@@ -1,0 +1,103 @@
+<!DOCTYPE html><html lang="en-GB"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EventFlow — Plan your event the simple way.</title>
+<link rel="stylesheet" href="/assets/css/styles.css">
+<meta name="description" content="Find suppliers, build your plan and keep everything in one place — beautifully simple on mobile and desktop.">
+<link rel="icon" href="/favicon.svg">
+</head><body>
+
+
+
+
+
+<header class="header" role="banner">
+  <div class="container header-inner">
+    <a class="brand" href="/" aria-label="EventFlow home">
+      <span class="logo" aria-hidden="true"></span>
+      <span class="brand-text">EventFlow</span>
+    </a>
+    <div class="header-actions">
+      <nav class="nav nav-inline" aria-label="Quick navigation">
+        <a href="/start.html" class="nav-link nav-main">Plan an Event</a>
+        <a href="/suppliers.html" class="nav-link nav-main">Suppliers</a>
+        <a href="/auth.html" class="nav-link nav-main nav-main-login">Log in</a>
+      </nav>
+      <button id="theme-toggle" class="icon-button" type="button" aria-label="Toggle dark mode">
+        <span class="theme-icon" aria-hidden="true">
+          <span class="theme-icon-sun" aria-hidden="true">☀</span>
+          <span class="theme-icon-moon" aria-hidden="true">🌙</span>
+        </span>
+      </button>
+      <button id="burger" class="nav-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false">
+        <span class="nav-toggle-bar"></span>
+        <span class="nav-toggle-bar"></span>
+        <span class="nav-toggle-bar"></span>
+      </button>
+    </div>
+  </div>
+  <nav class="nav nav-menu" aria-label="Primary navigation">
+    <a href="/start.html">Plan an Event</a>
+    <a href="/suppliers.html">Suppliers</a>
+    <a href="/plan.html">My Plan</a>
+    <a href="/for-suppliers.html">For Suppliers</a>
+    <a href="/faq.html">FAQ</a>
+    <a href="/settings.html">Settings</a>
+    <a href="/auth.html" id="nav-auth">Sign in</a>
+    <a href="#" id="nav-dashboard" style="display:none">Dashboard</a>
+    <a href="#" id="nav-signout" style="display:none">Sign out</a>
+  </nav>
+</header>
+<script src="/assets/js/auth-nav.js" defer></script>
+
+<main>
+  <section class="hero">
+    <div class="container hero-grid">
+      <div>
+        <div class="small">Plan in minutes</div>
+        <h1>Everything you need to organise an event — in one clear place.</h1>
+        <p class="lead">Find venues, catering, entertainment and more. Add to your plan with a click, start conversations when you’re ready, and keep everything together.</p>
+        <div class="hero-cta">
+          <button class="cta" onclick="location.href='/start.html'">Start planning</button>
+          <a class="cta secondary" href="/auth.html">Sign in / Create account</a>
+        </div>
+      </div>
+      <div>
+        <div class="collage" aria-hidden="true">
+          <div class="frame"><span class="tag">Venues</span><img loading="lazy" src="/assets/images/collage-venue.svg" alt=""></div>
+          <div class="frame"><span class="tag">Catering</span><img loading="lazy" src="/assets/images/collage-catering.svg" alt=""></div>
+          <div class="frame"><span class="tag">Entertainment</span><img loading="lazy" src="/assets/images/collage-entertainment.svg" alt=""></div>
+          <div class="frame"><span class="tag">Photography</span><img loading="lazy" src="/assets/images/collage-photography.svg" alt=""></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="small" style="text-transform:uppercase;letter-spacing:.2em;color:#7E8794">Featured packages</div>
+      <div id="featured-packages" class="cards"><div class="card"><p class="small">Loading…</p></div></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="cards">
+        <div class="card"><h3>1 · Tell us about your event</h3><p class="small">Type, location and date help us surface relevant suppliers.</p></div>
+        <div class="card"><h3>2 · Compare suppliers</h3><p class="small">Browse venues, catering, entertainment and more — add to your plan with one click.</p></div>
+        <div class="card"><h3>3 · Save & message</h3><p class="small">Create a free account to save your plan and start conversations with suppliers.</p></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer" role="contentinfo">
+  <div class="container" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+    <div><strong>EventFlow</strong><br><span class="small">Event planning made simple.</span></div>
+    <div class="version">Version: <span id="ef-version-label">loading…</span></div>
+    <div class="small"><a href="/credits.html">Credits</a> · <a href="/contact.html">Contact</a> · <a href="/terms.html">Terms</a> · <a href="/privacy.html">Privacy</a></div>
+  </div>
+</footer>
+
+<script src="/assets/js/app.js"></script>
+<script>window.__EF_PAGE__='home'</script>
+</body></html>

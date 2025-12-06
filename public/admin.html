@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Admin Panel</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body{font-family:sans-serif;padding:20px;background:#0b0b0b;color:#f5f5f5;}
+    h1,h2{margin-top:20px;}
+    table{width:100%;border-collapse:collapse;margin-top:10px;margin-bottom:20px;background:#111;}
+    td,th{border:1px solid #333;padding:8px;font-size:14px;}
+    th{background:#161616;text-align:left;}
+    button{padding:6px 10px;margin:2px;font-size:12px;cursor:pointer;background:#222;color:#f5f5f5;border:1px solid #444;border-radius:3px;}
+    button:hover{background:#2b825b;border-color:#2b825b;}
+    .controls{margin-top:10px;margin-bottom:10px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+    input[type="text"]{padding:6px 8px;border-radius:3px;border:1px solid #444;background:#111;color:#f5f5f5;min-width:220px;}
+    select{padding:6px 8px;border-radius:3px;border:1px solid #444;background:#111;color:#f5f5f5;}
+    .badge{display:inline-block;padding:2px 6px;border-radius:999px;font-size:11px;background:#222;}
+    .badge-yes{background:#134e4a;color:#bbf7d0;}
+    .badge-no{background:#3f3f46;color:#e4e4e7;}
+    .small{font-size:12px;color:#a1a1aa;}
+    .card{background:#111;padding:10px;border-radius:4px;border:1px solid #27272a;}
+  </style>
+</head>
+<body>
+  <h1>Admin Dashboard</h1>
+  <div id="status">Loading…</div>
+
+  <div class="controls">
+    <button id="refreshBtn">Refresh</button>
+    <button id="downloadUsersCsv">Download users CSV</button>
+    <button id="downloadMarketingCsv">Download marketing CSV</button>
+    <button id="downloadAllJson">Download full export (JSON)</button>
+    <button id="resetDemoBtn">Reset demo data</button>
+    <button id="adminLogoutBtn">Sign out</button>
+  </div>
+
+  <h2>Suppliers</h2>
+  <div class="controls"><button id="smartTagSuppliersBtn" type="button">Run smart tagging (beta)</button></div>
+  <table id="suppliers"></table>
+
+  <h2>Packages</h2>
+  <table id="packages"></table>
+
+  <h2>Users</h2>
+  <div class="controls">
+    <input id="userSearch" type="text" placeholder="Search users by name or email">
+    <select id="userDateFilter">
+      <option value="all">All time</option>
+      <option value="7">Joined in last 7 days</option>
+      <option value="30">Joined in last 30 days</option>
+    </select>
+  </div>
+  <table id="users"></table>
+
+  <h2>System Analytics</h2>
+  <div id="analytics"></div>
+
+  
+
+<script>
+  (function () {
+    function api(url, method, body) {
+      var opts = {
+        method: method || 'GET',
+        headers: { 'Content-Type': 'application/json' }
+      };
+      if (body) {
+        opts.body = JSON.stringify(body);
+      }
+      return fetch(url, opts).then(function (r) {
+        return r.json().then(function (data) {
+          if (!r.ok) {
+            var err = (data && data.error) ? data.error : ('Request failed with ' + r.status);
+            throw new Error(err);
+          }
+          return data;
+        });
+      });
+    }
+    var allUsers = [];
+
+    function renderUsersTable(list) {
+      var el = document.getElementById('users');
+      if (!el) return;
+
+      var rows = '<tr><th>Name</th><th>Email</th><th>Role</th><th>Verified</th><th>Joined</th><th>Last login</th><th>Actions</th></tr>';
+
+      (list || []).forEach(function (u) {
+        var joined = u.createdAt ? new Date(u.createdAt).toLocaleString() : '—';
+        var last = u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleString() : '—';
+        var verifiedBadge = u.verified
+          ? '<span class="badge badge-yes">Yes</span>'
+          : '<span class="badge badge-no">No</span>';
+
+        rows += '<tr>' +
+          '<td>' + (u.name || '') + '</td>' +
+          '<td>' + (u.email || '') + '</td>' +
+          '<td>' + (u.role || '') + '</td>' +
+          '<td>' + verifiedBadge + '</td>' +
+          '<td>' + joined + '</td>' +
+          '<td>' + last + '</td>' +
+          '<td><button onclick="disableUser(\'' + u.id + '\')">Disable</button></td>' +
+          '</tr>';
+      });
+
+      el.innerHTML = rows;
+    }
+
+    function applyUserFilters() {
+      var searchEl = document.getElementById('userSearch');
+      var filterEl = document.getElementById('userDateFilter');
+      var list = Array.isArray(allUsers) ? allUsers.slice() : [];
+
+      var term = (searchEl && searchEl.value || '').toLowerCase();
+      if (term) {
+        list = list.filter(function (u) {
+          var name = (u.name || '').toLowerCase();
+          var email = (u.email || '').toLowerCase();
+          return name.indexOf(term) !== -1 || email.indexOf(term) !== -1;
+        });
+      }
+
+      var rangeVal = filterEl ? filterEl.value : 'all';
+      if (rangeVal !== 'all') {
+        var days = parseInt(rangeVal, 10);
+        var now = Date.now();
+        var cutoff = now - days * 24 * 60 * 60 * 1000;
+        list = list.filter(function (u) {
+          if (!u.createdAt) return false;
+          var t = Date.parse(u.createdAt);
+          if (!t || isNaN(t)) return false;
+          return t >= cutoff;
+        });
+      }
+
+      renderUsersTable(list);
+    }
+
+    function renderSuppliersTable(resp) {
+      var el = document.getElementById('suppliers');
+      if (!el) return;
+
+      var rows = '<tr><th>Name</th><th>Approved</th><th>Pro plan</th><th>Score</th><th>Tags</th><th>Actions</th></tr>';
+      var items = (resp && resp.items) || [];
+
+      if (!items.length) {
+        el.innerHTML = '<tr><td colspan="6">No suppliers yet.</td></tr>';
+        return;
+      }
+
+      items.forEach(function (s) {
+        var plan;
+        if (s.isPro) {
+          if (s.proExpiresAt) {
+            try {
+              var d = new Date(s.proExpiresAt);
+              plan = 'Pro until ' + d.toLocaleDateString();
+            } catch (_e) {
+              plan = 'Pro (active)';
+            }
+          } else {
+            plan = 'Pro (active)';
+          }
+        } else {
+          plan = 'None';
+        }
+        var score = typeof s.healthScore === 'number' ? s.healthScore.toFixed(0) : '—';
+        var tags = (s.tags || []).join(', ');
+
+        var selectId = 'pro-duration-' + s.id;
+        var actions =
+          '<button onclick="approveSup(\'' + s.id + '\')">Approve</button>' +
+          '<button onclick="rejectSup(\'' + s.id + '\')">Reject</button>' +
+          '<div class="small" style="margin-top:4px;">' +
+            'Pro trial: ' +
+            '<select id="' + selectId + '">' +
+              '<option value="">Choose length…</option>' +
+              '<option value="1d">1 day</option>' +
+              '<option value="7d">7 days</option>' +
+              '<option value="1m">1 month</option>' +
+              '<option value="1y">1 year</option>' +
+            '</select>' +
+            '<button onclick="setProPlan(\'' + s.id + '\', \'duration\')">Set</button>' +
+            '<button onclick="setProPlan(\'' + s.id + '\', \'cancel\')">Cancel</button>' +
+          '</div>';
+
+        rows += '<tr><td>' + s.name + '</td><td>' + (s.approved ? 'Yes' : 'No') +
+          '</td><td>' + plan + '</td><td>' + score + '</td><td>' + tags + '</td><td>' + actions + '</td></tr>';
+      });
+
+      el.innerHTML = rows;
+    }
+
+    function renderPackagesTable(resp) {
+      var el = document.getElementById('packages');
+      if (!el) return;
+
+      var rows = '<tr><th>Title</th><th>Approved</th><th>Featured</th><th>Actions</th></tr>';
+      var items = (resp && resp.items) || [];
+
+      if (!items.length) {
+        el.innerHTML = '<tr><td colspan="4">No packages yet.</td></tr>';
+        return;
+      }
+
+      items.forEach(function (p) {
+        rows += '<tr><td>' + p.title + '</td><td>' + (p.approved ? 'Yes' : 'No') + '</td>' +
+          '<td>' + (p.featured ? 'Yes' : 'No') + '</td>' +
+          '<td>' +
+            '<button onclick="approvePkg(\'' + p.id + '\', true)">Approve</button>' +
+            '<button onclick="approvePkg(\'' + p.id + '\', false)">Unapprove</button>' +
+            '<button onclick="featurePkg(\'' + p.id + '\', true)">Feature</button>' +
+            '<button onclick="featurePkg(\'' + p.id + '\', false)">Unfeature</button>' +
+          '</td></tr>';
+      });
+
+      el.innerHTML = rows;
+    }
+
+    function renderAnalytics(metrics) {
+      var el = document.getElementById('analytics');
+      if (!el) return;
+
+      var counts = (metrics && metrics.counts) || {};
+      var byRole = counts.usersByRole || {};
+      var roleParts = Object.keys(byRole).map(function (r) {
+        return r + ': ' + byRole[r];
+      }).join(', ') || '—';
+
+      var usersList = Array.isArray(allUsers) && allUsers.length ? allUsers : [];
+      function countSince(days) {
+        var now = Date.now();
+        var cutoff = now - days * 24 * 60 * 60 * 1000;
+        return usersList.filter(function (u) {
+          if (!u.createdAt) return false;
+          var t = Date.parse(u.createdAt);
+          if (!t || isNaN(t)) return false;
+          return t >= cutoff;
+        }).length;
+      }
+
+      var last7 = countSince(7);
+      var last30 = countSince(30);
+
+      function bar(n) {
+        var c = n;
+        if (c > 20) c = 20;
+        var out = '';
+        for (var i = 0; i < c; i++) out += '▮';
+        return out;
+      }
+
+      el.innerHTML =
+        '<div class="card">' +
+          '<p><b>Total Users:</b> ' + (counts.usersTotal || 0) + '</p>' +
+          '<p><b>Users by role:</b> ' + roleParts + '</p>' +
+          '<p><b>Total Suppliers:</b> ' + (counts.suppliersTotal || 0) + '</p>' +
+          '<p><b>Total Packages:</b> ' + (counts.packagesTotal || 0) + '</p>' +
+          '<p><b>Signups last 7 days:</b> ' + last7 + ' <span class="small">' + bar(last7) + '</span></p>' +
+          '<p><b>Signups last 30 days:</b> ' + last30 + ' <span class="small">' + bar(last30) + '</span></p>' +
+          '<p class="small">Plans: ' + (counts.plansTotal || 0) +
+            ' · Threads: ' + (counts.threadsTotal || 0) +
+            ' · Messages: ' + (counts.messagesTotal || 0) + '</p>' +
+        '</div>';
+    }
+
+    function loadAll() {
+      var statusEl = document.getElementById('status');
+      if (statusEl) statusEl.innerText = 'Checking admin…';
+
+      api('/api/auth/me').then(function (me) {
+        if (!me || !me.user || me.user.role !== 'admin') {
+          if (statusEl) statusEl.innerText = 'Not admin / not logged in.';
+          return;
+        }
+
+        if (statusEl) statusEl.innerText = 'Loading data…';
+
+        return Promise.all([
+          api('/api/admin/suppliers'),
+          api('/api/admin/packages'),
+          api('/api/admin/users'),
+          api('/api/admin/metrics')
+        ]).then(function (results) {
+          var suppliersResp = results[0] || {};
+          var packagesResp = results[1] || {};
+          var usersResp = results[2] || {};
+          var metricsResp = results[3] || {};
+
+          allUsers = usersResp.items || [];
+          renderSuppliersTable(suppliersResp);
+          renderPackagesTable(packagesResp);
+          applyUserFilters();
+          renderAnalytics(metricsResp);
+
+          if (statusEl) statusEl.innerText = 'Loaded ' + allUsers.length + ' users.';
+        });
+      }).catch(function (err) {
+        console.error('Error loading admin', err);
+        if (statusEl) statusEl.innerText = 'Error loading admin.';
+      });
+    }
+
+    window.approveSup = function (id) {
+      api('/api/admin/suppliers/' + id + '/approve', 'POST', { approved: true })
+        .then(function () {
+          alert('Supplier approved.');
+          loadAll();
+        })
+        .catch(function (err) {
+          console.error('approveSup failed', err);
+          alert('Failed to approve supplier: ' + err.message);
+        });
+    };
+
+    window.rejectSup = function (id) {
+      api('/api/admin/suppliers/' + id + '/approve', 'POST', { approved: false })
+        .then(function () {
+          alert('Supplier rejected.');
+          loadAll();
+        })
+        .catch(function (err) {
+          console.error('rejectSup failed', err);
+          alert('Failed to reject supplier: ' + err.message);
+        });
+    };
+
+    window.setProPlan = function (id, mode) {
+      if (mode === 'duration') {
+        var sel = document.getElementById('pro-duration-' + id);
+        if (!sel || !sel.value) {
+          alert('Choose a duration first.');
+          return;
+        }
+        api('/api/admin/suppliers/' + id + '/pro', 'POST', {
+          mode: 'duration',
+          duration: sel.value
+        }).then(function () {
+          alert('Pro trial set for supplier.');
+          loadAll();
+        }).catch(function (err) {
+          console.error('setProPlan (duration) failed', err);
+          alert('Failed to set Pro trial: ' + err.message);
+        });
+      } else if (mode === 'cancel') {
+        if (!confirm('Remove Pro for this supplier?')) return;
+        api('/api/admin/suppliers/' + id + '/pro', 'POST', { mode: 'cancel' })
+          .then(function () {
+            alert('Pro plan cancelled for supplier.');
+            loadAll();
+          })
+          .catch(function (err) {
+            console.error('setProPlan (cancel) failed', err);
+            alert('Failed to cancel Pro plan: ' + err.message);
+          });
+      }
+    };
+
+    window.approvePkg = function (id, approved) {
+      api('/api/admin/packages/' + id + '/approve', 'POST', { approved: approved })
+        .then(loadAll)
+        .catch(function (err) { console.error('approvePkg failed', err); });
+    };
+
+    window.featurePkg = function (id, featured) {
+      api('/api/admin/packages/' + id + '/feature', 'POST', { featured: featured })
+        .then(loadAll)
+        .catch(function (err) { console.error('featurePkg failed', err); });
+    };
+
+    window.disableUser = function (id) {
+      api('/api/admin/users/' + id + '/disable', 'POST', { disabled: true })
+        .then(loadAll)
+        .catch(function (err) { console.error('disableUser failed', err); });
+    };
+
+    window.addEventListener('load', function () {
+      loadAll();
+
+      var search = document.getElementById('userSearch');
+      if (search) {
+        search.addEventListener('input', applyUserFilters);
+      }
+
+      var dateFilter = document.getElementById('userDateFilter');
+      if (dateFilter) {
+        dateFilter.addEventListener('change', applyUserFilters);
+      }
+
+      var refreshBtn = document.getElementById('refreshBtn');
+      if (refreshBtn) {
+        refreshBtn.addEventListener('click', function () {
+          loadAll();
+        });
+      }
+
+      var dlUsers = document.getElementById('downloadUsersCsv');
+      if (dlUsers) {
+        dlUsers.addEventListener('click', function () {
+          window.location.href = '/api/admin/users-export';
+        });
+      }
+
+      var dlMarketing = document.getElementById('downloadMarketingCsv');
+      if (dlMarketing) {
+        dlMarketing.addEventListener('click', function () {
+          window.location.href = '/api/admin/marketing-export';
+        });
+      }
+
+      var dlJson = document.getElementById('downloadAllJson');
+      if (dlJson) {
+        dlJson.addEventListener('click', function () {
+          window.location.href = '/api/admin/all-export';
+        });
+      }
+
+      var resetDemo = document.getElementById('resetDemoBtn');
+      if (resetDemo) {
+        resetDemo.addEventListener('click', function () {
+          if (!confirm('Really reset demo data?')) return;
+          api('/api/admin/reset-demo', 'POST', {})
+            .then(function () {
+              alert('Demo data reset.');
+              loadAll();
+            })
+            .catch(function (err) {
+              console.error('Error resetting demo', err);
+              alert('Reset failed, check server logs.');
+            });
+        });
+      }
+
+      var smartTagBtn = document.getElementById('smartTagSuppliersBtn');
+      if (smartTagBtn) {
+        smartTagBtn.addEventListener('click', function () {
+          smartTagBtn.disabled = true;
+          smartTagBtn.innerText = 'Running smart tagging…';
+          api('/api/admin/suppliers/smart-tags', 'POST', {})
+            .then(function () {
+              return loadAll();
+            })
+            .catch(function (err) {
+              console.error('Smart tagging failed', err);
+              alert('Smart tagging failed – check server logs.');
+            })
+            .finally(function () {
+              smartTagBtn.disabled = false;
+              smartTagBtn.innerText = 'Run smart tagging (beta)';
+            });
+        });
+      }
+
+      var logoutBtn = document.getElementById('adminLogoutBtn');
+      if (logoutBtn) {
+        logoutBtn.addEventListener('click', function () {
+          api('/api/auth/logout', 'POST', {})
+            .finally(function () {
+              window.location.href = '/';
+            });
+        });
+      }
+    });
+  })();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,76 @@
+<!DOCTYPE html><html lang='en-GB'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>Privacy — EventFlow</title><link rel='stylesheet' href='/assets/css/styles.css'></head><body>
+<header class="header" role="banner">
+  <div class="container header-inner">
+    <a class="brand" href="/" aria-label="EventFlow home">
+      <span class="logo" aria-hidden="true"></span>
+      <span class="brand-text">EventFlow</span>
+    </a>
+    <div class="header-actions">
+      <nav class="nav nav-inline" aria-label="Quick navigation">
+        <a href="/start.html" class="nav-link nav-main">Plan an Event</a>
+        <a href="/suppliers.html" class="nav-link nav-main">Suppliers</a>
+        <a href="/auth.html" class="nav-link nav-main nav-main-login">Log in</a>
+      </nav>
+      <button id="theme-toggle" class="icon-button" type="button" aria-label="Toggle dark mode">
+        <span class="theme-icon" aria-hidden="true">
+          <span class="theme-icon-sun" aria-hidden="true">☀</span>
+          <span class="theme-icon-moon" aria-hidden="true">🌙</span>
+        </span>
+      </button>
+      <button id="burger" class="nav-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false">
+        <span class="nav-toggle-bar"></span>
+        <span class="nav-toggle-bar"></span>
+        <span class="nav-toggle-bar"></span>
+      </button>
+    </div>
+  </div>
+  <nav class="nav nav-menu" aria-label="Primary navigation">
+    <a href="/start.html">Plan an Event</a>
+    <a href="/suppliers.html">Suppliers</a>
+    <a href="/plan.html">My Plan</a>
+    <a href="/for-suppliers.html">For Suppliers</a>
+    <a href="/faq.html">FAQ</a>
+    <a href="/settings.html">Settings</a>
+    <a href="/auth.html" id="nav-auth">Sign in</a>
+    <a href="#" id="nav-dashboard" style="display:none">Dashboard</a>
+    <a href="#" id="nav-signout" style="display:none">Sign out</a>
+  </nav>
+</header>
+<script src="/assets/js/auth-nav.js" defer></script>
+<main class='section'>
+  <div class='container'>
+    <h1>Privacy</h1>
+    <div class="card">
+      <p class="small">This page describes how the EventFlow demo handles data. It is an example only and not a full privacy policy.</p>
+
+      <h2 class="h4">1. What this demo stores</h2>
+      <p>This demo build stores information such as your name, email address, chosen password (as a hashed value), event details, supplier profiles and the content of any messages you send via the Conversations features.</p>
+
+      <h2 class="h4">2. Where data is kept</h2>
+      <p>All data for this demo runs locally as part of your development environment. It is not a hosted production service. Removing the demo or clearing the data directory will remove your records.</p>
+
+      <h2 class="h4">3. Cookies</h2>
+      <p>EventFlow uses a small authentication cookie so you can stay signed in while you move between pages. The cookie is only used to keep you logged in and is not used for advertising or tracking across other sites.</p>
+
+      <h2 class="h4">4. Emails</h2>
+      <p>Some actions in the demo, such as account verification or password reset, attempt to send email. In a local environment these usually log to the console instead of sending real mail. Do not enter sensitive real-world information.</p>
+
+      <h2 class="h4">5. Your control</h2>
+      <p>You can delete demo data by removing the local data files or resetting the database using any tooling provided with the project. Because this is a demo, there is no automated export or right-to-erasure workflow.</p>
+
+      <h2 class="h4">6. Analytics</h2>
+      <p>This demo does not include third-party analytics scripts. Basic metrics shown in the admin area are generated from the local demo data only.</p>
+
+      <h2 class="h4">7. Changes</h2>
+      <p>As EventFlow evolves, these example privacy details may change. Check this page for the latest demo version.</p>
+    </div>
+  </div>
+</main>
+<footer class="footer" role="contentinfo">
+  <div class="container" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+    <div><strong>EventFlow</strong><br><span class="small">Event planning made simple.</span></div>
+    <div class="version">Version: v16.3.9</div>
+    <div class="small"><a href="/credits.html">Credits</a> · <a href="/contact.html">Contact</a> · <a href="/terms.html">Terms</a> · <a href="/privacy.html">Privacy</a></div>
+  </div>
+</footer>
+</body></html>

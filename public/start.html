@@ -1,0 +1,168 @@
+<!DOCTYPE html><html lang='en-GB'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>Start planning — EventFlow</title><link rel='stylesheet' href='/assets/css/styles.css'></head><body>
+<header class="header" role="banner">
+  <div class="container header-inner">
+    <a class="brand" href="/" aria-label="EventFlow home">
+      <span class="logo" aria-hidden="true"></span>
+      <span class="brand-text">EventFlow</span>
+    </a>
+    <div class="header-actions">
+      <nav class="nav nav-inline" aria-label="Quick navigation">
+        <a href="/start.html" class="nav-link nav-main">Plan an Event</a>
+        <a href="/suppliers.html" class="nav-link nav-main">Suppliers</a>
+        <a href="/auth.html" class="nav-link nav-main nav-main-login">Log in</a>
+      </nav>
+      <button id="theme-toggle" class="icon-button" type="button" aria-label="Toggle dark mode">
+        <span class="theme-icon" aria-hidden="true">
+          <span class="theme-icon-sun" aria-hidden="true">☀</span>
+          <span class="theme-icon-moon" aria-hidden="true">🌙</span>
+        </span>
+      </button>
+      <button id="burger" class="nav-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false">
+        <span class="nav-toggle-bar"></span>
+        <span class="nav-toggle-bar"></span>
+        <span class="nav-toggle-bar"></span>
+      </button>
+    </div>
+  </div>
+  <nav class="nav nav-menu" aria-label="Primary navigation">
+    <a href="/start.html">Plan an Event</a>
+    <a href="/suppliers.html">Suppliers</a>
+    <a href="/plan.html">My Plan</a>
+    <a href="/for-suppliers.html">For Suppliers</a>
+    <a href="/faq.html">FAQ</a>
+    <a href="/settings.html">Settings</a>
+    <a href="/auth.html" id="nav-auth">Sign in</a>
+    <a href="#" id="nav-dashboard" style="display:none">Dashboard</a>
+    <a href="#" id="nav-signout" style="display:none">Sign out</a>
+  </nav>
+</header>
+<script src="/assets/js/auth-nav.js" defer></script>
+<main class='section'><div class='container'>
+<h1>Start planning your event</h1>
+<form id="start-form" class="card">
+  <div class="form-row">
+    <label>Event type</label>
+    <select id="eventType" required>
+      <option value="" disabled selected>Select an event type</option>
+      <option>Wedding</option>
+      <option>Birthday</option>
+      <option>Anniversary</option>
+      <option>Corporate</option>
+      <option>Other</option>
+    </select>
+  </div>
+  <div class="form-row">
+    <label>Event name <span class="small">(optional)</span></label>
+    <input id="eventName" placeholder="E.g. 40th birthday, summer party">
+  </div>
+  <div class="form-row">
+    <label>Location</label>
+    <input id="location" placeholder="Town or postcode" required>
+  </div>
+  <div class="form-row">
+    <label>Date <span class="small">(optional)</span></label>
+    <input id="date" type="date">
+  </div>
+  <div class="form-row">
+    <label>Guest count <span class="small">(approximate)</span></label>
+    <input id="guests" type="number" min="1" step="1" placeholder="e.g. 60">
+  </div>
+  <div class="form-row">
+    <label>Budget</label>
+    <select id="budget">
+      <option value="">Not sure yet</option>
+      <option>Up to £1,000</option>
+      <option>£1,000–£3,000</option>
+      <option>£3,000–£10,000</option>
+      <option>£10,000+</option>
+    </select>
+  </div>
+  <div class="form-row">
+    <label>Style & priorities <span class="small">(optional)</span></label>
+    <div class="small">
+      <label><input type="checkbox" name="stylePref" value="Relaxed"> Relaxed</label>
+      <label><input type="checkbox" name="stylePref" value="Luxury"> Luxury</label>
+      <label><input type="checkbox" name="stylePref" value="Family-friendly"> Family-friendly</label>
+      <label><input type="checkbox" name="stylePref" value="Outdoor"> Outdoor</label>
+      <label><input type="checkbox" name="stylePref" value="Formal"> Formal</label>
+    </div>
+  </div>
+  <div class="form-row">
+    <label>Notes for yourself <span class="small">(optional)</span></label>
+    <textarea id="eventNotes" rows="3" placeholder="Anything else that matters for this event"></textarea>
+  </div>
+  <div class="form-actions">
+    <button class="cta" type="submit">See suggested suppliers</button>
+    <span class="small">Only takes a moment.</span>
+  </div>
+</form>
+
+<script>
+  (function(){
+    var form = document.getElementById('start-form');
+    if (!form) return;
+    var typeEl = document.getElementById('eventType');
+    var nameEl = document.getElementById('eventName');
+    var locEl = document.getElementById('location');
+    var dateEl = document.getElementById('date');
+    var guestsEl = document.getElementById('guests');
+    var budgetEl = document.getElementById('budget');
+    var notesEl = document.getElementById('eventNotes');
+
+    form.addEventListener('submit', function(e){
+      e.preventDefault();
+      var type = typeEl ? typeEl.value.trim() : '';
+      var name = nameEl ? nameEl.value.trim() : '';
+      var loc = locEl ? locEl.value.trim() : '';
+      var date = dateEl ? dateEl.value : '';
+      var guests = guestsEl && guestsEl.value ? parseInt(guestsEl.value, 10) : null;
+      if (isNaN(guests)) guests = null;
+      var budget = budgetEl ? budgetEl.value : '';
+      var styles = [];
+      try {
+        var styleNodes = document.querySelectorAll('input[name="stylePref"]:checked');
+        styleNodes.forEach(function(n){ styles.push(n.value); });
+      } catch (_err) {}
+      var notes = notesEl ? notesEl.value.trim() : '';
+
+      // Build query string for suppliers page
+      var params = new URLSearchParams();
+      if (type) params.set('type', type);
+      if (loc) params.set('location', loc);
+
+      if (!params.get('q')) {
+        var q = (type + ' ' + loc).trim();
+        if (q) params.set('q', q);
+      }
+      if (date) params.set('date', date);
+
+      // Save to localStorage so other pages (like plan) can reuse it later
+      var payload = {
+        type: type,
+        name: name,
+        location: loc,
+        date: date,
+        guests: guests,
+        budget: budget,
+        styles: styles,
+        notes: notes
+      };
+      try {
+        localStorage.setItem('eventflow_start', JSON.stringify(payload));
+      } catch (_err) {}
+
+      var qs = params.toString();
+      location.href = '/suppliers.html' + (qs ? ('?' + qs) : '');
+    });
+  })();
+</script>
+
+</div></main>
+<footer class="footer" role="contentinfo">
+  <div class="container" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+    <div><strong>EventFlow</strong><br><span class="small">Event planning made simple.</span></div>
+    <div class="version">Version: v16.3.9</div>
+    <div class="small"><a href="/credits.html">Credits</a> · <a href="/contact.html">Contact</a> · <a href="/terms.html">Terms</a> · <a href="/privacy.html">Privacy</a></div>
+  </div>
+</footer>
+</body></html>

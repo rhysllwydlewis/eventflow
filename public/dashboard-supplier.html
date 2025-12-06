@@ -1,0 +1,185 @@
+<!DOCTYPE html><html lang='en-GB'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>Supplier dashboard — EventFlow</title><link rel='stylesheet' href='/assets/css/styles.css'></head><body>
+<!-- modern-ui -->
+<div class='card'><h2>Supplier Dashboard</h2></div>
+<header class="header" role="banner">
+  <div class="container header-inner">
+    <a class="brand" href="/" aria-label="EventFlow home">
+      <span class="logo" aria-hidden="true"></span>
+      <span class="brand-text">EventFlow</span>
+    </a>
+    <div class="header-actions">
+      <nav class="nav nav-inline" aria-label="Quick navigation">
+        <a href="/start.html" class="nav-link nav-main">Plan an Event</a>
+        <a href="/suppliers.html" class="nav-link nav-main">Suppliers</a>
+        <a href="/auth.html" class="nav-link nav-main nav-main-login">Log in</a>
+      </nav>
+      <button id="theme-toggle" class="icon-button" type="button" aria-label="Toggle dark mode">
+        <span class="theme-icon" aria-hidden="true">
+          <span class="theme-icon-sun" aria-hidden="true">☀</span>
+          <span class="theme-icon-moon" aria-hidden="true">🌙</span>
+        </span>
+      </button>
+      <button id="burger" class="nav-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false">
+        <span class="nav-toggle-bar"></span>
+        <span class="nav-toggle-bar"></span>
+        <span class="nav-toggle-bar"></span>
+      </button>
+    </div>
+  </div>
+  <nav class="nav nav-menu" aria-label="Primary navigation">
+    <a href="/start.html">Plan an Event</a>
+    <a href="/suppliers.html">Suppliers</a>
+    <a href="/plan.html">My Plan</a>
+    <a href="/for-suppliers.html">For Suppliers</a>
+    <a href="/faq.html">FAQ</a>
+    <a href="/settings.html">Settings</a>
+    <a href="/auth.html" id="nav-auth">Sign in</a>
+    <a href="#" id="nav-dashboard" style="display:none">Dashboard</a>
+    <a href="#" id="nav-signout" style="display:none">Sign out</a>
+  </nav>
+</header>
+<script src="/assets/js/auth-nav.js" defer></script>
+<main class='section'><div class='container'>
+  <div id="supplier-pro-ribbon" class="pro-ribbon" style="display:none"></div>
+<h1>Supplier dashboard</h1>
+<div class="card">
+  <h3>Your supplier profiles</h3>
+  <p class="small">
+    Experimental: each profile gets a simple listing health score based on photos, description and details you&apos;ve added.
+  </p>
+  <div id="my-suppliers" class="section"><p class="small">Loading…</p></div>
+  <h3 style="margin-top:16px">Create / Edit profile</h3>
+<form id="supplier-form">
+  <input type="hidden" id="sup-id" name="id">
+  <div class="form-row" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))">
+    <div>
+      <label>Business name</label>
+      <input id="sup-name" name="name">
+    </div>
+    <div>
+      <label>Category</label>
+      <select id="sup-category" name="category">
+        <option value="">Choose a category…</option>
+        <option>Venues</option>
+        <option>Catering</option>
+        <option>Photography</option>
+        <option>Entertainment</option>
+        <option>Flowers & décor</option>
+        <option>Transport</option>
+        <option>Extras & add-ons</option>
+      </select>
+    </div>
+    <div>
+      <label>Location</label>
+      <input id="sup-location" name="location" placeholder="City, region">
+    </div>
+    <div>
+      <label>Price display</label>
+      <input id="sup-price" name="price_display" placeholder="e.g. From £500 or ££">
+    </div>
+  </div>
+
+  <div class="form-row">
+    <label>Short description</label>
+    <input id="sup-short" name="description_short">
+  </div>
+
+  <div class="form-row">
+    <label>Long description</label>
+    <textarea id="sup-long" name="description_long" rows="4"></textarea>
+  </div>
+
+  <div class="form-row">
+    <label>Website</label>
+    <input id="sup-website" name="website" placeholder="your-website-url">
+  </div>
+
+  <div class="form-row">
+    <label>License / Insurance</label>
+    <input id="sup-license" name="license" placeholder="e.g. PLI £5m">
+  </div>
+
+  <div class="form-row">
+    <label>Amenities (comma-separated)</label>
+    <input id="sup-amenities" name="amenities" placeholder="Parking, Garden, PA system">
+  </div>
+
+  <div class="form-row">
+    <label>Max guests</label>
+    <input id="sup-max" name="maxGuests" type="number" min="0" step="1">
+  </div>
+
+  <div class="form-row" style="display:none">
+    <label>Photos (one URL per line)</label>
+    <textarea id="sup-photos" name="photos" rows="3"></textarea>
+  </div>
+
+  <div class="form-row">
+    <label>Upload photos</label>
+    <div id="sup-photo-drop" class="photo-drop-zone">
+      Drag &amp; drop images here, or click to choose files.
+    </div>
+    <div id="sup-photo-preview" class="photo-preview-grid"></div>
+    <p class="tiny">
+      You can upload multiple photos – they&apos;ll be shown on your public listing.
+    </p>
+  </div>
+
+  <div class="form-actions" style="margin-top:10px">
+    <button class="cta" id="sup-create" type="submit">Save profile</button>
+    <span class="small" id="sup-status"></span>
+  </div>
+</form>
+
+
+<div class="card" style="margin-top:16px">
+  <h3>Your packages</h3>
+  <p class="small" id="pkg-limit-note">Checking your package allowance…</p>
+  <div id="my-packages" class="section"><p class="small">Loading…</p></div>
+  <h3 style="margin-top:16px">Create a package</h3>
+  <form id="package-form">
+    <div class="form-row" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))">
+      <div><label>For supplier</label><select id="pkg-supplier"></select></div>
+      <div><label>Title</label><input id="pkg-title" name="title"></div>
+      <div><label>Price</label><input id="pkg-price" name="price" placeholder="e.g. £999 or £45 pp"></div>
+    </div>
+    <div class="form-row"><label>Description</label><textarea id="pkg-desc" name="description" rows="4"></textarea></div>
+    <div class="form-row" style="display:none">
+      <label>Image URL (optional)</label>
+      <input id="pkg-image" name="image" placeholder="your-website-url">
+    </div>
+    <div class="form-row">
+      <label>Upload image (optional)</label>
+      <div id="pkg-photo-drop" class="photo-drop-zone">Drag &amp; drop an image here, or click to choose a file.</div>
+      <div id="pkg-photo-preview" class="photo-preview-grid"></div>
+    </div>
+    <div class="form-actions" style="margin-top:10px">
+      <button class="cta" type="submit">Save package</button>
+      <span class="small" id="pkg-status"></span>
+    </div>
+    <input type="hidden" name="supplierId" id="pkg-supplier-id-hidden">
+    <input type="hidden" name="id" id="pkg-id-hidden">
+  </form>
+</div><div class="card" style="margin-top:16px">
+  <h3>Billing &amp; subscription</h3>
+  <div id="supplier-billing-card" class="section">
+    <p class="small">Checking billing status…</p>
+  </div>
+</div>
+
+<div class="card" style="margin-top:16px">
+  <h3>Messages</h3>
+  <div id="threads-sup" class="section"><p class="small">Loading…</p></div>
+</div>
+
+<script src="/assets/js/app.js"></script>
+<script>window.__EF_PAGE__='dash_supplier'</script>
+</div></main>
+<footer class="footer" role="contentinfo">
+  <div class="container" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+    <div><strong>EventFlow</strong><br><span class="small">Event planning made simple.</span></div>
+    <div class="version">Version: v16.3.9</div>
+    <div class="small"><a href="/credits.html">Credits</a> · <a href="/contact.html">Contact</a> · <a href="/terms.html">Terms</a> · <a href="/privacy.html">Privacy</a></div>
+  </div>
+</footer>
+</body></html>
