@@ -1,26 +1,26 @@
 // -----------------------------------------------------------------------------
-// EventFlow - FULLY FIXED PRODUCTION SERVER WITH WORKING SENDGRID EMAILS
+// EventFlow - FINAL FULLY FIXED SERVER WITH SENDGRID EMAIL + DEBUG ENABLED
 // -----------------------------------------------------------------------------
 
-const express = require('express');
-const fs = require('fs');
-const path = require('path');
-const cookieParser = require('cookie-parser');
-const rateLimit = require('express-rate-limit');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const nodemailer = require('nodemailer');
-const cors = require('cors');
-const { uid } = require('uid');
+const express = require("express");
+const fs = require("fs");
+const path = require("path");
+const cookieParser = require("cookie-parser");
+const rateLimit = require("express-rate-limit");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const nodemailer = require("nodemailer");
+const cors = require("cors");
+const { uid } = require("uid");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Fix Express Proxy Warning (required for Railway)
+// Fix Express reverse proxy issue
 app.set("trust proxy", true);
 
 // -----------------------------------------------------------------------------
-// BASIC MIDDLEWARE
+// Middleware
 // -----------------------------------------------------------------------------
 app.use(express.json());
 app.use(cookieParser());
@@ -28,7 +28,7 @@ app.use(cors());
 app.use(express.static(path.join(__dirname, "public")));
 
 // -----------------------------------------------------------------------------
-// DATA HELPERS
+// DATA STORAGE HELPERS
 // -----------------------------------------------------------------------------
 const DATA_DIR = path.join(__dirname, "data");
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR);
@@ -40,61 +40,71 @@ function read(name) {
 }
 
 function write(name, data) {
-    fs.writeFileSync(path.join(DATA_DIR, `${name}.json`), JSON.stringify(data, null, 2));
+    fs.writeFileSync(
+        path.join(DATA_DIR, `${name}.json`),
+        JSON.stringify(data, null, 2)
+    );
 }
 
 // -----------------------------------------------------------------------------
-// ENABLE EMAIL SYSTEM ALWAYS (YOUR CHOICE: OPTION A)
+// EMAIL SYSTEM (ALWAYS ENABLED FOR YOU - OPTION A)
 // -----------------------------------------------------------------------------
-const EMAIL_ENABLED = true;  // always TRUE
+const EMAIL_ENABLED = true;
 
-// REQUIRED Railway variables:
+// Required ENV variables on Railway:
 const FROM_EMAIL = process.env.FROM_EMAIL || "no-reply@event-flow.co.uk";
 
 const SMTP_HOST = process.env.SMTP_HOST || "smtp.sendgrid.net";
 const SMTP_PORT = Number(process.env.SMTP_PORT || 587);
-const SMTP_USER = process.env.SMTP_USER || "apikey"; // REQUIRED by SendGrid
-const SMTP_PASS = process.env.SMTP_PASS || process.env.SENDGRID_API_KEY;
+const SMTP_USER = process.env.SMTP_USER || "apikey";
+const SMTP_PASS =
+    process.env.SMTP_PASS || process.env.SENDGRID_API_KEY || "";
 
+// Email transporter
 let transporter = null;
 
-// VALIDATE SMTP Configuration
+console.log("📧 Initializing email transporter...");
+console.log("SMTP_HOST:", SMTP_HOST);
+console.log("SMTP_PORT:", SMTP_PORT);
+console.log("SMTP_USER:", SMTP_USER);
+console.log("FROM_EMAIL:", FROM_EMAIL);
+
 if (!SMTP_PASS || SMTP_PASS.trim() === "") {
-    console.error("❌ ERROR: No SMTP_PASS or SENDGRID_API_KEY provided.");
+    console.error("❌ ERROR: SMTP_PASS / SENDGRID_API_KEY missing!");
 } else {
-try {
-    transporter = nodemailer.createTransport({
-        host: SMTP_HOST.trim(),
-        port: SMTP_PORT,
-        secure: false,
-        auth: {
-            user: SMTP_USER.trim(),
-            pass: SMTP_PASS.trim()
-        },
-        logger: true,
-        debug: true
-    });
+    try {
+        transporter = nodemailer.createTransport({
+            host: SMTP_HOST.trim(),
+            port: SMTP_PORT,
+            secure: false,
+            auth: {
+                user: SMTP_USER.trim(),
+                pass: SMTP_PASS.trim(),
+            },
+            logger: true,
+            debug: true,
+        });
 
-    transporter.verify((err, success) => {
-        if (err) {
-            console.error("❌ SMTP LOGIN FAILED:", err);
-        } else {
-            console.log("✅ SMTP LOGIN SUCCESSFUL");
-        }
-    });
-
-} catch (err) {
-    console.error("❌ Failed creating transporter:", err);
+        // Test connection on startup
+        transporter.verify((err, success) => {
+            if (err) {
+                console.error("❌ SMTP LOGIN FAILED:", err);
+            } else {
+                console.log("✅ SMTP LOGIN SUCCESSFUL");
+            }
+        });
+    } catch (err) {
+        console.error("❌ Transporter creation error:", err);
+    }
 }
 
-
 // -----------------------------------------------------------------------------
-// SEND EMAIL FUNCTION (used by ALL email events)
+// EMAIL SENDER FUNCTION
 // -----------------------------------------------------------------------------
 async function sendMail(to, subject, text) {
-    console.log("📨 Preparing email to:", to);
+    console.log("📨 Sending email to:", to);
 
-    // Always write .eml to outbox for debugging
+    // Save a copy for debugging
     const outboxDir = path.join(__dirname, "outbox");
     if (!fs.existsSync(outboxDir)) fs.mkdirSync(outboxDir);
 
@@ -104,7 +114,7 @@ async function sendMail(to, subject, text) {
     );
 
     if (!transporter) {
-        console.error("❌ Email transporter NOT initialized. Email NOT sent.");
+        console.error("❌ Transporter not available — email NOT sent.");
         return;
     }
 
@@ -113,11 +123,11 @@ async function sendMail(to, subject, text) {
             from: FROM_EMAIL,
             to,
             subject,
-            text
+            text,
         });
-        console.log("✅ Email successfully sent to:", to);
+        console.log("✅ Email sent successfully →", to);
     } catch (err) {
-        console.error("❌ ERROR sending email:", err);
+        console.error("❌ FAILED SENDING EMAIL:", err);
     }
 }
 
@@ -127,47 +137,35 @@ async function sendMail(to, subject, text) {
 const JWT_SECRET = process.env.JWT_SECRET || "supersecret";
 
 function setAuthCookie(res, user) {
-    const token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: "30d" });
+    const token = jwt.sign({ id: user.id }, JWT_SECRET, {
+        expiresIn: "30d",
+    });
     res.cookie("token", token, { httpOnly: true, sameSite: "lax" });
 }
 
-function authOnly(req, res, next) {
-    const token = req.cookies.token;
-    if (!token) return res.status(401).json({ error: "Not logged in" });
-
-    try {
-        req.auth = jwt.verify(token, JWT_SECRET);
-        next();
-    } catch (err) {
-        return res.status(401).json({ error: "Invalid session" });
-    }
-}
-
-// -----------------------------------------------------------------------------
-// RATE LIMITERS
-// -----------------------------------------------------------------------------
+// Rate limiter
 const authLimiter = rateLimit({
     windowMs: 10000,
     max: 20,
 });
 
 // -----------------------------------------------------------------------------
-// REGISTER USER (THIS NOW SENDS EMAIL CORRECTLY)
+// REGISTER USER
 // -----------------------------------------------------------------------------
 app.post("/api/auth/register", authLimiter, async (req, res) => {
     const { name, email, password, role, marketingOptIn } = req.body;
 
-    if (!email || !password) {
-        return res.status(400).json({ error: "Email & password required" });
-    }
+    if (!email || !password)
+        return res.status(400).json({ error: "Email and password required" });
 
     const users = read("users");
-    if (users.find(u => u.email.toLowerCase() === email.toLowerCase())) {
+
+    if (users.find((u) => u.email === email.toLowerCase())) {
         return res.status(409).json({ error: "Email already registered" });
     }
 
     const user = {
-        id: uid(8),
+        id: uid(10),
         name: name || "",
         email: email.toLowerCase(),
         passwordHash: bcrypt.hashSync(password, 10),
@@ -175,66 +173,67 @@ app.post("/api/auth/register", authLimiter, async (req, res) => {
         verified: false,
         verificationToken: uid(16),
         marketingOptIn: !!marketingOptIn,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
     };
 
     users.push(user);
     write("users", users);
 
-    // SEND VERIFICATION EMAIL
-    const verifyUrl = `${process.env.BASE_URL || "https://event-flow.co.uk"}/verify.html?token=${user.verificationToken}`;
+    // Verification URL
+    const baseUrl =
+        process.env.BASE_URL || "https://event-flow.co.uk";
+
+    const verifyUrl = `${baseUrl}/verify.html?token=${user.verificationToken}`;
 
     await sendMail(
         user.email,
-        "Confirm your EventFlow account",
-        `Hi ${user.name},\n\nPlease confirm your EventFlow account:\n${verifyUrl}\n\nThanks,\nEventFlow`
+        "Verify your EventFlow account",
+        `Hello ${user.name},\n\nClick below to verify your account:\n${verifyUrl}\n\nThank you,\nEventFlow`
     );
-
-    // Auto-login user
-    setAuthCookie(res, user);
-
-    return res.json({ success: true });
-});
-
-// -----------------------------------------------------------------------------
-// VERIFY USER ACCOUNT
-// -----------------------------------------------------------------------------
-app.get("/api/auth/verify", (req, res) => {
-    const token = req.query.token;
-    if (!token) return res.status(400).send("Invalid link");
-
-    const users = read("users");
-    const user = users.find(u => u.verificationToken === token);
-    if (!user) return res.status(404).send("Invalid or expired link");
-
-    user.verified = true;
-    user.verificationToken = null;
-
-    write("users", users);
-
-    res.send("<h1>Account Verified!</h1>You can now close this tab and log in.");
-});
-
-// -----------------------------------------------------------------------------
-// LOGIN USER
-// -----------------------------------------------------------------------------
-app.post("/api/auth/login", authLimiter, (req, res) => {
-    const { email, password } = req.body;
-    const users = read("users");
-
-    const user = users.find(u => u.email === email.toLowerCase());
-    if (!user) return res.status(400).json({ error: "Invalid login" });
-
-    if (!bcrypt.compareSync(password, user.passwordHash)) {
-        return res.status(400).json({ error: "Invalid login" });
-    }
 
     setAuthCookie(res, user);
     res.json({ success: true });
 });
 
 // -----------------------------------------------------------------------------
-// PUBLIC FILES + FRONTEND
+// VERIFY ACCOUNT
+// -----------------------------------------------------------------------------
+app.get("/api/auth/verify", (req, res) => {
+    const token = req.query.token;
+    if (!token) return res.status(400).send("Invalid verification link.");
+
+    const users = read("users");
+    const user = users.find((u) => u.verificationToken === token);
+
+    if (!user) return res.status(404).send("Invalid or expired token.");
+
+    user.verified = true;
+    user.verificationToken = null;
+
+    write("users", users);
+
+    res.send("<h1>Account Verified!</h1>You may now log in.");
+});
+
+// -----------------------------------------------------------------------------
+// LOGIN
+// -----------------------------------------------------------------------------
+app.post("/api/auth/login", authLimiter, (req, res) => {
+    const { email, password } = req.body;
+    const users = read("users");
+
+    const user = users.find((u) => u.email === email.toLowerCase());
+    if (!user) return res.status(400).json({ error: "Invalid login" });
+
+    if (!bcrypt.compareSync(password, user.passwordHash))
+        return res.status(400).json({ error: "Invalid login" });
+
+    setAuthCookie(res, user);
+    res.json({ success: true });
+});
+
+// -----------------------------------------------------------------------------
+// SERVE FRONTEND
 // -----------------------------------------------------------------------------
 app.use(express.static("public"));
 
