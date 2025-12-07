@@ -1,249 +1,142 @@
-// -----------------------------------------------------------------------------
-// EventFlow - FINAL FULLY FIXED SERVER WITH SENDGRID EMAIL + DEBUG ENABLED
-// -----------------------------------------------------------------------------
-
 const express = require("express");
-const fs = require("fs");
 const path = require("path");
-const cookieParser = require("cookie-parser");
-const rateLimit = require("express-rate-limit");
-const bcrypt = require("bcryptjs");
+const bodyParser = require("body-parser");
 const jwt = require("jsonwebtoken");
+const bcrypt = require("bcryptjs");
 const nodemailer = require("nodemailer");
 const cors = require("cors");
-const { uid } = require("uid");
+
+// Load environment variables
+const {
+    SMTP_HOST,
+    SMTP_PORT,
+    SMTP_USER,
+    SMTP_PASS,
+    FROM_EMAIL,
+    SENDGRID_API_KEY,
+    EMAIL_ENABLED
+} = process.env;
 
 const app = express();
-const PORT = process.env.PORT || 3000;
-
-// Fix Express reverse proxy issue
-app.set("trust proxy", true);
-
-// -----------------------------------------------------------------------------
-// Middleware
-// -----------------------------------------------------------------------------
-app.use(express.json());
-app.use(cookieParser());
+app.use(bodyParser.json());
 app.use(cors());
-app.use(express.static(path.join(__dirname, "public")));
+app.use(express.static("public"));
 
-// -----------------------------------------------------------------------------
-// DATA STORAGE HELPERS
-// -----------------------------------------------------------------------------
-const DATA_DIR = path.join(__dirname, "data");
-if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR);
-
-function read(name) {
-    const file = path.join(DATA_DIR, `${name}.json`);
-    if (!fs.existsSync(file)) return [];
-    return JSON.parse(fs.readFileSync(file, "utf-8"));
-}
-
-function write(name, data) {
-    fs.writeFileSync(
-        path.join(DATA_DIR, `${name}.json`),
-        JSON.stringify(data, null, 2)
-    );
-}
-
-// -----------------------------------------------------------------------------
-// EMAIL SYSTEM (ALWAYS ENABLED FOR YOU - OPTION A)
-// -----------------------------------------------------------------------------
-const EMAIL_ENABLED = true;
-
-// Required ENV variables on Railway:
-const FROM_EMAIL = process.env.FROM_EMAIL || "no-reply@event-flow.co.uk";
-
-const SMTP_HOST = process.env.SMTP_HOST || "smtp.sendgrid.net";
-const SMTP_PORT = Number(process.env.SMTP_PORT || 587);
-const SMTP_USER = process.env.SMTP_USER || "apikey";
-const SMTP_PASS =
-    process.env.SMTP_PASS || process.env.SENDGRID_API_KEY || "";
-
-// Email transporter
-let transporter = null;
-
-console.log("📧 Initializing email transporter...");
+console.log("📨 Initializing email transporter...");
 console.log("SMTP_HOST:", SMTP_HOST);
 console.log("SMTP_PORT:", SMTP_PORT);
 console.log("SMTP_USER:", SMTP_USER);
 console.log("FROM_EMAIL:", FROM_EMAIL);
 
-if (!SMTP_PASS || SMTP_PASS.trim() === "") {
-    console.error("❌ ERROR: SMTP_PASS / SENDGRID_API_KEY missing!");
-} else {
-    try {
-        transporter = nodemailer.createTransport({
-            host: SMTP_HOST.trim(),
-            port: SMTP_PORT,
-            secure: false,
-            auth: {
-                user: SMTP_USER.trim(),
-                pass: SMTP_PASS.trim(),
-            },
-            logger: true,
-            debug: true,
-        });
-
-        // Test connection on startup
-        transporter.verify((err, success) => {
-            if (err) {
-                console.error("❌ SMTP LOGIN FAILED:", err);
-            } else {
-                console.log("✅ SMTP LOGIN SUCCESSFUL");
-            }
-        });
-    } catch (err) {
-        console.error("❌ Transporter creation error:", err);
-    }
+// Validate required variables
+if (!SMTP_PASS && !SENDGRID_API_KEY) {
+    console.error("❌ ERROR: SMTP_PASS or SENDGRID_API_KEY missing!");
 }
 
-// -----------------------------------------------------------------------------
-// EMAIL SENDER FUNCTION
-// -----------------------------------------------------------------------------
-async function sendMail(to, subject, text) {
-    console.log("📨 Sending email to:", to);
+const apiKey = SMTP_PASS || SENDGRID_API_KEY;
 
-    // Save a copy for debugging
-    const outboxDir = path.join(__dirname, "outbox");
-    if (!fs.existsSync(outboxDir)) fs.mkdirSync(outboxDir);
+// Setup SendGrid SMTP transporter
+const transporter = nodemailer.createTransport({
+    host: SMTP_HOST || "smtp.sendgrid.net",
+    port: SMTP_PORT ? parseInt(SMTP_PORT) : 587,
+    secure: false,
+    auth: {
+        user: SMTP_USER || "apikey",
+        pass: apiKey
+    }
+});
 
-    fs.writeFileSync(
-        path.join(outboxDir, `${Date.now()}-${to}.eml`),
-        `From: ${FROM_EMAIL}\nTo: ${to}\nSubject: ${subject}\n\n${text}`
-    );
+// Check SMTP connection
+transporter.verify((error, success) => {
+    if (error) {
+        console.error("❌ Email transporter failed:", error);
+    } else {
+        console.log("✔ Email transporter is ready.");
+    }
+});
 
-    if (!transporter) {
-        console.error("❌ Transporter not available — email NOT sent.");
+// Send verification email
+async function sendVerificationEmail(email, token) {
+    if (EMAIL_ENABLED !== "true") {
+        console.log("📭 Email disabled — skipping send");
         return;
     }
 
-    try {
-        await transporter.sendMail({
-            from: FROM_EMAIL,
-            to,
-            subject,
-            text,
-        });
-        console.log("✅ Email sent successfully →", to);
-    } catch (err) {
-        console.error("❌ FAILED SENDING EMAIL:", err);
-    }
-}
+    const verifyUrl = `https://event-flow.co.uk/verify.html?token=${token}`;
 
-// -----------------------------------------------------------------------------
-// AUTH HELPERS
-// -----------------------------------------------------------------------------
-const JWT_SECRET = process.env.JWT_SECRET || "supersecret";
-
-function setAuthCookie(res, user) {
-    const token = jwt.sign({ id: user.id }, JWT_SECRET, {
-        expiresIn: "30d",
-    });
-    res.cookie("token", token, { httpOnly: true, sameSite: "lax" });
-}
-
-// Rate limiter
-const authLimiter = rateLimit({
-    windowMs: 10000,
-    max: 20,
-});
-
-// -----------------------------------------------------------------------------
-// REGISTER USER
-// -----------------------------------------------------------------------------
-app.post("/api/auth/register", authLimiter, async (req, res) => {
-    const { name, email, password, role, marketingOptIn } = req.body;
-
-    if (!email || !password)
-        return res.status(400).json({ error: "Email and password required" });
-
-    const users = read("users");
-
-    if (users.find((u) => u.email === email.toLowerCase())) {
-        return res.status(409).json({ error: "Email already registered" });
-    }
-
-    const user = {
-        id: uid(10),
-        name: name || "",
-        email: email.toLowerCase(),
-        passwordHash: bcrypt.hashSync(password, 10),
-        role: role || "customer",
-        verified: false,
-        verificationToken: uid(16),
-        marketingOptIn: !!marketingOptIn,
-        createdAt: new Date().toISOString(),
+    const mailOptions = {
+        from: FROM_EMAIL,
+        to: email,
+        subject: "Verify your EventFlow account",
+        html: `
+            <h2>Welcome to EventFlow!</h2>
+            <p>Please verify your email by clicking below:</p>
+            <a href="${verifyUrl}">Verify Account</a>
+        `
     };
 
-    users.push(user);
-    write("users", users);
+    try {
+        await transporter.sendMail(mailOptions);
+        console.log("📧 Verification email sent to:", email);
+    } catch (err) {
+        console.error("❌ Email send error:", err);
+    }
+}
 
-    // Verification URL
-    const baseUrl =
-        process.env.BASE_URL || "https://event-flow.co.uk";
+// User database (replace with real DB later)
+let users = [];
 
-    const verifyUrl = `${baseUrl}/verify.html?token=${user.verificationToken}`;
+// Register
+app.post("/api/auth/register", async (req, res) => {
+    const { name, email, password, role } = req.body;
 
-    await sendMail(
-        user.email,
-        "Verify your EventFlow account",
-        `Hello ${user.name},\n\nClick below to verify your account:\n${verifyUrl}\n\nThank you,\nEventFlow`
-    );
+    if (users.find(u => u.email === email)) {
+        return res.status(409).json({ message: "Email already registered" });
+    }
 
-    setAuthCookie(res, user);
-    res.json({ success: true });
+    const hashed = await bcrypt.hash(password, 10);
+
+    const newUser = {
+        id: users.length + 1,
+        name,
+        email,
+        password: hashed,
+        role,
+        verified: false
+    };
+
+    users.push(newUser);
+
+    // Generate JWT token
+    const token = jwt.sign({ email: newUser.email }, "secretkey", { expiresIn: "1d" });
+
+    // Send verification email
+    sendVerificationEmail(newUser.email, token);
+
+    res.json({ message: "Account created. Check your email to verify." });
 });
 
-// -----------------------------------------------------------------------------
-// VERIFY ACCOUNT
-// -----------------------------------------------------------------------------
+// Verify email
 app.get("/api/auth/verify", (req, res) => {
-    const token = req.query.token;
-    if (!token) return res.status(400).send("Invalid verification link.");
+    const { token } = req.query;
 
-    const users = read("users");
-    const user = users.find((u) => u.verificationToken === token);
-
-    if (!user) return res.status(404).send("Invalid or expired token.");
-
-    user.verified = true;
-    user.verificationToken = null;
-
-    write("users", users);
-
-    res.send("<h1>Account Verified!</h1>You may now log in.");
+    try {
+        const decoded = jwt.verify(token, "secretkey");
+        const user = users.find(u => u.email === decoded.email);
+        if (user) {
+            user.verified = true;
+            return res.send("Email verified! You may now log in.");
+        }
+        res.status(400).send("Invalid token.");
+    } catch (err) {
+        res.status(400).send("Verification failed.");
+    }
 });
 
-// -----------------------------------------------------------------------------
-// LOGIN
-// -----------------------------------------------------------------------------
-app.post("/api/auth/login", authLimiter, (req, res) => {
-    const { email, password } = req.body;
-    const users = read("users");
-
-    const user = users.find((u) => u.email === email.toLowerCase());
-    if (!user) return res.status(400).json({ error: "Invalid login" });
-
-    if (!bcrypt.compareSync(password, user.passwordHash))
-        return res.status(400).json({ error: "Invalid login" });
-
-    setAuthCookie(res, user);
-    res.json({ success: true });
-});
-
-// -----------------------------------------------------------------------------
-// SERVE FRONTEND
-// -----------------------------------------------------------------------------
-app.use(express.static("public"));
-
+// Serve website pages
 app.get("*", (req, res) => {
     res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-// -----------------------------------------------------------------------------
-// START SERVER
-// -----------------------------------------------------------------------------
-app.listen(PORT, () => {
-    console.log(`🚀 EventFlow server running on port ${PORT}`);
-});
+const PORT = process.env.PORT || 8080;
+app.listen(PORT, () => console.log(`🚀 EventFlow server running on port ${PORT}`));
