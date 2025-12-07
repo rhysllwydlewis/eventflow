@@ -62,26 +62,31 @@ let transporter = null;
 if (!SMTP_PASS || SMTP_PASS.trim() === "") {
     console.error("❌ ERROR: No SMTP_PASS or SENDGRID_API_KEY provided.");
 } else {
-    try {
-        transporter = nodemailer.createTransport({
-            host: SMTP_HOST.trim(),
-            port: SMTP_PORT,
-            secure: false,
-            auth: {
-                user: SMTP_USER.trim(),
-                pass: SMTP_PASS.trim()
-            }
-        });
+try {
+    transporter = nodemailer.createTransport({
+        host: SMTP_HOST.trim(),
+        port: SMTP_PORT,
+        secure: false,
+        auth: {
+            user: SMTP_USER.trim(),
+            pass: SMTP_PASS.trim()
+        },
+        logger: true,
+        debug: true
+    });
 
-        console.log("✅ Email transporter created successfully.");
-        console.log("SMTP_HOST:", SMTP_HOST);
-        console.log("SMTP_USER:", SMTP_USER);
-        console.log("FROM_EMAIL:", FROM_EMAIL);
+    transporter.verify((err, success) => {
+        if (err) {
+            console.error("❌ SMTP LOGIN FAILED:", err);
+        } else {
+            console.log("✅ SMTP LOGIN SUCCESSFUL");
+        }
+    });
 
-    } catch (err) {
-        console.error("❌ Failed creating email transporter:", err);
-    }
+} catch (err) {
+    console.error("❌ Failed creating transporter:", err);
 }
+
 
 // -----------------------------------------------------------------------------
 // SEND EMAIL FUNCTION (used by ALL email events)
