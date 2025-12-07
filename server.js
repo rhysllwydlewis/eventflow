@@ -96,66 +96,35 @@ app.use(cookieParser());
 const authLimiter  = rateLimit({ windowMs: 15 * 60 * 1000, max: 100, standardHeaders: true, legacyHeaders: false });
 const writeLimiter = rateLimit({ windowMs: 10 * 60 * 1000, max: 80,  standardHeaders: true, legacyHeaders: false });
 
+// ---------- Email (safe dev mode) ----------
+const EMAIL_ENABLED = String(process.env.EMAIL_ENABLED || 'false').toLowerCase() === 'true';
+const FROM_EMAIL = process.env.FROM_EMAIL || 'no-reply@eventflow.local';
 
-// ---------- Email / SendGrid configuration ----------
-
-// Turn email sending on/off with EMAIL_ENABLED=true/false in the environment.
-// In Railway, make sure you have at least:
-//   EMAIL_ENABLED = true
-//   FROM_EMAIL    = no-reply@event-flow.co.uk   (or similar)
-//   SENDGRID_API_KEY = <your real SendGrid API key>
-//
-// We keep this deliberately simple: we always talk to SendGrid's SMTP endpoint.
-// If SENDGRID_API_KEY is missing we *never* try to send – we only write .eml files
-// into the local /outbox folder so you can still test templates safely.
-
-const EMAIL_ENABLED =
-  String(process.env.EMAIL_ENABLED || "false").toLowerCase() === "true";
-
-const FROM_EMAIL =
-  process.env.FROM_EMAIL || "no-reply@event-flow.co.uk";
-
-// Prefer SENDGRID_API_KEY, but fall back to SMTP_PASS if you decide to use that
-// name instead. (They can safely both be set to the same value.)
-const SENDGRID_API_KEY =
-  process.env.SENDGRID_API_KEY || process.env.SMTP_PASS || "";
-
-// For debugging: show which email-related env vars exist (but never their values)
-const EMAIL_ENV_KEYS = Object.keys(process.env).filter((key) =>
-  /(SENDGRID|SMTP|EMAIL)/i.test(key)
-);
-console.log("[email] Email-related env vars:", EMAIL_ENV_KEYS.join(", ") || "(none)");
+/**
+ * Optional SendGrid helper:
+ * If SENDGRID_API_KEY is set (and no explicit SMTP_HOST), configure SMTP to use SendGrid.
+ * This works both locally and in production.
+ */
+if (!process.env.SMTP_HOST && process.env.SENDGRID_API_KEY) {
+  process.env.SMTP_HOST = 'smtp.sendgrid.net';
+  process.env.SMTP_PORT = process.env.SMTP_PORT || '587';
+  // For SendGrid SMTP, the username is always literally 'apikey'
+  process.env.SMTP_USER = process.env.SMTP_USER || 'apikey';
+  process.env.SMTP_PASS = process.env.SMTP_PASS || process.env.SENDGRID_API_KEY;
+}
 
 let transporter = null;
 
-if (EMAIL_ENABLED && SENDGRID_API_KEY) {
-  // Use explicit defaults that work for SendGrid.
-  const smtpHost = process.env.SMTP_HOST || "smtp.sendgrid.net";
-  const smtpPort = Number(process.env.SMTP_PORT || 587);
-  const smtpSecure =
-    String(process.env.SMTP_SECURE || "false").toLowerCase() === "true";
-
+if (EMAIL_ENABLED && process.env.SMTP_HOST) {
   transporter = nodemailer.createTransport({
-    host: smtpHost,
-    port: smtpPort,
-    secure: smtpSecure,
-    auth: {
-      // For SendGrid SMTP the username is literally the string "apikey"
-      user: process.env.SMTP_USER || "apikey",
-      pass: SENDGRID_API_KEY,
-    },
+    host: process.env.SMTP_HOST,
+    port: Number(process.env.SMTP_PORT || 587),
+    secure: false,
+    auth: (process.env.SMTP_USER && process.env.SMTP_PASS) ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS } : undefined
   });
-
-  console.log("[email] EMAIL_ENABLED = true (SendGrid SMTP mode)");
-  console.log("[email] SENDGRID_API_KEY present:", true);
-  console.log("[email] SMTP host:", smtpHost, "port:", smtpPort, "secure:", smtpSecure);
-} else {
-  console.log("[email] EMAIL_ENABLED =", EMAIL_ENABLED);
-  console.log("[email] SENDGRID_API_KEY present:", !!SENDGRID_API_KEY);
-  console.log(
-    "[email] No external SMTP configured – emails will only be written to the local /outbox folder."
-  );
 }
+
+// Always save outgoing email to /outbox in dev
 function ensureOutbox() {
   const outDir = path.join(DATA_DIR, '..', 'outbox');
   if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
