@@ -96,106 +96,89 @@ app.use(cookieParser());
 const authLimiter  = rateLimit({ windowMs: 15 * 60 * 1000, max: 100, standardHeaders: true, legacyHeaders: false });
 const writeLimiter = rateLimit({ windowMs: 10 * 60 * 1000, max: 80,  standardHeaders: true, legacyHeaders: false });
 
-// ---------- Email configuration ----------
-const EMAIL_ENABLED = String(process.env.EMAIL_ENABLED || 'false').toLowerCase() === 'true';
-const FROM_EMAIL = process.env.FROM_EMAIL || 'no-reply@eventflow.local';
 
-// We prefer SendGrid's Web API (HTTPS) when an API key is available,
-// and fall back to raw SMTP via Nodemailer otherwise.
-let sgMail = null;
-let EMAIL_PROVIDER = 'none';
+// ---------- Email / SendGrid configuration ----------
 
-if (EMAIL_ENABLED && process.env.SENDGRID_API_KEY) {
-  try {
-    sgMail = require('@sendgrid/mail');
-    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-    EMAIL_PROVIDER = 'sendgrid-api';
-    console.log('[email] Using SendGrid Web API');
-  } catch (err) {
-    console.error('[email] Failed to load @sendgrid/mail, falling back to SMTP if configured:', err && err.message || err);
-  }
-}
+// Turn email sending on/off with EMAIL_ENABLED=true/false in the environment.
+// In Railway, make sure you have at least:
+//   EMAIL_ENABLED = true
+//   FROM_EMAIL    = no-reply@event-flow.co.uk   (or similar)
+//   SENDGRID_API_KEY = <your real SendGrid API key>
+//
+// We keep this deliberately simple: we always talk to SendGrid's SMTP endpoint.
+// If SENDGRID_API_KEY is missing we *never* try to send – we only write .eml files
+// into the local /outbox folder so you can still test templates safely.
+
+const EMAIL_ENABLED =
+  String(process.env.EMAIL_ENABLED || "false").toLowerCase() === "true";
+
+const FROM_EMAIL =
+  process.env.FROM_EMAIL || "no-reply@event-flow.co.uk";
+
+// Prefer SENDGRID_API_KEY, but fall back to SMTP_PASS if you decide to use that
+// name instead. (They can safely both be set to the same value.)
+const SENDGRID_API_KEY =
+  process.env.SENDGRID_API_KEY || process.env.SMTP_PASS || "";
+
+// For debugging: show which email-related env vars exist (but never their values)
+const EMAIL_ENV_KEYS = Object.keys(process.env).filter((key) =>
+  /(SENDGRID|SMTP|EMAIL)/i.test(key)
+);
+console.log("[email] Email-related env vars:", EMAIL_ENV_KEYS.join(", ") || "(none)");
 
 let transporter = null;
 
-if ( EMAIL_ENABLED && !sgMail ) {
-  const smtpHost = process.env.SMTP_HOST || 'smtp.sendgrid.net';
+if (EMAIL_ENABLED && SENDGRID_API_KEY) {
+  // Use explicit defaults that work for SendGrid.
+  const smtpHost = process.env.SMTP_HOST || "smtp.sendgrid.net";
   const smtpPort = Number(process.env.SMTP_PORT || 587);
-  const smtpUser = process.env.SMTP_USER || 'apikey';
-  const smtpPass = process.env.SMTP_PASS || process.env.SENDGRID_API_KEY || '';
+  const smtpSecure =
+    String(process.env.SMTP_SECURE || "false").toLowerCase() === "true";
 
-  if (!smtpPass) {
-    console.warn('[email] SMTP selected but no SMTP_PASS / SENDGRID_API_KEY provided – emails will only be written to the local outbox.');
-  } else {
-    try {
-      transporter = nodemailer.createTransport({
-        host: smtpHost,
-        port: smtpPort,
-        secure: String(process.env.SMTP_SECURE || 'false').toLowerCase() === 'true',
-        auth: { user: smtpUser, pass: smtpPass }
-      });
-      EMAIL_PROVIDER = 'smtp';
-      console.log(`[email] Using SMTP transport ${smtpHost}:${smtpPort}`);
-      transporter.verify().then(
-        () => console.log('[email] SMTP connection verified'),
-        (err) => console.error('[email] SMTP verification failed (emails may still be attempted):', err && err.message || err)
-      );
-    } catch (err) {
-      console.error('[email] Failed to create SMTP transporter – emails will only be written to the local outbox:', err && err.message || err);
-    }
-  }
+  transporter = nodemailer.createTransport({
+    host: smtpHost,
+    port: smtpPort,
+    secure: smtpSecure,
+    auth: {
+      // For SendGrid SMTP the username is literally the string "apikey"
+      user: process.env.SMTP_USER || "apikey",
+      pass: SENDGRID_API_KEY,
+    },
+  });
+
+  console.log("[email] EMAIL_ENABLED = true (SendGrid SMTP mode)");
+  console.log("[email] SENDGRID_API_KEY present:", true);
+  console.log("[email] SMTP host:", smtpHost, "port:", smtpPort, "secure:", smtpSecure);
+} else {
+  console.log("[email] EMAIL_ENABLED =", EMAIL_ENABLED);
+  console.log("[email] SENDGRID_API_KEY present:", !!SENDGRID_API_KEY);
+  console.log(
+    "[email] No external SMTP configured – emails will only be written to the local /outbox folder."
+  );
 }
-
-console.log('[email] EMAIL_ENABLED =', EMAIL_ENABLED, 'provider =', EMAIL_PROVIDER);
-
 function ensureOutbox() {
   const outDir = path.join(DATA_DIR, '..', 'outbox');
   if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
   return outDir;
 }
-
 async function sendMail(toOrOpts, subject, text) {
-  const opts = typeof toOrOpts === 'object' ? toOrOpts : { to: toOrOpts, subject, text };
-  const to = opts.to;
-  const subj = opts.subject;
-  const body = opts.text;
+  // Support both legacy (to, subject, text) and object-based calls: sendMail({ to, subject, text })
+  let to = toOrOpts;
+  let subj = subject;
+  let body = text;
 
-  if (!to || !subj) {
-    console.warn('[email] sendMail called without to/subject; skipping');
-    return;
+  if (toOrOpts && typeof toOrOpts === 'object') {
+    to = toOrOpts.to;
+    subj = toOrOpts.subject;
+    body = toOrOpts.text || '';
   }
 
-  // Always write a local copy for debugging in any environment.
-  try {
-    const outDir = ensureOutbox();
-    const file = path.join(outDir, `${Date.now()}-${subj.replace(/[^a-z0-9]+/gi, '-')}.txt`);
-    fs.writeFileSync(file, `TO: ${to}\nSUBJECT: ${subj}\n\n${body || ''}`);
-  } catch (err) {
-    console.error('[email] Error writing email to outbox:', err);
-  }
+  const outDir = ensureOutbox();
+  const safeTo = Array.isArray(to) ? to.join(', ') : to;
+  const blob = `To: ${safeTo}\nFrom: ${FROM_EMAIL}\nSubject: ${subj}\n\n${body}\n`;
+  fs.writeFileSync(path.join(outDir, `email-${Date.now()}.eml`), blob, 'utf8');
 
-  if (!EMAIL_ENABLED) {
-    console.log('[email] EMAIL_ENABLED is false – not sending externally');
-    return;
-  }
-
-  // Prefer SendGrid Web API when available.
-  if (sgMail) {
-    try {
-      await sgMail.send({
-        to,
-        from: FROM_EMAIL,
-        subject: subj,
-        text: body
-      });
-      return;
-    } catch (err) {
-      console.error('[email] Error sending via SendGrid Web API:', err && (err.response && err.response.body) || err);
-      // falls through to SMTP if configured
-    }
-  }
-
-  if (transporter) {
+  if (transporter && to) {
     try {
       await transporter.sendMail({
         from: FROM_EMAIL,
@@ -203,13 +186,12 @@ async function sendMail(toOrOpts, subject, text) {
         subject: subj,
         text: body
       });
-    } catch (err) {
-      console.error('[email] Error sending via SMTP transporter:', err);
+    } catch (e) {
+      console.error('Error sending email via transporter', e);
     }
-  } else {
-    console.log('[email] No external email provider configured – email written to outbox only.');
   }
 }
+
 // ---------- Auth helpers ----------
 function setAuthCookie(res, token) {
   const isProd = process.env.NODE_ENV === 'production';
