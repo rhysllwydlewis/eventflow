@@ -102,18 +102,29 @@
 <script>
   window.__EF_PAGE__ = 'home';
 
-  // Home-only brand animation: show "EventFlow" briefly, then shrink to logo only
+  // Brand animation: keep "EventFlow" for 3s, then fade + collapse from right to left
   (function () {
     var brandText = document.querySelector('.brand-text');
     if (!brandText) return;
-    brandText.style.transition = 'opacity 0.4s ease, width 0.4s ease, margin 0.4s ease';
+
+    // Ensure it can animate width
+    brandText.style.display = 'inline-block';
     brandText.style.whiteSpace = 'nowrap';
+    brandText.style.overflow = 'hidden';
+
+    // Capture the current width so the width transition works
+    var initialWidth = brandText.offsetWidth;
+    brandText.style.width = initialWidth + 'px';
+
+    // Smooth fade and width shrink
+    brandText.style.transition = 'opacity 0.45s ease, width 0.45s ease, margin 0.45s ease';
+
+    // After 3 seconds, animate out (visually disappearing right-to-left)
     setTimeout(function () {
       brandText.style.opacity = '0';
       brandText.style.width = '0';
       brandText.style.marginLeft = '0';
-      brandText.style.overflow = 'hidden';
-    }, 1800);
+    }, 3000);
   })();
 </script>
 </body>
