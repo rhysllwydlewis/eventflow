@@ -32,7 +32,10 @@
     const syncAria = () => {
       const isDark = root.getAttribute('data-theme') === 'dark';
       btn.setAttribute('aria-pressed', isDark ? 'true' : 'false');
-      btn.setAttribute('aria-label', isDark ? 'Switch to light mode' : 'Switch to dark mode');
+      btn.setAttribute(
+        'aria-label',
+        isDark ? 'Switch to light mode' : 'Switch to dark mode'
+      );
     };
 
     syncAria();
@@ -122,7 +125,7 @@
     });
   }
 
-  // --- Auth-aware nav (existing behaviour) ---
+  // --- Auth helper ---
   async function me() {
     try {
       const r = await fetch('/api/auth/me');
@@ -133,6 +136,7 @@
     }
   }
 
+  // --- Auth-aware nav (and normalising labels) ---
   function initAuthNav(user) {
     const auth = document.getElementById('nav-auth');
     const dash = document.getElementById('nav-dashboard');
@@ -140,13 +144,26 @@
 
     const inlineNav = document.querySelector('.nav.nav-inline');
     const inlineLogin = inlineNav ? inlineNav.querySelector('.nav-main-login') : null;
+    const firstNavItem = inlineNav ? inlineNav.querySelector('.nav-main') : null;
+
+    // Normalise top-left "Plan" label everywhere:
+    // "Plan an Event" -> "Plan"
+    if (firstNavItem) {
+      const text = firstNavItem.textContent.trim();
+      if (text === 'Plan an Event' || text === 'Plan an event') {
+        firstNavItem.textContent = 'Plan';
+      }
+    }
 
     if (user) {
       // Mobile nav
       if (auth) auth.style.display = 'none';
-      const dashHref = user.role === 'admin'
-        ? '/admin.html'
-        : (user.role === 'supplier' ? '/dashboard-supplier.html' : '/dashboard-customer.html');
+      const dashHref =
+        user.role === 'admin'
+          ? '/admin.html'
+          : user.role === 'supplier'
+          ? '/dashboard-supplier.html'
+          : '/dashboard-customer.html';
 
       if (dash) {
         dash.style.display = '';
@@ -198,7 +215,8 @@
       if (signout) signout.style.display = 'none';
 
       if (inlineLogin) {
-        inlineLogin.textContent = 'Log in';
+        // 👇 This keeps the top-right link as a single word on one line
+        inlineLogin.textContent = 'Login';
         inlineLogin.href = '/auth.html';
       }
       if (inlineNav) {
