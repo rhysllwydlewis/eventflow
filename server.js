@@ -1,4 +1,3 @@
-
 /* EventFlow v3.3.1 — Rebuilt server.js (clean, validated)
  * Features: Auth (JWT cookie), Suppliers, Packages, Plans/Notes, Threads/Messages,
  * Admin approvals + metrics, Settings, Featured packages, Sitemap.
@@ -39,7 +38,6 @@ try {
   console.warn('Stripe is not configured:', err.message);
 }
 
-
 let openaiClient = null;
 let AI_ENABLED = false;
 try {
@@ -56,7 +54,6 @@ try {
   console.warn('OpenAI is not configured:', err.message);
 }
 
-
 // Local JSON storage helpers (from ./store.js)
 const { read, write, uid, DATA_DIR } = require('./store');
 
@@ -66,11 +63,10 @@ const { read, write, uid, DATA_DIR } = require('./store');
 function supplierIsProActive(s) {
   if (!s || !s.isPro) return false;
   if (!s.proExpiresAt) return !!s.isPro;
-  var t = Date.parse(s.proExpiresAt);
+  const t = Date.parse(s.proExpiresAt);
   if (!t || isNaN(t)) return !!s.isPro;
   return t > Date.now();
 }
-
 
 const { seed } = require('./seed');
 
@@ -93,8 +89,18 @@ app.use(express.json({ limit: '2mb' }));
 app.use(cookieParser());
 
 // Rate limits
-const authLimiter  = rateLimit({ windowMs: 15 * 60 * 1000, max: 100, standardHeaders: true, legacyHeaders: false });
-const writeLimiter = rateLimit({ windowMs: 10 * 60 * 1000, max: 80,  standardHeaders: true, legacyHeaders: false });
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false
+});
+const writeLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 80,
+  standardHeaders: true,
+  legacyHeaders: false
+});
 
 // ---------- Email (safe dev mode) ----------
 const EMAIL_ENABLED = String(process.env.EMAIL_ENABLED || 'false').toLowerCase() === 'true';
@@ -120,7 +126,9 @@ if (EMAIL_ENABLED && process.env.SMTP_HOST) {
     host: process.env.SMTP_HOST,
     port: Number(process.env.SMTP_PORT || 587),
     secure: false,
-    auth: (process.env.SMTP_USER && process.env.SMTP_PASS) ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS } : undefined
+    auth: (process.env.SMTP_USER && process.env.SMTP_PASS)
+      ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
+      : undefined
   });
 }
 
@@ -130,6 +138,7 @@ function ensureOutbox() {
   if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
   return outDir;
 }
+
 async function sendMail(toOrOpts, subject, text) {
   // Support both legacy (to, subject, text) and object-based calls: sendMail({ to, subject, text })
   let to = toOrOpts;
@@ -171,18 +180,30 @@ function setAuthCookie(res, token) {
     maxAge: 1000 * 60 * 60 * 24 * 7
   });
 }
-function clearAuthCookie(res) { res.clearCookie('token'); }
+
+function clearAuthCookie(res) {
+  res.clearCookie('token');
+}
+
 function getUserFromCookie(req) {
   const t = req.cookies && req.cookies.token;
   if (!t) return null;
-  try { return jwt.verify(t, JWT_SECRET); } catch { return null; }
+  try {
+    return jwt.verify(t, JWT_SECRET);
+  } catch {
+    return null;
+  }
 }
+
 function authRequired(req, res, next) {
   const u = getUserFromCookie(req);
   if (!u) return res.status(401).json({ error: 'Unauthenticated' });
   req.user = u;
+  // Also expose userId for routes that rely on it
+  req.userId = u.id;
   next();
 }
+
 function roleRequired(role) {
   return (req, res, next) => {
     if (!req.user) return res.status(401).json({ error: 'Unauthenticated' });
@@ -190,8 +211,14 @@ function roleRequired(role) {
     next();
   };
 }
-function passwordOk(pw='') {
-  return typeof pw === 'string' && pw.length >= 8 && /[A-Za-z]/.test(pw) && /\d/.test(pw);
+
+function passwordOk(pw = '') {
+  return (
+    typeof pw === 'string' &&
+    pw.length >= 8 &&
+    /[A-Za-z]/.test(pw) &&
+    /\d/.test(pw)
+  );
 }
 
 // ---------- AUTH ----------
@@ -203,7 +230,9 @@ app.post('/api/auth/register', authLimiter, (req, res) => {
   const roleFinal = (role === 'supplier' || role === 'customer') ? role : 'customer';
 
   const users = read('users');
-  if (users.find(u => u.email.toLowerCase() === String(email).toLowerCase())) return res.status(409).json({ error: 'Email already registered' });
+  if (users.find(u => u.email.toLowerCase() === String(email).toLowerCase())) {
+    return res.status(409).json({ error: 'Email already registered' });
+  }
 
   const user = {
     id: uid('usr'),
@@ -217,7 +246,8 @@ app.post('/api/auth/register', authLimiter, (req, res) => {
     verificationToken: uid('verify'),
     createdAt: new Date().toISOString()
   };
-  users.push(user); write('users', users);
+  users.push(user);
+  write('users', users);
 
   // Send verification email (dev mode writes .eml files to /outbox)
   try {
@@ -250,20 +280,33 @@ If you did not create this account, you can ignore this email.`,
     console.error('Failed to update lastLoginAt', e);
   }
 
-  const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
+  const token = jwt.sign(
+    { id: user.id, email: user.email, role: user.role },
+    JWT_SECRET,
+    { expiresIn: '7d' }
+  );
   setAuthCookie(res, token);
 
-  res.json({ ok: true, user: { id: user.id, name: user.name, email: user.email, role: user.role } });
+  res.json({
+    ok: true,
+    user: { id: user.id, name: user.name, email: user.email, role: user.role }
+  });
 });
 
 app.post('/api/auth/login', authLimiter, (req, res) => {
   const { email, password } = req.body || {};
   if (!email || !password) return res.status(400).json({ error: 'Missing fields' });
 
-  const user = read('users').find(u => (u.email || '').toLowerCase() === String(email).toLowerCase());
+  const user = read('users').find(
+    u => (u.email || '').toLowerCase() === String(email).toLowerCase()
+  );
   if (!user) return res.status(401).json({ error: 'Invalid email or password' });
-  if (!bcrypt.compareSync(password, user.passwordHash)) return res.status(401).json({ error: 'Invalid email or password' });
-  if (user.verified === false) return res.status(403).json({ error: 'Please verify your email address before signing in.' });
+  if (!bcrypt.compareSync(password, user.passwordHash)) {
+    return res.status(401).json({ error: 'Invalid email or password' });
+  }
+  if (user.verified === false) {
+    return res.status(403).json({ error: 'Please verify your email address before signing in.' });
+  }
 
   // Update last login timestamp (non-blocking)
   try {
@@ -277,11 +320,18 @@ app.post('/api/auth/login', authLimiter, (req, res) => {
     console.error('Failed to update lastLoginAt', e);
   }
 
-  const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
+  const token = jwt.sign(
+    { id: user.id, email: user.email, role: user.role },
+    JWT_SECRET,
+    { expiresIn: '7d' }
+  );
   setAuthCookie(res, token);
-  res.json({ ok: true, user: { id: user.id, name: user.name, email: user.email, role: user.role } });
-});
 
+  res.json({
+    ok: true,
+    user: { id: user.id, name: user.name, email: user.email, role: user.role }
+  });
+});
 
 app.post('/api/auth/forgot', authLimiter, async (req, res) => {
   const { email } = req.body || {};
@@ -289,7 +339,9 @@ app.post('/api/auth/forgot', authLimiter, async (req, res) => {
 
   // Look up user by email (case-insensitive)
   const users = read('users');
-  const idx = users.findIndex(u => (u.email || '').toLowerCase() === String(email).toLowerCase());
+  const idx = users.findIndex(
+    u => (u.email || '').toLowerCase() === String(email).toLowerCase()
+  );
 
   if (idx === -1) {
     // Always respond success so we don't leak which emails exist
@@ -322,6 +374,7 @@ app.post('/api/auth/forgot', authLimiter, async (req, res) => {
 
   res.json({ ok: true });
 });
+
 app.get('/api/auth/verify', (req, res) => {
   const { token } = req.query || {};
   if (!token) return res.status(400).json({ error: 'Missing token' });
@@ -333,7 +386,6 @@ app.get('/api/auth/verify', (req, res) => {
   write('users', users);
   res.json({ ok: true });
 });
-
 
 // Admin: list users (without password hashes)
 app.get('/api/admin/users', authRequired, roleRequired('admin'), (req, res) => {
@@ -378,7 +430,7 @@ app.get('/api/admin/users-export', authRequired, roleRequired('admin'), (req, re
   const users = read('users');
   const header = 'id,name,email,role,verified,marketingOptIn,createdAt,lastLoginAt\n';
   const rows = users.map(u => {
-    const esc = (v) => String(v ?? '').replace(/"/g, '""');
+    const esc = v => String(v ?? '').replace(/"/g, '""');
     const verified = u.verified ? 'yes' : 'no';
     const marketing = u.marketingOptIn ? 'yes' : 'no';
     return `"${esc(u.id)}","${esc(u.name)}","${esc(u.email)}","${esc(u.role)}","${verified}","${marketing}","${esc(u.createdAt)}","${esc(u.lastLoginAt || '')}"`;
@@ -408,16 +460,23 @@ app.get('/api/admin/export/all', authRequired, roleRequired('admin'), (_req, res
   res.send(json);
 });
 
-app.post('/api/auth/logout', (_req, res) => { clearAuthCookie(res); res.json({ ok: true }); });
+app.post('/api/auth/logout', (_req, res) => {
+  clearAuthCookie(res);
+  res.json({ ok: true });
+});
+
 app.get('/api/auth/me', (req, res) => {
   const p = getUserFromCookie(req);
   if (!p) return res.json({ user: null });
   const u = read('users').find(x => x.id === p.id);
-  res.json({ user: u ? { id: u.id, name: u.name, email: u.email, role: u.role, notify: u.notify !== false } : null });
+  res.json({
+    user: u
+      ? { id: u.id, name: u.name, email: u.email, role: u.role, notify: u.notify !== false }
+      : null
+  });
 });
 
 // ---------- Suppliers (public) ----------
-
 app.get('/api/suppliers', (req, res) => {
   const { category, q, price } = req.query;
   let items = read('suppliers').filter(s => s.approved);
@@ -434,7 +493,7 @@ app.get('/api/suppliers', (req, res) => {
 
   // Mark suppliers that have at least one featured package and compute active Pro flag
   const pkgs = read('packages');
-  items = items.map((s) => {
+  items = items.map(s => {
     const featuredSupplier = pkgs.some(p => p.supplierId === s.id && p.featured);
     const isProActive = supplierIsProActive(s);
     return {
@@ -458,7 +517,7 @@ app.get('/api/suppliers', (req, res) => {
       if (ea === eb) return a._idx - b._idx;
       return eb - ea;
     })
-    .map((s) => {
+    .map(s => {
       const copy = { ...s };
       delete copy._idx;
       return copy;
@@ -476,9 +535,15 @@ app.post('/api/ai/plan', express.json(), async (req, res) => {
 
   const summaryBits = [];
   if (plan && typeof plan === 'object') {
-    if (Array.isArray(plan.guests) && plan.guests.length) summaryBits.push(plan.guests.length + ' guests in the list');
-    if (Array.isArray(plan.tasks) && plan.tasks.length) summaryBits.push(plan.tasks.length + ' planning tasks');
-    if (Array.isArray(plan.timeline) && plan.timeline.length) summaryBits.push(plan.timeline.length + ' timeline items');
+    if (Array.isArray(plan.guests) && plan.guests.length) {
+      summaryBits.push(plan.guests.length + ' guests in the list');
+    }
+    if (Array.isArray(plan.tasks) && plan.tasks.length) {
+      summaryBits.push(plan.tasks.length + ' planning tasks');
+    }
+    if (Array.isArray(plan.timeline) && plan.timeline.length) {
+      summaryBits.push(plan.timeline.length + ' timeline items');
+    }
   }
 
   const basePrompt = [
@@ -550,7 +615,13 @@ app.post('/api/ai/plan', express.json(), async (req, res) => {
       temperature: 0.6
     });
 
-    const raw = (completion && completion.choices && completion.choices[0] && completion.choices[0].message && completion.choices[0].message.content) || '';
+    const raw =
+      (completion &&
+        completion.choices &&
+        completion.choices[0] &&
+        completion.choices[0].message &&
+        completion.choices[0].message.content) ||
+      '';
     let parsed = null;
     try {
       parsed = JSON.parse(raw);
@@ -571,11 +642,11 @@ app.post('/api/admin/suppliers/smart-tags', authRequired, roleRequired('admin'),
   const now = new Date().toISOString();
   const updated = [];
 
-  all.forEach((s) => {
+  all.forEach(s => {
     const tags = [];
     if (s.category) tags.push(s.category);
     if (Array.isArray(s.amenities)) {
-      s.amenities.slice(0, 3).forEach((a) => tags.push(a));
+      s.amenities.slice(0, 3).forEach(a => tags.push(a));
     }
     if (s.location) tags.push(s.location.split(',')[0].trim());
 
@@ -595,7 +666,6 @@ app.post('/api/admin/suppliers/smart-tags', authRequired, roleRequired('admin'),
   write('suppliers', all);
   res.json({ ok: true, items: updated, aiEnabled: AI_ENABLED });
 });
-
 
 app.get('/api/suppliers/:id', (req, res) => {
   const sRaw = read('suppliers').find(x => x.id === req.params.id && x.approved);
@@ -622,22 +692,30 @@ app.get('/api/suppliers/:id/packages', (req, res) => {
 });
 
 app.get('/api/packages/featured', (_req, res) => {
-  const items = read('packages').filter(p => p.approved).sort((a,b) => Number(b.featured) - Number(a.featured)).slice(0, 6);
+  const items = read('packages')
+    .filter(p => p.approved)
+    .sort((a, b) => Number(b.featured) - Number(a.featured))
+    .slice(0, 6);
   res.json({ items });
 });
 
 app.get('/api/packages/search', (req, res) => {
   const q = String(req.query.q || '').toLowerCase();
-  const items = read('packages').filter(p => p.approved && (
-    (p.title || '').toLowerCase().includes(q) || (p.description || '').toLowerCase().includes(q)
-  ));
+  const items = read('packages').filter(
+    p =>
+      p.approved &&
+      (
+        (p.title || '').toLowerCase().includes(q) ||
+        (p.description || '').toLowerCase().includes(q)
+      )
+  );
   res.json({ items });
 });
 
 // ---------- Supplier dashboard ----------
 app.get('/api/me/suppliers', authRequired, roleRequired('supplier'), (req, res) => {
   const listRaw = read('suppliers').filter(s => s.ownerUserId === req.user.id);
-  const list = listRaw.map((s) => ({
+  const list = listRaw.map(s => ({
     ...s,
     isPro: supplierIsProActive(s),
     proExpiresAt: s.proExpiresAt || null
@@ -649,7 +727,7 @@ app.get('/api/me/suppliers', authRequired, roleRequired('supplier'), (req, res) 
 app.post('/api/me/subscription/upgrade', authRequired, roleRequired('supplier'), (req, res) => {
   const suppliers = read('suppliers');
   let changed = 0;
-  suppliers.forEach((s) => {
+  suppliers.forEach(s => {
     if (s.ownerUserId === req.user.id) {
       if (!s.isPro) {
         s.isPro = true;
@@ -674,15 +752,18 @@ app.post('/api/me/subscription/upgrade', authRequired, roleRequired('supplier'),
   res.json({ ok: true, updatedSuppliers: changed });
 });
 
-
-
 app.post('/api/me/suppliers', writeLimiter, authRequired, roleRequired('supplier'), (req, res) => {
   const b = req.body || {};
   if (!b.name || !b.category) return res.status(400).json({ error: 'Missing fields' });
-  const photos = (b.photos ? (Array.isArray(b.photos) ? b.photos : String(b.photos).split(/\r?\n/)) : [])
-    .map(x => String(x).trim()).filter(Boolean);
+  const photos = (b.photos
+    ? (Array.isArray(b.photos) ? b.photos : String(b.photos).split(/\r?\n/))
+    : [])
+    .map(x => String(x).trim())
+    .filter(Boolean);
 
-  const amenities = (b.amenities ? String(b.amenities).split(',') : []).map(x => x.trim()).filter(Boolean);
+  const amenities = (b.amenities ? String(b.amenities).split(',') : [])
+    .map(x => x.trim())
+    .filter(Boolean);
 
   const s = {
     id: uid('sup'),
@@ -697,11 +778,15 @@ app.post('/api/me/suppliers', writeLimiter, authRequired, roleRequired('supplier
     maxGuests: parseInt(b.maxGuests || 0, 10),
     description_short: String(b.description_short || '').slice(0, 220),
     description_long: String(b.description_long || '').slice(0, 2000),
-    photos: photos.length ? photos : [`https://source.unsplash.com/featured/800x600/?event,${encodeURIComponent(b.category)}`],
+    photos: photos.length
+      ? photos
+      : [`https://source.unsplash.com/featured/800x600/?event,${encodeURIComponent(b.category)}`],
     email: ((read('users').find(u => u.id === req.user.id) || {}).email) || '',
     approved: false
   };
-  const all = read('suppliers'); all.push(s); write('suppliers', all);
+  const all = read('suppliers');
+  all.push(s);
+  write('suppliers', all);
   res.json({ ok: true, supplier: s });
 });
 
@@ -711,13 +796,33 @@ app.patch('/api/me/suppliers/:id', writeLimiter, authRequired, roleRequired('sup
   if (i < 0) return res.status(404).json({ error: 'Not found' });
   const b = req.body || {};
 
-  const fields = ['name','category','location','price_display','website','license','description_short','description_long'];
-  for (const k of fields) if (typeof b[k] === 'string') all[i][k] = b[k];
+  const fields = [
+    'name',
+    'category',
+    'location',
+    'price_display',
+    'website',
+    'license',
+    'description_short',
+    'description_long'
+  ];
+  for (const k of fields) {
+    if (typeof b[k] === 'string') all[i][k] = b[k];
+  }
 
-  if (b.amenities) all[i].amenities = String(b.amenities).split(',').map(x => x.trim()).filter(Boolean);
-  if (b.maxGuests != null) all[i].maxGuests = parseInt(b.maxGuests,10) || 0;
+  if (b.amenities) {
+    all[i].amenities = String(b.amenities)
+      .split(',')
+      .map(x => x.trim())
+      .filter(Boolean);
+  }
+  if (b.maxGuests != null) all[i].maxGuests = parseInt(b.maxGuests, 10) || 0;
   if (b.photos) {
-    const photos = (Array.isArray(b.photos) ? b.photos : String(b.photos).split(/\r?\n/)).map(x => String(x).trim()).filter(Boolean);
+    const photos = (Array.isArray(b.photos)
+      ? b.photos
+      : String(b.photos).split(/\r?\n/))
+      .map(x => String(x).trim())
+      .filter(Boolean);
     if (photos.length) all[i].photos = photos;
   }
   all[i].approved = false;
@@ -726,7 +831,9 @@ app.patch('/api/me/suppliers/:id', writeLimiter, authRequired, roleRequired('sup
 });
 
 app.get('/api/me/packages', authRequired, roleRequired('supplier'), (req, res) => {
-  const mine = read('suppliers').filter(s => s.ownerUserId === req.user.id).map(s => s.id);
+  const mine = read('suppliers')
+    .filter(s => s.ownerUserId === req.user.id)
+    .map(s => s.id);
   const items = read('packages').filter(p => mine.includes(p.supplierId));
   res.json({ items });
 });
@@ -734,7 +841,9 @@ app.get('/api/me/packages', authRequired, roleRequired('supplier'), (req, res) =
 app.post('/api/me/packages', writeLimiter, authRequired, roleRequired('supplier'), (req, res) => {
   const { supplierId, title, description, price, image } = req.body || {};
   if (!supplierId || !title) return res.status(400).json({ error: 'Missing fields' });
-  const own = read('suppliers').find(s => s.id === supplierId && s.ownerUserId === req.user.id);
+  const own = read('suppliers').find(
+    s => s.id === supplierId && s.ownerUserId === req.user.id
+  );
   if (!own) return res.status(403).json({ error: 'Forbidden' });
 
   const ownIsPro = supplierIsProActive(own);
@@ -761,7 +870,9 @@ app.post('/api/me/packages', writeLimiter, authRequired, roleRequired('supplier'
     approved: false,
     featured: false
   };
-  const all = allPkgs; all.push(pkg); write('packages', all);
+  const all = allPkgs;
+  all.push(pkg);
+  write('packages', all);
   res.json({ ok: true, package: pkg });
 });
 
@@ -773,7 +884,9 @@ app.post('/api/threads/start', writeLimiter, authRequired, async (req, res) => {
   if (!supplier) return res.status(404).json({ error: 'Supplier not found' });
 
   const threads = read('threads');
-  let thread = threads.find(t => t.supplierId === supplierId && t.customerId === req.user.id);
+  let thread = threads.find(
+    t => t.supplierId === supplierId && t.customerId === req.user.id
+  );
   if (!thread) {
     thread = {
       id: uid('thd'),
@@ -824,7 +937,9 @@ app.post('/api/threads/start', writeLimiter, authRequired, async (req, res) => {
           `A customer started a conversation about ${supplier.name}.`
         );
       }
-    } catch (e) { /* dev-safe */ }
+    } catch (e) {
+      // dev-safe
+    }
   })();
 
   res.json({ ok: true, thread });
@@ -833,13 +948,23 @@ app.post('/api/threads/start', writeLimiter, authRequired, async (req, res) => {
 app.get('/api/threads/my', authRequired, (req, res) => {
   const ts = read('threads');
   let items = [];
-  if (req.user.role === 'customer') items = ts.filter(t => t.customerId === req.user.id);
-  else if (req.user.role === 'supplier') {
-    const mine = read('suppliers').filter(s => s.ownerUserId === req.user.id).map(s => s.id);
+  if (req.user.role === 'customer') {
+    items = ts.filter(t => t.customerId === req.user.id);
+  } else if (req.user.role === 'supplier') {
+    const mine = read('suppliers')
+      .filter(s => s.ownerUserId === req.user.id)
+      .map(s => s.id);
     items = ts.filter(t => mine.includes(t.supplierId));
-  } else if (req.user.role === 'admin') items = ts;
+  } else if (req.user.role === 'admin') {
+    items = ts;
+  }
   const msgs = read('messages');
-  items = items.map(t => ({ ...t, last: msgs.filter(m => m.threadId === t.id).sort((a,b) => b.createdAt.localeCompare(a.createdAt))[0] || null }));
+  items = items.map(t => ({
+    ...t,
+    last: msgs
+      .filter(m => m.threadId === t.id)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0] || null
+  }));
   res.json({ items });
 });
 
@@ -847,10 +972,14 @@ app.get('/api/threads/:id/messages', authRequired, (req, res) => {
   const t = read('threads').find(x => x.id === req.params.id);
   if (!t) return res.status(404).json({ error: 'Thread not found' });
   if (req.user.role !== 'admin' && t.customerId !== req.user.id) {
-    const own = read('suppliers').find(s => s.id === t.supplierId && s.ownerUserId === req.user.id);
+    const own = read('suppliers').find(
+      s => s.id === t.supplierId && s.ownerUserId === req.user.id
+    );
     if (!own) return res.status(403).json({ error: 'Forbidden' });
   }
-  const msgs = read('messages').filter(m => m.threadId === t.id).sort((a,b) => a.createdAt.localeCompare(b.createdAt));
+  const msgs = read('messages')
+    .filter(m => m.threadId === t.id)
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
   res.json({ items: msgs });
 });
 
@@ -860,26 +989,49 @@ app.post('/api/threads/:id/messages', writeLimiter, authRequired, (req, res) => 
   const t = read('threads').find(x => x.id === req.params.id);
   if (!t) return res.status(404).json({ error: 'Thread not found' });
   if (req.user.role !== 'admin' && t.customerId !== req.user.id) {
-    const own = read('suppliers').find(s => s.id === t.supplierId && s.ownerUserId === req.user.id);
+    const own = read('suppliers').find(
+      s => s.id === t.supplierId && s.ownerUserId === req.user.id
+    );
     if (!own) return res.status(403).json({ error: 'Forbidden' });
   }
-  const msgs = read('messages'); const entry = { id: uid('msg'), threadId: t.id, fromUserId: req.user.id, fromRole: req.user.role, text: String(text).slice(0, 4000), createdAt: new Date().toISOString() };
-  msgs.push(entry); write('messages', msgs);
+  const msgs = read('messages');
+  const entry = {
+    id: uid('msg'),
+    threadId: t.id,
+    fromUserId: req.user.id,
+    fromRole: req.user.role,
+    text: String(text).slice(0, 4000),
+    createdAt: new Date().toISOString()
+  };
+  msgs.push(entry);
+  write('messages', msgs);
 
   // Update thread timestamp
-  const th = read('threads'); const i = th.findIndex(x => x.id === t.id); if (i >= 0) { th[i].updatedAt = entry.createdAt; write('threads', th); }
+  const th = read('threads');
+  const i = th.findIndex(x => x.id === t.id);
+  if (i >= 0) {
+    th[i].updatedAt = entry.createdAt;
+    write('threads', th);
+  }
 
   // Email notify other party (safe IIFE)
   (async () => {
     try {
-      const otherEmail = (req.user.role === 'customer')
-        ? (((read('suppliers').find(s => s.id === t.supplierId) || {}).email) || null)
-        : (((read('users').find(u => u.id === t.customerId) || {}).email) || null);
+      const otherEmail =
+        (req.user.role === 'customer')
+          ? (((read('suppliers').find(s => s.id === t.supplierId) || {}).email) || null)
+          : (((read('users').find(u => u.id === t.customerId) || {}).email) || null);
       const me = read('users').find(u => u.id === req.user.id);
       if (otherEmail && me && me.notify !== false) {
-        await sendMail(otherEmail, 'New message on EventFlow', `You have a new message in a conversation.\n\n${entry.text.slice(0, 500)}`);
+        await sendMail(
+          otherEmail,
+          'New message on EventFlow',
+          `You have a new message in a conversation.\n\n${entry.text.slice(0, 500)}`
+        );
       }
-    } catch (e) { /* dev-safe */ }
+    } catch (e) {
+      // dev-safe
+    }
   })();
 
   res.json({ ok: true, message: entry });
@@ -887,50 +1039,93 @@ app.post('/api/threads/:id/messages', writeLimiter, authRequired, (req, res) => 
 
 // ---------- Plan & Notes (customer) ----------
 app.get('/api/plan', authRequired, (req, res) => {
-  if (req.user.role !== 'customer') return res.status(403).json({ error: 'Customers only' });
+  if (req.user.role !== 'customer') {
+    return res.status(403).json({ error: 'Customers only' });
+  }
   const plans = read('plans').filter(p => p.userId === req.user.id);
   const suppliers = read('suppliers').filter(s => s.approved);
-  const items = plans.map(p => suppliers.find(s => s.id === p.supplierId)).filter(Boolean);
+  const items = plans
+    .map(p => suppliers.find(s => s.id === p.supplierId))
+    .filter(Boolean);
   res.json({ items });
 });
 
 app.post('/api/plan', authRequired, (req, res) => {
-  if (req.user.role !== 'customer') return res.status(403).json({ error: 'Customers only' });
-  const { supplierId } = req.body || {}; if (!supplierId) return res.status(400).json({ error: 'Missing supplierId' });
-  const s = read('suppliers').find(x => x.id === supplierId && x.approved); if (!s) return res.status(404).json({ error: 'Supplier not found' });
-  const all = read('plans'); if (!all.find(p => p.userId === req.user.id && p.supplierId === supplierId)) all.push({ id: uid('pln'), userId: req.user.id, supplierId, createdAt: new Date().toISOString() });
-  write('plans', all); res.json({ ok: true });
+  if (req.user.role !== 'customer') {
+    return res.status(403).json({ error: 'Customers only' });
+  }
+  const { supplierId } = req.body || {};
+  if (!supplierId) return res.status(400).json({ error: 'Missing supplierId' });
+  const s = read('suppliers').find(x => x.id === supplierId && x.approved);
+  if (!s) return res.status(404).json({ error: 'Supplier not found' });
+  const all = read('plans');
+  if (!all.find(p => p.userId === req.user.id && p.supplierId === supplierId)) {
+    all.push({
+      id: uid('pln'),
+      userId: req.user.id,
+      supplierId,
+      createdAt: new Date().toISOString()
+    });
+  }
+  write('plans', all);
+  res.json({ ok: true });
 });
 
 app.delete('/api/plan/:supplierId', authRequired, (req, res) => {
-  if (req.user.role !== 'customer') return res.status(403).json({ error: 'Customers only' });
-  const all = read('plans').filter(p => !(p.userId === req.user.id && p.supplierId === req.params.supplierId));
-  write('plans', all); res.json({ ok: true });
+  if (req.user.role !== 'customer') {
+    return res.status(403).json({ error: 'Customers only' });
+  }
+  const all = read('plans').filter(
+    p => !(p.userId === req.user.id && p.supplierId === req.params.supplierId)
+  );
+  write('plans', all);
+  res.json({ ok: true });
 });
 
 app.get('/api/notes', authRequired, (req, res) => {
-  if (req.user.role !== 'customer') return res.status(403).json({ error: 'Customers only' });
-  const n = read('notes').find(x => x.userId === req.user.id); res.json({ text: (n && n.text) || '' });
+  if (req.user.role !== 'customer') {
+    return res.status(403).json({ error: 'Customers only' });
+  }
+  const n = read('notes').find(x => x.userId === req.user.id);
+  res.json({ text: (n && n.text) || '' });
 });
 
 app.post('/api/notes', authRequired, (req, res) => {
-  if (req.user.role !== 'customer') return res.status(403).json({ error: 'Customers only' });
-  const all = read('notes'); const i = all.findIndex(x => x.userId === req.user.id);
-  if (i >= 0) { all[i].text = String((req.body && req.body.text) || ''); all[i].updatedAt = new Date().toISOString(); }
-  else { all.push({ id: uid('nte'), userId: req.user.id, text: String((req.body && req.body.text) || ''), createdAt: new Date().toISOString() }); }
-  write('notes', all); res.json({ ok: true });
+  if (req.user.role !== 'customer') {
+    return res.status(403).json({ error: 'Customers only' });
+  }
+  const all = read('notes');
+  const i = all.findIndex(x => x.userId === req.user.id);
+  if (i >= 0) {
+    all[i].text = String((req.body && req.body.text) || '');
+    all[i].updatedAt = new Date().toISOString();
+  } else {
+    all.push({
+      id: uid('nte'),
+      userId: req.user.id,
+      text: String((req.body && req.body.text) || ''),
+      createdAt: new Date().toISOString()
+    });
+  }
+  write('notes', all);
+  res.json({ ok: true });
 });
 
 // ---------- Settings ----------
 app.get('/api/me/settings', authRequired, (req, res) => {
-  const users = read('users'); const i = users.findIndex(u => u.id === req.user.id);
+  const users = read('users');
+  const i = users.findIndex(u => u.id === req.user.id);
   if (i < 0) return res.status(404).json({ error: 'Not found' });
   res.json({ notify: users[i].notify !== false });
 });
+
 app.post('/api/me/settings', authRequired, (req, res) => {
-  const users = read('users'); const i = users.findIndex(u => u.id === req.user.id);
+  const users = read('users');
+  const i = users.findIndex(u => u.id === req.user.id);
   if (i < 0) return res.status(404).json({ error: 'Not found' });
-  users[i].notify = !!(req.body && req.body.notify); write('users', users); res.json({ ok: true, notify: users[i].notify });
+  users[i].notify = !!(req.body && req.body.notify);
+  write('users', users);
+  res.json({ ok: true, notify: users[i].notify });
 });
 
 // ---------- Meta & status ----------
@@ -941,6 +1136,7 @@ app.get('/api/meta', (_req, res) => {
     node: process.version,
     env: process.env.NODE_ENV || 'development'
   });
+});
 
 // Lightweight metrics endpoints (no-op by default)
 app.post('/api/metrics/track', (req, res) => {
@@ -954,34 +1150,57 @@ app.get('/api/admin/metrics/timeseries', authRequired, roleRequired('admin'), (_
   const days = 14;
   const series = [];
   for (let i = days - 1; i >= 0; i--) {
-    const d = new Date(today); d.setDate(d.getDate() - i);
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
     const iso = d.toISOString().slice(0, 10);
-    series.push({ date: iso, visitors: 20 + ((i * 7) % 15), signups: 3 + (i % 4), plans: 1 + (i % 3) });
+    series.push({
+      date: iso,
+      visitors: 20 + ((i * 7) % 15),
+      signups: 3 + (i % 4),
+      plans: 1 + (i % 3)
+    });
   }
   res.json({ series });
 });
 
-});
-
 // ---------- Admin ----------
 app.get('/api/admin/metrics', authRequired, roleRequired('admin'), (_req, res) => {
-  const users = read('users'), suppliers = read('suppliers'), plans = read('plans'), msgs = read('messages'), pkgs = read('packages'), threads = read('threads');
-  res.json({ counts: {
-    usersTotal: users.length,
-    usersByRole: users.reduce((a,u) => { a[u.role] = (a[u.role] || 0) + 1; return a; }, {}),
-    suppliersTotal: suppliers.length,
-    packagesTotal: pkgs.length,
-    plansTotal: plans.length,
-    messagesTotal: msgs.length,
-    threadsTotal: threads.length
-  }});
+  const users = read('users');
+  const suppliers = read('suppliers');
+  const plans = read('plans');
+  const msgs = read('messages');
+  const pkgs = read('packages');
+  const threads = read('threads');
+  res.json({
+    counts: {
+      usersTotal: users.length,
+      usersByRole: users.reduce((a, u) => {
+        a[u.role] = (a[u.role] || 0) + 1;
+        return a;
+      }, {}),
+      suppliersTotal: suppliers.length,
+      packagesTotal: pkgs.length,
+      plansTotal: plans.length,
+      messagesTotal: msgs.length,
+      threadsTotal: threads.length
+    }
+  });
 });
 
 app.post('/api/admin/reset-demo', authRequired, roleRequired('admin'), (req, res) => {
   try {
     // Clear key collections and rerun seeding
-    const collections = ['users', 'suppliers', 'packages', 'plans', 'notes', 'messages', 'threads', 'events'];
-    collections.forEach((name) => write(name, []));
+    const collections = [
+      'users',
+      'suppliers',
+      'packages',
+      'plans',
+      'notes',
+      'messages',
+      'threads',
+      'events'
+    ];
+    collections.forEach(name => write(name, []));
     seed();
     res.json({ ok: true });
   } catch (err) {
@@ -992,17 +1211,21 @@ app.post('/api/admin/reset-demo', authRequired, roleRequired('admin'), (req, res
 
 app.get('/api/admin/suppliers', authRequired, roleRequired('admin'), (_req, res) => {
   const raw = read('suppliers');
-  const items = raw.map((s) => ({
+  const items = raw.map(s => ({
     ...s,
     isPro: supplierIsProActive(s),
     proExpiresAt: s.proExpiresAt || null
   }));
   res.json({ items });
 });
+
 app.post('/api/admin/suppliers/:id/approve', authRequired, roleRequired('admin'), (req, res) => {
-  const all = read('suppliers'); const i = all.findIndex(s => s.id === req.params.id);
+  const all = read('suppliers');
+  const i = all.findIndex(s => s.id === req.params.id);
   if (i < 0) return res.status(404).json({ error: 'Not found' });
-  all[i].approved = !!(req.body && req.body.approved); write('suppliers', all); res.json({ ok: true, supplier: all[i] });
+  all[i].approved = !!(req.body && req.body.approved);
+  write('suppliers', all);
+  res.json({ ok: true, supplier: all[i] });
 });
 
 app.post('/api/admin/suppliers/:id/pro', authRequired, roleRequired('admin'), (req, res) => {
@@ -1020,10 +1243,18 @@ app.post('/api/admin/suppliers/:id/pro', authRequired, roleRequired('admin'), (r
   } else if (mode === 'duration') {
     let ms = 0;
     switch (duration) {
-      case '1d': ms = 1 * 24 * 60 * 60 * 1000; break;
-      case '7d': ms = 7 * 24 * 60 * 60 * 1000; break;
-      case '1m': ms = 30 * 24 * 60 * 60 * 1000; break;
-      case '1y': ms = 365 * 24 * 60 * 60 * 1000; break;
+      case '1d':
+        ms = 1 * 24 * 60 * 60 * 1000;
+        break;
+      case '7d':
+        ms = 7 * 24 * 60 * 60 * 1000;
+        break;
+      case '1m':
+        ms = 30 * 24 * 60 * 60 * 1000;
+        break;
+      case '1y':
+        ms = 365 * 24 * 60 * 60 * 1000;
+        break;
       default:
         return res.status(400).json({ error: 'Invalid duration' });
     }
@@ -1060,174 +1291,220 @@ app.post('/api/admin/suppliers/:id/pro', authRequired, roleRequired('admin'), (r
     }
   });
 });
-app.get('/api/admin/packages', authRequired, roleRequired('admin'), (_req, res) => res.json({ items: read('packages') }));
-app.post('/api/admin/packages/:id/approve', authRequired, roleRequired('admin'), (req, res) => {
-  const all = read('packages'); const i = all.findIndex(p => p.id === req.params.id);
-  if (i < 0) return res.status(404).json({ error: 'Not found' });
-  all[i].approved = !!(req.body && req.body.approved); write('packages', all); res.json({ ok: true, package: all[i] });
+
+app.get('/api/admin/packages', authRequired, roleRequired('admin'), (_req, res) => {
+  res.json({ items: read('packages') });
 });
-app.post('/api/admin/packages/:id/feature', authRequired, roleRequired('admin'), (req, res) => {
-  const all = read('packages'); const i = all.findIndex(p => p.id === req.params.id);
+
+app.post('/api/admin/packages/:id/approve', authRequired, roleRequired('admin'), (req, res) => {
+  const all = read('packages');
+  const i = all.findIndex(p => p.id === req.params.id);
   if (i < 0) return res.status(404).json({ error: 'Not found' });
-  all[i].featured = !!(req.body && req.body.featured); write('packages', all); res.json({ ok: true, package: all[i] });
+  all[i].approved = !!(req.body && req.body.approved);
+  write('packages', all);
+  res.json({ ok: true, package: all[i] });
+});
+
+app.post('/api/admin/packages/:id/feature', authRequired, roleRequired('admin'), (req, res) => {
+  const all = read('packages');
+  const i = all.findIndex(p => p.id === req.params.id);
+  if (i < 0) return res.status(404).json({ error: 'Not found' });
+  all[i].featured = !!(req.body && req.body.featured);
+  write('packages', all);
+  res.json({ ok: true, package: all[i] });
 });
 
 // ---------- Sitemap ----------
 app.get('/sitemap.xml', (_req, res) => {
   const base = `http://localhost:${PORT}`;
-  const suppliers = read('suppliers').filter(s => s.approved).map(s => `${base}/supplier.html?id=${s.id}`);
-  const urls = [ `${base}/`, `${base}/suppliers.html`, `${base}/start.html`, `${base}/plan.html`, `${base}/auth.html`, ...suppliers ];
-  const xml = ['<?xml version="1.0" encoding="UTF-8"?>','<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">', ...urls.map(u => `<url><loc>${u}</loc></url>`), '</urlset>'].join('');
-  res.set('Content-Type','application/xml'); res.send(xml);
+  const suppliers = read('suppliers')
+    .filter(s => s.approved)
+    .map(s => `${base}/supplier.html?id=${s.id}`);
+  const urls = [
+    `${base}/`,
+    `${base}/suppliers.html`,
+    `${base}/start.html`,
+    `${base}/plan.html`,
+    `${base}/auth.html`,
+    ...suppliers
+  ];
+  const xml = [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+    ...urls.map(u => `<url><loc>${u}</loc></url>`),
+    '</urlset>'
+  ].join('');
+  res.set('Content-Type', 'application/xml');
+  res.send(xml);
 });
 
 // ---------- Protected HTML routes ----------
 const sendHTML = (res, file) => res.sendFile(path.join(__dirname, 'public', file));
-app.get('/dashboard/customer', authRequired, (req, res) => { if (req.user.role !== 'customer') return res.redirect('/auth.html'); sendHTML(res, 'dashboard-customer.html'); });
-app.get('/dashboard/supplier', authRequired, (req, res) => { if (req.user.role !== 'supplier') return res.redirect('/auth.html'); sendHTML(res, 'dashboard-supplier.html'); });
-app.get('/admin', authRequired, (req, res) => { if (req.user.role !== 'admin') return res.redirect('/auth.html'); sendHTML(res, 'admin.html'); });
 
+app.get('/dashboard/customer', authRequired, (req, res) => {
+  if (req.user.role !== 'customer') return res.redirect('/auth.html');
+  sendHTML(res, 'dashboard-customer.html');
+});
 
-// ---------- Healthcheck ----------
+app.get('/dashboard/supplier', authRequired, (req, res) => {
+  if (req.user.role !== 'supplier') return res.redirect('/auth.html');
+  sendHTML(res, 'dashboard-supplier.html');
+});
+
+app.get('/admin', authRequired, (req, res) => {
+  if (req.user.role !== 'admin') return res.redirect('/auth.html');
+  sendHTML(res, 'admin.html');
+});
+
+// ---------- Healthcheck & plan save system ----------
 
 // --- PLAN SAVE SYSTEM ---
-function planOwnerOnly(req,res,next){
-  if(!req.userId) return res.status(403).json({error:'Not logged in'});
+function planOwnerOnly(req, res, next) {
+  if (!req.userId) return res.status(403).json({ error: 'Not logged in' });
   next();
 }
 
-app.post('/api/me/plan/save', planOwnerOnly, (req,res)=>{
+app.post('/api/me/plan/save', authRequired, planOwnerOnly, (req, res) => {
   const { plan } = req.body || {};
-  if(!plan) return res.status(400).json({error:'Missing plan'});
+  if (!plan) return res.status(400).json({ error: 'Missing plan' });
   const plans = read('plans');
-  let p = plans.find(x=>x.userId===req.userId);
-  if(!p){
-    p = { id:uid('pln'), userId:req.userId, plan };
+  let p = plans.find(x => x.userId === req.userId);
+  if (!p) {
+    p = { id: uid('pln'), userId: req.userId, plan };
     plans.push(p);
   } else {
     p.plan = plan;
   }
   write('plans', plans);
-  res.json({ok:true, plan:p});
+  res.json({ ok: true, plan: p });
 });
 
-app.get('/api/me/plan', planOwnerOnly, (req,res)=>{
+app.get('/api/me/plan', authRequired, planOwnerOnly, (req, res) => {
   const plans = read('plans');
-  const p = plans.find(x=>x.userId===req.userId);
-  if(!p) return res.json({ok:true, plan:null});
-  res.json({ok:true, plan:p.plan});
+  const p = plans.find(x => x.userId === req.userId);
+  if (!p) return res.json({ ok: true, plan: null });
+  res.json({ ok: true, plan: p.plan });
 });
-
 
 // --- PDF EXPORT ---
-app.get('/api/plan/export/pdf', async (req,res)=>{
-  if(!req.userId) return res.status(403).json({error:'Not logged in'});
-
+app.get('/api/plan/export/pdf', authRequired, planOwnerOnly, async (req, res) => {
   const plans = read('plans');
-  const p = plans.find(x=>x.userId===req.userId);
-  if(!p) return res.status(400).json({error:'No plan saved'});
+  const p = plans.find(x => x.userId === req.userId);
+  if (!p) return res.status(400).json({ error: 'No plan saved' });
 
   const suppliers = read('suppliers');
-  const packages = read('packages');
+  const packages = read('packages'); // currently unused, but kept for future detail
 
-  res.setHeader('Content-Type','application/pdf');
-  res.setHeader('Content-Disposition','attachment; filename=event_plan.pdf');
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', 'attachment; filename=event_plan.pdf');
 
-  const doc = new PDFDocument({margin:50});
+  const doc = new PDFDocument({ margin: 50 });
   doc.pipe(res);
 
-  doc.fontSize(22).text("EventFlow — Event Plan", {align:'center'});
+  doc.fontSize(22).text('EventFlow — Event Plan', { align: 'center' });
   doc.moveDown();
-  doc.fontSize(14).text("Generated: "+new Date().toLocaleString());
-  doc.moveDown();
-  doc.fontSize(16).text("Event Summary", {underline:true});
-  doc.fontSize(12).text(JSON.stringify(p.plan.summary||{},null,2));
+  doc.fontSize(14).text('Generated: ' + new Date().toLocaleString());
   doc.moveDown();
 
-  doc.fontSize(16).text("Timeline",{underline:true});
-  doc.fontSize(12).text(JSON.stringify(p.plan.timeline||[],null,2));
+  doc.fontSize(16).text('Event Summary', { underline: true });
+  doc.fontSize(12).text(JSON.stringify(p.plan.summary || {}, null, 2));
   doc.moveDown();
 
-  doc.fontSize(16).text("Suppliers",{underline:true});
-  const supIds = (p.plan.suppliers||[]).map(s=>s.id);
-  suppliers.filter(s=>supIds.includes(s.id)).forEach(s=>{
-    doc.fontSize(14).text(s.name);
-    doc.fontSize(12).text(s.category);
-    doc.moveDown();
-  });
+  doc.fontSize(16).text('Timeline', { underline: true });
+  doc.fontSize(12).text(JSON.stringify(p.plan.timeline || [], null, 2));
+  doc.moveDown();
 
-  doc.fontSize(16).text("Notes",{underline:true});
-  doc.fontSize(12).text(p.plan.notes||"None");
+  doc.fontSize(16).text('Suppliers', { underline: true });
+  const supIds = (p.plan.suppliers || []).map(s => s.id);
+  suppliers
+    .filter(s => supIds.includes(s.id))
+    .forEach(s => {
+      doc.fontSize(14).text(s.name);
+      doc.fontSize(12).text(s.category);
+      doc.moveDown();
+    });
+
+  doc.fontSize(16).text('Notes', { underline: true });
+  doc.fontSize(12).text(p.plan.notes || 'None');
   doc.moveDown();
 
   doc.end();
 });
 
-
 // --- IMAGE STORAGE (V9.3) ---
 // fs and path are already required at the top of this file
 const UP_ROOT = path.join(DATA_DIR, 'uploads');
 
-function ensureDirs(){
+function ensureDirs() {
   const dirs = [
     UP_ROOT,
-    path.join(UP_ROOT,'suppliers'),
-    path.join(UP_ROOT,'packages')
+    path.join(UP_ROOT, 'suppliers'),
+    path.join(UP_ROOT, 'packages')
   ];
-  for(const d of dirs) if(!fs.existsSync(d)) fs.mkdirSync(d,{recursive:true});
+  for (const d of dirs) {
+    if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true });
+  }
 }
 ensureDirs();
 
-function saveImageBase64(base64, ownerType, ownerId){
-  try{
+function saveImageBase64(base64, ownerType, ownerId) {
+  try {
     const match = base64.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
-    if(!match) return null;
+    if (!match) return null;
     const ext = match[1].split('/')[1];
     const buffer = Buffer.from(match[2], 'base64');
     const folder = path.join(UP_ROOT, ownerType, ownerId);
-    if(!fs.existsSync(folder)) fs.mkdirSync(folder,{recursive:true});
-    const filename = 'img_'+Date.now()+'_'+Math.random().toString(36).slice(2)+'.'+ext;
+    if (!fs.existsSync(folder)) fs.mkdirSync(folder, { recursive: true });
+    const filename = 'img_' + Date.now() + '_' + Math.random().toString(36).slice(2) + '.' + ext;
     const filePath = path.join(folder, filename);
     fs.writeFileSync(filePath, buffer);
-    return '/uploads/'+ownerType+'/'+ownerId+'/'+filename;
-  }catch(e){ return null; }
+    return '/uploads/' + ownerType + '/' + ownerId + '/' + filename;
+  } catch (e) {
+    return null;
+  }
 }
 
 // Supplier image upload
-app.post('/api/me/suppliers/:id/photos', authRequired, (req,res)=>{
+app.post('/api/me/suppliers/:id/photos', authRequired, (req, res) => {
   const { image } = req.body || {};
-  if(!image) return res.status(400).json({error:'Missing image'});
+  if (!image) return res.status(400).json({ error: 'Missing image' });
   const suppliers = read('suppliers');
-  const s = suppliers.find(x=>x.id===req.params.id && x.ownerUserId===req.userId);
-  if(!s) return res.status(403).json({error:'Not owner'});
-  const url = saveImageBase64(image,'suppliers',req.params.id);
-  if(!url) return res.status(400).json({error:'Invalid image'});
-  if(!s.photosGallery) s.photosGallery=[];
-  s.photosGallery.push({url,approved:false,uploadedAt:Date.now()});
-  write('suppliers',suppliers);
-  res.json({ok:true,url});
+  const s = suppliers.find(x => x.id === req.params.id && x.ownerUserId === req.userId);
+  if (!s) return res.status(403).json({ error: 'Not owner' });
+  const url = saveImageBase64(image, 'suppliers', req.params.id);
+  if (!url) return res.status(400).json({ error: 'Invalid image' });
+  if (!s.photosGallery) s.photosGallery = [];
+  s.photosGallery.push({ url, approved: false, uploadedAt: Date.now() });
+  write('suppliers', suppliers);
+  res.json({ ok: true, url });
 });
 
 // Package image upload
-app.post('/api/me/packages/:id/photos', authRequired, (req,res)=>{
+app.post('/api/me/packages/:id/photos', authRequired, (req, res) => {
   const { image } = req.body || {};
-  if(!image) return res.status(400).json({error:'Missing image'});
+  if (!image) return res.status(400).json({ error: 'Missing image' });
   const pkgs = read('packages');
-  const p = pkgs.find(x=>x.id===req.params.id);
-  if(!p) return res.status(404).json({error:'Not found'});
+  const p = pkgs.find(x => x.id === req.params.id);
+  if (!p) return res.status(404).json({ error: 'Not found' });
   const suppliers = read('suppliers');
-  const own = suppliers.find(x=>x.id===p.supplierId && x.ownerUserId===req.userId);
-  if(!own) return res.status(403).json({error:'Not owner'});
-  const url = saveImageBase64(image,'packages',req.params.id);
-  if(!url) return res.status(400).json({error:'Invalid image'});
-  if(!p.gallery) p.gallery=[];
-  p.gallery.push({url,approved:false,uploadedAt:Date.now()});
-  write('packages',pkgs);
-  res.json({ok:true,url});
+  const own = suppliers.find(x => x.id === p.supplierId && x.ownerUserId === req.userId);
+  if (!own) return res.status(403).json({ error: 'Not owner' });
+  const url = saveImageBase64(image, 'packages', req.params.id);
+  if (!url) return res.status(400).json({ error: 'Invalid image' });
+  if (!p.gallery) p.gallery = [];
+  p.gallery.push({ url, approved: false, uploadedAt: Date.now() });
+  write('packages', pkgs);
+  res.json({ ok: true, url });
 });
 
+// Basic API healthcheck
 app.get('/api/health', (_req, res) => {
-  res.json({ ok: true, version: APP_VERSION, status: 'online', time: new Date().toISOString() });
+  res.json({
+    ok: true,
+    version: APP_VERSION,
+    status: 'online',
+    time: new Date().toISOString()
+  });
 });
 
 // ---------- Static & 404 ----------
@@ -1235,4 +1512,6 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use((_req, res) => res.status(404).send('Not found'));
 
 // ---------- Start ----------
-app.listen(PORT, () => console.log(`EventFlow ${APP_VERSION} server running → http://localhost:${PORT}`));
+app.listen(PORT, () => {
+  console.log(`EventFlow ${APP_VERSION} server running → http://localhost:${PORT}`);
+});
