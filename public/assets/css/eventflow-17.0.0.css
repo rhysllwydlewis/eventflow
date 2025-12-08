@@ -1,6 +1,4 @@
-/* EventFlow 17.0.0 — header / nav / theme tidy-ups */
-/* Drop this file next to styles.css and include it after styles.css in your HTML,
-   or paste the contents at the very end of /assets/css/styles.css. */
+/* EventFlow 17.0.0 — header / nav / theme tidy-ups (updated) */
 
 /* 1) Mobile header: hide cramped inline nav, rely on burger + drawer */
 @media (max-width: 720px) {
@@ -15,4 +13,16 @@
 .theme-icon::after {
   /* Disable the old layered circle animation so the emoji are visible */
   content: none;
+}
+
+/* 3) Burger button: make it look obviously like a menu */
+.nav-toggle::before {
+  content: '☰';
+  font-size: 18px;
+  line-height: 1;
+}
+
+/* Hide the tiny internal bars so we just see the clear ☰ icon */
+.nav-toggle-bar {
+  display: none;
 }
