@@ -4,27 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>EventFlow — Plan your event the simple way.</title>
-  <meta name="description" content="Find suppliers, build your plan and keep everything in one place — beautifully simple on mobile and desktop.">
   <link rel="stylesheet" href="/assets/css/styles.css">
   <link rel="stylesheet" href="/assets/css/eventflow-17.0.0.css">
+  <meta name="description" content="Find suppliers, build your plan and keep everything in one place — beautifully simple on mobile and desktop.">
   <link rel="icon" href="/favicon.svg">
-  <style>
-    /* Home-only brand animation: full “EventFlow” at top, compact on scroll */
-    .header .brand-text {{
-      display: inline-block;
-      max-width: 160px;
-      opacity: 1;
-      transform: translateX(0);
-      white-space: nowrap;
-      overflow: hidden;
-      transition: max-width 0.25s ease, opacity 0.25s ease, transform 0.25s ease;
-    }}
-    .header.header--compact .brand-text {{
-      max-width: 0;
-      opacity: 0;
-      transform: translateX(-4px);
-    }}
-  </style>
 </head>
 <body>
 <header class="header" role="banner">
@@ -36,7 +19,7 @@
     <div class="header-actions">
       <nav class="nav nav-inline" aria-label="Quick navigation">
         <a href="/start.html" class="nav-link nav-main">Plan</a>
-        <a href="/suppliers.html" class="nav-link nav-main">Supplier</a>
+        <a href="/suppliers.html" class="nav-link nav-main">Suppliers</a>
         <a href="/auth.html" class="nav-link nav-main nav-main-login">Log in</a>
       </nav>
       <button id="burger" class="nav-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false">
@@ -118,6 +101,20 @@
 <script src="/assets/js/app.js"></script>
 <script>
   window.__EF_PAGE__ = 'home';
+
+  // Home-only brand animation: show "EventFlow" briefly, then shrink to logo only
+  (function () {
+    var brandText = document.querySelector('.brand-text');
+    if (!brandText) return;
+    brandText.style.transition = 'opacity 0.4s ease, width 0.4s ease, margin 0.4s ease';
+    brandText.style.whiteSpace = 'nowrap';
+    setTimeout(function () {
+      brandText.style.opacity = '0';
+      brandText.style.width = '0';
+      brandText.style.marginLeft = '0';
+      brandText.style.overflow = 'hidden';
+    }, 1800);
+  })();
 </script>
 </body>
 </html>
