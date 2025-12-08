@@ -5,7 +5,7 @@
     "title": "Barn Exclusive",
     "price": "£3,500",
     "description": "Full-day venue hire, ceremony & reception areas.",
-    "image": "https://source.unsplash.com/featured/800x600/?barn,wedding,venue",
+    "image": "/assets/images/hero-venue.jpg.jpg",
     "approved": true,
     "featured": true
   },
@@ -15,7 +15,7 @@
     "title": "Seasonal Feast",
     "price": "£45 pp",
     "description": "Three-course seasonal menu with staff & setup.",
-    "image": "https://source.unsplash.com/featured/800x600/?wedding,catering,banquet",
+    "image": "https://source.unsplash.com/featured/800x600/?banquet,catering",
     "approved": true,
     "featured": false
   },
@@ -25,7 +25,7 @@
     "title": "Full Day Capture",
     "price": "£1,200",
     "description": "Prep through first dance, private gallery.",
-    "image": "https://source.unsplash.com/featured/800x600/?wedding,photographer",
+    "image": "https://source.unsplash.com/featured/800x600/?camera,photography",
     "approved": true,
     "featured": false
   }
