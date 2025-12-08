@@ -6,11 +6,6 @@
 <meta name="description" content="Find suppliers, build your plan and keep everything in one place — beautifully simple on mobile and desktop.">
 <link rel="icon" href="/favicon.svg">
 </head><body>
-
-
-
-
-
 <header class="header" role="banner">
   <div class="container header-inner">
     <a class="brand" href="/" aria-label="EventFlow home">
@@ -100,5 +95,16 @@
 </footer>
 
 <script src="/assets/js/app.js"></script>
-<script>window.__EF_PAGE__='home'</script>
+<script>
+  // Simple burger toggle to guarantee the menu opens,
+  // even if another script fails for some reason.
+  (function () {
+    var burger = document.getElementById('burger');
+    if (!burger) return;
+    burger.addEventListener('click', function () {
+      document.body.classList.toggle('nav-open');
+    });
+  })();
+  window.__EF_PAGE__='home';
+</script>
 </body></html>
