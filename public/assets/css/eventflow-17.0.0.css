@@ -1,5 +1,4 @@
-
-/* EventFlow 17.0.0 — Header / nav / theme tidy-ups (site-wide) */
+/* EventFlow 17.0.0 — Header / nav / theme tidy-ups (site-wide, updated) */
 
 /* 1) Desktop / shared header layout tweaks */
 .header .header-actions {
@@ -21,12 +20,14 @@
   order: 3;
 }
 
-/* 2) Theme toggle: small, clean sun / moon icon (no ring) */
+/* 2) Theme toggle: small, clean sun / moon icon (no ring, minimal border) */
 
 .icon-button {
   border: none;
   background: transparent;
-  padding: 3px;            /* smaller overall toggle */
+  width: 28px;
+  height: 28px;
+  padding: 0;
   border-radius: 999px;
   display: inline-flex;
   align-items: center;
@@ -40,16 +41,17 @@
   transform: translateY(-1px);
 }
 
+/* Just the emoji – no extra ring */
 .theme-icon {
   width: 20px;
   height: 20px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  box-shadow: none;        /* remove ring */
-  border-radius: 0;        /* no circular background */
-  position: static;
-  overflow: visible;
+  box-shadow: none !important;      /* remove ring */
+  border-radius: 0 !important;      /* no circular background */
+  position: static !important;
+  overflow: visible !important;
 }
 
 /* Completely disable the old layered circle backgrounds */
@@ -66,7 +68,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
+  font-size: 17px;
   line-height: 1;
   transition: opacity 140ms ease-out, transform 140ms ease-out;
 }
@@ -79,12 +81,12 @@
 
 .theme-icon-moon {
   opacity: 0;
-  transform: scale(0.8);
+  transform: scale(0.85);
 }
 
 html[data-theme="dark"] .theme-icon-sun {
   opacity: 0;
-  transform: scale(0.8);
+  transform: scale(0.85);
 }
 
 html[data-theme="dark"] .theme-icon-moon {
@@ -92,8 +94,7 @@ html[data-theme="dark"] .theme-icon-moon {
   transform: scale(1);
 }
 
-/* 3) Burger button – keep as clear menu icon */
-
+/* 3) Burger button – clear menu icon */
 .nav-toggle {
   display: none;
   width: 34px;
@@ -124,5 +125,19 @@ html[data-theme="dark"] .theme-icon-moon {
 @media (max-width: 720px) {
   .nav-toggle {
     display: inline-flex;
+  }
+}
+
+/* 4) Ensure brand text is always visible, even on very small screens */
+@media (max-width: 520px) {
+  .brand-text {
+    display: inline !important;
+    font-size: 0.9rem;
+  }
+
+  /* Slightly tighten the nav pills so everything fits */
+  .nav-inline .nav-main {
+    padding: 4px 8px;
+    font-size: 0.8rem;
   }
 }
