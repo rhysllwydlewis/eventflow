@@ -16,16 +16,19 @@
     if (!btn) return;
 
     // Initialise from saved preference or system preference
-    try {
-      const stored = window.localStorage ? localStorage.getItem(THEME_KEY) : null;
-      if (stored === 'light' || stored === 'dark') {
-        applyTheme(stored);
-      } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-        applyTheme('dark');
-      }
-    } catch (_) {
-      // Ignore storage errors
-    }
+try {
+  const stored = window.localStorage ? localStorage.getItem(THEME_KEY) : null;
+  if (stored === 'light' || stored === 'dark') {
+    // If the user has chosen a theme before, respect that
+    applyTheme(stored);
+  } else {
+    // Default for everyone: light mode
+    applyTheme('light');
+  }
+} catch (_) {
+  // Ignore storage errors
+}
+
 
     const syncAria = () => {
       const isDark = root.getAttribute('data-theme') === 'dark';
