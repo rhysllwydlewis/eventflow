@@ -1,6 +1,16 @@
-<!DOCTYPE html><html lang='en-GB'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>My Event Plan — EventFlow</title><link rel='stylesheet' href='/assets/css/styles.css'></head><body>
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>My Event Plan — EventFlow</title>
+  <link rel="stylesheet" href="/assets/css/styles.css">
+  <link rel="stylesheet" href="/assets/css/eventflow-17.0.0.css">
+</head>
+<body>
 <!-- modern-ui -->
-<div class='card'><h2>Your Event Plan</h2></div>
+<div class="card"><h2>Your Event Plan</h2></div>
+
 <header class="header" role="banner">
   <div class="container header-inner">
     <a class="brand" href="/" aria-label="EventFlow home">
@@ -13,16 +23,16 @@
         <a href="/suppliers.html" class="nav-link nav-main">Suppliers</a>
         <a href="/auth.html" class="nav-link nav-main nav-main-login">Log in</a>
       </nav>
+      <button id="burger" class="nav-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false">
+        <span class="nav-toggle-bar"></span>
+        <span class="nav-toggle-bar"></span>
+        <span class="nav-toggle-bar"></span>
+      </button>
       <button id="theme-toggle" class="icon-button" type="button" aria-label="Toggle dark mode">
         <span class="theme-icon" aria-hidden="true">
           <span class="theme-icon-sun" aria-hidden="true">☀</span>
           <span class="theme-icon-moon" aria-hidden="true">🌙</span>
         </span>
-      </button>
-      <button id="burger" class="nav-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false">
-        <span class="nav-toggle-bar"></span>
-        <span class="nav-toggle-bar"></span>
-        <span class="nav-toggle-bar"></span>
       </button>
     </div>
   </div>
@@ -39,121 +49,162 @@
   </nav>
 </header>
 <script src="/assets/js/auth-nav.js" defer></script>
-<main class='section'><div class='container'>
-<h1>My Event Plan</h1>
-<section id="event-summary" class="card" style="margin-top:10px">
-  <h2 class="h4">Your event</h2>
-  <p id="event-summary-body" class="small">
-    Add details on the Start page to see your event summary here.
-  </p>
-</section>
+<script>
+  (function () {
+    var burger = document.getElementById('burger');
+    if (!burger) return;
+    burger.addEventListener('click', function () {
+      document.body.classList.toggle('nav-open');
+    });
+  })();
+</script>
 
-<div id="cloud-status" class="small">Sign in as a customer to save your plan.</div>
-<div class="section" id="plan-progress-wrap">
-  <div class="card plan-progress">
-    <div class="plan-progress-visual">
-      <svg viewBox="0 0 120 120" class="plan-ring" aria-hidden="true">
-        <circle class="plan-ring-bg" cx="60" cy="60" r="48"></circle>
-        <circle class="plan-ring-value" cx="60" cy="60" r="48"></circle>
-      </svg>
-      <div class="plan-ring-label">
-        <div class="small">Plan completeness</div>
-        <div id="plan-progress-percent">0%</div>
+<main class="section">
+  <div class="container">
+    <h1>My Event Plan</h1>
+    <section id="event-summary" class="card" style="margin-top:10px">
+      <h2 class="h4">Your event</h2>
+      <p id="event-summary-body" class="small">
+        Add details on the Start page to see your event summary here.
+      </p>
+    </section>
+
+    <div id="cloud-status" class="small">Sign in as a customer to save your plan.</div>
+    <div class="section" id="plan-progress-wrap">
+      <div class="card plan-progress">
+        <div class="plan-progress-visual">
+          <svg viewBox="0 0 120 120" class="plan-ring" aria-hidden="true">
+            <circle class="plan-ring-bg" cx="60" cy="60" r="48"></circle>
+            <circle class="plan-ring-value" cx="60" cy="60" r="48"></circle>
+          </svg>
+          <div class="plan-ring-label">
+            <div class="small">Plan completeness</div>
+            <div id="plan-progress-percent">0%</div>
+          </div>
+        </div>
+        <div class="plan-progress-text">
+          <p class="small">
+            As you add different types of suppliers — venue, catering, photography, entertainment and more —
+            this ring will fill to show how complete your plan is. It&apos;s just for fun and doesn&apos;t affect anything behind the scenes.
+          </p>
+          <div class="small" id="plan-progress-breakdown"></div>
+        </div>
       </div>
     </div>
-    <div class="plan-progress-text">
-      <p class="small">
-        As you add different types of suppliers — venue, catering, photography, entertainment and more —
-        this ring will fill to show how complete your plan is. It&apos;s just for fun and doesn&apos;t affect anything behind the scenes.
-      </p>
-      <div class="small" id="plan-progress-breakdown"></div>
+
+    <section id="plan-list" class="section">
+      <div class="card"><p>Your plan is currently empty. Add suppliers to build it.</p></div>
+    </section>
+
+    <section class="section">
+      <div class="card">
+        <h3>Budget overview</h3>
+        <div id="plan-budget" class="small">Add suppliers to see a rough budget summary.</div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="card">
+        <h3>AI event planning assistant <span class="badge subtle">Beta</span></h3>
+        <p class="small">Describe your event and we’ll suggest a checklist, rough timeline and supplier tips. Works even better if you’ve already started filling in your plan below.</p>
+        <div class="form-row">
+          <textarea id="ai-plan-input" rows="3" placeholder="e.g. Summer wedding near Cardiff for 80–100 guests, relaxed vibe, live band, budget around £18k"></textarea>
+        </div>
+        <div class="form-row plan-inline-fields">
+          <label class="small">
+            <input type="checkbox" id="ai-plan-use-current"> Include my current plan details
+          </label>
+          <button class="cta" id="ai-plan-run" type="button">Generate suggestions</button>
+        </div>
+        <div id="ai-plan-output" class="plan-ai-output small">
+          <p class="plan-list-empty">No AI suggestions yet. Describe your event and click “Generate suggestions”.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="card">
+        <h3>Guest list</h3>
+        <p class="small">Keep track of who’s coming to your event.</p>
+        <div id="plan-guests" class="plan-list-block"></div>
+        <div class="form-row plan-inline-fields">
+          <input id="guest-name" type="text" placeholder="Guest name">
+          <input id="guest-side" type="text" placeholder="Role / side (e.g. Bride’s side)">
+          <input id="guest-notes" type="text" placeholder="Notes or dietary needs">
+          <button class="cta secondary" id="add-guest" type="button">Add guest</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="card">
+        <h3>Checklist</h3>
+        <p class="small">Track key planning tasks and tick them off as you go.</p>
+        <div id="plan-tasks" class="plan-list-block"></div>
+        <div class="form-row plan-inline-fields">
+          <input id="task-label" type="text" placeholder="New task, e.g. ‘Book photographer’">
+          <input id="task-due" type="text" placeholder="Due (optional)">
+          <button class="cta secondary" id="add-task" type="button">Add task</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="card">
+        <h3>Timeline / run sheet</h3>
+        <p class="small">Rough schedule for the day – useful for suppliers and your wedding party.</p>
+        <div id="plan-timeline" class="plan-list-block"></div>
+        <div class="form-row plan-inline-fields">
+          <input id="timeline-time" type="text" placeholder="Time, e.g. 14:30">
+          <input id="timeline-item" type="text" placeholder="What happens?">
+          <input id="timeline-owner" type="text" placeholder="Who’s responsible?">
+          <button class="cta secondary" id="add-timeline" type="button">Add item</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h3>My notes</h3>
+      <textarea id="plan-notes" rows="5" placeholder="Your notes…"></textarea>
+      <div class="form-actions">
+        <button class="cta" id="save-notes">Save notes</button>
+        <span id="notes-status" class="small"></span>
+      </div>
+    </section>
+
+    <div class="section" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+      <div class="small">Ready to move forward?</div>
+      <div class="form-actions">
+        <button class="cta" id="message-all">Message all</button>
+        <button class="cta secondary" id="export-csv">Export CSV</button>
+        <button class="cta secondary" id="print-plan" type="button">Print plan</button>
+      </div>
     </div>
+
+    <div id="modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);align-items:center;justify-content:center;padding:16px">
+      <div style="background:#fff;border-radius:12px;max-width:720px;width:100%;padding:16px">
+        <h3>Copy emails &amp; message</h3>
+        <div class="card" id="modal-emails" style="font-family:monospace;word-break:break-all">Loading…</div>
+        <label>Your message</label>
+        <textarea id="modal-message" rows="6" placeholder="Write your message…"></textarea>
+        <div class="form-actions" style="margin-top:10px">
+          <button class="cta" id="open-mail">Open mail</button>
+          <button class="cta secondary" id="close-modal">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="/assets/js/app.js"></script>
+    <script>window.__EF_PAGE__='plan'</script>
   </div>
-</div>
+</main>
 
-<section id="plan-list" class="section"><div class="card"><p>Your plan is currently empty. Add suppliers to build it.</p></div></section>
-<section class="section">
-  <div class="card">
-    <h3>Budget overview</h3>
-    <div id="plan-budget" class="small">Add suppliers to see a rough budget summary.</div>
-  </div>
-</section>
-
-
-
-<section class="section">
-  <div class="card">
-    <h3>AI event planning assistant <span class="badge subtle">Beta</span></h3>
-    <p class="small">Describe your event and we’ll suggest a checklist, rough timeline and supplier tips. Works even better if you’ve already started filling in your plan below.</p>
-    <div class="form-row">
-      <textarea id="ai-plan-input" rows="3" placeholder="e.g. Summer wedding near Cardiff for 80–100 guests, relaxed vibe, live band, budget around £18k"></textarea>
-    </div>
-    <div class="form-row plan-inline-fields">
-      <label class="small">
-        <input type="checkbox" id="ai-plan-use-current"> Include my current plan details
-      </label>
-      <button class="cta" id="ai-plan-run" type="button">Generate suggestions</button>
-    </div>
-    <div id="ai-plan-output" class="plan-ai-output small">
-      <p class="plan-list-empty">No AI suggestions yet. Describe your event and click “Generate suggestions”.</p>
-    </div>
-  </div>
-</section>
-
-
-
-<section class="section">
-  <div class="card">
-    <h3>Guest list</h3>
-    <p class="small">Keep track of who’s coming to your event.</p>
-    <div id="plan-guests" class="plan-list-block"></div>
-    <div class="form-row plan-inline-fields">
-      <input id="guest-name" type="text" placeholder="Guest name">
-      <input id="guest-side" type="text" placeholder="Role / side (e.g. Bride’s side)">
-      <input id="guest-notes" type="text" placeholder="Notes or dietary needs">
-      <button class="cta secondary" id="add-guest" type="button">Add guest</button>
-    </div>
-  </div>
-</section>
-
-<section class="section">
-  <div class="card">
-    <h3>Checklist</h3>
-    <p class="small">Track key planning tasks and tick them off as you go.</p>
-    <div id="plan-tasks" class="plan-list-block"></div>
-    <div class="form-row plan-inline-fields">
-      <input id="task-label" type="text" placeholder="New task, e.g. ‘Book photographer’">
-      <input id="task-due" type="text" placeholder="Due (optional)">
-      <button class="cta secondary" id="add-task" type="button">Add task</button>
-    </div>
-  </div>
-</section>
-
-<section class="section">
-  <div class="card">
-    <h3>Timeline / run sheet</h3>
-    <p class="small">Rough schedule for the day – useful for suppliers and your wedding party.</p>
-    <div id="plan-timeline" class="plan-list-block"></div>
-    <div class="form-row plan-inline-fields">
-      <input id="timeline-time" type="text" placeholder="Time, e.g. 14:30">
-      <input id="timeline-item" type="text" placeholder="What happens?">
-      <input id="timeline-owner" type="text" placeholder="Who’s responsible?">
-      <button class="cta secondary" id="add-timeline" type="button">Add item</button>
-    </div>
-  </div>
-</section>
-
-<section class="card"><h3>My notes</h3><textarea id="plan-notes" rows="5" placeholder="Your notes…"></textarea><div class="form-actions"><button class="cta" id="save-notes">Save notes</button><span id="notes-status" class="small"></span></div></section>
-<div class="section" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><div class="small">Ready to move forward?</div><div class="form-actions"><button class="cta" id="message-all">Message all</button><button class="cta secondary" id="export-csv">Export CSV</button> <button class="cta secondary" id="print-plan" type="button">Print plan</button></div></div>
-<div id="modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);align-items:center;justify-content:center;padding:16px"><div style="background:#fff;border-radius:12px;max-width:720px;width:100%;padding:16px"><h3>Copy emails & message</h3><div class="card" id="modal-emails" style="font-family:monospace;word-break:break-all">Loading…</div><label>Your message</label><textarea id="modal-message" rows="6" placeholder="Write your message…"></textarea><div class="form-actions" style="margin-top:10px"><button class="cta" id="open-mail">Open mail</button><button class="cta secondary" id="close-modal">Close</button></div></div></div>
-<script src="/assets/js/app.js"></script>
-<script>window.__EF_PAGE__='plan'</script>
-</div></main>
 <footer class="footer" role="contentinfo">
   <div class="container" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
     <div><strong>EventFlow</strong><br><span class="small">Event planning made simple.</span></div>
-    <div class="version">Version: v16.3.9</div>
+    <div class="version">Version: v17.0.0</div>
     <div class="small"><a href="/credits.html">Credits</a> · <a href="/contact.html">Contact</a> · <a href="/terms.html">Terms</a> · <a href="/privacy.html">Privacy</a></div>
   </div>
 </footer>
-</body></html>
+</body>
+</html>

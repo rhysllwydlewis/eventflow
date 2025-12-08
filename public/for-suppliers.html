@@ -6,6 +6,7 @@
   <title>For Suppliers — EventFlow</title>
   <meta name="description" content="Information for venues and event suppliers who want to list on EventFlow.">
   <link rel="stylesheet" href="/assets/css/styles.css">
+  <link rel="stylesheet" href="/assets/css/eventflow-17.0.0.css">
   <link rel="icon" href="/favicon.svg">
 </head>
 <body>
@@ -21,16 +22,16 @@
         <a href="/suppliers.html" class="nav-link nav-main">Suppliers</a>
         <a href="/auth.html" class="nav-link nav-main nav-main-login">Log in</a>
       </nav>
+      <button id="burger" class="nav-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false">
+        <span class="nav-toggle-bar"></span>
+        <span class="nav-toggle-bar"></span>
+        <span class="nav-toggle-bar"></span>
+      </button>
       <button id="theme-toggle" class="icon-button" type="button" aria-label="Toggle dark mode">
         <span class="theme-icon" aria-hidden="true">
           <span class="theme-icon-sun" aria-hidden="true">☀</span>
           <span class="theme-icon-moon" aria-hidden="true">🌙</span>
         </span>
-      </button>
-      <button id="burger" class="nav-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false">
-        <span class="nav-toggle-bar"></span>
-        <span class="nav-toggle-bar"></span>
-        <span class="nav-toggle-bar"></span>
       </button>
     </div>
   </div>
@@ -47,6 +48,15 @@
   </nav>
 </header>
 <script src="/assets/js/auth-nav.js" defer></script>
+<script>
+  (function () {
+    var burger = document.getElementById('burger');
+    if (!burger) return;
+    burger.addEventListener('click', function () {
+      document.body.classList.toggle('nav-open');
+    });
+  })();
+</script>
 
 <main>
   <section class="hero hero--subpage">
@@ -127,7 +137,7 @@
       <strong>EventFlow</strong><br>
       <span class="small">Event planning made simple.</span>
     </div>
-    <div class="version">Version: v16.3.9</div>
+    <div class="version">Version: v17.0.0</div>
     <div class="small">
       <a href="/credits.html">Credits</a> ·
       <a href="/contact.html">Contact</a> ·
