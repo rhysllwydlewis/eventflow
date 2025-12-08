@@ -1,4 +1,4 @@
-/* EventFlow 17.0.0 — header / nav / theme tidy-ups (site-wide) */
+/* EventFlow 17.0.0 — Header / nav / theme tidy-ups (site-wide) */
 
 /* 1) Desktop / shared header layout tweaks */
 .header .header-actions {
@@ -41,7 +41,7 @@
   line-height: 1;
 }
 
-/* Hide the tiny internal bars so we just see the clear ☰ icon */
+/* Hide any internal bars so we just see the clear ☰ icon */
 .nav-toggle-bar {
   display: none;
 }
