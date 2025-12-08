@@ -1,0 +1,18 @@
+/* EventFlow 17.0.0 — header / nav / theme tidy-ups */
+/* Drop this file next to styles.css and include it after styles.css in your HTML,
+   or paste the contents at the very end of /assets/css/styles.css. */
+
+/* 1) Mobile header: hide cramped inline nav, rely on burger + drawer */
+@media (max-width: 720px) {
+  /* Only hide the inline nav in the header row */
+  .header .nav-inline {
+    display: none;
+  }
+}
+
+/* 2) Theme toggle: show clear ☀ / 🌙 instead of a vague dot */
+.theme-icon::before,
+.theme-icon::after {
+  /* Disable the old layered circle animation so the emoji are visible */
+  content: none;
+}
