@@ -16,19 +16,18 @@
     if (!btn) return;
 
     // Initialise from saved preference or system preference
-try {
-  const stored = window.localStorage ? localStorage.getItem(THEME_KEY) : null;
-  if (stored === 'light' || stored === 'dark') {
-    // If the user has chosen a theme before, respect that
-    applyTheme(stored);
-  } else {
-    // Default for everyone: light mode
-    applyTheme('light');
-  }
-} catch (_) {
-  // Ignore storage errors
-}
-
+    try {
+      const stored = window.localStorage ? localStorage.getItem(THEME_KEY) : null;
+      if (stored === 'light' || stored === 'dark') {
+        // If the user has chosen a theme before, respect that
+        applyTheme(stored);
+      } else {
+        // Default for everyone: light mode
+        applyTheme('light');
+      }
+    } catch (_) {
+      // Ignore storage errors
+    }
 
     const syncAria = () => {
       const isDark = root.getAttribute('data-theme') === 'dark';
@@ -51,45 +50,54 @@ try {
 
   // --- Nav (burger + scroll behaviour) ---
   function initNavToggle() {
-    const burger = document.getElementById('burger');
     const navMenu = document.querySelector('.nav.nav-menu');
-    if (!burger || !navMenu) return;
+    if (!navMenu) return;
 
     const body = document.body;
 
-    const closeNav = () => {
-      body.classList.remove('nav-open');
-      burger.setAttribute('aria-expanded', 'false');
-    };
+    // Defer setup so any inline burger scripts run first.
+    setTimeout(() => {
+      const original = document.getElementById('burger');
+      if (!original) return;
 
-    const openNav = () => {
-      body.classList.add('nav-open');
-      burger.setAttribute('aria-expanded', 'true');
-    };
+      // Clone the burger to remove any previously-attached click handlers
+      const burger = original.cloneNode(true);
+      original.parentNode.replaceChild(burger, original);
 
-    burger.addEventListener('click', () => {
-      const isOpen = body.classList.contains('nav-open');
-      if (isOpen) {
-        closeNav();
-      } else {
-        openNav();
-      }
-    });
+      const closeNav = () => {
+        body.classList.remove('nav-open');
+        burger.setAttribute('aria-expanded', 'false');
+      };
 
-    // Close nav when a menu link is clicked (on mobile)
-    navMenu.addEventListener('click', (event) => {
-      const target = event.target;
-      if (target && target.tagName === 'A') {
-        closeNav();
-      }
-    });
+      const openNav = () => {
+        body.classList.add('nav-open');
+        burger.setAttribute('aria-expanded', 'true');
+      };
 
-    // Close nav if the viewport is resized up to desktop
-    window.addEventListener('resize', () => {
-      if (window.innerWidth > 720) {
-        closeNav();
-      }
-    });
+      burger.addEventListener('click', () => {
+        const isOpen = body.classList.contains('nav-open');
+        if (isOpen) {
+          closeNav();
+        } else {
+          openNav();
+        }
+      });
+
+      // Close nav when a menu link is clicked (on mobile)
+      navMenu.addEventListener('click', (event) => {
+        const target = event.target;
+        if (target && target.tagName === 'A') {
+          closeNav();
+        }
+      });
+
+      // Close nav if the viewport is resized up to desktop
+      window.addEventListener('resize', () => {
+        if (window.innerWidth > 720) {
+          closeNav();
+        }
+      });
+    }, 0);
   }
 
   // --- Header scroll hide / show ---
@@ -114,7 +122,7 @@ try {
     });
   }
 
-  // --- Auth-aware nav (existing behaviour, slightly tidied) ---
+  // --- Auth-aware nav (existing behaviour) ---
   async function me() {
     try {
       const r = await fetch('/api/auth/me');
