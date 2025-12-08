@@ -65,20 +65,35 @@
         <div class="collage" aria-hidden="true">
           <div class="frame">
             <span class="tag">Venues</span>
-            <img loading="lazy" src="/assets/images/collage-venue.svg" alt="">
+            <img
+              loading="lazy"
+              src="https://source.unsplash.com/featured/600x400/?wedding,venue"
+              alt="An event venue exterior"
+            >
           </div>
           <div class="frame">
             <span class="tag">Catering</span>
-            <img loading="lazy" src="/assets/images/collage-catering.svg" alt="">
+            <img
+              loading="lazy"
+              src="https://source.unsplash.com/featured/600x400/?wedding,catering"
+              alt="Plated event catering"
+            >
           </div>
           <div class="frame">
             <span class="tag">Entertainment</span>
-            <!-- FIXED: use a stock entertainment photo so it always loads -->
-            <img loading="lazy" src="https://source.unsplash.com/featured/800x600/?wedding,entertainment" alt="">
+            <img
+              loading="lazy"
+              src="https://source.unsplash.com/featured/600x400/?wedding,band"
+              alt="Live band performing at an event"
+            >
           </div>
           <div class="frame">
             <span class="tag">Photography</span>
-            <img loading="lazy" src="/assets/images/collage-photography.svg" alt="">
+            <img
+              loading="lazy"
+              src="https://source.unsplash.com/featured/600x400/?wedding,photography"
+              alt="Photographer taking pictures at a wedding"
+            >
           </div>
         </div>
       </div>
@@ -87,17 +102,30 @@
 
   <section class="section">
     <div class="container">
-      <div class="small" style="text-transform:uppercase;letter-spacing:.2em;color:#7E8794">Featured packages</div>
-      <div id="featured-packages" class="cards"><div class="card"><p class="small">Loading…</p></div></div>
+      <div class="small" style="text-transform:uppercase;letter-spacing:.2em;color:#7E8794">
+        Featured packages
+      </div>
+      <div id="featured-packages" class="cards">
+        <div class="card"><p class="small">Loading…</p></div>
+      </div>
     </div>
   </section>
 
   <section class="section">
     <div class="container">
       <div class="cards">
-        <div class="card"><h3>1 · Tell us about your event</h3><p class="small">Type, location and date help us surface relevant suppliers.</p></div>
-        <div class="card"><h3>2 · Compare suppliers</h3><p class="small">Browse venues, catering, entertainment and more — add to your plan with one click.</p></div>
-        <div class="card"><h3>3 · Save &amp; message</h3><p class="small">Create a free account to save your plan and start conversations with suppliers.</p></div>
+        <div class="card">
+          <h3>1 · Tell us about your event</h3>
+          <p class="small">Type, location and date help us surface relevant suppliers.</p>
+        </div>
+        <div class="card">
+          <h3>2 · Compare suppliers</h3>
+          <p class="small">Browse venues, catering, entertainment and more — add to your plan with one click.</p>
+        </div>
+        <div class="card">
+          <h3>3 · Save &amp; message</h3>
+          <p class="small">Create a free account to save your plan and start conversations with suppliers.</p>
+        </div>
       </div>
     </div>
   </section>
@@ -107,7 +135,12 @@
   <div class="container" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
     <div><strong>EventFlow</strong><br><span class="small">Event planning made simple.</span></div>
     <div class="version">Version: <span id="ef-version-label">loading…</span></div>
-    <div class="small"><a href="/credits.html">Credits</a> · <a href="/contact.html">Contact</a> · <a href="/terms.html">Terms</a> · <a href="/privacy.html">Privacy</a></div>
+    <div class="small">
+      <a href="/credits.html">Credits</a> ·
+      <a href="/contact.html">Contact</a> ·
+      <a href="/terms.html">Terms</a> ·
+      <a href="/privacy.html">Privacy</a>
+    </div>
   </div>
 </footer>
 
@@ -120,19 +153,15 @@
     var brandText = document.querySelector('.brand-text');
     if (!brandText) return;
 
-    // Ensure it can animate width
     brandText.style.display = 'inline-block';
     brandText.style.whiteSpace = 'nowrap';
     brandText.style.overflow = 'hidden';
 
-    // Capture the current width so the width transition works
     var initialWidth = brandText.offsetWidth;
     brandText.style.width = initialWidth + 'px';
 
-    // Smooth fade and width shrink
     brandText.style.transition = 'opacity 0.45s ease, width 0.45s ease, margin 0.45s ease';
 
-    // After 3 seconds, animate out (visually disappearing right-to-left)
     setTimeout(function () {
       brandText.style.opacity = '0';
       brandText.style.width = '0';
