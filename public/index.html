@@ -1,11 +1,32 @@
-<!DOCTYPE html><html lang="en-GB"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>EventFlow — Plan your event the simple way.</title>
-<link rel="stylesheet" href="/assets/css/styles.css">
-<link rel="stylesheet" href="/assets/css/eventflow-17.0.0.css">
-<meta name="description" content="Find suppliers, build your plan and keep everything in one place — beautifully simple on mobile and desktop.">
-<link rel="icon" href="/favicon.svg">
-</head><body>
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>EventFlow — Plan your event the simple way.</title>
+  <meta name="description" content="Find suppliers, build your plan and keep everything in one place — beautifully simple on mobile and desktop.">
+  <link rel="stylesheet" href="/assets/css/styles.css">
+  <link rel="stylesheet" href="/assets/css/eventflow-17.0.0.css">
+  <link rel="icon" href="/favicon.svg">
+  <style>
+    /* Home-only brand animation: full “EventFlow” at top, compact on scroll */
+    .header .brand-text {{
+      display: inline-block;
+      max-width: 160px;
+      opacity: 1;
+      transform: translateX(0);
+      white-space: nowrap;
+      overflow: hidden;
+      transition: max-width 0.25s ease, opacity 0.25s ease, transform 0.25s ease;
+    }}
+    .header.header--compact .brand-text {{
+      max-width: 0;
+      opacity: 0;
+      transform: translateX(-4px);
+    }}
+  </style>
+</head>
+<body>
 <header class="header" role="banner">
   <div class="container header-inner">
     <a class="brand" href="/" aria-label="EventFlow home">
@@ -14,11 +35,10 @@
     </a>
     <div class="header-actions">
       <nav class="nav nav-inline" aria-label="Quick navigation">
-        <a href="/start.html" class="nav-link nav-main">Plan an Event</a>
-        <a href="/suppliers.html" class="nav-link nav-main">Suppliers</a>
+        <a href="/start.html" class="nav-link nav-main">Plan</a>
+        <a href="/suppliers.html" class="nav-link nav-main">Supplier</a>
         <a href="/auth.html" class="nav-link nav-main nav-main-login">Log in</a>
       </nav>
-      <!-- Burger first, then theme toggle -->
       <button id="burger" class="nav-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false">
         <span class="nav-toggle-bar"></span>
         <span class="nav-toggle-bar"></span>
@@ -81,7 +101,7 @@
       <div class="cards">
         <div class="card"><h3>1 · Tell us about your event</h3><p class="small">Type, location and date help us surface relevant suppliers.</p></div>
         <div class="card"><h3>2 · Compare suppliers</h3><p class="small">Browse venues, catering, entertainment and more — add to your plan with one click.</p></div>
-        <div class="card"><h3>3 · Save & message</h3><p class="small">Create a free account to save your plan and start conversations with suppliers.</p></div>
+        <div class="card"><h3>3 · Save &amp; message</h3><p class="small">Create a free account to save your plan and start conversations with suppliers.</p></div>
       </div>
     </div>
   </section>
@@ -97,6 +117,7 @@
 
 <script src="/assets/js/app.js"></script>
 <script>
-  window.__EF_PAGE__='home';
+  window.__EF_PAGE__ = 'home';
 </script>
-</body></html>
+</body>
+</html>

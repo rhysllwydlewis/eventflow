@@ -16,11 +16,10 @@
     </a>
     <div class="header-actions">
       <nav class="nav nav-inline" aria-label="Quick navigation">
-        <a href="/start.html" class="nav-link nav-main">Plan an Event</a>
-        <a href="/suppliers.html" class="nav-link nav-main">Suppliers</a>
+        <a href="/start.html" class="nav-link nav-main">Plan</a>
+        <a href="/suppliers.html" class="nav-link nav-main">Supplier</a>
         <a href="/auth.html" class="nav-link nav-main nav-main-login">Log in</a>
       </nav>
-      <!-- Burger first, then theme toggle -->
       <button id="burger" class="nav-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false">
         <span class="nav-toggle-bar"></span>
         <span class="nav-toggle-bar"></span>
@@ -110,7 +109,7 @@
     </form>
 
     <script>
-      (function(){
+      (function(){{
         var form = document.getElementById('start-form');
         if (!form) return;
         var typeEl = document.getElementById('eventType');
@@ -121,7 +120,7 @@
         var budgetEl = document.getElementById('budget');
         var notesEl = document.getElementById('eventNotes');
 
-        form.addEventListener('submit', function(e){
+        form.addEventListener('submit', function(e){{
           e.preventDefault();
           var type = typeEl ? typeEl.value.trim() : '';
           var name = nameEl ? nameEl.value.trim() : '';
@@ -131,25 +130,23 @@
           if (isNaN(guests)) guests = null;
           var budget = budgetEl ? budgetEl.value : '';
           var styles = [];
-          try {
+          try {{
             var styleNodes = document.querySelectorAll('input[name="stylePref"]:checked');
-            styleNodes.forEach(function(n){ styles.push(n.value); });
-          } catch (_err) {}
+            styleNodes.forEach(function(n){{ styles.push(n.value); }});
+          }} catch (_err) {{}}
           var notes = notesEl ? notesEl.value.trim() : '';
 
-          // Build query string for suppliers page
           var params = new URLSearchParams();
           if (type) params.set('type', type);
           if (loc) params.set('location', loc);
 
-          if (!params.get('q')) {
+          if (!params.get('q')) {{
             var q = (type + ' ' + loc).trim();
             if (q) params.set('q', q);
-          }
+          }}
           if (date) params.set('date', date);
 
-          // Save to localStorage so other pages (like plan) can reuse it later
-          var payload = {
+          var payload = {{
             type: type,
             name: name,
             location: loc,
@@ -158,15 +155,15 @@
             budget: budget,
             styles: styles,
             notes: notes
-          };
-          try {
+          }};
+          try {{
             localStorage.setItem('eventflow_start', JSON.stringify(payload));
-          } catch (_err) {}
+          }} catch (_err) {{}} 
 
           var qs = params.toString();
           location.href = '/suppliers.html' + (qs ? ('?' + qs) : '');
-        });
-      })();
+        }});
+      }})();
     </script>
 
   </div>
