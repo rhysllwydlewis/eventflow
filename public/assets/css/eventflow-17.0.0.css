@@ -1,21 +1,40 @@
-/* EventFlow 17.0.0 — header / nav / theme tidy-ups (updated) */
+/* EventFlow 17.0.0 — header / nav / theme tidy-ups (site-wide) */
 
-/* 1) Mobile header: hide cramped inline nav, rely on burger + drawer */
+/* 1) Desktop / shared header layout tweaks */
+.header .header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Ensure a predictable order for inline nav, burger and theme toggle */
+.header .nav-inline {
+  order: 1;
+}
+
+#burger {
+  order: 2;
+}
+
+#theme-toggle {
+  order: 3;
+}
+
+/* 2) Mobile header: hide cramped inline nav, rely on burger + drawer */
 @media (max-width: 720px) {
-  /* Only hide the inline nav in the header row */
   .header .nav-inline {
     display: none;
   }
 }
 
-/* 2) Theme toggle: show clear ☀ / 🌙 instead of a vague dot */
+/* 3) Theme toggle: show clear ☀ / 🌙 instead of a vague dot */
 .theme-icon::before,
 .theme-icon::after {
   /* Disable the old layered circle animation so the emoji are visible */
   content: none;
 }
 
-/* 3) Burger button: make it look obviously like a menu */
+/* 4) Burger button: make it look obviously like a menu */
 .nav-toggle::before {
   content: '☰';
   font-size: 18px;
