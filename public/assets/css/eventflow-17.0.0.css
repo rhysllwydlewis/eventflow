@@ -20,12 +20,13 @@
   order: 3;
 }
 
-/* 2) Mobile header: hide cramped inline nav, rely on burger + drawer */
-@media (max-width: 720px) {
-  .header .nav-inline {
-    display: none;
-  }
-}
+/* 2) Mobile header
+   We now keep the inline nav visible on mobile too, because the labels are short
+   (“Plan”, “Suppliers”, “Log in”). This means the header layout is:
+   Logo – Plan – Suppliers – Log in – burger – theme toggle
+   on phones as well as desktop.
+   (No extra @media rule is needed here: the default .nav-inline styles from
+   styles.css already handle responsiveness.) */
 
 /* 3) Theme toggle: show clear ☀ / 🌙 instead of a vague dot */
 .theme-icon::before,
