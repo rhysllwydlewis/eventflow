@@ -48,6 +48,17 @@ function seed(options = {}) {
       
       // Only create demo users if not skipping
       if (!skipIfExists) {
+        const admin = {
+          id: uid('usr'),
+          name: 'Admin',
+          email: 'admin@eventflow.local',
+          role: 'admin',
+          passwordHash: bcrypt.hashSync('Admin123!', 10),
+          createdAt: now,
+          notify: true,
+          marketingOptIn: false,
+          verified: true,
+        };
         const supplier = {
           id: uid('usr'),
           name: 'Supplier Demo',
