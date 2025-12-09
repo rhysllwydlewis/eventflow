@@ -173,7 +173,7 @@
         var actions = '<div style="display:flex;gap:4px;flex-wrap:wrap;">';
         actions += '<button onclick="editUser(\'' + u.id + '\')">Edit</button>';
         
-        // Manual verification button for unverified users (only for non-owner accounts)
+        // Manual verification button for unverified users (not shown for owner account)
         if (!u.verified && !isOwner) {
           actions += '<button onclick="verifyUser(\'' + u.id + '\')">Verify Email</button>';
         }
@@ -985,7 +985,7 @@
                 price_display: document.getElementById('edit-sup-price').value,
                 website: document.getElementById('edit-sup-website').value,
                 email: document.getElementById('edit-sup-email').value,
-                maxGuests: parseInt(document.getElementById('edit-sup-maxGuests').value, 10) || 0,
+                maxGuests: Math.max(0, parseInt(document.getElementById('edit-sup-maxGuests').value, 10) || 0),
                 description_short: document.getElementById('edit-sup-desc-short').value,
                 description_long: document.getElementById('edit-sup-desc-long').value
               };
