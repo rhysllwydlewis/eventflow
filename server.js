@@ -2413,6 +2413,145 @@ app.get('/api/photos/pending', authRequired, roleRequired('admin'), async (req, 
   }
 });
 
+/**
+ * PUT /api/photos/:id
+ * Edit photo metadata (caption, alt text, tags)
+ */
+app.put('/api/photos/:id', authRequired, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { caption, altText, tags, isFeatured, watermark } = req.body;
+    
+    const metadata = await photoUpload.updatePhotoMetadata(id, {
+      caption,
+      altText,
+      tags,
+      isFeatured,
+      watermark
+    });
+    
+    res.json({
+      success: true,
+      metadata,
+      message: 'Photo metadata updated successfully'
+    });
+  } catch (error) {
+    console.error('Update photo metadata error:', error);
+    res.status(500).json({ error: 'Failed to update photo metadata', details: error.message });
+  }
+});
+
+/**
+ * POST /api/photos/:id/replace
+ * Replace photo while keeping metadata
+ */
+app.post('/api/photos/:id/replace', authRequired, photoUpload.upload.single('photo'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { metadata } = req.body;
+    
+    if (!req.file) {
+      return res.status(400).json({ error: 'No photo file provided' });
+    }
+    
+    const result = await photoUpload.replacePhoto(id, req.file.buffer, JSON.parse(metadata || '{}'));
+    
+    res.json({
+      success: true,
+      photo: result,
+      message: 'Photo replaced successfully'
+    });
+  } catch (error) {
+    console.error('Replace photo error:', error);
+    res.status(500).json({ error: 'Failed to replace photo', details: error.message });
+  }
+});
+
+/**
+ * POST /api/photos/bulk-edit
+ * Bulk update multiple photos
+ */
+app.post('/api/photos/bulk-edit', authRequired, async (req, res) => {
+  try {
+    const { photos } = req.body;
+    
+    if (!Array.isArray(photos)) {
+      return res.status(400).json({ error: 'Photos must be an array' });
+    }
+    
+    const results = await Promise.all(
+      photos.map(photo => 
+        photoUpload.updatePhotoMetadata(photo.id, photo.metadata)
+      )
+    );
+    
+    res.json({
+      success: true,
+      updated: results.length,
+      photos: results,
+      message: `${results.length} photo(s) updated successfully`
+    });
+  } catch (error) {
+    console.error('Bulk edit photos error:', error);
+    res.status(500).json({ error: 'Failed to bulk edit photos', details: error.message });
+  }
+});
+
+/**
+ * POST /api/photos/:id/filters
+ * Apply filters to photo (brightness, contrast, saturation)
+ */
+app.post('/api/photos/:id/filters', authRequired, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { imageUrl, brightness, contrast, saturation } = req.body;
+    
+    if (!imageUrl) {
+      return res.status(400).json({ error: 'Image URL is required' });
+    }
+    
+    const result = await photoUpload.applyFilters(imageUrl, {
+      brightness: parseFloat(brightness) || 1,
+      contrast: parseFloat(contrast) || 1,
+      saturation: parseFloat(saturation) || 1
+    });
+    
+    res.json({
+      success: true,
+      image: result,
+      message: 'Filters applied successfully'
+    });
+  } catch (error) {
+    console.error('Apply filters error:', error);
+    res.status(500).json({ error: 'Failed to apply filters', details: error.message });
+  }
+});
+
+/**
+ * POST /api/photos/reorder
+ * Update photo order in gallery
+ */
+app.post('/api/photos/reorder', authRequired, async (req, res) => {
+  try {
+    const { photoOrder } = req.body;
+    
+    if (!Array.isArray(photoOrder)) {
+      return res.status(400).json({ error: 'Photo order must be an array' });
+    }
+    
+    const result = await photoUpload.updatePhotoOrder(photoOrder);
+    
+    res.json({
+      success: true,
+      order: result,
+      message: 'Photo order updated successfully'
+    });
+  } catch (error) {
+    console.error('Reorder photos error:', error);
+    res.status(500).json({ error: 'Failed to reorder photos', details: error.message });
+  }
+});
+
 // ---------- Content Reporting System ----------
 const reportsRoutes = require('./routes/reports');
 app.use('/api', reportsRoutes);
