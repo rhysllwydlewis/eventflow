@@ -48,7 +48,7 @@ class OnboardingTour {
       <div class="onboarding-tooltip">
         <div class="onboarding-tooltip-header">
           <div class="onboarding-step-indicator">
-            <span class="current-step">1</span> / <span class="total-steps">${this.options.steps.length}</span>
+            <span class="current-step">1</span>/<span class="total-steps">${this.options.steps.length}</span>
           </div>
           <button class="onboarding-skip" aria-label="Skip tour">Skip Tour</button>
         </div>
@@ -298,6 +298,7 @@ class OnboardingTour {
         background: rgba(0, 0, 0, 0.6);
         backdrop-filter: blur(2px);
         animation: fadeIn 0.3s ease-out;
+        pointer-events: none;
       }
 
       .onboarding-overlay.fade-out {
@@ -322,11 +323,14 @@ class OnboardingTour {
         transition: all 0.3s ease-out;
         pointer-events: none;
         z-index: 10001;
+        background: transparent;
       }
 
       .onboarding-highlighted {
         position: relative;
         z-index: 10002 !important;
+        filter: none !important;
+        opacity: 1 !important;
       }
 
       .onboarding-tooltip {
@@ -334,10 +338,11 @@ class OnboardingTour {
         background: white;
         border-radius: 12px;
         box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
-        max-width: 400px;
-        width: 90%;
+        max-width: 320px;
+        width: 85%;
         z-index: 10003;
         animation: slideInUp 0.3s ease-out;
+        pointer-events: auto;
       }
 
       html[data-theme="dark"] .onboarding-tooltip {
@@ -359,7 +364,7 @@ class OnboardingTour {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 16px 20px;
+        padding: 12px 16px;
         border-bottom: 1px solid #E5E7EB;
       }
 
@@ -395,12 +400,12 @@ class OnboardingTour {
       }
 
       .onboarding-tooltip-content {
-        padding: 20px;
+        padding: 16px;
       }
 
       .onboarding-title {
-        margin: 0 0 12px 0;
-        font-size: 1.25rem;
+        margin: 0 0 8px 0;
+        font-size: 1.125rem;
         color: var(--ink-dark, #0F172A);
       }
 
@@ -410,9 +415,9 @@ class OnboardingTour {
 
       .onboarding-description {
         margin: 0;
-        font-size: 0.9375rem;
+        font-size: 0.875rem;
         color: #4B5563;
-        line-height: 1.6;
+        line-height: 1.5;
       }
 
       html[data-theme="dark"] .onboarding-description {
@@ -420,7 +425,7 @@ class OnboardingTour {
       }
 
       .onboarding-tooltip-footer {
-        padding: 16px 20px;
+        padding: 12px 16px;
         border-top: 1px solid #E5E7EB;
         display: flex;
         justify-content: space-between;

@@ -33,12 +33,6 @@
         <span class="nav-toggle-bar"></span>
         <span class="nav-toggle-bar"></span>
       </button>
-      <button id="theme-toggle" class="icon-button" type="button" aria-label="Toggle dark mode">
-        <span class="theme-icon" aria-hidden="true">
-          <span class="theme-icon-sun" aria-hidden="true">☀</span>
-          <span class="theme-icon-moon" aria-hidden="true">🌙</span>
-        </span>
-      </button>
     </div>
   </div>
   <nav class="nav nav-menu" aria-label="Primary navigation">
@@ -60,6 +54,7 @@
 <script src="/assets/js/animations.js" defer></script>
 <script src="/assets/js/notifications.js" defer></script>
 <script src="/assets/js/search.js" defer></script>
+<script src="/assets/js/websocket-client.js" defer></script>
 
 <main class="section">
   <div class="container">
@@ -177,7 +172,11 @@
 <footer class="footer">
   <div class="container">
     <p class="small">
-      EventFlow &copy; 2025. <a href="/privacy.html">Privacy</a> | <a href="/terms.html">Terms</a>
+      EventFlow &copy; 2025. <a href="/privacy.html">Privacy</a> | <a href="/terms.html">Terms</a> ·
+      <button id="theme-toggle" class="footer-theme-btn" type="button" aria-label="Toggle dark mode">
+        <span class="theme-icon-sun" aria-hidden="true">☀</span>
+        <span class="theme-icon-moon" aria-hidden="true">🌙</span>
+      </button>
     </p>
   </div>
 </footer>
