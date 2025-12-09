@@ -188,6 +188,7 @@
 
 <script src="/assets/js/app.js"></script>
 <script src="/assets/js/websocket-client.js"></script>
+<script src="/assets/js/components/onboarding-tour.js"></script>
 <script>
   window.__EF_PAGE__ = 'home';
 
@@ -215,6 +216,53 @@
           }
         });
       }
+    }
+
+    // Initialize onboarding tour for first-time visitors
+    if (typeof OnboardingTour !== 'undefined') {
+      const tour = new OnboardingTour({
+        storageKey: 'ef_homepage_tour_completed',
+        autoStart: true,
+        steps: [
+          {
+            title: 'Welcome to EventFlow!',
+            description: 'Let\'s take a quick tour to help you get started with planning your perfect event.',
+            position: 'center'
+          },
+          {
+            title: 'Find Suppliers',
+            description: 'Search and discover verified suppliers for venues, catering, photography, and more.',
+            element: '.nav-link[href="/suppliers.html"]',
+            position: 'bottom'
+          },
+          {
+            title: 'Plan Your Event',
+            description: 'Create your event plan, add items to your checklist, and track your progress.',
+            element: '.nav-link[href="/start.html"]',
+            position: 'bottom'
+          },
+          {
+            title: 'Quick Search',
+            description: 'Press Cmd+K (or Ctrl+K) anytime to quickly search for suppliers across the platform.',
+            element: '.nav-link[href="/suppliers.html"]',
+            position: 'bottom'
+          },
+          {
+            title: 'Track Your Budget',
+            description: 'Manage your event budget, track expenses, and visualize spending by category.',
+            element: '.cards .card:first-child',
+            position: 'top'
+          },
+          {
+            title: 'You\'re All Set!',
+            description: 'You\'re ready to start planning your event. Sign in to save your progress and connect with suppliers.',
+            position: 'center'
+          }
+        ],
+        onComplete: () => {
+          console.log('Onboarding tour completed');
+        }
+      });
     }
 
     // Animate stat counters when they come into view (only if Counter and IntersectionObserver are available)
