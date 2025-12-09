@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Photo Moderation — EventFlow Admin</title>
+  <link rel="stylesheet" href="/assets/css/styles.css">
+  <link rel="stylesheet" href="/assets/css/eventflow-17.0.0.css">
+  <style>
+    .photo-queue {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1.5rem;
+      margin-top: 1.5rem;
+    }
+    
+    .photo-queue__item {
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .photo-queue__item:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    }
+    
+    .photo-queue__image {
+      width: 100%;
+      aspect-ratio: 1;
+      object-fit: cover;
+      cursor: pointer;
+    }
+    
+    .photo-queue__details {
+      padding: 1rem;
+    }
+    
+    .photo-queue__meta {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+      flex-wrap: wrap;
+    }
+    
+    .photo-queue__badge {
+      font-size: 0.75rem;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      background: #e0e0e0;
+      color: #333;
+    }
+    
+    .photo-queue__badge--pending {
+      background: #fff3cd;
+      color: #856404;
+    }
+    
+    .photo-queue__supplier {
+      font-size: 0.9rem;
+      color: #666;
+      margin-bottom: 0.5rem;
+    }
+    
+    .photo-queue__supplier a {
+      color: #667eea;
+      text-decoration: none;
+    }
+    
+    .photo-queue__supplier a:hover {
+      text-decoration: underline;
+    }
+    
+    .photo-queue__actions {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+    }
+    
+    .photo-queue__btn {
+      flex: 1;
+      padding: 0.5rem;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .photo-queue__btn--approve {
+      background: #4caf50;
+      color: white;
+    }
+    
+    .photo-queue__btn--approve:hover {
+      background: #45a049;
+    }
+    
+    .photo-queue__btn--reject {
+      background: #f44336;
+      color: white;
+    }
+    
+    .photo-queue__btn--reject:hover {
+      background: #da190b;
+    }
+    
+    .photo-queue__empty {
+      text-align: center;
+      padding: 3rem;
+      color: #999;
+    }
+    
+    .photo-queue__empty-icon {
+      font-size: 4rem;
+      margin-bottom: 1rem;
+    }
+    
+    .batch-actions {
+      position: sticky;
+      top: 0;
+      background: white;
+      padding: 1rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      margin-bottom: 1rem;
+      z-index: 100;
+      display: none;
+    }
+    
+    .batch-actions.active {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+    
+    .batch-actions__count {
+      font-weight: 600;
+      color: #667eea;
+    }
+    
+    .batch-actions__buttons {
+      display: flex;
+      gap: 0.5rem;
+    }
+    
+    @media (max-width: 768px) {
+      .photo-queue {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+<header class="header" role="banner">
+  <div class="container header-inner">
+    <a class="brand" href="/" aria-label="EventFlow home">
+      <span class="logo" aria-hidden="true"></span>
+      <span class="brand-text">EventFlow Admin</span>
+    </a>
+    <div class="header-actions">
+      <nav class="nav nav-inline" aria-label="Quick navigation">
+        <a href="/admin.html" class="nav-link nav-main">Dashboard</a>
+        <a href="/admin-users.html" class="nav-link nav-main">Users</a>
+        <a href="/admin-photos.html" class="nav-link nav-main">Photos</a>
+      </nav>
+      <button id="burger" class="nav-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false">
+        <span class="nav-toggle-bar"></span>
+        <span class="nav-toggle-bar"></span>
+        <span class="nav-toggle-bar"></span>
+      </button>
+    </div>
+  </div>
+  <nav class="nav nav-menu" aria-label="Primary navigation">
+    <a href="/admin.html">Dashboard</a>
+    <a href="/admin-users.html">Users</a>
+    <a href="/admin-photos.html">Photos</a>
+    <a href="/suppliers.html">Suppliers</a>
+    <a href="#" id="nav-signout">Sign out</a>
+  </nav>
+</header>
+<script src="/assets/js/auth-nav.js" defer></script>
+
+<main class="section">
+  <div class="container">
+    <h1>Photo Moderation Queue</h1>
+    <p class="small">Review and approve photos uploaded by suppliers</p>
+    
+    <div class="card" style="margin-top: 1rem;">
+      <div class="form-row" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+        <div>
+          <label>Filter by status</label>
+          <select id="filterStatus">
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+            <option value="all">All</option>
+          </select>
+        </div>
+        <div>
+          <label>Search supplier</label>
+          <input id="searchSupplier" placeholder="Search by supplier name...">
+        </div>
+      </div>
+    </div>
+    
+    <div id="batchActions" class="batch-actions">
+      <div class="batch-actions__count">
+        <span id="selectedCount">0</span> photo(s) selected
+      </div>
+      <div class="batch-actions__buttons">
+        <button class="cta" id="batchApprove">Approve Selected</button>
+        <button class="cta secondary" id="batchReject">Reject Selected</button>
+        <button class="cta secondary" id="clearSelection">Clear</button>
+      </div>
+    </div>
+    
+    <div id="photoQueue" class="photo-queue">
+      <div class="card"><p>Loading photos...</p></div>
+    </div>
+  </div>
+</main>
+
+<footer class="footer" role="contentinfo">
+  <div class="container" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+    <div><strong>EventFlow</strong><br><span class="small">Event planning made simple.</span></div>
+    <div class="version">Version: v16.3.9</div>
+    <div class="small"><a href="/credits.html">Credits</a> · <a href="/contact.html">Contact</a> · <a href="/terms.html">Terms</a> · <a href="/privacy.html">Privacy</a></div>
+  </div>
+</footer>
+
+<script src="/assets/js/app.js"></script>
+<script>
+(async function() {
+  // Check admin authentication
+  try {
+    const response = await fetch('/api/auth/me');
+    const user = await response.json();
+    if (!user || user.role !== 'admin') {
+      window.location.href = '/auth.html';
+      return;
+    }
+  } catch (err) {
+    window.location.href = '/auth.html';
+    return;
+  }
+  
+  let photos = [];
+  let selectedPhotos = new Set();
+  
+  const queueElement = document.getElementById('photoQueue');
+  const filterStatus = document.getElementById('filterStatus');
+  const searchSupplier = document.getElementById('searchSupplier');
+  const batchActions = document.getElementById('batchActions');
+  const selectedCount = document.getElementById('selectedCount');
+  const batchApprove = document.getElementById('batchApprove');
+  const batchReject = document.getElementById('batchReject');
+  const clearSelection = document.getElementById('clearSelection');
+  
+  async function loadPhotos() {
+    try {
+      const response = await fetch('/api/admin/photos/pending');
+      if (response.ok) {
+        const data = await response.json();
+        photos = data.photos || [];
+        renderPhotos();
+      } else {
+        queueElement.innerHTML = '<div class="card"><p class="small">Failed to load photos. Please try again.</p></div>';
+      }
+    } catch (err) {
+      console.error('Error loading photos:', err);
+      queueElement.innerHTML = '<div class="card"><p class="small">Failed to load photos. Please try again.</p></div>';
+    }
+  }
+  
+  function renderPhotos() {
+    const statusFilter = filterStatus.value;
+    const searchTerm = searchSupplier.value.toLowerCase().trim();
+    
+    let filtered = photos;
+    
+    // Filter by status
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(p => {
+        if (statusFilter === 'pending') return !p.approved && !p.rejected;
+        if (statusFilter === 'approved') return p.approved === true;
+        if (statusFilter === 'rejected') return p.rejected === true;
+        return true;
+      });
+    }
+    
+    // Filter by search
+    if (searchTerm) {
+      filtered = filtered.filter(p => 
+        (p.supplierName || '').toLowerCase().includes(searchTerm)
+      );
+    }
+    
+    if (filtered.length === 0) {
+      queueElement.innerHTML = `
+        <div class="photo-queue__empty">
+          <div class="photo-queue__empty-icon">📷</div>
+          <div>No photos found</div>
+        </div>
+      `;
+      return;
+    }
+    
+    queueElement.innerHTML = filtered.map(photo => `
+      <div class="photo-queue__item" data-photo-id="${photo.id}">
+        <input type="checkbox" class="photo-select" data-photo-id="${photo.id}" style="position: absolute; top: 1rem; left: 1rem; width: 24px; height: 24px; cursor: pointer; z-index: 10;">
+        <img class="photo-queue__image" src="${photo.url || photo.thumbnail || ''}" alt="Photo" loading="lazy">
+        <div class="photo-queue__details">
+          <div class="photo-queue__meta">
+            <span class="photo-queue__badge photo-queue__badge--pending">
+              ${photo.approved ? 'Approved' : photo.rejected ? 'Rejected' : 'Pending'}
+            </span>
+            ${photo.size ? `<span class="photo-queue__badge">${formatFileSize(photo.size)}</span>` : ''}
+          </div>
+          <div class="photo-queue__supplier">
+            Supplier: <a href="/supplier.html?id=${photo.supplierId}">${photo.supplierName || 'Unknown'}</a>
+          </div>
+          ${photo.caption ? `<div class="small" style="margin-bottom: 0.5rem;">${photo.caption}</div>` : ''}
+          <div class="small" style="color: #999;">Uploaded: ${formatDate(photo.uploadedAt)}</div>
+          <div class="photo-queue__actions">
+            <button class="photo-queue__btn photo-queue__btn--approve" onclick="approvePhoto('${photo.id}')">
+              ✓ Approve
+            </button>
+            <button class="photo-queue__btn photo-queue__btn--reject" onclick="rejectPhoto('${photo.id}')">
+              × Reject
+            </button>
+          </div>
+        </div>
+      </div>
+    `).join('');
+    
+    // Attach checkbox event listeners
+    document.querySelectorAll('.photo-select').forEach(checkbox => {
+      checkbox.addEventListener('change', updateSelection);
+    });
+  }
+  
+  function updateSelection() {
+    selectedPhotos.clear();
+    document.querySelectorAll('.photo-select:checked').forEach(checkbox => {
+      selectedPhotos.add(checkbox.dataset.photoId);
+    });
+    
+    selectedCount.textContent = selectedPhotos.size;
+    
+    if (selectedPhotos.size > 0) {
+      batchActions.classList.add('active');
+    } else {
+      batchActions.classList.remove('active');
+    }
+  }
+  
+  window.approvePhoto = async function(photoId) {
+    try {
+      const response = await fetch(`/api/admin/photos/${photoId}/approve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ approved: true })
+      });
+      
+      if (response.ok) {
+        await loadPhotos();
+      } else {
+        alert('Failed to approve photo');
+      }
+    } catch (err) {
+      console.error('Error approving photo:', err);
+      alert('Failed to approve photo');
+    }
+  };
+  
+  window.rejectPhoto = async function(photoId) {
+    if (!confirm('Are you sure you want to reject this photo?')) return;
+    
+    try {
+      const response = await fetch(`/api/admin/photos/${photoId}/approve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ approved: false })
+      });
+      
+      if (response.ok) {
+        await loadPhotos();
+      } else {
+        alert('Failed to reject photo');
+      }
+    } catch (err) {
+      console.error('Error rejecting photo:', err);
+      alert('Failed to reject photo');
+    }
+  };
+  
+  batchApprove.addEventListener('click', async () => {
+    if (selectedPhotos.size === 0) return;
+    
+    if (!confirm(`Approve ${selectedPhotos.size} photo(s)?`)) return;
+    
+    try {
+      const promises = Array.from(selectedPhotos).map(id =>
+        fetch(`/api/admin/photos/${id}/approve`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ approved: true })
+        })
+      );
+      
+      await Promise.all(promises);
+      selectedPhotos.clear();
+      await loadPhotos();
+    } catch (err) {
+      console.error('Error batch approving:', err);
+      alert('Failed to approve some photos');
+    }
+  });
+  
+  batchReject.addEventListener('click', async () => {
+    if (selectedPhotos.size === 0) return;
+    
+    if (!confirm(`Reject ${selectedPhotos.size} photo(s)?`)) return;
+    
+    try {
+      const promises = Array.from(selectedPhotos).map(id =>
+        fetch(`/api/admin/photos/${id}/approve`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ approved: false })
+        })
+      );
+      
+      await Promise.all(promises);
+      selectedPhotos.clear();
+      await loadPhotos();
+    } catch (err) {
+      console.error('Error batch rejecting:', err);
+      alert('Failed to reject some photos');
+    }
+  });
+  
+  clearSelection.addEventListener('click', () => {
+    document.querySelectorAll('.photo-select:checked').forEach(cb => cb.checked = false);
+    updateSelection();
+  });
+  
+  filterStatus.addEventListener('change', renderPhotos);
+  searchSupplier.addEventListener('input', renderPhotos);
+  
+  function formatFileSize(bytes) {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+  }
+  
+  function formatDate(timestamp) {
+    if (!timestamp) return 'Unknown';
+    const date = new Date(timestamp);
+    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+  }
+  
+  // Load photos on page load
+  await loadPhotos();
+})();
+</script>
+</body>
+</html>
