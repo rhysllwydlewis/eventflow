@@ -111,6 +111,20 @@ const authLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false
 });
+const strictAuthLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: 'Too many requests. Please try again later.'
+});
+const passwordResetLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: 'Too many password reset attempts. Please try again later.'
+});
 const writeLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
   max: 80,
@@ -171,6 +185,28 @@ if (EMAIL_ENABLED && process.env.SMTP_HOST && !AWS_SES_ENABLED) {
       ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
       : undefined
   });
+}
+
+// Validate production environment
+if (process.env.NODE_ENV === 'production') {
+  const required = {
+    BASE_URL: process.env.BASE_URL,
+    FROM_EMAIL: process.env.FROM_EMAIL,
+  };
+  
+  const missing = Object.entries(required)
+    .filter(([_, value]) => !value)
+    .map(([key]) => key);
+  
+  if (missing.length > 0) {
+    console.error(`Production error: Missing required environment variables: ${missing.join(', ')}`);
+    console.error('Please set these in your .env file before deploying.');
+    process.exit(1);
+  }
+  
+  if (!AWS_SES_ENABLED && !transporter) {
+    console.warn('Warning: No email service configured. Set up AWS SES or SMTP for email delivery.');
+  }
 }
 
 // Always save outgoing email to /outbox in dev
@@ -354,7 +390,7 @@ function passwordOk(pw = '') {
 }
 
 // ---------- AUTH ----------
-app.post('/api/auth/register', authLimiter, (req, res) => {
+app.post('/api/auth/register', strictAuthLimiter, async (req, res) => {
   const { name, email, password, role } = req.body || {};
   if (!name || !email || !password) return res.status(400).json({ error: 'Missing fields' });
   if (!validator.isEmail(String(email))) return res.status(400).json({ error: 'Invalid email' });
@@ -376,6 +412,7 @@ app.post('/api/auth/register', authLimiter, (req, res) => {
     marketingOptIn: !!(req.body && req.body.marketingOptIn),
     verified: false,
     verificationToken: uid('verify'),
+    verificationTokenExpiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
     createdAt: new Date().toISOString()
   };
   users.push(user);
@@ -384,44 +421,34 @@ app.post('/api/auth/register', authLimiter, (req, res) => {
   // Send verification email (dev mode writes .eml files to /outbox)
   try {
     const baseUrl = process.env.BASE_URL || `http://localhost:${PORT}`;
-    const verifyUrl = `${baseUrl}/verify.html?token=${encodeURIComponent(user.verificationToken)}`;
-    sendMail({
+    const verificationLink = `${baseUrl}/verify.html?token=${encodeURIComponent(user.verificationToken)}`;
+    await sendMail({
       to: user.email,
       subject: 'Confirm your EventFlow account',
-      text: `Hi ${user.name || ''},
-
-Please confirm your EventFlow account by visiting:
-
-${verifyUrl}
-
-If you did not create this account, you can ignore this email.`,
+      template: 'verification',
+      templateData: {
+        name: user.name || 'there',
+        verificationLink: verificationLink,
+        email: user.email
+      }
     });
   } catch (e) {
     console.error('Failed to send verification email', e);
-  }
-
-  // Update last login timestamp (non-blocking)
-  try {
+    
+    // Rollback user creation
     const allUsers = read('users');
-    const idx = allUsers.findIndex(u => u.id === user.id);
-    if (idx !== -1) {
-      allUsers[idx].lastLoginAt = new Date().toISOString();
-      write('users', allUsers);
-    }
-  } catch (e) {
-    console.error('Failed to update lastLoginAt', e);
+    const filteredUsers = allUsers.filter(u => u.id !== user.id);
+    write('users', filteredUsers);
+    
+    return res.status(500).json({ 
+      error: 'Failed to send verification email. Please try again or contact support.' 
+    });
   }
-
-  const token = jwt.sign(
-    { id: user.id, email: user.email, role: user.role },
-    JWT_SECRET,
-    { expiresIn: '7d' }
-  );
-  setAuthCookie(res, token);
 
   res.json({
     ok: true,
-    user: { id: user.id, name: user.name, email: user.email, role: user.role }
+    message: 'Account created successfully. Please check your email to verify your account.',
+    email: user.email
   });
 });
 
@@ -465,7 +492,7 @@ app.post('/api/auth/login', authLimiter, (req, res) => {
   });
 });
 
-app.post('/api/auth/forgot', authLimiter, async (req, res) => {
+app.post('/api/auth/forgot', passwordResetLimiter, async (req, res) => {
   const { email } = req.body || {};
   if (!email) return res.status(400).json({ error: 'Missing email' });
 
@@ -492,12 +519,19 @@ app.post('/api/auth/forgot', authLimiter, async (req, res) => {
   (async () => {
     try {
       if (user.email) {
-        await sendMail(
-          user.email,
-          'Reset your EventFlow password',
-          'A password reset was requested for this address. ' +
-          'For this demo build, your reset token is: ' + token
-        );
+        const baseUrl = process.env.BASE_URL || `http://localhost:${PORT}`;
+        const resetLink = `${baseUrl}/reset-password.html?token=${token}`;
+        await sendMail({
+          to: user.email,
+          subject: 'Reset your EventFlow password',
+          template: 'password-reset',
+          templateData: {
+            name: user.name || 'there',
+            resetToken: token,
+            resetLink: resetLink,
+            expiresIn: '1 hour'
+          }
+        });
       }
     } catch (err) {
       console.error('Failed to send reset email', err);
@@ -513,8 +547,18 @@ app.get('/api/auth/verify', (req, res) => {
   const users = read('users');
   const idx = users.findIndex(u => u.verificationToken === token);
   if (idx === -1) return res.status(400).json({ error: 'Invalid or expired token' });
+  
+  // Check if token has expired
+  if (users[idx].verificationTokenExpiresAt && new Date(users[idx].verificationTokenExpiresAt) < new Date()) {
+    return res.status(400).json({ 
+      error: 'Verification link has expired. Please request a new one.',
+      expired: true 
+    });
+  }
+  
   users[idx].verified = true;
   delete users[idx].verificationToken;
+  delete users[idx].verificationTokenExpiresAt;
   write('users', users);
   
   // Send welcome email after successful verification
@@ -533,6 +577,53 @@ app.get('/api/auth/verify', (req, res) => {
   });
   
   res.json({ ok: true });
+});
+
+app.post('/api/auth/resend-verification', authLimiter, async (req, res) => {
+  const { email } = req.body || {};
+  if (!email) return res.status(400).json({ error: 'Missing email' });
+  
+  const users = read('users');
+  const idx = users.findIndex(u => u.email.toLowerCase() === String(email).toLowerCase());
+  
+  if (idx === -1) {
+    return res.json({ ok: true }); // Don't leak which emails exist
+  }
+  
+  const user = users[idx];
+  
+  if (user.verified) {
+    return res.status(400).json({ error: 'Email already verified' });
+  }
+  
+  // Generate new token
+  const newToken = uid('verify');
+  users[idx].verificationToken = newToken;
+  users[idx].verificationTokenExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+  write('users', users);
+  
+  try {
+    const baseUrl = process.env.BASE_URL || `http://localhost:${PORT}`;
+    const verificationLink = `${baseUrl}/verify.html?token=${encodeURIComponent(newToken)}`;
+    
+    await sendMail({
+      to: user.email,
+      subject: 'Confirm your EventFlow account',
+      template: 'verification',
+      templateData: {
+        name: user.name || 'there',
+        verificationLink: verificationLink,
+        email: user.email
+      }
+    });
+    
+    res.json({ ok: true });
+  } catch (e) {
+    console.error('Failed to resend verification email', e);
+    return res.status(500).json({ 
+      error: 'Failed to send verification email. Please try again later.' 
+    });
+  }
 });
 
 // CSRF token endpoint - provides token for frontend use
@@ -2580,12 +2671,30 @@ app.get('/api/admin/audit-logs', authRequired, roleRequired('admin'), (req, res)
 });
 
 // Basic API healthcheck
-app.get('/api/health', (_req, res) => {
-  res.json({
-    ok: true,
+app.get('/api/health', async (_req, res) => {
+  const checks = {
+    server: 'online',
     version: APP_VERSION,
-    status: 'online',
-    time: new Date().toISOString()
+    time: new Date().toISOString(),
+    email: EMAIL_ENABLED ? (AWS_SES_ENABLED ? 'aws-ses' : (transporter ? 'smtp' : 'disabled')) : 'disabled',
+    environment: process.env.NODE_ENV || 'development'
+  };
+  
+  if (AWS_SES_ENABLED && sesClient) {
+    try {
+      await sesClient.getSendQuota().promise();
+      checks.emailStatus = 'connected';
+    } catch (e) {
+      checks.emailStatus = 'error';
+      checks.emailError = e.message;
+    }
+  }
+  
+  const allHealthy = checks.emailStatus !== 'error';
+  
+  res.status(allHealthy ? 200 : 503).json({
+    ok: allHealthy,
+    ...checks
   });
 });
 

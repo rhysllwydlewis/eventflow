@@ -1,35 +1,61 @@
 [
   {
-    "id": "usr_6apqxxnuz3vufi",
+    "id": "usr_ka5a9xcpz58w2u",
     "name": "Admin",
     "email": "admin@eventflow.local",
     "role": "admin",
-    "passwordHash": "$2a$10$8.fQYB2YeR6Q8UBhk0JQz.ePx9pB9czhOfuNRnmOL.gGvRPjomq5a",
-    "createdAt": "2025-12-09T21:42:12.942Z",
+    "passwordHash": "$2a$10$4Pv6MAU2VDMCAHeXKXA/Ceqony/KUJtiEimsnrUC3g.HZUoAGrPHe",
+    "createdAt": "2025-12-09T22:20:21.222Z",
     "notify": true,
     "marketingOptIn": false,
     "verified": true
   },
   {
-    "id": "usr_cp7s9j3sz3vui0",
+    "id": "usr_1kt6ev4nz58w5e",
     "name": "Supplier Demo",
     "email": "supplier@eventflow.local",
     "role": "supplier",
-    "passwordHash": "$2a$10$PDc8LXFI/yKPJPVQpzP/reZb85YScGRIT8tvxPm5FGmkcn5Uy1NRC",
-    "createdAt": "2025-12-09T21:42:12.942Z",
+    "passwordHash": "$2a$10$g98wvyRhlim2a9LnEkGAau7V.zc7PzuJqlCBAmPbKIO1KOaQr.0ES",
+    "createdAt": "2025-12-09T22:20:21.222Z",
     "notify": true,
     "marketingOptIn": false,
     "verified": true
   },
   {
-    "id": "usr_g0eor9urz3vuka",
+    "id": "usr_28y4fuhrz58w7o",
     "name": "Customer Demo",
     "email": "customer@eventflow.local",
     "role": "customer",
-    "passwordHash": "$2a$10$e92RAyk2ZMRVjM7O2vhTfeGaxKYmVoWibLZ6I2AtF.hxAvbTTt0L2",
-    "createdAt": "2025-12-09T21:42:12.942Z",
+    "passwordHash": "$2a$10$QHoGA6uFObC1sMd1qZOWz.cWbd1qWHYsygokIEdzMwSiAcV0dujFy",
+    "createdAt": "2025-12-09T22:20:21.222Z",
     "notify": true,
     "marketingOptIn": false,
     "verified": true
+  },
+  {
+    "id": "usr_35rwitplz599bm",
+    "name": "Security Test User",
+    "email": "sectest@example.com",
+    "role": "customer",
+    "passwordHash": "$2a$10$yZ8tSziZMqMZvXy4Du2.cOyMq8rmT4XkpoqRGh3W4oBfJ7hGT34s.",
+    "notify": true,
+    "marketingOptIn": false,
+    "verified": false,
+    "verificationToken": "verify_dpelip0wz599dw",
+    "verificationTokenExpiresAt": "2025-12-10T22:20:38.468Z",
+    "createdAt": "2025-12-09T22:20:38.468Z"
+  },
+  {
+    "id": "usr_w5hxgo7fz5a5dy",
+    "name": "Security Test User",
+    "email": "sectest1765318879@example.com",
+    "role": "customer",
+    "passwordHash": "$2a$10$BJZvsbAMWODGkqW5dydboumzLHDG7qdz94FWvpWqyXQ/ZRgWICsQK",
+    "notify": true,
+    "marketingOptIn": false,
+    "verified": false,
+    "verificationToken": "verify_cemy3lqjz5a5j9",
+    "verificationTokenExpiresAt": "2025-12-10T22:21:20.133Z",
+    "createdAt": "2025-12-09T22:21:20.028Z"
   }
 ]
