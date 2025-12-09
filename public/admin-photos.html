@@ -326,7 +326,8 @@
   // Check admin authentication
   try {
     const response = await fetch('/api/auth/me');
-    const user = await response.json();
+    const data = await response.json();
+    const user = data.user; // Extract user from response
     if (!user || user.role !== 'admin') {
       window.location.href = '/auth.html';
       return;
