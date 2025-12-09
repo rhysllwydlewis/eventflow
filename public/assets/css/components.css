@@ -750,3 +750,50 @@ html[data-theme="dark"] .badge.subtle {
   animation: shake 0.5s ease-in-out;
 }
 
+
+/* Footer Theme Toggle Button */
+.footer-theme-btn {
+  background: none;
+  border: 1px solid var(--border, #E7EAF0);
+  color: var(--text, #1F2937);
+  cursor: pointer;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 1rem;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  vertical-align: middle;
+}
+
+.footer-theme-btn:hover {
+  background: var(--bg-muted, #F7FAFC);
+  border-color: var(--ink, #0B8073);
+}
+
+html[data-theme="dark"] .footer-theme-btn {
+  border-color: #374151;
+  color: #D1D5DB;
+}
+
+html[data-theme="dark"] .footer-theme-btn:hover {
+  background: #374151;
+  border-color: var(--accent, #13B6A2);
+}
+
+.footer-theme-btn .theme-icon-sun {
+  display: inline;
+}
+
+.footer-theme-btn .theme-icon-moon {
+  display: none;
+}
+
+html[data-theme="dark"] .footer-theme-btn .theme-icon-sun {
+  display: none;
+}
+
+html[data-theme="dark"] .footer-theme-btn .theme-icon-moon {
+  display: inline;
+}

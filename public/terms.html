@@ -11,16 +11,20 @@
         <a href="/suppliers.html" class="nav-link nav-main">Suppliers</a>
         <a href="/auth.html" class="nav-link nav-main nav-main-login">Log in</a>
       </nav>
-      <button id="theme-toggle" class="icon-button" type="button" aria-label="Toggle dark mode">
-        <span class="theme-icon" aria-hidden="true">
-          <span class="theme-icon-sun" aria-hidden="true">☀</span>
-          <span class="theme-icon-moon" aria-hidden="true">🌙</span>
-        </span>
+      <button id="notification-bell" class="icon-button" type="button" aria-label="Notifications" style="display:none;">
+        <span class="notification-icon">🔔</span>
+        <span class="notification-badge" style="display:none;">0</span>
       </button>
       <button id="burger" class="nav-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false">
         <span class="nav-toggle-bar"></span>
         <span class="nav-toggle-bar"></span>
         <span class="nav-toggle-bar"></span>
+      </button>
+      <button id="theme-toggle" class="icon-button" type="button" aria-label="Toggle dark mode">
+        <span class="theme-icon" aria-hidden="true">
+          <span class="theme-icon-sun" aria-hidden="true">☀</span>
+          <span class="theme-icon-moon" aria-hidden="true">🌙</span>
+        </span>
       </button>
     </div>
   </div>
@@ -37,6 +41,7 @@
   </nav>
 </header>
 <script src="/assets/js/auth-nav.js" defer></script>
+<script src="/assets/js/websocket-client.js" defer></script>
 <main class='section'>
   <div class='container'>
     <h1>Terms</h1>
