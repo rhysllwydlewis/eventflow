@@ -1521,7 +1521,7 @@ if(page==='auth'){ // auth form handlers
       try{
         await fetch('/api/auth/forgot', {
           method:'POST',
-          headers:{'Content-Type':'application/json'},
+          headers: getHeadersWithCsrf({'Content-Type':'application/json'}),
           body: JSON.stringify({ email })
         });
         if(loginStatus) loginStatus.textContent = 'If this email is registered, we\'ll send reset instructions.';
@@ -1624,6 +1624,16 @@ if(page==='auth'){ // auth form handlers
   }
 
 
+  // Helper function to get headers with CSRF token
+  function getHeadersWithCsrf(additionalHeaders = {}) {
+    const headers = { ...additionalHeaders };
+    const csrfToken = window.__CSRF_TOKEN__;
+    if (csrfToken) {
+      headers['X-CSRF-Token'] = csrfToken;
+    }
+    return headers;
+  }
+
   if(loginForm && loginEmail && loginPassword){
     const loginBtn = loginForm.querySelector('button[type="submit"]');
     loginForm.addEventListener('submit', async (e)=>{
@@ -1635,7 +1645,7 @@ if(page==='auth'){ // auth form handlers
         const password = loginPassword.value;
         const r = await fetch('/api/auth/login', {
           method:'POST',
-          headers:{'Content-Type':'application/json'},
+          headers: getHeadersWithCsrf({'Content-Type':'application/json'}),
           body: JSON.stringify({ email, password })
         });
         let data = {};
@@ -1683,7 +1693,7 @@ if(page==='auth'){ // auth form handlers
         const marketingOptIn = !!(marketingEl && marketingEl.checked);
         const r = await fetch('/api/auth/register', {
           method:'POST',
-          headers:{'Content-Type':'application/json'},
+          headers: getHeadersWithCsrf({'Content-Type':'application/json'}),
           body: JSON.stringify({ name, email, password, role, marketingOptIn })
         });
         let data = {};
