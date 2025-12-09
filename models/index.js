@@ -5,7 +5,7 @@
 
 'use strict';
 
-const { getCollection } = require('../db');
+// Schema definitions don't need direct collection access
 
 /**
  * User Schema

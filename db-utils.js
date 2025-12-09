@@ -25,8 +25,16 @@ async function read(collectionName) {
 
 /**
  * Write (replace) all documents in a collection
- * WARNING: This deletes all existing documents and replaces them
- * Use with caution - primarily for migration from JSON files
+ * WARNING: This deletes all existing documents and replaces them with new data
+ * DANGEROUS: Use with extreme caution - this is a destructive operation
+ * 
+ * Primary use cases:
+ * - Initial data migration from JSON files (one-time operation)
+ * - Development/testing environment resets
+ * - Admin-controlled data restoration from backups
+ * 
+ * For production updates, use updateOne, insertOne, or deleteOne instead
+ * 
  * @param {string} collectionName - Name of the collection
  * @param {Array} data - Array of documents to write
  * @returns {Promise<boolean>} Success status

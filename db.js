@@ -108,15 +108,19 @@ function isConnected() {
 }
 
 // Handle application shutdown
-process.on('SIGINT', async () => {
-  await close();
-  process.exit(0);
-});
+let isShuttingDown = false;
 
-process.on('SIGTERM', async () => {
+async function gracefulShutdown(signal) {
+  if (isShuttingDown) return;
+  isShuttingDown = true;
+  
+  console.log(`\nReceived ${signal}, closing MongoDB connection...`);
   await close();
   process.exit(0);
-});
+}
+
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 
 module.exports = {
   connect,
