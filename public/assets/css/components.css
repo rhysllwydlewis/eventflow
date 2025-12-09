@@ -816,3 +816,179 @@ html[data-theme="dark"] .footer-theme-btn .theme-icon-sun {
 html[data-theme="dark"] .footer-theme-btn .theme-icon-moon {
   display: inline;
 }
+
+/* Cookie Consent Banner - UK GDPR Compliant */
+.cookie-consent-banner {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--bg, #fff);
+  border-top: 2px solid var(--accent, #13B6A2);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+  z-index: 9999;
+  transform: translateY(100%);
+  transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+  opacity: 0;
+  padding: 1rem;
+}
+
+.cookie-consent-banner.cookie-consent-visible {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.cookie-consent-banner.cookie-consent-hiding {
+  transform: translateY(100%);
+  opacity: 0;
+}
+
+.cookie-consent-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.cookie-consent-message {
+  flex: 1;
+}
+
+.cookie-consent-message p {
+  margin: 0 0 0.5rem 0;
+  color: var(--text, #0B1220);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.cookie-consent-message strong {
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--text, #0B1220);
+}
+
+.cookie-consent-links {
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
+}
+
+.cookie-consent-links a {
+  color: var(--accent, #13B6A2);
+  text-decoration: underline;
+  transition: color 0.2s ease-out;
+}
+
+.cookie-consent-links a:hover {
+  color: var(--ink, #0B8073);
+  text-decoration: none;
+}
+
+.cookie-consent-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.cookie-consent-btn {
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease-out;
+  border: 2px solid transparent;
+  min-width: 120px;
+  white-space: nowrap;
+}
+
+.cookie-consent-accept {
+  background: var(--accent, #13B6A2);
+  color: #fff;
+  border-color: var(--accent, #13B6A2);
+}
+
+.cookie-consent-accept:hover {
+  background: var(--ink, #0B8073);
+  border-color: var(--ink, #0B8073);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(19, 182, 162, 0.3);
+}
+
+.cookie-consent-accept:focus {
+  outline: 2px solid var(--accent, #13B6A2);
+  outline-offset: 2px;
+}
+
+.cookie-consent-reject {
+  background: transparent;
+  color: var(--text, #0B1220);
+  border-color: var(--border, #E7EAF0);
+}
+
+.cookie-consent-reject:hover {
+  background: var(--border, #E7EAF0);
+  border-color: var(--muted, #667085);
+}
+
+.cookie-consent-reject:focus {
+  outline: 2px solid var(--muted, #667085);
+  outline-offset: 2px;
+}
+
+/* Responsive design */
+@media (min-width: 768px) {
+  .cookie-consent-content {
+    flex-direction: row;
+    align-items: center;
+    gap: 2rem;
+  }
+
+  .cookie-consent-actions {
+    flex-shrink: 0;
+  }
+}
+
+@media (max-width: 767px) {
+  .cookie-consent-banner {
+    padding: 1.25rem 1rem;
+  }
+
+  .cookie-consent-message p {
+    font-size: 0.85rem;
+  }
+
+  .cookie-consent-btn {
+    flex: 1;
+    min-width: auto;
+  }
+}
+
+/* Dark mode support */
+html[data-theme="dark"] .cookie-consent-banner {
+  background: var(--bg-dark, #1a1a1a);
+  border-top-color: var(--accent, #13B6A2);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.4);
+}
+
+html[data-theme="dark"] .cookie-consent-message p,
+html[data-theme="dark"] .cookie-consent-message strong {
+  color: var(--text-dark, #f5f5f5);
+}
+
+html[data-theme="dark"] .cookie-consent-reject {
+  color: var(--text-dark, #f5f5f5);
+  border-color: #374151;
+}
+
+html[data-theme="dark"] .cookie-consent-reject:hover {
+  background: #374151;
+  border-color: #4b5563;
+}
+
+/* Accessibility - Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .cookie-consent-banner {
+    transition: none;
+  }
+}
