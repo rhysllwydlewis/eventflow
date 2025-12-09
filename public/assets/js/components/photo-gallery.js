@@ -594,7 +594,7 @@ class PhotoGallery {
       }
       
       // Callback with new order
-      this.onReorder(this.photos.map(p => p.id));
+      this.onReorder(this.photos.map(p => p.id).filter(id => id !== undefined));
     }
   }
   

@@ -501,6 +501,17 @@
             return;
           }
           
+          // HTML sanitization helper
+          function escapeHtml(unsafe) {
+            if (!unsafe) return '';
+            return String(unsafe)
+              .replace(/&/g, '&amp;')
+              .replace(/</g, '&lt;')
+              .replace(/>/g, '&gt;')
+              .replace(/"/g, '&quot;')
+              .replace(/'/g, '&#039;');
+          }
+          
           var modal = document.createElement('div');
           modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);z-index:10000;overflow:auto;padding:20px;';
           modal.className = 'review-modal';
@@ -515,12 +526,12 @@
           reviews.forEach(function(r) {
             var item = document.createElement('div');
             item.style.cssText = 'background:#1a1a1a;padding:15px;margin:10px 0;border-radius:6px;';
-            item.innerHTML = '<p><b>Rating:</b> ' + (r.rating || 0) + ' stars</p>' +
-              '<p><b>Comment:</b> ' + (r.comment || '') + '</p>' +
-              '<p class="small"><b>Supplier ID:</b> ' + r.supplierId + '</p>' +
-              '<p class="small"><b>Date:</b> ' + new Date(r.createdAt).toLocaleString() + '</p>' +
-              '<button onclick="approveReview(\'' + r.id + '\', true)">Approve</button> ' +
-              '<button onclick="approveReview(\'' + r.id + '\', false)">Reject</button>';
+            item.innerHTML = '<p><b>Rating:</b> ' + escapeHtml(String(r.rating || 0)) + ' stars</p>' +
+              '<p><b>Comment:</b> ' + escapeHtml(r.comment || '') + '</p>' +
+              '<p class="small"><b>Supplier ID:</b> ' + escapeHtml(r.supplierId) + '</p>' +
+              '<p class="small"><b>Date:</b> ' + escapeHtml(new Date(r.createdAt).toLocaleString()) + '</p>' +
+              '<button onclick="approveReview(\'' + escapeHtml(r.id) + '\', true)">Approve</button> ' +
+              '<button onclick="approveReview(\'' + escapeHtml(r.id) + '\', false)">Reject</button>';
             list.appendChild(item);
           });
         })

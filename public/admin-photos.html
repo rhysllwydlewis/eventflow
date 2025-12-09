@@ -277,6 +277,17 @@
   const batchReject = document.getElementById('batchReject');
   const clearSelection = document.getElementById('clearSelection');
   
+  // HTML sanitization helper
+  function escapeHtml(unsafe) {
+    if (!unsafe) return '';
+    return String(unsafe)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+  
   async function loadPhotos() {
     try {
       const response = await fetch('/api/admin/photos/pending');
@@ -327,9 +338,9 @@
     }
     
     queueElement.innerHTML = filtered.map(photo => `
-      <div class="photo-queue__item" data-photo-id="${photo.id}">
-        <input type="checkbox" class="photo-select" data-photo-id="${photo.id}">
-        <img class="photo-queue__image" src="${photo.url || photo.thumbnail || ''}" alt="Photo" loading="lazy">
+      <div class="photo-queue__item" data-photo-id="${escapeHtml(photo.id)}">
+        <input type="checkbox" class="photo-select" data-photo-id="${escapeHtml(photo.id)}">
+        <img class="photo-queue__image" src="${escapeHtml(photo.url || photo.thumbnail || '')}" alt="Photo" loading="lazy">
         <div class="photo-queue__details">
           <div class="photo-queue__meta">
             <span class="photo-queue__badge photo-queue__badge--pending">
@@ -338,15 +349,15 @@
             ${photo.size ? `<span class="photo-queue__badge">${formatFileSize(photo.size)}</span>` : ''}
           </div>
           <div class="photo-queue__supplier">
-            Supplier: <a href="/supplier.html?id=${photo.supplierId}">${photo.supplierName || 'Unknown'}</a>
+            Supplier: <a href="/supplier.html?id=${escapeHtml(photo.supplierId)}">${escapeHtml(photo.supplierName || 'Unknown')}</a>
           </div>
-          ${photo.caption ? `<div class="small" style="margin-bottom: 0.5rem;">${photo.caption}</div>` : ''}
+          ${photo.caption ? `<div class="small" style="margin-bottom: 0.5rem;">${escapeHtml(photo.caption)}</div>` : ''}
           <div class="small" style="color: #999;">Uploaded: ${formatDate(photo.uploadedAt)}</div>
           <div class="photo-queue__actions">
-            <button class="photo-queue__btn photo-queue__btn--approve" onclick="approvePhoto('${photo.id}')">
+            <button class="photo-queue__btn photo-queue__btn--approve" onclick="approvePhoto('${escapeHtml(photo.id)}')">
               ✓ Approve
             </button>
-            <button class="photo-queue__btn photo-queue__btn--reject" onclick="rejectPhoto('${photo.id}')">
+            <button class="photo-queue__btn photo-queue__btn--reject" onclick="rejectPhoto('${escapeHtml(photo.id)}')">
               × Reject
             </button>
           </div>
