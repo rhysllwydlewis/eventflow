@@ -19,6 +19,10 @@ class WebSocketServer {
       pingInterval: 25000
     });
 
+    // NOTE: In-memory Map for tracking user sockets
+    // This will be cleared on server restart. For production environments
+    // with multiple server instances, consider using Redis or another
+    // persistent storage solution with Socket.IO Redis adapter
     this.userSockets = new Map(); // userId -> Set of socket IDs
     this.init();
   }

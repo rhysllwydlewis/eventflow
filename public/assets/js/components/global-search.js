@@ -220,6 +220,11 @@ class GlobalSearch {
     try {
       const categoryFilter = this.currentCategory !== 'All' ? `&category=${encodeURIComponent(this.currentCategory)}` : '';
       const response = await fetch(`/api/search/suppliers?q=${encodeURIComponent(query)}${categoryFilter}&perPage=20`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const data = await response.json();
 
       this.searchResults = data.suppliers || [];

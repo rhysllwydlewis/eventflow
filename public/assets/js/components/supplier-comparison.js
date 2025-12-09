@@ -299,6 +299,11 @@ class SupplierComparison {
 
     try {
       const response = await fetch(`/api/search/suppliers?q=${encodeURIComponent(query)}&perPage=10`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const data = await response.json();
 
       if (!data.suppliers || data.suppliers.length === 0) {
