@@ -6,6 +6,9 @@
   <title>EventFlow — Plan your event the simple way.</title>
   <link rel="stylesheet" href="/assets/css/styles.css">
   <link rel="stylesheet" href="/assets/css/eventflow-17.0.0.css">
+  <link rel="stylesheet" href="/assets/css/utilities.css">
+  <link rel="stylesheet" href="/assets/css/components.css">
+  <link rel="stylesheet" href="/assets/css/animations.css">
   <meta name="description" content="Find suppliers, build your plan and keep everything in one place — beautifully simple on mobile and desktop.">
   <link rel="icon" href="/favicon.svg">
 </head>
@@ -48,6 +51,9 @@
   </nav>
 </header>
 <script src="/assets/js/auth-nav.js" defer></script>
+<script src="/assets/js/components.js" defer></script>
+<script src="/assets/js/animations.js" defer></script>
+<script src="/assets/js/notifications.js" defer></script>
 
 <main>
   <section class="hero">
@@ -117,17 +123,17 @@
   <section class="section">
     <div class="container">
       <div class="cards">
-        <div class="card">
+        <div class="card card-hover" data-reveal>
           <h3>1 · Tell us about your event</h3>
           <p class="small">Type, location and date help us surface relevant suppliers.</p>
         </div>
-        <div class="card">
+        <div class="card card-hover" data-reveal>
           <h3>2 · Compare suppliers</h3>
           <p class="small">
             Browse venues, catering, entertainment and more — add to your plan with one click.
           </p>
         </div>
-        <div class="card">
+        <div class="card card-hover" data-reveal>
           <h3>3 · Save &amp; message</h3>
           <p class="small">
             Create a free account to save your plan and start conversations with suppliers.
