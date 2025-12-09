@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Reports Queue - Admin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body{font-family:sans-serif;padding:20px;background:#0b0b0b;color:#f5f5f5;}
+    h1,h2{margin-top:20px;}
+    table{width:100%;border-collapse:collapse;margin-top:10px;margin-bottom:20px;background:#111;}
+    td,th{border:1px solid #333;padding:8px;font-size:14px;}
+    th{background:#161616;text-align:left;}
+    button{padding:6px 10px;margin:2px;font-size:12px;cursor:pointer;background:#222;color:#f5f5f5;border:1px solid #444;border-radius:3px;}
+    button:hover{background:#2b825b;border-color:#2b825b;}
+    button.danger{background:#7f1d1d;}
+    button.danger:hover{background:#991b1b;}
+    .controls{margin-top:10px;margin-bottom:10px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+    select{padding:6px 8px;border-radius:3px;border:1px solid #444;background:#111;color:#f5f5f5;}
+    .badge{display:inline-block;padding:2px 6px;border-radius:999px;font-size:11px;background:#222;}
+    .badge-pending{background:#92400e;color:#fef3c7;}
+    .badge-resolved{background:#134e4a;color:#bbf7d0;}
+    .badge-dismissed{background:#3f3f46;color:#e4e4e7;}
+    .small{font-size:12px;color:#a1a1aa;}
+    .report-details{background:#1a1a1a;padding:10px;margin-top:5px;border-left:3px solid #ef4444;border-radius:3px;}
+  </style>
+</head>
+<body>
+  <h1>Content Reports Queue</h1>
+  <div class="controls">
+    <button onclick="location.href='/admin.html'">← Back to Dashboard</button>
+    <button onclick="loadReports()">Refresh</button>
+  </div>
+
+  <div class="controls">
+    <select id="statusFilter" onchange="loadReports()">
+      <option value="pending">Pending</option>
+      <option value="">All Status</option>
+      <option value="reviewing">Reviewing</option>
+      <option value="resolved">Resolved</option>
+      <option value="dismissed">Dismissed</option>
+    </select>
+    <select id="typeFilter" onchange="loadReports()">
+      <option value="">All Types</option>
+      <option value="supplier">Supplier</option>
+      <option value="review">Review</option>
+      <option value="message">Message</option>
+      <option value="user">User</option>
+      <option value="photo">Photo</option>
+    </select>
+  </div>
+
+  <div id="status">Loading reports...</div>
+  <table id="reportsTable">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Reason</th>
+        <th>Reported By</th>
+        <th>Status</th>
+        <th>Created</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="reportsBody"></tbody>
+  </table>
+
+  <script>
+    function api(url, method, body) {
+      const opts = {
+        method: method || 'GET',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' }
+      };
+      if (body) opts.body = JSON.stringify(body);
+      return fetch(url, opts).then(r => {
+        if (!r.ok) throw new Error('API error ' + r.status);
+        return r.json();
+      });
+    }
+
+    function loadReports() {
+      const status = document.getElementById('statusFilter').value;
+      const type = document.getElementById('typeFilter').value;
+      
+      let url = '/api/admin/reports?perPage=50';
+      if (status) url += '&status=' + status;
+      if (type) url += '&type=' + type;
+      
+      document.getElementById('status').innerText = 'Loading reports...';
+      
+      api(url, 'GET').then(data => {
+        const reports = data.reports || [];
+        renderReports(reports);
+        document.getElementById('status').innerText = `Loaded ${reports.length} reports`;
+      }).catch(err => {
+        console.error('Error loading reports:', err);
+        document.getElementById('status').innerText = 'Error loading reports: ' + err.message;
+      });
+    }
+
+    function renderReports(reports) {
+      const tbody = document.getElementById('reportsBody');
+      tbody.innerHTML = '';
+      
+      if (reports.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#a1a1aa;">No reports found</td></tr>';
+        return;
+      }
+      
+      reports.forEach(report => {
+        const row = document.createElement('tr');
+        
+        let statusBadge = '';
+        if (report.status === 'pending') statusBadge = '<span class="badge badge-pending">Pending</span>';
+        else if (report.status === 'resolved') statusBadge = '<span class="badge badge-resolved">Resolved</span>';
+        else if (report.status === 'dismissed') statusBadge = '<span class="badge badge-dismissed">Dismissed</span>';
+        else statusBadge = '<span class="badge">' + escapeHtml(report.status) + '</span>';
+        
+        const createdDate = report.createdAt ? new Date(report.createdAt).toLocaleString() : 'N/A';
+        
+        const reasonLabel = report.reason.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        
+        row.innerHTML = `
+          <td>${escapeHtml(report.type)}</td>
+          <td>${escapeHtml(reasonLabel)}<br><span class="small">ID: ${report.targetId}</span></td>
+          <td>${escapeHtml(report.reporterEmail || 'Unknown')}</td>
+          <td>${statusBadge}</td>
+          <td><span class="small">${createdDate}</span></td>
+          <td>
+            <button onclick="viewReport('${report.id}')">View Details</button>
+            ${report.status === 'pending' ? `
+              <button onclick="resolveReport('${report.id}')">Resolve</button>
+              <button class="danger" onclick="dismissReport('${report.id}')">Dismiss</button>
+            ` : ''}
+          </td>
+        `;
+        tbody.appendChild(row);
+        
+        // Add details row if needed (hidden by default)
+        if (report.details) {
+          const detailsRow = document.createElement('tr');
+          detailsRow.id = `details-${report.id}`;
+          detailsRow.style.display = 'none';
+          detailsRow.innerHTML = `
+            <td colspan="6">
+              <div class="report-details">
+                <strong>Details:</strong> ${escapeHtml(report.details)}<br>
+                ${report.resolutionNotes ? `<strong>Resolution:</strong> ${escapeHtml(report.resolutionNotes)}` : ''}
+              </div>
+            </td>
+          `;
+          tbody.appendChild(detailsRow);
+        }
+      });
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function viewReport(reportId) {
+      const detailsRow = document.getElementById(`details-${reportId}`);
+      if (detailsRow) {
+        detailsRow.style.display = detailsRow.style.display === 'none' ? 'table-row' : 'none';
+      }
+    }
+
+    function resolveReport(reportId) {
+      const resolution = prompt('Resolution type:\n1. valid (content violated rules)\n2. invalid (false report)\n3. duplicate (already reported)\n\nEnter 1, 2, or 3:');
+      if (!resolution) return;
+      
+      let resolutionType = '';
+      if (resolution === '1') resolutionType = 'valid';
+      else if (resolution === '2') resolutionType = 'invalid';
+      else if (resolution === '3') resolutionType = 'duplicate';
+      else {
+        alert('Invalid selection');
+        return;
+      }
+      
+      const action = prompt('Action taken:\n1. content_removed\n2. user_warned\n3. user_suspended\n4. no_action\n\nEnter 1, 2, 3, or 4:');
+      let actionType = 'no_action';
+      if (action === '1') actionType = 'content_removed';
+      else if (action === '2') actionType = 'user_warned';
+      else if (action === '3') actionType = 'user_suspended';
+      
+      const notes = prompt('Resolution notes (optional):');
+      
+      api(`/api/admin/reports/${reportId}/resolve`, 'POST', { 
+        resolution: resolutionType, 
+        action: actionType, 
+        notes: notes || '' 
+      }).then(() => {
+        alert('Report resolved successfully');
+        loadReports();
+      }).catch(err => alert('Error: ' + err.message));
+    }
+
+    function dismissReport(reportId) {
+      const notes = prompt('Dismissal reason (optional):');
+      if (!confirm('Dismiss this report?')) return;
+      
+      api(`/api/admin/reports/${reportId}/dismiss`, 'POST', { notes: notes || '' })
+        .then(() => {
+          alert('Report dismissed successfully');
+          loadReports();
+        }).catch(err => alert('Error: ' + err.message));
+    }
+
+    // Load reports on page load
+    loadReports();
+  </script>
+</body>
+</html>

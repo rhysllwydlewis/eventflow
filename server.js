@@ -2391,6 +2391,29 @@ app.get('/api/photos/pending', authRequired, roleRequired('admin'), async (req, 
 const reportsRoutes = require('./routes/reports');
 app.use('/api', reportsRoutes);
 
+// ---------- Audit Logging ----------
+const { getAuditLogs } = require('./middleware/audit');
+
+/**
+ * GET /api/admin/audit-logs
+ * Get audit logs with optional filtering
+ */
+app.get('/api/admin/audit-logs', authRequired, roleRequired('admin'), (req, res) => {
+  const { adminId, action, targetType, targetId, startDate, endDate, limit } = req.query;
+  
+  const logs = getAuditLogs({
+    adminId,
+    action,
+    targetType,
+    targetId,
+    startDate,
+    endDate,
+    limit: limit ? parseInt(limit, 10) : 100
+  });
+  
+  res.json({ logs, count: logs.length });
+});
+
 // Basic API healthcheck
 app.get('/api/health', (_req, res) => {
   res.json({
