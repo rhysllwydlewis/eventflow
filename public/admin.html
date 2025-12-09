@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="/assets/css/components.css">
   <link rel="stylesheet" href="/assets/css/animations.css">
   <link rel="icon" href="/favicon.svg">
+  <script src="/assets/js/components.js"></script>
   <style>
     /* Improved accessibility and contrast */
     body{font-family:sans-serif;padding:20px;background:#f5f5f5;color:#1a1a1a;}
@@ -41,7 +42,6 @@
     <button id="downloadUsersCsv">Download users CSV</button>
     <button id="downloadMarketingCsv">Download marketing CSV</button>
     <button id="downloadAllJson">Download full export (JSON)</button>
-    <button id="resetDemoBtn">Reset demo data</button>
     <button id="adminLogoutBtn">Sign out</button>
   </div>
 
@@ -113,13 +113,32 @@
         opts.body = JSON.stringify(body);
       }
       return fetch(url, opts).then(function (r) {
-        return r.json().then(function (data) {
-          if (!r.ok) {
-            var err = (data && data.error) ? data.error : ('Request failed with ' + r.status);
-            throw new Error(err);
-          }
-          return data;
-        });
+        // Check content type before parsing
+        var contentType = r.headers.get('content-type');
+        var isJson = contentType && contentType.includes('application/json');
+        
+        if (isJson) {
+          return r.json().then(function (data) {
+            if (!r.ok) {
+              var err = (data && data.error) ? data.error : ('Request failed with ' + r.status);
+              throw new Error(err);
+            }
+            return data;
+          });
+        } else {
+          // Handle non-JSON responses (like plain text errors)
+          return r.text().then(function (text) {
+            if (!r.ok) {
+              throw new Error(text || 'Request failed with ' + r.status);
+            }
+            // Try to parse as JSON anyway for successful responses
+            try {
+              return JSON.parse(text);
+            } catch (e) {
+              return { message: text };
+            }
+          });
+        }
       });
     }
     var allUsers = [];
@@ -142,6 +161,11 @@
         
         var actions = '<div style="display:flex;gap:4px;flex-wrap:wrap;">';
         actions += '<button onclick="editUser(\'' + u.id + '\')">Edit</button>';
+        
+        // Manual verification button for unverified users (only for non-owner accounts)
+        if (!u.verified && !isOwner) {
+          actions += '<button onclick="verifyUser(\'' + u.id + '\')">Verify Email</button>';
+        }
         
         // Admin privilege toggle (only for non-owner accounts)
         if (!isOwner) {
@@ -409,57 +433,158 @@
     }
 
     window.approveSup = function (id) {
-      api('/api/admin/suppliers/' + id + '/approve', 'POST', { approved: true })
-        .then(function () {
-          alert('Supplier approved.');
-          loadAll();
-        })
-        .catch(function (err) {
-          console.error('approveSup failed', err);
-          alert('Failed to approve supplier: ' + err.message);
+      if (typeof Modal !== 'undefined') {
+        var modal = new Modal({
+          title: 'Approve Supplier',
+          content: '<p>Are you sure you want to approve this supplier?</p>',
+          confirmText: 'Approve',
+          cancelText: 'Cancel',
+          onConfirm: function() {
+            api('/api/admin/suppliers/' + id + '/approve', 'POST', { approved: true })
+              .then(function () {
+                if (typeof Toast !== 'undefined') {
+                  Toast.success('Supplier approved.');
+                } else {
+                  alert('Supplier approved.');
+                }
+                loadAll();
+              })
+              .catch(function (err) {
+                console.error('approveSup failed', err);
+                if (typeof Toast !== 'undefined') {
+                  Toast.error('Failed to approve supplier: ' + err.message);
+                } else {
+                  alert('Failed to approve supplier: ' + err.message);
+                }
+              });
+          }
         });
+        modal.show();
+      } else {
+        // Fallback to confirm dialog
+        api('/api/admin/suppliers/' + id + '/approve', 'POST', { approved: true })
+          .then(function () {
+            alert('Supplier approved.');
+            loadAll();
+          })
+          .catch(function (err) {
+            console.error('approveSup failed', err);
+            alert('Failed to approve supplier: ' + err.message);
+          });
+      }
     };
 
     window.rejectSup = function (id) {
-      api('/api/admin/suppliers/' + id + '/approve', 'POST', { approved: false })
-        .then(function () {
-          alert('Supplier rejected.');
-          loadAll();
-        })
-        .catch(function (err) {
-          console.error('rejectSup failed', err);
-          alert('Failed to reject supplier: ' + err.message);
+      if (typeof Modal !== 'undefined') {
+        var modal = new Modal({
+          title: 'Reject Supplier',
+          content: '<p>Are you sure you want to reject this supplier?</p>',
+          confirmText: 'Reject',
+          cancelText: 'Cancel',
+          onConfirm: function() {
+            api('/api/admin/suppliers/' + id + '/approve', 'POST', { approved: false })
+              .then(function () {
+                if (typeof Toast !== 'undefined') {
+                  Toast.success('Supplier rejected.');
+                } else {
+                  alert('Supplier rejected.');
+                }
+                loadAll();
+              })
+              .catch(function (err) {
+                console.error('rejectSup failed', err);
+                if (typeof Toast !== 'undefined') {
+                  Toast.error('Failed to reject supplier: ' + err.message);
+                } else {
+                  alert('Failed to reject supplier: ' + err.message);
+                }
+              });
+          }
         });
+        modal.show();
+      } else {
+        // Fallback to confirm dialog
+        api('/api/admin/suppliers/' + id + '/approve', 'POST', { approved: false })
+          .then(function () {
+            alert('Supplier rejected.');
+            loadAll();
+          })
+          .catch(function (err) {
+            console.error('rejectSup failed', err);
+            alert('Failed to reject supplier: ' + err.message);
+          });
+      }
     };
 
     window.setProPlan = function (id, mode) {
       if (mode === 'duration') {
         var sel = document.getElementById('pro-duration-' + id);
         if (!sel || !sel.value) {
-          alert('Choose a duration first.');
+          if (typeof Toast !== 'undefined') {
+            Toast.warning('Choose a duration first.');
+          } else {
+            alert('Choose a duration first.');
+          }
           return;
         }
         api('/api/admin/suppliers/' + id + '/pro', 'POST', {
           mode: 'duration',
           duration: sel.value
         }).then(function () {
-          alert('Pro trial set for supplier.');
+          if (typeof Toast !== 'undefined') {
+            Toast.success('Pro trial set for supplier.');
+          } else {
+            alert('Pro trial set for supplier.');
+          }
           loadAll();
         }).catch(function (err) {
           console.error('setProPlan (duration) failed', err);
-          alert('Failed to set Pro trial: ' + err.message);
+          if (typeof Toast !== 'undefined') {
+            Toast.error('Failed to set Pro trial: ' + err.message);
+          } else {
+            alert('Failed to set Pro trial: ' + err.message);
+          }
         });
       } else if (mode === 'cancel') {
-        if (!confirm('Remove Pro for this supplier?')) return;
-        api('/api/admin/suppliers/' + id + '/pro', 'POST', { mode: 'cancel' })
-          .then(function () {
-            alert('Pro plan cancelled for supplier.');
-            loadAll();
-          })
-          .catch(function (err) {
-            console.error('setProPlan (cancel) failed', err);
-            alert('Failed to cancel Pro plan: ' + err.message);
+        if (typeof Modal !== 'undefined') {
+          var modal = new Modal({
+            title: 'Cancel Pro Plan',
+            content: '<p>Remove Pro for this supplier?</p>',
+            confirmText: 'Cancel Pro',
+            cancelText: 'Keep Pro',
+            onConfirm: function() {
+              api('/api/admin/suppliers/' + id + '/pro', 'POST', { mode: 'cancel' })
+                .then(function () {
+                  if (typeof Toast !== 'undefined') {
+                    Toast.success('Pro plan cancelled for supplier.');
+                  } else {
+                    alert('Pro plan cancelled for supplier.');
+                  }
+                  loadAll();
+                })
+                .catch(function (err) {
+                  console.error('setProPlan (cancel) failed', err);
+                  if (typeof Toast !== 'undefined') {
+                    Toast.error('Failed to cancel Pro plan: ' + err.message);
+                  } else {
+                    alert('Failed to cancel Pro plan: ' + err.message);
+                  }
+                });
+            }
           });
+          modal.show();
+        } else {
+          if (!confirm('Remove Pro for this supplier?')) return;
+          api('/api/admin/suppliers/' + id + '/pro', 'POST', { mode: 'cancel' })
+            .then(function () {
+              alert('Pro plan cancelled for supplier.');
+              loadAll();
+            })
+            .catch(function (err) {
+              console.error('setProPlan (cancel) failed', err);
+              alert('Failed to cancel Pro plan: ' + err.message);
+            });
+        }
       }
     };
 
@@ -483,107 +608,460 @@
     
     // New user management functions
     window.deleteUser = function (id) {
-      if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) return;
-      api('/api/admin/users/' + id, 'DELETE')
-        .then(function () {
-          alert('User deleted successfully.');
-          loadAll();
-        })
-        .catch(function (err) {
-          console.error('deleteUser failed', err);
-          alert('Failed to delete user: ' + err.message);
+      if (typeof Modal !== 'undefined') {
+        var modal = new Modal({
+          title: 'Delete User',
+          content: '<p>Are you sure you want to delete this user? This action cannot be undone.</p>',
+          confirmText: 'Delete',
+          cancelText: 'Cancel',
+          onConfirm: function() {
+            api('/api/admin/users/' + id, 'DELETE')
+              .then(function () {
+                if (typeof Toast !== 'undefined') {
+                  Toast.success('User deleted successfully.');
+                } else {
+                  alert('User deleted successfully.');
+                }
+                loadAll();
+              })
+              .catch(function (err) {
+                console.error('deleteUser failed', err);
+                if (typeof Toast !== 'undefined') {
+                  Toast.error('Failed to delete user: ' + err.message);
+                } else {
+                  alert('Failed to delete user: ' + err.message);
+                }
+              });
+          }
         });
+        modal.show();
+      } else {
+        if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) return;
+        api('/api/admin/users/' + id, 'DELETE')
+          .then(function () {
+            alert('User deleted successfully.');
+            loadAll();
+          })
+          .catch(function (err) {
+            console.error('deleteUser failed', err);
+            alert('Failed to delete user: ' + err.message);
+          });
+      }
     };
     
     window.editUser = function (id) {
       var user = allUsers.find(function (u) { return u.id === id; });
       if (!user) {
-        alert('User not found');
+        if (typeof Toast !== 'undefined') {
+          Toast.error('User not found');
+        } else {
+          alert('User not found');
+        }
         return;
       }
       
-      var name = prompt('Enter new name:', user.name || '');
-      if (name === null) return; // Cancelled
+      // Create modal content with form
+      var content = document.createElement('div');
+      content.innerHTML = 
+        '<div style="display: grid; gap: 1rem;">' +
+          '<div><label style="display:block;margin-bottom:4px;font-weight:600;">Name</label>' +
+          '<input type="text" id="edit-user-name" value="' + (user.name || '') + '" style="width:100%;padding:8px;border:1px solid #d4d4d8;border-radius:4px;"></div>' +
+          '<div><label style="display:block;margin-bottom:4px;font-weight:600;">Email</label>' +
+          '<input type="email" id="edit-user-email" value="' + (user.email || '') + '" style="width:100%;padding:8px;border:1px solid #d4d4d8;border-radius:4px;"></div>' +
+        '</div>';
       
-      var email = prompt('Enter new email:', user.email || '');
-      if (email === null) return; // Cancelled
-      
-      api('/api/admin/users/' + id, 'PUT', { name: name, email: email })
-        .then(function () {
-          alert('User updated successfully.');
-          loadAll();
-        })
-        .catch(function (err) {
-          console.error('editUser failed', err);
-          alert('Failed to update user: ' + err.message);
+      if (typeof Modal !== 'undefined') {
+        var modal = new Modal({
+          title: 'Edit User',
+          content: content,
+          confirmText: 'Save',
+          cancelText: 'Cancel',
+          onConfirm: function() {
+            var name = document.getElementById('edit-user-name').value;
+            var email = document.getElementById('edit-user-email').value;
+            
+            api('/api/admin/users/' + id, 'PUT', { name: name, email: email })
+              .then(function () {
+                if (typeof Toast !== 'undefined') {
+                  Toast.success('User updated successfully.');
+                } else {
+                  alert('User updated successfully.');
+                }
+                loadAll();
+              })
+              .catch(function (err) {
+                console.error('editUser failed', err);
+                if (typeof Toast !== 'undefined') {
+                  Toast.error('Failed to update user: ' + err.message);
+                } else {
+                  alert('Failed to update user: ' + err.message);
+                }
+              });
+          }
         });
+        modal.show();
+      } else {
+        // Fallback to prompt
+        var name = prompt('Enter new name:', user.name || '');
+        if (name === null) return;
+        
+        var email = prompt('Enter new email:', user.email || '');
+        if (email === null) return;
+        
+        api('/api/admin/users/' + id, 'PUT', { name: name, email: email })
+          .then(function () {
+            alert('User updated successfully.');
+            loadAll();
+          })
+          .catch(function (err) {
+            console.error('editUser failed', err);
+            alert('Failed to update user: ' + err.message);
+          });
+      }
     };
     
     window.grantAdmin = function (id) {
-      if (!confirm('Grant admin privileges to this user?')) return;
-      api('/api/admin/users/' + id + '/grant-admin', 'POST')
-        .then(function () {
-          alert('Admin privileges granted successfully.');
-          loadAll();
-        })
-        .catch(function (err) {
-          console.error('grantAdmin failed', err);
-          alert('Failed to grant admin privileges: ' + err.message);
+      if (typeof Modal !== 'undefined') {
+        var modal = new Modal({
+          title: 'Grant Admin Privileges',
+          content: '<p>Grant admin privileges to this user?</p>',
+          confirmText: 'Grant Admin',
+          cancelText: 'Cancel',
+          onConfirm: function() {
+            api('/api/admin/users/' + id + '/grant-admin', 'POST')
+              .then(function () {
+                if (typeof Toast !== 'undefined') {
+                  Toast.success('Admin privileges granted successfully.');
+                } else {
+                  alert('Admin privileges granted successfully.');
+                }
+                loadAll();
+              })
+              .catch(function (err) {
+                console.error('grantAdmin failed', err);
+                if (typeof Toast !== 'undefined') {
+                  Toast.error('Failed to grant admin privileges: ' + err.message);
+                } else {
+                  alert('Failed to grant admin privileges: ' + err.message);
+                }
+              });
+          }
         });
+        modal.show();
+      } else {
+        if (!confirm('Grant admin privileges to this user?')) return;
+        api('/api/admin/users/' + id + '/grant-admin', 'POST')
+          .then(function () {
+            alert('Admin privileges granted successfully.');
+            loadAll();
+          })
+          .catch(function (err) {
+            console.error('grantAdmin failed', err);
+            alert('Failed to grant admin privileges: ' + err.message);
+          });
+      }
     };
     
     window.revokeAdmin = function (id) {
-      if (!confirm('Revoke admin privileges from this user?')) return;
-      var newRole = prompt('Enter new role (customer or supplier):', 'customer');
-      if (!newRole) return;
+      // Create modal content with role selection
+      var content = document.createElement('div');
+      content.innerHTML = 
+        '<p>Revoke admin privileges from this user?</p>' +
+        '<div style="margin-top: 1rem;"><label style="display:block;margin-bottom:4px;font-weight:600;">New Role</label>' +
+        '<select id="revoke-admin-role" style="width:100%;padding:8px;border:1px solid #d4d4d8;border-radius:4px;">' +
+          '<option value="customer">Customer</option>' +
+          '<option value="supplier">Supplier</option>' +
+        '</select></div>';
       
-      api('/api/admin/users/' + id + '/revoke-admin', 'POST', { newRole: newRole })
-        .then(function () {
-          alert('Admin privileges revoked successfully.');
-          loadAll();
-        })
-        .catch(function (err) {
-          console.error('revokeAdmin failed', err);
-          alert('Failed to revoke admin privileges: ' + err.message);
+      if (typeof Modal !== 'undefined') {
+        var modal = new Modal({
+          title: 'Revoke Admin Privileges',
+          content: content,
+          confirmText: 'Revoke Admin',
+          cancelText: 'Cancel',
+          onConfirm: function() {
+            var newRole = document.getElementById('revoke-admin-role').value;
+            
+            api('/api/admin/users/' + id + '/revoke-admin', 'POST', { newRole: newRole })
+              .then(function () {
+                if (typeof Toast !== 'undefined') {
+                  Toast.success('Admin privileges revoked successfully.');
+                } else {
+                  alert('Admin privileges revoked successfully.');
+                }
+                loadAll();
+              })
+              .catch(function (err) {
+                console.error('revokeAdmin failed', err);
+                if (typeof Toast !== 'undefined') {
+                  Toast.error('Failed to revoke admin privileges: ' + err.message);
+                } else {
+                  alert('Failed to revoke admin privileges: ' + err.message);
+                }
+              });
+          }
         });
+        modal.show();
+      } else {
+        if (!confirm('Revoke admin privileges from this user?')) return;
+        var newRole = prompt('Enter new role (customer or supplier):', 'customer');
+        if (!newRole) return;
+        
+        api('/api/admin/users/' + id + '/revoke-admin', 'POST', { newRole: newRole })
+          .then(function () {
+            alert('Admin privileges revoked successfully.');
+            loadAll();
+          })
+          .catch(function (err) {
+            console.error('revokeAdmin failed', err);
+            alert('Failed to revoke admin privileges: ' + err.message);
+          });
+      }
+    };
+    
+    window.verifyUser = function (id) {
+      if (typeof Modal !== 'undefined') {
+        var modal = new Modal({
+          title: 'Verify User Email',
+          content: '<p>Manually verify this user\'s email address?</p>',
+          confirmText: 'Verify',
+          cancelText: 'Cancel',
+          onConfirm: function() {
+            api('/api/admin/users/' + id + '/verify', 'POST')
+              .then(function () {
+                if (typeof Toast !== 'undefined') {
+                  Toast.success('User verified successfully.');
+                } else {
+                  alert('User verified successfully.');
+                }
+                loadAll();
+              })
+              .catch(function (err) {
+                console.error('verifyUser failed', err);
+                if (typeof Toast !== 'undefined') {
+                  Toast.error('Failed to verify user: ' + err.message);
+                } else {
+                  alert('Failed to verify user: ' + err.message);
+                }
+              });
+          }
+        });
+        modal.show();
+      } else {
+        if (!confirm('Manually verify this user\'s email address?')) return;
+        api('/api/admin/users/' + id + '/verify', 'POST')
+          .then(function () {
+            if (typeof Toast !== 'undefined') {
+              Toast.success('User verified successfully.');
+            } else {
+              alert('User verified successfully.');
+            }
+            loadAll();
+          })
+          .catch(function (err) {
+            console.error('verifyUser failed', err);
+            if (typeof Toast !== 'undefined') {
+              Toast.error('Failed to verify user: ' + err.message);
+            } else {
+              alert('Failed to verify user: ' + err.message);
+            }
+          });
+      }
     };
     
     // Supplier management functions
     window.deleteSupplier = function (id) {
-      if (!confirm('Are you sure you want to delete this supplier and all associated packages? This action cannot be undone.')) return;
-      api('/api/admin/suppliers/' + id, 'DELETE')
-        .then(function () {
-          alert('Supplier deleted successfully.');
-          loadAll();
-        })
-        .catch(function (err) {
-          console.error('deleteSupplier failed', err);
-          alert('Failed to delete supplier: ' + err.message);
+      if (typeof Modal !== 'undefined') {
+        var modal = new Modal({
+          title: 'Delete Supplier',
+          content: '<p>Are you sure you want to delete this supplier and all associated packages? This action cannot be undone.</p>',
+          confirmText: 'Delete',
+          cancelText: 'Cancel',
+          onConfirm: function() {
+            api('/api/admin/suppliers/' + id, 'DELETE')
+              .then(function () {
+                if (typeof Toast !== 'undefined') {
+                  Toast.success('Supplier deleted successfully.');
+                } else {
+                  alert('Supplier deleted successfully.');
+                }
+                loadAll();
+              })
+              .catch(function (err) {
+                console.error('deleteSupplier failed', err);
+                if (typeof Toast !== 'undefined') {
+                  Toast.error('Failed to delete supplier: ' + err.message);
+                } else {
+                  alert('Failed to delete supplier: ' + err.message);
+                }
+              });
+          }
         });
+        modal.show();
+      } else {
+        if (!confirm('Are you sure you want to delete this supplier and all associated packages? This action cannot be undone.')) return;
+        api('/api/admin/suppliers/' + id, 'DELETE')
+          .then(function () {
+            alert('Supplier deleted successfully.');
+            loadAll();
+          })
+          .catch(function (err) {
+            console.error('deleteSupplier failed', err);
+            alert('Failed to delete supplier: ' + err.message);
+          });
+      }
     };
     
     window.editSupplier = function (id) {
-      alert('Supplier editing is available through the full edit modal. This will be implemented in a future update.');
-      // TODO: Implement supplier edit modal
+      // Find supplier in current data
+      api('/api/admin/suppliers').then(function(resp) {
+        var suppliers = (resp && resp.items) || [];
+        var supplier = suppliers.find(function(s) { return s.id === id; });
+        
+        if (!supplier) {
+          if (typeof Toast !== 'undefined') {
+            Toast.error('Supplier not found');
+          } else {
+            alert('Supplier not found');
+          }
+          return;
+        }
+        
+        // Create modal content
+        var content = document.createElement('div');
+        content.innerHTML = 
+          '<div style="display: grid; gap: 1rem;">' +
+            '<div><label style="display:block;margin-bottom:4px;font-weight:600;">Name</label>' +
+            '<input type="text" id="edit-sup-name" value="' + (supplier.name || '') + '" style="width:100%;padding:8px;border:1px solid #d4d4d8;border-radius:4px;"></div>' +
+            
+            '<div><label style="display:block;margin-bottom:4px;font-weight:600;">Category</label>' +
+            '<input type="text" id="edit-sup-category" value="' + (supplier.category || '') + '" style="width:100%;padding:8px;border:1px solid #d4d4d8;border-radius:4px;"></div>' +
+            
+            '<div><label style="display:block;margin-bottom:4px;font-weight:600;">Location</label>' +
+            '<input type="text" id="edit-sup-location" value="' + (supplier.location || '') + '" style="width:100%;padding:8px;border:1px solid #d4d4d8;border-radius:4px;"></div>' +
+            
+            '<div><label style="display:block;margin-bottom:4px;font-weight:600;">Price Display</label>' +
+            '<input type="text" id="edit-sup-price" value="' + (supplier.price_display || '') + '" style="width:100%;padding:8px;border:1px solid #d4d4d8;border-radius:4px;"></div>' +
+            
+            '<div><label style="display:block;margin-bottom:4px;font-weight:600;">Website</label>' +
+            '<input type="url" id="edit-sup-website" value="' + (supplier.website || '') + '" style="width:100%;padding:8px;border:1px solid #d4d4d8;border-radius:4px;"></div>' +
+            
+            '<div><label style="display:block;margin-bottom:4px;font-weight:600;">Email</label>' +
+            '<input type="email" id="edit-sup-email" value="' + (supplier.email || '') + '" style="width:100%;padding:8px;border:1px solid #d4d4d8;border-radius:4px;"></div>' +
+            
+            '<div><label style="display:block;margin-bottom:4px;font-weight:600;">Max Guests</label>' +
+            '<input type="number" id="edit-sup-maxGuests" value="' + (supplier.maxGuests || '') + '" style="width:100%;padding:8px;border:1px solid #d4d4d8;border-radius:4px;"></div>' +
+            
+            '<div><label style="display:block;margin-bottom:4px;font-weight:600;">Short Description</label>' +
+            '<textarea id="edit-sup-desc-short" rows="2" style="width:100%;padding:8px;border:1px solid #d4d4d8;border-radius:4px;">' + (supplier.description_short || '') + '</textarea></div>' +
+            
+            '<div><label style="display:block;margin-bottom:4px;font-weight:600;">Long Description</label>' +
+            '<textarea id="edit-sup-desc-long" rows="4" style="width:100%;padding:8px;border:1px solid #d4d4d8;border-radius:4px;">' + (supplier.description_long || '') + '</textarea></div>' +
+          '</div>';
+        
+        // Create modal
+        if (typeof Modal !== 'undefined') {
+          var modal = new Modal({
+            title: 'Edit Supplier: ' + supplier.name,
+            content: content,
+            confirmText: 'Save Changes',
+            cancelText: 'Cancel',
+            onConfirm: function() {
+              var updateData = {
+                name: document.getElementById('edit-sup-name').value,
+                category: document.getElementById('edit-sup-category').value,
+                location: document.getElementById('edit-sup-location').value,
+                price_display: document.getElementById('edit-sup-price').value,
+                website: document.getElementById('edit-sup-website').value,
+                email: document.getElementById('edit-sup-email').value,
+                maxGuests: parseInt(document.getElementById('edit-sup-maxGuests').value) || 0,
+                description_short: document.getElementById('edit-sup-desc-short').value,
+                description_long: document.getElementById('edit-sup-desc-long').value
+              };
+              
+              api('/api/admin/suppliers/' + id, 'PUT', updateData)
+                .then(function() {
+                  if (typeof Toast !== 'undefined') {
+                    Toast.success('Supplier updated successfully.');
+                  } else {
+                    alert('Supplier updated successfully.');
+                  }
+                  loadAll();
+                })
+                .catch(function(err) {
+                  console.error('editSupplier failed', err);
+                  if (typeof Toast !== 'undefined') {
+                    Toast.error('Failed to update supplier: ' + err.message);
+                  } else {
+                    alert('Failed to update supplier: ' + err.message);
+                  }
+                });
+            }
+          });
+          modal.show();
+        } else {
+          // Fallback if Modal is not available
+          alert('Supplier editing requires the Modal component. Please reload the page.');
+        }
+      }).catch(function(err) {
+        console.error('Failed to load supplier', err);
+        if (typeof Toast !== 'undefined') {
+          Toast.error('Failed to load supplier data');
+        } else {
+          alert('Failed to load supplier data');
+        }
+      });
     };
     
     // Package management functions
     window.deletePackage = function (id) {
-      if (!confirm('Are you sure you want to delete this package? This action cannot be undone.')) return;
-      api('/api/admin/packages/' + id, 'DELETE')
-        .then(function () {
-          alert('Package deleted successfully.');
-          loadAll();
-        })
-        .catch(function (err) {
-          console.error('deletePackage failed', err);
-          alert('Failed to delete package: ' + err.message);
+      if (typeof Modal !== 'undefined') {
+        var modal = new Modal({
+          title: 'Delete Package',
+          content: '<p>Are you sure you want to delete this package? This action cannot be undone.</p>',
+          confirmText: 'Delete',
+          cancelText: 'Cancel',
+          onConfirm: function() {
+            api('/api/admin/packages/' + id, 'DELETE')
+              .then(function () {
+                if (typeof Toast !== 'undefined') {
+                  Toast.success('Package deleted successfully.');
+                } else {
+                  alert('Package deleted successfully.');
+                }
+                loadAll();
+              })
+              .catch(function (err) {
+                console.error('deletePackage failed', err);
+                if (typeof Toast !== 'undefined') {
+                  Toast.error('Failed to delete package: ' + err.message);
+                } else {
+                  alert('Failed to delete package: ' + err.message);
+                }
+              });
+          }
         });
+        modal.show();
+      } else {
+        if (!confirm('Are you sure you want to delete this package? This action cannot be undone.')) return;
+        api('/api/admin/packages/' + id, 'DELETE')
+          .then(function () {
+            alert('Package deleted successfully.');
+            loadAll();
+          })
+          .catch(function (err) {
+            console.error('deletePackage failed', err);
+            alert('Failed to delete package: ' + err.message);
+          });
+      }
     };
     
     window.editPackage = function (id) {
-      alert('Package editing is available through the full edit modal. This will be implemented in a future update.');
-      // TODO: Implement package edit modal
+      if (typeof Toast !== 'undefined') {
+        Toast.info('Package editing is available through the supplier dashboard.');
+      } else {
+        alert('Package editing is available through the supplier dashboard.');
+      }
     };
 
     window.addEventListener('load', function () {
@@ -627,22 +1105,6 @@
         });
       }
 
-      var resetDemo = document.getElementById('resetDemoBtn');
-      if (resetDemo) {
-        resetDemo.addEventListener('click', function () {
-          if (!confirm('Really reset demo data?')) return;
-          api('/api/admin/reset-demo', 'POST', {})
-            .then(function () {
-              alert('Demo data reset.');
-              loadAll();
-            })
-            .catch(function (err) {
-              console.error('Error resetting demo', err);
-              alert('Reset failed, check server logs.');
-            });
-        });
-      }
-
       var smartTagBtn = document.getElementById('smartTagSuppliersBtn');
       if (smartTagBtn) {
         smartTagBtn.addEventListener('click', function () {
@@ -679,7 +1141,11 @@
         .then(function(data) {
           var reviews = (data.reviews || []).filter(r => !r.approved && !r.rejected);
           if (reviews.length === 0) {
-            alert('No pending reviews to moderate.');
+            if (typeof Toast !== 'undefined') {
+              Toast.info('No pending reviews to moderate.');
+            } else {
+              alert('No pending reviews to moderate.');
+            }
             return;
           }
           
@@ -719,20 +1185,32 @@
         })
         .catch(function(err) {
           console.error('Failed to load reviews', err);
-          alert('Failed to load reviews');
+          if (typeof Toast !== 'undefined') {
+            Toast.error('Failed to load reviews');
+          } else {
+            alert('Failed to load reviews');
+          }
         });
     };
     
     window.approveReview = function(id, approved) {
       api('/api/admin/reviews/' + id + '/approve', 'POST', { approved: approved })
         .then(function() {
-          alert('Review ' + (approved ? 'approved' : 'rejected'));
+          if (typeof Toast !== 'undefined') {
+            Toast.success('Review ' + (approved ? 'approved' : 'rejected'));
+          } else {
+            alert('Review ' + (approved ? 'approved' : 'rejected'));
+          }
           loadAll();
           closeReviewModal();
         })
         .catch(function(err) {
           console.error('Failed to moderate review', err);
-          alert('Failed to moderate review');
+          if (typeof Toast !== 'undefined') {
+            Toast.error('Failed to moderate review');
+          } else {
+            alert('Failed to moderate review');
+          }
         });
     };
     
