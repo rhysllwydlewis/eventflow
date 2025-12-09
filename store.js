@@ -12,6 +12,10 @@ const files = {
   messages: path.join(DATA_DIR, 'messages.json'),
   threads: path.join(DATA_DIR, 'threads.json'),
   events: path.join(DATA_DIR, 'events.json'),
+  reviews: path.join(DATA_DIR, 'reviews.json'),
+  reports: path.join(DATA_DIR, 'reports.json'),
+  audit_logs: path.join(DATA_DIR, 'audit_logs.json'),
+  search_history: path.join(DATA_DIR, 'search_history.json'),
 };
 
 function ensure() {
