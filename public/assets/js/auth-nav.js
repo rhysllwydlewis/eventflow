@@ -1,7 +1,10 @@
 (async function () {
-  // --- Theme (light / dark) ---
+  // --- Theme (light / dark) with system preference support ---
   const root = document.documentElement;
   const THEME_KEY = 'ef-theme';
+
+  // Add smooth transition for theme changes
+  root.style.transition = 'background-color 0.3s ease-out, color 0.3s ease-out';
 
   function applyTheme(theme) {
     if (theme === 'dark') {
@@ -11,22 +14,44 @@
     }
   }
 
+  function getSystemPreference() {
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      return 'dark';
+    }
+    return 'light';
+  }
+
   function initThemeToggle() {
     const btn = document.getElementById('theme-toggle');
     if (!btn) return;
 
-    // Initialise from saved preference or system preference
+    // Initialize from saved preference or system preference
     try {
       const stored = window.localStorage ? localStorage.getItem(THEME_KEY) : null;
       if (stored === 'light' || stored === 'dark') {
         // If the user has chosen a theme before, respect that
         applyTheme(stored);
       } else {
-        // Default for everyone: light mode
-        applyTheme('light');
+        // Use system preference if no stored preference
+        const systemPreference = getSystemPreference();
+        applyTheme(systemPreference);
       }
     } catch (_) {
       // Ignore storage errors
+      applyTheme('light');
+    }
+
+    // Listen for system preference changes
+    if (window.matchMedia) {
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      mediaQuery.addEventListener('change', (e) => {
+        // Only auto-switch if user hasn't set a preference
+        const stored = window.localStorage ? localStorage.getItem(THEME_KEY) : null;
+        if (!stored) {
+          applyTheme(e.matches ? 'dark' : 'light');
+          syncAria();
+        }
+      });
     }
 
     const syncAria = () => {

@@ -54,6 +54,7 @@
 <script src="/assets/js/components.js" defer></script>
 <script src="/assets/js/animations.js" defer></script>
 <script src="/assets/js/notifications.js" defer></script>
+<script src="/assets/js/search.js" defer></script>
 
 <main>
   <section class="hero">
@@ -160,6 +161,38 @@
 <script src="/assets/js/app.js"></script>
 <script>
   window.__EF_PAGE__ = 'home';
+
+  // Initialize stats counters on homepage
+  document.addEventListener('DOMContentLoaded', () => {
+    // Animate stat counters when they come into view
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting && !entry.target.dataset.counted) {
+          const target = parseInt(entry.target.dataset.counter);
+          if (target > 0) {
+            entry.target.dataset.counted = 'true';
+            const counter = new Counter(entry.target, {
+              target: target,
+              duration: 2000,
+              suffix: entry.target.dataset.suffix || ''
+            });
+            counter.animate();
+          }
+        }
+      });
+    }, { threshold: 0.5 });
+
+    document.querySelectorAll('[data-counter]').forEach(el => {
+      observer.observe(el);
+    });
+
+    // Add ripple effect to CTA buttons
+    document.querySelectorAll('.cta').forEach(button => {
+      if (!button.classList.contains('ripple-container')) {
+        button.addEventListener('click', createRipple);
+      }
+    });
+  });
 
   // Brand animation: keep "EventFlow" for 3s, then fade + collapse from right to left
   (function () {
