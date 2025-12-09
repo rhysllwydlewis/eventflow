@@ -60,6 +60,12 @@ const { read, write, uid, DATA_DIR } = require('./store');
 // Photo upload utilities
 const photoUpload = require('./photo-upload');
 
+// Reviews and ratings system
+const reviewsSystem = require('./reviews');
+
+// Search and discovery system
+const searchSystem = require('./search');
+
 // Helper: determine if a supplier's Pro plan is currently active.
 // - isPro must be true, AND
 // - proExpiresAt is either missing/null (no expiry) or in the future.
@@ -1500,7 +1506,356 @@ app.post('/api/me/packages/:id/photos', authRequired, (req, res) => {
   res.json({ ok: true, url });
 });
 
+// ---------- Advanced Search & Discovery ----------
+
+/**
+ * Search suppliers with advanced filters
+ * GET /api/search/suppliers
+ * Query params: q, category, location, minPrice, maxPrice, minRating, amenities, 
+ *               minGuests, proOnly, verifiedOnly, sortBy, page, perPage
+ */
+app.get('/api/search/suppliers', async (req, res) => {
+  try {
+    const results = await searchSystem.searchSuppliers(req.query);
+
+    // Save to search history if user is authenticated
+    if (req.user && req.query.q) {
+      await searchSystem.saveSearchHistory(req.user.id, req.query);
+    }
+
+    res.json({
+      success: true,
+      ...results,
+    });
+  } catch (error) {
+    console.error('Search error:', error);
+    res.status(500).json({ error: 'Search failed', details: error.message });
+  }
+});
+
+/**
+ * Get trending suppliers
+ * GET /api/discovery/trending
+ */
+app.get('/api/discovery/trending', async (req, res) => {
+  try {
+    const limit = Number(req.query.limit) || 10;
+    const trending = await searchSystem.getTrendingSuppliers(limit);
+
+    res.json({
+      success: true,
+      count: trending.length,
+      suppliers: trending,
+    });
+  } catch (error) {
+    console.error('Get trending error:', error);
+    res.status(500).json({ error: 'Failed to get trending suppliers', details: error.message });
+  }
+});
+
+/**
+ * Get new arrivals
+ * GET /api/discovery/new
+ */
+app.get('/api/discovery/new', async (req, res) => {
+  try {
+    const limit = Number(req.query.limit) || 10;
+    const newSuppliers = await searchSystem.getNewArrivals(limit);
+
+    res.json({
+      success: true,
+      count: newSuppliers.length,
+      suppliers: newSuppliers,
+    });
+  } catch (error) {
+    console.error('Get new arrivals error:', error);
+    res.status(500).json({ error: 'Failed to get new suppliers', details: error.message });
+  }
+});
+
+/**
+ * Get popular packages
+ * GET /api/discovery/popular-packages
+ */
+app.get('/api/discovery/popular-packages', async (req, res) => {
+  try {
+    const limit = Number(req.query.limit) || 10;
+    const packages = await searchSystem.getPopularPackages(limit);
+
+    res.json({
+      success: true,
+      count: packages.length,
+      packages,
+    });
+  } catch (error) {
+    console.error('Get popular packages error:', error);
+    res.status(500).json({ error: 'Failed to get popular packages', details: error.message });
+  }
+});
+
+/**
+ * Get personalized recommendations
+ * GET /api/discovery/recommendations
+ */
+app.get('/api/discovery/recommendations', authRequired, async (req, res) => {
+  try {
+    const limit = Number(req.query.limit) || 10;
+    const recommendations = await searchSystem.getRecommendations(req.user.id, limit);
+
+    res.json({
+      success: true,
+      count: recommendations.length,
+      suppliers: recommendations,
+    });
+  } catch (error) {
+    console.error('Get recommendations error:', error);
+    res.status(500).json({ error: 'Failed to get recommendations', details: error.message });
+  }
+});
+
+/**
+ * Get user's search history
+ * GET /api/search/history
+ */
+app.get('/api/search/history', authRequired, async (req, res) => {
+  try {
+    const limit = Number(req.query.limit) || 20;
+    const history = await searchSystem.getUserSearchHistory(req.user.id, limit);
+
+    res.json({
+      success: true,
+      count: history.length,
+      history,
+    });
+  } catch (error) {
+    console.error('Get search history error:', error);
+    res.status(500).json({ error: 'Failed to get search history', details: error.message });
+  }
+});
+
+/**
+ * Get all categories
+ * GET /api/search/categories
+ */
+app.get('/api/search/categories', async (req, res) => {
+  try {
+    const categories = await searchSystem.getCategories();
+
+    res.json({
+      success: true,
+      count: categories.length,
+      categories,
+    });
+  } catch (error) {
+    console.error('Get categories error:', error);
+    res.status(500).json({ error: 'Failed to get categories', details: error.message });
+  }
+});
+
+/**
+ * Get all amenities
+ * GET /api/search/amenities
+ */
+app.get('/api/search/amenities', async (req, res) => {
+  try {
+    const amenities = await searchSystem.getAmenities();
+
+    res.json({
+      success: true,
+      count: amenities.length,
+      amenities,
+    });
+  } catch (error) {
+    console.error('Get amenities error:', error);
+    res.status(500).json({ error: 'Failed to get amenities', details: error.message });
+  }
+});
+
+// ---------- Reviews and Ratings System ----------
+
+
+/**
+ * Create a review for a supplier
+ * POST /api/reviews
+ * Body: { supplierId, rating, comment, eventType, eventDate }
+ */
+app.post('/api/reviews', authRequired, async (req, res) => {
+  try {
+    const { supplierId, rating, comment, eventType, eventDate } = req.body;
+
+    // Validate input
+    if (!supplierId || !rating || rating < 1 || rating > 5) {
+      return res.status(400).json({ error: 'Invalid input. Rating must be between 1 and 5.' });
+    }
+
+    // Check if supplier exists
+    const suppliers = await read('suppliers');
+    const supplier = suppliers.find(s => s.id === supplierId);
+    if (!supplier) {
+      return res.status(404).json({ error: 'Supplier not found' });
+    }
+
+    // Get user info
+    const users = await read('users');
+    const user = users.find(u => u.id === req.user.id);
+
+    // Create review
+    const review = await reviewsSystem.createReview({
+      supplierId,
+      userId: req.user.id,
+      userName: user.name || 'Anonymous',
+      rating: Number(rating),
+      comment: comment || '',
+      eventType: eventType || '',
+      eventDate: eventDate || '',
+      verified: false, // TODO: Check if user actually booked this supplier
+    });
+
+    res.json({
+      success: true,
+      review,
+      message: 'Review submitted successfully. Pending admin approval.',
+    });
+  } catch (error) {
+    console.error('Create review error:', error);
+    res.status(500).json({ error: 'Failed to create review', details: error.message });
+  }
+});
+
+/**
+ * Get reviews for a supplier
+ * GET /api/reviews/supplier/:supplierId
+ */
+app.get('/api/reviews/supplier/:supplierId', async (req, res) => {
+  try {
+    const { supplierId } = req.params;
+    const { minRating, sortBy } = req.query;
+
+    const reviews = await reviewsSystem.getSupplierReviews(supplierId, {
+      approvedOnly: true,
+      minRating: minRating ? Number(minRating) : undefined,
+      sortBy: sortBy || 'date',
+    });
+
+    res.json({
+      success: true,
+      count: reviews.length,
+      reviews,
+    });
+  } catch (error) {
+    console.error('Get reviews error:', error);
+    res.status(500).json({ error: 'Failed to get reviews', details: error.message });
+  }
+});
+
+/**
+ * Get rating distribution for a supplier
+ * GET /api/reviews/supplier/:supplierId/distribution
+ */
+app.get('/api/reviews/supplier/:supplierId/distribution', async (req, res) => {
+  try {
+    const { supplierId } = req.params;
+    const distribution = await reviewsSystem.getRatingDistribution(supplierId);
+
+    res.json({
+      success: true,
+      ...distribution,
+    });
+  } catch (error) {
+    console.error('Get rating distribution error:', error);
+    res.status(500).json({ error: 'Failed to get rating distribution', details: error.message });
+  }
+});
+
+/**
+ * Mark review as helpful
+ * POST /api/reviews/:reviewId/helpful
+ */
+app.post('/api/reviews/:reviewId/helpful', async (req, res) => {
+  try {
+    const { reviewId } = req.params;
+    const review = await reviewsSystem.markHelpful(reviewId);
+
+    res.json({
+      success: true,
+      review,
+      message: 'Thank you for your feedback!',
+    });
+  } catch (error) {
+    console.error('Mark helpful error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * Get pending reviews (admin only)
+ * GET /api/admin/reviews/pending
+ */
+app.get('/api/admin/reviews/pending', authRequired, roleRequired('admin'), async (req, res) => {
+  try {
+    const pending = await reviewsSystem.getPendingReviews();
+
+    res.json({
+      success: true,
+      count: pending.length,
+      reviews: pending,
+    });
+  } catch (error) {
+    console.error('Get pending reviews error:', error);
+    res.status(500).json({ error: 'Failed to get pending reviews', details: error.message });
+  }
+});
+
+/**
+ * Approve or reject a review (admin only)
+ * POST /api/admin/reviews/:reviewId/approve
+ * Body: { approved: boolean }
+ */
+app.post('/api/admin/reviews/:reviewId/approve', authRequired, roleRequired('admin'), async (req, res) => {
+  try {
+    const { reviewId } = req.params;
+    const { approved } = req.body;
+
+    if (typeof approved !== 'boolean') {
+      return res.status(400).json({ error: 'Invalid input' });
+    }
+
+    const review = await reviewsSystem.approveReview(reviewId, approved, req.user.id);
+
+    res.json({
+      success: true,
+      review,
+      message: approved ? 'Review approved' : 'Review rejected',
+    });
+  } catch (error) {
+    console.error('Approve review error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * Delete a review
+ * DELETE /api/reviews/:reviewId
+ */
+app.delete('/api/reviews/:reviewId', authRequired, async (req, res) => {
+  try {
+    const { reviewId } = req.params;
+    const isAdmin = req.user.role === 'admin';
+
+    await reviewsSystem.deleteReview(reviewId, req.user.id, isAdmin);
+
+    res.json({
+      success: true,
+      message: 'Review deleted successfully',
+    });
+  } catch (error) {
+    console.error('Delete review error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // ---------- Photo Upload & Management ----------
+
 
 /**
  * Upload single photo for supplier or package
