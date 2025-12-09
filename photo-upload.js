@@ -320,12 +320,116 @@ async function cropImage(imageUrl, cropData) {
   return processAndSaveImage(cropped, 'cropped.jpg');
 }
 
+/**
+ * Update photo metadata (caption, alt text, tags)
+ * @param {string} photoId - Photo identifier
+ * @param {Object} metadata - New metadata { caption, altText, tags, isFeatured, watermark }
+ * @returns {Promise<Object>} Updated metadata
+ */
+async function updatePhotoMetadata(photoId, metadata) {
+  const { caption, altText, tags, isFeatured, watermark } = metadata;
+  
+  return {
+    photoId,
+    caption: caption || '',
+    altText: altText || '',
+    tags: Array.isArray(tags) ? tags : [],
+    isFeatured: !!isFeatured,
+    watermark: !!watermark,
+    updatedAt: new Date().toISOString()
+  };
+}
+
+/**
+ * Replace photo while keeping metadata
+ * @param {string} photoId - Photo identifier
+ * @param {Buffer} newImageBuffer - New image data
+ * @param {Object} existingMetadata - Existing metadata to preserve
+ * @returns {Promise<Object>} New image URLs with preserved metadata
+ */
+async function replacePhoto(photoId, newImageBuffer, existingMetadata) {
+  // Process and save new image
+  const newImageData = await processAndSaveImage(newImageBuffer, `replaced_${photoId}.jpg`);
+  
+  // Merge with existing metadata
+  return {
+    ...newImageData,
+    metadata: existingMetadata
+  };
+}
+
+/**
+ * Apply filters to image (brightness, contrast, saturation)
+ * @param {string} imageUrl - Image URL
+ * @param {Object} filters - Filter values { brightness, contrast, saturation }
+ * @returns {Promise<Object>} Processed image data
+ */
+async function applyFilters(imageUrl, filters) {
+  const { brightness = 1, contrast = 1, saturation = 1 } = filters;
+  
+  let buffer;
+  
+  if (S3_ENABLED) {
+    const key = imageUrl.replace(/^https?:\/\/[^/]+\//, '');
+    const data = await s3.getObject({
+      Bucket: process.env.AWS_S3_BUCKET,
+      Key: key,
+    }).promise();
+    buffer = data.Body;
+  } else {
+    const filename = path.basename(imageUrl);
+    const filepath = path.join(UPLOAD_DIRS.original, filename);
+    buffer = await fs.readFile(filepath);
+  }
+  
+  // Apply filters using Sharp
+  let image = sharp(buffer);
+  
+  // Brightness adjustment (0.5 = darker, 1.5 = brighter)
+  if (brightness !== 1) {
+    image = image.modulate({ brightness });
+  }
+  
+  // Saturation adjustment (0 = grayscale, 2 = very saturated)
+  if (saturation !== 1) {
+    image = image.modulate({ saturation });
+  }
+  
+  // Contrast is handled via linear transform
+  if (contrast !== 1) {
+    const alpha = contrast;
+    const beta = 128 * (1 - contrast);
+    image = image.linear(alpha, beta);
+  }
+  
+  const processed = await image.toBuffer();
+  
+  // Save processed image
+  return processAndSaveImage(processed, 'filtered.jpg');
+}
+
+/**
+ * Bulk update photo order
+ * @param {Array} photoOrder - Array of {photoId, order} objects
+ * @returns {Promise<Array>} Updated order
+ */
+async function updatePhotoOrder(photoOrder) {
+  return photoOrder.map((item, index) => ({
+    photoId: item.photoId,
+    order: index
+  }));
+}
+
 module.exports = {
   upload,
   processAndSaveImage,
   deleteImage,
   getImageMetadata,
   cropImage,
+  updatePhotoMetadata,
+  replacePhoto,
+  applyFilters,
+  updatePhotoOrder,
   S3_ENABLED,
   IMAGE_CONFIGS,
 };

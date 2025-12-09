@@ -620,5 +620,95 @@ function parseDuration(duration) {
   }
 }
 
+/**
+ * PUT /api/admin/packages/:id
+ * Edit package details (admin only)
+ */
+router.put('/packages/:id', authRequired, roleRequired('admin'), auditLog(AUDIT_ACTIONS.PACKAGE_EDITED), (req, res) => {
+  const { id } = req.params;
+  const { title, description, price, features, availability, status, scheduledPublishAt } = req.body;
+  
+  const packages = read('packages');
+  const pkgIndex = packages.findIndex(p => p.id === id);
+  
+  if (pkgIndex === -1) {
+    return res.status(404).json({ error: 'Package not found' });
+  }
+  
+  const pkg = packages[pkgIndex];
+  
+  // Store previous version for history
+  if (!pkg.versionHistory) {
+    pkg.versionHistory = [];
+  }
+  pkg.versionHistory.push({
+    timestamp: new Date().toISOString(),
+    editedBy: req.user.id,
+    previousState: { ...pkg }
+  });
+  
+  // Update fields if provided
+  if (title !== undefined) pkg.title = title;
+  if (description !== undefined) pkg.description = description;
+  if (price !== undefined) pkg.price = price;
+  if (features !== undefined) pkg.features = features;
+  if (availability !== undefined) pkg.availability = availability;
+  if (status !== undefined) pkg.status = status;
+  if (scheduledPublishAt !== undefined) pkg.scheduledPublishAt = scheduledPublishAt;
+  
+  pkg.updatedAt = new Date().toISOString();
+  pkg.lastEditedBy = req.user.id;
+  
+  packages[pkgIndex] = pkg;
+  write('packages', packages);
+  
+  res.json({ success: true, package: pkg });
+});
+
+/**
+ * PUT /api/admin/suppliers/:id
+ * Edit supplier profile (admin only)
+ */
+router.put('/suppliers/:id', authRequired, roleRequired('admin'), auditLog(AUDIT_ACTIONS.SUPPLIER_EDITED), (req, res) => {
+  const { id } = req.params;
+  const { name, description, contact, categories, amenities, location, serviceAreas } = req.body;
+  
+  const suppliers = read('suppliers');
+  const supplierIndex = suppliers.findIndex(s => s.id === id);
+  
+  if (supplierIndex === -1) {
+    return res.status(404).json({ error: 'Supplier not found' });
+  }
+  
+  const supplier = suppliers[supplierIndex];
+  
+  // Store previous version for history
+  if (!supplier.versionHistory) {
+    supplier.versionHistory = [];
+  }
+  supplier.versionHistory.push({
+    timestamp: new Date().toISOString(),
+    editedBy: req.user.id,
+    previousState: { ...supplier }
+  });
+  
+  // Update fields if provided
+  if (name !== undefined) supplier.name = name;
+  if (description !== undefined) supplier.description = description;
+  if (contact !== undefined) supplier.contact = contact;
+  if (categories !== undefined) supplier.categories = categories;
+  if (amenities !== undefined) supplier.amenities = amenities;
+  if (location !== undefined) supplier.location = location;
+  if (serviceAreas !== undefined) supplier.serviceAreas = serviceAreas;
+  
+  supplier.updatedAt = new Date().toISOString();
+  supplier.lastEditedBy = req.user.id;
+  
+  suppliers[supplierIndex] = supplier;
+  write('suppliers', suppliers);
+  
+  res.json({ success: true, supplier });
+});
+
 module.exports = router;
 module.exports.setHelperFunctions = setHelperFunctions;
