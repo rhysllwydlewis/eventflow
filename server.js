@@ -17,7 +17,7 @@ const jwt = require('jsonwebtoken');
 const validator = require('validator');
 const nodemailer = require('nodemailer');
 
-const APP_VERSION = 'v16.3.9';
+const APP_VERSION = 'v17.0.0';
 
 require('dotenv').config();
 
@@ -65,6 +65,9 @@ const reviewsSystem = require('./reviews');
 
 // Search and discovery system
 const searchSystem = require('./search');
+
+// CSRF protection middleware
+const { getToken } = require('./middleware/csrf');
 
 // Swagger API documentation
 const swaggerUi = require('swagger-ui-express');
@@ -513,7 +516,30 @@ app.get('/api/auth/verify', (req, res) => {
   users[idx].verified = true;
   delete users[idx].verificationToken;
   write('users', users);
+  
+  // Send welcome email after successful verification
+  const user = users[idx];
+  sendMail({
+    to: user.email,
+    subject: 'Welcome to EventFlow!',
+    template: 'welcome',
+    templateData: {
+      name: user.name || 'there',
+      email: user.email,
+      role: user.role
+    }
+  }).catch(e => {
+    console.error('Failed to send welcome email', e);
+  });
+  
   res.json({ ok: true });
+});
+
+// CSRF token endpoint - provides token for frontend use
+// Apply authLimiter to prevent token exhaustion attacks
+app.get('/api/csrf-token', authLimiter, (req, res) => {
+  const token = getToken(req);
+  res.json({ csrfToken: token });
 });
 
 // Admin: list users (without password hashes)

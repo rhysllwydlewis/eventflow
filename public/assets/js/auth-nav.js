@@ -1,4 +1,25 @@
 (async function () {
+  // --- CSRF Token Management ---
+  let csrfToken = null;
+  
+  // Fetch CSRF token on page load
+  async function fetchCsrfToken() {
+    try {
+      const response = await fetch('/api/csrf-token');
+      if (response.ok) {
+        const data = await response.json();
+        csrfToken = data.csrfToken;
+        // Store in window for access by other scripts
+        window.__CSRF_TOKEN__ = csrfToken;
+      }
+    } catch (e) {
+      console.error('Failed to fetch CSRF token', e);
+    }
+  }
+  
+  // Fetch token immediately
+  await fetchCsrfToken();
+  
   // --- Theme (light / dark) with system preference support ---
   const root = document.documentElement;
   const THEME_KEY = 'ef-theme';
