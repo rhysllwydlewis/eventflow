@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="/assets/css/components.css">
   <link rel="stylesheet" href="/assets/css/animations.css">
   <link rel="icon" href="/favicon.svg">
-  <script src="/assets/js/components.js"></script>
+  <script src="/assets/js/components.js" defer></script>
   <style>
     /* Improved accessibility and contrast */
     body{font-family:sans-serif;padding:20px;background:#f5f5f5;color:#1a1a1a;}
@@ -104,6 +104,17 @@
 
 <script>
   (function () {
+    // HTML sanitization helper to prevent XSS
+    function escapeHtml(unsafe) {
+      if (!unsafe) return '';
+      return String(unsafe)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
     function api(url, method, body) {
       var opts = {
         method: method || 'GET',
@@ -932,37 +943,37 @@
         content.innerHTML = 
           '<div style="display: grid; gap: 1rem;">' +
             '<div><label style="display:block;margin-bottom:4px;font-weight:600;">Name</label>' +
-            '<input type="text" id="edit-sup-name" value="' + (supplier.name || '') + '" style="width:100%;padding:8px;border:1px solid #d4d4d8;border-radius:4px;"></div>' +
+            '<input type="text" id="edit-sup-name" value="' + escapeHtml(supplier.name || '') + '" style="width:100%;padding:8px;border:1px solid #d4d4d8;border-radius:4px;"></div>' +
             
             '<div><label style="display:block;margin-bottom:4px;font-weight:600;">Category</label>' +
-            '<input type="text" id="edit-sup-category" value="' + (supplier.category || '') + '" style="width:100%;padding:8px;border:1px solid #d4d4d8;border-radius:4px;"></div>' +
+            '<input type="text" id="edit-sup-category" value="' + escapeHtml(supplier.category || '') + '" style="width:100%;padding:8px;border:1px solid #d4d4d8;border-radius:4px;"></div>' +
             
             '<div><label style="display:block;margin-bottom:4px;font-weight:600;">Location</label>' +
-            '<input type="text" id="edit-sup-location" value="' + (supplier.location || '') + '" style="width:100%;padding:8px;border:1px solid #d4d4d8;border-radius:4px;"></div>' +
+            '<input type="text" id="edit-sup-location" value="' + escapeHtml(supplier.location || '') + '" style="width:100%;padding:8px;border:1px solid #d4d4d8;border-radius:4px;"></div>' +
             
             '<div><label style="display:block;margin-bottom:4px;font-weight:600;">Price Display</label>' +
-            '<input type="text" id="edit-sup-price" value="' + (supplier.price_display || '') + '" style="width:100%;padding:8px;border:1px solid #d4d4d8;border-radius:4px;"></div>' +
+            '<input type="text" id="edit-sup-price" value="' + escapeHtml(supplier.price_display || '') + '" style="width:100%;padding:8px;border:1px solid #d4d4d8;border-radius:4px;"></div>' +
             
             '<div><label style="display:block;margin-bottom:4px;font-weight:600;">Website</label>' +
-            '<input type="url" id="edit-sup-website" value="' + (supplier.website || '') + '" style="width:100%;padding:8px;border:1px solid #d4d4d8;border-radius:4px;"></div>' +
+            '<input type="url" id="edit-sup-website" value="' + escapeHtml(supplier.website || '') + '" style="width:100%;padding:8px;border:1px solid #d4d4d8;border-radius:4px;"></div>' +
             
             '<div><label style="display:block;margin-bottom:4px;font-weight:600;">Email</label>' +
-            '<input type="email" id="edit-sup-email" value="' + (supplier.email || '') + '" style="width:100%;padding:8px;border:1px solid #d4d4d8;border-radius:4px;"></div>' +
+            '<input type="email" id="edit-sup-email" value="' + escapeHtml(supplier.email || '') + '" style="width:100%;padding:8px;border:1px solid #d4d4d8;border-radius:4px;"></div>' +
             
             '<div><label style="display:block;margin-bottom:4px;font-weight:600;">Max Guests</label>' +
-            '<input type="number" id="edit-sup-maxGuests" value="' + (supplier.maxGuests || '') + '" style="width:100%;padding:8px;border:1px solid #d4d4d8;border-radius:4px;"></div>' +
+            '<input type="number" id="edit-sup-maxGuests" value="' + escapeHtml(supplier.maxGuests || '') + '" style="width:100%;padding:8px;border:1px solid #d4d4d8;border-radius:4px;"></div>' +
             
             '<div><label style="display:block;margin-bottom:4px;font-weight:600;">Short Description</label>' +
-            '<textarea id="edit-sup-desc-short" rows="2" style="width:100%;padding:8px;border:1px solid #d4d4d8;border-radius:4px;">' + (supplier.description_short || '') + '</textarea></div>' +
+            '<textarea id="edit-sup-desc-short" rows="2" style="width:100%;padding:8px;border:1px solid #d4d4d8;border-radius:4px;">' + escapeHtml(supplier.description_short || '') + '</textarea></div>' +
             
             '<div><label style="display:block;margin-bottom:4px;font-weight:600;">Long Description</label>' +
-            '<textarea id="edit-sup-desc-long" rows="4" style="width:100%;padding:8px;border:1px solid #d4d4d8;border-radius:4px;">' + (supplier.description_long || '') + '</textarea></div>' +
+            '<textarea id="edit-sup-desc-long" rows="4" style="width:100%;padding:8px;border:1px solid #d4d4d8;border-radius:4px;">' + escapeHtml(supplier.description_long || '') + '</textarea></div>' +
           '</div>';
         
         // Create modal
         if (typeof Modal !== 'undefined') {
           var modal = new Modal({
-            title: 'Edit Supplier: ' + supplier.name,
+            title: 'Edit Supplier: ' + escapeHtml(supplier.name),
             content: content,
             confirmText: 'Save Changes',
             cancelText: 'Cancel',
@@ -974,7 +985,7 @@
                 price_display: document.getElementById('edit-sup-price').value,
                 website: document.getElementById('edit-sup-website').value,
                 email: document.getElementById('edit-sup-email').value,
-                maxGuests: parseInt(document.getElementById('edit-sup-maxGuests').value) || 0,
+                maxGuests: parseInt(document.getElementById('edit-sup-maxGuests').value, 10) || 0,
                 description_short: document.getElementById('edit-sup-desc-short').value,
                 description_long: document.getElementById('edit-sup-desc-long').value
               };
