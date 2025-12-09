@@ -8,6 +8,7 @@
 const express = require('express');
 const { read, write } = require('../store');
 const { authRequired, roleRequired } = require('../middleware/auth');
+const { auditLog, AUDIT_ACTIONS } = require('../middleware/audit');
 
 const router = express.Router();
 
@@ -313,6 +314,311 @@ router.post('/packages/:id/feature', authRequired, roleRequired('admin'), (req, 
   write('packages', all);
   res.json({ ok: true, package: all[i] });
 });
+
+// ---------- User Management ----------
+
+/**
+ * POST /api/admin/users/:id/suspend
+ * Suspend or unsuspend a user account
+ * Body: { suspended: boolean, reason: string, duration: string }
+ */
+router.post('/users/:id/suspend', authRequired, roleRequired('admin'), (req, res) => {
+  const { suspended, reason, duration } = req.body;
+  const users = read('users');
+  const userIndex = users.findIndex(u => u.id === req.params.id);
+  
+  if (userIndex < 0) {
+    return res.status(404).json({ error: 'User not found' });
+  }
+  
+  const user = users[userIndex];
+  const now = new Date().toISOString();
+  
+  // Prevent admins from suspending themselves
+  if (user.id === req.user.id) {
+    return res.status(400).json({ error: 'You cannot suspend your own account' });
+  }
+  
+  user.suspended = !!suspended;
+  user.suspendedAt = suspended ? now : null;
+  user.suspendedBy = suspended ? req.user.id : null;
+  user.suspensionReason = suspended ? (reason || 'No reason provided') : null;
+  user.suspensionDuration = suspended ? duration : null;
+  user.updatedAt = now;
+  
+  // Calculate expiry if duration is provided
+  if (suspended && duration) {
+    const durationMs = parseDuration(duration);
+    if (durationMs > 0) {
+      const expiryDate = new Date(Date.now() + durationMs);
+      user.suspensionExpiresAt = expiryDate.toISOString();
+    }
+  } else {
+    user.suspensionExpiresAt = null;
+  }
+  
+  users[userIndex] = user;
+  write('users', users);
+  
+  // Create audit log (requiring audit.js)
+  auditLog({
+    adminId: req.user.id,
+    adminEmail: req.user.email,
+    action: suspended ? AUDIT_ACTIONS.USER_SUSPENDED : AUDIT_ACTIONS.USER_UNSUSPENDED,
+    targetType: 'user',
+    targetId: user.id,
+    details: { reason, duration, email: user.email }
+  });
+  
+  res.json({ 
+    message: suspended ? 'User suspended successfully' : 'User unsuspended successfully',
+    user: {
+      id: user.id,
+      email: user.email,
+      suspended: user.suspended,
+      suspensionReason: user.suspensionReason
+    }
+  });
+});
+
+/**
+ * POST /api/admin/users/:id/ban
+ * Ban or unban a user permanently
+ * Body: { banned: boolean, reason: string }
+ */
+router.post('/users/:id/ban', authRequired, roleRequired('admin'), (req, res) => {
+  const { banned, reason } = req.body;
+  const users = read('users');
+  const userIndex = users.findIndex(u => u.id === req.params.id);
+  
+  if (userIndex < 0) {
+    return res.status(404).json({ error: 'User not found' });
+  }
+  
+  const user = users[userIndex];
+  const now = new Date().toISOString();
+  
+  // Prevent admins from banning themselves
+  if (user.id === req.user.id) {
+    return res.status(400).json({ error: 'You cannot ban your own account' });
+  }
+  
+  user.banned = !!banned;
+  user.bannedAt = banned ? now : null;
+  user.bannedBy = banned ? req.user.id : null;
+  user.banReason = banned ? (reason || 'No reason provided') : null;
+  user.updatedAt = now;
+  
+  users[userIndex] = user;
+  write('users', users);
+  
+  // Create audit log
+  auditLog({
+    adminId: req.user.id,
+    adminEmail: req.user.email,
+    action: banned ? AUDIT_ACTIONS.USER_BANNED : AUDIT_ACTIONS.USER_UNBANNED,
+    targetType: 'user',
+    targetId: user.id,
+    details: { reason, email: user.email }
+  });
+  
+  res.json({ 
+    message: banned ? 'User banned successfully' : 'User unbanned successfully',
+    user: {
+      id: user.id,
+      email: user.email,
+      banned: user.banned,
+      banReason: user.banReason
+    }
+  });
+});
+
+/**
+ * POST /api/admin/users/:id/verify
+ * Manually verify a user's email
+ */
+router.post('/users/:id/verify', authRequired, roleRequired('admin'), (req, res) => {
+  const users = read('users');
+  const userIndex = users.findIndex(u => u.id === req.params.id);
+  
+  if (userIndex < 0) {
+    return res.status(404).json({ error: 'User not found' });
+  }
+  
+  const user = users[userIndex];
+  const now = new Date().toISOString();
+  
+  if (user.verified) {
+    return res.status(400).json({ error: 'User is already verified' });
+  }
+  
+  user.verified = true;
+  user.verifiedAt = now;
+  user.verifiedBy = req.user.id;
+  user.verificationToken = null; // Clear verification token
+  user.updatedAt = now;
+  
+  users[userIndex] = user;
+  write('users', users);
+  
+  // Create audit log
+  auditLog({
+    adminId: req.user.id,
+    adminEmail: req.user.email,
+    action: AUDIT_ACTIONS.USER_VERIFIED,
+    targetType: 'user',
+    targetId: user.id,
+    details: { email: user.email }
+  });
+  
+  res.json({ 
+    message: 'User verified successfully',
+    user: {
+      id: user.id,
+      email: user.email,
+      verified: user.verified
+    }
+  });
+});
+
+/**
+ * POST /api/admin/users/:id/force-reset
+ * Force a password reset for a user
+ */
+router.post('/users/:id/force-reset', authRequired, roleRequired('admin'), (req, res) => {
+  const users = read('users');
+  const userIndex = users.findIndex(u => u.id === req.params.id);
+  
+  if (userIndex < 0) {
+    return res.status(404).json({ error: 'User not found' });
+  }
+  
+  const user = users[userIndex];
+  const now = new Date().toISOString();
+  
+  // Generate reset token
+  const crypto = require('crypto');
+  const resetToken = crypto.randomBytes(32).toString('hex');
+  const resetTokenExpiresAt = new Date(Date.now() + 3600000).toISOString(); // 1 hour
+  
+  user.resetToken = resetToken;
+  user.resetTokenExpiresAt = resetTokenExpiresAt;
+  user.passwordResetRequired = true;
+  user.updatedAt = now;
+  
+  users[userIndex] = user;
+  write('users', users);
+  
+  // Create audit log
+  auditLog({
+    adminId: req.user.id,
+    adminEmail: req.user.email,
+    action: AUDIT_ACTIONS.USER_PASSWORD_RESET,
+    targetType: 'user',
+    targetId: user.id,
+    details: { email: user.email, forced: true }
+  });
+  
+  // TODO: Send password reset email
+  const resetLink = `${process.env.BASE_URL || 'http://localhost:3000'}/reset-password.html?token=${resetToken}`;
+  
+  res.json({ 
+    message: 'Password reset initiated successfully',
+    resetLink, // In production, this would be emailed, not returned
+    user: {
+      id: user.id,
+      email: user.email
+    }
+  });
+});
+
+/**
+ * POST /api/admin/suppliers/:id/verify
+ * Verify a supplier account
+ * Body: { verified: boolean, verificationNotes: string }
+ */
+router.post('/suppliers/:id/verify', authRequired, roleRequired('admin'), (req, res) => {
+  const { verified, verificationNotes } = req.body;
+  const suppliers = read('suppliers');
+  const supplierIndex = suppliers.findIndex(s => s.id === req.params.id);
+  
+  if (supplierIndex < 0) {
+    return res.status(404).json({ error: 'Supplier not found' });
+  }
+  
+  const supplier = suppliers[supplierIndex];
+  const now = new Date().toISOString();
+  
+  supplier.verified = !!verified;
+  supplier.verifiedAt = verified ? now : null;
+  supplier.verifiedBy = verified ? req.user.id : null;
+  supplier.verificationNotes = verificationNotes || '';
+  supplier.verificationStatus = verified ? 'verified' : 'rejected';
+  supplier.updatedAt = now;
+  
+  suppliers[supplierIndex] = supplier;
+  write('suppliers', suppliers);
+  
+  // Create audit log
+  auditLog({
+    adminId: req.user.id,
+    adminEmail: req.user.email,
+    action: verified ? AUDIT_ACTIONS.SUPPLIER_VERIFIED : AUDIT_ACTIONS.SUPPLIER_REJECTED,
+    targetType: 'supplier',
+    targetId: supplier.id,
+    details: { name: supplier.name, notes: verificationNotes }
+  });
+  
+  res.json({ 
+    message: verified ? 'Supplier verified successfully' : 'Supplier verification rejected',
+    supplier: {
+      id: supplier.id,
+      name: supplier.name,
+      verified: supplier.verified,
+      verificationStatus: supplier.verificationStatus
+    }
+  });
+});
+
+/**
+ * GET /api/admin/suppliers/pending-verification
+ * Get suppliers awaiting verification
+ */
+router.get('/suppliers/pending-verification', authRequired, roleRequired('admin'), (req, res) => {
+  const suppliers = read('suppliers');
+  const pending = suppliers.filter(s => 
+    !s.verified && 
+    (!s.verificationStatus || s.verificationStatus === 'pending')
+  );
+  
+  res.json({ 
+    suppliers: pending.map(s => ({
+      id: s.id,
+      name: s.name,
+      category: s.category,
+      location: s.location,
+      ownerUserId: s.ownerUserId,
+      createdAt: s.createdAt
+    })),
+    count: pending.length
+  });
+});
+
+// Helper function to parse duration strings like "7d", "1h", "30m"
+function parseDuration(duration) {
+  const match = duration.match(/^(\d+)([dhm])$/);
+  if (!match) return 0;
+  
+  const value = parseInt(match[1], 10);
+  const unit = match[2];
+  
+  switch (unit) {
+    case 'd': return value * 24 * 60 * 60 * 1000; // days
+    case 'h': return value * 60 * 60 * 1000; // hours
+    case 'm': return value * 60 * 1000; // minutes
+    default: return 0;
+  }
+}
 
 module.exports = router;
 module.exports.setHelperFunctions = setHelperFunctions;

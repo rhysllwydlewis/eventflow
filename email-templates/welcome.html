@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Welcome to EventFlow!</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background-color: #f9fafb;
+      color: #0B1220;
+      line-height: 1.6;
+    }
+    .email-container {
+      max-width: 600px;
+      margin: 40px auto;
+      background-color: #ffffff;
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+    }
+    .email-header {
+      background: linear-gradient(180deg, #16c3ad, #0ea896);
+      padding: 32px 24px;
+      text-align: center;
+    }
+    .logo {
+      width: 48px;
+      height: 48px;
+      margin: 0 auto 12px;
+      border-radius: 12px;
+      background: conic-gradient(from 180deg, #9be7d9, #13B6A2 25%, #0B8073 55%, #0B1220 75%, #9be7d9);
+    }
+    .email-header h1 {
+      margin: 0;
+      color: #ffffff;
+      font-size: 24px;
+      font-weight: 800;
+    }
+    .email-body {
+      padding: 32px 24px;
+    }
+    .email-body h2 {
+      margin: 0 0 16px;
+      font-size: 20px;
+      font-weight: 700;
+      color: #0B1220;
+    }
+    .email-body p {
+      margin: 0 0 16px;
+      color: #667085;
+      font-size: 15px;
+    }
+    .cta-button {
+      display: inline-block;
+      margin: 12px 8px;
+      padding: 14px 28px;
+      background: linear-gradient(180deg, #16c3ad, #0ea896);
+      color: #ffffff;
+      text-decoration: none;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 16px;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.1);
+    }
+    .cta-button.secondary {
+      background: #F6FAF9;
+      color: #0B8073;
+      border: 1px solid #CFEDEA;
+      box-shadow: none;
+    }
+    .feature-box {
+      margin: 24px 0;
+      padding: 20px;
+      background-color: #F2FBF9;
+      border-left: 4px solid #13B6A2;
+      border-radius: 8px;
+    }
+    .feature-box h3 {
+      margin: 0 0 8px;
+      font-size: 16px;
+      font-weight: 700;
+      color: #0B8073;
+    }
+    .feature-box p {
+      margin: 0;
+      color: #667085;
+      font-size: 14px;
+    }
+    .email-footer {
+      padding: 24px;
+      background-color: #f9fafb;
+      border-top: 1px solid #E7EAF0;
+      text-align: center;
+    }
+    .email-footer p {
+      margin: 0 0 8px;
+      font-size: 13px;
+      color: #98A2B3;
+    }
+    .email-footer a {
+      color: #0B8073;
+      text-decoration: none;
+    }
+    .divider {
+      margin: 24px 0;
+      border: 0;
+      border-top: 1px solid #E7EAF0;
+    }
+    @media only screen and (max-width: 600px) {
+      .email-container {
+        margin: 20px;
+        border-radius: 10px;
+      }
+      .email-header {
+        padding: 24px 16px;
+      }
+      .email-body {
+        padding: 24px 16px;
+      }
+      .cta-button {
+        display: block;
+        text-align: center;
+        margin: 12px 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="email-container">
+    <div class="email-header">
+      <div class="logo" aria-hidden="true"></div>
+      <h1>EventFlow</h1>
+    </div>
+    <div class="email-body">
+      <h2>🎉 Welcome to EventFlow!</h2>
+      <p>Hi {{name}},</p>
+      <p>Your email has been verified! You're all set to start planning your perfect event with EventFlow.</p>
+      <p>Here's what you can do next:</p>
+      
+      <div class="feature-box">
+        <h3>🔍 Discover Suppliers</h3>
+        <p>Browse verified venues, caterers, photographers, and more. Filter by location, price, and ratings to find the perfect fit.</p>
+      </div>
+      
+      <div class="feature-box">
+        <h3>📋 Create Your Plan</h3>
+        <p>Build your event checklist, track tasks, and manage your budget all in one place.</p>
+      </div>
+      
+      <div class="feature-box">
+        <h3>💬 Connect & Collaborate</h3>
+        <p>Message suppliers directly, ask questions, and get quotes without leaving the platform.</p>
+      </div>
+      
+      <div style="text-align: center; margin-top: 32px;">
+        <a href="{{baseUrl}}/start.html" class="cta-button">Start Planning</a>
+        <a href="{{baseUrl}}/suppliers.html" class="cta-button secondary">Browse Suppliers</a>
+      </div>
+      
+      <hr class="divider">
+      
+      <p style="font-size: 14px; color: #98A2B3;"><strong>💡 Pro Tip:</strong> Press <strong>Cmd+K</strong> (or <strong>Ctrl+K</strong>) anytime to quickly search for suppliers across the platform.</p>
+      
+      <p style="font-size: 14px; color: #98A2B3;">Need help getting started? Check out our <a href="{{baseUrl}}/faq.html" style="color: #0B8073;">FAQ</a> or reach out to us anytime.</p>
+    </div>
+    <div class="email-footer">
+      <p><strong>EventFlow</strong> — Event planning made simple.</p>
+      <p>
+        <a href="{{baseUrl}}/privacy.html">Privacy Policy</a> · 
+        <a href="{{baseUrl}}/terms.html">Terms of Service</a> · 
+        <a href="{{baseUrl}}/contact.html">Contact Us</a>
+      </p>
+      <p>© {{year}} EventFlow. All rights reserved.</p>
+    </div>
+  </div>
+</body>
+</html>

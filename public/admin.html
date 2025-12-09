@@ -48,6 +48,24 @@
       <div class="small" style="margin-top: 5px;">Reviews awaiting approval</div>
       <button onclick="reviewPendingReviews()" style="margin-top: 10px; width: 100%;">Review Reviews</button>
     </div>
+    <div class="card">
+      <h3 style="margin: 0 0 10px 0; font-size: 16px;">Pending Reports</h3>
+      <div style="font-size: 28px; font-weight: bold; color: #ef4444;" id="pendingReportsCount">—</div>
+      <div class="small" style="margin-top: 5px;">Content reports to review</div>
+      <button onclick="location.href='/admin-reports.html'" style="margin-top: 10px; width: 100%;">Review Reports</button>
+    </div>
+    <div class="card">
+      <h3 style="margin: 0 0 10px 0; font-size: 16px;">Suppliers Pending Verification</h3>
+      <div style="font-size: 28px; font-weight: bold; color: #3b82f6;" id="pendingSupplierVerificationCount">—</div>
+      <div class="small" style="margin-top: 5px;">Suppliers awaiting verification</div>
+      <button onclick="location.href='/admin-users.html#suppliers'" style="margin-top: 10px; width: 100%;">Verify Suppliers</button>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button onclick="location.href='/admin-users.html'">User Management</button>
+    <button onclick="location.href='/admin-reports.html'">Reports Queue</button>
+    <button onclick="location.href='/admin-audit.html'">Audit Log</button>
   </div>
 
   <h2>Suppliers</h2>
@@ -319,9 +337,27 @@
           
           var photosEl = document.getElementById('pendingPhotosCount');
           var reviewsEl = document.getElementById('pendingReviewsCount');
+          var reportsEl = document.getElementById('pendingReportsCount');
+          var suppliersVerificationEl = document.getElementById('pendingSupplierVerificationCount');
           
           if (photosEl) photosEl.innerText = pendingPhotos.length;
           if (reviewsEl) reviewsEl.innerText = pendingReviews.length;
+
+          // Fetch pending reports count
+          api('/api/admin/reports/pending', 'GET').then(function(reportsResp) {
+            if (reportsEl) reportsEl.innerText = reportsResp.count || 0;
+          }).catch(function(err) {
+            console.error('Error loading pending reports:', err);
+            if (reportsEl) reportsEl.innerText = '?';
+          });
+
+          // Fetch pending supplier verifications
+          api('/api/admin/suppliers/pending-verification', 'GET').then(function(suppliersResp) {
+            if (suppliersVerificationEl) suppliersVerificationEl.innerText = suppliersResp.count || 0;
+          }).catch(function(err) {
+            console.error('Error loading pending supplier verifications:', err);
+            if (suppliersVerificationEl) suppliersVerificationEl.innerText = '?';
+          });
 
           if (statusEl) statusEl.innerText = 'Loaded ' + allUsers.length + ' users.';
         });

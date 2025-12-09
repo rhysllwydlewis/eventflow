@@ -49,6 +49,7 @@
     <a href="/for-suppliers.html">For Suppliers</a>
     <a href="/faq.html">FAQ</a>
     <a href="/settings.html">Settings</a>
+    <a href="#" id="nav-take-tour">Take a Tour</a>
     <a href="/auth.html" id="nav-auth">Sign in</a>
     <a href="#" id="nav-dashboard" style="display:none">Dashboard</a>
     <a href="#" id="nav-signout" style="display:none">Sign out</a>
@@ -265,6 +266,21 @@
         ],
         onComplete: () => {
           console.log('Onboarding tour completed');
+        }
+      });
+    }
+
+    // Handle "Take a Tour" link click
+    const takeTourLink = document.getElementById('nav-take-tour');
+    if (takeTourLink) {
+      takeTourLink.addEventListener('click', function(e) {
+        e.preventDefault();
+        // Clear the tour completion flag and reload to restart tour
+        localStorage.removeItem('ef_homepage_tour_completed');
+        // If OnboardingTour exists and has an instance, restart it
+        if (typeof OnboardingTour !== 'undefined') {
+          // Reload the page to restart the tour
+          window.location.reload();
         }
       });
     }

@@ -4,47 +4,87 @@ const { read, write, uid } = require('./store');
 // Seed the local JSON "database" with default records.
 // For this demo build, we reset core demo data on startup
 // so the logins and sample content are predictable.
-function seed() {
+// 
+// Options:
+// - skipIfExists: Don't overwrite existing data (for production)
+// - seedUsers: Include default users (admin, supplier, customer)
+// - seedSuppliers: Include demo suppliers
+// - seedPackages: Include demo packages
+function seed(options = {}) {
+  const {
+    skipIfExists = false,
+    seedUsers = true,
+    seedSuppliers = true,
+    seedPackages = true
+  } = options;
+
   // Users (admin, supplier demo, customer demo)
-  const now = new Date().toISOString();
-  const admin = {
-    id: uid('usr'),
-    name: 'Admin',
-    email: 'admin@eventflow.local',
-    role: 'admin',
-    passwordHash: bcrypt.hashSync('Admin123!', 10),
-    createdAt: now,
-    notify: true,
-    marketingOptIn: false,
-    verified: true,
-  };
-  const supplier = {
-    id: uid('usr'),
-    name: 'Supplier Demo',
-    email: 'supplier@eventflow.local',
-    role: 'supplier',
-    passwordHash: bcrypt.hashSync('Supplier123!', 10),
-    createdAt: now,
-    notify: true,
-    marketingOptIn: false,
-    verified: true,
-  };
-  const customer = {
-    id: uid('usr'),
-    name: 'Customer Demo',
-    email: 'customer@eventflow.local',
-    role: 'customer',
-    passwordHash: bcrypt.hashSync('Customer123!', 10),
-    createdAt: now,
-    notify: true,
-    marketingOptIn: false,
-    verified: true,
-  };
-  write('users', [admin, supplier, customer]);
+  if (seedUsers) {
+    const existingUsers = read('users');
+    
+    // Check if we should skip (for production use)
+    if (skipIfExists && existingUsers.length > 0) {
+      console.log('Users already exist, skipping user seed');
+    } else {
+      const now = new Date().toISOString();
+      
+      // Check if admin exists
+      const adminExists = existingUsers.find(u => u.email === 'admin@eventflow.local');
+      if (!adminExists) {
+        const admin = {
+          id: uid('usr'),
+          name: 'Admin',
+          email: 'admin@eventflow.local',
+          role: 'admin',
+          passwordHash: bcrypt.hashSync('Admin123!', 10),
+          createdAt: now,
+          notify: true,
+          marketingOptIn: false,
+          verified: true,
+        };
+        existingUsers.push(admin);
+        console.log('Created default admin user: admin@eventflow.local');
+      }
+      
+      // Only create demo users if not skipping
+      if (!skipIfExists) {
+        const supplier = {
+          id: uid('usr'),
+          name: 'Supplier Demo',
+          email: 'supplier@eventflow.local',
+          role: 'supplier',
+          passwordHash: bcrypt.hashSync('Supplier123!', 10),
+          createdAt: now,
+          notify: true,
+          marketingOptIn: false,
+          verified: true,
+        };
+        const customer = {
+          id: uid('usr'),
+          name: 'Customer Demo',
+          email: 'customer@eventflow.local',
+          role: 'customer',
+          passwordHash: bcrypt.hashSync('Customer123!', 10),
+          createdAt: now,
+          notify: true,
+          marketingOptIn: false,
+          verified: true,
+        };
+        write('users', [admin, supplier, customer]);
+        console.log('Created demo users (admin, supplier, customer)');
+      } else {
+        write('users', existingUsers);
+      }
+    }
+  }
 
   // Suppliers
-  if (!Array.isArray(read('suppliers')) || read('suppliers').length === 0) {
-    const defaults = [
+  if (seedSuppliers) {
+    const existingSuppliers = read('suppliers');
+    if (skipIfExists && existingSuppliers.length > 0) {
+      console.log('Suppliers already exist, skipping supplier seed');
+    } else if (!Array.isArray(existingSuppliers) || existingSuppliers.length === 0) {
+      const defaults = [
   {
     "id": "sup_xmkgxc6kd04f",
     "ownerUserId": null,
@@ -112,11 +152,17 @@ function seed() {
   }
 ];
     write('suppliers', defaults);
+      console.log('Created demo suppliers');
+    }
   }
 
   // Packages
-  if (!Array.isArray(read('packages')) || read('packages').length === 0) {
-    const defaults = [
+  if (seedPackages) {
+    const existingPackages = read('packages');
+    if (skipIfExists && existingPackages.length > 0) {
+      console.log('Packages already exist, skipping package seed');
+    } else if (!Array.isArray(existingPackages) || existingPackages.length === 0) {
+      const defaults = [
   {
     "id": "pkg_pk1uq76kd04h",
     "supplierId": "sup_xmkgxc6kd04f",
@@ -148,16 +194,20 @@ function seed() {
     "featured": false
   }
 ];
-    write('packages', defaults);
+      write('packages', defaults);
+      console.log('Created demo packages');
+    }
   }
 
   // Always ensure these collections exist as arrays
-  for (const name of ['plans','notes','messages','threads','events']) {
+  for (const name of ['plans','notes','messages','threads','events','reviews','reports','audit_logs','search_history']) {
     const items = read(name);
     if (!Array.isArray(items) || items.length === 0) {
       write(name, []);
     }
   }
+  
+  console.log('Seed complete');
 }
 
 module.exports = { seed };

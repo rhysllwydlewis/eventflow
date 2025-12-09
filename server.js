@@ -119,12 +119,37 @@ const writeLimiter = rateLimit({
 const EMAIL_ENABLED = String(process.env.EMAIL_ENABLED || 'false').toLowerCase() === 'true';
 const FROM_EMAIL = process.env.FROM_EMAIL || 'no-reply@eventflow.local';
 
+// AWS SES Configuration
+const AWS_SES_REGION = process.env.AWS_SES_REGION || 'eu-west-2';
+const AWS_SES_ACCESS_KEY = process.env.AWS_SES_ACCESS_KEY_ID;
+const AWS_SES_SECRET_KEY = process.env.AWS_SECRET_ACCESS_KEY;
+
+let sesClient = null;
+let AWS_SES_ENABLED = false;
+
+// Initialize AWS SES if credentials are provided
+if (AWS_SES_ACCESS_KEY && AWS_SES_SECRET_KEY) {
+  try {
+    const AWS = require('aws-sdk');
+    AWS.config.update({
+      region: AWS_SES_REGION,
+      accessKeyId: AWS_SES_ACCESS_KEY,
+      secretAccessKey: AWS_SES_SECRET_KEY
+    });
+    sesClient = new AWS.SES({ apiVersion: '2010-12-01' });
+    AWS_SES_ENABLED = true;
+    console.log(`AWS SES configured for region: ${AWS_SES_REGION}`);
+  } catch (err) {
+    console.warn('AWS SES configuration failed:', err.message);
+  }
+}
+
 /**
  * Optional SendGrid helper:
  * If SENDGRID_API_KEY is set (and no explicit SMTP_HOST), configure SMTP to use SendGrid.
  * This works both locally and in production.
  */
-if (!process.env.SMTP_HOST && process.env.SENDGRID_API_KEY) {
+if (!process.env.SMTP_HOST && process.env.SENDGRID_API_KEY && !AWS_SES_ENABLED) {
   process.env.SMTP_HOST = 'smtp.sendgrid.net';
   process.env.SMTP_PORT = process.env.SMTP_PORT || '587';
   // For SendGrid SMTP, the username is always literally 'apikey'
@@ -134,7 +159,7 @@ if (!process.env.SMTP_HOST && process.env.SENDGRID_API_KEY) {
 
 let transporter = null;
 
-if (EMAIL_ENABLED && process.env.SMTP_HOST) {
+if (EMAIL_ENABLED && process.env.SMTP_HOST && !AWS_SES_ENABLED) {
   transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST,
     port: Number(process.env.SMTP_PORT || 587),
@@ -152,33 +177,124 @@ function ensureOutbox() {
   return outDir;
 }
 
+/**
+ * Helper function to load and process email templates
+ * @param {string} templateName - Name of template file (without .html extension)
+ * @param {object} data - Data to replace in template
+ * @returns {string} Processed HTML
+ */
+function loadEmailTemplate(templateName, data) {
+  try {
+    const templatePath = path.join(__dirname, 'email-templates', `${templateName}.html`);
+    if (!fs.existsSync(templatePath)) {
+      return null;
+    }
+    let html = fs.readFileSync(templatePath, 'utf8');
+    
+    // Simple template replacement
+    Object.keys(data).forEach(key => {
+      const regex = new RegExp(`{{${key}}}`, 'g');
+      html = html.replace(regex, data[key] || '');
+    });
+    
+    // Add current year
+    html = html.replace(/{{year}}/g, new Date().getFullYear());
+    
+    // Add base URL
+    const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+    html = html.replace(/{{baseUrl}}/g, baseUrl);
+    
+    return html;
+  } catch (err) {
+    console.error('Error loading email template:', err);
+    return null;
+  }
+}
+
 async function sendMail(toOrOpts, subject, text) {
-  // Support both legacy (to, subject, text) and object-based calls: sendMail({ to, subject, text })
+  // Support both legacy (to, subject, text) and object-based calls: sendMail({ to, subject, text, html, template, templateData })
   let to = toOrOpts;
   let subj = subject;
   let body = text;
+  let html = null;
+  let template = null;
+  let templateData = {};
 
   if (toOrOpts && typeof toOrOpts === 'object') {
     to = toOrOpts.to;
     subj = toOrOpts.subject;
     body = toOrOpts.text || '';
+    html = toOrOpts.html || null;
+    template = toOrOpts.template || null;
+    templateData = toOrOpts.templateData || {};
+  }
+
+  // Load template if specified
+  if (template && !html) {
+    html = loadEmailTemplate(template, templateData);
   }
 
   const outDir = ensureOutbox();
   const safeTo = Array.isArray(to) ? to.join(', ') : to;
-  const blob = `To: ${safeTo}\nFrom: ${FROM_EMAIL}\nSubject: ${subj}\n\n${body}\n`;
+  const blob = `To: ${safeTo}\nFrom: ${FROM_EMAIL}\nSubject: ${subj}\n\n${html || body}\n`;
   fs.writeFileSync(path.join(outDir, `email-${Date.now()}.eml`), blob, 'utf8');
 
+  // Try AWS SES first
+  if (AWS_SES_ENABLED && sesClient && to) {
+    try {
+      const params = {
+        Source: FROM_EMAIL,
+        Destination: {
+          ToAddresses: Array.isArray(to) ? to : [to]
+        },
+        Message: {
+          Subject: {
+            Data: subj,
+            Charset: 'UTF-8'
+          },
+          Body: html ? {
+            Html: {
+              Data: html,
+              Charset: 'UTF-8'
+            }
+          } : {
+            Text: {
+              Data: body,
+              Charset: 'UTF-8'
+            }
+          }
+        }
+      };
+      
+      await sesClient.sendEmail(params).promise();
+      console.log(`Email sent via AWS SES to ${safeTo}`);
+      return;
+    } catch (e) {
+      console.error('Error sending email via AWS SES:', e.message);
+      // Fall through to SMTP if SES fails
+    }
+  }
+
+  // Fall back to SMTP/SendGrid
   if (transporter && to) {
     try {
-      await transporter.sendMail({
+      const mailOptions = {
         from: FROM_EMAIL,
         to,
-        subject: subj,
-        text: body
-      });
+        subject: subj
+      };
+      
+      if (html) {
+        mailOptions.html = html;
+        mailOptions.text = body; // Provide text fallback
+      } else {
+        mailOptions.text = body;
+      }
+      
+      await transporter.sendMail(mailOptions);
+      console.log(`Email sent via SMTP to ${safeTo}`);
     } catch (e) {
-      console.error('Error sending email via transporter', e);
+      console.error('Error sending email via transporter:', e.message);
     }
   }
 }
@@ -2269,6 +2385,33 @@ app.get('/api/photos/pending', authRequired, roleRequired('admin'), async (req, 
     console.error('Get pending photos error:', error);
     res.status(500).json({ error: 'Failed to get pending photos', details: error.message });
   }
+});
+
+// ---------- Content Reporting System ----------
+const reportsRoutes = require('./routes/reports');
+app.use('/api', reportsRoutes);
+
+// ---------- Audit Logging ----------
+const { getAuditLogs } = require('./middleware/audit');
+
+/**
+ * GET /api/admin/audit-logs
+ * Get audit logs with optional filtering
+ */
+app.get('/api/admin/audit-logs', authRequired, roleRequired('admin'), (req, res) => {
+  const { adminId, action, targetType, targetId, startDate, endDate, limit } = req.query;
+  
+  const logs = getAuditLogs({
+    adminId,
+    action,
+    targetType,
+    targetId,
+    startDate,
+    endDate,
+    limit: limit ? parseInt(limit, 10) : 100
+  });
+  
+  res.json({ logs, count: logs.length });
 });
 
 // Basic API healthcheck
