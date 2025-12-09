@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Guest List Manager — EventFlow</title>
+  <link rel="stylesheet" href="/assets/css/styles.css">
+  <link rel="stylesheet" href="/assets/css/eventflow-17.0.0.css">
+  <link rel="stylesheet" href="/assets/css/utilities.css">
+  <link rel="stylesheet" href="/assets/css/components.css">
+  <link rel="stylesheet" href="/assets/css/animations.css">
+  <link rel="icon" href="/favicon.svg">
+</head>
+<body>
+<header class="header" role="banner">
+  <div class="container header-inner">
+    <a class="brand" href="/" aria-label="EventFlow home">
+      <span class="logo" aria-hidden="true"></span>
+      <span class="brand-text">EventFlow</span>
+    </a>
+    <div class="header-actions">
+      <nav class="nav nav-inline" aria-label="Quick navigation">
+        <a href="/start.html" class="nav-link nav-main">Plan</a>
+        <a href="/suppliers.html" class="nav-link nav-main">Suppliers</a>
+        <a href="/auth.html" class="nav-link nav-main nav-main-login">Log in</a>
+      </nav>
+      <button id="burger" class="nav-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false">
+        <span class="nav-toggle-bar"></span>
+        <span class="nav-toggle-bar"></span>
+        <span class="nav-toggle-bar"></span>
+      </button>
+      <button id="theme-toggle" class="icon-button" type="button" aria-label="Toggle dark mode">
+        <span class="theme-icon" aria-hidden="true">
+          <span class="theme-icon-sun" aria-hidden="true">☀</span>
+          <span class="theme-icon-moon" aria-hidden="true">🌙</span>
+        </span>
+      </button>
+    </div>
+  </div>
+  <nav class="nav nav-menu" aria-label="Primary navigation">
+    <a href="/start.html">Plan an Event</a>
+    <a href="/suppliers.html">Suppliers</a>
+    <a href="/plan.html">My Plan</a>
+    <a href="/budget.html">Budget</a>
+    <a href="/guests.html" aria-current="page">Guest List</a>
+    <a href="/for-suppliers.html">For Suppliers</a>
+    <a href="/faq.html">FAQ</a>
+    <a href="/settings.html">Settings</a>
+    <a href="/auth.html" id="nav-auth">Sign in</a>
+    <a href="#" id="nav-dashboard" style="display:none">Dashboard</a>
+    <a href="#" id="nav-signout" style="display:none">Sign out</a>
+  </nav>
+</header>
+<script src="/assets/js/auth-nav.js" defer></script>
+<script src="/assets/js/components.js" defer></script>
+<script src="/assets/js/animations.js" defer></script>
+<script src="/assets/js/notifications.js" defer></script>
+<script src="/assets/js/search.js" defer></script>
+
+<main class="section">
+  <div class="container">
+    <div class="breadcrumbs mb-4">
+      <a href="/" class="breadcrumb-item">Home</a>
+      <span class="breadcrumb-separator">›</span>
+      <span class="breadcrumb-item active">Guest List</span>
+    </div>
+
+    <div class="flex items-center justify-between mb-6" style="flex-wrap: wrap; gap: 1rem;">
+      <div>
+        <h1 class="mb-2">Guest List Manager</h1>
+        <p class="small">Track RSVPs and manage your guest list</p>
+      </div>
+      <div class="flex gap-2" style="flex-wrap: wrap;">
+        <button class="cta secondary" id="import-guests">
+          📥 Import CSV
+        </button>
+        <button class="cta secondary" id="export-guests">
+          📊 Export List
+        </button>
+        <button class="cta" id="add-guest">
+          ➕ Add Guest
+        </button>
+      </div>
+    </div>
+
+    <!-- Overview Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+      <div class="card card-hover">
+        <div class="small mb-2" style="color: var(--muted);">Total Invited</div>
+        <div class="text-3xl font-bold" id="total-guests">0</div>
+      </div>
+
+      <div class="card card-hover">
+        <div class="small mb-2" style="color: var(--muted);">Attending</div>
+        <div class="text-3xl font-bold" style="color: #10B981;" id="attending-count">0</div>
+      </div>
+
+      <div class="card card-hover">
+        <div class="small mb-2" style="color: var(--muted);">Declined</div>
+        <div class="text-3xl font-bold" style="color: #EF4444;" id="declined-count">0</div>
+      </div>
+
+      <div class="card card-hover">
+        <div class="small mb-2" style="color: var(--muted);">Pending</div>
+        <div class="text-3xl font-bold" style="color: #F59E0B;" id="pending-count">0</div>
+      </div>
+    </div>
+
+    <!-- RSVP Progress and Dietary Requirements -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      <!-- RSVP Progress Chart -->
+      <div class="card">
+        <h3 class="mb-4">RSVP Progress</h3>
+        <div style="position: relative; height: 250px; display: flex; align-items: center; justify-content: center;">
+          <canvas id="rsvp-chart"></canvas>
+          <div id="rsvp-empty" style="text-align: center; color: var(--muted); display: none;">
+            <div style="font-size: 2rem; margin-bottom: 0.5rem;">👥</div>
+            <div class="small">No guests yet</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dietary Requirements -->
+      <div class="card">
+        <h3 class="mb-4">Dietary Requirements</h3>
+        <div id="dietary-list" style="max-height: 250px; overflow-y: auto;">
+          <div style="text-align: center; color: var(--muted); padding: 2rem;">
+            <div class="small">Add guests to track dietary requirements</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Guest List -->
+    <div class="card">
+      <div class="flex items-center justify-between mb-4" style="flex-wrap: wrap; gap: 1rem;">
+        <h3 class="m-0">Guest List</h3>
+        <div class="flex gap-2" style="flex-wrap: wrap;">
+          <input type="search" id="search-guests" placeholder="Search guests..." style="width: 200px; padding: 0.5rem 1rem; font-size: 0.875rem;">
+          <select id="filter-rsvp" style="width: auto; padding: 0.5rem 1rem; font-size: 0.875rem;">
+            <option value="">All RSVPs</option>
+            <option value="attending">Attending</option>
+            <option value="declined">Declined</option>
+            <option value="pending">Pending</option>
+          </select>
+        </div>
+      </div>
+      
+      <div id="guests-list">
+        <div style="text-align: center; color: var(--muted); padding: 3rem;">
+          <div style="font-size: 3rem; margin-bottom: 1rem;">👥</div>
+          <div class="text-lg font-semibold mb-2">No guests yet</div>
+          <div class="small mb-4">Start building your guest list by adding your first guest</div>
+          <button class="cta" onclick="document.getElementById('add-guest').click()">
+            Add First Guest
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="container">
+    <p class="small">
+      EventFlow &copy; 2025. <a href="/privacy.html">Privacy</a> | <a href="/terms.html">Terms</a>
+    </p>
+  </div>
+</footer>
+
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="/assets/js/guests.js" defer></script>
+
+</body>
+</html>

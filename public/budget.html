@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Budget Tracker — EventFlow</title>
+  <link rel="stylesheet" href="/assets/css/styles.css">
+  <link rel="stylesheet" href="/assets/css/eventflow-17.0.0.css">
+  <link rel="stylesheet" href="/assets/css/utilities.css">
+  <link rel="stylesheet" href="/assets/css/components.css">
+  <link rel="stylesheet" href="/assets/css/animations.css">
+  <link rel="icon" href="/favicon.svg">
+</head>
+<body>
+<header class="header" role="banner">
+  <div class="container header-inner">
+    <a class="brand" href="/" aria-label="EventFlow home">
+      <span class="logo" aria-hidden="true"></span>
+      <span class="brand-text">EventFlow</span>
+    </a>
+    <div class="header-actions">
+      <nav class="nav nav-inline" aria-label="Quick navigation">
+        <a href="/start.html" class="nav-link nav-main">Plan</a>
+        <a href="/suppliers.html" class="nav-link nav-main">Suppliers</a>
+        <a href="/auth.html" class="nav-link nav-main nav-main-login">Log in</a>
+      </nav>
+      <button id="burger" class="nav-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false">
+        <span class="nav-toggle-bar"></span>
+        <span class="nav-toggle-bar"></span>
+        <span class="nav-toggle-bar"></span>
+      </button>
+      <button id="theme-toggle" class="icon-button" type="button" aria-label="Toggle dark mode">
+        <span class="theme-icon" aria-hidden="true">
+          <span class="theme-icon-sun" aria-hidden="true">☀</span>
+          <span class="theme-icon-moon" aria-hidden="true">🌙</span>
+        </span>
+      </button>
+    </div>
+  </div>
+  <nav class="nav nav-menu" aria-label="Primary navigation">
+    <a href="/start.html">Plan an Event</a>
+    <a href="/suppliers.html">Suppliers</a>
+    <a href="/plan.html">My Plan</a>
+    <a href="/budget.html" aria-current="page">Budget</a>
+    <a href="/guests.html">Guest List</a>
+    <a href="/for-suppliers.html">For Suppliers</a>
+    <a href="/faq.html">FAQ</a>
+    <a href="/settings.html">Settings</a>
+    <a href="/auth.html" id="nav-auth">Sign in</a>
+    <a href="#" id="nav-dashboard" style="display:none">Dashboard</a>
+    <a href="#" id="nav-signout" style="display:none">Sign out</a>
+  </nav>
+</header>
+<script src="/assets/js/auth-nav.js" defer></script>
+<script src="/assets/js/components.js" defer></script>
+<script src="/assets/js/animations.js" defer></script>
+<script src="/assets/js/notifications.js" defer></script>
+<script src="/assets/js/search.js" defer></script>
+
+<main class="section">
+  <div class="container">
+    <div class="breadcrumbs mb-4">
+      <a href="/" class="breadcrumb-item">Home</a>
+      <span class="breadcrumb-separator">›</span>
+      <span class="breadcrumb-item active">Budget Tracker</span>
+    </div>
+
+    <div class="flex items-center justify-between mb-6" style="flex-wrap: wrap; gap: 1rem;">
+      <div>
+        <h1 class="mb-2">Budget Tracker</h1>
+        <p class="small">Manage your event budget and track expenses</p>
+      </div>
+      <div class="flex gap-2" style="flex-wrap: wrap;">
+        <button class="cta secondary" id="export-budget">
+          📊 Export Budget
+        </button>
+        <button class="cta" id="add-expense">
+          ➕ Add Expense
+        </button>
+      </div>
+    </div>
+
+    <!-- Budget Overview Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div class="card card-hover">
+        <div class="small mb-2" style="color: var(--muted);">Total Budget</div>
+        <div class="text-3xl font-bold mb-1" id="total-budget">£0</div>
+        <button class="cta ghost" style="padding: 0.5rem 1rem; font-size: 0.875rem;" id="set-budget">
+          Set Budget
+        </button>
+      </div>
+
+      <div class="card card-hover">
+        <div class="small mb-2" style="color: var(--muted);">Total Spent</div>
+        <div class="text-3xl font-bold mb-1" id="total-spent">£0</div>
+        <div class="small" id="spent-percentage">0% of budget</div>
+        <div class="progress mt-3">
+          <div class="progress-bar" id="spent-progress" style="width: 0%"></div>
+        </div>
+      </div>
+
+      <div class="card card-hover">
+        <div class="small mb-2" style="color: var(--muted);">Remaining</div>
+        <div class="text-3xl font-bold mb-1" id="budget-remaining">£0</div>
+        <div class="small" id="remaining-status">On track</div>
+      </div>
+    </div>
+
+    <!-- Budget Chart and Breakdown -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      <!-- Chart -->
+      <div class="card">
+        <h3 class="mb-4">Budget Breakdown</h3>
+        <div style="position: relative; height: 300px; display: flex; align-items: center; justify-content: center;">
+          <canvas id="budget-chart"></canvas>
+          <div id="chart-empty" style="text-align: center; color: var(--muted); display: none;">
+            <div style="font-size: 2rem; margin-bottom: 0.5rem;">📊</div>
+            <div class="small">No expenses yet</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Category Breakdown -->
+      <div class="card">
+        <h3 class="mb-4">Category Breakdown</h3>
+        <div id="category-list" style="max-height: 300px; overflow-y: auto;">
+          <div style="text-align: center; color: var(--muted); padding: 2rem;">
+            <div class="small">Add expenses to see breakdown</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Expenses List -->
+    <div class="card">
+      <div class="flex items-center justify-between mb-4" style="flex-wrap: wrap; gap: 1rem;">
+        <h3 class="m-0">Expenses</h3>
+        <div class="flex gap-2" style="flex-wrap: wrap;">
+          <select id="filter-category" style="width: auto; padding: 0.5rem 1rem; font-size: 0.875rem;">
+            <option value="">All Categories</option>
+            <option value="Venue">Venue</option>
+            <option value="Catering">Catering</option>
+            <option value="Photography">Photography</option>
+            <option value="Entertainment">Entertainment</option>
+            <option value="Decor">Decor</option>
+            <option value="Transport">Transport</option>
+            <option value="Attire">Attire</option>
+            <option value="Other">Other</option>
+          </select>
+          <select id="filter-status" style="width: auto; padding: 0.5rem 1rem; font-size: 0.875rem;">
+            <option value="">All Status</option>
+            <option value="paid">Paid</option>
+            <option value="pending">Pending</option>
+            <option value="overdue">Overdue</option>
+          </select>
+        </div>
+      </div>
+      
+      <div id="expenses-list">
+        <div style="text-align: center; color: var(--muted); padding: 3rem;">
+          <div style="font-size: 3rem; margin-bottom: 1rem;">💰</div>
+          <div class="text-lg font-semibold mb-2">No expenses yet</div>
+          <div class="small mb-4">Start tracking your event budget by adding your first expense</div>
+          <button class="cta" onclick="document.getElementById('add-expense').click()">
+            Add First Expense
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="container">
+    <p class="small">
+      EventFlow &copy; 2025. <a href="/privacy.html">Privacy</a> | <a href="/terms.html">Terms</a>
+    </p>
+  </div>
+</footer>
+
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="/assets/js/budget.js" defer></script>
+
+</body>
+</html>
