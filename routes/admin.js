@@ -727,14 +727,15 @@ router.put('/users/:id', authRequired, roleRequired('admin'), (req, res) => {
   
   const user = users[userIndex];
   
-  // Store previous version for history
+  // Store previous version for history (excluding sensitive data)
   if (!user.versionHistory) {
     user.versionHistory = [];
   }
+  const { password, passwordHash, resetToken, twoFactorSecret, ...safeState } = user;
   user.versionHistory.push({
     timestamp: new Date().toISOString(),
     editedBy: req.user.id,
-    previousState: { ...user }
+    previousState: safeState
   });
   
   // Update fields if provided
@@ -796,7 +797,7 @@ router.delete('/users/:id', authRequired, roleRequired('admin'), (req, res) => {
   auditLog({
     adminId: req.user.id,
     adminEmail: req.user.email,
-    action: AUDIT_ACTIONS.USER_DELETED || 'user_deleted',
+    action: AUDIT_ACTIONS.USER_DELETED,
     targetType: 'user',
     targetId: user.id,
     details: { email: user.email, name: user.name }
@@ -911,7 +912,7 @@ router.post('/users/:id/grant-admin', authRequired, roleRequired('admin'), (req,
   auditLog({
     adminId: req.user.id,
     adminEmail: req.user.email,
-    action: AUDIT_ACTIONS.USER_ROLE_CHANGED || 'admin_granted',
+    action: AUDIT_ACTIONS.USER_ROLE_CHANGED,
     targetType: 'user',
     targetId: user.id,
     details: { 
@@ -983,7 +984,7 @@ router.post('/users/:id/revoke-admin', authRequired, roleRequired('admin'), (req
   auditLog({
     adminId: req.user.id,
     adminEmail: req.user.email,
-    action: AUDIT_ACTIONS.USER_ROLE_CHANGED || 'admin_revoked',
+    action: AUDIT_ACTIONS.USER_ROLE_CHANGED,
     targetType: 'user',
     targetId: user.id,
     details: { 
