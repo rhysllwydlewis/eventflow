@@ -1554,6 +1554,59 @@ if(page==='auth'){ // auth form handlers
   attachPasswordToggle(loginPassword);
   attachPasswordToggle(regPassword);
 
+  // Real-time email validation for registration
+  if(regEmail){
+    const emailValidationMsg = document.getElementById('email-validation-msg');
+    regEmail.addEventListener('blur', ()=>{
+      const email = regEmail.value.trim();
+      if(email && emailValidationMsg){
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if(!emailRegex.test(email)){
+          emailValidationMsg.textContent = 'Please enter a valid email address';
+          emailValidationMsg.style.display = 'block';
+        }else{
+          emailValidationMsg.textContent = '';
+          emailValidationMsg.style.display = 'none';
+        }
+      }
+    });
+  }
+
+  // Password strength indicator for registration
+  if(regPassword){
+    const passwordStrengthMsg = document.getElementById('password-strength-msg');
+    regPassword.addEventListener('input', ()=>{
+      const password = regPassword.value;
+      if(password && passwordStrengthMsg){
+        let strength = 0;
+        let feedback = '';
+        if(password.length >= 8) strength++;
+        if(/[a-z]/.test(password)) strength++;
+        if(/[A-Z]/.test(password)) strength++;
+        if(/[0-9]/.test(password)) strength++;
+        if(/[^a-zA-Z0-9]/.test(password)) strength++;
+        
+        if(password.length < 8){
+          feedback = 'Password must be at least 8 characters';
+          passwordStrengthMsg.style.color = '#b00020';
+        }else if(strength <= 2){
+          feedback = 'Weak password - add letters and numbers';
+          passwordStrengthMsg.style.color = '#f59e0b';
+        }else if(strength === 3){
+          feedback = 'Fair password';
+          passwordStrengthMsg.style.color = '#f59e0b';
+        }else if(strength === 4){
+          feedback = 'Good password';
+          passwordStrengthMsg.style.color = '#10b981';
+        }else{
+          feedback = 'Strong password';
+          passwordStrengthMsg.style.color = '#10b981';
+        }
+        passwordStrengthMsg.textContent = feedback;
+      }
+    });
+  }
+
   // Account type toggle (customer / supplier)
   const roleHidden = document.getElementById('reg-role');
   const rolePills = document.querySelectorAll('.role-pill');
@@ -1611,6 +1664,14 @@ if(page==='auth'){ // auth form handlers
     regForm.addEventListener('submit', async (e)=>{
       e.preventDefault();
       if(regStatus) regStatus.textContent = '';
+      
+      // Validate terms checkbox
+      const termsCheckbox = document.getElementById('reg-terms');
+      if(termsCheckbox && !termsCheckbox.checked){
+        if(regStatus) regStatus.textContent = 'You must agree to the Terms and Privacy Policy to create an account.';
+        return;
+      }
+      
       if(regBtn){ regBtn.disabled = true; regBtn.textContent = 'Creating…'; }
       try{
         const name = regName ? regName.value.trim() : '';
@@ -1628,7 +1689,18 @@ if(page==='auth'){ // auth form handlers
         let data = {};
         try{ data = await r.json(); }catch(_){}
         if(!r.ok){
-          if(regStatus) regStatus.textContent = data.error || 'Could not create account. Please check your details.';
+          // Provide specific error messages
+          let errorMsg = 'Could not create account. Please check your details.';
+          if(data.error){
+            if(data.error.includes('email')){
+              errorMsg = data.error;
+            }else if(data.error.includes('password')){
+              errorMsg = data.error;
+            }else{
+              errorMsg = data.error;
+            }
+          }
+          if(regStatus) regStatus.textContent = errorMsg;
         }else{
           if(regStatus) regStatus.textContent = 'Account created. Check your email to verify your account, then you can sign in.';
         }
@@ -1643,6 +1715,44 @@ if(page==='auth'){ // auth form handlers
 }
 });
 
+
+// Email verification page
+async function initVerify(){
+  const statusEl = document.getElementById('verify-status');
+  const nextEl = document.getElementById('verify-next');
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get('token');
+  
+  if(!token){
+    if(statusEl) statusEl.textContent = 'No verification token provided. Please check your email for the verification link.';
+    return;
+  }
+  
+  try{
+    const r = await fetch('/api/auth/verify?token=' + encodeURIComponent(token));
+    const data = await r.json();
+    
+    if(!r.ok){
+      if(statusEl){
+        if(data.error && data.error.includes('Invalid or expired')){
+          statusEl.textContent = 'This verification link is invalid or has expired. Please request a new verification email.';
+        }else{
+          statusEl.textContent = data.error || 'Verification failed. Please try again or contact support.';
+        }
+      }
+    }else{
+      if(statusEl) statusEl.textContent = '✓ Your email has been verified successfully!';
+      if(nextEl) nextEl.style.display = 'block';
+      // Auto-redirect to login after 3 seconds
+      setTimeout(()=>{
+        window.location.href = '/auth.html';
+      }, 3000);
+    }
+  }catch(err){
+    if(statusEl) statusEl.textContent = 'Network error. Please check your connection and try again.';
+    console.error('Verification error', err);
+  }
+}
 
 // Settings page
 async function initSettings(){
