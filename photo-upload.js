@@ -240,7 +240,10 @@ async function processAndSaveImage(buffer, originalFilename) {
  * @returns {Promise<void>}
  */
 async function deleteImage(url) {
-  if (S3_ENABLED && url.includes('amazonaws.com')) {
+  // Validate S3 URL more strictly - must start with https:// and contain amazonaws.com in the domain
+  const isS3Url = S3_ENABLED && /^https:\/\/[^\/]*\.amazonaws\.com\//.test(url);
+  
+  if (isS3Url) {
     // Delete from S3
     const key = url.split('.com/')[1];
     await s3.deleteObject({
@@ -287,7 +290,10 @@ async function cropImage(imageUrl, cropData) {
   // Download image (either from S3 or local)
   let buffer;
   
-  if (S3_ENABLED && imageUrl.includes('amazonaws.com')) {
+  // Validate S3 URL more strictly - must start with https:// and contain amazonaws.com in the domain
+  const isS3Url = S3_ENABLED && /^https:\/\/[^\/]*\.amazonaws\.com\//.test(imageUrl);
+  
+  if (isS3Url) {
     const key = imageUrl.split('.com/')[1];
     const data = await s3.getObject({
       Bucket: process.env.AWS_S3_BUCKET,
