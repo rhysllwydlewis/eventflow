@@ -217,7 +217,7 @@ router.get('/verify', (req, res) => {
  * POST /api/auth/logout
  * Log out current user
  */
-router.post('/logout', (_req, res) => {
+router.post('/logout', authLimiter, (_req, res) => {
   clearAuthCookie(res);
   res.json({ ok: true });
 });

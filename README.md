@@ -199,6 +199,32 @@ AWS_SECRET_ACCESS_KEY=your-secret
 
 See [.env.example](.env.example) for all options.
 
+## 📁 Project Structure
+
+```
+eventflow/
+├── middleware/          # Reusable middleware functions
+│   ├── auth.js         # Authentication & authorization
+│   ├── validation.js   # Input validation helpers
+│   └── rateLimit.js    # Rate limiting configuration
+├── routes/             # Modular route handlers
+│   ├── auth.js         # Authentication routes
+│   └── admin.js        # Admin-only routes
+├── models/             # Database models and schemas
+├── public/             # Frontend assets
+│   ├── assets/
+│   │   ├── css/       # Stylesheets
+│   │   └── js/        # JavaScript modules
+│   └── *.html         # Page templates
+├── data/              # JSON data storage (development)
+├── photo-upload.js    # Photo upload utilities
+├── reviews.js         # Reviews system module
+├── search.js          # Search & discovery module
+├── websocket-server.js # Real-time WebSocket server
+├── server.js          # Main application server
+└── package.json       # Dependencies and scripts
+```
+
 ## 🗄️ Database Schema
 
 **Collections:**
