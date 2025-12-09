@@ -71,7 +71,13 @@
   // Restart tour button
   document.getElementById('restart-tour').addEventListener('click', function() {
     localStorage.removeItem('ef_homepage_tour_completed');
-    alert('Tour reset! Visit the homepage to see the tour again.');
+    const btn = this;
+    btn.textContent = '✓ Tour Reset!';
+    btn.disabled = true;
+    setTimeout(() => {
+      btn.textContent = 'Restart Tour';
+      btn.disabled = false;
+    }, 2000);
   });
 </script>
 </div></main>
