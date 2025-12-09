@@ -273,3 +273,63 @@ body {
     justify-content: center;
   }
 }
+
+/* Footer theme icon button - nicer, smaller SVG icon */
+.footer-theme-icon-btn {
+  border: none;
+  background: transparent;
+  padding: 4px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  transition: background 140ms ease-out, transform 140ms ease-out;
+  color: var(--text);
+  position: relative;
+}
+
+.footer-theme-icon-btn:hover {
+  background: rgba(15,23,42,.06);
+  transform: scale(1.1);
+}
+
+html[data-theme="dark"] .footer-theme-icon-btn {
+  color: var(--text);
+}
+
+html[data-theme="dark"] .footer-theme-icon-btn:hover {
+  background: rgba(55,65,81,.6);
+}
+
+/* SVG icon transitions */
+.theme-icon-light,
+.theme-icon-dark {
+  transition: opacity 200ms ease-out, transform 200ms ease-out;
+  display: block;
+}
+
+.theme-icon-light {
+  opacity: 1;
+  transform: rotate(0deg) scale(1);
+}
+
+.theme-icon-dark {
+  opacity: 0;
+  transform: rotate(-90deg) scale(0.5);
+  position: absolute;
+}
+
+html[data-theme="dark"] .theme-icon-light {
+  opacity: 0;
+  transform: rotate(90deg) scale(0.5);
+  position: absolute;
+}
+
+html[data-theme="dark"] .theme-icon-dark {
+  opacity: 1;
+  transform: rotate(0deg) scale(1);
+  position: static;
+}
