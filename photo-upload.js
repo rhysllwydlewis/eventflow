@@ -38,6 +38,7 @@ const UPLOAD_DIRS = {
   original: path.join(__dirname, 'uploads', 'original'),
   thumbnails: path.join(__dirname, 'uploads', 'thumbnails'),
   optimized: path.join(__dirname, 'uploads', 'optimized'),
+  large: path.join(__dirname, 'uploads', 'large'),
   public: path.join(__dirname, 'public', 'uploads'),
 };
 
@@ -199,7 +200,7 @@ async function processAndSaveImage(buffer, originalFilename) {
         uploadToS3(originalProcessed, `${baseFilename}.jpg`, 'original'),
         uploadToS3(thumbnail, `${baseFilename}-thumb.jpg`, 'thumbnails'),
         uploadToS3(optimized, `${baseFilename}-opt.jpg`, 'optimized'),
-        uploadToS3(large, `${baseFilename}-large.jpg`, 'optimized'),
+        uploadToS3(large, `${baseFilename}-large.jpg`, 'large'),
       ]);
       
       results.original = originalUrl;
@@ -212,7 +213,7 @@ async function processAndSaveImage(buffer, originalFilename) {
         saveToLocal(originalProcessed, `${baseFilename}.jpg`, 'original'),
         saveToLocal(thumbnail, `${baseFilename}-thumb.jpg`, 'thumbnails'),
         saveToLocal(optimized, `${baseFilename}-opt.jpg`, 'optimized'),
-        saveToLocal(large, `${baseFilename}-large.jpg`, 'optimized'),
+        saveToLocal(large, `${baseFilename}-large.jpg`, 'large'),
       ]);
       
       // Return local URLs
@@ -220,7 +221,7 @@ async function processAndSaveImage(buffer, originalFilename) {
       results.original = `${baseUrl}/uploads/original/${baseFilename}.jpg`;
       results.thumbnail = `${baseUrl}/uploads/thumbnails/${baseFilename}-thumb.jpg`;
       results.optimized = `${baseUrl}/uploads/optimized/${baseFilename}-opt.jpg`;
-      results.large = `${baseUrl}/uploads/optimized/${baseFilename}-large.jpg`;
+      results.large = `${baseUrl}/uploads/large/${baseFilename}-large.jpg`;
     }
     
     // Also save to public folder for serving
