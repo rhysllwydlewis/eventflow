@@ -1,0 +1,15 @@
+[
+  {
+    "id": "supplier-sample-1",
+    "ownerUserId": "user-sample-2",
+    "name": "Elegant Venues Ltd",
+    "category": "Venues",
+    "location": "London, UK",
+    "price_display": "From £2,500",
+    "amenities": ["Parking", "Garden", "PA System"],
+    "maxGuests": 200,
+    "description_short": "Stunning historic venue perfect for weddings",
+    "approved": true,
+    "isPro": true
+  }
+]
