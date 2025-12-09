@@ -503,10 +503,11 @@
           
           var modal = document.createElement('div');
           modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);z-index:10000;overflow:auto;padding:20px;';
+          modal.className = 'review-modal';
           modal.innerHTML = '<div style="background:#111;max-width:800px;margin:auto;padding:20px;border-radius:8px;">' +
             '<h2>Pending Reviews (' + reviews.length + ')</h2>' +
             '<div id="review-list"></div>' +
-            '<button onclick="this.closest(\'div[style*=fixed]\').remove()">Close</button>' +
+            '<button onclick="closeReviewModal()">Close</button>' +
             '</div>';
           document.body.appendChild(modal);
           
@@ -534,12 +535,17 @@
         .then(function() {
           alert('Review ' + (approved ? 'approved' : 'rejected'));
           loadAll();
-          document.querySelector('div[style*=fixed]')?.remove();
+          closeReviewModal();
         })
         .catch(function(err) {
           console.error('Failed to moderate review', err);
           alert('Failed to moderate review');
         });
+    };
+    
+    window.closeReviewModal = function() {
+      var modal = document.querySelector('.review-modal');
+      if (modal) modal.remove();
     };
   })();
 </script>

@@ -294,7 +294,7 @@ class PhotoUploader {
       
       // Click to browse
       this.dropzone.addEventListener('click', (e) => {
-        if (!this.uploading && e.target === this.dropzone || e.target.closest('.photo-uploader__icon, .photo-uploader__text, .photo-uploader__hint')) {
+        if (!this.uploading && (e.target === this.dropzone || e.target.closest('.photo-uploader__icon, .photo-uploader__text, .photo-uploader__hint'))) {
           this.input.click();
         }
       });
