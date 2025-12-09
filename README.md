@@ -45,6 +45,18 @@ A production-ready, feature-rich platform connecting event service suppliers (ph
 - Rating distribution analytics
 - Verified reviews
 
+### Admin Dashboard
+- **User Management** - Edit, delete, suspend, ban users
+- **Admin Privilege Control** - Grant/revoke admin access with owner protection
+- **Supplier Management** - Edit, approve, verify, delete suppliers
+- **Package Management** - Edit, approve, feature, delete packages
+- **Photo Moderation** - Batch approve/reject photo uploads
+- **Review Moderation** - Approve/reject customer reviews
+- **Comprehensive Audit Log** - Track all admin actions with timestamps
+- **Data Export** - CSV and JSON exports for users, marketing lists, full database
+- **Analytics Dashboard** - User signups, activity metrics, platform statistics
+- **GDPR Compliance** - User data management and privacy controls
+
 ## 🚀 Quick Start
 
 ### Prerequisites
@@ -170,7 +182,26 @@ GET    /api/photos/pending       - Get pending photos (admin)
 POST   /api/photos/approve       - Approve/reject photo (admin)
 ```
 
-See [API_DOCUMENTATION.md](API_DOCUMENTATION.md) for complete reference.
+### Admin Endpoints
+```
+GET    /api/admin/users          - List all users
+PUT    /api/admin/users/:id      - Edit user profile
+DELETE /api/admin/users/:id      - Delete user
+POST   /api/admin/users/:id/grant-admin   - Grant admin privileges
+POST   /api/admin/users/:id/revoke-admin  - Revoke admin privileges
+GET    /api/admin/suppliers      - List all suppliers
+PUT    /api/admin/suppliers/:id  - Edit supplier
+DELETE /api/admin/suppliers/:id  - Delete supplier
+GET    /api/admin/packages       - List all packages
+PUT    /api/admin/packages/:id   - Edit package
+DELETE /api/admin/packages/:id   - Delete package
+GET    /api/admin/metrics        - Get dashboard metrics
+GET    /api/admin/users-export   - Export users (CSV)
+GET    /api/admin/export/all     - Export all data (JSON)
+```
+
+See [API_DOCUMENTATION.md](API_DOCUMENTATION.md) for complete reference.  
+See [ADMIN_API.md](ADMIN_API.md) for detailed admin endpoint documentation.
 
 ## 🔧 Environment Variables
 
@@ -307,6 +338,18 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - 📧 Email: support@eventflow.com
 - 🐛 Issues: [GitHub Issues](https://github.com/yourusername/eventflow/issues)
 - 📖 Docs: [Documentation](API_DOCUMENTATION.md)
+
+## 📚 Documentation
+
+- **[README.md](README.md)** - Overview and quick start
+- **[API_DOCUMENTATION.md](API_DOCUMENTATION.md)** - Complete API reference
+- **[ADMIN_GUIDE.md](ADMIN_GUIDE.md)** - Admin dashboard user guide
+- **[ADMIN_API.md](ADMIN_API.md)** - Admin API endpoint documentation
+- **[GDPR_COMPLIANCE.md](GDPR_COMPLIANCE.md)** - Data protection and privacy
+- **[DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)** - Production deployment
+- **[MONGODB_SETUP.md](MONGODB_SETUP.md)** - Database configuration
+- **[AWS_SES_SETUP.md](AWS_SES_SETUP.md)** - Email service setup
+- **[2FA_IMPLEMENTATION.md](2FA_IMPLEMENTATION.md)** - Two-factor auth (planned)
 
 ---
 

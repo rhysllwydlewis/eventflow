@@ -710,5 +710,300 @@ router.put('/suppliers/:id', authRequired, roleRequired('admin'), auditLog(AUDIT
   res.json({ success: true, supplier });
 });
 
+/**
+ * PUT /api/admin/users/:id
+ * Edit user profile (admin only)
+ */
+router.put('/users/:id', authRequired, roleRequired('admin'), (req, res) => {
+  const { id } = req.params;
+  const { name, email, role, verified, marketingOptIn } = req.body;
+  
+  const users = read('users');
+  const userIndex = users.findIndex(u => u.id === id);
+  
+  if (userIndex === -1) {
+    return res.status(404).json({ error: 'User not found' });
+  }
+  
+  const user = users[userIndex];
+  
+  // Store previous version for history (excluding sensitive data)
+  if (!user.versionHistory) {
+    user.versionHistory = [];
+  }
+  const { password, passwordHash, resetToken, twoFactorSecret, ...safeState } = user;
+  user.versionHistory.push({
+    timestamp: new Date().toISOString(),
+    editedBy: req.user.id,
+    previousState: safeState
+  });
+  
+  // Update fields if provided
+  if (name !== undefined) user.name = name;
+  if (email !== undefined) user.email = email;
+  if (role !== undefined) user.role = role;
+  if (verified !== undefined) user.verified = verified;
+  if (marketingOptIn !== undefined) user.marketingOptIn = marketingOptIn;
+  
+  user.updatedAt = new Date().toISOString();
+  user.lastEditedBy = req.user.id;
+  
+  users[userIndex] = user;
+  write('users', users);
+  
+  // Create audit log
+  auditLog({
+    adminId: req.user.id,
+    adminEmail: req.user.email,
+    action: 'user_edited',
+    targetType: 'user',
+    targetId: user.id,
+    details: { email: user.email, changes: req.body }
+  });
+  
+  res.json({ success: true, user });
+});
+
+/**
+ * DELETE /api/admin/users/:id
+ * Delete a user account (admin only)
+ */
+router.delete('/users/:id', authRequired, roleRequired('admin'), (req, res) => {
+  const { id } = req.params;
+  const users = read('users');
+  const userIndex = users.findIndex(u => u.id === id);
+  
+  if (userIndex === -1) {
+    return res.status(404).json({ error: 'User not found' });
+  }
+  
+  const user = users[userIndex];
+  
+  // Prevent admins from deleting themselves
+  if (user.id === req.user.id) {
+    return res.status(400).json({ error: 'You cannot delete your own account' });
+  }
+  
+  // Prevent deletion of the owner account
+  if (user.email === 'admin@event-flow.co.uk') {
+    return res.status(403).json({ error: 'Cannot delete the owner account' });
+  }
+  
+  // Remove the user
+  users.splice(userIndex, 1);
+  write('users', users);
+  
+  // Create audit log
+  auditLog({
+    adminId: req.user.id,
+    adminEmail: req.user.email,
+    action: AUDIT_ACTIONS.USER_DELETED,
+    targetType: 'user',
+    targetId: user.id,
+    details: { email: user.email, name: user.name }
+  });
+  
+  res.json({ success: true, message: 'User deleted successfully' });
+});
+
+/**
+ * DELETE /api/admin/suppliers/:id
+ * Delete a supplier (admin only)
+ */
+router.delete('/suppliers/:id', authRequired, roleRequired('admin'), (req, res) => {
+  const { id } = req.params;
+  const suppliers = read('suppliers');
+  const supplierIndex = suppliers.findIndex(s => s.id === id);
+  
+  if (supplierIndex === -1) {
+    return res.status(404).json({ error: 'Supplier not found' });
+  }
+  
+  const supplier = suppliers[supplierIndex];
+  
+  // Remove the supplier
+  suppliers.splice(supplierIndex, 1);
+  write('suppliers', suppliers);
+  
+  // Also delete associated packages
+  const packages = read('packages');
+  const updatedPackages = packages.filter(p => p.supplierId !== id);
+  if (updatedPackages.length < packages.length) {
+    write('packages', updatedPackages);
+  }
+  
+  // Create audit log
+  auditLog({
+    adminId: req.user.id,
+    adminEmail: req.user.email,
+    action: 'supplier_deleted',
+    targetType: 'supplier',
+    targetId: supplier.id,
+    details: { name: supplier.name }
+  });
+  
+  res.json({ success: true, message: 'Supplier and associated packages deleted successfully' });
+});
+
+/**
+ * DELETE /api/admin/packages/:id
+ * Delete a package (admin only)
+ */
+router.delete('/packages/:id', authRequired, roleRequired('admin'), (req, res) => {
+  const { id } = req.params;
+  const packages = read('packages');
+  const packageIndex = packages.findIndex(p => p.id === id);
+  
+  if (packageIndex === -1) {
+    return res.status(404).json({ error: 'Package not found' });
+  }
+  
+  const pkg = packages[packageIndex];
+  
+  // Remove the package
+  packages.splice(packageIndex, 1);
+  write('packages', packages);
+  
+  // Create audit log
+  auditLog({
+    adminId: req.user.id,
+    adminEmail: req.user.email,
+    action: 'package_deleted',
+    targetType: 'package',
+    targetId: pkg.id,
+    details: { title: pkg.title }
+  });
+  
+  res.json({ success: true, message: 'Package deleted successfully' });
+});
+
+/**
+ * POST /api/admin/users/:id/grant-admin
+ * Grant admin privileges to a user
+ */
+router.post('/users/:id/grant-admin', authRequired, roleRequired('admin'), (req, res) => {
+  const { id } = req.params;
+  const users = read('users');
+  const userIndex = users.findIndex(u => u.id === id);
+  
+  if (userIndex === -1) {
+    return res.status(404).json({ error: 'User not found' });
+  }
+  
+  const user = users[userIndex];
+  const now = new Date().toISOString();
+  
+  // Check if user already has admin role
+  if (user.role === 'admin') {
+    return res.status(400).json({ error: 'User already has admin privileges' });
+  }
+  
+  // Store previous role
+  user.previousRole = user.role;
+  user.role = 'admin';
+  user.adminGrantedAt = now;
+  user.adminGrantedBy = req.user.id;
+  user.updatedAt = now;
+  
+  users[userIndex] = user;
+  write('users', users);
+  
+  // Create audit log
+  auditLog({
+    adminId: req.user.id,
+    adminEmail: req.user.email,
+    action: AUDIT_ACTIONS.USER_ROLE_CHANGED,
+    targetType: 'user',
+    targetId: user.id,
+    details: { 
+      email: user.email, 
+      previousRole: user.previousRole,
+      newRole: 'admin'
+    }
+  });
+  
+  res.json({ 
+    success: true, 
+    message: 'Admin privileges granted successfully',
+    user: {
+      id: user.id,
+      email: user.email,
+      role: user.role
+    }
+  });
+});
+
+/**
+ * POST /api/admin/users/:id/revoke-admin
+ * Revoke admin privileges from a user
+ */
+router.post('/users/:id/revoke-admin', authRequired, roleRequired('admin'), (req, res) => {
+  const { id } = req.params;
+  const { newRole = 'customer' } = req.body;
+  const users = read('users');
+  const userIndex = users.findIndex(u => u.id === id);
+  
+  if (userIndex === -1) {
+    return res.status(404).json({ error: 'User not found' });
+  }
+  
+  const user = users[userIndex];
+  const now = new Date().toISOString();
+  
+  // Check if user has admin role
+  if (user.role !== 'admin') {
+    return res.status(400).json({ error: 'User does not have admin privileges' });
+  }
+  
+  // Prevent revoking own admin privileges
+  if (user.id === req.user.id) {
+    return res.status(400).json({ error: 'You cannot revoke your own admin privileges' });
+  }
+  
+  // Prevent revoking owner's admin privileges
+  if (user.email === 'admin@event-flow.co.uk') {
+    return res.status(403).json({ error: 'Cannot revoke admin privileges from the owner account' });
+  }
+  
+  // Validate newRole
+  if (!['customer', 'supplier'].includes(newRole)) {
+    return res.status(400).json({ error: 'Invalid role. Must be customer or supplier' });
+  }
+  
+  // Store previous role
+  user.previousRole = user.role;
+  user.role = newRole;
+  user.adminRevokedAt = now;
+  user.adminRevokedBy = req.user.id;
+  user.updatedAt = now;
+  
+  users[userIndex] = user;
+  write('users', users);
+  
+  // Create audit log
+  auditLog({
+    adminId: req.user.id,
+    adminEmail: req.user.email,
+    action: AUDIT_ACTIONS.USER_ROLE_CHANGED,
+    targetType: 'user',
+    targetId: user.id,
+    details: { 
+      email: user.email, 
+      previousRole: 'admin',
+      newRole: newRole
+    }
+  });
+  
+  res.json({ 
+    success: true, 
+    message: 'Admin privileges revoked successfully',
+    user: {
+      id: user.id,
+      email: user.email,
+      role: user.role
+    }
+  });
+});
+
 module.exports = router;
 module.exports.setHelperFunctions = setHelperFunctions;
