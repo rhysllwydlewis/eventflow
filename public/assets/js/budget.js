@@ -169,8 +169,8 @@ class BudgetManager {
           });
           Toast.success('Expense added');
           
-          // Show confetti if this is a significant expense
-          if (amount > 1000) {
+          // Show confetti if this is a significant expense (only if confetti is available)
+          if (amount > 1000 && typeof confetti === 'function') {
             confetti({ particleCount: 50, spread: 60 });
           }
         }

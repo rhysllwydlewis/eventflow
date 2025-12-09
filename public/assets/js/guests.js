@@ -325,6 +325,9 @@ class GuestManager {
   }
 
   animateCounters() {
+    // Only animate if Counter class is available
+    if (typeof Counter !== 'function') return;
+    
     const counters = ['total-guests', 'attending-count', 'declined-count', 'pending-count'];
     counters.forEach(id => {
       const el = document.getElementById(id);

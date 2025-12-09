@@ -368,7 +368,9 @@ class GlobalSearch {
   }
 
   highlightMatch(text, query) {
-    const regex = new RegExp(`(${query})`, 'gi');
+    // Escape special regex characters to prevent ReDoS attacks
+    const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(`(${escapedQuery})`, 'gi');
     return this.escapeHtml(text).replace(regex, '<mark style="background: rgba(11, 128, 115, 0.2); padding: 0 2px; border-radius: 2px;">$1</mark>');
   }
 
