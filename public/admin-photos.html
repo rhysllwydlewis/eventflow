@@ -8,14 +8,14 @@
   <link rel="stylesheet" href="/assets/css/eventflow-17.0.0.css">
   <style>
     body {
-      background: #0b0b0b;
-      color: #f5f5f5;
+      background: #f5f5f5;
+      color: #1a1a1a;
       font-family: sans-serif;
       padding: 20px;
     }
     
     h1, h2 {
-      color: #f5f5f5;
+      color: #0a0a0a;
     }
     
     .photo-queue {
@@ -26,17 +26,17 @@
     }
     
     .photo-queue__item {
-      background: #111;
-      border: 1px solid #27272a;
+      background: #fff;
+      border: 1px solid #e4e4e7;
       border-radius: 12px;
       overflow: hidden;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
       transition: transform 0.2s, box-shadow 0.2s;
     }
     
     .photo-queue__item:hover {
       transform: translateY(-4px);
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     }
     
     .photo-queue__image {
@@ -61,28 +61,28 @@
       font-size: 0.75rem;
       padding: 0.25rem 0.5rem;
       border-radius: 4px;
-      background: #27272a;
-      color: #f5f5f5;
+      background: #e4e4e7;
+      color: #3f3f46;
     }
     
     .photo-queue__badge--pending {
-      background: #92400e;
-      color: #fef3c7;
+      background: #fef3c7;
+      color: #92400e;
     }
     
     .photo-queue__supplier {
       font-size: 0.9rem;
-      color: #a1a1aa;
+      color: #52525b;
       margin-bottom: 0.5rem;
     }
     
     .photo-queue__supplier a {
-      color: #60a5fa;
+      color: #3b82f6;
       text-decoration: none;
     }
     
     .photo-queue__supplier a:hover {
-      color: #93c5fd;
+      color: #2563eb;
       text-decoration: underline;
     }
     
@@ -104,27 +104,37 @@
     }
     
     .photo-queue__btn--approve {
-      background: #4caf50;
+      background: #22c55e;
       color: white;
     }
     
     .photo-queue__btn--approve:hover {
-      background: #45a049;
+      background: #16a34a;
+    }
+    
+    .photo-queue__btn--approve:focus {
+      outline: 2px solid #86efac;
+      outline-offset: 2px;
     }
     
     .photo-queue__btn--reject {
-      background: #f44336;
+      background: #ef4444;
       color: white;
     }
     
     .photo-queue__btn--reject:hover {
-      background: #da190b;
+      background: #dc2626;
+    }
+    
+    .photo-queue__btn--reject:focus {
+      outline: 2px solid #fca5a5;
+      outline-offset: 2px;
     }
     
     .photo-queue__empty {
       text-align: center;
       padding: 3rem;
-      color: #a1a1aa;
+      color: #71717a;
     }
     
     .photo-queue__empty-icon {
@@ -135,11 +145,11 @@
     .batch-actions {
       position: sticky;
       top: 0;
-      background: #111;
-      border: 1px solid #27272a;
+      background: #fff;
+      border: 1px solid #e4e4e7;
       padding: 1rem;
       border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
       margin-bottom: 1rem;
       z-index: 100;
       display: none;
@@ -155,7 +165,7 @@
     
     .batch-actions__count {
       font-weight: 600;
-      color: #60a5fa;
+      color: #3b82f6;
     }
     
     .batch-actions__buttons {
@@ -164,7 +174,7 @@
     }
     
     .photo-queue__item.selected {
-      border: 2px solid #60a5fa;
+      border: 2px solid #3b82f6;
     }
     
     .photo-select {

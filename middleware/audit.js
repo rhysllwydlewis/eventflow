@@ -184,6 +184,8 @@ const AUDIT_ACTIONS = {
   USER_VERIFIED: 'user_verified',
   USER_PASSWORD_RESET: 'user_password_reset',
   USER_ROLE_CHANGED: 'user_role_changed',
+  USER_DELETED: 'user_deleted',
+  USER_EDITED: 'user_edited',
   
   // Supplier management
   SUPPLIER_APPROVED: 'supplier_approved',
@@ -191,6 +193,14 @@ const AUDIT_ACTIONS = {
   SUPPLIER_VERIFIED: 'supplier_verified',
   SUPPLIER_PRO_GRANTED: 'supplier_pro_granted',
   SUPPLIER_PRO_REVOKED: 'supplier_pro_revoked',
+  SUPPLIER_DELETED: 'supplier_deleted',
+  SUPPLIER_EDITED: 'supplier_edited',
+  
+  // Package management
+  PACKAGE_APPROVED: 'package_approved',
+  PACKAGE_REJECTED: 'package_rejected',
+  PACKAGE_DELETED: 'package_deleted',
+  PACKAGE_EDITED: 'package_edited',
   
   // Content moderation
   REVIEW_APPROVED: 'review_approved',
