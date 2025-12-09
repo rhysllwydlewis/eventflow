@@ -2387,6 +2387,10 @@ app.get('/api/photos/pending', authRequired, roleRequired('admin'), async (req, 
   }
 });
 
+// ---------- Content Reporting System ----------
+const reportsRoutes = require('./routes/reports');
+app.use('/api', reportsRoutes);
+
 // Basic API healthcheck
 app.get('/api/health', (_req, res) => {
   res.json({
