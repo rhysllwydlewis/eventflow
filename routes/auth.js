@@ -32,6 +32,23 @@ function setSendMailFunction(fn) {
 }
 
 /**
+ * Helper function to update user's last login timestamp
+ * @param {string} userId - User ID
+ */
+function updateLastLogin(userId) {
+  try {
+    const allUsers = read('users');
+    const idx = allUsers.findIndex(u => u.id === userId);
+    if (idx !== -1) {
+      allUsers[idx].lastLoginAt = new Date().toISOString();
+      write('users', allUsers);
+    }
+  } catch (e) {
+    console.error('Failed to update lastLoginAt', e);
+  }
+}
+
+/**
  * POST /api/auth/register
  * Register a new user account
  */
@@ -84,16 +101,7 @@ If you did not create this account, you can ignore this email.`,
   }
 
   // Update last login timestamp (non-blocking)
-  try {
-    const allUsers = read('users');
-    const idx = allUsers.findIndex(u => u.id === user.id);
-    if (idx !== -1) {
-      allUsers[idx].lastLoginAt = new Date().toISOString();
-      write('users', allUsers);
-    }
-  } catch (e) {
-    console.error('Failed to update lastLoginAt', e);
-  }
+  updateLastLogin(user.id);
 
   const token = jwt.sign(
     { id: user.id, email: user.email, role: user.role },
@@ -128,16 +136,7 @@ router.post('/login', authLimiter, (req, res) => {
   }
 
   // Update last login timestamp (non-blocking)
-  try {
-    const allUsers = read('users');
-    const idx = allUsers.findIndex(u => u.id === user.id);
-    if (idx !== -1) {
-      allUsers[idx].lastLoginAt = new Date().toISOString();
-      write('users', allUsers);
-    }
-  } catch (e) {
-    console.error('Failed to update lastLoginAt', e);
-  }
+  updateLastLogin(user.id);
 
   const token = jwt.sign(
     { id: user.id, email: user.email, role: user.role },
@@ -183,12 +182,12 @@ router.post('/forgot', authLimiter, async (req, res) => {
   (async () => {
     try {
       if (user.email && sendMailFn) {
-        await sendMailFn(
-          user.email,
-          'Reset your EventFlow password',
-          'A password reset was requested for this address. ' +
-          'For this demo build, your reset token is: ' + token
-        );
+        await sendMailFn({
+          to: user.email,
+          subject: 'Reset your EventFlow password',
+          text: 'A password reset was requested for this address. ' +
+            'For this demo build, your reset token is: ' + token
+        });
       }
     } catch (err) {
       console.error('Failed to send reset email', err);
