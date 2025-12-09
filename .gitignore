@@ -125,6 +125,10 @@ temp/
 # Uploads directory (except .gitkeep)
 data/uploads/*
 !data/uploads/.gitkeep
+uploads/*
+!uploads/.gitkeep
+public/uploads/*
+!public/uploads/.gitkeep
 
 # Email outbox
 outbox/
