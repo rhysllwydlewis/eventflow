@@ -1,33 +1,33 @@
 [
   {
-    "id": "usr_m9014j3ryg6jto",
+    "id": "usr_sdm8qbwhygba99",
     "name": "Admin",
     "email": "admin@eventflow.local",
     "role": "admin",
-    "passwordHash": "$2a$10$jqw47ON2yOmx/vq0zd67lOY/V01aA0aNAEC.fx64I75Dm22P9qsv6",
-    "createdAt": "2025-12-09T10:38:41.628Z",
+    "passwordHash": "$2a$10$Qdt3gRU8JIQVpwhRsLpo9uvyWQ65JV4oQZCGhG1KOnShLo4trEX0e",
+    "createdAt": "2025-12-09T10:42:22.509Z",
     "notify": true,
     "marketingOptIn": false,
     "verified": true
   },
   {
-    "id": "usr_vgcg169ayg6jw6",
+    "id": "usr_xngtwkw8ygbabr",
     "name": "Supplier Demo",
     "email": "supplier@eventflow.local",
     "role": "supplier",
-    "passwordHash": "$2a$10$pAn7SlEPGAX4deceH1wDZuzyviNcnoYILW8YQUSACUoanq.aoZEqm",
-    "createdAt": "2025-12-09T10:38:41.628Z",
+    "passwordHash": "$2a$10$xL6GnlPRHiFPQG2YtGMN6.79wbPbCZRhGd6/WTbGUq0wU58wC1Xx6",
+    "createdAt": "2025-12-09T10:42:22.509Z",
     "notify": true,
     "marketingOptIn": false,
     "verified": true
   },
   {
-    "id": "usr_qfby6n8jyg6jyg",
+    "id": "usr_yu1mmxjdygbae0",
     "name": "Customer Demo",
     "email": "customer@eventflow.local",
     "role": "customer",
-    "passwordHash": "$2a$10$dgn8Zx3HNq/jIYwn1uuw6eLzK0TzmqaZAlUQwSdoorxpIa9SN6tqu",
-    "createdAt": "2025-12-09T10:38:41.628Z",
+    "passwordHash": "$2a$10$PlDp6XcRC9/.Sld6Ds9JiOHE.0Thc9FeilF51cdA6563iezZHpNY2",
+    "createdAt": "2025-12-09T10:42:22.509Z",
     "notify": true,
     "marketingOptIn": false,
     "verified": true

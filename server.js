@@ -66,6 +66,10 @@ const reviewsSystem = require('./reviews');
 // Search and discovery system
 const searchSystem = require('./search');
 
+// Swagger API documentation
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('./swagger');
+
 // Helper: determine if a supplier's Pro plan is currently active.
 // - isPro must be true, AND
 // - proExpiresAt is either missing/null (no expiry) or in the future.
@@ -2278,6 +2282,12 @@ app.get('/api/health', (_req, res) => {
 });
 
 // ---------- Static & 404 ----------
+// API Documentation (Swagger UI)
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: 'EventFlow API Documentation',
+}));
+
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use((_req, res) => res.status(404).send('Not found'));
