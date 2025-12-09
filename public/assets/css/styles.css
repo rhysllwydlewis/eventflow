@@ -347,16 +347,23 @@ html[data-theme="dark"] .timeline-step::before{
 .form-row{
   position:relative;
 }
+/* Password inputs with toggle buttons need extra padding on the right */
+.form-row input[type="password"],
+.form-row input[type="text"].has-toggle{
+  padding-right:60px;
+}
 .password-toggle{
   position:absolute;
-  right:12px;
-  bottom:12px;
+  right:8px;
+  top:50%;
+  transform:translateY(-50%);
   border:none;
   background:none;
   font-size:12px;
   cursor:pointer;
   color:var(--muted);
   line-height:1;
+  padding:4px 8px;
 }
 .password-toggle:hover{
   text-decoration:underline;
