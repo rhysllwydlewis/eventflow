@@ -1,0 +1,333 @@
+/**
+ * MongoDB Schema Definitions and Validation
+ * Defines the structure and validation rules for all collections
+ */
+
+'use strict';
+
+const { getCollection } = require('../db');
+
+/**
+ * User Schema
+ * Stores user accounts for customers, suppliers, and admins
+ */
+const userSchema = {
+  validator: {
+    $jsonSchema: {
+      bsonType: 'object',
+      required: ['id', 'email', 'role', 'passwordHash'],
+      properties: {
+        id: { bsonType: 'string', description: 'Unique user identifier' },
+        name: { bsonType: 'string', description: 'User full name' },
+        email: { bsonType: 'string', description: 'User email address' },
+        role: { enum: ['customer', 'supplier', 'admin'], description: 'User role' },
+        passwordHash: { bsonType: 'string', description: 'Hashed password' },
+        notify: { bsonType: 'bool', description: 'Email notification preference' },
+        marketingOptIn: { bsonType: 'bool', description: 'Marketing email consent' },
+        verified: { bsonType: 'bool', description: 'Email verification status' },
+        verificationToken: { bsonType: 'string', description: 'Email verification token' },
+        resetToken: { bsonType: 'string', description: 'Password reset token' },
+        resetTokenExpiresAt: { bsonType: 'string', description: 'Reset token expiration' },
+        isPro: { bsonType: 'bool', description: 'Pro subscription status' },
+        createdAt: { bsonType: 'string', description: 'Account creation timestamp' },
+        lastLoginAt: { bsonType: 'string', description: 'Last login timestamp' },
+      },
+    },
+  },
+};
+
+/**
+ * Supplier Schema
+ * Stores supplier/vendor business information
+ */
+const supplierSchema = {
+  validator: {
+    $jsonSchema: {
+      bsonType: 'object',
+      required: ['id', 'name', 'category'],
+      properties: {
+        id: { bsonType: 'string', description: 'Unique supplier identifier' },
+        ownerUserId: { bsonType: 'string', description: 'User ID of the owner' },
+        name: { bsonType: 'string', description: 'Business name' },
+        category: { bsonType: 'string', description: 'Supplier category' },
+        location: { bsonType: 'string', description: 'Business location' },
+        price_display: { bsonType: 'string', description: 'Price range display' },
+        website: { bsonType: 'string', description: 'Business website URL' },
+        email: { bsonType: 'string', description: 'Business contact email' },
+        license: { bsonType: 'string', description: 'Business license number' },
+        amenities: { bsonType: 'array', items: { bsonType: 'string' }, description: 'List of amenities' },
+        maxGuests: { bsonType: 'int', description: 'Maximum guest capacity' },
+        description_short: { bsonType: 'string', description: 'Short description' },
+        description_long: { bsonType: 'string', description: 'Detailed description' },
+        photos: { bsonType: 'array', items: { bsonType: 'string' }, description: 'Photo URLs' },
+        photosGallery: {
+          bsonType: 'array',
+          items: {
+            bsonType: 'object',
+            properties: {
+              url: { bsonType: 'string' },
+              approved: { bsonType: 'bool' },
+              uploadedAt: { bsonType: 'number' },
+            },
+          },
+          description: 'Photo gallery with approval status',
+        },
+        approved: { bsonType: 'bool', description: 'Admin approval status' },
+        isPro: { bsonType: 'bool', description: 'Pro subscription status' },
+        proExpiresAt: { bsonType: 'string', description: 'Pro subscription expiration' },
+        aiTags: { bsonType: 'array', items: { bsonType: 'string' }, description: 'AI-generated tags' },
+        aiScore: { bsonType: 'number', description: 'AI quality score' },
+        aiUpdatedAt: { bsonType: 'string', description: 'Last AI update timestamp' },
+      },
+    },
+  },
+};
+
+/**
+ * Package Schema
+ * Stores service packages offered by suppliers
+ */
+const packageSchema = {
+  validator: {
+    $jsonSchema: {
+      bsonType: 'object',
+      required: ['id', 'supplierId', 'title'],
+      properties: {
+        id: { bsonType: 'string', description: 'Unique package identifier' },
+        supplierId: { bsonType: 'string', description: 'Associated supplier ID' },
+        title: { bsonType: 'string', description: 'Package title' },
+        description: { bsonType: 'string', description: 'Package description' },
+        price: { bsonType: 'string', description: 'Package price' },
+        image: { bsonType: 'string', description: 'Main package image URL' },
+        gallery: {
+          bsonType: 'array',
+          items: {
+            bsonType: 'object',
+            properties: {
+              url: { bsonType: 'string' },
+              approved: { bsonType: 'bool' },
+              uploadedAt: { bsonType: 'number' },
+            },
+          },
+          description: 'Package image gallery',
+        },
+        approved: { bsonType: 'bool', description: 'Admin approval status' },
+        featured: { bsonType: 'bool', description: 'Featured package flag' },
+      },
+    },
+  },
+};
+
+/**
+ * Plan Schema
+ * Stores customer event plans (saved suppliers and event details)
+ */
+const planSchema = {
+  validator: {
+    $jsonSchema: {
+      bsonType: 'object',
+      required: ['id', 'userId'],
+      properties: {
+        id: { bsonType: 'string', description: 'Unique plan identifier' },
+        userId: { bsonType: 'string', description: 'Customer user ID' },
+        supplierId: { bsonType: 'string', description: 'Saved supplier ID' },
+        plan: { bsonType: 'object', description: 'Complete plan data structure' },
+        createdAt: { bsonType: 'string', description: 'Creation timestamp' },
+      },
+    },
+  },
+};
+
+/**
+ * Note Schema
+ * Stores customer notes for event planning
+ */
+const noteSchema = {
+  validator: {
+    $jsonSchema: {
+      bsonType: 'object',
+      required: ['id', 'userId'],
+      properties: {
+        id: { bsonType: 'string', description: 'Unique note identifier' },
+        userId: { bsonType: 'string', description: 'Note owner user ID' },
+        text: { bsonType: 'string', description: 'Note content' },
+        createdAt: { bsonType: 'string', description: 'Creation timestamp' },
+        updatedAt: { bsonType: 'string', description: 'Last update timestamp' },
+      },
+    },
+  },
+};
+
+/**
+ * Message Schema
+ * Stores individual messages in conversation threads
+ */
+const messageSchema = {
+  validator: {
+    $jsonSchema: {
+      bsonType: 'object',
+      required: ['id', 'threadId', 'fromUserId', 'text'],
+      properties: {
+        id: { bsonType: 'string', description: 'Unique message identifier' },
+        threadId: { bsonType: 'string', description: 'Parent thread ID' },
+        fromUserId: { bsonType: 'string', description: 'Sender user ID' },
+        fromRole: { bsonType: 'string', description: 'Sender role' },
+        text: { bsonType: 'string', description: 'Message content' },
+        createdAt: { bsonType: 'string', description: 'Creation timestamp' },
+      },
+    },
+  },
+};
+
+/**
+ * Thread Schema
+ * Stores conversation threads between customers and suppliers
+ */
+const threadSchema = {
+  validator: {
+    $jsonSchema: {
+      bsonType: 'object',
+      required: ['id', 'supplierId', 'customerId'],
+      properties: {
+        id: { bsonType: 'string', description: 'Unique thread identifier' },
+        supplierId: { bsonType: 'string', description: 'Supplier user/business ID' },
+        supplierName: { bsonType: 'string', description: 'Supplier name' },
+        customerId: { bsonType: 'string', description: 'Customer user ID' },
+        eventType: { bsonType: 'string', description: 'Type of event' },
+        eventDate: { bsonType: 'string', description: 'Event date' },
+        eventLocation: { bsonType: 'string', description: 'Event location' },
+        guests: { bsonType: 'string', description: 'Number of guests' },
+        createdAt: { bsonType: 'string', description: 'Thread creation timestamp' },
+        updatedAt: { bsonType: 'string', description: 'Last activity timestamp' },
+      },
+    },
+  },
+};
+
+/**
+ * Event Schema
+ * Stores event records (if used)
+ */
+const eventSchema = {
+  validator: {
+    $jsonSchema: {
+      bsonType: 'object',
+      required: ['id'],
+      properties: {
+        id: { bsonType: 'string', description: 'Unique event identifier' },
+        userId: { bsonType: 'string', description: 'Event creator user ID' },
+        title: { bsonType: 'string', description: 'Event title' },
+        date: { bsonType: 'string', description: 'Event date' },
+        location: { bsonType: 'string', description: 'Event location' },
+        description: { bsonType: 'string', description: 'Event description' },
+        createdAt: { bsonType: 'string', description: 'Creation timestamp' },
+        updatedAt: { bsonType: 'string', description: 'Last update timestamp' },
+      },
+    },
+  },
+};
+
+/**
+ * Initialize collections with schemas and indexes
+ * @param {Object} db - MongoDB database instance
+ */
+async function initializeCollections(db) {
+  const collections = {
+    users: userSchema,
+    suppliers: supplierSchema,
+    packages: packageSchema,
+    plans: planSchema,
+    notes: noteSchema,
+    messages: messageSchema,
+    threads: threadSchema,
+    events: eventSchema,
+  };
+
+  for (const [name, schema] of Object.entries(collections)) {
+    try {
+      // Check if collection exists
+      const existingCollections = await db.listCollections({ name }).toArray();
+      
+      if (existingCollections.length === 0) {
+        // Create collection with schema validation
+        await db.createCollection(name, schema);
+        console.log(`Created collection: ${name}`);
+      } else {
+        // Update validation rules for existing collection
+        await db.command({
+          collMod: name,
+          validator: schema.validator,
+        });
+        console.log(`Updated validation for collection: ${name}`);
+      }
+    } catch (error) {
+      console.error(`Error initializing collection ${name}:`, error.message);
+    }
+  }
+
+  // Create indexes for better query performance
+  await createIndexes(db);
+}
+
+/**
+ * Create database indexes for performance optimization
+ * @param {Object} db - MongoDB database instance
+ */
+async function createIndexes(db) {
+  try {
+    // User indexes
+    await db.collection('users').createIndex({ id: 1 }, { unique: true });
+    await db.collection('users').createIndex({ email: 1 }, { unique: true });
+    await db.collection('users').createIndex({ role: 1 });
+    await db.collection('users').createIndex({ verificationToken: 1 }, { sparse: true });
+    await db.collection('users').createIndex({ resetToken: 1 }, { sparse: true });
+
+    // Supplier indexes
+    await db.collection('suppliers').createIndex({ id: 1 }, { unique: true });
+    await db.collection('suppliers').createIndex({ ownerUserId: 1 });
+    await db.collection('suppliers').createIndex({ category: 1 });
+    await db.collection('suppliers').createIndex({ approved: 1 });
+    await db.collection('suppliers').createIndex({ isPro: 1 });
+
+    // Package indexes
+    await db.collection('packages').createIndex({ id: 1 }, { unique: true });
+    await db.collection('packages').createIndex({ supplierId: 1 });
+    await db.collection('packages').createIndex({ approved: 1 });
+    await db.collection('packages').createIndex({ featured: 1 });
+
+    // Plan indexes
+    await db.collection('plans').createIndex({ id: 1 }, { unique: true });
+    await db.collection('plans').createIndex({ userId: 1 });
+    await db.collection('plans').createIndex({ supplierId: 1 });
+
+    // Note indexes
+    await db.collection('notes').createIndex({ id: 1 }, { unique: true });
+    await db.collection('notes').createIndex({ userId: 1 });
+
+    // Message indexes
+    await db.collection('messages').createIndex({ id: 1 }, { unique: true });
+    await db.collection('messages').createIndex({ threadId: 1 });
+    await db.collection('messages').createIndex({ fromUserId: 1 });
+    await db.collection('messages').createIndex({ createdAt: 1 });
+
+    // Thread indexes
+    await db.collection('threads').createIndex({ id: 1 }, { unique: true });
+    await db.collection('threads').createIndex({ customerId: 1 });
+    await db.collection('threads').createIndex({ supplierId: 1 });
+    await db.collection('threads').createIndex({ updatedAt: 1 });
+
+    // Event indexes
+    await db.collection('events').createIndex({ id: 1 }, { unique: true });
+    await db.collection('events').createIndex({ userId: 1 });
+
+    console.log('Database indexes created successfully');
+  } catch (error) {
+    console.error('Error creating indexes:', error.message);
+  }
+}
+
+module.exports = {
+  initializeCollections,
+  createIndexes,
+  getCollection,
+};
