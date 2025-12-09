@@ -8,6 +8,7 @@
 const express = require('express');
 const { read, write } = require('../store');
 const { authRequired, roleRequired } = require('../middleware/auth');
+const { auditLog, AUDIT_ACTIONS } = require('../middleware/audit');
 
 const router = express.Router();
 
@@ -360,7 +361,6 @@ router.post('/users/:id/suspend', authRequired, roleRequired('admin'), (req, res
   write('users', users);
   
   // Create audit log (requiring audit.js)
-  const { auditLog, AUDIT_ACTIONS } = require('../middleware/audit');
   auditLog({
     adminId: req.user.id,
     adminEmail: req.user.email,
@@ -413,7 +413,6 @@ router.post('/users/:id/ban', authRequired, roleRequired('admin'), (req, res) =>
   write('users', users);
   
   // Create audit log
-  const { auditLog, AUDIT_ACTIONS } = require('../middleware/audit');
   auditLog({
     adminId: req.user.id,
     adminEmail: req.user.email,
@@ -463,7 +462,6 @@ router.post('/users/:id/verify', authRequired, roleRequired('admin'), (req, res)
   write('users', users);
   
   // Create audit log
-  const { auditLog, AUDIT_ACTIONS } = require('../middleware/audit');
   auditLog({
     adminId: req.user.id,
     adminEmail: req.user.email,
@@ -512,7 +510,6 @@ router.post('/users/:id/force-reset', authRequired, roleRequired('admin'), (req,
   write('users', users);
   
   // Create audit log
-  const { auditLog, AUDIT_ACTIONS } = require('../middleware/audit');
   auditLog({
     adminId: req.user.id,
     adminEmail: req.user.email,
@@ -563,7 +560,6 @@ router.post('/suppliers/:id/verify', authRequired, roleRequired('admin'), (req, 
   write('suppliers', suppliers);
   
   // Create audit log
-  const { auditLog, AUDIT_ACTIONS } = require('../middleware/audit');
   auditLog({
     adminId: req.user.id,
     adminEmail: req.user.email,

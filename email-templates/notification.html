@@ -128,25 +128,9 @@
       <h2>{{title}}</h2>
       <p>Hi {{name}},</p>
       
-      {{#if notificationBox}}
-      <div class="notification-box">
-        <p>{{notificationMessage}}</p>
-      </div>
-      {{/if}}
-      
       <p>{{message}}</p>
       
-      {{#if actionUrl}}
-      <div style="text-align: center;">
-        <a href="{{actionUrl}}" class="cta-button">{{actionText}}</a>
-      </div>
-      {{/if}}
-      
       <hr class="divider">
-      
-      {{#if additionalInfo}}
-      <p style="font-size: 14px; color: #98A2B3;">{{additionalInfo}}</p>
-      {{/if}}
       
       <p style="font-size: 14px; color: #98A2B3;">You received this email because you have notifications enabled for your EventFlow account. You can manage your notification preferences in your <a href="{{baseUrl}}/settings.html" style="color: #0B8073;">account settings</a>.</p>
     </div>
