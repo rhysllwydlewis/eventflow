@@ -1,61 +1,47 @@
 [
   {
-    "id": "usr_ka5a9xcpz58w2u",
+    "id": "usr_qsnl9adoz6wple",
     "name": "Admin",
     "email": "admin@eventflow.local",
     "role": "admin",
-    "passwordHash": "$2a$10$4Pv6MAU2VDMCAHeXKXA/Ceqony/KUJtiEimsnrUC3g.HZUoAGrPHe",
-    "createdAt": "2025-12-09T22:20:21.222Z",
+    "passwordHash": "$2a$10$Kbs3hGXV3p/dASI1iSlJxeX5muFgZUfJucqN7XzbfSFJECTLtr/nu",
+    "createdAt": "2025-12-09T23:06:52.178Z",
     "notify": true,
     "marketingOptIn": false,
-    "verified": true
+    "verified": true,
+    "lastLoginAt": "2025-12-09T23:09:07.890Z"
   },
   {
-    "id": "usr_1kt6ev4nz58w5e",
+    "id": "usr_v7e59qzuz6wpnx",
     "name": "Supplier Demo",
     "email": "supplier@eventflow.local",
     "role": "supplier",
-    "passwordHash": "$2a$10$g98wvyRhlim2a9LnEkGAau7V.zc7PzuJqlCBAmPbKIO1KOaQr.0ES",
-    "createdAt": "2025-12-09T22:20:21.222Z",
+    "passwordHash": "$2a$10$alpgL1nV/PaUoSt3IhQxW.tz2aXep/3LNz/8Ap7I5fMvGA7iEOU6S",
+    "createdAt": "2025-12-09T23:06:52.178Z",
     "notify": true,
     "marketingOptIn": false,
     "verified": true
   },
   {
-    "id": "usr_28y4fuhrz58w7o",
+    "id": "usr_7ahbqm8pz6wpq7",
     "name": "Customer Demo",
     "email": "customer@eventflow.local",
     "role": "customer",
-    "passwordHash": "$2a$10$QHoGA6uFObC1sMd1qZOWz.cWbd1qWHYsygokIEdzMwSiAcV0dujFy",
-    "createdAt": "2025-12-09T22:20:21.222Z",
+    "passwordHash": "$2a$10$NIXezGtQyTlCzKke0oekO.0pj918fRpJUa6ou3Aq.8wKHGQ0XrTLm",
+    "createdAt": "2025-12-09T23:06:52.178Z",
     "notify": true,
     "marketingOptIn": false,
     "verified": true
   },
   {
-    "id": "usr_35rwitplz599bm",
-    "name": "Security Test User",
-    "email": "sectest@example.com",
+    "id": "usr_test_unverified",
+    "name": "Test Unverified",
+    "email": "unverified@eventflow.local",
     "role": "customer",
-    "passwordHash": "$2a$10$yZ8tSziZMqMZvXy4Du2.cOyMq8rmT4XkpoqRGh3W4oBfJ7hGT34s.",
+    "passwordHash": "$2a$10$6aHs4kSwwThw5g6TlpJL7edi3RGIcYvtTnfH.Fm5I4CQbTooptDVq",
+    "createdAt": "2025-12-09T23:10:55.418Z",
     "notify": true,
     "marketingOptIn": false,
-    "verified": false,
-    "verificationToken": "verify_dpelip0wz599dw",
-    "verificationTokenExpiresAt": "2025-12-10T22:20:38.468Z",
-    "createdAt": "2025-12-09T22:20:38.468Z"
-  },
-  {
-    "id": "usr_w5hxgo7fz5a5dy",
-    "name": "Security Test User",
-    "email": "sectest1765318879@example.com",
-    "role": "customer",
-    "passwordHash": "$2a$10$BJZvsbAMWODGkqW5dydboumzLHDG7qdz94FWvpWqyXQ/ZRgWICsQK",
-    "notify": true,
-    "marketingOptIn": false,
-    "verified": false,
-    "verificationToken": "verify_cemy3lqjz5a5j9",
-    "verificationTokenExpiresAt": "2025-12-10T22:21:20.133Z",
-    "createdAt": "2025-12-09T22:21:20.028Z"
+    "verified": false
   }
 ]
