@@ -99,28 +99,6 @@ if (!JWT_SECRET || JWT_SECRET === 'change_me') {
   process.exit(1);
 }
 
-// Validate production environment
-if (process.env.NODE_ENV === 'production') {
-  const required = {
-    BASE_URL: process.env.BASE_URL,
-    FROM_EMAIL: process.env.FROM_EMAIL,
-  };
-  
-  const missing = Object.entries(required)
-    .filter(([_, value]) => !value)
-    .map(([key]) => key);
-  
-  if (missing.length > 0) {
-    console.error(`Production error: Missing required environment variables: ${missing.join(', ')}`);
-    console.error('Please set these in your .env file before deploying.');
-    process.exit(1);
-  }
-  
-  if (!AWS_SES_ENABLED && !transporter) {
-    console.warn('Warning: No email service configured. Set up AWS SES or SMTP for email delivery.');
-  }
-}
-
 app.disable('x-powered-by');
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(express.json({ limit: '2mb' }));
@@ -207,6 +185,28 @@ if (EMAIL_ENABLED && process.env.SMTP_HOST && !AWS_SES_ENABLED) {
       ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
       : undefined
   });
+}
+
+// Validate production environment
+if (process.env.NODE_ENV === 'production') {
+  const required = {
+    BASE_URL: process.env.BASE_URL,
+    FROM_EMAIL: process.env.FROM_EMAIL,
+  };
+  
+  const missing = Object.entries(required)
+    .filter(([_, value]) => !value)
+    .map(([key]) => key);
+  
+  if (missing.length > 0) {
+    console.error(`Production error: Missing required environment variables: ${missing.join(', ')}`);
+    console.error('Please set these in your .env file before deploying.');
+    process.exit(1);
+  }
+  
+  if (!AWS_SES_ENABLED && !transporter) {
+    console.warn('Warning: No email service configured. Set up AWS SES or SMTP for email delivery.');
+  }
 }
 
 // Always save outgoing email to /outbox in dev
@@ -421,15 +421,14 @@ app.post('/api/auth/register', strictAuthLimiter, async (req, res) => {
   // Send verification email (dev mode writes .eml files to /outbox)
   try {
     const baseUrl = process.env.BASE_URL || `http://localhost:${PORT}`;
-    const verifyUrl = `${baseUrl}/verify.html?token=${encodeURIComponent(user.verificationToken)}`;
+    const verificationLink = `${baseUrl}/verify.html?token=${encodeURIComponent(user.verificationToken)}`;
     await sendMail({
       to: user.email,
       subject: 'Confirm your EventFlow account',
       template: 'verification',
       templateData: {
         name: user.name || 'there',
-        verifyUrl: verifyUrl,
-        verificationLink: verifyUrl,
+        verificationLink: verificationLink,
         email: user.email
       }
     });
@@ -521,6 +520,7 @@ app.post('/api/auth/forgot', passwordResetLimiter, async (req, res) => {
     try {
       if (user.email) {
         const baseUrl = process.env.BASE_URL || `http://localhost:${PORT}`;
+        const resetLink = `${baseUrl}/reset-password.html?token=${token}`;
         await sendMail({
           to: user.email,
           subject: 'Reset your EventFlow password',
@@ -528,8 +528,7 @@ app.post('/api/auth/forgot', passwordResetLimiter, async (req, res) => {
           templateData: {
             name: user.name || 'there',
             resetToken: token,
-            resetUrl: `${baseUrl}/reset-password.html?token=${token}`,
-            resetLink: `${baseUrl}/reset-password.html?token=${token}`,
+            resetLink: resetLink,
             expiresIn: '1 hour'
           }
         });
@@ -605,7 +604,7 @@ app.post('/api/auth/resend-verification', authLimiter, async (req, res) => {
   
   try {
     const baseUrl = process.env.BASE_URL || `http://localhost:${PORT}`;
-    const verifyUrl = `${baseUrl}/verify.html?token=${encodeURIComponent(newToken)}`;
+    const verificationLink = `${baseUrl}/verify.html?token=${encodeURIComponent(newToken)}`;
     
     await sendMail({
       to: user.email,
@@ -613,8 +612,7 @@ app.post('/api/auth/resend-verification', authLimiter, async (req, res) => {
       template: 'verification',
       templateData: {
         name: user.name || 'there',
-        verifyUrl: verifyUrl,
-        verificationLink: verifyUrl,
+        verificationLink: verificationLink,
         email: user.email
       }
     });
