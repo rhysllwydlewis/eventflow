@@ -3,6 +3,12 @@ const crypto = require('crypto');
 /**
  * CSRF Protection Middleware
  * Generates and validates CSRF tokens for state-changing operations
+ * 
+ * NOTE: This implementation uses in-memory storage for simplicity.
+ * For production deployments:
+ * - Use session-based storage (e.g., express-session)
+ * - Use a shared store like Redis for multi-server deployments
+ * - Consider using a library like csurf for battle-tested CSRF protection
  */
 
 // Store tokens in memory (in production, use session storage or Redis)

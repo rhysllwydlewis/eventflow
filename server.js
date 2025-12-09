@@ -17,7 +17,7 @@ const jwt = require('jsonwebtoken');
 const validator = require('validator');
 const nodemailer = require('nodemailer');
 
-const APP_VERSION = 'v16.3.9';
+const APP_VERSION = 'v17.0.0';
 
 require('dotenv').config();
 
@@ -519,28 +519,25 @@ app.get('/api/auth/verify', (req, res) => {
   
   // Send welcome email after successful verification
   const user = users[idx];
-  try {
-    sendMail({
-      to: user.email,
-      subject: 'Welcome to EventFlow!',
-      template: 'welcome',
-      templateData: {
-        name: user.name || 'there',
-        email: user.email,
-        role: user.role
-      }
-    }).catch(e => {
-      console.error('Failed to send welcome email', e);
-    });
-  } catch (e) {
-    console.error('Error sending welcome email', e);
-  }
+  sendMail({
+    to: user.email,
+    subject: 'Welcome to EventFlow!',
+    template: 'welcome',
+    templateData: {
+      name: user.name || 'there',
+      email: user.email,
+      role: user.role
+    }
+  }).catch(e => {
+    console.error('Failed to send welcome email', e);
+  });
   
   res.json({ ok: true });
 });
 
 // CSRF token endpoint - provides token for frontend use
-app.get('/api/csrf-token', (req, res) => {
+// Apply authLimiter to prevent token exhaustion attacks
+app.get('/api/csrf-token', authLimiter, (req, res) => {
   const token = getToken(req);
   res.json({ csrfToken: token });
 });
