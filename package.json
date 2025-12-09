@@ -5,9 +5,12 @@
   "main": "server.js",
   "scripts": {
     "dev": "node server.js",
-    "start": "node server.js"
+    "start": "node server.js",
+    "migrate": "node migrate-to-mongodb.js"
   },
   "dependencies": {
+    "@sendgrid/mail": "^8.1.0",
+    "aws-sdk": "^2.1691.0",
     "bcryptjs": "^2.4.3",
     "cookie-parser": "^1.4.6",
     "dotenv": "^16.4.5",
@@ -15,9 +18,11 @@
     "express-rate-limit": "^7.1.5",
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
+    "mongodb": "^6.10.0",
+    "multer": "^2.0.2",
     "nodemailer": "^7.0.10",
-    "validator": "^13.11.0",
     "pdfkit": "^0.15.0",
-    "@sendgrid/mail": "^8.1.0"
+    "sharp": "^0.33.5",
+    "validator": "^13.11.0"
   }
 }
