@@ -7,20 +7,25 @@
   gap: 10px;
 }
 
-/* Keep order consistent: Logo – Plan – Suppliers – Login – burger – theme toggle */
+/* New order: Logo – Plan – Suppliers – Login – Bell – Burger (Theme toggle moved to footer) */
 .header .nav-inline {
   order: 1;
 }
 
-#burger {
+#notification-bell {
   order: 2;
 }
 
-#theme-toggle {
+#burger {
   order: 3;
 }
 
-/* 2) Theme toggle: small, clean sun / moon icon (no ring, minimal border) */
+/* Hide theme toggle in header - it's now in the footer */
+.header #theme-toggle {
+  display: none !important;
+}
+
+/* 2) Icon button base styles */
 
 .icon-button {
   border: none;
@@ -34,11 +39,36 @@
   justify-content: center;
   cursor: pointer;
   transition: background 140ms ease-out, transform 120ms ease-out;
+  position: relative;
 }
 
 .icon-button:hover {
   background: rgba(15,23,42,.06);
   transform: translateY(-1px);
+}
+
+html[data-theme="dark"] .icon-button:hover {
+  background: rgba(55,65,81,.6);
+}
+
+/* Notification bell styling */
+.notification-icon {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.notification-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: #dc2626;
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 5px;
+  border-radius: 999px;
+  min-width: 18px;
+  text-align: center;
 }
 
 /* Just the emoji – no extra ring */
@@ -48,8 +78,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  box-shadow: none !important;      /* remove ring */
-  border-radius: 0 !important;      /* no circular background */
+  box-shadow: none !important;
+  border-radius: 0 !important;
   position: static !important;
   overflow: visible !important;
 }
@@ -94,9 +124,9 @@ html[data-theme="dark"] .theme-icon-moon {
   transform: scale(1);
 }
 
-/* 3) Burger button – clear menu icon */
+/* 3) Burger button – visible on desktop AND mobile (per user requirement) */
 .nav-toggle {
-  display: none;
+  display: inline-flex;
   width: 34px;
   height: 34px;
   border-radius: 999px;
@@ -109,35 +139,197 @@ html[data-theme="dark"] .theme-icon-moon {
   transition: background 140ms ease-out, transform 120ms ease-out, box-shadow 160ms ease-out;
 }
 
-/* Use the ☰ glyph so it’s always visible, even if bars are hidden */
+.nav-toggle:hover {
+  background: rgba(15,23,42,.06);
+  transform: translateY(-1px);
+}
+
+/* Use the ☰ glyph so it's always visible */
 .nav-toggle::before {
   content: '☰';
   font-size: 18px;
   line-height: 1;
 }
 
-/* Hide internal bars – the glyph does the visual work */
+/* Hide internal bars */
 .nav-toggle-bar {
   display: none;
 }
 
-/* Show burger on small screens (matches existing layout) */
-@media (max-width: 720px) {
-  .nav-toggle {
-    display: inline-flex;
-  }
+/* Dark mode support for burger */
+html[data-theme="dark"] .nav-toggle {
+  background: rgba(31,41,55,.9);
+  border-color: rgba(255,255,255,.16);
 }
 
-/* 4) Ensure brand text is always visible, even on very small screens */
+html[data-theme="dark"] .nav-toggle:hover {
+  background: rgba(55,65,81,.9);
+}
+
+/* 4) Ensure brand text is always visible */
 @media (max-width: 520px) {
   .brand-text {
     display: inline !important;
     font-size: 0.9rem;
   }
 
-  /* Slightly tighten the nav pills so everything fits */
   .nav-inline .nav-main {
     padding: 4px 8px;
     font-size: 0.8rem;
   }
+}
+
+/* 5) Fixed footer navigation bar */
+.footer-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 56px;
+  background: rgba(255,255,255,0.95);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 0 16px;
+  box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+}
+
+html[data-theme="dark"] .footer-nav {
+  background: rgba(31,41,55,0.95);
+  border-top-color: #374151;
+  box-shadow: 0 -2px 10px rgba(0,0,0,0.3);
+}
+
+.footer-nav-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 1120px;
+  gap: 16px;
+}
+
+.footer-nav-links {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.footer-nav-link {
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--text);
+  text-decoration: none;
+  transition: background 140ms ease-out;
+}
+
+.footer-nav-link:hover {
+  background: rgba(15,23,42,.06);
+  text-decoration: none;
+}
+
+html[data-theme="dark"] .footer-nav-link:hover {
+  background: rgba(55,65,81,.6);
+}
+
+.footer-theme-btn {
+  border: none;
+  background: transparent;
+  padding: 6px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  transition: background 140ms ease-out;
+}
+
+.footer-theme-btn:hover {
+  background: rgba(15,23,42,.06);
+}
+
+html[data-theme="dark"] .footer-theme-btn:hover {
+  background: rgba(55,65,81,.6);
+}
+
+/* Add padding to body to account for fixed footer */
+body {
+  padding-bottom: 70px;
+}
+
+/* Mobile responsive footer */
+@media (max-width: 600px) {
+  .footer-nav-links {
+    display: none;
+  }
+  
+  .footer-nav-content {
+    justify-content: center;
+  }
+}
+
+/* Footer theme icon button - nicer, smaller SVG icon */
+.footer-theme-icon-btn {
+  border: none;
+  background: transparent;
+  padding: 4px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  transition: background 140ms ease-out, transform 140ms ease-out;
+  color: var(--text);
+  position: relative;
+}
+
+.footer-theme-icon-btn:hover {
+  background: rgba(15,23,42,.06);
+  transform: scale(1.1);
+}
+
+html[data-theme="dark"] .footer-theme-icon-btn {
+  color: var(--text);
+}
+
+html[data-theme="dark"] .footer-theme-icon-btn:hover {
+  background: rgba(55,65,81,.6);
+}
+
+/* SVG icon transitions */
+.theme-icon-light,
+.theme-icon-dark {
+  transition: opacity 200ms ease-out, transform 200ms ease-out;
+  display: block;
+}
+
+.theme-icon-light {
+  opacity: 1;
+  transform: rotate(0deg) scale(1);
+}
+
+.theme-icon-dark {
+  opacity: 0;
+  transform: rotate(-90deg) scale(0.5);
+  position: absolute;
+}
+
+html[data-theme="dark"] .theme-icon-light {
+  opacity: 0;
+  transform: rotate(90deg) scale(0.5);
+  position: absolute;
+}
+
+html[data-theme="dark"] .theme-icon-dark {
+  opacity: 1;
+  transform: rotate(0deg) scale(1);
+  position: static;
 }

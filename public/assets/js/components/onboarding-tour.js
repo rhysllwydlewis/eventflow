@@ -5,6 +5,8 @@
 
 class OnboardingTour {
   constructor(options = {}) {
+    console.log('[OnboardingTour] Initializing with options:', options);
+    
     this.options = {
       steps: options.steps || [],
       onComplete: options.onComplete || null,
@@ -17,22 +19,40 @@ class OnboardingTour {
     this.overlay = null;
     this.isActive = false;
 
+    console.log('[OnboardingTour] Steps count:', this.options.steps.length);
+    console.log('[OnboardingTour] Has completed tour:', this.hasCompletedTour());
+
     if (this.options.autoStart && !this.hasCompletedTour()) {
+      console.log('[OnboardingTour] Auto-starting tour');
       this.start();
+    } else {
+      console.log('[OnboardingTour] Tour not auto-starting. AutoStart:', this.options.autoStart, 'Completed:', this.hasCompletedTour());
     }
   }
 
   hasCompletedTour() {
-    return localStorage.getItem(this.options.storageKey) === 'true';
+    const completed = localStorage.getItem(this.options.storageKey) === 'true';
+    console.log('[OnboardingTour] Checking completion status:', completed, 'for key:', this.options.storageKey);
+    return completed;
   }
 
   markTourCompleted() {
+    console.log('[OnboardingTour] Marking tour as completed');
     localStorage.setItem(this.options.storageKey, 'true');
   }
 
-  start() {
-    if (this.isActive || this.options.steps.length === 0) return;
+  resetTour() {
+    console.log('[OnboardingTour] Resetting tour');
+    localStorage.removeItem(this.options.storageKey);
+  }
 
+  start() {
+    if (this.isActive || this.options.steps.length === 0) {
+      console.log('[OnboardingTour] Cannot start. Active:', this.isActive, 'Steps:', this.options.steps.length);
+      return;
+    }
+
+    console.log('[OnboardingTour] Starting tour');
     this.isActive = true;
     this.currentStep = 0;
     this.createOverlay();
