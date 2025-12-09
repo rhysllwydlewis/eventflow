@@ -57,6 +57,9 @@ try {
 // Local JSON storage helpers (from ./store.js)
 const { read, write, uid, DATA_DIR } = require('./store');
 
+// Photo upload utilities
+const photoUpload = require('./photo-upload');
+
 // Helper: determine if a supplier's Pro plan is currently active.
 // - isPro must be true, AND
 // - proExpiresAt is either missing/null (no expiry) or in the future.
@@ -1497,6 +1500,418 @@ app.post('/api/me/packages/:id/photos', authRequired, (req, res) => {
   res.json({ ok: true, url });
 });
 
+// ---------- Photo Upload & Management ----------
+
+/**
+ * Upload single photo for supplier or package
+ * POST /api/photos/upload
+ * Body: multipart/form-data with 'photo' field
+ * Query: ?type=supplier|package&id=<supplierId|packageId>
+ */
+app.post('/api/photos/upload', authRequired, photoUpload.upload.single('photo'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    const { type, id } = req.query;
+    if (!type || !id) {
+      return res.status(400).json({ error: 'Missing type or id parameter' });
+    }
+
+    // Process and save image
+    const images = await photoUpload.processAndSaveImage(req.file.buffer, req.file.originalname);
+    
+    // Get metadata
+    const metadata = await photoUpload.getImageMetadata(req.file.buffer);
+
+    // Create photo record
+    const photoRecord = {
+      url: images.optimized,
+      thumbnail: images.thumbnail,
+      large: images.large,
+      original: images.original,
+      approved: false, // Requires admin approval
+      uploadedAt: Date.now(),
+      uploadedBy: req.user.id,
+      metadata: metadata,
+    };
+
+    // Update supplier or package with new photo
+    if (type === 'supplier') {
+      const suppliers = await read('suppliers');
+      const supplier = suppliers.find(s => s.id === id);
+      
+      if (!supplier) {
+        return res.status(404).json({ error: 'Supplier not found' });
+      }
+
+      // Check if user owns this supplier
+      if (supplier.ownerUserId !== req.user.id && req.user.role !== 'admin') {
+        return res.status(403).json({ error: 'Not authorized' });
+      }
+
+      // Add to gallery
+      if (!supplier.photosGallery) {
+        supplier.photosGallery = [];
+      }
+      supplier.photosGallery.push(photoRecord);
+
+      await write('suppliers', suppliers);
+      
+      return res.json({
+        success: true,
+        photo: photoRecord,
+        message: 'Photo uploaded successfully. Pending admin approval.',
+      });
+    } else if (type === 'package') {
+      const packages = await read('packages');
+      const pkg = packages.find(p => p.id === id);
+      
+      if (!pkg) {
+        return res.status(404).json({ error: 'Package not found' });
+      }
+
+      // Check if user owns this package's supplier
+      const suppliers = await read('suppliers');
+      const supplier = suppliers.find(s => s.id === pkg.supplierId);
+      
+      if (!supplier || (supplier.ownerUserId !== req.user.id && req.user.role !== 'admin')) {
+        return res.status(403).json({ error: 'Not authorized' });
+      }
+
+      // Add to gallery
+      if (!pkg.gallery) {
+        pkg.gallery = [];
+      }
+      pkg.gallery.push(photoRecord);
+
+      await write('packages', packages);
+      
+      return res.json({
+        success: true,
+        photo: photoRecord,
+        message: 'Photo uploaded successfully. Pending admin approval.',
+      });
+    } else {
+      return res.status(400).json({ error: 'Invalid type. Must be supplier or package.' });
+    }
+  } catch (error) {
+    console.error('Photo upload error:', error);
+    res.status(500).json({ error: 'Failed to upload photo', details: error.message });
+  }
+});
+
+/**
+ * Upload multiple photos (batch upload)
+ * POST /api/photos/upload/batch
+ * Body: multipart/form-data with 'photos' field (multiple files)
+ * Query: ?type=supplier|package&id=<supplierId|packageId>
+ */
+app.post('/api/photos/upload/batch', authRequired, photoUpload.upload.array('photos', 10), async (req, res) => {
+  try {
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ error: 'No files uploaded' });
+    }
+
+    const { type, id } = req.query;
+    if (!type || !id) {
+      return res.status(400).json({ error: 'Missing type or id parameter' });
+    }
+
+    // Process all images
+    const uploadedPhotos = [];
+    const errors = [];
+
+    for (const file of req.files) {
+      try {
+        const images = await photoUpload.processAndSaveImage(file.buffer, file.originalname);
+        const metadata = await photoUpload.getImageMetadata(file.buffer);
+
+        const photoRecord = {
+          url: images.optimized,
+          thumbnail: images.thumbnail,
+          large: images.large,
+          original: images.original,
+          approved: false,
+          uploadedAt: Date.now(),
+          uploadedBy: req.user.id,
+          metadata: metadata,
+        };
+
+        uploadedPhotos.push(photoRecord);
+      } catch (error) {
+        errors.push({ filename: file.originalname, error: error.message });
+      }
+    }
+
+    // Update supplier or package with new photos
+    if (type === 'supplier') {
+      const suppliers = await read('suppliers');
+      const supplier = suppliers.find(s => s.id === id);
+      
+      if (!supplier) {
+        return res.status(404).json({ error: 'Supplier not found' });
+      }
+
+      if (supplier.ownerUserId !== req.user.id && req.user.role !== 'admin') {
+        return res.status(403).json({ error: 'Not authorized' });
+      }
+
+      if (!supplier.photosGallery) {
+        supplier.photosGallery = [];
+      }
+      supplier.photosGallery.push(...uploadedPhotos);
+
+      await write('suppliers', suppliers);
+    } else if (type === 'package') {
+      const packages = await read('packages');
+      const pkg = packages.find(p => p.id === id);
+      
+      if (!pkg) {
+        return res.status(404).json({ error: 'Package not found' });
+      }
+
+      const suppliers = await read('suppliers');
+      const supplier = suppliers.find(s => s.id === pkg.supplierId);
+      
+      if (!supplier || (supplier.ownerUserId !== req.user.id && req.user.role !== 'admin')) {
+        return res.status(403).json({ error: 'Not authorized' });
+      }
+
+      if (!pkg.gallery) {
+        pkg.gallery = [];
+      }
+      pkg.gallery.push(...uploadedPhotos);
+
+      await write('packages', packages);
+    } else {
+      return res.status(400).json({ error: 'Invalid type' });
+    }
+
+    res.json({
+      success: true,
+      uploaded: uploadedPhotos.length,
+      photos: uploadedPhotos,
+      errors: errors,
+      message: `${uploadedPhotos.length} photo(s) uploaded successfully. Pending admin approval.`,
+    });
+  } catch (error) {
+    console.error('Batch upload error:', error);
+    res.status(500).json({ error: 'Failed to upload photos', details: error.message });
+  }
+});
+
+/**
+ * Delete photo
+ * DELETE /api/photos/:photoUrl
+ * Query: ?type=supplier|package&id=<supplierId|packageId>
+ */
+app.delete('/api/photos/delete', authRequired, async (req, res) => {
+  try {
+    const { type, id, photoUrl } = req.query;
+    
+    if (!type || !id || !photoUrl) {
+      return res.status(400).json({ error: 'Missing required parameters' });
+    }
+
+    const decodedUrl = decodeURIComponent(photoUrl);
+
+    if (type === 'supplier') {
+      const suppliers = await read('suppliers');
+      const supplier = suppliers.find(s => s.id === id);
+      
+      if (!supplier) {
+        return res.status(404).json({ error: 'Supplier not found' });
+      }
+
+      if (supplier.ownerUserId !== req.user.id && req.user.role !== 'admin') {
+        return res.status(403).json({ error: 'Not authorized' });
+      }
+
+      if (supplier.photosGallery) {
+        supplier.photosGallery = supplier.photosGallery.filter(p => p.url !== decodedUrl);
+        await write('suppliers', suppliers);
+        
+        // Delete physical files
+        await photoUpload.deleteImage(decodedUrl);
+      }
+    } else if (type === 'package') {
+      const packages = await read('packages');
+      const pkg = packages.find(p => p.id === id);
+      
+      if (!pkg) {
+        return res.status(404).json({ error: 'Package not found' });
+      }
+
+      const suppliers = await read('suppliers');
+      const supplier = suppliers.find(s => s.id === pkg.supplierId);
+      
+      if (!supplier || (supplier.ownerUserId !== req.user.id && req.user.role !== 'admin')) {
+        return res.status(403).json({ error: 'Not authorized' });
+      }
+
+      if (pkg.gallery) {
+        pkg.gallery = pkg.gallery.filter(p => p.url !== decodedUrl);
+        await write('packages', packages);
+        
+        // Delete physical files
+        await photoUpload.deleteImage(decodedUrl);
+      }
+    }
+
+    res.json({ success: true, message: 'Photo deleted successfully' });
+  } catch (error) {
+    console.error('Delete photo error:', error);
+    res.status(500).json({ error: 'Failed to delete photo', details: error.message });
+  }
+});
+
+/**
+ * Approve photo (admin only)
+ * POST /api/photos/approve
+ * Body: { type, id, photoUrl, approved }
+ */
+app.post('/api/photos/approve', authRequired, roleRequired('admin'), async (req, res) => {
+  try {
+    const { type, id, photoUrl, approved } = req.body;
+    
+    if (!type || !id || !photoUrl || typeof approved !== 'boolean') {
+      return res.status(400).json({ error: 'Missing required parameters' });
+    }
+
+    if (type === 'supplier') {
+      const suppliers = await read('suppliers');
+      const supplier = suppliers.find(s => s.id === id);
+      
+      if (!supplier) {
+        return res.status(404).json({ error: 'Supplier not found' });
+      }
+
+      if (supplier.photosGallery) {
+        const photo = supplier.photosGallery.find(p => p.url === photoUrl);
+        if (photo) {
+          photo.approved = approved;
+          photo.approvedAt = Date.now();
+          photo.approvedBy = req.user.id;
+          await write('suppliers', suppliers);
+        }
+      }
+    } else if (type === 'package') {
+      const packages = await read('packages');
+      const pkg = packages.find(p => p.id === id);
+      
+      if (!pkg) {
+        return res.status(404).json({ error: 'Package not found' });
+      }
+
+      if (pkg.gallery) {
+        const photo = pkg.gallery.find(p => p.url === photoUrl);
+        if (photo) {
+          photo.approved = approved;
+          photo.approvedAt = Date.now();
+          photo.approvedBy = req.user.id;
+          await write('packages', packages);
+        }
+      }
+    }
+
+    res.json({ 
+      success: true, 
+      message: approved ? 'Photo approved' : 'Photo rejected' 
+    });
+  } catch (error) {
+    console.error('Approve photo error:', error);
+    res.status(500).json({ error: 'Failed to approve photo', details: error.message });
+  }
+});
+
+/**
+ * Crop image
+ * POST /api/photos/crop
+ * Body: { imageUrl, cropData: { x, y, width, height } }
+ */
+app.post('/api/photos/crop', authRequired, async (req, res) => {
+  try {
+    const { imageUrl, cropData } = req.body;
+    
+    if (!imageUrl || !cropData) {
+      return res.status(400).json({ error: 'Missing imageUrl or cropData' });
+    }
+
+    // Validate crop data
+    if (!cropData.x || !cropData.y || !cropData.width || !cropData.height) {
+      return res.status(400).json({ error: 'Invalid crop data' });
+    }
+
+    const croppedImages = await photoUpload.cropImage(imageUrl, cropData);
+    
+    res.json({
+      success: true,
+      images: croppedImages,
+      message: 'Image cropped successfully',
+    });
+  } catch (error) {
+    console.error('Crop image error:', error);
+    res.status(500).json({ error: 'Failed to crop image', details: error.message });
+  }
+});
+
+/**
+ * Get pending photos for moderation (admin only)
+ * GET /api/photos/pending
+ */
+app.get('/api/photos/pending', authRequired, roleRequired('admin'), async (req, res) => {
+  try {
+    const pendingPhotos = [];
+
+    // Get pending supplier photos
+    const suppliers = await read('suppliers');
+    for (const supplier of suppliers) {
+      if (supplier.photosGallery) {
+        const pending = supplier.photosGallery
+          .filter(p => !p.approved)
+          .map(p => ({
+            ...p,
+            type: 'supplier',
+            supplierId: supplier.id,
+            supplierName: supplier.name,
+          }));
+        pendingPhotos.push(...pending);
+      }
+    }
+
+    // Get pending package photos
+    const packages = await read('packages');
+    for (const pkg of packages) {
+      if (pkg.gallery) {
+        const pending = pkg.gallery
+          .filter(p => !p.approved)
+          .map(p => ({
+            ...p,
+            type: 'package',
+            packageId: pkg.id,
+            packageTitle: pkg.title,
+            supplierId: pkg.supplierId,
+          }));
+        pendingPhotos.push(...pending);
+      }
+    }
+
+    // Sort by upload time (newest first)
+    pendingPhotos.sort((a, b) => b.uploadedAt - a.uploadedAt);
+
+    res.json({
+      success: true,
+      count: pendingPhotos.length,
+      photos: pendingPhotos,
+    });
+  } catch (error) {
+    console.error('Get pending photos error:', error);
+    res.status(500).json({ error: 'Failed to get pending photos', details: error.message });
+  }
+});
+
 // Basic API healthcheck
 app.get('/api/health', (_req, res) => {
   res.json({
@@ -1509,6 +1924,7 @@ app.get('/api/health', (_req, res) => {
 
 // ---------- Static & 404 ----------
 app.use(express.static(path.join(__dirname, 'public')));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use((_req, res) => res.status(404).send('Not found'));
 
 // ---------- Start ----------

@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Photo Gallery - EventFlow</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: #f5f5f5;
+      color: #333;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 2rem;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .header h1 {
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    /* Upload Area */
+    .upload-area {
+      background: white;
+      border-radius: 12px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .upload-dropzone {
+      border: 3px dashed #667eea;
+      border-radius: 8px;
+      padding: 3rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      background: #f8f9ff;
+    }
+
+    .upload-dropzone:hover,
+    .upload-dropzone.dragover {
+      background: #e8ebff;
+      border-color: #764ba2;
+      transform: scale(1.02);
+    }
+
+    .upload-dropzone.uploading {
+      background: #fff3cd;
+      border-color: #ffc107;
+    }
+
+    .upload-icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+    }
+
+    .upload-text {
+      font-size: 1.2rem;
+      color: #667eea;
+      margin-bottom: 0.5rem;
+    }
+
+    .upload-hint {
+      color: #666;
+      font-size: 0.9rem;
+    }
+
+    .file-input {
+      display: none;
+    }
+
+    .upload-controls {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1.5rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: 0.75rem 1.5rem;
+      border: none;
+      border-radius: 6px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-weight: 500;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-secondary {
+      background: #6c757d;
+      color: white;
+    }
+
+    .btn-secondary:hover {
+      background: #5a6268;
+    }
+
+    /* Progress Bar */
+    .progress-container {
+      display: none;
+      margin-top: 1.5rem;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 30px;
+      background: #e9ecef;
+      border-radius: 15px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+      transition: width 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+    }
+
+    /* Gallery Grid */
+    .gallery-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .gallery-filters {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .filter-select {
+      padding: 0.5rem 1rem;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 1rem;
+    }
+
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .gallery-item {
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      transition: all 0.3s ease;
+      position: relative;
+    }
+
+    .gallery-item:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    }
+
+    .gallery-item.pending {
+      border: 2px solid #ffc107;
+    }
+
+    .gallery-item.approved {
+      border: 2px solid #28a745;
+    }
+
+    .image-wrapper {
+      position: relative;
+      padding-top: 75%; /* 4:3 Aspect Ratio */
+      overflow: hidden;
+      cursor: pointer;
+    }
+
+    .gallery-image {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.3s ease;
+    }
+
+    .gallery-item:hover .gallery-image {
+      transform: scale(1.1);
+    }
+
+    .image-status {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      padding: 0.3rem 0.8rem;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: white;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    }
+
+    .status-pending {
+      background: #ffc107;
+    }
+
+    .status-approved {
+      background: #28a745;
+    }
+
+    .status-rejected {
+      background: #dc3545;
+    }
+
+    .image-actions {
+      padding: 1rem;
+      display: flex;
+      gap: 0.5rem;
+      justify-content: space-between;
+    }
+
+    .btn-small {
+      padding: 0.4rem 0.8rem;
+      font-size: 0.85rem;
+      flex: 1;
+    }
+
+    .btn-danger {
+      background: #dc3545;
+      color: white;
+    }
+
+    .btn-danger:hover {
+      background: #c82333;
+    }
+
+    .btn-success {
+      background: #28a745;
+      color: white;
+    }
+
+    .btn-success:hover {
+      background: #218838;
+    }
+
+    .btn-warning {
+      background: #ffc107;
+      color: #333;
+    }
+
+    .btn-warning:hover {
+      background: #e0a800;
+    }
+
+    /* Lightbox */
+    .lightbox {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.95);
+      z-index: 9999;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .lightbox.active {
+      display: flex;
+    }
+
+    .lightbox-content {
+      position: relative;
+      max-width: 90%;
+      max-height: 90%;
+    }
+
+    .lightbox-image {
+      max-width: 100%;
+      max-height: 90vh;
+      object-fit: contain;
+    }
+
+    .lightbox-close {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      font-size: 3rem;
+      color: white;
+      cursor: pointer;
+      background: rgba(0,0,0,0.5);
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+      transition: all 0.3s ease;
+    }
+
+    .lightbox-close:hover {
+      background: rgba(255,255,255,0.2);
+      transform: rotate(90deg);
+    }
+
+    .lightbox-nav {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 3rem;
+      color: white;
+      cursor: pointer;
+      background: rgba(0,0,0,0.5);
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+    }
+
+    .lightbox-nav:hover {
+      background: rgba(255,255,255,0.2);
+    }
+
+    .lightbox-prev {
+      left: 20px;
+    }
+
+    .lightbox-next {
+      right: 20px;
+    }
+
+    /* Loading Spinner */
+    .loading {
+      display: none;
+      text-align: center;
+      padding: 3rem;
+    }
+
+    .spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #667eea;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 3rem;
+      color: #666;
+    }
+
+    .empty-state-icon {
+      font-size: 4rem;
+      margin-bottom: 1rem;
+      opacity: 0.5;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .gallery-grid {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 1rem;
+      }
+
+      .header h1 {
+        font-size: 1.5rem;
+      }
+
+      .upload-dropzone {
+        padding: 2rem 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="container">
+      <h1>📸 Photo Gallery Manager</h1>
+      <p>Upload and manage photos for your suppliers and packages</p>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- Upload Area -->
+    <div class="upload-area">
+      <div class="upload-dropzone" id="dropzone">
+        <div class="upload-icon">📤</div>
+        <div class="upload-text">Drag & Drop Images Here</div>
+        <div class="upload-hint">or click to browse (JPEG, PNG, WebP, GIF • Max 10MB • Up to 10 files)</div>
+      </div>
+      
+      <input type="file" id="fileInput" class="file-input" accept="image/*" multiple>
+      
+      <div class="upload-controls">
+        <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
+          📁 Browse Files
+        </button>
+        <button class="btn btn-secondary" onclick="uploadFiles()" id="uploadBtn" disabled>
+          ⬆️ Upload Selected (<span id="fileCount">0</span>)
+        </button>
+      </div>
+
+      <div class="progress-container" id="progressContainer">
+        <div class="progress-bar">
+          <div class="progress-fill" id="progressFill">0%</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Gallery -->
+    <div class="gallery-header">
+      <h2>Your Photos (<span id="photoCount">0</span>)</h2>
+      <div class="gallery-filters">
+        <select class="filter-select" id="filterType" onchange="loadGallery()">
+          <option value="all">All Types</option>
+          <option value="supplier">Suppliers Only</option>
+          <option value="package">Packages Only</option>
+        </select>
+        <select class="filter-select" id="filterStatus" onchange="loadGallery()">
+          <option value="all">All Status</option>
+          <option value="pending">Pending Approval</option>
+          <option value="approved">Approved</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="loading" id="loading">
+      <div class="spinner"></div>
+      <p style="margin-top: 1rem;">Loading photos...</p>
+    </div>
+
+    <div class="gallery-grid" id="galleryGrid"></div>
+
+    <div class="empty-state" id="emptyState" style="display: none;">
+      <div class="empty-state-icon">🖼️</div>
+      <h3>No Photos Yet</h3>
+      <p>Upload your first photo to get started!</p>
+    </div>
+  </div>
+
+  <!-- Lightbox -->
+  <div class="lightbox" id="lightbox" onclick="closeLightbox(event)">
+    <div class="lightbox-content">
+      <span class="lightbox-close" onclick="closeLightbox(event)">×</span>
+      <span class="lightbox-nav lightbox-prev" onclick="navigateLightbox(-1); event.stopPropagation();">‹</span>
+      <img class="lightbox-image" id="lightboxImage" src="" alt="Photo">
+      <span class="lightbox-nav lightbox-next" onclick="navigateLightbox(1); event.stopPropagation();">›</span>
+    </div>
+  </div>
+
+  <script>
+    let selectedFiles = [];
+    let currentImages = [];
+    let currentLightboxIndex = 0;
+    const API_BASE = '/api';
+
+    // Drag and drop
+    const dropzone = document.getElementById('dropzone');
+    const fileInput = document.getElementById('fileInput');
+
+    dropzone.addEventListener('click', () => fileInput.click());
+    
+    dropzone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropzone.classList.add('dragover');
+    });
+
+    dropzone.addEventListener('dragleave', () => {
+      dropzone.classList.remove('dragover');
+    });
+
+    dropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropzone.classList.remove('dragover');
+      handleFiles(e.dataTransfer.files);
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      handleFiles(e.target.files);
+    });
+
+    function handleFiles(files) {
+      selectedFiles = Array.from(files).filter(file => {
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+          alert(`${file.name} is not an image file`);
+          return false;
+        }
+        // Validate file size (10MB)
+        if (file.size > 10 * 1024 * 1024) {
+          alert(`${file.name} is too large (max 10MB)`);
+          return false;
+        }
+        return true;
+      });
+
+      document.getElementById('fileCount').textContent = selectedFiles.length;
+      document.getElementById('uploadBtn').disabled = selectedFiles.length === 0;
+
+      // Show preview
+      if (selectedFiles.length > 0) {
+        dropzone.classList.add('uploading');
+        dropzone.querySelector('.upload-text').textContent = 
+          `${selectedFiles.length} file(s) ready to upload`;
+      }
+    }
+
+    async function uploadFiles() {
+      if (selectedFiles.length === 0) return;
+
+      const type = prompt('Upload for:\n1. Supplier\n2. Package\n\nEnter 1 or 2:');
+      let uploadType;
+      if (type === '1') uploadType = 'supplier';
+      else if (type === '2') uploadType = 'package';
+      else {
+        alert('Invalid selection');
+        return;
+      }
+
+      const id = prompt(`Enter ${uploadType} ID:`);
+      if (!id) {
+        alert('ID is required');
+        return;
+      }
+
+      const formData = new FormData();
+      selectedFiles.forEach(file => {
+        formData.append('photos', file);
+      });
+
+      const progressContainer = document.getElementById('progressContainer');
+      const progressFill = document.getElementById('progressFill');
+      progressContainer.style.display = 'block';
+
+      try {
+        // Simulate progress (since we can't track real upload progress easily)
+        let progress = 0;
+        const progressInterval = setInterval(() => {
+          progress += 10;
+          if (progress >= 90) clearInterval(progressInterval);
+          progressFill.style.width = progress + '%';
+          progressFill.textContent = progress + '%';
+        }, 200);
+
+        const response = await fetch(`${API_BASE}/photos/upload/batch?type=${uploadType}&id=${id}`, {
+          method: 'POST',
+          body: formData,
+          credentials: 'include'
+        });
+
+        clearInterval(progressInterval);
+        progressFill.style.width = '100%';
+        progressFill.textContent = '100%';
+
+        const result = await response.json();
+        
+        if (response.ok) {
+          alert(result.message || 'Upload successful!');
+          
+          // Reset
+          selectedFiles = [];
+          fileInput.value = '';
+          document.getElementById('fileCount').textContent = '0';
+          document.getElementById('uploadBtn').disabled = true;
+          dropzone.classList.remove('uploading');
+          dropzone.querySelector('.upload-text').textContent = 'Drag & Drop Images Here';
+          
+          setTimeout(() => {
+            progressContainer.style.display = 'none';
+            progressFill.style.width = '0%';
+          }, 1000);
+
+          loadGallery();
+        } else {
+          alert('Upload failed: ' + (result.error || 'Unknown error'));
+          progressContainer.style.display = 'none';
+        }
+      } catch (error) {
+        console.error('Upload error:', error);
+        alert('Upload failed: ' + error.message);
+        progressContainer.style.display = 'none';
+      }
+    }
+
+    async function loadGallery() {
+      const loading = document.getElementById('loading');
+      const galleryGrid = document.getElementById('galleryGrid');
+      const emptyState = document.getElementById('emptyState');
+
+      loading.style.display = 'block';
+      galleryGrid.innerHTML = '';
+      emptyState.style.display = 'none';
+
+      try {
+        // TODO: Replace with actual API endpoint to fetch user's photos
+        // For now, we'll show empty state
+        currentImages = [];
+
+        loading.style.display = 'none';
+
+        if (currentImages.length === 0) {
+          emptyState.style.display = 'block';
+          document.getElementById('photoCount').textContent = '0';
+        } else {
+          renderGallery(currentImages);
+          document.getElementById('photoCount').textContent = currentImages.length;
+        }
+      } catch (error) {
+        console.error('Load gallery error:', error);
+        loading.style.display = 'none';
+        alert('Failed to load gallery');
+      }
+    }
+
+    function renderGallery(images) {
+      const galleryGrid = document.getElementById('galleryGrid');
+      galleryGrid.innerHTML = '';
+
+      images.forEach((image, index) => {
+        const item = document.createElement('div');
+        item.className = `gallery-item ${image.approved ? 'approved' : 'pending'}`;
+        
+        item.innerHTML = `
+          <div class="image-wrapper" onclick="openLightbox(${index})">
+            <img class="gallery-image" src="${image.thumbnail || image.url}" alt="Photo" loading="lazy">
+            <span class="image-status status-${image.approved ? 'approved' : 'pending'}">
+              ${image.approved ? '✓ Approved' : '⏳ Pending'}
+            </span>
+          </div>
+          <div class="image-actions">
+            <button class="btn btn-small btn-warning" onclick="viewImage('${image.large || image.url}')">
+              👁️ View
+            </button>
+            <button class="btn btn-small btn-danger" onclick="deleteImage('${image.url}', '${image.type}', '${image.id}')">
+              🗑️ Delete
+            </button>
+          </div>
+        `;
+
+        galleryGrid.appendChild(item);
+      });
+    }
+
+    function openLightbox(index) {
+      currentLightboxIndex = index;
+      const image = currentImages[index];
+      document.getElementById('lightboxImage').src = image.large || image.url;
+      document.getElementById('lightbox').classList.add('active');
+    }
+
+    function closeLightbox(event) {
+      if (event.target.id === 'lightbox' || event.target.classList.contains('lightbox-close')) {
+        document.getElementById('lightbox').classList.remove('active');
+      }
+    }
+
+    function navigateLightbox(direction) {
+      currentLightboxIndex += direction;
+      if (currentLightboxIndex < 0) currentLightboxIndex = currentImages.length - 1;
+      if (currentLightboxIndex >= currentImages.length) currentLightboxIndex = 0;
+      
+      const image = currentImages[currentLightboxIndex];
+      document.getElementById('lightboxImage').src = image.large || image.url;
+    }
+
+    function viewImage(url) {
+      window.open(url, '_blank');
+    }
+
+    async function deleteImage(url, type, id) {
+      if (!confirm('Are you sure you want to delete this image?')) return;
+
+      try {
+        const response = await fetch(
+          `${API_BASE}/photos/delete?type=${type}&id=${id}&photoUrl=${encodeURIComponent(url)}`,
+          {
+            method: 'DELETE',
+            credentials: 'include'
+          }
+        );
+
+        const result = await response.json();
+
+        if (response.ok) {
+          alert('Image deleted successfully');
+          loadGallery();
+        } else {
+          alert('Delete failed: ' + (result.error || 'Unknown error'));
+        }
+      } catch (error) {
+        console.error('Delete error:', error);
+        alert('Delete failed: ' + error.message);
+      }
+    }
+
+    // Keyboard navigation for lightbox
+    document.addEventListener('keydown', (e) => {
+      const lightbox = document.getElementById('lightbox');
+      if (lightbox.classList.contains('active')) {
+        if (e.key === 'ArrowLeft') navigateLightbox(-1);
+        if (e.key === 'ArrowRight') navigateLightbox(1);
+        if (e.key === 'Escape') lightbox.classList.remove('active');
+      }
+    });
+
+    // Load gallery on page load
+    loadGallery();
+  </script>
+</body>
+</html>
