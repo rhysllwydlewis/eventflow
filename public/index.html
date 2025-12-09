@@ -25,6 +25,10 @@
         <a href="/suppliers.html" class="nav-link nav-main">Suppliers</a>
         <a href="/auth.html" class="nav-link nav-main nav-main-login">Log in</a>
       </nav>
+      <button id="notification-bell" class="icon-button" type="button" aria-label="Notifications" style="display:none;">
+        <span class="notification-icon">🔔</span>
+        <span class="notification-badge" style="display:none;">0</span>
+      </button>
       <button id="burger" class="nav-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false">
         <span class="nav-toggle-bar"></span>
         <span class="nav-toggle-bar"></span>
@@ -55,6 +59,7 @@
 <script src="/assets/js/animations.js" defer></script>
 <script src="/assets/js/notifications.js" defer></script>
 <script src="/assets/js/search.js" defer></script>
+<script src="/assets/js/components/global-search.js" defer></script>
 
 <main>
   <section class="hero">
@@ -121,6 +126,29 @@
     </div>
   </section>
 
+  <section class="section" style="background: linear-gradient(135deg, var(--ink, #0B8073), var(--accent, #13B6A2)); color: white;">
+    <div class="container">
+      <div class="stats-grid">
+        <div class="stat-item" data-reveal>
+          <div class="stat-number" data-counter="500" data-suffix="+">0</div>
+          <div class="stat-label">Verified Suppliers</div>
+        </div>
+        <div class="stat-item" data-reveal>
+          <div class="stat-number" data-counter="1200" data-suffix="+">0</div>
+          <div class="stat-label">Events Planned</div>
+        </div>
+        <div class="stat-item" data-reveal>
+          <div class="stat-number" data-counter="98" data-suffix="%">0</div>
+          <div class="stat-label">Customer Satisfaction</div>
+        </div>
+        <div class="stat-item" data-reveal>
+          <div class="stat-number" data-counter="50" data-suffix="+">0</div>
+          <div class="stat-label">Service Categories</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <section class="section">
     <div class="container">
       <div class="cards">
@@ -159,11 +187,36 @@
 </footer>
 
 <script src="/assets/js/app.js"></script>
+<script src="/assets/js/websocket-client.js"></script>
 <script>
   window.__EF_PAGE__ = 'home';
 
   // Initialize stats counters on homepage
   document.addEventListener('DOMContentLoaded', () => {
+    // Show notification bell for logged-in users
+    const user = localStorage.getItem('user');
+    if (user) {
+      const notificationBell = document.getElementById('notification-bell');
+      if (notificationBell) {
+        notificationBell.style.display = 'block';
+      }
+      
+      // Initialize WebSocket connection for real-time notifications
+      if (typeof WebSocketClient !== 'undefined') {
+        const wsClient = new WebSocketClient({
+          onNotification: (notification) => {
+            // Update notification badge
+            const badge = document.querySelector('.notification-badge');
+            if (badge) {
+              badge.style.display = 'block';
+              const current = parseInt(badge.textContent) || 0;
+              badge.textContent = current + 1;
+            }
+          }
+        });
+      }
+    }
+
     // Animate stat counters when they come into view (only if Counter and IntersectionObserver are available)
     if (typeof Counter === 'function' && 'IntersectionObserver' in window) {
       const observer = new IntersectionObserver((entries) => {
