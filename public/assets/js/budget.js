@@ -440,23 +440,99 @@ class BudgetManager {
   }
 
   exportBudget() {
-    const data = {
-      budget: this.budget.total,
-      totalSpent: this.budget.expenses.reduce((sum, e) => sum + e.amount, 0),
-      expenses: this.budget.expenses,
-      exportDate: new Date().toISOString()
-    };
+    // Show export options modal
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay active';
+    modal.innerHTML = `
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Export Budget</h2>
+          <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">×</button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-4">Choose export format:</p>
+          <div style="display: flex; flex-direction: column; gap: 12px;">
+            <button class="btn btn-primary" id="export-pdf">
+              📄 Export as PDF
+            </button>
+            <button class="btn btn-secondary" id="export-csv">
+              📊 Export as CSV
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
 
-    const csv = this.generateCSV();
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `eventflow-budget-${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    document.body.appendChild(modal);
 
-    Toast.success('Budget exported successfully');
+    // Handle PDF export
+    modal.querySelector('#export-pdf').addEventListener('click', async () => {
+      try {
+        const totalSpent = this.budget.expenses.reduce((sum, e) => sum + e.amount, 0);
+        const remaining = this.budget.total - totalSpent;
+        const percentage = this.budget.total > 0 ? ((totalSpent / this.budget.total) * 100).toFixed(1) : 0;
+
+        const budgetData = {
+          totalBudget: this.budget.total,
+          totalSpent: totalSpent,
+          remaining: remaining,
+          percentageUsed: percentage,
+          expenses: this.budget.expenses,
+          categoryBreakdown: this.getCategoryBreakdown()
+        };
+
+        if (typeof exportUtility !== 'undefined') {
+          await exportUtility.exportBudgetToPDF(budgetData, `eventflow-budget-${new Date().toISOString().split('T')[0]}.pdf`);
+          Toast.success('Budget exported as PDF');
+        } else {
+          Toast.error('Export utility not loaded');
+        }
+      } catch (error) {
+        console.error('PDF export error:', error);
+        Toast.error('Failed to export PDF');
+      }
+      modal.remove();
+    });
+
+    // Handle CSV export
+    modal.querySelector('#export-csv').addEventListener('click', () => {
+      const csv = this.generateCSV();
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `eventflow-budget-${new Date().toISOString().split('T')[0]}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      Toast.success('Budget exported as CSV');
+      modal.remove();
+    });
+
+    // Close on overlay click
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        modal.remove();
+      }
+    });
+  }
+
+  getCategoryBreakdown() {
+    const categoryTotals = {};
+    this.budget.categories.forEach(cat => categoryTotals[cat] = 0);
+    
+    this.budget.expenses.forEach(expense => {
+      categoryTotals[expense.category] = (categoryTotals[expense.category] || 0) + expense.amount;
+    });
+
+    const totalSpent = this.budget.expenses.reduce((sum, e) => sum + e.amount, 0);
+    
+    return Object.entries(categoryTotals)
+      .filter(([_, amount]) => amount > 0)
+      .map(([category, amount]) => ({
+        category,
+        amount,
+        percentage: totalSpent > 0 ? ((amount / totalSpent) * 100).toFixed(1) : 0
+      }));
   }
 
   generateCSV() {

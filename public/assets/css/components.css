@@ -688,4 +688,65 @@ html[data-theme="dark"] .badge.subtle {
     width: 40px;
     height: 40px;
   }
+  
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
+
+/* Stats Grid Component */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2rem;
+  padding: 3rem 0;
+}
+
+.stat-item {
+  text-align: center;
+}
+
+.stat-number {
+  font-size: 3rem;
+  font-weight: 700;
+  line-height: 1;
+  margin-bottom: 0.5rem;
+  color: white;
+}
+
+.stat-label {
+  font-size: 1rem;
+  opacity: 0.9;
+  color: white;
+}
+
+/* Notification Bell Component */
+.notification-icon {
+  font-size: 1.25rem;
+  position: relative;
+  display: block;
+}
+
+.notification-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: #EF4444;
+  color: white;
+  font-size: 0.625rem;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 10px;
+  min-width: 18px;
+  text-align: center;
+  line-height: 1.2;
+}
+
+#notification-bell {
+  position: relative;
+}
+
+#notification-bell:hover .notification-icon {
+  animation: shake 0.5s ease-in-out;
+}
+

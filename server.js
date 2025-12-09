@@ -2293,6 +2293,17 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use((_req, res) => res.status(404).send('Not found'));
 
 // ---------- Start ----------
-app.listen(PORT, () => {
+const http = require('http');
+const server = http.createServer(app);
+
+// Initialize WebSocket server
+const WebSocketServer = require('./websocket-server');
+const wsServer = new WebSocketServer(server);
+
+// Make wsServer available to routes if needed
+app.set('wsServer', wsServer);
+
+server.listen(PORT, () => {
   console.log(`EventFlow ${APP_VERSION} server running → http://localhost:${PORT}`);
+  console.log(`WebSocket server initialized for real-time features`);
 });
