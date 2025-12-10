@@ -163,6 +163,15 @@ const writeLimiter = rateLimit({
   legacyHeaders: false
 });
 
+// Health check rate limiter - generous limits for monitoring tools
+const healthCheckLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 60, // 60 requests per minute (once per second)
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: 'Too many health check requests'
+});
+
 // ---------- Email (safe dev mode) ----------
 const EMAIL_ENABLED = String(process.env.EMAIL_ENABLED || 'false').toLowerCase() === 'true';
 const FROM_EMAIL = process.env.FROM_EMAIL || 'no-reply@eventflow.local';
@@ -3045,8 +3054,8 @@ app.get('/api/admin/audit-logs', authRequired, roleRequired('admin'), (req, res)
   res.json({ logs, count: logs.length });
 });
 
-// Basic API healthcheck
-app.get('/api/health', async (_req, res) => {
+// Basic API healthcheck with rate limiting
+app.get('/api/health', healthCheckLimiter, async (_req, res) => {
   const checks = {
     server: 'online',
     version: APP_VERSION,
