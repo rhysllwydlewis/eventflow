@@ -290,6 +290,13 @@ class MessagingSystem {
 
   /**
    * Listen to unread count changes in real-time
+   * 
+   * PERFORMANCE NOTE: This implementation queries all messages in real-time.
+   * For production with high message volume, consider:
+   * 1. Denormalizing unread count to conversation document
+   * 2. Using Cloud Functions to update count on message create/read
+   * 3. Using Firestore count() aggregation queries (when available)
+   * 
    * @param {string} userId - User ID
    * @param {string} userType - 'customer' | 'supplier'
    * @param {Function} callback - Callback function with unread count
@@ -307,6 +314,7 @@ class MessagingSystem {
         let totalUnread = 0;
         
         // For each conversation, count unread messages
+        // NOTE: This could be optimized with denormalized counts
         const promises = [];
         conversationsSnapshot.forEach((conversationDoc) => {
           const messagesRef = collection(db, 'conversations', conversationDoc.id, 'messages');

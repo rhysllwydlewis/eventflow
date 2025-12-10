@@ -36,9 +36,10 @@ function initializeFirebaseAdmin() {
       });
       console.log('Firebase Admin initialized with project ID');
     }
-    // If no credentials, don't initialize (fallback to local storage)
+    // If no credentials, don't initialize (no Firebase available)
     else {
-      console.log('Firebase Admin not initialized - using local storage fallback');
+      console.log('Firebase Admin not initialized - no credentials provided');
+      console.log('Set FIREBASE_PROJECT_ID or FIREBASE_SERVICE_ACCOUNT_KEY to use Firebase');
       return { db: null, storage: null };
     }
 
@@ -50,7 +51,7 @@ function initializeFirebaseAdmin() {
     return { db, storage };
   } catch (error) {
     console.error('Failed to initialize Firebase Admin:', error.message);
-    console.log('Falling back to local storage');
+    console.log('Firebase not available - backend will use local storage');
     return { db: null, storage: null };
   }
 }

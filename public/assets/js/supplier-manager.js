@@ -270,9 +270,15 @@ class SupplierManager {
 
   /**
    * Generate unique ID for supplier
+   * Uses crypto API for better uniqueness guarantees
    * @returns {string} Supplier ID
    */
   generateId() {
+    // Use crypto.randomUUID if available, otherwise fallback
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+      return 'sup_' + crypto.randomUUID().replace(/-/g, '');
+    }
+    // Fallback for older browsers
     return 'sup_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
   }
 

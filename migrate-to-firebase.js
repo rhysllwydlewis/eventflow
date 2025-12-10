@@ -113,12 +113,16 @@ async function migrateCollection(collectionName, filePath) {
       // Prepare data for Firebase
       const firestoreData = { ...item };
       
-      // Convert date strings to Firestore timestamps if needed
-      if (firestoreData.createdAt && typeof firestoreData.createdAt === 'string') {
-        firestoreData.createdAt = new Date(firestoreData.createdAt).toISOString();
+      // Convert date strings to proper Firestore timestamps
+      if (firestoreData.createdAt) {
+        if (typeof firestoreData.createdAt === 'string') {
+          firestoreData.createdAt = new Date(firestoreData.createdAt);
+        }
       }
-      if (firestoreData.updatedAt && typeof firestoreData.updatedAt === 'string') {
-        firestoreData.updatedAt = new Date(firestoreData.updatedAt).toISOString();
+      if (firestoreData.updatedAt) {
+        if (typeof firestoreData.updatedAt === 'string') {
+          firestoreData.updatedAt = new Date(firestoreData.updatedAt);
+        }
       }
       
       // Migrate to Firebase
