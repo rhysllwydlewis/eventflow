@@ -16,16 +16,21 @@ img{max-width:100%;display:block;border-radius:12px}
 h1{margin:0 0 6px;font-weight:900;letter-spacing:-.02em;font-size:clamp(30px,4.6vw,46px)}.lead{font-size:clamp(16px,1.9vw,18px);color:var(--muted);max-width:60ch}
 .hero-cta{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
 .collage{display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:170px;gap:12px}.frame{position:relative;border:1px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:var(--shadow)}
+.frame img{width:100%;height:100%;object-fit:cover}
 .frame .tag{position:absolute;left:10px;top:10px;background:rgba(255,255,255,.88);backdrop-filter:blur(6px);color:var(--ink);border:1px solid #cfe5e1;border-radius:999px;padding:4px 10px;font-weight:700;font-size:12px}
 .section{padding:32px 0}.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}
 .card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow)}
 .badge{display:inline-block;padding:4px 10px;border-radius:999px;background:#F2FBF9;color:var(--ink);font-weight:700;font-size:12px}
-.pack{display:grid;grid-template-columns:110px 1fr;gap:12px;align-items:start}
+.pack{display:flex;flex-direction:column;overflow:hidden;padding:0!important}
+.pack img{width:100%;height:200px;object-fit:cover;border-radius:0;margin:0}
+.pack-info{padding:16px;background:#fff;display:flex;flex-direction:column;gap:8px}
+.pack-info h3{margin:0 0 4px 0}
+.pack-info .small{margin:0}
 .footer{padding:26px 0;border-top:1px solid var(--border);color:#7E8794;margin-top:24px}.version{font-size:12px;color:#98A2B3}
 input,select,textarea{width:100%;padding:12px 14px;border:1px solid var(--border);border-radius:12px;background:#fff;font:inherit}
 label{display:block;margin:8px 0 6px;font-weight:600;color:#1F2937}.form-row{position:relative;display:grid;gap:12px;grid-template-columns:1fr}.form-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:8px}
 .supplier-card{display:grid;grid-template-columns:120px 1fr;gap:14px;align-items:start}.supplier-card img{width:120px;height:90px;object-fit:cover;border-radius:10px}
-@media (max-width:900px){.hero-grid{grid-template-columns:1fr}.collage{grid-auto-rows:150px}.pack{grid-template-columns:1fr}}
+@media (max-width:900px){.hero-grid{grid-template-columns:1fr}.collage{grid-auto-rows:150px}}
 
 
 /* v3.9.0 enhanced visual design */
@@ -37,7 +42,7 @@ label{display:block;margin:8px 0 6px;font-weight:600;color:#1F2937}.form-row{pos
   box-shadow:0 20px 55px rgba(15,23,42,.14);
 }
 .hero{
-  padding:70px 0 34px;
+  padding:24px 0 24px;
 }
 .hero--subpage{
   padding:48px 0 30px;
@@ -369,6 +374,18 @@ html[data-theme="dark"] .timeline-step::before{
   text-decoration:underline;
 }
 
+/* Checkboxes next to text */
+.checkbox-label-right{
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.checkbox-label-right input[type="checkbox"]{
+  width:auto;
+  flex-shrink:0;
+  margin:0;
+  order:2;
+}
 
 
 /* EventFlow 6.1.0 — responsive header & nav improvements */
@@ -806,6 +823,30 @@ button, .cta{
 }
 .plan-inline-fields input {
   min-width: 140px;
+}
+
+/* Modal backdrop for enquiry forms */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 50;
+}
+.modal-backdrop .modal {
+  background: #fff;
+  border-radius: 18px;
+  max-width: 600px;
+  width: 100%;
+  padding: 24px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+.modal-backdrop .modal h2 {
+  margin-top: 0;
 }
 
 /* Chat UI */

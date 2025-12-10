@@ -150,7 +150,7 @@ async function initHome(){
   const r=await fetch('/api/packages/featured'); const d=await r.json(); const items=d.items||[];
   wrap.innerHTML = items.length? items.map(p=>`<div class="card pack">
     <img src="${p.image}" alt="${p.title} image">
-    <div>
+    <div class="pack-info">
       <h3>${p.title}</h3>
       <div class="small"><span class="badge">${p.price}</span></div>
       <p class="small">Supplier: <a href="/supplier.html?id=${encodeURIComponent(p.supplierId)}">${p.supplierId.slice(0,8)}</a></p>
