@@ -14,11 +14,14 @@
 const dataAccess = require('./data-access');
 const { read: readLocal, write: writeLocal, uid, DATA_DIR } = require('./store');
 
+// Check Firebase availability once at module initialization
+const FIREBASE_ENABLED = dataAccess.isFirebaseEnabled();
+
 // Track if we've warned about sync usage
 let hasWarnedAboutSync = false;
 
 function warnAboutSync() {
-  if (!hasWarnedAboutSync && dataAccess.isFirebaseEnabled()) {
+  if (!hasWarnedAboutSync && FIREBASE_ENABLED) {
     console.warn('⚠️  Using synchronous data access - Firebase writes will be delayed');
     console.warn('   For better Firebase integration, convert endpoints to async/await');
     hasWarnedAboutSync = true;
@@ -27,23 +30,11 @@ function warnAboutSync() {
 
 /**
  * Synchronous read from collection
- * Falls back to local storage for immediate response
- * Firebase sync happens in background if available
+ * Always returns local storage data immediately
  */
 function read(collectionName) {
   warnAboutSync();
-  
-  // Use local storage for synchronous read
-  const localData = readLocal(collectionName);
-  
-  // Optionally sync from Firebase in background (fire and forget)
-  if (dataAccess.isFirebaseEnabled()) {
-    dataAccess.read(collectionName).catch(err => {
-      console.error(`Background Firebase read error for ${collectionName}:`, err.message);
-    });
-  }
-  
-  return localData;
+  return readLocal(collectionName);
 }
 
 /**
@@ -58,7 +49,7 @@ function write(collectionName, data) {
   writeLocal(collectionName, data);
   
   // Sync to Firebase in background (fire and forget)
-  if (dataAccess.isFirebaseEnabled()) {
+  if (FIREBASE_ENABLED) {
     dataAccess.write(collectionName, data).catch(err => {
       console.error(`Background Firebase write error for ${collectionName}:`, err.message);
     });
