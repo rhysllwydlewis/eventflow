@@ -3076,7 +3076,9 @@ const wsServer = new WebSocketServer(server);
 // Make wsServer available to routes if needed
 app.set('wsServer', wsServer);
 
-server.listen(PORT, () => {
-  console.log(`EventFlow ${APP_VERSION} server running → http://localhost:${PORT}`);
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`EventFlow ${APP_VERSION} server running on port ${PORT}`);
+  console.log(`Server listening on all interfaces (0.0.0.0:${PORT})`);
+  console.log(`Local access: http://localhost:${PORT}`);
   console.log(`WebSocket server initialized for real-time features`);
 });
