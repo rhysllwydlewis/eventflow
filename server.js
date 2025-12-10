@@ -695,6 +695,82 @@ app.get('/api/admin/users-export', authRequired, roleRequired('admin'), (req, re
 });
 
 /**
+ * POST /api/admin/users
+ * Create a new user (admin only)
+ */
+app.post('/api/admin/users', authRequired, roleRequired('admin'), async (req, res) => {
+  const { name, email, password, role = 'customer' } = req.body || {};
+  
+  // Validate required fields
+  if (!name || !email || !password) {
+    return res.status(400).json({ error: 'Missing required fields: name, email, and password are required' });
+  }
+  
+  // Validate email format
+  if (!validator.isEmail(String(email))) {
+    return res.status(400).json({ error: 'Invalid email format' });
+  }
+  
+  // Validate password strength
+  if (!passwordOk(password)) {
+    return res.status(400).json({ error: 'Password must be at least 8 characters with uppercase, lowercase, and number' });
+  }
+  
+  // Validate role
+  const validRoles = ['customer', 'supplier', 'admin'];
+  const roleFinal = validRoles.includes(role) ? role : 'customer';
+  
+  // Check if user already exists
+  const users = read('users');
+  if (users.find(u => u.email.toLowerCase() === String(email).toLowerCase())) {
+    return res.status(409).json({ error: 'A user with this email already exists' });
+  }
+  
+  // Create new user
+  const user = {
+    id: uid('usr'),
+    name: String(name).trim().slice(0, 80),
+    email: String(email).toLowerCase(),
+    role: roleFinal,
+    passwordHash: bcrypt.hashSync(password, 10),
+    notify: true,
+    marketingOptIn: false,
+    verified: true, // Admin-created users are pre-verified
+    createdAt: new Date().toISOString(),
+    createdBy: req.user.id // Track who created the user
+  };
+  
+  users.push(user);
+  write('users', users);
+  
+  // Create audit log
+  auditLog({
+    adminId: req.user.id,
+    adminEmail: req.user.email,
+    action: AUDIT_ACTIONS.USER_CREATED,
+    targetType: 'user',
+    targetId: user.id,
+    details: { 
+      email: user.email,
+      name: user.name,
+      role: user.role
+    }
+  });
+  
+  res.json({
+    success: true,
+    message: 'User created successfully',
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      verified: user.verified
+    }
+  });
+});
+
+/**
  * POST /api/admin/users/:id/grant-admin
  * Grant admin privileges to a user
  */

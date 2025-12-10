@@ -177,6 +177,7 @@ function getAuditLogs(filters = {}) {
  */
 const AUDIT_ACTIONS = {
   // User management
+  USER_CREATED: 'user_created',
   USER_SUSPENDED: 'user_suspended',
   USER_UNSUSPENDED: 'user_unsuspended',
   USER_BANNED: 'user_banned',

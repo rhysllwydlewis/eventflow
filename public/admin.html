@@ -90,6 +90,7 @@
 
   <h2>Users</h2>
   <div class="controls">
+    <button id="createUserBtn" type="button" style="background:#10b981;border-color:#059669;">Create User</button>
     <input id="userSearch" type="text" placeholder="Search users by name or email">
     <select id="userDateFilter">
       <option value="all">All time</option>
@@ -1138,6 +1139,13 @@
         });
       }
 
+      var createUserBtn = document.getElementById('createUserBtn');
+      if (createUserBtn) {
+        createUserBtn.addEventListener('click', function () {
+          showCreateUserModal();
+        });
+      }
+
       var logoutBtn = document.getElementById('adminLogoutBtn');
       if (logoutBtn) {
         logoutBtn.addEventListener('click', function () {
@@ -1148,6 +1156,90 @@
         });
       }
     });
+    
+    window.showCreateUserModal = function() {
+      // Create modal content with form
+      var content = document.createElement('div');
+      content.innerHTML = 
+        '<div style="display: grid; gap: 1rem;">' +
+          '<div><label style="display:block;margin-bottom:4px;font-weight:600;">Name *</label>' +
+          '<input type="text" id="create-user-name" required style="width:100%;padding:8px;border:1px solid #d4d4d8;border-radius:4px;"></div>' +
+          '<div><label style="display:block;margin-bottom:4px;font-weight:600;">Email *</label>' +
+          '<input type="email" id="create-user-email" required style="width:100%;padding:8px;border:1px solid #d4d4d8;border-radius:4px;"></div>' +
+          '<div><label style="display:block;margin-bottom:4px;font-weight:600;">Password *</label>' +
+          '<input type="password" id="create-user-password" required style="width:100%;padding:8px;border:1px solid #d4d4d8;border-radius:4px;"></div>' +
+          '<div><label style="display:block;margin-bottom:4px;font-weight:600;">Role</label>' +
+          '<select id="create-user-role" style="width:100%;padding:8px;border:1px solid #d4d4d8;border-radius:4px;">' +
+            '<option value="customer">Customer</option>' +
+            '<option value="supplier">Supplier</option>' +
+            '<option value="admin">Admin</option>' +
+          '</select></div>' +
+          '<p class="small" style="color:#52525b;margin:0;">Password must be at least 8 characters with uppercase, lowercase, and number.</p>' +
+        '</div>';
+      
+      if (typeof Modal !== 'undefined') {
+        var modal = new Modal({
+          title: 'Create New User',
+          content: content,
+          confirmText: 'Create User',
+          cancelText: 'Cancel',
+          onConfirm: function() {
+            var name = document.getElementById('create-user-name').value;
+            var email = document.getElementById('create-user-email').value;
+            var password = document.getElementById('create-user-password').value;
+            var role = document.getElementById('create-user-role').value;
+            
+            if (!name || !email || !password) {
+              if (typeof Toast !== 'undefined') {
+                Toast.error('All fields are required');
+              } else {
+                alert('All fields are required');
+              }
+              return;
+            }
+            
+            api('/api/admin/users', 'POST', { name: name, email: email, password: password, role: role })
+              .then(function () {
+                if (typeof Toast !== 'undefined') {
+                  Toast.success('User created successfully.');
+                } else {
+                  alert('User created successfully.');
+                }
+                loadAll();
+              })
+              .catch(function (err) {
+                console.error('createUser failed', err);
+                if (typeof Toast !== 'undefined') {
+                  Toast.error('Failed to create user: ' + err.message);
+                } else {
+                  alert('Failed to create user: ' + err.message);
+                }
+              });
+          }
+        });
+        modal.show();
+      } else {
+        // Fallback to prompt
+        var name = prompt('Enter user name:');
+        if (!name) return;
+        
+        var email = prompt('Enter user email:');
+        if (!email) return;
+        
+        var password = prompt('Enter user password:');
+        if (!password) return;
+        
+        api('/api/admin/users', 'POST', { name: name, email: email, password: password, role: 'customer' })
+          .then(function () {
+            alert('User created successfully.');
+            loadAll();
+          })
+          .catch(function (err) {
+            console.error('createUser failed', err);
+            alert('Failed to create user: ' + err.message);
+          });
+      }
+    };
     
     window.reviewPendingReviews = function() {
       api('/api/admin/reviews/pending')
