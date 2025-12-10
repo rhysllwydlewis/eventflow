@@ -7,7 +7,7 @@
  * This allows gradual migration from local storage to Firebase.
  */
 
-const { read: readLocal, write: writeLocal, uid } = require('./store');
+const { read: readLocal, write: writeLocal, uid, DATA_DIR } = require('./store');
 const { 
   initializeFirebaseAdmin, 
   isFirebaseAvailable, 
@@ -298,6 +298,7 @@ module.exports = {
   findOne,
   query,
   uid,
+  DATA_DIR,
   isFirebaseEnabled: () => FIREBASE_ENABLED,
   
   /**
