@@ -38,8 +38,9 @@ async function initializeDatabase() {
 
   // Try MongoDB next
   try {
-    if (await isMongoAvailable()) {
-      mongodb = await getDb();
+    if (isMongoAvailable()) {
+      const db = require('./db');
+      mongodb = await db.connect();
       dbType = 'mongodb';
       console.log('✅ Using MongoDB for data storage');
       return dbType;
