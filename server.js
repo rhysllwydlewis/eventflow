@@ -73,6 +73,10 @@ const { getToken } = require('./middleware/csrf');
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./swagger');
 
+// Constants for user management
+const VALID_USER_ROLES = ['customer', 'supplier', 'admin'];
+const MAX_NAME_LENGTH = 80;
+
 // Helper: determine if a supplier's Pro plan is currently active.
 // - isPro must be true, AND
 // - proExpiresAt is either missing/null (no expiry) or in the future.
@@ -411,7 +415,7 @@ app.post('/api/auth/register', strictAuthLimiter, async (req, res) => {
 
   const user = {
     id: uid('usr'),
-    name: String(name).trim().slice(0, 80),
+    name: String(name).trim().slice(0, MAX_NAME_LENGTH),
     email: String(email).toLowerCase(),
     role: roleFinal,
     passwordHash: bcrypt.hashSync(password, 10),
@@ -717,8 +721,7 @@ app.post('/api/admin/users', authRequired, roleRequired('admin'), async (req, re
   }
   
   // Validate role
-  const validRoles = ['customer', 'supplier', 'admin'];
-  const roleFinal = validRoles.includes(role) ? role : 'customer';
+  const roleFinal = VALID_USER_ROLES.includes(role) ? role : 'customer';
   
   // Check if user already exists
   const users = read('users');
@@ -729,7 +732,7 @@ app.post('/api/admin/users', authRequired, roleRequired('admin'), async (req, re
   // Create new user
   const user = {
     id: uid('usr'),
-    name: String(name).trim().slice(0, 80),
+    name: String(name).trim().slice(0, MAX_NAME_LENGTH),
     email: String(email).toLowerCase(),
     role: roleFinal,
     passwordHash: bcrypt.hashSync(password, 10),
