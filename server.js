@@ -694,6 +694,134 @@ app.get('/api/admin/users-export', authRequired, roleRequired('admin'), (req, re
   res.send(csv);
 });
 
+/**
+ * POST /api/admin/users/:id/grant-admin
+ * Grant admin privileges to a user
+ */
+app.post('/api/admin/users/:id/grant-admin', authRequired, roleRequired('admin'), (req, res) => {
+  const { id } = req.params;
+  const users = read('users');
+  const userIndex = users.findIndex(u => u.id === id);
+  
+  if (userIndex === -1) {
+    return res.status(404).json({ error: 'User not found' });
+  }
+  
+  const user = users[userIndex];
+  const now = new Date().toISOString();
+  
+  // Check if user already has admin role
+  if (user.role === 'admin') {
+    return res.status(400).json({ error: 'User already has admin privileges' });
+  }
+  
+  // Store previous role
+  user.previousRole = user.role;
+  user.role = 'admin';
+  user.adminGrantedAt = now;
+  user.adminGrantedBy = req.user.id;
+  user.updatedAt = now;
+  
+  users[userIndex] = user;
+  write('users', users);
+  
+  // Create audit log
+  auditLog({
+    adminId: req.user.id,
+    adminEmail: req.user.email,
+    action: AUDIT_ACTIONS.USER_ROLE_CHANGED,
+    targetType: 'user',
+    targetId: user.id,
+    details: { 
+      email: user.email, 
+      previousRole: user.previousRole,
+      newRole: 'admin'
+    }
+  });
+  
+  res.json({ 
+    success: true, 
+    message: 'Admin privileges granted successfully',
+    user: {
+      id: user.id,
+      email: user.email,
+      role: user.role
+    }
+  });
+});
+
+/**
+ * POST /api/admin/users/:id/revoke-admin
+ * Revoke admin privileges from a user
+ */
+app.post('/api/admin/users/:id/revoke-admin', authRequired, roleRequired('admin'), (req, res) => {
+  const { id } = req.params;
+  const { newRole = 'customer' } = req.body;
+  const users = read('users');
+  const userIndex = users.findIndex(u => u.id === id);
+  
+  if (userIndex === -1) {
+    return res.status(404).json({ error: 'User not found' });
+  }
+  
+  const user = users[userIndex];
+  const now = new Date().toISOString();
+  
+  // Check if user has admin role
+  if (user.role !== 'admin') {
+    return res.status(400).json({ error: 'User does not have admin privileges' });
+  }
+  
+  // Prevent revoking own admin privileges
+  if (user.id === req.user.id) {
+    return res.status(400).json({ error: 'You cannot revoke your own admin privileges' });
+  }
+  
+  // Prevent revoking owner's admin privileges
+  if (user.email === 'admin@event-flow.co.uk' || user.isOwner) {
+    return res.status(403).json({ error: 'Cannot revoke admin privileges from the owner account' });
+  }
+  
+  // Validate newRole
+  if (!['customer', 'supplier'].includes(newRole)) {
+    return res.status(400).json({ error: 'Invalid role. Must be customer or supplier' });
+  }
+  
+  // Store previous role
+  user.previousRole = user.role;
+  user.role = newRole;
+  user.adminRevokedAt = now;
+  user.adminRevokedBy = req.user.id;
+  user.updatedAt = now;
+  
+  users[userIndex] = user;
+  write('users', users);
+  
+  // Create audit log
+  auditLog({
+    adminId: req.user.id,
+    adminEmail: req.user.email,
+    action: AUDIT_ACTIONS.USER_ROLE_CHANGED,
+    targetType: 'user',
+    targetId: user.id,
+    details: { 
+      email: user.email, 
+      previousRole: 'admin',
+      newRole: newRole
+    }
+  });
+  
+  res.json({ 
+    success: true, 
+    message: 'Admin privileges revoked successfully',
+    user: {
+      id: user.id,
+      email: user.email,
+      role: user.role
+    }
+  });
+});
+
 // Admin: export all core collections as JSON
 app.get('/api/admin/export/all', authRequired, roleRequired('admin'), (_req, res) => {
   const payload = {
@@ -2748,7 +2876,7 @@ const reportsRoutes = require('./routes/reports');
 app.use('/api', reportsRoutes);
 
 // ---------- Audit Logging ----------
-const { getAuditLogs } = require('./middleware/audit');
+const { getAuditLogs, auditLog, AUDIT_ACTIONS } = require('./middleware/audit');
 
 /**
  * GET /api/admin/audit-logs
