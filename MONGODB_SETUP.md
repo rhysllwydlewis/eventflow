@@ -1,10 +1,12 @@
 # MongoDB Integration Guide
 
+**Current Status:** EventFlow is configured to use **file-based JSON storage** by default for simplicity and zero-configuration setup. MongoDB support is fully implemented and available for production deployments.
+
 This guide explains how to set up and use MongoDB with EventFlow.
 
 ## Overview
 
-EventFlow now supports MongoDB as a database backend, providing better scalability, reliability, and features compared to JSON file storage. The system maintains backward compatibility with the existing JSON-based storage through the migration tools.
+EventFlow supports both file-based JSON storage (default) and MongoDB as database backends. MongoDB provides better scalability, reliability, and features for production deployments. The system maintains backward compatibility through migration tools.
 
 ## Quick Start
 

@@ -61,7 +61,9 @@ A production-ready, feature-rich platform connecting event service suppliers (ph
 
 ### Prerequisites
 - Node.js 16+ and npm
-- MongoDB 6.0+ (local or Atlas)
+- **Optional:** MongoDB 6.0+ (local or Atlas) for production deployments
+
+**Note:** EventFlow uses file-based JSON storage by default for zero-configuration setup. MongoDB is available for production use - see [MONGODB_SETUP.md](MONGODB_SETUP.md).
 
 ### Installation
 
@@ -75,13 +77,13 @@ npm install
 
 # Set up environment
 cp .env.example .env
-# Edit .env with your configuration
+# Edit .env with your configuration (MongoDB is optional)
 
-# Run migrations
-npm run migrate
-
-# Start server
+# Start server (no migration needed for file-based storage)
 npm start
+
+# Optional: Migrate to MongoDB (for production)
+# npm run migrate
 ```
 
 Visit http://localhost:3000
