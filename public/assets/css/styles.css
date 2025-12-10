@@ -508,7 +508,6 @@ html[data-theme="dark"] .theme-icon::after{
 }
 
 .nav-toggle{
-  display:none;
   width:34px;
   height:34px;
   border-radius:999px;
