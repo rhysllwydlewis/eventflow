@@ -167,11 +167,21 @@
 </div>
 
 <div class="card" style="margin-top:16px">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+    <h3 style="margin:0;">Support Tickets</h3>
+    <button class="cta" id="createSupplierTicketBtn" style="padding:0.5rem 1rem;font-size:14px;">Create Ticket</button>
+  </div>
+  <div id="tickets-sup" class="section"><p class="small">Loading…</p></div>
+</div>
+
+<div class="card" style="margin-top:16px">
   <h3>Messages</h3>
   <div id="threads-sup" class="section"><p class="small">Loading…</p></div>
 </div>
 
 <script src="/assets/js/app.js"></script>
+<script type="module" src="/assets/js/supplier-tickets.js"></script>
+<script type="module" src="/assets/js/supplier-messages.js"></script>
 <script>window.__EF_PAGE__='dash_supplier'</script>
 </div></main>
 <footer class="footer" role="contentinfo">

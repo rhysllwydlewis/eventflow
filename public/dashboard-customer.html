@@ -40,9 +40,17 @@
 <h1>Your dashboard</h1>
 <div class="cards">
   <div class="card"><h3>Your plan</h3><p class="small">Review and manage your suppliers.</p><button class="cta" onclick="location.href='/plan.html'">Open My Plan</button></div>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+      <h3 style="margin:0;">Support Tickets</h3>
+      <button class="cta" id="createTicketBtn" style="padding:0.5rem 1rem;font-size:14px;">Create Ticket</button>
+    </div>
+    <div id="tickets-cust" class="section"><p class="small">Loading…</p></div>
+  </div>
   <div class="card"><h3>Conversations</h3><div id="threads-cust" class="section"><p class="small">Loading…</p></div></div>
 </div>
 <script src="/assets/js/app.js"></script>
+<script type="module" src="/assets/js/customer-tickets.js"></script>
 <script>window.__EF_PAGE__='dash_customer'</script>
 </div></main>
 <footer class="footer" role="contentinfo">
