@@ -785,7 +785,7 @@ router.delete('/users/:id', authRequired, roleRequired('admin'), (req, res) => {
   }
   
   // Prevent deletion of the owner account
-  if (user.email === 'admin@event-flow.co.uk') {
+  if (user.email === 'admin@event-flow.co.uk' || user.isOwner) {
     return res.status(403).json({ error: 'Cannot delete the owner account' });
   }
   
@@ -961,7 +961,7 @@ router.post('/users/:id/revoke-admin', authRequired, roleRequired('admin'), (req
   }
   
   // Prevent revoking owner's admin privileges
-  if (user.email === 'admin@event-flow.co.uk') {
+  if (user.email === 'admin@event-flow.co.uk' || user.isOwner) {
     return res.status(403).json({ error: 'Cannot revoke admin privileges from the owner account' });
   }
   

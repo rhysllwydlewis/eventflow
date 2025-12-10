@@ -31,5 +31,18 @@
     "notify": true,
     "marketingOptIn": false,
     "verified": true
+  },
+  {
+    "id": "usr_wo88ix81ztswww",
+    "name": "EventFlow Owner",
+    "email": "admin@event-flow.co.uk",
+    "role": "admin",
+    "passwordHash": "$2a$10$C6pX6xDivY.wnUqEGpY1CeS3/lgFwlsqQSfTzr/Ga6facz.VtDF/S",
+    "createdAt": "2025-12-10T09:47:46.208Z",
+    "notify": true,
+    "marketingOptIn": false,
+    "verified": true,
+    "isOwner": true,
+    "lastLoginAt": "2025-12-10T09:50:02.284Z"
   }
 ]

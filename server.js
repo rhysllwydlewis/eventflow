@@ -87,7 +87,14 @@ function supplierIsProActive(s) {
 const { seed } = require('./seed');
 
 // ---------- Initialisation ----------
-seed();
+// In production, preserve existing users. In development, create demo users.
+const isProduction = process.env.NODE_ENV === 'production';
+seed({ 
+  skipIfExists: isProduction,
+  seedUsers: true,
+  seedSuppliers: !isProduction, // Only seed demo suppliers in dev
+  seedPackages: !isProduction   // Only seed demo packages in dev
+});
 
 const app = express();
 const PDFDocument = require('pdfkit');
