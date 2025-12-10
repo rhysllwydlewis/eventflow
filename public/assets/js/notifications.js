@@ -198,13 +198,8 @@ class NotificationCenter {
       this.toggle();
     });
 
-    // Insert before theme toggle
-    const themeToggle = headerActions.querySelector('#theme-toggle');
-    if (themeToggle) {
-      headerActions.insertBefore(button, themeToggle);
-    } else {
-      headerActions.appendChild(button);
-    }
+    // Add notification button to header
+    headerActions.appendChild(button);
   }
 
   createPanel() {

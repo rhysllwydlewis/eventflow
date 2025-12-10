@@ -67,11 +67,15 @@ const reviewsSystem = require('./reviews');
 const searchSystem = require('./search');
 
 // CSRF protection middleware
-const { getToken } = require('./middleware/csrf');
+const { csrfProtection, getToken } = require('./middleware/csrf');
 
 // Swagger API documentation
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./swagger');
+
+// Constants for user management
+const VALID_USER_ROLES = ['customer', 'supplier', 'admin'];
+const MAX_NAME_LENGTH = 80;
 
 // Helper: determine if a supplier's Pro plan is currently active.
 // - isPro must be true, AND
@@ -397,7 +401,7 @@ function passwordOk(pw = '') {
 }
 
 // ---------- AUTH ----------
-app.post('/api/auth/register', strictAuthLimiter, async (req, res) => {
+app.post('/api/auth/register', strictAuthLimiter, csrfProtection, async (req, res) => {
   const { name, email, password, role } = req.body || {};
   if (!name || !email || !password) return res.status(400).json({ error: 'Missing fields' });
   if (!validator.isEmail(String(email))) return res.status(400).json({ error: 'Invalid email' });
@@ -411,7 +415,7 @@ app.post('/api/auth/register', strictAuthLimiter, async (req, res) => {
 
   const user = {
     id: uid('usr'),
-    name: String(name).trim().slice(0, 80),
+    name: String(name).trim().slice(0, MAX_NAME_LENGTH),
     email: String(email).toLowerCase(),
     role: roleFinal,
     passwordHash: bcrypt.hashSync(password, 10),
@@ -459,7 +463,7 @@ app.post('/api/auth/register', strictAuthLimiter, async (req, res) => {
   });
 });
 
-app.post('/api/auth/login', authLimiter, (req, res) => {
+app.post('/api/auth/login', authLimiter, csrfProtection, (req, res) => {
   const { email, password } = req.body || {};
   if (!email || !password) return res.status(400).json({ error: 'Missing fields' });
 
@@ -499,7 +503,7 @@ app.post('/api/auth/login', authLimiter, (req, res) => {
   });
 });
 
-app.post('/api/auth/forgot', passwordResetLimiter, async (req, res) => {
+app.post('/api/auth/forgot', passwordResetLimiter, csrfProtection, async (req, res) => {
   const { email } = req.body || {};
   if (!email) return res.status(400).json({ error: 'Missing email' });
 
@@ -586,7 +590,7 @@ app.get('/api/auth/verify', (req, res) => {
   res.json({ ok: true });
 });
 
-app.post('/api/auth/resend-verification', authLimiter, async (req, res) => {
+app.post('/api/auth/resend-verification', authLimiter, csrfProtection, async (req, res) => {
   const { email } = req.body || {};
   if (!email) return res.status(400).json({ error: 'Missing email' });
   
@@ -695,10 +699,85 @@ app.get('/api/admin/users-export', authRequired, roleRequired('admin'), (req, re
 });
 
 /**
+ * POST /api/admin/users
+ * Create a new user (admin only)
+ */
+app.post('/api/admin/users', authRequired, roleRequired('admin'), csrfProtection, async (req, res) => {
+  const { name, email, password, role = 'customer' } = req.body || {};
+  
+  // Validate required fields
+  if (!name || !email || !password) {
+    return res.status(400).json({ error: 'Missing required fields: name, email, and password are required' });
+  }
+  
+  // Validate email format
+  if (!validator.isEmail(String(email))) {
+    return res.status(400).json({ error: 'Invalid email format' });
+  }
+  
+  // Validate password strength
+  if (!passwordOk(password)) {
+    return res.status(400).json({ error: 'Password must be at least 8 characters with uppercase, lowercase, and number' });
+  }
+  
+  // Validate role
+  const roleFinal = VALID_USER_ROLES.includes(role) ? role : 'customer';
+  
+  // Check if user already exists
+  const users = read('users');
+  if (users.find(u => u.email.toLowerCase() === String(email).toLowerCase())) {
+    return res.status(409).json({ error: 'A user with this email already exists' });
+  }
+  
+  // Create new user
+  const user = {
+    id: uid('usr'),
+    name: String(name).trim().slice(0, MAX_NAME_LENGTH),
+    email: String(email).toLowerCase(),
+    role: roleFinal,
+    passwordHash: bcrypt.hashSync(password, 10),
+    notify: true,
+    marketingOptIn: false,
+    verified: true, // Admin-created users are pre-verified
+    createdAt: new Date().toISOString(),
+    createdBy: req.user.id // Track who created the user
+  };
+  
+  users.push(user);
+  write('users', users);
+  
+  // Create audit log
+  auditLog({
+    adminId: req.user.id,
+    adminEmail: req.user.email,
+    action: AUDIT_ACTIONS.USER_CREATED,
+    targetType: 'user',
+    targetId: user.id,
+    details: { 
+      email: user.email,
+      name: user.name,
+      role: user.role
+    }
+  });
+  
+  res.json({
+    success: true,
+    message: 'User created successfully',
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      verified: user.verified
+    }
+  });
+});
+
+/**
  * POST /api/admin/users/:id/grant-admin
  * Grant admin privileges to a user
  */
-app.post('/api/admin/users/:id/grant-admin', authRequired, roleRequired('admin'), (req, res) => {
+app.post('/api/admin/users/:id/grant-admin', authRequired, roleRequired('admin'), csrfProtection, (req, res) => {
   const { id } = req.params;
   const users = read('users');
   const userIndex = users.findIndex(u => u.id === id);
@@ -754,7 +833,7 @@ app.post('/api/admin/users/:id/grant-admin', authRequired, roleRequired('admin')
  * POST /api/admin/users/:id/revoke-admin
  * Revoke admin privileges from a user
  */
-app.post('/api/admin/users/:id/revoke-admin', authRequired, roleRequired('admin'), (req, res) => {
+app.post('/api/admin/users/:id/revoke-admin', authRequired, roleRequired('admin'), csrfProtection, (req, res) => {
   const { id } = req.params;
   const { newRole = 'customer' } = req.body;
   const users = read('users');
@@ -841,7 +920,7 @@ app.get('/api/admin/export/all', authRequired, roleRequired('admin'), (_req, res
   res.send(json);
 });
 
-app.post('/api/auth/logout', (_req, res) => {
+app.post('/api/auth/logout', csrfProtection, (_req, res) => {
   clearAuthCookie(res);
   res.json({ ok: true });
 });
@@ -908,7 +987,7 @@ app.get('/api/suppliers', (req, res) => {
 });
 
 // AI event planning assistant
-app.post('/api/ai/plan', express.json(), async (req, res) => {
+app.post('/api/ai/plan', express.json(), csrfProtection, async (req, res) => {
   const body = req.body || {};
   const promptText = String(body.prompt || '').trim();
   const plan = body.plan || {};
@@ -1018,7 +1097,7 @@ app.post('/api/ai/plan', express.json(), async (req, res) => {
 });
 
 // Admin-only: auto-categorisation & scoring for suppliers
-app.post('/api/admin/suppliers/smart-tags', authRequired, roleRequired('admin'), async (req, res) => {
+app.post('/api/admin/suppliers/smart-tags', authRequired, roleRequired('admin'), csrfProtection, async (req, res) => {
   const all = read('suppliers');
   const now = new Date().toISOString();
   const updated = [];
@@ -1076,7 +1155,7 @@ app.get('/api/admin/photos/pending', authRequired, roleRequired('admin'), (req, 
  * POST /api/admin/photos/:id/approve
  * Approve a photo
  */
-app.post('/api/admin/photos/:id/approve', authRequired, roleRequired('admin'), (req, res) => {
+app.post('/api/admin/photos/:id/approve', authRequired, roleRequired('admin'), csrfProtection, (req, res) => {
   const { id } = req.params;
   const photos = read('photos');
   const photoIndex = photos.findIndex(p => p.id === id);
@@ -1117,7 +1196,7 @@ app.post('/api/admin/photos/:id/approve', authRequired, roleRequired('admin'), (
  * POST /api/admin/photos/:id/reject
  * Reject a photo
  */
-app.post('/api/admin/photos/:id/reject', authRequired, roleRequired('admin'), (req, res) => {
+app.post('/api/admin/photos/:id/reject', authRequired, roleRequired('admin'), csrfProtection, (req, res) => {
   const { id } = req.params;
   const { reason } = req.body;
   const photos = read('photos');
@@ -1198,7 +1277,7 @@ app.get('/api/me/suppliers', authRequired, roleRequired('supplier'), (req, res) 
 });
 
 // Mark all suppliers owned by the current user as Pro
-app.post('/api/me/subscription/upgrade', authRequired, roleRequired('supplier'), (req, res) => {
+app.post('/api/me/subscription/upgrade', authRequired, roleRequired('supplier'), csrfProtection, (req, res) => {
   const suppliers = read('suppliers');
   let changed = 0;
   suppliers.forEach(s => {
@@ -1226,7 +1305,7 @@ app.post('/api/me/subscription/upgrade', authRequired, roleRequired('supplier'),
   res.json({ ok: true, updatedSuppliers: changed });
 });
 
-app.post('/api/me/suppliers', writeLimiter, authRequired, roleRequired('supplier'), (req, res) => {
+app.post('/api/me/suppliers', writeLimiter, authRequired, roleRequired('supplier'), csrfProtection, (req, res) => {
   const b = req.body || {};
   if (!b.name || !b.category) return res.status(400).json({ error: 'Missing fields' });
   const photos = (b.photos
@@ -1312,7 +1391,7 @@ app.get('/api/me/packages', authRequired, roleRequired('supplier'), (req, res) =
   res.json({ items });
 });
 
-app.post('/api/me/packages', writeLimiter, authRequired, roleRequired('supplier'), (req, res) => {
+app.post('/api/me/packages', writeLimiter, authRequired, roleRequired('supplier'), csrfProtection, (req, res) => {
   const { supplierId, title, description, price, image } = req.body || {};
   if (!supplierId || !title) return res.status(400).json({ error: 'Missing fields' });
   const own = read('suppliers').find(
@@ -1351,7 +1430,7 @@ app.post('/api/me/packages', writeLimiter, authRequired, roleRequired('supplier'
 });
 
 // ---------- Threads & Messages ----------
-app.post('/api/threads/start', writeLimiter, authRequired, async (req, res) => {
+app.post('/api/threads/start', writeLimiter, authRequired, csrfProtection, async (req, res) => {
   const { supplierId, message, eventType, eventDate, location, guests } = req.body || {};
   if (!supplierId) return res.status(400).json({ error: 'Missing supplierId' });
   const supplier = read('suppliers').find(s => s.id === supplierId && s.approved);
@@ -1457,7 +1536,7 @@ app.get('/api/threads/:id/messages', authRequired, (req, res) => {
   res.json({ items: msgs });
 });
 
-app.post('/api/threads/:id/messages', writeLimiter, authRequired, (req, res) => {
+app.post('/api/threads/:id/messages', writeLimiter, authRequired, csrfProtection, (req, res) => {
   const { text } = req.body || {};
   if (!text) return res.status(400).json({ error: 'Missing text' });
   const t = read('threads').find(x => x.id === req.params.id);
@@ -1524,7 +1603,7 @@ app.get('/api/plan', authRequired, (req, res) => {
   res.json({ items });
 });
 
-app.post('/api/plan', authRequired, (req, res) => {
+app.post('/api/plan', authRequired, csrfProtection, (req, res) => {
   if (req.user.role !== 'customer') {
     return res.status(403).json({ error: 'Customers only' });
   }
@@ -1545,7 +1624,7 @@ app.post('/api/plan', authRequired, (req, res) => {
   res.json({ ok: true });
 });
 
-app.delete('/api/plan/:supplierId', authRequired, (req, res) => {
+app.delete('/api/plan/:supplierId', authRequired, csrfProtection, (req, res) => {
   if (req.user.role !== 'customer') {
     return res.status(403).json({ error: 'Customers only' });
   }
@@ -1564,7 +1643,7 @@ app.get('/api/notes', authRequired, (req, res) => {
   res.json({ text: (n && n.text) || '' });
 });
 
-app.post('/api/notes', authRequired, (req, res) => {
+app.post('/api/notes', authRequired, csrfProtection, (req, res) => {
   if (req.user.role !== 'customer') {
     return res.status(403).json({ error: 'Customers only' });
   }
@@ -1593,7 +1672,7 @@ app.get('/api/me/settings', authRequired, (req, res) => {
   res.json({ notify: users[i].notify !== false });
 });
 
-app.post('/api/me/settings', authRequired, (req, res) => {
+app.post('/api/me/settings', authRequired, csrfProtection, (req, res) => {
   const users = read('users');
   const i = users.findIndex(u => u.id === req.user.id);
   if (i < 0) return res.status(404).json({ error: 'Not found' });
@@ -1613,7 +1692,7 @@ app.get('/api/meta', (_req, res) => {
 });
 
 // Lightweight metrics endpoints (no-op by default)
-app.post('/api/metrics/track', (req, res) => {
+app.post('/api/metrics/track', csrfProtection, (req, res) => {
   // In a real deployment you could log req.body here.
   res.json({ ok: true });
 });
@@ -1661,7 +1740,7 @@ app.get('/api/admin/metrics', authRequired, roleRequired('admin'), (_req, res) =
   });
 });
 
-app.post('/api/admin/reset-demo', authRequired, roleRequired('admin'), (req, res) => {
+app.post('/api/admin/reset-demo', authRequired, roleRequired('admin'), csrfProtection, (req, res) => {
   try {
     // Clear key collections and rerun seeding
     const collections = [
@@ -1693,7 +1772,7 @@ app.get('/api/admin/suppliers', authRequired, roleRequired('admin'), (_req, res)
   res.json({ items });
 });
 
-app.post('/api/admin/suppliers/:id/approve', authRequired, roleRequired('admin'), (req, res) => {
+app.post('/api/admin/suppliers/:id/approve', authRequired, roleRequired('admin'), csrfProtection, (req, res) => {
   const all = read('suppliers');
   const i = all.findIndex(s => s.id === req.params.id);
   if (i < 0) return res.status(404).json({ error: 'Not found' });
@@ -1702,7 +1781,7 @@ app.post('/api/admin/suppliers/:id/approve', authRequired, roleRequired('admin')
   res.json({ ok: true, supplier: all[i] });
 });
 
-app.post('/api/admin/suppliers/:id/pro', authRequired, roleRequired('admin'), (req, res) => {
+app.post('/api/admin/suppliers/:id/pro', authRequired, roleRequired('admin'), csrfProtection, (req, res) => {
   const { mode, duration } = req.body || {};
   const all = read('suppliers');
   const i = all.findIndex(s => s.id === req.params.id);
@@ -1770,7 +1849,7 @@ app.get('/api/admin/packages', authRequired, roleRequired('admin'), (_req, res) 
   res.json({ items: read('packages') });
 });
 
-app.post('/api/admin/packages/:id/approve', authRequired, roleRequired('admin'), (req, res) => {
+app.post('/api/admin/packages/:id/approve', authRequired, roleRequired('admin'), csrfProtection, (req, res) => {
   const all = read('packages');
   const i = all.findIndex(p => p.id === req.params.id);
   if (i < 0) return res.status(404).json({ error: 'Not found' });
@@ -1779,7 +1858,7 @@ app.post('/api/admin/packages/:id/approve', authRequired, roleRequired('admin'),
   res.json({ ok: true, package: all[i] });
 });
 
-app.post('/api/admin/packages/:id/feature', authRequired, roleRequired('admin'), (req, res) => {
+app.post('/api/admin/packages/:id/feature', authRequired, roleRequired('admin'), csrfProtection, (req, res) => {
   const all = read('packages');
   const i = all.findIndex(p => p.id === req.params.id);
   if (i < 0) return res.status(404).json({ error: 'Not found' });
@@ -1792,7 +1871,7 @@ app.post('/api/admin/packages/:id/feature', authRequired, roleRequired('admin'),
  * PUT /api/admin/packages/:id
  * Update package details
  */
-app.put('/api/admin/packages/:id', authRequired, roleRequired('admin'), (req, res) => {
+app.put('/api/admin/packages/:id', authRequired, roleRequired('admin'), csrfProtection, (req, res) => {
   const { id } = req.params;
   const packages = read('packages');
   const pkgIndex = packages.findIndex(p => p.id === id);
@@ -1823,7 +1902,7 @@ app.put('/api/admin/packages/:id', authRequired, roleRequired('admin'), (req, re
  * DELETE /api/admin/packages/:id
  * Delete a package
  */
-app.delete('/api/admin/packages/:id', authRequired, roleRequired('admin'), (req, res) => {
+app.delete('/api/admin/packages/:id', authRequired, roleRequired('admin'), csrfProtection, (req, res) => {
   const { id } = req.params;
   const packages = read('packages');
   const filtered = packages.filter(p => p.id !== id);
@@ -1886,7 +1965,7 @@ function planOwnerOnly(req, res, next) {
   next();
 }
 
-app.post('/api/me/plan/save', authRequired, planOwnerOnly, (req, res) => {
+app.post('/api/me/plan/save', authRequired, planOwnerOnly, csrfProtection, (req, res) => {
   const { plan } = req.body || {};
   if (!plan) return res.status(400).json({ error: 'Missing plan' });
   const plans = read('plans');
@@ -1987,7 +2066,7 @@ function saveImageBase64(base64, ownerType, ownerId) {
 }
 
 // Supplier image upload
-app.post('/api/me/suppliers/:id/photos', authRequired, (req, res) => {
+app.post('/api/me/suppliers/:id/photos', authRequired, csrfProtection, (req, res) => {
   const { image } = req.body || {};
   if (!image) return res.status(400).json({ error: 'Missing image' });
   const suppliers = read('suppliers');
@@ -2002,7 +2081,7 @@ app.post('/api/me/suppliers/:id/photos', authRequired, (req, res) => {
 });
 
 // Package image upload
-app.post('/api/me/packages/:id/photos', authRequired, (req, res) => {
+app.post('/api/me/packages/:id/photos', authRequired, csrfProtection, (req, res) => {
   const { image } = req.body || {};
   if (!image) return res.status(400).json({ error: 'Missing image' });
   const pkgs = read('packages');
@@ -2192,7 +2271,7 @@ app.get('/api/search/amenities', async (req, res) => {
  * POST /api/reviews
  * Body: { supplierId, rating, comment, eventType, eventDate }
  */
-app.post('/api/reviews', authRequired, async (req, res) => {
+app.post('/api/reviews', authRequired, csrfProtection, async (req, res) => {
   try {
     const { supplierId, rating, comment, eventType, eventDate } = req.body;
 
@@ -2284,7 +2363,7 @@ app.get('/api/reviews/supplier/:supplierId/distribution', async (req, res) => {
  * Mark review as helpful
  * POST /api/reviews/:reviewId/helpful
  */
-app.post('/api/reviews/:reviewId/helpful', async (req, res) => {
+app.post('/api/reviews/:reviewId/helpful', csrfProtection, async (req, res) => {
   try {
     const { reviewId } = req.params;
     const review = await reviewsSystem.markHelpful(reviewId);
@@ -2324,7 +2403,7 @@ app.get('/api/admin/reviews/pending', authRequired, roleRequired('admin'), async
  * POST /api/admin/reviews/:reviewId/approve
  * Body: { approved: boolean }
  */
-app.post('/api/admin/reviews/:reviewId/approve', authRequired, roleRequired('admin'), async (req, res) => {
+app.post('/api/admin/reviews/:reviewId/approve', authRequired, roleRequired('admin'), csrfProtection, async (req, res) => {
   try {
     const { reviewId } = req.params;
     const { approved } = req.body;
@@ -2350,7 +2429,7 @@ app.post('/api/admin/reviews/:reviewId/approve', authRequired, roleRequired('adm
  * Delete a review
  * DELETE /api/reviews/:reviewId
  */
-app.delete('/api/reviews/:reviewId', authRequired, async (req, res) => {
+app.delete('/api/reviews/:reviewId', authRequired, csrfProtection, async (req, res) => {
   try {
     const { reviewId } = req.params;
     const isAdmin = req.user.role === 'admin';
@@ -2376,7 +2455,7 @@ app.delete('/api/reviews/:reviewId', authRequired, async (req, res) => {
  * Body: multipart/form-data with 'photo' field
  * Query: ?type=supplier|package&id=<supplierId|packageId>
  */
-app.post('/api/photos/upload', authRequired, photoUpload.upload.single('photo'), async (req, res) => {
+app.post('/api/photos/upload', authRequired, photoUpload.upload.single('photo'), csrfProtection, async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
@@ -2476,7 +2555,7 @@ app.post('/api/photos/upload', authRequired, photoUpload.upload.single('photo'),
  * Body: multipart/form-data with 'photos' field (multiple files)
  * Query: ?type=supplier|package&id=<supplierId|packageId>
  */
-app.post('/api/photos/upload/batch', authRequired, photoUpload.upload.array('photos', 10), async (req, res) => {
+app.post('/api/photos/upload/batch', authRequired, photoUpload.upload.array('photos', 10), csrfProtection, async (req, res) => {
   try {
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({ error: 'No files uploaded' });
@@ -2575,7 +2654,7 @@ app.post('/api/photos/upload/batch', authRequired, photoUpload.upload.array('pho
  * DELETE /api/photos/:photoUrl
  * Query: ?type=supplier|package&id=<supplierId|packageId>
  */
-app.delete('/api/photos/delete', authRequired, async (req, res) => {
+app.delete('/api/photos/delete', authRequired, csrfProtection, async (req, res) => {
   try {
     const { type, id, photoUrl } = req.query;
     
@@ -2640,7 +2719,7 @@ app.delete('/api/photos/delete', authRequired, async (req, res) => {
  * POST /api/photos/approve
  * Body: { type, id, photoUrl, approved }
  */
-app.post('/api/photos/approve', authRequired, roleRequired('admin'), async (req, res) => {
+app.post('/api/photos/approve', authRequired, roleRequired('admin'), csrfProtection, async (req, res) => {
   try {
     const { type, id, photoUrl, approved } = req.body;
     
@@ -2699,7 +2778,7 @@ app.post('/api/photos/approve', authRequired, roleRequired('admin'), async (req,
  * POST /api/photos/crop
  * Body: { imageUrl, cropData: { x, y, width, height } }
  */
-app.post('/api/photos/crop', authRequired, async (req, res) => {
+app.post('/api/photos/crop', authRequired, csrfProtection, async (req, res) => {
   try {
     const { imageUrl, cropData } = req.body;
     
@@ -2784,7 +2863,7 @@ app.get('/api/photos/pending', authRequired, roleRequired('admin'), async (req, 
  * PUT /api/photos/:id
  * Edit photo metadata (caption, alt text, tags)
  */
-app.put('/api/photos/:id', authRequired, async (req, res) => {
+app.put('/api/photos/:id', authRequired, csrfProtection, async (req, res) => {
   try {
     const { id } = req.params;
     const { caption, altText, tags, isFeatured, watermark } = req.body;
@@ -2812,7 +2891,7 @@ app.put('/api/photos/:id', authRequired, async (req, res) => {
  * POST /api/photos/:id/replace
  * Replace photo while keeping metadata
  */
-app.post('/api/photos/:id/replace', authRequired, photoUpload.upload.single('photo'), async (req, res) => {
+app.post('/api/photos/:id/replace', authRequired, photoUpload.upload.single('photo'), csrfProtection, async (req, res) => {
   try {
     const { id } = req.params;
     const { metadata } = req.body;
@@ -2838,7 +2917,7 @@ app.post('/api/photos/:id/replace', authRequired, photoUpload.upload.single('pho
  * POST /api/photos/bulk-edit
  * Bulk update multiple photos
  */
-app.post('/api/photos/bulk-edit', authRequired, async (req, res) => {
+app.post('/api/photos/bulk-edit', authRequired, csrfProtection, async (req, res) => {
   try {
     const { photos } = req.body;
     
@@ -2868,7 +2947,7 @@ app.post('/api/photos/bulk-edit', authRequired, async (req, res) => {
  * POST /api/photos/:id/filters
  * Apply filters to photo (brightness, contrast, saturation)
  */
-app.post('/api/photos/:id/filters', authRequired, async (req, res) => {
+app.post('/api/photos/:id/filters', authRequired, csrfProtection, async (req, res) => {
   try {
     const { id } = req.params;
     const { imageUrl, brightness, contrast, saturation } = req.body;
@@ -2898,7 +2977,7 @@ app.post('/api/photos/:id/filters', authRequired, async (req, res) => {
  * POST /api/photos/reorder
  * Update photo order in gallery
  */
-app.post('/api/photos/reorder', authRequired, async (req, res) => {
+app.post('/api/photos/reorder', authRequired, csrfProtection, async (req, res) => {
   try {
     const { photoOrder } = req.body;
     

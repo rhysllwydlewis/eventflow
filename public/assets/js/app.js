@@ -1083,7 +1083,7 @@ async function initDashSupplier(){
   try {
     const params = new URLSearchParams(location.search);
     if (params.get('billing') === 'success') {
-      fetch('/api/me/subscription/upgrade', { method: 'POST' }).catch(()=>{});
+      fetch('/api/me/subscription/upgrade', { method: 'POST', headers: { 'X-CSRF-Token': window.__CSRF_TOKEN__ || '' } }).catch(()=>{});
     }
   } catch (_e) {}
 
@@ -1338,7 +1338,7 @@ async function initAdmin(){ efMaybeShowOnboarding('admin');
       const originalLabel = resetBtn.textContent;
       resetBtn.textContent = 'Resetting…';
       try {
-        const r = await fetch('/api/admin/reset-demo', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+        const r = await fetch('/api/admin/reset-demo', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': window.__CSRF_TOKEN__ || '' } });
         if (!r.ok) {
           alert('Reset failed (' + r.status + ').');
         } else {
@@ -1354,7 +1354,17 @@ async function initAdmin(){ efMaybeShowOnboarding('admin');
     });
   }
 
-async function fetchJSON(url,opts){ const r=await fetch(url,opts||{}); if(!r.ok) throw new Error((await r.json()).error||'Request failed'); return r.json(); }
+// Helper function to add CSRF token to requests
+function addCsrfToken(opts) {
+  opts = opts || {};
+  opts.headers = opts.headers || {};
+  if (window.__CSRF_TOKEN__ && opts.method && ['POST', 'PUT', 'DELETE'].includes(opts.method.toUpperCase())) {
+    opts.headers['X-CSRF-Token'] = window.__CSRF_TOKEN__;
+  }
+  return opts;
+}
+
+async function fetchJSON(url,opts){ opts = addCsrfToken(opts); const r=await fetch(url,opts||{}); if(!r.ok) throw new Error((await r.json()).error||'Request failed'); return r.json(); }
   try{ const m=await fetchJSON('/api/admin/metrics'); const c=m.counts; metrics.textContent = `Users: ${c.usersTotal} ( ${Object.entries(c.usersByRole).map(([k,v])=>k+': '+v).join(', ')} ) · Suppliers: ${c.suppliersTotal} · Packages: ${c.packagesTotal} · Threads: ${c.threadsTotal} · Messages: ${c.messagesTotal}`; }catch(e){ metrics.textContent='Forbidden (admin only).'; }
   try{
     const s=await fetchJSON('/api/admin/suppliers');
@@ -1463,10 +1473,8 @@ document.addEventListener('DOMContentLoaded', ()=>{
   if(page==='admin_users') initAdminUsers && initAdminUsers();
   if(page==='verify') initVerify && initVerify();
 
-  // Global header behaviour: theme toggle, burger, scroll hide/show
+  // Global header behaviour: burger menu, scroll hide/show
   try {
-    efInitThemeToggle && efInitThemeToggle();
-
     const header = document.querySelector('.header');
     const burger = document.getElementById('burger');
     const nav = document.querySelector('.nav');
@@ -1805,7 +1813,7 @@ async function initSettings(){
     const r=await fetch('/api/me/settings'); if(!r.ok) throw new Error('Not signed in');
     const d=await r.json(); const cb=document.getElementById('notify'); cb.checked=!!d.notify;
     document.getElementById('save-settings').addEventListener('click', async ()=>{
-      const rr=await fetch('/api/me/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({notify: document.getElementById('notify').checked})});
+      const rr=await fetch('/api/me/settings',{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-Token': window.__CSRF_TOKEN__ || ''},body:JSON.stringify({notify: document.getElementById('notify').checked})});
       if(rr.ok){ document.getElementById('settings-status').textContent='Saved'; setTimeout(()=>document.getElementById('settings-status').textContent='',1200); }
     });
   }catch(e){
@@ -1818,7 +1826,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
 });
 
 // simple pageview beacon
-fetch('/api/metrics/track',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'pageview',meta:{path:location.pathname}})}).catch(()=>{});
+fetch('/api/metrics/track',{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-Token': window.__CSRF_TOKEN__ || ''},body:JSON.stringify({type:'pageview',meta:{path:location.pathname}})}).catch(()=>{});
 
 // Admin charts
 async function adminCharts(){
@@ -1859,50 +1867,6 @@ document.addEventListener('DOMContentLoaded', ()=>{
 
 
 // === Experimental features (EventFlow Experimental v2) ===
-const EF_THEME_KEY = 'ef_theme';
-
-function efApplyTheme(theme){
-  const root=document.documentElement;
-  if(theme==='dark'){
-    root.setAttribute('data-theme','dark');
-  }else{
-    root.removeAttribute('data-theme');
-    theme='light';
-  }
-  try{ localStorage.setItem(EF_THEME_KEY, theme); }catch(_){}
-}
-
-function efInitThemeToggle(){
-
-  // restore saved theme or respect system preference
-  let stored=null;
-  try{ stored=localStorage.getItem(EF_THEME_KEY); }catch(_){}
-  if(stored==='dark'){
-    efApplyTheme('dark');
-  }else if(stored!=='light'){
-    try{
-      if(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches){
-        efApplyTheme('dark');
-        stored='dark';
-      }
-    }catch(_){}
-  }
-
-  const btn=document.getElementById('theme-toggle');
-  if(!btn) return;
-
-  const updateLabel=()=>{
-    const isDark=document.documentElement.getAttribute('data-theme')==='dark';
-    btn.setAttribute('aria-label', isDark ? 'Switch to light mode' : 'Switch to dark mode');
-  };
-  updateLabel();
-
-  btn.addEventListener('click', ()=>{
-    const isDark=document.documentElement.getAttribute('data-theme')==='dark';
-    efApplyTheme(isDark ? 'light' : 'dark');
-    updateLabel();
-  });
-}
 
 // Simple loader overlay: fades out shortly after load
 function efInitLoader(){
@@ -1968,7 +1932,6 @@ function efInitVenueMap(){
 }
 
 document.addEventListener('DOMContentLoaded', ()=>{
-  try{ efInitThemeToggle(); }catch(_){}
   try{ efInitLoader(); }catch(_){}
   try{ efInitVenueMap(); }catch(_){}
 });
