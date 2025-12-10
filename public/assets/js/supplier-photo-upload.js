@@ -15,6 +15,10 @@ class SupplierPhotoUpload {
   constructor() {
     this.uploadedPhotos = [];
     this.maxPhotos = 10;
+    this.maxFileSize = 5 * 1024 * 1024; // 5MB
+    this.compressionQuality = 0.85; // 85% quality
+    this.maxImageWidth = 1920;
+    this.maxImageHeight = 1920;
   }
 
   /**
@@ -31,9 +35,8 @@ class SupplierPhotoUpload {
       }
 
       // Check file size (max 5MB)
-      const maxSize = 5 * 1024 * 1024; // 5MB
-      if (file.size > maxSize) {
-        throw new Error('File too large. Maximum size is 5MB.');
+      if (file.size > this.maxFileSize) {
+        throw new Error(`File too large. Maximum size is ${this.maxFileSize / (1024 * 1024)}MB.`);
       }
 
       // Generate unique filename
@@ -139,9 +142,9 @@ class SupplierPhotoUpload {
           const canvas = document.createElement('canvas');
           const ctx = canvas.getContext('2d');
           
-          // Set max dimensions
-          const maxWidth = 1920;
-          const maxHeight = 1920;
+          // Use configured max dimensions
+          const maxWidth = this.maxImageWidth;
+          const maxHeight = this.maxImageHeight;
           
           let width = img.width;
           let height = img.height;
@@ -182,7 +185,7 @@ class SupplierPhotoUpload {
               resolve(compressedFile);
             },
             'image/jpeg',
-            0.85 // Quality
+            this.compressionQuality
           );
         };
         

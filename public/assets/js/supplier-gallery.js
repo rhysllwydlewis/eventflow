@@ -98,7 +98,12 @@ class SupplierGalleryManager {
     const maxPhotos = 10;
     
     if (currentPhotoCount + fileArray.length > maxPhotos) {
-      alert(`You can upload a maximum of ${maxPhotos} photos. You currently have ${currentPhotoCount} photos.`);
+      // Use Toast if available, fallback to alert
+      if (typeof Toast !== 'undefined') {
+        Toast.warning(`You can upload a maximum of ${maxPhotos} photos. You currently have ${currentPhotoCount} photos.`);
+      } else {
+        alert(`You can upload a maximum of ${maxPhotos} photos. You currently have ${currentPhotoCount} photos.`);
+      }
       return;
     }
 
@@ -180,7 +185,7 @@ class SupplierGalleryManager {
       // If no supplier ID, we need to create the supplier first to get an ID
       if (!supplierId || supplierId.trim() === '') {
         // Generate a temporary ID for new suppliers
-        supplierId = 'sup_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        supplierId = 'sup_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
         if (supplierIdField) {
           supplierIdField.value = supplierId;
         }
@@ -221,7 +226,12 @@ class SupplierGalleryManager {
         // Clear pending uploads
         this.pendingUploads = [];
         
-        alert('Saved supplier profile with photos!');
+        // Use Toast if available, fallback to alert
+        if (typeof Toast !== 'undefined') {
+          Toast.success('Supplier profile and photos saved successfully!');
+        } else {
+          alert('Saved supplier profile with photos!');
+        }
         
         // Reload the page or refresh suppliers list
         if (typeof window.loadSuppliers === 'function') {
@@ -229,7 +239,13 @@ class SupplierGalleryManager {
         }
       } catch (error) {
         console.error('Error saving supplier:', error);
-        alert('Error saving supplier profile: ' + error.message);
+        
+        // Use Toast if available, fallback to alert
+        if (typeof Toast !== 'undefined') {
+          Toast.error('Error saving supplier profile: ' + error.message);
+        } else {
+          alert('Error saving supplier profile: ' + error.message);
+        }
       }
     });
   }
