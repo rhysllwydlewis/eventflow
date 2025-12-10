@@ -86,9 +86,7 @@ function setupFirebaseConversation(originalButton) {
 
 function openFirebaseConversationModal(user, supplierId, supplierInfo) {
   const modal = document.createElement('div');
-  modal.className = 'modal-overlay';
-  modal.style.opacity = '1';
-  modal.style.visibility = 'visible';
+  modal.className = 'modal-overlay active';
   
   modal.innerHTML = `
     <div class="modal" style="max-width:600px;">
@@ -104,8 +102,8 @@ function openFirebaseConversationModal(user, supplierId, supplierInfo) {
             <textarea id="conversationMessage" rows="6" required placeholder="Hi! We are planning an event on [DATE] for around [GUESTS] guests at [LOCATION]. Are you available, and could you share your pricing or packages?"></textarea>
           </div>
           <div class="form-actions" style="margin-top:1rem;">
-            <button type="submit" class="btn btn-primary">Send Message</button>
-            <button type="button" class="btn btn-secondary modal-close-btn">Cancel</button>
+            <button type="submit" class="cta">Send Message</button>
+            <button type="button" class="cta secondary modal-close-btn">Cancel</button>
           </div>
         </form>
       </div>
