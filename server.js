@@ -2,6 +2,20 @@
  * Features: Auth (JWT cookie), Suppliers, Packages, Plans/Notes, Threads/Messages,
  * Admin approvals + metrics, Settings, Featured packages, Sitemap.
  * Email: safe dev mode by default (writes .eml files to /outbox).
+ * 
+ * PRODUCTION DEPLOYMENT:
+ * - Server performs startup health checks before accepting requests
+ * - Validates cloud database is configured (MongoDB Atlas or Firebase)
+ * - Validates email service is configured (when EMAIL_ENABLED=true)
+ * - Rejects localhost MongoDB URIs in production
+ * - Exits with error code 1 if critical configuration is missing
+ * 
+ * TROUBLESHOOTING 502 ERRORS:
+ * - Check server startup logs for validation errors
+ * - Ensure MONGODB_URI points to cloud database (not localhost)
+ * - Verify BASE_URL matches your actual domain
+ * - Set EMAIL_ENABLED=true and configure AWS SES or SMTP
+ * - Check /api/health endpoint for service status
  */
 
 'use strict';
