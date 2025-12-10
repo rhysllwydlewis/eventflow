@@ -241,7 +241,7 @@ function seed(options = {}) {
   }
 
   // Always ensure these collections exist as arrays
-  for (const name of ['plans','notes','messages','threads','events','reviews','reports','audit_logs','search_history']) {
+  for (const name of ['plans','notes','messages','threads','events','reviews','reports','audit_logs','search_history','photos']) {
     const items = read(name);
     if (!Array.isArray(items) || items.length === 0) {
       write(name, []);

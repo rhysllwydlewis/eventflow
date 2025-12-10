@@ -1005,5 +1005,217 @@ router.post('/users/:id/revoke-admin', authRequired, roleRequired('admin'), (req
   });
 });
 
+// ---------- Photo Moderation ----------
+
+/**
+ * GET /api/admin/photos/pending
+ * Get all photos pending approval
+ */
+router.get('/photos/pending', authRequired, roleRequired('admin'), (req, res) => {
+  const photos = read('photos');
+  const pendingPhotos = photos.filter(p => p.status === 'pending');
+  
+  // Enrich with supplier information
+  const suppliers = read('suppliers');
+  const enrichedPhotos = pendingPhotos.map(photo => {
+    const supplier = suppliers.find(s => s.id === photo.supplierId);
+    return {
+      ...photo,
+      supplierName: supplier ? supplier.name : 'Unknown',
+      supplierCategory: supplier ? supplier.category : null
+    };
+  });
+  
+  res.json({ photos: enrichedPhotos });
+});
+
+/**
+ * POST /api/admin/photos/:id/approve
+ * Approve a photo
+ */
+router.post('/photos/:id/approve', authRequired, roleRequired('admin'), (req, res) => {
+  const { id } = req.params;
+  const photos = read('photos');
+  const photoIndex = photos.findIndex(p => p.id === id);
+  
+  if (photoIndex === -1) {
+    return res.status(404).json({ error: 'Photo not found' });
+  }
+  
+  const photo = photos[photoIndex];
+  const now = new Date().toISOString();
+  
+  // Update photo status
+  photo.status = 'approved';
+  photo.approvedAt = now;
+  photo.approvedBy = req.user.id;
+  
+  photos[photoIndex] = photo;
+  write('photos', photos);
+  
+  // Add photo to supplier's photos array if not already there
+  const suppliers = read('suppliers');
+  const supplierIndex = suppliers.findIndex(s => s.id === photo.supplierId);
+  
+  if (supplierIndex !== -1) {
+    if (!suppliers[supplierIndex].photos) {
+      suppliers[supplierIndex].photos = [];
+    }
+    if (!suppliers[supplierIndex].photos.includes(photo.url)) {
+      suppliers[supplierIndex].photos.push(photo.url);
+      write('suppliers', suppliers);
+    }
+  }
+  
+  // Create audit log
+  auditLog({
+    adminId: req.user.id,
+    adminEmail: req.user.email,
+    action: AUDIT_ACTIONS.CONTENT_APPROVED,
+    targetType: 'photo',
+    targetId: photo.id,
+    details: { supplierId: photo.supplierId, url: photo.url }
+  });
+  
+  res.json({ success: true, message: 'Photo approved successfully', photo });
+});
+
+/**
+ * POST /api/admin/photos/:id/reject
+ * Reject a photo
+ */
+router.post('/photos/:id/reject', authRequired, roleRequired('admin'), (req, res) => {
+  const { id } = req.params;
+  const { reason } = req.body;
+  const photos = read('photos');
+  const photoIndex = photos.findIndex(p => p.id === id);
+  
+  if (photoIndex === -1) {
+    return res.status(404).json({ error: 'Photo not found' });
+  }
+  
+  const photo = photos[photoIndex];
+  const now = new Date().toISOString();
+  
+  // Update photo status
+  photo.status = 'rejected';
+  photo.rejectedAt = now;
+  photo.rejectedBy = req.user.id;
+  photo.rejectionReason = reason || 'No reason provided';
+  
+  photos[photoIndex] = photo;
+  write('photos', photos);
+  
+  // Create audit log
+  auditLog({
+    adminId: req.user.id,
+    adminEmail: req.user.email,
+    action: AUDIT_ACTIONS.CONTENT_REJECTED,
+    targetType: 'photo',
+    targetId: photo.id,
+    details: { 
+      supplierId: photo.supplierId, 
+      url: photo.url,
+      reason: photo.rejectionReason 
+    }
+  });
+  
+  res.json({ success: true, message: 'Photo rejected successfully', photo });
+});
+
+// ---------- Smart Tagging ----------
+
+/**
+ * POST /api/admin/suppliers/smart-tags
+ * Generate smart tags for all suppliers based on their descriptions and categories
+ */
+router.post('/suppliers/smart-tags', authRequired, roleRequired('admin'), (req, res) => {
+  const suppliers = read('suppliers');
+  let taggedCount = 0;
+  
+  // Common wedding/event industry tags
+  const tagMapping = {
+    'venues': ['venue', 'location', 'space', 'ceremony', 'reception'],
+    'catering': ['food', 'catering', 'menu', 'dining', 'buffet', 'meal'],
+    'photography': ['photo', 'photography', 'photographer', 'camera', 'pictures'],
+    'entertainment': ['music', 'band', 'dj', 'entertainment', 'performance'],
+    'flowers': ['flowers', 'floral', 'bouquet', 'decoration', 'decor'],
+    'transport': ['transport', 'car', 'vehicle', 'limousine', 'travel'],
+    'extras': ['extras', 'accessories', 'favors', 'gifts'],
+  };
+  
+  // Additional context-based tags
+  const contextTags = {
+    'wedding': ['wedding', 'bride', 'groom', 'marriage', 'nuptial'],
+    'outdoor': ['outdoor', 'garden', 'countryside', 'open-air'],
+    'indoor': ['indoor', 'barn', 'hall', 'ballroom'],
+    'luxury': ['luxury', 'premium', 'exclusive', 'upscale'],
+    'rustic': ['rustic', 'countryside', 'barn', 'rural'],
+    'modern': ['modern', 'contemporary', 'stylish'],
+    'traditional': ['traditional', 'classic', 'formal'],
+    'budget': ['affordable', 'budget', 'value'],
+  };
+  
+  suppliers.forEach((supplier, index) => {
+    if (!supplier.approved) return;
+    
+    const tags = new Set();
+    const text = [
+      supplier.name || '',
+      supplier.description_short || '',
+      supplier.description_long || '',
+      supplier.category || '',
+      ...(supplier.amenities || [])
+    ].join(' ').toLowerCase();
+    
+    // Add category-based tags
+    const categoryKey = (supplier.category || '').toLowerCase().replace(/[^a-z]/g, '');
+    if (tagMapping[categoryKey]) {
+      tagMapping[categoryKey].forEach(tag => tags.add(tag));
+    }
+    
+    // Add context-based tags
+    Object.entries(contextTags).forEach(([tag, keywords]) => {
+      if (keywords.some(keyword => text.includes(keyword))) {
+        tags.add(tag);
+      }
+    });
+    
+    // Add location tag if available
+    if (supplier.location) {
+      const locationWords = supplier.location.toLowerCase().split(/[,\s]+/);
+      locationWords.forEach(word => {
+        if (word.length > 3) {
+          tags.add(word);
+        }
+      });
+    }
+    
+    // Only update if we generated tags
+    if (tags.size > 0) {
+      suppliers[index].tags = Array.from(tags).slice(0, 10); // Limit to 10 tags
+      taggedCount++;
+    }
+  });
+  
+  write('suppliers', suppliers);
+  
+  // Create audit log
+  auditLog({
+    adminId: req.user.id,
+    adminEmail: req.user.email,
+    action: 'SMART_TAGS_GENERATED',
+    targetType: 'suppliers',
+    targetId: null,
+    details: { suppliersTagged: taggedCount }
+  });
+  
+  res.json({ 
+    success: true, 
+    message: `Smart tags generated for ${taggedCount} suppliers`,
+    taggedCount 
+  });
+});
+
 module.exports = router;
 module.exports.setHelperFunctions = setHelperFunctions;

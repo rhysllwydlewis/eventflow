@@ -16,6 +16,7 @@ const files = {
   reports: path.join(DATA_DIR, 'reports.json'),
   audit_logs: path.join(DATA_DIR, 'audit_logs.json'),
   search_history: path.join(DATA_DIR, 'search_history.json'),
+  photos: path.join(DATA_DIR, 'photos.json'),
 };
 
 function ensure() {
