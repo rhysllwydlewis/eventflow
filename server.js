@@ -54,8 +54,9 @@ try {
   console.warn('OpenAI is not configured:', err.message);
 }
 
-// Local JSON storage helpers (from ./store.js)
-const { read, write, uid, DATA_DIR } = require('./store');
+// Data access layer with Firebase support (synchronous wrapper for compatibility)
+// For better Firebase integration, convert endpoints to async and use require('./data-access')
+const { read, write, uid, DATA_DIR } = require('./data-access-sync');
 
 // Photo upload utilities
 const photoUpload = require('./photo-upload');

@@ -369,6 +369,8 @@ html[data-theme="dark"] .timeline-step::before{
   color:var(--muted);
   line-height:1;
   padding:4px 8px;
+  width:auto;
+  white-space:nowrap;
 }
 .password-toggle:hover{
   text-decoration:underline;
@@ -384,6 +386,8 @@ html[data-theme="dark"] .timeline-step::before{
     border:1px solid var(--border);
     border-radius:6px;
     z-index:1;
+    width:auto;
+    white-space:nowrap;
   }
   .form-row input[type="password"],
   .form-row input[type="text"].has-toggle{
