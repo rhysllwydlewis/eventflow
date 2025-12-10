@@ -49,23 +49,30 @@ async function read(collectionName) {
 }
 
 /**
- * Write all documents to a collection (replaces entire collection)
- * WARNING: This is expensive in Firebase. Consider using update() for single documents.
+ * Write all documents to a collection
+ * 
+ * WARNING: This does NOT perform a true collection replacement in Firebase.
+ * It only updates/creates the documents provided. Existing documents not in
+ * the array will remain in Firebase. For true replacement, use remove() to
+ * delete documents first, or manage documents individually with create/update.
+ * 
+ * This behavior is intentional for backward compatibility and safety.
+ * Local storage is always fully replaced.
+ * 
  * @param {string} collectionName - Name of the collection
  * @param {Array} data - Array of documents to write
  * @returns {Promise<void>}
  */
 async function write(collectionName, data) {
-  // Always write to local storage for backward compatibility
+  // Always write to local storage for backward compatibility (full replacement)
   writeLocal(collectionName, data);
   
   if (FIREBASE_ENABLED) {
     try {
-      // Note: This doesn't delete existing docs not in the array
-      // For true replacement, would need to query and delete first
+      // Update/create documents in Firebase (does NOT delete existing docs not in array)
       const promises = data.map(doc => {
         if (!doc.id) {
-          console.warn(`Skipping document without ID in ${collectionName}`);
+          console.warn(`[data-access] Skipping document without ID in ${collectionName} for Firebase write`);
           return Promise.resolve();
         }
         return setDocument(collectionName, doc.id, doc);
@@ -291,5 +298,44 @@ module.exports = {
   findOne,
   query,
   uid,
-  isFirebaseEnabled: () => FIREBASE_ENABLED
+  isFirebaseEnabled: () => FIREBASE_ENABLED,
+  
+  /**
+   * Replace entire collection (DANGEROUS - deletes all existing docs)
+   * Use with caution. Only available when Firebase is enabled.
+   * @param {string} collectionName - Name of the collection
+   * @param {Array} data - Array of documents to write
+   * @returns {Promise<void>}
+   */
+  async replaceCollection(collectionName, data) {
+    if (!FIREBASE_ENABLED) {
+      writeLocal(collectionName, data);
+      return;
+    }
+    
+    try {
+      // Get all existing documents
+      const existing = await getCollection(collectionName);
+      
+      // Delete all existing documents
+      const deletePromises = existing.map(doc => deleteDocument(collectionName, doc.id));
+      await Promise.all(deletePromises);
+      
+      // Write new documents
+      const createPromises = data.map(doc => {
+        if (!doc.id) {
+          console.warn(`[data-access] Skipping document without ID in ${collectionName}`);
+          return Promise.resolve();
+        }
+        return setDocument(collectionName, doc.id, doc);
+      });
+      await Promise.all(createPromises);
+      
+      // Update local storage
+      writeLocal(collectionName, data);
+    } catch (error) {
+      console.error(`Firebase replaceCollection error for ${collectionName}:`, error.message);
+      throw error;
+    }
+  }
 };

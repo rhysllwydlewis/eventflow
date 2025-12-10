@@ -24,18 +24,18 @@ const options = {
   collection: args.find(arg => arg.startsWith('--collection='))?.split('=')[1] || null
 };
 
-// Collections to migrate
+// Collections to migrate (ordered by dependency: users first, then content)
 const COLLECTIONS_TO_MIGRATE = [
-  { name: 'users', file: 'data/users.json' },
-  { name: 'suppliers', file: 'data/suppliers.json' },
-  { name: 'packages', file: 'data/packages.json' },
-  { name: 'messages', file: 'data/messages.json' },
-  { name: 'threads', file: 'data/threads.json' },
-  { name: 'plans', file: 'data/plans.json' },
-  { name: 'notes', file: 'data/notes.json' },
-  { name: 'events', file: 'data/events.json' },
-  { name: 'reviews', file: 'data/reviews.json' },
-  { name: 'audit_logs', file: 'data/audit_logs.json' }
+  { name: 'users', file: 'data/users.json' },           // Base: user accounts
+  { name: 'suppliers', file: 'data/suppliers.json' },   // Reference users
+  { name: 'packages', file: 'data/packages.json' },     // Reference suppliers
+  { name: 'messages', file: 'data/messages.json' },     // Reference users
+  { name: 'threads', file: 'data/threads.json' },       // Conversation threads
+  { name: 'plans', file: 'data/plans.json' },           // User plans
+  { name: 'notes', file: 'data/notes.json' },           // User notes
+  { name: 'events', file: 'data/events.json' },         // Event data
+  { name: 'reviews', file: 'data/reviews.json' },       // User reviews
+  { name: 'audit_logs', file: 'data/audit_logs.json' }  // System logs
 ];
 
 /**
