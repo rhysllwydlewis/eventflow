@@ -113,6 +113,11 @@
         <div id="module-tests"></div>
     </div>
 
+    <div class="test-section">
+        <h2>5. Supplier & Customer Manager Tests</h2>
+        <div id="manager-tests"></div>
+    </div>
+
     <div class="summary" id="summary" style="display:none;">
         <h2>Test Summary</h2>
         <div id="summary-content"></div>
@@ -122,6 +127,8 @@
         import * as firebaseConfig from '/assets/js/firebase-config.js';
         import ticketingSystem from '/assets/js/ticketing.js';
         import messagingSystem from '/assets/js/messaging.js';
+        import supplierManager from '/assets/js/supplier-manager.js';
+        import customerManager from '/assets/js/customer-manager.js';
 
         const tests = {
             config: [
@@ -149,7 +156,18 @@
                 { name: 'Ticketing addResponse method', fn: () => typeof ticketingSystem.addResponse === 'function' },
                 { name: 'Messaging module loaded', fn: () => messagingSystem !== undefined },
                 { name: 'Messaging startConversation method', fn: () => typeof messagingSystem.startConversation === 'function' },
-                { name: 'Messaging sendMessage method', fn: () => typeof messagingSystem.sendMessage === 'function' }
+                { name: 'Messaging sendMessage method', fn: () => typeof messagingSystem.sendMessage === 'function' },
+                { name: 'Messaging getUnreadCount method', fn: () => typeof messagingSystem.getUnreadCount === 'function' },
+                { name: 'Messaging listenToUnreadCount method', fn: () => typeof messagingSystem.listenToUnreadCount === 'function' }
+            ],
+            managers: [
+                { name: 'Supplier Manager loaded', fn: () => supplierManager !== undefined },
+                { name: 'Supplier createSupplier method', fn: () => typeof supplierManager.createSupplier === 'function' },
+                { name: 'Supplier getAllSuppliers method', fn: () => typeof supplierManager.getAllSuppliers === 'function' },
+                { name: 'Supplier listenToSuppliers method', fn: () => typeof supplierManager.listenToSuppliers === 'function' },
+                { name: 'Customer Manager loaded', fn: () => customerManager !== undefined },
+                { name: 'Customer saveCustomer method', fn: () => typeof customerManager.saveCustomer === 'function' },
+                { name: 'Customer getFavorites method', fn: () => typeof customerManager.getFavorites === 'function' }
             ]
         };
 
@@ -194,7 +212,8 @@
                 config: await runTests('config', tests.config, 'config-tests'),
                 firestore: await runTests('firestore', tests.firestore, 'firestore-tests'),
                 storage: await runTests('storage', tests.storage, 'storage-tests'),
-                modules: await runTests('modules', tests.modules, 'module-tests')
+                modules: await runTests('modules', tests.modules, 'module-tests'),
+                managers: await runTests('managers', tests.managers, 'manager-tests')
             };
 
             // Calculate totals
@@ -219,13 +238,14 @@
                     <div>🔥 <strong>Firestore Tests:</strong> ${results.firestore.passed}/${results.firestore.total}</div>
                     <div>📦 <strong>Storage Tests:</strong> ${results.storage.passed}/${results.storage.total}</div>
                     <div>🧩 <strong>Module Tests:</strong> ${results.modules.passed}/${results.modules.total}</div>
+                    <div>👥 <strong>Manager Tests:</strong> ${results.managers.passed}/${results.managers.total}</div>
                 </div>
                 ${totalFailed > 0 ? '<div style="margin-top: 15px; color: #ef4444;"><strong>⚠️ Some tests failed. Check the details above.</strong></div>' : '<div style="margin-top: 15px; color: #10b981;"><strong>✨ All tests passed! Firebase integration is working correctly.</strong></div>'}
             `;
         }
 
         function clearResults() {
-            ['config-tests', 'firestore-tests', 'storage-tests', 'module-tests'].forEach(id => {
+            ['config-tests', 'firestore-tests', 'storage-tests', 'module-tests', 'manager-tests'].forEach(id => {
                 document.getElementById(id).innerHTML = '';
             });
             document.getElementById('summary').style.display = 'none';
@@ -254,11 +274,16 @@
 ✅ Atomic operations (arrayUnion, writeBatch)
 ✅ Real-time listeners with cleanup
 ✅ Module exports and imports working
+✅ Firebase Admin SDK installed for backend
+✅ Data migration script created (migrate-to-firebase.js)
+✅ Unread message counts implemented
+✅ Supplier Manager module created
+✅ Customer Manager module created
 
-⚠️ Known Limitations:
-- Data migration from local storage not automated
-- Unread message counts not implemented
-- Backend server.js still uses local storage (dual persistence)
+📋 Remaining Tasks:
+- Backend integration with Firebase Admin SDK
+- Run data migration from local JSON to Firebase
+- Test all features with real Firebase project
         </div>
     </div>
 
