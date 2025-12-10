@@ -26,9 +26,16 @@ const options = {
 
 // Collections to migrate
 const COLLECTIONS_TO_MIGRATE = [
-  { name: 'packages', file: 'data/packages.json' },
+  { name: 'users', file: 'data/users.json' },
   { name: 'suppliers', file: 'data/suppliers.json' },
-  { name: 'users', file: 'data/users.json' }
+  { name: 'packages', file: 'data/packages.json' },
+  { name: 'messages', file: 'data/messages.json' },
+  { name: 'threads', file: 'data/threads.json' },
+  { name: 'plans', file: 'data/plans.json' },
+  { name: 'notes', file: 'data/notes.json' },
+  { name: 'events', file: 'data/events.json' },
+  { name: 'reviews', file: 'data/reviews.json' },
+  { name: 'audit_logs', file: 'data/audit_logs.json' }
 ];
 
 /**
