@@ -26,6 +26,7 @@ function seed(options = {}) {
     
     // Always ensure owner account exists (protected from deletion)
     const ownerEmail = 'admin@event-flow.co.uk';
+    const ownerPassword = process.env.OWNER_PASSWORD || 'Admin123!'; // Default for dev only
     const ownerExists = existingUsers.find(u => u.email === ownerEmail);
     if (!ownerExists) {
       const owner = {
@@ -33,7 +34,7 @@ function seed(options = {}) {
         name: 'EventFlow Owner',
         email: ownerEmail,
         role: 'admin',
-        passwordHash: bcrypt.hashSync('Admin123!', 10),
+        passwordHash: bcrypt.hashSync(ownerPassword, 10),
         createdAt: now,
         notify: true,
         marketingOptIn: false,
@@ -43,6 +44,9 @@ function seed(options = {}) {
       existingUsers.push(owner);
       usersModified = true;
       console.log(`Created owner account: ${ownerEmail}`);
+      if (!process.env.OWNER_PASSWORD && process.env.NODE_ENV === 'production') {
+        console.warn('WARNING: Using default owner password in production. Set OWNER_PASSWORD environment variable.');
+      }
     }
     
     // Create demo users only if skipIfExists is false (demo/dev mode)

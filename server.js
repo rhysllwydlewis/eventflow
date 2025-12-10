@@ -946,8 +946,7 @@ app.get('/api/suppliers/:id/packages', (req, res) => {
 
 app.get('/api/packages/featured', (_req, res) => {
   const items = read('packages')
-    .filter(p => p.approved)
-    .sort((a, b) => Number(b.featured) - Number(a.featured))
+    .filter(p => p.approved && p.featured === true) // Only truly featured packages
     .slice(0, 6);
   res.json({ items });
 });
