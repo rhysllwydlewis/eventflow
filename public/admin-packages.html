@@ -69,13 +69,16 @@
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;">
       <h1 style="margin:0;">Package Management</h1>
       <div>
-        <button class="btn btn-primary" id="createPackageBtn">Create New Package</button>
         <button class="btn btn-secondary" onclick="location.href='/admin.html'">Back to Dashboard</button>
       </div>
     </div>
 
+    <div class="card" style="background:#eff6ff;border-color:#3b82f6;margin-bottom:1rem;">
+      <p style="margin:0;color:#1e40af;"><strong>Note:</strong> New packages are created via the Supplier Dashboard. This page allows you to edit, approve, and manage existing packages.</p>
+    </div>
+
     <div id="packageFormSection" class="card">
-      <h2 id="formTitle">Create Package</h2>
+      <h2 id="formTitle">Edit Package</h2>
       <form id="packageForm">
         <input type="hidden" id="packageId" name="id">
         <input type="hidden" id="packageSupplierId" name="supplierId">
@@ -332,15 +335,6 @@
     }
   };
 
-  // Create Package Button
-  document.getElementById('createPackageBtn').addEventListener('click', function() {
-    document.getElementById('formTitle').textContent = 'Create Package';
-    document.getElementById('packageForm').reset();
-    document.getElementById('packageId').value = '';
-    document.getElementById('packageFormSection').style.display = 'block';
-    document.getElementById('packageFormSection').scrollIntoView({ behavior: 'smooth' });
-  });
-
   // Cancel Form Button
   document.getElementById('cancelFormBtn').addEventListener('click', function() {
     document.getElementById('packageFormSection').style.display = 'none';
@@ -352,6 +346,16 @@
     e.preventDefault();
     
     const id = document.getElementById('packageId').value;
+    
+    if (!id) {
+      if (typeof Toast !== 'undefined') {
+        Toast.error('No package selected for editing');
+      } else {
+        alert('No package selected for editing');
+      }
+      return;
+    }
+    
     const packageData = {
       title: document.getElementById('packageTitle').value,
       description: document.getElementById('packageDescription').value,
@@ -360,17 +364,6 @@
       approved: document.getElementById('packageApproved').checked,
       featured: document.getElementById('packageFeatured').checked
     };
-
-    // For new packages, we need a supplierId - in a real scenario this would be selected
-    // For now, we'll show a message that admin should use supplier dashboard
-    if (!id) {
-      if (typeof Toast !== 'undefined') {
-        Toast.info('Package creation is currently available through the supplier dashboard. Use this form to edit existing packages.');
-      } else {
-        alert('Package creation is currently available through the supplier dashboard. Use this form to edit existing packages.');
-      }
-      return;
-    }
 
     try {
       await api('/api/admin/packages/' + id, 'PUT', packageData);
