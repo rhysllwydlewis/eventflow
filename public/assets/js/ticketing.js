@@ -17,7 +17,8 @@ import {
   orderBy,
   onSnapshot,
   serverTimestamp,
-  Timestamp
+  Timestamp,
+  arrayUnion
 } from './firebase-config.js';
 
 class TicketingSystem {
@@ -129,19 +130,14 @@ class TicketingSystem {
 
   /**
    * Add a response to a ticket
+   * Uses arrayUnion for atomic operation to prevent race conditions
    * @param {string} ticketId - Ticket ID
    * @param {Object} responseData - Response data
    */
   async addResponse(ticketId, responseData) {
     try {
       const ticketRef = doc(db, 'tickets', ticketId);
-      const ticketSnap = await getDoc(ticketRef);
       
-      if (!ticketSnap.exists()) {
-        throw new Error('Ticket not found');
-      }
-      
-      const ticket = ticketSnap.data();
       const newResponse = {
         responderId: responseData.responderId,
         responderType: responseData.responderType, // 'admin' | 'customer' | 'supplier'
@@ -150,11 +146,9 @@ class TicketingSystem {
         timestamp: serverTimestamp()
       };
       
-      const responses = ticket.responses || [];
-      responses.push(newResponse);
-      
+      // Use arrayUnion for atomic array operation (prevents race conditions)
       await updateDoc(ticketRef, {
-        responses: responses,
+        responses: arrayUnion(newResponse),
         updatedAt: serverTimestamp()
       });
       

@@ -17,7 +17,8 @@ import {
   orderBy,
   onSnapshot,
   serverTimestamp,
-  Timestamp
+  Timestamp,
+  writeBatch
 } from './firebase-config.js';
 
 class MessagingSystem {
@@ -222,6 +223,7 @@ class MessagingSystem {
 
   /**
    * Mark messages as read
+   * Uses batch writes for better performance and atomicity
    * @param {string} conversationId - Conversation ID
    * @param {string} userId - User ID
    */
@@ -235,14 +237,20 @@ class MessagingSystem {
       );
       
       const querySnapshot = await getDocs(q);
-      const updates = [];
+      
+      if (querySnapshot.empty) {
+        return; // No messages to update
+      }
+      
+      // Use batch write for atomic operation
+      const batch = writeBatch(db);
       
       querySnapshot.forEach((docSnap) => {
         const messageRef = doc(db, 'conversations', conversationId, 'messages', docSnap.id);
-        updates.push(setDoc(messageRef, { read: true }, { merge: true }));
+        batch.update(messageRef, { read: true });
       });
       
-      await Promise.all(updates);
+      await batch.commit();
       console.log('Messages marked as read');
     } catch (error) {
       console.error('Error marking messages as read:', error);

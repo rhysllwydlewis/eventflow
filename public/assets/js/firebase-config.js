@@ -1,14 +1,20 @@
 /**
  * Firebase Configuration for EventFlow
  * Initializes Firebase SDK with Firestore, Storage, and Authentication
+ * 
+ * SECURITY NOTE: Firebase API keys are safe to expose in client-side code.
+ * They are not secret keys and are meant to be public. Security is enforced
+ * through Firestore and Storage security rules, not API key protection.
+ * See: https://firebase.google.com/docs/projects/api-keys
  */
 
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-import { getFirestore, collection, doc, setDoc, getDoc, getDocs, updateDoc, deleteDoc, query, where, orderBy, onSnapshot, addDoc, Timestamp, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+import { getFirestore, collection, doc, setDoc, getDoc, getDocs, updateDoc, deleteDoc, query, where, orderBy, onSnapshot, addDoc, Timestamp, serverTimestamp, writeBatch, arrayUnion } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js';
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 
 // Firebase configuration
+// These values are safe to expose as security is enforced via Firestore rules
 const firebaseConfig = {
   apiKey: "AIzaSyAbFoGEvaAQcAvjL716cPSs1KDMkriahqc",
   authDomain: "eventflow-ffb12.firebaseapp.com",
@@ -45,6 +51,8 @@ export {
   addDoc,
   Timestamp,
   serverTimestamp,
+  writeBatch,
+  arrayUnion,
   ref,
   uploadBytes,
   getDownloadURL,
