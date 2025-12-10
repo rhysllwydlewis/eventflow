@@ -374,17 +374,17 @@ html[data-theme="dark"] .timeline-step::before{
   text-decoration:underline;
 }
 
-/* Right-aligned checkboxes */
+/* Checkboxes next to text */
 .checkbox-label-right{
   display:flex;
-  justify-content:space-between;
   align-items:center;
-  gap:10px;
+  gap:8px;
 }
 .checkbox-label-right input[type="checkbox"]{
   width:auto;
   flex-shrink:0;
   margin:0;
+  order:2;
 }
 
 
