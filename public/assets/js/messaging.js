@@ -289,6 +289,56 @@ class MessagingSystem {
   }
 
   /**
+   * Listen to unread count changes in real-time
+   * @param {string} userId - User ID
+   * @param {string} userType - 'customer' | 'supplier'
+   * @param {Function} callback - Callback function with unread count
+   * @returns {Function} Unsubscribe function
+   */
+  listenToUnreadCount(userId, userType, callback) {
+    try {
+      const fieldName = userType === 'customer' ? 'customerId' : 'supplierId';
+      
+      // Listen to all conversations for this user
+      const conversationsRef = collection(db, 'conversations');
+      const q = query(conversationsRef, where(fieldName, '==', userId));
+      
+      const unsubscribe = onSnapshot(q, async (conversationsSnapshot) => {
+        let totalUnread = 0;
+        
+        // For each conversation, count unread messages
+        const promises = [];
+        conversationsSnapshot.forEach((conversationDoc) => {
+          const messagesRef = collection(db, 'conversations', conversationDoc.id, 'messages');
+          const messagesQuery = query(
+            messagesRef,
+            where('senderId', '!=', userId),
+            where('read', '==', false)
+          );
+          
+          promises.push(
+            getDocs(messagesQuery).then(snapshot => snapshot.size)
+          );
+        });
+        
+        const unreadCounts = await Promise.all(promises);
+        totalUnread = unreadCounts.reduce((sum, count) => sum + count, 0);
+        
+        callback(totalUnread);
+      }, (error) => {
+        console.error('Error listening to unread count:', error);
+        callback(0);
+      });
+      
+      this.unsubscribers.push(unsubscribe);
+      return unsubscribe;
+    } catch (error) {
+      console.error('Error setting up unread count listener:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Clean up all listeners
    */
   cleanup() {

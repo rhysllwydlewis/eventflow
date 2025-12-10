@@ -272,7 +272,25 @@ async function init() {
         renderConversations(allConversations);
       }
     });
+    
+    // Listen to unread count for this supplier
+    messagingSystem.listenToUnreadCount(supplier.id, 'supplier', (unreadCount) => {
+      updateUnreadBadge(unreadCount);
+    });
   });
+}
+
+// Update unread badge
+function updateUnreadBadge(count) {
+  const badge = document.getElementById('unreadMessageBadge');
+  if (badge) {
+    if (count > 0) {
+      badge.textContent = `${count} unread`;
+      badge.style.display = 'inline-block';
+    } else {
+      badge.style.display = 'none';
+    }
+  }
 }
 
 // Run on load
