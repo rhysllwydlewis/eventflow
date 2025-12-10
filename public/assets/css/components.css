@@ -992,3 +992,82 @@ html[data-theme="dark"] .cookie-consent-reject:hover {
     transition: none;
   }
 }
+
+/* Ticket and Messaging Components */
+.ticket-list,
+.thread-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.ticket-item,
+.thread-item {
+  transition: background 0.2s, transform 0.2s;
+}
+
+.ticket-item:hover,
+.thread-item:hover {
+  background: #fafafa;
+  transform: translateX(2px);
+}
+
+.badge-info {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.badge-warning {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.badge-success {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.badge-danger {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.badge-secondary {
+  background: #f3f4f6;
+  color: #4b5563;
+}
+
+html[data-theme="dark"] .ticket-item:hover,
+html[data-theme="dark"] .thread-item:hover {
+  background: #1e2530;
+}
+
+html[data-theme="dark"] .badge-info {
+  background: #1e3a8a;
+  color: #93c5fd;
+}
+
+html[data-theme="dark"] .badge-warning {
+  background: #78350f;
+  color: #fcd34d;
+}
+
+html[data-theme="dark"] .badge-success {
+  background: #14532d;
+  color: #86efac;
+}
+
+html[data-theme="dark"] .badge-danger {
+  background: #7f1d1d;
+  color: #fca5a5;
+}
+
+html[data-theme="dark"] .badge-secondary {
+  background: #374151;
+  color: #d1d5db;
+}
+
+.messages-list {
+  display: flex;
+  flex-direction: column;
+}
