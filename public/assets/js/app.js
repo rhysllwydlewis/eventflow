@@ -321,9 +321,13 @@ async function initSupplier(){
         if (planResp.ok) {
           const planData = await planResp.json();
           isInPlan = (planData.items || []).some(item => item.id === s.id);
+        } else {
+          console.error('Failed to load plan status:', planResp.status);
+          // Continue with isInPlan = false as default
         }
       } catch(e) {
         console.error('Error checking plan:', e);
+        // Continue with isInPlan = false as default
       }
     } else {
       // For non-authenticated users, check localStorage
@@ -352,8 +356,7 @@ async function initSupplier(){
         // Remove from plan
         try {
           const r = await fetch(`/api/plan/${encodeURIComponent(s.id)}`, {
-            method: 'DELETE',
-            headers: {'Content-Type': 'application/json'}
+            method: 'DELETE'
           });
           if (r.ok) {
             addBtn.textContent='Add to my plan';
