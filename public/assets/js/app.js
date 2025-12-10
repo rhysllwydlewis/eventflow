@@ -127,7 +127,7 @@ function supplierCard(s,user){
   const tags = [];
   if (s.maxGuests && s.maxGuests > 0) tags.push(`<span class="badge">Up to ${s.maxGuests} guests</span>`);
   if (Array.isArray(s.amenities)) {
-    s.amenities.slice(0,3).forEach(a=>{ tags.push(`<span class="badge">${a}</span>`); });
+    s.amenities.slice(0,3).forEach(a=>{ tags.push(`<span class="badge clickable-tag" data-amenity="${a}" style="cursor:pointer;" title="Click to filter by ${a}">${a}</span>`); });
   }
   if (s.featuredSupplier) {
     tags.unshift('<span class="badge">Featured</span>');
@@ -226,6 +226,19 @@ async function initResults(){
         addLocal(btn.getAttribute('data-add-local'));
         btn.textContent='Added';
         btn.disabled=true;
+      });
+    });
+    // Make amenity tags clickable for filtering
+    container.querySelectorAll('.clickable-tag[data-amenity]').forEach(tag=>{
+      tag.addEventListener('click', ()=>{
+        const amenity = tag.getAttribute('data-amenity');
+        if (amenity && filterQueryEl) {
+          filterQueryEl.value = amenity;
+          filters.q = amenity;
+          render();
+          // Scroll to top to see results
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
       });
     });
   }
