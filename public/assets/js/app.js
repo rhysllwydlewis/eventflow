@@ -298,17 +298,38 @@ async function initSupplier(){
 
   const addBtn=document.getElementById('add');
   if(addBtn){
+    // Check if supplier is already in plan and update button accordingly
+    const ls=lsGet();
+    const isInPlan = ls.includes(s.id);
+    if (isInPlan) {
+      addBtn.textContent='Remove from plan';
+      addBtn.classList.add('secondary');
+    }
+    
     addBtn.addEventListener('click', ()=>{
       if (!user || user.role!=='customer') {
         alert('Create a customer account and sign in to add suppliers to your plan.');
         return;
       }
       const ls=lsGet();
-      if(!ls.includes(s.id)){
-        ls.push(s.id); lsSet(ls);
+      const currentlyInPlan = ls.includes(s.id);
+      
+      if(currentlyInPlan){
+        // Remove from plan
+        const index = ls.indexOf(s.id);
+        if (index > -1) {
+          ls.splice(index, 1);
+        }
+        lsSet(ls);
+        addBtn.textContent='Add to my plan';
+        addBtn.classList.remove('secondary');
+      } else {
+        // Add to plan
+        ls.push(s.id);
+        lsSet(ls);
+        addBtn.textContent='Remove from plan';
+        addBtn.classList.add('secondary');
       }
-      addBtn.textContent='Added';
-      addBtn.disabled=true;
     });
   }
 
@@ -1231,13 +1252,63 @@ async function initDashSupplier(){
   (async ()=>{
     const host = document.getElementById('supplier-billing-card');
     if(!host) return;
-    // Display unavailability message for billing
-    host.innerHTML = `
-      <div style="padding: 16px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 8px; text-align: center;">
-        <p style="font-size: 16px; font-weight: 600; margin: 0 0 8px 0;">Billing is currently unavailable</p>
-        <p style="font-size: 14px; margin: 0; opacity: 0.95;">Professional subscriptions are coming soon!</p>
-      </div>
-    `;
+    try{
+      const r = await fetch('/api/billing/config');
+      if(!r.ok){
+        host.innerHTML = '<p class="small">Billing status is currently unavailable.</p>';
+        return;
+      }
+      const data = await r.json();
+      if(!data.enabled){
+        host.innerHTML = '<p class="small">Card payments and subscriptions are not set up yet. Ask your EventFlow admin to connect Stripe.</p>';
+        return;
+      }
+
+      if(currentIsPro){
+        host.innerHTML = `
+          <p class="small"><strong>You're on EventFlow Pro.</strong> Thank you for supporting the platform.</p>
+          <p class="tiny" style="opacity:0.8;margin-top:4px">If you need to change your subscription or billing details, use the billing emails from Stripe or contact EventFlow support.</p>
+        `;
+        return;
+      }
+
+      host.innerHTML = `
+        <p class="small">Upgrade to a paid plan to unlock extra visibility and insights.</p>
+        <ul class="small" style="margin-bottom:8px">
+          <li>Boosted placement in search results</li>
+          <li>Unlimited packages</li>
+          <li>Priority support</li>
+        </ul>
+        <div class="form-actions">
+          <button class="cta" type="button" id="billing-upgrade-btn">Upgrade with Stripe</button>
+          <span class="small" id="billing-status"></span>
+        </div>
+      `;
+      const btn = document.getElementById('billing-upgrade-btn');
+      const status = document.getElementById('billing-status');
+      if(btn){
+        btn.addEventListener('click', async ()=>{
+          if(status) status.textContent = 'Redirecting to secure checkout…';
+          try{
+            const resp = await fetch('/api/billing/checkout', {
+              method:'POST',
+              headers:{'Content-Type':'application/json'},
+              body: JSON.stringify({})
+            });
+            const payload = await resp.json().catch(()=>({}));
+            if(!resp.ok || !payload.url){
+              if(status) status.textContent = payload.error || 'Could not start checkout.';
+              return;
+            }
+            window.location.href = payload.url;
+          }catch(err){
+            if(status) status.textContent = 'Network error – please try again.';
+          }
+        });
+      }
+    }catch(_e){
+      host.innerHTML = '<p class="small">Billing status is currently unavailable.</p>';
+    }
   })();
 
 }
