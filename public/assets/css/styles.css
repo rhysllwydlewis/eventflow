@@ -1018,11 +1018,35 @@ button, .cta{
   flex-wrap:wrap;
   gap:8px;
 }
-.photo-preview-grid img{
+.photo-preview-grid img,
+.photo-preview-item img{
   width:72px;
   height:72px;
   object-fit:cover;
   border-radius:8px;
+}
+.photo-preview-item{
+  position:relative;
+  display:inline-block;
+}
+.photo-remove-btn{
+  position:absolute;
+  top:4px;
+  right:4px;
+  background:rgba(255,255,255,0.9);
+  border:1px solid #ccc;
+  border-radius:50%;
+  width:24px;
+  height:24px;
+  cursor:pointer;
+  font-size:16px;
+  line-height:1;
+  padding:0;
+  transition:background 0.2s ease;
+}
+.photo-remove-btn:hover{
+  background:#fff;
+  border-color:#999;
 }
 
 
