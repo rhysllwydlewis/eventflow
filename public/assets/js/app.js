@@ -311,37 +311,75 @@ async function initSupplier(){
 
   const addBtn=document.getElementById('add');
   if(addBtn){
-    // Check if supplier is already in plan and update button accordingly
-    const ls=lsGet();
-    const isInPlan = ls.includes(s.id);
+    // Check if supplier is already in plan
+    let isInPlan = false;
+    
+    if (user && user.role === 'customer') {
+      // For authenticated users, check server-side plan
+      try {
+        const planResp = await fetch('/api/plan');
+        if (planResp.ok) {
+          const planData = await planResp.json();
+          isInPlan = (planData.items || []).some(item => item.id === s.id);
+        }
+      } catch(e) {
+        console.error('Error checking plan:', e);
+      }
+    } else {
+      // For non-authenticated users, check localStorage
+      const ls = lsGet();
+      isInPlan = ls.includes(s.id);
+    }
+    
     if (isInPlan) {
       addBtn.textContent='Remove from plan';
       addBtn.classList.add('secondary');
     }
     
-    addBtn.addEventListener('click', ()=>{
+    addBtn.addEventListener('click', async ()=>{
       if (!user || user.role!=='customer') {
         alert('Create a customer account and sign in to add suppliers to your plan.');
         return;
       }
-      const ls=lsGet();
-      const currentlyInPlan = ls.includes(s.id);
+      
+      // For authenticated users, use server-side API
+      const currentlyInPlan = addBtn.textContent.includes('Remove');
       
       if(currentlyInPlan){
         // Remove from plan
-        const index = ls.indexOf(s.id);
-        if (index > -1) {
-          ls.splice(index, 1);
+        try {
+          const r = await fetch(`/api/plan/${encodeURIComponent(s.id)}`, {
+            method: 'DELETE',
+            headers: {'Content-Type': 'application/json'}
+          });
+          if (r.ok) {
+            addBtn.textContent='Add to my plan';
+            addBtn.classList.remove('secondary');
+          } else {
+            alert('Failed to remove from plan. Please try again.');
+          }
+        } catch(e) {
+          console.error('Error removing from plan:', e);
+          alert('Failed to remove from plan. Please try again.');
         }
-        lsSet(ls);
-        addBtn.textContent='Add to my plan';
-        addBtn.classList.remove('secondary');
       } else {
         // Add to plan
-        ls.push(s.id);
-        lsSet(ls);
-        addBtn.textContent='Remove from plan';
-        addBtn.classList.add('secondary');
+        try {
+          const r = await fetch('/api/plan', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({supplierId: s.id})
+          });
+          if (r.ok) {
+            addBtn.textContent='Remove from plan';
+            addBtn.classList.add('secondary');
+          } else {
+            alert('Failed to add to plan. Please try again.');
+          }
+        } catch(e) {
+          console.error('Error adding to plan:', e);
+          alert('Failed to add to plan. Please try again.');
+        }
       }
     });
   }
@@ -445,13 +483,39 @@ async function initPlan(){
 
   // --- Load suppliers currently in the plan (server-side) ---
   let items = [];
-  try{
-    const r = await fetch('/api/plan');
-    if (r.ok) {
-      const d = await r.json();
-      items = d.items || [];
+  
+  if (container) {
+    container.innerHTML = '<div class="card"><p>Loading your plan...</p></div>';
+  }
+  
+  // For authenticated users, always fetch from server
+  if (user && user.role === 'customer') {
+    try{
+      const r = await fetch('/api/plan');
+      if (r.ok) {
+        const d = await r.json();
+        items = d.items || [];
+      } else {
+        console.error('Failed to load plan:', r.status);
+        if (container) {
+          container.innerHTML = '<div class="card"><p>Error loading your plan. Please refresh the page.</p></div>';
+        }
+        return;
+      }
+    } catch(e) {
+      console.error('Error loading plan:', e);
+      if (container) {
+        container.innerHTML = '<div class="card"><p>Error loading your plan. Please refresh the page.</p></div>';
+      }
+      return;
     }
-  }catch(_e){}
+  } else {
+    // For non-authenticated users, show message to sign in
+    if (container) {
+      container.innerHTML = '<div class="card"><p>Sign in to a customer account to save and manage your plan.</p></div>';
+    }
+    return;
+  }
 
   if (container) {
     if (!items.length) {
