@@ -334,6 +334,9 @@ async function initSupplier(){
     if (isInPlan) {
       addBtn.textContent='Remove from plan';
       addBtn.classList.add('secondary');
+      addBtn.dataset.inPlan = 'true';
+    } else {
+      addBtn.dataset.inPlan = 'false';
     }
     
     addBtn.addEventListener('click', async ()=>{
@@ -343,7 +346,7 @@ async function initSupplier(){
       }
       
       // For authenticated users, use server-side API
-      const currentlyInPlan = addBtn.textContent.includes('Remove');
+      const currentlyInPlan = addBtn.dataset.inPlan === 'true';
       
       if(currentlyInPlan){
         // Remove from plan
@@ -355,6 +358,7 @@ async function initSupplier(){
           if (r.ok) {
             addBtn.textContent='Add to my plan';
             addBtn.classList.remove('secondary');
+            addBtn.dataset.inPlan = 'false';
           } else {
             alert('Failed to remove from plan. Please try again.');
           }
@@ -373,6 +377,7 @@ async function initSupplier(){
           if (r.ok) {
             addBtn.textContent='Remove from plan';
             addBtn.classList.add('secondary');
+            addBtn.dataset.inPlan = 'true';
           } else {
             alert('Failed to add to plan. Please try again.');
           }
