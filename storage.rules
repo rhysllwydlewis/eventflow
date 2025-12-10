@@ -1,0 +1,58 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Helper function to check if user is admin
+    function isAdmin() {
+      return isAuthenticated() && 
+             firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    // Helper function to validate image file
+    function isImage() {
+      return request.resource.contentType.matches('image/.*');
+    }
+    
+    // Helper function to validate file size (max 5MB)
+    function isValidSize() {
+      return request.resource.size < 5 * 1024 * 1024;
+    }
+    
+    // Package images
+    match /packages/{packageId}/{imageName} {
+      // Anyone can read package images
+      allow read: if true;
+      // Only authenticated users can upload images
+      allow write: if isAuthenticated() && isImage() && isValidSize();
+    }
+    
+    // Supplier logos and images
+    match /suppliers/{supplierId}/{imageName} {
+      // Anyone can read supplier images
+      allow read: if true;
+      // Only authenticated users can upload images
+      allow write: if isAuthenticated() && isImage() && isValidSize();
+    }
+    
+    // User avatars
+    match /users/{userId}/{imageName} {
+      // Anyone can read user avatars
+      allow read: if true;
+      // Users can upload their own avatar, admins can upload any
+      allow write: if (isAuthenticated() && request.auth.uid == userId && isImage() && isValidSize()) || isAdmin();
+    }
+    
+    // Ticket attachments (future use)
+    match /tickets/{ticketId}/{fileName} {
+      // Authenticated users can read ticket attachments
+      allow read: if isAuthenticated();
+      // Authenticated users can upload attachments to tickets
+      allow write: if isAuthenticated() && isValidSize();
+    }
+  }
+}
