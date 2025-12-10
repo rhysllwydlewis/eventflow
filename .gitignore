@@ -138,3 +138,13 @@ outbox/
 *.sqlite
 *.sqlite3
 nohup.out
+
+# Local data files (migrated to cloud database)
+# Keep structure but ignore user data
+data/*.json
+data/*.json.tmp
+data/*.json.bak
+!data/.gitkeep
+
+# Preserve sample data for reference
+!data/sample/

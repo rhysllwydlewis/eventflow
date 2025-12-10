@@ -32,7 +32,7 @@ service firebase.storage {
     }
     
     // Supplier logos and images
-    match /suppliers/{supplierId}/{imageName} {
+    match /suppliers/{supplierId}/{allPaths=**} {
       // Anyone can read supplier images
       allow read: if true;
       // Only authenticated users can upload images
