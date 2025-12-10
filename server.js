@@ -1788,6 +1788,54 @@ app.post('/api/admin/packages/:id/feature', authRequired, roleRequired('admin'),
   res.json({ ok: true, package: all[i] });
 });
 
+/**
+ * PUT /api/admin/packages/:id
+ * Update package details
+ */
+app.put('/api/admin/packages/:id', authRequired, roleRequired('admin'), (req, res) => {
+  const { id } = req.params;
+  const packages = read('packages');
+  const pkgIndex = packages.findIndex(p => p.id === id);
+  
+  if (pkgIndex === -1) {
+    return res.status(404).json({ error: 'Package not found' });
+  }
+  
+  const pkg = packages[pkgIndex];
+  const now = new Date().toISOString();
+  
+  // Update allowed fields
+  if (req.body.title) pkg.title = req.body.title;
+  if (req.body.description) pkg.description = req.body.description;
+  if (req.body.price_display) pkg.price_display = req.body.price_display;
+  if (req.body.image) pkg.image = req.body.image;
+  if (typeof req.body.approved === 'boolean') pkg.approved = req.body.approved;
+  if (typeof req.body.featured === 'boolean') pkg.featured = req.body.featured;
+  pkg.updatedAt = now;
+  
+  packages[pkgIndex] = pkg;
+  write('packages', packages);
+  
+  res.json({ ok: true, package: pkg });
+});
+
+/**
+ * DELETE /api/admin/packages/:id
+ * Delete a package
+ */
+app.delete('/api/admin/packages/:id', authRequired, roleRequired('admin'), (req, res) => {
+  const { id } = req.params;
+  const packages = read('packages');
+  const filtered = packages.filter(p => p.id !== id);
+  
+  if (filtered.length === packages.length) {
+    return res.status(404).json({ error: 'Package not found' });
+  }
+  
+  write('packages', filtered);
+  res.json({ ok: true, message: 'Package deleted successfully' });
+});
+
 // ---------- Sitemap ----------
 app.get('/sitemap.xml', (_req, res) => {
   const base = `http://localhost:${PORT}`;

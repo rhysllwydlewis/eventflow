@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang='en-GB'>
+<head>
+<meta charset='utf-8'>
+<meta name='viewport' content='width=device-width,initial-scale=1'>
+<title>Package Management — EventFlow Admin</title>
+<link rel='stylesheet' href='/assets/css/styles.css'>
+<link rel='stylesheet' href='/assets/css/eventflow-17.0.0.css'>
+<link rel='stylesheet' href='/assets/css/utilities.css'>
+<link rel='stylesheet' href='/assets/css/components.css'>
+<link rel='stylesheet' href='/assets/css/animations.css'>
+<link rel='icon' href='/favicon.svg'>
+<script src="/assets/js/components.js" defer></script>
+<style>
+  body{background:#f5f5f5;color:#1a1a1a;}
+  .section{background:#f5f5f5;}
+  .container{background:#f5f5f5;}
+  .card{background:#fff;border:1px solid #e4e4e7;padding:1.5rem;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.1);margin-bottom:1rem;}
+  .table{background:#fff;border-collapse:collapse;width:100%;box-shadow:0 1px 2px rgba(0,0,0,0.05);}
+  .table td,.table th{border:1px solid #d4d4d8;color:#1a1a1a;padding:12px;}
+  .table th{background:#e4e4e7;font-weight:600;}
+  .table tbody tr:hover{background:#fafafa;}
+  .small{color:#52525b;}
+  h1, h2, h3{color:#0a0a0a;}
+  .badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:12px;background:#e4e4e7;color:#3f3f46;font-weight:500;}
+  .badge-yes{background:#dcfce7;color:#166534;}
+  .badge-no{background:#fee2e2;color:#991b1b;}
+  .package-image{max-width:100px;max-height:100px;object-fit:cover;border-radius:4px;}
+  .form-row{margin-bottom:1rem;}
+  .form-row label{display:block;margin-bottom:0.5rem;font-weight:600;color:#1a1a1a;}
+  .form-row input, .form-row textarea, .form-row select{width:100%;padding:0.5rem;border:1px solid #d4d4d8;border-radius:4px;font-size:14px;}
+  .form-row input:focus, .form-row textarea:focus, .form-row select:focus{outline:2px solid #3b82f6;outline-offset:0;border-color:#3b82f6;}
+  .form-actions{display:flex;gap:0.5rem;margin-top:1rem;}
+  .btn{padding:0.5rem 1rem;border:none;border-radius:4px;cursor:pointer;font-size:14px;font-weight:500;transition:all 0.2s;}
+  .btn-primary{background:#3b82f6;color:#fff;}
+  .btn-primary:hover{background:#2563eb;}
+  .btn-secondary{background:#6b7280;color:#fff;}
+  .btn-secondary:hover{background:#4b5563;}
+  .btn-danger{background:#ef4444;color:#fff;}
+  .btn-danger:hover{background:#dc2626;}
+  .btn-small{padding:0.25rem 0.5rem;font-size:12px;}
+  #packageFormSection{display:none;}
+</style>
+</head>
+<body>
+<header class="header" role="banner">
+  <div class="container header-inner">
+    <a class="brand" href="/" aria-label="EventFlow home">
+      <span class="logo" aria-hidden="true"></span>
+      <span class="brand-text">EventFlow</span>
+    </a>
+    <div class="header-actions">
+      <nav class="nav nav-inline" aria-label="Quick navigation">
+        <a href="/admin.html" class="nav-link nav-main">Admin Dashboard</a>
+        <a href="/admin-users.html" class="nav-link nav-main">Users</a>
+      </nav>
+      <button id="burger" class="nav-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false">
+        <span class="nav-toggle-bar"></span>
+        <span class="nav-toggle-bar"></span>
+        <span class="nav-toggle-bar"></span>
+      </button>
+    </div>
+  </div>
+</header>
+<script src="/assets/js/auth-nav.js" defer></script>
+
+<main class='section'>
+  <div class='container'>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;">
+      <h1 style="margin:0;">Package Management</h1>
+      <div>
+        <button class="btn btn-primary" id="createPackageBtn">Create New Package</button>
+        <button class="btn btn-secondary" onclick="location.href='/admin.html'">Back to Dashboard</button>
+      </div>
+    </div>
+
+    <div id="packageFormSection" class="card">
+      <h2 id="formTitle">Create Package</h2>
+      <form id="packageForm">
+        <input type="hidden" id="packageId" name="id">
+        <input type="hidden" id="packageSupplierId" name="supplierId">
+        
+        <div class="form-row">
+          <label for="packageTitle">Package Title *</label>
+          <input type="text" id="packageTitle" name="title" required>
+        </div>
+
+        <div class="form-row">
+          <label for="packageDescription">Description *</label>
+          <textarea id="packageDescription" name="description" rows="4" required></textarea>
+        </div>
+
+        <div class="form-row">
+          <label for="packagePrice">Price Display *</label>
+          <input type="text" id="packagePrice" name="price_display" placeholder="e.g. £500 or From £1000" required>
+        </div>
+
+        <div class="form-row">
+          <label for="packageImage">Image URL *</label>
+          <input type="text" id="packageImage" name="image" placeholder="https://example.com/image.jpg or data:image/..." required>
+          <div class="small" style="margin-top:0.5rem;">Enter image URL or use the photo uploader from supplier dashboard</div>
+        </div>
+
+        <div class="form-row">
+          <label>
+            <input type="checkbox" id="packageApproved" name="approved">
+            Approved (visible to customers)
+          </label>
+        </div>
+
+        <div class="form-row">
+          <label>
+            <input type="checkbox" id="packageFeatured" name="featured">
+            Featured (shown on homepage)
+          </label>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Save Package</button>
+          <button type="button" class="btn btn-secondary" id="cancelFormBtn">Cancel</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2>All Packages</h2>
+      <div style="margin-bottom:1rem;">
+        <input type="text" id="searchInput" placeholder="Search packages..." style="padding:0.5rem;border:1px solid #d4d4d8;border-radius:4px;width:300px;">
+      </div>
+      <div id="packagesContainer"></div>
+    </div>
+  </div>
+</main>
+
+<footer class="footer" role="contentinfo">
+  <div class="container" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+    <div><strong>EventFlow</strong><br><span class="small">Admin Panel</span></div>
+    <div class="small"><a href="/admin.html">Dashboard</a> · <a href="/admin-users.html">Users</a> · <a href="/admin-audit.html">Audit Log</a></div>
+  </div>
+</footer>
+
+<script>
+(function() {
+  'use strict';
+
+  let allPackages = [];
+  let allSuppliers = [];
+
+  function api(url, method, body) {
+    const opts = {
+      method: method || 'GET',
+      headers: { 'Content-Type': 'application/json' }
+    };
+    if (body) {
+      opts.body = JSON.stringify(body);
+    }
+    return fetch(url, opts).then(function (r) {
+      const contentType = r.headers.get('content-type');
+      const isJson = contentType && contentType.includes('application/json');
+      
+      if (isJson) {
+        return r.json().then(function (data) {
+          if (!r.ok) {
+            const err = (data && data.error) ? data.error : ('Request failed with ' + r.status);
+            throw new Error(err);
+          }
+          return data;
+        });
+      } else {
+        return r.text().then(function (text) {
+          if (!r.ok) {
+            throw new Error(text || 'Request failed with ' + r.status);
+          }
+          try {
+            return JSON.parse(text);
+          } catch (e) {
+            return { message: text };
+          }
+        });
+      }
+    });
+  }
+
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text || '';
+    return div.innerHTML;
+  }
+
+  async function loadPackages() {
+    try {
+      const data = await api('/api/admin/packages');
+      allPackages = data.items || [];
+      renderPackages(allPackages);
+    } catch (err) {
+      console.error('Failed to load packages:', err);
+      if (typeof Toast !== 'undefined') {
+        Toast.error('Failed to load packages: ' + err.message);
+      }
+    }
+  }
+
+  async function loadSuppliers() {
+    try {
+      const data = await api('/api/admin/suppliers');
+      allSuppliers = data.items || [];
+    } catch (err) {
+      console.error('Failed to load suppliers:', err);
+    }
+  }
+
+  function renderPackages(packages) {
+    const container = document.getElementById('packagesContainer');
+    if (!container) return;
+
+    if (!packages.length) {
+      container.innerHTML = '<p class="small">No packages found.</p>';
+      return;
+    }
+
+    let html = '<table class="table"><thead><tr>';
+    html += '<th>Image</th><th>Title</th><th>Price</th><th>Status</th><th>Actions</th>';
+    html += '</tr></thead><tbody>';
+
+    packages.forEach(function(pkg) {
+      html += '<tr>';
+      html += '<td><img src="' + escapeHtml(pkg.image || '') + '" class="package-image" alt="Package image"></td>';
+      html += '<td><strong>' + escapeHtml(pkg.title || '') + '</strong><br><span class="small">' + escapeHtml((pkg.description || '').substring(0, 100)) + (pkg.description && pkg.description.length > 100 ? '...' : '') + '</span></td>';
+      html += '<td>' + escapeHtml(pkg.price_display || '') + '</td>';
+      html += '<td>';
+      html += '<span class="badge ' + (pkg.approved ? 'badge-yes' : 'badge-no') + '">' + (pkg.approved ? 'Approved' : 'Pending') + '</span> ';
+      if (pkg.featured) {
+        html += '<span class="badge badge-yes">Featured</span>';
+      }
+      html += '</td>';
+      html += '<td>';
+      html += '<button class="btn btn-primary btn-small" onclick="editPackage(\'' + pkg.id + '\')">Edit</button> ';
+      html += '<button class="btn btn-small ' + (pkg.approved ? 'btn-secondary' : 'btn-primary') + '" onclick="toggleApproval(\'' + pkg.id + '\', ' + !pkg.approved + ')">' + (pkg.approved ? 'Unapprove' : 'Approve') + '</button> ';
+      html += '<button class="btn btn-small ' + (pkg.featured ? 'btn-secondary' : 'btn-primary') + '" onclick="toggleFeatured(\'' + pkg.id + '\', ' + !pkg.featured + ')">' + (pkg.featured ? 'Unfeature' : 'Feature') + '</button> ';
+      html += '<button class="btn btn-danger btn-small" onclick="deletePackage(\'' + pkg.id + '\')">Delete</button>';
+      html += '</td>';
+      html += '</tr>';
+    });
+
+    html += '</tbody></table>';
+    container.innerHTML = html;
+  }
+
+  window.editPackage = async function(id) {
+    const pkg = allPackages.find(p => p.id === id);
+    if (!pkg) {
+      if (typeof Toast !== 'undefined') {
+        Toast.error('Package not found');
+      }
+      return;
+    }
+
+    document.getElementById('formTitle').textContent = 'Edit Package';
+    document.getElementById('packageId').value = pkg.id;
+    document.getElementById('packageSupplierId').value = pkg.supplierId || '';
+    document.getElementById('packageTitle').value = pkg.title || '';
+    document.getElementById('packageDescription').value = pkg.description || '';
+    document.getElementById('packagePrice').value = pkg.price_display || '';
+    document.getElementById('packageImage').value = pkg.image || '';
+    document.getElementById('packageApproved').checked = !!pkg.approved;
+    document.getElementById('packageFeatured').checked = !!pkg.featured;
+
+    document.getElementById('packageFormSection').style.display = 'block';
+    document.getElementById('packageFormSection').scrollIntoView({ behavior: 'smooth' });
+  };
+
+  window.toggleApproval = async function(id, approved) {
+    try {
+      await api('/api/admin/packages/' + id + '/approve', 'POST', { approved: approved });
+      if (typeof Toast !== 'undefined') {
+        Toast.success(approved ? 'Package approved' : 'Package unapproved');
+      }
+      await loadPackages();
+    } catch (err) {
+      if (typeof Toast !== 'undefined') {
+        Toast.error('Failed to update package: ' + err.message);
+      }
+    }
+  };
+
+  window.toggleFeatured = async function(id, featured) {
+    try {
+      await api('/api/admin/packages/' + id + '/feature', 'POST', { featured: featured });
+      if (typeof Toast !== 'undefined') {
+        Toast.success(featured ? 'Package featured' : 'Package unfeatured');
+      }
+      await loadPackages();
+    } catch (err) {
+      if (typeof Toast !== 'undefined') {
+        Toast.error('Failed to update package: ' + err.message);
+      }
+    }
+  };
+
+  window.deletePackage = function(id) {
+    if (typeof Modal !== 'undefined') {
+      const modal = new Modal({
+        title: 'Delete Package',
+        content: '<p>Are you sure you want to delete this package? This action cannot be undone.</p>',
+        confirmText: 'Delete',
+        cancelText: 'Cancel',
+        onConfirm: async function() {
+          try {
+            await api('/api/admin/packages/' + id, 'DELETE');
+            if (typeof Toast !== 'undefined') {
+              Toast.success('Package deleted successfully');
+            }
+            await loadPackages();
+          } catch (err) {
+            if (typeof Toast !== 'undefined') {
+              Toast.error('Failed to delete package: ' + err.message);
+            }
+          }
+        }
+      });
+      modal.show();
+    } else {
+      if (!confirm('Are you sure you want to delete this package? This action cannot be undone.')) return;
+      api('/api/admin/packages/' + id, 'DELETE')
+        .then(function() {
+          alert('Package deleted successfully');
+          return loadPackages();
+        })
+        .catch(function(err) {
+          alert('Failed to delete package: ' + err.message);
+        });
+    }
+  };
+
+  // Create Package Button
+  document.getElementById('createPackageBtn').addEventListener('click', function() {
+    document.getElementById('formTitle').textContent = 'Create Package';
+    document.getElementById('packageForm').reset();
+    document.getElementById('packageId').value = '';
+    document.getElementById('packageFormSection').style.display = 'block';
+    document.getElementById('packageFormSection').scrollIntoView({ behavior: 'smooth' });
+  });
+
+  // Cancel Form Button
+  document.getElementById('cancelFormBtn').addEventListener('click', function() {
+    document.getElementById('packageFormSection').style.display = 'none';
+    document.getElementById('packageForm').reset();
+  });
+
+  // Package Form Submit
+  document.getElementById('packageForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const id = document.getElementById('packageId').value;
+    const packageData = {
+      title: document.getElementById('packageTitle').value,
+      description: document.getElementById('packageDescription').value,
+      price_display: document.getElementById('packagePrice').value,
+      image: document.getElementById('packageImage').value,
+      approved: document.getElementById('packageApproved').checked,
+      featured: document.getElementById('packageFeatured').checked
+    };
+
+    // For new packages, we need a supplierId - in a real scenario this would be selected
+    // For now, we'll show a message that admin should use supplier dashboard
+    if (!id) {
+      if (typeof Toast !== 'undefined') {
+        Toast.info('Package creation is currently available through the supplier dashboard. Use this form to edit existing packages.');
+      } else {
+        alert('Package creation is currently available through the supplier dashboard. Use this form to edit existing packages.');
+      }
+      return;
+    }
+
+    try {
+      await api('/api/admin/packages/' + id, 'PUT', packageData);
+      if (typeof Toast !== 'undefined') {
+        Toast.success('Package updated successfully');
+      }
+      document.getElementById('packageFormSection').style.display = 'none';
+      document.getElementById('packageForm').reset();
+      await loadPackages();
+    } catch (err) {
+      if (typeof Toast !== 'undefined') {
+        Toast.error('Failed to save package: ' + err.message);
+      } else {
+        alert('Failed to save package: ' + err.message);
+      }
+    }
+  });
+
+  // Search functionality
+  document.getElementById('searchInput').addEventListener('input', function(e) {
+    const query = e.target.value.toLowerCase();
+    if (!query) {
+      renderPackages(allPackages);
+      return;
+    }
+    
+    const filtered = allPackages.filter(function(pkg) {
+      return (pkg.title || '').toLowerCase().includes(query) ||
+             (pkg.description || '').toLowerCase().includes(query) ||
+             (pkg.price_display || '').toLowerCase().includes(query);
+    });
+    renderPackages(filtered);
+  });
+
+  // Initialize
+  loadPackages();
+  loadSuppliers();
+})();
+</script>
+</body>
+</html>
