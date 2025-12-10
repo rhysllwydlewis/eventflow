@@ -127,7 +127,7 @@ function supplierCard(s,user){
   const tags = [];
   if (s.maxGuests && s.maxGuests > 0) tags.push(`<span class="badge">Up to ${s.maxGuests} guests</span>`);
   if (Array.isArray(s.amenities)) {
-    s.amenities.slice(0,3).forEach(a=>{ tags.push(`<span class="badge">${a}</span>`); });
+    s.amenities.slice(0,3).forEach(a=>{ tags.push(`<span class="badge clickable-tag" data-amenity="${a}" style="cursor:pointer;" title="Click to filter by ${a}">${a}</span>`); });
   }
   if (s.featuredSupplier) {
     tags.unshift('<span class="badge">Featured</span>');
@@ -228,6 +228,19 @@ async function initResults(){
         btn.disabled=true;
       });
     });
+    // Make amenity tags clickable for filtering
+    container.querySelectorAll('.clickable-tag[data-amenity]').forEach(tag=>{
+      tag.addEventListener('click', ()=>{
+        const amenity = tag.getAttribute('data-amenity');
+        if (amenity && filterQueryEl) {
+          filterQueryEl.value = amenity;
+          filters.q = amenity;
+          render();
+          // Scroll to top to see results
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      });
+    });
   }
 
   if (filterCategoryEl) {
@@ -298,17 +311,38 @@ async function initSupplier(){
 
   const addBtn=document.getElementById('add');
   if(addBtn){
+    // Check if supplier is already in plan and update button accordingly
+    const ls=lsGet();
+    const isInPlan = ls.includes(s.id);
+    if (isInPlan) {
+      addBtn.textContent='Remove from plan';
+      addBtn.classList.add('secondary');
+    }
+    
     addBtn.addEventListener('click', ()=>{
       if (!user || user.role!=='customer') {
         alert('Create a customer account and sign in to add suppliers to your plan.');
         return;
       }
       const ls=lsGet();
-      if(!ls.includes(s.id)){
-        ls.push(s.id); lsSet(ls);
+      const currentlyInPlan = ls.includes(s.id);
+      
+      if(currentlyInPlan){
+        // Remove from plan
+        const index = ls.indexOf(s.id);
+        if (index > -1) {
+          ls.splice(index, 1);
+        }
+        lsSet(ls);
+        addBtn.textContent='Add to my plan';
+        addBtn.classList.remove('secondary');
+      } else {
+        // Add to plan
+        ls.push(s.id);
+        lsSet(ls);
+        addBtn.textContent='Remove from plan';
+        addBtn.classList.add('secondary');
       }
-      addBtn.textContent='Added';
-      addBtn.disabled=true;
     });
   }
 
@@ -1245,7 +1279,7 @@ async function initDashSupplier(){
 
       if(currentIsPro){
         host.innerHTML = `
-          <p class="small"><strong>You’re on EventFlow Pro.</strong> Thank you for supporting the platform.</p>
+          <p class="small"><strong>You're on EventFlow Pro.</strong> Thank you for supporting the platform.</p>
           <p class="tiny" style="opacity:0.8;margin-top:4px">If you need to change your subscription or billing details, use the billing emails from Stripe or contact EventFlow support.</p>
         `;
         return;
@@ -1291,6 +1325,7 @@ async function initDashSupplier(){
   })();
 
 }
+
 
 async function initAdmin(){ efMaybeShowOnboarding('admin');
   const metrics=document.getElementById('metrics'); const supWrap=document.getElementById('admin-suppliers'); const pkgWrap=document.getElementById('admin-packages');
