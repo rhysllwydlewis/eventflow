@@ -1,3 +1,4 @@
+require('dotenv').config();
 /**
  * Firebase Admin SDK initialization for EventFlow backend
  * Provides server-side access to Firestore and Storage

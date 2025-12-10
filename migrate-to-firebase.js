@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+require('dotenv').config();
 /**
  * Data Migration Script for EventFlow
  * Migrates existing data from local JSON files to Firebase Firestore
@@ -98,10 +99,21 @@ async function migrateCollection(collectionName, filePath) {
   let errors = 0;
   
   for (const item of localData) {
-    const docId = item.id;
+    // Accept multiple ID field formats from different collections
+    const docId = item.id || 
+                  item.uid || 
+                  item.userId || 
+                  item.supplierId || 
+                  item.packageId || 
+                  item.planId || 
+                  item.eventId || 
+                  item.messageId || 
+                  item.reviewId || 
+                  item.logId;
     
     if (!docId) {
-      console.log(`   ⚠️  Skipping item without ID`);
+      console.log(`   ⚠️  Skipping item without ID. Available fields: ${Object.keys(item).join(', ')}`);
+      console.log(`   📄 Item data: ${JSON.stringify(item).substring(0, 200)}...`);
       skipped++;
       continue;
     }
@@ -139,6 +151,8 @@ async function migrateCollection(collectionName, filePath) {
       
     } catch (error) {
       console.error(`   ❌ Error migrating ${docId}:`, error.message);
+      console.error(`   📄 Error code: ${error.code || 'UNKNOWN'}`);
+      console.error(`   📄 Item keys: ${Object.keys(item).join(', ')}`);
       errors++;
     }
   }
