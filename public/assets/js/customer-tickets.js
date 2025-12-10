@@ -8,9 +8,10 @@ import ticketingSystem from './ticketing.js';
 // Get current user
 async function getCurrentUser() {
   try {
-    const response = await fetch('/api/me');
+    const response = await fetch('/api/auth/me');
     if (!response.ok) return null;
-    return await response.json();
+    const data = await response.json();
+    return data.user || null;
   } catch (error) {
     console.error('Error getting current user:', error);
     return null;
