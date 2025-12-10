@@ -18,23 +18,46 @@ function seed(options = {}) {
     seedPackages = true
   } = options;
 
-  // Users (admin, supplier demo, customer demo)
+  // Users (owner account, and optional demo users)
   if (seedUsers) {
     const existingUsers = read('users');
+    const now = new Date().toISOString();
+    let usersModified = false;
     
-    // Check if we should skip (for production use)
-    if (skipIfExists && existingUsers.length > 0) {
-      console.log('Users already exist, skipping user seed');
-    } else {
-      const now = new Date().toISOString();
-      
-      // Check if admin exists
-      const adminExists = existingUsers.find(u => u.email === 'admin@eventflow.local');
-      if (!adminExists) {
+    // Always ensure owner account exists (protected from deletion)
+    const ownerEmail = 'admin@event-flow.co.uk';
+    const ownerPassword = process.env.OWNER_PASSWORD || 'Admin123!'; // Default for dev only
+    const ownerExists = existingUsers.find(u => u.email === ownerEmail);
+    if (!ownerExists) {
+      const owner = {
+        id: uid('usr'),
+        name: 'EventFlow Owner',
+        email: ownerEmail,
+        role: 'admin',
+        passwordHash: bcrypt.hashSync(ownerPassword, 10),
+        createdAt: now,
+        notify: true,
+        marketingOptIn: false,
+        verified: true,
+        isOwner: true, // Special flag to protect from deletion
+      };
+      existingUsers.push(owner);
+      usersModified = true;
+      console.log(`Created owner account: ${ownerEmail}`);
+      if (!process.env.OWNER_PASSWORD && process.env.NODE_ENV === 'production') {
+        console.warn('WARNING: Using default owner password in production. Set OWNER_PASSWORD environment variable.');
+      }
+    }
+    
+    // Create demo users only if skipIfExists is false (demo/dev mode)
+    if (!skipIfExists) {
+      // Check and create demo admin if it doesn't exist
+      const demoAdminEmail = 'admin@eventflow.local';
+      if (!existingUsers.find(u => u.email === demoAdminEmail)) {
         const admin = {
           id: uid('usr'),
           name: 'Admin',
-          email: 'admin@eventflow.local',
+          email: demoAdminEmail,
           role: 'admin',
           passwordHash: bcrypt.hashSync('Admin123!', 10),
           createdAt: now,
@@ -43,26 +66,17 @@ function seed(options = {}) {
           verified: true,
         };
         existingUsers.push(admin);
-        console.log('Created default admin user: admin@eventflow.local');
+        usersModified = true;
+        console.log(`Created demo admin user: ${demoAdminEmail}`);
       }
       
-      // Only create demo users if not skipping
-      if (!skipIfExists) {
-        const admin = {
-          id: uid('usr'),
-          name: 'Admin',
-          email: 'admin@eventflow.local',
-          role: 'admin',
-          passwordHash: bcrypt.hashSync('Admin123!', 10),
-          createdAt: now,
-          notify: true,
-          marketingOptIn: false,
-          verified: true,
-        };
+      // Check and create demo supplier if it doesn't exist
+      const demoSupplierEmail = 'supplier@eventflow.local';
+      if (!existingUsers.find(u => u.email === demoSupplierEmail)) {
         const supplier = {
           id: uid('usr'),
           name: 'Supplier Demo',
-          email: 'supplier@eventflow.local',
+          email: demoSupplierEmail,
           role: 'supplier',
           passwordHash: bcrypt.hashSync('Supplier123!', 10),
           createdAt: now,
@@ -70,10 +84,18 @@ function seed(options = {}) {
           marketingOptIn: false,
           verified: true,
         };
+        existingUsers.push(supplier);
+        usersModified = true;
+        console.log(`Created demo supplier user: ${demoSupplierEmail}`);
+      }
+      
+      // Check and create demo customer if it doesn't exist
+      const demoCustomerEmail = 'customer@eventflow.local';
+      if (!existingUsers.find(u => u.email === demoCustomerEmail)) {
         const customer = {
           id: uid('usr'),
           name: 'Customer Demo',
-          email: 'customer@eventflow.local',
+          email: demoCustomerEmail,
           role: 'customer',
           passwordHash: bcrypt.hashSync('Customer123!', 10),
           createdAt: now,
@@ -81,11 +103,19 @@ function seed(options = {}) {
           marketingOptIn: false,
           verified: true,
         };
-        write('users', [admin, supplier, customer]);
-        console.log('Created demo users (admin, supplier, customer)');
-      } else {
-        write('users', existingUsers);
+        existingUsers.push(customer);
+        usersModified = true;
+        console.log(`Created demo customer user: ${demoCustomerEmail}`);
       }
+    }
+    
+    // Only write if we made changes
+    if (usersModified) {
+      write('users', existingUsers);
+    }
+    
+    if (skipIfExists && existingUsers.length > 0) {
+      console.log(`User seed complete (production mode): ${existingUsers.length} users exist`);
     }
   }
 
@@ -211,7 +241,7 @@ function seed(options = {}) {
   }
 
   // Always ensure these collections exist as arrays
-  for (const name of ['plans','notes','messages','threads','events','reviews','reports','audit_logs','search_history']) {
+  for (const name of ['plans','notes','messages','threads','events','reviews','reports','audit_logs','search_history','photos']) {
     const items = read(name);
     if (!Array.isArray(items) || items.length === 0) {
       write(name, []);

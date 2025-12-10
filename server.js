@@ -87,7 +87,14 @@ function supplierIsProActive(s) {
 const { seed } = require('./seed');
 
 // ---------- Initialisation ----------
-seed();
+// In production, preserve existing users. In development, create demo users.
+const isProduction = process.env.NODE_ENV === 'production';
+seed({ 
+  skipIfExists: isProduction,
+  seedUsers: true,
+  seedSuppliers: !isProduction, // Only seed demo suppliers in dev
+  seedPackages: !isProduction   // Only seed demo packages in dev
+});
 
 const app = express();
 const PDFDocument = require('pdfkit');
@@ -913,6 +920,100 @@ app.post('/api/admin/suppliers/smart-tags', authRequired, roleRequired('admin'),
   res.json({ ok: true, items: updated, aiEnabled: AI_ENABLED });
 });
 
+// ---------- Photo Moderation ----------
+
+/**
+ * GET /api/admin/photos/pending
+ * Get all photos pending approval
+ */
+app.get('/api/admin/photos/pending', authRequired, roleRequired('admin'), (req, res) => {
+  const photos = read('photos');
+  const pendingPhotos = photos.filter(p => p.status === 'pending');
+  
+  // Enrich with supplier information
+  const suppliers = read('suppliers');
+  const enrichedPhotos = pendingPhotos.map(photo => {
+    const supplier = suppliers.find(s => s.id === photo.supplierId);
+    return {
+      ...photo,
+      supplierName: supplier ? supplier.name : 'Unknown',
+      supplierCategory: supplier ? supplier.category : null
+    };
+  });
+  
+  res.json({ photos: enrichedPhotos });
+});
+
+/**
+ * POST /api/admin/photos/:id/approve
+ * Approve a photo
+ */
+app.post('/api/admin/photos/:id/approve', authRequired, roleRequired('admin'), (req, res) => {
+  const { id } = req.params;
+  const photos = read('photos');
+  const photoIndex = photos.findIndex(p => p.id === id);
+  
+  if (photoIndex === -1) {
+    return res.status(404).json({ error: 'Photo not found' });
+  }
+  
+  const photo = photos[photoIndex];
+  const now = new Date().toISOString();
+  
+  // Update photo status
+  photo.status = 'approved';
+  photo.approvedAt = now;
+  photo.approvedBy = req.user.id;
+  
+  photos[photoIndex] = photo;
+  write('photos', photos);
+  
+  // Add photo to supplier's photos array if not already there
+  const suppliers = read('suppliers');
+  const supplierIndex = suppliers.findIndex(s => s.id === photo.supplierId);
+  
+  if (supplierIndex !== -1) {
+    if (!suppliers[supplierIndex].photos) {
+      suppliers[supplierIndex].photos = [];
+    }
+    if (!suppliers[supplierIndex].photos.includes(photo.url)) {
+      suppliers[supplierIndex].photos.push(photo.url);
+      write('suppliers', suppliers);
+    }
+  }
+  
+  res.json({ success: true, message: 'Photo approved successfully', photo });
+});
+
+/**
+ * POST /api/admin/photos/:id/reject
+ * Reject a photo
+ */
+app.post('/api/admin/photos/:id/reject', authRequired, roleRequired('admin'), (req, res) => {
+  const { id } = req.params;
+  const { reason } = req.body;
+  const photos = read('photos');
+  const photoIndex = photos.findIndex(p => p.id === id);
+  
+  if (photoIndex === -1) {
+    return res.status(404).json({ error: 'Photo not found' });
+  }
+  
+  const photo = photos[photoIndex];
+  const now = new Date().toISOString();
+  
+  // Update photo status
+  photo.status = 'rejected';
+  photo.rejectedAt = now;
+  photo.rejectedBy = req.user.id;
+  photo.rejectionReason = reason || 'No reason provided';
+  
+  photos[photoIndex] = photo;
+  write('photos', photos);
+  
+  res.json({ success: true, message: 'Photo rejected successfully', photo });
+});
+
 app.get('/api/suppliers/:id', (req, res) => {
   const sRaw = read('suppliers').find(x => x.id === req.params.id && x.approved);
   if (!sRaw) return res.status(404).json({ error: 'Not found' });
@@ -939,8 +1040,7 @@ app.get('/api/suppliers/:id/packages', (req, res) => {
 
 app.get('/api/packages/featured', (_req, res) => {
   const items = read('packages')
-    .filter(p => p.approved)
-    .sort((a, b) => Number(b.featured) - Number(a.featured))
+    .filter(p => p.approved && p.featured === true) // Only truly featured packages
     .slice(0, 6);
   res.json({ items });
 });

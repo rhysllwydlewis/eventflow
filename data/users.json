@@ -1,47 +1,48 @@
 [
   {
-    "id": "usr_qsnl9adoz6wple",
+    "id": "usr_7y8l47tfztdgju",
     "name": "Admin",
     "email": "admin@eventflow.local",
     "role": "admin",
-    "passwordHash": "$2a$10$Kbs3hGXV3p/dASI1iSlJxeX5muFgZUfJucqN7XzbfSFJECTLtr/nu",
-    "createdAt": "2025-12-09T23:06:52.178Z",
+    "passwordHash": "$2a$10$Okrq01IW4Bb7G/uT2L3C5e1cznXoHTcrsoWJuvLva2JAzQze6sswe",
+    "createdAt": "2025-12-10T09:35:45.162Z",
     "notify": true,
     "marketingOptIn": false,
-    "verified": true,
-    "lastLoginAt": "2025-12-09T23:09:07.890Z"
+    "verified": true
   },
   {
-    "id": "usr_v7e59qzuz6wpnx",
+    "id": "usr_xk2bphtbztdgmd",
     "name": "Supplier Demo",
     "email": "supplier@eventflow.local",
     "role": "supplier",
-    "passwordHash": "$2a$10$alpgL1nV/PaUoSt3IhQxW.tz2aXep/3LNz/8Ap7I5fMvGA7iEOU6S",
-    "createdAt": "2025-12-09T23:06:52.178Z",
+    "passwordHash": "$2a$10$v7g/ZG8R28mWOxaRIEp87OM4.DHr4J4AR6oTUczYO1/NipTOw73ni",
+    "createdAt": "2025-12-10T09:35:45.162Z",
     "notify": true,
     "marketingOptIn": false,
     "verified": true
   },
   {
-    "id": "usr_7ahbqm8pz6wpq7",
+    "id": "usr_fi4nz748ztdgon",
     "name": "Customer Demo",
     "email": "customer@eventflow.local",
     "role": "customer",
-    "passwordHash": "$2a$10$NIXezGtQyTlCzKke0oekO.0pj918fRpJUa6ou3Aq.8wKHGQ0XrTLm",
-    "createdAt": "2025-12-09T23:06:52.178Z",
+    "passwordHash": "$2a$10$hM6.st9wYax1mkRW.6ofo.x/fHyyZJKn2idLbn2cAL5Em7b4eydQy",
+    "createdAt": "2025-12-10T09:35:45.162Z",
     "notify": true,
     "marketingOptIn": false,
     "verified": true
   },
   {
-    "id": "usr_test_unverified",
-    "name": "Test Unverified",
-    "email": "unverified@eventflow.local",
-    "role": "customer",
-    "passwordHash": "$2a$10$6aHs4kSwwThw5g6TlpJL7edi3RGIcYvtTnfH.Fm5I4CQbTooptDVq",
-    "createdAt": "2025-12-09T23:10:55.418Z",
+    "id": "usr_wo88ix81ztswww",
+    "name": "EventFlow Owner",
+    "email": "admin@event-flow.co.uk",
+    "role": "admin",
+    "passwordHash": "$2a$10$C6pX6xDivY.wnUqEGpY1CeS3/lgFwlsqQSfTzr/Ga6facz.VtDF/S",
+    "createdAt": "2025-12-10T09:47:46.208Z",
     "notify": true,
     "marketingOptIn": false,
-    "verified": false
+    "verified": true,
+    "isOwner": true,
+    "lastLoginAt": "2025-12-10T10:15:51.105Z"
   }
 ]
