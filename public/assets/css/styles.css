@@ -374,6 +374,23 @@ html[data-theme="dark"] .timeline-step::before{
   text-decoration:underline;
 }
 
+/* Mobile-specific password toggle styling */
+@media(max-width:600px){
+  .password-toggle{
+    font-size:10px;
+    padding:2px 6px;
+    right:6px;
+    background:rgba(255,255,255,0.9);
+    border:1px solid var(--border);
+    border-radius:6px;
+    z-index:1;
+  }
+  .form-row input[type="password"],
+  .form-row input[type="text"].has-toggle{
+    padding-right:55px;
+  }
+}
+
 /* Checkboxes next to text */
 .checkbox-label-right{
   display:flex;
