@@ -1463,10 +1463,8 @@ document.addEventListener('DOMContentLoaded', ()=>{
   if(page==='admin_users') initAdminUsers && initAdminUsers();
   if(page==='verify') initVerify && initVerify();
 
-  // Global header behaviour: theme toggle, burger, scroll hide/show
+  // Global header behaviour: burger menu, scroll hide/show
   try {
-    efInitThemeToggle && efInitThemeToggle();
-
     const header = document.querySelector('.header');
     const burger = document.getElementById('burger');
     const nav = document.querySelector('.nav');
@@ -1859,50 +1857,6 @@ document.addEventListener('DOMContentLoaded', ()=>{
 
 
 // === Experimental features (EventFlow Experimental v2) ===
-const EF_THEME_KEY = 'ef_theme';
-
-function efApplyTheme(theme){
-  const root=document.documentElement;
-  if(theme==='dark'){
-    root.setAttribute('data-theme','dark');
-  }else{
-    root.removeAttribute('data-theme');
-    theme='light';
-  }
-  try{ localStorage.setItem(EF_THEME_KEY, theme); }catch(_){}
-}
-
-function efInitThemeToggle(){
-
-  // restore saved theme or respect system preference
-  let stored=null;
-  try{ stored=localStorage.getItem(EF_THEME_KEY); }catch(_){}
-  if(stored==='dark'){
-    efApplyTheme('dark');
-  }else if(stored!=='light'){
-    try{
-      if(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches){
-        efApplyTheme('dark');
-        stored='dark';
-      }
-    }catch(_){}
-  }
-
-  const btn=document.getElementById('theme-toggle');
-  if(!btn) return;
-
-  const updateLabel=()=>{
-    const isDark=document.documentElement.getAttribute('data-theme')==='dark';
-    btn.setAttribute('aria-label', isDark ? 'Switch to light mode' : 'Switch to dark mode');
-  };
-  updateLabel();
-
-  btn.addEventListener('click', ()=>{
-    const isDark=document.documentElement.getAttribute('data-theme')==='dark';
-    efApplyTheme(isDark ? 'light' : 'dark');
-    updateLabel();
-  });
-}
 
 // Simple loader overlay: fades out shortly after load
 function efInitLoader(){
@@ -1968,7 +1922,6 @@ function efInitVenueMap(){
 }
 
 document.addEventListener('DOMContentLoaded', ()=>{
-  try{ efInitThemeToggle(); }catch(_){}
   try{ efInitLoader(); }catch(_){}
   try{ efInitVenueMap(); }catch(_){}
 });

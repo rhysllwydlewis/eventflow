@@ -362,7 +362,8 @@ class GuestManager {
       this.chart.destroy();
     }
 
-    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    // Always use light theme colors
+    const isDark = false;
     
     this.chart = new Chart(ctx, {
       type: 'doughnut',
