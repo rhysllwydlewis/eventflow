@@ -1,3 +1,4 @@
+require('dotenv').config();
 /**
  * Firebase Admin SDK initialization for EventFlow backend
  * Provides server-side access to Firestore and Storage
@@ -22,16 +23,21 @@ function initializeFirebaseAdmin() {
     // Try to initialize with service account key if provided
     if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
       const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
+      const projectId = serviceAccount.project_id || process.env.FIREBASE_PROJECT_ID || 'eventflow-ffb12';
       admin.initializeApp({
         credential: admin.credential.cert(serviceAccount),
+        projectId: projectId,
+        databaseURL: `https://${projectId}.firebaseio.com`,
         storageBucket: process.env.FIREBASE_STORAGE_BUCKET || 'eventflow-ffb12.firebasestorage.app'
       });
       console.log('Firebase Admin initialized with service account');
     } 
     // Fallback to application default credentials (for local development)
     else if (process.env.FIREBASE_PROJECT_ID) {
+      const projectId = process.env.FIREBASE_PROJECT_ID;
       admin.initializeApp({
-        projectId: process.env.FIREBASE_PROJECT_ID,
+        projectId: projectId,
+        databaseURL: `https://${projectId}.firebaseio.com`,
         storageBucket: process.env.FIREBASE_STORAGE_BUCKET || 'eventflow-ffb12.firebasestorage.app'
       });
       console.log('Firebase Admin initialized with project ID');
