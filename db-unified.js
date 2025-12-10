@@ -7,7 +7,7 @@
 'use strict';
 
 const { initializeFirebaseAdmin, isFirebaseAvailable, getFirestore } = require('./firebase-admin');
-const { getDb, isMongoAvailable } = require('./db');
+const db = require('./db');
 const store = require('./store');
 
 let dbType = null;
@@ -38,8 +38,7 @@ async function initializeDatabase() {
 
   // Try MongoDB next
   try {
-    if (isMongoAvailable()) {
-      const db = require('./db');
+    if (db.isMongoAvailable()) {
       mongodb = await db.connect();
       dbType = 'mongodb';
       console.log('✅ Using MongoDB for data storage');

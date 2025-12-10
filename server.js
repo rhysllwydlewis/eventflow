@@ -72,6 +72,11 @@ try {
 // For better Firebase integration, convert endpoints to async and use require('./data-access')
 const { read, write, uid, DATA_DIR } = require('./data-access-sync');
 
+// Database modules for startup validation
+const dbUnified = require('./db-unified');
+const { isFirebaseAvailable } = require('./firebase-admin');
+const { isMongoAvailable } = require('./db');
+
 // Photo upload utilities
 const photoUpload = require('./photo-upload');
 
@@ -3052,7 +3057,6 @@ app.get('/api/health', async (_req, res) => {
   
   // Check database status
   try {
-    const dbUnified = require('./db-unified');
     await dbUnified.initializeDatabase();
     const dbType = dbUnified.getDatabaseType ? dbUnified.getDatabaseType() : 'unknown';
     checks.database = dbType || 'unknown';
@@ -3141,14 +3145,10 @@ async function startServer() {
     // 2. Initialize database connection
     console.log('');
     console.log('🔌 Initializing database...');
-    const dbUnified = require('./db-unified');
     await dbUnified.initializeDatabase();
     
     // Warn if using local storage in production
     if (isProduction) {
-      const { isFirebaseAvailable } = require('./firebase-admin');
-      const { isMongoAvailable } = require('./db');
-      
       if (!isFirebaseAvailable() && !isMongoAvailable()) {
         console.error('❌ Production error: No cloud database configured!');
         console.error('   Set FIREBASE_PROJECT_ID or MONGODB_URI for production deployment');
