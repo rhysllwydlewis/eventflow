@@ -143,7 +143,7 @@
         signout.addEventListener('click', async (e) => {
           e.preventDefault();
           try {
-            await fetch('/api/auth/logout', { method: 'POST' });
+            await fetch('/api/auth/logout', { method: 'POST', headers: { 'X-CSRF-Token': window.__CSRF_TOKEN__ || '' } });
           } catch (_) {}
           location.href = '/';
         });
@@ -172,7 +172,7 @@
         inlineLogin.addEventListener('click', async (e) => {
           e.preventDefault();
           try {
-            await fetch('/api/auth/logout', { method: 'POST' });
+            await fetch('/api/auth/logout', { method: 'POST', headers: { 'X-CSRF-Token': window.__CSRF_TOKEN__ || '' } });
           } catch (_) {}
           location.href = '/';
         });

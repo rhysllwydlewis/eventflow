@@ -121,8 +121,18 @@
     function api(url, method, body) {
       var opts = {
         method: method || 'GET',
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 
+          'Content-Type': 'application/json'
+        }
       };
+      
+      // Add CSRF token for state-changing requests
+      if (method && ['POST', 'PUT', 'DELETE'].includes(method.toUpperCase())) {
+        if (window.__CSRF_TOKEN__) {
+          opts.headers['X-CSRF-Token'] = window.__CSRF_TOKEN__;
+        }
+      }
+      
       if (body) {
         opts.body = JSON.stringify(body);
       }
