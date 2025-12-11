@@ -45,10 +45,16 @@ async function initializeDatabase() {
 
   // Try Firebase Firestore first (with timeout)
   try {
-    // initializeFirebaseAdmin is synchronous, so we need to wrap it
-    const initPromise = new Promise((resolve) => {
-      const result = initializeFirebaseAdmin();
-      resolve(result);
+    // Firebase Admin initialization is synchronous, but admin.initializeApp() 
+    // may hang when trying to fetch Application Default Credentials in production
+    // without proper configuration. We wrap this in a timeout to prevent hanging.
+    const initPromise = new Promise((resolve, reject) => {
+      try {
+        const result = initializeFirebaseAdmin();
+        resolve(result);
+      } catch (error) {
+        reject(error);
+      }
     });
     
     const { db } = await withTimeout(

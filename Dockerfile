@@ -23,9 +23,9 @@ EXPOSE 3000
 # Add health check - Railway will use this to determine if the app is ready
 # Check every 10 seconds, start after 10 seconds, timeout after 5 seconds
 # If 3 consecutive checks fail, mark as unhealthy
-# Note: Using PORT 3000 as default; Railway overrides at runtime but healthcheck uses container's PORT
+# Note: Using shell form to support PORT variable substitution
 HEALTHCHECK --interval=10s --timeout=5s --start-period=10s --retries=3 \
-  CMD curl -f http://localhost:3000/api/health || exit 1
+  CMD sh -c 'curl -f http://localhost:${PORT:-3000}/api/health || exit 1'
 
 # Start the server
 CMD ["node", "server.js"]
