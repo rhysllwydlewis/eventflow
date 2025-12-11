@@ -36,13 +36,9 @@ OWNER_PASSWORD=<strong password for admin@event-flow.co.uk>
 NODE_ENV=production
 PORT=3000
 BASE_URL=https://event-flow.co.uk
-
-# Email Configuration (REQUIRED)
-EMAIL_ENABLED=true
-FROM_EMAIL=no-reply@event-flow.co.uk
 ```
 
-### 🔌 Database - Choose ONE Option
+### 🔌 Database - Choose ONE Option (REQUIRED)
 
 **Option A: MongoDB Atlas (Recommended)**
 ```bash
@@ -57,10 +53,14 @@ FIREBASE_PROJECT_ID=eventflow-ffb12
 FIREBASE_SERVICE_ACCOUNT_KEY={"type":"service_account",...}
 ```
 
-### 📧 Email Service - Choose ONE Option
+### 📧 Email Service - Choose ONE Option (OPTIONAL but Recommended)
+
+**Note:** Email service is optional. If not configured, emails will be saved to /outbox folder and warnings will be logged, but the application will start successfully.
 
 **Option A: AWS SES (Recommended for production)**
 ```bash
+EMAIL_ENABLED=true
+FROM_EMAIL=no-reply@event-flow.co.uk
 AWS_SES_REGION=eu-west-2
 AWS_SES_ACCESS_KEY_ID=<your-key>
 AWS_SECRET_ACCESS_KEY=<your-secret>
@@ -68,11 +68,15 @@ AWS_SECRET_ACCESS_KEY=<your-secret>
 
 **Option B: SendGrid**
 ```bash
+EMAIL_ENABLED=true
+FROM_EMAIL=no-reply@event-flow.co.uk
 SENDGRID_API_KEY=SG.your-api-key-here
 ```
 
 **Option C: Custom SMTP (Gmail, etc.)**
 ```bash
+EMAIL_ENABLED=true
+FROM_EMAIL=no-reply@event-flow.co.uk
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
 SMTP_USER=your-email@gmail.com
@@ -225,28 +229,34 @@ After deployment:
 ### Issue: "MONGODB_URI cannot point to localhost"
 **Solution:** Replace `MONGODB_URI` value with MongoDB Atlas connection string
 
-### Issue: "Production requires email service"
-**Solution:** 
-1. Make sure `EMAIL_ENABLED=true` is set
+### Issue: Email warnings in logs
+**Note:** Email service is optional. The application will start successfully with warnings if email is not configured. To enable email:
+1. Set `EMAIL_ENABLED=true`
 2. Add AWS SES, SendGrid, or SMTP credentials
+3. Set `FROM_EMAIL` to your sender address
+
+Or to disable email warnings, set `EMAIL_ENABLED=false`
 
 ### Issue: Still getting 502 errors
 **Check:**
 1. Railway logs for exact error message
 2. `/api/health` endpoint response
-3. All required variables are set
+3. All required variables are set (JWT_SECRET, BASE_URL, database config)
 4. No duplicate variables
 5. MongoDB Atlas allows Railway IP addresses (set to allow all: `0.0.0.0/0`)
 
 ## 📞 Quick Reference
 
 **Minimum required for production:**
-- `JWT_SECRET` ✓
-- `NODE_ENV=production` ✓
-- `BASE_URL=https://event-flow.co.uk` ✓
-- `MONGODB_URI` (cloud) OR `FIREBASE_PROJECT_ID` ✓
-- `FROM_EMAIL=no-reply@event-flow.co.uk` ✓
-- Email service credentials (SES/SendGrid/SMTP) ✓
+- `JWT_SECRET` ✓ (REQUIRED)
+- `NODE_ENV=production` ✓ (REQUIRED)
+- `BASE_URL=https://event-flow.co.uk` ✓ (REQUIRED)
+- `MONGODB_URI` (cloud) OR `FIREBASE_PROJECT_ID` ✓ (REQUIRED)
+
+**Optional (recommended for full functionality):**
+- `EMAIL_ENABLED=true` (optional, defaults to false)
+- `FROM_EMAIL=no-reply@event-flow.co.uk` (optional if EMAIL_ENABLED=false)
+- Email service credentials (SES/SendGrid/SMTP) (optional, warnings logged if missing)
 
 **Variables to DELETE:**
 - `MONGODB_LOCAL_URI` ✗

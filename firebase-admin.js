@@ -32,20 +32,24 @@ function initializeFirebaseAdmin() {
       });
       console.log('Firebase Admin initialized with service account');
     } 
-    // Fallback to application default credentials (for local development)
-    else if (process.env.FIREBASE_PROJECT_ID) {
+    // Fallback to application default credentials (for local development ONLY)
+    else if (process.env.FIREBASE_PROJECT_ID && process.env.NODE_ENV !== 'production') {
       const projectId = process.env.FIREBASE_PROJECT_ID;
       admin.initializeApp({
         projectId: projectId,
         databaseURL: `https://${projectId}.firebaseio.com`,
         storageBucket: process.env.FIREBASE_STORAGE_BUCKET || 'eventflow-ffb12.firebasestorage.app'
       });
-      console.log('Firebase Admin initialized with project ID');
+      console.log('Firebase Admin initialized with project ID (development mode)');
     }
     // If no credentials, don't initialize (no Firebase available)
     else {
-      console.log('Firebase Admin not initialized - no credentials provided');
-      console.log('Set FIREBASE_PROJECT_ID or FIREBASE_SERVICE_ACCOUNT_KEY to use Firebase');
+      if (process.env.FIREBASE_PROJECT_ID && !process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
+        console.warn('⚠️  Firebase Admin not initialized - FIREBASE_SERVICE_ACCOUNT_KEY required for production');
+        console.warn('   Set FIREBASE_SERVICE_ACCOUNT_KEY environment variable with service account JSON');
+        console.warn('   Or use MongoDB instead by setting MONGODB_URI');
+      }
+      // No Firebase configuration at all - silently skip
       return { db: null, storage: null };
     }
 

@@ -6,15 +6,16 @@
  * PRODUCTION DEPLOYMENT:
  * - Server performs startup health checks before accepting requests
  * - Validates cloud database is configured (MongoDB Atlas or Firebase)
- * - Validates email service is configured (when EMAIL_ENABLED=true)
+ * - Email service is optional but recommended for production
  * - Rejects localhost MongoDB URIs in production
  * - Exits with error code 1 if critical configuration is missing
+ * - Logs warnings for optional services (email, Stripe, OpenAI)
  * 
  * TROUBLESHOOTING 502 ERRORS:
  * - Check server startup logs for validation errors
  * - Ensure MONGODB_URI points to cloud database (not localhost)
  * - Verify BASE_URL matches your actual domain
- * - Set EMAIL_ENABLED=true and configure AWS SES or SMTP
+ * - Email service (AWS SES/SMTP) is optional - warnings logged if not configured
  * - Check /api/health endpoint for service status
  */
 
@@ -231,7 +232,6 @@ if (EMAIL_ENABLED && process.env.SMTP_HOST && !AWS_SES_ENABLED) {
 if (process.env.NODE_ENV === 'production') {
   const required = {
     BASE_URL: process.env.BASE_URL,
-    FROM_EMAIL: process.env.FROM_EMAIL,
   };
   
   const missing = Object.entries(required)
@@ -244,8 +244,16 @@ if (process.env.NODE_ENV === 'production') {
     process.exit(1);
   }
   
-  if (!AWS_SES_ENABLED && !transporter) {
-    console.warn('Warning: No email service configured. Set up AWS SES or SMTP for email delivery.');
+  // Warn about email configuration but don't block startup
+  if (EMAIL_ENABLED) {
+    if (!AWS_SES_ENABLED && !transporter) {
+      console.warn('Warning: EMAIL_ENABLED=true but no email service configured.');
+      console.warn('Set up AWS SES or SMTP for email delivery, or set EMAIL_ENABLED=false.');
+      console.warn('Emails will be saved to /outbox folder until service is configured.');
+    }
+    if (!process.env.FROM_EMAIL) {
+      console.warn('Warning: FROM_EMAIL not set. Using default value: no-reply@eventflow.local');
+    }
   }
 }
 
@@ -3076,7 +3084,7 @@ app.get('/api/health', healthCheckLimiter, async (_req, res) => {
     checks.databaseError = error.message;
   }
   
-  // Check email service
+  // Check email service (non-critical, won't affect overall health)
   if (AWS_SES_ENABLED && sesClient) {
     try {
       await sesClient.getSendQuota().promise();
@@ -3097,8 +3105,8 @@ app.get('/api/health', healthCheckLimiter, async (_req, res) => {
     checks.emailStatus = EMAIL_ENABLED ? 'not_configured' : 'disabled';
   }
   
-  const allHealthy = checks.databaseStatus !== 'disconnected' && 
-                     checks.emailStatus !== 'error';
+  // Only database status affects overall health (email is optional)
+  const allHealthy = checks.databaseStatus !== 'disconnected';
   
   res.status(allHealthy ? 200 : 503).json({
     ok: allHealthy,
@@ -3160,7 +3168,12 @@ async function startServer() {
     if (isProduction) {
       if (!isFirebaseAvailable() && !isMongoAvailable()) {
         console.error('❌ Production error: No cloud database configured!');
-        console.error('   Set FIREBASE_PROJECT_ID or MONGODB_URI for production deployment');
+        if (process.env.FIREBASE_PROJECT_ID && !isFirebaseAvailable()) {
+          console.error('   FIREBASE_PROJECT_ID is set but Firebase Admin failed to initialize');
+          console.error('   Add FIREBASE_SERVICE_ACCOUNT_KEY or switch to MONGODB_URI');
+        } else {
+          console.error('   Set MONGODB_URI or configure Firebase with FIREBASE_SERVICE_ACCOUNT_KEY');
+        }
         process.exit(1);
       }
     }
@@ -3176,11 +3189,9 @@ async function startServer() {
           await sesClient.getSendQuota().promise();
           console.log('   ✅ AWS SES connection verified');
         } catch (error) {
-          console.error('   ❌ AWS SES connection failed:', error.message);
-          if (isProduction) {
-            console.error('   Production deployment requires working email service');
-            process.exit(1);
-          }
+          console.warn('   ⚠️  AWS SES connection failed:', error.message);
+          console.warn('   Email features may not work correctly');
+          console.warn('   Check your AWS SES credentials and permissions');
         }
       } else if (transporter) {
         console.log('   ✅ Email: SMTP configured');
@@ -3189,20 +3200,14 @@ async function startServer() {
           await transporter.verify();
           console.log('   ✅ SMTP connection verified');
         } catch (error) {
-          console.error('   ❌ SMTP connection failed:', error.message);
-          console.error('   Check your SMTP credentials and configuration');
-          if (isProduction) {
-            console.error('   Production deployment requires working email service');
-            process.exit(1);
-          }
+          console.warn('   ⚠️  SMTP connection failed:', error.message);
+          console.warn('   Email features may not work correctly');
+          console.warn('   Check your SMTP credentials and configuration');
         }
       } else {
         console.warn('   ⚠️  Email enabled but no service configured');
-        console.warn('   Set up AWS SES or SMTP credentials');
-        if (isProduction) {
-          console.error('   ❌ Production deployment requires email service');
-          process.exit(1);
-        }
+        console.warn('   Set up AWS SES or SMTP credentials for email delivery');
+        console.warn('   Emails will be saved to /outbox folder instead');
       }
     } else {
       console.log('   ℹ️  Email disabled (EMAIL_ENABLED=false)');

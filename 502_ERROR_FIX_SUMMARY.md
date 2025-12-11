@@ -140,16 +140,22 @@ SMTP_PASS=<password>
 #### ✅ Passes Validation
 - Production with cloud MongoDB URI
 - Production with Firebase credentials
-- Production with AWS SES configured
+- Production with or without email service configured (optional)
 - Development with local MongoDB
 - Development without database (uses local files)
 
 #### ❌ Fails Validation (exits with error)
 - Production without cloud database
 - Production with localhost MongoDB URI
-- Production with EMAIL_ENABLED=true but no email service
 - Missing JWT_SECRET
-- Missing BASE_URL or FROM_EMAIL in production
+- Missing BASE_URL in production
+
+#### ⚠️ Logs Warnings (but continues startup)
+- EMAIL_ENABLED=true but no email service configured
+- EMAIL_ENABLED=true but email connection test fails
+- Missing FROM_EMAIL when EMAIL_ENABLED=true
+- Stripe not configured (optional feature)
+- OpenAI not configured (optional feature)
 
 ## Testing Performed
 
