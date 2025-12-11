@@ -3168,7 +3168,12 @@ async function startServer() {
     if (isProduction) {
       if (!isFirebaseAvailable() && !isMongoAvailable()) {
         console.error('❌ Production error: No cloud database configured!');
-        console.error('   Set FIREBASE_PROJECT_ID or MONGODB_URI for production deployment');
+        if (process.env.FIREBASE_PROJECT_ID && !isFirebaseAvailable()) {
+          console.error('   FIREBASE_PROJECT_ID is set but Firebase Admin failed to initialize');
+          console.error('   Add FIREBASE_SERVICE_ACCOUNT_KEY or switch to MONGODB_URI');
+        } else {
+          console.error('   Set MONGODB_URI or configure Firebase with FIREBASE_SERVICE_ACCOUNT_KEY');
+        }
         process.exit(1);
       }
     }
