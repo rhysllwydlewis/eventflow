@@ -3177,26 +3177,118 @@ async function startServer() {
       console.warn('   Set BASE_URL to your actual domain (e.g., https://event-flow.co.uk)');
     }
     
-    // 2. Initialize database connection
+    // 2. Pre-flight database validation (before initialization)
     console.log('');
-    console.log('🔌 Initializing database...');
-    await dbUnified.initializeDatabase();
+    console.log('🔌 Validating database configuration...');
     
-    // Warn if using local storage in production
+    // Check if MongoDB is configured and validate the URI format
+    if (process.env.MONGODB_URI) {
+      console.log('   MongoDB URI detected - validating format...');
+      
+      // The validation will happen in db.js getConnectionUri(), but we can provide
+      // early feedback here if we detect obvious issues
+      const uri = process.env.MONGODB_URI;
+      
+      if (!uri.startsWith('mongodb://') && !uri.startsWith('mongodb+srv://')) {
+        console.error('');
+        console.error('❌ INVALID MONGODB_URI FORMAT');
+        console.error('   Your connection string must start with:');
+        console.error('   • mongodb:// or mongodb+srv://');
+        console.error('');
+        console.error('   Current value starts with:', uri.substring(0, 20) + '...');
+        console.error('');
+        console.error('📚 Setup guide: See MONGODB_SETUP_SIMPLE.md');
+        console.error('');
+        process.exit(1);
+      }
+      
+      // Check for obvious placeholder values
+      if (uri.includes('username:password@cluster') || 
+          uri.includes('your-') || 
+          uri.includes('YourCluster') ||
+          uri.includes('<password>')) {
+        console.error('');
+        console.error('❌ MONGODB_URI CONTAINS PLACEHOLDER VALUES');
+        console.error('   You must replace the example values with your actual MongoDB credentials.');
+        console.error('');
+        console.error('   Current MONGODB_URI contains placeholder text that needs to be replaced.');
+        console.error('');
+        console.error('📚 Step-by-step setup guide: MONGODB_SETUP_SIMPLE.md');
+        console.error('   Get your real connection string from: https://cloud.mongodb.com/');
+        console.error('');
+        process.exit(1);
+      }
+      
+      console.log('   ✅ MongoDB URI format looks valid');
+    }
+    
+    // Warn if using local storage in production (before initialization)
     if (isProduction) {
       if (!isFirebaseAvailable() && !isMongoAvailable()) {
-        console.error('❌ Production error: No cloud database configured!');
+        console.error('');
+        console.error('='.repeat(70));
+        console.error('❌ PRODUCTION ERROR: NO CLOUD DATABASE CONFIGURED');
+        console.error('='.repeat(70));
+        console.error('');
+        console.error('Your app cannot start without a cloud database in production.');
+        console.error('');
+        console.error('You need to set up MongoDB Atlas (free tier available):');
+        console.error('');
+        console.error('  1. Create account at: https://cloud.mongodb.com/');
+        console.error('  2. Follow the setup guide: MONGODB_SETUP_SIMPLE.md');
+        console.error('  3. Set MONGODB_URI environment variable on your deployment platform');
+        console.error('');
         if (process.env.FIREBASE_PROJECT_ID && !isFirebaseAvailable()) {
-          console.error('   FIREBASE_PROJECT_ID is set but Firebase Admin failed to initialize');
-          console.error('   Add FIREBASE_SERVICE_ACCOUNT_KEY or switch to MONGODB_URI');
-        } else {
-          console.error('   Set MONGODB_URI or configure Firebase with FIREBASE_SERVICE_ACCOUNT_KEY');
+          console.error('Note: FIREBASE_PROJECT_ID is set but Firebase Admin failed to initialize.');
+          console.error('      Add FIREBASE_SERVICE_ACCOUNT_KEY or switch to MongoDB Atlas.');
+          console.error('');
         }
+        console.error('📚 Documentation:');
+        console.error('   → Simple guide: MONGODB_SETUP_SIMPLE.md');
+        console.error('   → Technical guide: MONGODB_SETUP.md');
+        console.error('   → Deployment guide: DEPLOYMENT_GUIDE.md');
+        console.error('');
+        console.error('='.repeat(70));
+        console.error('');
         process.exit(1);
       }
     }
     
-    // 3. Check email service
+    // 3. Initialize database connection
+    console.log('');
+    console.log('🔌 Connecting to database...');
+    try {
+      await dbUnified.initializeDatabase();
+      console.log('   ✅ Database connection successful');
+    } catch (error) {
+      console.error('');
+      console.error('='.repeat(70));
+      console.error('❌ DATABASE CONNECTION FAILED');
+      console.error('='.repeat(70));
+      console.error('');
+      console.error('Could not connect to the database.');
+      console.error('');
+      console.error('Error details:');
+      console.error(`   ${error.message}`);
+      console.error('');
+      
+      if (error.message.includes('Invalid scheme') || 
+          error.message.includes('placeholder') ||
+          error.message.includes('MONGODB_URI')) {
+        console.error('🔍 This looks like a MongoDB configuration issue.');
+        console.error('');
+        console.error('📚 Follow the setup guide:');
+        console.error('   → MONGODB_SETUP_SIMPLE.md (beginner-friendly)');
+        console.error('   → Get MongoDB Atlas free: https://cloud.mongodb.com/');
+        console.error('');
+      }
+      
+      console.error('='.repeat(70));
+      console.error('');
+      process.exit(1);
+    }
+    
+    // 4. Check email service
     console.log('');
     console.log('📧 Checking email configuration...');
     if (EMAIL_ENABLED) {
@@ -3232,7 +3324,7 @@ async function startServer() {
       console.log('   Emails will be saved to /outbox folder');
     }
     
-    // 4. Check optional services
+    // 5. Check optional services
     console.log('');
     console.log('🔧 Checking optional services...');
     if (STRIPE_ENABLED) {
@@ -3247,7 +3339,7 @@ async function startServer() {
       console.log('   ℹ️  OpenAI: Not configured (optional)');
     }
     
-    // 5. Start the server
+    // 6. Start the server
     console.log('');
     console.log('🚀 Starting server...');
     
