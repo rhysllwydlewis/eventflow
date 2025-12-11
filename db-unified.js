@@ -15,17 +15,53 @@ let firestore = null;
 let mongodb = null;
 
 /**
+ * Timeout wrapper for database operations
+ * Prevents hanging during initialization
+ * @param {Promise} promise - Promise to wrap
+ * @param {number} timeoutMs - Timeout in milliseconds
+ * @param {string} operationName - Name of operation for error message
+ * @returns {Promise} Wrapped promise with timeout
+ */
+function withTimeout(promise, timeoutMs, operationName) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => {
+      setTimeout(() => {
+        reject(new Error(`${operationName} timed out after ${timeoutMs}ms`));
+      }, timeoutMs);
+    })
+  ]);
+}
+
+/**
  * Initialize the database layer
  * Tries Firestore first, then MongoDB, then falls back to local files
+ * Includes 10 second timeout to prevent hanging
  */
 async function initializeDatabase() {
   if (dbType) {
     return dbType;
   }
 
-  // Try Firebase Firestore first
+  // Try Firebase Firestore first (with timeout)
   try {
-    const { db } = initializeFirebaseAdmin();
+    // Firebase Admin initialization is synchronous, but admin.initializeApp() 
+    // may hang when trying to fetch Application Default Credentials in production
+    // without proper configuration. We wrap this in a timeout to prevent hanging.
+    const initPromise = new Promise((resolve, reject) => {
+      try {
+        const result = initializeFirebaseAdmin();
+        resolve(result);
+      } catch (error) {
+        reject(error);
+      }
+    });
+    
+    const { db } = await withTimeout(
+      initPromise,
+      10000,
+      'Firebase initialization'
+    );
     if (db) {
       firestore = db;
       dbType = 'firestore';
@@ -36,10 +72,14 @@ async function initializeDatabase() {
     console.log('Firebase Firestore not available:', error.message);
   }
 
-  // Try MongoDB next
+  // Try MongoDB next (with timeout)
   try {
     if (db.isMongoAvailable()) {
-      mongodb = await db.connect();
+      mongodb = await withTimeout(
+        db.connect(),
+        10000,
+        'MongoDB connection'
+      );
       dbType = 'mongodb';
       console.log('✅ Using MongoDB for data storage');
       return dbType;

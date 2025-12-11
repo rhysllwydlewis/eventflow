@@ -3139,8 +3139,26 @@ app.set('wsServer', wsServer);
 /**
  * Initialize all services and start the server
  * This ensures proper startup and health checks before accepting requests
+ * Includes 30 second startup timeout to prevent hanging
  */
 async function startServer() {
+  // Set startup timeout to prevent hanging
+  const startupTimeout = setTimeout(() => {
+    console.error('');
+    console.error('='.repeat(60));
+    console.error('❌ STARTUP TIMEOUT');
+    console.error('='.repeat(60));
+    console.error('Server startup took longer than 30 seconds');
+    console.error('This usually indicates:');
+    console.error('  - Database connection hanging');
+    console.error('  - Email service not responding');
+    console.error('  - Network connectivity issues');
+    console.error('');
+    console.error('Check your configuration and try again.');
+    console.error('='.repeat(60));
+    process.exit(1);
+  }, 30000); // 30 seconds
+
   try {
     console.log('='.repeat(60));
     console.log(`EventFlow ${APP_VERSION} - Starting Server`);
@@ -3234,6 +3252,9 @@ async function startServer() {
     console.log('🚀 Starting server...');
     
     server.listen(PORT, '0.0.0.0', () => {
+      // Clear startup timeout - server started successfully
+      clearTimeout(startupTimeout);
+      
       console.log('');
       console.log('='.repeat(60));
       console.log(`✅ Server is ready!`);
@@ -3252,6 +3273,9 @@ async function startServer() {
     });
     
   } catch (error) {
+    // Clear startup timeout
+    clearTimeout(startupTimeout);
+    
     console.error('');
     console.error('='.repeat(60));
     console.error('❌ STARTUP FAILED');
