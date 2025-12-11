@@ -32,10 +32,14 @@ function validateMongoUri(uri) {
   
   // Check for placeholder/example URIs
   const placeholderPatterns = [
-    'username:password@cluster',
+    'username:password',  // Common placeholder pattern
+    'user:pass',          // Short placeholder pattern
     'your-cluster',
     'YourCluster',
     'example.com',
+    '<password>',         // Angle bracket placeholder
+    '<username>',
+    'cluster.mongodb.net/?appName=YourCluster',  // Full placeholder from .env.example
   ];
   
   for (const pattern of placeholderPatterns) {
@@ -239,7 +243,7 @@ async function connect() {
       console.error('     mongodb+srv://USERNAME:PASSWORD@cluster...');
       console.error('');
       console.error('⚠️  Note: The password should be URL-encoded if it contains');
-      console.error('   special characters like @, :, /, ?, #, [, ], @');
+      console.error('   special characters like @, :, /, ?, #, [, ]');
       console.error('');
     } else if (error.message.includes('timeout')) {
       console.error('🔍 Diagnosis: Connection timeout');

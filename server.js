@@ -3195,18 +3195,21 @@ async function startServer() {
         console.error('   Your connection string must start with:');
         console.error('   • mongodb:// or mongodb+srv://');
         console.error('');
-        console.error('   Current value starts with:', uri.substring(0, 20) + '...');
+        console.error('   Current value starts with:', uri.substring(0, 10) + '...');
         console.error('');
         console.error('📚 Setup guide: See MONGODB_SETUP_SIMPLE.md');
         console.error('');
         process.exit(1);
       }
       
-      // Check for obvious placeholder values
-      if (uri.includes('username:password@cluster') || 
-          uri.includes('your-') || 
-          uri.includes('YourCluster') ||
-          uri.includes('<password>')) {
+      // Basic check for obvious placeholder values (detailed validation in db.js)
+      const hasPlaceholder = uri.includes('username:password') || 
+                            uri.includes('your-') || 
+                            uri.includes('YourCluster') ||
+                            uri.includes('<password>') ||
+                            uri.includes('<username>');
+                            
+      if (hasPlaceholder) {
         console.error('');
         console.error('❌ MONGODB_URI CONTAINS PLACEHOLDER VALUES');
         console.error('   You must replace the example values with your actual MongoDB credentials.');

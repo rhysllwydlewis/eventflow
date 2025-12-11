@@ -364,8 +364,6 @@ heroku create eventflow-app
 heroku config:set JWT_SECRET="..." MONGODB_URI="mongodb+srv://..."
 git push heroku main
 ```
-git push heroku main
-```
 
 ### DigitalOcean App Platform
 ```bash
