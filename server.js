@@ -2,6 +2,20 @@
  * Features: Auth (JWT cookie), Suppliers, Packages, Plans/Notes, Threads/Messages,
  * Admin approvals + metrics, Settings, Featured packages, Sitemap.
  * Email: safe dev mode by default (writes .eml files to /outbox).
+ * 
+ * PRODUCTION DEPLOYMENT:
+ * - Server performs startup health checks before accepting requests
+ * - Validates cloud database is configured (MongoDB Atlas or Firebase)
+ * - Validates email service is configured (when EMAIL_ENABLED=true)
+ * - Rejects localhost MongoDB URIs in production
+ * - Exits with error code 1 if critical configuration is missing
+ * 
+ * TROUBLESHOOTING 502 ERRORS:
+ * - Check server startup logs for validation errors
+ * - Ensure MONGODB_URI points to cloud database (not localhost)
+ * - Verify BASE_URL matches your actual domain
+ * - Set EMAIL_ENABLED=true and configure AWS SES or SMTP
+ * - Check /api/health endpoint for service status
  */
 
 'use strict';
@@ -57,6 +71,11 @@ try {
 // Data access layer with Firebase support (synchronous wrapper for compatibility)
 // For better Firebase integration, convert endpoints to async and use require('./data-access')
 const { read, write, uid, DATA_DIR } = require('./data-access-sync');
+
+// Database modules for startup validation
+const dbUnified = require('./db-unified');
+const { isFirebaseAvailable } = require('./firebase-admin');
+const { isMongoAvailable } = require('./db');
 
 // Photo upload utilities
 const photoUpload = require('./photo-upload');
@@ -142,6 +161,15 @@ const writeLimiter = rateLimit({
   max: 80,
   standardHeaders: true,
   legacyHeaders: false
+});
+
+// Health check rate limiter - generous limits for monitoring tools
+const healthCheckLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 60, // 60 requests per minute (once per second)
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: 'Too many health check requests'
 });
 
 // ---------- Email (safe dev mode) ----------
@@ -3026,8 +3054,8 @@ app.get('/api/admin/audit-logs', authRequired, roleRequired('admin'), (req, res)
   res.json({ logs, count: logs.length });
 });
 
-// Basic API healthcheck
-app.get('/api/health', async (_req, res) => {
+// Basic API healthcheck with rate limiting
+app.get('/api/health', healthCheckLimiter, async (_req, res) => {
   const checks = {
     server: 'online',
     version: APP_VERSION,
@@ -3036,6 +3064,19 @@ app.get('/api/health', async (_req, res) => {
     environment: process.env.NODE_ENV || 'development'
   };
   
+  // Check database status
+  try {
+    await dbUnified.initializeDatabase();
+    const dbType = dbUnified.getDatabaseType ? dbUnified.getDatabaseType() : 'unknown';
+    checks.database = dbType || 'unknown';
+    checks.databaseStatus = 'connected';
+  } catch (error) {
+    checks.database = 'error';
+    checks.databaseStatus = 'disconnected';
+    checks.databaseError = error.message;
+  }
+  
+  // Check email service
   if (AWS_SES_ENABLED && sesClient) {
     try {
       await sesClient.getSendQuota().promise();
@@ -3044,9 +3085,20 @@ app.get('/api/health', async (_req, res) => {
       checks.emailStatus = 'error';
       checks.emailError = e.message;
     }
+  } else if (transporter && EMAIL_ENABLED) {
+    try {
+      await transporter.verify();
+      checks.emailStatus = 'connected';
+    } catch (e) {
+      checks.emailStatus = 'error';
+      checks.emailError = e.message;
+    }
+  } else {
+    checks.emailStatus = EMAIL_ENABLED ? 'not_configured' : 'disabled';
   }
   
-  const allHealthy = checks.emailStatus !== 'error';
+  const allHealthy = checks.databaseStatus !== 'disconnected' && 
+                     checks.emailStatus !== 'error';
   
   res.status(allHealthy ? 200 : 503).json({
     ok: allHealthy,
@@ -3076,9 +3128,140 @@ const wsServer = new WebSocketServer(server);
 // Make wsServer available to routes if needed
 app.set('wsServer', wsServer);
 
-server.listen(PORT, '0.0.0.0', () => {
-  console.log(`EventFlow ${APP_VERSION} server running on port ${PORT}`);
-  console.log(`Server listening on all interfaces (0.0.0.0:${PORT})`);
-  console.log(`Local access: http://localhost:${PORT}`);
-  console.log(`WebSocket server initialized for real-time features`);
+/**
+ * Initialize all services and start the server
+ * This ensures proper startup and health checks before accepting requests
+ */
+async function startServer() {
+  try {
+    console.log('='.repeat(60));
+    console.log(`EventFlow ${APP_VERSION} - Starting Server`);
+    console.log('='.repeat(60));
+    console.log('');
+    
+    // 1. Validate critical environment variables
+    console.log('📋 Checking configuration...');
+    const baseUrl = process.env.BASE_URL || `http://localhost:${PORT}`;
+    console.log(`   BASE_URL: ${baseUrl}`);
+    console.log(`   NODE_ENV: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`   PORT: ${PORT}`);
+    
+    if (isProduction && baseUrl.includes('localhost')) {
+      console.warn('⚠️  Warning: BASE_URL points to localhost in production');
+      console.warn('   Set BASE_URL to your actual domain (e.g., https://event-flow.co.uk)');
+    }
+    
+    // 2. Initialize database connection
+    console.log('');
+    console.log('🔌 Initializing database...');
+    await dbUnified.initializeDatabase();
+    
+    // Warn if using local storage in production
+    if (isProduction) {
+      if (!isFirebaseAvailable() && !isMongoAvailable()) {
+        console.error('❌ Production error: No cloud database configured!');
+        console.error('   Set FIREBASE_PROJECT_ID or MONGODB_URI for production deployment');
+        process.exit(1);
+      }
+    }
+    
+    // 3. Check email service
+    console.log('');
+    console.log('📧 Checking email configuration...');
+    if (EMAIL_ENABLED) {
+      if (AWS_SES_ENABLED) {
+        console.log('   ✅ Email: AWS SES configured');
+        // Test AWS SES connection
+        try {
+          await sesClient.getSendQuota().promise();
+          console.log('   ✅ AWS SES connection verified');
+        } catch (error) {
+          console.error('   ❌ AWS SES connection failed:', error.message);
+          if (isProduction) {
+            console.error('   Production deployment requires working email service');
+            process.exit(1);
+          }
+        }
+      } else if (transporter) {
+        console.log('   ✅ Email: SMTP configured');
+        // Test SMTP connection
+        try {
+          await transporter.verify();
+          console.log('   ✅ SMTP connection verified');
+        } catch (error) {
+          console.error('   ❌ SMTP connection failed:', error.message);
+          console.error('   Check your SMTP credentials and configuration');
+          if (isProduction) {
+            console.error('   Production deployment requires working email service');
+            process.exit(1);
+          }
+        }
+      } else {
+        console.warn('   ⚠️  Email enabled but no service configured');
+        console.warn('   Set up AWS SES or SMTP credentials');
+        if (isProduction) {
+          console.error('   ❌ Production deployment requires email service');
+          process.exit(1);
+        }
+      }
+    } else {
+      console.log('   ℹ️  Email disabled (EMAIL_ENABLED=false)');
+      console.log('   Emails will be saved to /outbox folder');
+    }
+    
+    // 4. Check optional services
+    console.log('');
+    console.log('🔧 Checking optional services...');
+    if (STRIPE_ENABLED) {
+      console.log('   ✅ Stripe: Configured');
+    } else {
+      console.log('   ℹ️  Stripe: Not configured (optional)');
+    }
+    
+    if (AI_ENABLED) {
+      console.log('   ✅ OpenAI: Configured');
+    } else {
+      console.log('   ℹ️  OpenAI: Not configured (optional)');
+    }
+    
+    // 5. Start the server
+    console.log('');
+    console.log('🚀 Starting server...');
+    
+    server.listen(PORT, '0.0.0.0', () => {
+      console.log('');
+      console.log('='.repeat(60));
+      console.log(`✅ Server is ready!`);
+      console.log('='.repeat(60));
+      console.log(`   Server: http://0.0.0.0:${PORT}`);
+      console.log(`   Local:  http://localhost:${PORT}`);
+      if (!baseUrl.includes('localhost')) {
+        console.log(`   Public: ${baseUrl}`);
+      }
+      console.log(`   Health: ${baseUrl}/api/health`);
+      console.log(`   Docs:   ${baseUrl}/api-docs`);
+      console.log('='.repeat(60));
+      console.log('');
+      console.log('WebSocket server initialized for real-time features');
+      console.log('Server is now accepting requests');
+    });
+    
+  } catch (error) {
+    console.error('');
+    console.error('='.repeat(60));
+    console.error('❌ STARTUP FAILED');
+    console.error('='.repeat(60));
+    console.error('Error:', error.message);
+    console.error('');
+    console.error('Please fix the configuration issues and try again.');
+    console.error('See the documentation for setup instructions.');
+    console.error('='.repeat(60));
+    process.exit(1);
+  }
+}
+
+// Start the server with proper initialization
+startServer().catch(error => {
+  console.error('Fatal error during startup:', error);
+  process.exit(1);
 });
