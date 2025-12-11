@@ -252,7 +252,7 @@ if (process.env.NODE_ENV === 'production') {
       console.warn('Emails will be saved to /outbox folder until service is configured.');
     }
     if (!process.env.FROM_EMAIL) {
-      console.warn('Warning: FROM_EMAIL not set. Using default: no-reply@eventflow.local');
+      console.warn('Warning: FROM_EMAIL not set. Using default value: no-reply@eventflow.local');
     }
   }
 }

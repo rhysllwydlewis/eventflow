@@ -48,10 +48,8 @@ function initializeFirebaseAdmin() {
         console.warn('⚠️  Firebase Admin not initialized - FIREBASE_SERVICE_ACCOUNT_KEY required for production');
         console.warn('   Set FIREBASE_SERVICE_ACCOUNT_KEY environment variable with service account JSON');
         console.warn('   Or use MongoDB instead by setting MONGODB_URI');
-      } else {
-        console.log('Firebase Admin not initialized - no credentials provided');
-        console.log('Set FIREBASE_SERVICE_ACCOUNT_KEY to use Firebase in production');
       }
+      // No Firebase configuration at all - silently skip
       return { db: null, storage: null };
     }
 
