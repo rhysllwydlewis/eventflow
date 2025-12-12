@@ -17,7 +17,7 @@ Add to your `.env` file:
 
 ```bash
 # Mailgun Configuration
-MAILGUN_API_KEY=your-mailgun-api-key-here
+MAILGUN_API_KEY=pubkey-2821845c6a90a3ec96a734687de541f6
 MAILGUN_DOMAIN=mg.yourdomain.com
 MAILGUN_BASE_URL=https://api.eu.mailgun.net  # EU region (default)
 MAILGUN_FROM=no-reply@mg.yourdomain.com

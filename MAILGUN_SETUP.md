@@ -88,7 +88,7 @@ Add these variables to your `.env` file:
 # ============================================
 
 # Your Mailgun API key (required)
-MAILGUN_API_KEY=your-mailgun-api-key-here
+MAILGUN_API_KEY=pubkey-2821845c6a90a3ec96a734687de541f6
 
 # Your verified Mailgun domain (required)
 MAILGUN_DOMAIN=mg.yourdomain.com
@@ -414,7 +414,7 @@ Error: Verification token has expired
 
 Set environment variables in dashboard:
 ```bash
-MAILGUN_API_KEY=your-key
+MAILGUN_API_KEY=pubkey-2821845c6a90a3ec96a734687de541f6
 MAILGUN_DOMAIN=mg.yourdomain.com
 MAILGUN_BASE_URL=https://api.eu.mailgun.net
 MAILGUN_FROM=no-reply@mg.yourdomain.com
@@ -425,7 +425,7 @@ APP_BASE_URL=https://your-app.railway.app
 
 Pass as environment variables:
 ```dockerfile
-ENV MAILGUN_API_KEY=your-key
+ENV MAILGUN_API_KEY=pubkey-2821845c6a90a3ec96a734687de541f6
 ENV MAILGUN_DOMAIN=mg.yourdomain.com
 ```
 
