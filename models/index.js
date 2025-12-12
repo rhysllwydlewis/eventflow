@@ -22,10 +22,13 @@ const userSchema = {
         email: { bsonType: 'string', description: 'User email address' },
         role: { enum: ['customer', 'supplier', 'admin'], description: 'User role' },
         passwordHash: { bsonType: 'string', description: 'Hashed password' },
-        notify: { bsonType: 'bool', description: 'Email notification preference' },
-        marketingOptIn: { bsonType: 'bool', description: 'Marketing email consent' },
+        notify: { bsonType: 'bool', description: 'Email notification preference (deprecated, use notify_account)' },
+        notify_account: { bsonType: 'bool', description: 'Transactional email notifications (account, security)' },
+        notify_marketing: { bsonType: 'bool', description: 'Marketing and promotional email consent' },
+        marketingOptIn: { bsonType: 'bool', description: 'Marketing email consent (deprecated, use notify_marketing)' },
         verified: { bsonType: 'bool', description: 'Email verification status' },
         verificationToken: { bsonType: 'string', description: 'Email verification token' },
+        verificationTokenExpiresAt: { bsonType: 'string', description: 'Verification token expiration timestamp' },
         resetToken: { bsonType: 'string', description: 'Password reset token' },
         resetTokenExpiresAt: { bsonType: 'string', description: 'Reset token expiration' },
         isPro: { bsonType: 'bool', description: 'Pro subscription status' },
@@ -280,6 +283,7 @@ async function createIndexes(db) {
     await db.collection('users').createIndex({ email: 1 }, { unique: true });
     await db.collection('users').createIndex({ role: 1 });
     await db.collection('users').createIndex({ verificationToken: 1 }, { sparse: true });
+    await db.collection('users').createIndex({ verificationTokenExpiresAt: 1 }, { sparse: true });
     await db.collection('users').createIndex({ resetToken: 1 }, { sparse: true });
 
     // Supplier indexes
@@ -328,6 +332,5 @@ async function createIndexes(db) {
 
 module.exports = {
   initializeCollections,
-  createIndexes,
-  getCollection,
+  createIndexes
 };
