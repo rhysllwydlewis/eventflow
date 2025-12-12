@@ -226,6 +226,8 @@ pm2 startup
 
 ### Reverse Proxy with Nginx
 
+**Important:** When running behind a reverse proxy (Nginx, Railway, Heroku, etc.), you must enable Express trust proxy setting for proper IP detection and rate limiting. EventFlow automatically enables this on Railway, or you can manually set `TRUST_PROXY=true` in your environment variables.
+
 ```nginx
 # /etc/nginx/sites-available/eventflow
 server {
@@ -248,6 +250,23 @@ server {
     client_max_body_size 20M;
 }
 ```
+
+**Trust Proxy Configuration:**
+
+When deploying behind a reverse proxy or load balancer, set the `TRUST_PROXY` environment variable to enable proper IP detection:
+
+```bash
+# Enable trust proxy (required for Railway, Heroku, load balancers, Nginx)
+TRUST_PROXY=true
+```
+
+This setting:
+- Enables proper client IP detection from `X-Forwarded-For` headers
+- Fixes rate limiting to work correctly behind proxies
+- Allows `X-Forwarded-Proto` to be trusted for protocol detection
+- **Required on Railway** to avoid `ERR_ERL_UNEXPECTED_X_FORWARDED_FOR` errors
+
+**Note:** EventFlow automatically enables trust proxy when `RAILWAY_ENVIRONMENT` is detected, but you can explicitly control it via the `TRUST_PROXY` variable. For local development, this defaults to `false` to avoid unexpected behavior.
 
 ```bash
 # Enable site and restart nginx
@@ -285,6 +304,10 @@ MONGODB_DB_NAME=eventflow
 PORT=3000
 NODE_ENV=production
 BASE_URL=https://yourdomain.com
+
+# Trust proxy (for Railway, Heroku, or reverse proxy deployments)
+# Automatically enabled on Railway, or set to 'true' manually
+TRUST_PROXY=true
 
 # Email (REQUIRED for production)
 EMAIL_ENABLED=true
