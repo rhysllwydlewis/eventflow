@@ -133,6 +133,10 @@ public/uploads/*
 # Email outbox
 outbox/
 
+# Test scripts (development only)
+test-mailgun.js
+test-integration.js
+
 # Database backups
 *.db
 *.sqlite

@@ -332,6 +332,5 @@ async function createIndexes(db) {
 
 module.exports = {
   initializeCollections,
-  createIndexes,
-  getCollection,
+  createIndexes
 };

@@ -75,6 +75,9 @@ try {
 // For better Firebase integration, convert endpoints to async and use require('./data-access')
 const { read, write, uid, DATA_DIR } = require('./data-access-sync');
 
+// Mailgun email utility
+const mailgun = require('./utils/mailgun');
+
 // Database modules for startup validation
 const dbUnified = require('./db-unified');
 const { isFirebaseAvailable } = require('./firebase-admin');
@@ -3115,7 +3118,7 @@ app.get('/api/health', healthCheckLimiter, async (_req, res) => {
     server: 'online',
     version: APP_VERSION,
     time: new Date().toISOString(),
-    email: EMAIL_ENABLED ? (AWS_SES_ENABLED ? 'aws-ses' : (transporter ? 'smtp' : 'disabled')) : 'disabled',
+    email: EMAIL_ENABLED ? (AWS_SES_ENABLED ? 'aws-ses' : (transporter ? 'smtp' : (mailgun.isMailgunEnabled() ? 'mailgun' : 'disabled'))) : 'disabled',
     environment: process.env.NODE_ENV || 'development'
   };
   
@@ -3132,7 +3135,12 @@ app.get('/api/health', healthCheckLimiter, async (_req, res) => {
   }
   
   // Check email service (non-critical, won't affect overall health)
-  if (AWS_SES_ENABLED && sesClient) {
+  if (mailgun.isMailgunEnabled()) {
+    // Mailgun is configured
+    const mailgunStatus = mailgun.getMailgunStatus();
+    checks.emailStatus = 'configured';
+    checks.mailgunDomain = mailgunStatus.domain;
+  } else if (AWS_SES_ENABLED && sesClient) {
     try {
       await sesClient.getSendQuota().promise();
       checks.emailStatus = 'connected';
@@ -3353,7 +3361,11 @@ async function startServer() {
     console.log('');
     console.log('📧 Checking email configuration...');
     if (EMAIL_ENABLED) {
-      if (AWS_SES_ENABLED) {
+      if (mailgun.isMailgunEnabled()) {
+        const mailgunStatus = mailgun.getMailgunStatus();
+        console.log(`   ✅ Email: Mailgun configured (${mailgunStatus.domain})`);
+        console.log('   ✅ Mailgun ready to send emails');
+      } else if (AWS_SES_ENABLED) {
         console.log('   ✅ Email: AWS SES configured');
         // Test AWS SES connection
         try {
@@ -3377,7 +3389,7 @@ async function startServer() {
         }
       } else {
         console.warn('   ⚠️  Email enabled but no service configured');
-        console.warn('   Set up AWS SES or SMTP credentials for email delivery');
+        console.warn('   Set up Mailgun, AWS SES or SMTP credentials for email delivery');
         console.warn('   Emails will be saved to /outbox folder instead');
       }
     } else {
