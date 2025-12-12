@@ -259,6 +259,42 @@ await mailgun.sendMail({
 
 ## Testing
 
+### Test Mailgun API Directly
+
+Before integrating with your application, test your Mailgun configuration directly:
+
+```bash
+# Test sending a simple email via Mailgun API
+curl -s --user 'api:pubkey-2821845c6a90a3ec96a734687de541f6' \
+  https://api.eu.mailgun.net/v3/mg.fake-domain.com/messages \
+  -F from='Eventflow <noreply@mg.fake-domain.com>' \
+  -F to='test@example.com' \
+  -F subject='Hello from Mailgun' \
+  -F text='Testing Mailgun integration with EventFlow'
+```
+
+**Important Notes:**
+- Replace `pubkey-2821845c6a90a3ec96a734687de541f6` with your actual API key
+- Replace `mg.fake-domain.com` with your verified Mailgun domain
+- Use `api.mailgun.net` for US region, `api.eu.mailgun.net` for EU region
+- For **sandbox domains**: Recipient must be in authorized recipients list
+- For **custom domains**: Sender domain must match your verified domain
+
+**Expected Response (Success):**
+```json
+{
+  "id": "<20231212140000.1.ABCD@mg.fake-domain.com>",
+  "message": "Queued. Thank you."
+}
+```
+
+**Expected Response (Error - Unauthorized Recipient):**
+```json
+{
+  "message": "This email address is not authorized to receive messages from this domain"
+}
+```
+
 ### Development Mode (No Mailgun Configured)
 
 When Mailgun is not configured:

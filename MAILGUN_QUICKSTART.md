@@ -117,6 +117,25 @@ await mailgun.sendMail({
 
 ## Testing
 
+### Test Mailgun API Directly
+
+You can test your Mailgun configuration with a direct API call:
+
+```bash
+# Test sending via Mailgun API
+curl -s --user 'api:pubkey-2821845c6a90a3ec96a734687de541f6' \
+  https://api.eu.mailgun.net/v3/mg.fake-domain.com/messages \
+  -F from='Eventflow <noreply@mg.fake-domain.com>' \
+  -F to='test@example.com' \
+  -F subject='Hello from Mailgun' \
+  -F text='Testing Mailgun integration with EventFlow'
+```
+
+**Note:** Replace with your actual values:
+- `api:YOUR_API_KEY` - Your Mailgun API key with `api:` prefix
+- `mg.fake-domain.com` - Your verified Mailgun domain
+- Email addresses must be authorized (sandbox) or verified (custom domain)
+
 ### Development Mode (No Mailgun)
 
 Without Mailgun configured:
