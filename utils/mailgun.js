@@ -243,10 +243,18 @@ async function sendMarketingEmail(user, subject, message, options = {}) {
   // Generate unsubscribe link
   const unsubscribeLink = `${APP_BASE_URL}/api/auth/unsubscribe?email=${encodeURIComponent(user.email)}`;
   
+  // Build message with optional CTA button
+  let fullMessage = message;
+  if (options.ctaText && options.ctaLink) {
+    fullMessage += `\n\n<div style="text-align: center; margin: 24px 0;">
+      <a href="${options.ctaLink}" class="cta-button" style="display: inline-block; padding: 14px 28px; background: linear-gradient(180deg, #16c3ad, #0ea896); color: #ffffff; text-decoration: none; border-radius: 12px; font-weight: 700; font-size: 16px;">${options.ctaText}</a>
+    </div>`;
+  }
+  
   const templateData = {
     name: user.name || 'there',
     title: subject,
-    message: message,
+    message: fullMessage,
     unsubscribeLink: unsubscribeLink,
     ...(options.templateData || {})
   };
