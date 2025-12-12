@@ -14,6 +14,7 @@
 
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 
 // Lazy-load Mailgun to avoid errors if not configured
 let mailgunClient = null;
@@ -25,6 +26,7 @@ const MAILGUN_DOMAIN = process.env.MAILGUN_DOMAIN;
 const MAILGUN_BASE_URL = process.env.MAILGUN_BASE_URL || 'https://api.eu.mailgun.net';
 const MAILGUN_FROM = process.env.MAILGUN_FROM || process.env.FROM_EMAIL || 'no-reply@eventflow.com';
 const APP_BASE_URL = process.env.APP_BASE_URL || process.env.BASE_URL || 'http://localhost:3000';
+const UNSUBSCRIBE_SECRET = process.env.UNSUBSCRIBE_SECRET || process.env.JWT_SECRET || 'default-secret-change-in-production';
 
 /**
  * Initialize Mailgun client
@@ -59,6 +61,32 @@ function initializeMailgun() {
 initializeMailgun();
 
 /**
+ * Generate secure unsubscribe token for email address
+ * @param {string} email - User email address
+ * @returns {string} HMAC-SHA256 token
+ */
+function generateUnsubscribeToken(email) {
+  return crypto
+    .createHmac('sha256', UNSUBSCRIBE_SECRET)
+    .update(email.toLowerCase())
+    .digest('hex');
+}
+
+/**
+ * Verify unsubscribe token matches email
+ * @param {string} email - User email address
+ * @param {string} token - Token to verify
+ * @returns {boolean} True if token is valid for this email
+ */
+function verifyUnsubscribeToken(email, token) {
+  const expectedToken = generateUnsubscribeToken(email);
+  return crypto.timingSafeEqual(
+    Buffer.from(token),
+    Buffer.from(expectedToken)
+  );
+}
+
+/**
  * Load and process email template
  * @param {string} templateName - Name of template file (without .html)
  * @param {Object} data - Template variables to replace
@@ -74,10 +102,24 @@ function loadEmailTemplate(templateName, data = {}) {
     
     let html = fs.readFileSync(templatePath, 'utf8');
     
-    // Replace template variables
+    // Helper to escape HTML entities to prevent XSS
+    const escapeHtml = (text) => {
+      if (typeof text !== 'string') return text;
+      return text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    };
+    
+    // Replace template variables with HTML-escaped values
     Object.keys(data).forEach(key => {
       const regex = new RegExp(`{{${key}}}`, 'g');
-      html = html.replace(regex, data[key] || '');
+      // Don't escape if the value contains HTML tags (for message content)
+      // This allows controlled HTML in message field but escapes other fields
+      const value = (key === 'message' || key === 'html') ? data[key] : escapeHtml(data[key]);
+      html = html.replace(regex, value || '');
     });
     
     // Add current year
@@ -240,8 +282,9 @@ async function sendMarketingEmail(user, subject, message, options = {}) {
     return null;
   }
 
-  // Generate unsubscribe link
-  const unsubscribeLink = `${APP_BASE_URL}/api/auth/unsubscribe?email=${encodeURIComponent(user.email)}`;
+  // Generate secure unsubscribe link with token
+  const unsubscribeToken = generateUnsubscribeToken(user.email);
+  const unsubscribeLink = `${APP_BASE_URL}/api/auth/unsubscribe?email=${encodeURIComponent(user.email)}&token=${unsubscribeToken}`;
   
   // Build message with optional CTA button
   let fullMessage = message;
@@ -330,5 +373,7 @@ module.exports = {
   sendNotificationEmail,
   isMailgunEnabled,
   getMailgunStatus,
-  loadEmailTemplate
+  loadEmailTemplate,
+  generateUnsubscribeToken,
+  verifyUnsubscribeToken
 };

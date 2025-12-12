@@ -318,21 +318,34 @@ router.put('/preferences', authRequired, (req, res) => {
 /**
  * GET /api/auth/unsubscribe
  * Unsubscribe user from marketing emails
- * Can be used from email links without authentication
+ * Requires email and secure token for verification
  */
 router.get('/unsubscribe', (req, res) => {
-  const { email } = req.query || {};
+  const { email, token } = req.query || {};
   
-  if (!email) {
-    return res.status(400).json({ error: 'Missing email parameter' });
+  if (!email || !token) {
+    return res.status(400).json({ error: 'Missing email or token parameter' });
+  }
+  
+  // Verify the token matches the email
+  try {
+    if (!mailgun.verifyUnsubscribeToken(email, token)) {
+      return res.status(400).json({ error: 'Invalid unsubscribe token' });
+    }
+  } catch (err) {
+    // Handle token verification errors (e.g., token length mismatch)
+    return res.status(400).json({ error: 'Invalid unsubscribe token' });
   }
   
   const users = read('users');
   const idx = users.findIndex(u => u.email.toLowerCase() === String(email).toLowerCase());
   
   if (idx === -1) {
-    // Don't reveal if email exists
-    return res.json({ ok: true, message: 'If this email is registered, marketing emails have been disabled.' });
+    // Don't reveal if email exists - return success anyway
+    return res.json({ 
+      ok: true, 
+      message: 'If this email is registered, marketing emails have been disabled.'
+    });
   }
   
   // Disable marketing emails
