@@ -165,6 +165,19 @@ if (!JWT_SECRET || hasPlaceholder || JWT_SECRET.length < 32) {
   process.exit(1);
 }
 
+// Configure trust proxy for Railway and other reverse proxies
+// This enables proper IP detection for rate limiting and X-Forwarded-* headers
+const trustProxyEnv = process.env.TRUST_PROXY?.toLowerCase();
+const isRailway = process.env.RAILWAY_ENVIRONMENT !== undefined;
+const shouldTrustProxy = trustProxyEnv === 'true' || (isRailway && trustProxyEnv !== 'false');
+
+if (shouldTrustProxy) {
+  app.set('trust proxy', 1);
+  console.log('🔧 Trust proxy: enabled (running behind proxy/load balancer)');
+} else {
+  console.log('🔧 Trust proxy: disabled (local development mode)');
+}
+
 app.disable('x-powered-by');
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(express.json({ limit: '2mb' }));

@@ -36,7 +36,14 @@ OWNER_PASSWORD=<strong password for admin@event-flow.co.uk>
 NODE_ENV=production
 PORT=3000
 BASE_URL=https://event-flow.co.uk
+
+# Trust Proxy for Railway (RECOMMENDED)
+# Enables proper IP detection for rate limiting behind Railway's proxy
+# Automatically enabled on Railway, but can be set explicitly
+TRUST_PROXY=true
 ```
+
+**Note about TRUST_PROXY:** This setting is **automatically enabled** when Railway is detected (via `RAILWAY_ENVIRONMENT`), but you can set it explicitly to `true` for clarity. This is required for proper rate limiting and IP detection when running behind Railway's reverse proxy. It fixes `ERR_ERL_UNEXPECTED_X_FORWARDED_FOR` errors from `express-rate-limit`.
 
 ### 🔌 Database - Choose ONE Option (RECOMMENDED but Optional)
 
