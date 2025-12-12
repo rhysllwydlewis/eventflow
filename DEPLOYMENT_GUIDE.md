@@ -315,6 +315,21 @@ OPENAI_MODEL=gpt-4-turbo-mini
 
 ## Database Setup
 
+### Production Database Options
+
+EventFlow supports three database modes:
+
+1. **MongoDB Atlas (Recommended for Production)** - Cloud-hosted, persistent, scalable
+2. **Firebase Firestore** - Cloud-hosted, persistent, real-time capabilities
+3. **Local JSON Storage (Fallback)** - Non-persistent, data lost on restart
+
+⚠️ **IMPORTANT:** While EventFlow can run without a cloud database using local JSON storage, this mode is **not recommended for production** with real user data. Data is stored in local files and will be **permanently lost on server restart or redeployment**.
+
+For production deployments:
+- Use MongoDB Atlas or Firebase Firestore for data persistence
+- Local storage mode is suitable only for testing, demos, or temporary deployments
+- A clear warning will be displayed at startup when running in local storage mode
+
 ### MongoDB Atlas Production Setup
 
 1. **Create Production Cluster**

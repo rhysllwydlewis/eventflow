@@ -38,9 +38,11 @@ PORT=3000
 BASE_URL=https://event-flow.co.uk
 ```
 
-### 🔌 Database - Choose ONE Option (REQUIRED)
+### 🔌 Database - Choose ONE Option (RECOMMENDED but Optional)
 
-**Option A: MongoDB Atlas (Recommended)**
+**⚠️ IMPORTANT:** While the app can run without a cloud database, it will use local JSON storage which is **non-persistent**. Data will be **lost on server restart or redeployment**. A cloud database is **strongly recommended** for production use with real user data.
+
+**Option A: MongoDB Atlas (Recommended for Production)**
 ```bash
 MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/eventflow?retryWrites=true&w=majority
 MONGODB_DB_NAME=eventflow
@@ -51,6 +53,13 @@ MONGODB_DB_NAME=eventflow
 FIREBASE_PROJECT_ID=eventflow-ffb12
 # Optional: For better security, also set
 FIREBASE_SERVICE_ACCOUNT_KEY={"type":"service_account",...}
+```
+
+**Option C: No Database (Local Storage Mode)**
+```bash
+# Do not set MONGODB_URI or FIREBASE_PROJECT_ID
+# App will run with local JSON storage (non-persistent)
+# A warning will be displayed at startup
 ```
 
 ### 📧 Email Service - Choose ONE Option (OPTIONAL but Recommended)

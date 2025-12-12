@@ -5,15 +5,17 @@
  * 
  * PRODUCTION DEPLOYMENT:
  * - Server performs startup health checks before accepting requests
- * - Validates cloud database is configured (MongoDB Atlas or Firebase)
+ * - Cloud database (MongoDB Atlas or Firebase) is RECOMMENDED but not required
+ * - Falls back to local JSON storage if no cloud database is configured
+ * - LOCAL STORAGE WARNING: Data is non-persistent and will be lost on restart
  * - Email service is optional but recommended for production
  * - Rejects localhost MongoDB URIs in production
- * - Exits with error code 1 if critical configuration is missing
- * - Logs warnings for optional services (email, Stripe, OpenAI)
+ * - Exits with error code 1 if critical security configuration is missing (JWT_SECRET, BASE_URL)
+ * - Logs warnings for optional/recommended services (database, email, Stripe, OpenAI)
  * 
  * TROUBLESHOOTING 502 ERRORS:
  * - Check server startup logs for validation errors
- * - Ensure MONGODB_URI points to cloud database (not localhost)
+ * - If using MongoDB, ensure MONGODB_URI points to cloud database (not localhost)
  * - Verify BASE_URL matches your actual domain
  * - Email service (AWS SES/SMTP) is optional - warnings logged if not configured
  * - Check /api/health endpoint for service status
@@ -3260,32 +3262,43 @@ async function startServer() {
     // Warn if using local storage in production (before initialization)
     if (isProduction) {
       if (!isFirebaseAvailable() && !isMongoAvailable()) {
-        console.error('');
-        console.error('='.repeat(70));
-        console.error('❌ PRODUCTION ERROR: NO CLOUD DATABASE CONFIGURED');
-        console.error('='.repeat(70));
-        console.error('');
-        console.error('Your app cannot start without a cloud database in production.');
-        console.error('');
-        console.error('You need to set up MongoDB Atlas (free tier available):');
-        console.error('');
-        console.error('  1. Create account at: https://cloud.mongodb.com/');
-        console.error('  2. Follow the setup guide: MONGODB_SETUP_SIMPLE.md');
-        console.error('  3. Set MONGODB_URI environment variable on your deployment platform');
-        console.error('');
+        console.warn('');
+        console.warn('='.repeat(70));
+        console.warn('⚠️  WARNING: NO CLOUD DATABASE CONFIGURED');
+        console.warn('='.repeat(70));
+        console.warn('');
+        console.warn('Running in LOCAL STORAGE MODE (non-persistent).');
+        console.warn('');
+        console.warn('⚠️  IMPORTANT:');
+        console.warn('   • Data is stored in local JSON files');
+        console.warn('   • Data will be LOST on server restart/redeployment');
+        console.warn('   • NOT RECOMMENDED for production with real user data');
+        console.warn('');
+        console.warn('For persistent data storage, set up a cloud database:');
+        console.warn('');
+        console.warn('  Option A - MongoDB Atlas (free tier available):');
+        console.warn('    1. Create account at: https://cloud.mongodb.com/');
+        console.warn('    2. Follow the setup guide: MONGODB_SETUP_SIMPLE.md');
+        console.warn('    3. Set MONGODB_URI environment variable');
+        console.warn('');
+        console.warn('  Option B - Firebase Firestore:');
+        console.warn('    1. Set FIREBASE_PROJECT_ID');
+        console.warn('    2. Set FIREBASE_SERVICE_ACCOUNT_KEY');
+        console.warn('');
         if (process.env.FIREBASE_PROJECT_ID && !isFirebaseAvailable()) {
-          console.error('Note: FIREBASE_PROJECT_ID is set but Firebase Admin failed to initialize.');
-          console.error('      Add FIREBASE_SERVICE_ACCOUNT_KEY or switch to MongoDB Atlas.');
-          console.error('');
+          console.warn('Note: FIREBASE_PROJECT_ID is set but Firebase Admin failed to initialize.');
+          console.warn('      Add FIREBASE_SERVICE_ACCOUNT_KEY or switch to MongoDB Atlas.');
+          console.warn('');
         }
-        console.error('📚 Documentation:');
-        console.error('   → Simple guide: MONGODB_SETUP_SIMPLE.md');
-        console.error('   → Technical guide: MONGODB_SETUP.md');
-        console.error('   → Deployment guide: DEPLOYMENT_GUIDE.md');
-        console.error('');
-        console.error('='.repeat(70));
-        console.error('');
-        process.exit(1);
+        console.warn('📚 Documentation:');
+        console.warn('   → Simple guide: MONGODB_SETUP_SIMPLE.md');
+        console.warn('   → Technical guide: MONGODB_SETUP.md');
+        console.warn('   → Deployment guide: DEPLOYMENT_GUIDE.md');
+        console.warn('');
+        console.warn('='.repeat(70));
+        console.warn('');
+        console.warn('Continuing with local storage...');
+        console.warn('');
       }
     }
     
