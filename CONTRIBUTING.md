@@ -45,6 +45,7 @@ This project adheres to a Code of Conduct that all contributors are expected to 
    ```bash
    npm install
    ```
+   This will install all required dependencies and set up Husky git hooks.
 
 2. **Set up environment variables**:
    ```bash
@@ -57,10 +58,23 @@ This project adheres to a Code of Conduct that all contributors are expected to 
 
 3. **Run the development server**:
    ```bash
+   npm start
+   ```
+   Or for development with auto-reload:
+   ```bash
    npm run dev
    ```
 
-4. **Run tests**:
+4. **Run linting**:
+   ```bash
+   npm run lint
+   ```
+   To automatically fix issues:
+   ```bash
+   npm run lint:fix
+   ```
+
+5. **Run tests**:
    ```bash
    npm test
    ```
@@ -92,8 +106,18 @@ For detailed setup instructions, see [README.md](README.md).
    git add .
    git commit -m "Brief description of changes"
    ```
-   - Use clear, descriptive commit messages
-   - Reference issue numbers when applicable
+   
+   **Commit Message Guidelines:**
+   - Use present tense ("Add feature" not "Added feature")
+   - Use imperative mood ("Move cursor to..." not "Moves cursor to...")
+   - Limit first line to 72 characters or less
+   - Reference issue numbers when applicable (e.g., "Fix #123")
+   - Be descriptive but concise
+   
+   **Examples:**
+   - `Add user authentication middleware`
+   - `Fix photo upload validation bug #456`
+   - `Update README with deployment instructions`
 
 4. **Keep your branch updated**:
    ```bash
@@ -107,21 +131,48 @@ For detailed setup instructions, see [README.md](README.md).
    ```
 
 6. **Create a Pull Request** on GitHub
+   - Fill out the PR template completely
+   - Link related issues
+   - Include screenshots for UI changes
+   - Ensure all CI checks pass
 
 ## Coding Standards
 
 ### JavaScript/Node.js
 
-- We use **ESLint** and **Prettier** for code formatting
-- Run linting before committing:
-  ```bash
-  npm run lint
-  npm run format
-  ```
+We enforce code quality using **ESLint** and **Prettier**:
+
+- **ESLint** - Linting and code quality rules
+- **Prettier** - Code formatting
+- **Husky** - Pre-commit hooks automatically run linting
+- **lint-staged** - Only lint changed files
+
+#### Running Code Quality Tools
+
+```bash
+# Lint JavaScript files
+npm run lint
+
+# Auto-fix linting issues
+npm run lint:fix
+
+# Format all files
+npm run format
+
+# Check formatting without modifying files
+npm run format:check
+```
+
+#### Code Style Guidelines
+
 - Follow existing code style and conventions
 - Use meaningful variable and function names
 - Add comments for complex logic
 - Prefer `const` over `let`, avoid `var`
+- Use async/await instead of callbacks
+- Always use semicolons
+- Use single quotes for strings
+- Maximum line length: 100 characters (soft limit)
 
 ### Code Quality
 
@@ -175,22 +226,45 @@ For more details, see [TESTING.md](TESTING.md).
 
 ### Pull Request Guidelines
 
-1. **Update documentation** if you're changing functionality
-2. **Add tests** for new features
-3. **Ensure all tests pass** (`npm test`)
-4. **Ensure linting passes** (`npm run lint`)
-5. **Keep PRs focused** - one feature/fix per PR
-6. **Write a clear PR description**:
-   - What changes were made
-   - Why the changes were necessary
-   - How to test the changes
-   - Screenshots for UI changes
+Before submitting a pull request, ensure:
+
+1. **Code Quality**
+   - All tests pass: `npm test`
+   - Linting passes: `npm run lint`
+   - Code is formatted: `npm run format`
+   - No security vulnerabilities: `npm audit`
+
+2. **Documentation**
+   - Update documentation if changing functionality
+   - Add JSDoc comments for new functions
+   - Update API documentation if adding endpoints
+
+3. **Testing**
+   - Add tests for new features
+   - Update existing tests if needed
+   - Aim for >70% code coverage
+   - See [TESTING.md](TESTING.md) for testing guidelines
+
+4. **PR Description**
+   - Use the PR template
+   - Describe what changes were made
+   - Explain why the changes were necessary
+   - List how to test the changes
+   - Include screenshots for UI changes
+   - Link related issues
+
+5. **Keep PRs Focused**
+   - One feature or fix per PR
+   - Break large changes into smaller PRs
+   - Avoid mixing refactoring with new features
 
 ### PR Review Process
 
-- Maintainers will review your PR
-- Address any feedback or requested changes
-- Once approved, your PR will be merged
+- Maintainers will review your PR within 3-5 business days
+- Address any feedback or requested changes promptly
+- Respond to review comments
+- Once approved and CI passes, your PR will be merged
+- PRs may be closed if inactive for 30 days
 
 ## Reporting Bugs
 
@@ -236,6 +310,22 @@ If you have questions about contributing:
 - Check the [README.md](README.md)
 - Check existing [issues](https://github.com/rhysllwydlewis/eventflow/issues)
 - Open a new issue with the "question" label
+
+## Security
+
+If you discover a security vulnerability, please follow our responsible disclosure process:
+
+1. **DO NOT** open a public issue
+2. Email security details to: **[SECURITY-CONTACT-EMAIL]**
+3. Include:
+   - Description of the vulnerability
+   - Steps to reproduce
+   - Potential impact
+   - Suggested fix (if any)
+
+We will respond within 48 hours and work with you to address the issue.
+
+For more information, see [SECURITY.md](SECURITY.md).
 
 ## License
 
