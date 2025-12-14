@@ -1,0 +1,11 @@
+node_modules
+dist
+build
+coverage
+uploads
+data
+outbox
+public/uploads
+*.min.js
+.env
+.env.*
