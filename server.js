@@ -182,7 +182,43 @@ if (shouldTrustProxy) {
 }
 
 app.disable('x-powered-by');
-app.use(helmet({ contentSecurityPolicy: false }));
+
+// Enhanced CSP headers
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://cdn.jsdelivr.net"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      imgSrc: ["'self'", "data:", "https:", "blob:"],
+      connectSrc: ["'self'", "https:"],
+      frameSrc: ["'none'"],
+      objectSrc: ["'none'"],
+      upgradeInsecureRequests: [],
+    },
+  },
+  hsts: {
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: true,
+  },
+}));
+
+// Compression middleware
+const configureCompression = require('./middleware/compression');
+app.use(configureCompression());
+
+// Logging middleware
+const { configureLogging, requestDurationMiddleware } = require('./middleware/logging');
+app.use(configureLogging({ environment: isProduction ? 'production' : 'development' }));
+app.use(requestDurationMiddleware);
+
+// Sanitization middleware
+const { configureSanitization, inputValidationMiddleware } = require('./middleware/sanitize');
+app.use(configureSanitization());
+app.use(inputValidationMiddleware);
+
 app.use(express.json({ limit: '2mb' }));
 app.use(cookieParser());
 
