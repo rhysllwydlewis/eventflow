@@ -706,7 +706,33 @@ html[data-theme="dark"] .back-to-top:hover {
   }
   
   .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.5rem;
+    padding: 2rem 0;
+  }
+  
+  .stat-number {
+    font-size: 2rem;
+  }
+  
+  .stat-label {
+    font-size: 0.875rem;
+  }
+}
+
+/* Extra-small mobile breakpoint for very small screens */
+@media (max-width: 360px) {
+  .stats-grid {
+    gap: 1rem;
+    padding: 1.5rem 0;
+  }
+  
+  .stat-number {
+    font-size: 1.75rem;
+  }
+  
+  .stat-label {
+    font-size: 0.75rem;
   }
 }
 
