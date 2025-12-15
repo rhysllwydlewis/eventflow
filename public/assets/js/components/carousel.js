@@ -1,518 +1,226 @@
 /**
- * Carousel Component
- * Lightweight horizontal carousel for featured packages
- * No dependencies - pure vanilla JavaScript
+ * Carousel component
+ * - Mobile: prevent horizontal page overflow (overflow hidden) and enable touch/trackpad scrolling
+ *   via scroll-snap.
+ * - Controls: next/prev uses container.scrollTo.
+ * - State: sync currentIndex on scroll.
+ * - A11y: keyboard arrow navigation when focused.
+ * - UX: improved drag handling to prevent accidental text selection.
  */
 
-class Carousel {
-  constructor(containerId, options = {}) {
-    this.container = document.getElementById(containerId);
-    if (!this.container) {
-      console.warn(`Carousel: Container ${containerId} not found`);
-      return;
-    }
-    this.options = {
-      itemsPerView: 3,
-      itemsPerViewTablet: 2,
-      itemsPerViewMobile: 1,
-      autoScroll: true,
-      autoScrollInterval: 5000,
-      pauseOnHover: true,
-      ...options,
-    };
-    this.items = [];
-    this.currentIndex = 0;
-    this.autoScrollTimer = null;
-    this.touchStartX = null;
-    this.touchDeltaX = 0;
-    this.injectStyles();
-  }
+(function () {
+  const carousels = document.querySelectorAll('.carousel');
+  if (!carousels.length) return;
 
-  injectStyles() {
-    if (document.getElementById('carousel-styles')) {
-      return;
-    }
-
+  // Inject required CSS once (keeps change self-contained).
+  if (!document.getElementById('carousel-component-styles')) {
     const style = document.createElement('style');
-    style.id = 'carousel-styles';
+    style.id = 'carousel-component-styles';
     style.textContent = `
-      .carousel-wrapper {
-        position: relative;
-        margin-top: 24px;
-      }
-
-      .carousel-container {
-        overflow: hidden;
-        border-radius: 12px;
-      }
-
-      .carousel-track {
-        display: flex;
-        gap: 20px;
-        transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-      }
-
-      .carousel-item {
-        flex: 0 0 calc((100% - 40px) / 3);
-        background: var(--bg, #fff);
-        border: 1px solid var(--border, #E7EAF0);
-        border-radius: 12px;
-        overflow: hidden;
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-        min-width: 0;
-      }
-
-      .carousel-item:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 12px 40px rgba(15, 23, 42, 0.15);
-      }
-
-      .carousel-item-image {
-        width: 100%;
-        height: 180px;
-        object-fit: cover;
-        display: block;
-      }
-
-      .carousel-item-placeholder {
-        width: 100%;
-        height: 180px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: linear-gradient(135deg, #F9FAFB 0%, #F3F4F6 100%);
-        color: var(--muted, #667085);
-        font-size: 0.875rem;
-        border-bottom: 1px solid var(--border, #E7EAF0);
-      }
-
-      .carousel-item-placeholder::before {
-        content: '📦';
-        font-size: 3rem;
-        opacity: 0.3;
-        display: block;
-      }
-
-      .carousel-item-content {
-        padding: 14px;
-      }
-
-      .carousel-item-title {
-        font-size: 1.1rem;
-        font-weight: 600;
-        margin: 0 0 8px 0;
-        color: var(--text, #0B1220);
-      }
-
-      .carousel-item-price {
-        font-size: 1rem;
-        font-weight: 600;
-        color: var(--ink, #0B8073);
-        margin: 8px 0;
-      }
-
-      .carousel-item-inclusions {
-        font-size: 0.85rem;
-        color: var(--muted, #667085);
-        margin: 8px 0;
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-      }
-
-      .carousel-item-cta {
-        display: inline-block;
-        margin-top: 12px;
-        padding: 8px 16px;
-        background: var(--ink, #0B8073);
-        color: white;
-        border-radius: 8px;
-        font-size: 0.9rem;
-        font-weight: 600;
-        text-decoration: none;
-        transition: background 0.2s ease;
-      }
-
-      .carousel-item-cta:hover {
-        background: var(--accent, #13B6A2);
-        text-decoration: none;
-      }
-
-      .carousel-controls {
-        position: absolute;
-        top: 40%;
-        left: 0;
-        right: 0;
-        transform: translateY(-50%);
-        display: flex;
-        justify-content: space-between;
-        pointer-events: none;
-        padding: 0 -10px;
-      }
-
-      .carousel-control {
-        pointer-events: auto;
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        background: rgba(255, 255, 255, 0.95);
-        border: 1px solid var(--border, #E7EAF0);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        font-size: 20px;
-        color: var(--text, #0B1220);
-      }
-
-      .carousel-control:hover {
-        background: white;
-        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
-        transform: scale(1.05);
-      }
-
-      .carousel-control:active {
-        transform: scale(0.95);
-      }
-
-      .carousel-control-prev {
-        margin-left: 10px;
-      }
-
-      .carousel-control-next {
-        margin-right: 10px;
-      }
-
-      @media (max-width: 1024px) {
-        .carousel-item {
-          flex: 0 0 calc((100% - 20px) / 2);
-        }
-      }
-
-      @media (max-width: 640px) {
-        .carousel-item {
-          flex: 0 0 100%;
-        }
-
-        .carousel-track {
-          gap: 0;
-        }
-
-        .carousel-control {
-          width: 36px;
-          height: 36px;
-          font-size: 18px;
-        }
-      }
-
+      /* Prevent horizontal page overflow on small screens */
       @media (max-width: 480px) {
-        .carousel-wrapper {
-          margin-left: -4px;
-          margin-right: -4px;
-        }
-
         .carousel-container {
-          overflow: visible;
-          width: 100%;
+          overflow: hidden; /* was visible; hide overflow to prevent body overflow */
         }
+      }
 
-        .carousel-item {
-          min-width: 0;
-          max-width: 100%;
-          width: 100%;
-          overflow: visible;
-          height: auto;
-          min-height: auto;
-          align-self: flex-start;
-        }
+      /* Make carousel container horizontally scrollable with snap */
+      .carousel-container {
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+        scroll-snap-type: x mandatory;
+        scroll-behavior: smooth;
+        scrollbar-width: none; /* Firefox */
+      }
+      .carousel-container::-webkit-scrollbar { display: none; }
 
-        .carousel-item-content {
-          padding: 12px 12px 20px 12px;
-          min-width: 0;
-          box-sizing: border-box;
-        }
+      /* Ensure items snap nicely */
+      .carousel-item {
+        scroll-snap-align: start;
+      }
 
-        .carousel-item-title {
-          font-size: 1rem;
-          overflow-wrap: break-word;
-          word-break: break-word;
-          hyphens: auto;
-          max-width: 100%;
-        }
-
-        .carousel-item-price {
-          font-size: 0.9rem;
-          overflow-wrap: break-word;
-          word-break: break-word;
-        }
-
-        .carousel-item-inclusions {
-          font-size: 0.8rem;
-          overflow-wrap: break-word;
-          word-break: break-word;
-        }
-
-        .carousel-item-cta {
-          font-size: 0.85rem;
-          padding: 7px 14px;
-          white-space: normal;
-          text-align: center;
-          max-width: 100%;
-        }
-
-        .carousel-control {
-          width: 32px;
-          height: 32px;
-          font-size: 16px;
-        }
-
-        .carousel-control-prev {
-          margin-left: 4px;
-        }
-
-        .carousel-control-next {
-          margin-right: 4px;
-        }
+      /* Improve drag UX */
+      .carousel-container.is-dragging {
+        cursor: grabbing;
+        user-select: none;
+      }
+      .carousel-container.is-dragging * {
+        user-select: none;
+        -webkit-user-drag: none;
       }
     `;
     document.head.appendChild(style);
   }
 
-  setItems(items) {
-    this.items = items;
-    this.render();
-  }
+  const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
 
-  render() {
-    if (this.items.length === 0) {
-      this.container.innerHTML = '<p class="small">No items available.</p>';
-      return;
+  carousels.forEach((carousel) => {
+    const container = carousel.querySelector('.carousel-container');
+    if (!container) return;
+
+    const items = Array.from(container.querySelectorAll('.carousel-item'));
+    if (!items.length) return;
+
+    const prevButton = carousel.querySelector('[data-carousel-prev], .carousel-prev, .prev');
+    const nextButton = carousel.querySelector('[data-carousel-next], .carousel-next, .next');
+
+    // Make container focusable for keyboard navigation if not already.
+    if (!container.hasAttribute('tabindex')) {
+      container.setAttribute('tabindex', '0');
     }
 
-    const wrapper = document.createElement('div');
-    wrapper.className = 'carousel-wrapper';
+    // Track index based on scroll position.
+    let currentIndex = 0;
 
-    const container = document.createElement('div');
-    container.className = 'carousel-container';
+    const getItemWidth = () => {
+      // Use first item's width (including margin via offsetLeft delta when possible)
+      if (items.length > 1) {
+        const w = items[1].offsetLeft - items[0].offsetLeft;
+        return w || items[0].getBoundingClientRect().width;
+      }
+      return items[0].getBoundingClientRect().width;
+    };
 
-    const track = document.createElement('div');
-    track.className = 'carousel-track';
+    const scrollToIndex = (index) => {
+      const i = clamp(index, 0, items.length - 1);
+      const left = items[i].offsetLeft;
+      container.scrollTo({ left, behavior: 'smooth' });
+      currentIndex = i;
+      updateControls();
+    };
 
-    this.items.forEach(item => {
-      const element = this.createItem(item);
-      track.appendChild(element);
+    const updateControls = () => {
+      if (prevButton) prevButton.disabled = currentIndex <= 0;
+      if (nextButton) nextButton.disabled = currentIndex >= items.length - 1;
+    };
+
+    // Sync index on scroll (touch/trackpad).
+    let scrollRaf = null;
+    const onScroll = () => {
+      if (scrollRaf) cancelAnimationFrame(scrollRaf);
+      scrollRaf = requestAnimationFrame(() => {
+        // Find closest item to current scrollLeft.
+        const scrollLeft = container.scrollLeft;
+        let closestIdx = 0;
+        let closestDist = Infinity;
+        for (let i = 0; i < items.length; i++) {
+          const dist = Math.abs(items[i].offsetLeft - scrollLeft);
+          if (dist < closestDist) {
+            closestDist = dist;
+            closestIdx = i;
+          }
+        }
+        if (closestIdx !== currentIndex) {
+          currentIndex = closestIdx;
+          updateControls();
+        }
+      });
+    };
+    container.addEventListener('scroll', onScroll, { passive: true });
+
+    // Buttons use scrollTo
+    if (prevButton) {
+      prevButton.addEventListener('click', (e) => {
+        e.preventDefault();
+        scrollToIndex(currentIndex - 1);
+      });
+    }
+    if (nextButton) {
+      nextButton.addEventListener('click', (e) => {
+        e.preventDefault();
+        scrollToIndex(currentIndex + 1);
+      });
+    }
+
+    // Keyboard navigation when focused
+    container.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        scrollToIndex(currentIndex - 1);
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        scrollToIndex(currentIndex + 1);
+      }
     });
 
-    container.appendChild(track);
-    wrapper.appendChild(container);
+    // Drag handling: allow grabbing to scroll without selecting text.
+    let isPointerDown = false;
+    let didDrag = false;
+    let startX = 0;
+    let startScrollLeft = 0;
 
-    // Add controls
-    const controls = this.createControls();
-    wrapper.appendChild(controls);
+    const DRAG_THRESHOLD_PX = 6;
 
-    // Note: Dots are not created per design requirements
-    // Users navigate via arrows or auto-scroll
+    const onPointerDown = (e) => {
+      // Only left click / primary touch
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
 
-    this.container.innerHTML = '';
-    this.container.appendChild(wrapper);
+      isPointerDown = true;
+      didDrag = false;
+      startX = e.clientX;
+      startScrollLeft = container.scrollLeft;
 
-    this.track = track;
-    this.updatePosition();
+      container.classList.add('is-dragging');
+      container.setPointerCapture?.(e.pointerId);
 
-    this.setupTouch(wrapper);
+      // Prevent text selection while dragging
+      document.body.style.userSelect = 'none';
+    };
 
-    // Setup auto-scroll
-    if (this.options.autoScroll && this.hasMultiplePages()) {
-      this.startAutoScroll();
+    const onPointerMove = (e) => {
+      if (!isPointerDown) return;
+      const dx = e.clientX - startX;
 
-      if (this.options.pauseOnHover) {
-        wrapper.addEventListener('mouseenter', () => this.stopAutoScroll());
-        wrapper.addEventListener('mouseleave', () => this.startAutoScroll());
+      if (!didDrag && Math.abs(dx) > DRAG_THRESHOLD_PX) {
+        didDrag = true;
       }
+
+      if (didDrag) {
+        // Drag left => scroll right
+        container.scrollLeft = startScrollLeft - dx;
+      }
+    };
+
+    const onPointerUp = (e) => {
+      if (!isPointerDown) return;
+      isPointerDown = false;
+      container.classList.remove('is-dragging');
+      container.releasePointerCapture?.(e.pointerId);
+      document.body.style.userSelect = '';
+
+      // If we dragged, prevent accidental click on links/buttons inside items.
+      if (didDrag) {
+        const preventClick = (ev) => {
+          ev.preventDefault();
+          ev.stopPropagation();
+        };
+        container.addEventListener('click', preventClick, { capture: true, once: true });
+      }
+    };
+
+    container.addEventListener('pointerdown', onPointerDown);
+    container.addEventListener('pointermove', onPointerMove);
+    container.addEventListener('pointerup', onPointerUp);
+    container.addEventListener('pointercancel', onPointerUp);
+    container.addEventListener('pointerleave', onPointerUp);
+
+    // Initialize state
+    // Snap to first item (without animation) if we're not aligned.
+    const initialLeft = items[0].offsetLeft;
+    if (Math.abs(container.scrollLeft - initialLeft) > 1) {
+      container.scrollTo({ left: initialLeft, behavior: 'auto' });
     }
+    updateControls();
 
-    // Handle window resize
-    window.addEventListener('resize', () => this.updatePosition());
-  }
-
-  createItem(item) {
-    const element = document.createElement('div');
-    element.className = 'carousel-item';
-
-    const imageUrl = item.image;
-    const price = item.price || 'Contact for price';
-    const inclusions = item.description || item.inclusions || '';
-
-    element.innerHTML = `
-      <div class="carousel-item-content">
-        <h3 class="carousel-item-title">${item.title}</h3>
-        <div class="carousel-item-price">${price}</div>
-        ${inclusions ? `<div class="carousel-item-inclusions">${inclusions}</div>` : ''}
-        <a href="/package.html?slug=${item.slug}" class="carousel-item-cta">View Details</a>
-      </div>
-    `;
-
-    // Handle image loading with proper error handling
-    if (imageUrl) {
-      const img = document.createElement('img');
-      img.className = 'carousel-item-image';
-      img.src = imageUrl;
-      img.alt = item.title;
-      img.loading = 'lazy';
-
-      img.addEventListener('error', () => {
-        // Replace failed image with placeholder
-        const placeholder = document.createElement('div');
-        placeholder.className = 'carousel-item-placeholder';
-        img.replaceWith(placeholder);
+    // Re-sync on resize (item widths can change)
+    let resizeRaf = null;
+    window.addEventListener('resize', () => {
+      if (resizeRaf) cancelAnimationFrame(resizeRaf);
+      resizeRaf = requestAnimationFrame(() => {
+        // keep current item in view
+        scrollToIndex(currentIndex);
       });
-
-      element.insertBefore(img, element.firstChild);
-    } else {
-      // No image provided, use placeholder
-      const placeholder = document.createElement('div');
-      placeholder.className = 'carousel-item-placeholder';
-      element.insertBefore(placeholder, element.firstChild);
-    }
-
-    return element;
-  }
-
-  createControls() {
-    const controls = document.createElement('div');
-    controls.className = 'carousel-controls';
-
-    const prevBtn = document.createElement('button');
-    prevBtn.className = 'carousel-control carousel-control-prev';
-    prevBtn.innerHTML = '‹';
-    prevBtn.setAttribute('aria-label', 'Previous');
-    prevBtn.addEventListener('click', () => this.prev());
-
-    const nextBtn = document.createElement('button');
-    nextBtn.className = 'carousel-control carousel-control-next';
-    nextBtn.innerHTML = '›';
-    nextBtn.setAttribute('aria-label', 'Next');
-    nextBtn.addEventListener('click', () => this.next());
-
-    controls.appendChild(prevBtn);
-    controls.appendChild(nextBtn);
-
-    return controls;
-  }
-
-  getItemsPerView() {
-    const width = window.innerWidth;
-    if (width < 640) {
-      return this.options.itemsPerViewMobile;
-    }
-    if (width < 1024) {
-      return this.options.itemsPerViewTablet;
-    }
-    return this.options.itemsPerView;
-  }
-
-  hasMultiplePages() {
-    return this.items.length > this.getItemsPerView();
-  }
-
-  updatePosition() {
-    if (!this.track) {
-      return;
-    }
-
-    const itemsPerView = this.getItemsPerView();
-    const maxIndex = Math.max(0, this.items.length - itemsPerView);
-    this.currentIndex = Math.min(this.currentIndex, maxIndex);
-
-    const itemWidth = this.track.children[0]?.offsetWidth || 0;
-    const gap = 20;
-    const offset = -(this.currentIndex * (itemWidth + gap));
-
-    this.track.style.transform = `translateX(${offset}px)`;
-  }
-
-  setupTouch(wrapper) {
-    const onStart = event => {
-      this.touchStartX = event.touches ? event.touches[0].clientX : event.clientX;
-      this.touchDeltaX = 0;
-      if (this.options.autoScroll) {
-        this.stopAutoScroll();
-      }
-    };
-
-    const onMove = event => {
-      if (this.touchStartX === null) {
-        return;
-      }
-      const currentX = event.touches ? event.touches[0].clientX : event.clientX;
-      this.touchDeltaX = currentX - this.touchStartX;
-    };
-
-    const onEnd = () => {
-      if (this.touchStartX === null) {
-        return;
-      }
-      if (Math.abs(this.touchDeltaX) > 40) {
-        if (this.touchDeltaX < 0) {
-          this.next();
-        } else {
-          this.prev();
-        }
-      }
-      this.touchStartX = null;
-      this.touchDeltaX = 0;
-      if (this.options.autoScroll) {
-        this.startAutoScroll();
-      }
-    };
-
-    wrapper.addEventListener('touchstart', onStart, { passive: true });
-    wrapper.addEventListener('touchmove', onMove, { passive: true });
-    wrapper.addEventListener('touchend', onEnd, { passive: true });
-    wrapper.addEventListener('mousedown', onStart);
-    wrapper.addEventListener('mousemove', onMove);
-    wrapper.addEventListener('mouseup', onEnd);
-    wrapper.addEventListener('mouseleave', onEnd);
-  }
-
-  next() {
-    const itemsPerView = this.getItemsPerView();
-    const maxIndex = Math.max(0, this.items.length - itemsPerView);
-    this.currentIndex = Math.min(this.currentIndex + 1, maxIndex);
-    this.updatePosition();
-  }
-
-  prev() {
-    this.currentIndex = Math.max(0, this.currentIndex - 1);
-    this.updatePosition();
-  }
-
-  startAutoScroll() {
-    this.stopAutoScroll();
-    this.autoScrollTimer = setInterval(() => {
-      const itemsPerView = this.getItemsPerView();
-      const maxIndex = Math.max(0, this.items.length - itemsPerView);
-      if (this.currentIndex >= maxIndex) {
-        this.currentIndex = 0;
-      } else {
-        this.currentIndex++;
-      }
-      this.updatePosition();
-    }, this.options.autoScrollInterval);
-  }
-
-  stopAutoScroll() {
-    if (this.autoScrollTimer) {
-      clearInterval(this.autoScrollTimer);
-      this.autoScrollTimer = null;
-    }
-  }
-}
-
-// Export to window
-if (typeof window !== 'undefined') {
-  window.Carousel = Carousel;
-}
+    });
+  });
+})();
