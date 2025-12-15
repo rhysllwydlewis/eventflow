@@ -19,20 +19,13 @@ module.exports = {
   ],
 
   // Test patterns
-  testMatch: [
-    '**/tests/**/*.test.js',
-    '**/tests/**/*.spec.js',
-  ],
+  testMatch: ['**/tests/**/*.test.js', '**/tests/**/*.spec.js'],
 
   // Setup files
   setupFilesAfterEnv: ['<rootDir>/tests/setup.js'],
 
   // Ignore patterns
-  testPathIgnorePatterns: [
-    '/node_modules/',
-    '/data/',
-    '/uploads/',
-  ],
+  testPathIgnorePatterns: ['/node_modules/', '/data/', '/uploads/'],
 
   // Coverage thresholds (can be adjusted)
   coverageThreshold: {

@@ -41,15 +41,15 @@ The `PhotoUploader` component provides a drag-and-drop photo upload interface wi
     uploadUrl: '/api/photos/upload',
     maxFiles: 10,
     maxFileSize: 10 * 1024 * 1024, // 10MB
-    onSuccess: (response) => {
+    onSuccess: response => {
       console.log('Upload successful:', response);
       // Refresh gallery or update UI
     },
-    onError: (error) => {
+    onError: error => {
       console.error('Upload failed:', error);
-    }
+    },
   });
-  
+
   // Append to a container
   uploader.appendTo('#upload-container');
 </script>
@@ -57,19 +57,20 @@ The `PhotoUploader` component provides a drag-and-drop photo upload interface wi
 
 ### Constructor Options
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `uploadUrl` | String | `/api/photos/upload` | API endpoint for photo upload |
-| `maxFiles` | Number | `10` | Maximum number of files per upload |
-| `maxFileSize` | Number | `10485760` (10MB) | Maximum file size in bytes |
-| `acceptedTypes` | Array | `['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif']` | Allowed MIME types |
-| `onSuccess` | Function | `() => {}` | Callback on successful upload |
-| `onError` | Function | `(error) => {}` | Callback on error |
-| `onProgress` | Function | `(percent) => {}` | Callback on upload progress |
+| Option          | Type     | Default                                                               | Description                        |
+| --------------- | -------- | --------------------------------------------------------------------- | ---------------------------------- |
+| `uploadUrl`     | String   | `/api/photos/upload`                                                  | API endpoint for photo upload      |
+| `maxFiles`      | Number   | `10`                                                                  | Maximum number of files per upload |
+| `maxFileSize`   | Number   | `10485760` (10MB)                                                     | Maximum file size in bytes         |
+| `acceptedTypes` | Array    | `['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif']` | Allowed MIME types                 |
+| `onSuccess`     | Function | `() => {}`                                                            | Callback on successful upload      |
+| `onError`       | Function | `(error) => {}`                                                       | Callback on error                  |
+| `onProgress`    | Function | `(percent) => {}`                                                     | Callback on upload progress        |
 
 ### Methods
 
 #### `appendTo(target)`
+
 Appends the uploader to a DOM element.
 
 ```javascript
@@ -79,6 +80,7 @@ uploader.appendTo(document.getElementById('container'));
 ```
 
 #### `getElement()`
+
 Returns the uploader's DOM element.
 
 ```javascript
@@ -87,6 +89,7 @@ document.body.appendChild(element);
 ```
 
 #### `clear()`
+
 Clears selected files and resets the uploader.
 
 ```javascript
@@ -103,23 +106,23 @@ uploader.clear();
 
 <script>
   const supplierId = 'supplier-123'; // Get from current user
-  
+
   const uploader = new PhotoUploader({
     uploadUrl: `/api/suppliers/${supplierId}/photos/upload`,
     maxFiles: 10,
-    onSuccess: (response) => {
+    onSuccess: response => {
       alert(`Successfully uploaded ${response.photos.length} photo(s)!`);
       // Reload gallery
       loadSupplierGallery();
     },
-    onError: (error) => {
+    onError: error => {
       console.error('Upload error:', error);
     },
-    onProgress: (percent) => {
+    onProgress: percent => {
       console.log(`Upload progress: ${percent}%`);
-    }
+    },
   });
-  
+
   uploader.appendTo('#supplier-photo-uploader');
 </script>
 ```
@@ -161,39 +164,39 @@ The `PhotoGallery` component displays photos in a responsive grid with lightbox 
         thumbnail: '/uploads/photo1-thumb.jpg',
         large: '/uploads/photo1-large.jpg',
         caption: 'Beautiful venue',
-        approved: true
+        approved: true,
       },
       {
         id: 'photo-2',
         url: '/uploads/photo2.jpg',
-        caption: 'Reception hall'
-      }
+        caption: 'Reception hall',
+      },
     ],
     lightbox: true,
     lazyLoad: true,
     editable: false,
-    onDelete: (photoId) => {
+    onDelete: photoId => {
       console.log('Delete photo:', photoId);
       // Call API to delete photo
-    }
+    },
   });
-  
+
   gallery.appendTo('#gallery-container');
 </script>
 ```
 
 ### Constructor Options
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `photos` | Array | `[]` | Array of photo objects |
-| `lightbox` | Boolean | `true` | Enable lightbox viewer |
-| `lazyLoad` | Boolean | `true` | Enable lazy loading |
-| `editable` | Boolean | `false` | Show delete/edit buttons |
-| `reorderable` | Boolean | `false` | Enable drag-drop reordering |
-| `columns` | String/Number | `'auto'` | Grid columns ('auto', 1, 2, 3, 4) |
-| `onDelete` | Function | `() => {}` | Callback when photo is deleted |
-| `onReorder` | Function | `(photoIds) => {}` | Callback when photos are reordered |
+| Option        | Type          | Default            | Description                        |
+| ------------- | ------------- | ------------------ | ---------------------------------- |
+| `photos`      | Array         | `[]`               | Array of photo objects             |
+| `lightbox`    | Boolean       | `true`             | Enable lightbox viewer             |
+| `lazyLoad`    | Boolean       | `true`             | Enable lazy loading                |
+| `editable`    | Boolean       | `false`            | Show delete/edit buttons           |
+| `reorderable` | Boolean       | `false`            | Enable drag-drop reordering        |
+| `columns`     | String/Number | `'auto'`           | Grid columns ('auto', 1, 2, 3, 4)  |
+| `onDelete`    | Function      | `() => {}`         | Callback when photo is deleted     |
+| `onReorder`   | Function      | `(photoIds) => {}` | Callback when photos are reordered |
 
 ### Photo Object Structure
 
@@ -211,26 +214,27 @@ The `PhotoGallery` component displays photos in a responsive grid with lightbox 
 ### Methods
 
 #### `updatePhotos(photos)`
+
 Updates the gallery with new photos.
 
 ```javascript
-gallery.updatePhotos([
-  { id: '1', url: '/photo1.jpg', caption: 'New photo' }
-]);
+gallery.updatePhotos([{ id: '1', url: '/photo1.jpg', caption: 'New photo' }]);
 ```
 
 #### `addPhoto(photo)`
+
 Adds a single photo to the gallery.
 
 ```javascript
 gallery.addPhoto({
   id: 'new-1',
   url: '/new-photo.jpg',
-  caption: 'Recently uploaded'
+  caption: 'Recently uploaded',
 });
 ```
 
 #### `appendTo(target)`
+
 Appends the gallery to a DOM element.
 
 ```javascript
@@ -238,6 +242,7 @@ gallery.appendTo('#container');
 ```
 
 #### `getElement()`
+
 Returns the gallery's DOM element.
 
 ```javascript
@@ -245,6 +250,7 @@ const element = gallery.getElement();
 ```
 
 #### `destroy()`
+
 Removes the gallery and cleans up event listeners.
 
 ```javascript
@@ -253,11 +259,11 @@ gallery.destroy();
 
 ### Keyboard Navigation (Lightbox)
 
-| Key | Action |
-|-----|--------|
-| `←` (Left Arrow) | Previous photo |
-| `→` (Right Arrow) | Next photo |
-| `ESC` | Close lightbox |
+| Key               | Action         |
+| ----------------- | -------------- |
+| `←` (Left Arrow)  | Previous photo |
+| `→` (Right Arrow) | Next photo     |
+| `ESC`             | Close lightbox |
 
 ### Example: Supplier Detail Page Integration
 
@@ -270,23 +276,23 @@ gallery.destroy();
 <script>
   async function loadSupplierGallery() {
     const supplierId = 'supplier-123';
-    
+
     // Fetch photos from API
     const response = await fetch(`/api/suppliers/${supplierId}/photos`);
     const data = await response.json();
-    
+
     // Create gallery
     const gallery = new PhotoGallery({
       photos: data.photos,
       lightbox: true,
       lazyLoad: true,
       editable: false, // Set to true for supplier owner
-      columns: 3
+      columns: 3,
     });
-    
+
     gallery.appendTo('#supplier-gallery');
   }
-  
+
   loadSupplierGallery();
 </script>
 ```
@@ -301,22 +307,22 @@ gallery.destroy();
 
 <script>
   const supplierId = 'current-supplier-id';
-  
+
   async function loadEditableGallery() {
     const response = await fetch(`/api/suppliers/${supplierId}/photos`);
     const data = await response.json();
-    
+
     const gallery = new PhotoGallery({
       photos: data.photos,
       editable: true,
       reorderable: true,
-      onDelete: async (photoId) => {
+      onDelete: async photoId => {
         if (!confirm('Delete this photo?')) return;
-        
+
         const response = await fetch(`/api/photos/${photoId}`, {
-          method: 'DELETE'
+          method: 'DELETE',
         });
-        
+
         if (response.ok) {
           // Photo will be removed from gallery automatically
           alert('Photo deleted successfully');
@@ -324,19 +330,19 @@ gallery.destroy();
           alert('Failed to delete photo');
         }
       },
-      onReorder: async (photoIds) => {
+      onReorder: async photoIds => {
         // Save new order to server
         await fetch(`/api/suppliers/${supplierId}/photos/reorder`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ order: photoIds })
+          body: JSON.stringify({ order: photoIds }),
         });
-      }
+      },
     });
-    
+
     gallery.appendTo('#editable-gallery');
   }
-  
+
   loadEditableGallery();
 </script>
 ```
@@ -350,72 +356,72 @@ gallery.destroy();
 ```html
 <!DOCTYPE html>
 <html>
-<head>
-  <title>Supplier Dashboard</title>
-  <script src="/assets/js/components/photo-uploader.js"></script>
-  <script src="/assets/js/components/photo-gallery.js"></script>
-</head>
-<body>
-  <div class="container">
-    <h1>My Supplier Dashboard</h1>
-    
-    <!-- Photo Upload Section -->
-    <div class="card">
-      <h2>Upload New Photos</h2>
-      <div id="upload-section"></div>
+  <head>
+    <title>Supplier Dashboard</title>
+    <script src="/assets/js/components/photo-uploader.js"></script>
+    <script src="/assets/js/components/photo-gallery.js"></script>
+  </head>
+  <body>
+    <div class="container">
+      <h1>My Supplier Dashboard</h1>
+
+      <!-- Photo Upload Section -->
+      <div class="card">
+        <h2>Upload New Photos</h2>
+        <div id="upload-section"></div>
+      </div>
+
+      <!-- Gallery Section -->
+      <div class="card">
+        <h2>My Photos</h2>
+        <div id="gallery-section"></div>
+      </div>
     </div>
-    
-    <!-- Gallery Section -->
-    <div class="card">
-      <h2>My Photos</h2>
-      <div id="gallery-section"></div>
-    </div>
-  </div>
-  
-  <script>
-    const supplierId = 'my-supplier-id'; // Get from authenticated user
-    
-    // Initialize uploader
-    const uploader = new PhotoUploader({
-      uploadUrl: `/api/suppliers/${supplierId}/photos/upload`,
-      onSuccess: (response) => {
-        alert('Photos uploaded successfully!');
-        // Reload gallery
-        loadGallery();
-      }
-    });
-    uploader.appendTo('#upload-section');
-    
-    // Initialize gallery
-    let gallery;
-    
-    async function loadGallery() {
-      const response = await fetch(`/api/suppliers/${supplierId}/photos`);
-      const data = await response.json();
-      
-      // Destroy existing gallery if any
-      if (gallery) gallery.destroy();
-      
-      // Create new gallery
-      gallery = new PhotoGallery({
-        photos: data.photos,
-        editable: true,
-        reorderable: true,
-        onDelete: async (photoId) => {
-          if (confirm('Delete this photo?')) {
-            await fetch(`/api/photos/${photoId}`, { method: 'DELETE' });
-            loadGallery(); // Reload
-          }
-        }
+
+    <script>
+      const supplierId = 'my-supplier-id'; // Get from authenticated user
+
+      // Initialize uploader
+      const uploader = new PhotoUploader({
+        uploadUrl: `/api/suppliers/${supplierId}/photos/upload`,
+        onSuccess: response => {
+          alert('Photos uploaded successfully!');
+          // Reload gallery
+          loadGallery();
+        },
       });
-      
-      gallery.appendTo('#gallery-section');
-    }
-    
-    // Load gallery on page load
-    loadGallery();
-  </script>
-</body>
+      uploader.appendTo('#upload-section');
+
+      // Initialize gallery
+      let gallery;
+
+      async function loadGallery() {
+        const response = await fetch(`/api/suppliers/${supplierId}/photos`);
+        const data = await response.json();
+
+        // Destroy existing gallery if any
+        if (gallery) gallery.destroy();
+
+        // Create new gallery
+        gallery = new PhotoGallery({
+          photos: data.photos,
+          editable: true,
+          reorderable: true,
+          onDelete: async photoId => {
+            if (confirm('Delete this photo?')) {
+              await fetch(`/api/photos/${photoId}`, { method: 'DELETE' });
+              loadGallery(); // Reload
+            }
+          },
+        });
+
+        gallery.appendTo('#gallery-section');
+      }
+
+      // Load gallery on page load
+      loadGallery();
+    </script>
+  </body>
 </html>
 ```
 
@@ -474,6 +480,7 @@ GET /api/suppliers/:id/photos
 ```
 
 Response:
+
 ```json
 {
   "photos": [
@@ -523,6 +530,7 @@ Content-Type: application/json
 ## Support
 
 For issues or questions:
+
 - Review the component source code
 - Check browser console for errors
 - Ensure API endpoints are working

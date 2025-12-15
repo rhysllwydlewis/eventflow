@@ -1,6 +1,7 @@
 # Security Summary
 
 ## Overview
+
 This document outlines security considerations, current protections, and recommended improvements for the EventFlow platform.
 
 ## Current Security Measures
@@ -47,16 +48,19 @@ This document outlines security considerations, current protections, and recomme
 ## ⚠️ Known Security Considerations
 
 ### 1. CSRF Protection
+
 **Status:** Not implemented  
 **Risk Level:** Medium  
 **Description:** The application uses cookie-based authentication without CSRF tokens for state-changing operations.
 
 **Mitigation:**
+
 - All authenticated endpoints require valid JWT token
 - SameSite cookie attribute provides partial protection
 - Rate limiting prevents automated attacks
 
 **Recommended Fix:**
+
 ```javascript
 // Install csurf package
 npm install csurf
@@ -72,31 +76,37 @@ app.post('/api/photos/upload', csrfProtection, authRequired, ...);
 ```
 
 ### 2. Two-Factor Authentication
+
 **Status:** Not implemented  
 **Risk Level:** Medium  
 **Description:** No 2FA available for additional account security.
 
 **Recommended Implementation:**
+
 - Add TOTP support using speakeasy
 - SMS verification using Twilio
 - Backup codes for account recovery
 
 ### 3. Data Encryption at Rest
+
 **Status:** Not implemented (relies on MongoDB Atlas)  
 **Risk Level:** Low (if using Atlas with encryption)  
 **Description:** Sensitive data is not encrypted before storage.
 
 **Mitigation:**
+
 - Use MongoDB Atlas with encryption at rest enabled
 - For self-hosted: Enable MongoDB encryption
 - Never store plain text passwords (using bcrypt)
 
 ### 4. API Versioning
+
 **Status:** Not implemented  
 **Risk Level:** Low  
 **Description:** No API versioning strategy for backward compatibility.
 
 **Recommended:**
+
 ```javascript
 app.use('/api/v1', routes);
 app.use('/api/v2', routesV2);
@@ -113,6 +123,7 @@ app.use('/api/v2', routesV2);
    - Use different secrets for dev/staging/production
 
 2. **HTTPS Enforcement**
+
    ```nginx
    # Force HTTPS redirect
    server {
@@ -143,11 +154,12 @@ app.use('/api/v2', routesV2);
 ### For Development
 
 1. **Dependency Security**
+
    ```bash
    # Regular security audits
    npm audit
    npm audit fix
-   
+
    # Check for vulnerabilities
    npm install -g snyk
    snyk test
@@ -209,6 +221,7 @@ app.use('/api/v2', routesV2);
 ## 🔐 Compliance Considerations
 
 ### GDPR (if applicable)
+
 - [ ] Implement user data export functionality
 - [ ] Implement user data deletion functionality
 - [ ] Add privacy policy acceptance tracking
@@ -217,6 +230,7 @@ app.use('/api/v2', routesV2);
 - [ ] Appoint Data Protection Officer (if required)
 
 ### PCI DSS (if handling payments)
+
 - [ ] Never store full credit card numbers
 - [ ] Use Stripe.js for PCI-compliant payment handling
 - [ ] Implement additional security measures as required
@@ -224,6 +238,7 @@ app.use('/api/v2', routesV2);
 ## 📞 Security Contact
 
 For security issues or vulnerabilities:
+
 - Email: security@eventflow.com
 - Report privately via GitHub Security Advisories
 - DO NOT create public issues for security vulnerabilities
