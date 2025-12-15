@@ -614,15 +614,45 @@
     };
 
     window.approvePkg = function (id, approved) {
+      var action = approved ? 'approve' : 'unapprove';
       api('/api/admin/packages/' + id + '/approve', 'POST', { approved: approved })
-        .then(loadAll)
-        .catch(function (err) { console.error('approvePkg failed', err); });
+        .then(function () {
+          if (typeof Toast !== 'undefined') {
+            Toast.success('Package ' + action + 'd successfully.');
+          } else {
+            alert('Package ' + action + 'd successfully.');
+          }
+          loadAll();
+        })
+        .catch(function (err) {
+          console.error('approvePkg failed', err);
+          if (typeof Toast !== 'undefined') {
+            Toast.error('Failed to ' + action + ' package: ' + err.message);
+          } else {
+            alert('Failed to ' + action + ' package: ' + err.message);
+          }
+        });
     };
 
     window.featurePkg = function (id, featured) {
+      var action = featured ? 'feature' : 'unfeature';
       api('/api/admin/packages/' + id + '/feature', 'POST', { featured: featured })
-        .then(loadAll)
-        .catch(function (err) { console.error('featurePkg failed', err); });
+        .then(function () {
+          if (typeof Toast !== 'undefined') {
+            Toast.success('Package ' + action + 'd successfully.');
+          } else {
+            alert('Package ' + action + 'd successfully.');
+          }
+          loadAll();
+        })
+        .catch(function (err) {
+          console.error('featurePkg failed', err);
+          if (typeof Toast !== 'undefined') {
+            Toast.error('Failed to ' + action + ' package: ' + err.message);
+          } else {
+            alert('Failed to ' + action + ' package: ' + err.message);
+          }
+        });
     };
 
     window.disableUser = function (id) {
