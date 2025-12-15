@@ -59,6 +59,7 @@ class Carousel {
         border-radius: 12px;
         overflow: hidden;
         transition: transform 0.3s ease, box-shadow 0.3s ease;
+        min-width: 0;
       }
 
       .carousel-item:hover {
@@ -68,14 +69,14 @@ class Carousel {
 
       .carousel-item-image {
         width: 100%;
-        height: 200px;
+        height: 180px;
         object-fit: cover;
         display: block;
       }
 
       .carousel-item-placeholder {
         width: 100%;
-        height: 200px;
+        height: 180px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -93,7 +94,7 @@ class Carousel {
       }
 
       .carousel-item-content {
-        padding: 16px;
+        padding: 14px;
       }
 
       .carousel-item-title {
@@ -140,7 +141,7 @@ class Carousel {
 
       .carousel-controls {
         position: absolute;
-        top: 50%;
+        top: 40%;
         left: 0;
         right: 0;
         transform: translateY(-50%);
