@@ -1544,6 +1544,94 @@ app.get('/api/categories', (_req, res) => {
   res.json({ items: sorted });
 });
 
+// Admin: Update category hero image
+app.post(
+  '/api/admin/categories/:id/hero-image',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  photoUpload.upload.single('image'),
+  async (req, res) => {
+    try {
+      const categoryId = req.params.id;
+      const categories = read('categories');
+      const categoryIndex = categories.findIndex(c => c.id === categoryId);
+
+      if (categoryIndex === -1) {
+        return res.status(404).json({ error: 'Category not found' });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({ error: 'No image file provided' });
+      }
+
+      // Process and save the image
+      const imageData = await photoUpload.processAndSaveImage(
+        req.file.buffer,
+        req.file.originalname
+      );
+
+      // Update category with new hero image URL
+      categories[categoryIndex].heroImage = imageData.optimized || imageData.large;
+
+      write('categories', categories);
+
+      res.json({
+        ok: true,
+        category: categories[categoryIndex],
+        imageUrl: categories[categoryIndex].heroImage,
+      });
+    } catch (error) {
+      console.error('Error uploading category hero image:', error);
+      res.status(500).json({ error: 'Failed to upload image', details: error.message });
+    }
+  }
+);
+
+// Admin: Remove category hero image
+app.delete(
+  '/api/admin/categories/:id/hero-image',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    try {
+      const categoryId = req.params.id;
+      const categories = read('categories');
+      const categoryIndex = categories.findIndex(c => c.id === categoryId);
+
+      if (categoryIndex === -1) {
+        return res.status(404).json({ error: 'Category not found' });
+      }
+
+      const oldImageUrl = categories[categoryIndex].heroImage;
+
+      // Remove the hero image URL
+      categories[categoryIndex].heroImage = '';
+
+      write('categories', categories);
+
+      // Optionally delete the old image file if it exists
+      if (oldImageUrl && typeof oldImageUrl === 'string' && oldImageUrl.trim() !== '') {
+        try {
+          await photoUpload.deleteImage(oldImageUrl);
+        } catch (deleteErr) {
+          // Ignore delete errors - the URL is already removed from the category
+          console.warn('Failed to delete old image file:', deleteErr);
+        }
+      }
+
+      res.json({
+        ok: true,
+        category: categories[categoryIndex],
+      });
+    } catch (error) {
+      console.error('Error removing category hero image:', error);
+      res.status(500).json({ error: 'Failed to remove image', details: error.message });
+    }
+  }
+);
+
 app.get('/api/categories/:slug', (req, res) => {
   const categories = read('categories');
   const category = categories.find(c => c.slug === req.params.slug);
