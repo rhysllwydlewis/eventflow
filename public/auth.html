@@ -112,24 +112,7 @@
         </div>
       </form>
     </section>
-    <script>
-      const tabSign=document.getElementById('tab-signin');
-      const tabCreate=document.getElementById('tab-create');
-      const panelSign=document.getElementById('panel-signin');
-      const panelCreate=document.getElementById('panel-create');
-      tabSign.addEventListener('click',()=>{
-        tabSign.setAttribute('aria-selected','true');
-        tabCreate.setAttribute('aria-selected','false');
-        panelSign.hidden=false;
-        panelCreate.hidden=true;
-      });
-      tabCreate.addEventListener('click',()=>{
-        tabSign.setAttribute('aria-selected','false');
-        tabCreate.setAttribute('aria-selected','true');
-        panelSign.hidden=true;
-        panelCreate.hidden=false;
-      });
-    </script>
+    <script src="/assets/js/pages/auth-init.js"></script>
     <script src="/assets/js/app.js"></script>
     <script>window.__EF_PAGE__='auth'</script>
   </div>
