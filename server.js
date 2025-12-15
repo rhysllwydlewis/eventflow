@@ -2268,6 +2268,39 @@ app.get('/api/admin/suppliers', authRequired, roleRequired('admin'), (_req, res)
   res.json({ items });
 });
 
+/**
+ * GET /api/admin/suppliers/pending-verification
+ * Get suppliers awaiting verification
+ */
+app.get(
+  '/api/admin/suppliers/pending-verification',
+  authRequired,
+  roleRequired('admin'),
+  (_req, res) => {
+    try {
+      const suppliers = read('suppliers') || [];
+      const pending = suppliers.filter(
+        s => !s.verified && (!s.verificationStatus || s.verificationStatus === 'pending')
+      );
+
+      res.json({
+        suppliers: pending.map(s => ({
+          id: s.id,
+          name: s.name,
+          category: s.category,
+          location: s.location,
+          ownerUserId: s.ownerUserId,
+          createdAt: s.createdAt,
+        })),
+        count: pending.length,
+      });
+    } catch (error) {
+      console.error('Error fetching pending verification suppliers:', error);
+      res.status(500).json({ suppliers: [], count: 0, error: 'Failed to fetch pending suppliers' });
+    }
+  }
+);
+
 app.post(
   '/api/admin/suppliers/:id/approve',
   authRequired,

@@ -237,7 +237,7 @@ class Carousel {
         }
 
         .carousel-container {
-          overflow: hidden;
+          overflow: visible;
           width: 100%;
         }
 
@@ -245,10 +245,14 @@ class Carousel {
           min-width: 0;
           max-width: 100%;
           width: 100%;
+          overflow: visible;
+          height: auto;
+          min-height: auto;
+          align-self: flex-start;
         }
 
         .carousel-item-content {
-          padding: 12px;
+          padding: 12px 12px 20px 12px;
           min-width: 0;
           box-sizing: border-box;
         }
