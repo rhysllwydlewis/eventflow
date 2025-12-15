@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>EventFlow — Plan your event the simple way.</title>
+  <link rel="stylesheet" href="/assets/css/styles.css">
+  <link rel="stylesheet" href="/assets/css/eventflow-17.0.0.css">
+  <link rel="stylesheet" href="/assets/css/utilities.css">
+  <link rel="stylesheet" href="/assets/css/components.css">
+  <link rel="stylesheet" href="/assets/css/animations.css">
+  <meta name="description" content="Find suppliers, build your plan and keep everything in one place — beautifully simple on mobile and desktop.">
+  <link rel="icon" href="/favicon.svg">
+</head>
+<body>
+<header class="header" role="banner">
+  <div class="container header-inner">
+    <a class="brand" href="/" aria-label="EventFlow home">
+      <span class="logo" aria-hidden="true"></span>
+      <span class="brand-text">EventFlow</span>
+    </a>
+    <div class="header-actions">
+      <nav class="nav nav-inline" aria-label="Quick navigation">
+        <a href="/start.html" class="nav-link nav-main">Plan</a>
+        <a href="/suppliers.html" class="nav-link nav-main">Suppliers</a>
+        <a href="/auth.html" class="nav-link nav-main nav-main-login">Log in</a>
+      </nav>
+      <button id="notification-bell" class="icon-button" type="button" aria-label="Notifications" style="display:none;">
+        <span class="notification-icon">🔔</span>
+        <span class="notification-badge" style="display:none;">0</span>
+      </button>
+      <button id="burger" class="nav-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false">
+        <span class="nav-toggle-bar"></span>
+        <span class="nav-toggle-bar"></span>
+        <span class="nav-toggle-bar"></span>
+      </button>
+      </div>
+  </div>
+  <nav class="nav nav-menu" aria-label="Primary navigation">
+    <a href="/start.html">Plan an Event</a>
+    <a href="/suppliers.html">Suppliers</a>
+    <a href="/plan.html">My Plan</a>
+    <a href="/for-suppliers.html">For Suppliers</a>
+    <a href="/faq.html">FAQ</a>
+    <a href="/settings.html">Settings</a>
+    <a href="/auth.html" id="nav-auth">Sign in</a>
+    <a href="#" id="nav-dashboard" style="display:none">Dashboard</a>
+    <a href="#" id="nav-signout" style="display:none">Sign out</a>
+  </nav>
+</header>
+<script src="/assets/js/auth-nav.js" defer></script>
+<script src="/assets/js/components.js" defer></script>
+<script src="/assets/js/animations.js" defer></script>
+<script src="/assets/js/notifications.js" defer></script>
+<script src="/assets/js/search.js" defer></script>
+<script src="/assets/js/components/global-search.js" defer></script>
+
+<main>
+  <section class="hero">
+    <div class="container hero-grid">
+      <div>
+        <div class="small">Plan in minutes</div>
+        <h1>Everything you need to organise an event — in one clear place.</h1>
+        <p class="lead">
+          Find venues, catering, entertainment and more. Add to your plan with a click,
+          start conversations when you’re ready, and keep everything together.
+        </p>
+        <div class="hero-cta">
+          <button class="cta" onclick="location.href='/start.html'">Start planning</button>
+          <a class="cta secondary" href="/auth.html">Sign in / Create account</a>
+        </div>
+      </div>
+      <div>
+        <div class="collage" aria-hidden="true">
+          <div class="frame">
+            <span class="tag">Venues</span>
+            <img
+              loading="lazy"
+              src="/assets/images/collage-venue.jpg"
+              alt="An event venue exterior"
+            >
+          </div>
+          <div class="frame">
+            <span class="tag">Catering</span>
+            <img
+              loading="lazy"
+              src="/assets/images/collage-catering.jpg"
+              alt="Plated event catering"
+            >
+          </div>
+          <div class="frame">
+            <span class="tag">Entertainment</span>
+            <img
+              loading="lazy"
+              src="/assets/images/collage-entertainment.jpg"
+              alt="Live band performing at an event"
+            >
+          </div>
+          <div class="frame">
+            <span class="tag">Photography</span>
+            <img
+              loading="lazy"
+              src="/assets/images/collage-photography.jpg"
+              alt="Photographer taking pictures at a wedding"
+            >
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="small" style="text-transform:uppercase;letter-spacing:.2em;color:#7E8794">
+        Browse by Category
+      </div>
+      <div id="category-grid-home"></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="small" style="text-transform:uppercase;letter-spacing:.2em;color:#7E8794">
+        Featured packages
+      </div>
+      <div id="featured-packages" class="cards">
+        <div class="card"><p class="small">Loading…</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" style="background: linear-gradient(135deg, var(--ink, #0B8073), var(--accent, #13B6A2)); color: white;">
+    <div class="container">
+      <div class="stats-grid">
+        <div class="stat-item" data-reveal>
+          <div class="stat-number" data-counter="500" data-suffix="+">0</div>
+          <div class="stat-label">Verified Suppliers</div>
+        </div>
+        <div class="stat-item" data-reveal>
+          <div class="stat-number" data-counter="1200" data-suffix="+">0</div>
+          <div class="stat-label">Events Planned</div>
+        </div>
+        <div class="stat-item" data-reveal>
+          <div class="stat-number" data-counter="98" data-suffix="%">0</div>
+          <div class="stat-label">Customer Satisfaction</div>
+        </div>
+        <div class="stat-item" data-reveal>
+          <div class="stat-number" data-counter="50" data-suffix="+">0</div>
+          <div class="stat-label">Service Categories</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="cards">
+        <div class="card card-hover" data-reveal>
+          <h3>1 · Tell us about your event</h3>
+          <p class="small">Type, location and date help us surface relevant suppliers.</p>
+        </div>
+        <div class="card card-hover" data-reveal>
+          <h3>2 · Compare suppliers</h3>
+          <p class="small">
+            Browse venues, catering, entertainment and more — add to your plan with one click.
+          </p>
+        </div>
+        <div class="card card-hover" data-reveal>
+          <h3>3 · Save &amp; message</h3>
+          <p class="small">
+            Create a free account to save your plan and start conversations with suppliers.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer" role="contentinfo">
+  <div class="container" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+    <div><strong>EventFlow</strong><br><span class="small">Event planning made simple.</span></div>
+    <div class="version">Version: <span id="ef-version-label">loading…</span></div>
+    <div class="small">
+      <a href="/credits.html">Credits</a> ·
+      <a href="/contact.html">Contact</a> ·
+      <a href="/terms.html">Terms</a> ·
+      <a href="/privacy.html">Privacy</a>
+    </div>
+  </div>
+</footer>
+
+<script src="/assets/js/app.js"></script>
+<script src="/assets/js/websocket-client.js"></script>
+<script src="/assets/js/components/category-grid.js"></script>
+<script src="/assets/js/components/package-list.js"></script>
+<script>
+  window.__EF_PAGE__ = 'home';
+
+  // Initialize stats counters on homepage
+  document.addEventListener('DOMContentLoaded', () => {
+    // Initialize category grid
+    if (typeof CategoryGrid !== 'undefined') {
+      const categoryGrid = new CategoryGrid('category-grid-home');
+      categoryGrid.loadCategories();
+    }
+
+    // Load featured packages
+    fetch('/api/packages/featured')
+      .then(res => res.json())
+      .then(data => {
+        const container = document.getElementById('featured-packages');
+        if (!container) return;
+
+        if (!data.items || data.items.length === 0) {
+          container.innerHTML = '<p class="small">No featured packages available yet.</p>';
+          return;
+        }
+
+        const packageList = new PackageList('featured-packages', {
+          sortFeaturedFirst: false,
+        });
+        packageList.setPackages(data.items);
+      })
+      .catch(() => {
+        /* Ignore errors */
+      });
+
+    // Show notification bell for logged-in users
+    const user = localStorage.getItem('user');
+    if (user) {
+      const notificationBell = document.getElementById('notification-bell');
+      if (notificationBell) {
+        notificationBell.style.display = 'block';
+      }
+      
+      // Initialize WebSocket connection for real-time notifications
+      if (typeof WebSocketClient !== 'undefined') {
+        const wsClient = new WebSocketClient({
+          onNotification: (notification) => {
+            // Update notification badge
+            const badge = document.querySelector('.notification-badge');
+            if (badge) {
+              badge.style.display = 'block';
+              const current = parseInt(badge.textContent) || 0;
+              badge.textContent = current + 1;
+            }
+          }
+        });
+      }
+    }
+
+    // Animate stat counters when they come into view (only if Counter and IntersectionObserver are available)
+    if (typeof Counter === 'function' && 'IntersectionObserver' in window) {
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting && !entry.target.dataset.counted) {
+            const target = parseInt(entry.target.dataset.counter);
+            if (target > 0) {
+              entry.target.dataset.counted = 'true';
+              const counter = new Counter(entry.target, {
+                target: target,
+                duration: 2000,
+                suffix: entry.target.dataset.suffix || ''
+              });
+              counter.animate();
+            }
+          }
+        });
+      }, { threshold: 0.5 });
+
+      document.querySelectorAll('[data-counter]').forEach(el => {
+        observer.observe(el);
+      });
+    }
+
+    // Add ripple effect to CTA buttons (only if createRipple is available)
+    if (typeof createRipple === 'function') {
+      document.querySelectorAll('.cta').forEach(button => {
+        if (!button.classList.contains('ripple-container')) {
+          button.addEventListener('click', createRipple);
+        }
+      });
+    }
+  });
+
+  // Brand animation: keep "EventFlow" for 3s, then fade + collapse from right to left
+  (function () {
+    var brandText = document.querySelector('.brand-text');
+    if (!brandText) return;
+
+    brandText.style.display = 'inline-block';
+    brandText.style.whiteSpace = 'nowrap';
+    brandText.style.overflow = 'hidden';
+
+    var initialWidth = brandText.offsetWidth;
+    brandText.style.width = initialWidth + 'px';
+
+    brandText.style.transition = 'opacity 0.45s ease, width 0.45s ease, margin 0.45s ease';
+
+    setTimeout(function () {
+      brandText.style.opacity = '0';
+      brandText.style.width = '0';
+      brandText.style.marginLeft = '0';
+    }, 3000);
+  })();
+</script>
+<script src="/assets/js/components/footer-nav.js" defer></script>
+<script src="/assets/js/cookie-consent.js" defer></script>
+</body>
+</html>
