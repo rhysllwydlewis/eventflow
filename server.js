@@ -195,7 +195,7 @@ app.use(
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", 'https://cdn.jsdelivr.net', 'https://maps.googleapis.com', 'https://maps.gstatic.com'],
+        scriptSrc: ["'self'", "'unsafe-eval'", 'https://cdn.jsdelivr.net', 'https://maps.googleapis.com', 'https://maps.gstatic.com'],
         styleSrc: [
           "'self'",
           "'unsafe-inline'",
