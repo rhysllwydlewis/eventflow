@@ -1,48 +1,47 @@
 [
   {
-    "id": "usr_7y8l47tfztdgju",
-    "name": "Admin",
-    "email": "admin@eventflow.local",
-    "role": "admin",
-    "passwordHash": "$2a$10$Okrq01IW4Bb7G/uT2L3C5e1cznXoHTcrsoWJuvLva2JAzQze6sswe",
-    "createdAt": "2025-12-10T09:35:45.162Z",
-    "notify": true,
-    "marketingOptIn": false,
-    "verified": true
-  },
-  {
-    "id": "usr_xk2bphtbztdgmd",
-    "name": "Supplier Demo",
-    "email": "supplier@eventflow.local",
-    "role": "supplier",
-    "passwordHash": "$2a$10$v7g/ZG8R28mWOxaRIEp87OM4.DHr4J4AR6oTUczYO1/NipTOw73ni",
-    "createdAt": "2025-12-10T09:35:45.162Z",
-    "notify": true,
-    "marketingOptIn": false,
-    "verified": true
-  },
-  {
-    "id": "usr_fi4nz748ztdgon",
-    "name": "Customer Demo",
-    "email": "customer@eventflow.local",
-    "role": "customer",
-    "passwordHash": "$2a$10$hM6.st9wYax1mkRW.6ofo.x/fHyyZJKn2idLbn2cAL5Em7b4eydQy",
-    "createdAt": "2025-12-10T09:35:45.162Z",
-    "notify": true,
-    "marketingOptIn": false,
-    "verified": true
-  },
-  {
-    "id": "usr_wo88ix81ztswww",
+    "id": "usr_rmn81e0h750rah",
     "name": "EventFlow Owner",
     "email": "admin@event-flow.co.uk",
     "role": "admin",
-    "passwordHash": "$2a$10$C6pX6xDivY.wnUqEGpY1CeS3/lgFwlsqQSfTzr/Ga6facz.VtDF/S",
-    "createdAt": "2025-12-10T09:47:46.208Z",
+    "passwordHash": "$2a$10$Dt7.XasWlKU7NXvaHViXJ.AkEzCJFllSCTX9zDox/Mw6gfrjju1f6",
+    "createdAt": "2025-12-15T12:36:11.177Z",
     "notify": true,
     "marketingOptIn": false,
     "verified": true,
-    "isOwner": true,
-    "lastLoginAt": "2025-12-10T10:15:51.105Z"
+    "isOwner": true
+  },
+  {
+    "id": "usr_minyq5rk750rd2",
+    "name": "Admin",
+    "email": "admin@eventflow.local",
+    "role": "admin",
+    "passwordHash": "$2a$10$mEusjHOiBRbBcLCBBPdBYOk3oFe9QRCh6fo9mk3B9kdWQf6t2IGm6",
+    "createdAt": "2025-12-15T12:36:11.177Z",
+    "notify": true,
+    "marketingOptIn": false,
+    "verified": true
+  },
+  {
+    "id": "usr_9ydkodbh750rfb",
+    "name": "Supplier Demo",
+    "email": "supplier@eventflow.local",
+    "role": "supplier",
+    "passwordHash": "$2a$10$sRqgBb7xs9N11EesyCvgauwvwSzZFSsakIO3sneByQeVXjk9XKwiq",
+    "createdAt": "2025-12-15T12:36:11.177Z",
+    "notify": true,
+    "marketingOptIn": false,
+    "verified": true
+  },
+  {
+    "id": "usr_v1ir5ocw750rhl",
+    "name": "Customer Demo",
+    "email": "customer@eventflow.local",
+    "role": "customer",
+    "passwordHash": "$2a$10$wpEzVg1CA4XsQ8v/LoQZdOjEfVrxRCaDqgqqcBmmnm.eVwgDTg/Um",
+    "createdAt": "2025-12-15T12:36:11.177Z",
+    "notify": true,
+    "marketingOptIn": false,
+    "verified": true
   }
 ]
