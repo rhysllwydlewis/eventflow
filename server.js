@@ -897,11 +897,9 @@ app.post(
 
     // Validate password strength
     if (!passwordOk(password)) {
-      return res
-        .status(400)
-        .json({
-          error: 'Password must be at least 8 characters with uppercase, lowercase, and number',
-        });
+      return res.status(400).json({
+        error: 'Password must be at least 8 characters with uppercase, lowercase, and number',
+      });
     }
 
     // Validate role

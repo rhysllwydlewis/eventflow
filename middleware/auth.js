@@ -20,7 +20,7 @@ function setAuthCookie(res, token) {
     httpOnly: true,
     sameSite: isProd ? 'strict' : 'lax',
     secure: isProd,
-    maxAge: 1000 * 60 * 60 * 24 * 7
+    maxAge: 1000 * 60 * 60 * 24 * 7,
   });
 }
 
@@ -39,7 +39,9 @@ function clearAuthCookie(res) {
  */
 function getUserFromCookie(req) {
   const t = req.cookies && req.cookies.token;
-  if (!t) return null;
+  if (!t) {
+    return null;
+  }
   try {
     return jwt.verify(t, JWT_SECRET);
   } catch {
@@ -56,7 +58,9 @@ function getUserFromCookie(req) {
  */
 function authRequired(req, res, next) {
   const u = getUserFromCookie(req);
-  if (!u) return res.status(401).json({ error: 'Unauthenticated' });
+  if (!u) {
+    return res.status(401).json({ error: 'Unauthenticated' });
+  }
   req.user = u;
   // Also expose userId for routes that rely on it
   req.userId = u.id;
@@ -70,8 +74,12 @@ function authRequired(req, res, next) {
  */
 function roleRequired(role) {
   return (req, res, next) => {
-    if (!req.user) return res.status(401).json({ error: 'Unauthenticated' });
-    if (req.user.role !== role) return res.status(403).json({ error: 'Forbidden' });
+    if (!req.user) {
+      return res.status(401).json({ error: 'Unauthenticated' });
+    }
+    if (req.user.role !== role) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
     next();
   };
 }
@@ -86,7 +94,9 @@ function planOwnerOnly(req, res, next) {
   const { read } = require('../store');
   const plans = read('plans');
   const p = plans.find(x => x.userId === req.userId);
-  if (!p) return res.status(404).json({ error: 'No plan found' });
+  if (!p) {
+    return res.status(404).json({ error: 'No plan found' });
+  }
   req.plan = p;
   next();
 }
@@ -97,5 +107,5 @@ module.exports = {
   getUserFromCookie,
   authRequired,
   roleRequired,
-  planOwnerOnly
+  planOwnerOnly,
 };

@@ -56,12 +56,15 @@ function throttle(func, limit = 300) {
       inThrottle = true;
     } else {
       clearTimeout(lastFunc);
-      lastFunc = setTimeout(() => {
-        if (Date.now() - lastRan >= limit) {
-          func.apply(context, args);
-          lastRan = Date.now();
-        }
-      }, Math.max(limit - (Date.now() - lastRan), 0));
+      lastFunc = setTimeout(
+        () => {
+          if (Date.now() - lastRan >= limit) {
+            func.apply(context, args);
+            lastRan = Date.now();
+          }
+        },
+        Math.max(limit - (Date.now() - lastRan), 0)
+      );
     }
   };
 }

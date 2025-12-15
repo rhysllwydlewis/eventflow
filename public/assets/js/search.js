@@ -11,7 +11,7 @@ class GlobalSearch {
     this.maxHistory = 10;
     this.modal = null;
     this.input = null;
-    
+
     this.loadHistory();
     this.init();
   }
@@ -22,7 +22,7 @@ class GlobalSearch {
   }
 
   setupKeyboardShortcut() {
-    document.addEventListener('keydown', (e) => {
+    document.addEventListener('keydown', e => {
       // Check for Ctrl+K (Windows/Linux) or Cmd+K (Mac)
       if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
         e.preventDefault();
@@ -48,7 +48,7 @@ class GlobalSearch {
     const modal = document.createElement('div');
     modal.className = 'modal';
     modal.style.maxWidth = '600px';
-    
+
     modal.innerHTML = `
       <div class="modal-header" style="border-bottom: none; padding-bottom: 0;">
         <input 
@@ -137,7 +137,7 @@ class GlobalSearch {
     this.input = modal.querySelector('#global-search-input');
 
     // Close on overlay click
-    overlay.addEventListener('click', (e) => {
+    overlay.addEventListener('click', e => {
       if (e.target === overlay) {
         this.close();
       }
@@ -149,12 +149,12 @@ class GlobalSearch {
     });
 
     // Search input handler
-    this.input.addEventListener('input', (e) => {
+    this.input.addEventListener('input', e => {
       this.handleSearch(e.target.value);
     });
 
     // Keyboard navigation
-    this.input.addEventListener('keydown', (e) => {
+    this.input.addEventListener('keydown', e => {
       this.handleKeyNavigation(e);
     });
   }
@@ -172,7 +172,7 @@ class GlobalSearch {
     this.modal.style.opacity = '1';
     this.modal.style.visibility = 'visible';
     this.isOpen = true;
-    
+
     // Focus input
     setTimeout(() => {
       this.input.focus();
@@ -188,7 +188,7 @@ class GlobalSearch {
     this.modal.style.visibility = 'hidden';
     this.isOpen = false;
     this.input.value = '';
-    
+
     // Reset view
     document.getElementById('search-results').innerHTML = '';
     document.getElementById('search-suggestions').style.display = 'block';
@@ -196,11 +196,12 @@ class GlobalSearch {
 
   handleSearch(query) {
     const trimmed = query.trim();
-    
+
     if (!trimmed) {
       document.getElementById('search-results').innerHTML = '';
       document.getElementById('search-suggestions').style.display = 'block';
-      document.getElementById('search-recent').style.display = this.searchHistory.length > 0 ? 'block' : 'none';
+      document.getElementById('search-recent').style.display =
+        this.searchHistory.length > 0 ? 'block' : 'none';
       return;
     }
 
@@ -215,16 +216,51 @@ class GlobalSearch {
 
   performSearch(query) {
     const lowerQuery = query.toLowerCase();
-    
+
     // Mock search data - in production, this would search the actual database
     const mockData = [
-      { type: 'supplier', title: 'Garden Venue & Events', category: 'Venues', url: '/supplier.html?id=1' },
-      { type: 'supplier', title: 'Elite Catering Services', category: 'Catering', url: '/supplier.html?id=2' },
-      { type: 'supplier', title: 'Professional Photography', category: 'Photography', url: '/supplier.html?id=3' },
-      { type: 'page', title: 'Budget Tracker', description: 'Manage your event budget', url: '/budget.html' },
-      { type: 'page', title: 'Guest List Manager', description: 'Track RSVPs and guests', url: '/guests.html' },
-      { type: 'help', title: 'How to find suppliers?', description: 'Browse and filter suppliers', url: '/faq.html#suppliers' },
-      { type: 'help', title: 'How to create an account?', description: 'Sign up process', url: '/faq.html#account' },
+      {
+        type: 'supplier',
+        title: 'Garden Venue & Events',
+        category: 'Venues',
+        url: '/supplier.html?id=1',
+      },
+      {
+        type: 'supplier',
+        title: 'Elite Catering Services',
+        category: 'Catering',
+        url: '/supplier.html?id=2',
+      },
+      {
+        type: 'supplier',
+        title: 'Professional Photography',
+        category: 'Photography',
+        url: '/supplier.html?id=3',
+      },
+      {
+        type: 'page',
+        title: 'Budget Tracker',
+        description: 'Manage your event budget',
+        url: '/budget.html',
+      },
+      {
+        type: 'page',
+        title: 'Guest List Manager',
+        description: 'Track RSVPs and guests',
+        url: '/guests.html',
+      },
+      {
+        type: 'help',
+        title: 'How to find suppliers?',
+        description: 'Browse and filter suppliers',
+        url: '/faq.html#suppliers',
+      },
+      {
+        type: 'help',
+        title: 'How to create an account?',
+        description: 'Sign up process',
+        url: '/faq.html#account',
+      },
     ];
 
     // Simple fuzzy search
@@ -238,7 +274,7 @@ class GlobalSearch {
 
   renderResults(results, query) {
     const container = document.getElementById('search-results');
-    
+
     if (results.length === 0) {
       container.innerHTML = `
         <div style="text-align: center; padding: 2rem; color: var(--muted);">
@@ -249,14 +285,16 @@ class GlobalSearch {
       return;
     }
 
-    const html = results.map((result, index) => {
-      const icon = {
-        supplier: '🏢',
-        page: '📄',
-        help: '❓'
-      }[result.type] || '📄';
+    const html = results
+      .map((result, index) => {
+        const icon =
+          {
+            supplier: '🏢',
+            page: '📄',
+            help: '❓',
+          }[result.type] || '📄';
 
-      return `
+        return `
         <a href="${result.url}" class="search-result-item" data-index="${index}">
           <div>
             <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
@@ -269,7 +307,8 @@ class GlobalSearch {
           <span style="color: var(--muted);">→</span>
         </a>
       `;
-    }).join('');
+      })
+      .join('');
 
     container.innerHTML = html;
 
@@ -285,29 +324,35 @@ class GlobalSearch {
   renderRecentSearches() {
     const container = document.getElementById('search-recent');
     const listContainer = document.getElementById('recent-searches-list');
-    
+
     if (this.searchHistory.length === 0) {
       container.style.display = 'none';
       return;
     }
 
     container.style.display = 'block';
-    
-    const html = this.searchHistory.map(query => `
+
+    const html = this.searchHistory
+      .map(
+        query => `
       <div class="search-result-item" onclick="document.getElementById('global-search-input').value = '${this.escapeHtml(query)}'; document.getElementById('global-search-input').dispatchEvent(new Event('input'));">
         <div style="display: flex; align-items: center; gap: 0.5rem;">
           <span style="color: var(--muted);">🕐</span>
           <span>${this.escapeHtml(query)}</span>
         </div>
       </div>
-    `).join('');
+    `
+      )
+      .join('');
 
     listContainer.innerHTML = html;
   }
 
   handleKeyNavigation(e) {
     const results = document.querySelectorAll('.search-result-item');
-    if (results.length === 0) return;
+    if (results.length === 0) {
+      return;
+    }
 
     const current = document.querySelector('.search-result-item.active');
     let index = current ? parseInt(current.dataset.index) || 0 : -1;
@@ -338,13 +383,15 @@ class GlobalSearch {
   }
 
   addToHistory(query) {
-    if (!query || this.searchHistory.includes(query)) return;
-    
+    if (!query || this.searchHistory.includes(query)) {
+      return;
+    }
+
     this.searchHistory.unshift(query);
     if (this.searchHistory.length > this.maxHistory) {
       this.searchHistory = this.searchHistory.slice(0, this.maxHistory);
     }
-    
+
     this.saveHistory();
   }
 
@@ -371,11 +418,16 @@ class GlobalSearch {
     // Escape special regex characters to prevent ReDoS attacks
     const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const regex = new RegExp(`(${escapedQuery})`, 'gi');
-    return this.escapeHtml(text).replace(regex, '<mark style="background: rgba(11, 128, 115, 0.2); padding: 0 2px; border-radius: 2px;">$1</mark>');
+    return this.escapeHtml(text).replace(
+      regex,
+      '<mark style="background: rgba(11, 128, 115, 0.2); padding: 0 2px; border-radius: 2px;">$1</mark>'
+    );
   }
 
   escapeHtml(unsafe) {
-    if (typeof unsafe !== 'string') return '';
+    if (typeof unsafe !== 'string') {
+      return '';
+    }
     return unsafe
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')

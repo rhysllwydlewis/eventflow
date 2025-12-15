@@ -3,6 +3,7 @@
 ## Quick Start
 
 ### Prerequisites
+
 - Docker Desktop installed
 - Docker Compose installed (included with Docker Desktop)
 
@@ -20,6 +21,7 @@ docker-compose logs -f app
 ```
 
 This will start:
+
 - **MongoDB** on port 27017
 - **EventFlow App** on port 3000
 - **Mongo Express** (Web UI) on port 8081
@@ -124,7 +126,7 @@ If ports are already in use, edit `docker-compose.yml` to use different ports:
 
 ```yaml
 ports:
-  - "3001:3000"  # Change host port
+  - '3001:3000' # Change host port
 ```
 
 ## Production Deployment
@@ -137,6 +139,7 @@ docker-compose -f docker-compose.prod.yml up -d
 ```
 
 Or use container orchestration platforms like:
+
 - Kubernetes
 - Docker Swarm
 - AWS ECS

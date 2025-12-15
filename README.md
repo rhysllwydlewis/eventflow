@@ -13,6 +13,7 @@ A production-ready, feature-rich platform connecting event service suppliers (ph
 **Deploying to production (Railway, Heroku, etc.)?** Follow these steps to avoid 502 errors:
 
 ### Prerequisites
+
 - ✅ Node.js 16+
 - ✅ **MongoDB Atlas account (free tier available)** ← Most important!
 - ✅ Deployment platform account (Railway, Heroku, etc.)
@@ -25,13 +26,14 @@ A production-ready, feature-rich platform connecting event service suppliers (ph
    - Get your connection string from MongoDB Atlas
 
 2. **Configure Environment Variables** on your deployment platform:
+
    ```bash
    # Required
    MONGODB_URI=mongodb+srv://your-actual-connection-string
    JWT_SECRET=your-random-secret-min-32-chars
    NODE_ENV=production
    BASE_URL=https://your-app.railway.app
-   
+
    # Recommended (optional)
    EMAIL_ENABLED=true
    FROM_EMAIL=no-reply@yourdomain.com
@@ -47,12 +49,12 @@ A production-ready, feature-rich platform connecting event service suppliers (ph
 
 Getting "502 Bad Gateway" or "connection refused" errors? This usually means MongoDB isn't configured:
 
-| Error Message | Solution |
-|--------------|----------|
+| Error Message                                   | Solution                                                                                                                                    |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
 | "Invalid scheme, expected connection string..." | You're using the placeholder from `.env.example`. Get your real connection string from MongoDB Atlas - [see guide](MONGODB_SETUP_SIMPLE.md) |
-| "Authentication failed" or "bad auth" | Wrong password in connection string. Reset it in MongoDB Atlas → Database Access |
-| "Connection timeout" or "ENOTFOUND" | IP not whitelisted. Add `0.0.0.0/0` in MongoDB Atlas → Network Access |
-| "No cloud database configured" | `MONGODB_URI` environment variable not set on your deployment platform |
+| "Authentication failed" or "bad auth"           | Wrong password in connection string. Reset it in MongoDB Atlas → Database Access                                                            |
+| "Connection timeout" or "ENOTFOUND"             | IP not whitelisted. Add `0.0.0.0/0` in MongoDB Atlas → Network Access                                                                       |
+| "No cloud database configured"                  | `MONGODB_URI` environment variable not set on your deployment platform                                                                      |
 
 **📚 Detailed troubleshooting:** See [MONGODB_SETUP_SIMPLE.md](MONGODB_SETUP_SIMPLE.md#common-problems-and-solutions)
 
@@ -61,6 +63,7 @@ Getting "502 Bad Gateway" or "connection refused" errors? This usually means Mon
 ## 🌟 Features
 
 ### Core Platform
+
 - ✅ **Advanced Photo Management** - Upload, optimize, crop with AWS S3 or local storage
 - ✅ **Reviews & Ratings System** - 5-star ratings with approval workflow
 - ✅ **Advanced Search & Discovery** - Full-text search, filters, trending, recommendations
@@ -71,6 +74,7 @@ Getting "502 Bad Gateway" or "connection refused" errors? This usually means Mon
 - ✅ **API Documentation** - Interactive Swagger UI at `/api-docs`
 
 ### Photo Management
+
 - Multer middleware for secure uploads
 - Sharp for image optimization (resize, compress, format conversion)
 - Automatic thumbnail generation (300x300, 1200x1200, 2000x2000)
@@ -81,6 +85,7 @@ Getting "502 Bad Gateway" or "connection refused" errors? This usually means Mon
 - CDN-ready URLs
 
 ### Search & Discovery
+
 - Full-text search across suppliers
 - Advanced filters: category, location, price, rating, amenities, guest capacity
 - Trending suppliers
@@ -90,6 +95,7 @@ Getting "502 Bad Gateway" or "connection refused" errors? This usually means Mon
 - Search history tracking
 
 ### Reviews & Ratings
+
 - 5-star rating system
 - Written reviews with event details
 - Admin moderation
@@ -98,6 +104,7 @@ Getting "502 Bad Gateway" or "connection refused" errors? This usually means Mon
 - Verified reviews
 
 ### Admin Dashboard
+
 - **User Management** - Edit, delete, suspend, ban users
 - **Admin Privilege Control** - Grant/revoke admin access with owner protection
 - **Supplier Management** - Edit, approve, verify, delete suppliers
@@ -112,6 +119,7 @@ Getting "502 Bad Gateway" or "connection refused" errors? This usually means Mon
 ## 🚀 Quick Start
 
 ### Prerequisites
+
 - Node.js 16+ and npm
 - **Optional:** MongoDB 6.0+ (local or Atlas) for production deployments
 
@@ -154,6 +162,7 @@ docker-compose down
 ```
 
 **Services:**
+
 - App: http://localhost:3000
 - API Docs: http://localhost:3000/api-docs
 - MongoDB UI: http://localhost:8081
@@ -163,11 +172,13 @@ See [DOCKER_GUIDE.md](DOCKER_GUIDE.md) for details.
 ## 📚 Documentation
 
 ### Getting Started
+
 - **[Production Deployment Quick Start](#-quick-start---production-deployment)** - Deploy in 15 minutes
 - **[MongoDB Setup (Simple Guide)](MONGODB_SETUP_SIMPLE.md)** - For non-technical users
 - **[Troubleshooting 502 Errors](#troubleshooting-502-errors)** - Common deployment issues
 
 ### Complete Guides
+
 - **[API Documentation](API_DOCUMENTATION.md)** - Complete API reference with examples
 - **[Deployment Guide](DEPLOYMENT_GUIDE.md)** - Production deployment instructions
 - **[MongoDB Setup (Technical)](MONGODB_SETUP.md)** - Database configuration guide
@@ -177,6 +188,7 @@ See [DOCKER_GUIDE.md](DOCKER_GUIDE.md) for details.
 ## 🛠️ Tech Stack
 
 **Backend:**
+
 - Node.js & Express.js
 - MongoDB with Mongoose schemas
 - JWT authentication
@@ -185,26 +197,31 @@ See [DOCKER_GUIDE.md](DOCKER_GUIDE.md) for details.
 - AWS SDK (S3 storage)
 
 **Email:**
+
 - SendGrid or SMTP
 - Nodemailer
 
 **Security:**
+
 - Helmet (security headers)
 - bcrypt (password hashing)
 - Rate limiting
 - Input validation (Validator.js)
 
 **Documentation:**
+
 - Swagger/OpenAPI 3.0
 - Swagger UI Express
 
 **Optional:**
+
 - Stripe (payments)
 - OpenAI (AI features)
 
 ## 📖 API Endpoints
 
 ### Authentication
+
 ```
 POST   /api/auth/register        - Register new user
 POST   /api/auth/login           - Login
@@ -214,6 +231,7 @@ POST   /api/auth/forgot          - Request password reset
 ```
 
 ### Search & Discovery
+
 ```
 GET    /api/search/suppliers     - Advanced supplier search
 GET    /api/search/categories    - Get all categories
@@ -224,6 +242,7 @@ GET    /api/discovery/recommendations - Personalized recommendations
 ```
 
 ### Reviews & Ratings
+
 ```
 POST   /api/reviews              - Create review
 GET    /api/reviews/supplier/:id - Get supplier reviews
@@ -233,6 +252,7 @@ DELETE /api/reviews/:id          - Delete review
 ```
 
 ### Photo Management
+
 ```
 POST   /api/photos/upload        - Upload single photo
 POST   /api/photos/upload/batch  - Upload multiple photos
@@ -243,6 +263,7 @@ POST   /api/photos/approve       - Approve/reject photo (admin)
 ```
 
 ### Admin Endpoints
+
 ```
 GET    /api/admin/users          - List all users
 PUT    /api/admin/users/:id      - Edit user profile
@@ -266,6 +287,7 @@ See [ADMIN_API.md](ADMIN_API.md) for detailed admin endpoint documentation.
 ## 🔧 Environment Variables
 
 **Required for Production:**
+
 ```env
 # Database - MOST IMPORTANT! App won't start without this
 MONGODB_URI=mongodb+srv://user:pass@cluster.mongodb.net/eventflow
@@ -280,6 +302,7 @@ BASE_URL=https://yourdomain.com
 ```
 
 **Recommended (Email functionality):**
+
 ```env
 EMAIL_ENABLED=true
 FROM_EMAIL=no-reply@yourdomain.com
@@ -287,6 +310,7 @@ SENDGRID_API_KEY=SG.your-api-key
 ```
 
 **Optional - AWS S3:**
+
 ```env
 AWS_S3_BUCKET=your-bucket
 AWS_S3_REGION=us-east-1
@@ -328,6 +352,7 @@ eventflow/
 ## 🗄️ Database Schema
 
 **Collections:**
+
 - `users` - Customer, supplier, admin accounts
 - `suppliers` - Supplier business profiles
 - `packages` - Service packages
@@ -340,6 +365,7 @@ eventflow/
 - `searchHistory` - User search history
 
 All collections have:
+
 - JSON schema validation
 - Optimized indexes
 - Automatic timestamps
@@ -349,6 +375,7 @@ All collections have:
 **⚠️ First-time deploying?** See the [Production Quick Start](#-quick-start---production-deployment) section at the top!
 
 ### Railway
+
 ```bash
 railway login
 railway init
@@ -358,6 +385,7 @@ railway up
 ```
 
 ### Heroku
+
 ```bash
 heroku create eventflow-app
 # Set environment variables (use your REAL MongoDB connection string!)
@@ -366,12 +394,14 @@ git push heroku main
 ```
 
 ### DigitalOcean App Platform
+
 ```bash
 # Configure via dashboard or doctl CLI
 doctl apps create --spec .do/app.yaml
 ```
 
 ### AWS EC2 / VPS
+
 See [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) for detailed instructions.
 
 ## 🧪 Testing

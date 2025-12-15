@@ -50,7 +50,7 @@ class SupplierGalleryManager {
   setupDragAndDrop(dropZone, previewContainer) {
     // Prevent default drag behaviors
     ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-      dropZone.addEventListener(eventName, (e) => {
+      dropZone.addEventListener(eventName, e => {
         e.preventDefault();
         e.stopPropagation();
       });
@@ -70,7 +70,7 @@ class SupplierGalleryManager {
     });
 
     // Handle dropped files
-    dropZone.addEventListener('drop', (e) => {
+    dropZone.addEventListener('drop', e => {
       const files = e.dataTransfer.files;
       this.handleFiles(files, previewContainer);
     });
@@ -89,20 +89,26 @@ class SupplierGalleryManager {
   }
 
   async handleFiles(files, previewContainer) {
-    if (!files || files.length === 0) return;
+    if (!files || files.length === 0) {
+      return;
+    }
 
     const fileArray = Array.from(files);
-    
+
     // Validate number of photos
     const currentPhotoCount = this.uploadedPhotos.length + this.pendingUploads.length;
     const maxPhotos = 10;
-    
+
     if (currentPhotoCount + fileArray.length > maxPhotos) {
       // Use Toast if available, fallback to alert
       if (typeof Toast !== 'undefined') {
-        Toast.warning(`You can upload a maximum of ${maxPhotos} photos. You currently have ${currentPhotoCount} photos.`);
+        Toast.warning(
+          `You can upload a maximum of ${maxPhotos} photos. You currently have ${currentPhotoCount} photos.`
+        );
       } else {
-        alert(`You can upload a maximum of ${maxPhotos} photos. You currently have ${currentPhotoCount} photos.`);
+        alert(
+          `You can upload a maximum of ${maxPhotos} photos. You currently have ${currentPhotoCount} photos.`
+        );
       }
       return;
     }
@@ -126,8 +132,8 @@ class SupplierGalleryManager {
 
   showPreview(file, previewContainer) {
     const reader = new FileReader();
-    
-    reader.onload = (e) => {
+
+    reader.onload = e => {
       const wrapper = document.createElement('div');
       wrapper.className = 'photo-preview-item';
       wrapper.style.position = 'relative';
@@ -135,7 +141,7 @@ class SupplierGalleryManager {
       const img = document.createElement('img');
       img.src = e.target.result;
       img.alt = file.name;
-      
+
       // Add remove button
       const removeBtn = document.createElement('button');
       removeBtn.type = 'button';
@@ -153,7 +159,7 @@ class SupplierGalleryManager {
       removeBtn.style.fontSize = '16px';
       removeBtn.style.lineHeight = '1';
       removeBtn.style.padding = '0';
-      
+
       removeBtn.addEventListener('click', () => {
         // Remove from pending uploads
         const index = this.pendingUploads.indexOf(file);
@@ -174,10 +180,10 @@ class SupplierGalleryManager {
 
   setupFormIntercept(form) {
     const originalSubmit = form.onsubmit;
-    
-    form.addEventListener('submit', async (e) => {
+
+    form.addEventListener('submit', async e => {
       e.preventDefault();
-      
+
       // Get or determine supplier ID
       const supplierIdField = document.getElementById('sup-id');
       let supplierId = supplierIdField ? supplierIdField.value : null;
@@ -185,7 +191,7 @@ class SupplierGalleryManager {
       // If no supplier ID, we need to create the supplier first to get an ID
       if (!supplierId || supplierId.trim() === '') {
         // Generate a temporary ID for new suppliers
-        supplierId = 'sup_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+        supplierId = `sup_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
         if (supplierIdField) {
           supplierIdField.value = supplierId;
         }
@@ -206,8 +212,8 @@ class SupplierGalleryManager {
       // Now submit the form normally
       const formData = new FormData(form);
       const payload = {};
-      formData.forEach((v, k) => payload[k] = v);
-      
+      formData.forEach((v, k) => (payload[k] = v));
+
       const id = (payload.id || '').toString().trim();
       const path = id ? `/api/me/suppliers/${encodeURIComponent(id)}` : '/api/me/suppliers';
       const method = id ? 'PATCH' : 'POST';
@@ -216,7 +222,7 @@ class SupplierGalleryManager {
         const response = await fetch(path, {
           method,
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
+          body: JSON.stringify(payload),
         });
 
         if (!response.ok) {
@@ -225,33 +231,35 @@ class SupplierGalleryManager {
 
         // Clear pending uploads
         this.pendingUploads = [];
-        
+
         // Use Toast if available, fallback to alert
         if (typeof Toast !== 'undefined') {
           Toast.success('Supplier profile and photos saved successfully!');
         } else {
           alert('Saved supplier profile with photos!');
         }
-        
+
         // Reload the page or refresh suppliers list
         if (typeof window.loadSuppliers === 'function') {
           await window.loadSuppliers();
         }
       } catch (error) {
         console.error('Error saving supplier:', error);
-        
+
         // Use Toast if available, fallback to alert
         if (typeof Toast !== 'undefined') {
-          Toast.error('Error saving supplier profile: ' + error.message);
+          Toast.error(`Error saving supplier profile: ${error.message}`);
         } else {
-          alert('Error saving supplier profile: ' + error.message);
+          alert(`Error saving supplier profile: ${error.message}`);
         }
       }
     });
   }
 
   async uploadPendingPhotos(supplierId) {
-    if (this.pendingUploads.length === 0) return;
+    if (this.pendingUploads.length === 0) {
+      return;
+    }
 
     const statusEl = document.getElementById('sup-status');
     if (statusEl) {
@@ -266,7 +274,7 @@ class SupplierGalleryManager {
           if (statusEl) {
             statusEl.textContent = `Uploading photo ${current} of ${total}...`;
           }
-          
+
           if (photoData) {
             this.uploadedPhotos.push(photoData);
           }
@@ -288,12 +296,12 @@ class SupplierGalleryManager {
 
       // Clear pending uploads
       this.pendingUploads = [];
-      
+
       console.log('Photos uploaded:', this.uploadedPhotos);
     } catch (error) {
       console.error('Error uploading photos:', error);
       if (statusEl) {
-        statusEl.textContent = 'Error uploading photos: ' + error.message;
+        statusEl.textContent = `Error uploading photos: ${error.message}`;
       }
       throw error;
     }
@@ -308,16 +316,16 @@ class SupplierGalleryManager {
     }
 
     const supplierId = supplierIdField.value;
-    
+
     try {
       const supplier = await supplierManager.getSupplier(supplierId);
       if (supplier && supplier.photos) {
         // Parse photos (assuming they're stored as newline-separated URLs)
         const photoUrls = supplier.photos.split('\n').filter(url => url.trim());
-        
+
         // For existing photos, we just need the URLs
         this.uploadedPhotos = photoUrls.map(url => ({ url }));
-        
+
         console.log('Loaded existing photos:', this.uploadedPhotos);
       }
     } catch (error) {

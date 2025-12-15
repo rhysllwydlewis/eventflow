@@ -3,13 +3,7 @@
  * Handles uploading supplier gallery photos to Firebase Storage
  */
 
-import {
-  storage,
-  ref,
-  uploadBytes,
-  getDownloadURL,
-  deleteObject
-} from './firebase-config.js';
+import { storage, ref, uploadBytes, getDownloadURL, deleteObject } from './firebase-config.js';
 
 class SupplierPhotoUpload {
   constructor() {
@@ -44,14 +38,14 @@ class SupplierPhotoUpload {
       const randomStr = Math.random().toString(36).substring(2, 9);
       const extension = file.name.split('.').pop() || 'jpg';
       const filename = `${timestamp}_${randomStr}.${extension}`;
-      
+
       // Create storage reference
       const storagePath = `suppliers/${supplierId}/gallery/${filename}`;
       const storageRef = ref(storage, storagePath);
 
       // Upload file
       const snapshot = await uploadBytes(storageRef, file);
-      
+
       // Get download URL
       const downloadURL = await getDownloadURL(snapshot.ref);
 
@@ -62,7 +56,7 @@ class SupplierPhotoUpload {
         filename: filename,
         originalName: file.name,
         size: file.size,
-        uploadedAt: new Date().toISOString()
+        uploadedAt: new Date().toISOString(),
       };
 
       console.log('Photo uploaded successfully:', photoData);
@@ -84,26 +78,26 @@ class SupplierPhotoUpload {
     try {
       const fileArray = Array.from(files);
       const results = [];
-      
+
       for (let i = 0; i < fileArray.length; i++) {
         const file = fileArray[i];
-        
+
         try {
           const photoData = await this.uploadPhoto(file, supplierId);
           results.push({ success: true, photo: photoData });
-          
+
           if (onProgress) {
             onProgress(i + 1, fileArray.length, photoData);
           }
         } catch (error) {
           results.push({ success: false, error: error.message, filename: file.name });
-          
+
           if (onProgress) {
             onProgress(i + 1, fileArray.length, null, error);
           }
         }
       }
-      
+
       return results;
     } catch (error) {
       console.error('Error uploading multiple photos:', error);
@@ -134,21 +128,21 @@ class SupplierPhotoUpload {
   async compressImage(file) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      
-      reader.onload = (e) => {
+
+      reader.onload = e => {
         const img = new Image();
-        
+
         img.onload = () => {
           const canvas = document.createElement('canvas');
           const ctx = canvas.getContext('2d');
-          
+
           // Use configured max dimensions
           const maxWidth = this.maxImageWidth;
           const maxHeight = this.maxImageHeight;
-          
+
           let width = img.width;
           let height = img.height;
-          
+
           // Calculate new dimensions
           if (width > height) {
             if (width > maxWidth) {
@@ -161,45 +155,45 @@ class SupplierPhotoUpload {
               height = maxHeight;
             }
           }
-          
+
           canvas.width = width;
           canvas.height = height;
-          
+
           // Draw image on canvas
           ctx.drawImage(img, 0, 0, width, height);
-          
+
           // Convert to blob
           canvas.toBlob(
-            (blob) => {
+            blob => {
               if (!blob) {
                 reject(new Error('Failed to compress image'));
                 return;
               }
-              
+
               // Create new file from blob
               const compressedFile = new File([blob], file.name, {
                 type: 'image/jpeg',
-                lastModified: Date.now()
+                lastModified: Date.now(),
               });
-              
+
               resolve(compressedFile);
             },
             'image/jpeg',
             this.compressionQuality
           );
         };
-        
+
         img.onerror = () => {
           reject(new Error('Failed to load image'));
         };
-        
+
         img.src = e.target.result;
       };
-      
+
       reader.onerror = () => {
         reject(new Error('Failed to read file'));
       };
-      
+
       reader.readAsDataURL(file);
     });
   }

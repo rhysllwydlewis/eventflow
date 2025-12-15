@@ -16,7 +16,7 @@ class API {
    */
   async request(endpoint, options = {}) {
     const url = `${this.baseURL}${endpoint}`;
-    
+
     const defaultOptions = {
       headers: {
         'Content-Type': 'application/json',
@@ -33,7 +33,7 @@ class API {
 
     try {
       const response = await fetch(url, config);
-      
+
       // Check if response is ok
       if (!response.ok) {
         const error = await response.json().catch(() => ({
@@ -60,7 +60,7 @@ class API {
   async get(endpoint, params = {}) {
     const queryString = new URLSearchParams(params).toString();
     const url = queryString ? `${endpoint}?${queryString}` : endpoint;
-    
+
     return this.request(url, { method: 'GET' });
   }
 
