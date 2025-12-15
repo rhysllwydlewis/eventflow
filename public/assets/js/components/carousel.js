@@ -225,6 +225,15 @@ class Carousel {
     document.head.appendChild(style);
   }
 
+  /**
+   * Set carousel items and render the carousel.
+   * Note: This method replaces the entire carousel content and should
+   * typically be called only once during initialization. Calling it
+   * multiple times will destroy existing event listeners and re-render
+   * the entire carousel from scratch.
+   *
+   * @param {Array} items - Array of package items to display
+   */
   setItems(items) {
     this.items = items;
     this._render();
@@ -288,20 +297,22 @@ class Carousel {
     const validateSlug = value => {
       const slugStr = String(value || '');
       // Only allow alphanumeric, hyphens, and underscores
-      return slugStr.replace(/[^a-zA-Z0-9_-]/g, '');
+      const cleaned = slugStr.replace(/[^a-zA-Z0-9_-]/g, '');
+      // Fall back to item id if slug becomes empty after cleaning
+      return cleaned || String(item.id || 'unknown');
     };
 
     const title = escapeHtml(item.title || 'Untitled Package');
-    const description = escapeHtml(item.description || '');
+    // Truncate description BEFORE escaping to avoid counting HTML entities
+    const rawDesc = item.description || '';
+    const truncatedRawDesc =
+      rawDesc.length > DESCRIPTION_MAX_LENGTH
+        ? `${rawDesc.substring(0, DESCRIPTION_MAX_LENGTH)}...`
+        : rawDesc;
+    const description = escapeHtml(truncatedRawDesc);
     const price = escapeHtml(item.price_display || 'Contact for pricing');
     const image = sanitizeUrl(item.image);
     const slug = validateSlug(item.slug || item.id || '');
-
-    // Truncate description with ellipsis
-    const truncatedDesc =
-      description.length > DESCRIPTION_MAX_LENGTH
-        ? `${description.substring(0, DESCRIPTION_MAX_LENGTH)}...`
-        : description;
 
     return `
       <div class="carousel-item">
@@ -309,7 +320,7 @@ class Carousel {
           <img src="${image}" alt="${title}" loading="lazy">
           <div class="package-info">
             <h3>${title}</h3>
-            <p class="package-description">${truncatedDesc}</p>
+            <p class="package-description">${description}</p>
             <div class="package-price">${price}</div>
           </div>
         </a>
