@@ -2278,7 +2278,7 @@ app.get(
   roleRequired('admin'),
   (_req, res) => {
     try {
-      const suppliers = read('suppliers');
+      const suppliers = read('suppliers') || [];
       const pending = suppliers.filter(
         s => !s.verified && (!s.verificationStatus || s.verificationStatus === 'pending')
       );
