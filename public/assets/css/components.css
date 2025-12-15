@@ -684,6 +684,32 @@ html[data-theme="dark"] .back-to-top:hover {
   box-shadow: 0 8px 24px rgba(94, 234, 212, 0.4);
 }
 
+/* Stats Grid Component */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2rem;
+  padding: 3rem 0;
+}
+
+.stat-item {
+  text-align: center;
+}
+
+.stat-number {
+  font-size: 3rem;
+  font-weight: 700;
+  line-height: 1;
+  margin-bottom: 0.5rem;
+  color: white;
+}
+
+.stat-label {
+  font-size: 1rem;
+  opacity: 0.9;
+  color: white;
+}
+
 /* Responsive adjustments */
 @media (max-width: 640px) {
   .modal {
@@ -734,32 +760,6 @@ html[data-theme="dark"] .back-to-top:hover {
   .stat-label {
     font-size: 0.75rem;
   }
-}
-
-/* Stats Grid Component */
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 2rem;
-  padding: 3rem 0;
-}
-
-.stat-item {
-  text-align: center;
-}
-
-.stat-number {
-  font-size: 3rem;
-  font-weight: 700;
-  line-height: 1;
-  margin-bottom: 0.5rem;
-  color: white;
-}
-
-.stat-label {
-  font-size: 1rem;
-  opacity: 0.9;
-  color: white;
 }
 
 /* Notification Bell Component */
