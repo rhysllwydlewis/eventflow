@@ -229,6 +229,49 @@ class Carousel {
           font-size: 18px;
         }
       }
+
+      @media (max-width: 480px) {
+        .carousel-wrapper {
+          margin-left: -4px;
+          margin-right: -4px;
+        }
+
+        .carousel-item-content {
+          padding: 12px;
+        }
+
+        .carousel-item-title {
+          font-size: 1rem;
+          overflow-wrap: break-word;
+        }
+
+        .carousel-item-price {
+          font-size: 0.9rem;
+        }
+
+        .carousel-item-inclusions {
+          font-size: 0.8rem;
+        }
+
+        .carousel-item-cta {
+          font-size: 0.85rem;
+          padding: 7px 14px;
+        }
+
+        .carousel-control {
+          width: 32px;
+          height: 32px;
+          font-size: 16px;
+        }
+
+        .carousel-control-prev {
+          margin-left: 4px;
+        }
+
+        .carousel-control-next {
+          margin-right: 4px;
+        }
+      }
     `;
     document.head.appendChild(style);
   }
