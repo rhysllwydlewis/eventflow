@@ -26,8 +26,8 @@
 <body>
   <h1>Content Reports Queue</h1>
   <div class="controls">
-    <button onclick="location.href='/admin.html'">← Back to Dashboard</button>
-    <button onclick="loadReports()">Refresh</button>
+    <button id="backToDashboard">← Back to Dashboard</button>
+    <button id="refreshReports">Refresh</button>
   </div>
 
   <div class="controls">
@@ -126,10 +126,10 @@
           <td>${statusBadge}</td>
           <td><span class="small">${createdDate}</span></td>
           <td>
-            <button onclick="viewReport('${report.id}')">View Details</button>
+            <button data-action="viewReport" data-id="${report.id}">View Details</button>
             ${report.status === 'pending' ? `
-              <button onclick="resolveReport('${report.id}')">Resolve</button>
-              <button class="danger" onclick="dismissReport('${report.id}')">Dismiss</button>
+              <button data-action="resolveReport" data-id="${report.id}">Resolve</button>
+              <button class="danger" data-action="dismissReport" data-id="${report.id}">Dismiss</button>
             ` : ''}
           </td>
         `;
@@ -210,6 +210,38 @@
 
     // Load reports on page load
     loadReports();
+    
+    // Event listeners
+    document.getElementById('backToDashboard').addEventListener('click', function() {
+      location.href = '/admin.html';
+    });
+    
+    document.getElementById('refreshReports').addEventListener('click', function() {
+      loadReports();
+    });
+    
+    // Event delegation for dynamically created buttons
+    document.body.addEventListener('click', function(e) {
+      var target = e.target;
+      if (target.tagName !== 'BUTTON') return;
+      
+      var action = target.getAttribute('data-action');
+      if (!action) return;
+      
+      var id = target.getAttribute('data-id');
+      
+      switch(action) {
+        case 'viewReport':
+          if (id) viewReport(id);
+          break;
+        case 'resolveReport':
+          if (id) resolveReport(id);
+          break;
+        case 'dismissReport':
+          if (id) dismissReport(id);
+          break;
+      }
+    });
   </script>
 </body>
 </html>

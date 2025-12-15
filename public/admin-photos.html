@@ -421,10 +421,10 @@
           ${photo.caption ? `<div class="small" style="margin-bottom: 0.5rem;">${escapeHtml(photo.caption)}</div>` : ''}
           <div class="small" style="color: #999;">Uploaded: ${formatDate(photo.uploadedAt)}</div>
           <div class="photo-queue__actions">
-            <button class="photo-queue__btn photo-queue__btn--approve" onclick="approvePhoto('${escapeHtml(photo.id)}')">
+            <button class="photo-queue__btn photo-queue__btn--approve" data-action="approvePhoto" data-id="${escapeHtml(photo.id)}">
               ✓ Approve
             </button>
-            <button class="photo-queue__btn photo-queue__btn--reject" onclick="rejectPhoto('${escapeHtml(photo.id)}')">
+            <button class="photo-queue__btn photo-queue__btn--reject" data-action="rejectPhoto" data-id="${escapeHtml(photo.id)}">
               × Reject
             </button>
           </div>
@@ -563,6 +563,26 @@
   
   // Load photos on page load
   await loadPhotos();
+  
+  // Event delegation for dynamically created buttons
+  document.body.addEventListener('click', function(e) {
+    var target = e.target;
+    if (target.tagName !== 'BUTTON') return;
+    
+    var action = target.getAttribute('data-action');
+    if (!action) return;
+    
+    var id = target.getAttribute('data-id');
+    
+    switch(action) {
+      case 'approvePhoto':
+        if (id) approvePhoto(id);
+        break;
+      case 'rejectPhoto':
+        if (id) rejectPhoto(id);
+        break;
+    }
+  });
 })();
 </script>
 <script src="/assets/js/components/footer-nav.js" defer></script>

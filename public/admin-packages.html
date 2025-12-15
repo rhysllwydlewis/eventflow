@@ -70,7 +70,7 @@
       <h1 style="margin:0;">Package Management</h1>
       <div style="display:flex;gap:0.5rem;">
         <button class="btn btn-primary" id="addPackageBtn">Add Package</button>
-        <button class="btn btn-secondary" onclick="location.href='/admin.html'">Back to Dashboard</button>
+        <button class="btn btn-secondary" id="backToDashboard">Back to Dashboard</button>
       </div>
     </div>
 
@@ -317,10 +317,10 @@ import { uploadImage, saveDocument, getDocuments, deleteDocument } from '/assets
       }
       html += '</td>';
       html += '<td>';
-      html += '<button class="btn btn-primary btn-small" onclick="editPackage(\'' + pkg.id + '\')">Edit</button> ';
-      html += '<button class="btn btn-small ' + (pkg.approved ? 'btn-secondary' : 'btn-primary') + '" onclick="toggleApproval(\'' + pkg.id + '\', ' + !pkg.approved + ')">' + (pkg.approved ? 'Unapprove' : 'Approve') + '</button> ';
-      html += '<button class="btn btn-small ' + (pkg.featured ? 'btn-secondary' : 'btn-primary') + '" onclick="toggleFeatured(\'' + pkg.id + '\', ' + !pkg.featured + ')">' + (pkg.featured ? 'Unfeature' : 'Feature') + '</button> ';
-      html += '<button class="btn btn-danger btn-small" onclick="deletePackage(\'' + pkg.id + '\')">Delete</button>';
+      html += '<button class="btn btn-primary btn-small" data-action="editPackage" data-id="' + pkg.id + '">Edit</button> ';
+      html += '<button class="btn btn-small ' + (pkg.approved ? 'btn-secondary' : 'btn-primary') + '" data-action="toggleApproval" data-id="' + pkg.id + '" data-param="' + !pkg.approved + '">' + (pkg.approved ? 'Unapprove' : 'Approve') + '</button> ';
+      html += '<button class="btn btn-small ' + (pkg.featured ? 'btn-secondary' : 'btn-primary') + '" data-action="toggleFeatured" data-id="' + pkg.id + '" data-param="' + !pkg.featured + '">' + (pkg.featured ? 'Unfeature' : 'Feature') + '</button> ';
+      html += '<button class="btn btn-danger btn-small" data-action="deletePackage" data-id="' + pkg.id + '">Delete</button>';
       html += '</td>';
       html += '</tr>';
     });
@@ -661,6 +661,38 @@ import { uploadImage, saveDocument, getDocuments, deleteDocument } from '/assets
   setupImageUpload();
   loadPackages();
   loadSuppliers();
+  
+  // Event delegation for dynamically created buttons
+  document.body.addEventListener('click', function(e) {
+    var target = e.target;
+    if (target.tagName !== 'BUTTON') return;
+    
+    var action = target.getAttribute('data-action');
+    if (!action) return;
+    
+    var id = target.getAttribute('data-id');
+    var param = target.getAttribute('data-param');
+    
+    switch(action) {
+      case 'editPackage':
+        if (id) editPackage(id);
+        break;
+      case 'toggleApproval':
+        if (id && param !== null) toggleApproval(id, param === 'true');
+        break;
+      case 'toggleFeatured':
+        if (id && param !== null) toggleFeatured(id, param === 'true');
+        break;
+      case 'deletePackage':
+        if (id) deletePackage(id);
+        break;
+    }
+  });
+  
+  // Back to dashboard button
+  document.getElementById('backToDashboard').addEventListener('click', function() {
+    location.href = '/admin.html';
+  });
 })();
 </script>
 </body>
