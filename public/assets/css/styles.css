@@ -367,8 +367,8 @@ html[data-theme="dark"] .timeline-step::before{
 .password-toggle{
   position:absolute;
   right:8px;
-  top:calc(50% + 14px);
-  transform:translateY(-50%);
+  bottom:12px;
+  transform:translateY(0);
   border:none;
   background:none;
   font-size:12px;
@@ -393,7 +393,7 @@ html[data-theme="dark"] .timeline-step::before{
     font-size:10px;
     padding:2px 6px;
     right:6px;
-    top:calc(50% + 14px);
+    bottom:13px;
     background:rgba(255,255,255,0.9);
     border:1px solid var(--border);
     border-radius:6px;
