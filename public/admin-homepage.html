@@ -293,7 +293,7 @@
               ? `<img src="${escapeHtml(category.heroImage)}" alt="${escapeHtml(category.name)}" class="category-preview" id="preview-${escapeHtml(category.id)}">`
               : `<div class="category-placeholder" id="preview-${escapeHtml(category.id)}">No image set</div>`
             }
-            <div class="upload-area" id="drop-${escapeHtml(category.id)}" onclick="document.getElementById('file-${escapeHtml(category.id)}').click()">
+            <div class="upload-area" id="drop-${escapeHtml(category.id)}">
               <div>📤 Click to upload or drag & drop</div>
               <div class="small">PNG, JPG, WebP (max 5MB)</div>
             </div>
@@ -317,6 +317,11 @@
       }
 
       if (dropArea) {
+        dropArea.addEventListener('click', () => {
+          if (fileInput) {
+            fileInput.click();
+          }
+        });
         dropArea.addEventListener('dragover', handleDragOver);
         dropArea.addEventListener('dragleave', handleDragLeave);
         dropArea.addEventListener('drop', (e) => handleDrop(e, category.id));

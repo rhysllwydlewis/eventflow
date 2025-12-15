@@ -51,35 +51,35 @@
       <h3 style="margin: 0 0 10px 0; font-size: 16px;">Pending Photos</h3>
       <div style="font-size: 28px; font-weight: bold; color: #fbbf24;" id="pendingPhotosCount">—</div>
       <div class="small" style="margin-top: 5px;">Photos awaiting approval</div>
-      <button onclick="location.href='/admin-photos.html'" style="margin-top: 10px; width: 100%;">Review Photos</button>
+      <button id="reviewPhotosBtn" style="margin-top: 10px; width: 100%;">Review Photos</button>
     </div>
     <div class="card">
       <h3 style="margin: 0 0 10px 0; font-size: 16px;">Pending Reviews</h3>
       <div style="font-size: 28px; font-weight: bold; color: #fbbf24;" id="pendingReviewsCount">—</div>
       <div class="small" style="margin-top: 5px;">Reviews awaiting approval</div>
-      <button onclick="reviewPendingReviews()" style="margin-top: 10px; width: 100%;">Review Reviews</button>
+      <button id="reviewReviewsBtn" style="margin-top: 10px; width: 100%;">Review Reviews</button>
     </div>
     <div class="card">
       <h3 style="margin: 0 0 10px 0; font-size: 16px;">Pending Reports</h3>
       <div style="font-size: 28px; font-weight: bold; color: #ef4444;" id="pendingReportsCount">—</div>
       <div class="small" style="margin-top: 5px;">Content reports to review</div>
-      <button onclick="location.href='/admin-reports.html'" style="margin-top: 10px; width: 100%;">Review Reports</button>
+      <button id="reviewReportsBtn" style="margin-top: 10px; width: 100%;">Review Reports</button>
     </div>
     <div class="card">
       <h3 style="margin: 0 0 10px 0; font-size: 16px;">Suppliers Pending Verification</h3>
       <div style="font-size: 28px; font-weight: bold; color: #3b82f6;" id="pendingSupplierVerificationCount">—</div>
       <div class="small" style="margin-top: 5px;">Suppliers awaiting verification</div>
-      <button onclick="location.href='/admin-users.html#suppliers'" style="margin-top: 10px; width: 100%;">Verify Suppliers</button>
+      <button id="verifySuppliersBtn" style="margin-top: 10px; width: 100%;">Verify Suppliers</button>
     </div>
   </div>
 
   <div class="controls">
-    <button onclick="location.href='/admin-users.html'">User Management</button>
-    <button onclick="location.href='/admin-packages.html'">Package Management</button>
+    <button id="userManagementBtn">User Management</button>
+    <button id="packageManagementBtn">Package Management</button>
     <button id="homepageChangesBtn">Homepage Changes</button>
-    <button onclick="location.href='/admin-tickets.html'">Support Tickets</button>
-    <button onclick="location.href='/admin-reports.html'">Reports Queue</button>
-    <button onclick="location.href='/admin-audit.html'">Audit Log</button>
+    <button id="supportTicketsBtn">Support Tickets</button>
+    <button id="reportsQueueBtn">Reports Queue</button>
+    <button id="auditLogBtn">Audit Log</button>
   </div>
 
   <h2>Suppliers</h2>
@@ -614,15 +614,45 @@
     };
 
     window.approvePkg = function (id, approved) {
+      var action = approved ? 'approve' : 'unapprove';
       api('/api/admin/packages/' + id + '/approve', 'POST', { approved: approved })
-        .then(loadAll)
-        .catch(function (err) { console.error('approvePkg failed', err); });
+        .then(function () {
+          if (typeof Toast !== 'undefined') {
+            Toast.success('Package ' + action + 'd successfully.');
+          } else {
+            alert('Package ' + action + 'd successfully.');
+          }
+          loadAll();
+        })
+        .catch(function (err) {
+          console.error('approvePkg failed', err);
+          if (typeof Toast !== 'undefined') {
+            Toast.error('Failed to ' + action + ' package: ' + err.message);
+          } else {
+            alert('Failed to ' + action + ' package: ' + err.message);
+          }
+        });
     };
 
     window.featurePkg = function (id, featured) {
+      var action = featured ? 'feature' : 'unfeature';
       api('/api/admin/packages/' + id + '/feature', 'POST', { featured: featured })
-        .then(loadAll)
-        .catch(function (err) { console.error('featurePkg failed', err); });
+        .then(function () {
+          if (typeof Toast !== 'undefined') {
+            Toast.success('Package ' + action + 'd successfully.');
+          } else {
+            alert('Package ' + action + 'd successfully.');
+          }
+          loadAll();
+        })
+        .catch(function (err) {
+          console.error('featurePkg failed', err);
+          if (typeof Toast !== 'undefined') {
+            Toast.error('Failed to ' + action + ' package: ' + err.message);
+          } else {
+            alert('Failed to ' + action + ' package: ' + err.message);
+          }
+        });
     };
 
     window.disableUser = function (id) {
@@ -1157,16 +1187,44 @@
         });
       }
 
-      var homepageChangesBtn = document.getElementById('homepageChangesBtn');
-      if (homepageChangesBtn) {
-        homepageChangesBtn.addEventListener('click', function () {
-          window.location.href = '/admin-homepage.html';
+      // Navigation button helpers with keyboard support
+      function setupNavButton(btnId, href) {
+        var btn = document.getElementById(btnId);
+        if (btn) {
+          btn.addEventListener('click', function () {
+            window.location.href = href;
+          });
+          // Support keyboard activation (Enter and Space)
+          btn.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              window.location.href = href;
+            }
+          });
+        }
+      }
+
+      setupNavButton('userManagementBtn', '/admin-users.html');
+      setupNavButton('packageManagementBtn', '/admin-packages.html');
+      setupNavButton('homepageChangesBtn', '/admin-homepage.html');
+      setupNavButton('supportTicketsBtn', '/admin-tickets.html');
+      setupNavButton('reportsQueueBtn', '/admin-reports.html');
+      setupNavButton('auditLogBtn', '/admin-audit.html');
+      
+      // Moderation queue buttons
+      setupNavButton('reviewPhotosBtn', '/admin-photos.html');
+      setupNavButton('reviewReportsBtn', '/admin-reports.html');
+      setupNavButton('verifySuppliersBtn', '/admin-users.html#suppliers');
+      
+      var reviewReviewsBtn = document.getElementById('reviewReviewsBtn');
+      if (reviewReviewsBtn) {
+        reviewReviewsBtn.addEventListener('click', function() {
+          reviewPendingReviews();
         });
-        // Support keyboard activation (Enter and Space)
-        homepageChangesBtn.addEventListener('keydown', function (e) {
+        reviewReviewsBtn.addEventListener('keydown', function(e) {
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
-            window.location.href = '/admin-homepage.html';
+            reviewPendingReviews();
           }
         });
       }
