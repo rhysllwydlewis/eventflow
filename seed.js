@@ -121,6 +121,60 @@ function seed(options = {}) {
     }
   }
 
+  // Categories
+  const existingCategories = read('categories');
+  if (!Array.isArray(existingCategories) || existingCategories.length === 0) {
+    const categories = [
+      {
+        id: 'cat_venues',
+        name: 'Venues',
+        slug: 'venues',
+        description: 'Beautiful venues for your perfect event',
+        heroImage: '/assets/images/collage-venue.jpg',
+        icon: '🏛️',
+        order: 1,
+      },
+      {
+        id: 'cat_catering',
+        name: 'Catering',
+        slug: 'catering',
+        description: 'Delicious food and beverage services',
+        heroImage: '/assets/images/collage-catering.jpg',
+        icon: '🍽️',
+        order: 2,
+      },
+      {
+        id: 'cat_entertainment',
+        name: 'Entertainment',
+        slug: 'entertainment',
+        description: 'Live music, DJs, and entertainment',
+        heroImage: '/assets/images/collage-entertainment.jpg',
+        icon: '🎵',
+        order: 3,
+      },
+      {
+        id: 'cat_photography',
+        name: 'Photography',
+        slug: 'photography',
+        description: 'Professional photography and videography',
+        heroImage: '/assets/images/collage-photography.jpg',
+        icon: '📷',
+        order: 4,
+      },
+      {
+        id: 'cat_decor',
+        name: 'Decor & Styling',
+        slug: 'decor-styling',
+        description: 'Beautiful decor and styling services',
+        heroImage: 'https://source.unsplash.com/featured/800x600/?wedding,decor',
+        icon: '💐',
+        order: 5,
+      },
+    ];
+    write('categories', categories);
+    console.log('Created demo categories');
+  }
+
   // Suppliers
   if (seedSuppliers) {
     const existingSuppliers = read('suppliers');
@@ -132,51 +186,60 @@ function seed(options = {}) {
           id: 'sup_xmkgxc6kd04f',
           ownerUserId: null,
           name: 'The Willow Barn Venue',
+          logo: 'https://source.unsplash.com/100x100/?logo,barn',
+          blurb: 'Your perfect rustic wedding venue',
           category: 'Venues',
           location: 'Monmouthshire, South Wales',
           price_display: 'From \u00a31,500',
           website: '',
+          email: 'willowbarn@example.com',
+          phone: '01234 567890',
           license: '',
           amenities: ['Parking', 'Garden'],
           maxGuests: 120,
           photos: ['https://source.unsplash.com/featured/800x600/?wedding,barn'],
           description_short: 'Rustic countryside venue.',
           description_long: 'Converted barn with indoor/outdoor spaces.',
-          email: 'willowbarn@example.com',
           approved: true,
         },
         {
           id: 'sup_suj0sb6kd04f',
           ownerUserId: null,
           name: 'Green Oak Catering',
+          logo: 'https://source.unsplash.com/100x100/?logo,food',
+          blurb: 'Seasonal menus with local produce',
           category: 'Catering',
           location: 'Cardiff & South Wales',
           price_display: '\u00a3\u00a3',
           website: '',
+          email: 'greenoakcatering@example.com',
+          phone: '01234 567891',
           license: '',
           amenities: ['Vegan options', 'Serving staff'],
           maxGuests: 500,
           photos: ['https://source.unsplash.com/featured/800x600/?catering,food'],
           description_short: 'Seasonal menus with local produce.',
           description_long: 'Buffets and formal dining. Vegan options.',
-          email: 'greenoakcatering@example.com',
           approved: true,
         },
         {
           id: 'sup_5n2run6kd04f',
           ownerUserId: null,
           name: 'Snapshot Photography',
+          logo: 'https://source.unsplash.com/100x100/?logo,camera',
+          blurb: 'Capturing your special moments',
           category: 'Photography',
           location: 'Bristol & South West',
           price_display: 'From \u00a3800',
           website: '',
+          email: 'snapshotphoto@example.com',
+          phone: '01234 567892',
           license: '',
           amenities: ['Online gallery'],
           maxGuests: 0,
           photos: ['https://source.unsplash.com/featured/800x600/?wedding,photography'],
           description_short: 'Relaxed documentary style.',
           description_long: 'Full-day or hourly packages.',
-          email: 'snapshotphoto@example.com',
           approved: true,
         },
       ];
@@ -195,32 +258,76 @@ function seed(options = {}) {
         {
           id: 'pkg_pk1uq76kd04h',
           supplierId: 'sup_xmkgxc6kd04f',
+          slug: 'barn-exclusive',
           title: 'Barn Exclusive',
           price: '\u00a33,500',
-          description: 'Full-day venue hire, ceremony & reception areas.',
+          location: 'Monmouthshire, South Wales',
+          description:
+            'Full-day venue hire, ceremony & reception areas. Includes indoor and outdoor spaces, tables and chairs, parking for 50 cars.',
           image: 'https://source.unsplash.com/featured/800x600/?rustic,venue',
+          gallery: [
+            {
+              url: 'https://source.unsplash.com/featured/800x600/?rustic,venue',
+              approved: true,
+              uploadedAt: Date.now(),
+            },
+            {
+              url: 'https://source.unsplash.com/featured/800x600/?barn,interior',
+              approved: true,
+              uploadedAt: Date.now(),
+            },
+          ],
+          categories: ['venues'],
+          tags: ['rustic', 'barn', 'countryside', 'outdoor'],
           approved: true,
           featured: true,
+          isFeatured: true,
         },
         {
           id: 'pkg_3e3fdh6kd04h',
           supplierId: 'sup_suj0sb6kd04f',
+          slug: 'seasonal-feast',
           title: 'Seasonal Feast',
           price: '\u00a345 pp',
-          description: 'Three-course seasonal menu with staff & setup.',
+          location: 'Cardiff & South Wales',
+          description:
+            'Three-course seasonal menu with staff & setup. Includes locally sourced ingredients, vegan options available.',
           image: 'https://source.unsplash.com/featured/800x600/?banquet,catering',
+          gallery: [
+            {
+              url: 'https://source.unsplash.com/featured/800x600/?banquet,catering',
+              approved: true,
+              uploadedAt: Date.now(),
+            },
+          ],
+          categories: ['catering'],
+          tags: ['seasonal', 'local', 'vegan-friendly'],
           approved: true,
           featured: false,
+          isFeatured: false,
         },
         {
           id: 'pkg_8b6fmw6kd04h',
           supplierId: 'sup_5n2run6kd04f',
+          slug: 'full-day-capture',
           title: 'Full Day Capture',
           price: '\u00a31,200',
-          description: 'Prep through first dance, private gallery.',
+          location: 'Bristol & South West',
+          description:
+            'Prep through first dance, private gallery. Includes all edited photos, online gallery access, and print rights.',
           image: 'https://source.unsplash.com/featured/800x600/?camera,photography',
+          gallery: [
+            {
+              url: 'https://source.unsplash.com/featured/800x600/?camera,photography',
+              approved: true,
+              uploadedAt: Date.now(),
+            },
+          ],
+          categories: ['photography'],
+          tags: ['documentary', 'candid', 'full-day'],
           approved: true,
-          featured: false,
+          featured: true,
+          isFeatured: true,
         },
       ];
       write('packages', defaults);
@@ -230,6 +337,7 @@ function seed(options = {}) {
 
   // Always ensure these collections exist as arrays
   for (const name of [
+    'categories',
     'plans',
     'notes',
     'messages',

@@ -67,11 +67,14 @@ const supplierSchema = {
         id: { bsonType: 'string', description: 'Unique supplier identifier' },
         ownerUserId: { bsonType: 'string', description: 'User ID of the owner' },
         name: { bsonType: 'string', description: 'Business name' },
+        logo: { bsonType: 'string', description: 'Business logo URL' },
+        blurb: { bsonType: 'string', description: 'Short business blurb/tagline' },
         category: { bsonType: 'string', description: 'Supplier category' },
         location: { bsonType: 'string', description: 'Business location' },
         price_display: { bsonType: 'string', description: 'Price range display' },
         website: { bsonType: 'string', description: 'Business website URL' },
         email: { bsonType: 'string', description: 'Business contact email' },
+        phone: { bsonType: 'string', description: 'Business contact phone' },
         license: { bsonType: 'string', description: 'Business license number' },
         amenities: {
           bsonType: 'array',
@@ -122,8 +125,10 @@ const packageSchema = {
         id: { bsonType: 'string', description: 'Unique package identifier' },
         supplierId: { bsonType: 'string', description: 'Associated supplier ID' },
         title: { bsonType: 'string', description: 'Package title' },
+        slug: { bsonType: 'string', description: 'URL-friendly package slug' },
         description: { bsonType: 'string', description: 'Package description' },
         price: { bsonType: 'string', description: 'Package price' },
+        location: { bsonType: 'string', description: 'Package location' },
         image: { bsonType: 'string', description: 'Main package image URL' },
         gallery: {
           bsonType: 'array',
@@ -137,8 +142,19 @@ const packageSchema = {
           },
           description: 'Package image gallery',
         },
+        categories: {
+          bsonType: 'array',
+          items: { bsonType: 'string' },
+          description: 'Category slugs this package belongs to',
+        },
+        tags: {
+          bsonType: 'array',
+          items: { bsonType: 'string' },
+          description: 'Package tags for search and filtering',
+        },
         approved: { bsonType: 'bool', description: 'Admin approval status' },
         featured: { bsonType: 'bool', description: 'Featured package flag' },
+        isFeatured: { bsonType: 'bool', description: 'Featured package flag (alias)' },
       },
     },
   },
@@ -199,6 +215,9 @@ const messageSchema = {
         fromUserId: { bsonType: 'string', description: 'Sender user ID' },
         fromRole: { bsonType: 'string', description: 'Sender role' },
         text: { bsonType: 'string', description: 'Message content' },
+        packageId: { bsonType: 'string', description: 'Related package ID (optional)' },
+        supplierId: { bsonType: 'string', description: 'Related supplier ID (optional)' },
+        status: { bsonType: 'string', description: 'Message status (sent, read, etc.)' },
         createdAt: { bsonType: 'string', description: 'Creation timestamp' },
       },
     },
@@ -219,12 +238,35 @@ const threadSchema = {
         supplierId: { bsonType: 'string', description: 'Supplier user/business ID' },
         supplierName: { bsonType: 'string', description: 'Supplier name' },
         customerId: { bsonType: 'string', description: 'Customer user ID' },
+        packageId: { bsonType: 'string', description: 'Related package ID (optional)' },
         eventType: { bsonType: 'string', description: 'Type of event' },
         eventDate: { bsonType: 'string', description: 'Event date' },
         eventLocation: { bsonType: 'string', description: 'Event location' },
         guests: { bsonType: 'string', description: 'Number of guests' },
         createdAt: { bsonType: 'string', description: 'Thread creation timestamp' },
         updatedAt: { bsonType: 'string', description: 'Last activity timestamp' },
+      },
+    },
+  },
+};
+
+/**
+ * Category Schema
+ * Stores package categories for browsing and filtering
+ */
+const categorySchema = {
+  validator: {
+    $jsonSchema: {
+      bsonType: 'object',
+      required: ['id', 'name', 'slug'],
+      properties: {
+        id: { bsonType: 'string', description: 'Unique category identifier' },
+        name: { bsonType: 'string', description: 'Category display name' },
+        slug: { bsonType: 'string', description: 'URL-friendly category slug' },
+        description: { bsonType: 'string', description: 'Category description' },
+        heroImage: { bsonType: 'string', description: 'Hero image URL for category page' },
+        icon: { bsonType: 'string', description: 'Icon or emoji for category' },
+        order: { bsonType: 'int', description: 'Display order' },
       },
     },
   },
@@ -262,6 +304,7 @@ async function initializeCollections(db) {
     users: userSchema,
     suppliers: supplierSchema,
     packages: packageSchema,
+    categories: categorySchema,
     plans: planSchema,
     notes: noteSchema,
     messages: messageSchema,
@@ -318,9 +361,17 @@ async function createIndexes(db) {
 
     // Package indexes
     await db.collection('packages').createIndex({ id: 1 }, { unique: true });
+    await db.collection('packages').createIndex({ slug: 1 }, { unique: true, sparse: true });
     await db.collection('packages').createIndex({ supplierId: 1 });
     await db.collection('packages').createIndex({ approved: 1 });
     await db.collection('packages').createIndex({ featured: 1 });
+    await db.collection('packages').createIndex({ isFeatured: 1 });
+    await db.collection('packages').createIndex({ categories: 1 });
+
+    // Category indexes
+    await db.collection('categories').createIndex({ id: 1 }, { unique: true });
+    await db.collection('categories').createIndex({ slug: 1 }, { unique: true });
+    await db.collection('categories').createIndex({ order: 1 });
 
     // Plan indexes
     await db.collection('plans').createIndex({ id: 1 }, { unique: true });

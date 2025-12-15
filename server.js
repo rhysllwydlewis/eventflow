@@ -1508,7 +1508,7 @@ app.get('/api/suppliers/:id/packages', (req, res) => {
 
 app.get('/api/packages/featured', (_req, res) => {
   const items = read('packages')
-    .filter(p => p.approved && p.featured === true) // Only truly featured packages
+    .filter(p => p.approved && (p.featured === true || p.isFeatured === true))
     .slice(0, 6);
   res.json({ items });
 });
@@ -1521,6 +1521,77 @@ app.get('/api/packages/search', (req, res) => {
       ((p.title || '').toLowerCase().includes(q) || (p.description || '').toLowerCase().includes(q))
   );
   res.json({ items });
+});
+
+// ---------- Category browsing endpoints ----------
+app.get('/api/categories', (_req, res) => {
+  const categories = read('categories');
+  const sorted = categories.sort((a, b) => (a.order || 0) - (b.order || 0));
+  res.json({ items: sorted });
+});
+
+app.get('/api/categories/:slug', (req, res) => {
+  const categories = read('categories');
+  const category = categories.find(c => c.slug === req.params.slug);
+  if (!category) {
+    return res.status(404).json({ error: 'Category not found' });
+  }
+
+  // Get all approved packages in this category
+  const allPackages = read('packages');
+  const categoryPackages = allPackages.filter(p => {
+    if (!p.approved) {
+      return false;
+    }
+    if (!p.categories || !Array.isArray(p.categories)) {
+      return false;
+    }
+    return p.categories.includes(req.params.slug);
+  });
+
+  // Sort: featured packages first
+  const sorted = categoryPackages.sort((a, b) => {
+    const aFeatured = a.featured || a.isFeatured || false;
+    const bFeatured = b.featured || b.isFeatured || false;
+    if (aFeatured && !bFeatured) {
+      return -1;
+    }
+    if (!aFeatured && bFeatured) {
+      return 1;
+    }
+    return 0;
+  });
+
+  res.json({ category, packages: sorted });
+});
+
+app.get('/api/packages/:slug', (req, res) => {
+  const packages = read('packages');
+  const pkg = packages.find(p => p.slug === req.params.slug && p.approved);
+
+  if (!pkg) {
+    return res.status(404).json({ error: 'Package not found' });
+  }
+
+  // Get supplier details
+  const suppliers = read('suppliers');
+  const supplier = suppliers.find(s => s.id === pkg.supplierId && s.approved);
+
+  if (!supplier) {
+    return res.status(404).json({ error: 'Supplier not found' });
+  }
+
+  // Get category details
+  const categories = read('categories');
+  const packageCategories = (pkg.categories || [])
+    .map(slug => categories.find(c => c.slug === slug))
+    .filter(Boolean);
+
+  res.json({
+    package: pkg,
+    supplier,
+    categories: packageCategories,
+  });
 });
 
 // ---------- Supplier dashboard ----------
@@ -1726,7 +1797,7 @@ app.post(
 
 // ---------- Threads & Messages ----------
 app.post('/api/threads/start', writeLimiter, authRequired, csrfProtection, async (req, res) => {
-  const { supplierId, message, eventType, eventDate, location, guests } = req.body || {};
+  const { supplierId, packageId, message, eventType, eventDate, location, guests } = req.body || {};
   if (!supplierId) {
     return res.status(400).json({ error: 'Missing supplierId' });
   }
@@ -1743,6 +1814,7 @@ app.post('/api/threads/start', writeLimiter, authRequired, csrfProtection, async
       supplierId,
       supplierName: supplier.name,
       customerId: req.user.id,
+      packageId: packageId || null,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       eventType: eventType || null,
@@ -1762,6 +1834,9 @@ app.post('/api/threads/start', writeLimiter, authRequired, csrfProtection, async
       threadId: thread.id,
       fromUserId: req.user.id,
       text: String(message).slice(0, 4000),
+      packageId: packageId || null,
+      supplierId: supplierId || null,
+      status: 'sent',
       createdAt: new Date().toISOString(),
     };
     msgs.push(entry);
@@ -1837,7 +1912,7 @@ app.get('/api/threads/:id/messages', authRequired, (req, res) => {
 });
 
 app.post('/api/threads/:id/messages', writeLimiter, authRequired, csrfProtection, (req, res) => {
-  const { text } = req.body || {};
+  const { text, packageId } = req.body || {};
   if (!text) {
     return res.status(400).json({ error: 'Missing text' });
   }
@@ -1858,6 +1933,9 @@ app.post('/api/threads/:id/messages', writeLimiter, authRequired, csrfProtection
     fromUserId: req.user.id,
     fromRole: req.user.role,
     text: String(text).slice(0, 4000),
+    packageId: packageId || t.packageId || null,
+    supplierId: t.supplierId || null,
+    status: 'sent',
     createdAt: new Date().toISOString(),
   };
   msgs.push(entry);
