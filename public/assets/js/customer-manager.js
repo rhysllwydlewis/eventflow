@@ -16,7 +16,7 @@ import {
   where,
   orderBy,
   onSnapshot,
-  serverTimestamp
+  serverTimestamp,
 } from './firebase-config.js';
 
 class CustomerManager {
@@ -33,20 +33,20 @@ class CustomerManager {
   async saveCustomer(userId, customerData) {
     try {
       const customerRef = doc(db, 'customers', userId);
-      
+
       const data = {
         ...customerData,
         userId: userId,
-        updatedAt: serverTimestamp()
+        updatedAt: serverTimestamp(),
       };
-      
+
       // Check if customer exists
       const customerSnap = await getDoc(customerRef);
-      
+
       if (!customerSnap.exists()) {
         data.createdAt = serverTimestamp();
       }
-      
+
       await setDoc(customerRef, data, { merge: true });
       console.log('Customer saved:', userId);
       return userId;
@@ -65,11 +65,11 @@ class CustomerManager {
     try {
       const customerRef = doc(db, 'customers', userId);
       const customerSnap = await getDoc(customerRef);
-      
+
       if (!customerSnap.exists()) {
         return null;
       }
-      
+
       return { id: customerSnap.id, ...customerSnap.data() };
     } catch (error) {
       console.error('Error getting customer:', error);
@@ -85,24 +85,24 @@ class CustomerManager {
   async getAllCustomers(options = {}) {
     try {
       let q = collection(db, 'customers');
-      
+
       const constraints = [];
-      
+
       if (options.orderBy) {
         constraints.push(orderBy(options.orderBy.field, options.orderBy.direction || 'asc'));
       }
-      
+
       if (constraints.length > 0) {
         q = query(collection(db, 'customers'), ...constraints);
       }
-      
+
       const querySnapshot = await getDocs(q);
       const customers = [];
-      
-      querySnapshot.forEach((doc) => {
+
+      querySnapshot.forEach(doc => {
         customers.push({ id: doc.id, ...doc.data() });
       });
-      
+
       return customers;
     } catch (error) {
       console.error('Error getting customers:', error);
@@ -118,12 +118,12 @@ class CustomerManager {
   async updateCustomer(userId, updates) {
     try {
       const customerRef = doc(db, 'customers', userId);
-      
+
       await updateDoc(customerRef, {
         ...updates,
-        updatedAt: serverTimestamp()
+        updatedAt: serverTimestamp(),
       });
-      
+
       console.log('Customer updated:', userId);
     } catch (error) {
       console.error('Error updating customer:', error);
@@ -155,18 +155,22 @@ class CustomerManager {
   listenToCustomer(userId, callback) {
     try {
       const customerRef = doc(db, 'customers', userId);
-      
-      const unsubscribe = onSnapshot(customerRef, (doc) => {
-        if (doc.exists()) {
-          callback({ id: doc.id, ...doc.data() });
-        } else {
+
+      const unsubscribe = onSnapshot(
+        customerRef,
+        doc => {
+          if (doc.exists()) {
+            callback({ id: doc.id, ...doc.data() });
+          } else {
+            callback(null);
+          }
+        },
+        error => {
+          console.error('Error listening to customer:', error);
           callback(null);
         }
-      }, (error) => {
-        console.error('Error listening to customer:', error);
-        callback(null);
-      });
-      
+      );
+
       this.unsubscribers.push(unsubscribe);
       return unsubscribe;
     } catch (error) {
@@ -184,28 +188,32 @@ class CustomerManager {
   listenToCustomers(options = {}, callback) {
     try {
       let q = collection(db, 'customers');
-      
+
       const constraints = [];
-      
+
       if (options.orderBy) {
         constraints.push(orderBy(options.orderBy.field, options.orderBy.direction || 'asc'));
       }
-      
+
       if (constraints.length > 0) {
         q = query(collection(db, 'customers'), ...constraints);
       }
-      
-      const unsubscribe = onSnapshot(q, (querySnapshot) => {
-        const customers = [];
-        querySnapshot.forEach((doc) => {
-          customers.push({ id: doc.id, ...doc.data() });
-        });
-        callback(customers);
-      }, (error) => {
-        console.error('Error listening to customers:', error);
-        callback([]);
-      });
-      
+
+      const unsubscribe = onSnapshot(
+        q,
+        querySnapshot => {
+          const customers = [];
+          querySnapshot.forEach(doc => {
+            customers.push({ id: doc.id, ...doc.data() });
+          });
+          callback(customers);
+        },
+        error => {
+          console.error('Error listening to customers:', error);
+          callback([]);
+        }
+      );
+
       this.unsubscribers.push(unsubscribe);
       return unsubscribe;
     } catch (error) {
@@ -238,7 +246,7 @@ class CustomerManager {
     try {
       const customer = await this.getCustomer(userId);
       const favorites = customer?.favorites || [];
-      
+
       if (!favorites.includes(supplierId)) {
         favorites.push(supplierId);
         await this.updateCustomer(userId, { favorites });
@@ -259,7 +267,7 @@ class CustomerManager {
     try {
       const customer = await this.getCustomer(userId);
       const favorites = customer?.favorites || [];
-      
+
       const index = favorites.indexOf(supplierId);
       if (index > -1) {
         favorites.splice(index, 1);

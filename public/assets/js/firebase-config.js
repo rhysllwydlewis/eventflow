@@ -1,7 +1,7 @@
 /**
  * Firebase Configuration for EventFlow
  * Initializes Firebase SDK with Firestore, Storage, and Authentication
- * 
+ *
  * SECURITY NOTE: Firebase API keys are safe to expose in client-side code.
  * They are not secret keys and are meant to be public. Security is enforced
  * through Firestore and Storage security rules, not API key protection.
@@ -9,20 +9,50 @@
  */
 
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-import { getFirestore, collection, doc, setDoc, getDoc, getDocs, updateDoc, deleteDoc, query, where, orderBy, onSnapshot, addDoc, Timestamp, serverTimestamp, writeBatch, arrayUnion } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
-import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js';
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+import {
+  getFirestore,
+  collection,
+  doc,
+  setDoc,
+  getDoc,
+  getDocs,
+  updateDoc,
+  deleteDoc,
+  query,
+  where,
+  orderBy,
+  onSnapshot,
+  addDoc,
+  Timestamp,
+  serverTimestamp,
+  writeBatch,
+  arrayUnion,
+} from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+import {
+  getStorage,
+  ref,
+  uploadBytes,
+  getDownloadURL,
+  deleteObject,
+} from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js';
+import {
+  getAuth,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+} from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 
 // Firebase configuration
 // These values are safe to expose as security is enforced via Firestore rules
 const firebaseConfig = {
-  apiKey: "AIzaSyAbFoGEvaAQcAvjL716cPSs1KDMkriahqc",
-  authDomain: "eventflow-ffb12.firebaseapp.com",
-  projectId: "eventflow-ffb12",
-  storageBucket: "eventflow-ffb12.firebasestorage.app",
-  messagingSenderId: "253829522456",
-  appId: "1:253829522456:web:3fae1bcec63932321bcf6d",
-  measurementId: "G-JRT11771YD"
+  apiKey: 'AIzaSyAbFoGEvaAQcAvjL716cPSs1KDMkriahqc',
+  authDomain: 'eventflow-ffb12.firebaseapp.com',
+  projectId: 'eventflow-ffb12',
+  storageBucket: 'eventflow-ffb12.firebasestorage.app',
+  messagingSenderId: '253829522456',
+  appId: '1:253829522456:web:3fae1bcec63932321bcf6d',
+  measurementId: 'G-JRT11771YD',
 };
 
 // Initialize Firebase
@@ -60,7 +90,7 @@ export {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut,
-  onAuthStateChanged
+  onAuthStateChanged,
 };
 
 // Helper functions for common Firebase operations
@@ -150,21 +180,21 @@ export async function getDocuments(collectionName, options = {}) {
   try {
     const colRef = collection(db, collectionName);
     let q = colRef;
-    
+
     if (options.where) {
       q = query(q, where(options.where.field, options.where.operator, options.where.value));
     }
-    
+
     if (options.orderBy) {
       q = query(q, orderBy(options.orderBy.field, options.orderBy.direction || 'asc'));
     }
-    
+
     const querySnapshot = await getDocs(q);
     const documents = [];
-    querySnapshot.forEach((doc) => {
+    querySnapshot.forEach(doc => {
       documents.push({ id: doc.id, ...doc.data() });
     });
-    
+
     return documents;
   } catch (error) {
     console.error('Error getting documents:', error);
@@ -183,24 +213,28 @@ export function listenToCollection(collectionName, callback, options = {}) {
   try {
     const colRef = collection(db, collectionName);
     let q = colRef;
-    
+
     if (options.where) {
       q = query(q, where(options.where.field, options.where.operator, options.where.value));
     }
-    
+
     if (options.orderBy) {
       q = query(q, orderBy(options.orderBy.field, options.orderBy.direction || 'asc'));
     }
-    
-    return onSnapshot(q, (querySnapshot) => {
-      const documents = [];
-      querySnapshot.forEach((doc) => {
-        documents.push({ id: doc.id, ...doc.data() });
-      });
-      callback(documents);
-    }, (error) => {
-      console.error('Error listening to collection:', error);
-    });
+
+    return onSnapshot(
+      q,
+      querySnapshot => {
+        const documents = [];
+        querySnapshot.forEach(doc => {
+          documents.push({ id: doc.id, ...doc.data() });
+        });
+        callback(documents);
+      },
+      error => {
+        console.error('Error listening to collection:', error);
+      }
+    );
   } catch (error) {
     console.error('Error setting up listener:', error);
     throw error;
@@ -217,15 +251,19 @@ export function listenToCollection(collectionName, callback, options = {}) {
 export function listenToDocument(collectionName, docId, callback) {
   try {
     const docRef = doc(db, collectionName, docId);
-    return onSnapshot(docRef, (docSnap) => {
-      if (docSnap.exists()) {
-        callback({ id: docSnap.id, ...docSnap.data() });
-      } else {
-        callback(null);
+    return onSnapshot(
+      docRef,
+      docSnap => {
+        if (docSnap.exists()) {
+          callback({ id: docSnap.id, ...docSnap.data() });
+        } else {
+          callback(null);
+        }
+      },
+      error => {
+        console.error('Error listening to document:', error);
       }
-    }, (error) => {
-      console.error('Error listening to document:', error);
-    });
+    );
   } catch (error) {
     console.error('Error setting up listener:', error);
     throw error;

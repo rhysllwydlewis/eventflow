@@ -6,13 +6,13 @@
 class OnboardingTour {
   constructor(options = {}) {
     console.log('[OnboardingTour] Initializing with options:', options);
-    
+
     this.options = {
       steps: options.steps || [],
       onComplete: options.onComplete || null,
       onSkip: options.onSkip || null,
       storageKey: options.storageKey || 'ef_tour_completed',
-      autoStart: options.autoStart !== false
+      autoStart: options.autoStart !== false,
     };
 
     this.currentStep = 0;
@@ -26,13 +26,23 @@ class OnboardingTour {
       console.log('[OnboardingTour] Auto-starting tour');
       this.start();
     } else {
-      console.log('[OnboardingTour] Tour not auto-starting. AutoStart:', this.options.autoStart, 'Completed:', this.hasCompletedTour());
+      console.log(
+        '[OnboardingTour] Tour not auto-starting. AutoStart:',
+        this.options.autoStart,
+        'Completed:',
+        this.hasCompletedTour()
+      );
     }
   }
 
   hasCompletedTour() {
     const completed = localStorage.getItem(this.options.storageKey) === 'true';
-    console.log('[OnboardingTour] Checking completion status:', completed, 'for key:', this.options.storageKey);
+    console.log(
+      '[OnboardingTour] Checking completion status:',
+      completed,
+      'for key:',
+      this.options.storageKey
+    );
     return completed;
   }
 
@@ -48,7 +58,12 @@ class OnboardingTour {
 
   start() {
     if (this.isActive || this.options.steps.length === 0) {
-      console.log('[OnboardingTour] Cannot start. Active:', this.isActive, 'Steps:', this.options.steps.length);
+      console.log(
+        '[OnboardingTour] Cannot start. Active:',
+        this.isActive,
+        'Steps:',
+        this.options.steps.length
+      );
       return;
     }
 
@@ -99,7 +114,7 @@ class OnboardingTour {
     });
 
     // Close on ESC key
-    this.escapeHandler = (e) => {
+    this.escapeHandler = e => {
       if (e.key === 'Escape') {
         this.skip();
       }
@@ -108,7 +123,9 @@ class OnboardingTour {
   }
 
   showStep(stepIndex) {
-    if (stepIndex < 0 || stepIndex >= this.options.steps.length) return;
+    if (stepIndex < 0 || stepIndex >= this.options.steps.length) {
+      return;
+    }
 
     this.currentStep = stepIndex;
     const step = this.options.steps[stepIndex];
@@ -141,9 +158,7 @@ class OnboardingTour {
   }
 
   highlightElement(selector, position) {
-    const element = typeof selector === 'string' 
-      ? document.querySelector(selector) 
-      : selector;
+    const element = typeof selector === 'string' ? document.querySelector(selector) : selector;
 
     if (!element) {
       console.warn('Onboarding: Element not found:', selector);
@@ -168,7 +183,7 @@ class OnboardingTour {
     setTimeout(() => {
       const rect = element.getBoundingClientRect();
       const spotlight = this.overlay.querySelector('.onboarding-spotlight');
-      
+
       spotlight.style.top = `${rect.top - 8}px`;
       spotlight.style.left = `${rect.left - 8}px`;
       spotlight.style.width = `${rect.width + 16}px`;
@@ -221,22 +236,22 @@ class OnboardingTour {
     // Ensure tooltip stays within viewport
     setTimeout(() => {
       const tooltipRect = tooltip.getBoundingClientRect();
-      
+
       if (tooltipRect.right > window.innerWidth - 20) {
         tooltip.style.left = 'auto';
         tooltip.style.right = '20px';
       }
-      
+
       if (tooltipRect.left < 20) {
         tooltip.style.left = '20px';
         tooltip.style.right = 'auto';
       }
-      
+
       if (tooltipRect.bottom > window.innerHeight - 20) {
         tooltip.style.top = 'auto';
         tooltip.style.bottom = '20px';
       }
-      
+
       if (tooltipRect.top < 20) {
         tooltip.style.top = '20px';
         tooltip.style.bottom = 'auto';
@@ -267,7 +282,7 @@ class OnboardingTour {
     }
 
     if (typeof showToast === 'function') {
-      showToast('Tour completed! You\'re all set 🎉', 'success');
+      showToast("Tour completed! You're all set 🎉", 'success');
     }
   }
 
@@ -306,7 +321,9 @@ class OnboardingTour {
   }
 
   injectStyles() {
-    if (document.getElementById('onboarding-tour-styles')) return;
+    if (document.getElementById('onboarding-tour-styles')) {
+      return;
+    }
 
     const styles = document.createElement('style');
     styles.id = 'onboarding-tour-styles';

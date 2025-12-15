@@ -1,18 +1,22 @@
 # Admin API Documentation
 
 ## Authentication
+
 All admin endpoints require:
+
 - Valid JWT token in HTTP-only cookie
 - User role: `admin`
 
 ## User Management Endpoints
 
 ### List All Users
+
 ```http
 GET /api/admin/users
 ```
 
 **Response:**
+
 ```json
 {
   "items": [
@@ -31,6 +35,7 @@ GET /api/admin/users
 ```
 
 ### Edit User Profile
+
 ```http
 PUT /api/admin/users/:id
 Content-Type: application/json
@@ -45,6 +50,7 @@ Content-Type: application/json
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -61,19 +67,23 @@ Content-Type: application/json
 ```
 
 **Version History:**
+
 - All edits are tracked in `user.versionHistory[]`
 - Includes timestamp, editor ID, and previous state
 
 ### Delete User
+
 ```http
 DELETE /api/admin/users/:id
 ```
 
 **Restrictions:**
+
 - Cannot delete your own account
 - Cannot delete owner account (admin@event-flow.co.uk)
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -82,6 +92,7 @@ DELETE /api/admin/users/:id
 ```
 
 **Error Response:**
+
 ```json
 {
   "error": "You cannot delete your own account"
@@ -89,11 +100,13 @@ DELETE /api/admin/users/:id
 ```
 
 ### Grant Admin Privileges
+
 ```http
 POST /api/admin/users/:id/grant-admin
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -109,6 +122,7 @@ POST /api/admin/users/:id/grant-admin
 **Audit Log:** Action logged as `user_role_changed`
 
 ### Revoke Admin Privileges
+
 ```http
 POST /api/admin/users/:id/revoke-admin
 Content-Type: application/json
@@ -119,13 +133,16 @@ Content-Type: application/json
 ```
 
 **Parameters:**
+
 - `newRole` (required): "customer" or "supplier"
 
 **Restrictions:**
+
 - Cannot revoke your own admin privileges
 - Cannot revoke owner account privileges
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -139,6 +156,7 @@ Content-Type: application/json
 ```
 
 ### Suspend User
+
 ```http
 POST /api/admin/users/:id/suspend
 Content-Type: application/json
@@ -151,11 +169,13 @@ Content-Type: application/json
 ```
 
 **Parameters:**
+
 - `suspended` (boolean): true to suspend, false to unsuspend
 - `reason` (string): Reason for suspension
 - `duration` (string, optional): "7d", "30d", etc.
 
 **Response:**
+
 ```json
 {
   "message": "User suspended successfully",
@@ -169,6 +189,7 @@ Content-Type: application/json
 ```
 
 ### Ban User
+
 ```http
 POST /api/admin/users/:id/ban
 Content-Type: application/json
@@ -180,6 +201,7 @@ Content-Type: application/json
 ```
 
 **Response:**
+
 ```json
 {
   "message": "User banned successfully",
@@ -193,11 +215,13 @@ Content-Type: application/json
 ```
 
 ### Verify User Email
+
 ```http
 POST /api/admin/users/:id/verify
 ```
 
 **Response:**
+
 ```json
 {
   "message": "User verified successfully",
@@ -212,11 +236,13 @@ POST /api/admin/users/:id/verify
 ## Supplier Management Endpoints
 
 ### List All Suppliers
+
 ```http
 GET /api/admin/suppliers
 ```
 
 **Response:**
+
 ```json
 {
   "items": [
@@ -234,6 +260,7 @@ GET /api/admin/suppliers
 ```
 
 ### Edit Supplier Profile
+
 ```http
 PUT /api/admin/suppliers/:id
 Content-Type: application/json
@@ -253,6 +280,7 @@ Content-Type: application/json
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -266,6 +294,7 @@ Content-Type: application/json
 ```
 
 ### Delete Supplier
+
 ```http
 DELETE /api/admin/suppliers/:id
 ```
@@ -273,6 +302,7 @@ DELETE /api/admin/suppliers/:id
 **Note:** Also deletes all associated packages
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -281,6 +311,7 @@ DELETE /api/admin/suppliers/:id
 ```
 
 ### Approve/Reject Supplier
+
 ```http
 POST /api/admin/suppliers/:id/approve
 Content-Type: application/json
@@ -291,6 +322,7 @@ Content-Type: application/json
 ```
 
 **Response:**
+
 ```json
 {
   "ok": true,
@@ -303,6 +335,7 @@ Content-Type: application/json
 ```
 
 ### Verify Supplier
+
 ```http
 POST /api/admin/suppliers/:id/verify
 Content-Type: application/json
@@ -314,6 +347,7 @@ Content-Type: application/json
 ```
 
 **Response:**
+
 ```json
 {
   "message": "Supplier verified successfully",
@@ -327,6 +361,7 @@ Content-Type: application/json
 ```
 
 ### Manage Pro Plan
+
 ```http
 POST /api/admin/suppliers/:id/pro
 Content-Type: application/json
@@ -338,10 +373,12 @@ Content-Type: application/json
 ```
 
 **Parameters:**
+
 - `mode`: "duration" to set Pro, "cancel" to remove
 - `duration`: "1d", "7d", "1m", "1y"
 
 **Response:**
+
 ```json
 {
   "ok": true,
@@ -354,11 +391,13 @@ Content-Type: application/json
 ```
 
 ### Get Pending Supplier Verifications
+
 ```http
 GET /api/admin/suppliers/pending-verification
 ```
 
 **Response:**
+
 ```json
 {
   "suppliers": [
@@ -377,11 +416,13 @@ GET /api/admin/suppliers/pending-verification
 ## Package Management Endpoints
 
 ### List All Packages
+
 ```http
 GET /api/admin/packages
 ```
 
 **Response:**
+
 ```json
 {
   "items": [
@@ -397,6 +438,7 @@ GET /api/admin/packages
 ```
 
 ### Edit Package
+
 ```http
 PUT /api/admin/packages/:id
 Content-Type: application/json
@@ -411,6 +453,7 @@ Content-Type: application/json
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -424,11 +467,13 @@ Content-Type: application/json
 ```
 
 ### Delete Package
+
 ```http
 DELETE /api/admin/packages/:id
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -437,6 +482,7 @@ DELETE /api/admin/packages/:id
 ```
 
 ### Approve Package
+
 ```http
 POST /api/admin/packages/:id/approve
 Content-Type: application/json
@@ -447,6 +493,7 @@ Content-Type: application/json
 ```
 
 **Response:**
+
 ```json
 {
   "ok": true,
@@ -458,6 +505,7 @@ Content-Type: application/json
 ```
 
 ### Feature Package
+
 ```http
 POST /api/admin/packages/:id/feature
 Content-Type: application/json
@@ -468,6 +516,7 @@ Content-Type: application/json
 ```
 
 **Response:**
+
 ```json
 {
   "ok": true,
@@ -481,17 +530,20 @@ Content-Type: application/json
 ## Data Export Endpoints
 
 ### Export Users (CSV)
+
 ```http
 GET /api/admin/users-export
 ```
 
 **Response:** CSV file download
+
 ```csv
 id,name,email,role,verified,marketingOptIn,createdAt,lastLoginAt
 usr_123,John Doe,john@example.com,customer,yes,no,2024-01-15T10:30:00Z,2024-12-09T14:20:00Z
 ```
 
 ### Export Marketing List (CSV)
+
 ```http
 GET /api/admin/marketing-export
 ```
@@ -499,11 +551,13 @@ GET /api/admin/marketing-export
 **Response:** CSV file with marketing opt-in users only
 
 ### Export All Data (JSON)
+
 ```http
 GET /api/admin/export/all
 ```
 
 **Response:** JSON file download
+
 ```json
 {
   "exportedAt": "2024-12-09T16:30:00Z",
@@ -521,11 +575,13 @@ GET /api/admin/export/all
 ## Metrics Endpoints
 
 ### Get Dashboard Metrics
+
 ```http
 GET /api/admin/metrics
 ```
 
 **Response:**
+
 ```json
 {
   "counts": {
@@ -545,11 +601,13 @@ GET /api/admin/metrics
 ```
 
 ### Get Timeseries Data
+
 ```http
 GET /api/admin/metrics/timeseries
 ```
 
 **Response:**
+
 ```json
 {
   "series": [
@@ -567,6 +625,7 @@ GET /api/admin/metrics/timeseries
 ## System Administration Endpoints
 
 ### Reset Demo Data
+
 ```http
 POST /api/admin/reset-demo
 ```
@@ -574,6 +633,7 @@ POST /api/admin/reset-demo
 **⚠️ WARNING:** Deletes all data and reseeds demo data
 
 **Response:**
+
 ```json
 {
   "ok": true
@@ -581,11 +641,13 @@ POST /api/admin/reset-demo
 ```
 
 ### Smart Tag Suppliers (Beta)
+
 ```http
 POST /api/admin/suppliers/smart-tags
 ```
 
 **Response:**
+
 ```json
 {
   "ok": true
@@ -595,6 +657,7 @@ POST /api/admin/suppliers/smart-tags
 ## Error Responses
 
 ### 401 Unauthorized
+
 ```json
 {
   "error": "Unauthenticated"
@@ -602,6 +665,7 @@ POST /api/admin/suppliers/smart-tags
 ```
 
 ### 403 Forbidden
+
 ```json
 {
   "error": "Forbidden"
@@ -609,6 +673,7 @@ POST /api/admin/suppliers/smart-tags
 ```
 
 ### 404 Not Found
+
 ```json
 {
   "error": "User not found"
@@ -616,6 +681,7 @@ POST /api/admin/suppliers/smart-tags
 ```
 
 ### 400 Bad Request
+
 ```json
 {
   "error": "Invalid role. Must be customer or supplier"
@@ -625,12 +691,14 @@ POST /api/admin/suppliers/smart-tags
 ## Rate Limiting
 
 Admin endpoints use standard rate limiting:
+
 - Most endpoints: 100 requests per 15 minutes per IP
 - Authentication endpoints: 5 requests per 15 minutes per IP
 
 ## Audit Logging
 
 All admin actions are automatically logged with:
+
 - Admin ID and email
 - Action type
 - Target resource
@@ -639,6 +707,7 @@ All admin actions are automatically logged with:
 - IP address and user agent
 
 View audit logs at `/admin-audit.html` or via:
+
 ```http
 GET /api/admin/audit-logs
 ```

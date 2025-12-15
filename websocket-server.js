@@ -13,10 +13,10 @@ class WebSocketServer {
       cors: {
         origin: process.env.BASE_URL || 'http://localhost:3000',
         methods: ['GET', 'POST'],
-        credentials: true
+        credentials: true,
       },
       pingTimeout: 60000,
-      pingInterval: 25000
+      pingInterval: 25000,
     });
 
     // NOTE: In-memory Map for tracking user sockets
@@ -28,64 +28,64 @@ class WebSocketServer {
   }
 
   init() {
-    this.io.on('connection', (socket) => {
+    this.io.on('connection', socket => {
       console.log(`WebSocket connected: ${socket.id}`);
 
       // Handle user authentication
-      socket.on('auth', (data) => {
+      socket.on('auth', data => {
         if (data && data.userId) {
           socket.userId = data.userId;
-          
+
           if (!this.userSockets.has(data.userId)) {
             this.userSockets.set(data.userId, new Set());
           }
           this.userSockets.get(data.userId).add(socket.id);
-          
+
           socket.join(`user:${data.userId}`);
           socket.emit('auth:success', { userId: data.userId });
-          
+
           console.log(`User ${data.userId} authenticated on socket ${socket.id}`);
         }
       });
 
       // Handle joining rooms (for suppliers, events, etc.)
-      socket.on('join', (room) => {
+      socket.on('join', room => {
         socket.join(room);
         console.log(`Socket ${socket.id} joined room: ${room}`);
       });
 
       // Handle leaving rooms
-      socket.on('leave', (room) => {
+      socket.on('leave', room => {
         socket.leave(room);
         console.log(`Socket ${socket.id} left room: ${room}`);
       });
 
       // Handle real-time messaging
-      socket.on('message:send', (data) => {
+      socket.on('message:send', data => {
         const { threadId, recipientId, message } = data;
-        
+
         // Emit to recipient
         this.io.to(`user:${recipientId}`).emit('message:received', {
           threadId,
           message,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
       });
 
       // Handle typing indicators
-      socket.on('typing:start', (data) => {
+      socket.on('typing:start', data => {
         const { threadId, recipientId } = data;
         this.io.to(`user:${recipientId}`).emit('typing:started', {
           threadId,
-          userId: socket.userId
+          userId: socket.userId,
         });
       });
 
-      socket.on('typing:stop', (data) => {
+      socket.on('typing:stop', data => {
         const { threadId, recipientId } = data;
         this.io.to(`user:${recipientId}`).emit('typing:stopped', {
           threadId,
-          userId: socket.userId
+          userId: socket.userId,
         });
       });
 

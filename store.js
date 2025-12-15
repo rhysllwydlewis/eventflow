@@ -37,7 +37,7 @@ function read(name) {
     return JSON.parse(raw);
   } catch (_err) {
     // If a file is corrupt, fall back to backup if available; otherwise empty array.
-    const backup = files[name] + '.bak';
+    const backup = `${files[name]}.bak`;
     if (fs.existsSync(backup)) {
       try {
         return JSON.parse(fs.readFileSync(backup, 'utf8') || '[]');
@@ -52,8 +52,8 @@ function read(name) {
 function write(name, data) {
   ensure();
   const file = files[name];
-  const tmp = file + '.tmp';
-  const bak = file + '.bak';
+  const tmp = `${file}.tmp`;
+  const bak = `${file}.bak`;
   const json = JSON.stringify(data, null, 2);
 
   // Write to temp file first

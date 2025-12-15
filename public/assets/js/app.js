@@ -102,7 +102,7 @@ function efSetupPhotoDropZone(dropId, previewId, onImage) {
         efErrorBanner.style.opacity = '0';
       }, 5000);
     } catch (_) {
-      // Ignore banner removal errors
+      /* Ignore banner display errors */
     }
   }
 
@@ -681,7 +681,9 @@ async function initPlan() {
 
         let finalPrompt = promptText;
         if (aiUseCurrent && aiUseCurrent.checked) {
-          finalPrompt += `\n\nHere is my current plan data summary: ${summaryBits.join(' • ') || 'No extra details yet.'}`;
+          finalPrompt += `\n\nHere is my current plan data summary: ${
+            summaryBits.join(' • ') || 'No extra details yet.'
+          }`;
         }
 
         aiOut.innerHTML = '<p class="small">Thinking about your event…</p>';
@@ -708,22 +710,53 @@ async function initPlan() {
 
           let html = '';
           if (checklist.length) {
-            html += `<h4>Suggested checklist</h4><ul>${checklist.map(t => `<li>${escapeHtml(String(t))}</li>`).join('')}</ul>`;
+            html += `<h4>Suggested checklist</h4><ul>${checklist
+              .map(t => `<li>${escapeHtml(String(t))}</li>`)
+              .join('')}</ul>`;
           }
           if (timeline.length) {
-            html += `<h4>Sample timeline</h4><ul>${timeline.map(row => `<li><strong>${escapeHtml(String(row.time || ''))}</strong> – ${escapeHtml(String(row.item || ''))}${row.owner ? ` <span class="small">(${escapeHtml(String(row.owner))})</span>` : ''}</li>`).join('')}</ul>`;
+            html += `<h4>Sample timeline</h4><ul>${timeline
+              .map(
+                row =>
+                  `<li><strong>${escapeHtml(String(row.time || ''))}</strong> – ${escapeHtml(
+                    String(row.item || '')
+                  )}${
+                    row.owner
+                      ? ` <span class="small">(${escapeHtml(String(row.owner))})</span>`
+                      : ''
+                  }</li>`
+              )
+              .join('')}</ul>`;
           }
           if (suppliers.length) {
-            html += `<h4>Supplier tips</h4><ul>${suppliers.map(row => `<li><strong>${escapeHtml(String(row.category || 'Supplier'))}:</strong> ${escapeHtml(String(row.suggestion || ''))}</li>`).join('')}</ul>`;
+            html += `<h4>Supplier tips</h4><ul>${suppliers
+              .map(
+                row =>
+                  `<li><strong>${escapeHtml(
+                    String(row.category || 'Supplier')
+                  )}:</strong> ${escapeHtml(String(row.suggestion || ''))}</li>`
+              )
+              .join('')}</ul>`;
           }
           if (budget.length) {
-            html += `<h4>Budget breakdown</h4><ul>${budget.map(row => `<li><strong>${escapeHtml(String(row.item || 'Item'))}:</strong> ${escapeHtml(String(row.estimate || ''))}</li>`).join('')}</ul>`;
+            html += `<h4>Budget breakdown</h4><ul>${budget
+              .map(
+                row =>
+                  `<li><strong>${escapeHtml(String(row.item || 'Item'))}:</strong> ${escapeHtml(
+                    String(row.estimate || '')
+                  )}</li>`
+              )
+              .join('')}</ul>`;
           }
           if (styleIdeas.length) {
-            html += `<h4>Style &amp; theme ideas</h4><ul>${styleIdeas.map(t => `<li>${escapeHtml(String(t))}</li>`).join('')}</ul>`;
+            html += `<h4>Style &amp; theme ideas</h4><ul>${styleIdeas
+              .map(t => `<li>${escapeHtml(String(t))}</li>`)
+              .join('')}</ul>`;
           }
           if (messages.length) {
-            html += `<h4>Messages to suppliers</h4><ul>${messages.map(t => `<li>${escapeHtml(String(t))}</li>`).join('')}</ul>`;
+            html += `<h4>Messages to suppliers</h4><ul>${messages
+              .map(t => `<li>${escapeHtml(String(t))}</li>`)
+              .join('')}</ul>`;
           }
 
           if (!html) {
@@ -1138,7 +1171,7 @@ async function renderThreads(targetEl) {
   try {
     user = await me();
   } catch (_e) {
-    /* Ignore authentication errors */
+    /* Ignore user fetch errors */
   }
   if (!user) {
     host.innerHTML = '<p class="small">Sign in to see your conversations.</p>';
@@ -1397,11 +1430,11 @@ async function initDashSupplier() {
         method: 'POST',
         headers: { 'X-CSRF-Token': window.__CSRF_TOKEN__ || '' },
       }).catch(() => {
-        /* Ignore upgrade errors */
+        /* Ignore errors */
       });
     }
   } catch (_e) {
-    /* Ignore billing check errors */
+    /* Ignore conversation fetch errors */
   }
 
   async function api(path, opts) {
@@ -2019,7 +2052,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   } catch (_err) {
-    /* Ignore scroll animation errors */
+    /* Ignore loader errors */
   }
 
   if (page === 'auth') {
@@ -2054,7 +2087,7 @@ document.addEventListener('DOMContentLoaded', () => {
           }, 600);
         }
       } catch (_) {
-        /* Ignore errors */
+        /* Ignore loader errors */
       }
     })();
 
@@ -2461,7 +2494,7 @@ async function adminCharts() {
     };
     document.body.appendChild(s);
   } catch (e) {
-    /* Ignore Chart.js loading errors */
+    /* Ignore confetti errors */
   }
 }
 
@@ -2472,7 +2505,9 @@ function renderSupplierChecklist(wrapper, supplierCount, packageCount) {
     { name: 'Get approved by admin', done: false }, // can't know client-side; show informational
     { name: 'Add at least one package', done: packageCount > 0 },
   ];
-  wrapper.innerHTML = `<h3>Onboarding</h3>${steps.map(s => `<div class="small">${s.done ? '✅' : '⬜️'} ${s.name}</div>`).join('')}`;
+  wrapper.innerHTML = `<h3>Onboarding</h3>${steps
+    .map(s => `<div class="small">${s.done ? '✅' : '⬜️'} ${s.name}</div>`)
+    .join('')}`;
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -2492,7 +2527,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelector('main .container').appendChild(box);
         renderSupplierChecklist(box, (ms.items || []).length, (mp.items || []).length);
       } catch (e) {
-        /* Ignore checklist rendering errors */
+        /* Ignore checklist render errors */
       }
     })();
   }
@@ -2537,7 +2572,9 @@ function efInitVenueMap() {
     if (!q) {
       return;
     }
-    const url = `https://www.google.com/maps?q=${encodeURIComponent(`wedding venues near ${q}`)}&output=embed`;
+    const url = `https://www.google.com/maps?q=${encodeURIComponent(
+      `wedding venues near ${q}`
+    )}&output=embed`;
     mapFrame.src = url;
     setStatus(`Showing results near "${q}" (powered by Google Maps in your browser).`);
   }
@@ -2577,12 +2614,12 @@ document.addEventListener('DOMContentLoaded', () => {
   try {
     efInitLoader();
   } catch (_) {
-    /* Ignore errors */
+    /* Ignore loader init errors */
   }
   try {
     efInitVenueMap();
   } catch (_) {
-    /* Ignore errors */
+    /* Ignore map init errors */
   }
 });
 
@@ -2607,7 +2644,7 @@ document.addEventListener('DOMContentLoaded', () => {
     );
     els.forEach(el => obs.observe(el));
   } catch (_) {
-    /* Ignore errors */
+    /* Ignore IntersectionObserver errors */
   }
 });
 
@@ -2637,7 +2674,7 @@ function efConfetti() {
       layer.remove();
     }, 1300);
   } catch (_) {
-    /* Ignore errors */
+    /* Ignore loader removal errors */
   }
 }
 

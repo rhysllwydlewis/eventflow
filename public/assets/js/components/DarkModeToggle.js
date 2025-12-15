@@ -12,7 +12,7 @@ class DarkModeToggle {
     // Check for saved theme preference or default to system preference
     const savedTheme = localStorage.getItem('theme');
     const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    
+
     if (savedTheme) {
       this.setTheme(savedTheme);
     } else if (systemPrefersDark) {
@@ -35,7 +35,7 @@ class DarkModeToggle {
   setTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('theme', theme);
-    
+
     // Update button icon if it exists
     const button = document.querySelector('.dark-mode-toggle');
     if (button) {
@@ -59,25 +59,25 @@ class DarkModeToggle {
     button.className = 'dark-mode-toggle';
     button.setAttribute('aria-label', 'Toggle dark mode');
     button.setAttribute('title', 'Toggle dark mode');
-    
+
     // Create icons
     const sunIcon = document.createElement('span');
     sunIcon.className = 'icon-sun';
     sunIcon.innerHTML = '☀️';
-    
+
     const moonIcon = document.createElement('span');
     moonIcon.className = 'icon-moon';
     moonIcon.innerHTML = '🌙';
-    
+
     button.appendChild(sunIcon);
     button.appendChild(moonIcon);
-    
+
     // Add click handler
     button.addEventListener('click', () => this.toggleTheme());
-    
+
     // Append to body
     document.body.appendChild(button);
-    
+
     // Update icon based on current theme
     const currentTheme = document.documentElement.getAttribute('data-theme');
     this.updateButtonIcon(button, currentTheme);
@@ -86,7 +86,7 @@ class DarkModeToggle {
   updateButtonIcon(button, theme) {
     const sunIcon = button.querySelector('.icon-sun');
     const moonIcon = button.querySelector('.icon-moon');
-    
+
     if (theme === 'dark') {
       sunIcon.style.display = 'block';
       moonIcon.style.display = 'none';

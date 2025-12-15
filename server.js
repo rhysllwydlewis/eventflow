@@ -897,11 +897,9 @@ app.post(
 
     // Validate password strength
     if (!passwordOk(password)) {
-      return res
-        .status(400)
-        .json({
-          error: 'Password must be at least 8 characters with uppercase, lowercase, and number',
-        });
+      return res.status(400).json({
+        error: 'Password must be at least 8 characters with uppercase, lowercase, and number',
+      });
     }
 
     // Validate role
@@ -1653,7 +1651,8 @@ app.patch(
         .map(x => x.trim())
         .filter(Boolean);
     }
-    if (b.maxGuests !== null) {
+    // eslint-disable-next-line eqeqeq
+    if (b.maxGuests != null) {
       all[i].maxGuests = parseInt(b.maxGuests, 10) || 0;
     }
     if (b.photos) {

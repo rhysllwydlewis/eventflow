@@ -3,7 +3,7 @@
  * Fixed footer bar with quick navigation links
  */
 
-(function() {
+(function () {
   'use strict';
 
   // Create and inject footer navigation HTML

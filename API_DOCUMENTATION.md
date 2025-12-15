@@ -1,6 +1,7 @@
 # EventFlow API Documentation
 
 ## Table of Contents
+
 1. [Overview](#overview)
 2. [Getting Started](#getting-started)
 3. [Authentication](#authentication)
@@ -19,7 +20,8 @@ EventFlow is a comprehensive event services marketplace platform that connects e
 ## Getting Started
 
 ### Prerequisites
-- Node.js 16+ 
+
+- Node.js 16+
 - MongoDB (local or Atlas)
 - npm or yarn
 
@@ -97,11 +99,13 @@ Returns current user information if authenticated.
 ### Search & Discovery
 
 #### Advanced Search
+
 ```http
 GET /api/search/suppliers?q=photography&category=Photography&location=New%20York&minRating=4&sortBy=rating&page=1&perPage=20
 ```
 
 **Query Parameters:**
+
 - `q` - Search term (searches name, description, category, location, amenities)
 - `category` - Filter by category
 - `location` - Filter by location
@@ -116,6 +120,7 @@ GET /api/search/suppliers?q=photography&category=Photography&location=New%20York
 - `perPage` - Results per page (default: 20)
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -128,27 +133,33 @@ GET /api/search/suppliers?q=photography&category=Photography&location=New%20York
 ```
 
 #### Get Trending Suppliers
+
 ```http
 GET /api/discovery/trending?limit=10
 ```
 
 #### Get New Arrivals
+
 ```http
 GET /api/discovery/new?limit=10
 ```
 
 #### Get Popular Packages
+
 ```http
 GET /api/discovery/popular-packages?limit=10
 ```
 
 #### Get Personalized Recommendations
+
 ```http
 GET /api/discovery/recommendations?limit=10
 ```
+
 Requires authentication. Returns recommendations based on browsing history.
 
 #### Get Categories
+
 ```http
 GET /api/search/categories
 ```
@@ -156,6 +167,7 @@ GET /api/search/categories
 Returns all available categories with supplier counts.
 
 #### Get Amenities
+
 ```http
 GET /api/search/amenities
 ```
@@ -165,6 +177,7 @@ Returns all available amenities with counts.
 ### Reviews & Ratings
 
 #### Create Review
+
 ```http
 POST /api/reviews
 Content-Type: application/json
@@ -181,15 +194,18 @@ Content-Type: application/json
 Requires authentication. Review will be pending until admin approval.
 
 #### Get Supplier Reviews
+
 ```http
 GET /api/reviews/supplier/sup_abc123?minRating=4&sortBy=helpful
 ```
 
 **Query Parameters:**
+
 - `minRating` - Filter by minimum rating
 - `sortBy` - Sort by `date` or `helpful`
 
 #### Get Rating Distribution
+
 ```http
 GET /api/reviews/supplier/sup_abc123/distribution
 ```
@@ -197,11 +213,13 @@ GET /api/reviews/supplier/sup_abc123/distribution
 Returns distribution of ratings (1-5 stars) for the supplier.
 
 #### Mark Review as Helpful
+
 ```http
 POST /api/reviews/rev_abc123/helpful
 ```
 
 #### Delete Review
+
 ```http
 DELETE /api/reviews/rev_abc123
 ```
@@ -211,6 +229,7 @@ Requires authentication. Can only delete own reviews (or admin can delete any).
 ### Photo Management
 
 #### Upload Single Photo
+
 ```http
 POST /api/photos/upload?type=supplier&id=sup_abc123
 Content-Type: multipart/form-data
@@ -221,6 +240,7 @@ photo: [file]
 Requires authentication. Uploads photo for supplier or package.
 
 **Query Parameters:**
+
 - `type` - Either `supplier` or `package`
 - `id` - ID of the supplier or package
 
@@ -228,6 +248,7 @@ Requires authentication. Uploads photo for supplier or package.
 **Max Size:** 10MB per file
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -250,6 +271,7 @@ Requires authentication. Uploads photo for supplier or package.
 ```
 
 #### Batch Upload Photos
+
 ```http
 POST /api/photos/upload/batch?type=supplier&id=sup_abc123
 Content-Type: multipart/form-data
@@ -260,11 +282,13 @@ photos: [file1, file2, file3, ...]
 Upload up to 10 photos at once.
 
 #### Delete Photo
+
 ```http
 DELETE /api/photos/delete?type=supplier&id=sup_abc123&photoUrl=https://...
 ```
 
 #### Crop Image
+
 ```http
 POST /api/photos/crop
 Content-Type: application/json
@@ -285,11 +309,13 @@ Content-Type: application/json
 All admin endpoints require authentication with admin role.
 
 #### Get Pending Reviews
+
 ```http
 GET /api/admin/reviews/pending
 ```
 
 #### Approve/Reject Review
+
 ```http
 POST /api/admin/reviews/rev_abc123/approve
 Content-Type: application/json
@@ -300,11 +326,13 @@ Content-Type: application/json
 ```
 
 #### Get Pending Photos
+
 ```http
 GET /api/photos/pending
 ```
 
 #### Approve/Reject Photo
+
 ```http
 POST /api/photos/approve
 Content-Type: application/json
@@ -329,6 +357,7 @@ All errors follow this format:
 ```
 
 **Common HTTP Status Codes:**
+
 - `200` - Success
 - `201` - Created
 - `400` - Bad Request (invalid input)
@@ -341,14 +370,17 @@ All errors follow this format:
 ## Rate Limiting
 
 ### Authentication Endpoints
+
 - **Limit:** 100 requests per 15 minutes
 - **Applies to:** `/api/auth/*`
 
 ### Write Operations
+
 - **Limit:** 80 requests per 10 minutes
 - **Applies to:** POST, PUT, DELETE operations
 
 Rate limit headers are included in responses:
+
 ```
 X-RateLimit-Limit: 100
 X-RateLimit-Remaining: 95
@@ -369,10 +401,13 @@ Images are converted to JPEG format with progressive loading and optimized using
 ## Storage Options
 
 ### Local Storage (Development)
+
 Images stored in `/uploads` directory and served at `/uploads/*`
 
 ### AWS S3 (Production)
+
 Configure these environment variables:
+
 ```
 AWS_S3_BUCKET=your-bucket-name
 AWS_S3_REGION=us-east-1
@@ -394,6 +429,7 @@ When S3 is configured, images are automatically uploaded to S3 and URLs point to
 ## Support
 
 For issues or questions:
+
 - GitHub Issues: https://github.com/yourusername/eventflow/issues
 - Email: support@eventflow.com
 - Documentation: https://docs.eventflow.com
