@@ -9,6 +9,10 @@
  * - Proper gap handling for positioning
  */
 
+// Responsive breakpoint constants (must match CSS media queries)
+const BREAKPOINT_MOBILE = 480;
+const BREAKPOINT_TABLET = 768;
+
 class Carousel {
   constructor(containerId, options = {}) {
     this.containerId = containerId;
@@ -63,7 +67,7 @@ class Carousel {
       .carousel-container::-webkit-scrollbar { display: none; }
 
       /* Prevent horizontal page overflow on mobile */
-      @media (max-width: 480px) {
+      @media (max-width: ${BREAKPOINT_MOBILE}px) {
         .carousel-container {
           overflow: hidden;
           gap: 0;
@@ -78,21 +82,21 @@ class Carousel {
       }
 
       /* Desktop: 3 items per view */
-      @media (min-width: 769px) {
+      @media (min-width: ${BREAKPOINT_TABLET + 1}px) {
         .carousel-item {
           width: calc((100% - 40px) / 3); /* 3 items with 20px gaps */
         }
       }
 
       /* Tablet: 2 items per view */
-      @media (min-width: 481px) and (max-width: 768px) {
+      @media (min-width: ${BREAKPOINT_MOBILE + 1}px) and (max-width: ${BREAKPOINT_TABLET}px) {
         .carousel-item {
           width: calc((100% - 20px) / 2); /* 2 items with 20px gap */
         }
       }
 
       /* Mobile: 1 item per view */
-      @media (max-width: 480px) {
+      @media (max-width: ${BREAKPOINT_MOBILE}px) {
         .carousel-item {
           width: 100%;
           max-width: 100%;
@@ -189,7 +193,7 @@ class Carousel {
       .carousel-prev { left: -20px; }
       .carousel-next { right: -20px; }
 
-      @media (max-width: 768px) {
+      @media (max-width: ${BREAKPOINT_TABLET}px) {
         .carousel-prev { left: 0; }
         .carousel-next { right: 0; }
       }
@@ -206,7 +210,7 @@ class Carousel {
       }
 
       /* Mobile text overflow handling */
-      @media (max-width: 480px) {
+      @media (max-width: ${BREAKPOINT_MOBILE}px) {
         .featured-package-card {
           width: 100%;
           box-sizing: border-box;
@@ -273,18 +277,25 @@ class Carousel {
         return '/assets/images/placeholder-package.jpg';
       }
       const urlStr = String(url);
-      // Block javascript:, data:, and vbscript: URLs
-      if (/^(javascript|data|vbscript):/i.test(urlStr)) {
+      // Block javascript:, data:, vbscript:, and file: URLs
+      if (/^(javascript|data|vbscript|file):/i.test(urlStr)) {
         return '/assets/images/placeholder-package.jpg';
       }
       return escapeHtml(urlStr);
+    };
+
+    // Validate slug for URL safety
+    const validateSlug = value => {
+      const slugStr = String(value || '');
+      // Only allow alphanumeric, hyphens, and underscores
+      return slugStr.replace(/[^a-zA-Z0-9_-]/g, '');
     };
 
     const title = escapeHtml(item.title || 'Untitled Package');
     const description = escapeHtml(item.description || '');
     const price = escapeHtml(item.price_display || 'Contact for pricing');
     const image = sanitizeUrl(item.image);
-    const slug = escapeHtml(item.slug || item.id || '');
+    const slug = validateSlug(item.slug || item.id || '');
 
     // Truncate description with ellipsis
     const truncatedDesc =
@@ -494,9 +505,9 @@ class Carousel {
     const width = window.innerWidth;
     let itemsPerView = this.options.itemsPerView;
 
-    if (width <= 480) {
+    if (width <= BREAKPOINT_MOBILE) {
       itemsPerView = this.options.itemsPerViewMobile;
-    } else if (width <= 768) {
+    } else if (width <= BREAKPOINT_TABLET) {
       itemsPerView = this.options.itemsPerViewTablet;
     }
 
