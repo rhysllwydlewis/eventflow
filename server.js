@@ -1506,9 +1506,14 @@ app.get('/api/suppliers/:id/packages', (req, res) => {
   res.json({ items: pkgs });
 });
 
+// Helper function to check if package is featured
+function isFeaturedPackage(pkg) {
+  return pkg.featured === true || pkg.isFeatured === true;
+}
+
 app.get('/api/packages/featured', (_req, res) => {
   const items = read('packages')
-    .filter(p => p.approved && (p.featured === true || p.isFeatured === true))
+    .filter(p => p.approved && isFeaturedPackage(p))
     .slice(0, 6);
   res.json({ items });
 });
@@ -1551,8 +1556,8 @@ app.get('/api/categories/:slug', (req, res) => {
 
   // Sort: featured packages first
   const sorted = categoryPackages.sort((a, b) => {
-    const aFeatured = a.featured || a.isFeatured || false;
-    const bFeatured = b.featured || b.isFeatured || false;
+    const aFeatured = isFeaturedPackage(a);
+    const bFeatured = isFeaturedPackage(b);
     if (aFeatured && !bFeatured) {
       return -1;
     }

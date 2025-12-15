@@ -128,6 +128,7 @@
 <script src="/assets/js/components/supplier-card.js"></script>
 <script src="/assets/js/components/message-supplier-panel.js"></script>
 <script>
+  /* global PackageGallery, SupplierCard, MessageSupplierPanel */
   window.__EF_PAGE__ = 'package';
 
   document.addEventListener('DOMContentLoaded', () => {
@@ -172,7 +173,6 @@
         if (pkg.gallery && pkg.gallery.length > 0) {
           const galleryImages = pkg.gallery.filter(img => img.approved !== false);
           if (typeof PackageGallery !== 'undefined') {
-            /* global PackageGallery */
             const gallery = new PackageGallery('package-gallery-container', galleryImages);
           }
         } else if (pkg.image) {
@@ -231,13 +231,11 @@
 
         // Display supplier card
         if (typeof SupplierCard !== 'undefined') {
-          /* global SupplierCard */
           const supplierCard = new SupplierCard('supplier-card-container', supplier);
         }
 
         // Display message panel
         if (typeof MessageSupplierPanel !== 'undefined') {
-          /* global MessageSupplierPanel */
           const messagePanel = new MessageSupplierPanel('message-supplier-panel', {
             supplierId: supplier.id,
             packageId: pkg.id,

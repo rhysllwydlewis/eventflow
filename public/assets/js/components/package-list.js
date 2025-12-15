@@ -153,8 +153,8 @@ class PackageList {
 
   sortFeaturedFirst() {
     this.packages.sort((a, b) => {
-      const aFeatured = a.featured || a.isFeatured || false;
-      const bFeatured = b.featured || b.isFeatured || false;
+      const aFeatured = a.featured === true || a.isFeatured === true;
+      const bFeatured = b.featured === true || b.isFeatured === true;
       if (aFeatured && !bFeatured) {
         return -1;
       }
