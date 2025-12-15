@@ -53,6 +53,7 @@
 <script src="/assets/js/animations.js" defer></script>
 <script src="/assets/js/notifications.js" defer></script>
 <script src="/assets/js/search.js" defer></script>
+<script src="/assets/js/components/carousel.js" defer></script>
 <script src="/assets/js/components/global-search.js" defer></script>
 
 <main>
@@ -123,7 +124,7 @@
       <div class="small" style="text-transform:uppercase;letter-spacing:.2em;color:#7E8794">
         Featured packages
       </div>
-      <div id="featured-packages" class="cards">
+      <div id="featured-packages" class="featured-carousel">
         <div class="card"><p class="small">Loading…</p></div>
       </div>
     </div>
@@ -216,10 +217,14 @@
           return;
         }
 
-        const packageList = new PackageList('featured-packages', {
-          sortFeaturedFirst: false,
+        const carousel = new Carousel('featured-packages', {
+          itemsPerView: 3,
+          itemsPerViewTablet: 2,
+          itemsPerViewMobile: 1,
+          autoScroll: true,
+          autoScrollInterval: 5000,
         });
-        packageList.setPackages(data.items);
+        carousel.setItems(data.items);
       })
       .catch(() => {
         /* Ignore errors */
@@ -283,26 +288,6 @@
     }
   });
 
-  // Brand animation: keep "EventFlow" for 3s, then fade + collapse from right to left
-  (function () {
-    var brandText = document.querySelector('.brand-text');
-    if (!brandText) return;
-
-    brandText.style.display = 'inline-block';
-    brandText.style.whiteSpace = 'nowrap';
-    brandText.style.overflow = 'hidden';
-
-    var initialWidth = brandText.offsetWidth;
-    brandText.style.width = initialWidth + 'px';
-
-    brandText.style.transition = 'opacity 0.45s ease, width 0.45s ease, margin 0.45s ease';
-
-    setTimeout(function () {
-      brandText.style.opacity = '0';
-      brandText.style.width = '0';
-      brandText.style.marginLeft = '0';
-    }, 3000);
-  })();
 </script>
 <script src="/assets/js/components/footer-nav.js" defer></script>
 <script src="/assets/js/cookie-consent.js" defer></script>

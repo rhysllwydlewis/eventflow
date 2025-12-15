@@ -20,6 +20,29 @@
   // Fetch token immediately
   await fetchCsrfToken();
 
+  // --- Brand wordmark animation ---
+  function initBrandAnimation() {
+    const brandText = document.querySelector('.brand-text');
+    if (!brandText || brandText.dataset.animated === 'true') {
+      return;
+    }
+    brandText.dataset.animated = 'true';
+
+    brandText.style.display = 'inline-block';
+    brandText.style.whiteSpace = 'nowrap';
+    brandText.style.overflow = 'hidden';
+
+    const initialWidth = brandText.offsetWidth;
+    brandText.style.width = `${initialWidth}px`;
+    brandText.style.transition = 'opacity 0.45s ease, width 0.45s ease, margin 0.45s ease';
+
+    setTimeout(() => {
+      brandText.style.opacity = '0';
+      brandText.style.width = '0';
+      brandText.style.marginLeft = '0';
+    }, 3000);
+  }
+
   // --- Nav (burger + scroll behaviour) ---
   function initNavToggle() {
     const navMenu = document.querySelector('.nav.nav-menu');
@@ -42,20 +65,30 @@
 
       const closeNav = () => {
         body.classList.remove('nav-open');
+        navMenu.classList.remove('nav-menu--open');
         burger.setAttribute('aria-expanded', 'false');
       };
 
       const openNav = () => {
         body.classList.add('nav-open');
+        navMenu.classList.add('nav-menu--open');
         burger.setAttribute('aria-expanded', 'true');
       };
 
-      burger.addEventListener('click', () => {
+      const toggleNav = () => {
         const isOpen = body.classList.contains('nav-open');
         if (isOpen) {
           closeNav();
         } else {
           openNav();
+        }
+      };
+
+      burger.addEventListener('click', toggleNav);
+      burger.addEventListener('keydown', event => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          toggleNav();
         }
       });
 
@@ -222,6 +255,7 @@
   }
 
   // Initialise UI pieces that don't depend on auth
+  initBrandAnimation();
   initNavToggle();
   initHeaderScroll();
 

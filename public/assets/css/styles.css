@@ -625,6 +625,12 @@ body.nav-open .nav-toggle-bar:nth-child(3){
     pointer-events:none;
     transition:opacity 160ms ease-out, transform 160ms ease-out;
   }
+  .nav-menu.nav-menu--open{
+    display:flex;
+    opacity:1;
+    transform:translateY(0);
+    pointer-events:auto;
+  }
   body.nav-open .nav-menu{
     opacity:1;
     transform:translateY(0);
