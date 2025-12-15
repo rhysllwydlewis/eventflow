@@ -2600,12 +2600,6 @@ function efInitVenueMap() {
     mapFrame.src = url;
     mapFrame.style.display = 'block';
 
-    // Handle iframe load errors
-    mapFrame.onerror = () => {
-      setStatus('Unable to load map. Please check your internet connection.');
-      mapFrame.style.display = 'none';
-    };
-
     setStatus(`Showing results near "${q}" (powered by Google Maps).`);
   }
 

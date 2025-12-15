@@ -808,7 +808,8 @@ app.get('/api/csrf-token', authLimiter, (req, res) => {
 });
 
 // Client config endpoint - provides public configuration values
-app.get('/api/config', (req, res) => {
+// Apply rate limiting to prevent abuse of API key exposure
+app.get('/api/config', authLimiter, (req, res) => {
   res.json({
     googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || '',
     version: APP_VERSION,
