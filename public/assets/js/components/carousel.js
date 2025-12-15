@@ -242,7 +242,6 @@ class Carousel {
 
         .carousel-item-title {
           font-size: 1rem;
-          word-wrap: break-word;
           overflow-wrap: break-word;
         }
 
