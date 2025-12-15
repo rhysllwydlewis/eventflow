@@ -2550,6 +2550,32 @@ function efInitLoader() {
   });
 }
 
+// Brand wordmark animation: collapse text after initial reveal
+function efInitBrandAnimation() {
+  const brandText = document.querySelector('.brand-text');
+  if (!brandText) {
+    return;
+  }
+  if (brandText.dataset.animated === 'true') {
+    return;
+  }
+  brandText.dataset.animated = 'true';
+
+  brandText.style.display = 'inline-block';
+  brandText.style.whiteSpace = 'nowrap';
+  brandText.style.overflow = 'hidden';
+
+  const initialWidth = brandText.offsetWidth;
+  brandText.style.width = `${initialWidth}px`;
+  brandText.style.transition = 'opacity 0.45s ease, width 0.45s ease, margin 0.45s ease';
+
+  setTimeout(() => {
+    brandText.style.opacity = '0';
+    brandText.style.width = '0';
+    brandText.style.marginLeft = '0';
+  }, 3000);
+}
+
 // Venue map: uses browser geolocation or postcode to set an embedded map
 function efInitVenueMap() {
   const mapFrame = document.getElementById('venue-map');
@@ -2560,6 +2586,9 @@ function efInitVenueMap() {
   const form = document.getElementById('map-postcode-form');
   const input = document.getElementById('map-postcode');
   const status = document.getElementById('map-status');
+  const LAST_QUERY_KEY = 'ef:lastMapQuery';
+  const LAST_QUERY_LABEL_KEY = 'ef:lastMapLabel';
+  const DEFAULT_QUERY = 'wedding venues in the UK';
 
   // Fetch Google Maps API key from server
   let mapsApiKey = '';
@@ -2567,14 +2596,12 @@ function efInitVenueMap() {
     .then(res => res.json())
     .then(config => {
       mapsApiKey = config.googleMapsApiKey || '';
-      if (!mapsApiKey) {
-        setStatus('Map service not configured. Contact site administrator.');
-        mapFrame.style.display = 'none';
-      }
     })
     .catch(() => {
-      setStatus('Unable to load map configuration.');
-      mapFrame.style.display = 'none';
+      setStatus('Showing default UK map view.');
+    })
+    .finally(() => {
+      showDefaultMap();
     });
 
   function setStatus(msg) {
@@ -2584,23 +2611,56 @@ function efInitVenueMap() {
     status.textContent = msg || '';
   }
 
-  function updateForQuery(q) {
-    if (!q) {
+  function buildMapUrl(query) {
+    if (!query) {
+      return mapFrame.src;
+    }
+    const encodedQuery = encodeURIComponent(query);
+    if (mapsApiKey) {
+      return `https://www.google.com/maps/embed/v1/search?key=${encodeURIComponent(mapsApiKey)}&q=${encodedQuery}`;
+    }
+    return `https://www.google.com/maps?q=${encodedQuery}&output=embed`;
+  }
+
+  function showDefaultMap() {
+    let savedQuery = '';
+    let savedLabel = '';
+    try {
+      savedQuery = localStorage.getItem(LAST_QUERY_KEY) || '';
+      savedLabel = localStorage.getItem(LAST_QUERY_LABEL_KEY) || '';
+    } catch (_) {
+      /* Ignore storage errors */
+    }
+
+    const trimmed = savedQuery.trim();
+    const baseQuery = trimmed ? `wedding venues near ${trimmed}` : DEFAULT_QUERY;
+    const label = (savedLabel || trimmed).trim();
+    mapFrame.src = buildMapUrl(baseQuery);
+    mapFrame.style.display = 'block';
+    setStatus(
+      trimmed
+        ? `Showing results near "${label || trimmed}".`
+        : 'Showing venues across the UK. Share your location to refine your results.'
+    );
+  }
+
+  function updateForQuery(q, labelOverride) {
+    const cleaned = (q || '').trim();
+    if (!cleaned) {
       return;
     }
-    // Use Google Maps Embed API with API key if available
-    let url = '';
-    if (mapsApiKey) {
-      url = `https://www.google.com/maps/embed/v1/search?key=${encodeURIComponent(mapsApiKey)}&q=${encodeURIComponent(`wedding venues near ${q}`)}`;
-    } else {
-      // Fallback to simple embed without API key (may be blocked by Google)
-      url = `https://www.google.com/maps?q=${encodeURIComponent(`wedding venues near ${q}`)}&output=embed`;
-    }
-
-    mapFrame.src = url;
+    const query = `wedding venues near ${cleaned}`;
+    mapFrame.src = buildMapUrl(query);
     mapFrame.style.display = 'block';
 
-    setStatus(`Showing results near "${q}" (powered by Google Maps).`);
+    const label = labelOverride || cleaned;
+    setStatus(`Showing results near "${label}".`);
+    try {
+      localStorage.setItem(LAST_QUERY_KEY, cleaned);
+      localStorage.setItem(LAST_QUERY_LABEL_KEY, label);
+    } catch (_) {
+      /* Ignore storage errors */
+    }
   }
 
   if (useBtn && navigator.geolocation) {
@@ -2610,7 +2670,7 @@ function efInitVenueMap() {
         pos => {
           const { latitude, longitude } = pos.coords;
           const query = `${latitude.toFixed(4)},${longitude.toFixed(4)}`;
-          updateForQuery(query);
+          updateForQuery(query, 'your location');
         },
         err => {
           setStatus(
@@ -2639,6 +2699,11 @@ document.addEventListener('DOMContentLoaded', () => {
     efInitLoader();
   } catch (_) {
     /* Ignore loader init errors */
+  }
+  try {
+    efInitBrandAnimation();
+  } catch (_) {
+    /* Ignore brand animation errors */
   }
   try {
     efInitVenueMap();

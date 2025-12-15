@@ -23,6 +23,8 @@ class Carousel {
     this.items = [];
     this.currentIndex = 0;
     this.autoScrollTimer = null;
+    this.touchStartX = null;
+    this.touchDeltaX = 0;
     this.injectStyles();
   }
 
@@ -255,6 +257,8 @@ class Carousel {
     this.track = track;
     this.updatePosition();
 
+    this.setupTouch(wrapper);
+
     // Setup auto-scroll
     if (this.options.autoScroll) {
       this.startAutoScroll();
@@ -316,9 +320,7 @@ class Carousel {
     const dotsContainer = document.createElement('div');
     dotsContainer.className = 'carousel-dots';
 
-    const totalPages = Math.ceil(
-      this.items.length / this.getItemsPerView()
-    );
+    const totalPages = Math.ceil(this.items.length / this.getItemsPerView());
 
     for (let i = 0; i < totalPages; i++) {
       const dot = document.createElement('button');
@@ -369,6 +371,50 @@ class Carousel {
         dot.classList.toggle('active', index === currentPage);
       });
     }
+  }
+
+  setupTouch(wrapper) {
+    const onStart = event => {
+      this.touchStartX = event.touches ? event.touches[0].clientX : event.clientX;
+      this.touchDeltaX = 0;
+      if (this.options.autoScroll) {
+        this.stopAutoScroll();
+      }
+    };
+
+    const onMove = event => {
+      if (this.touchStartX === null) {
+        return;
+      }
+      const currentX = event.touches ? event.touches[0].clientX : event.clientX;
+      this.touchDeltaX = currentX - this.touchStartX;
+    };
+
+    const onEnd = () => {
+      if (this.touchStartX === null) {
+        return;
+      }
+      if (Math.abs(this.touchDeltaX) > 40) {
+        if (this.touchDeltaX < 0) {
+          this.next();
+        } else {
+          this.prev();
+        }
+      }
+      this.touchStartX = null;
+      this.touchDeltaX = 0;
+      if (this.options.autoScroll) {
+        this.startAutoScroll();
+      }
+    };
+
+    wrapper.addEventListener('touchstart', onStart, { passive: true });
+    wrapper.addEventListener('touchmove', onMove, { passive: true });
+    wrapper.addEventListener('touchend', onEnd, { passive: true });
+    wrapper.addEventListener('mousedown', onStart);
+    wrapper.addEventListener('mousemove', onMove);
+    wrapper.addEventListener('mouseup', onEnd);
+    wrapper.addEventListener('mouseleave', onEnd);
   }
 
   next() {
