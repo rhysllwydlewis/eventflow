@@ -11,7 +11,8 @@ const options = {
     info: {
       title: 'EventFlow API',
       version: '16.3.9',
-      description: 'Comprehensive event services marketplace API - A production-ready platform for connecting event service suppliers with customers',
+      description:
+        'Comprehensive event services marketplace API - A production-ready platform for connecting event service suppliers with customers',
       contact: {
         name: 'EventFlow Support',
         email: 'support@eventflow.com',

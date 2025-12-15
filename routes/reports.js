@@ -19,7 +19,7 @@ const reportLimiter = rateLimit({
   max: 5, // Max 5 reports per 15 minutes
   message: 'Too many reports submitted. Please try again later.',
   standardHeaders: true,
-  legacyHeaders: false
+  legacyHeaders: false,
 });
 
 /**
@@ -29,39 +29,39 @@ const reportLimiter = rateLimit({
  */
 router.post('/', authRequired, reportLimiter, (req, res) => {
   const { type, targetId, reason, details } = req.body;
-  
+
   // Validate input
   if (!type || !targetId || !reason) {
-    return res.status(400).json({ 
-      error: 'Missing required fields: type, targetId, reason' 
+    return res.status(400).json({
+      error: 'Missing required fields: type, targetId, reason',
     });
   }
-  
+
   const validTypes = ['supplier', 'review', 'message', 'user', 'photo'];
   if (!validTypes.includes(type)) {
-    return res.status(400).json({ 
-      error: `Invalid report type. Must be one of: ${validTypes.join(', ')}` 
+    return res.status(400).json({
+      error: `Invalid report type. Must be one of: ${validTypes.join(', ')}`,
     });
   }
-  
+
   const validReasons = [
     'spam',
     'inappropriate_content',
     'harassment',
     'false_information',
     'copyright_violation',
-    'other'
+    'other',
   ];
   if (!validReasons.includes(reason)) {
-    return res.status(400).json({ 
-      error: `Invalid reason. Must be one of: ${validReasons.join(', ')}` 
+    return res.status(400).json({
+      error: `Invalid reason. Must be one of: ${validReasons.join(', ')}`,
     });
   }
-  
+
   // Check if target exists
   let targetExists = false;
   let targetData = null;
-  
+
   switch (type) {
     case 'supplier':
       targetData = read('suppliers').find(s => s.id === targetId);
@@ -79,7 +79,7 @@ router.post('/', authRequired, reportLimiter, (req, res) => {
       targetData = read('users').find(u => u.id === targetId);
       targetExists = !!targetData;
       break;
-    case 'photo':
+    case 'photo': {
       // Photos are embedded in suppliers, need to check differently
       const suppliers = read('suppliers');
       for (const supplier of suppliers) {
@@ -90,28 +90,27 @@ router.post('/', authRequired, reportLimiter, (req, res) => {
         }
       }
       break;
+    }
   }
-  
+
   if (!targetExists) {
-    return res.status(404).json({ 
-      error: `${type} with ID ${targetId} not found` 
+    return res.status(404).json({
+      error: `${type} with ID ${targetId} not found`,
     });
   }
-  
+
   // Check for duplicate reports (same user reporting same target)
   const existingReports = read('reports');
   const duplicateReport = existingReports.find(
-    r => r.reportedBy === req.user.id && 
-         r.targetId === targetId && 
-         r.status === 'pending'
+    r => r.reportedBy === req.user.id && r.targetId === targetId && r.status === 'pending'
   );
-  
+
   if (duplicateReport) {
-    return res.status(400).json({ 
-      error: 'You have already reported this content' 
+    return res.status(400).json({
+      error: 'You have already reported this content',
     });
   }
-  
+
   // Create report
   const now = new Date().toISOString();
   const report = {
@@ -129,23 +128,23 @@ router.post('/', authRequired, reportLimiter, (req, res) => {
     resolvedAt: null,
     resolutionNotes: null,
     createdAt: now,
-    updatedAt: now
+    updatedAt: now,
   };
-  
+
   existingReports.push(report);
   write('reports', existingReports);
-  
+
   console.log(`New report created: ${type} ${targetId} by ${req.user.email}`);
-  
-  res.status(201).json({ 
-    message: 'Report submitted successfully', 
+
+  res.status(201).json({
+    message: 'Report submitted successfully',
     report: {
       id: report.id,
       type: report.type,
       reason: report.reason,
       status: report.status,
-      createdAt: report.createdAt
-    }
+      createdAt: report.createdAt,
+    },
   });
 });
 
@@ -156,41 +155,41 @@ router.post('/', authRequired, reportLimiter, (req, res) => {
  */
 router.get('/admin/reports', authRequired, roleRequired('admin'), (req, res) => {
   const { status, type, page = 1, perPage = 20 } = req.query;
-  
+
   let reports = read('reports');
-  
+
   // Filter by status
   if (status) {
     reports = reports.filter(r => r.status === status);
   }
-  
+
   // Filter by type
   if (type) {
     reports = reports.filter(r => r.type === type);
   }
-  
+
   // Sort by createdAt descending (newest first)
   reports.sort((a, b) => {
     const aTime = new Date(a.createdAt).getTime();
     const bTime = new Date(b.createdAt).getTime();
     return bTime - aTime;
   });
-  
+
   // Pagination
   const pageNum = parseInt(page, 10);
   const perPageNum = parseInt(perPage, 10);
   const startIndex = (pageNum - 1) * perPageNum;
   const endIndex = startIndex + perPageNum;
   const paginatedReports = reports.slice(startIndex, endIndex);
-  
+
   res.json({
     reports: paginatedReports,
     pagination: {
       page: pageNum,
       perPage: perPageNum,
       total: reports.length,
-      totalPages: Math.ceil(reports.length / perPageNum)
-    }
+      totalPages: Math.ceil(reports.length / perPageNum),
+    },
   });
 });
 
@@ -201,7 +200,7 @@ router.get('/admin/reports', authRequired, roleRequired('admin'), (req, res) => 
 router.get('/admin/reports/pending', authRequired, roleRequired('admin'), (req, res) => {
   const reports = read('reports');
   const pendingCount = reports.filter(r => r.status === 'pending').length;
-  
+
   res.json({ count: pendingCount });
 });
 
@@ -213,11 +212,11 @@ router.get('/admin/reports/:id', authRequired, roleRequired('admin'), (req, res)
   const { id } = req.params;
   const reports = read('reports');
   const report = reports.find(r => r.id === id);
-  
+
   if (!report) {
     return res.status(404).json({ error: 'Report not found' });
   }
-  
+
   res.json({ report });
 });
 
@@ -231,31 +230,31 @@ router.get('/admin/reports/:id', authRequired, roleRequired('admin'), (req, res)
 router.post('/admin/reports/:id/resolve', authRequired, roleRequired('admin'), (req, res) => {
   const { id } = req.params;
   const { resolution, action, notes } = req.body;
-  
+
   if (!resolution) {
     return res.status(400).json({ error: 'Resolution is required' });
   }
-  
+
   const validResolutions = ['valid', 'invalid', 'duplicate'];
   if (!validResolutions.includes(resolution)) {
-    return res.status(400).json({ 
-      error: `Invalid resolution. Must be one of: ${validResolutions.join(', ')}` 
+    return res.status(400).json({
+      error: `Invalid resolution. Must be one of: ${validResolutions.join(', ')}`,
     });
   }
-  
+
   const reports = read('reports');
   const reportIndex = reports.findIndex(r => r.id === id);
-  
+
   if (reportIndex === -1) {
     return res.status(404).json({ error: 'Report not found' });
   }
-  
+
   const report = reports[reportIndex];
-  
+
   if (report.status === 'resolved' || report.status === 'dismissed') {
     return res.status(400).json({ error: 'Report has already been resolved' });
   }
-  
+
   // Update report
   const now = new Date().toISOString();
   report.status = 'resolved';
@@ -266,10 +265,10 @@ router.post('/admin/reports/:id/resolve', authRequired, roleRequired('admin'), (
   report.resolvedByEmail = req.user.email;
   report.resolvedAt = now;
   report.updatedAt = now;
-  
+
   reports[reportIndex] = report;
   write('reports', reports);
-  
+
   // Create audit log
   auditLog({
     adminId: req.user.id,
@@ -282,15 +281,15 @@ router.post('/admin/reports/:id/resolve', authRequired, roleRequired('admin'), (
       targetId: report.targetId,
       resolution,
       action,
-      notes
-    }
+      notes,
+    },
   });
-  
+
   console.log(`Report ${id} resolved by ${req.user.email}: ${resolution}`);
-  
-  res.json({ 
-    message: 'Report resolved successfully', 
-    report 
+
+  res.json({
+    message: 'Report resolved successfully',
+    report,
   });
 });
 
@@ -301,16 +300,16 @@ router.post('/admin/reports/:id/resolve', authRequired, roleRequired('admin'), (
 router.post('/admin/reports/:id/dismiss', authRequired, roleRequired('admin'), (req, res) => {
   const { id } = req.params;
   const { notes } = req.body;
-  
+
   const reports = read('reports');
   const reportIndex = reports.findIndex(r => r.id === id);
-  
+
   if (reportIndex === -1) {
     return res.status(404).json({ error: 'Report not found' });
   }
-  
+
   const report = reports[reportIndex];
-  
+
   // Update report
   const now = new Date().toISOString();
   report.status = 'dismissed';
@@ -321,10 +320,10 @@ router.post('/admin/reports/:id/dismiss', authRequired, roleRequired('admin'), (
   report.resolvedByEmail = req.user.email;
   report.resolvedAt = now;
   report.updatedAt = now;
-  
+
   reports[reportIndex] = report;
   write('reports', reports);
-  
+
   // Create audit log
   auditLog({
     adminId: req.user.id,
@@ -335,15 +334,15 @@ router.post('/admin/reports/:id/dismiss', authRequired, roleRequired('admin'), (
     details: {
       reportType: report.type,
       targetId: report.targetId,
-      notes
-    }
+      notes,
+    },
   });
-  
+
   console.log(`Report ${id} dismissed by ${req.user.email}`);
-  
-  res.json({ 
-    message: 'Report dismissed successfully', 
-    report 
+
+  res.json({
+    message: 'Report dismissed successfully',
+    report,
   });
 });
 

@@ -29,7 +29,7 @@ EventFlow uses Mailgun for secure, server-side email delivery. Mailgun provides:
 ✅ Account verification flow with 24-hour token expiration  
 ✅ Notification preferences (transactional vs. marketing)  
 ✅ Unsubscribe functionality for marketing emails  
-✅ Email templates with consistent branding  
+✅ Email templates with consistent branding
 
 ## Mailgun Configuration
 
@@ -44,20 +44,24 @@ EventFlow uses Mailgun for secure, server-side email delivery. Mailgun provides:
 ### Step 2: Get Your Credentials
 
 #### API Key
+
 1. Go to **Settings** → **API Keys**
 2. Copy your **Private API key**
 3. Keep this secret and never commit to source control
 
 #### Domain
+
 You have two options:
 
 **Option A: Sandbox Domain (Testing)**
+
 - Free, pre-configured domain for testing
 - Limited to authorized recipients only
 - Format: `sandboxXXXXXXXX.mailgun.org`
 - Find it in: **Sending** → **Domains**
 
 **Option B: Custom Domain (Production)**
+
 1. Go to **Sending** → **Domains** → **Add New Domain**
 2. Enter your domain (e.g., `mg.yourdomain.com`)
 3. Add DNS records to your domain:
@@ -70,11 +74,13 @@ You have two options:
 ### Step 3: Configure Sender Email
 
 For sandbox domains:
+
 1. Go to **Sending** → **Domains** → Select your domain
 2. Add **Authorized Recipients** under the domain settings
 3. Recipients must verify their email before receiving test emails
 
 For custom domains:
+
 - Any email address from your verified domain can be used
 - Example: `no-reply@mg.yourdomain.com`
 
@@ -115,10 +121,12 @@ EMAIL_ENABLED=true
 ### Important Notes
 
 ⚠️ **Never commit these values to source control**
+
 - Add `.env` to `.gitignore` (already done in this repo)
 - Use environment variables in production (Railway, Heroku, etc.)
 
 ⚠️ **Region Selection**
+
 - EU users should use `https://api.eu.mailgun.net`
 - US users should use `https://api.mailgun.net`
 - Using wrong region will cause authentication errors
@@ -128,6 +136,7 @@ EMAIL_ENABLED=true
 ### 1. Account Verification
 
 When users register, they receive a verification email with:
+
 - 24-hour expiration token
 - Branded HTML email template
 - Fallback plain text version
@@ -140,11 +149,13 @@ When users register, they receive a verification email with:
 Users can control two types of emails:
 
 **`notify_account` (Transactional)**
+
 - Default: `true`
 - Account notifications, security alerts, password resets
 - Cannot be completely disabled (security requirement)
 
 **`notify_marketing` (Marketing)**
+
 - Default: `false` (requires opt-in)
 - Promotional emails, newsletters, feature announcements
 - Can be disabled via account settings or unsubscribe link
@@ -152,6 +163,7 @@ Users can control two types of emails:
 ### 3. Unsubscribe Functionality
 
 Marketing emails include an unsubscribe link:
+
 - Works without authentication (email parameter only)
 - Sets `notify_marketing: false`
 - Returns friendly confirmation message
@@ -167,7 +179,7 @@ const mailgun = require('./utils/mailgun');
 // During user registration
 const user = {
   email: 'user@example.com',
-  name: 'John Doe'
+  name: 'John Doe',
 };
 const verificationToken = 'abc123...';
 
@@ -183,7 +195,7 @@ const mailgun = require('./utils/mailgun');
 const user = {
   email: 'user@example.com',
   name: 'John Doe',
-  notify_marketing: true // Must be true to send
+  notify_marketing: true, // Must be true to send
 };
 
 // Send marketing email with preference check
@@ -194,8 +206,8 @@ const result = await mailgun.sendMarketingEmail(
   {
     templateData: {
       ctaText: 'View Features',
-      ctaLink: 'https://yourdomain.com/features'
-    }
+      ctaLink: 'https://yourdomain.com/features',
+    },
   }
 );
 
@@ -214,7 +226,7 @@ const mailgun = require('./utils/mailgun');
 const user = {
   email: 'user@example.com',
   name: 'John Doe',
-  notify_account: true
+  notify_account: true,
 };
 
 await mailgun.sendNotificationEmail(
@@ -236,16 +248,16 @@ await mailgun.sendMail({
   template: 'welcome', // Uses email-templates/welcome.html
   templateData: {
     name: 'John Doe',
-    loginLink: 'https://yourdomain.com/login'
+    loginLink: 'https://yourdomain.com/login',
   },
-  tags: ['onboarding', 'transactional']
+  tags: ['onboarding', 'transactional'],
 });
 
 // Send simple text email
 await mailgun.sendMail({
   to: 'user@example.com',
   subject: 'Quick notification',
-  text: 'This is a plain text email message.'
+  text: 'This is a plain text email message.',
 });
 
 // Send HTML email
@@ -253,7 +265,7 @@ await mailgun.sendMail({
   to: 'user@example.com',
   subject: 'Rich content',
   html: '<h1>Hello</h1><p>This is an HTML email.</p>',
-  text: 'Hello\n\nThis is an HTML email.' // Fallback
+  text: 'Hello\n\nThis is an HTML email.', // Fallback
 });
 ```
 
@@ -274,6 +286,7 @@ curl -s --user 'api:pubkey-2821845c6a90a3ec96a734687de541f6' \
 ```
 
 **Important Notes:**
+
 - Replace `pubkey-2821845c6a90a3ec96a734687de541f6` with your actual API key
 - Replace `mg.fake-domain.com` with your verified Mailgun domain
 - Use `api.mailgun.net` for US region, `api.eu.mailgun.net` for EU region
@@ -281,6 +294,7 @@ curl -s --user 'api:pubkey-2821845c6a90a3ec96a734687de541f6' \
 - For **custom domains**: Sender domain must match your verified domain
 
 **Expected Response (Success):**
+
 ```json
 {
   "id": "<20231212140000.1.ABCD@mg.fake-domain.com>",
@@ -289,6 +303,7 @@ curl -s --user 'api:pubkey-2821845c6a90a3ec96a734687de541f6' \
 ```
 
 **Expected Response (Error - Unauthorized Recipient):**
+
 ```json
 {
   "message": "This email address is not authorized to receive messages from this domain"
@@ -298,6 +313,7 @@ curl -s --user 'api:pubkey-2821845c6a90a3ec96a734687de541f6' \
 ### Development Mode (No Mailgun Configured)
 
 When Mailgun is not configured:
+
 1. Emails are saved to `/outbox` folder as `.eml` files
 2. Console logs show what would have been sent
 3. No actual emails are delivered
@@ -356,6 +372,7 @@ curl "http://localhost:3000/api/auth/unsubscribe?email=test@example.com"
 ### Email Not Sending
 
 **Check configuration:**
+
 ```javascript
 const mailgun = require('./utils/mailgun');
 console.log(mailgun.getMailgunStatus());
@@ -363,6 +380,7 @@ console.log(mailgun.getMailgunStatus());
 ```
 
 **Common issues:**
+
 - Missing MAILGUN_API_KEY or MAILGUN_DOMAIN
 - Wrong API base URL for your region
 - Sandbox domain without authorized recipients
@@ -375,6 +393,7 @@ Error: Forbidden
 ```
 
 **Solutions:**
+
 - Verify API key is correct (no extra spaces)
 - Check you're using the **Private API key**, not Public
 - Ensure base URL matches your account region
@@ -387,6 +406,7 @@ Error: Domain not found
 ```
 
 **Solutions:**
+
 - Wait for DNS propagation (up to 48 hours)
 - Verify all DNS records are added correctly
 - Check domain status in Mailgun dashboard
@@ -395,6 +415,7 @@ Error: Domain not found
 ### Emails Going to Spam
 
 **Best practices:**
+
 - Use custom domain instead of sandbox
 - Set up proper SPF, DKIM, DMARC records
 - Avoid spam trigger words in subject/content
@@ -408,6 +429,7 @@ Error: Verification token has expired
 ```
 
 **Solutions:**
+
 - Tokens expire after 24 hours
 - User must request new verification email
 - Check `verificationTokenExpiresAt` field in database
@@ -416,10 +438,12 @@ Error: Verification token has expired
 ## API Endpoints
 
 ### Verification
+
 - `POST /api/auth/register` - Register user (sends verification email)
 - `GET /api/auth/verify?token=TOKEN` - Verify email with token
 
 ### Preferences
+
 - `GET /api/auth/me` - Get current user with preferences
 - `PUT /api/auth/preferences` - Update notification preferences
 - `GET /api/auth/unsubscribe?email=EMAIL` - Unsubscribe from marketing
@@ -427,18 +451,21 @@ Error: Verification token has expired
 ## Security Best Practices
 
 ✅ **API Key Security**
+
 - Never commit API key to source control
 - Use environment variables only
 - Rotate keys periodically
 - Use different keys for dev/staging/production
 
 ✅ **Email Validation**
+
 - Validate email format before sending
 - Use sparse indexes for token fields
 - Implement rate limiting on email endpoints
 - Clear tokens after successful verification
 
 ✅ **Privacy Compliance**
+
 - Honor unsubscribe requests immediately
 - Include unsubscribe link in marketing emails
 - Don't reveal if email exists in unsubscribe response
@@ -449,6 +476,7 @@ Error: Verification token has expired
 ### Railway / Heroku
 
 Set environment variables in dashboard:
+
 ```bash
 MAILGUN_API_KEY=pubkey-2821845c6a90a3ec96a734687de541f6
 MAILGUN_DOMAIN=mg.yourdomain.com
@@ -460,12 +488,14 @@ APP_BASE_URL=https://your-app.railway.app
 ### Docker
 
 Pass as environment variables:
+
 ```dockerfile
 ENV MAILGUN_API_KEY=pubkey-2821845c6a90a3ec96a734687de541f6
 ENV MAILGUN_DOMAIN=mg.yourdomain.com
 ```
 
 Or use `.env` file with Docker Compose:
+
 ```yaml
 services:
   app:

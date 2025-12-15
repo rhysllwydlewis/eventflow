@@ -22,13 +22,28 @@ const userSchema = {
         email: { bsonType: 'string', description: 'User email address' },
         role: { enum: ['customer', 'supplier', 'admin'], description: 'User role' },
         passwordHash: { bsonType: 'string', description: 'Hashed password' },
-        notify: { bsonType: 'bool', description: 'Email notification preference (deprecated, use notify_account)' },
-        notify_account: { bsonType: 'bool', description: 'Transactional email notifications (account, security)' },
-        notify_marketing: { bsonType: 'bool', description: 'Marketing and promotional email consent' },
-        marketingOptIn: { bsonType: 'bool', description: 'Marketing email consent (deprecated, use notify_marketing)' },
+        notify: {
+          bsonType: 'bool',
+          description: 'Email notification preference (deprecated, use notify_account)',
+        },
+        notify_account: {
+          bsonType: 'bool',
+          description: 'Transactional email notifications (account, security)',
+        },
+        notify_marketing: {
+          bsonType: 'bool',
+          description: 'Marketing and promotional email consent',
+        },
+        marketingOptIn: {
+          bsonType: 'bool',
+          description: 'Marketing email consent (deprecated, use notify_marketing)',
+        },
         verified: { bsonType: 'bool', description: 'Email verification status' },
         verificationToken: { bsonType: 'string', description: 'Email verification token' },
-        verificationTokenExpiresAt: { bsonType: 'string', description: 'Verification token expiration timestamp' },
+        verificationTokenExpiresAt: {
+          bsonType: 'string',
+          description: 'Verification token expiration timestamp',
+        },
         resetToken: { bsonType: 'string', description: 'Password reset token' },
         resetTokenExpiresAt: { bsonType: 'string', description: 'Reset token expiration' },
         isPro: { bsonType: 'bool', description: 'Pro subscription status' },
@@ -58,7 +73,11 @@ const supplierSchema = {
         website: { bsonType: 'string', description: 'Business website URL' },
         email: { bsonType: 'string', description: 'Business contact email' },
         license: { bsonType: 'string', description: 'Business license number' },
-        amenities: { bsonType: 'array', items: { bsonType: 'string' }, description: 'List of amenities' },
+        amenities: {
+          bsonType: 'array',
+          items: { bsonType: 'string' },
+          description: 'List of amenities',
+        },
         maxGuests: { bsonType: 'int', description: 'Maximum guest capacity' },
         description_short: { bsonType: 'string', description: 'Short description' },
         description_long: { bsonType: 'string', description: 'Detailed description' },
@@ -78,7 +97,11 @@ const supplierSchema = {
         approved: { bsonType: 'bool', description: 'Admin approval status' },
         isPro: { bsonType: 'bool', description: 'Pro subscription status' },
         proExpiresAt: { bsonType: 'string', description: 'Pro subscription expiration' },
-        aiTags: { bsonType: 'array', items: { bsonType: 'string' }, description: 'AI-generated tags' },
+        aiTags: {
+          bsonType: 'array',
+          items: { bsonType: 'string' },
+          description: 'AI-generated tags',
+        },
         aiScore: { bsonType: 'number', description: 'AI quality score' },
         aiUpdatedAt: { bsonType: 'string', description: 'Last AI update timestamp' },
       },
@@ -250,7 +273,7 @@ async function initializeCollections(db) {
     try {
       // Check if collection exists
       const existingCollections = await db.listCollections({ name }).toArray();
-      
+
       if (existingCollections.length === 0) {
         // Create collection with schema validation
         await db.createCollection(name, schema);
@@ -332,5 +355,5 @@ async function createIndexes(db) {
 
 module.exports = {
   initializeCollections,
-  createIndexes
+  createIndexes,
 };

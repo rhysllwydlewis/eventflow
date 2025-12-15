@@ -42,20 +42,24 @@ This project adheres to a Code of Conduct that all contributors are expected to 
 ### Installation
 
 1. **Install dependencies**:
+
    ```bash
    npm install
    ```
 
 2. **Set up environment variables**:
+
    ```bash
    cp .env.example .env
    ```
+
    Edit `.env` and configure:
    - `MONGODB_URI` - Your MongoDB connection string
    - `JWT_SECRET` - Random secret (min 32 characters)
    - Other optional services (email, storage, etc.)
 
 3. **Run the development server**:
+
    ```bash
    npm run dev
    ```
@@ -79,6 +83,7 @@ For detailed setup instructions, see [README.md](README.md).
 ### Workflow Steps
 
 1. **Create a branch** from `develop`:
+
    ```bash
    git checkout develop
    git pull upstream develop
@@ -88,20 +93,24 @@ For detailed setup instructions, see [README.md](README.md).
 2. **Make your changes** following our coding standards
 
 3. **Commit your changes**:
+
    ```bash
    git add .
    git commit -m "Brief description of changes"
    ```
+
    - Use clear, descriptive commit messages
    - Reference issue numbers when applicable
 
 4. **Keep your branch updated**:
+
    ```bash
    git fetch upstream
    git rebase upstream/develop
    ```
 
 5. **Push to your fork**:
+
    ```bash
    git push origin feature/your-feature-name
    ```

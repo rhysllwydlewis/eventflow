@@ -181,7 +181,7 @@ class Toast {
     // Create toast element
     const toast = document.createElement('div');
     toast.className = `toast toast-${type}`;
-    
+
     // Icon based on type
     const icons = {
       success: '✓',
@@ -198,21 +198,21 @@ class Toast {
     // Content
     const content = document.createElement('div');
     content.className = 'toast-content';
-    
+
     if (title) {
       const titleEl = document.createElement('div');
       titleEl.className = 'toast-title';
       titleEl.textContent = title;
       content.appendChild(titleEl);
     }
-    
+
     if (message) {
       const messageEl = document.createElement('div');
       messageEl.className = 'toast-message';
       messageEl.textContent = message;
       content.appendChild(messageEl);
     }
-    
+
     toast.appendChild(content);
 
     // Close button

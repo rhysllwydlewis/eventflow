@@ -12,14 +12,9 @@
  * @returns {boolean} True if password is valid
  */
 function passwordOk(pw = '') {
-  return (
-    typeof pw === 'string' &&
-    pw.length >= 8 &&
-    /[A-Za-z]/.test(pw) &&
-    /\d/.test(pw)
-  );
+  return typeof pw === 'string' && pw.length >= 8 && /[A-Za-z]/.test(pw) && /\d/.test(pw);
 }
 
 module.exports = {
-  passwordOk
+  passwordOk,
 };

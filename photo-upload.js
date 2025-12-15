@@ -19,7 +19,7 @@ try {
   const AWS = require('aws-sdk');
   const bucketName = process.env.AWS_S3_BUCKET;
   const region = process.env.AWS_S3_REGION;
-  
+
   if (bucketName && region) {
     s3 = new AWS.S3({
       region,
@@ -50,13 +50,7 @@ const IMAGE_CONFIGS = {
 };
 
 // Allowed file types
-const ALLOWED_MIME_TYPES = [
-  'image/jpeg',
-  'image/jpg',
-  'image/png',
-  'image/webp',
-  'image/gif',
-];
+const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
 
 // Maximum file size (10MB)
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -107,7 +101,7 @@ const upload = multer({
  */
 async function processImage(buffer, config) {
   let processor = sharp(buffer);
-  
+
   // Resize
   if (config.width || config.height) {
     processor = processor.resize({
@@ -117,14 +111,14 @@ async function processImage(buffer, config) {
       withoutEnlargement: true,
     });
   }
-  
+
   // Convert to JPEG and optimize
   processor = processor.jpeg({
     quality: config.quality || 85,
     progressive: true,
     mozjpeg: true,
   });
-  
+
   return processor.toBuffer();
 }
 
@@ -153,7 +147,7 @@ async function uploadToS3(buffer, filename, directory = 'original') {
   if (!S3_ENABLED) {
     throw new Error('AWS S3 is not configured');
   }
-  
+
   const key = `${directory}/${filename}`;
   const params = {
     Bucket: process.env.AWS_S3_BUCKET,
@@ -162,7 +156,7 @@ async function uploadToS3(buffer, filename, directory = 'original') {
     ContentType: 'image/jpeg',
     ACL: 'public-read',
   };
-  
+
   const result = await s3.upload(params).promise();
   return result.Location;
 }
@@ -176,14 +170,14 @@ async function uploadToS3(buffer, filename, directory = 'original') {
 async function processAndSaveImage(buffer, originalFilename) {
   const filename = generateFilename(originalFilename);
   const baseFilename = filename.replace(path.extname(filename), '');
-  
+
   const results = {
     original: null,
     thumbnail: null,
     optimized: null,
     large: null,
   };
-  
+
   try {
     // Process each size
     const [originalProcessed, thumbnail, optimized, large] = await Promise.all([
@@ -192,7 +186,7 @@ async function processAndSaveImage(buffer, originalFilename) {
       processImage(buffer, IMAGE_CONFIGS.optimized),
       processImage(buffer, IMAGE_CONFIGS.large),
     ]);
-    
+
     // Save locally or to S3
     if (S3_ENABLED) {
       // Upload to S3
@@ -202,7 +196,7 @@ async function processAndSaveImage(buffer, originalFilename) {
         uploadToS3(optimized, `${baseFilename}-opt.jpg`, 'optimized'),
         uploadToS3(large, `${baseFilename}-large.jpg`, 'large'),
       ]);
-      
+
       results.original = originalUrl;
       results.thumbnail = thumbnailUrl;
       results.optimized = optimizedUrl;
@@ -215,7 +209,7 @@ async function processAndSaveImage(buffer, originalFilename) {
         saveToLocal(optimized, `${baseFilename}-opt.jpg`, 'optimized'),
         saveToLocal(large, `${baseFilename}-large.jpg`, 'large'),
       ]);
-      
+
       // Return local URLs
       const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
       results.original = `${baseUrl}/uploads/original/${baseFilename}.jpg`;
@@ -223,10 +217,10 @@ async function processAndSaveImage(buffer, originalFilename) {
       results.optimized = `${baseUrl}/uploads/optimized/${baseFilename}-opt.jpg`;
       results.large = `${baseUrl}/uploads/large/${baseFilename}-large.jpg`;
     }
-    
+
     // Also save to public folder for serving
     await saveToLocal(optimized, `${baseFilename}-opt.jpg`, 'public');
-    
+
     return results;
   } catch (error) {
     console.error('Error processing image:', error);
@@ -241,20 +235,22 @@ async function processAndSaveImage(buffer, originalFilename) {
  */
 async function deleteImage(url) {
   // Validate S3 URL more strictly - must start with https:// and contain amazonaws.com in the domain
-  const isS3Url = S3_ENABLED && /^https:\/\/[^\/]*\.amazonaws\.com\//.test(url);
-  
+  const isS3Url = S3_ENABLED && /^https:\/\/[^/]*\.amazonaws\.com\//.test(url);
+
   if (isS3Url) {
     // Delete from S3
     const key = url.split('.com/')[1];
-    await s3.deleteObject({
-      Bucket: process.env.AWS_S3_BUCKET,
-      Key: key,
-    }).promise();
+    await s3
+      .deleteObject({
+        Bucket: process.env.AWS_S3_BUCKET,
+        Key: key,
+      })
+      .promise();
   } else {
     // Delete from local filesystem
     const filename = path.basename(url);
     const dirs = ['original', 'thumbnails', 'optimized', 'public'];
-    
+
     await Promise.allSettled(
       dirs.map(dir => {
         const filepath = path.join(UPLOAD_DIRS[dir], filename);
@@ -289,23 +285,25 @@ async function getImageMetadata(buffer) {
 async function cropImage(imageUrl, cropData) {
   // Download image (either from S3 or local)
   let buffer;
-  
+
   // Validate S3 URL more strictly - must start with https:// and contain amazonaws.com in the domain
-  const isS3Url = S3_ENABLED && /^https:\/\/[^\/]*\.amazonaws\.com\//.test(imageUrl);
-  
+  const isS3Url = S3_ENABLED && /^https:\/\/[^/]*\.amazonaws\.com\//.test(imageUrl);
+
   if (isS3Url) {
     const key = imageUrl.split('.com/')[1];
-    const data = await s3.getObject({
-      Bucket: process.env.AWS_S3_BUCKET,
-      Key: key,
-    }).promise();
+    const data = await s3
+      .getObject({
+        Bucket: process.env.AWS_S3_BUCKET,
+        Key: key,
+      })
+      .promise();
     buffer = data.Body;
   } else {
     const filename = path.basename(imageUrl);
     const filepath = path.join(UPLOAD_DIRS.original, filename);
     buffer = await fs.readFile(filepath);
   }
-  
+
   // Perform crop
   const cropped = await sharp(buffer)
     .extract({
@@ -315,7 +313,7 @@ async function cropImage(imageUrl, cropData) {
       height: Math.round(cropData.height),
     })
     .toBuffer();
-  
+
   // Process and save cropped image
   return processAndSaveImage(cropped, 'cropped.jpg');
 }
@@ -328,7 +326,7 @@ async function cropImage(imageUrl, cropData) {
  */
 async function updatePhotoMetadata(photoId, metadata) {
   const { caption, altText, tags, isFeatured, watermark } = metadata;
-  
+
   return {
     photoId,
     caption: caption || '',
@@ -336,7 +334,7 @@ async function updatePhotoMetadata(photoId, metadata) {
     tags: Array.isArray(tags) ? tags : [],
     isFeatured: !!isFeatured,
     watermark: !!watermark,
-    updatedAt: new Date().toISOString()
+    updatedAt: new Date().toISOString(),
   };
 }
 
@@ -350,11 +348,11 @@ async function updatePhotoMetadata(photoId, metadata) {
 async function replacePhoto(photoId, newImageBuffer, existingMetadata) {
   // Process and save new image
   const newImageData = await processAndSaveImage(newImageBuffer, `replaced_${photoId}.jpg`);
-  
+
   // Merge with existing metadata
   return {
     ...newImageData,
-    metadata: existingMetadata
+    metadata: existingMetadata,
   };
 }
 
@@ -366,44 +364,46 @@ async function replacePhoto(photoId, newImageBuffer, existingMetadata) {
  */
 async function applyFilters(imageUrl, filters) {
   const { brightness = 1, contrast = 1, saturation = 1 } = filters;
-  
+
   let buffer;
-  
+
   if (S3_ENABLED) {
     const key = imageUrl.replace(/^https?:\/\/[^/]+\//, '');
-    const data = await s3.getObject({
-      Bucket: process.env.AWS_S3_BUCKET,
-      Key: key,
-    }).promise();
+    const data = await s3
+      .getObject({
+        Bucket: process.env.AWS_S3_BUCKET,
+        Key: key,
+      })
+      .promise();
     buffer = data.Body;
   } else {
     const filename = path.basename(imageUrl);
     const filepath = path.join(UPLOAD_DIRS.original, filename);
     buffer = await fs.readFile(filepath);
   }
-  
+
   // Apply filters using Sharp
   let image = sharp(buffer);
-  
+
   // Brightness adjustment (0.5 = darker, 1.5 = brighter)
   if (brightness !== 1) {
     image = image.modulate({ brightness });
   }
-  
+
   // Saturation adjustment (0 = grayscale, 2 = very saturated)
   if (saturation !== 1) {
     image = image.modulate({ saturation });
   }
-  
+
   // Contrast is handled via linear transform
   if (contrast !== 1) {
     const alpha = contrast;
     const beta = 128 * (1 - contrast);
     image = image.linear(alpha, beta);
   }
-  
+
   const processed = await image.toBuffer();
-  
+
   // Save processed image
   return processAndSaveImage(processed, 'filtered.jpg');
 }
@@ -416,7 +416,7 @@ async function applyFilters(imageUrl, filters) {
 async function updatePhotoOrder(photoOrder) {
   return photoOrder.map((item, index) => ({
     photoId: item.photoId,
-    order: index
+    order: index,
   }));
 }
 

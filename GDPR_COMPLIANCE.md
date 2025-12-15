@@ -1,34 +1,39 @@
 # GDPR Compliance Documentation
 
 ## Overview
+
 EventFlow is committed to protecting user data and complying with the General Data Protection Regulation (GDPR) and other data protection laws.
 
 ## Data Controller Information
 
 **Organization:** EventFlow  
 **Contact:** admin@event-flow.co.uk  
-**Data Protection Officer:** To be designated  
+**Data Protection Officer:** To be designated
 
 ## Personal Data We Collect
 
 ### User Accounts
+
 - **Identity Data:** Name, email address
 - **Account Data:** User ID, password (hashed), role, verification status
 - **Usage Data:** Last login date, join date, marketing preferences
 - **Profile Data:** User preferences, saved plans, notes
 
 ### Supplier Accounts
+
 - **Business Data:** Supplier name, description, contact information
 - **Location Data:** Business address, service areas
 - **Commercial Data:** Packages, pricing, availability
 - **Performance Data:** Reviews, ratings, health score
 
 ### Customer Data
+
 - **Planning Data:** Event plans, budgets, guest lists
 - **Communication Data:** Messages, threads
 - **Preference Data:** Saved suppliers, comparisons
 
 ### Photos and Media
+
 - **Photo Data:** Uploaded images, metadata
 - **Attribution:** Supplier association, upload date
 - **Moderation Status:** Approval status, rejection reasons
@@ -76,78 +81,95 @@ We process personal data under the following lawful bases:
 
 ### Data Retention
 
-| Data Type | Retention Period | Justification |
-|-----------|-----------------|---------------|
-| Active user accounts | Indefinite | Account management |
-| Deleted user data | 30 days | Recovery period |
-| Audit logs | 2 years | Compliance and security |
-| Photos (approved) | Indefinite | Platform content |
-| Photos (rejected) | 90 days | Moderation review |
-| Messages | Indefinite | User communication |
-| Export files | Immediate deletion recommended | Admin discretion |
+| Data Type            | Retention Period               | Justification           |
+| -------------------- | ------------------------------ | ----------------------- |
+| Active user accounts | Indefinite                     | Account management      |
+| Deleted user data    | 30 days                        | Recovery period         |
+| Audit logs           | 2 years                        | Compliance and security |
+| Photos (approved)    | Indefinite                     | Platform content        |
+| Photos (rejected)    | 90 days                        | Moderation review       |
+| Messages             | Indefinite                     | User communication      |
+| Export files         | Immediate deletion recommended | Admin discretion        |
 
 ## User Rights Under GDPR
 
 ### Right to Access (Article 15)
+
 Users can request access to their personal data:
+
 - **Method:** Email admin@event-flow.co.uk
 - **Response Time:** 30 days
 - **Format:** JSON or CSV export
 - **Scope:** All personal data held
 
 ### Right to Rectification (Article 16)
+
 Users can correct inaccurate data:
+
 - **Self-Service:** Update in Settings page
 - **Admin Assistance:** Contact admin for profile updates
 - **Verification:** Email verification for email changes
 
 ### Right to Erasure (Article 17)
+
 Users can request data deletion ("right to be forgotten"):
+
 - **Method:** Contact admin for account deletion
 - **Admin Action:** DELETE /api/admin/users/:id
 - **Scope:** All personal data and associated content
 - **Exceptions:** Legal retention requirements, audit logs
 
 ### Right to Data Portability (Article 20)
+
 Users can receive data in machine-readable format:
+
 - **Method:** Request data export via admin
 - **Format:** JSON (structured data)
 - **Scope:** User-provided data and generated content
 
 ### Right to Object (Article 21)
+
 Users can object to data processing:
+
 - **Marketing:** Opt-out via marketing preferences
 - **Profiling:** Disable in settings (if applicable)
 
 ### Right to Restrict Processing (Article 18)
+
 Users can request processing restrictions:
+
 - **Account Suspension:** Contact admin
 - **Temporary Hold:** Admin can suspend account
 
 ### Rights Related to Automated Decision-Making (Article 22)
+
 - **Current Status:** No fully automated decision-making
 - **Smart Tagging:** Beta feature, admin-reviewed
 
 ## Data Processing Activities
 
 ### User Registration
+
 - **Data Collected:** Name, email, password
 - **Purpose:** Account creation
 - **Retention:** Until account deletion
 - **Third Parties:** None (email verification service if configured)
 
 ### Email Communications
+
 - **Data Used:** Email address, name
 - **Purpose:** Verification, notifications, marketing (with consent)
 - **Service Providers:** AWS SES / SendGrid / SMTP server
 - **Opt-Out:** Marketing preferences in settings
 
 ### Analytics (if enabled)
+
 - **Data Collected:** Usage metrics, signups
 - **Purpose:** Platform improvement
 - **Anonymization:** No personal identifiers in basic metrics
 
 ### Photo Upload and Moderation
+
 - **Data Collected:** Images, metadata, supplier association
 - **Purpose:** Platform content, supplier portfolios
 - **Retention:** See retention table
@@ -156,6 +178,7 @@ Users can request processing restrictions:
 ## Third-Party Data Processors
 
 ### Email Service Providers
+
 - **AWS SES:** Email delivery (EU region configurable)
 - **SendGrid:** Alternative email delivery
 - **SMTP Server:** Custom server option
@@ -165,10 +188,12 @@ Users can request processing restrictions:
 **Safeguards:** Data Processing Agreement, GDPR-compliant providers
 
 ### Cloud Storage (if configured)
+
 - **AWS S3:** Photo and file storage
 - **Region:** Configurable (EU recommended)
 
 ### Database
+
 - **MongoDB Atlas:** Production database (when configured)
 - **Region:** Configurable
 - **Encryption:** At rest and in transit
@@ -176,26 +201,29 @@ Users can request processing restrictions:
 ## Data Breach Procedures
 
 ### Detection
+
 - Monitor audit logs for suspicious activity
 - Review failed login attempts
 - Track unauthorized access attempts
 
 ### Response Plan
+
 1. **Immediate:** Identify and contain breach
 2. **Assessment:** Determine scope and severity
-3. **Notification:** 
+3. **Notification:**
    - Supervisory authority within 72 hours (if risk to users)
    - Affected users without undue delay (if high risk)
 4. **Documentation:** Record breach details in audit log
 5. **Mitigation:** Implement fixes and preventive measures
 
 ### Notification Template
+
 ```
 Subject: Important Security Notice - EventFlow
 
 Dear [User],
 
-We are writing to inform you of a security incident that may have 
+We are writing to inform you of a security incident that may have
 affected your personal data on EventFlow.
 
 What happened: [Description]
@@ -209,6 +237,7 @@ For more information or questions, contact: admin@event-flow.co.uk
 ## International Data Transfers
 
 If data is transferred outside the EU/UK:
+
 - **Mechanism:** Standard Contractual Clauses (SCCs)
 - **Safeguards:** Encryption, access controls
 - **Documentation:** Data transfer agreements
@@ -216,11 +245,13 @@ If data is transferred outside the EU/UK:
 ## Cookies and Tracking
 
 ### Essential Cookies
+
 - **Authentication Token:** HTTP-only, secure
 - **Purpose:** User session management
 - **Expiry:** 7 days
 
 ### Optional Cookies
+
 - **Theme Preference:** localStorage
 - **UI Settings:** localStorage
 
@@ -229,6 +260,7 @@ If data is transferred outside the EU/UK:
 ## Children's Privacy
 
 EventFlow is not intended for users under 16 years old.
+
 - No knowingly collected data from children
 - Age verification: None (implicit in service nature)
 - Parental consent: Not applicable
@@ -236,21 +268,25 @@ EventFlow is not intended for users under 16 years old.
 ## Admin Responsibilities
 
 ### Data Minimization
+
 - Only collect necessary data
 - Avoid excessive data retention
 - Regular data cleanup
 
 ### Access Control
+
 - Limit admin access to necessary personnel
 - Review admin privileges quarterly
 - Revoke access when no longer needed
 
 ### Audit Trail
+
 - All admin actions logged
 - Retain audit logs for 2 years
 - Regular review of suspicious activity
 
 ### Data Exports
+
 - Use exports only when necessary
 - Securely store exported files
 - Delete exports after use
@@ -259,11 +295,13 @@ EventFlow is not intended for users under 16 years old.
 ## User Consent Management
 
 ### Marketing Consent
+
 - **Opt-In:** Required for marketing emails
 - **Granular:** Separate from service emails
 - **Withdrawal:** Easy opt-out in every email and settings
 
 ### Data Processing Consent
+
 - **Terms of Service:** Accepted on registration
 - **Privacy Policy:** Linked and accessible
 - **Updates:** Users notified of policy changes
@@ -271,7 +309,9 @@ EventFlow is not intended for users under 16 years old.
 ## Documentation and Records
 
 ### Records of Processing Activities (Article 30)
+
 Maintained documentation includes:
+
 - Categories of data processed
 - Purposes of processing
 - Data retention periods
@@ -279,7 +319,9 @@ Maintained documentation includes:
 - Third-party processors
 
 ### Data Protection Impact Assessments (DPIA)
+
 Conducted for:
+
 - New data processing activities
 - Changes to existing processing
 - High-risk processing activities
@@ -287,12 +329,15 @@ Conducted for:
 ## Contact and Complaints
 
 ### Data Subject Requests
+
 **Email:** admin@event-flow.co.uk  
 **Response Time:** Within 30 days  
 **Format:** Formal written response
 
 ### Complaints
+
 Users can file complaints with:
+
 - **EventFlow:** admin@event-flow.co.uk
 - **Supervisory Authority:** ICO (UK) or relevant EU DPA
 
@@ -319,6 +364,7 @@ Users can file complaints with:
 **Version:** 1.0
 
 This document should be reviewed and updated:
+
 - Annually
 - After significant platform changes
 - Following regulatory updates
@@ -327,6 +373,7 @@ This document should be reviewed and updated:
 ## Appendix: Data Schema
 
 ### User Object
+
 ```json
 {
   "id": "string (unique identifier)",
@@ -345,6 +392,7 @@ This document should be reviewed and updated:
 ```
 
 ### Supplier Object
+
 ```json
 {
   "id": "string",
@@ -361,6 +409,7 @@ This document should be reviewed and updated:
 ```
 
 ### Audit Log Entry
+
 ```json
 {
   "id": "string",

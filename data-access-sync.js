@@ -1,13 +1,13 @@
 /**
  * Synchronous Data Access Wrapper for EventFlow
- * 
+ *
  * This module provides synchronous versions of the data-access functions
  * for compatibility with existing server.js code.
- * 
+ *
  * IMPORTANT: This uses synchronous wrappers around async functions, which
  * means Firebase operations will fall back to local storage. For true Firebase
  * integration, endpoints should be converted to async/await.
- * 
+ *
  * This is a transition layer to maintain compatibility while migrating.
  */
 
@@ -44,10 +44,10 @@ function read(collectionName) {
  */
 function write(collectionName, data) {
   warnAboutSync();
-  
+
   // Write to local storage immediately
   writeLocal(collectionName, data);
-  
+
   // Sync to Firebase in background (fire and forget)
   if (FIREBASE_ENABLED) {
     dataAccess.write(collectionName, data).catch(err => {
@@ -61,10 +61,10 @@ module.exports = {
   write,
   uid,
   DATA_DIR,
-  
+
   // Export async versions for endpoints that want to convert
   async: dataAccess,
-  
+
   // Utility to check if Firebase is enabled
-  isFirebaseEnabled: dataAccess.isFirebaseEnabled
+  isFirebaseEnabled: dataAccess.isFirebaseEnabled,
 };
