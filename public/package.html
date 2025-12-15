@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Package Details — EventFlow</title>
+  <link rel="stylesheet" href="/assets/css/styles.css">
+  <link rel="stylesheet" href="/assets/css/eventflow-17.0.0.css">
+  <link rel="stylesheet" href="/assets/css/utilities.css">
+  <link rel="stylesheet" href="/assets/css/components.css">
+  <link rel="stylesheet" href="/assets/css/animations.css">
+  <meta name="description" content="View package details on EventFlow.">
+  <link rel="icon" href="/favicon.svg">
+</head>
+<body>
+<header class="header" role="banner">
+  <div class="container header-inner">
+    <a class="brand" href="/" aria-label="EventFlow home">
+      <span class="logo" aria-hidden="true"></span>
+      <span class="brand-text">EventFlow</span>
+    </a>
+    <div class="header-actions">
+      <nav class="nav nav-inline" aria-label="Quick navigation">
+        <a href="/start.html" class="nav-link nav-main">Plan</a>
+        <a href="/suppliers.html" class="nav-link nav-main">Suppliers</a>
+        <a href="/auth.html" class="nav-link nav-main nav-main-login">Log in</a>
+      </nav>
+      <button id="notification-bell" class="icon-button" type="button" aria-label="Notifications" style="display:none;">
+        <span class="notification-icon">🔔</span>
+        <span class="notification-badge" style="display:none;">0</span>
+      </button>
+      <button id="burger" class="nav-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false">
+        <span class="nav-toggle-bar"></span>
+        <span class="nav-toggle-bar"></span>
+        <span class="nav-toggle-bar"></span>
+      </button>
+      </div>
+  </div>
+  <nav class="nav nav-menu" aria-label="Primary navigation">
+    <a href="/start.html">Plan an Event</a>
+    <a href="/suppliers.html">Suppliers</a>
+    <a href="/plan.html">My Plan</a>
+    <a href="/for-suppliers.html">For Suppliers</a>
+    <a href="/faq.html">FAQ</a>
+    <a href="/settings.html">Settings</a>
+    <a href="/auth.html" id="nav-auth">Sign in</a>
+    <a href="#" id="nav-dashboard" style="display:none">Dashboard</a>
+    <a href="#" id="nav-signout" style="display:none">Sign out</a>
+  </nav>
+</header>
+<script src="/assets/js/auth-nav.js" defer></script>
+<script src="/assets/js/components.js" defer></script>
+<script src="/assets/js/animations.js" defer></script>
+<script src="/assets/js/notifications.js" defer></script>
+
+<main>
+  <section class="section">
+    <div class="container">
+      <div id="package-breadcrumb" style="margin-bottom: 16px; font-size: 0.9rem; color: var(--color-text-secondary, #6c757d);">
+        <a href="/" style="text-decoration: none; color: inherit;">Home</a> / 
+        <span id="breadcrumb-category"></span> /
+        <span id="breadcrumb-package">Package</span>
+      </div>
+
+      <div id="package-loading" class="card">
+        <p>Loading package details...</p>
+      </div>
+
+      <div id="package-error" style="display: none;" class="card">
+        <h2>Package not found</h2>
+        <p>The package you're looking for could not be found. <a href="/">Return home</a></p>
+      </div>
+
+      <div id="package-content" style="display: none;">
+        <!-- Gallery Section -->
+        <div id="package-gallery-container"></div>
+
+        <!-- Package Header -->
+        <div class="card" style="margin-top: 24px;">
+          <div style="display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: 16px;">
+            <div style="flex: 1; min-width: 200px;">
+              <h1 id="package-title" style="margin: 0 0 12px 0;">Package Title</h1>
+              <div id="package-categories" style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px;"></div>
+              <div style="display: flex; gap: 16px; flex-wrap: wrap; margin-top: 12px;">
+                <div id="package-price" style="font-size: 1.5rem; font-weight: 600; color: var(--accent, #13B6A2);"></div>
+                <div id="package-location" style="font-size: 1rem; color: var(--color-text-secondary, #6c757d);"></div>
+              </div>
+            </div>
+            <div id="package-featured-badge" style="display: none; background-color: var(--accent, #13B6A2); color: white; padding: 8px 16px; border-radius: 20px; font-weight: 600;">
+              Featured
+            </div>
+          </div>
+        </div>
+
+        <!-- Package Description -->
+        <div class="card" style="margin-top: 24px;">
+          <h2 style="margin-top: 0;">About this package</h2>
+          <p id="package-description" style="line-height: 1.8; color: var(--color-text-primary, #212529);"></p>
+          <div id="package-tags" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px;"></div>
+        </div>
+
+        <!-- Supplier Card -->
+        <div id="supplier-card-container"></div>
+
+        <!-- Message Supplier Panel -->
+        <div id="message-supplier-panel"></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer" role="contentinfo">
+  <div class="container" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+    <div><strong>EventFlow</strong><br><span class="small">Event planning made simple.</span></div>
+    <div class="version">Version: <span id="ef-version-label">loading…</span></div>
+    <div class="small">
+      <a href="/credits.html">Credits</a> ·
+      <a href="/contact.html">Contact</a> ·
+      <a href="/terms.html">Terms</a> ·
+      <a href="/privacy.html">Privacy</a>
+    </div>
+  </div>
+</footer>
+
+<script src="/assets/js/app.js"></script>
+<script src="/assets/js/components/auth-gate.js"></script>
+<script src="/assets/js/components/package-gallery.js"></script>
+<script src="/assets/js/components/supplier-card.js"></script>
+<script src="/assets/js/components/message-supplier-panel.js"></script>
+<script>
+  window.__EF_PAGE__ = 'package';
+
+  document.addEventListener('DOMContentLoaded', () => {
+    // Get package slug from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const slug = urlParams.get('slug');
+
+    if (!slug) {
+      document.getElementById('package-loading').style.display = 'none';
+      document.getElementById('package-error').style.display = 'block';
+      return;
+    }
+
+    // Load package details
+    fetch(`/api/packages/${slug}`)
+      .then(res => {
+        if (!res.ok) {
+          throw new Error('Package not found');
+        }
+        return res.json();
+      })
+      .then(data => {
+        const { package: pkg, supplier, categories } = data;
+
+        // Hide loading, show content
+        document.getElementById('package-loading').style.display = 'none';
+        document.getElementById('package-content').style.display = 'block';
+
+        // Update page title
+        document.title = `${pkg.title} — EventFlow`;
+
+        // Update breadcrumb
+        if (categories && categories.length > 0) {
+          const categoryLinks = categories.map(cat => 
+            `<a href="/category.html?slug=${cat.slug}" style="text-decoration: none; color: inherit;">${cat.name}</a>`
+          ).join(', ');
+          document.getElementById('breadcrumb-category').innerHTML = categoryLinks;
+        }
+        document.getElementById('breadcrumb-package').textContent = pkg.title;
+
+        // Display gallery
+        if (pkg.gallery && pkg.gallery.length > 0) {
+          const galleryImages = pkg.gallery.filter(img => img.approved !== false);
+          if (typeof PackageGallery !== 'undefined') {
+            /* global PackageGallery */
+            const gallery = new PackageGallery('package-gallery-container', galleryImages);
+          }
+        } else if (pkg.image) {
+          if (typeof PackageGallery !== 'undefined') {
+            const gallery = new PackageGallery('package-gallery-container', [{ url: pkg.image }]);
+          }
+        }
+
+        // Display package header
+        document.getElementById('package-title').textContent = pkg.title;
+
+        if (pkg.featured || pkg.isFeatured) {
+          document.getElementById('package-featured-badge').style.display = 'block';
+        }
+
+        // Display categories
+        if (categories && categories.length > 0) {
+          const categoriesHtml = categories.map(cat => 
+            `<a href="/category.html?slug=${cat.slug}" 
+                style="background-color: var(--color-bg-secondary, #f8f9fa); 
+                       color: var(--color-text-secondary, #6c757d); 
+                       padding: 6px 12px; 
+                       border-radius: 16px; 
+                       font-size: 0.85rem; 
+                       font-weight: 500;
+                       text-decoration: none;
+                       display: inline-block;">
+              ${cat.icon || ''} ${cat.name}
+            </a>`
+          ).join('');
+          document.getElementById('package-categories').innerHTML = categoriesHtml;
+        }
+
+        // Display price and location
+        document.getElementById('package-price').textContent = pkg.price || 'Contact for price';
+        if (pkg.location) {
+          document.getElementById('package-location').innerHTML = `📍 ${pkg.location}`;
+        }
+
+        // Display description
+        document.getElementById('package-description').textContent = pkg.description || 'No description available.';
+
+        // Display tags
+        if (pkg.tags && pkg.tags.length > 0) {
+          const tagsHtml = pkg.tags.map(tag => 
+            `<span style="background-color: var(--color-bg-secondary, #f8f9fa); 
+                          color: var(--color-text-secondary, #6c757d); 
+                          padding: 4px 10px; 
+                          border-radius: 12px; 
+                          font-size: 0.8rem;">
+              #${tag}
+            </span>`
+          ).join('');
+          document.getElementById('package-tags').innerHTML = tagsHtml;
+        }
+
+        // Display supplier card
+        if (typeof SupplierCard !== 'undefined') {
+          /* global SupplierCard */
+          const supplierCard = new SupplierCard('supplier-card-container', supplier);
+        }
+
+        // Display message panel
+        if (typeof MessageSupplierPanel !== 'undefined') {
+          /* global MessageSupplierPanel */
+          const messagePanel = new MessageSupplierPanel('message-supplier-panel', {
+            supplierId: supplier.id,
+            packageId: pkg.id,
+            supplierName: supplier.name,
+          });
+        }
+      })
+      .catch(error => {
+        console.error('Error loading package:', error);
+        document.getElementById('package-loading').style.display = 'none';
+        document.getElementById('package-error').style.display = 'block';
+      });
+  });
+</script>
+<script src="/assets/js/components/footer-nav.js" defer></script>
+<script src="/assets/js/cookie-consent.js" defer></script>
+</body>
+</html>

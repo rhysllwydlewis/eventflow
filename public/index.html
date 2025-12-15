@@ -112,6 +112,15 @@
   <section class="section">
     <div class="container">
       <div class="small" style="text-transform:uppercase;letter-spacing:.2em;color:#7E8794">
+        Browse by Category
+      </div>
+      <div id="category-grid-home"></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="small" style="text-transform:uppercase;letter-spacing:.2em;color:#7E8794">
         Featured packages
       </div>
       <div id="featured-packages" class="cards">
@@ -182,11 +191,40 @@
 
 <script src="/assets/js/app.js"></script>
 <script src="/assets/js/websocket-client.js"></script>
+<script src="/assets/js/components/category-grid.js"></script>
+<script src="/assets/js/components/package-list.js"></script>
 <script>
   window.__EF_PAGE__ = 'home';
 
   // Initialize stats counters on homepage
   document.addEventListener('DOMContentLoaded', () => {
+    // Initialize category grid
+    if (typeof CategoryGrid !== 'undefined') {
+      const categoryGrid = new CategoryGrid('category-grid-home');
+      categoryGrid.loadCategories();
+    }
+
+    // Load featured packages
+    fetch('/api/packages/featured')
+      .then(res => res.json())
+      .then(data => {
+        const container = document.getElementById('featured-packages');
+        if (!container) return;
+
+        if (!data.items || data.items.length === 0) {
+          container.innerHTML = '<p class="small">No featured packages available yet.</p>';
+          return;
+        }
+
+        const packageList = new PackageList('featured-packages', {
+          sortFeaturedFirst: false,
+        });
+        packageList.setPackages(data.items);
+      })
+      .catch(() => {
+        /* Ignore errors */
+      });
+
     // Show notification bell for logged-in users
     const user = localStorage.getItem('user');
     if (user) {
