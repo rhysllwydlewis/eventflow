@@ -2561,6 +2561,22 @@ function efInitVenueMap() {
   const input = document.getElementById('map-postcode');
   const status = document.getElementById('map-status');
 
+  // Fetch Google Maps API key from server
+  let mapsApiKey = '';
+  fetch('/api/config')
+    .then(res => res.json())
+    .then(config => {
+      mapsApiKey = config.googleMapsApiKey || '';
+      if (!mapsApiKey) {
+        setStatus('Map service not configured. Contact site administrator.');
+        mapFrame.style.display = 'none';
+      }
+    })
+    .catch(() => {
+      setStatus('Unable to load map configuration.');
+      mapFrame.style.display = 'none';
+    });
+
   function setStatus(msg) {
     if (!status) {
       return;
@@ -2572,11 +2588,19 @@ function efInitVenueMap() {
     if (!q) {
       return;
     }
-    const url = `https://www.google.com/maps?q=${encodeURIComponent(
-      `wedding venues near ${q}`
-    )}&output=embed`;
+    // Use Google Maps Embed API with API key if available
+    let url = '';
+    if (mapsApiKey) {
+      url = `https://www.google.com/maps/embed/v1/search?key=${encodeURIComponent(mapsApiKey)}&q=${encodeURIComponent(`wedding venues near ${q}`)}`;
+    } else {
+      // Fallback to simple embed without API key (may be blocked by Google)
+      url = `https://www.google.com/maps?q=${encodeURIComponent(`wedding venues near ${q}`)}&output=embed`;
+    }
+
     mapFrame.src = url;
-    setStatus(`Showing results near "${q}" (powered by Google Maps in your browser).`);
+    mapFrame.style.display = 'block';
+
+    setStatus(`Showing results near "${q}" (powered by Google Maps).`);
   }
 
   if (useBtn && navigator.geolocation) {

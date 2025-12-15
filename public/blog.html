@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ideas & Guides — EventFlow</title>
+  <link rel="stylesheet" href="/assets/css/styles.css">
+  <link rel="stylesheet" href="/assets/css/eventflow-17.0.0.css">
+  <link rel="stylesheet" href="/assets/css/utilities.css">
+  <link rel="stylesheet" href="/assets/css/components.css">
+  <meta name="description" content="Expert tips, guides, and inspiration for planning your perfect event">
+  <link rel="icon" href="/favicon.svg">
+</head>
+<body>
+<header class="header" role="banner">
+  <div class="container header-inner">
+    <a class="brand" href="/" aria-label="EventFlow home">
+      <span class="logo" aria-hidden="true"></span>
+      <span class="brand-text">EventFlow</span>
+    </a>
+    <div class="header-actions">
+      <nav class="nav nav-inline" aria-label="Quick navigation">
+        <a href="/start.html" class="nav-link nav-main">Plan</a>
+        <a href="/suppliers.html" class="nav-link nav-main">Suppliers</a>
+        <a href="/auth.html" class="nav-link nav-main nav-main-login">Log in</a>
+      </nav>
+      <button id="notification-bell" class="icon-button" type="button" aria-label="Notifications" style="display:none;">
+        <span class="notification-icon">🔔</span>
+        <span class="notification-badge" style="display:none;">0</span>
+      </button>
+      <button id="burger" class="nav-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false">
+        <span class="nav-toggle-bar"></span>
+        <span class="nav-toggle-bar"></span>
+        <span class="nav-toggle-bar"></span>
+      </button>
+    </div>
+  </div>
+  <nav class="nav nav-menu" aria-label="Primary navigation">
+    <a href="/start.html">Plan an Event</a>
+    <a href="/suppliers.html">Suppliers</a>
+    <a href="/plan.html">My Plan</a>
+    <a href="/for-suppliers.html">For Suppliers</a>
+    <a href="/faq.html">FAQ</a>
+    <a href="/blog.html" aria-current="page">Ideas & Guides</a>
+    <a href="/settings.html">Settings</a>
+    <a href="/auth.html" id="nav-auth">Sign in</a>
+    <a href="#" id="nav-dashboard" style="display:none">Dashboard</a>
+    <a href="#" id="nav-signout" style="display:none">Sign out</a>
+  </nav>
+</header>
+<script src="/assets/js/auth-nav.js" defer></script>
+<script src="/assets/js/components.js" defer></script>
+
+<main>
+  <section class="hero hero--subpage">
+    <div class="container">
+      <h1>Ideas & Guides</h1>
+      <p class="lead">Expert tips, inspiration, and practical advice for planning your perfect event</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div id="blog-articles" class="articles-grid">
+        <!-- Articles will be loaded here -->
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer" role="contentinfo">
+  <div class="container" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+    <div><strong>EventFlow</strong><br><span class="small">Event planning made simple.</span></div>
+    <div class="version">Version: <span id="ef-version-label">loading…</span></div>
+    <div class="small">
+      <a href="/credits.html">Credits</a> ·
+      <a href="/contact.html">Contact</a> ·
+      <a href="/blog.html">Blog</a> ·
+      <a href="/terms.html">Terms</a> ·
+      <a href="/privacy.html">Privacy</a>
+    </div>
+  </div>
+</footer>
+
+<script src="/assets/js/app.js"></script>
+<script>
+  window.__EF_PAGE__ = 'blog';
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const container = document.getElementById('blog-articles');
+    if (!container) return;
+
+    // Sample articles - in production, these would come from a CMS or API
+    const articles = [
+      {
+        title: '10 Essential Tips for Planning Your Perfect Event',
+        excerpt: 'From choosing the right venue to managing your budget, discover expert advice to make your event unforgettable. Learn from industry professionals about timeline management, vendor selection, and creating memorable experiences.',
+        image: '/assets/images/hero-planning.jpg',
+        tag: 'Planning',
+        link: '#',
+        affiliate: false
+      },
+      {
+        title: 'How to Choose the Perfect Venue for Your Wedding',
+        excerpt: 'Find the ideal space that matches your vision and budget with our comprehensive venue selection guide. Consider capacity, location, amenities, and atmosphere when making this crucial decision.',
+        image: '/assets/images/hero-venue.jpg',
+        tag: 'Venues',
+        link: '#',
+        affiliate: false
+      },
+      {
+        title: 'Catering Trends: What's Hot in 2024',
+        excerpt: 'Explore the latest food and beverage trends that will make your event menu stand out. From sustainable sourcing to interactive food stations, discover what\'s making waves in event catering.',
+        image: '/assets/images/collage-catering.jpg',
+        tag: 'Catering',
+        link: '#',
+        affiliate: true
+      },
+      {
+        title: 'Entertainment Ideas for Every Budget',
+        excerpt: 'Create an unforgettable atmosphere without breaking the bank. From live bands to DJs and unique performers, find entertainment options that fit your style and budget.',
+        image: '/assets/images/collage-entertainment.jpg',
+        tag: 'Entertainment',
+        link: '#',
+        affiliate: false
+      },
+      {
+        title: 'Photography Tips: Capturing Your Special Day',
+        excerpt: 'Work with your photographer to ensure every moment is beautifully documented. Learn about must-have shots, lighting considerations, and timeline planning for perfect photos.',
+        image: '/assets/images/collage-photography.jpg',
+        tag: 'Photography',
+        link: '#',
+        affiliate: false
+      },
+      {
+        title: 'Budget-Friendly Decor Ideas That Look Luxurious',
+        excerpt: 'Transform your venue with creative decoration ideas that won\'t empty your wallet. Discover DIY options, smart rental strategies, and styling tricks from professional decorators.',
+        image: '/assets/images/collage-venue.jpg',
+        tag: 'Decor',
+        link: '#',
+        affiliate: true
+      }
+    ];
+
+    articles.forEach(article => {
+      const card = document.createElement('article');
+      card.className = 'article-card';
+      
+      card.innerHTML = `
+        <a href="${article.link}" class="article-card-link">
+          <img src="${article.image}" alt="${article.title}" class="article-card-image" loading="lazy">
+          <div class="article-card-content">
+            <span class="article-card-tag">${article.tag}</span>
+            ${article.affiliate ? '<span class="article-card-affiliate">Partner</span>' : ''}
+            <h3 class="article-card-title">${article.title}</h3>
+            <p class="article-card-excerpt">${article.excerpt}</p>
+            <span class="article-card-cta">Read more →</span>
+          </div>
+        </a>
+      `;
+      
+      container.appendChild(card);
+    });
+  });
+</script>
+<script src="/assets/js/components/footer-nav.js" defer></script>
+</body>
+</html>
