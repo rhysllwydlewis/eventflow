@@ -259,17 +259,38 @@ class Carousel {
   }
 
   _renderItem(item) {
+    const DESCRIPTION_MAX_LENGTH = 100;
+
     const escapeHtml = text => {
       const div = document.createElement('div');
       div.textContent = text || '';
       return div.innerHTML;
     };
 
+    // Validate and sanitize URLs to prevent XSS
+    const sanitizeUrl = url => {
+      if (!url) {
+        return '/assets/images/placeholder-package.jpg';
+      }
+      const urlStr = String(url);
+      // Block javascript:, data:, and vbscript: URLs
+      if (/^(javascript|data|vbscript):/i.test(urlStr)) {
+        return '/assets/images/placeholder-package.jpg';
+      }
+      return escapeHtml(urlStr);
+    };
+
     const title = escapeHtml(item.title || 'Untitled Package');
     const description = escapeHtml(item.description || '');
     const price = escapeHtml(item.price_display || 'Contact for pricing');
-    const image = escapeHtml(item.image || '/assets/images/placeholder-package.jpg');
-    const slug = item.slug || item.id || '';
+    const image = sanitizeUrl(item.image);
+    const slug = escapeHtml(item.slug || item.id || '');
+
+    // Truncate description with ellipsis
+    const truncatedDesc =
+      description.length > DESCRIPTION_MAX_LENGTH
+        ? `${description.substring(0, DESCRIPTION_MAX_LENGTH)}...`
+        : description;
 
     return `
       <div class="carousel-item">
@@ -277,7 +298,7 @@ class Carousel {
           <img src="${image}" alt="${title}" loading="lazy">
           <div class="package-info">
             <h3>${title}</h3>
-            <p class="package-description">${description.substring(0, 100)}${description.length > 100 ? '...' : ''}</p>
+            <p class="package-description">${truncatedDesc}</p>
             <div class="package-price">${price}</div>
           </div>
         </a>
