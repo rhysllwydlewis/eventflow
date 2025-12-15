@@ -60,40 +60,6 @@ import { uploadImage, saveDocument, getDocuments, deleteDocument } from '/assets
       }
     });
   }
-  function api(url, method, body) {
-    const opts = {
-      method: method || 'GET',
-      headers: { 'Content-Type': 'application/json' }
-    };
-    if (body) {
-      opts.body = JSON.stringify(body);
-    }
-    return fetch(url, opts).then(function (r) {
-      const contentType = r.headers.get('content-type');
-      const isJson = contentType && contentType.includes('application/json');
-      
-      if (isJson) {
-        return r.json().then(function (data) {
-          if (!r.ok) {
-            const err = (data && data.error) ? data.error : ('Request failed with ' + r.status);
-            throw new Error(err);
-          }
-          return data;
-        });
-      } else {
-        return r.text().then(function (text) {
-          if (!r.ok) {
-            throw new Error(text || 'Request failed with ' + r.status);
-          }
-          try {
-            return JSON.parse(text);
-          } catch (e) {
-            return { message: text };
-          }
-        });
-      }
-    });
-  }
 
   function escapeHtml(text) {
     const div = document.createElement('div');
@@ -102,7 +68,7 @@ import { uploadImage, saveDocument, getDocuments, deleteDocument } from '/assets
   }
 
   function generateId(prefix) {
-    return prefix + '_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    return prefix + '_' + Date.now() + '_' + Math.random().toString(36).substring(2, 11);
   }
 
   async function loadPackages() {
