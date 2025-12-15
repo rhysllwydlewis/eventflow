@@ -300,14 +300,7 @@ class Carousel {
     const price = item.price || 'Contact for price';
     const inclusions = item.description || item.inclusions || '';
 
-    // Use placeholder if no image provided
-    const imageHtml = imageUrl
-      ? `<img class="carousel-item-image" src="${imageUrl}" alt="${item.title}" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-         <div class="carousel-item-placeholder" style="display:none;"></div>`
-      : `<div class="carousel-item-placeholder"></div>`;
-
     element.innerHTML = `
-      ${imageHtml}
       <div class="carousel-item-content">
         <h3 class="carousel-item-title">${item.title}</h3>
         <div class="carousel-item-price">${price}</div>
@@ -315,6 +308,29 @@ class Carousel {
         <a href="/package.html?slug=${item.slug}" class="carousel-item-cta">View Details</a>
       </div>
     `;
+
+    // Handle image loading with proper error handling
+    if (imageUrl) {
+      const img = document.createElement('img');
+      img.className = 'carousel-item-image';
+      img.src = imageUrl;
+      img.alt = item.title;
+      img.loading = 'lazy';
+
+      img.addEventListener('error', () => {
+        // Replace failed image with placeholder
+        const placeholder = document.createElement('div');
+        placeholder.className = 'carousel-item-placeholder';
+        img.replaceWith(placeholder);
+      });
+
+      element.insertBefore(img, element.firstChild);
+    } else {
+      // No image provided, use placeholder
+      const placeholder = document.createElement('div');
+      placeholder.className = 'carousel-item-placeholder';
+      element.insertBefore(placeholder, element.firstChild);
+    }
 
     return element;
   }
