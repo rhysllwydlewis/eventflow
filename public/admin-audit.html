@@ -24,9 +24,9 @@
 <body>
   <h1>Audit Log</h1>
   <div class="controls">
-    <button onclick="location.href='/admin.html'">← Back to Dashboard</button>
-    <button onclick="loadAuditLogs()">Refresh</button>
-    <button onclick="exportAuditLogs()">Export CSV</button>
+    <button id="backToDashboard">← Back to Dashboard</button>
+    <button id="refreshAuditLogs">Refresh</button>
+    <button id="exportAuditLogs">Export CSV</button>
   </div>
 
   <div class="controls">
@@ -244,6 +244,19 @@
 
     // Load audit logs on page load
     loadAuditLogs();
+    
+    // Event listeners
+    document.getElementById('backToDashboard').addEventListener('click', function() {
+      location.href = '/admin.html';
+    });
+    
+    document.getElementById('refreshAuditLogs').addEventListener('click', function() {
+      loadAuditLogs();
+    });
+    
+    document.getElementById('exportAuditLogs').addEventListener('click', function() {
+      exportAuditLogs();
+    });
   </script>
 </body>
 </html>

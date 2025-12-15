@@ -198,25 +198,25 @@
         var isAdmin = u.role === 'admin';
         
         var actions = '<div style="display:flex;gap:4px;flex-wrap:wrap;">';
-        actions += '<button onclick="editUser(\'' + u.id + '\')">Edit</button>';
+        actions += '<button data-action="editUser" data-id="' + u.id + '">Edit</button>';
         
         // Manual verification button for unverified users (not shown for owner account)
         if (!u.verified && !isOwner) {
-          actions += '<button onclick="verifyUser(\'' + u.id + '\')">Verify Email</button>';
+          actions += '<button data-action="verifyUser" data-id="' + u.id + '">Verify Email</button>';
         }
         
         // Admin privilege toggle (only for non-owner accounts)
         if (!isOwner) {
           if (isAdmin) {
-            actions += '<button onclick="revokeAdmin(\'' + u.id + '\')">Revoke Admin</button>';
+            actions += '<button data-action="revokeAdmin" data-id="' + u.id + '">Revoke Admin</button>';
           } else {
-            actions += '<button onclick="grantAdmin(\'' + u.id + '\')">Grant Admin</button>';
+            actions += '<button data-action="grantAdmin" data-id="' + u.id + '">Grant Admin</button>';
           }
         }
         
         // Delete button (disabled for owner)
         if (!isOwner) {
-          actions += '<button onclick="deleteUser(\'' + u.id + '\')">Delete</button>';
+          actions += '<button data-action="deleteUser" data-id="' + u.id + '">Delete</button>';
         }
         
         actions += '</div>';
@@ -300,10 +300,10 @@
         var actions =
           '<div style="display:flex;gap:4px;flex-wrap:wrap;flex-direction:column;">' +
           '<div style="display:flex;gap:4px;">' +
-            '<button onclick="editSupplier(\'' + s.id + '\')">Edit</button>' +
-            '<button onclick="approveSup(\'' + s.id + '\')">Approve</button>' +
-            '<button onclick="rejectSup(\'' + s.id + '\')">Reject</button>' +
-            '<button onclick="deleteSupplier(\'' + s.id + '\')">Delete</button>' +
+            '<button data-action="editSupplier" data-id="' + s.id + '">Edit</button>' +
+            '<button data-action="approveSup" data-id="' + s.id + '">Approve</button>' +
+            '<button data-action="rejectSup" data-id="' + s.id + '">Reject</button>' +
+            '<button data-action="deleteSupplier" data-id="' + s.id + '">Delete</button>' +
           '</div>' +
           '<div class="small" style="margin-top:4px;">' +
             'Pro trial: ' +
@@ -314,8 +314,8 @@
               '<option value="1m">1 month</option>' +
               '<option value="1y">1 year</option>' +
             '</select>' +
-            '<button onclick="setProPlan(\'' + s.id + '\', \'duration\')">Set</button>' +
-            '<button onclick="setProPlan(\'' + s.id + '\', \'cancel\')">Cancel</button>' +
+            '<button data-action="setProPlan" data-id="' + s.id + '" data-param="duration">Set</button>' +
+            '<button data-action="setProPlan" data-id="' + s.id + '" data-param="cancel">Cancel</button>' +
           '</div>' +
           '</div>';
 
@@ -342,12 +342,12 @@
         rows += '<tr><td>' + p.title + '</td><td>' + (p.approved ? 'Yes' : 'No') + '</td>' +
           '<td>' + (p.featured ? 'Yes' : 'No') + '</td>' +
           '<td>' +
-            '<button onclick="editPackage(\'' + p.id + '\')">Edit</button>' +
-            '<button onclick="approvePkg(\'' + p.id + '\', true)">Approve</button>' +
-            '<button onclick="approvePkg(\'' + p.id + '\', false)">Unapprove</button>' +
-            '<button onclick="featurePkg(\'' + p.id + '\', true)">Feature</button>' +
-            '<button onclick="featurePkg(\'' + p.id + '\', false)">Unfeature</button>' +
-            '<button onclick="deletePackage(\'' + p.id + '\')">Delete</button>' +
+            '<button data-action="editPackage" data-id="' + p.id + '">Edit</button>' +
+            '<button data-action="approvePkg" data-id="' + p.id + '" data-param="true">Approve</button>' +
+            '<button data-action="approvePkg" data-id="' + p.id + '" data-param="false">Unapprove</button>' +
+            '<button data-action="featurePkg" data-id="' + p.id + '" data-param="true">Feature</button>' +
+            '<button data-action="featurePkg" data-id="' + p.id + '" data-param="false">Unfeature</button>' +
+            '<button data-action="deletePackage" data-id="' + p.id + '">Delete</button>' +
           '</td></tr>';
       });
 
@@ -1525,7 +1525,7 @@
           modal.innerHTML = '<div style="background:#111;max-width:800px;margin:auto;padding:20px;border-radius:8px;">' +
             '<h2>Pending Reviews (' + reviews.length + ')</h2>' +
             '<div id="review-list"></div>' +
-            '<button onclick="closeReviewModal()">Close</button>' +
+            '<button data-action="closeReviewModal">Close</button>' +
             '</div>';
           document.body.appendChild(modal);
           
@@ -1537,8 +1537,8 @@
               '<p><b>Comment:</b> ' + escapeHtml(r.comment || '') + '</p>' +
               '<p class="small"><b>Supplier ID:</b> ' + escapeHtml(r.supplierId) + '</p>' +
               '<p class="small"><b>Date:</b> ' + escapeHtml(new Date(r.createdAt).toLocaleString()) + '</p>' +
-              '<button onclick="approveReview(\'' + escapeHtml(r.id) + '\', true)">Approve</button> ' +
-              '<button onclick="approveReview(\'' + escapeHtml(r.id) + '\', false)">Reject</button>';
+              '<button data-action="approveReview" data-id="' + escapeHtml(r.id) + '" data-param="true">Approve</button> ' +
+              '<button data-action="approveReview" data-id="' + escapeHtml(r.id) + '" data-param="false">Reject</button>';
             list.appendChild(item);
           });
         })
@@ -1577,6 +1577,70 @@
       var modal = document.querySelector('.review-modal');
       if (modal) modal.remove();
     };
+    
+    // Event delegation for all dynamically created buttons
+    document.body.addEventListener('click', function(e) {
+      var target = e.target;
+      if (target.tagName !== 'BUTTON') return;
+      
+      var action = target.getAttribute('data-action');
+      if (!action) return;
+      
+      var id = target.getAttribute('data-id');
+      var param = target.getAttribute('data-param');
+      
+      // Call the appropriate function based on the action
+      switch(action) {
+        case 'editUser':
+          if (window.editUser && id) window.editUser(id);
+          break;
+        case 'verifyUser':
+          if (window.verifyUser && id) window.verifyUser(id);
+          break;
+        case 'revokeAdmin':
+          if (window.revokeAdmin && id) window.revokeAdmin(id);
+          break;
+        case 'grantAdmin':
+          if (window.grantAdmin && id) window.grantAdmin(id);
+          break;
+        case 'deleteUser':
+          if (window.deleteUser && id) window.deleteUser(id);
+          break;
+        case 'editSupplier':
+          if (window.editSupplier && id) window.editSupplier(id);
+          break;
+        case 'approveSup':
+          if (window.approveSup && id) window.approveSup(id);
+          break;
+        case 'rejectSup':
+          if (window.rejectSup && id) window.rejectSup(id);
+          break;
+        case 'deleteSupplier':
+          if (window.deleteSupplier && id) window.deleteSupplier(id);
+          break;
+        case 'setProPlan':
+          if (window.setProPlan && id && param) window.setProPlan(id, param);
+          break;
+        case 'editPackage':
+          if (window.editPackage && id) window.editPackage(id);
+          break;
+        case 'approvePkg':
+          if (window.approvePkg && id && param !== null) window.approvePkg(id, param === 'true');
+          break;
+        case 'featurePkg':
+          if (window.featurePkg && id && param !== null) window.featurePkg(id, param === 'true');
+          break;
+        case 'deletePackage':
+          if (window.deletePackage && id) window.deletePackage(id);
+          break;
+        case 'approveReview':
+          if (window.approveReview && id && param !== null) window.approveReview(id, param === 'true');
+          break;
+        case 'closeReviewModal':
+          if (window.closeReviewModal) window.closeReviewModal();
+          break;
+      }
+    });
   })();
 </script>
 

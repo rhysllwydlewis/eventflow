@@ -203,7 +203,7 @@
     <p class="small">Manage category hero images displayed on the homepage</p>
     
     <div class="controls">
-      <button onclick="location.href='/admin.html'">← Back to Dashboard</button>
+      <button id="backToDashboard">← Back to Dashboard</button>
       <button id="refreshBtn">Refresh</button>
     </div>
 
@@ -466,8 +466,12 @@
   // Load categories on page load
   await loadCategories();
 
-  // Refresh button
+  // Event listeners
   document.getElementById('refreshBtn').addEventListener('click', loadCategories);
+  
+  document.getElementById('backToDashboard').addEventListener('click', function() {
+    location.href = '/admin.html';
+  });
 })();
 </script>
 <script src="/assets/js/components/footer-nav.js" defer></script>

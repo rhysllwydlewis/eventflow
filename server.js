@@ -195,7 +195,7 @@ app.use(
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", 'https://cdn.jsdelivr.net'],
+        scriptSrc: ["'self'", "'unsafe-eval'", 'https://cdn.jsdelivr.net'],
         styleSrc: [
           "'self'",
           "'unsafe-inline'",

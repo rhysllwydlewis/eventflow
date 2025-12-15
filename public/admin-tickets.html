@@ -50,7 +50,7 @@
   <div class='container'>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;">
       <h1 style="margin:0;">Support Tickets</h1>
-      <button class="btn btn-secondary" onclick="location.href='/admin.html'">Back to Dashboard</button>
+      <button class="btn btn-secondary" id="backToDashboard">Back to Dashboard</button>
     </div>
 
     <div class="card">
@@ -328,6 +328,11 @@ document.querySelectorAll('.filter-btn').forEach(btn => {
     currentFilter = btn.getAttribute('data-filter');
     renderTickets();
   });
+});
+
+// Back to dashboard button
+document.getElementById('backToDashboard').addEventListener('click', function() {
+  location.href = '/admin.html';
 });
 
 // Initialize
