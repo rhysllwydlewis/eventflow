@@ -186,28 +186,6 @@ class Carousel {
         margin-right: 10px;
       }
 
-      .carousel-dots {
-        display: flex;
-        justify-content: center;
-        gap: 8px;
-        margin-top: 16px;
-      }
-
-      .carousel-dot {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        background: var(--border, #E7EAF0);
-        cursor: pointer;
-        transition: all 0.2s ease;
-      }
-
-      .carousel-dot.active {
-        background: var(--ink, #0B8073);
-        width: 24px;
-        border-radius: 4px;
-      }
-
       @media (max-width: 1024px) {
         .carousel-item {
           flex: 0 0 calc((100% - 20px) / 2);
@@ -335,11 +313,8 @@ class Carousel {
     const controls = this.createControls();
     wrapper.appendChild(controls);
 
-    // Add dots
-    if (this.items.length > this.getItemsPerView()) {
-      const dots = this.createDots();
-      wrapper.appendChild(dots);
-    }
+    // Note: Dots are not created per design requirements
+    // Users navigate via arrows or auto-scroll
 
     this.container.innerHTML = '';
     this.container.appendChild(wrapper);
@@ -350,7 +325,7 @@ class Carousel {
     this.setupTouch(wrapper);
 
     // Setup auto-scroll
-    if (this.options.autoScroll) {
+    if (this.options.autoScroll && this.hasMultiplePages()) {
       this.startAutoScroll();
 
       if (this.options.pauseOnHover) {
@@ -428,27 +403,6 @@ class Carousel {
     return controls;
   }
 
-  createDots() {
-    const dotsContainer = document.createElement('div');
-    dotsContainer.className = 'carousel-dots';
-
-    const totalPages = Math.ceil(this.items.length / this.getItemsPerView());
-
-    for (let i = 0; i < totalPages; i++) {
-      const dot = document.createElement('button');
-      dot.className = 'carousel-dot';
-      dot.setAttribute('aria-label', `Go to page ${i + 1}`);
-      if (i === 0) {
-        dot.classList.add('active');
-      }
-      dot.addEventListener('click', () => this.goToPage(i));
-      dotsContainer.appendChild(dot);
-    }
-
-    this.dotsContainer = dotsContainer;
-    return dotsContainer;
-  }
-
   getItemsPerView() {
     const width = window.innerWidth;
     if (width < 640) {
@@ -458,6 +412,10 @@ class Carousel {
       return this.options.itemsPerViewTablet;
     }
     return this.options.itemsPerView;
+  }
+
+  hasMultiplePages() {
+    return this.items.length > this.getItemsPerView();
   }
 
   updatePosition() {
@@ -474,15 +432,6 @@ class Carousel {
     const offset = -(this.currentIndex * (itemWidth + gap));
 
     this.track.style.transform = `translateX(${offset}px)`;
-
-    // Update dots
-    if (this.dotsContainer) {
-      const currentPage = Math.floor(this.currentIndex / itemsPerView);
-      const dots = this.dotsContainer.querySelectorAll('.carousel-dot');
-      dots.forEach((dot, index) => {
-        dot.classList.toggle('active', index === currentPage);
-      });
-    }
   }
 
   setupTouch(wrapper) {
@@ -538,12 +487,6 @@ class Carousel {
 
   prev() {
     this.currentIndex = Math.max(0, this.currentIndex - 1);
-    this.updatePosition();
-  }
-
-  goToPage(pageIndex) {
-    const itemsPerView = this.getItemsPerView();
-    this.currentIndex = pageIndex * itemsPerView;
     this.updatePosition();
   }
 
