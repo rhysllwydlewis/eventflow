@@ -2003,27 +2003,10 @@ document.addEventListener('DOMContentLoaded', () => {
     initVerify && initVerify();
   }
 
-  // Global header behaviour: burger menu, scroll hide/show
+  // Global header behaviour: scroll hide/show
+  // Note: burger menu is handled by auth-nav.js
   try {
     const header = document.querySelector('.header');
-    const burger = document.getElementById('burger');
-    const nav = document.querySelector('.nav');
-
-    if (burger && nav && header) {
-      burger.addEventListener('click', () => {
-        const open = document.body.classList.toggle('nav-open');
-        burger.setAttribute('aria-expanded', open ? 'true' : 'false');
-      });
-
-      // Close nav when clicking a link (mobile)
-      nav.addEventListener('click', e => {
-        const target = e.target;
-        if (target && target.tagName === 'A') {
-          document.body.classList.remove('nav-open');
-          burger.setAttribute('aria-expanded', 'false');
-        }
-      });
-    }
 
     // Hide header on scroll down, show on scroll up
     let lastY = window.scrollY;

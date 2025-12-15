@@ -63,16 +63,26 @@
       const burger = original.cloneNode(true);
       original.parentNode.replaceChild(burger, original);
 
+      // Add aria-controls if nav menu has an id
+      if (!navMenu.id) {
+        navMenu.id = 'primary-nav-menu';
+      }
+      burger.setAttribute('aria-controls', navMenu.id);
+
       const closeNav = () => {
         body.classList.remove('nav-open');
         navMenu.classList.remove('nav-menu--open');
         burger.setAttribute('aria-expanded', 'false');
+        // Restore background scrolling
+        body.style.overflow = '';
       };
 
       const openNav = () => {
         body.classList.add('nav-open');
         navMenu.classList.add('nav-menu--open');
         burger.setAttribute('aria-expanded', 'true');
+        // Prevent background scrolling when menu is open
+        body.style.overflow = 'hidden';
       };
 
       const toggleNav = () => {
@@ -103,6 +113,25 @@
       // Close nav if the viewport is resized up to desktop
       window.addEventListener('resize', () => {
         if (window.innerWidth > 720) {
+          closeNav();
+        }
+      });
+
+      // Close nav on ESC key press
+      document.addEventListener('keydown', event => {
+        if (event.key === 'Escape' && body.classList.contains('nav-open')) {
+          closeNav();
+        }
+      });
+
+      // Close nav when clicking outside
+      document.addEventListener('click', event => {
+        const isOpen = body.classList.contains('nav-open');
+        if (!isOpen) {
+          return;
+        }
+        // Check if click is outside burger and nav menu
+        if (!burger.contains(event.target) && !navMenu.contains(event.target)) {
           closeNav();
         }
       });

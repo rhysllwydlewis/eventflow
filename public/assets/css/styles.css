@@ -561,6 +561,14 @@ html[data-theme="dark"] .theme-icon::after{
   cursor:pointer;
   transition:background 140ms ease-out, transform 120ms ease-out, box-shadow 160ms ease-out;
 }
+.nav-toggle:hover{
+  background:#fff;
+  box-shadow:0 2px 8px rgba(15,23,42,.12);
+}
+.nav-toggle:focus-visible{
+  outline:2px solid #0B8073;
+  outline-offset:2px;
+}
 .nav-toggle-bar{
   width:16px;
   height:2px;
@@ -624,6 +632,7 @@ body.nav-open .nav-toggle-bar:nth-child(3){
     transform:translateY(-6px);
     pointer-events:none;
     transition:opacity 160ms ease-out, transform 160ms ease-out;
+    z-index:1000;
   }
   .nav-menu.nav-menu--open{
     display:flex;
