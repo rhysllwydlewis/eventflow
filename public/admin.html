@@ -76,7 +76,7 @@
   <div class="controls">
     <button onclick="location.href='/admin-users.html'">User Management</button>
     <button onclick="location.href='/admin-packages.html'">Package Management</button>
-    <button onclick="location.href='/admin-homepage.html'">Homepage Changes</button>
+    <button id="homepageChangesBtn">Homepage Changes</button>
     <button onclick="location.href='/admin-tickets.html'">Support Tickets</button>
     <button onclick="location.href='/admin-reports.html'">Reports Queue</button>
     <button onclick="location.href='/admin-audit.html'">Audit Log</button>
@@ -1157,6 +1157,20 @@
         });
       }
 
+      var homepageChangesBtn = document.getElementById('homepageChangesBtn');
+      if (homepageChangesBtn) {
+        homepageChangesBtn.addEventListener('click', function () {
+          window.location.href = '/admin-homepage.html';
+        });
+        // Support keyboard activation (Enter and Space)
+        homepageChangesBtn.addEventListener('keydown', function (e) {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            window.location.href = '/admin-homepage.html';
+          }
+        });
+      }
+
       var logoutBtn = document.getElementById('adminLogoutBtn');
       if (logoutBtn) {
         logoutBtn.addEventListener('click', function () {
@@ -1166,6 +1180,17 @@
             });
         });
       }
+      
+      // Fetch CSRF token for state-changing requests
+      api('/api/csrf-token', 'GET')
+        .then(function(data) {
+          if (data && data.token) {
+            window.__CSRF_TOKEN__ = data.token;
+          }
+        })
+        .catch(function() {
+          /* Ignore CSRF token fetch errors */
+        });
     });
     
     window.showCreateUserModal = function() {
