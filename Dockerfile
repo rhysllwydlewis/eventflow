@@ -9,7 +9,8 @@ WORKDIR /app
 
 # Install dependencies first (better layer caching)
 COPY package*.json ./
-RUN npm install --omit=dev
+# Skip lifecycle scripts (like husky prepare) during production install
+RUN npm install --omit=dev --ignore-scripts
 
 # Bundle app source
 COPY . .
