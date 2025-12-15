@@ -159,14 +159,14 @@ class Modal {
 // Toast Notification Component
 class Toast {
   static getContainer() {
-    if (!this.container) {
-      this.container = document.createElement('div');
-      this.container.className = 'toast-container';
-      this.container.setAttribute('aria-live', 'polite');
-      this.container.setAttribute('aria-atomic', 'true');
-      document.body.appendChild(this.container);
+    if (!Toast.container) {
+      Toast.container = document.createElement('div');
+      Toast.container.className = 'toast-container';
+      Toast.container.setAttribute('aria-live', 'polite');
+      Toast.container.setAttribute('aria-atomic', 'true');
+      document.body.appendChild(Toast.container);
     }
-    return this.container;
+    return Toast.container;
   }
 
   static show(options = {}) {
