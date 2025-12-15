@@ -205,7 +205,7 @@ app.use(
         fontSrc: ["'self'", 'https://fonts.gstatic.com'],
         imgSrc: ["'self'", 'data:', 'https:', 'blob:'],
         connectSrc: ["'self'", 'https:'],
-        frameSrc: ["'none'"],
+        frameSrc: ["'self'", 'https://www.google.com', 'https://maps.google.com'],
         objectSrc: ["'none'"],
         upgradeInsecureRequests: [],
       },
@@ -805,6 +805,14 @@ app.post('/api/auth/resend-verification', authLimiter, csrfProtection, async (re
 app.get('/api/csrf-token', authLimiter, (req, res) => {
   const token = getToken(req);
   res.json({ csrfToken: token });
+});
+
+// Client config endpoint - provides public configuration values
+app.get('/api/config', (req, res) => {
+  res.json({
+    googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || '',
+    version: APP_VERSION,
+  });
 });
 
 // Admin: list users (without password hashes)
