@@ -7,6 +7,7 @@ const files = {
   users: path.join(DATA_DIR, 'users.json'),
   suppliers: path.join(DATA_DIR, 'suppliers.json'),
   packages: path.join(DATA_DIR, 'packages.json'),
+  categories: path.join(DATA_DIR, 'categories.json'),
   plans: path.join(DATA_DIR, 'plans.json'),
   notes: path.join(DATA_DIR, 'notes.json'),
   messages: path.join(DATA_DIR, 'messages.json'),
