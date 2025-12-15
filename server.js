@@ -1607,7 +1607,7 @@ app.delete(
       const oldImageUrl = categories[categoryIndex].heroImage;
 
       // Remove the hero image URL
-      categories[categoryIndex].heroImage = '';
+      delete categories[categoryIndex].heroImage;
 
       write('categories', categories);
 

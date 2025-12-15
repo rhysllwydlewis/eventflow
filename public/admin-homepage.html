@@ -298,7 +298,7 @@
               <div class="small">PNG, JPG, WebP (max 5MB)</div>
             </div>
             <input type="file" id="file-${escapeHtml(category.id)}" accept="image/*" data-category-id="${escapeHtml(category.id)}">
-            ${hasImage ? `<button class="remove-btn" onclick="removeImage('${escapeHtml(category.id)}')">Remove Image</button>` : ''}
+            ${hasImage ? `<button class="remove-btn" data-category-id="${escapeHtml(category.id)}">Remove Image</button>` : ''}
             <div class="success-message" id="success-${escapeHtml(category.id)}">Image updated successfully!</div>
             <div class="error-message" id="error-${escapeHtml(category.id)}">Failed to update image.</div>
           </div>
@@ -310,6 +310,7 @@
     categories.forEach(category => {
       const fileInput = document.getElementById(`file-${category.id}`);
       const dropArea = document.getElementById(`drop-${category.id}`);
+      const removeBtn = document.querySelector(`.remove-btn[data-category-id="${category.id}"]`);
 
       if (fileInput) {
         fileInput.addEventListener('change', (e) => handleFileSelect(e, category.id));
@@ -319,6 +320,10 @@
         dropArea.addEventListener('dragover', handleDragOver);
         dropArea.addEventListener('dragleave', handleDragLeave);
         dropArea.addEventListener('drop', (e) => handleDrop(e, category.id));
+      }
+
+      if (removeBtn) {
+        removeBtn.addEventListener('click', () => removeImage(category.id));
       }
     });
   }
@@ -396,7 +401,7 @@
     }
   }
 
-  window.removeImage = async function(categoryId) {
+  async function removeImage(categoryId) {
     if (!confirm('Are you sure you want to remove this image?')) {
       return;
     }
@@ -426,7 +431,7 @@
       console.error('Error removing image:', err);
       showError(categoryId, 'Failed to remove image.');
     }
-  };
+  }
 
   function showSuccess(categoryId) {
     const successEl = document.getElementById(`success-${categoryId}`);
