@@ -187,10 +187,7 @@ class Carousel {
       }
 
       .carousel-dots {
-        display: flex;
-        justify-content: center;
-        gap: 8px;
-        margin-top: 16px;
+        display: none;
       }
 
       .carousel-dot {
@@ -350,7 +347,7 @@ class Carousel {
     this.setupTouch(wrapper);
 
     // Setup auto-scroll
-    if (this.options.autoScroll) {
+    if (this.options.autoScroll && this.items.length > this.getItemsPerView()) {
       this.startAutoScroll();
 
       if (this.options.pauseOnHover) {
