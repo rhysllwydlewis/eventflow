@@ -235,9 +235,17 @@ class Carousel {
    * @param {Array} items - Array of package items to display
    */
   setItems(items) {
+    // Stop auto-scroll if running
+    this._stopAutoScroll();
+
     this.items = items;
     this._render();
-    this._setupEventListeners();
+
+    // Only set up event listeners if not already initialized
+    // This prevents duplicate event listeners on multiple setItems calls
+    if (!this.isInitialized) {
+      this._setupEventListeners();
+    }
 
     if (this.options.autoScroll && this._hasMultiplePages()) {
       this._startAutoScroll();
@@ -294,12 +302,12 @@ class Carousel {
     };
 
     // Validate slug for URL safety
-    const validateSlug = value => {
+    const validateSlug = (value, fallbackId) => {
       const slugStr = String(value || '');
       // Only allow alphanumeric, hyphens, and underscores
       const cleaned = slugStr.replace(/[^a-zA-Z0-9_-]/g, '');
-      // Fall back to item id if slug becomes empty after cleaning
-      return cleaned || String(item.id || 'unknown');
+      // Fall back to provided id if slug becomes empty after cleaning
+      return cleaned || String(fallbackId || 'unknown');
     };
 
     const title = escapeHtml(item.title || 'Untitled Package');
@@ -312,7 +320,7 @@ class Carousel {
     const description = escapeHtml(truncatedRawDesc);
     const price = escapeHtml(item.price_display || 'Contact for pricing');
     const image = sanitizeUrl(item.image);
-    const slug = validateSlug(item.slug || item.id || '');
+    const slug = validateSlug(item.slug, item.id);
 
     return `
       <div class="carousel-item">
