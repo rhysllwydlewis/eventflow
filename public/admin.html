@@ -108,6 +108,16 @@
 
 <script>
   (function () {
+    // Defensive error logging wrapper
+    function safeExecute(fn, context) {
+      try {
+        return fn.call(context);
+      } catch (err) {
+        console.error('Admin page error:', err);
+        return null;
+      }
+    }
+
     // HTML sanitization helper to prevent XSS
     function escapeHtml(unsafe) {
       if (!unsafe) return '';
@@ -164,6 +174,9 @@
             }
           });
         }
+      }).catch(function(err) {
+        console.error('API error:', url, err);
+        throw err;
       });
     }
     var allUsers = [];
@@ -458,87 +471,91 @@
     }
 
     window.approveSup = function (id) {
-      if (typeof Modal !== 'undefined') {
-        var modal = new Modal({
-          title: 'Approve Supplier',
-          content: '<p>Are you sure you want to approve this supplier?</p>',
-          confirmText: 'Approve',
-          cancelText: 'Cancel',
-          onConfirm: function() {
-            api('/api/admin/suppliers/' + id + '/approve', 'POST', { approved: true })
-              .then(function () {
-                if (typeof Toast !== 'undefined') {
-                  Toast.success('Supplier approved.');
-                } else {
-                  alert('Supplier approved.');
-                }
-                loadAll();
-              })
-              .catch(function (err) {
-                console.error('approveSup failed', err);
-                if (typeof Toast !== 'undefined') {
-                  Toast.error('Failed to approve supplier: ' + err.message);
-                } else {
-                  alert('Failed to approve supplier: ' + err.message);
-                }
-              });
-          }
-        });
-        modal.show();
-      } else {
-        // Fallback to confirm dialog
-        api('/api/admin/suppliers/' + id + '/approve', 'POST', { approved: true })
-          .then(function () {
-            alert('Supplier approved.');
-            loadAll();
-          })
-          .catch(function (err) {
-            console.error('approveSup failed', err);
-            alert('Failed to approve supplier: ' + err.message);
+      return safeExecute(function() {
+        if (typeof Modal !== 'undefined') {
+          var modal = new Modal({
+            title: 'Approve Supplier',
+            content: '<p>Are you sure you want to approve this supplier?</p>',
+            confirmText: 'Approve',
+            cancelText: 'Cancel',
+            onConfirm: function() {
+              api('/api/admin/suppliers/' + id + '/approve', 'POST', { approved: true })
+                .then(function () {
+                  if (typeof Toast !== 'undefined') {
+                    Toast.success('Supplier approved.');
+                  } else {
+                    alert('Supplier approved.');
+                  }
+                  loadAll();
+                })
+                .catch(function (err) {
+                  console.error('approveSup failed', err);
+                  if (typeof Toast !== 'undefined') {
+                    Toast.error('Failed to approve supplier: ' + err.message);
+                  } else {
+                    alert('Failed to approve supplier: ' + err.message);
+                  }
+                });
+            }
           });
-      }
+          modal.show();
+        } else {
+          // Fallback to confirm dialog
+          api('/api/admin/suppliers/' + id + '/approve', 'POST', { approved: true })
+            .then(function () {
+              alert('Supplier approved.');
+              loadAll();
+            })
+            .catch(function (err) {
+              console.error('approveSup failed', err);
+              alert('Failed to approve supplier: ' + err.message);
+            });
+        }
+      });
     };
 
     window.rejectSup = function (id) {
-      if (typeof Modal !== 'undefined') {
-        var modal = new Modal({
-          title: 'Reject Supplier',
-          content: '<p>Are you sure you want to reject this supplier?</p>',
-          confirmText: 'Reject',
-          cancelText: 'Cancel',
-          onConfirm: function() {
-            api('/api/admin/suppliers/' + id + '/approve', 'POST', { approved: false })
-              .then(function () {
-                if (typeof Toast !== 'undefined') {
-                  Toast.success('Supplier rejected.');
-                } else {
-                  alert('Supplier rejected.');
-                }
-                loadAll();
-              })
-              .catch(function (err) {
-                console.error('rejectSup failed', err);
-                if (typeof Toast !== 'undefined') {
-                  Toast.error('Failed to reject supplier: ' + err.message);
-                } else {
-                  alert('Failed to reject supplier: ' + err.message);
-                }
-              });
-          }
-        });
-        modal.show();
-      } else {
-        // Fallback to confirm dialog
-        api('/api/admin/suppliers/' + id + '/approve', 'POST', { approved: false })
-          .then(function () {
-            alert('Supplier rejected.');
-            loadAll();
-          })
-          .catch(function (err) {
-            console.error('rejectSup failed', err);
-            alert('Failed to reject supplier: ' + err.message);
+      return safeExecute(function() {
+        if (typeof Modal !== 'undefined') {
+          var modal = new Modal({
+            title: 'Reject Supplier',
+            content: '<p>Are you sure you want to reject this supplier?</p>',
+            confirmText: 'Reject',
+            cancelText: 'Cancel',
+            onConfirm: function() {
+              api('/api/admin/suppliers/' + id + '/approve', 'POST', { approved: false })
+                .then(function () {
+                  if (typeof Toast !== 'undefined') {
+                    Toast.success('Supplier rejected.');
+                  } else {
+                    alert('Supplier rejected.');
+                  }
+                  loadAll();
+                })
+                .catch(function (err) {
+                  console.error('rejectSup failed', err);
+                  if (typeof Toast !== 'undefined') {
+                    Toast.error('Failed to reject supplier: ' + err.message);
+                  } else {
+                    alert('Failed to reject supplier: ' + err.message);
+                  }
+                });
+            }
           });
-      }
+          modal.show();
+        } else {
+          // Fallback to confirm dialog
+          api('/api/admin/suppliers/' + id + '/approve', 'POST', { approved: false })
+            .then(function () {
+              alert('Supplier rejected.');
+              loadAll();
+            })
+            .catch(function (err) {
+              console.error('rejectSup failed', err);
+              alert('Failed to reject supplier: ' + err.message);
+            });
+        }
+      });
     };
 
     window.setProPlan = function (id, mode) {
@@ -614,45 +631,49 @@
     };
 
     window.approvePkg = function (id, approved) {
-      var action = approved ? 'approve' : 'unapprove';
-      api('/api/admin/packages/' + id + '/approve', 'POST', { approved: approved })
-        .then(function () {
-          if (typeof Toast !== 'undefined') {
-            Toast.success('Package ' + action + 'd successfully.');
-          } else {
-            alert('Package ' + action + 'd successfully.');
-          }
-          loadAll();
-        })
-        .catch(function (err) {
-          console.error('approvePkg failed', err);
-          if (typeof Toast !== 'undefined') {
-            Toast.error('Failed to ' + action + ' package: ' + err.message);
-          } else {
-            alert('Failed to ' + action + ' package: ' + err.message);
-          }
-        });
+      return safeExecute(function() {
+        var action = approved ? 'approve' : 'unapprove';
+        api('/api/admin/packages/' + id + '/approve', 'POST', { approved: approved })
+          .then(function () {
+            if (typeof Toast !== 'undefined') {
+              Toast.success('Package ' + action + 'd successfully.');
+            } else {
+              alert('Package ' + action + 'd successfully.');
+            }
+            loadAll();
+          })
+          .catch(function (err) {
+            console.error('approvePkg failed', err);
+            if (typeof Toast !== 'undefined') {
+              Toast.error('Failed to ' + action + ' package: ' + err.message);
+            } else {
+              alert('Failed to ' + action + ' package: ' + err.message);
+            }
+          });
+      });
     };
 
     window.featurePkg = function (id, featured) {
-      var action = featured ? 'feature' : 'unfeature';
-      api('/api/admin/packages/' + id + '/feature', 'POST', { featured: featured })
-        .then(function () {
-          if (typeof Toast !== 'undefined') {
-            Toast.success('Package ' + action + 'd successfully.');
-          } else {
-            alert('Package ' + action + 'd successfully.');
-          }
-          loadAll();
-        })
-        .catch(function (err) {
-          console.error('featurePkg failed', err);
-          if (typeof Toast !== 'undefined') {
-            Toast.error('Failed to ' + action + ' package: ' + err.message);
-          } else {
-            alert('Failed to ' + action + ' package: ' + err.message);
-          }
-        });
+      return safeExecute(function() {
+        var action = featured ? 'feature' : 'unfeature';
+        api('/api/admin/packages/' + id + '/feature', 'POST', { featured: featured })
+          .then(function () {
+            if (typeof Toast !== 'undefined') {
+              Toast.success('Package ' + action + 'd successfully.');
+            } else {
+              alert('Package ' + action + 'd successfully.');
+            }
+            loadAll();
+          })
+          .catch(function (err) {
+            console.error('featurePkg failed', err);
+            if (typeof Toast !== 'undefined') {
+              Toast.error('Failed to ' + action + ' package: ' + err.message);
+            } else {
+              alert('Failed to ' + action + ' package: ' + err.message);
+            }
+          });
+      });
     };
 
     window.disableUser = function (id) {
@@ -926,45 +947,47 @@
     
     // Supplier management functions
     window.deleteSupplier = function (id) {
-      if (typeof Modal !== 'undefined') {
-        var modal = new Modal({
-          title: 'Delete Supplier',
-          content: '<p>Are you sure you want to delete this supplier and all associated packages? This action cannot be undone.</p>',
-          confirmText: 'Delete',
-          cancelText: 'Cancel',
-          onConfirm: function() {
-            api('/api/admin/suppliers/' + id, 'DELETE')
-              .then(function () {
-                if (typeof Toast !== 'undefined') {
-                  Toast.success('Supplier deleted successfully.');
-                } else {
-                  alert('Supplier deleted successfully.');
-                }
-                loadAll();
-              })
-              .catch(function (err) {
-                console.error('deleteSupplier failed', err);
-                if (typeof Toast !== 'undefined') {
-                  Toast.error('Failed to delete supplier: ' + err.message);
-                } else {
-                  alert('Failed to delete supplier: ' + err.message);
-                }
-              });
-          }
-        });
-        modal.show();
-      } else {
-        if (!confirm('Are you sure you want to delete this supplier and all associated packages? This action cannot be undone.')) return;
-        api('/api/admin/suppliers/' + id, 'DELETE')
-          .then(function () {
-            alert('Supplier deleted successfully.');
-            loadAll();
-          })
-          .catch(function (err) {
-            console.error('deleteSupplier failed', err);
-            alert('Failed to delete supplier: ' + err.message);
+      return safeExecute(function() {
+        if (typeof Modal !== 'undefined') {
+          var modal = new Modal({
+            title: 'Delete Supplier',
+            content: '<p>Are you sure you want to delete this supplier and all associated packages? This action cannot be undone.</p>',
+            confirmText: 'Delete',
+            cancelText: 'Cancel',
+            onConfirm: function() {
+              api('/api/admin/suppliers/' + id, 'DELETE')
+                .then(function () {
+                  if (typeof Toast !== 'undefined') {
+                    Toast.success('Supplier deleted successfully.');
+                  } else {
+                    alert('Supplier deleted successfully.');
+                  }
+                  loadAll();
+                })
+                .catch(function (err) {
+                  console.error('deleteSupplier failed', err);
+                  if (typeof Toast !== 'undefined') {
+                    Toast.error('Failed to delete supplier: ' + err.message);
+                  } else {
+                    alert('Failed to delete supplier: ' + err.message);
+                  }
+                });
+            }
           });
-      }
+          modal.show();
+        } else {
+          if (!confirm('Are you sure you want to delete this supplier and all associated packages? This action cannot be undone.')) return;
+          api('/api/admin/suppliers/' + id, 'DELETE')
+            .then(function () {
+              alert('Supplier deleted successfully.');
+              loadAll();
+            })
+            .catch(function (err) {
+              console.error('deleteSupplier failed', err);
+              alert('Failed to delete supplier: ' + err.message);
+            });
+        }
+      });
     };
     
     window.editSupplier = function (id) {
@@ -1070,45 +1093,47 @@
     
     // Package management functions
     window.deletePackage = function (id) {
-      if (typeof Modal !== 'undefined') {
-        var modal = new Modal({
-          title: 'Delete Package',
-          content: '<p>Are you sure you want to delete this package? This action cannot be undone.</p>',
-          confirmText: 'Delete',
-          cancelText: 'Cancel',
-          onConfirm: function() {
-            api('/api/admin/packages/' + id, 'DELETE')
-              .then(function () {
-                if (typeof Toast !== 'undefined') {
-                  Toast.success('Package deleted successfully.');
-                } else {
-                  alert('Package deleted successfully.');
-                }
-                loadAll();
-              })
-              .catch(function (err) {
-                console.error('deletePackage failed', err);
-                if (typeof Toast !== 'undefined') {
-                  Toast.error('Failed to delete package: ' + err.message);
-                } else {
-                  alert('Failed to delete package: ' + err.message);
-                }
-              });
-          }
-        });
-        modal.show();
-      } else {
-        if (!confirm('Are you sure you want to delete this package? This action cannot be undone.')) return;
-        api('/api/admin/packages/' + id, 'DELETE')
-          .then(function () {
-            alert('Package deleted successfully.');
-            loadAll();
-          })
-          .catch(function (err) {
-            console.error('deletePackage failed', err);
-            alert('Failed to delete package: ' + err.message);
+      return safeExecute(function() {
+        if (typeof Modal !== 'undefined') {
+          var modal = new Modal({
+            title: 'Delete Package',
+            content: '<p>Are you sure you want to delete this package? This action cannot be undone.</p>',
+            confirmText: 'Delete',
+            cancelText: 'Cancel',
+            onConfirm: function() {
+              api('/api/admin/packages/' + id, 'DELETE')
+                .then(function () {
+                  if (typeof Toast !== 'undefined') {
+                    Toast.success('Package deleted successfully.');
+                  } else {
+                    alert('Package deleted successfully.');
+                  }
+                  loadAll();
+                })
+                .catch(function (err) {
+                  console.error('deletePackage failed', err);
+                  if (typeof Toast !== 'undefined') {
+                    Toast.error('Failed to delete package: ' + err.message);
+                  } else {
+                    alert('Failed to delete package: ' + err.message);
+                  }
+                });
+            }
           });
-      }
+          modal.show();
+        } else {
+          if (!confirm('Are you sure you want to delete this package? This action cannot be undone.')) return;
+          api('/api/admin/packages/' + id, 'DELETE')
+            .then(function () {
+              alert('Package deleted successfully.');
+              loadAll();
+            })
+            .catch(function (err) {
+              console.error('deletePackage failed', err);
+              alert('Failed to delete package: ' + err.message);
+            });
+        }
+      });
     };
     
     window.editPackage = function (id) {
@@ -1120,153 +1145,179 @@
     };
 
     window.addEventListener('load', function () {
-      loadAll();
+      safeExecute(function() {
+        loadAll();
 
-      var search = document.getElementById('userSearch');
-      if (search) {
-        search.addEventListener('input', applyUserFilters);
-      }
+        var search = document.getElementById('userSearch');
+        if (search) {
+          search.addEventListener('input', applyUserFilters);
+        }
 
-      var dateFilter = document.getElementById('userDateFilter');
-      if (dateFilter) {
-        dateFilter.addEventListener('change', applyUserFilters);
-      }
+        var dateFilter = document.getElementById('userDateFilter');
+        if (dateFilter) {
+          dateFilter.addEventListener('change', applyUserFilters);
+        }
 
-      var refreshBtn = document.getElementById('refreshBtn');
-      if (refreshBtn) {
-        refreshBtn.addEventListener('click', function () {
-          loadAll();
-        });
-      }
-
-      var dlUsers = document.getElementById('downloadUsersCsv');
-      if (dlUsers) {
-        dlUsers.addEventListener('click', function () {
-          window.location.href = '/api/admin/users-export';
-        });
-      }
-
-      var dlMarketing = document.getElementById('downloadMarketingCsv');
-      if (dlMarketing) {
-        dlMarketing.addEventListener('click', function () {
-          window.location.href = '/api/admin/marketing-export';
-        });
-      }
-
-      var dlJson = document.getElementById('downloadAllJson');
-      if (dlJson) {
-        dlJson.addEventListener('click', function () {
-          window.location.href = '/api/admin/all-export';
-        });
-      }
-
-      var smartTagBtn = document.getElementById('smartTagSuppliersBtn');
-      if (smartTagBtn) {
-        smartTagBtn.addEventListener('click', function () {
-          smartTagBtn.disabled = true;
-          smartTagBtn.innerText = 'Running smart tagging…';
-          api('/api/admin/suppliers/smart-tags', 'POST', {})
-            .then(function () {
-              return loadAll();
-            })
-            .catch(function (err) {
-              console.error('Smart tagging failed', err);
-              alert('Smart tagging failed – check server logs.');
-            })
-            .finally(function () {
-              smartTagBtn.disabled = false;
-              smartTagBtn.innerText = 'Run smart tagging (beta)';
-            });
-        });
-      }
-
-      var createUserBtn = document.getElementById('createUserBtn');
-      if (createUserBtn) {
-        createUserBtn.addEventListener('click', function () {
-          showCreateUserModal();
-        });
-      }
-
-      // Navigation button helpers with keyboard support
-      function setupNavButton(btnId, href) {
-        var btn = document.getElementById(btnId);
-        if (btn) {
-          btn.addEventListener('click', function () {
-            window.location.href = href;
+        var refreshBtn = document.getElementById('refreshBtn');
+        if (refreshBtn) {
+          refreshBtn.addEventListener('click', function () {
+            loadAll();
           });
-          // Support keyboard activation (Enter and Space)
-          btn.addEventListener('keydown', function (e) {
+        }
+
+        var dlUsers = document.getElementById('downloadUsersCsv');
+        if (dlUsers) {
+          dlUsers.addEventListener('click', function () {
+            window.location.href = '/api/admin/users-export';
+          });
+        }
+
+        var dlMarketing = document.getElementById('downloadMarketingCsv');
+        if (dlMarketing) {
+          dlMarketing.addEventListener('click', function () {
+            window.location.href = '/api/admin/marketing-export';
+          });
+        }
+
+        var dlJson = document.getElementById('downloadAllJson');
+        if (dlJson) {
+          dlJson.addEventListener('click', function () {
+            window.location.href = '/api/admin/all-export';
+          });
+        }
+
+        var smartTagBtn = document.getElementById('smartTagSuppliersBtn');
+        if (smartTagBtn) {
+          smartTagBtn.addEventListener('click', function () {
+            smartTagBtn.disabled = true;
+            smartTagBtn.innerText = 'Running smart tagging…';
+            api('/api/admin/suppliers/smart-tags', 'POST', {})
+              .then(function () {
+                return loadAll();
+              })
+              .catch(function (err) {
+                console.error('Smart tagging failed', err);
+                alert('Smart tagging failed – check server logs.');
+              })
+              .finally(function () {
+                smartTagBtn.disabled = false;
+                smartTagBtn.innerText = 'Run smart tagging (beta)';
+              });
+          });
+        }
+
+        var createUserBtn = document.getElementById('createUserBtn');
+        if (createUserBtn) {
+          createUserBtn.addEventListener('click', function () {
+            showCreateUserModal();
+          });
+        }
+
+        // Navigation button helpers with keyboard support
+        function setupNavButton(btnId, href) {
+          var btn = document.getElementById(btnId);
+          if (btn) {
+            btn.addEventListener('click', function () {
+              window.location.href = href;
+            });
+            // Support keyboard activation (Enter and Space)
+            btn.addEventListener('keydown', function (e) {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                window.location.href = href;
+              }
+            });
+            // Make sure button is tabbable
+            if (!btn.hasAttribute('tabindex')) {
+              btn.setAttribute('tabindex', '0');
+            }
+          } else {
+            console.warn('Navigation button not found:', btnId);
+          }
+        }
+
+        setupNavButton('userManagementBtn', '/admin-users.html');
+        setupNavButton('packageManagementBtn', '/admin-packages.html');
+        setupNavButton('homepageChangesBtn', '/admin-homepage.html');
+        setupNavButton('supportTicketsBtn', '/admin-tickets.html');
+        setupNavButton('reportsQueueBtn', '/admin-reports.html');
+        setupNavButton('auditLogBtn', '/admin-audit.html');
+        
+        // Moderation queue buttons
+        setupNavButton('reviewPhotosBtn', '/admin-photos.html');
+        setupNavButton('reviewReportsBtn', '/admin-reports.html');
+        setupNavButton('verifySuppliersBtn', '/admin-users.html#suppliers');
+        
+        var reviewReviewsBtn = document.getElementById('reviewReviewsBtn');
+        if (reviewReviewsBtn) {
+          reviewReviewsBtn.addEventListener('click', function() {
+            reviewPendingReviews();
+          });
+          reviewReviewsBtn.addEventListener('keydown', function(e) {
             if (e.key === 'Enter' || e.key === ' ') {
               e.preventDefault();
-              window.location.href = href;
+              reviewPendingReviews();
+            }
+          });
+          if (!reviewReviewsBtn.hasAttribute('tabindex')) {
+            reviewReviewsBtn.setAttribute('tabindex', '0');
+          }
+        }
+
+        var logoutBtn = document.getElementById('adminLogoutBtn');
+        if (logoutBtn) {
+          logoutBtn.addEventListener('click', function () {
+            // Wait for CSRF token to be available if not already set
+            var performLogout = function() {
+              api('/api/auth/logout', 'POST', {})
+                .then(function() {
+                  // Clear any local storage
+                  try {
+                    localStorage.clear();
+                  } catch (e) {
+                    console.warn('Could not clear localStorage:', e);
+                  }
+                })
+                .catch(function(err) {
+                  console.error('Logout error:', err);
+                  // Still redirect even if logout fails
+                })
+                .finally(function () {
+                  window.location.href = '/';
+                });
+            };
+            
+            if (window.__CSRF_TOKEN__) {
+              performLogout();
+            } else {
+              // Fetch token if not available, then logout
+              api('/api/csrf-token', 'GET')
+                .then(function(data) {
+                  if (data && data.token) {
+                    window.__CSRF_TOKEN__ = data.token;
+                  }
+                })
+                .catch(function(err) {
+                  console.warn('Could not fetch CSRF token:', err);
+                })
+                .finally(function() {
+                  performLogout();
+                });
             }
           });
         }
-      }
-
-      setupNavButton('userManagementBtn', '/admin-users.html');
-      setupNavButton('packageManagementBtn', '/admin-packages.html');
-      setupNavButton('homepageChangesBtn', '/admin-homepage.html');
-      setupNavButton('supportTicketsBtn', '/admin-tickets.html');
-      setupNavButton('reportsQueueBtn', '/admin-reports.html');
-      setupNavButton('auditLogBtn', '/admin-audit.html');
-      
-      // Moderation queue buttons
-      setupNavButton('reviewPhotosBtn', '/admin-photos.html');
-      setupNavButton('reviewReportsBtn', '/admin-reports.html');
-      setupNavButton('verifySuppliersBtn', '/admin-users.html#suppliers');
-      
-      var reviewReviewsBtn = document.getElementById('reviewReviewsBtn');
-      if (reviewReviewsBtn) {
-        reviewReviewsBtn.addEventListener('click', function() {
-          reviewPendingReviews();
-        });
-        reviewReviewsBtn.addEventListener('keydown', function(e) {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            reviewPendingReviews();
-          }
-        });
-      }
-
-      var logoutBtn = document.getElementById('adminLogoutBtn');
-      if (logoutBtn) {
-        logoutBtn.addEventListener('click', function () {
-          // Wait for CSRF token to be available if not already set
-          var performLogout = function() {
-            api('/api/auth/logout', 'POST', {})
-              .finally(function () {
-                window.location.href = '/';
-              });
-          };
-          
-          if (window.__CSRF_TOKEN__) {
-            performLogout();
-          } else {
-            // Fetch token if not available, then logout
-            api('/api/csrf-token', 'GET')
-              .then(function(data) {
-                if (data && data.token) {
-                  window.__CSRF_TOKEN__ = data.token;
-                }
-              })
-              .finally(function() {
-                performLogout();
-              });
-          }
-        });
-      }
-      
-      // Fetch CSRF token for state-changing requests
-      api('/api/csrf-token', 'GET')
-        .then(function(data) {
-          if (data && data.token) {
-            window.__CSRF_TOKEN__ = data.token;
-          }
-        })
-        .catch(function() {
-          /* Ignore CSRF token fetch errors */
-        });
+        
+        // Fetch CSRF token for state-changing requests
+        api('/api/csrf-token', 'GET')
+          .then(function(data) {
+            if (data && data.token) {
+              window.__CSRF_TOKEN__ = data.token;
+            }
+          })
+          .catch(function() {
+            console.warn('Could not fetch CSRF token on page load');
+          });
+      });
     });
     
     window.showCreateUserModal = function() {
