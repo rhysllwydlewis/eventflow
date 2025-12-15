@@ -248,7 +248,6 @@ class Carousel {
         .carousel-item-title {
           font-size: 1rem;
           overflow-wrap: break-word;
-          word-wrap: break-word;
           word-break: break-word;
           hyphens: auto;
         }
@@ -261,7 +260,6 @@ class Carousel {
         .carousel-item-inclusions {
           font-size: 0.8rem;
           overflow-wrap: break-word;
-          word-wrap: break-word;
         }
 
         .carousel-item-cta {
