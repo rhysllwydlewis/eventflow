@@ -23,30 +23,35 @@ function initializeFirebaseAdmin() {
     // Try to initialize with service account key if provided
     if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
       const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
-      const projectId = serviceAccount.project_id || process.env.FIREBASE_PROJECT_ID || 'eventflow-ffb12';
+      const projectId =
+        serviceAccount.project_id || process.env.FIREBASE_PROJECT_ID || 'eventflow-ffb12';
       admin.initializeApp({
         credential: admin.credential.cert(serviceAccount),
         projectId: projectId,
         databaseURL: `https://${projectId}.firebaseio.com`,
-        storageBucket: process.env.FIREBASE_STORAGE_BUCKET || 'eventflow-ffb12.firebasestorage.app'
+        storageBucket: process.env.FIREBASE_STORAGE_BUCKET || 'eventflow-ffb12.firebasestorage.app',
       });
       console.log('Firebase Admin initialized with service account');
-    } 
+    }
     // Fallback to application default credentials (for local development ONLY)
     else if (process.env.FIREBASE_PROJECT_ID && process.env.NODE_ENV !== 'production') {
       const projectId = process.env.FIREBASE_PROJECT_ID;
       admin.initializeApp({
         projectId: projectId,
         databaseURL: `https://${projectId}.firebaseio.com`,
-        storageBucket: process.env.FIREBASE_STORAGE_BUCKET || 'eventflow-ffb12.firebasestorage.app'
+        storageBucket: process.env.FIREBASE_STORAGE_BUCKET || 'eventflow-ffb12.firebasestorage.app',
       });
       console.log('Firebase Admin initialized with project ID (development mode)');
     }
     // If no credentials, don't initialize (no Firebase available)
     else {
       if (process.env.FIREBASE_PROJECT_ID && !process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
-        console.warn('⚠️  Firebase Admin not initialized - FIREBASE_SERVICE_ACCOUNT_KEY required for production');
-        console.warn('   Set FIREBASE_SERVICE_ACCOUNT_KEY environment variable with service account JSON');
+        console.warn(
+          '⚠️  Firebase Admin not initialized - FIREBASE_SERVICE_ACCOUNT_KEY required for production'
+        );
+        console.warn(
+          '   Set FIREBASE_SERVICE_ACCOUNT_KEY environment variable with service account JSON'
+        );
         console.warn('   Or use MongoDB instead by setting MONGODB_URI');
       }
       // No Firebase configuration at all - silently skip
@@ -100,7 +105,7 @@ async function getCollection(collectionName) {
   if (!isFirebaseAvailable()) {
     throw new Error('Firebase not available');
   }
-  
+
   const snapshot = await db.collection(collectionName).get();
   const docs = [];
   snapshot.forEach(doc => {
@@ -116,7 +121,7 @@ async function getDocument(collectionName, docId) {
   if (!isFirebaseAvailable()) {
     throw new Error('Firebase not available');
   }
-  
+
   const doc = await db.collection(collectionName).doc(docId).get();
   if (!doc.exists) {
     return null;
@@ -131,7 +136,7 @@ async function setDocument(collectionName, docId, data) {
   if (!isFirebaseAvailable()) {
     throw new Error('Firebase not available');
   }
-  
+
   if (docId) {
     await db.collection(collectionName).doc(docId).set(data, { merge: true });
     return docId;
@@ -148,7 +153,7 @@ async function deleteDocument(collectionName, docId) {
   if (!isFirebaseAvailable()) {
     throw new Error('Firebase not available');
   }
-  
+
   await db.collection(collectionName).doc(docId).delete();
 }
 
@@ -159,24 +164,24 @@ async function queryDocuments(collectionName, filters = {}) {
   if (!isFirebaseAvailable()) {
     throw new Error('Firebase not available');
   }
-  
+
   let query = db.collection(collectionName);
-  
+
   // Apply filters
   if (filters.where) {
     for (const [field, operator, value] of filters.where) {
       query = query.where(field, operator, value);
     }
   }
-  
+
   if (filters.orderBy) {
     query = query.orderBy(filters.orderBy.field, filters.orderBy.direction || 'asc');
   }
-  
+
   if (filters.limit) {
     query = query.limit(filters.limit);
   }
-  
+
   const snapshot = await query.get();
   const docs = [];
   snapshot.forEach(doc => {
@@ -195,5 +200,5 @@ module.exports = {
   setDocument,
   deleteDocument,
   queryDocuments,
-  admin
+  admin,
 };

@@ -15,7 +15,7 @@ const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
   standardHeaders: true,
-  legacyHeaders: false
+  legacyHeaders: false,
 });
 
 /**
@@ -26,10 +26,10 @@ const writeLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
   max: 80,
   standardHeaders: true,
-  legacyHeaders: false
+  legacyHeaders: false,
 });
 
 module.exports = {
   authLimiter,
-  writeLimiter
+  writeLimiter,
 };

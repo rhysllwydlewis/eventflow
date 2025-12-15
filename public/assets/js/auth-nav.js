@@ -1,7 +1,7 @@
 (async function () {
   // --- CSRF Token Management ---
   let csrfToken = null;
-  
+
   // Fetch CSRF token on page load
   async function fetchCsrfToken() {
     try {
@@ -16,21 +16,25 @@
       console.error('Failed to fetch CSRF token', e);
     }
   }
-  
+
   // Fetch token immediately
   await fetchCsrfToken();
-  
+
   // --- Nav (burger + scroll behaviour) ---
   function initNavToggle() {
     const navMenu = document.querySelector('.nav.nav-menu');
-    if (!navMenu) return;
+    if (!navMenu) {
+      return;
+    }
 
     const body = document.body;
 
     // Defer setup so any inline burger scripts run first.
     setTimeout(() => {
       const original = document.getElementById('burger');
-      if (!original) return;
+      if (!original) {
+        return;
+      }
 
       // Clone the burger to remove any previously-attached click handlers
       const burger = original.cloneNode(true);
@@ -56,7 +60,7 @@
       });
 
       // Close nav when a menu link is clicked (on mobile)
-      navMenu.addEventListener('click', (event) => {
+      navMenu.addEventListener('click', event => {
         const target = event.target;
         if (target && target.tagName === 'A') {
           closeNav();
@@ -75,7 +79,9 @@
   // --- Header scroll hide / show ---
   function initHeaderScroll() {
     const header = document.querySelector('.header');
-    if (!header) return;
+    if (!header) {
+      return;
+    }
 
     let lastY = window.scrollY;
     let ticking = false;
@@ -126,13 +132,15 @@
 
     if (user) {
       // Mobile nav
-      if (auth) auth.style.display = 'none';
+      if (auth) {
+        auth.style.display = 'none';
+      }
       const dashHref =
         user.role === 'admin'
           ? '/admin.html'
           : user.role === 'supplier'
-          ? '/dashboard-supplier.html'
-          : '/dashboard-customer.html';
+            ? '/dashboard-supplier.html'
+            : '/dashboard-customer.html';
 
       if (dash) {
         dash.style.display = '';
@@ -140,11 +148,16 @@
       }
       if (signout) {
         signout.style.display = '';
-        signout.addEventListener('click', async (e) => {
+        signout.addEventListener('click', async e => {
           e.preventDefault();
           try {
-            await fetch('/api/auth/logout', { method: 'POST', headers: { 'X-CSRF-Token': window.__CSRF_TOKEN__ || '' } });
-          } catch (_) {}
+            await fetch('/api/auth/logout', {
+              method: 'POST',
+              headers: { 'X-CSRF-Token': window.__CSRF_TOKEN__ || '' },
+            });
+          } catch (_) {
+            /* Ignore logout errors */
+          }
           location.href = '/';
         });
       }
@@ -169,19 +182,30 @@
       if (inlineLogin) {
         inlineLogin.textContent = 'Log out';
         inlineLogin.href = '#';
-        inlineLogin.addEventListener('click', async (e) => {
+        inlineLogin.addEventListener('click', async e => {
           e.preventDefault();
           try {
-            await fetch('/api/auth/logout', { method: 'POST', headers: { 'X-CSRF-Token': window.__CSRF_TOKEN__ || '' } });
-          } catch (_) {}
+            await fetch('/api/auth/logout', {
+              method: 'POST',
+              headers: { 'X-CSRF-Token': window.__CSRF_TOKEN__ || '' },
+            });
+          } catch (_) {
+            /* Ignore logout errors */
+          }
           location.href = '/';
         });
       }
     } else {
       // Not signed in
-      if (auth) auth.style.display = '';
-      if (dash) dash.style.display = 'none';
-      if (signout) signout.style.display = 'none';
+      if (auth) {
+        auth.style.display = '';
+      }
+      if (dash) {
+        dash.style.display = 'none';
+      }
+      if (signout) {
+        signout.style.display = 'none';
+      }
 
       if (inlineLogin) {
         // 👇 This keeps the top-right link as a single word on one line
@@ -190,7 +214,9 @@
       }
       if (inlineNav) {
         const dashInline = inlineNav.querySelector('.nav-main-dashboard');
-        if (dashInline) dashInline.remove();
+        if (dashInline) {
+          dashInline.remove();
+        }
       }
     }
   }

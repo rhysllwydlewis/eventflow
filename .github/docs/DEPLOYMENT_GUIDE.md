@@ -1,6 +1,7 @@
 # EventFlow Deployment Guide
 
 ## Table of Contents
+
 1. [Local Development Setup](#local-development-setup)
 2. [Production Deployment](#production-deployment)
 3. [Environment Configuration](#environment-configuration)
@@ -12,6 +13,7 @@
 ## Local Development Setup
 
 ### Prerequisites
+
 - **Node.js** v16.0.0 or higher
 - **npm** v8.0.0 or higher
 - **MongoDB** v6.0 or higher (optional - can use MongoDB Atlas)
@@ -42,6 +44,7 @@ nano .env
 ```
 
 **Minimum required settings for local development:**
+
 ```env
 JWT_SECRET=your-generated-secret-here
 MONGODB_LOCAL_URI=mongodb://localhost:27017/eventflow
@@ -54,6 +57,7 @@ EMAIL_ENABLED=false
 ### Step 3: Database Setup
 
 **Option A: Local MongoDB**
+
 ```bash
 # Install MongoDB (macOS with Homebrew)
 brew tap mongodb/brew
@@ -67,6 +71,7 @@ mongo --eval "db.version()"
 ```
 
 **Option B: MongoDB Atlas (Cloud)**
+
 1. Sign up at https://www.mongodb.com/cloud/atlas
 2. Create a free cluster
 3. Get your connection string
@@ -83,6 +88,7 @@ npm run migrate
 ```
 
 This will:
+
 - Connect to MongoDB
 - Create all collections with validation schemas
 - Create indexes for performance
@@ -103,6 +109,7 @@ Server will start at http://localhost:3000
 ### Step 6: Verify Installation
 
 Visit these URLs to verify:
+
 - **Homepage:** http://localhost:3000
 - **API Health:** http://localhost:3000/api/health
 - **API Docs:** http://localhost:3000/api-docs
@@ -261,6 +268,7 @@ TRUST_PROXY=true
 ```
 
 This setting:
+
 - Enables proper client IP detection from `X-Forwarded-For` headers
 - Fixes rate limiting to work correctly behind proxies
 - Allows `X-Forwarded-Proto` to be trusted for protocol detection
@@ -349,6 +357,7 @@ EventFlow supports three database modes:
 ⚠️ **IMPORTANT:** While EventFlow can run without a cloud database using local JSON storage, this mode is **not recommended for production** with real user data. Data is stored in local files and will be **permanently lost on server restart or redeployment**.
 
 For production deployments:
+
 - Use MongoDB Atlas or Firebase Firestore for data persistence
 - Local storage mode is suitable only for testing, demos, or temporary deployments
 - A clear warning will be displayed at startup when running in local storage mode
@@ -367,6 +376,7 @@ For production deployments:
    - Enable IP Whitelist
 
 3. **Get Connection String**
+
    ```
    mongodb+srv://username:password@cluster.mongodb.net/eventflow?retryWrites=true&w=majority
    ```
@@ -394,12 +404,14 @@ mongorestore --uri="mongodb+srv://..." /backups/20240101
 ### AWS S3 Configuration
 
 1. **Create S3 Bucket**
+
    ```bash
    # Using AWS CLI
    aws s3 mb s3://eventflow-photos --region us-east-1
    ```
 
 2. **Set Bucket Policy (Public Read)**
+
    ```json
    {
      "Version": "2012-10-17",
@@ -416,6 +428,7 @@ mongorestore --uri="mongodb+srv://..." /backups/20240101
    ```
 
 3. **Enable CORS**
+
    ```json
    [
      {
@@ -465,6 +478,7 @@ pm2 logs eventflow --lines 100
 ### Performance Monitoring
 
 **Recommended Tools:**
+
 - **Sentry** - Error tracking
 - **New Relic** - APM
 - **DataDog** - Infrastructure monitoring

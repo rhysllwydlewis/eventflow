@@ -22,6 +22,7 @@ This guide explains how to configure AWS Simple Email Service (SES) for EventFlo
 AWS SES will provide DNS records that you need to add to your domain:
 
 ### DKIM Records (for email authentication)
+
 Add the CNAME records provided by AWS SES to your DNS:
 
 ```
@@ -33,6 +34,7 @@ Value: xxx.dkim.amazonses.com
 You'll typically have 3 DKIM CNAME records to add.
 
 ### Verification Record
+
 Add the TXT record for domain verification:
 
 ```
@@ -55,6 +57,7 @@ Using a custom MAIL FROM domain improves deliverability and SPF alignment.
 ### Add Required DNS Records
 
 #### MX Record
+
 ```
 Name: mail.event-flow.co.uk
 Type: MX
@@ -65,6 +68,7 @@ Value: feedback-smtp.eu-west-2.amazonses.com
 **Important:** Replace `eu-west-2` with your actual AWS region.
 
 #### SPF Record
+
 ```
 Name: mail.event-flow.co.uk
 Type: TXT
@@ -74,6 +78,7 @@ Value: "v=spf1 include:amazonses.com ~all"
 ## Step 4: Request Production Access (Remove Sandbox Limitations)
 
 By default, AWS SES accounts are in sandbox mode with limitations:
+
 - Can only send to verified email addresses
 - Maximum 200 emails per 24 hours
 - Maximum 1 email per second
@@ -85,16 +90,18 @@ To send to any email address:
 3. Fill out the form with:
    - **Mail type:** Transactional
    - **Website URL:** Your EventFlow URL
-   - **Use case description:** 
+   - **Use case description:**
+
      ```
      EventFlow is an event planning platform that sends transactional emails including:
      - Email verification for new user registrations
      - Password reset requests
      - Event notifications and updates
      - Supplier communication notifications
-     
+
      All emails are opt-in and users can manage preferences in their account settings.
      ```
+
 4. Submit the request
 
 **Note:** Approval typically takes 24 hours.
@@ -151,12 +158,14 @@ BASE_URL=https://your-domain.com
 ### Troubleshooting
 
 **Email not sending:**
+
 - Check AWS SES console → **Monitoring** for send statistics
 - Verify IAM credentials have correct permissions
 - Check CloudWatch Logs for SES errors
 - Ensure domain verification is complete (green checkmark in SES)
 
 **Emails going to spam:**
+
 - Verify DKIM records are properly configured (should show green checkmarks)
 - Set up Custom MAIL FROM domain
 - Monitor bounce and complaint rates in SES console
@@ -170,15 +179,18 @@ BASE_URL=https://your-domain.com
 ## Email Limits and Monitoring
 
 ### Default Limits (Production Access)
+
 - **Sending rate:** 14 emails/second (can be increased)
 - **Daily quota:** 50,000 emails/day (can be increased)
 
 ### Request Limit Increases
+
 1. Go to AWS SES Console → **Account dashboard**
 2. Click on **Sending statistics**
 3. Use **Request a sending quota increase** form
 
 ### Monitor Email Health
+
 1. AWS SES Console → **Reputation metrics**
 2. Keep bounce rate < 5%
 3. Keep complaint rate < 0.1%
@@ -187,6 +199,7 @@ BASE_URL=https://your-domain.com
 ## Cost
 
 AWS SES Pricing (as of 2024):
+
 - **First 62,000 emails/month:** $0.10 per 1,000 emails
 - **Beyond 62,000:** $0.12 per 1,000 emails
 - **Attachments:** $0.12 per GB
@@ -203,10 +216,7 @@ Example: 10,000 verification emails/month = **$1.00**
      "Statement": [
        {
          "Effect": "Allow",
-         "Action": [
-           "ses:SendEmail",
-           "ses:SendRawEmail"
-         ],
+         "Action": ["ses:SendEmail", "ses:SendRawEmail"],
          "Resource": "*"
        }
      ]

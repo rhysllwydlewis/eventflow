@@ -11,36 +11,40 @@ class WebSocketClient {
     this.reconnectAttempts = 0;
     this.maxReconnectAttempts = 5;
     this.reconnectDelay = 1000;
-    
+
     this.options = {
       autoConnect: options.autoConnect !== false,
       onConnect: options.onConnect || null,
       onDisconnect: options.onDisconnect || null,
       onNotification: options.onNotification || null,
       onMessage: options.onMessage || null,
-      onError: options.onError || null
+      onError: options.onError || null,
     };
 
     this.listeners = new Map();
-    
+
     if (this.options.autoConnect) {
       this.connect();
     }
   }
 
   connect() {
-    if (this.connected) return;
+    if (this.connected) {
+      return;
+    }
 
     // Load socket.io from CDN
     if (typeof io === 'undefined') {
-      this.loadSocketIO().then(() => {
-        this.initConnection();
-      }).catch(err => {
-        console.error('Failed to load socket.io:', err);
-        if (this.options.onError) {
-          this.options.onError(err);
-        }
-      });
+      this.loadSocketIO()
+        .then(() => {
+          this.initConnection();
+        })
+        .catch(err => {
+          console.error('Failed to load socket.io:', err);
+          if (this.options.onError) {
+            this.options.onError(err);
+          }
+        });
     } else {
       this.initConnection();
     }
@@ -62,7 +66,7 @@ class WebSocketClient {
         transports: ['websocket', 'polling'],
         reconnection: true,
         reconnectionDelay: this.reconnectDelay,
-        reconnectionAttempts: this.maxReconnectAttempts
+        reconnectionAttempts: this.maxReconnectAttempts,
       });
 
       this.setupEventHandlers();
@@ -79,63 +83,63 @@ class WebSocketClient {
       console.log('WebSocket connected');
       this.connected = true;
       this.reconnectAttempts = 0;
-      
+
       // Authenticate if we have user data
       const user = this.getCurrentUser();
       if (user && user.id) {
         this.authenticate(user.id);
       }
-      
+
       if (this.options.onConnect) {
         this.options.onConnect();
       }
     });
 
-    this.socket.on('disconnect', (reason) => {
+    this.socket.on('disconnect', reason => {
       console.log('WebSocket disconnected:', reason);
       this.connected = false;
-      
+
       if (this.options.onDisconnect) {
         this.options.onDisconnect(reason);
       }
     });
 
-    this.socket.on('auth:success', (data) => {
+    this.socket.on('auth:success', data => {
       console.log('WebSocket authenticated:', data);
       this.userId = data.userId;
     });
 
-    this.socket.on('notification', (notification) => {
+    this.socket.on('notification', notification => {
       console.log('Notification received:', notification);
-      
+
       // Show toast notification
       this.showNotification(notification);
-      
+
       if (this.options.onNotification) {
         this.options.onNotification(notification);
       }
     });
 
-    this.socket.on('message:received', (data) => {
+    this.socket.on('message:received', data => {
       console.log('Message received:', data);
-      
+
       if (this.options.onMessage) {
         this.options.onMessage(data);
       }
     });
 
-    this.socket.on('typing:started', (data) => {
+    this.socket.on('typing:started', data => {
       this.emit('typing:started', data);
     });
 
-    this.socket.on('typing:stopped', (data) => {
+    this.socket.on('typing:stopped', data => {
       this.emit('typing:stopped', data);
     });
 
-    this.socket.on('connect_error', (error) => {
+    this.socket.on('connect_error', error => {
       console.error('WebSocket connection error:', error);
       this.reconnectAttempts++;
-      
+
       if (this.reconnectAttempts >= this.maxReconnectAttempts) {
         console.error('Max reconnection attempts reached');
         if (this.options.onError) {
@@ -191,7 +195,7 @@ class WebSocketClient {
       if ('Notification' in window && Notification.permission === 'granted') {
         new Notification(notification.title || 'EventFlow', {
           body: notification.message,
-          icon: '/favicon.svg'
+          icon: '/favicon.svg',
         });
       }
     }

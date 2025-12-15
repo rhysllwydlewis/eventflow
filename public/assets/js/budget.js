@@ -18,8 +18,8 @@ class BudgetManager {
         'Decor',
         'Transport',
         'Attire',
-        'Other'
-      ]
+        'Other',
+      ],
     };
     this.chart = null;
     this.loadFromStorage();
@@ -76,7 +76,7 @@ class BudgetManager {
         this.saveToStorage();
         this.render();
         Toast.success(`Budget set to £${amount.toLocaleString()}`);
-      }
+      },
     });
 
     modal.show();
@@ -86,7 +86,7 @@ class BudgetManager {
   showAddExpenseModal(expense = null) {
     const isEdit = expense !== null;
     const content = document.createElement('div');
-    
+
     content.innerHTML = `
       <div class="form-row">
         <label for="expense-name">Expense Name *</label>
@@ -97,9 +97,12 @@ class BudgetManager {
         <div>
           <label for="expense-category">Category *</label>
           <select id="expense-category" class="focus-ring" required>
-            ${this.budget.categories.map(cat => 
-              `<option value="${cat}" ${expense && expense.category === cat ? 'selected' : ''}>${cat}</option>`
-            ).join('')}
+            ${this.budget.categories
+              .map(
+                cat =>
+                  `<option value="${cat}" ${expense && expense.category === cat ? 'selected' : ''}>${cat}</option>`
+              )
+              .join('')}
           </select>
         </div>
         <div>
@@ -165,10 +168,10 @@ class BudgetManager {
             date,
             vendor,
             notes,
-            createdAt: Date.now()
+            createdAt: Date.now(),
           });
           Toast.success('Expense added');
-          
+
           // Show confetti if this is a significant expense (only if confetti is available)
           if (amount > 1000 && typeof confetti === 'function') {
             confetti({ particleCount: 50, spread: 60 });
@@ -177,7 +180,7 @@ class BudgetManager {
 
         this.saveToStorage();
         this.render();
-      }
+      },
     });
 
     modal.show();
@@ -186,7 +189,9 @@ class BudgetManager {
 
   deleteExpense(id) {
     const expense = this.budget.expenses.find(e => e.id === id);
-    if (!expense) return;
+    if (!expense) {
+      return;
+    }
 
     const modal = new Modal({
       title: 'Delete Expense',
@@ -197,7 +202,7 @@ class BudgetManager {
         this.saveToStorage();
         this.render();
         Toast.success('Expense deleted');
-      }
+      },
     });
 
     modal.show();
@@ -237,8 +242,8 @@ class BudgetManager {
 
   renderChart() {
     const categoryTotals = {};
-    this.budget.categories.forEach(cat => categoryTotals[cat] = 0);
-    
+    this.budget.categories.forEach(cat => (categoryTotals[cat] = 0));
+
     this.budget.expenses.forEach(expense => {
       categoryTotals[expense.category] = (categoryTotals[expense.category] || 0) + expense.amount;
     });
@@ -257,33 +262,35 @@ class BudgetManager {
     document.getElementById('chart-empty').style.display = 'none';
 
     const ctx = document.getElementById('budget-chart');
-    
+
     if (this.chart) {
       this.chart.destroy();
     }
 
     // Always use light theme colors
     const isDark = false;
-    
+
     this.chart = new Chart(ctx, {
       type: 'doughnut',
       data: {
         labels: data.map(([cat]) => cat),
-        datasets: [{
-          data: data.map(([_, amount]) => amount),
-          backgroundColor: [
-            '#0B8073',
-            '#13B6A2',
-            '#5EEAD4',
-            '#9be7d9',
-            '#10B981',
-            '#F59E0B',
-            '#EF4444',
-            '#9CA3AF'
-          ],
-          borderWidth: 2,
-          borderColor: isDark ? '#020617' : '#fff'
-        }]
+        datasets: [
+          {
+            data: data.map(([_, amount]) => amount),
+            backgroundColor: [
+              '#0B8073',
+              '#13B6A2',
+              '#5EEAD4',
+              '#9be7d9',
+              '#10B981',
+              '#F59E0B',
+              '#EF4444',
+              '#9CA3AF',
+            ],
+            borderWidth: 2,
+            borderColor: isDark ? '#020617' : '#fff',
+          },
+        ],
       },
       options: {
         responsive: true,
@@ -295,30 +302,30 @@ class BudgetManager {
               color: isDark ? '#E5E7EB' : '#0B1220',
               padding: 15,
               font: {
-                size: 12
-              }
-            }
+                size: 12,
+              },
+            },
           },
           tooltip: {
             callbacks: {
-              label: (context) => {
+              label: context => {
                 const label = context.label || '';
                 const value = context.parsed || 0;
                 const total = context.dataset.data.reduce((a, b) => a + b, 0);
                 const percentage = ((value / total) * 100).toFixed(1);
                 return `${label}: £${value.toLocaleString()} (${percentage}%)`;
-              }
-            }
-          }
-        }
-      }
+              },
+            },
+          },
+        },
+      },
     });
   }
 
   renderCategoryBreakdown() {
     const categoryTotals = {};
-    this.budget.categories.forEach(cat => categoryTotals[cat] = 0);
-    
+    this.budget.categories.forEach(cat => (categoryTotals[cat] = 0));
+
     this.budget.expenses.forEach(expense => {
       categoryTotals[expense.category] = (categoryTotals[expense.category] || 0) + expense.amount;
     });
@@ -335,9 +342,10 @@ class BudgetManager {
       return;
     }
 
-    const html = data.map(([category, amount]) => {
-      const percentage = total > 0 ? (amount / total) * 100 : 0;
-      return `
+    const html = data
+      .map(([category, amount]) => {
+        const percentage = total > 0 ? (amount / total) * 100 : 0;
+        return `
         <div class="mb-4">
           <div class="flex items-center justify-between mb-2">
             <span class="font-medium">${category}</span>
@@ -349,7 +357,8 @@ class BudgetManager {
           <div class="small mt-1" style="color: var(--muted);">${percentage.toFixed(1)}% of total</div>
         </div>
       `;
-    }).join('');
+      })
+      .join('');
 
     document.getElementById('category-list').innerHTML = html;
   }
@@ -394,15 +403,16 @@ class BudgetManager {
           </tr>
         </thead>
         <tbody>
-          ${expenses.map(expense => {
-            const statusColors = {
-              paid: { bg: '#D1FAE5', text: '#065F46' },
-              pending: { bg: '#FEF3C7', text: '#92400E' },
-              overdue: { bg: '#FEE2E2', text: '#991B1B' }
-            };
-            const color = statusColors[expense.status] || statusColors.pending;
+          ${expenses
+            .map(expense => {
+              const statusColors = {
+                paid: { bg: '#D1FAE5', text: '#065F46' },
+                pending: { bg: '#FEF3C7', text: '#92400E' },
+                overdue: { bg: '#FEE2E2', text: '#991B1B' },
+              };
+              const color = statusColors[expense.status] || statusColors.pending;
 
-            return `
+              return `
               <tr style="border-bottom: 1px solid var(--border);" class="hover-lift">
                 <td style="padding: 1rem;">
                   <div class="font-medium">${this.escapeHtml(expense.name)}</div>
@@ -432,7 +442,8 @@ class BudgetManager {
                 </td>
               </tr>
             `;
-          }).join('')}
+            })
+            .join('')}
         </tbody>
       </table>
     `;
@@ -471,7 +482,8 @@ class BudgetManager {
       try {
         const totalSpent = this.budget.expenses.reduce((sum, e) => sum + e.amount, 0);
         const remaining = this.budget.total - totalSpent;
-        const percentage = this.budget.total > 0 ? ((totalSpent / this.budget.total) * 100).toFixed(1) : 0;
+        const percentage =
+          this.budget.total > 0 ? ((totalSpent / this.budget.total) * 100).toFixed(1) : 0;
 
         const budgetData = {
           totalBudget: this.budget.total,
@@ -479,11 +491,14 @@ class BudgetManager {
           remaining: remaining,
           percentageUsed: percentage,
           expenses: this.budget.expenses,
-          categoryBreakdown: this.getCategoryBreakdown()
+          categoryBreakdown: this.getCategoryBreakdown(),
         };
 
         if (typeof exportUtility !== 'undefined') {
-          await exportUtility.exportBudgetToPDF(budgetData, `eventflow-budget-${new Date().toISOString().split('T')[0]}.pdf`);
+          await exportUtility.exportBudgetToPDF(
+            budgetData,
+            `eventflow-budget-${new Date().toISOString().split('T')[0]}.pdf`
+          );
           Toast.success('Budget exported as PDF');
         } else {
           Toast.error('Export utility not loaded');
@@ -510,7 +525,7 @@ class BudgetManager {
     });
 
     // Close on overlay click
-    modal.addEventListener('click', (e) => {
+    modal.addEventListener('click', e => {
       if (e.target === modal) {
         modal.remove();
       }
@@ -519,20 +534,20 @@ class BudgetManager {
 
   getCategoryBreakdown() {
     const categoryTotals = {};
-    this.budget.categories.forEach(cat => categoryTotals[cat] = 0);
-    
+    this.budget.categories.forEach(cat => (categoryTotals[cat] = 0));
+
     this.budget.expenses.forEach(expense => {
       categoryTotals[expense.category] = (categoryTotals[expense.category] || 0) + expense.amount;
     });
 
     const totalSpent = this.budget.expenses.reduce((sum, e) => sum + e.amount, 0);
-    
+
     return Object.entries(categoryTotals)
       .filter(([_, amount]) => amount > 0)
       .map(([category, amount]) => ({
         category,
         amount,
-        percentage: totalSpent > 0 ? ((amount / totalSpent) * 100).toFixed(1) : 0
+        percentage: totalSpent > 0 ? ((amount / totalSpent) * 100).toFixed(1) : 0,
       }));
   }
 
@@ -545,12 +560,12 @@ class BudgetManager {
       e.status,
       e.date,
       e.vendor || '',
-      e.notes || ''
+      e.notes || '',
     ]);
 
     const csvContent = [
       headers.join(','),
-      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(',')),
     ].join('\n');
 
     return csvContent;
@@ -581,7 +596,9 @@ class BudgetManager {
   }
 
   escapeHtml(unsafe) {
-    if (typeof unsafe !== 'string') return '';
+    if (typeof unsafe !== 'string') {
+      return '';
+    }
     return unsafe
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')

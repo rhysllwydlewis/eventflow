@@ -14,7 +14,7 @@ function configureSanitization() {
   return mongoSanitize({
     // Remove data that contains prohibited characters
     replaceWith: '_',
-    
+
     // Sanitize both req.body, req.query, and req.params
     onSanitize: ({ req, key }) => {
       if (process.env.NODE_ENV !== 'production') {
@@ -30,9 +30,9 @@ function configureSanitization() {
  */
 function inputValidationMiddleware(req, res, next) {
   // Validate and limit request body size (already handled by express.json limit)
-  
+
   // Remove null bytes from strings
-  const sanitizeNullBytes = (obj) => {
+  const sanitizeNullBytes = obj => {
     if (typeof obj === 'string') {
       return obj.replace(/\0/g, '');
     }
@@ -45,7 +45,7 @@ function inputValidationMiddleware(req, res, next) {
     }
     return obj;
   };
-  
+
   if (req.body) {
     req.body = sanitizeNullBytes(req.body);
   }
@@ -55,7 +55,7 @@ function inputValidationMiddleware(req, res, next) {
   if (req.params) {
     req.params = sanitizeNullBytes(req.params);
   }
-  
+
   next();
 }
 
