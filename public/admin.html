@@ -1137,11 +1137,102 @@
     };
     
     window.editPackage = function (id) {
-      if (typeof Toast !== 'undefined') {
-        Toast.info('Package editing is available through the supplier dashboard.');
-      } else {
-        alert('Package editing is available through the supplier dashboard.');
-      }
+      // Fetch package data
+      api('/api/admin/packages').then(function(resp) {
+        var packages = (resp && resp.items) || [];
+        var pkg = packages.find(function(p) { return p.id === id; });
+        
+        if (!pkg) {
+          if (typeof Toast !== 'undefined') {
+            Toast.error('Package not found');
+          } else {
+            alert('Package not found');
+          }
+          return;
+        }
+        
+        // Create modal content
+        var content = document.createElement('div');
+        content.innerHTML = 
+          '<div style="display: grid; gap: 1rem;">' +
+            '<div><label style="display:block;margin-bottom:4px;font-weight:600;">Title *</label>' +
+            '<input type="text" id="edit-pkg-title" value="' + escapeHtml(pkg.title || '') + '" style="width:100%;padding:8px;border:1px solid #d4d4d8;border-radius:4px;"></div>' +
+            
+            '<div><label style="display:block;margin-bottom:4px;font-weight:600;">Description</label>' +
+            '<textarea id="edit-pkg-description" rows="3" style="width:100%;padding:8px;border:1px solid #d4d4d8;border-radius:4px;">' + escapeHtml(pkg.description || '') + '</textarea></div>' +
+            
+            '<div><label style="display:block;margin-bottom:4px;font-weight:600;">Price Display</label>' +
+            '<input type="text" id="edit-pkg-price" value="' + escapeHtml(pkg.price_display || pkg.price || '') + '" placeholder="e.g., £1,500" style="width:100%;padding:8px;border:1px solid #d4d4d8;border-radius:4px;"></div>' +
+            
+            '<div><label style="display:block;margin-bottom:4px;font-weight:600;">Image URL</label>' +
+            '<input type="url" id="edit-pkg-image" value="' + escapeHtml(pkg.image || '') + '" style="width:100%;padding:8px;border:1px solid #d4d4d8;border-radius:4px;"></div>' +
+            
+            '<div style="display:flex;gap:1rem;align-items:center;">' +
+              '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;">' +
+                '<input type="checkbox" id="edit-pkg-approved" ' + (pkg.approved ? 'checked' : '') + ' style="width:18px;height:18px;">' +
+                '<span style="font-weight:600;">Approved</span>' +
+              '</label>' +
+              '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;">' +
+                '<input type="checkbox" id="edit-pkg-featured" ' + (pkg.featured ? 'checked' : '') + ' style="width:18px;height:18px;">' +
+                '<span style="font-weight:600;">Featured</span>' +
+              '</label>' +
+            '</div>' +
+            
+            '<div class="small" style="color:#52525b;margin-top:8px;padding:8px;background:#f9fafb;border-radius:4px;">' +
+              '<strong>Gallery Management:</strong><br>' +
+              'Photo gallery can be managed by the supplier through their dashboard.' +
+            '</div>' +
+          '</div>';
+        
+        // Create modal
+        if (typeof Modal !== 'undefined') {
+          var modal = new Modal({
+            title: 'Edit Package: ' + escapeHtml(pkg.title),
+            content: content,
+            confirmText: 'Save Changes',
+            cancelText: 'Cancel',
+            onConfirm: function() {
+              var updateData = {
+                title: document.getElementById('edit-pkg-title').value,
+                description: document.getElementById('edit-pkg-description').value,
+                price_display: document.getElementById('edit-pkg-price').value,
+                image: document.getElementById('edit-pkg-image').value,
+                approved: document.getElementById('edit-pkg-approved').checked,
+                featured: document.getElementById('edit-pkg-featured').checked
+              };
+              
+              api('/api/admin/packages/' + id, 'PUT', updateData)
+                .then(function() {
+                  if (typeof Toast !== 'undefined') {
+                    Toast.success('Package updated successfully.');
+                  } else {
+                    alert('Package updated successfully.');
+                  }
+                  loadAll();
+                })
+                .catch(function(err) {
+                  console.error('editPackage failed', err);
+                  if (typeof Toast !== 'undefined') {
+                    Toast.error('Failed to update package: ' + err.message);
+                  } else {
+                    alert('Failed to update package: ' + err.message);
+                  }
+                });
+            }
+          });
+          modal.show();
+        } else {
+          // Fallback if Modal is not available
+          alert('Package editing requires the Modal component. Please reload the page.');
+        }
+      }).catch(function(err) {
+        console.error('Failed to load package', err);
+        if (typeof Toast !== 'undefined') {
+          Toast.error('Failed to load package data');
+        } else {
+          alert('Failed to load package data');
+        }
+      });
     };
 
     window.addEventListener('load', function () {
@@ -1182,7 +1273,7 @@
         var dlJson = document.getElementById('downloadAllJson');
         if (dlJson) {
           dlJson.addEventListener('click', function () {
-            window.location.href = '/api/admin/all-export';
+            window.location.href = '/api/admin/export/all';
           });
         }
 

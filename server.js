@@ -2390,6 +2390,83 @@ app.post(
   }
 );
 
+/**
+ * PUT /api/admin/suppliers/:id
+ * Update supplier details (admin only)
+ */
+app.put(
+  '/api/admin/suppliers/:id',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  (req, res) => {
+    const { id } = req.params;
+    const suppliers = read('suppliers');
+    const supplierIndex = suppliers.findIndex(s => s.id === id);
+
+    if (supplierIndex === -1) {
+      return res.status(404).json({ error: 'Supplier not found' });
+    }
+
+    const supplier = suppliers[supplierIndex];
+    const now = new Date().toISOString();
+
+    // Update allowed fields
+    if (req.body.name !== undefined) {
+      supplier.name = req.body.name;
+    }
+    if (req.body.category !== undefined) {
+      supplier.category = req.body.category;
+    }
+    if (req.body.location !== undefined) {
+      supplier.location = req.body.location;
+    }
+    if (req.body.price_display !== undefined) {
+      supplier.price_display = req.body.price_display;
+    }
+    if (req.body.website !== undefined) {
+      supplier.website = req.body.website;
+    }
+    if (req.body.email !== undefined) {
+      supplier.email = req.body.email;
+    }
+    if (req.body.phone !== undefined) {
+      supplier.phone = req.body.phone;
+    }
+    if (req.body.maxGuests !== undefined) {
+      supplier.maxGuests = req.body.maxGuests;
+    }
+    if (req.body.description_short !== undefined) {
+      supplier.description_short = req.body.description_short;
+    }
+    if (req.body.description_long !== undefined) {
+      supplier.description_long = req.body.description_long;
+    }
+    if (req.body.blurb !== undefined) {
+      supplier.blurb = req.body.blurb;
+    }
+    if (req.body.amenities !== undefined) {
+      supplier.amenities = req.body.amenities;
+    }
+    if (typeof req.body.approved === 'boolean') {
+      supplier.approved = req.body.approved;
+    }
+    if (typeof req.body.verified === 'boolean') {
+      supplier.verified = req.body.verified;
+    }
+    if (req.body.tags !== undefined) {
+      supplier.tags = req.body.tags;
+    }
+    
+    supplier.updatedAt = now;
+
+    suppliers[supplierIndex] = supplier;
+    write('suppliers', suppliers);
+
+    res.json({ ok: true, supplier });
+  }
+);
+
 app.get('/api/admin/packages', authRequired, roleRequired('admin'), (_req, res) => {
   res.json({ items: read('packages') });
 });
