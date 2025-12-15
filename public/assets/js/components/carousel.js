@@ -236,26 +236,39 @@ class Carousel {
           margin-right: -4px;
         }
 
+        .carousel-item {
+          min-width: 0;
+        }
+
         .carousel-item-content {
           padding: 12px;
+          min-width: 0;
         }
 
         .carousel-item-title {
           font-size: 1rem;
           overflow-wrap: break-word;
+          word-wrap: break-word;
+          word-break: break-word;
+          hyphens: auto;
         }
 
         .carousel-item-price {
           font-size: 0.9rem;
+          overflow-wrap: break-word;
         }
 
         .carousel-item-inclusions {
           font-size: 0.8rem;
+          overflow-wrap: break-word;
+          word-wrap: break-word;
         }
 
         .carousel-item-cta {
           font-size: 0.85rem;
           padding: 7px 14px;
+          white-space: normal;
+          text-align: center;
         }
 
         .carousel-control {

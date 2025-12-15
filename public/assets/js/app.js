@@ -2112,15 +2112,19 @@ document.addEventListener('DOMContentLoaded', () => {
       toggle.type = 'button';
       toggle.className = 'password-toggle';
       toggle.textContent = 'Show';
+      toggle.setAttribute('aria-label', 'Toggle password visibility');
       toggle.addEventListener('click', () => {
         if (input.type === 'password') {
           input.type = 'text';
           toggle.textContent = 'Hide';
+          toggle.setAttribute('aria-label', 'Hide password');
         } else {
           input.type = 'password';
           toggle.textContent = 'Show';
+          toggle.setAttribute('aria-label', 'Show password');
         }
       });
+      input.classList.add('has-toggle');
       wrapper.appendChild(toggle);
     };
 
