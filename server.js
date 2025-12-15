@@ -1651,7 +1651,8 @@ app.patch(
         .map(x => x.trim())
         .filter(Boolean);
     }
-    if (b.maxGuests !== null) {
+    // eslint-disable-next-line eqeqeq
+    if (b.maxGuests != null) {
       all[i].maxGuests = parseInt(b.maxGuests, 10) || 0;
     }
     if (b.photos) {
