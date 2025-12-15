@@ -110,17 +110,10 @@
         }
       });
 
-      // Close nav when a menu link is clicked (on mobile)
+      // Close nav when a menu link is clicked
       navMenu.addEventListener('click', event => {
         const target = event.target;
         if (target && target.tagName === 'A') {
-          closeNav();
-        }
-      });
-
-      // Close nav if the viewport is resized up to desktop
-      window.addEventListener('resize', () => {
-        if (window.innerWidth > 720) {
           closeNav();
         }
       });
@@ -278,8 +271,7 @@
       }
 
       if (inlineLogin) {
-        // 👇 This keeps the top-right link as a single word on one line
-        inlineLogin.textContent = 'Login';
+        inlineLogin.textContent = 'Log in';
         inlineLogin.href = '/auth.html';
       }
       if (inlineNav) {

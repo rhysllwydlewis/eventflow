@@ -73,6 +73,25 @@ class Carousel {
         display: block;
       }
 
+      .carousel-item-placeholder {
+        width: 100%;
+        height: 200px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #F9FAFB 0%, #F3F4F6 100%);
+        color: var(--muted, #667085);
+        font-size: 0.875rem;
+        border-bottom: 1px solid var(--border, #E7EAF0);
+      }
+
+      .carousel-item-placeholder::before {
+        content: '📦';
+        font-size: 3rem;
+        opacity: 0.3;
+        display: block;
+      }
+
       .carousel-item-content {
         padding: 16px;
       }
@@ -277,12 +296,11 @@ class Carousel {
     const element = document.createElement('div');
     element.className = 'carousel-item';
 
-    const imageUrl = item.image || '/assets/images/collage-venue.jpg';
+    const imageUrl = item.image;
     const price = item.price || 'Contact for price';
     const inclusions = item.description || item.inclusions || '';
 
     element.innerHTML = `
-      <img class="carousel-item-image" src="${imageUrl}" alt="${item.title}" loading="lazy">
       <div class="carousel-item-content">
         <h3 class="carousel-item-title">${item.title}</h3>
         <div class="carousel-item-price">${price}</div>
@@ -290,6 +308,29 @@ class Carousel {
         <a href="/package.html?slug=${item.slug}" class="carousel-item-cta">View Details</a>
       </div>
     `;
+
+    // Handle image loading with proper error handling
+    if (imageUrl) {
+      const img = document.createElement('img');
+      img.className = 'carousel-item-image';
+      img.src = imageUrl;
+      img.alt = item.title;
+      img.loading = 'lazy';
+
+      img.addEventListener('error', () => {
+        // Replace failed image with placeholder
+        const placeholder = document.createElement('div');
+        placeholder.className = 'carousel-item-placeholder';
+        img.replaceWith(placeholder);
+      });
+
+      element.insertBefore(img, element.firstChild);
+    } else {
+      // No image provided, use placeholder
+      const placeholder = document.createElement('div');
+      placeholder.className = 'carousel-item-placeholder';
+      element.insertBefore(placeholder, element.firstChild);
+    }
 
     return element;
   }
