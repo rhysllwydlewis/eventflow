@@ -236,13 +236,21 @@ class Carousel {
           margin-right: -4px;
         }
 
+        .carousel-container {
+          overflow: hidden;
+          width: 100%;
+        }
+
         .carousel-item {
           min-width: 0;
+          max-width: 100%;
+          width: 100%;
         }
 
         .carousel-item-content {
           padding: 12px;
           min-width: 0;
+          box-sizing: border-box;
         }
 
         .carousel-item-title {
@@ -250,16 +258,19 @@ class Carousel {
           overflow-wrap: break-word;
           word-break: break-word;
           hyphens: auto;
+          max-width: 100%;
         }
 
         .carousel-item-price {
           font-size: 0.9rem;
           overflow-wrap: break-word;
+          word-break: break-word;
         }
 
         .carousel-item-inclusions {
           font-size: 0.8rem;
           overflow-wrap: break-word;
+          word-break: break-word;
         }
 
         .carousel-item-cta {
@@ -267,6 +278,7 @@ class Carousel {
           padding: 7px 14px;
           white-space: normal;
           text-align: center;
+          max-width: 100%;
         }
 
         .carousel-control {
