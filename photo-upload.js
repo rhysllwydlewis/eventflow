@@ -241,7 +241,7 @@ async function processAndSaveImage(buffer, originalFilename) {
  */
 async function deleteImage(url) {
   // Validate S3 URL more strictly - must start with https:// and contain amazonaws.com in the domain
-  const isS3Url = S3_ENABLED && /^https:\/\/[^\/]*\.amazonaws\.com\//.test(url);
+  const isS3Url = S3_ENABLED && /^https:\/\/[^/]*\.amazonaws\.com\//.test(url);
   
   if (isS3Url) {
     // Delete from S3
@@ -291,7 +291,7 @@ async function cropImage(imageUrl, cropData) {
   let buffer;
   
   // Validate S3 URL more strictly - must start with https:// and contain amazonaws.com in the domain
-  const isS3Url = S3_ENABLED && /^https:\/\/[^\/]*\.amazonaws\.com\//.test(imageUrl);
+  const isS3Url = S3_ENABLED && /^https:\/\/[^/]*\.amazonaws\.com\//.test(imageUrl);
   
   if (isS3Url) {
     const key = imageUrl.split('.com/')[1];
