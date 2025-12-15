@@ -12,9 +12,13 @@ img{max-width:100%;display:block;border-radius:12px}
 .header-inner{display:flex;align-items:center;justify-content:space-between;padding:14px 0;gap:12px}
 .brand{display:flex;align-items:center;gap:12px;font-weight:800}.brand .logo{width:30px;height:30px;border-radius:8px;background:conic-gradient(from 180deg,#9be7d9,#13B6A2 25%,#0B8073 55%,#0B1220 75%,#9be7d9)}
 .nav{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.nav a{padding:10px 14px;border-radius:10px;color:#354052}.nav a[aria-current="page"]{background:#F2FBF9;color:var(--ink)}
-.cta{display:inline-flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#16c3ad,#0ea896);color:#fff;border:none;padding:12px 16px;border-radius:12px;font-weight:700;box-shadow:var(--shadow);cursor:pointer}
+.cta{display:inline-flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#16c3ad,#0ea896);color:#fff;border:none;padding:12px 16px;border-radius:12px;font-weight:700;box-shadow:var(--shadow);cursor:pointer;transition:transform 140ms ease-out, box-shadow 160ms ease-out}
+.cta:hover{transform:translateY(-2px);box-shadow:0 16px 40px rgba(15,23,42,.18);text-decoration:none}
+.cta:focus-visible{outline:2px solid var(--ink, #0B8073);outline-offset:2px}
 .cta.secondary{background:#F6FAF9;color:var(--ink);border:1px solid #CFEDEA;box-shadow:none}
+.cta.secondary:hover{background:#EDF7F5;transform:translateY(-1px);box-shadow:0 8px 20px rgba(11,128,115,.12)}
 .cta.ghost{background:#fff;border:1px solid var(--border);color:#0B1220;box-shadow:none}
+.cta.ghost:hover{background:#FAFBFC;transform:translateY(-1px);box-shadow:0 4px 12px rgba(15,23,42,.08)}
 .hero{padding:54px 0 24px}.hero-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:24px;align-items:center}
 h1{margin:0 0 6px;font-weight:900;letter-spacing:-.02em;font-size:clamp(30px,4.6vw,46px)}.lead{font-size:clamp(16px,1.9vw,18px);color:var(--muted);max-width:60ch}
 .hero-cta{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
@@ -464,6 +468,11 @@ html[data-theme="dark"] .timeline-step::before{
 .nav-inline .nav-main:hover{
   transform:translateY(-1px);
   box-shadow:0 12px 30px rgba(15,23,42,.14);
+  background:rgba(255,255,255,.95);
+}
+.nav-inline .nav-main:focus-visible{
+  outline:2px solid var(--ink, #0B8073);
+  outline-offset:2px;
 }
 .nav-inline .nav-main-login{
   font-weight:600;
@@ -482,6 +491,10 @@ html[data-theme="dark"] .timeline-step::before{
 .icon-button:hover{
   background:rgba(15,23,42,.06);
   transform:translateY(-1px);
+}
+.icon-button:focus-visible{
+  outline:2px solid var(--ink, #0B8073);
+  outline-offset:2px;
 }
 .theme-icon{
   width:18px;
@@ -554,7 +567,7 @@ html[data-theme="dark"] .theme-icon::after{
   border-radius:999px;
   border:1px solid rgba(15,23,42,.16);
   background:rgba(255,255,255,.9);
-  display:none;
+  display:inline-flex;
   align-items:center;
   justify-content:center;
   gap:3px;
@@ -588,14 +601,36 @@ body.nav-open .nav-toggle-bar:nth-child(3){
 
 /* Main nav menu (desktop + mobile drawer) */
 .nav-menu{
-  display:none;
-  align-items:center;
-  justify-content:center;
-  gap:8px;
-  padding:8px 16px 12px;
+  display:flex;
+  position:fixed;
+  inset:56px 12px auto 12px;
+  border-radius:16px;
+  background:rgba(255,255,255,.98);
+  box-shadow:0 24px 70px rgba(15,23,42,.35);
+  flex-direction:column;
+  align-items:stretch;
+  padding:10px 12px 14px;
+  max-height:70vh;
+  overflow:auto;
+  opacity:0;
+  transform:translateY(-6px);
+  pointer-events:none;
+  transition:opacity 160ms ease-out, transform 160ms ease-out;
+  z-index:1000;
+}
+.nav-menu.nav-menu--open{
+  opacity:1;
+  transform:translateY(0);
+  pointer-events:auto;
+}
+body.nav-open .nav-menu{
+  opacity:1;
+  transform:translateY(0);
+  pointer-events:auto;
 }
 .nav-menu a{
   padding:8px 12px;
+  width:100%;
 }
 
 /* Responsive behaviour */
@@ -647,6 +682,16 @@ body.nav-open .nav-toggle-bar:nth-child(3){
   }
   .nav-menu a{
     width:100%;
+    border-radius:10px;
+    transition:background 140ms ease-out, transform 100ms ease-out;
+  }
+  .nav-menu a:hover{
+    background:rgba(11,128,115,.08);
+    transform:translateX(2px);
+  }
+  .nav-menu a:focus-visible{
+    outline:2px solid var(--ink, #0B8073);
+    outline-offset:2px;
   }
   .nav{
     flex-wrap:nowrap;
