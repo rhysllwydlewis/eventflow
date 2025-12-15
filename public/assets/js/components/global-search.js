@@ -8,9 +8,16 @@ class GlobalSearch {
     this.options = {
       placeholder: options.placeholder || 'Search suppliers, venues, services...',
       shortcuts: options.shortcuts !== false,
-      categories: options.categories || ['All', 'Venues', 'Catering', 'Photography', 'Entertainment', 'Florists'],
+      categories: options.categories || [
+        'All',
+        'Venues',
+        'Catering',
+        'Photography',
+        'Entertainment',
+        'Florists',
+      ],
       onSearch: options.onSearch || null,
-      onSelect: options.onSelect || null
+      onSelect: options.onSelect || null,
     };
 
     this.isOpen = false;
@@ -50,12 +57,16 @@ class GlobalSearch {
         </div>
         
         <div class="global-search-categories">
-          ${this.options.categories.map(cat => `
+          ${this.options.categories
+            .map(
+              cat => `
             <button class="category-btn ${cat === this.currentCategory ? 'active' : ''}" 
                     data-category="${cat}">
               ${cat}
             </button>
-          `).join('')}
+          `
+            )
+            .join('')}
         </div>
         
         <div class="global-search-results" id="global-search-results">
@@ -90,7 +101,7 @@ class GlobalSearch {
   attachEventListeners() {
     // Keyboard shortcut (Cmd+K or Ctrl+K)
     if (this.options.shortcuts) {
-      document.addEventListener('keydown', (e) => {
+      document.addEventListener('keydown', e => {
         if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
           e.preventDefault();
           this.toggle();
@@ -103,14 +114,14 @@ class GlobalSearch {
     closeBtn.addEventListener('click', () => this.close());
 
     // Close on overlay click
-    this.overlay.addEventListener('click', (e) => {
+    this.overlay.addEventListener('click', e => {
       if (e.target === this.overlay) {
         this.close();
       }
     });
 
     // Close on ESC key
-    document.addEventListener('keydown', (e) => {
+    document.addEventListener('keydown', e => {
       if (e.key === 'Escape' && this.isOpen) {
         this.close();
       }
@@ -118,10 +129,10 @@ class GlobalSearch {
 
     // Search input
     const searchInput = document.getElementById('global-search-input');
-    searchInput.addEventListener('input', (e) => {
+    searchInput.addEventListener('input', e => {
       clearTimeout(this.searchTimeout);
       const query = e.target.value.trim();
-      
+
       if (query.length < 2) {
         this.showEmpty();
         return;
@@ -133,7 +144,7 @@ class GlobalSearch {
     });
 
     // Keyboard navigation
-    searchInput.addEventListener('keydown', (e) => {
+    searchInput.addEventListener('keydown', e => {
       if (e.key === 'ArrowDown') {
         e.preventDefault();
         this.selectNext();
@@ -147,7 +158,7 @@ class GlobalSearch {
     });
 
     // Category filters
-    this.overlay.addEventListener('click', (e) => {
+    this.overlay.addEventListener('click', e => {
       const categoryBtn = e.target.closest('.category-btn');
       if (categoryBtn) {
         this.setCategory(categoryBtn.dataset.category);
@@ -155,7 +166,7 @@ class GlobalSearch {
     });
 
     // Result clicks
-    this.overlay.addEventListener('click', (e) => {
+    this.overlay.addEventListener('click', e => {
       const resultItem = e.target.closest('.search-result-item');
       if (resultItem) {
         const index = parseInt(resultItem.dataset.index);
@@ -175,7 +186,7 @@ class GlobalSearch {
   open() {
     this.isOpen = true;
     this.overlay.classList.add('active');
-    
+
     // Focus input after animation
     setTimeout(() => {
       document.getElementById('global-search-input').focus();
@@ -188,19 +199,19 @@ class GlobalSearch {
   close() {
     this.isOpen = false;
     this.overlay.classList.remove('active');
-    
+
     // Clear search
     document.getElementById('global-search-input').value = '';
     this.showEmpty();
     this.selectedIndex = 0;
-    
+
     // Restore body scroll
     document.body.style.overflow = '';
   }
 
   setCategory(category) {
     this.currentCategory = category;
-    
+
     // Update active state
     this.overlay.querySelectorAll('.category-btn').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.category === category);
@@ -215,16 +226,22 @@ class GlobalSearch {
 
   async performSearch(query) {
     const resultsContainer = document.getElementById('global-search-results');
-    resultsContainer.innerHTML = '<div class="search-loading"><div class="spinner"></div> Searching...</div>';
+    resultsContainer.innerHTML =
+      '<div class="search-loading"><div class="spinner"></div> Searching...</div>';
 
     try {
-      const categoryFilter = this.currentCategory !== 'All' ? `&category=${encodeURIComponent(this.currentCategory)}` : '';
-      const response = await fetch(`/api/search/suppliers?q=${encodeURIComponent(query)}${categoryFilter}&perPage=20`);
-      
+      const categoryFilter =
+        this.currentCategory !== 'All'
+          ? `&category=${encodeURIComponent(this.currentCategory)}`
+          : '';
+      const response = await fetch(
+        `/api/search/suppliers?q=${encodeURIComponent(query)}${categoryFilter}&perPage=20`
+      );
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       const data = await response.json();
 
       this.searchResults = data.suppliers || [];
@@ -246,7 +263,6 @@ class GlobalSearch {
       if (this.options.onSearch) {
         this.options.onSearch(query, this.searchResults);
       }
-
     } catch (error) {
       console.error('Search error:', error);
       resultsContainer.innerHTML = `
@@ -261,30 +277,42 @@ class GlobalSearch {
     const resultsContainer = document.getElementById('global-search-results');
     resultsContainer.innerHTML = `
       <div class="search-results-list">
-        ${this.searchResults.map((result, index) => `
+        ${this.searchResults
+          .map(
+            (result, index) => `
           <div class="search-result-item ${index === this.selectedIndex ? 'selected' : ''}" 
                data-index="${index}">
-            ${result.photoUrl ? `
+            ${
+              result.photoUrl
+                ? `
               <img src="${result.photoUrl}" alt="${this.escapeHtml(result.name)}" class="result-thumbnail">
-            ` : `
+            `
+                : `
               <div class="result-thumbnail-placeholder">${result.name.charAt(0)}</div>
-            `}
+            `
+            }
             <div class="result-content">
               <h4>${this.highlightQuery(result.name)}</h4>
               <div class="result-meta">
                 <span class="result-category">${this.escapeHtml(result.category || '')}</span>
                 ${result.location ? `<span class="result-location">📍 ${this.escapeHtml(result.location)}</span>` : ''}
               </div>
-              ${result.rating ? `
+              ${
+                result.rating
+                  ? `
                 <div class="result-rating">
                   ${'★'.repeat(Math.floor(result.rating))}${'☆'.repeat(5 - Math.floor(result.rating))}
                   <span class="rating-count">${result.rating.toFixed(1)}</span>
                 </div>
-              ` : ''}
+              `
+                  : ''
+              }
             </div>
             <div class="result-arrow">→</div>
           </div>
-        `).join('')}
+        `
+          )
+          .join('')}
       </div>
     `;
   }
@@ -316,7 +344,8 @@ class GlobalSearch {
 
   selectPrevious() {
     if (this.searchResults.length === 0) return;
-    this.selectedIndex = (this.selectedIndex - 1 + this.searchResults.length) % this.searchResults.length;
+    this.selectedIndex =
+      (this.selectedIndex - 1 + this.searchResults.length) % this.searchResults.length;
     this.renderResults();
     this.scrollToSelected();
   }

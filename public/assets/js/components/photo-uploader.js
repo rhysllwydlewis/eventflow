@@ -1,7 +1,7 @@
 /**
  * Photo Uploader Component
  * Drag-and-drop photo uploader with preview, progress tracking, and error handling
- * 
+ *
  * Usage:
  *   const uploader = new PhotoUploader({
  *     uploadUrl: '/api/photos/upload',
@@ -17,22 +17,28 @@ class PhotoUploader {
     this.uploadUrl = options.uploadUrl || '/api/photos/upload';
     this.maxFiles = options.maxFiles || 10;
     this.maxFileSize = options.maxFileSize || 10 * 1024 * 1024; // 10MB default
-    this.acceptedTypes = options.acceptedTypes || ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+    this.acceptedTypes = options.acceptedTypes || [
+      'image/jpeg',
+      'image/jpg',
+      'image/png',
+      'image/webp',
+      'image/gif',
+    ];
     this.onSuccess = options.onSuccess || (() => {});
-    this.onError = options.onError || ((error) => console.error(error));
+    this.onError = options.onError || (error => console.error(error));
     this.onProgress = options.onProgress || (() => {});
-    
+
     this.files = [];
     this.uploading = false;
-    
+
     this.init();
   }
-  
+
   init() {
     this.createUI();
     this.attachEventListeners();
   }
-  
+
   createUI() {
     // Create uploader container
     this.container = document.createElement('div');
@@ -60,14 +66,14 @@ class PhotoUploader {
         <div class="photo-uploader__progress-text" id="progressText">Uploading...</div>
       </div>
     `;
-    
+
     // Add styles
     this.injectStyles();
   }
-  
+
   injectStyles() {
     if (document.getElementById('photo-uploader-styles')) return;
-    
+
     const style = document.createElement('style');
     style.id = 'photo-uploader-styles';
     style.textContent = `
@@ -278,7 +284,7 @@ class PhotoUploader {
     `;
     document.head.appendChild(style);
   }
-  
+
   attachEventListeners() {
     // Get elements after container is added to DOM
     setTimeout(() => {
@@ -291,51 +297,55 @@ class PhotoUploader {
       this.progressContainer = this.container.querySelector('#uploadProgress');
       this.progressFill = this.container.querySelector('#progressFill');
       this.progressText = this.container.querySelector('#progressText');
-      
+
       // Click to browse
-      this.dropzone.addEventListener('click', (e) => {
-        if (!this.uploading && (e.target === this.dropzone || e.target.closest('.photo-uploader__icon, .photo-uploader__text, .photo-uploader__hint'))) {
+      this.dropzone.addEventListener('click', e => {
+        if (
+          !this.uploading &&
+          (e.target === this.dropzone ||
+            e.target.closest('.photo-uploader__icon, .photo-uploader__text, .photo-uploader__hint'))
+        ) {
           this.input.click();
         }
       });
-      
+
       // File input change
-      this.input.addEventListener('change', (e) => {
+      this.input.addEventListener('change', e => {
         this.handleFiles(Array.from(e.target.files));
       });
-      
+
       // Drag and drop
-      this.dropzone.addEventListener('dragover', (e) => {
+      this.dropzone.addEventListener('dragover', e => {
         e.preventDefault();
         this.dropzone.classList.add('dragover');
       });
-      
+
       this.dropzone.addEventListener('dragleave', () => {
         this.dropzone.classList.remove('dragover');
       });
-      
-      this.dropzone.addEventListener('drop', (e) => {
+
+      this.dropzone.addEventListener('drop', e => {
         e.preventDefault();
         this.dropzone.classList.remove('dragover');
-        
+
         if (!this.uploading) {
           const files = Array.from(e.dataTransfer.files);
           this.handleFiles(files);
         }
       });
-      
+
       // Upload button
       this.uploadButton.addEventListener('click', () => {
         this.upload();
       });
-      
+
       // Clear button
       this.clearButton.addEventListener('click', () => {
         this.clear();
       });
     }, 0);
   }
-  
+
   handleFiles(newFiles) {
     // Filter valid files
     const validFiles = newFiles.filter(file => {
@@ -344,34 +354,36 @@ class PhotoUploader {
         return false;
       }
       if (file.size > this.maxFileSize) {
-        this.showError(`File too large: ${file.name} (max ${this.formatFileSize(this.maxFileSize)})`);
+        this.showError(
+          `File too large: ${file.name} (max ${this.formatFileSize(this.maxFileSize)})`
+        );
         return false;
       }
       return true;
     });
-    
+
     // Check total count
     const totalFiles = this.files.length + validFiles.length;
     if (totalFiles > this.maxFiles) {
       this.showError(`Maximum ${this.maxFiles} files allowed`);
       return;
     }
-    
+
     // Add files
     validFiles.forEach(file => {
       this.files.push(file);
       this.addPreview(file);
     });
-    
+
     // Show controls
     if (this.files.length > 0) {
       this.controls.style.display = 'flex';
     }
   }
-  
+
   addPreview(file) {
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = e => {
       const preview = document.createElement('div');
       preview.className = 'photo-uploader__preview';
       preview.dataset.filename = file.name;
@@ -380,26 +392,26 @@ class PhotoUploader {
         <button class="photo-uploader__preview-remove" title="Remove">×</button>
         <div class="photo-uploader__preview-name">${file.name}</div>
       `;
-      
+
       // Remove button
       preview.querySelector('.photo-uploader__preview-remove').addEventListener('click', () => {
         this.removeFile(file.name);
         preview.remove();
-        
+
         if (this.files.length === 0) {
           this.controls.style.display = 'none';
         }
       });
-      
+
       this.previews.appendChild(preview);
     };
     reader.readAsDataURL(file);
   }
-  
+
   removeFile(filename) {
     this.files = this.files.filter(f => f.name !== filename);
   }
-  
+
   clear() {
     this.files = [];
     this.previews.innerHTML = '';
@@ -407,33 +419,33 @@ class PhotoUploader {
     this.input.value = '';
     this.hideError();
   }
-  
+
   async upload() {
     if (this.files.length === 0 || this.uploading) return;
-    
+
     this.uploading = true;
     this.uploadButton.disabled = true;
     this.clearButton.disabled = true;
     this.dropzone.classList.add('uploading');
     this.progressContainer.style.display = 'block';
     this.hideError();
-    
+
     try {
       const formData = new FormData();
       this.files.forEach(file => {
         formData.append('photos', file);
       });
-      
+
       // Upload with progress tracking
       const xhr = new XMLHttpRequest();
-      
-      xhr.upload.addEventListener('progress', (e) => {
+
+      xhr.upload.addEventListener('progress', e => {
         if (e.lengthComputable) {
           const percent = Math.round((e.loaded / e.total) * 100);
           this.updateProgress(percent);
         }
       });
-      
+
       xhr.addEventListener('load', () => {
         if (xhr.status >= 200 && xhr.status < 300) {
           const response = JSON.parse(xhr.responseText);
@@ -443,62 +455,63 @@ class PhotoUploader {
           this.handleUploadError(error.error || 'Upload failed');
         }
       });
-      
+
       xhr.addEventListener('error', () => {
         this.handleUploadError('Network error occurred');
       });
-      
+
       xhr.open('POST', this.uploadUrl);
       xhr.send(formData);
-      
     } catch (error) {
       this.handleUploadError(error.message);
     }
   }
-  
+
   updateProgress(percent) {
     this.progressFill.style.width = `${percent}%`;
     this.progressText.textContent = `Uploading... ${percent}%`;
     this.onProgress(percent);
   }
-  
+
   handleUploadSuccess(response) {
     this.uploading = false;
     this.uploadButton.disabled = false;
     this.clearButton.disabled = false;
     this.dropzone.classList.remove('uploading');
     this.progressContainer.style.display = 'none';
-    
+
     this.onSuccess(response);
     this.clear();
-    
+
     // Show success message
-    this.showSuccess(`Successfully uploaded ${response.photos?.length || this.files.length} photo(s)`);
+    this.showSuccess(
+      `Successfully uploaded ${response.photos?.length || this.files.length} photo(s)`
+    );
   }
-  
+
   handleUploadError(error) {
     this.uploading = false;
     this.uploadButton.disabled = false;
     this.clearButton.disabled = false;
     this.dropzone.classList.remove('uploading');
     this.progressContainer.style.display = 'none';
-    
+
     this.showError(error);
     this.onError(error);
   }
-  
+
   showError(message) {
     this.hideError();
     const error = document.createElement('div');
     error.className = 'photo-uploader__error';
     error.textContent = message;
     this.container.appendChild(error);
-    
+
     setTimeout(() => {
       error.remove();
     }, 5000);
   }
-  
+
   showSuccess(message) {
     const success = document.createElement('div');
     success.className = 'photo-uploader__error';
@@ -507,30 +520,30 @@ class PhotoUploader {
     success.style.color = '#2e7d32';
     success.textContent = message;
     this.container.appendChild(success);
-    
+
     setTimeout(() => {
       success.remove();
     }, 3000);
   }
-  
+
   hideError() {
     const errors = this.container.querySelectorAll('.photo-uploader__error');
     errors.forEach(error => error.remove());
   }
-  
+
   formatFileSize(bytes) {
     if (!bytes || bytes <= 0) return '0 Bytes';
     const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(Math.abs(bytes)) / Math.log(k));
-    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
   }
-  
+
   // Public method to get the container element
   getElement() {
     return this.container;
   }
-  
+
   // Public method to append to a target element
   appendTo(target) {
     const element = typeof target === 'string' ? document.querySelector(target) : target;

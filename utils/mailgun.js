@@ -1,7 +1,7 @@
 /**
  * Mailgun Email Utility
  * Provides secure, server-side email sending via Mailgun
- * 
+ *
  * Environment Variables Required:
  * - MAILGUN_API_KEY: Your Mailgun API key
  * - MAILGUN_DOMAIN: Your verified Mailgun domain
@@ -26,7 +26,8 @@ const MAILGUN_DOMAIN = process.env.MAILGUN_DOMAIN;
 const MAILGUN_BASE_URL = process.env.MAILGUN_BASE_URL || 'https://api.eu.mailgun.net';
 const MAILGUN_FROM = process.env.MAILGUN_FROM || process.env.FROM_EMAIL || 'no-reply@eventflow.com';
 const APP_BASE_URL = process.env.APP_BASE_URL || process.env.BASE_URL || 'http://localhost:3000';
-const UNSUBSCRIBE_SECRET = process.env.UNSUBSCRIBE_SECRET || process.env.JWT_SECRET || 'default-secret-change-in-production';
+const UNSUBSCRIBE_SECRET =
+  process.env.UNSUBSCRIBE_SECRET || process.env.JWT_SECRET || 'default-secret-change-in-production';
 
 /**
  * Initialize Mailgun client
@@ -41,13 +42,13 @@ function initializeMailgun() {
     const formData = require('form-data');
     const Mailgun = require('mailgun.js');
     const mailgun = new Mailgun(formData);
-    
+
     mailgunClient = mailgun.client({
       username: 'api',
       key: MAILGUN_API_KEY,
-      url: MAILGUN_BASE_URL
+      url: MAILGUN_BASE_URL,
     });
-    
+
     MAILGUN_ENABLED = true;
     console.log(`✓ Mailgun configured for domain: ${MAILGUN_DOMAIN} (${MAILGUN_BASE_URL})`);
     return true;
@@ -66,10 +67,7 @@ initializeMailgun();
  * @returns {string} HMAC-SHA256 token
  */
 function generateUnsubscribeToken(email) {
-  return crypto
-    .createHmac('sha256', UNSUBSCRIBE_SECRET)
-    .update(email.toLowerCase())
-    .digest('hex');
+  return crypto.createHmac('sha256', UNSUBSCRIBE_SECRET).update(email.toLowerCase()).digest('hex');
 }
 
 /**
@@ -80,10 +78,7 @@ function generateUnsubscribeToken(email) {
  */
 function verifyUnsubscribeToken(email, token) {
   const expectedToken = generateUnsubscribeToken(email);
-  return crypto.timingSafeEqual(
-    Buffer.from(token),
-    Buffer.from(expectedToken)
-  );
+  return crypto.timingSafeEqual(Buffer.from(token), Buffer.from(expectedToken));
 }
 
 /**
@@ -99,11 +94,11 @@ function loadEmailTemplate(templateName, data = {}) {
       console.error(`Email template not found: ${templateName}.html`);
       return null;
     }
-    
+
     let html = fs.readFileSync(templatePath, 'utf8');
-    
+
     // Helper to escape HTML entities to prevent XSS
-    const escapeHtml = (text) => {
+    const escapeHtml = text => {
       if (typeof text !== 'string') return text;
       return text
         .replace(/&/g, '&amp;')
@@ -112,22 +107,22 @@ function loadEmailTemplate(templateName, data = {}) {
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#039;');
     };
-    
+
     // Replace template variables with HTML-escaped values
     Object.keys(data).forEach(key => {
       const regex = new RegExp(`{{${key}}}`, 'g');
       // Don't escape if the value contains HTML tags (for message content)
       // This allows controlled HTML in message field but escapes other fields
-      const value = (key === 'message' || key === 'html') ? data[key] : escapeHtml(data[key]);
+      const value = key === 'message' || key === 'html' ? data[key] : escapeHtml(data[key]);
       html = html.replace(regex, value || '');
     });
-    
+
     // Add current year
     html = html.replace(/{{year}}/g, new Date().getFullYear());
-    
+
     // Add base URL
     html = html.replace(/{{baseUrl}}/g, APP_BASE_URL);
-    
+
     return html;
   } catch (err) {
     console.error('Error loading email template:', err.message);
@@ -153,7 +148,16 @@ async function sendMail(options) {
     throw new Error('Missing required email fields: to, subject');
   }
 
-  const { to, subject, text, html, template, templateData = {}, from = MAILGUN_FROM, tags } = options;
+  const {
+    to,
+    subject,
+    text,
+    html,
+    template,
+    templateData = {},
+    from = MAILGUN_FROM,
+    tags,
+  } = options;
 
   // Load template if specified and HTML not provided
   let emailHtml = html;
@@ -165,7 +169,7 @@ async function sendMail(options) {
   const emailData = {
     from: from,
     to: Array.isArray(to) ? to : [to],
-    subject: subject
+    subject: subject,
   };
 
   // Add body content
@@ -174,7 +178,10 @@ async function sendMail(options) {
     // Provide text fallback if HTML is used
     if (!text) {
       // Simple HTML to text conversion
-      emailData.text = emailHtml.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+      emailData.text = emailHtml
+        .replace(/<[^>]*>/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
     } else {
       emailData.text = text;
     }
@@ -194,16 +201,16 @@ async function sendMail(options) {
     console.log('[Mailgun Disabled] Would send email:', {
       to: emailData.to,
       subject: emailData.subject,
-      from: emailData.from
+      from: emailData.from,
     });
-    
+
     // Save to outbox for development/testing
     saveEmailToOutbox(emailData);
-    
-    return { 
+
+    return {
       status: 'disabled',
       message: 'Mailgun not configured. Email saved to outbox.',
-      id: `test-${Date.now()}`
+      id: `test-${Date.now()}`,
     };
   }
 
@@ -229,7 +236,7 @@ function saveEmailToOutbox(emailData) {
     if (!fs.existsSync(outboxDir)) {
       fs.mkdirSync(outboxDir, { recursive: true });
     }
-    
+
     const timestamp = Date.now();
     const filename = `email-${timestamp}.eml`;
     const content = `To: ${Array.isArray(emailData.to) ? emailData.to.join(', ') : emailData.to}
@@ -238,7 +245,7 @@ Subject: ${emailData.subject}
 
 ${emailData.html || emailData.text}
 `;
-    
+
     fs.writeFileSync(path.join(outboxDir, filename), content, 'utf8');
     console.log(`Email saved to outbox: ${filename}`);
   } catch (err) {
@@ -254,16 +261,16 @@ ${emailData.html || emailData.text}
  */
 async function sendVerificationEmail(user, verificationToken) {
   const verificationLink = `${APP_BASE_URL}/verify.html?token=${encodeURIComponent(verificationToken)}`;
-  
+
   return sendMail({
     to: user.email,
     subject: 'Confirm your EventFlow account',
     template: 'verification',
     templateData: {
       name: user.name || 'there',
-      verificationLink: verificationLink
+      verificationLink: verificationLink,
     },
-    tags: ['verification', 'transactional']
+    tags: ['verification', 'transactional'],
   });
 }
 
@@ -285,7 +292,7 @@ async function sendMarketingEmail(user, subject, message, options = {}) {
   // Generate secure unsubscribe link with token
   const unsubscribeToken = generateUnsubscribeToken(user.email);
   const unsubscribeLink = `${APP_BASE_URL}/api/auth/unsubscribe?email=${encodeURIComponent(user.email)}&token=${unsubscribeToken}`;
-  
+
   // Build message with optional CTA button
   let fullMessage = message;
   if (options.ctaText && options.ctaLink) {
@@ -293,13 +300,13 @@ async function sendMarketingEmail(user, subject, message, options = {}) {
       <a href="${options.ctaLink}" class="cta-button" style="display: inline-block; padding: 14px 28px; background: linear-gradient(180deg, #16c3ad, #0ea896); color: #ffffff; text-decoration: none; border-radius: 12px; font-weight: 700; font-size: 16px;">${options.ctaText}</a>
     </div>`;
   }
-  
+
   const templateData = {
     name: user.name || 'there',
     title: subject,
     message: fullMessage,
     unsubscribeLink: unsubscribeLink,
-    ...(options.templateData || {})
+    ...(options.templateData || {}),
   };
 
   return sendMail({
@@ -308,7 +315,7 @@ async function sendMarketingEmail(user, subject, message, options = {}) {
     template: options.template || 'marketing',
     templateData: templateData,
     tags: ['marketing'],
-    ...options
+    ...options,
   });
 }
 
@@ -331,7 +338,7 @@ async function sendNotificationEmail(user, subject, message, options = {}) {
     name: user.name || 'there',
     title: subject,
     message: message,
-    ...(options.templateData || {})
+    ...(options.templateData || {}),
   };
 
   return sendMail({
@@ -340,7 +347,7 @@ async function sendNotificationEmail(user, subject, message, options = {}) {
     template: options.template || 'notification',
     templateData: templateData,
     tags: ['notification', 'transactional'],
-    ...options
+    ...options,
   });
 }
 
@@ -362,7 +369,7 @@ function getMailgunStatus() {
     domain: MAILGUN_DOMAIN || 'not_configured',
     baseUrl: MAILGUN_BASE_URL,
     from: MAILGUN_FROM,
-    appBaseUrl: APP_BASE_URL
+    appBaseUrl: APP_BASE_URL,
   };
 }
 
@@ -375,5 +382,5 @@ module.exports = {
   getMailgunStatus,
   loadEmailTemplate,
   generateUnsubscribeToken,
-  verifyUnsubscribeToken
+  verifyUnsubscribeToken,
 };

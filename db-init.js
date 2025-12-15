@@ -18,8 +18,8 @@ const ADDITIONAL_COLLECTIONS = [
       { keys: { userId: 1 }, options: {} },
       { keys: { approved: 1 }, options: {} },
       { keys: { rating: 1 }, options: {} },
-      { keys: { createdAt: -1 }, options: {} }
-    ]
+      { keys: { createdAt: -1 }, options: {} },
+    ],
   },
   {
     name: 'reports',
@@ -29,8 +29,8 @@ const ADDITIONAL_COLLECTIONS = [
       { keys: { targetId: 1 }, options: {} },
       { keys: { reportedBy: 1 }, options: {} },
       { keys: { status: 1 }, options: {} },
-      { keys: { createdAt: -1 }, options: {} }
-    ]
+      { keys: { createdAt: -1 }, options: {} },
+    ],
   },
   {
     name: 'audit_logs',
@@ -40,8 +40,8 @@ const ADDITIONAL_COLLECTIONS = [
       { keys: { action: 1 }, options: {} },
       { keys: { targetType: 1 }, options: {} },
       { keys: { targetId: 1 }, options: {} },
-      { keys: { timestamp: -1 }, options: {} }
-    ]
+      { keys: { timestamp: -1 }, options: {} },
+    ],
   },
   {
     name: 'search_history',
@@ -49,9 +49,9 @@ const ADDITIONAL_COLLECTIONS = [
       { keys: { id: 1 }, options: { unique: true } },
       { keys: { userId: 1 }, options: {} },
       { keys: { query: 1 }, options: {} },
-      { keys: { createdAt: -1 }, options: {} }
-    ]
-  }
+      { keys: { createdAt: -1 }, options: {} },
+    ],
+  },
 ];
 
 /**
@@ -62,19 +62,19 @@ async function initializeDatabase() {
   try {
     const db = await getDb();
     console.log('Initializing database collections and indexes...');
-    
+
     // Initialize core collections from models
     await initializeCollections(db);
     await createIndexes(db);
-    
+
     // Get list of existing collections
     const existingCollections = await db.listCollections().toArray();
     const existingNames = existingCollections.map(c => c.name);
-    
+
     // Create additional collections
     for (const collectionDef of ADDITIONAL_COLLECTIONS) {
       const { name, indexes } = collectionDef;
-      
+
       // Create collection if it doesn't exist
       if (!existingNames.includes(name)) {
         console.log(`Creating collection: ${name}`);
@@ -82,11 +82,11 @@ async function initializeDatabase() {
       } else {
         console.log(`Collection already exists: ${name}`);
       }
-      
+
       // Create indexes
       if (indexes && indexes.length > 0) {
         const collection = db.collection(name);
-        
+
         for (const index of indexes) {
           try {
             await collection.createIndex(index.keys, index.options);
@@ -101,7 +101,7 @@ async function initializeDatabase() {
         }
       }
     }
-    
+
     console.log('✓ Database initialization complete');
     return true;
   } catch (error) {
@@ -117,11 +117,22 @@ async function getDatabaseStats() {
   try {
     const db = await getDb();
     const stats = await db.stats();
-    
-    const allCollections = ['users', 'suppliers', 'packages', 'plans', 'notes', 
-                           'events', 'threads', 'messages', 'reviews', 'reports', 
-                           'audit_logs', 'search_history'];
-    
+
+    const allCollections = [
+      'users',
+      'suppliers',
+      'packages',
+      'plans',
+      'notes',
+      'events',
+      'threads',
+      'messages',
+      'reviews',
+      'reports',
+      'audit_logs',
+      'search_history',
+    ];
+
     const collectionStats = {};
     for (const collectionName of allCollections) {
       try {
@@ -132,14 +143,14 @@ async function getDatabaseStats() {
         collectionStats[collectionName] = 0;
       }
     }
-    
+
     return {
       database: stats.db,
       collections: stats.collections,
       dataSize: stats.dataSize,
       indexSize: stats.indexSize,
       totalSize: stats.dataSize + stats.indexSize,
-      collectionCounts: collectionStats
+      collectionCounts: collectionStats,
     };
   } catch (error) {
     console.error('Error getting database stats:', error.message);
@@ -150,6 +161,5 @@ async function getDatabaseStats() {
 module.exports = {
   initializeDatabase,
   getDatabaseStats,
-  ADDITIONAL_COLLECTIONS
+  ADDITIONAL_COLLECTIONS,
 };
-

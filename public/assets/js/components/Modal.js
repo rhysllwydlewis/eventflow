@@ -171,7 +171,7 @@ class Modal {
     // Create modal container
     const container = document.createElement('div');
     container.className = 'modal-container';
-    
+
     // Set size
     const sizes = {
       small: '400px',
@@ -207,20 +207,20 @@ class Modal {
     // Create body
     const body = document.createElement('div');
     body.className = 'modal-body';
-    
+
     if (typeof content === 'string') {
       body.innerHTML = content;
     } else if (content instanceof HTMLElement) {
       body.appendChild(content);
     }
-    
+
     container.appendChild(body);
 
     // Create footer
     if (footer) {
       const footerEl = document.createElement('div');
       footerEl.className = 'modal-footer';
-      
+
       if (typeof footer === 'string') {
         footerEl.innerHTML = footer;
       } else if (footer instanceof HTMLElement) {
@@ -228,7 +228,7 @@ class Modal {
       } else if (Array.isArray(footer)) {
         footer.forEach(button => footerEl.appendChild(button));
       }
-      
+
       container.appendChild(footerEl);
     }
 
@@ -268,12 +268,12 @@ class Modal {
     }
 
     overlay.classList.add('closing');
-    
+
     setTimeout(() => {
       if (overlay.parentElement) {
         overlay.parentElement.removeChild(overlay);
       }
-      
+
       const index = this.modals.indexOf(overlay);
       if (index > -1) {
         this.modals.splice(index, 1);

@@ -1,7 +1,7 @@
 (async function () {
   // --- CSRF Token Management ---
   let csrfToken = null;
-  
+
   // Fetch CSRF token on page load
   async function fetchCsrfToken() {
     try {
@@ -16,10 +16,10 @@
       console.error('Failed to fetch CSRF token', e);
     }
   }
-  
+
   // Fetch token immediately
   await fetchCsrfToken();
-  
+
   // --- Nav (burger + scroll behaviour) ---
   function initNavToggle() {
     const navMenu = document.querySelector('.nav.nav-menu');
@@ -56,7 +56,7 @@
       });
 
       // Close nav when a menu link is clicked (on mobile)
-      navMenu.addEventListener('click', (event) => {
+      navMenu.addEventListener('click', event => {
         const target = event.target;
         if (target && target.tagName === 'A') {
           closeNav();
@@ -131,8 +131,8 @@
         user.role === 'admin'
           ? '/admin.html'
           : user.role === 'supplier'
-          ? '/dashboard-supplier.html'
-          : '/dashboard-customer.html';
+            ? '/dashboard-supplier.html'
+            : '/dashboard-customer.html';
 
       if (dash) {
         dash.style.display = '';
@@ -140,10 +140,13 @@
       }
       if (signout) {
         signout.style.display = '';
-        signout.addEventListener('click', async (e) => {
+        signout.addEventListener('click', async e => {
           e.preventDefault();
           try {
-            await fetch('/api/auth/logout', { method: 'POST', headers: { 'X-CSRF-Token': window.__CSRF_TOKEN__ || '' } });
+            await fetch('/api/auth/logout', {
+              method: 'POST',
+              headers: { 'X-CSRF-Token': window.__CSRF_TOKEN__ || '' },
+            });
           } catch (_) {}
           location.href = '/';
         });
@@ -169,10 +172,13 @@
       if (inlineLogin) {
         inlineLogin.textContent = 'Log out';
         inlineLogin.href = '#';
-        inlineLogin.addEventListener('click', async (e) => {
+        inlineLogin.addEventListener('click', async e => {
           e.preventDefault();
           try {
-            await fetch('/api/auth/logout', { method: 'POST', headers: { 'X-CSRF-Token': window.__CSRF_TOKEN__ || '' } });
+            await fetch('/api/auth/logout', {
+              method: 'POST',
+              headers: { 'X-CSRF-Token': window.__CSRF_TOKEN__ || '' },
+            });
           } catch (_) {}
           location.href = '/';
         });

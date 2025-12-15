@@ -12,7 +12,7 @@ describe('API Health Check', () => {
   it('should have proper test structure', () => {
     expect(true).toBe(true);
   });
-  
+
   // Example of what a real health check test would look like:
   // (Would need proper server setup/teardown)
   /*
@@ -45,7 +45,7 @@ describe('API Error Handling', () => {
       success: false,
       error: 'Test error message',
     };
-    
+
     expect(errorResponse).toHaveProperty('success');
     expect(errorResponse).toHaveProperty('error');
     expect(errorResponse.success).toBe(false);

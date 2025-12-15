@@ -10,7 +10,7 @@ class ScrollReveal {
       threshold: options.threshold || 0.15,
       rootMargin: options.rootMargin || '0px 0px -50px 0px',
       animationClass: options.animationClass || 'animate-slideInUp',
-      once: options.once !== false
+      once: options.once !== false,
     };
 
     this.observer = null;
@@ -24,22 +24,25 @@ class ScrollReveal {
       return;
     }
 
-    this.observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add(this.options.animationClass);
-          
-          if (this.options.once) {
-            this.observer.unobserve(entry.target);
+    this.observer = new IntersectionObserver(
+      entries => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add(this.options.animationClass);
+
+            if (this.options.once) {
+              this.observer.unobserve(entry.target);
+            }
+          } else if (!this.options.once) {
+            entry.target.classList.remove(this.options.animationClass);
           }
-        } else if (!this.options.once) {
-          entry.target.classList.remove(this.options.animationClass);
-        }
-      });
-    }, {
-      threshold: this.options.threshold,
-      rootMargin: this.options.rootMargin
-    });
+        });
+      },
+      {
+        threshold: this.options.threshold,
+        rootMargin: this.options.rootMargin,
+      }
+    );
 
     this.observe();
   }
@@ -68,11 +71,7 @@ class ScrollReveal {
 
 // Stagger animation for child elements
 function staggerAnimation(parent, options = {}) {
-  const {
-    delay = 100,
-    animationClass = 'animate-slideInUp',
-    selector = '*'
-  } = options;
+  const { delay = 100, animationClass = 'animate-slideInUp', selector = '*' } = options;
 
   const children = parent.querySelectorAll(selector);
   children.forEach((child, index) => {
@@ -91,7 +90,7 @@ class Typewriter {
     this.cursor = options.cursor !== false;
     this.onComplete = options.onComplete || null;
     this.index = 0;
-    
+
     element.textContent = '';
     if (this.cursor) {
       element.style.borderRight = '2px solid';
@@ -140,13 +139,13 @@ class Counter {
     const step = () => {
       const elapsed = Date.now() - startTime;
       const progress = Math.min(elapsed / this.duration, 1);
-      
+
       // Easing function (ease-out)
       const easeProgress = 1 - Math.pow(1 - progress, 3);
       const current = this.start + (this.target - this.start) * easeProgress;
-      
+
       this.element.textContent = this.format(current);
-      
+
       if (progress < 1) {
         requestAnimationFrame(step);
       } else {
@@ -156,31 +155,27 @@ class Counter {
         }
       }
     };
-    
+
     requestAnimationFrame(step);
   }
 
   format(value) {
     let formatted = value.toFixed(this.decimals);
-    
+
     // Add thousand separators
     if (this.separator) {
       const parts = formatted.split('.');
       parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, this.separator);
       formatted = parts.join('.');
     }
-    
+
     return this.prefix + formatted + this.suffix;
   }
 }
 
 // Smooth scroll to element
 function smoothScroll(target, options = {}) {
-  const {
-    duration = 800,
-    offset = 0,
-    callback = null
-  } = options;
+  const { duration = 800, offset = 0, callback = null } = options;
 
   const targetElement = typeof target === 'string' ? document.querySelector(target) : target;
   if (!targetElement) return;
@@ -194,14 +189,13 @@ function smoothScroll(target, options = {}) {
     if (startTime === null) startTime = currentTime;
     const elapsed = currentTime - startTime;
     const progress = Math.min(elapsed / duration, 1);
-    
+
     // Easing function (ease-in-out)
-    const easeProgress = progress < 0.5
-      ? 2 * progress * progress
-      : 1 - Math.pow(-2 * progress + 2, 2) / 2;
-    
+    const easeProgress =
+      progress < 0.5 ? 2 * progress * progress : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+
     window.scrollTo(0, startPosition + distance * easeProgress);
-    
+
     if (progress < 1) {
       requestAnimationFrame(animation);
     } else if (callback) {
@@ -215,10 +209,10 @@ function smoothScroll(target, options = {}) {
 // Parallax effect
 function parallax() {
   const elements = document.querySelectorAll('[data-parallax]');
-  
+
   function updateParallax() {
     const scrolled = window.pageYOffset;
-    
+
     elements.forEach(el => {
       const speed = parseFloat(el.dataset.parallax) || 0.5;
       const yPos = -(scrolled * speed);
@@ -247,7 +241,7 @@ function confetti(options = {}) {
     particleCount = 100,
     spread = 70,
     origin = { x: 0.5, y: 0.5 },
-    colors = ['#0B8073', '#13B6A2', '#5EEAD4', '#9be7d9']
+    colors = ['#0B8073', '#13B6A2', '#5EEAD4', '#9be7d9'],
   } = options;
 
   const canvas = document.createElement('canvas');
@@ -271,7 +265,7 @@ function confetti(options = {}) {
   for (let i = 0; i < particleCount; i++) {
     const angle = (Math.random() * spread - spread / 2) * (Math.PI / 180);
     const velocity = 3 + Math.random() * 5;
-    
+
     particles.push({
       x: centerX,
       y: centerY,
@@ -282,15 +276,15 @@ function confetti(options = {}) {
       color: colors[Math.floor(Math.random() * colors.length)],
       size: 6 + Math.random() * 4,
       gravity: 0.3,
-      friction: 0.99
+      friction: 0.99,
     });
   }
 
   function animate() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
+
     let stillAnimating = false;
-    
+
     particles.forEach(p => {
       p.vy += p.gravity;
       p.vx *= p.friction;
@@ -298,19 +292,19 @@ function confetti(options = {}) {
       p.x += p.vx;
       p.y += p.vy;
       p.rotation += p.rotationSpeed;
-      
+
       if (p.y < canvas.height) {
         stillAnimating = true;
-        
+
         ctx.save();
         ctx.translate(p.x, p.y);
-        ctx.rotate(p.rotation * Math.PI / 180);
+        ctx.rotate((p.rotation * Math.PI) / 180);
         ctx.fillStyle = p.color;
         ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
         ctx.restore();
       }
     });
-    
+
     if (stillAnimating) {
       requestAnimationFrame(animate);
     } else {
@@ -329,7 +323,7 @@ class ParticlesBackground {
       particleCount: options.particleCount || 50,
       particleColor: options.particleColor || 'rgba(11, 128, 115, 0.3)',
       particleSize: options.particleSize || 2,
-      speed: options.speed || 0.5
+      speed: options.speed || 0.5,
     };
 
     this.canvas = document.createElement('canvas');
@@ -348,7 +342,7 @@ class ParticlesBackground {
     this.canvas.style.height = '100%';
     this.canvas.style.pointerEvents = 'none';
     this.canvas.style.zIndex = '0';
-    
+
     this.container.style.position = 'relative';
     this.container.appendChild(this.canvas);
 
@@ -371,31 +365,31 @@ class ParticlesBackground {
         y: Math.random() * this.canvas.height,
         vx: (Math.random() - 0.5) * this.options.speed,
         vy: (Math.random() - 0.5) * this.options.speed,
-        size: Math.random() * this.options.particleSize + 1
+        size: Math.random() * this.options.particleSize + 1,
       });
     }
   }
 
   animate() {
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    
+
     this.particles.forEach(p => {
       p.x += p.vx;
       p.y += p.vy;
-      
+
       // Wrap around edges
       if (p.x < 0) p.x = this.canvas.width;
       if (p.x > this.canvas.width) p.x = 0;
       if (p.y < 0) p.y = this.canvas.height;
       if (p.y > this.canvas.height) p.y = 0;
-      
+
       // Draw particle
       this.ctx.fillStyle = this.options.particleColor;
       this.ctx.beginPath();
       this.ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
       this.ctx.fill();
     });
-    
+
     this.animationId = requestAnimationFrame(() => this.animate());
   }
 
@@ -414,7 +408,7 @@ if (typeof document !== 'undefined') {
   document.addEventListener('DOMContentLoaded', () => {
     // Initialize scroll reveal
     new ScrollReveal();
-    
+
     // Initialize parallax
     if (document.querySelectorAll('[data-parallax]').length > 0) {
       parallax();
@@ -432,6 +426,6 @@ if (typeof module !== 'undefined' && module.exports) {
     parallax,
     confetti,
     ParticlesBackground,
-    staggerAnimation
+    staggerAnimation,
   };
 }

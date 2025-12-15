@@ -90,7 +90,7 @@ class LoadingSkeleton {
     const { width = '100%', lines = 1, className = '' } = options;
     const container = document.createElement('div');
     container.className = `skeleton-paragraph ${className}`;
-    
+
     for (let i = 0; i < lines; i++) {
       const line = document.createElement('div');
       line.className = 'skeleton skeleton-text';
@@ -101,7 +101,7 @@ class LoadingSkeleton {
       }
       container.appendChild(line);
     }
-    
+
     return container;
   }
 
@@ -146,37 +146,43 @@ class LoadingSkeleton {
 
   // Create a card skeleton
   card(options = {}) {
-    const { hasAvatar = false, hasImage = false, titleLines = 1, textLines = 3, className = '' } = options;
-    
+    const {
+      hasAvatar = false,
+      hasImage = false,
+      titleLines = 1,
+      textLines = 3,
+      className = '',
+    } = options;
+
     const card = document.createElement('div');
     card.className = `skeleton-card ${className}`;
-    
+
     if (hasImage) {
       card.appendChild(this.image());
     }
-    
+
     if (hasAvatar) {
       const header = document.createElement('div');
       header.style.display = 'flex';
       header.style.alignItems = 'center';
       header.style.marginBottom = '16px';
       header.appendChild(this.avatar());
-      
+
       const titleContainer = document.createElement('div');
       titleContainer.style.flex = '1';
       titleContainer.style.marginLeft = '12px';
       titleContainer.appendChild(this.title());
       header.appendChild(titleContainer);
-      
+
       card.appendChild(header);
     } else if (titleLines > 0) {
       card.appendChild(this.title());
     }
-    
+
     if (textLines > 0) {
       card.appendChild(this.text({ lines: textLines }));
     }
-    
+
     return card;
   }
 
@@ -194,7 +200,7 @@ class LoadingSkeleton {
     if (!element) {
       return;
     }
-    
+
     const skeleton = this.card(options);
     element.innerHTML = '';
     element.appendChild(skeleton);
@@ -205,7 +211,7 @@ class LoadingSkeleton {
     if (!element) {
       return;
     }
-    
+
     element.innerHTML = content;
   }
 }

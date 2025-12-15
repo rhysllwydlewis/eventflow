@@ -34,12 +34,12 @@ class Modal {
     // Trigger reflow for animation
     this.overlay.offsetHeight;
     this.overlay.classList.add('active');
-    
+
     // Focus trap
     this.trapFocus();
-    
+
     // Close on overlay click
-    this.overlay.addEventListener('click', (e) => {
+    this.overlay.addEventListener('click', e => {
       if (e.target === this.overlay) {
         this.hide();
       }
@@ -60,17 +60,17 @@ class Modal {
     overlayDiv.className = 'modal-overlay';
     overlayDiv.setAttribute('role', 'dialog');
     overlayDiv.setAttribute('aria-modal', 'true');
-    
+
     const modalDiv = document.createElement('div');
     modalDiv.className = 'modal';
-    
+
     const header = document.createElement('div');
     header.className = 'modal-header';
     header.innerHTML = `
       <h2 class="modal-title">${escapeHtml(this.title)}</h2>
       <button class="modal-close" aria-label="Close">&times;</button>
     `;
-    
+
     const body = document.createElement('div');
     body.className = 'modal-body';
     if (typeof this.content === 'string') {
@@ -78,10 +78,10 @@ class Modal {
     } else {
       body.appendChild(this.content);
     }
-    
+
     const footer = document.createElement('div');
     footer.className = 'modal-footer';
-    
+
     if (this.showCancel) {
       const cancelBtn = document.createElement('button');
       cancelBtn.className = 'cta ghost';
@@ -92,7 +92,7 @@ class Modal {
       });
       footer.appendChild(cancelBtn);
     }
-    
+
     const confirmBtn = document.createElement('button');
     confirmBtn.className = 'cta';
     confirmBtn.textContent = this.confirmText;
@@ -101,24 +101,24 @@ class Modal {
       this.hide();
     });
     footer.appendChild(confirmBtn);
-    
+
     // Close button handler
     header.querySelector('.modal-close').addEventListener('click', () => {
       this.hide();
     });
-    
+
     // Escape key handler
-    document.addEventListener('keydown', (e) => {
+    document.addEventListener('keydown', e => {
       if (e.key === 'Escape') {
         this.hide();
       }
     });
-    
+
     modalDiv.appendChild(header);
     modalDiv.appendChild(body);
     modalDiv.appendChild(footer);
     overlayDiv.appendChild(modalDiv);
-    
+
     this.overlay = overlayDiv;
     this.modal = modalDiv;
   }
@@ -130,7 +130,7 @@ class Modal {
     const firstElement = focusableElements[0];
     const lastElement = focusableElements[focusableElements.length - 1];
 
-    this.modal.addEventListener('keydown', (e) => {
+    this.modal.addEventListener('keydown', e => {
       if (e.key === 'Tab') {
         if (e.shiftKey) {
           if (document.activeElement === firstElement) {
@@ -171,18 +171,18 @@ class Toast {
       title = '',
       message = '',
       duration = 5000,
-      dismissible = true
+      dismissible = true,
     } = options;
 
     const container = this.getContainer();
     const toast = document.createElement('div');
     toast.className = `toast toast-${type}`;
-    
+
     const icons = {
       success: '✓',
       error: '✕',
       warning: '⚠',
-      info: 'ℹ'
+      info: 'ℹ',
     };
 
     toast.innerHTML = `
@@ -253,7 +253,7 @@ class Dropdown {
     this.trigger = element.querySelector('[data-dropdown-trigger]');
     this.isOpen = false;
 
-    this.trigger.addEventListener('click', (e) => {
+    this.trigger.addEventListener('click', e => {
       e.stopPropagation();
       this.toggle();
     });
@@ -264,7 +264,7 @@ class Dropdown {
       }
     });
 
-    this.menu.addEventListener('click', (e) => {
+    this.menu.addEventListener('click', e => {
       e.stopPropagation();
     });
   }
@@ -331,7 +331,7 @@ class Accordion {
     this.element = element;
     this.items = element.querySelectorAll('.accordion-item');
 
-    this.items.forEach((item) => {
+    this.items.forEach(item => {
       const header = item.querySelector('.accordion-header');
       header.addEventListener('click', () => {
         this.toggle(item);
@@ -341,9 +341,9 @@ class Accordion {
 
   toggle(item) {
     const isActive = item.classList.contains('active');
-    
+
     // Close all items
-    this.items.forEach((i) => {
+    this.items.forEach(i => {
       i.classList.remove('active');
       i.querySelector('.accordion-header').setAttribute('aria-expanded', 'false');
     });
@@ -359,7 +359,7 @@ class Accordion {
 // Ripple Effect
 function createRipple(event) {
   const button = event.currentTarget;
-  
+
   if (!button.classList.contains('ripple-container')) {
     button.classList.add('ripple-container');
   }
@@ -392,7 +392,7 @@ function initBackToTop() {
     btn.innerHTML = '↑';
     btn.setAttribute('aria-label', 'Back to top');
     document.body.appendChild(btn);
-    
+
     btn.addEventListener('click', () => {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     });
@@ -413,16 +413,16 @@ if (typeof document !== 'undefined') {
   document.addEventListener('DOMContentLoaded', () => {
     // Initialize dropdowns
     document.querySelectorAll('.dropdown').forEach(el => new Dropdown(el));
-    
+
     // Initialize tabs
     document.querySelectorAll('.tabs').forEach(el => new Tabs(el));
-    
+
     // Initialize accordions
     document.querySelectorAll('.accordion').forEach(el => new Accordion(el));
-    
+
     // Initialize back to top
     initBackToTop();
-    
+
     // Add ripple effect to buttons
     document.querySelectorAll('.cta').forEach(button => {
       button.addEventListener('click', createRipple);

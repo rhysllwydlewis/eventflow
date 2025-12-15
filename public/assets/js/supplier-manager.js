@@ -16,7 +16,7 @@ import {
   where,
   orderBy,
   onSnapshot,
-  serverTimestamp
+  serverTimestamp,
 } from './firebase-config.js';
 
 class SupplierManager {
@@ -33,15 +33,15 @@ class SupplierManager {
     try {
       const supplierId = supplierData.id || this.generateId();
       const supplierRef = doc(db, 'suppliers', supplierId);
-      
+
       const data = {
         ...supplierData,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         approved: supplierData.approved !== undefined ? supplierData.approved : false,
-        verified: supplierData.verified !== undefined ? supplierData.verified : false
+        verified: supplierData.verified !== undefined ? supplierData.verified : false,
       };
-      
+
       await setDoc(supplierRef, data);
       console.log('Supplier created:', supplierId);
       return supplierId;
@@ -60,11 +60,11 @@ class SupplierManager {
     try {
       const supplierRef = doc(db, 'suppliers', supplierId);
       const supplierSnap = await getDoc(supplierRef);
-      
+
       if (!supplierSnap.exists()) {
         return null;
       }
-      
+
       return { id: supplierSnap.id, ...supplierSnap.data() };
     } catch (error) {
       console.error('Error getting supplier:', error);
@@ -80,41 +80,41 @@ class SupplierManager {
   async getAllSuppliers(options = {}) {
     try {
       let q = collection(db, 'suppliers');
-      
+
       // Apply filters
       const constraints = [];
-      
+
       if (options.approved !== undefined) {
         constraints.push(where('approved', '==', options.approved));
       }
-      
+
       if (options.verified !== undefined) {
         constraints.push(where('verified', '==', options.verified));
       }
-      
+
       if (options.ownerUserId) {
         constraints.push(where('ownerUserId', '==', options.ownerUserId));
       }
-      
+
       if (options.category) {
         constraints.push(where('category', '==', options.category));
       }
-      
+
       if (options.orderBy) {
         constraints.push(orderBy(options.orderBy.field, options.orderBy.direction || 'asc'));
       }
-      
+
       if (constraints.length > 0) {
         q = query(collection(db, 'suppliers'), ...constraints);
       }
-      
+
       const querySnapshot = await getDocs(q);
       const suppliers = [];
-      
-      querySnapshot.forEach((doc) => {
+
+      querySnapshot.forEach(doc => {
         suppliers.push({ id: doc.id, ...doc.data() });
       });
-      
+
       return suppliers;
     } catch (error) {
       console.error('Error getting suppliers:', error);
@@ -130,12 +130,12 @@ class SupplierManager {
   async updateSupplier(supplierId, updates) {
     try {
       const supplierRef = doc(db, 'suppliers', supplierId);
-      
+
       await updateDoc(supplierRef, {
         ...updates,
-        updatedAt: serverTimestamp()
+        updatedAt: serverTimestamp(),
       });
-      
+
       console.log('Supplier updated:', supplierId);
     } catch (error) {
       console.error('Error updating supplier:', error);
@@ -167,18 +167,22 @@ class SupplierManager {
   listenToSupplier(supplierId, callback) {
     try {
       const supplierRef = doc(db, 'suppliers', supplierId);
-      
-      const unsubscribe = onSnapshot(supplierRef, (doc) => {
-        if (doc.exists()) {
-          callback({ id: doc.id, ...doc.data() });
-        } else {
+
+      const unsubscribe = onSnapshot(
+        supplierRef,
+        doc => {
+          if (doc.exists()) {
+            callback({ id: doc.id, ...doc.data() });
+          } else {
+            callback(null);
+          }
+        },
+        error => {
+          console.error('Error listening to supplier:', error);
           callback(null);
         }
-      }, (error) => {
-        console.error('Error listening to supplier:', error);
-        callback(null);
-      });
-      
+      );
+
       this.unsubscribers.push(unsubscribe);
       return unsubscribe;
     } catch (error) {
@@ -196,40 +200,44 @@ class SupplierManager {
   listenToSuppliers(options = {}, callback) {
     try {
       let q = collection(db, 'suppliers');
-      
+
       const constraints = [];
-      
+
       if (options.approved !== undefined) {
         constraints.push(where('approved', '==', options.approved));
       }
-      
+
       if (options.verified !== undefined) {
         constraints.push(where('verified', '==', options.verified));
       }
-      
+
       if (options.ownerUserId) {
         constraints.push(where('ownerUserId', '==', options.ownerUserId));
       }
-      
+
       if (options.orderBy) {
         constraints.push(orderBy(options.orderBy.field, options.orderBy.direction || 'asc'));
       }
-      
+
       if (constraints.length > 0) {
         q = query(collection(db, 'suppliers'), ...constraints);
       }
-      
-      const unsubscribe = onSnapshot(q, (querySnapshot) => {
-        const suppliers = [];
-        querySnapshot.forEach((doc) => {
-          suppliers.push({ id: doc.id, ...doc.data() });
-        });
-        callback(suppliers);
-      }, (error) => {
-        console.error('Error listening to suppliers:', error);
-        callback([]);
-      });
-      
+
+      const unsubscribe = onSnapshot(
+        q,
+        querySnapshot => {
+          const suppliers = [];
+          querySnapshot.forEach(doc => {
+            suppliers.push({ id: doc.id, ...doc.data() });
+          });
+          callback(suppliers);
+        },
+        error => {
+          console.error('Error listening to suppliers:', error);
+          callback([]);
+        }
+      );
+
       this.unsubscribers.push(unsubscribe);
       return unsubscribe;
     } catch (error) {

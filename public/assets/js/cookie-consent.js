@@ -1,14 +1,14 @@
 /**
  * Cookie Consent Banner - UK GDPR/PECR Compliant
- * 
+ *
  * This implements a cookie consent banner compliant with UK law (GDPR & PECR).
  * It allows users to accept or reject non-essential cookies and remembers their choice.
- * 
+ *
  * Essential cookies (authentication) are always allowed as they are strictly necessary
  * for the service to function.
  */
 
-(function() {
+(function () {
   'use strict';
 
   // Cookie names
@@ -37,7 +37,7 @@
     var expires = '';
     if (days) {
       var date = new Date();
-      date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+      date.setTime(date.getTime() + days * 24 * 60 * 60 * 1000);
       expires = '; expires=' + date.toUTCString();
     }
     document.cookie = name + '=' + (value || '') + expires + '; path=/; SameSite=Lax';
@@ -56,11 +56,11 @@
   function saveConsent(accepted) {
     var consentValue = accepted ? 'accepted' : 'rejected';
     setCookie(CONSENT_COOKIE_NAME, consentValue, CONSENT_EXPIRY_DAYS);
-    
+
     // Dispatch event so other scripts can respond to consent changes
     if (typeof window.CustomEvent === 'function') {
       var event = new CustomEvent('cookieConsentChanged', {
-        detail: { accepted: accepted }
+        detail: { accepted: accepted },
       });
       window.dispatchEvent(event);
     }
@@ -73,7 +73,7 @@
     var banner = document.getElementById('cookie-consent-banner');
     if (banner) {
       banner.classList.add('cookie-consent-hiding');
-      setTimeout(function() {
+      setTimeout(function () {
         if (banner.parentNode) {
           banner.parentNode.removeChild(banner);
         }
@@ -97,38 +97,38 @@
     banner.setAttribute('role', 'dialog');
     banner.setAttribute('aria-label', 'Cookie consent');
     banner.setAttribute('aria-live', 'polite');
-    
-    banner.innerHTML = 
+
+    banner.innerHTML =
       '<div class="cookie-consent-content">' +
-        '<div class="cookie-consent-message">' +
-          '<p><strong>We use cookies</strong></p>' +
-          '<p>We use essential cookies to make our site work. With your consent, we may also use non-essential cookies to improve user experience. By clicking "Accept", you agree to our use of cookies.</p>' +
-          '<p class="cookie-consent-links">' +
-            '<a href="/privacy.html" target="_blank">Privacy Policy</a> · ' +
-            '<a href="/terms.html" target="_blank">Terms of Service</a>' +
-          '</p>' +
-        '</div>' +
-        '<div class="cookie-consent-actions">' +
-          '<button id="cookie-consent-accept" class="cookie-consent-btn cookie-consent-accept" aria-label="Accept cookies">Accept</button>' +
-          '<button id="cookie-consent-reject" class="cookie-consent-btn cookie-consent-reject" aria-label="Reject non-essential cookies">Reject</button>' +
-        '</div>' +
+      '<div class="cookie-consent-message">' +
+      '<p><strong>We use cookies</strong></p>' +
+      '<p>We use essential cookies to make our site work. With your consent, we may also use non-essential cookies to improve user experience. By clicking "Accept", you agree to our use of cookies.</p>' +
+      '<p class="cookie-consent-links">' +
+      '<a href="/privacy.html" target="_blank">Privacy Policy</a> · ' +
+      '<a href="/terms.html" target="_blank">Terms of Service</a>' +
+      '</p>' +
+      '</div>' +
+      '<div class="cookie-consent-actions">' +
+      '<button id="cookie-consent-accept" class="cookie-consent-btn cookie-consent-accept" aria-label="Accept cookies">Accept</button>' +
+      '<button id="cookie-consent-reject" class="cookie-consent-btn cookie-consent-reject" aria-label="Reject non-essential cookies">Reject</button>' +
+      '</div>' +
       '</div>';
 
     // Add to page
     document.body.appendChild(banner);
 
     // Trigger animation
-    setTimeout(function() {
+    setTimeout(function () {
       banner.classList.add('cookie-consent-visible');
     }, 100);
 
     // Add event listeners
-    document.getElementById('cookie-consent-accept').addEventListener('click', function() {
+    document.getElementById('cookie-consent-accept').addEventListener('click', function () {
       saveConsent(true);
       removeBanner();
     });
 
-    document.getElementById('cookie-consent-reject').addEventListener('click', function() {
+    document.getElementById('cookie-consent-reject').addEventListener('click', function () {
       saveConsent(false);
       removeBanner();
     });
@@ -149,12 +149,12 @@
   // Public API
   window.CookieConsent = {
     hasConsent: hasConsent,
-    getConsent: function() {
+    getConsent: function () {
       var consent = getCookie(CONSENT_COOKIE_NAME);
       return consent === 'accepted';
     },
     show: showCookieBanner,
-    init: init
+    init: init,
   };
 
   // Auto-initialize

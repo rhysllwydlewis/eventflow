@@ -55,7 +55,7 @@ While the cluster is creating, set up a user:
 2. Click **"Add a Database User"** or you might already be in this screen
 3. Fill in the form:
    - **Username:** Choose something simple like `eventflowuser` (no spaces)
-   - **Password:** Click **"Autogenerate Secure Password"** 
+   - **Password:** Click **"Autogenerate Secure Password"**
    - **IMPORTANT:** Click the **"Copy"** button next to the password and save it somewhere safe!
    - Or create your own strong password (letters, numbers, symbols - no spaces)
 4. **Database User Privileges:** Keep it as **"Read and write to any database"** (default)
@@ -166,6 +166,7 @@ Now add this to your deployment platform:
 #### For Other Platforms:
 
 Look for "Environment Variables" or "Config Vars" in your platform's settings and add:
+
 - Name/Key: `MONGODB_URI`
 - Value: Your complete connection string
 
@@ -192,7 +193,8 @@ Wait 1-2 minutes for your app to restart, then:
 
 **Cause:** You're still using the example/placeholder connection string.
 
-**Solution:** 
+**Solution:**
+
 - Make sure you followed Step 5 to get YOUR actual connection string from MongoDB Atlas
 - Don't use the example from `.env.example`
 
@@ -203,6 +205,7 @@ Wait 1-2 minutes for your app to restart, then:
 **Cause:** The password in your connection string is wrong.
 
 **Solution:**
+
 1. Go to MongoDB Atlas → Database Access
 2. Click on your user
 3. Click "Edit"
@@ -218,6 +221,7 @@ Wait 1-2 minutes for your app to restart, then:
 **Cause:** Your deployment platform's IP address is not whitelisted.
 
 **Solution:**
+
 1. Go to MongoDB Atlas → Network Access
 2. If you don't see `0.0.0.0/0`, add it (see Step 4)
 3. Wait 1-2 minutes and try again
@@ -229,6 +233,7 @@ Wait 1-2 minutes for your app to restart, then:
 **Cause:** Multiple possibilities.
 
 **Solution - Check these:**
+
 1. Visit `https://your-app.railway.app/api/health`
    - Look at what the `databaseStatus` says
 2. Check your deployment logs:
@@ -244,7 +249,8 @@ Wait 1-2 minutes for your app to restart, then:
 
 **Cause:** Username already taken in your account.
 
-**Solution:** 
+**Solution:**
+
 - Choose a different username like `eventflowuser2` in Step 3
 
 ---
@@ -264,11 +270,13 @@ Wait 1-2 minutes for your app to restart, then:
 ## Security Tips
 
 ✅ **DO:**
+
 - Use a strong, unique password for your database user
 - Keep your connection string secret (don't share it publicly)
 - Regularly check who has access to your MongoDB cluster
 
 ❌ **DON'T:**
+
 - Share your password or connection string publicly
 - Commit the connection string to Git/GitHub
 - Use simple passwords like "password123"
@@ -278,11 +286,13 @@ Wait 1-2 minutes for your app to restart, then:
 ## Summary Checklist
 
 Before you start:
+
 - [ ] I have 15 minutes
 - [ ] I have access to my email
 - [ ] I know my deployment platform (Railway, Heroku, etc.)
 
 Steps completed:
+
 - [ ] Created MongoDB Atlas account
 - [ ] Created a free M0 cluster
 - [ ] Created a database user and saved the password
@@ -297,4 +307,4 @@ Steps completed:
 **Last updated:** 2025-12-11  
 **Guide version:** 1.0
 
-*This guide is designed for people with no technical background. If anything is unclear, please let us know so we can improve it!*
+_This guide is designed for people with no technical background. If anything is unclear, please let us know so we can improve it!_

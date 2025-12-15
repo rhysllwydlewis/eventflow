@@ -2,7 +2,7 @@
  * Features: Auth (JWT cookie), Suppliers, Packages, Plans/Notes, Threads/Messages,
  * Admin approvals + metrics, Settings, Featured packages, Sitemap.
  * Email: safe dev mode by default (writes .eml files to /outbox).
- * 
+ *
  * PRODUCTION DEPLOYMENT:
  * - Server performs startup health checks before accepting requests
  * - Cloud database (MongoDB Atlas or Firebase) is RECOMMENDED but not required
@@ -12,7 +12,7 @@
  * - Rejects localhost MongoDB URIs in production
  * - Exits with error code 1 if critical security configuration is missing (JWT_SECRET, BASE_URL)
  * - Logs warnings for optional/recommended services (database, email, Stripe, OpenAI)
- * 
+ *
  * TROUBLESHOOTING 502 ERRORS:
  * - Check server startup logs for validation errors
  * - If using MongoDB, ensure MONGODB_URI points to cloud database (not localhost)
@@ -119,11 +119,11 @@ const { seed } = require('./seed');
 // ---------- Initialisation ----------
 // In production, preserve existing users. In development, create demo users.
 const isProduction = process.env.NODE_ENV === 'production';
-seed({ 
+seed({
   skipIfExists: isProduction,
   seedUsers: true,
   seedSuppliers: !isProduction, // Only seed demo suppliers in dev
-  seedPackages: !isProduction   // Only seed demo packages in dev
+  seedPackages: !isProduction, // Only seed demo packages in dev
 });
 
 const app = express();
@@ -137,10 +137,10 @@ const knownPlaceholders = [
   'your_super_long_random_secret',
   'your-secret-key-min-32-chars',
   'your-secret-key',
-  'your_secret'
+  'your_secret',
 ];
 
-const hasPlaceholder = knownPlaceholders.some(placeholder => 
+const hasPlaceholder = knownPlaceholders.some(placeholder =>
   JWT_SECRET.toLowerCase().includes(placeholder.toLowerCase())
 );
 
@@ -148,7 +148,7 @@ if (!JWT_SECRET || hasPlaceholder || JWT_SECRET.length < 32) {
   console.error('');
   console.error('❌ SECURITY ERROR: Invalid JWT_SECRET');
   console.error('');
-  
+
   if (!JWT_SECRET) {
     console.error('   JWT_SECRET is not set in your environment.');
   } else if (hasPlaceholder) {
@@ -157,7 +157,7 @@ if (!JWT_SECRET || hasPlaceholder || JWT_SECRET.length < 32) {
     console.error(`   JWT_SECRET is too short (${JWT_SECRET.length} characters).`);
     console.error('   A secure JWT_SECRET must be at least 32 characters long.');
   }
-  
+
   console.error('');
   console.error('🔧 To generate a secure JWT_SECRET, run:');
   console.error('   openssl rand -base64 32');
@@ -184,26 +184,33 @@ if (shouldTrustProxy) {
 app.disable('x-powered-by');
 
 // Enhanced CSP headers
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://cdn.jsdelivr.net"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://fonts.googleapis.com"],
-      fontSrc: ["'self'", "https://fonts.gstatic.com"],
-      imgSrc: ["'self'", "data:", "https:", "blob:"],
-      connectSrc: ["'self'", "https:"],
-      frameSrc: ["'none'"],
-      objectSrc: ["'none'"],
-      upgradeInsecureRequests: [],
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", 'https://cdn.jsdelivr.net'],
+        styleSrc: [
+          "'self'",
+          "'unsafe-inline'",
+          'https://cdn.jsdelivr.net',
+          'https://fonts.googleapis.com',
+        ],
+        fontSrc: ["'self'", 'https://fonts.gstatic.com'],
+        imgSrc: ["'self'", 'data:', 'https:', 'blob:'],
+        connectSrc: ["'self'", 'https:'],
+        frameSrc: ["'none'"],
+        objectSrc: ["'none'"],
+        upgradeInsecureRequests: [],
+      },
     },
-  },
-  hsts: {
-    maxAge: 31536000,
-    includeSubDomains: true,
-    preload: true,
-  },
-}));
+    hsts: {
+      maxAge: 31536000,
+      includeSubDomains: true,
+      preload: true,
+    },
+  })
+);
 
 // Compression middleware
 const configureCompression = require('./middleware/compression');
@@ -227,27 +234,27 @@ const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
   standardHeaders: true,
-  legacyHeaders: false
+  legacyHeaders: false,
 });
 const strictAuthLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
-  message: 'Too many requests. Please try again later.'
+  message: 'Too many requests. Please try again later.',
 });
 const passwordResetLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 5,
   standardHeaders: true,
   legacyHeaders: false,
-  message: 'Too many password reset attempts. Please try again later.'
+  message: 'Too many password reset attempts. Please try again later.',
 });
 const writeLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
   max: 80,
   standardHeaders: true,
-  legacyHeaders: false
+  legacyHeaders: false,
 });
 
 // Health check rate limiter - generous limits for monitoring tools
@@ -256,7 +263,7 @@ const healthCheckLimiter = rateLimit({
   max: 60, // 60 requests per minute (once per second)
   standardHeaders: true,
   legacyHeaders: false,
-  message: 'Too many health check requests'
+  message: 'Too many health check requests',
 });
 
 // ---------- Email (safe dev mode) ----------
@@ -278,7 +285,7 @@ if (AWS_SES_ACCESS_KEY && AWS_SES_SECRET_KEY) {
     AWS.config.update({
       region: AWS_SES_REGION,
       accessKeyId: AWS_SES_ACCESS_KEY,
-      secretAccessKey: AWS_SES_SECRET_KEY
+      secretAccessKey: AWS_SES_SECRET_KEY,
     });
     sesClient = new AWS.SES({ apiVersion: '2010-12-01' });
     AWS_SES_ENABLED = true;
@@ -308,9 +315,10 @@ if (EMAIL_ENABLED && process.env.SMTP_HOST && !AWS_SES_ENABLED) {
     host: process.env.SMTP_HOST,
     port: Number(process.env.SMTP_PORT || 587),
     secure: false,
-    auth: (process.env.SMTP_USER && process.env.SMTP_PASS)
-      ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
-      : undefined
+    auth:
+      process.env.SMTP_USER && process.env.SMTP_PASS
+        ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
+        : undefined,
   });
 }
 
@@ -319,17 +327,19 @@ if (process.env.NODE_ENV === 'production') {
   const required = {
     BASE_URL: process.env.BASE_URL,
   };
-  
+
   const missing = Object.entries(required)
     .filter(([_, value]) => !value)
     .map(([key]) => key);
-  
+
   if (missing.length > 0) {
-    console.error(`Production error: Missing required environment variables: ${missing.join(', ')}`);
+    console.error(
+      `Production error: Missing required environment variables: ${missing.join(', ')}`
+    );
     console.error('Please set these in your .env file before deploying.');
     process.exit(1);
   }
-  
+
   // Warn about email configuration but don't block startup
   if (EMAIL_ENABLED) {
     if (!AWS_SES_ENABLED && !transporter) {
@@ -363,20 +373,20 @@ function loadEmailTemplate(templateName, data) {
       return null;
     }
     let html = fs.readFileSync(templatePath, 'utf8');
-    
+
     // Simple template replacement
     Object.keys(data).forEach(key => {
       const regex = new RegExp(`{{${key}}}`, 'g');
       html = html.replace(regex, data[key] || '');
     });
-    
+
     // Add current year
     html = html.replace(/{{year}}/g, new Date().getFullYear());
-    
+
     // Add base URL
     const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
     html = html.replace(/{{baseUrl}}/g, baseUrl);
-    
+
     return html;
   } catch (err) {
     console.error('Error loading email template:', err);
@@ -418,27 +428,29 @@ async function sendMail(toOrOpts, subject, text) {
       const params = {
         Source: FROM_EMAIL,
         Destination: {
-          ToAddresses: Array.isArray(to) ? to : [to]
+          ToAddresses: Array.isArray(to) ? to : [to],
         },
         Message: {
           Subject: {
             Data: subj,
-            Charset: 'UTF-8'
+            Charset: 'UTF-8',
           },
-          Body: html ? {
-            Html: {
-              Data: html,
-              Charset: 'UTF-8'
-            }
-          } : {
-            Text: {
-              Data: body,
-              Charset: 'UTF-8'
-            }
-          }
-        }
+          Body: html
+            ? {
+                Html: {
+                  Data: html,
+                  Charset: 'UTF-8',
+                },
+              }
+            : {
+                Text: {
+                  Data: body,
+                  Charset: 'UTF-8',
+                },
+              },
+        },
       };
-      
+
       await sesClient.sendEmail(params).promise();
       console.log(`Email sent via AWS SES to ${safeTo}`);
       return;
@@ -454,16 +466,16 @@ async function sendMail(toOrOpts, subject, text) {
       const mailOptions = {
         from: FROM_EMAIL,
         to,
-        subject: subj
+        subject: subj,
       };
-      
+
       if (html) {
         mailOptions.html = html;
         mailOptions.text = body; // Provide text fallback
       } else {
         mailOptions.text = body;
       }
-      
+
       await transporter.sendMail(mailOptions);
       console.log(`Email sent via SMTP to ${safeTo}`);
     } catch (e) {
@@ -479,7 +491,7 @@ function setAuthCookie(res, token) {
     httpOnly: true,
     sameSite: isProd ? 'strict' : 'lax',
     secure: isProd,
-    maxAge: 1000 * 60 * 60 * 24 * 7
+    maxAge: 1000 * 60 * 60 * 24 * 7,
   });
 }
 
@@ -515,12 +527,7 @@ function roleRequired(role) {
 }
 
 function passwordOk(pw = '') {
-  return (
-    typeof pw === 'string' &&
-    pw.length >= 8 &&
-    /[A-Za-z]/.test(pw) &&
-    /\d/.test(pw)
-  );
+  return typeof pw === 'string' && pw.length >= 8 && /[A-Za-z]/.test(pw) && /\d/.test(pw);
 }
 
 // ---------- AUTH ----------
@@ -529,7 +536,7 @@ app.post('/api/auth/register', strictAuthLimiter, csrfProtection, async (req, re
   if (!name || !email || !password) return res.status(400).json({ error: 'Missing fields' });
   if (!validator.isEmail(String(email))) return res.status(400).json({ error: 'Invalid email' });
   if (!passwordOk(password)) return res.status(400).json({ error: 'Weak password' });
-  const roleFinal = (role === 'supplier' || role === 'customer') ? role : 'customer';
+  const roleFinal = role === 'supplier' || role === 'customer' ? role : 'customer';
 
   const users = read('users');
   if (users.find(u => u.email.toLowerCase() === String(email).toLowerCase())) {
@@ -547,7 +554,7 @@ app.post('/api/auth/register', strictAuthLimiter, csrfProtection, async (req, re
     verified: false,
     verificationToken: uid('verify'),
     verificationTokenExpiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-    createdAt: new Date().toISOString()
+    createdAt: new Date().toISOString(),
   };
   users.push(user);
   write('users', users);
@@ -563,26 +570,26 @@ app.post('/api/auth/register', strictAuthLimiter, csrfProtection, async (req, re
       templateData: {
         name: user.name || 'there',
         verificationLink: verificationLink,
-        email: user.email
-      }
+        email: user.email,
+      },
     });
   } catch (e) {
     console.error('Failed to send verification email', e);
-    
+
     // Rollback user creation
     const allUsers = read('users');
     const filteredUsers = allUsers.filter(u => u.id !== user.id);
     write('users', filteredUsers);
-    
-    return res.status(500).json({ 
-      error: 'Failed to send verification email. Please try again or contact support.' 
+
+    return res.status(500).json({
+      error: 'Failed to send verification email. Please try again or contact support.',
     });
   }
 
   res.json({
     ok: true,
     message: 'Account created successfully. Please check your email to verify your account.',
-    email: user.email
+    email: user.email,
   });
 });
 
@@ -613,16 +620,14 @@ app.post('/api/auth/login', authLimiter, csrfProtection, (req, res) => {
     console.error('Failed to update lastLoginAt', e);
   }
 
-  const token = jwt.sign(
-    { id: user.id, email: user.email, role: user.role },
-    JWT_SECRET,
-    { expiresIn: '7d' }
-  );
+  const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, {
+    expiresIn: '7d',
+  });
   setAuthCookie(res, token);
 
   res.json({
     ok: true,
-    user: { id: user.id, name: user.name, email: user.email, role: user.role }
+    user: { id: user.id, name: user.name, email: user.email, role: user.role },
   });
 });
 
@@ -632,9 +637,7 @@ app.post('/api/auth/forgot', passwordResetLimiter, csrfProtection, async (req, r
 
   // Look up user by email (case-insensitive)
   const users = read('users');
-  const idx = users.findIndex(
-    u => (u.email || '').toLowerCase() === String(email).toLowerCase()
-  );
+  const idx = users.findIndex(u => (u.email || '').toLowerCase() === String(email).toLowerCase());
 
   if (idx === -1) {
     // Always respond success so we don't leak which emails exist
@@ -663,8 +666,8 @@ app.post('/api/auth/forgot', passwordResetLimiter, csrfProtection, async (req, r
             name: user.name || 'there',
             resetToken: token,
             resetLink: resetLink,
-            expiresIn: '1 hour'
-          }
+            expiresIn: '1 hour',
+          },
         });
       }
     } catch (err) {
@@ -681,20 +684,23 @@ app.get('/api/auth/verify', (req, res) => {
   const users = read('users');
   const idx = users.findIndex(u => u.verificationToken === token);
   if (idx === -1) return res.status(400).json({ error: 'Invalid or expired token' });
-  
+
   // Check if token has expired
-  if (users[idx].verificationTokenExpiresAt && new Date(users[idx].verificationTokenExpiresAt) < new Date()) {
-    return res.status(400).json({ 
+  if (
+    users[idx].verificationTokenExpiresAt &&
+    new Date(users[idx].verificationTokenExpiresAt) < new Date()
+  ) {
+    return res.status(400).json({
       error: 'Verification link has expired. Please request a new one.',
-      expired: true 
+      expired: true,
     });
   }
-  
+
   users[idx].verified = true;
   delete users[idx].verificationToken;
   delete users[idx].verificationTokenExpiresAt;
   write('users', users);
-  
+
   // Send welcome email after successful verification
   const user = users[idx];
   sendMail({
@@ -704,42 +710,42 @@ app.get('/api/auth/verify', (req, res) => {
     templateData: {
       name: user.name || 'there',
       email: user.email,
-      role: user.role
-    }
+      role: user.role,
+    },
   }).catch(e => {
     console.error('Failed to send welcome email', e);
   });
-  
+
   res.json({ ok: true });
 });
 
 app.post('/api/auth/resend-verification', authLimiter, csrfProtection, async (req, res) => {
   const { email } = req.body || {};
   if (!email) return res.status(400).json({ error: 'Missing email' });
-  
+
   const users = read('users');
   const idx = users.findIndex(u => u.email.toLowerCase() === String(email).toLowerCase());
-  
+
   if (idx === -1) {
     return res.json({ ok: true }); // Don't leak which emails exist
   }
-  
+
   const user = users[idx];
-  
+
   if (user.verified) {
     return res.status(400).json({ error: 'Email already verified' });
   }
-  
+
   // Generate new token
   const newToken = uid('verify');
   users[idx].verificationToken = newToken;
   users[idx].verificationTokenExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
   write('users', users);
-  
+
   try {
     const baseUrl = process.env.BASE_URL || `http://localhost:${PORT}`;
     const verificationLink = `${baseUrl}/verify.html?token=${encodeURIComponent(newToken)}`;
-    
+
     await sendMail({
       to: user.email,
       subject: 'Confirm your EventFlow account',
@@ -747,15 +753,15 @@ app.post('/api/auth/resend-verification', authLimiter, csrfProtection, async (re
       templateData: {
         name: user.name || 'there',
         verificationLink: verificationLink,
-        email: user.email
-      }
+        email: user.email,
+      },
     });
-    
+
     res.json({ ok: true });
   } catch (e) {
     console.error('Failed to resend verification email', e);
-    return res.status(500).json({ 
-      error: 'Failed to send verification email. Please try again later.' 
+    return res.status(500).json({
+      error: 'Failed to send verification email. Please try again later.',
     });
   }
 });
@@ -777,7 +783,7 @@ app.get('/api/admin/users', authRequired, roleRequired('admin'), (req, res) => {
     verified: !!u.verified,
     marketingOptIn: !!u.marketingOptIn,
     createdAt: u.createdAt,
-    lastLoginAt: u.lastLoginAt || null
+    lastLoginAt: u.lastLoginAt || null,
   }));
   // Sort newest first by createdAt
   users.sort((a, b) => {
@@ -793,12 +799,14 @@ app.get('/api/admin/users', authRequired, roleRequired('admin'), (req, res) => {
 app.get('/api/admin/marketing-export', authRequired, roleRequired('admin'), (req, res) => {
   const users = read('users').filter(u => u.marketingOptIn);
   const header = 'name,email,role\n';
-  const rows = users.map(u => {
-    const name = (u.name || '').replace(/"/g, '""');
-    const email = (u.email || '').replace(/"/g, '""');
-    const role = (u.role || '').replace(/"/g, '""');
-    return `"${name}","${email}","${role}"`;
-  }).join('\n');
+  const rows = users
+    .map(u => {
+      const name = (u.name || '').replace(/"/g, '""');
+      const email = (u.email || '').replace(/"/g, '""');
+      const role = (u.role || '').replace(/"/g, '""');
+      return `"${name}","${email}","${role}"`;
+    })
+    .join('\n');
   const csv = header + rows + (rows ? '\n' : '');
   res.setHeader('Content-Type', 'text/csv; charset=utf-8');
   res.setHeader('Content-Disposition', 'attachment; filename="eventflow-marketing.csv"');
@@ -809,12 +817,14 @@ app.get('/api/admin/marketing-export', authRequired, roleRequired('admin'), (req
 app.get('/api/admin/users-export', authRequired, roleRequired('admin'), (req, res) => {
   const users = read('users');
   const header = 'id,name,email,role,verified,marketingOptIn,createdAt,lastLoginAt\n';
-  const rows = users.map(u => {
-    const esc = v => String(v ?? '').replace(/"/g, '""');
-    const verified = u.verified ? 'yes' : 'no';
-    const marketing = u.marketingOptIn ? 'yes' : 'no';
-    return `"${esc(u.id)}","${esc(u.name)}","${esc(u.email)}","${esc(u.role)}","${verified}","${marketing}","${esc(u.createdAt)}","${esc(u.lastLoginAt || '')}"`;
-  }).join('\n');
+  const rows = users
+    .map(u => {
+      const esc = v => String(v ?? '').replace(/"/g, '""');
+      const verified = u.verified ? 'yes' : 'no';
+      const marketing = u.marketingOptIn ? 'yes' : 'no';
+      return `"${esc(u.id)}","${esc(u.name)}","${esc(u.email)}","${esc(u.role)}","${verified}","${marketing}","${esc(u.createdAt)}","${esc(u.lastLoginAt || '')}"`;
+    })
+    .join('\n');
   const csv = header + rows + (rows ? '\n' : '');
   res.setHeader('Content-Type', 'text/csv; charset=utf-8');
   res.setHeader('Content-Disposition', 'attachment; filename="eventflow-users.csv"');
@@ -825,204 +835,228 @@ app.get('/api/admin/users-export', authRequired, roleRequired('admin'), (req, re
  * POST /api/admin/users
  * Create a new user (admin only)
  */
-app.post('/api/admin/users', authRequired, roleRequired('admin'), csrfProtection, async (req, res) => {
-  const { name, email, password, role = 'customer' } = req.body || {};
-  
-  // Validate required fields
-  if (!name || !email || !password) {
-    return res.status(400).json({ error: 'Missing required fields: name, email, and password are required' });
-  }
-  
-  // Validate email format
-  if (!validator.isEmail(String(email))) {
-    return res.status(400).json({ error: 'Invalid email format' });
-  }
-  
-  // Validate password strength
-  if (!passwordOk(password)) {
-    return res.status(400).json({ error: 'Password must be at least 8 characters with uppercase, lowercase, and number' });
-  }
-  
-  // Validate role
-  const roleFinal = VALID_USER_ROLES.includes(role) ? role : 'customer';
-  
-  // Check if user already exists
-  const users = read('users');
-  if (users.find(u => u.email.toLowerCase() === String(email).toLowerCase())) {
-    return res.status(409).json({ error: 'A user with this email already exists' });
-  }
-  
-  // Create new user
-  const user = {
-    id: uid('usr'),
-    name: String(name).trim().slice(0, MAX_NAME_LENGTH),
-    email: String(email).toLowerCase(),
-    role: roleFinal,
-    passwordHash: bcrypt.hashSync(password, 10),
-    notify: true,
-    marketingOptIn: false,
-    verified: true, // Admin-created users are pre-verified
-    createdAt: new Date().toISOString(),
-    createdBy: req.user.id // Track who created the user
-  };
-  
-  users.push(user);
-  write('users', users);
-  
-  // Create audit log
-  auditLog({
-    adminId: req.user.id,
-    adminEmail: req.user.email,
-    action: AUDIT_ACTIONS.USER_CREATED,
-    targetType: 'user',
-    targetId: user.id,
-    details: { 
-      email: user.email,
-      name: user.name,
-      role: user.role
+app.post(
+  '/api/admin/users',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    const { name, email, password, role = 'customer' } = req.body || {};
+
+    // Validate required fields
+    if (!name || !email || !password) {
+      return res
+        .status(400)
+        .json({ error: 'Missing required fields: name, email, and password are required' });
     }
-  });
-  
-  res.json({
-    success: true,
-    message: 'User created successfully',
-    user: {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      verified: user.verified
+
+    // Validate email format
+    if (!validator.isEmail(String(email))) {
+      return res.status(400).json({ error: 'Invalid email format' });
     }
-  });
-});
+
+    // Validate password strength
+    if (!passwordOk(password)) {
+      return res.status(400).json({
+        error: 'Password must be at least 8 characters with uppercase, lowercase, and number',
+      });
+    }
+
+    // Validate role
+    const roleFinal = VALID_USER_ROLES.includes(role) ? role : 'customer';
+
+    // Check if user already exists
+    const users = read('users');
+    if (users.find(u => u.email.toLowerCase() === String(email).toLowerCase())) {
+      return res.status(409).json({ error: 'A user with this email already exists' });
+    }
+
+    // Create new user
+    const user = {
+      id: uid('usr'),
+      name: String(name).trim().slice(0, MAX_NAME_LENGTH),
+      email: String(email).toLowerCase(),
+      role: roleFinal,
+      passwordHash: bcrypt.hashSync(password, 10),
+      notify: true,
+      marketingOptIn: false,
+      verified: true, // Admin-created users are pre-verified
+      createdAt: new Date().toISOString(),
+      createdBy: req.user.id, // Track who created the user
+    };
+
+    users.push(user);
+    write('users', users);
+
+    // Create audit log
+    auditLog({
+      adminId: req.user.id,
+      adminEmail: req.user.email,
+      action: AUDIT_ACTIONS.USER_CREATED,
+      targetType: 'user',
+      targetId: user.id,
+      details: {
+        email: user.email,
+        name: user.name,
+        role: user.role,
+      },
+    });
+
+    res.json({
+      success: true,
+      message: 'User created successfully',
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        verified: user.verified,
+      },
+    });
+  }
+);
 
 /**
  * POST /api/admin/users/:id/grant-admin
  * Grant admin privileges to a user
  */
-app.post('/api/admin/users/:id/grant-admin', authRequired, roleRequired('admin'), csrfProtection, (req, res) => {
-  const { id } = req.params;
-  const users = read('users');
-  const userIndex = users.findIndex(u => u.id === id);
-  
-  if (userIndex === -1) {
-    return res.status(404).json({ error: 'User not found' });
-  }
-  
-  const user = users[userIndex];
-  const now = new Date().toISOString();
-  
-  // Check if user already has admin role
-  if (user.role === 'admin') {
-    return res.status(400).json({ error: 'User already has admin privileges' });
-  }
-  
-  // Store previous role
-  user.previousRole = user.role;
-  user.role = 'admin';
-  user.adminGrantedAt = now;
-  user.adminGrantedBy = req.user.id;
-  user.updatedAt = now;
-  
-  users[userIndex] = user;
-  write('users', users);
-  
-  // Create audit log
-  auditLog({
-    adminId: req.user.id,
-    adminEmail: req.user.email,
-    action: AUDIT_ACTIONS.USER_ROLE_CHANGED,
-    targetType: 'user',
-    targetId: user.id,
-    details: { 
-      email: user.email, 
-      previousRole: user.previousRole,
-      newRole: 'admin'
+app.post(
+  '/api/admin/users/:id/grant-admin',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  (req, res) => {
+    const { id } = req.params;
+    const users = read('users');
+    const userIndex = users.findIndex(u => u.id === id);
+
+    if (userIndex === -1) {
+      return res.status(404).json({ error: 'User not found' });
     }
-  });
-  
-  res.json({ 
-    success: true, 
-    message: 'Admin privileges granted successfully',
-    user: {
-      id: user.id,
-      email: user.email,
-      role: user.role
+
+    const user = users[userIndex];
+    const now = new Date().toISOString();
+
+    // Check if user already has admin role
+    if (user.role === 'admin') {
+      return res.status(400).json({ error: 'User already has admin privileges' });
     }
-  });
-});
+
+    // Store previous role
+    user.previousRole = user.role;
+    user.role = 'admin';
+    user.adminGrantedAt = now;
+    user.adminGrantedBy = req.user.id;
+    user.updatedAt = now;
+
+    users[userIndex] = user;
+    write('users', users);
+
+    // Create audit log
+    auditLog({
+      adminId: req.user.id,
+      adminEmail: req.user.email,
+      action: AUDIT_ACTIONS.USER_ROLE_CHANGED,
+      targetType: 'user',
+      targetId: user.id,
+      details: {
+        email: user.email,
+        previousRole: user.previousRole,
+        newRole: 'admin',
+      },
+    });
+
+    res.json({
+      success: true,
+      message: 'Admin privileges granted successfully',
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+      },
+    });
+  }
+);
 
 /**
  * POST /api/admin/users/:id/revoke-admin
  * Revoke admin privileges from a user
  */
-app.post('/api/admin/users/:id/revoke-admin', authRequired, roleRequired('admin'), csrfProtection, (req, res) => {
-  const { id } = req.params;
-  const { newRole = 'customer' } = req.body;
-  const users = read('users');
-  const userIndex = users.findIndex(u => u.id === id);
-  
-  if (userIndex === -1) {
-    return res.status(404).json({ error: 'User not found' });
-  }
-  
-  const user = users[userIndex];
-  const now = new Date().toISOString();
-  
-  // Check if user has admin role
-  if (user.role !== 'admin') {
-    return res.status(400).json({ error: 'User does not have admin privileges' });
-  }
-  
-  // Prevent revoking own admin privileges
-  if (user.id === req.user.id) {
-    return res.status(400).json({ error: 'You cannot revoke your own admin privileges' });
-  }
-  
-  // Prevent revoking owner's admin privileges
-  if (user.email === 'admin@event-flow.co.uk' || user.isOwner) {
-    return res.status(403).json({ error: 'Cannot revoke admin privileges from the owner account' });
-  }
-  
-  // Validate newRole
-  if (!['customer', 'supplier'].includes(newRole)) {
-    return res.status(400).json({ error: 'Invalid role. Must be customer or supplier' });
-  }
-  
-  // Store previous role
-  user.previousRole = user.role;
-  user.role = newRole;
-  user.adminRevokedAt = now;
-  user.adminRevokedBy = req.user.id;
-  user.updatedAt = now;
-  
-  users[userIndex] = user;
-  write('users', users);
-  
-  // Create audit log
-  auditLog({
-    adminId: req.user.id,
-    adminEmail: req.user.email,
-    action: AUDIT_ACTIONS.USER_ROLE_CHANGED,
-    targetType: 'user',
-    targetId: user.id,
-    details: { 
-      email: user.email, 
-      previousRole: 'admin',
-      newRole: newRole
+app.post(
+  '/api/admin/users/:id/revoke-admin',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  (req, res) => {
+    const { id } = req.params;
+    const { newRole = 'customer' } = req.body;
+    const users = read('users');
+    const userIndex = users.findIndex(u => u.id === id);
+
+    if (userIndex === -1) {
+      return res.status(404).json({ error: 'User not found' });
     }
-  });
-  
-  res.json({ 
-    success: true, 
-    message: 'Admin privileges revoked successfully',
-    user: {
-      id: user.id,
-      email: user.email,
-      role: user.role
+
+    const user = users[userIndex];
+    const now = new Date().toISOString();
+
+    // Check if user has admin role
+    if (user.role !== 'admin') {
+      return res.status(400).json({ error: 'User does not have admin privileges' });
     }
-  });
-});
+
+    // Prevent revoking own admin privileges
+    if (user.id === req.user.id) {
+      return res.status(400).json({ error: 'You cannot revoke your own admin privileges' });
+    }
+
+    // Prevent revoking owner's admin privileges
+    if (user.email === 'admin@event-flow.co.uk' || user.isOwner) {
+      return res
+        .status(403)
+        .json({ error: 'Cannot revoke admin privileges from the owner account' });
+    }
+
+    // Validate newRole
+    if (!['customer', 'supplier'].includes(newRole)) {
+      return res.status(400).json({ error: 'Invalid role. Must be customer or supplier' });
+    }
+
+    // Store previous role
+    user.previousRole = user.role;
+    user.role = newRole;
+    user.adminRevokedAt = now;
+    user.adminRevokedBy = req.user.id;
+    user.updatedAt = now;
+
+    users[userIndex] = user;
+    write('users', users);
+
+    // Create audit log
+    auditLog({
+      adminId: req.user.id,
+      adminEmail: req.user.email,
+      action: AUDIT_ACTIONS.USER_ROLE_CHANGED,
+      targetType: 'user',
+      targetId: user.id,
+      details: {
+        email: user.email,
+        previousRole: 'admin',
+        newRole: newRole,
+      },
+    });
+
+    res.json({
+      success: true,
+      message: 'Admin privileges revoked successfully',
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+      },
+    });
+  }
+);
 
 // Admin: export all core collections as JSON
 app.get('/api/admin/export/all', authRequired, roleRequired('admin'), (_req, res) => {
@@ -1035,7 +1069,7 @@ app.get('/api/admin/export/all', authRequired, roleRequired('admin'), (_req, res
     notes: read('notes'),
     events: read('events'),
     threads: read('threads'),
-    messages: read('messages')
+    messages: read('messages'),
   };
   const json = JSON.stringify(payload, null, 2);
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
@@ -1055,7 +1089,7 @@ app.get('/api/auth/me', (req, res) => {
   res.json({
     user: u
       ? { id: u.id, name: u.name, email: u.email, role: u.role, notify: u.notify !== false }
-      : null
+      : null,
   });
 });
 
@@ -1067,10 +1101,11 @@ app.get('/api/suppliers', (req, res) => {
   if (price) items = items.filter(s => (s.price_display || '').includes(price));
   if (q) {
     const qq = String(q).toLowerCase();
-    items = items.filter(s =>
-      (s.name || '').toLowerCase().includes(qq) ||
-      (s.description_short || '').toLowerCase().includes(qq) ||
-      (s.location || '').toLowerCase().includes(qq)
+    items = items.filter(
+      s =>
+        (s.name || '').toLowerCase().includes(qq) ||
+        (s.description_short || '').toLowerCase().includes(qq) ||
+        (s.location || '').toLowerCase().includes(qq)
     );
   }
 
@@ -1083,7 +1118,7 @@ app.get('/api/suppliers', (req, res) => {
       ...s,
       featuredSupplier,
       isPro: isProActive,
-      proExpiresAt: s.proExpiresAt || null
+      proExpiresAt: s.proExpiresAt || null,
     };
   });
 
@@ -1137,7 +1172,7 @@ app.post('/api/ai/plan', express.json(), csrfProtection, async (req, res) => {
     promptText || '(User did not provide extra description.)',
     '',
     'Current plan summary:',
-    summaryBits.length ? ('- ' + summaryBits.join('\n- ')) : 'No existing plan data.',
+    summaryBits.length ? '- ' + summaryBits.join('\n- ') : 'No existing plan data.',
     '',
     'Your JSON must use this structure:',
     '{',
@@ -1147,7 +1182,7 @@ app.post('/api/ai/plan', express.json(), csrfProtection, async (req, res) => {
     '  "budget": [ { "item": "Venue", "estimate": "£2000" } ],',
     '  "styleIdeas": [ "One-sentence styling idea" ],',
     '  "messages": [ "Friendly message the user could send to a supplier" ]',
-    '}'
+    '}',
   ].join('\n');
 
   if (!hasOpenAI) {
@@ -1157,33 +1192,42 @@ app.post('/api/ai/plan', express.json(), csrfProtection, async (req, res) => {
         'Lock in your venue date',
         'Confirm catering numbers and dietary requirements',
         'Book photographer / videographer',
-        'Create a draft day-of timeline'
+        'Create a draft day-of timeline',
       ],
       timeline: [
         { time: '13:00', item: 'Guests arrive', owner: 'Venue' },
         { time: '14:00', item: 'Ceremony', owner: 'Registrar / celebrant' },
         { time: '15:00', item: 'Drinks reception & photos', owner: 'Venue / photographer' },
         { time: '17:30', item: 'Wedding breakfast', owner: 'Catering' },
-        { time: '20:00', item: 'First dance & evening guests', owner: 'Band / DJ' }
+        { time: '20:00', item: 'First dance & evening guests', owner: 'Band / DJ' },
       ],
       suppliers: [
-        { category: 'Venues', suggestion: 'Shortlist 2–3 venues within 30 minutes of where most guests live.' },
-        { category: 'Catering', suggestion: 'Ask for sample menus that cover vegan and gluten-free options.' },
-        { category: 'Photography', suggestion: 'Look for photographers who have shot at your chosen venue before.' }
+        {
+          category: 'Venues',
+          suggestion: 'Shortlist 2–3 venues within 30 minutes of where most guests live.',
+        },
+        {
+          category: 'Catering',
+          suggestion: 'Ask for sample menus that cover vegan and gluten-free options.',
+        },
+        {
+          category: 'Photography',
+          suggestion: 'Look for photographers who have shot at your chosen venue before.',
+        },
       ],
       budget: [
         { item: 'Venue & hire', estimate: '≈ 40% of your total budget' },
         { item: 'Food & drink', estimate: '≈ 25% of your total budget' },
-        { item: 'Photography / video', estimate: '≈ 10–15% of your total budget' }
+        { item: 'Photography / video', estimate: '≈ 10–15% of your total budget' },
       ],
       styleIdeas: [
         'Soft green and white palette with lots of candlelight.',
-        'Personal touches like table names based on places you have travelled together.'
+        'Personal touches like table names based on places you have travelled together.',
       ],
       messages: [
         'Hi! We are planning a wedding around [DATE] for around [GUESTS] guests near [LOCATION]. Are you available, and could you share a sample package or pricing?',
-        'Hi! We love your work and are planning an event in [MONTH/YEAR]. Could you let us know your availability and typical pricing for this kind of day?'
-      ]
+        'Hi! We love your work and are planning an event in [MONTH/YEAR]. Could you let us know your availability and typical pricing for this kind of day?',
+      ],
     };
     return res.json({ from: 'fallback', data: fallback });
   }
@@ -1192,10 +1236,13 @@ app.post('/api/ai/plan', express.json(), csrfProtection, async (req, res) => {
     const completion = await openaiClient.chat.completions.create({
       model: process.env.OPENAI_MODEL || 'gpt-4.1-mini',
       messages: [
-        { role: 'system', content: 'You are a concise, practical wedding and event planning assistant.' },
-        { role: 'user', content: basePrompt }
+        {
+          role: 'system',
+          content: 'You are a concise, practical wedding and event planning assistant.',
+        },
+        { role: 'user', content: basePrompt },
       ],
-      temperature: 0.6
+      temperature: 0.6,
     });
 
     const raw =
@@ -1210,7 +1257,14 @@ app.post('/api/ai/plan', express.json(), csrfProtection, async (req, res) => {
       parsed = JSON.parse(raw);
     } catch (_e) {
       // If the model returns text instead of JSON, fall back to a safe minimal object.
-      parsed = { checklist: [], timeline: [], suppliers: [], budget: [], styleIdeas: [], messages: [] };
+      parsed = {
+        checklist: [],
+        timeline: [],
+        suppliers: [],
+        budget: [],
+        styleIdeas: [],
+        messages: [],
+      };
     }
     return res.json({ from: 'openai', data: parsed });
   } catch (err) {
@@ -1220,35 +1274,41 @@ app.post('/api/ai/plan', express.json(), csrfProtection, async (req, res) => {
 });
 
 // Admin-only: auto-categorisation & scoring for suppliers
-app.post('/api/admin/suppliers/smart-tags', authRequired, roleRequired('admin'), csrfProtection, async (req, res) => {
-  const all = read('suppliers');
-  const now = new Date().toISOString();
-  const updated = [];
+app.post(
+  '/api/admin/suppliers/smart-tags',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    const all = read('suppliers');
+    const now = new Date().toISOString();
+    const updated = [];
 
-  all.forEach(s => {
-    const tags = [];
-    if (s.category) tags.push(s.category);
-    if (Array.isArray(s.amenities)) {
-      s.amenities.slice(0, 3).forEach(a => tags.push(a));
-    }
-    if (s.location) tags.push(s.location.split(',')[0].trim());
+    all.forEach(s => {
+      const tags = [];
+      if (s.category) tags.push(s.category);
+      if (Array.isArray(s.amenities)) {
+        s.amenities.slice(0, 3).forEach(a => tags.push(a));
+      }
+      if (s.location) tags.push(s.location.split(',')[0].trim());
 
-    let score = 40;
-    if (Array.isArray(s.photos) && s.photos.length) score += 20;
-    if ((s.description_short || '').length > 40) score += 15;
-    if ((s.description_long || '').length > 80) score += 15;
-    if (Array.isArray(s.amenities) && s.amenities.length >= 3) score += 10;
-    if (score > 100) score = 100;
+      let score = 40;
+      if (Array.isArray(s.photos) && s.photos.length) score += 20;
+      if ((s.description_short || '').length > 40) score += 15;
+      if ((s.description_long || '').length > 80) score += 15;
+      if (Array.isArray(s.amenities) && s.amenities.length >= 3) score += 10;
+      if (score > 100) score = 100;
 
-    s.aiTags = tags;
-    s.aiScore = score;
-    s.aiUpdatedAt = now;
-    updated.push({ id: s.id, aiTags: tags, aiScore: score });
-  });
+      s.aiTags = tags;
+      s.aiScore = score;
+      s.aiUpdatedAt = now;
+      updated.push({ id: s.id, aiTags: tags, aiScore: score });
+    });
 
-  write('suppliers', all);
-  res.json({ ok: true, items: updated, aiEnabled: AI_ENABLED });
-});
+    write('suppliers', all);
+    res.json({ ok: true, items: updated, aiEnabled: AI_ENABLED });
+  }
+);
 
 // ---------- Photo Moderation ----------
 
@@ -1259,7 +1319,7 @@ app.post('/api/admin/suppliers/smart-tags', authRequired, roleRequired('admin'),
 app.get('/api/admin/photos/pending', authRequired, roleRequired('admin'), (req, res) => {
   const photos = read('photos');
   const pendingPhotos = photos.filter(p => p.status === 'pending');
-  
+
   // Enrich with supplier information
   const suppliers = read('suppliers');
   const enrichedPhotos = pendingPhotos.map(photo => {
@@ -1267,10 +1327,10 @@ app.get('/api/admin/photos/pending', authRequired, roleRequired('admin'), (req, 
     return {
       ...photo,
       supplierName: supplier ? supplier.name : 'Unknown',
-      supplierCategory: supplier ? supplier.category : null
+      supplierCategory: supplier ? supplier.category : null,
     };
   });
-  
+
   res.json({ photos: enrichedPhotos });
 });
 
@@ -1278,71 +1338,83 @@ app.get('/api/admin/photos/pending', authRequired, roleRequired('admin'), (req, 
  * POST /api/admin/photos/:id/approve
  * Approve a photo
  */
-app.post('/api/admin/photos/:id/approve', authRequired, roleRequired('admin'), csrfProtection, (req, res) => {
-  const { id } = req.params;
-  const photos = read('photos');
-  const photoIndex = photos.findIndex(p => p.id === id);
-  
-  if (photoIndex === -1) {
-    return res.status(404).json({ error: 'Photo not found' });
-  }
-  
-  const photo = photos[photoIndex];
-  const now = new Date().toISOString();
-  
-  // Update photo status
-  photo.status = 'approved';
-  photo.approvedAt = now;
-  photo.approvedBy = req.user.id;
-  
-  photos[photoIndex] = photo;
-  write('photos', photos);
-  
-  // Add photo to supplier's photos array if not already there
-  const suppliers = read('suppliers');
-  const supplierIndex = suppliers.findIndex(s => s.id === photo.supplierId);
-  
-  if (supplierIndex !== -1) {
-    if (!suppliers[supplierIndex].photos) {
-      suppliers[supplierIndex].photos = [];
+app.post(
+  '/api/admin/photos/:id/approve',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  (req, res) => {
+    const { id } = req.params;
+    const photos = read('photos');
+    const photoIndex = photos.findIndex(p => p.id === id);
+
+    if (photoIndex === -1) {
+      return res.status(404).json({ error: 'Photo not found' });
     }
-    if (!suppliers[supplierIndex].photos.includes(photo.url)) {
-      suppliers[supplierIndex].photos.push(photo.url);
-      write('suppliers', suppliers);
+
+    const photo = photos[photoIndex];
+    const now = new Date().toISOString();
+
+    // Update photo status
+    photo.status = 'approved';
+    photo.approvedAt = now;
+    photo.approvedBy = req.user.id;
+
+    photos[photoIndex] = photo;
+    write('photos', photos);
+
+    // Add photo to supplier's photos array if not already there
+    const suppliers = read('suppliers');
+    const supplierIndex = suppliers.findIndex(s => s.id === photo.supplierId);
+
+    if (supplierIndex !== -1) {
+      if (!suppliers[supplierIndex].photos) {
+        suppliers[supplierIndex].photos = [];
+      }
+      if (!suppliers[supplierIndex].photos.includes(photo.url)) {
+        suppliers[supplierIndex].photos.push(photo.url);
+        write('suppliers', suppliers);
+      }
     }
+
+    res.json({ success: true, message: 'Photo approved successfully', photo });
   }
-  
-  res.json({ success: true, message: 'Photo approved successfully', photo });
-});
+);
 
 /**
  * POST /api/admin/photos/:id/reject
  * Reject a photo
  */
-app.post('/api/admin/photos/:id/reject', authRequired, roleRequired('admin'), csrfProtection, (req, res) => {
-  const { id } = req.params;
-  const { reason } = req.body;
-  const photos = read('photos');
-  const photoIndex = photos.findIndex(p => p.id === id);
-  
-  if (photoIndex === -1) {
-    return res.status(404).json({ error: 'Photo not found' });
+app.post(
+  '/api/admin/photos/:id/reject',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  (req, res) => {
+    const { id } = req.params;
+    const { reason } = req.body;
+    const photos = read('photos');
+    const photoIndex = photos.findIndex(p => p.id === id);
+
+    if (photoIndex === -1) {
+      return res.status(404).json({ error: 'Photo not found' });
+    }
+
+    const photo = photos[photoIndex];
+    const now = new Date().toISOString();
+
+    // Update photo status
+    photo.status = 'rejected';
+    photo.rejectedAt = now;
+    photo.rejectedBy = req.user.id;
+    photo.rejectionReason = reason || 'No reason provided';
+
+    photos[photoIndex] = photo;
+    write('photos', photos);
+
+    res.json({ success: true, message: 'Photo rejected successfully', photo });
   }
-  
-  const photo = photos[photoIndex];
-  const now = new Date().toISOString();
-  
-  // Update photo status
-  photo.status = 'rejected';
-  photo.rejectedAt = now;
-  photo.rejectedBy = req.user.id;
-  photo.rejectionReason = reason || 'No reason provided';
-  
-  photos[photoIndex] = photo;
-  write('photos', photos);
-  
-  res.json({ success: true, message: 'Photo rejected successfully', photo });
-});
+);
 
 app.get('/api/suppliers/:id', (req, res) => {
   const sRaw = read('suppliers').find(x => x.id === req.params.id && x.approved);
@@ -1355,7 +1427,7 @@ app.get('/api/suppliers/:id', (req, res) => {
     ...sRaw,
     featuredSupplier,
     isPro: isProActive,
-    proExpiresAt: sRaw.proExpiresAt || null
+    proExpiresAt: sRaw.proExpiresAt || null,
   };
 
   res.json(s);
@@ -1380,10 +1452,7 @@ app.get('/api/packages/search', (req, res) => {
   const items = read('packages').filter(
     p =>
       p.approved &&
-      (
-        (p.title || '').toLowerCase().includes(q) ||
-        (p.description || '').toLowerCase().includes(q)
-      )
+      ((p.title || '').toLowerCase().includes(q) || (p.description || '').toLowerCase().includes(q))
   );
   res.json({ items });
 });
@@ -1394,117 +1463,134 @@ app.get('/api/me/suppliers', authRequired, roleRequired('supplier'), (req, res) 
   const list = listRaw.map(s => ({
     ...s,
     isPro: supplierIsProActive(s),
-    proExpiresAt: s.proExpiresAt || null
+    proExpiresAt: s.proExpiresAt || null,
   }));
   res.json({ items: list });
 });
 
 // Mark all suppliers owned by the current user as Pro
-app.post('/api/me/subscription/upgrade', authRequired, roleRequired('supplier'), csrfProtection, (req, res) => {
-  const suppliers = read('suppliers');
-  let changed = 0;
-  suppliers.forEach(s => {
-    if (s.ownerUserId === req.user.id) {
-      if (!s.isPro) {
-        s.isPro = true;
-        changed += 1;
+app.post(
+  '/api/me/subscription/upgrade',
+  authRequired,
+  roleRequired('supplier'),
+  csrfProtection,
+  (req, res) => {
+    const suppliers = read('suppliers');
+    let changed = 0;
+    suppliers.forEach(s => {
+      if (s.ownerUserId === req.user.id) {
+        if (!s.isPro) {
+          s.isPro = true;
+          changed += 1;
+        }
       }
+    });
+    write('suppliers', suppliers);
+
+    // Optionally also mirror this onto the user record if present
+    try {
+      const users = read('users');
+      const u = users.find(u => u.id === req.user.id);
+      if (u) {
+        u.isPro = true;
+        write('users', users);
+      }
+    } catch (_e) {
+      // ignore if users store is not present
     }
-  });
-  write('suppliers', suppliers);
 
-  // Optionally also mirror this onto the user record if present
-  try {
-    const users = read('users');
-    const u = users.find(u => u.id === req.user.id);
-    if (u) {
-      u.isPro = true;
-      write('users', users);
-    }
-  } catch (_e) {
-    // ignore if users store is not present
+    res.json({ ok: true, updatedSuppliers: changed });
   }
+);
 
-  res.json({ ok: true, updatedSuppliers: changed });
-});
-
-app.post('/api/me/suppliers', writeLimiter, authRequired, roleRequired('supplier'), csrfProtection, (req, res) => {
-  const b = req.body || {};
-  if (!b.name || !b.category) return res.status(400).json({ error: 'Missing fields' });
-  const photos = (b.photos
-    ? (Array.isArray(b.photos) ? b.photos : String(b.photos).split(/\r?\n/))
-    : [])
-    .map(x => String(x).trim())
-    .filter(Boolean);
-
-  const amenities = (b.amenities ? String(b.amenities).split(',') : [])
-    .map(x => x.trim())
-    .filter(Boolean);
-
-  const s = {
-    id: uid('sup'),
-    ownerUserId: req.user.id,
-    name: String(b.name).slice(0, 120),
-    category: b.category,
-    location: String(b.location || '').slice(0, 120),
-    price_display: String(b.price_display || '').slice(0, 60),
-    website: String(b.website || '').slice(0, 200),
-    license: String(b.license || '').slice(0, 120),
-    amenities,
-    maxGuests: parseInt(b.maxGuests || 0, 10),
-    description_short: String(b.description_short || '').slice(0, 220),
-    description_long: String(b.description_long || '').slice(0, 2000),
-    photos: photos.length
-      ? photos
-      : [`https://source.unsplash.com/featured/800x600/?event,${encodeURIComponent(b.category)}`],
-    email: ((read('users').find(u => u.id === req.user.id) || {}).email) || '',
-    approved: false
-  };
-  const all = read('suppliers');
-  all.push(s);
-  write('suppliers', all);
-  res.json({ ok: true, supplier: s });
-});
-
-app.patch('/api/me/suppliers/:id', writeLimiter, authRequired, roleRequired('supplier'), (req, res) => {
-  const all = read('suppliers');
-  const i = all.findIndex(s => s.id === req.params.id && s.ownerUserId === req.user.id);
-  if (i < 0) return res.status(404).json({ error: 'Not found' });
-  const b = req.body || {};
-
-  const fields = [
-    'name',
-    'category',
-    'location',
-    'price_display',
-    'website',
-    'license',
-    'description_short',
-    'description_long'
-  ];
-  for (const k of fields) {
-    if (typeof b[k] === 'string') all[i][k] = b[k];
-  }
-
-  if (b.amenities) {
-    all[i].amenities = String(b.amenities)
-      .split(',')
-      .map(x => x.trim())
-      .filter(Boolean);
-  }
-  if (b.maxGuests != null) all[i].maxGuests = parseInt(b.maxGuests, 10) || 0;
-  if (b.photos) {
-    const photos = (Array.isArray(b.photos)
-      ? b.photos
-      : String(b.photos).split(/\r?\n/))
+app.post(
+  '/api/me/suppliers',
+  writeLimiter,
+  authRequired,
+  roleRequired('supplier'),
+  csrfProtection,
+  (req, res) => {
+    const b = req.body || {};
+    if (!b.name || !b.category) return res.status(400).json({ error: 'Missing fields' });
+    const photos = (
+      b.photos ? (Array.isArray(b.photos) ? b.photos : String(b.photos).split(/\r?\n/)) : []
+    )
       .map(x => String(x).trim())
       .filter(Boolean);
-    if (photos.length) all[i].photos = photos;
+
+    const amenities = (b.amenities ? String(b.amenities).split(',') : [])
+      .map(x => x.trim())
+      .filter(Boolean);
+
+    const s = {
+      id: uid('sup'),
+      ownerUserId: req.user.id,
+      name: String(b.name).slice(0, 120),
+      category: b.category,
+      location: String(b.location || '').slice(0, 120),
+      price_display: String(b.price_display || '').slice(0, 60),
+      website: String(b.website || '').slice(0, 200),
+      license: String(b.license || '').slice(0, 120),
+      amenities,
+      maxGuests: parseInt(b.maxGuests || 0, 10),
+      description_short: String(b.description_short || '').slice(0, 220),
+      description_long: String(b.description_long || '').slice(0, 2000),
+      photos: photos.length
+        ? photos
+        : [`https://source.unsplash.com/featured/800x600/?event,${encodeURIComponent(b.category)}`],
+      email: (read('users').find(u => u.id === req.user.id) || {}).email || '',
+      approved: false,
+    };
+    const all = read('suppliers');
+    all.push(s);
+    write('suppliers', all);
+    res.json({ ok: true, supplier: s });
   }
-  all[i].approved = false;
-  write('suppliers', all);
-  res.json({ ok: true, supplier: all[i] });
-});
+);
+
+app.patch(
+  '/api/me/suppliers/:id',
+  writeLimiter,
+  authRequired,
+  roleRequired('supplier'),
+  (req, res) => {
+    const all = read('suppliers');
+    const i = all.findIndex(s => s.id === req.params.id && s.ownerUserId === req.user.id);
+    if (i < 0) return res.status(404).json({ error: 'Not found' });
+    const b = req.body || {};
+
+    const fields = [
+      'name',
+      'category',
+      'location',
+      'price_display',
+      'website',
+      'license',
+      'description_short',
+      'description_long',
+    ];
+    for (const k of fields) {
+      if (typeof b[k] === 'string') all[i][k] = b[k];
+    }
+
+    if (b.amenities) {
+      all[i].amenities = String(b.amenities)
+        .split(',')
+        .map(x => x.trim())
+        .filter(Boolean);
+    }
+    if (b.maxGuests != null) all[i].maxGuests = parseInt(b.maxGuests, 10) || 0;
+    if (b.photos) {
+      const photos = (Array.isArray(b.photos) ? b.photos : String(b.photos).split(/\r?\n/))
+        .map(x => String(x).trim())
+        .filter(Boolean);
+      if (photos.length) all[i].photos = photos;
+    }
+    all[i].approved = false;
+    write('suppliers', all);
+    res.json({ ok: true, supplier: all[i] });
+  }
+);
 
 app.get('/api/me/packages', authRequired, roleRequired('supplier'), (req, res) => {
   const mine = read('suppliers')
@@ -1514,43 +1600,48 @@ app.get('/api/me/packages', authRequired, roleRequired('supplier'), (req, res) =
   res.json({ items });
 });
 
-app.post('/api/me/packages', writeLimiter, authRequired, roleRequired('supplier'), csrfProtection, (req, res) => {
-  const { supplierId, title, description, price, image } = req.body || {};
-  if (!supplierId || !title) return res.status(400).json({ error: 'Missing fields' });
-  const own = read('suppliers').find(
-    s => s.id === supplierId && s.ownerUserId === req.user.id
-  );
-  if (!own) return res.status(403).json({ error: 'Forbidden' });
+app.post(
+  '/api/me/packages',
+  writeLimiter,
+  authRequired,
+  roleRequired('supplier'),
+  csrfProtection,
+  (req, res) => {
+    const { supplierId, title, description, price, image } = req.body || {};
+    if (!supplierId || !title) return res.status(400).json({ error: 'Missing fields' });
+    const own = read('suppliers').find(s => s.id === supplierId && s.ownerUserId === req.user.id);
+    if (!own) return res.status(403).json({ error: 'Forbidden' });
 
-  const ownIsPro = supplierIsProActive(own);
+    const ownIsPro = supplierIsProActive(own);
 
-  // Enforce a simple Free vs Pro package limit:
-  // - Free suppliers can create up to FREE_PACKAGE_LIMIT packages (default 3)
-  // - Pro suppliers have no limit
-  const allPkgs = read('packages');
-  const existingForSupplier = allPkgs.filter(p => p.supplierId === supplierId);
-  const freeLimit = Number(process.env.FREE_PACKAGE_LIMIT || 3);
-  if (!ownIsPro && existingForSupplier.length >= freeLimit) {
-    return res.status(403).json({
-      error: `Free suppliers can create up to ${freeLimit} packages. Upgrade to Pro to add more.`
-    });
+    // Enforce a simple Free vs Pro package limit:
+    // - Free suppliers can create up to FREE_PACKAGE_LIMIT packages (default 3)
+    // - Pro suppliers have no limit
+    const allPkgs = read('packages');
+    const existingForSupplier = allPkgs.filter(p => p.supplierId === supplierId);
+    const freeLimit = Number(process.env.FREE_PACKAGE_LIMIT || 3);
+    if (!ownIsPro && existingForSupplier.length >= freeLimit) {
+      return res.status(403).json({
+        error: `Free suppliers can create up to ${freeLimit} packages. Upgrade to Pro to add more.`,
+      });
+    }
+
+    const pkg = {
+      id: uid('pkg'),
+      supplierId,
+      title: String(title).slice(0, 120),
+      description: String(description || '').slice(0, 1500),
+      price: String(price || '').slice(0, 60),
+      image: image || 'https://source.unsplash.com/featured/800x600/?package,event',
+      approved: false,
+      featured: false,
+    };
+    const all = allPkgs;
+    all.push(pkg);
+    write('packages', all);
+    res.json({ ok: true, package: pkg });
   }
-
-  const pkg = {
-    id: uid('pkg'),
-    supplierId,
-    title: String(title).slice(0, 120),
-    description: String(description || '').slice(0, 1500),
-    price: String(price || '').slice(0, 60),
-    image: image || 'https://source.unsplash.com/featured/800x600/?package,event',
-    approved: false,
-    featured: false
-  };
-  const all = allPkgs;
-  all.push(pkg);
-  write('packages', all);
-  res.json({ ok: true, package: pkg });
-});
+);
 
 // ---------- Threads & Messages ----------
 app.post('/api/threads/start', writeLimiter, authRequired, csrfProtection, async (req, res) => {
@@ -1560,9 +1651,7 @@ app.post('/api/threads/start', writeLimiter, authRequired, csrfProtection, async
   if (!supplier) return res.status(404).json({ error: 'Supplier not found' });
 
   const threads = read('threads');
-  let thread = threads.find(
-    t => t.supplierId === supplierId && t.customerId === req.user.id
-  );
+  let thread = threads.find(t => t.supplierId === supplierId && t.customerId === req.user.id);
   if (!thread) {
     thread = {
       id: uid('thd'),
@@ -1574,7 +1663,7 @@ app.post('/api/threads/start', writeLimiter, authRequired, csrfProtection, async
       eventType: eventType || null,
       eventDate: eventDate || null,
       eventLocation: location || null,
-      guests: guests || null
+      guests: guests || null,
     };
     threads.push(thread);
     write('threads', threads);
@@ -1588,7 +1677,7 @@ app.post('/api/threads/start', writeLimiter, authRequired, csrfProtection, async
       threadId: thread.id,
       fromUserId: req.user.id,
       text: String(message).slice(0, 4000),
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
     };
     msgs.push(entry);
     write('messages', msgs);
@@ -1637,9 +1726,10 @@ app.get('/api/threads/my', authRequired, (req, res) => {
   const msgs = read('messages');
   items = items.map(t => ({
     ...t,
-    last: msgs
-      .filter(m => m.threadId === t.id)
-      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0] || null
+    last:
+      msgs
+        .filter(m => m.threadId === t.id)
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0] || null,
   }));
   res.json({ items });
 });
@@ -1648,9 +1738,7 @@ app.get('/api/threads/:id/messages', authRequired, (req, res) => {
   const t = read('threads').find(x => x.id === req.params.id);
   if (!t) return res.status(404).json({ error: 'Thread not found' });
   if (req.user.role !== 'admin' && t.customerId !== req.user.id) {
-    const own = read('suppliers').find(
-      s => s.id === t.supplierId && s.ownerUserId === req.user.id
-    );
+    const own = read('suppliers').find(s => s.id === t.supplierId && s.ownerUserId === req.user.id);
     if (!own) return res.status(403).json({ error: 'Forbidden' });
   }
   const msgs = read('messages')
@@ -1665,9 +1753,7 @@ app.post('/api/threads/:id/messages', writeLimiter, authRequired, csrfProtection
   const t = read('threads').find(x => x.id === req.params.id);
   if (!t) return res.status(404).json({ error: 'Thread not found' });
   if (req.user.role !== 'admin' && t.customerId !== req.user.id) {
-    const own = read('suppliers').find(
-      s => s.id === t.supplierId && s.ownerUserId === req.user.id
-    );
+    const own = read('suppliers').find(s => s.id === t.supplierId && s.ownerUserId === req.user.id);
     if (!own) return res.status(403).json({ error: 'Forbidden' });
   }
   const msgs = read('messages');
@@ -1677,7 +1763,7 @@ app.post('/api/threads/:id/messages', writeLimiter, authRequired, csrfProtection
     fromUserId: req.user.id,
     fromRole: req.user.role,
     text: String(text).slice(0, 4000),
-    createdAt: new Date().toISOString()
+    createdAt: new Date().toISOString(),
   };
   msgs.push(entry);
   write('messages', msgs);
@@ -1694,9 +1780,9 @@ app.post('/api/threads/:id/messages', writeLimiter, authRequired, csrfProtection
   (async () => {
     try {
       const otherEmail =
-        (req.user.role === 'customer')
-          ? (((read('suppliers').find(s => s.id === t.supplierId) || {}).email) || null)
-          : (((read('users').find(u => u.id === t.customerId) || {}).email) || null);
+        req.user.role === 'customer'
+          ? (read('suppliers').find(s => s.id === t.supplierId) || {}).email || null
+          : (read('users').find(u => u.id === t.customerId) || {}).email || null;
       const me = read('users').find(u => u.id === req.user.id);
       if (otherEmail && me && me.notify !== false) {
         await sendMail(
@@ -1720,9 +1806,7 @@ app.get('/api/plan', authRequired, (req, res) => {
   }
   const plans = read('plans').filter(p => p.userId === req.user.id);
   const suppliers = read('suppliers').filter(s => s.approved);
-  const items = plans
-    .map(p => suppliers.find(s => s.id === p.supplierId))
-    .filter(Boolean);
+  const items = plans.map(p => suppliers.find(s => s.id === p.supplierId)).filter(Boolean);
   res.json({ items });
 });
 
@@ -1740,7 +1824,7 @@ app.post('/api/plan', authRequired, csrfProtection, (req, res) => {
       id: uid('pln'),
       userId: req.user.id,
       supplierId,
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
     });
   }
   write('plans', all);
@@ -1780,7 +1864,7 @@ app.post('/api/notes', authRequired, csrfProtection, (req, res) => {
       id: uid('nte'),
       userId: req.user.id,
       text: String((req.body && req.body.text) || ''),
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
     });
   }
   write('notes', all);
@@ -1810,7 +1894,7 @@ app.get('/api/meta', (_req, res) => {
     ok: true,
     version: APP_VERSION,
     node: process.version,
-    env: process.env.NODE_ENV || 'development'
+    env: process.env.NODE_ENV || 'development',
   });
 });
 
@@ -1833,7 +1917,7 @@ app.get('/api/admin/metrics/timeseries', authRequired, roleRequired('admin'), (_
       date: iso,
       visitors: 20 + ((i * 7) % 15),
       signups: 3 + (i % 4),
-      plans: 1 + (i % 3)
+      plans: 1 + (i % 3),
     });
   }
   res.json({ series });
@@ -1858,185 +1942,227 @@ app.get('/api/admin/metrics', authRequired, roleRequired('admin'), (_req, res) =
       packagesTotal: pkgs.length,
       plansTotal: plans.length,
       messagesTotal: msgs.length,
-      threadsTotal: threads.length
-    }
+      threadsTotal: threads.length,
+    },
   });
 });
 
-app.post('/api/admin/reset-demo', authRequired, roleRequired('admin'), csrfProtection, (req, res) => {
-  try {
-    // Clear key collections and rerun seeding
-    const collections = [
-      'users',
-      'suppliers',
-      'packages',
-      'plans',
-      'notes',
-      'messages',
-      'threads',
-      'events'
-    ];
-    collections.forEach(name => write(name, []));
-    seed();
-    res.json({ ok: true });
-  } catch (err) {
-    console.error('Reset demo failed', err);
-    res.status(500).json({ error: 'Reset demo failed' });
+app.post(
+  '/api/admin/reset-demo',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  (req, res) => {
+    try {
+      // Clear key collections and rerun seeding
+      const collections = [
+        'users',
+        'suppliers',
+        'packages',
+        'plans',
+        'notes',
+        'messages',
+        'threads',
+        'events',
+      ];
+      collections.forEach(name => write(name, []));
+      seed();
+      res.json({ ok: true });
+    } catch (err) {
+      console.error('Reset demo failed', err);
+      res.status(500).json({ error: 'Reset demo failed' });
+    }
   }
-});
+);
 
 app.get('/api/admin/suppliers', authRequired, roleRequired('admin'), (_req, res) => {
   const raw = read('suppliers');
   const items = raw.map(s => ({
     ...s,
     isPro: supplierIsProActive(s),
-    proExpiresAt: s.proExpiresAt || null
+    proExpiresAt: s.proExpiresAt || null,
   }));
   res.json({ items });
 });
 
-app.post('/api/admin/suppliers/:id/approve', authRequired, roleRequired('admin'), csrfProtection, (req, res) => {
-  const all = read('suppliers');
-  const i = all.findIndex(s => s.id === req.params.id);
-  if (i < 0) return res.status(404).json({ error: 'Not found' });
-  all[i].approved = !!(req.body && req.body.approved);
-  write('suppliers', all);
-  res.json({ ok: true, supplier: all[i] });
-});
-
-app.post('/api/admin/suppliers/:id/pro', authRequired, roleRequired('admin'), csrfProtection, (req, res) => {
-  const { mode, duration } = req.body || {};
-  const all = read('suppliers');
-  const i = all.findIndex(s => s.id === req.params.id);
-  if (i < 0) return res.status(404).json({ error: 'Not found' });
-
-  const s = all[i];
-  const now = Date.now();
-
-  if (mode === 'cancel') {
-    s.isPro = false;
-    s.proExpiresAt = null;
-  } else if (mode === 'duration') {
-    let ms = 0;
-    switch (duration) {
-      case '1d':
-        ms = 1 * 24 * 60 * 60 * 1000;
-        break;
-      case '7d':
-        ms = 7 * 24 * 60 * 60 * 1000;
-        break;
-      case '1m':
-        ms = 30 * 24 * 60 * 60 * 1000;
-        break;
-      case '1y':
-        ms = 365 * 24 * 60 * 60 * 1000;
-        break;
-      default:
-        return res.status(400).json({ error: 'Invalid duration' });
-    }
-    s.isPro = true;
-    s.proExpiresAt = new Date(now + ms).toISOString();
-  } else {
-    return res.status(400).json({ error: 'Invalid mode' });
+app.post(
+  '/api/admin/suppliers/:id/approve',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  (req, res) => {
+    const all = read('suppliers');
+    const i = all.findIndex(s => s.id === req.params.id);
+    if (i < 0) return res.status(404).json({ error: 'Not found' });
+    all[i].approved = !!(req.body && req.body.approved);
+    write('suppliers', all);
+    res.json({ ok: true, supplier: all[i] });
   }
+);
 
-  // Optionally mirror Pro flag to the owning user, if present.
-  try {
-    if (s.ownerUserId) {
-      const users = read('users');
-      const u = users.find(u => u.id === s.ownerUserId);
-      if (u) {
-        u.isPro = !!s.isPro;
-        write('users', users);
+app.post(
+  '/api/admin/suppliers/:id/pro',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  (req, res) => {
+    const { mode, duration } = req.body || {};
+    const all = read('suppliers');
+    const i = all.findIndex(s => s.id === req.params.id);
+    if (i < 0) return res.status(404).json({ error: 'Not found' });
+
+    const s = all[i];
+    const now = Date.now();
+
+    if (mode === 'cancel') {
+      s.isPro = false;
+      s.proExpiresAt = null;
+    } else if (mode === 'duration') {
+      let ms = 0;
+      switch (duration) {
+        case '1d':
+          ms = 1 * 24 * 60 * 60 * 1000;
+          break;
+        case '7d':
+          ms = 7 * 24 * 60 * 60 * 1000;
+          break;
+        case '1m':
+          ms = 30 * 24 * 60 * 60 * 1000;
+          break;
+        case '1y':
+          ms = 365 * 24 * 60 * 60 * 1000;
+          break;
+        default:
+          return res.status(400).json({ error: 'Invalid duration' });
       }
+      s.isPro = true;
+      s.proExpiresAt = new Date(now + ms).toISOString();
+    } else {
+      return res.status(400).json({ error: 'Invalid mode' });
     }
-  } catch (_e) {
-    // ignore errors from user store
+
+    // Optionally mirror Pro flag to the owning user, if present.
+    try {
+      if (s.ownerUserId) {
+        const users = read('users');
+        const u = users.find(u => u.id === s.ownerUserId);
+        if (u) {
+          u.isPro = !!s.isPro;
+          write('users', users);
+        }
+      }
+    } catch (_e) {
+      // ignore errors from user store
+    }
+
+    all[i] = s;
+    write('suppliers', all);
+
+    const active = supplierIsProActive(s);
+    res.json({
+      ok: true,
+      supplier: {
+        ...s,
+        isPro: active,
+        proExpiresAt: s.proExpiresAt || null,
+      },
+    });
   }
-
-  all[i] = s;
-  write('suppliers', all);
-
-  const active = supplierIsProActive(s);
-  res.json({
-    ok: true,
-    supplier: {
-      ...s,
-      isPro: active,
-      proExpiresAt: s.proExpiresAt || null
-    }
-  });
-});
+);
 
 app.get('/api/admin/packages', authRequired, roleRequired('admin'), (_req, res) => {
   res.json({ items: read('packages') });
 });
 
-app.post('/api/admin/packages/:id/approve', authRequired, roleRequired('admin'), csrfProtection, (req, res) => {
-  const all = read('packages');
-  const i = all.findIndex(p => p.id === req.params.id);
-  if (i < 0) return res.status(404).json({ error: 'Not found' });
-  all[i].approved = !!(req.body && req.body.approved);
-  write('packages', all);
-  res.json({ ok: true, package: all[i] });
-});
+app.post(
+  '/api/admin/packages/:id/approve',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  (req, res) => {
+    const all = read('packages');
+    const i = all.findIndex(p => p.id === req.params.id);
+    if (i < 0) return res.status(404).json({ error: 'Not found' });
+    all[i].approved = !!(req.body && req.body.approved);
+    write('packages', all);
+    res.json({ ok: true, package: all[i] });
+  }
+);
 
-app.post('/api/admin/packages/:id/feature', authRequired, roleRequired('admin'), csrfProtection, (req, res) => {
-  const all = read('packages');
-  const i = all.findIndex(p => p.id === req.params.id);
-  if (i < 0) return res.status(404).json({ error: 'Not found' });
-  all[i].featured = !!(req.body && req.body.featured);
-  write('packages', all);
-  res.json({ ok: true, package: all[i] });
-});
+app.post(
+  '/api/admin/packages/:id/feature',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  (req, res) => {
+    const all = read('packages');
+    const i = all.findIndex(p => p.id === req.params.id);
+    if (i < 0) return res.status(404).json({ error: 'Not found' });
+    all[i].featured = !!(req.body && req.body.featured);
+    write('packages', all);
+    res.json({ ok: true, package: all[i] });
+  }
+);
 
 /**
  * PUT /api/admin/packages/:id
  * Update package details
  */
-app.put('/api/admin/packages/:id', authRequired, roleRequired('admin'), csrfProtection, (req, res) => {
-  const { id } = req.params;
-  const packages = read('packages');
-  const pkgIndex = packages.findIndex(p => p.id === id);
-  
-  if (pkgIndex === -1) {
-    return res.status(404).json({ error: 'Package not found' });
+app.put(
+  '/api/admin/packages/:id',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  (req, res) => {
+    const { id } = req.params;
+    const packages = read('packages');
+    const pkgIndex = packages.findIndex(p => p.id === id);
+
+    if (pkgIndex === -1) {
+      return res.status(404).json({ error: 'Package not found' });
+    }
+
+    const pkg = packages[pkgIndex];
+    const now = new Date().toISOString();
+
+    // Update allowed fields
+    if (req.body.title) pkg.title = req.body.title;
+    if (req.body.description) pkg.description = req.body.description;
+    if (req.body.price_display) pkg.price_display = req.body.price_display;
+    if (req.body.image) pkg.image = req.body.image;
+    if (typeof req.body.approved === 'boolean') pkg.approved = req.body.approved;
+    if (typeof req.body.featured === 'boolean') pkg.featured = req.body.featured;
+    pkg.updatedAt = now;
+
+    packages[pkgIndex] = pkg;
+    write('packages', packages);
+
+    res.json({ ok: true, package: pkg });
   }
-  
-  const pkg = packages[pkgIndex];
-  const now = new Date().toISOString();
-  
-  // Update allowed fields
-  if (req.body.title) pkg.title = req.body.title;
-  if (req.body.description) pkg.description = req.body.description;
-  if (req.body.price_display) pkg.price_display = req.body.price_display;
-  if (req.body.image) pkg.image = req.body.image;
-  if (typeof req.body.approved === 'boolean') pkg.approved = req.body.approved;
-  if (typeof req.body.featured === 'boolean') pkg.featured = req.body.featured;
-  pkg.updatedAt = now;
-  
-  packages[pkgIndex] = pkg;
-  write('packages', packages);
-  
-  res.json({ ok: true, package: pkg });
-});
+);
 
 /**
  * DELETE /api/admin/packages/:id
  * Delete a package
  */
-app.delete('/api/admin/packages/:id', authRequired, roleRequired('admin'), csrfProtection, (req, res) => {
-  const { id } = req.params;
-  const packages = read('packages');
-  const filtered = packages.filter(p => p.id !== id);
-  
-  if (filtered.length === packages.length) {
-    return res.status(404).json({ error: 'Package not found' });
+app.delete(
+  '/api/admin/packages/:id',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  (req, res) => {
+    const { id } = req.params;
+    const packages = read('packages');
+    const filtered = packages.filter(p => p.id !== id);
+
+    if (filtered.length === packages.length) {
+      return res.status(404).json({ error: 'Package not found' });
+    }
+
+    write('packages', filtered);
+    res.json({ ok: true, message: 'Package deleted successfully' });
   }
-  
-  write('packages', filtered);
-  res.json({ ok: true, message: 'Package deleted successfully' });
-});
+);
 
 // ---------- Sitemap ----------
 app.get('/sitemap.xml', (_req, res) => {
@@ -2050,13 +2176,13 @@ app.get('/sitemap.xml', (_req, res) => {
     `${base}/start.html`,
     `${base}/plan.html`,
     `${base}/auth.html`,
-    ...suppliers
+    ...suppliers,
   ];
   const xml = [
     '<?xml version="1.0" encoding="UTF-8"?>',
     '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
     ...urls.map(u => `<url><loc>${u}</loc></url>`),
-    '</urlset>'
+    '</urlset>',
   ].join('');
   res.set('Content-Type', 'application/xml');
   res.send(xml);
@@ -2160,11 +2286,7 @@ app.get('/api/plan/export/pdf', authRequired, planOwnerOnly, async (req, res) =>
 const UP_ROOT = path.join(DATA_DIR, 'uploads');
 
 function ensureDirs() {
-  const dirs = [
-    UP_ROOT,
-    path.join(UP_ROOT, 'suppliers'),
-    path.join(UP_ROOT, 'packages')
-  ];
+  const dirs = [UP_ROOT, path.join(UP_ROOT, 'suppliers'), path.join(UP_ROOT, 'packages')];
   for (const d of dirs) {
     if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true });
   }
@@ -2226,7 +2348,7 @@ app.post('/api/me/packages/:id/photos', authRequired, csrfProtection, (req, res)
 /**
  * Search suppliers with advanced filters
  * GET /api/search/suppliers
- * Query params: q, category, location, minPrice, maxPrice, minRating, amenities, 
+ * Query params: q, category, location, minPrice, maxPrice, minRating, amenities,
  *               minGuests, proOnly, verifiedOnly, sortBy, page, perPage
  */
 app.get('/api/search/suppliers', async (req, res) => {
@@ -2388,7 +2510,6 @@ app.get('/api/search/amenities', async (req, res) => {
 
 // ---------- Reviews and Ratings System ----------
 
-
 /**
  * Create a review for a supplier
  * POST /api/reviews
@@ -2526,27 +2647,33 @@ app.get('/api/admin/reviews/pending', authRequired, roleRequired('admin'), async
  * POST /api/admin/reviews/:reviewId/approve
  * Body: { approved: boolean }
  */
-app.post('/api/admin/reviews/:reviewId/approve', authRequired, roleRequired('admin'), csrfProtection, async (req, res) => {
-  try {
-    const { reviewId } = req.params;
-    const { approved } = req.body;
+app.post(
+  '/api/admin/reviews/:reviewId/approve',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    try {
+      const { reviewId } = req.params;
+      const { approved } = req.body;
 
-    if (typeof approved !== 'boolean') {
-      return res.status(400).json({ error: 'Invalid input' });
+      if (typeof approved !== 'boolean') {
+        return res.status(400).json({ error: 'Invalid input' });
+      }
+
+      const review = await reviewsSystem.approveReview(reviewId, approved, req.user.id);
+
+      res.json({
+        success: true,
+        review,
+        message: approved ? 'Review approved' : 'Review rejected',
+      });
+    } catch (error) {
+      console.error('Approve review error:', error);
+      res.status(500).json({ error: error.message });
     }
-
-    const review = await reviewsSystem.approveReview(reviewId, approved, req.user.id);
-
-    res.json({
-      success: true,
-      review,
-      message: approved ? 'Review approved' : 'Review rejected',
-    });
-  } catch (error) {
-    console.error('Approve review error:', error);
-    res.status(500).json({ error: error.message });
   }
-});
+);
 
 /**
  * Delete a review
@@ -2571,106 +2698,111 @@ app.delete('/api/reviews/:reviewId', authRequired, csrfProtection, async (req, r
 
 // ---------- Photo Upload & Management ----------
 
-
 /**
  * Upload single photo for supplier or package
  * POST /api/photos/upload
  * Body: multipart/form-data with 'photo' field
  * Query: ?type=supplier|package&id=<supplierId|packageId>
  */
-app.post('/api/photos/upload', authRequired, photoUpload.upload.single('photo'), csrfProtection, async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ error: 'No file uploaded' });
+app.post(
+  '/api/photos/upload',
+  authRequired,
+  photoUpload.upload.single('photo'),
+  csrfProtection,
+  async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: 'No file uploaded' });
+      }
+
+      const { type, id } = req.query;
+      if (!type || !id) {
+        return res.status(400).json({ error: 'Missing type or id parameter' });
+      }
+
+      // Process and save image
+      const images = await photoUpload.processAndSaveImage(req.file.buffer, req.file.originalname);
+
+      // Get metadata
+      const metadata = await photoUpload.getImageMetadata(req.file.buffer);
+
+      // Create photo record
+      const photoRecord = {
+        url: images.optimized,
+        thumbnail: images.thumbnail,
+        large: images.large,
+        original: images.original,
+        approved: false, // Requires admin approval
+        uploadedAt: Date.now(),
+        uploadedBy: req.user.id,
+        metadata: metadata,
+      };
+
+      // Update supplier or package with new photo
+      if (type === 'supplier') {
+        const suppliers = await read('suppliers');
+        const supplier = suppliers.find(s => s.id === id);
+
+        if (!supplier) {
+          return res.status(404).json({ error: 'Supplier not found' });
+        }
+
+        // Check if user owns this supplier
+        if (supplier.ownerUserId !== req.user.id && req.user.role !== 'admin') {
+          return res.status(403).json({ error: 'Not authorized' });
+        }
+
+        // Add to gallery
+        if (!supplier.photosGallery) {
+          supplier.photosGallery = [];
+        }
+        supplier.photosGallery.push(photoRecord);
+
+        await write('suppliers', suppliers);
+
+        return res.json({
+          success: true,
+          photo: photoRecord,
+          message: 'Photo uploaded successfully. Pending admin approval.',
+        });
+      } else if (type === 'package') {
+        const packages = await read('packages');
+        const pkg = packages.find(p => p.id === id);
+
+        if (!pkg) {
+          return res.status(404).json({ error: 'Package not found' });
+        }
+
+        // Check if user owns this package's supplier
+        const suppliers = await read('suppliers');
+        const supplier = suppliers.find(s => s.id === pkg.supplierId);
+
+        if (!supplier || (supplier.ownerUserId !== req.user.id && req.user.role !== 'admin')) {
+          return res.status(403).json({ error: 'Not authorized' });
+        }
+
+        // Add to gallery
+        if (!pkg.gallery) {
+          pkg.gallery = [];
+        }
+        pkg.gallery.push(photoRecord);
+
+        await write('packages', packages);
+
+        return res.json({
+          success: true,
+          photo: photoRecord,
+          message: 'Photo uploaded successfully. Pending admin approval.',
+        });
+      } else {
+        return res.status(400).json({ error: 'Invalid type. Must be supplier or package.' });
+      }
+    } catch (error) {
+      console.error('Photo upload error:', error);
+      res.status(500).json({ error: 'Failed to upload photo', details: error.message });
     }
-
-    const { type, id } = req.query;
-    if (!type || !id) {
-      return res.status(400).json({ error: 'Missing type or id parameter' });
-    }
-
-    // Process and save image
-    const images = await photoUpload.processAndSaveImage(req.file.buffer, req.file.originalname);
-    
-    // Get metadata
-    const metadata = await photoUpload.getImageMetadata(req.file.buffer);
-
-    // Create photo record
-    const photoRecord = {
-      url: images.optimized,
-      thumbnail: images.thumbnail,
-      large: images.large,
-      original: images.original,
-      approved: false, // Requires admin approval
-      uploadedAt: Date.now(),
-      uploadedBy: req.user.id,
-      metadata: metadata,
-    };
-
-    // Update supplier or package with new photo
-    if (type === 'supplier') {
-      const suppliers = await read('suppliers');
-      const supplier = suppliers.find(s => s.id === id);
-      
-      if (!supplier) {
-        return res.status(404).json({ error: 'Supplier not found' });
-      }
-
-      // Check if user owns this supplier
-      if (supplier.ownerUserId !== req.user.id && req.user.role !== 'admin') {
-        return res.status(403).json({ error: 'Not authorized' });
-      }
-
-      // Add to gallery
-      if (!supplier.photosGallery) {
-        supplier.photosGallery = [];
-      }
-      supplier.photosGallery.push(photoRecord);
-
-      await write('suppliers', suppliers);
-      
-      return res.json({
-        success: true,
-        photo: photoRecord,
-        message: 'Photo uploaded successfully. Pending admin approval.',
-      });
-    } else if (type === 'package') {
-      const packages = await read('packages');
-      const pkg = packages.find(p => p.id === id);
-      
-      if (!pkg) {
-        return res.status(404).json({ error: 'Package not found' });
-      }
-
-      // Check if user owns this package's supplier
-      const suppliers = await read('suppliers');
-      const supplier = suppliers.find(s => s.id === pkg.supplierId);
-      
-      if (!supplier || (supplier.ownerUserId !== req.user.id && req.user.role !== 'admin')) {
-        return res.status(403).json({ error: 'Not authorized' });
-      }
-
-      // Add to gallery
-      if (!pkg.gallery) {
-        pkg.gallery = [];
-      }
-      pkg.gallery.push(photoRecord);
-
-      await write('packages', packages);
-      
-      return res.json({
-        success: true,
-        photo: photoRecord,
-        message: 'Photo uploaded successfully. Pending admin approval.',
-      });
-    } else {
-      return res.status(400).json({ error: 'Invalid type. Must be supplier or package.' });
-    }
-  } catch (error) {
-    console.error('Photo upload error:', error);
-    res.status(500).json({ error: 'Failed to upload photo', details: error.message });
   }
-});
+);
 
 /**
  * Upload multiple photos (batch upload)
@@ -2678,99 +2810,105 @@ app.post('/api/photos/upload', authRequired, photoUpload.upload.single('photo'),
  * Body: multipart/form-data with 'photos' field (multiple files)
  * Query: ?type=supplier|package&id=<supplierId|packageId>
  */
-app.post('/api/photos/upload/batch', authRequired, photoUpload.upload.array('photos', 10), csrfProtection, async (req, res) => {
-  try {
-    if (!req.files || req.files.length === 0) {
-      return res.status(400).json({ error: 'No files uploaded' });
+app.post(
+  '/api/photos/upload/batch',
+  authRequired,
+  photoUpload.upload.array('photos', 10),
+  csrfProtection,
+  async (req, res) => {
+    try {
+      if (!req.files || req.files.length === 0) {
+        return res.status(400).json({ error: 'No files uploaded' });
+      }
+
+      const { type, id } = req.query;
+      if (!type || !id) {
+        return res.status(400).json({ error: 'Missing type or id parameter' });
+      }
+
+      // Process all images
+      const uploadedPhotos = [];
+      const errors = [];
+
+      for (const file of req.files) {
+        try {
+          const images = await photoUpload.processAndSaveImage(file.buffer, file.originalname);
+          const metadata = await photoUpload.getImageMetadata(file.buffer);
+
+          const photoRecord = {
+            url: images.optimized,
+            thumbnail: images.thumbnail,
+            large: images.large,
+            original: images.original,
+            approved: false,
+            uploadedAt: Date.now(),
+            uploadedBy: req.user.id,
+            metadata: metadata,
+          };
+
+          uploadedPhotos.push(photoRecord);
+        } catch (error) {
+          errors.push({ filename: file.originalname, error: error.message });
+        }
+      }
+
+      // Update supplier or package with new photos
+      if (type === 'supplier') {
+        const suppliers = await read('suppliers');
+        const supplier = suppliers.find(s => s.id === id);
+
+        if (!supplier) {
+          return res.status(404).json({ error: 'Supplier not found' });
+        }
+
+        if (supplier.ownerUserId !== req.user.id && req.user.role !== 'admin') {
+          return res.status(403).json({ error: 'Not authorized' });
+        }
+
+        if (!supplier.photosGallery) {
+          supplier.photosGallery = [];
+        }
+        supplier.photosGallery.push(...uploadedPhotos);
+
+        await write('suppliers', suppliers);
+      } else if (type === 'package') {
+        const packages = await read('packages');
+        const pkg = packages.find(p => p.id === id);
+
+        if (!pkg) {
+          return res.status(404).json({ error: 'Package not found' });
+        }
+
+        const suppliers = await read('suppliers');
+        const supplier = suppliers.find(s => s.id === pkg.supplierId);
+
+        if (!supplier || (supplier.ownerUserId !== req.user.id && req.user.role !== 'admin')) {
+          return res.status(403).json({ error: 'Not authorized' });
+        }
+
+        if (!pkg.gallery) {
+          pkg.gallery = [];
+        }
+        pkg.gallery.push(...uploadedPhotos);
+
+        await write('packages', packages);
+      } else {
+        return res.status(400).json({ error: 'Invalid type' });
+      }
+
+      res.json({
+        success: true,
+        uploaded: uploadedPhotos.length,
+        photos: uploadedPhotos,
+        errors: errors,
+        message: `${uploadedPhotos.length} photo(s) uploaded successfully. Pending admin approval.`,
+      });
+    } catch (error) {
+      console.error('Batch upload error:', error);
+      res.status(500).json({ error: 'Failed to upload photos', details: error.message });
     }
-
-    const { type, id } = req.query;
-    if (!type || !id) {
-      return res.status(400).json({ error: 'Missing type or id parameter' });
-    }
-
-    // Process all images
-    const uploadedPhotos = [];
-    const errors = [];
-
-    for (const file of req.files) {
-      try {
-        const images = await photoUpload.processAndSaveImage(file.buffer, file.originalname);
-        const metadata = await photoUpload.getImageMetadata(file.buffer);
-
-        const photoRecord = {
-          url: images.optimized,
-          thumbnail: images.thumbnail,
-          large: images.large,
-          original: images.original,
-          approved: false,
-          uploadedAt: Date.now(),
-          uploadedBy: req.user.id,
-          metadata: metadata,
-        };
-
-        uploadedPhotos.push(photoRecord);
-      } catch (error) {
-        errors.push({ filename: file.originalname, error: error.message });
-      }
-    }
-
-    // Update supplier or package with new photos
-    if (type === 'supplier') {
-      const suppliers = await read('suppliers');
-      const supplier = suppliers.find(s => s.id === id);
-      
-      if (!supplier) {
-        return res.status(404).json({ error: 'Supplier not found' });
-      }
-
-      if (supplier.ownerUserId !== req.user.id && req.user.role !== 'admin') {
-        return res.status(403).json({ error: 'Not authorized' });
-      }
-
-      if (!supplier.photosGallery) {
-        supplier.photosGallery = [];
-      }
-      supplier.photosGallery.push(...uploadedPhotos);
-
-      await write('suppliers', suppliers);
-    } else if (type === 'package') {
-      const packages = await read('packages');
-      const pkg = packages.find(p => p.id === id);
-      
-      if (!pkg) {
-        return res.status(404).json({ error: 'Package not found' });
-      }
-
-      const suppliers = await read('suppliers');
-      const supplier = suppliers.find(s => s.id === pkg.supplierId);
-      
-      if (!supplier || (supplier.ownerUserId !== req.user.id && req.user.role !== 'admin')) {
-        return res.status(403).json({ error: 'Not authorized' });
-      }
-
-      if (!pkg.gallery) {
-        pkg.gallery = [];
-      }
-      pkg.gallery.push(...uploadedPhotos);
-
-      await write('packages', packages);
-    } else {
-      return res.status(400).json({ error: 'Invalid type' });
-    }
-
-    res.json({
-      success: true,
-      uploaded: uploadedPhotos.length,
-      photos: uploadedPhotos,
-      errors: errors,
-      message: `${uploadedPhotos.length} photo(s) uploaded successfully. Pending admin approval.`,
-    });
-  } catch (error) {
-    console.error('Batch upload error:', error);
-    res.status(500).json({ error: 'Failed to upload photos', details: error.message });
   }
-});
+);
 
 /**
  * Delete photo
@@ -2780,7 +2918,7 @@ app.post('/api/photos/upload/batch', authRequired, photoUpload.upload.array('pho
 app.delete('/api/photos/delete', authRequired, csrfProtection, async (req, res) => {
   try {
     const { type, id, photoUrl } = req.query;
-    
+
     if (!type || !id || !photoUrl) {
       return res.status(400).json({ error: 'Missing required parameters' });
     }
@@ -2790,7 +2928,7 @@ app.delete('/api/photos/delete', authRequired, csrfProtection, async (req, res) 
     if (type === 'supplier') {
       const suppliers = await read('suppliers');
       const supplier = suppliers.find(s => s.id === id);
-      
+
       if (!supplier) {
         return res.status(404).json({ error: 'Supplier not found' });
       }
@@ -2802,21 +2940,21 @@ app.delete('/api/photos/delete', authRequired, csrfProtection, async (req, res) 
       if (supplier.photosGallery) {
         supplier.photosGallery = supplier.photosGallery.filter(p => p.url !== decodedUrl);
         await write('suppliers', suppliers);
-        
+
         // Delete physical files
         await photoUpload.deleteImage(decodedUrl);
       }
     } else if (type === 'package') {
       const packages = await read('packages');
       const pkg = packages.find(p => p.id === id);
-      
+
       if (!pkg) {
         return res.status(404).json({ error: 'Package not found' });
       }
 
       const suppliers = await read('suppliers');
       const supplier = suppliers.find(s => s.id === pkg.supplierId);
-      
+
       if (!supplier || (supplier.ownerUserId !== req.user.id && req.user.role !== 'admin')) {
         return res.status(403).json({ error: 'Not authorized' });
       }
@@ -2824,7 +2962,7 @@ app.delete('/api/photos/delete', authRequired, csrfProtection, async (req, res) 
       if (pkg.gallery) {
         pkg.gallery = pkg.gallery.filter(p => p.url !== decodedUrl);
         await write('packages', packages);
-        
+
         // Delete physical files
         await photoUpload.deleteImage(decodedUrl);
       }
@@ -2842,59 +2980,65 @@ app.delete('/api/photos/delete', authRequired, csrfProtection, async (req, res) 
  * POST /api/photos/approve
  * Body: { type, id, photoUrl, approved }
  */
-app.post('/api/photos/approve', authRequired, roleRequired('admin'), csrfProtection, async (req, res) => {
-  try {
-    const { type, id, photoUrl, approved } = req.body;
-    
-    if (!type || !id || !photoUrl || typeof approved !== 'boolean') {
-      return res.status(400).json({ error: 'Missing required parameters' });
-    }
+app.post(
+  '/api/photos/approve',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    try {
+      const { type, id, photoUrl, approved } = req.body;
 
-    if (type === 'supplier') {
-      const suppliers = await read('suppliers');
-      const supplier = suppliers.find(s => s.id === id);
-      
-      if (!supplier) {
-        return res.status(404).json({ error: 'Supplier not found' });
+      if (!type || !id || !photoUrl || typeof approved !== 'boolean') {
+        return res.status(400).json({ error: 'Missing required parameters' });
       }
 
-      if (supplier.photosGallery) {
-        const photo = supplier.photosGallery.find(p => p.url === photoUrl);
-        if (photo) {
-          photo.approved = approved;
-          photo.approvedAt = Date.now();
-          photo.approvedBy = req.user.id;
-          await write('suppliers', suppliers);
+      if (type === 'supplier') {
+        const suppliers = await read('suppliers');
+        const supplier = suppliers.find(s => s.id === id);
+
+        if (!supplier) {
+          return res.status(404).json({ error: 'Supplier not found' });
+        }
+
+        if (supplier.photosGallery) {
+          const photo = supplier.photosGallery.find(p => p.url === photoUrl);
+          if (photo) {
+            photo.approved = approved;
+            photo.approvedAt = Date.now();
+            photo.approvedBy = req.user.id;
+            await write('suppliers', suppliers);
+          }
+        }
+      } else if (type === 'package') {
+        const packages = await read('packages');
+        const pkg = packages.find(p => p.id === id);
+
+        if (!pkg) {
+          return res.status(404).json({ error: 'Package not found' });
+        }
+
+        if (pkg.gallery) {
+          const photo = pkg.gallery.find(p => p.url === photoUrl);
+          if (photo) {
+            photo.approved = approved;
+            photo.approvedAt = Date.now();
+            photo.approvedBy = req.user.id;
+            await write('packages', packages);
+          }
         }
       }
-    } else if (type === 'package') {
-      const packages = await read('packages');
-      const pkg = packages.find(p => p.id === id);
-      
-      if (!pkg) {
-        return res.status(404).json({ error: 'Package not found' });
-      }
 
-      if (pkg.gallery) {
-        const photo = pkg.gallery.find(p => p.url === photoUrl);
-        if (photo) {
-          photo.approved = approved;
-          photo.approvedAt = Date.now();
-          photo.approvedBy = req.user.id;
-          await write('packages', packages);
-        }
-      }
+      res.json({
+        success: true,
+        message: approved ? 'Photo approved' : 'Photo rejected',
+      });
+    } catch (error) {
+      console.error('Approve photo error:', error);
+      res.status(500).json({ error: 'Failed to approve photo', details: error.message });
     }
-
-    res.json({ 
-      success: true, 
-      message: approved ? 'Photo approved' : 'Photo rejected' 
-    });
-  } catch (error) {
-    console.error('Approve photo error:', error);
-    res.status(500).json({ error: 'Failed to approve photo', details: error.message });
   }
-});
+);
 
 /**
  * Crop image
@@ -2904,7 +3048,7 @@ app.post('/api/photos/approve', authRequired, roleRequired('admin'), csrfProtect
 app.post('/api/photos/crop', authRequired, csrfProtection, async (req, res) => {
   try {
     const { imageUrl, cropData } = req.body;
-    
+
     if (!imageUrl || !cropData) {
       return res.status(400).json({ error: 'Missing imageUrl or cropData' });
     }
@@ -2915,7 +3059,7 @@ app.post('/api/photos/crop', authRequired, csrfProtection, async (req, res) => {
     }
 
     const croppedImages = await photoUpload.cropImage(imageUrl, cropData);
-    
+
     res.json({
       success: true,
       images: croppedImages,
@@ -2990,19 +3134,19 @@ app.put('/api/photos/:id', authRequired, csrfProtection, async (req, res) => {
   try {
     const { id } = req.params;
     const { caption, altText, tags, isFeatured, watermark } = req.body;
-    
+
     const metadata = await photoUpload.updatePhotoMetadata(id, {
       caption,
       altText,
       tags,
       isFeatured,
-      watermark
+      watermark,
     });
-    
+
     res.json({
       success: true,
       metadata,
-      message: 'Photo metadata updated successfully'
+      message: 'Photo metadata updated successfully',
     });
   } catch (error) {
     console.error('Update photo metadata error:', error);
@@ -3014,27 +3158,37 @@ app.put('/api/photos/:id', authRequired, csrfProtection, async (req, res) => {
  * POST /api/photos/:id/replace
  * Replace photo while keeping metadata
  */
-app.post('/api/photos/:id/replace', authRequired, photoUpload.upload.single('photo'), csrfProtection, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { metadata } = req.body;
-    
-    if (!req.file) {
-      return res.status(400).json({ error: 'No photo file provided' });
+app.post(
+  '/api/photos/:id/replace',
+  authRequired,
+  photoUpload.upload.single('photo'),
+  csrfProtection,
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { metadata } = req.body;
+
+      if (!req.file) {
+        return res.status(400).json({ error: 'No photo file provided' });
+      }
+
+      const result = await photoUpload.replacePhoto(
+        id,
+        req.file.buffer,
+        JSON.parse(metadata || '{}')
+      );
+
+      res.json({
+        success: true,
+        photo: result,
+        message: 'Photo replaced successfully',
+      });
+    } catch (error) {
+      console.error('Replace photo error:', error);
+      res.status(500).json({ error: 'Failed to replace photo', details: error.message });
     }
-    
-    const result = await photoUpload.replacePhoto(id, req.file.buffer, JSON.parse(metadata || '{}'));
-    
-    res.json({
-      success: true,
-      photo: result,
-      message: 'Photo replaced successfully'
-    });
-  } catch (error) {
-    console.error('Replace photo error:', error);
-    res.status(500).json({ error: 'Failed to replace photo', details: error.message });
   }
-});
+);
 
 /**
  * POST /api/photos/bulk-edit
@@ -3043,22 +3197,20 @@ app.post('/api/photos/:id/replace', authRequired, photoUpload.upload.single('pho
 app.post('/api/photos/bulk-edit', authRequired, csrfProtection, async (req, res) => {
   try {
     const { photos } = req.body;
-    
+
     if (!Array.isArray(photos)) {
       return res.status(400).json({ error: 'Photos must be an array' });
     }
-    
+
     const results = await Promise.all(
-      photos.map(photo => 
-        photoUpload.updatePhotoMetadata(photo.id, photo.metadata)
-      )
+      photos.map(photo => photoUpload.updatePhotoMetadata(photo.id, photo.metadata))
     );
-    
+
     res.json({
       success: true,
       updated: results.length,
       photos: results,
-      message: `${results.length} photo(s) updated successfully`
+      message: `${results.length} photo(s) updated successfully`,
     });
   } catch (error) {
     console.error('Bulk edit photos error:', error);
@@ -3074,21 +3226,21 @@ app.post('/api/photos/:id/filters', authRequired, csrfProtection, async (req, re
   try {
     const { id } = req.params;
     const { imageUrl, brightness, contrast, saturation } = req.body;
-    
+
     if (!imageUrl) {
       return res.status(400).json({ error: 'Image URL is required' });
     }
-    
+
     const result = await photoUpload.applyFilters(imageUrl, {
       brightness: parseFloat(brightness) || 1,
       contrast: parseFloat(contrast) || 1,
-      saturation: parseFloat(saturation) || 1
+      saturation: parseFloat(saturation) || 1,
     });
-    
+
     res.json({
       success: true,
       image: result,
-      message: 'Filters applied successfully'
+      message: 'Filters applied successfully',
     });
   } catch (error) {
     console.error('Apply filters error:', error);
@@ -3103,17 +3255,17 @@ app.post('/api/photos/:id/filters', authRequired, csrfProtection, async (req, re
 app.post('/api/photos/reorder', authRequired, csrfProtection, async (req, res) => {
   try {
     const { photoOrder } = req.body;
-    
+
     if (!Array.isArray(photoOrder)) {
       return res.status(400).json({ error: 'Photo order must be an array' });
     }
-    
+
     const result = await photoUpload.updatePhotoOrder(photoOrder);
-    
+
     res.json({
       success: true,
       order: result,
-      message: 'Photo order updated successfully'
+      message: 'Photo order updated successfully',
     });
   } catch (error) {
     console.error('Reorder photos error:', error);
@@ -3134,7 +3286,7 @@ const { getAuditLogs, auditLog, AUDIT_ACTIONS } = require('./middleware/audit');
  */
 app.get('/api/admin/audit-logs', authRequired, roleRequired('admin'), (req, res) => {
   const { adminId, action, targetType, targetId, startDate, endDate, limit } = req.query;
-  
+
   const logs = getAuditLogs({
     adminId,
     action,
@@ -3142,9 +3294,9 @@ app.get('/api/admin/audit-logs', authRequired, roleRequired('admin'), (req, res)
     targetId,
     startDate,
     endDate,
-    limit: limit ? parseInt(limit, 10) : 100
+    limit: limit ? parseInt(limit, 10) : 100,
   });
-  
+
   res.json({ logs, count: logs.length });
 });
 
@@ -3154,10 +3306,18 @@ app.get('/api/health', healthCheckLimiter, async (_req, res) => {
     server: 'online',
     version: APP_VERSION,
     time: new Date().toISOString(),
-    email: EMAIL_ENABLED ? (AWS_SES_ENABLED ? 'aws-ses' : (transporter ? 'smtp' : (mailgun.isMailgunEnabled() ? 'mailgun' : 'disabled'))) : 'disabled',
-    environment: process.env.NODE_ENV || 'development'
+    email: EMAIL_ENABLED
+      ? AWS_SES_ENABLED
+        ? 'aws-ses'
+        : transporter
+          ? 'smtp'
+          : mailgun.isMailgunEnabled()
+            ? 'mailgun'
+            : 'disabled'
+      : 'disabled',
+    environment: process.env.NODE_ENV || 'development',
   };
-  
+
   // Check database status
   try {
     await dbUnified.initializeDatabase();
@@ -3169,7 +3329,7 @@ app.get('/api/health', healthCheckLimiter, async (_req, res) => {
     checks.databaseStatus = 'disconnected';
     checks.databaseError = error.message;
   }
-  
+
   // Check email service (non-critical, won't affect overall health)
   if (mailgun.isMailgunEnabled()) {
     // Mailgun is configured
@@ -3195,22 +3355,26 @@ app.get('/api/health', healthCheckLimiter, async (_req, res) => {
   } else {
     checks.emailStatus = EMAIL_ENABLED ? 'not_configured' : 'disabled';
   }
-  
+
   // Only database status affects overall health (email is optional)
   const allHealthy = checks.databaseStatus !== 'disconnected';
-  
+
   res.status(allHealthy ? 200 : 503).json({
     ok: allHealthy,
-    ...checks
+    ...checks,
   });
 });
 
 // ---------- Static & 404 ----------
 // API Documentation (Swagger UI)
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
-  customCss: '.swagger-ui .topbar { display: none }',
-  customSiteTitle: 'EventFlow API Documentation',
-}));
+app.use(
+  '/api-docs',
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerSpec, {
+    customCss: '.swagger-ui .topbar { display: none }',
+    customSiteTitle: 'EventFlow API Documentation',
+  })
+);
 
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -3255,31 +3419,31 @@ async function startServer() {
     console.log(`EventFlow ${APP_VERSION} - Starting Server`);
     console.log('='.repeat(60));
     console.log('');
-    
+
     // 1. Validate critical environment variables
     console.log('📋 Checking configuration...');
     const baseUrl = process.env.BASE_URL || `http://localhost:${PORT}`;
     console.log(`   BASE_URL: ${baseUrl}`);
     console.log(`   NODE_ENV: ${process.env.NODE_ENV || 'development'}`);
     console.log(`   PORT: ${PORT}`);
-    
+
     if (isProduction && baseUrl.includes('localhost')) {
       console.warn('⚠️  Warning: BASE_URL points to localhost in production');
       console.warn('   Set BASE_URL to your actual domain (e.g., https://event-flow.co.uk)');
     }
-    
+
     // 2. Pre-flight database validation (before initialization)
     console.log('');
     console.log('🔌 Validating database configuration...');
-    
+
     // Check if MongoDB is configured and validate the URI format
     if (process.env.MONGODB_URI) {
       console.log('   MongoDB URI detected - validating format...');
-      
+
       // The validation will happen in db.js getConnectionUri(), but we can provide
       // early feedback here if we detect obvious issues
       const uri = process.env.MONGODB_URI;
-      
+
       if (!uri.startsWith('mongodb://') && !uri.startsWith('mongodb+srv://')) {
         console.error('');
         console.error('❌ INVALID MONGODB_URI FORMAT');
@@ -3292,30 +3456,35 @@ async function startServer() {
         console.error('');
         process.exit(1);
       }
-      
+
       // Basic check for obvious placeholder values (detailed validation in db.js)
-      const hasPlaceholder = uri.includes('username:password') || 
-                            uri.includes('your-') || 
-                            uri.includes('YourCluster') ||
-                            uri.includes('<password>') ||
-                            uri.includes('<username>');
-                            
+      const hasPlaceholder =
+        uri.includes('username:password') ||
+        uri.includes('your-') ||
+        uri.includes('YourCluster') ||
+        uri.includes('<password>') ||
+        uri.includes('<username>');
+
       if (hasPlaceholder) {
         console.error('');
         console.error('❌ MONGODB_URI CONTAINS PLACEHOLDER VALUES');
-        console.error('   You must replace the example values with your actual MongoDB credentials.');
+        console.error(
+          '   You must replace the example values with your actual MongoDB credentials.'
+        );
         console.error('');
-        console.error('   Current MONGODB_URI contains placeholder text that needs to be replaced.');
+        console.error(
+          '   Current MONGODB_URI contains placeholder text that needs to be replaced.'
+        );
         console.error('');
         console.error('📚 Step-by-step setup guide: MONGODB_SETUP_SIMPLE.md');
         console.error('   Get your real connection string from: https://cloud.mongodb.com/');
         console.error('');
         process.exit(1);
       }
-      
+
       console.log('   ✅ MongoDB URI format looks valid');
     }
-    
+
     // Warn if using local storage in production (before initialization)
     if (isProduction) {
       if (!isFirebaseAvailable() && !isMongoAvailable()) {
@@ -3358,7 +3527,7 @@ async function startServer() {
         console.warn('');
       }
     }
-    
+
     // 3. Initialize database connection
     console.log('');
     console.log('🔌 Connecting to database...');
@@ -3376,10 +3545,12 @@ async function startServer() {
       console.error('Error details:');
       console.error(`   ${error.message}`);
       console.error('');
-      
-      if (error.message.includes('Invalid scheme') || 
-          error.message.includes('placeholder') ||
-          error.message.includes('MONGODB_URI')) {
+
+      if (
+        error.message.includes('Invalid scheme') ||
+        error.message.includes('placeholder') ||
+        error.message.includes('MONGODB_URI')
+      ) {
         console.error('🔍 This looks like a MongoDB configuration issue.');
         console.error('');
         console.error('📚 Follow the setup guide:');
@@ -3387,12 +3558,12 @@ async function startServer() {
         console.error('   → Get MongoDB Atlas free: https://cloud.mongodb.com/');
         console.error('');
       }
-      
+
       console.error('='.repeat(70));
       console.error('');
       process.exit(1);
     }
-    
+
     // 4. Check email service
     console.log('');
     console.log('📧 Checking email configuration...');
@@ -3432,7 +3603,7 @@ async function startServer() {
       console.log('   ℹ️  Email disabled (EMAIL_ENABLED=false)');
       console.log('   Emails will be saved to /outbox folder');
     }
-    
+
     // 5. Check optional services
     console.log('');
     console.log('🔧 Checking optional services...');
@@ -3441,21 +3612,21 @@ async function startServer() {
     } else {
       console.log('   ℹ️  Stripe: Not configured (optional)');
     }
-    
+
     if (AI_ENABLED) {
       console.log('   ✅ OpenAI: Configured');
     } else {
       console.log('   ℹ️  OpenAI: Not configured (optional)');
     }
-    
+
     // 6. Start the server
     console.log('');
     console.log('🚀 Starting server...');
-    
+
     server.listen(PORT, '0.0.0.0', () => {
       // Clear startup timeout - server started successfully
       clearTimeout(startupTimeout);
-      
+
       console.log('');
       console.log('='.repeat(60));
       console.log(`✅ Server is ready!`);
@@ -3472,11 +3643,10 @@ async function startServer() {
       console.log('WebSocket server initialized for real-time features');
       console.log('Server is now accepting requests');
     });
-    
   } catch (error) {
     // Clear startup timeout
     clearTimeout(startupTimeout);
-    
+
     console.error('');
     console.error('='.repeat(60));
     console.error('❌ STARTUP FAILED');

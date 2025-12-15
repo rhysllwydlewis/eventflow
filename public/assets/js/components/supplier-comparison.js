@@ -11,19 +11,20 @@ class SupplierComparison {
       maxSuppliers: options.maxSuppliers || 3,
       onSupplierAdd: options.onSupplierAdd || null,
       onSupplierRemove: options.onSupplierRemove || null,
-      onCompare: options.onCompare || null
+      onCompare: options.onCompare || null,
     };
 
     this.container = null;
     this.suppliers = this.options.suppliers;
-    
+
     this.init();
   }
 
   init() {
-    const containerEl = typeof this.options.container === 'string'
-      ? document.querySelector(this.options.container)
-      : this.options.container;
+    const containerEl =
+      typeof this.options.container === 'string'
+        ? document.querySelector(this.options.container)
+        : this.options.container;
 
     if (!containerEl) {
       console.error('Comparison container not found');
@@ -70,14 +71,20 @@ class SupplierComparison {
       <div class="comparison-grid" style="grid-template-columns: 200px repeat(${this.suppliers.length}, 1fr)">
         <!-- Header Row -->
         <div class="comparison-cell comparison-header-cell"></div>
-        ${this.suppliers.map((supplier, index) => `
+        ${this.suppliers
+          .map(
+            (supplier, index) => `
           <div class="comparison-cell comparison-supplier-header">
             <div class="supplier-header-content">
-              ${supplier.photoUrl ? `
+              ${
+                supplier.photoUrl
+                  ? `
                 <img src="${supplier.photoUrl}" alt="${this.escapeHtml(supplier.name)}" class="supplier-avatar">
-              ` : `
+              `
+                  : `
                 <div class="supplier-avatar-placeholder">${supplier.name.charAt(0)}</div>
-              `}
+              `
+              }
               <h3>${this.escapeHtml(supplier.name)}</h3>
               <div class="supplier-rating">
                 ${this.renderStars(supplier.rating || 0)}
@@ -86,113 +93,158 @@ class SupplierComparison {
               <button class="btn-remove" data-action="remove" data-index="${index}">×</button>
             </div>
           </div>
-        `).join('')}
+        `
+          )
+          .join('')}
 
         <!-- Price Row -->
         <div class="comparison-cell comparison-label-cell">
           <strong>Starting Price</strong>
         </div>
-        ${this.suppliers.map(supplier => `
+        ${this.suppliers
+          .map(
+            supplier => `
           <div class="comparison-cell">
             <div class="comparison-value comparison-price">
               ${supplier.startingPrice ? `£${supplier.startingPrice.toLocaleString()}` : 'Contact for quote'}
             </div>
           </div>
-        `).join('')}
+        `
+          )
+          .join('')}
 
         <!-- Category Row -->
         <div class="comparison-cell comparison-label-cell">
           <strong>Category</strong>
         </div>
-        ${this.suppliers.map(supplier => `
+        ${this.suppliers
+          .map(
+            supplier => `
           <div class="comparison-cell">
             <div class="comparison-value">
               <span class="category-badge">${this.escapeHtml(supplier.category || 'N/A')}</span>
             </div>
           </div>
-        `).join('')}
+        `
+          )
+          .join('')}
 
         <!-- Location Row -->
         <div class="comparison-cell comparison-label-cell">
           <strong>Location</strong>
         </div>
-        ${this.suppliers.map(supplier => `
+        ${this.suppliers
+          .map(
+            supplier => `
           <div class="comparison-cell">
             <div class="comparison-value">${this.escapeHtml(supplier.location || 'N/A')}</div>
           </div>
-        `).join('')}
+        `
+          )
+          .join('')}
 
         <!-- Reviews Row -->
         <div class="comparison-cell comparison-label-cell">
           <strong>Reviews</strong>
         </div>
-        ${this.suppliers.map(supplier => `
+        ${this.suppliers
+          .map(
+            supplier => `
           <div class="comparison-cell">
             <div class="comparison-value">${supplier.reviewCount || 0} reviews</div>
           </div>
-        `).join('')}
+        `
+          )
+          .join('')}
 
         <!-- Experience Row -->
         <div class="comparison-cell comparison-label-cell">
           <strong>Years Experience</strong>
         </div>
-        ${this.suppliers.map(supplier => `
+        ${this.suppliers
+          .map(
+            supplier => `
           <div class="comparison-cell">
             <div class="comparison-value">${supplier.yearsExperience || 'N/A'}</div>
           </div>
-        `).join('')}
+        `
+          )
+          .join('')}
 
         <!-- Capacity Row -->
         <div class="comparison-cell comparison-label-cell">
           <strong>Guest Capacity</strong>
         </div>
-        ${this.suppliers.map(supplier => `
+        ${this.suppliers
+          .map(
+            supplier => `
           <div class="comparison-cell">
             <div class="comparison-value">
               ${supplier.minGuests || 0} - ${supplier.maxGuests || 'Unlimited'}
             </div>
           </div>
-        `).join('')}
+        `
+          )
+          .join('')}
 
         <!-- Amenities Row -->
         <div class="comparison-cell comparison-label-cell">
           <strong>Key Amenities</strong>
         </div>
-        ${this.suppliers.map(supplier => `
+        ${this.suppliers
+          .map(
+            supplier => `
           <div class="comparison-cell">
             <div class="comparison-value">
-              ${supplier.amenities && supplier.amenities.length > 0 
-                ? supplier.amenities.slice(0, 3).map(a => `<span class="amenity-tag">${this.escapeHtml(a)}</span>`).join('')
-                : '<span class="text-muted">None listed</span>'}
+              ${
+                supplier.amenities && supplier.amenities.length > 0
+                  ? supplier.amenities
+                      .slice(0, 3)
+                      .map(a => `<span class="amenity-tag">${this.escapeHtml(a)}</span>`)
+                      .join('')
+                  : '<span class="text-muted">None listed</span>'
+              }
             </div>
           </div>
-        `).join('')}
+        `
+          )
+          .join('')}
 
         <!-- Availability Row -->
         <div class="comparison-cell comparison-label-cell">
           <strong>Availability</strong>
         </div>
-        ${this.suppliers.map(supplier => `
+        ${this.suppliers
+          .map(
+            supplier => `
           <div class="comparison-cell">
             <div class="comparison-value ${supplier.available ? 'text-success' : 'text-warning'}">
               ${supplier.available ? '✓ Available' : '⚠ Limited'}
             </div>
           </div>
-        `).join('')}
+        `
+          )
+          .join('')}
 
         <!-- Response Time Row -->
         <div class="comparison-cell comparison-label-cell">
           <strong>Avg. Response</strong>
         </div>
-        ${this.suppliers.map(supplier => `
+        ${this.suppliers
+          .map(
+            supplier => `
           <div class="comparison-cell">
             <div class="comparison-value">${supplier.responseTime || 'N/A'}</div>
           </div>
-        `).join('')}
+        `
+          )
+          .join('')}
 
         <!-- Action Row -->
         <div class="comparison-cell comparison-label-cell"></div>
-        ${this.suppliers.map((supplier, index) => `
+        ${this.suppliers
+          .map(
+            (supplier, index) => `
           <div class="comparison-cell">
             <div class="comparison-actions">
               <button class="btn btn-primary btn-sm" onclick="location.href='/supplier.html?id=${supplier.id}'">
@@ -203,7 +255,9 @@ class SupplierComparison {
               </button>
             </div>
           </div>
-        `).join('')}
+        `
+          )
+          .join('')}
       </div>
     `;
   }
@@ -232,7 +286,7 @@ class SupplierComparison {
       addFirstBtn.addEventListener('click', () => this.showSupplierSearch());
     }
 
-    this.container.addEventListener('click', (e) => {
+    this.container.addEventListener('click', e => {
       const removeBtn = e.target.closest('[data-action="remove"]');
       if (removeBtn) {
         const index = parseInt(removeBtn.dataset.index);
@@ -273,12 +327,13 @@ class SupplierComparison {
     const resultsContainer = modal.querySelector('#supplier-search-results');
 
     let searchTimeout;
-    searchInput.addEventListener('input', (e) => {
+    searchInput.addEventListener('input', e => {
       clearTimeout(searchTimeout);
       const query = e.target.value.trim();
 
       if (query.length < 2) {
-        resultsContainer.innerHTML = '<p class="text-muted">Type at least 2 characters to search...</p>';
+        resultsContainer.innerHTML =
+          '<p class="text-muted">Type at least 2 characters to search...</p>';
         return;
       }
 
@@ -287,7 +342,7 @@ class SupplierComparison {
       }, 300);
     });
 
-    modal.addEventListener('click', (e) => {
+    modal.addEventListener('click', e => {
       if (e.target === modal) {
         modal.remove();
       }
@@ -298,12 +353,14 @@ class SupplierComparison {
     resultsContainer.innerHTML = '<div class="loading">Searching...</div>';
 
     try {
-      const response = await fetch(`/api/search/suppliers?q=${encodeURIComponent(query)}&perPage=10`);
-      
+      const response = await fetch(
+        `/api/search/suppliers?q=${encodeURIComponent(query)}&perPage=10`
+      );
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       const data = await response.json();
 
       if (!data.suppliers || data.suppliers.length === 0) {
@@ -312,24 +369,31 @@ class SupplierComparison {
       }
 
       // Filter out already added suppliers
-      const availableSuppliers = data.suppliers.filter(s => 
-        !this.suppliers.find(existing => existing.id === s.id)
+      const availableSuppliers = data.suppliers.filter(
+        s => !this.suppliers.find(existing => existing.id === s.id)
       );
 
       if (availableSuppliers.length === 0) {
-        resultsContainer.innerHTML = '<p class="text-muted">All matching suppliers are already added.</p>';
+        resultsContainer.innerHTML =
+          '<p class="text-muted">All matching suppliers are already added.</p>';
         return;
       }
 
       resultsContainer.innerHTML = `
         <div class="supplier-results">
-          ${availableSuppliers.map(supplier => `
+          ${availableSuppliers
+            .map(
+              supplier => `
             <div class="supplier-result-item" data-supplier='${JSON.stringify(supplier)}'>
-              ${supplier.photoUrl ? `
+              ${
+                supplier.photoUrl
+                  ? `
                 <img src="${supplier.photoUrl}" alt="${this.escapeHtml(supplier.name)}" class="result-avatar">
-              ` : `
+              `
+                  : `
                 <div class="result-avatar-placeholder">${supplier.name.charAt(0)}</div>
-              `}
+              `
+              }
               <div class="result-info">
                 <h4>${this.escapeHtml(supplier.name)}</h4>
                 <p>${this.escapeHtml(supplier.category || '')}</p>
@@ -340,11 +404,13 @@ class SupplierComparison {
               </div>
               <button class="btn btn-primary btn-sm" data-action="add-to-compare">Add</button>
             </div>
-          `).join('')}
+          `
+            )
+            .join('')}
         </div>
       `;
 
-      resultsContainer.addEventListener('click', (e) => {
+      resultsContainer.addEventListener('click', e => {
         const addBtn = e.target.closest('[data-action="add-to-compare"]');
         if (addBtn) {
           const item = addBtn.closest('.supplier-result-item');
@@ -353,17 +419,20 @@ class SupplierComparison {
           modal.remove();
         }
       });
-
     } catch (error) {
       console.error('Error searching suppliers:', error);
-      resultsContainer.innerHTML = '<p class="text-danger">Error searching suppliers. Please try again.</p>';
+      resultsContainer.innerHTML =
+        '<p class="text-danger">Error searching suppliers. Please try again.</p>';
     }
   }
 
   addSupplier(supplier) {
     if (this.suppliers.length >= this.options.maxSuppliers) {
       if (typeof showToast === 'function') {
-        showToast(`Maximum ${this.options.maxSuppliers} suppliers can be compared at once`, 'warning');
+        showToast(
+          `Maximum ${this.options.maxSuppliers} suppliers can be compared at once`,
+          'warning'
+        );
       }
       return;
     }

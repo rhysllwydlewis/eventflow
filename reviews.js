@@ -14,7 +14,7 @@ const { read, write, uid } = require('./store');
  */
 async function createReview(reviewData) {
   const reviews = await read('reviews');
-  
+
   const review = {
     id: uid('rev'),
     supplierId: reviewData.supplierId,
@@ -49,9 +49,7 @@ async function updateSupplierRating(supplierId) {
   const reviews = await read('reviews');
   const suppliers = await read('suppliers');
 
-  const supplierReviews = reviews.filter(
-    r => r.supplierId === supplierId && r.approved
-  );
+  const supplierReviews = reviews.filter(r => r.supplierId === supplierId && r.approved);
 
   const supplier = suppliers.find(s => s.id === supplierId);
   if (!supplier) return;
@@ -76,7 +74,7 @@ async function updateSupplierRating(supplierId) {
  */
 async function getSupplierReviews(supplierId, options = {}) {
   const reviews = await read('reviews');
-  
+
   let filtered = reviews.filter(r => r.supplierId === supplierId);
 
   // Filter by approval status
@@ -174,9 +172,7 @@ async function getPendingReviews() {
  */
 async function getRatingDistribution(supplierId) {
   const reviews = await read('reviews');
-  const supplierReviews = reviews.filter(
-    r => r.supplierId === supplierId && r.approved
-  );
+  const supplierReviews = reviews.filter(r => r.supplierId === supplierId && r.approved);
 
   const distribution = {
     1: 0,
@@ -193,9 +189,10 @@ async function getRatingDistribution(supplierId) {
   return {
     distribution,
     total: supplierReviews.length,
-    average: supplierReviews.length > 0
-      ? supplierReviews.reduce((sum, r) => sum + r.rating, 0) / supplierReviews.length
-      : 0,
+    average:
+      supplierReviews.length > 0
+        ? supplierReviews.reduce((sum, r) => sum + r.rating, 0) / supplierReviews.length
+        : 0,
   };
 }
 
@@ -221,7 +218,7 @@ async function deleteReview(reviewId, userId, isAdmin = false) {
 
   const supplierId = review.supplierId;
   const filtered = reviews.filter(r => r.id !== reviewId);
-  
+
   await write('reviews', filtered);
 
   // Update supplier rating

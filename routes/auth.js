@@ -11,7 +11,13 @@ const jwt = require('jsonwebtoken');
 const validator = require('validator');
 
 const { read, write, uid } = require('../store');
-const { authRequired, roleRequired, setAuthCookie, clearAuthCookie, getUserFromCookie } = require('../middleware/auth');
+const {
+  authRequired,
+  roleRequired,
+  setAuthCookie,
+  clearAuthCookie,
+  getUserFromCookie,
+} = require('../middleware/auth');
 const { passwordOk } = require('../middleware/validation');
 const { authLimiter } = require('../middleware/rateLimit');
 const mailgun = require('../utils/mailgun');
@@ -58,7 +64,7 @@ router.post('/register', authLimiter, (req, res) => {
   if (!name || !email || !password) return res.status(400).json({ error: 'Missing fields' });
   if (!validator.isEmail(String(email))) return res.status(400).json({ error: 'Invalid email' });
   if (!passwordOk(password)) return res.status(400).json({ error: 'Weak password' });
-  const roleFinal = (role === 'supplier' || role === 'customer') ? role : 'customer';
+  const roleFinal = role === 'supplier' || role === 'customer' ? role : 'customer';
 
   const users = read('users');
   if (users.find(u => u.email.toLowerCase() === String(email).toLowerCase())) {
@@ -82,7 +88,7 @@ router.post('/register', authLimiter, (req, res) => {
     verified: false,
     verificationToken: verificationToken,
     verificationTokenExpiresAt: tokenExpiresAt,
-    createdAt: new Date().toISOString()
+    createdAt: new Date().toISOString(),
   };
   users.push(user);
   write('users', users);
@@ -119,16 +125,14 @@ If you did not create this account, you can ignore this email.`,
   // Update last login timestamp (non-blocking)
   updateLastLogin(user.id);
 
-  const token = jwt.sign(
-    { id: user.id, email: user.email, role: user.role },
-    JWT_SECRET,
-    { expiresIn: '7d' }
-  );
+  const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, {
+    expiresIn: '7d',
+  });
   setAuthCookie(res, token);
 
   res.json({
     ok: true,
-    user: { id: user.id, name: user.name, email: user.email, role: user.role }
+    user: { id: user.id, name: user.name, email: user.email, role: user.role },
   });
 });
 
@@ -154,16 +158,14 @@ router.post('/login', authLimiter, (req, res) => {
   // Update last login timestamp (non-blocking)
   updateLastLogin(user.id);
 
-  const token = jwt.sign(
-    { id: user.id, email: user.email, role: user.role },
-    JWT_SECRET,
-    { expiresIn: '7d' }
-  );
+  const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, {
+    expiresIn: '7d',
+  });
   setAuthCookie(res, token);
 
   res.json({
     ok: true,
-    user: { id: user.id, name: user.name, email: user.email, role: user.role }
+    user: { id: user.id, name: user.name, email: user.email, role: user.role },
   });
 });
 
@@ -177,9 +179,7 @@ router.post('/forgot', authLimiter, async (req, res) => {
 
   // Look up user by email (case-insensitive)
   const users = read('users');
-  const idx = users.findIndex(
-    u => (u.email || '').toLowerCase() === String(email).toLowerCase()
-  );
+  const idx = users.findIndex(u => (u.email || '').toLowerCase() === String(email).toLowerCase());
 
   if (idx === -1) {
     // Always respond success so we don't leak which emails exist
@@ -201,8 +201,10 @@ router.post('/forgot', authLimiter, async (req, res) => {
         await sendMailFn({
           to: user.email,
           subject: 'Reset your EventFlow password',
-          text: 'A password reset was requested for this address. ' +
-            'For this demo build, your reset token is: ' + token
+          text:
+            'A password reset was requested for this address. ' +
+            'For this demo build, your reset token is: ' +
+            token,
         });
       }
     } catch (err) {
@@ -220,30 +222,32 @@ router.post('/forgot', authLimiter, async (req, res) => {
 router.get('/verify', (req, res) => {
   const { token } = req.query || {};
   if (!token) return res.status(400).json({ error: 'Missing token' });
-  
+
   const users = read('users');
   const idx = users.findIndex(u => u.verificationToken === token);
-  
+
   if (idx === -1) {
     return res.status(400).json({ error: 'Invalid or expired token' });
   }
 
   const user = users[idx];
-  
+
   // Check if token has expired
   if (user.verificationTokenExpiresAt) {
     const expiresAt = new Date(user.verificationTokenExpiresAt);
     if (expiresAt < new Date()) {
-      return res.status(400).json({ error: 'Verification token has expired. Please request a new one.' });
+      return res
+        .status(400)
+        .json({ error: 'Verification token has expired. Please request a new one.' });
     }
   }
-  
+
   // Mark user as verified and clear token
   users[idx].verified = true;
   delete users[idx].verificationToken;
   delete users[idx].verificationTokenExpiresAt;
   write('users', users);
-  
+
   res.json({ ok: true, message: 'Email verified successfully' });
 });
 
@@ -266,16 +270,16 @@ router.get('/me', (req, res) => {
   const u = read('users').find(x => x.id === p.id);
   res.json({
     user: u
-      ? { 
-          id: u.id, 
-          name: u.name, 
-          email: u.email, 
-          role: u.role, 
+      ? {
+          id: u.id,
+          name: u.name,
+          email: u.email,
+          role: u.role,
           notify: u.notify !== false,
           notify_account: u.notify_account !== false,
-          notify_marketing: u.notify_marketing === true
+          notify_marketing: u.notify_marketing === true,
         }
-      : null
+      : null,
   });
 });
 
@@ -285,10 +289,10 @@ router.get('/me', (req, res) => {
  */
 router.put('/preferences', authRequired, (req, res) => {
   const { notify_account, notify_marketing } = req.body || {};
-  
+
   const users = read('users');
   const idx = users.findIndex(u => u.id === req.user.id);
-  
+
   if (idx === -1) {
     return res.status(404).json({ error: 'User not found' });
   }
@@ -298,20 +302,20 @@ router.put('/preferences', authRequired, (req, res) => {
     users[idx].notify_account = notify_account;
     users[idx].notify = notify_account; // Update deprecated field for backward compatibility
   }
-  
+
   if (typeof notify_marketing === 'boolean') {
     users[idx].notify_marketing = notify_marketing;
     users[idx].marketingOptIn = notify_marketing; // Update deprecated field for backward compatibility
   }
-  
+
   write('users', users);
-  
-  res.json({ 
-    ok: true, 
+
+  res.json({
+    ok: true,
     preferences: {
       notify_account: users[idx].notify_account !== false,
-      notify_marketing: users[idx].notify_marketing === true
-    }
+      notify_marketing: users[idx].notify_marketing === true,
+    },
   });
 });
 
@@ -322,11 +326,11 @@ router.put('/preferences', authRequired, (req, res) => {
  */
 router.get('/unsubscribe', (req, res) => {
   const { email, token } = req.query || {};
-  
+
   if (!email || !token) {
     return res.status(400).json({ error: 'Missing email or token parameter' });
   }
-  
+
   // Verify the token matches the email
   try {
     if (!mailgun.verifyUnsubscribeToken(email, token)) {
@@ -336,26 +340,27 @@ router.get('/unsubscribe', (req, res) => {
     // Handle token verification errors (e.g., token length mismatch)
     return res.status(400).json({ error: 'Invalid unsubscribe token' });
   }
-  
+
   const users = read('users');
   const idx = users.findIndex(u => u.email.toLowerCase() === String(email).toLowerCase());
-  
+
   if (idx === -1) {
     // Don't reveal if email exists - return success anyway
-    return res.json({ 
-      ok: true, 
-      message: 'If this email is registered, marketing emails have been disabled.'
+    return res.json({
+      ok: true,
+      message: 'If this email is registered, marketing emails have been disabled.',
     });
   }
-  
+
   // Disable marketing emails
   users[idx].notify_marketing = false;
   users[idx].marketingOptIn = false; // Update deprecated field
   write('users', users);
-  
-  res.json({ 
-    ok: true, 
-    message: 'You have been unsubscribed from marketing emails. You will still receive important account notifications.'
+
+  res.json({
+    ok: true,
+    message:
+      'You have been unsubscribed from marketing emails. You will still receive important account notifications.',
   });
 });
 

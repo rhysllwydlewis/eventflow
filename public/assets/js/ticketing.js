@@ -18,7 +18,7 @@ import {
   onSnapshot,
   serverTimestamp,
   Timestamp,
-  arrayUnion
+  arrayUnion,
 } from './firebase-config.js';
 
 class TicketingSystem {
@@ -44,7 +44,7 @@ class TicketingSystem {
         priority: ticketData.priority || 'medium', // 'low' | 'medium' | 'high'
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
-        responses: []
+        responses: [],
       };
 
       const docRef = await addDoc(collection(db, 'tickets'), ticket);
@@ -70,13 +70,13 @@ class TicketingSystem {
         where('senderType', '==', userType),
         orderBy('createdAt', 'desc')
       );
-      
+
       const querySnapshot = await getDocs(q);
       const tickets = [];
-      querySnapshot.forEach((doc) => {
+      querySnapshot.forEach(doc => {
         tickets.push({ id: doc.id, ...doc.data() });
       });
-      
+
       return tickets;
     } catch (error) {
       console.error('Error getting user tickets:', error);
@@ -90,17 +90,14 @@ class TicketingSystem {
    */
   async getAllTickets() {
     try {
-      const q = query(
-        collection(db, 'tickets'),
-        orderBy('createdAt', 'desc')
-      );
-      
+      const q = query(collection(db, 'tickets'), orderBy('createdAt', 'desc'));
+
       const querySnapshot = await getDocs(q);
       const tickets = [];
-      querySnapshot.forEach((doc) => {
+      querySnapshot.forEach(doc => {
         tickets.push({ id: doc.id, ...doc.data() });
       });
-      
+
       return tickets;
     } catch (error) {
       console.error('Error getting all tickets:', error);
@@ -117,7 +114,7 @@ class TicketingSystem {
     try {
       const docRef = doc(db, 'tickets', ticketId);
       const docSnap = await getDoc(docRef);
-      
+
       if (docSnap.exists()) {
         return { id: docSnap.id, ...docSnap.data() };
       }
@@ -137,21 +134,21 @@ class TicketingSystem {
   async addResponse(ticketId, responseData) {
     try {
       const ticketRef = doc(db, 'tickets', ticketId);
-      
+
       const newResponse = {
         responderId: responseData.responderId,
         responderType: responseData.responderType, // 'admin' | 'customer' | 'supplier'
         responderName: responseData.responderName,
         message: responseData.message,
-        timestamp: serverTimestamp()
+        timestamp: serverTimestamp(),
       };
-      
+
       // Use arrayUnion for atomic array operation (prevents race conditions)
       await updateDoc(ticketRef, {
         responses: arrayUnion(newResponse),
-        updatedAt: serverTimestamp()
+        updatedAt: serverTimestamp(),
       });
-      
+
       console.log('Response added to ticket:', ticketId);
     } catch (error) {
       console.error('Error adding response:', error);
@@ -169,9 +166,9 @@ class TicketingSystem {
       const ticketRef = doc(db, 'tickets', ticketId);
       await updateDoc(ticketRef, {
         status: status,
-        updatedAt: serverTimestamp()
+        updatedAt: serverTimestamp(),
       });
-      
+
       console.log('Ticket status updated:', ticketId, status);
     } catch (error) {
       console.error('Error updating ticket status:', error);
@@ -193,17 +190,21 @@ class TicketingSystem {
         where('senderType', '==', userType),
         orderBy('createdAt', 'desc')
       );
-      
-      const unsubscribe = onSnapshot(q, (querySnapshot) => {
-        const tickets = [];
-        querySnapshot.forEach((doc) => {
-          tickets.push({ id: doc.id, ...doc.data() });
-        });
-        callback(tickets);
-      }, (error) => {
-        console.error('Error listening to user tickets:', error);
-      });
-      
+
+      const unsubscribe = onSnapshot(
+        q,
+        querySnapshot => {
+          const tickets = [];
+          querySnapshot.forEach(doc => {
+            tickets.push({ id: doc.id, ...doc.data() });
+          });
+          callback(tickets);
+        },
+        error => {
+          console.error('Error listening to user tickets:', error);
+        }
+      );
+
       this.unsubscribers.push(unsubscribe);
       return unsubscribe;
     } catch (error) {
@@ -218,21 +219,22 @@ class TicketingSystem {
    */
   listenToAllTickets(callback) {
     try {
-      const q = query(
-        collection(db, 'tickets'),
-        orderBy('createdAt', 'desc')
+      const q = query(collection(db, 'tickets'), orderBy('createdAt', 'desc'));
+
+      const unsubscribe = onSnapshot(
+        q,
+        querySnapshot => {
+          const tickets = [];
+          querySnapshot.forEach(doc => {
+            tickets.push({ id: doc.id, ...doc.data() });
+          });
+          callback(tickets);
+        },
+        error => {
+          console.error('Error listening to all tickets:', error);
+        }
       );
-      
-      const unsubscribe = onSnapshot(q, (querySnapshot) => {
-        const tickets = [];
-        querySnapshot.forEach((doc) => {
-          tickets.push({ id: doc.id, ...doc.data() });
-        });
-        callback(tickets);
-      }, (error) => {
-        console.error('Error listening to all tickets:', error);
-      });
-      
+
       this.unsubscribers.push(unsubscribe);
       return unsubscribe;
     } catch (error) {
@@ -249,17 +251,21 @@ class TicketingSystem {
   listenToTicket(ticketId, callback) {
     try {
       const docRef = doc(db, 'tickets', ticketId);
-      
-      const unsubscribe = onSnapshot(docRef, (docSnap) => {
-        if (docSnap.exists()) {
-          callback({ id: docSnap.id, ...docSnap.data() });
-        } else {
-          callback(null);
+
+      const unsubscribe = onSnapshot(
+        docRef,
+        docSnap => {
+          if (docSnap.exists()) {
+            callback({ id: docSnap.id, ...docSnap.data() });
+          } else {
+            callback(null);
+          }
+        },
+        error => {
+          console.error('Error listening to ticket:', error);
         }
-      }, (error) => {
-        console.error('Error listening to ticket:', error);
-      });
-      
+      );
+
       this.unsubscribers.push(unsubscribe);
       return unsubscribe;
     } catch (error) {
@@ -283,7 +289,7 @@ class TicketingSystem {
    */
   formatTimestamp(timestamp) {
     if (!timestamp) return '';
-    
+
     let date;
     if (timestamp.toDate) {
       date = timestamp.toDate();
@@ -292,13 +298,13 @@ class TicketingSystem {
     } else {
       date = new Date(timestamp);
     }
-    
+
     return date.toLocaleString('en-GB', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
   }
 
@@ -309,10 +315,10 @@ class TicketingSystem {
    */
   getStatusClass(status) {
     const classes = {
-      'open': 'badge-info',
-      'in_progress': 'badge-warning',
-      'resolved': 'badge-success',
-      'closed': 'badge-secondary'
+      open: 'badge-info',
+      in_progress: 'badge-warning',
+      resolved: 'badge-success',
+      closed: 'badge-secondary',
     };
     return classes[status] || 'badge-secondary';
   }
@@ -324,9 +330,9 @@ class TicketingSystem {
    */
   getPriorityClass(priority) {
     const classes = {
-      'low': 'badge-secondary',
-      'medium': 'badge-warning',
-      'high': 'badge-danger'
+      low: 'badge-secondary',
+      medium: 'badge-warning',
+      high: 'badge-danger',
     };
     return classes[priority] || 'badge-secondary';
   }

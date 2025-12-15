@@ -20,7 +20,7 @@ function setAuthCookie(res, token) {
     httpOnly: true,
     sameSite: isProd ? 'strict' : 'lax',
     secure: isProd,
-    maxAge: 1000 * 60 * 60 * 24 * 7
+    maxAge: 1000 * 60 * 60 * 24 * 7,
   });
 }
 
@@ -97,5 +97,5 @@ module.exports = {
   getUserFromCookie,
   authRequired,
   roleRequired,
-  planOwnerOnly
+  planOwnerOnly,
 };

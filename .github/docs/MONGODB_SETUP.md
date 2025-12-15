@@ -72,6 +72,7 @@ npm run migrate
 ```
 
 This will:
+
 - Connect to MongoDB
 - Create collections with proper schemas and indexes
 - Import all data from JSON files
@@ -222,6 +223,7 @@ After setting up MongoDB:
 ## Support
 
 For issues or questions:
+
 - Check MongoDB documentation: https://docs.mongodb.com/
 - Review error logs in console
 - Verify environment configuration

@@ -12,21 +12,22 @@ class TimelineBuilder {
       onEventAdd: options.onEventAdd || null,
       onEventUpdate: options.onEventUpdate || null,
       onEventDelete: options.onEventDelete || null,
-      onEventMove: options.onEventMove || null
+      onEventMove: options.onEventMove || null,
     };
 
     this.container = null;
     this.timeline = null;
     this.draggedElement = null;
     this.timelineData = this.options.events;
-    
+
     this.init();
   }
 
   init() {
-    const containerEl = typeof this.options.container === 'string'
-      ? document.querySelector(this.options.container)
-      : this.options.container;
+    const containerEl =
+      typeof this.options.container === 'string'
+        ? document.querySelector(this.options.container)
+        : this.options.container;
 
     if (!containerEl) {
       console.error('Timeline container not found');
@@ -44,11 +45,15 @@ class TimelineBuilder {
       <div class="timeline-builder">
         <div class="timeline-header">
           <h2>Event Timeline</h2>
-          ${this.options.editable ? `
+          ${
+            this.options.editable
+              ? `
             <button class="btn btn-primary" id="add-timeline-event">
               <span>+ Add Event</span>
             </button>
-          ` : ''}
+          `
+              : ''
+          }
         </div>
         <div class="timeline-container">
           <div class="timeline-line"></div>
@@ -99,16 +104,26 @@ class TimelineBuilder {
             <h3 class="timeline-event-title">${this.escapeHtml(event.title)}</h3>
             <span class="timeline-event-duration">${duration}</span>
           </div>
-          ${event.description ? `
+          ${
+            event.description
+              ? `
             <p class="timeline-event-description">${this.escapeHtml(event.description)}</p>
-          ` : ''}
-          ${event.supplier ? `
+          `
+              : ''
+          }
+          ${
+            event.supplier
+              ? `
             <div class="timeline-event-supplier">
               <span class="supplier-badge">${this.escapeHtml(event.supplier)}</span>
             </div>
-          ` : ''}
+          `
+              : ''
+          }
         </div>
-        ${this.options.editable ? `
+        ${
+          this.options.editable
+            ? `
           <div class="timeline-event-actions">
             <button class="btn-icon" data-action="edit" data-id="${event.id || index}" title="Edit">
               ✏️
@@ -117,7 +132,9 @@ class TimelineBuilder {
               🗑️
             </button>
           </div>
-        ` : ''}
+        `
+            : ''
+        }
       </div>
     `;
   }
@@ -130,7 +147,7 @@ class TimelineBuilder {
     }
 
     // Event actions (edit, delete)
-    this.container.addEventListener('click', (e) => {
+    this.container.addEventListener('click', e => {
       const action = e.target.closest('[data-action]');
       if (action) {
         const eventId = action.dataset.id;
@@ -151,7 +168,7 @@ class TimelineBuilder {
   }
 
   setupDragAndDrop() {
-    this.container.addEventListener('dragstart', (e) => {
+    this.container.addEventListener('dragstart', e => {
       if (e.target.classList.contains('timeline-event')) {
         this.draggedElement = e.target;
         e.target.classList.add('dragging');
@@ -159,18 +176,18 @@ class TimelineBuilder {
       }
     });
 
-    this.container.addEventListener('dragend', (e) => {
+    this.container.addEventListener('dragend', e => {
       if (e.target.classList.contains('timeline-event')) {
         e.target.classList.remove('dragging');
         this.draggedElement = null;
       }
     });
 
-    this.container.addEventListener('dragover', (e) => {
+    this.container.addEventListener('dragover', e => {
       e.preventDefault();
       const afterElement = this.getDragAfterElement(e.clientY);
       const dragging = this.container.querySelector('.dragging');
-      
+
       if (dragging && this.timeline) {
         if (afterElement == null) {
           this.timeline.appendChild(dragging);
@@ -180,7 +197,7 @@ class TimelineBuilder {
       }
     });
 
-    this.container.addEventListener('drop', (e) => {
+    this.container.addEventListener('drop', e => {
       e.preventDefault();
       this.reorderEvents();
     });
@@ -189,26 +206,33 @@ class TimelineBuilder {
   getDragAfterElement(y) {
     const draggableElements = [...this.timeline.querySelectorAll('.timeline-event:not(.dragging)')];
 
-    return draggableElements.reduce((closest, child) => {
-      const box = child.getBoundingClientRect();
-      const offset = y - box.top - box.height / 2;
+    return draggableElements.reduce(
+      (closest, child) => {
+        const box = child.getBoundingClientRect();
+        const offset = y - box.top - box.height / 2;
 
-      if (offset < 0 && offset > closest.offset) {
-        return { offset: offset, element: child };
-      } else {
-        return closest;
-      }
-    }, { offset: Number.NEGATIVE_INFINITY }).element;
+        if (offset < 0 && offset > closest.offset) {
+          return { offset: offset, element: child };
+        } else {
+          return closest;
+        }
+      },
+      { offset: Number.NEGATIVE_INFINITY }
+    ).element;
   }
 
   reorderEvents() {
     const eventElements = [...this.timeline.querySelectorAll('.timeline-event')];
     const newOrder = eventElements.map(el => el.dataset.id);
-    
+
     // Reorder timelineData based on new DOM order
-    this.timelineData = newOrder.map(id => {
-      return this.timelineData.find(e => String(e.id) === id || String(this.timelineData.indexOf(e)) === id);
-    }).filter(Boolean);
+    this.timelineData = newOrder
+      .map(id => {
+        return this.timelineData.find(
+          e => String(e.id) === id || String(this.timelineData.indexOf(e)) === id
+        );
+      })
+      .filter(Boolean);
 
     if (this.options.onEventMove) {
       this.options.onEventMove(this.timelineData);
@@ -270,7 +294,7 @@ class TimelineBuilder {
 
     // Handle form submission
     const form = modal.querySelector('#event-form');
-    form.addEventListener('submit', (e) => {
+    form.addEventListener('submit', e => {
       e.preventDefault();
       const formData = new FormData(form);
       const eventData = {
@@ -280,7 +304,7 @@ class TimelineBuilder {
         duration: formData.get('duration'),
         category: formData.get('category'),
         description: formData.get('description'),
-        supplier: formData.get('supplier')
+        supplier: formData.get('supplier'),
       };
 
       if (isEdit) {
@@ -293,7 +317,7 @@ class TimelineBuilder {
     });
 
     // Close on overlay click
-    modal.addEventListener('click', (e) => {
+    modal.addEventListener('click', e => {
       if (e.target === modal) {
         modal.remove();
       }
@@ -324,7 +348,10 @@ class TimelineBuilder {
   }
 
   editEvent(eventId) {
-    const event = this.timelineData.find(e => String(e.id) === String(eventId) || String(this.timelineData.indexOf(e)) === String(eventId));
+    const event = this.timelineData.find(
+      e =>
+        String(e.id) === String(eventId) || String(this.timelineData.indexOf(e)) === String(eventId)
+    );
     if (event) {
       this.showEventModal(event);
     }
@@ -332,7 +359,11 @@ class TimelineBuilder {
 
   deleteEvent(eventId) {
     if (confirm('Are you sure you want to delete this event?')) {
-      this.timelineData = this.timelineData.filter(e => String(e.id) !== String(eventId) && String(this.timelineData.indexOf(e)) !== String(eventId));
+      this.timelineData = this.timelineData.filter(
+        e =>
+          String(e.id) !== String(eventId) &&
+          String(this.timelineData.indexOf(e)) !== String(eventId)
+      );
       this.render();
       this.attachEventListeners();
 
@@ -365,7 +396,7 @@ class TimelineBuilder {
       catering: '#F59E0B',
       entertainment: '#8B5CF6',
       photography: '#EC4899',
-      other: '#6B7280'
+      other: '#6B7280',
     };
     return colors[category] || colors.general;
   }

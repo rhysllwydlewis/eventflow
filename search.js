@@ -29,7 +29,9 @@ async function searchSuppliers(query) {
         s.category || '',
         s.location || '',
         ...(s.amenities || []),
-      ].join(' ').toLowerCase();
+      ]
+        .join(' ')
+        .toLowerCase();
 
       return searchableText.includes(searchTerm);
     });
@@ -54,13 +56,13 @@ async function searchSuppliers(query) {
     results = results.filter(s => {
       // Extract numeric value from price_display (e.g., "$$" or "$100-$500")
       const priceDisplay = s.price_display || '';
-      
+
       // Simple price level mapping
       const priceLevel = priceDisplay.split('$').length - 1;
-      
+
       if (query.minPrice && priceLevel < Number(query.minPrice)) return false;
       if (query.maxPrice && priceLevel > Number(query.maxPrice)) return false;
-      
+
       return true;
     });
   }
@@ -75,15 +77,13 @@ async function searchSuppliers(query) {
 
   // Amenities filter
   if (query.amenities) {
-    const requiredAmenities = Array.isArray(query.amenities) 
-      ? query.amenities 
+    const requiredAmenities = Array.isArray(query.amenities)
+      ? query.amenities
       : query.amenities.split(',');
-    
+
     results = results.filter(s => {
       const supplierAmenities = s.amenities || [];
-      return requiredAmenities.every(amenity => 
-        supplierAmenities.includes(amenity)
-      );
+      return requiredAmenities.every(amenity => supplierAmenities.includes(amenity));
     });
   }
 
@@ -112,7 +112,7 @@ async function searchSuppliers(query) {
 
   // Sorting
   const sortBy = query.sortBy || 'relevance';
-  
+
   if (sortBy === 'rating') {
     results.sort((a, b) => (b.averageRating || 0) - (a.averageRating || 0));
   } else if (sortBy === 'reviews') {
@@ -159,7 +159,7 @@ async function searchSuppliers(query) {
  */
 async function getTrendingSuppliers(limit = 10) {
   const suppliers = await read('suppliers');
-  
+
   // Filter approved and sort by view count (if available) or review count
   const trending = suppliers
     .filter(s => s.approved)
@@ -180,7 +180,7 @@ async function getTrendingSuppliers(limit = 10) {
  */
 async function getNewArrivals(limit = 10) {
   const suppliers = await read('suppliers');
-  
+
   const newSuppliers = suppliers
     .filter(s => s.approved)
     .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
@@ -196,7 +196,7 @@ async function getNewArrivals(limit = 10) {
  */
 async function getPopularPackages(limit = 10) {
   const packages = await read('packages');
-  
+
   const popular = packages
     .filter(p => p.approved)
     .sort((a, b) => {
@@ -217,8 +217,8 @@ async function getPopularPackages(limit = 10) {
  */
 async function getRecommendations(userId, limit = 10) {
   const suppliers = await read('suppliers');
-  const searchHistory = await read('searchHistory') || [];
-  
+  const searchHistory = (await read('searchHistory')) || [];
+
   // Get user's search history
   const userHistory = searchHistory
     .filter(h => h.userId === userId)
@@ -233,7 +233,7 @@ async function getRecommendations(userId, limit = 10) {
   // Extract categories and tags from history
   const categories = {};
   const locations = {};
-  
+
   userHistory.forEach(h => {
     if (h.category) categories[h.category] = (categories[h.category] || 0) + 1;
     if (h.location) locations[h.location] = (locations[h.location] || 0) + 1;
@@ -244,29 +244,29 @@ async function getRecommendations(userId, limit = 10) {
     .filter(s => s.approved)
     .map(supplier => {
       let score = 0;
-      
+
       // Category match
       if (categories[supplier.category]) {
         score += categories[supplier.category] * 10;
       }
-      
+
       // Location match
       if (locations[supplier.location]) {
         score += locations[supplier.location] * 5;
       }
-      
+
       // Rating boost
       score += (supplier.averageRating || 0) * 2;
-      
+
       // Review count boost
-      score += Math.min((supplier.reviewCount || 0), 20);
-      
+      score += Math.min(supplier.reviewCount || 0, 20);
+
       // Pro boost
       if (supplier.isPro) score += 5;
-      
+
       // Featured boost
       if (supplier.featured) score += 10;
-      
+
       return { ...supplier, recommendationScore: score };
     })
     .filter(s => s.recommendationScore > 0)
@@ -283,8 +283,8 @@ async function getRecommendations(userId, limit = 10) {
  * @returns {Promise<void>}
  */
 async function saveSearchHistory(userId, query) {
-  const searchHistory = await read('searchHistory') || [];
-  
+  const searchHistory = (await read('searchHistory')) || [];
+
   const historyEntry = {
     id: `hist_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
     userId,
@@ -312,8 +312,8 @@ async function saveSearchHistory(userId, query) {
  * @returns {Promise<Array>} Search history
  */
 async function getUserSearchHistory(userId, limit = 20) {
-  const searchHistory = await read('searchHistory') || [];
-  
+  const searchHistory = (await read('searchHistory')) || [];
+
   return searchHistory
     .filter(h => h.userId === userId)
     .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
@@ -326,7 +326,7 @@ async function getUserSearchHistory(userId, limit = 20) {
  */
 async function getCategories() {
   const suppliers = await read('suppliers');
-  
+
   const categoryCounts = {};
   suppliers
     .filter(s => s.approved)
@@ -347,7 +347,7 @@ async function getCategories() {
  */
 async function getAmenities() {
   const suppliers = await read('suppliers');
-  
+
   const amenityCounts = {};
   suppliers
     .filter(s => s.approved && s.amenities)

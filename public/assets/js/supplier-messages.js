@@ -44,19 +44,20 @@ function renderConversations(conversations) {
   if (!container) return;
 
   if (!conversations || conversations.length === 0) {
-    container.innerHTML = '<p class="small">No messages yet. Conversations will appear here when customers contact you.</p>';
+    container.innerHTML =
+      '<p class="small">No messages yet. Conversations will appear here when customers contact you.</p>';
     return;
   }
 
   let html = '<div class="thread-list">';
-  
+
   conversations.forEach(conversation => {
     const customerName = conversation.customerName || 'Customer';
     const lastMessage = conversation.lastMessage || 'No messages yet';
-    const lastMessageTime = conversation.lastMessageTime 
+    const lastMessageTime = conversation.lastMessageTime
       ? messagingSystem.formatTimestamp(conversation.lastMessageTime)
       : '';
-    
+
     html += `
       <div class="thread-item" style="border:1px solid #e4e4e7;padding:1rem;margin-bottom:0.5rem;border-radius:4px;cursor:pointer;transition:background 0.2s;" data-conversation-id="${conversation.id}">
         <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:0.5rem;">
@@ -67,22 +68,22 @@ function renderConversations(conversations) {
       </div>
     `;
   });
-  
+
   html += '</div>';
   container.innerHTML = html;
 
   // Add click handlers
   container.querySelectorAll('.thread-item').forEach(item => {
-    item.addEventListener('click', function() {
+    item.addEventListener('click', function () {
       const conversationId = this.getAttribute('data-conversation-id');
       openConversation(conversationId);
     });
-    
+
     // Hover effect
-    item.addEventListener('mouseenter', function() {
+    item.addEventListener('mouseenter', function () {
       this.style.background = '#fafafa';
     });
-    item.addEventListener('mouseleave', function() {
+    item.addEventListener('mouseleave', function () {
       this.style.background = '';
     });
   });
@@ -119,7 +120,7 @@ function openConversation(conversationId) {
   };
 
   modal.querySelector('.modal-close').addEventListener('click', closeModal);
-  modal.addEventListener('click', (e) => {
+  modal.addEventListener('click', e => {
     if (e.target === modal) closeModal();
   });
 
@@ -127,7 +128,7 @@ function openConversation(conversationId) {
   let messagesUnsubscribe = null;
   let currentUser = null;
 
-  const renderMessages = (messages) => {
+  const renderMessages = messages => {
     const container = document.getElementById('conversationMessages');
     if (!container) return;
 
@@ -137,14 +138,14 @@ function openConversation(conversationId) {
     }
 
     let html = '<div class="messages-list">';
-    
+
     messages.forEach(message => {
       const timestamp = messagingSystem.formatFullTimestamp(message.timestamp);
       const isFromSupplier = message.senderType === 'supplier';
       const alignment = isFromSupplier ? 'right' : 'left';
       const bgColor = isFromSupplier ? '#3b82f6' : '#e4e4e7';
       const textColor = isFromSupplier ? '#fff' : '#1a1a1a';
-      
+
       html += `
         <div style="display:flex;justify-content:${isFromSupplier ? 'flex-end' : 'flex-start'};margin-bottom:1rem;">
           <div style="max-width:70%;padding:0.75rem;background:${bgColor};color:${textColor};border-radius:8px;">
@@ -155,7 +156,7 @@ function openConversation(conversationId) {
         </div>
       `;
     });
-    
+
     html += '</div>';
     container.innerHTML = html;
 
@@ -167,10 +168,10 @@ function openConversation(conversationId) {
   getCurrentUser().then(user => {
     if (!user) return;
     currentUser = user;
-    
+
     // Listen to messages
     messagesUnsubscribe = messagingSystem.listenToMessages(conversationId, renderMessages);
-    
+
     // Mark messages as read
     messagingSystem.markMessagesAsRead(conversationId, user.id).catch(err => {
       console.error('Error marking messages as read:', err);
@@ -178,9 +179,9 @@ function openConversation(conversationId) {
   });
 
   // Send message form
-  modal.querySelector('#sendMessageForm').addEventListener('submit', async (e) => {
+  modal.querySelector('#sendMessageForm').addEventListener('submit', async e => {
     e.preventDefault();
-    
+
     if (!currentUser) {
       if (typeof Toast !== 'undefined') {
         Toast.error('Please sign in to send messages');
@@ -190,7 +191,7 @@ function openConversation(conversationId) {
 
     const messageInput = document.getElementById('messageInput');
     const messageText = messageInput.value.trim();
-    
+
     if (!messageText) return;
 
     try {
@@ -202,7 +203,7 @@ function openConversation(conversationId) {
         senderId: currentUser.id,
         senderType: 'supplier',
         senderName: currentUser.name || currentUser.email,
-        message: messageText
+        message: messageText,
       });
 
       messageInput.value = '';
@@ -213,7 +214,7 @@ function openConversation(conversationId) {
       if (typeof Toast !== 'undefined') {
         Toast.error('Failed to send message: ' + error.message);
       }
-      
+
       const submitBtn = e.target.querySelector('button[type="submit"]');
       submitBtn.disabled = false;
       submitBtn.textContent = 'Send';
@@ -234,11 +235,12 @@ async function init() {
 
   // Get user's suppliers
   const suppliers = await getUserSuppliers(user.id);
-  
+
   if (!suppliers || suppliers.length === 0) {
     const container = document.getElementById('threads-sup');
     if (container) {
-      container.innerHTML = '<p class="small">Create a supplier profile to receive messages from customers.</p>';
+      container.innerHTML =
+        '<p class="small">Create a supplier profile to receive messages from customers.</p>';
     }
     return;
   }
@@ -246,9 +248,9 @@ async function init() {
   // Listen to conversations for all supplier IDs
   const allConversations = [];
   let loadedCount = 0;
-  
+
   suppliers.forEach(supplier => {
-    messagingSystem.listenToUserConversations(supplier.id, 'supplier', (conversations) => {
+    messagingSystem.listenToUserConversations(supplier.id, 'supplier', conversations => {
       // Merge conversations
       conversations.forEach(conv => {
         const existingIndex = allConversations.findIndex(c => c.id === conv.id);
@@ -258,9 +260,9 @@ async function init() {
           allConversations.push(conv);
         }
       });
-      
+
       loadedCount++;
-      
+
       // Render when all suppliers loaded
       if (loadedCount >= suppliers.length) {
         // Sort by last message time
@@ -269,13 +271,13 @@ async function init() {
           const timeB = b.lastMessageTime?.seconds || 0;
           return timeB - timeA;
         });
-        
+
         renderConversations(allConversations);
       }
     });
-    
+
     // Listen to unread count for this supplier
-    messagingSystem.listenToUnreadCount(supplier.id, 'supplier', (unreadCount) => {
+    messagingSystem.listenToUnreadCount(supplier.id, 'supplier', unreadCount => {
       updateUnreadBadge(unreadCount);
     });
   });

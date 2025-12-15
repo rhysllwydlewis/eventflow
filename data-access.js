@@ -3,19 +3,19 @@
  * Provides a single interface for reading/writing data that works with both:
  * - Firebase Firestore (when configured)
  * - Local JSON files (fallback)
- * 
+ *
  * This allows gradual migration from local storage to Firebase.
  */
 
 const { read: readLocal, write: writeLocal, uid, DATA_DIR } = require('./store');
-const { 
-  initializeFirebaseAdmin, 
-  isFirebaseAvailable, 
-  getCollection, 
-  getDocument, 
-  setDocument, 
+const {
+  initializeFirebaseAdmin,
+  isFirebaseAvailable,
+  getCollection,
+  getDocument,
+  setDocument,
   deleteDocument,
-  queryDocuments
+  queryDocuments,
 } = require('./firebase-admin');
 
 // Initialize Firebase on module load
@@ -41,7 +41,10 @@ async function read(collectionName) {
       const docs = await getCollection(collectionName);
       return docs;
     } catch (error) {
-      console.error(`Firebase read error for ${collectionName}, falling back to local:`, error.message);
+      console.error(
+        `Firebase read error for ${collectionName}, falling back to local:`,
+        error.message
+      );
       return readLocal(collectionName);
     }
   }
@@ -50,15 +53,15 @@ async function read(collectionName) {
 
 /**
  * Write all documents to a collection
- * 
+ *
  * WARNING: This does NOT perform a true collection replacement in Firebase.
  * It only updates/creates the documents provided. Existing documents not in
  * the array will remain in Firebase. For true replacement, use remove() to
  * delete documents first, or manage documents individually with create/update.
- * 
+ *
  * This behavior is intentional for backward compatibility and safety.
  * Local storage is always fully replaced.
- * 
+ *
  * @param {string} collectionName - Name of the collection
  * @param {Array} data - Array of documents to write
  * @returns {Promise<void>}
@@ -66,13 +69,15 @@ async function read(collectionName) {
 async function write(collectionName, data) {
   // Always write to local storage for backward compatibility (full replacement)
   writeLocal(collectionName, data);
-  
+
   if (FIREBASE_ENABLED) {
     try {
       // Update/create documents in Firebase (does NOT delete existing docs not in array)
       const promises = data.map(doc => {
         if (!doc.id) {
-          console.warn(`[data-access] Skipping document without ID in ${collectionName} for Firebase write`);
+          console.warn(
+            `[data-access] Skipping document without ID in ${collectionName} for Firebase write`
+          );
           return Promise.resolve();
         }
         return setDocument(collectionName, doc.id, doc);
@@ -97,7 +102,10 @@ async function getById(collectionName, docId) {
       const doc = await getDocument(collectionName, docId);
       return doc;
     } catch (error) {
-      console.error(`Firebase getById error for ${collectionName}/${docId}, falling back to local:`, error.message);
+      console.error(
+        `Firebase getById error for ${collectionName}/${docId}, falling back to local:`,
+        error.message
+      );
       const items = readLocal(collectionName);
       return items.find(item => item.id === docId) || null;
     }
@@ -117,14 +125,14 @@ async function update(collectionName, docId, updates) {
   // Update in local storage
   const items = readLocal(collectionName);
   const index = items.findIndex(item => item.id === docId);
-  
+
   if (index === -1) {
     throw new Error(`Document ${docId} not found in ${collectionName}`);
   }
-  
+
   items[index] = { ...items[index], ...updates };
   writeLocal(collectionName, items);
-  
+
   // Update in Firebase if available
   if (FIREBASE_ENABLED) {
     try {
@@ -134,7 +142,7 @@ async function update(collectionName, docId, updates) {
       // Local update succeeded, continue
     }
   }
-  
+
   return items[index];
 }
 
@@ -146,23 +154,23 @@ async function update(collectionName, docId, updates) {
  */
 async function create(collectionName, data) {
   const doc = { ...data };
-  
+
   // Generate ID if not provided
   if (!doc.id) {
     const prefix = collectionName.slice(0, 3);
     doc.id = uid(prefix);
   }
-  
+
   // Add timestamps if not present
   if (!doc.createdAt) {
     doc.createdAt = new Date().toISOString();
   }
-  
+
   // Create in local storage
   const items = readLocal(collectionName);
   items.push(doc);
   writeLocal(collectionName, items);
-  
+
   // Create in Firebase if available
   if (FIREBASE_ENABLED) {
     try {
@@ -172,7 +180,7 @@ async function create(collectionName, data) {
       // Local create succeeded, continue
     }
   }
-  
+
   return doc;
 }
 
@@ -186,13 +194,13 @@ async function remove(collectionName, docId) {
   // Delete from local storage
   const items = readLocal(collectionName);
   const filteredItems = items.filter(item => item.id !== docId);
-  
+
   if (filteredItems.length === items.length) {
     return false; // Not found
   }
-  
+
   writeLocal(collectionName, filteredItems);
-  
+
   // Delete from Firebase if available
   if (FIREBASE_ENABLED) {
     try {
@@ -202,7 +210,7 @@ async function remove(collectionName, docId) {
       // Local delete succeeded, continue
     }
   }
-  
+
   return true;
 }
 
@@ -240,34 +248,46 @@ async function query(collectionName, filters = {}) {
     try {
       return await queryDocuments(collectionName, filters);
     } catch (error) {
-      console.error(`Firebase query error for ${collectionName}, falling back to local:`, error.message);
+      console.error(
+        `Firebase query error for ${collectionName}, falling back to local:`,
+        error.message
+      );
       // Fall through to local query
     }
   }
-  
+
   // Local storage query implementation
   let items = readLocal(collectionName);
-  
+
   // Apply where filters
   if (filters.where) {
     for (const [field, operator, value] of filters.where) {
       items = items.filter(item => {
         const fieldValue = item[field];
         switch (operator) {
-          case '==': return fieldValue === value;
-          case '!=': return fieldValue !== value;
-          case '<': return fieldValue < value;
-          case '<=': return fieldValue <= value;
-          case '>': return fieldValue > value;
-          case '>=': return fieldValue >= value;
-          case 'in': return Array.isArray(value) && value.includes(fieldValue);
-          case 'array-contains': return Array.isArray(fieldValue) && fieldValue.includes(value);
-          default: return true;
+          case '==':
+            return fieldValue === value;
+          case '!=':
+            return fieldValue !== value;
+          case '<':
+            return fieldValue < value;
+          case '<=':
+            return fieldValue <= value;
+          case '>':
+            return fieldValue > value;
+          case '>=':
+            return fieldValue >= value;
+          case 'in':
+            return Array.isArray(value) && value.includes(fieldValue);
+          case 'array-contains':
+            return Array.isArray(fieldValue) && fieldValue.includes(value);
+          default:
+            return true;
         }
       });
     }
   }
-  
+
   // Apply orderBy
   if (filters.orderBy) {
     const { field, direction = 'asc' } = filters.orderBy;
@@ -278,12 +298,12 @@ async function query(collectionName, filters = {}) {
       return direction === 'desc' ? -comparison : comparison;
     });
   }
-  
+
   // Apply limit
   if (filters.limit) {
     items = items.slice(0, filters.limit);
   }
-  
+
   return items;
 }
 
@@ -300,7 +320,7 @@ module.exports = {
   uid,
   DATA_DIR,
   isFirebaseEnabled: () => FIREBASE_ENABLED,
-  
+
   /**
    * Replace entire collection (DANGEROUS - deletes all existing docs)
    * Use with caution. Only available when Firebase is enabled.
@@ -313,15 +333,15 @@ module.exports = {
       writeLocal(collectionName, data);
       return;
     }
-    
+
     try {
       // Get all existing documents
       const existing = await getCollection(collectionName);
-      
+
       // Delete all existing documents
       const deletePromises = existing.map(doc => deleteDocument(collectionName, doc.id));
       await Promise.all(deletePromises);
-      
+
       // Write new documents
       const createPromises = data.map(doc => {
         if (!doc.id) {
@@ -331,12 +351,12 @@ module.exports = {
         return setDocument(collectionName, doc.id, doc);
       });
       await Promise.all(createPromises);
-      
+
       // Update local storage
       writeLocal(collectionName, data);
     } catch (error) {
       console.error(`Firebase replaceCollection error for ${collectionName}:`, error.message);
       throw error;
     }
-  }
+  },
 };

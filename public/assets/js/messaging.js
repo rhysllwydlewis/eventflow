@@ -18,7 +18,7 @@ import {
   onSnapshot,
   serverTimestamp,
   Timestamp,
-  writeBatch
+  writeBatch,
 } from './firebase-config.js';
 
 class MessagingSystem {
@@ -47,10 +47,10 @@ class MessagingSystem {
         conversationData.customerId,
         conversationData.supplierId
       );
-      
+
       const conversationRef = doc(db, 'conversations', conversationId);
       const conversationSnap = await getDoc(conversationRef);
-      
+
       if (!conversationSnap.exists()) {
         // Create new conversation
         await setDoc(conversationRef, {
@@ -60,12 +60,12 @@ class MessagingSystem {
           supplierName: conversationData.supplierName,
           lastMessage: '',
           lastMessageTime: serverTimestamp(),
-          createdAt: serverTimestamp()
+          createdAt: serverTimestamp(),
         });
-        
+
         console.log('New conversation created:', conversationId);
       }
-      
+
       return conversationId;
     } catch (error) {
       console.error('Error starting conversation:', error);
@@ -89,18 +89,22 @@ class MessagingSystem {
         senderName: messageData.senderName,
         message: messageData.message,
         timestamp: serverTimestamp(),
-        read: false
+        read: false,
       };
-      
+
       const docRef = await addDoc(messagesRef, message);
-      
+
       // Update conversation metadata
       const conversationRef = doc(db, 'conversations', conversationId);
-      await setDoc(conversationRef, {
-        lastMessage: messageData.message,
-        lastMessageTime: serverTimestamp()
-      }, { merge: true });
-      
+      await setDoc(
+        conversationRef,
+        {
+          lastMessage: messageData.message,
+          lastMessageTime: serverTimestamp(),
+        },
+        { merge: true }
+      );
+
       console.log('Message sent:', docRef.id);
       return docRef.id;
     } catch (error) {
@@ -118,13 +122,13 @@ class MessagingSystem {
     try {
       const messagesRef = collection(db, 'conversations', conversationId, 'messages');
       const q = query(messagesRef, orderBy('timestamp', 'asc'));
-      
+
       const querySnapshot = await getDocs(q);
       const messages = [];
-      querySnapshot.forEach((doc) => {
+      querySnapshot.forEach(doc => {
         messages.push({ id: doc.id, ...doc.data() });
       });
-      
+
       return messages;
     } catch (error) {
       console.error('Error getting messages:', error);
@@ -146,13 +150,13 @@ class MessagingSystem {
         where(fieldName, '==', userId),
         orderBy('lastMessageTime', 'desc')
       );
-      
+
       const querySnapshot = await getDocs(q);
       const conversations = [];
-      querySnapshot.forEach((doc) => {
+      querySnapshot.forEach(doc => {
         conversations.push({ id: doc.id, ...doc.data() });
       });
-      
+
       return conversations;
     } catch (error) {
       console.error('Error getting user conversations:', error);
@@ -169,17 +173,21 @@ class MessagingSystem {
     try {
       const messagesRef = collection(db, 'conversations', conversationId, 'messages');
       const q = query(messagesRef, orderBy('timestamp', 'asc'));
-      
-      const unsubscribe = onSnapshot(q, (querySnapshot) => {
-        const messages = [];
-        querySnapshot.forEach((doc) => {
-          messages.push({ id: doc.id, ...doc.data() });
-        });
-        callback(messages);
-      }, (error) => {
-        console.error('Error listening to messages:', error);
-      });
-      
+
+      const unsubscribe = onSnapshot(
+        q,
+        querySnapshot => {
+          const messages = [];
+          querySnapshot.forEach(doc => {
+            messages.push({ id: doc.id, ...doc.data() });
+          });
+          callback(messages);
+        },
+        error => {
+          console.error('Error listening to messages:', error);
+        }
+      );
+
       this.unsubscribers.push(unsubscribe);
       return unsubscribe;
     } catch (error) {
@@ -202,17 +210,21 @@ class MessagingSystem {
         where(fieldName, '==', userId),
         orderBy('lastMessageTime', 'desc')
       );
-      
-      const unsubscribe = onSnapshot(q, (querySnapshot) => {
-        const conversations = [];
-        querySnapshot.forEach((doc) => {
-          conversations.push({ id: doc.id, ...doc.data() });
-        });
-        callback(conversations);
-      }, (error) => {
-        console.error('Error listening to conversations:', error);
-      });
-      
+
+      const unsubscribe = onSnapshot(
+        q,
+        querySnapshot => {
+          const conversations = [];
+          querySnapshot.forEach(doc => {
+            conversations.push({ id: doc.id, ...doc.data() });
+          });
+          callback(conversations);
+        },
+        error => {
+          console.error('Error listening to conversations:', error);
+        }
+      );
+
       this.unsubscribers.push(unsubscribe);
       return unsubscribe;
     } catch (error) {
@@ -230,26 +242,22 @@ class MessagingSystem {
   async markMessagesAsRead(conversationId, userId) {
     try {
       const messagesRef = collection(db, 'conversations', conversationId, 'messages');
-      const q = query(
-        messagesRef,
-        where('senderId', '!=', userId),
-        where('read', '==', false)
-      );
-      
+      const q = query(messagesRef, where('senderId', '!=', userId), where('read', '==', false));
+
       const querySnapshot = await getDocs(q);
-      
+
       if (querySnapshot.empty) {
         return; // No messages to update
       }
-      
+
       // Use batch write for atomic operation
       const batch = writeBatch(db);
-      
-      querySnapshot.forEach((docSnap) => {
+
+      querySnapshot.forEach(docSnap => {
         const messageRef = doc(db, 'conversations', conversationId, 'messages', docSnap.id);
         batch.update(messageRef, { read: true });
       });
-      
+
       await batch.commit();
       console.log('Messages marked as read');
     } catch (error) {
@@ -268,19 +276,15 @@ class MessagingSystem {
     try {
       const conversations = await this.getUserConversations(userId, userType);
       let unreadCount = 0;
-      
+
       for (const conversation of conversations) {
         const messagesRef = collection(db, 'conversations', conversation.id, 'messages');
-        const q = query(
-          messagesRef,
-          where('senderId', '!=', userId),
-          where('read', '==', false)
-        );
-        
+        const q = query(messagesRef, where('senderId', '!=', userId), where('read', '==', false));
+
         const querySnapshot = await getDocs(q);
         unreadCount += querySnapshot.size;
       }
-      
+
       return unreadCount;
     } catch (error) {
       console.error('Error getting unread count:', error);
@@ -290,13 +294,13 @@ class MessagingSystem {
 
   /**
    * Listen to unread count changes in real-time
-   * 
+   *
    * PERFORMANCE NOTE: This implementation queries all messages in real-time.
    * For production with high message volume, consider:
    * 1. Denormalizing unread count to conversation document
    * 2. Using Cloud Functions to update count on message create/read
    * 3. Using Firestore count() aggregation queries (when available)
-   * 
+   *
    * @param {string} userId - User ID
    * @param {string} userType - 'customer' | 'supplier'
    * @param {Function} callback - Callback function with unread count
@@ -305,39 +309,41 @@ class MessagingSystem {
   listenToUnreadCount(userId, userType, callback) {
     try {
       const fieldName = userType === 'customer' ? 'customerId' : 'supplierId';
-      
+
       // Listen to all conversations for this user
       const conversationsRef = collection(db, 'conversations');
       const q = query(conversationsRef, where(fieldName, '==', userId));
-      
-      const unsubscribe = onSnapshot(q, async (conversationsSnapshot) => {
-        let totalUnread = 0;
-        
-        // For each conversation, count unread messages
-        // NOTE: This could be optimized with denormalized counts
-        const promises = [];
-        conversationsSnapshot.forEach((conversationDoc) => {
-          const messagesRef = collection(db, 'conversations', conversationDoc.id, 'messages');
-          const messagesQuery = query(
-            messagesRef,
-            where('senderId', '!=', userId),
-            where('read', '==', false)
-          );
-          
-          promises.push(
-            getDocs(messagesQuery).then(snapshot => snapshot.size)
-          );
-        });
-        
-        const unreadCounts = await Promise.all(promises);
-        totalUnread = unreadCounts.reduce((sum, count) => sum + count, 0);
-        
-        callback(totalUnread);
-      }, (error) => {
-        console.error('Error listening to unread count:', error);
-        callback(0);
-      });
-      
+
+      const unsubscribe = onSnapshot(
+        q,
+        async conversationsSnapshot => {
+          let totalUnread = 0;
+
+          // For each conversation, count unread messages
+          // NOTE: This could be optimized with denormalized counts
+          const promises = [];
+          conversationsSnapshot.forEach(conversationDoc => {
+            const messagesRef = collection(db, 'conversations', conversationDoc.id, 'messages');
+            const messagesQuery = query(
+              messagesRef,
+              where('senderId', '!=', userId),
+              where('read', '==', false)
+            );
+
+            promises.push(getDocs(messagesQuery).then(snapshot => snapshot.size));
+          });
+
+          const unreadCounts = await Promise.all(promises);
+          totalUnread = unreadCounts.reduce((sum, count) => sum + count, 0);
+
+          callback(totalUnread);
+        },
+        error => {
+          console.error('Error listening to unread count:', error);
+          callback(0);
+        }
+      );
+
       this.unsubscribers.push(unsubscribe);
       return unsubscribe;
     } catch (error) {
@@ -361,7 +367,7 @@ class MessagingSystem {
    */
   formatTimestamp(timestamp) {
     if (!timestamp) return '';
-    
+
     let date;
     if (timestamp.toDate) {
       date = timestamp.toDate();
@@ -370,22 +376,22 @@ class MessagingSystem {
     } else {
       date = new Date(timestamp);
     }
-    
+
     const now = new Date();
     const diff = now - date;
     const minutes = Math.floor(diff / 60000);
     const hours = Math.floor(diff / 3600000);
     const days = Math.floor(diff / 86400000);
-    
+
     if (minutes < 1) return 'Just now';
     if (minutes < 60) return `${minutes}m ago`;
     if (hours < 24) return `${hours}h ago`;
     if (days < 7) return `${days}d ago`;
-    
+
     return date.toLocaleDateString('en-GB', {
       month: 'short',
       day: 'numeric',
-      year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
+      year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined,
     });
   }
 
@@ -396,7 +402,7 @@ class MessagingSystem {
    */
   formatFullTimestamp(timestamp) {
     if (!timestamp) return '';
-    
+
     let date;
     if (timestamp.toDate) {
       date = timestamp.toDate();
@@ -405,13 +411,13 @@ class MessagingSystem {
     } else {
       date = new Date(timestamp);
     }
-    
+
     return date.toLocaleString('en-GB', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
   }
 }

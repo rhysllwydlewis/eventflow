@@ -27,14 +27,14 @@ async function read(collectionName) {
  * Write (replace) all documents in a collection
  * WARNING: This deletes all existing documents and replaces them with new data
  * DANGEROUS: Use with extreme caution - this is a destructive operation
- * 
+ *
  * Primary use cases:
  * - Initial data migration from JSON files (one-time operation)
  * - Development/testing environment resets
  * - Admin-controlled data restoration from backups
- * 
+ *
  * For production updates, use updateOne, insertOne, or deleteOne instead
- * 
+ *
  * @param {string} collectionName - Name of the collection
  * @param {Array} data - Array of documents to write
  * @returns {Promise<boolean>} Success status
@@ -42,15 +42,15 @@ async function read(collectionName) {
 async function write(collectionName, data) {
   try {
     const collection = await getCollection(collectionName);
-    
+
     // Delete all existing documents
     await collection.deleteMany({});
-    
+
     // Insert new documents if any
     if (Array.isArray(data) && data.length > 0) {
       await collection.insertMany(data);
     }
-    
+
     return true;
   } catch (error) {
     console.error(`Error writing to ${collectionName}:`, error.message);
@@ -68,7 +68,7 @@ async function insertOne(collectionName, document) {
   try {
     const collection = await getCollection(collectionName);
     const result = await collection.insertOne(document);
-    
+
     if (result.acknowledged) {
       return document;
     }
@@ -89,12 +89,8 @@ async function insertOne(collectionName, document) {
 async function updateOne(collectionName, filter, update) {
   try {
     const collection = await getCollection(collectionName);
-    const result = await collection.findOneAndUpdate(
-      filter,
-      update,
-      { returnDocument: 'after' }
-    );
-    
+    const result = await collection.findOneAndUpdate(filter, update, { returnDocument: 'after' });
+
     return result.value;
   } catch (error) {
     console.error(`Error updating in ${collectionName}:`, error.message);
@@ -130,19 +126,19 @@ async function find(collectionName, filter = {}, options = {}) {
   try {
     const collection = await getCollection(collectionName);
     let query = collection.find(filter);
-    
+
     if (options.sort) {
       query = query.sort(options.sort);
     }
-    
+
     if (options.limit) {
       query = query.limit(options.limit);
     }
-    
+
     if (options.skip) {
       query = query.skip(options.skip);
     }
-    
+
     return await query.toArray();
   } catch (error) {
     console.error(`Error finding in ${collectionName}:`, error.message);
@@ -210,7 +206,7 @@ async function migrateFromJson(store) {
     'threads',
     'events',
   ];
-  
+
   const results = {
     success: [],
     failed: [],
@@ -221,11 +217,11 @@ async function migrateFromJson(store) {
     try {
       // Read data from JSON files using store.js
       const data = store.read(collectionName);
-      
+
       if (Array.isArray(data) && data.length > 0) {
         // Write to MongoDB
         const success = await write(collectionName, data);
-        
+
         if (success) {
           results.success.push(collectionName);
           results.counts[collectionName] = data.length;
@@ -263,7 +259,7 @@ async function exportToJson() {
     'threads',
     'events',
   ];
-  
+
   const data = {
     exportedAt: new Date().toISOString(),
   };

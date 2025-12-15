@@ -24,18 +24,19 @@ function renderTickets(tickets) {
   if (!container) return;
 
   if (!tickets || tickets.length === 0) {
-    container.innerHTML = '<p class="small">No support tickets yet. Create one if you need help!</p>';
+    container.innerHTML =
+      '<p class="small">No support tickets yet. Create one if you need help!</p>';
     return;
   }
 
   let html = '<div class="ticket-list">';
-  
+
   tickets.forEach(ticket => {
     const statusClass = ticketingSystem.getStatusClass(ticket.status);
     const priorityClass = ticketingSystem.getPriorityClass(ticket.priority);
     const createdAt = ticketingSystem.formatTimestamp(ticket.createdAt);
     const responseCount = ticket.responses ? ticket.responses.length : 0;
-    
+
     html += `
       <div class="ticket-item" style="border:1px solid #e4e4e7;padding:1rem;margin-bottom:0.5rem;border-radius:4px;cursor:pointer;" data-ticket-id="${ticket.id}">
         <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:0.5rem;">
@@ -52,7 +53,7 @@ function renderTickets(tickets) {
       </div>
     `;
   });
-  
+
   html += '</div>';
   container.innerHTML = html;
 
@@ -118,14 +119,14 @@ function showCreateTicketModal() {
 
   modal.querySelector('.modal-close').addEventListener('click', closeModal);
   modal.querySelector('.modal-close-btn').addEventListener('click', closeModal);
-  modal.addEventListener('click', (e) => {
+  modal.addEventListener('click', e => {
     if (e.target === modal) closeModal();
   });
 
   // Form submit
-  modal.querySelector('#createTicketForm').addEventListener('submit', async (e) => {
+  modal.querySelector('#createTicketForm').addEventListener('submit', async e => {
     e.preventDefault();
-    
+
     const user = await getCurrentUser();
     if (!user) {
       if (typeof Toast !== 'undefined') {
@@ -141,7 +142,7 @@ function showCreateTicketModal() {
       senderEmail: user.email,
       subject: document.getElementById('ticketSubject').value,
       message: document.getElementById('ticketMessage').value,
-      priority: document.getElementById('ticketPriority').value
+      priority: document.getElementById('ticketPriority').value,
     };
 
     try {
@@ -150,13 +151,13 @@ function showCreateTicketModal() {
       submitBtn.textContent = 'Submitting...';
 
       await ticketingSystem.createTicket(ticketData);
-      
+
       if (typeof Toast !== 'undefined') {
         Toast.success('Ticket created successfully');
       } else {
         alert('Ticket created successfully');
       }
-      
+
       closeModal();
     } catch (error) {
       console.error('Error creating ticket:', error);
@@ -165,7 +166,7 @@ function showCreateTicketModal() {
       } else {
         alert('Failed to create ticket: ' + error.message);
       }
-      
+
       submitBtn.disabled = false;
       submitBtn.textContent = 'Submit Ticket';
     }
@@ -197,14 +198,14 @@ function viewTicket(ticketId) {
   };
 
   modal.querySelector('.modal-close').addEventListener('click', closeModal);
-  modal.addEventListener('click', (e) => {
+  modal.addEventListener('click', e => {
     if (e.target === modal) closeModal();
   });
 
   // Load ticket details with real-time updates
   let ticketUnsubscribe = null;
 
-  const renderTicketDetails = (ticket) => {
+  const renderTicketDetails = ticket => {
     if (!ticket) {
       document.getElementById('ticketDetails').innerHTML = '<p class="small">Ticket not found.</p>';
       return;
@@ -229,11 +230,11 @@ function viewTicket(ticketId) {
     if (ticket.responses && ticket.responses.length > 0) {
       html += '<h4>Responses</h4>';
       html += '<div class="responses-list">';
-      
+
       ticket.responses.forEach(response => {
         const respTimestamp = ticketingSystem.formatTimestamp(response.timestamp);
         const isAdmin = response.responderType === 'admin';
-        
+
         html += `
           <div style="margin-bottom:1rem;padding:1rem;background:${isAdmin ? '#eff6ff' : '#fafafa'};border-radius:4px;border-left:3px solid ${isAdmin ? '#3b82f6' : '#9ca3af'};">
             <div style="display:flex;justify-content:space-between;margin-bottom:0.5rem;">
@@ -244,10 +245,11 @@ function viewTicket(ticketId) {
           </div>
         `;
       });
-      
+
       html += '</div>';
     } else {
-      html += '<p class="small" style="color:#9ca3af;">No responses yet. An admin will respond soon.</p>';
+      html +=
+        '<p class="small" style="color:#9ca3af;">No responses yet. An admin will respond soon.</p>';
     }
 
     document.getElementById('ticketDetails').innerHTML = html;

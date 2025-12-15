@@ -28,7 +28,7 @@ async function enhanceConversationButton() {
       setupFirebaseConversation(startThreadBtn);
     }
   }, 100);
-  
+
   // Stop checking after 5 seconds
   setTimeout(() => clearInterval(checkButton), 5000);
 }
@@ -39,15 +39,15 @@ function setupFirebaseConversation(originalButton) {
     const params = new URLSearchParams(window.location.search);
     return params.get('id');
   };
-  
+
   // Store original click handler
   const originalHandler = originalButton.onclick;
   const originalListeners = originalButton._listeners || [];
-  
+
   // Remove all existing listeners
   const newButton = originalButton.cloneNode(true);
   originalButton.parentNode.replaceChild(newButton, originalButton);
-  
+
   // Add new Firebase-enhanced handler
   newButton.addEventListener('click', async () => {
     const user = await getCurrentUser();
@@ -55,18 +55,20 @@ function setupFirebaseConversation(originalButton) {
       alert('You need an account to contact suppliers. Please sign in or create an account.');
       return;
     }
-    
+
     if (user.role !== 'customer') {
-      alert('Only customers can start conversations with suppliers. Please sign in with a customer account.');
+      alert(
+        'Only customers can start conversations with suppliers. Please sign in with a customer account.'
+      );
       return;
     }
-    
+
     const supplierId = getSupplierId();
     if (!supplierId) {
       alert('Supplier not found');
       return;
     }
-    
+
     // Get supplier info
     let supplierInfo = null;
     try {
@@ -78,7 +80,7 @@ function setupFirebaseConversation(originalButton) {
     } catch (error) {
       console.error('Error fetching supplier:', error);
     }
-    
+
     // Open conversation modal
     openFirebaseConversationModal(user, supplierId, supplierInfo);
   });
@@ -87,7 +89,7 @@ function setupFirebaseConversation(originalButton) {
 function openFirebaseConversationModal(user, supplierId, supplierInfo) {
   const modal = document.createElement('div');
   modal.className = 'modal-overlay active';
-  
+
   modal.innerHTML = `
     <div class="modal" style="max-width:600px;">
       <div class="modal-header">
@@ -109,48 +111,48 @@ function openFirebaseConversationModal(user, supplierId, supplierInfo) {
       </div>
     </div>
   `;
-  
+
   document.body.appendChild(modal);
-  
+
   // Close handlers
   const closeModal = () => {
     modal.remove();
   };
-  
+
   modal.querySelector('.modal-close').addEventListener('click', closeModal);
   modal.querySelector('.modal-close-btn').addEventListener('click', closeModal);
-  modal.addEventListener('click', (e) => {
+  modal.addEventListener('click', e => {
     if (e.target === modal) closeModal();
   });
-  
+
   // Form submit
-  modal.querySelector('#startConversationForm').addEventListener('submit', async (e) => {
+  modal.querySelector('#startConversationForm').addEventListener('submit', async e => {
     e.preventDefault();
-    
+
     const messageText = document.getElementById('conversationMessage').value.trim();
     if (!messageText) return;
-    
+
     try {
       const submitBtn = e.target.querySelector('button[type="submit"]');
       submitBtn.disabled = true;
       submitBtn.textContent = 'Sending...';
-      
+
       // Start conversation in Firebase
       const conversationId = await messagingSystem.startConversation({
         customerId: user.id,
         customerName: user.name || user.email,
         supplierId: supplierId,
-        supplierName: supplierInfo?.name || 'Supplier'
+        supplierName: supplierInfo?.name || 'Supplier',
       });
-      
+
       // Send the first message
       await messagingSystem.sendMessage(conversationId, {
         senderId: user.id,
         senderType: 'customer',
         senderName: user.name || user.email,
-        message: messageText
+        message: messageText,
       });
-      
+
       // Also send via legacy API for backward compatibility
       try {
         await fetch('/api/threads/start', {
@@ -158,26 +160,25 @@ function openFirebaseConversationModal(user, supplierId, supplierInfo) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             supplierId: supplierId,
-            message: messageText
-          })
+            message: messageText,
+          }),
         });
       } catch (apiError) {
         console.log('Legacy API call failed (expected if using Firebase only):', apiError);
       }
-      
+
       closeModal();
-      
+
       if (typeof Toast !== 'undefined') {
         Toast.success('Message sent! The supplier will respond soon.');
       } else {
         alert('Message sent! Visit your dashboard to continue the conversation.');
       }
-      
+
       // Redirect to customer dashboard
       setTimeout(() => {
         window.location.href = '/dashboard-customer.html';
       }, 1500);
-      
     } catch (error) {
       console.error('Error starting conversation:', error);
       if (typeof Toast !== 'undefined') {
@@ -185,7 +186,7 @@ function openFirebaseConversationModal(user, supplierId, supplierInfo) {
       } else {
         alert('Failed to send message: ' + error.message);
       }
-      
+
       const submitBtn = e.target.querySelector('button[type="submit"]');
       submitBtn.disabled = false;
       submitBtn.textContent = 'Send Message';

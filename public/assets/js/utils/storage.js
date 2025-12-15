@@ -35,7 +35,7 @@ class Storage {
 
     try {
       const item = window[type].getItem(key);
-      
+
       if (item === null) {
         return defaultValue;
       }

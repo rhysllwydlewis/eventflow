@@ -22,11 +22,11 @@ class NotificationManager {
       message: notification.message || '',
       timestamp: Date.now(),
       read: false,
-      link: notification.link || null
+      link: notification.link || null,
     };
 
     this.notifications.unshift(newNotification);
-    
+
     // Limit stored notifications
     if (this.notifications.length > this.maxNotifications) {
       this.notifications = this.notifications.slice(0, this.maxNotifications);
@@ -41,7 +41,7 @@ class NotificationManager {
       Toast.show({
         type: newNotification.type,
         title: newNotification.title,
-        message: newNotification.message
+        message: newNotification.message,
       });
     }
 
@@ -61,7 +61,7 @@ class NotificationManager {
 
   // Mark all as read
   markAllAsRead() {
-    this.notifications.forEach(n => n.read = true);
+    this.notifications.forEach(n => (n.read = true));
     this.unreadCount = 0;
     this.saveToStorage();
     this.updateBadge();
@@ -112,10 +112,13 @@ class NotificationManager {
   // Save to localStorage
   saveToStorage() {
     try {
-      localStorage.setItem(this.storageKey, JSON.stringify({
-        notifications: this.notifications,
-        unreadCount: this.unreadCount
-      }));
+      localStorage.setItem(
+        this.storageKey,
+        JSON.stringify({
+          notifications: this.notifications,
+          unreadCount: this.unreadCount,
+        })
+      );
     } catch (e) {
       console.error('Failed to save notifications:', e);
     }
@@ -193,7 +196,7 @@ class NotificationCenter {
       </span>
     `;
 
-    button.addEventListener('click', (e) => {
+    button.addEventListener('click', e => {
       e.stopPropagation();
       this.toggle();
     });
@@ -255,7 +258,7 @@ class NotificationCenter {
     });
 
     // Close on outside click
-    document.addEventListener('click', (e) => {
+    document.addEventListener('click', e => {
       if (this.isOpen && !panel.contains(e.target) && !e.target.closest('.notification-button')) {
         this.close();
       }
@@ -301,16 +304,17 @@ class NotificationCenter {
       return;
     }
 
-    listContainer.innerHTML = notifications.map(n => {
-      const timeAgo = this.formatTimeAgo(n.timestamp);
-      const icons = {
-        success: '✓',
-        error: '✕',
-        warning: '⚠',
-        info: 'ℹ'
-      };
+    listContainer.innerHTML = notifications
+      .map(n => {
+        const timeAgo = this.formatTimeAgo(n.timestamp);
+        const icons = {
+          success: '✓',
+          error: '✕',
+          warning: '⚠',
+          info: 'ℹ',
+        };
 
-      return `
+        return `
         <div class="notification-item" data-id="${n.id}" style="
           padding: 0.75rem;
           border-radius: 8px;
@@ -348,7 +352,8 @@ class NotificationCenter {
           </div>
         </div>
       `;
-    }).join('');
+      })
+      .join('');
 
     // Add click handlers
     listContainer.querySelectorAll('.notification-item').forEach(item => {
@@ -356,7 +361,7 @@ class NotificationCenter {
         const id = item.dataset.id;
         this.manager.markAsRead(id);
         this.render();
-        
+
         const notification = this.manager.notifications.find(n => n.id === id);
         if (notification && notification.link) {
           window.location.href = notification.link;
@@ -370,14 +375,14 @@ class NotificationCenter {
       success: '#10B981',
       error: '#EF4444',
       warning: '#F59E0B',
-      info: '#0B8073'
+      info: '#0B8073',
     };
     return colors[type] || colors.info;
   }
 
   formatTimeAgo(timestamp) {
     const seconds = Math.floor((Date.now() - timestamp) / 1000);
-    
+
     if (seconds < 60) return 'Just now';
     if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
     if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
@@ -405,7 +410,7 @@ if (typeof document !== 'undefined') {
   document.addEventListener('DOMContentLoaded', () => {
     notificationManager = new NotificationManager();
     notificationCenter = new NotificationCenter(notificationManager);
-    
+
     // Make globally available
     window.Notifications = notificationManager;
   });

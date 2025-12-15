@@ -29,47 +29,49 @@ function validateMongoUri(uri) {
   if (!uri || typeof uri !== 'string') {
     return { valid: false, error: 'MongoDB URI is empty or invalid' };
   }
-  
+
   // Check for placeholder/example URIs
   const placeholderPatterns = [
-    'username:password',  // Common placeholder pattern
-    'user:pass',          // Short placeholder pattern
+    'username:password', // Common placeholder pattern
+    'user:pass', // Short placeholder pattern
     'your-cluster',
     'YourCluster',
     'example.com',
-    '<password>',         // Angle bracket placeholder
+    '<password>', // Angle bracket placeholder
     '<username>',
-    'cluster.mongodb.net/?appName=YourCluster',  // Full placeholder from .env.example
+    'cluster.mongodb.net/?appName=YourCluster', // Full placeholder from .env.example
   ];
-  
+
   for (const pattern of placeholderPatterns) {
     if (uri.includes(pattern)) {
-      return { 
-        valid: false, 
-        error: 'MongoDB URI contains placeholder values - you must replace these with your actual MongoDB Atlas credentials'
+      return {
+        valid: false,
+        error:
+          'MongoDB URI contains placeholder values - you must replace these with your actual MongoDB Atlas credentials',
       };
     }
   }
-  
+
   // Validate URI scheme
   if (!uri.startsWith('mongodb://') && !uri.startsWith('mongodb+srv://')) {
-    return { 
-      valid: false, 
-      error: 'Invalid scheme, expected connection string to start with "mongodb://" or "mongodb+srv://"'
+    return {
+      valid: false,
+      error:
+        'Invalid scheme, expected connection string to start with "mongodb://" or "mongodb+srv://"',
     };
   }
-  
+
   // Check for credentials in cloud URIs
   if (uri.startsWith('mongodb+srv://') || uri.startsWith('mongodb://')) {
     // For mongodb+srv, we need credentials unless it's localhost
     if (uri.startsWith('mongodb+srv://') && !uri.includes('@')) {
       return {
         valid: false,
-        error: 'MongoDB Atlas URI is missing credentials (username:password@...)'
+        error: 'MongoDB Atlas URI is missing credentials (username:password@...)',
       };
     }
   }
-  
+
   return { valid: true };
 }
 
@@ -81,7 +83,7 @@ function getConnectionUri() {
   const cloudUri = process.env.MONGODB_URI;
   const localUri = process.env.MONGODB_LOCAL_URI || 'mongodb://localhost:27017/eventflow';
   const isProduction = process.env.NODE_ENV === 'production';
-  
+
   // In production, never use localhost
   if (isProduction) {
     if (!cloudUri) {
@@ -104,9 +106,11 @@ function getConnectionUri() {
       console.error('');
       console.error('='.repeat(70));
       console.error('');
-      throw new Error('Production error: MONGODB_URI must be set to a cloud MongoDB connection string');
+      throw new Error(
+        'Production error: MONGODB_URI must be set to a cloud MongoDB connection string'
+      );
     }
-    
+
     // Validate URI format
     const validation = validateMongoUri(cloudUri);
     if (!validation.valid) {
@@ -118,7 +122,9 @@ function getConnectionUri() {
       console.error(`Error: ${validation.error}`);
       console.error('');
       console.error('Your MONGODB_URI should look like:');
-      console.error('  mongodb+srv://myuser:mypassword@cluster0.abcde.mongodb.net/?retryWrites=true&w=majority');
+      console.error(
+        '  mongodb+srv://myuser:mypassword@cluster0.abcde.mongodb.net/?retryWrites=true&w=majority'
+      );
       console.error('');
       console.error('Common issues:');
       console.error('  ✗ Using the example/placeholder from .env.example');
@@ -134,14 +140,14 @@ function getConnectionUri() {
       console.error('');
       throw new Error(`Invalid MONGODB_URI: ${validation.error}`);
     }
-    
+
     if (cloudUri.includes('localhost') || cloudUri.includes('127.0.0.1')) {
       console.error('');
       console.error('='.repeat(70));
       console.error('❌ MONGODB LOCALHOST NOT ALLOWED IN PRODUCTION');
       console.error('='.repeat(70));
       console.error('');
-      console.error('Your MONGODB_URI points to localhost, which won\'t work in production.');
+      console.error("Your MONGODB_URI points to localhost, which won't work in production.");
       console.error('');
       console.error('You need a cloud MongoDB database (MongoDB Atlas):');
       console.error('  → Free tier available at https://cloud.mongodb.com/');
@@ -153,10 +159,10 @@ function getConnectionUri() {
     }
     return cloudUri;
   }
-  
+
   // In development, prefer cloud but allow local fallback
   const uri = cloudUri || localUri;
-  
+
   // Still validate format even in development
   if (cloudUri) {
     const validation = validateMongoUri(cloudUri);
@@ -169,7 +175,7 @@ function getConnectionUri() {
       return localUri;
     }
   }
-  
+
   return uri;
 }
 
@@ -185,26 +191,26 @@ async function connect() {
   try {
     const uri = getConnectionUri();
     const isProduction = process.env.NODE_ENV === 'production';
-    
+
     // Log connection attempt (without exposing credentials)
     const sanitizedUri = uri.replace(/\/\/([^:]+):([^@]+)@/, '//<credentials>@');
     console.log(`Connecting to MongoDB...`);
     console.log(`Environment: ${isProduction ? 'production' : 'development'}`);
     console.log(`URI: ${sanitizedUri}`);
-    
+
     client = new MongoClient(uri, options);
     await client.connect();
-    
+
     // Get database name from URI or use default
     const dbName = process.env.MONGODB_DB_NAME || 'eventflow';
     db = client.db(dbName);
-    
+
     console.log(`✅ Connected to MongoDB database: ${dbName}`);
-    
+
     // Test the connection
     await db.admin().ping();
     console.log('✅ MongoDB connection verified');
-    
+
     return db;
   } catch (error) {
     console.error('');
@@ -214,7 +220,7 @@ async function connect() {
     console.error('');
     console.error(`Error: ${error.message}`);
     console.error('');
-    
+
     // Provide helpful error messages based on error type
     if (error.message.includes('ENOTFOUND') || error.message.includes('ECONNREFUSED')) {
       console.error('🔍 Diagnosis: Network error - Cannot reach MongoDB server');
@@ -230,7 +236,10 @@ async function connect() {
       console.error('     (or use 0.0.0.0/0 to allow all IPs for testing)');
       console.error('  3. Check that your cluster is running and not paused');
       console.error('');
-    } else if (error.message.includes('authentication') || error.message.includes('AuthenticationFailed')) {
+    } else if (
+      error.message.includes('authentication') ||
+      error.message.includes('AuthenticationFailed')
+    ) {
       console.error('🔍 Diagnosis: Authentication failed');
       console.error('');
       console.error('This means your username or password is incorrect.');
@@ -264,15 +273,17 @@ async function connect() {
       console.error('  • mongodb+srv:// for MongoDB Atlas (recommended)');
       console.error('');
     }
-    
+
     console.error('📚 Need help?');
     console.error('   → See MONGODB_SETUP_SIMPLE.md for detailed setup guide');
     console.error('   → MongoDB Atlas: https://cloud.mongodb.com/');
-    console.error('   → Documentation: https://github.com/rhysllwydlewis/eventflow#troubleshooting');
+    console.error(
+      '   → Documentation: https://github.com/rhysllwydlewis/eventflow#troubleshooting'
+    );
     console.error('');
     console.error('='.repeat(70));
     console.error('');
-    
+
     throw error;
   }
 }
@@ -329,12 +340,12 @@ function isMongoAvailable() {
   const cloudUri = process.env.MONGODB_URI;
   const localUri = process.env.MONGODB_LOCAL_URI;
   const isProduction = process.env.NODE_ENV === 'production';
-  
+
   // In production, only accept cloud MongoDB URI
   if (isProduction) {
     return !!cloudUri && !cloudUri.includes('localhost') && !cloudUri.includes('127.0.0.1');
   }
-  
+
   // In development, accept either cloud or local
   return !!(cloudUri || localUri);
 }
@@ -345,7 +356,7 @@ let isShuttingDown = false;
 async function gracefulShutdown(signal) {
   if (isShuttingDown) return;
   isShuttingDown = true;
-  
+
   console.log(`\nReceived ${signal}, closing MongoDB connection...`);
   await close();
   process.exit(0);

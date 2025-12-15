@@ -29,7 +29,7 @@ function withTimeout(promise, timeoutMs, operationName) {
       setTimeout(() => {
         reject(new Error(`${operationName} timed out after ${timeoutMs}ms`));
       }, timeoutMs);
-    })
+    }),
   ]);
 }
 
@@ -45,7 +45,7 @@ async function initializeDatabase() {
 
   // Try Firebase Firestore first (with timeout)
   try {
-    // Firebase Admin initialization is synchronous, but admin.initializeApp() 
+    // Firebase Admin initialization is synchronous, but admin.initializeApp()
     // may hang when trying to fetch Application Default Credentials in production
     // without proper configuration. We wrap this in a timeout to prevent hanging.
     const initPromise = new Promise((resolve, reject) => {
@@ -56,12 +56,8 @@ async function initializeDatabase() {
         reject(error);
       }
     });
-    
-    const { db } = await withTimeout(
-      initPromise,
-      10000,
-      'Firebase initialization'
-    );
+
+    const { db } = await withTimeout(initPromise, 10000, 'Firebase initialization');
     if (db) {
       firestore = db;
       dbType = 'firestore';
@@ -75,11 +71,7 @@ async function initializeDatabase() {
   // Try MongoDB next (with timeout)
   try {
     if (db.isMongoAvailable()) {
-      mongodb = await withTimeout(
-        db.connect(),
-        10000,
-        'MongoDB connection'
-      );
+      mongodb = await withTimeout(db.connect(), 10000, 'MongoDB connection');
       dbType = 'mongodb';
       console.log('✅ Using MongoDB for data storage');
       return dbType;
@@ -142,17 +134,19 @@ async function write(collectionName, data) {
     if (dbType === 'firestore') {
       // For Firestore, we should update individual documents
       // But for compatibility with existing code, we'll handle this carefully
-      console.warn(`write() called on Firestore for ${collectionName} - use individual document operations instead`);
-      
+      console.warn(
+        `write() called on Firestore for ${collectionName} - use individual document operations instead`
+      );
+
       // Get existing docs
       const snapshot = await firestore.collection(collectionName).get();
       const batch = firestore.batch();
-      
+
       // Delete all existing
       snapshot.forEach(doc => {
         batch.delete(doc.ref);
       });
-      
+
       // Add new docs
       if (Array.isArray(data)) {
         data.forEach(item => {
@@ -162,7 +156,7 @@ async function write(collectionName, data) {
           }
         });
       }
-      
+
       await batch.commit();
       return true;
     } else if (dbType === 'mongodb') {
@@ -212,9 +206,11 @@ async function findOne(collectionName, filter) {
         // For object filters, get all and filter in memory
         // TODO: Convert to Firestore queries for better performance
         const all = await read(collectionName);
-        return all.find(item => {
-          return Object.keys(filter).every(key => item[key] === filter[key]);
-        }) || null;
+        return (
+          all.find(item => {
+            return Object.keys(filter).every(key => item[key] === filter[key]);
+          }) || null
+        );
       }
     } else if (dbType === 'mongodb') {
       if (typeof filter === 'function') {
@@ -228,9 +224,11 @@ async function findOne(collectionName, filter) {
       if (typeof filter === 'function') {
         return all.find(filter) || null;
       }
-      return all.find(item => {
-        return Object.keys(filter).every(key => item[key] === filter[key]);
-      }) || null;
+      return (
+        all.find(item => {
+          return Object.keys(filter).every(key => item[key] === filter[key]);
+        }) || null
+      );
     }
   } catch (error) {
     console.error(`Error finding in ${collectionName}:`, error.message);
@@ -363,5 +361,5 @@ module.exports = {
   insertOne,
   deleteOne,
   uid,
-  getDatabaseType
+  getDatabaseType,
 };

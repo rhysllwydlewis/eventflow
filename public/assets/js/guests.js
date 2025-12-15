@@ -47,7 +47,7 @@ class GuestManager {
   showAddGuestModal(guest = null) {
     const isEdit = guest !== null;
     const content = document.createElement('div');
-    
+
     content.innerHTML = `
       <div class="form-row grid grid-cols-2 gap-4">
         <div>
@@ -134,7 +134,7 @@ class GuestManager {
             plusOne,
             dietary,
             table,
-            notes
+            notes,
           });
           Toast.success('Guest updated');
         } else {
@@ -149,14 +149,14 @@ class GuestManager {
             dietary,
             table,
             notes,
-            createdAt: Date.now()
+            createdAt: Date.now(),
           });
           Toast.success('Guest added');
         }
 
         this.saveToStorage();
         this.render();
-      }
+      },
     });
 
     modal.show();
@@ -176,7 +176,7 @@ class GuestManager {
         this.saveToStorage();
         this.render();
         Toast.success('Guest removed');
-      }
+      },
     });
 
     modal.show();
@@ -203,14 +203,14 @@ class GuestManager {
       onConfirm: () => {
         const fileInput = document.getElementById('csv-file');
         const file = fileInput.files[0];
-        
+
         if (!file) {
           Toast.error('Please select a CSV file');
           return;
         }
 
         const reader = new FileReader();
-        reader.onload = (e) => {
+        reader.onload = e => {
           try {
             const csv = e.target.result;
             const imported = this.parseCSV(csv);
@@ -224,7 +224,7 @@ class GuestManager {
           }
         };
         reader.readAsText(file);
-      }
+      },
     });
 
     modal.show();
@@ -248,7 +248,7 @@ class GuestManager {
         dietary: values[6] || '',
         table: values[7] || '',
         notes: values[8] || '',
-        createdAt: Date.now()
+        createdAt: Date.now(),
       };
 
       if (guest.firstName && guest.lastName) {
@@ -278,7 +278,17 @@ class GuestManager {
   }
 
   generateCSV() {
-    const headers = ['FirstName', 'LastName', 'Email', 'Phone', 'RSVP', 'PlusOne', 'Dietary', 'Table', 'Notes'];
+    const headers = [
+      'FirstName',
+      'LastName',
+      'Email',
+      'Phone',
+      'RSVP',
+      'PlusOne',
+      'Dietary',
+      'Table',
+      'Notes',
+    ];
     const rows = this.guests.map(g => [
       g.firstName,
       g.lastName,
@@ -288,12 +298,12 @@ class GuestManager {
       g.plusOne,
       g.dietary || '',
       g.table || '',
-      g.notes || ''
+      g.notes || '',
     ]);
 
     const csvContent = [
       headers.join(','),
-      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(',')),
     ].join('\n');
 
     return csvContent;
@@ -313,7 +323,9 @@ class GuestManager {
     const pending = this.guests.filter(g => g.rsvp === 'pending').length;
 
     // Include plus ones in count
-    const attendingWithPlusOnes = this.guests.filter(g => g.rsvp === 'attending' && g.plusOne === 'yes').length;
+    const attendingWithPlusOnes = this.guests.filter(
+      g => g.rsvp === 'attending' && g.plusOne === 'yes'
+    ).length;
 
     document.getElementById('total-guests').textContent = total;
     document.getElementById('attending-count').textContent = attending + attendingWithPlusOnes;
@@ -327,7 +339,7 @@ class GuestManager {
   animateCounters() {
     // Only animate if Counter class is available
     if (typeof Counter !== 'function') return;
-    
+
     const counters = ['total-guests', 'attending-count', 'declined-count', 'pending-count'];
     counters.forEach(id => {
       const el = document.getElementById(id);
@@ -357,24 +369,26 @@ class GuestManager {
     document.getElementById('rsvp-empty').style.display = 'none';
 
     const ctx = document.getElementById('rsvp-chart');
-    
+
     if (this.chart) {
       this.chart.destroy();
     }
 
     // Always use light theme colors
     const isDark = false;
-    
+
     this.chart = new Chart(ctx, {
       type: 'doughnut',
       data: {
         labels: ['Attending', 'Declined', 'Pending'],
-        datasets: [{
-          data: [attending, declined, pending],
-          backgroundColor: ['#10B981', '#EF4444', '#F59E0B'],
-          borderWidth: 2,
-          borderColor: isDark ? '#020617' : '#fff'
-        }]
+        datasets: [
+          {
+            data: [attending, declined, pending],
+            backgroundColor: ['#10B981', '#EF4444', '#F59E0B'],
+            borderWidth: 2,
+            borderColor: isDark ? '#020617' : '#fff',
+          },
+        ],
       },
       options: {
         responsive: true,
@@ -386,32 +400,35 @@ class GuestManager {
               color: isDark ? '#E5E7EB' : '#0B1220',
               padding: 15,
               font: {
-                size: 13
-              }
-            }
+                size: 13,
+              },
+            },
           },
           tooltip: {
             callbacks: {
-              label: (context) => {
+              label: context => {
                 const label = context.label || '';
                 const value = context.parsed || 0;
                 const total = context.dataset.data.reduce((a, b) => a + b, 0);
                 const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
                 return `${label}: ${value} (${percentage}%)`;
-              }
-            }
-          }
-        }
-      }
+              },
+            },
+          },
+        },
+      },
     });
   }
 
   renderDietaryRequirements() {
     const dietary = {};
-    
+
     this.guests.forEach(guest => {
       if (guest.dietary && guest.rsvp === 'attending') {
-        const reqs = guest.dietary.split(',').map(r => r.trim()).filter(r => r);
+        const reqs = guest.dietary
+          .split(',')
+          .map(r => r.trim())
+          .filter(r => r);
         reqs.forEach(req => {
           dietary[req] = (dietary[req] || 0) + 1;
         });
@@ -429,8 +446,9 @@ class GuestManager {
       return;
     }
 
-    const html = entries.map(([req, count]) => {
-      return `
+    const html = entries
+      .map(([req, count]) => {
+        return `
         <div class="flex items-center justify-between mb-3 pb-3" style="border-bottom: 1px solid var(--border);">
           <div>
             <div class="font-medium">${this.escapeHtml(req)}</div>
@@ -439,7 +457,8 @@ class GuestManager {
           <div class="badge">${count}</div>
         </div>
       `;
-    }).join('');
+      })
+      .join('');
 
     document.getElementById('dietary-list').innerHTML = html;
   }
@@ -452,10 +471,11 @@ class GuestManager {
 
     // Apply filters
     if (searchTerm) {
-      guests = guests.filter(g => 
-        g.firstName.toLowerCase().includes(searchTerm) ||
-        g.lastName.toLowerCase().includes(searchTerm) ||
-        (g.email && g.email.toLowerCase().includes(searchTerm))
+      guests = guests.filter(
+        g =>
+          g.firstName.toLowerCase().includes(searchTerm) ||
+          g.lastName.toLowerCase().includes(searchTerm) ||
+          (g.email && g.email.toLowerCase().includes(searchTerm))
       );
     }
 
@@ -490,15 +510,16 @@ class GuestManager {
           </tr>
         </thead>
         <tbody>
-          ${guests.map(guest => {
-            const rsvpColors = {
-              attending: { bg: '#D1FAE5', text: '#065F46' },
-              declined: { bg: '#FEE2E2', text: '#991B1B' },
-              pending: { bg: '#FEF3C7', text: '#92400E' }
-            };
-            const color = rsvpColors[guest.rsvp] || rsvpColors.pending;
+          ${guests
+            .map(guest => {
+              const rsvpColors = {
+                attending: { bg: '#D1FAE5', text: '#065F46' },
+                declined: { bg: '#FEE2E2', text: '#991B1B' },
+                pending: { bg: '#FEF3C7', text: '#92400E' },
+              };
+              const color = rsvpColors[guest.rsvp] || rsvpColors.pending;
 
-            return `
+              return `
               <tr style="border-bottom: 1px solid var(--border);" class="hover-lift">
                 <td style="padding: 1rem;">
                   <div class="font-medium">${this.escapeHtml(guest.firstName)} ${this.escapeHtml(guest.lastName)}</div>
@@ -532,7 +553,8 @@ class GuestManager {
                 </td>
               </tr>
             `;
-          }).join('')}
+            })
+            .join('')}
         </tbody>
       </table>
     `;

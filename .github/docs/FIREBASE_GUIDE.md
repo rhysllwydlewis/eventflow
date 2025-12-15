@@ -59,13 +59,13 @@ The configuration should look like this:
 
 ```javascript
 const firebaseConfig = {
-  apiKey: "AIzaSyAbFoGEvaAQcAvjL716cPSs1KDMkriahqc",
-  authDomain: "eventflow-ffb12.firebaseapp.com",
-  projectId: "eventflow-ffb12",
-  storageBucket: "eventflow-ffb12.firebasestorage.app",
-  messagingSenderId: "253829522456",
-  appId: "1:253829522456:web:3fae1bcec63932321bcf6d",
-  measurementId: "G-JRT11771YD"
+  apiKey: 'AIzaSyAbFoGEvaAQcAvjL716cPSs1KDMkriahqc',
+  authDomain: 'eventflow-ffb12.firebaseapp.com',
+  projectId: 'eventflow-ffb12',
+  storageBucket: 'eventflow-ffb12.firebasestorage.app',
+  messagingSenderId: '253829522456',
+  appId: '1:253829522456:web:3fae1bcec63932321bcf6d',
+  measurementId: 'G-JRT11771YD',
 };
 ```
 
@@ -139,6 +139,7 @@ Admins can now:
 6. Click **Save Package**
 
 Images are automatically uploaded to Firebase Storage at:
+
 ```
 /packages/{packageId}/{imageName}
 ```
@@ -177,12 +178,14 @@ Three types of users can create and view tickets:
 5. Real-time updates when new tickets arrive
 
 **Ticket Statuses:**
+
 - `open` - New ticket, needs attention
 - `in_progress` - Admin is working on it
 - `resolved` - Issue resolved
 - `closed` - Ticket closed
 
 **Priority Levels:**
+
 - `low` - General questions
 - `medium` - Normal issues
 - `high` - Urgent problems
@@ -328,6 +331,7 @@ With messages subcollection at `conversations/{id}/messages/`:
 **Problem**: "Firebase is not defined" error
 
 **Solution**:
+
 1. Check that `firebase-config.js` is loaded as a module:
    ```html
    <script type="module" src="/assets/js/firebase-config.js"></script>
@@ -340,6 +344,7 @@ With messages subcollection at `conversations/{id}/messages/`:
 **Problem**: Image upload fails
 
 **Solution**:
+
 1. Check Storage security rules allow uploads
 2. Ensure file size is under 5MB
 3. Verify file is an image type (JPG, PNG, GIF)
@@ -350,6 +355,7 @@ With messages subcollection at `conversations/{id}/messages/`:
 **Problem**: Tickets don't show in dashboard
 
 **Solution**:
+
 1. Check Firestore security rules allow read/write
 2. Verify user is authenticated
 3. Check browser console for errors
@@ -360,6 +366,7 @@ With messages subcollection at `conversations/{id}/messages/`:
 **Problem**: Messages/tickets don't update automatically
 
 **Solution**:
+
 1. Check that listeners are set up correctly
 2. Verify Firestore security rules allow read access
 3. Check browser console for listener errors
@@ -404,11 +411,13 @@ For production use with higher traffic, consider upgrading to Blaze (Pay as you 
 ## Support
 
 For Firebase-specific issues:
+
 - [Firebase Documentation](https://firebase.google.com/docs)
 - [Firebase Community](https://firebase.google.com/support)
 - [Stack Overflow](https://stackoverflow.com/questions/tagged/firebase)
 
 For EventFlow issues:
+
 - Check the console for error messages
 - Review Firestore and Storage security rules
 - Verify Firebase services are enabled

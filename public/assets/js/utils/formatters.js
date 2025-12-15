@@ -13,10 +13,8 @@ const Formatters = {
    */
   date(date, locale = 'en-US', options = {}) {
     try {
-      const dateObj = typeof date === 'string' || typeof date === 'number' 
-        ? new Date(date) 
-        : date;
-      
+      const dateObj = typeof date === 'string' || typeof date === 'number' ? new Date(date) : date;
+
       if (isNaN(dateObj.getTime())) {
         return 'Invalid date';
       }
@@ -41,10 +39,8 @@ const Formatters = {
    */
   relativeTime(date) {
     try {
-      const dateObj = typeof date === 'string' || typeof date === 'number' 
-        ? new Date(date) 
-        : date;
-      
+      const dateObj = typeof date === 'string' || typeof date === 'number' ? new Date(date) : date;
+
       if (isNaN(dateObj.getTime())) {
         return 'Invalid date';
       }

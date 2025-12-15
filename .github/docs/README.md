@@ -15,6 +15,7 @@ This directory contains detailed technical guides that are primarily used by AI 
 ## Purpose
 
 These guides provide technical context for AI coding assistants to:
+
 - Diagnose deployment issues
 - Configure cloud services
 - Fix database connection problems

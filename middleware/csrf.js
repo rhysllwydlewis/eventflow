@@ -3,7 +3,7 @@ const crypto = require('crypto');
 /**
  * CSRF Protection Middleware
  * Generates and validates CSRF tokens for state-changing operations
- * 
+ *
  * NOTE: This implementation uses in-memory storage for simplicity.
  * For production deployments:
  * - Use session-based storage (e.g., express-session)
@@ -44,7 +44,7 @@ function csrfProtection(req, res, next) {
 
   // Validate token
   const storedData = tokenStore.get(token);
-  
+
   if (!storedData) {
     return res.status(403).json({ error: 'Invalid CSRF token' });
   }
@@ -69,10 +69,10 @@ function getToken(req) {
   // For now, we'll generate a new token each time
   const token = generateToken();
   const expiresAt = Date.now() + TOKEN_EXPIRY;
-  
+
   tokenStore.set(token, {
     createdAt: Date.now(),
-    expiresAt: expiresAt
+    expiresAt: expiresAt,
   });
 
   return token;
@@ -96,5 +96,5 @@ setInterval(cleanupExpiredTokens, 15 * 60 * 1000);
 module.exports = {
   csrfProtection,
   getToken,
-  generateToken
+  generateToken,
 };
