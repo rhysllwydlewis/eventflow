@@ -186,10 +186,6 @@ class Carousel {
         margin-right: 10px;
       }
 
-      .carousel-dots {
-        display: none;
-      }
-
       .carousel-dot {
         width: 8px;
         height: 8px;
@@ -332,11 +328,8 @@ class Carousel {
     const controls = this.createControls();
     wrapper.appendChild(controls);
 
-    // Add dots
-    if (this.items.length > this.getItemsPerView()) {
-      const dots = this.createDots();
-      wrapper.appendChild(dots);
-    }
+    // Note: Dots are not created per design requirements
+    // Users navigate via arrows or auto-scroll
 
     this.container.innerHTML = '';
     this.container.appendChild(wrapper);
@@ -347,7 +340,7 @@ class Carousel {
     this.setupTouch(wrapper);
 
     // Setup auto-scroll
-    if (this.options.autoScroll && this.items.length > this.getItemsPerView()) {
+    if (this.options.autoScroll && this.hasMultiplePages()) {
       this.startAutoScroll();
 
       if (this.options.pauseOnHover) {
@@ -455,6 +448,10 @@ class Carousel {
       return this.options.itemsPerViewTablet;
     }
     return this.options.itemsPerView;
+  }
+
+  hasMultiplePages() {
+    return this.items.length > this.getItemsPerView();
   }
 
   updatePosition() {
