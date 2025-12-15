@@ -59,9 +59,17 @@
         return;
       }
 
+      // Prevent re-initialization
+      if (original.dataset.navInitialized === 'true') {
+        return;
+      }
+
       // Clone the burger to remove any previously-attached click handlers
       const burger = original.cloneNode(true);
       original.parentNode.replaceChild(burger, original);
+
+      // Mark as initialized
+      burger.dataset.navInitialized = 'true';
 
       // Add aria-controls if nav menu has an id
       if (!navMenu.id) {
