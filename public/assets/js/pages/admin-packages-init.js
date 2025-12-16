@@ -78,7 +78,8 @@ import { uploadImage, saveDocument, getDocuments, deleteDocument } from '/assets
         const firebasePackages = await getDocuments('packages', {
           orderBy: { field: 'createdAt', direction: 'desc' }
         });
-        if (firebasePackages && firebasePackages.length > 0) {
+        // If Firebase returns a valid response (array), use it even if empty
+        if (Array.isArray(firebasePackages)) {
           allPackages = firebasePackages;
           renderPackages(allPackages);
           return;
@@ -106,7 +107,8 @@ import { uploadImage, saveDocument, getDocuments, deleteDocument } from '/assets
         const firebaseSuppliers = await getDocuments('suppliers', {
           orderBy: { field: 'name', direction: 'asc' }
         });
-        if (firebaseSuppliers && firebaseSuppliers.length > 0) {
+        // If Firebase returns a valid response (array), use it even if empty
+        if (Array.isArray(firebaseSuppliers)) {
           allSuppliers = firebaseSuppliers;
           populateSupplierSelect();
           return;

@@ -80,8 +80,8 @@ function requestDurationMiddleware(req, res, next) {
   res.end = function (...args) {
     const duration = Date.now() - startTime;
 
-    // Add duration to response headers (for debugging)
-    if (process.env.NODE_ENV !== 'production') {
+    // Add duration to response headers (for debugging) - only if headers haven't been sent
+    if (process.env.NODE_ENV !== 'production' && !res.headersSent) {
       res.setHeader('X-Response-Time', `${duration}ms`);
     }
 
