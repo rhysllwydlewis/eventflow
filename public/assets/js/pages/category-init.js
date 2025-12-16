@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (!slug) {
     document.getElementById('category-title').textContent = 'Category not found';
-    document.getElementById('package-list-container').innerHTML = 
+    document.getElementById('package-list-container').innerHTML =
       '<div class="package-empty-state"><p>Invalid category. <a href="/">Return home</a></p></div>';
     return;
   }
@@ -35,17 +35,41 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('category-description').textContent = category.description || '';
       document.getElementById('breadcrumb-category').textContent = category.name;
 
+      // Helper function to escape HTML
+      function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text || '';
+        return div.innerHTML;
+      }
+
+      // Helper function to sanitize URLs
+      function sanitizeUrl(url) {
+        if (!url) {
+          return '';
+        }
+        const urlStr = String(url);
+        // Block javascript:, data:, vbscript:, and file: URLs
+        if (/^(javascript|data|vbscript|file):/i.test(urlStr)) {
+          return '';
+        }
+        return escapeHtml(urlStr);
+      }
+
       // Show hero image if available
       if (category.heroImage) {
         const heroSection = document.getElementById('category-hero-section');
+        const heroImage = sanitizeUrl(category.heroImage);
+        const categoryName = escapeHtml(category.name);
+        const categoryIcon = escapeHtml(category.icon || '');
+
         heroSection.innerHTML = `
           <div style="position: relative; border-radius: 12px; overflow: hidden; height: 300px;">
-            <img src="${category.heroImage}" alt="${category.name}" 
+            <img src="${heroImage}" alt="${categoryName}" 
                  style="width: 100%; height: 100%; object-fit: cover;">
             <div style="position: absolute; bottom: 0; left: 0; right: 0; 
                         background: linear-gradient(to top, rgba(0,0,0,0.7), transparent); 
                         padding: 32px; color: white;">
-              <h1 style="margin: 0; font-size: 2.5rem;">${category.icon || ''} ${category.name}</h1>
+              <h1 style="margin: 0; font-size: 2.5rem;">${categoryIcon} ${categoryName}</h1>
             </div>
           </div>
         `;
@@ -58,14 +82,14 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         packageList.setPackages(packages || []);
       } else {
-        document.getElementById('package-list-container').innerHTML = 
+        document.getElementById('package-list-container').innerHTML =
           '<p>Unable to load packages. Please refresh the page.</p>';
       }
     })
     .catch(error => {
       console.error('Error loading category:', error);
       document.getElementById('category-title').textContent = 'Category not found';
-      document.getElementById('package-list-container').innerHTML = 
+      document.getElementById('package-list-container').innerHTML =
         '<div class="package-empty-state"><p>This category could not be found. <a href="/">Return home</a></p></div>';
     });
 });
