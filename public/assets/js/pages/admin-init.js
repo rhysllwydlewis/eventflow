@@ -1275,8 +1275,8 @@
               // Fetch token if not available, then logout
               api('/api/csrf-token', 'GET')
                 .then(function(data) {
-                  if (data && data.token) {
-                    window.__CSRF_TOKEN__ = data.token;
+                  if (data && data.csrfToken) {
+                    window.__CSRF_TOKEN__ = data.csrfToken;
                   }
                 })
                 .catch(function(err) {
@@ -1292,8 +1292,8 @@
         // Fetch CSRF token for state-changing requests
         api('/api/csrf-token', 'GET')
           .then(function(data) {
-            if (data && data.token) {
-              window.__CSRF_TOKEN__ = data.token;
+            if (data && data.csrfToken) {
+              window.__CSRF_TOKEN__ = data.csrfToken;
             }
           })
           .catch(function() {
