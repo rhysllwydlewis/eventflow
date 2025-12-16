@@ -42,15 +42,20 @@ document.addEventListener('DOMContentLoaded', () => {
         return div.innerHTML;
       }
 
-      // Helper function to sanitize URLs
+      // Helper function to sanitize URLs - only allow http/https
       function sanitizeUrl(url) {
         if (!url) {
           return '';
         }
-        const urlStr = String(url);
-        // Block javascript:, data:, vbscript:, and file: URLs
-        if (/^(javascript|data|vbscript|file):/i.test(urlStr)) {
-          return '';
+        const urlStr = String(url).trim();
+        // Only allow http and https URLs, reject everything else
+        if (!/^https?:\/\//i.test(urlStr)) {
+          // If it doesn't start with http/https, check if it's a relative URL
+          if (!urlStr.startsWith('/')) {
+            return '';
+          }
+          // Allow relative URLs (start with /)
+          return escapeHtml(urlStr);
         }
         return escapeHtml(urlStr);
       }
