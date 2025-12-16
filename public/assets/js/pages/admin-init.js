@@ -1350,7 +1350,12 @@
                 } else {
                   alert('User created successfully.');
                 }
-                loadAll();
+                // Close modal first, then reload data
+                modal.hide();
+                // Small delay to ensure modal is fully closed before reloading
+                setTimeout(function() {
+                  loadAll();
+                }, 100);
               })
               .catch(function (err) {
                 console.error('createUser failed', err);
