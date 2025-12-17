@@ -265,38 +265,46 @@ async function init() {
   const allConversations = [];
   let loadedCount = 0;
 
-  suppliers.forEach(supplier => {
-    messagingSystem.listenToUserConversations(supplier.id, 'supplier', conversations => {
-      // Merge conversations
-      conversations.forEach(conv => {
-        const existingIndex = allConversations.findIndex(c => c.id === conv.id);
-        if (existingIndex >= 0) {
-          allConversations[existingIndex] = conv;
-        } else {
-          allConversations.push(conv);
+  try {
+    suppliers.forEach(supplier => {
+      messagingSystem.listenToUserConversations(supplier.id, 'supplier', conversations => {
+        // Merge conversations
+        conversations.forEach(conv => {
+          const existingIndex = allConversations.findIndex(c => c.id === conv.id);
+          if (existingIndex >= 0) {
+            allConversations[existingIndex] = conv;
+          } else {
+            allConversations.push(conv);
+          }
+        });
+
+        loadedCount++;
+
+        // Render when all suppliers loaded
+        if (loadedCount >= suppliers.length) {
+          // Sort by last message time
+          allConversations.sort((a, b) => {
+            const timeA = a.lastMessageTime?.seconds || 0;
+            const timeB = b.lastMessageTime?.seconds || 0;
+            return timeB - timeA;
+          });
+
+          renderConversations(allConversations);
         }
       });
 
-      loadedCount++;
-
-      // Render when all suppliers loaded
-      if (loadedCount >= suppliers.length) {
-        // Sort by last message time
-        allConversations.sort((a, b) => {
-          const timeA = a.lastMessageTime?.seconds || 0;
-          const timeB = b.lastMessageTime?.seconds || 0;
-          return timeB - timeA;
-        });
-
-        renderConversations(allConversations);
-      }
+      // Listen to unread count for this supplier
+      messagingSystem.listenToUnreadCount(supplier.id, 'supplier', unreadCount => {
+        updateUnreadBadge(unreadCount);
+      });
     });
-
-    // Listen to unread count for this supplier
-    messagingSystem.listenToUnreadCount(supplier.id, 'supplier', unreadCount => {
-      updateUnreadBadge(unreadCount);
-    });
-  });
+  } catch (error) {
+    console.error('Error listening to conversations:', error);
+    const container = document.getElementById('threads-sup');
+    if (container) {
+      container.innerHTML = '<p class="small">Unable to load messages. Please try refreshing the page.</p>';
+    }
+  }
 }
 
 // Update unread badge

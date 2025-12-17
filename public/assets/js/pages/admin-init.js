@@ -1354,6 +1354,7 @@
       setupNavButton('packageManagementBtn', '/admin-packages.html');
       setupNavButton('homepageChangesBtn', '/admin-homepage.html');
       setupNavButton('supportTicketsBtn', '/admin-tickets.html');
+      setupNavButton('paymentsAnalyticsBtn', '/admin-payments.html');
       setupNavButton('reportsQueueBtn', '/admin-reports.html');
       setupNavButton('auditLogBtn', '/admin-audit.html');
 

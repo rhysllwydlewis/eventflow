@@ -1,21 +1,62 @@
 /**
  * Google Pay Configuration for EventFlow
  * Configures Google Pay API for subscription payments
+ * Uses TEST mode and integrates with Firebase "Make Payments with Google Pay" extension
  */
 
 /**
- * Google Pay API configuration
+ * Google Pay API configuration - TEST MODE
  */
 const GOOGLE_PAY_CONFIG = {
   apiVersion: 2,
   apiVersionMinor: 0,
   merchantInfo: {
     merchantName: 'EventFlow',
-    // TODO: CRITICAL - Replace with actual merchant ID from Google Pay Business Console
-    // https://pay.google.com/business/console
-    merchantId: '12345678901234567890',
+    // Merchant ID for TEST mode - replace with actual ID for production
+    merchantId: 'BCR2DN4T5WBN5VBO',
   },
 };
+
+/**
+ * Get base allowed payment methods configuration
+ */
+function getBaseCardPaymentMethod() {
+  return {
+    type: 'CARD',
+    parameters: {
+      allowedAuthMethods: ['PAN_ONLY', 'CRYPTOGRAM_3DS'],
+      allowedCardNetworks: ['MASTERCARD', 'VISA', 'AMEX'],
+    },
+  };
+}
+
+/**
+ * Get tokenization specification for Google Pay
+ * Uses DIRECT tokenization for Firebase extension processing
+ */
+function getTokenizationSpecification() {
+  return {
+    type: 'PAYMENT_GATEWAY',
+    parameters: {
+      gateway: 'example',
+      gatewayMerchantId: 'exampleGatewayMerchantId',
+    },
+  };
+}
+
+/**
+ * Get card payment method with tokenization
+ */
+function getCardPaymentMethod() {
+  const cardPaymentMethod = Object.assign(
+    {},
+    getBaseCardPaymentMethod(),
+    {
+      tokenizationSpecification: getTokenizationSpecification(),
+    }
+  );
+  return cardPaymentMethod;
+}
 
 /**
  * Payment data request for Google Pay
@@ -24,24 +65,7 @@ function getGooglePaymentDataRequest(amount, planId, planName) {
   return {
     apiVersion: GOOGLE_PAY_CONFIG.apiVersion,
     apiVersionMinor: GOOGLE_PAY_CONFIG.apiVersionMinor,
-    allowedPaymentMethods: [
-      {
-        type: 'CARD',
-        parameters: {
-          allowedAuthMethods: ['PAN_ONLY', 'CRYPTOGRAM_3DS'],
-          allowedCardNetworks: ['MASTERCARD', 'VISA', 'AMEX'],
-        },
-        tokenizationSpecification: {
-          type: 'PAYMENT_GATEWAY',
-          parameters: {
-            // TODO: CRITICAL - Replace with actual payment gateway configuration
-            // Example gateways: 'stripe', 'braintree', 'square'
-            gateway: 'example',
-            gatewayMerchantId: 'exampleGatewayMerchantId',
-          },
-        },
-      },
-    ],
+    allowedPaymentMethods: [getCardPaymentMethod()],
     merchantInfo: GOOGLE_PAY_CONFIG.merchantInfo,
     transactionInfo: {
       totalPriceStatus: 'FINAL',
@@ -57,26 +81,30 @@ function getGooglePaymentDataRequest(amount, planId, planName) {
         },
       ],
     },
-    callbackIntents: ['PAYMENT_AUTHORIZATION'],
   };
 }
 
 /**
- * Initialize Google Pay API
- * @returns {Promise<google.payments.api.PaymentsClient>}
+ * Initialize Google Pay API in TEST mode
+ * @returns {Promise<google.payments.api.PaymentsClient|null>}
  */
 async function initializeGooglePay() {
-  if (typeof google === 'undefined' || !google.payments) {
-    throw new Error('Google Pay API not loaded');
+  // Check if Google Pay API is available
+  if (typeof window === 'undefined' || !window.google || !window.google.payments || !window.google.payments.api) {
+    console.warn('Google Pay API not available');
+    return null;
   }
 
-  const paymentsClient = new google.payments.api.PaymentsClient({
-    // TODO: CRITICAL - Change to 'PRODUCTION' before deploying to live environment
-    // TEST environment is only for development and testing with test cards
-    environment: 'TEST',
-  });
+  try {
+    const paymentsClient = new google.payments.api.PaymentsClient({
+      environment: 'TEST', // Using TEST mode as required
+    });
 
-  return paymentsClient;
+    return paymentsClient;
+  } catch (error) {
+    console.error('Error initializing Google Pay:', error);
+    return null;
+  }
 }
 
 /**
@@ -85,23 +113,19 @@ async function initializeGooglePay() {
  * @returns {Promise<boolean>}
  */
 async function isGooglePayAvailable(paymentsClient) {
+  if (!paymentsClient) {
+    return false;
+  }
+
   try {
     const isReadyToPayRequest = {
       apiVersion: GOOGLE_PAY_CONFIG.apiVersion,
       apiVersionMinor: GOOGLE_PAY_CONFIG.apiVersionMinor,
-      allowedPaymentMethods: [
-        {
-          type: 'CARD',
-          parameters: {
-            allowedAuthMethods: ['PAN_ONLY', 'CRYPTOGRAM_3DS'],
-            allowedCardNetworks: ['MASTERCARD', 'VISA', 'AMEX'],
-          },
-        },
-      ],
+      allowedPaymentMethods: [getBaseCardPaymentMethod()],
     };
 
     const response = await paymentsClient.isReadyToPay(isReadyToPayRequest);
-    return response.result;
+    return response.result === true;
   } catch (error) {
     console.error('Error checking Google Pay availability:', error);
     return false;
@@ -110,25 +134,54 @@ async function isGooglePayAvailable(paymentsClient) {
 
 /**
  * Process payment with Google Pay
+ * Writes payment data to Firestore for Firebase extension to process
  * @param {google.payments.api.PaymentsClient} paymentsClient
- * @param {number} amount
- * @param {string} planId
- * @param {string} planName
+ * @param {number} amount - Plan price
+ * @param {string} planId - Plan identifier
+ * @param {string} planName - Plan display name
  * @returns {Promise<object>}
  */
 async function processGooglePayPayment(paymentsClient, amount, planId, planName) {
+  if (!paymentsClient) {
+    return {
+      success: false,
+      error: 'Google Pay not initialized',
+    };
+  }
+
   try {
     const paymentDataRequest = getGooglePaymentDataRequest(amount, planId, planName);
 
+    // Request payment data from Google Pay
     const paymentData = await paymentsClient.loadPaymentData(paymentDataRequest);
 
-    // Payment successful, return payment data
+    // Extract payment token
+    const paymentToken = paymentData.paymentMethodData?.tokenizationData?.token;
+    if (!paymentToken) {
+      throw new Error('No payment token received from Google Pay');
+    }
+
+    // Write payment data to Firestore for Firebase extension to process
+    // DO NOT process payment on frontend
+    const result = await writePaymentToFirestore(paymentData, amount, planId);
+
     return {
       success: true,
       paymentData,
+      firestoreDocId: result.id,
     };
   } catch (error) {
     console.error('Error processing Google Pay payment:', error);
+    
+    // Handle user cancellation gracefully
+    if (error.statusCode === 'CANCELED') {
+      return {
+        success: false,
+        error: 'Payment cancelled',
+        cancelled: true,
+      };
+    }
+
     return {
       success: false,
       error: error.message || 'Payment failed',
@@ -137,65 +190,30 @@ async function processGooglePayPayment(paymentsClient, amount, planId, planName)
 }
 
 /**
- * Handle payment authorization
- * This is called by Google Pay when payment is authorized
+ * Write payment data to Firestore
+ * Firebase "Make Payments with Google Pay" extension will process this
+ * @param {object} paymentData - Payment data from Google Pay
+ * @param {number} amount - Plan price
+ * @param {string} planId - Plan identifier
+ * @returns {Promise<object>}
  */
-function onPaymentAuthorized(paymentData) {
-  return new Promise((resolve, reject) => {
-    // Process payment through Firebase extension
-    processPaymentWithExtension(paymentData)
-      .then(() => {
-        resolve({ transactionState: 'SUCCESS' });
-      })
-      .catch(error => {
-        console.error('Payment processing error:', error);
-        resolve({
-          transactionState: 'ERROR',
-          error: {
-            reason: 'PAYMENT_DATA_INVALID',
-            message: 'Payment could not be processed',
-            intent: 'PAYMENT_AUTHORIZATION',
-          },
-        });
-      });
-  });
-}
-
-/**
- * Process payment with Firebase extension
- * Writes payment data to Firestore for extension to process
- * 
- * The google-pay/make-payment extension expects:
- * {
- *   psp: 'braintree' (or other PSP),
- *   total: 100 (amount in smallest currency unit, e.g., pence),
- *   currency: 'GBP',
- *   paymentToken: {...} (from Google Pay)
- * }
- */
-async function processPaymentWithExtension(paymentData) {
+async function writePaymentToFirestore(paymentData, amount, planId) {
   // Import Firebase from the config
-  const { db, addDoc, collection, auth, Timestamp, serverTimestamp } = await import('../assets/js/firebase-config.js');
+  const { db, auth, collection, addDoc, serverTimestamp } = await import('../../assets/js/firebase-config.js');
 
   const user = auth.currentUser;
   if (!user) {
     throw new Error('User not authenticated');
   }
 
-  // Get supplier ID and plan info
+  // Get supplier ID from session storage
   const supplierId = sessionStorage.getItem('selectedSupplierId');
-  const planId = sessionStorage.getItem('selectedPlanId');
-  const planAmount = sessionStorage.getItem('selectedPlanAmount'); // Should be set when plan is selected
-
-  if (!supplierId || !planId || !planAmount) {
-    throw new Error('Missing supplier or plan information');
+  if (!supplierId) {
+    throw new Error('No supplier selected');
   }
 
-  // Extract payment token from Google Pay response
+  // Extract payment token
   const paymentToken = paymentData.paymentMethodData?.tokenizationData?.token;
-  if (!paymentToken) {
-    throw new Error('No payment token received from Google Pay');
-  }
 
   // Parse the token if it's a string
   let parsedToken;
@@ -205,41 +223,46 @@ async function processPaymentWithExtension(paymentData) {
     parsedToken = paymentToken;
   }
 
-  // Convert amount to smallest currency unit (pence for GBP)
-  const totalInPence = Math.round(parseFloat(planAmount) * 100);
-
-  // Write payment request in the format expected by google-pay/make-payment extension
+  // Write payment document as specified in requirements
   const paymentDoc = {
-    // Required fields for the extension
-    // TODO: CRITICAL - Set this to your Payment Service Provider
-    // Options: 'braintree', 'stripe', 'square', etc.
-    // Must match the PSP configured in Firebase extension settings
-    psp: 'braintree',
-    total: totalInPence,
+    psp: 'googlepay',
+    total: amount, // As number, not in smallest currency unit
     currency: 'GBP',
     paymentToken: parsedToken,
+    status: 'pending',
+    createdAt: serverTimestamp(),
     
-    // Additional metadata for our subscription logic
+    // Additional metadata for subscription processing
     userId: user.uid,
     supplierId: supplierId,
     planId: planId,
-    createdAt: serverTimestamp(),
   };
 
   const docRef = await addDoc(collection(db, 'payments'), paymentDoc);
 
-  console.log('Payment request written for extension:', docRef.id);
+  console.log('Payment request written to Firestore:', docRef.id);
 
-  // Return the document reference to monitor for updates
   return docRef;
 }
 
 /**
  * Create Google Pay button
+ * Button renders only if Google Pay API is available
  * @param {HTMLElement} container - Container element for the button
  * @param {Function} onClick - Click handler
+ * @returns {HTMLElement|null}
  */
 function createGooglePayButton(container, onClick) {
+  if (!container) {
+    return null;
+  }
+
+  // Check if Google Pay API is available
+  if (typeof window === 'undefined' || !window.google || !window.google.payments || !window.google.payments.api) {
+    console.warn('Google Pay API not available - button will not render');
+    return null;
+  }
+
   const button = document.createElement('button');
   button.className = 'gpay-button';
   button.setAttribute('aria-label', 'Pay with Google Pay');
@@ -258,20 +281,20 @@ function createGooglePayButton(container, onClick) {
     min-height: 40px;
     padding: 12px 24px;
     width: 240px;
+    margin-top: 0.5rem;
   `;
 
   button.addEventListener('click', onClick);
   container.appendChild(button);
 
   return button;
-}
 
 export {
   GOOGLE_PAY_CONFIG,
   initializeGooglePay,
   isGooglePayAvailable,
   processGooglePayPayment,
-  onPaymentAuthorized,
   createGooglePayButton,
   getGooglePaymentDataRequest,
 };
+

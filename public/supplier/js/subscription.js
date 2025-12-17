@@ -168,15 +168,21 @@ async function loadSupplierData() {
 async function initGooglePayAPI() {
   try {
     paymentsClient = await initializeGooglePay();
+    
+    if (!paymentsClient) {
+      console.warn('Google Pay not available - buttons will not render');
+      return;
+    }
+    
     const available = await isGooglePayAvailable(paymentsClient);
 
     if (!available) {
-      console.warn('Google Pay not available');
-      showWarning('Google Pay is not available on this device. Please try another payment method.');
+      console.warn('Google Pay not ready on this device');
+      paymentsClient = null;
     }
   } catch (error) {
     console.error('Error initializing Google Pay:', error);
-    showWarning('Could not initialize Google Pay. Payment buttons may not work.');
+    paymentsClient = null;
   }
 }
 
@@ -329,21 +335,25 @@ async function handleGooglePayClick(plan) {
     // Process payment through Google Pay
     const result = await processGooglePayPayment(paymentsClient, plan.price, plan.id, plan.name);
 
+    hideLoading();
+
     if (result.success) {
       showSuccess('Payment successful! Your subscription is being activated...');
 
-      // Wait a moment for the Cloud Function to process
+      // Wait a moment for the Firebase extension to process
       setTimeout(() => {
         window.location.href = '/dashboard-supplier.html?subscription=success';
       }, 2000);
+    } else if (result.cancelled) {
+      // User cancelled payment - don't show error
+      console.log('Payment cancelled by user');
     } else {
       showError(result.error || 'Payment failed. Please try again.');
     }
   } catch (error) {
     console.error('Error processing Google Pay payment:', error);
-    showError('Payment failed. Please try again.');
-  } finally {
     hideLoading();
+    showError('Payment failed. Please try again.');
   }
 }
 

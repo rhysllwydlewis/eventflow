@@ -1,6 +1,5 @@
 <!DOCTYPE html><html lang='en-GB'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>Supplier dashboard — EventFlow</title><link rel='stylesheet' href='/assets/css/styles.css'><link rel='stylesheet' href='/assets/css/components.css'></head><body>
 <!-- modern-ui -->
-<div class='card'><h2>Supplier Dashboard</h2></div>
 <header class="header" role="banner">
   <div class="container header-inner">
     <a class="brand" href="/" aria-label="EventFlow home">
@@ -198,8 +197,10 @@
     enforcePackageLimit 
   } from '/supplier/js/feature-access.js';
   
-  // Initialize feature access control
-  await initializeFeatureAccess();
+  // Initialize feature access control (non-blocking)
+  initializeFeatureAccess().catch(err => {
+    console.error('Error initializing feature access:', err);
+  });
   
   async function displaySubscriptionStatus() {
     const container = document.getElementById('supplier-subscription-card');
