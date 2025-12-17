@@ -180,6 +180,7 @@ See [DOCKER_GUIDE.md](DOCKER_GUIDE.md) for details.
 ### Complete Guides
 
 - **[API Documentation](API_DOCUMENTATION.md)** - Complete API reference with examples
+- **[Firebase Storage Guide](FIREBASE_STORAGE_GUIDE.md)** - Using Firebase as primary storage (database + files)
 - **[Deployment Guide](DEPLOYMENT_GUIDE.md)** - Production deployment instructions
 - **[MongoDB Setup (Technical)](MONGODB_SETUP.md)** - Database configuration guide
 - **[Docker Guide](DOCKER_GUIDE.md)** - Docker Compose usage
@@ -326,7 +327,11 @@ See [.env.example](.env.example) for all options.
 
 ## 🔥 Firebase Setup
 
+**Firebase is the primary cloud storage solution for EventFlow** - storing all application data (users, packages, posts, reviews) in Firestore and all media files (photos, images) in Firebase Storage. The system is pre-configured to use Firebase first, with automatic fallback to MongoDB or local storage if Firebase is not available.
+
 EventFlow includes Firebase integration for authentication, real-time database (Firestore), cloud storage, and analytics. Firebase is already configured and ready to use.
+
+📖 **See [FIREBASE_STORAGE_GUIDE.md](FIREBASE_STORAGE_GUIDE.md) for complete setup instructions and troubleshooting.**
 
 ### Quick Start
 
@@ -424,6 +429,41 @@ const snapshot = await db.collection('events').get();
 ```
 
 See `firebase-admin.js` for backend Firebase configuration.
+
+### Firebase as Primary Storage
+
+**EventFlow is configured to use Firebase as the primary cloud storage solution:**
+
+1. **Database (Firestore)**: The system automatically prioritizes Firebase Firestore over MongoDB and local storage
+   - All data (users, packages, posts, reviews, etc.) stored in Firestore
+   - Configured in `db-unified.js` to try Firestore first
+   - Set `FIREBASE_PROJECT_ID` or `FIREBASE_SERVICE_ACCOUNT_KEY` in environment variables
+
+2. **File Storage**: Photos and media files are stored in Firebase Storage
+   - Supplier photos use Firebase Storage (`supplier-photo-upload.js`)
+   - Storage bucket: `eventflow-ffb12.firebasestorage.app`
+   - Set `STORAGE_TYPE=firebase` in `.env` (already default)
+
+3. **Production Setup**: To use Firebase in production:
+   ```env
+   # Required: Firebase Project ID
+   FIREBASE_PROJECT_ID=eventflow-ffb12
+   
+   # Required for production: Service Account Key (download from Firebase Console)
+   FIREBASE_SERVICE_ACCOUNT_KEY='{"type":"service_account","project_id":"eventflow-ffb12",...}'
+   
+   # Storage Configuration
+   STORAGE_TYPE=firebase
+   FIREBASE_STORAGE_BUCKET=eventflow-ffb12.firebasestorage.app
+   ```
+
+4. **How it works**:
+   - On startup, `db-unified.js` attempts Firebase Firestore connection first
+   - If Firebase is available, all database operations use Firestore
+   - If not configured, falls back to MongoDB, then local files (dev only)
+   - Check logs on startup for: `✅ Using Firebase Firestore for data storage`
+
+**To verify Firebase is active**: Check server logs after starting the app. You should see "Using Firebase Firestore for data storage" instead of "Using local file storage".
 
 ## 📁 Project Structure
 
