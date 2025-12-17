@@ -89,33 +89,65 @@ const SUBSCRIPTION_PLANS = {
 
 /**
  * Handle successful payment from Google Pay extension
- * Triggered when a payment document is created in Firestore
+ * Triggered when the payment document is updated by the extension with results
+ * 
+ * The google-pay/make-payment extension will update the document with:
+ * - status: 'success' or 'error'
+ * - response: { ... } (PSP response)
+ * - error: { ... } (if failed)
  */
 exports.onPaymentSuccess = functions
   .region('europe-west2')
   .firestore.document('payments/{paymentId}')
-  .onCreate(async (snap, context) => {
-    const paymentData = snap.data();
+  .onUpdate(async (change, context) => {
+    const beforeData = change.before.data();
+    const afterData = change.after.data();
     const paymentId = context.params.paymentId;
 
     try {
-      console.log('Processing payment:', paymentId, paymentData);
+      console.log('Payment document updated:', paymentId, afterData);
+
+      // Check if this update is from the extension processing the payment
+      // The extension should set a status field or response field
+      const isExtensionUpdate = afterData.response || afterData.status;
+      
+      if (!isExtensionUpdate) {
+        console.log('Not an extension update, skipping');
+        return null;
+      }
+
+      // Check if already processed to avoid duplicate processing
+      if (afterData.subscriptionActivated) {
+        console.log('Subscription already activated, skipping');
+        return null;
+      }
 
       // Validate payment data
-      if (!paymentData.supplierId || !paymentData.planId || !paymentData.status) {
-        console.error('Invalid payment data:', paymentData);
+      if (!afterData.supplierId || !afterData.planId) {
+        console.error('Invalid payment data:', afterData);
         return null;
       }
 
-      // Only process successful payments
-      if (paymentData.status !== 'success' && paymentData.status !== 'completed') {
-        console.log('Payment not successful, skipping:', paymentData.status);
+      // Check if payment was successful
+      // The extension may set status: 'success' or check the response
+      const isSuccessful = 
+        afterData.status === 'success' || 
+        afterData.status === 'completed' ||
+        (afterData.response && afterData.response.success);
+
+      if (!isSuccessful) {
+        console.log('Payment not successful, skipping:', afterData.status);
+        // Mark as processed to avoid re-checking
+        await change.after.ref.update({
+          subscriptionActivated: false,
+          processedAt: admin.firestore.Timestamp.now(),
+        });
         return null;
       }
 
-      const plan = SUBSCRIPTION_PLANS[paymentData.planId];
+      const plan = SUBSCRIPTION_PLANS[afterData.planId];
       if (!plan) {
-        console.error('Unknown plan:', paymentData.planId);
+        console.error('Unknown plan:', afterData.planId);
         return null;
       }
 
@@ -132,7 +164,7 @@ exports.onPaymentSuccess = functions
       }
 
       // Update supplier document with subscription info
-      const supplierRef = db.collection('suppliers').doc(paymentData.supplierId);
+      const supplierRef = admin.firestore().collection('suppliers').doc(afterData.supplierId);
       await supplierRef.set(
         {
           subscription: {
@@ -152,8 +184,14 @@ exports.onPaymentSuccess = functions
         { merge: true }
       );
 
+      // Mark payment as processed
+      await change.after.ref.update({
+        subscriptionActivated: true,
+        processedAt: admin.firestore.Timestamp.now(),
+      });
+
       console.log(
-        `Subscription activated for supplier ${paymentData.supplierId}, plan ${plan.id}`
+        `Subscription activated for supplier ${afterData.supplierId}, plan ${plan.id}`
       );
 
       // TODO: Send confirmation email
@@ -163,7 +201,7 @@ exports.onPaymentSuccess = functions
     } catch (error) {
       console.error('Error processing payment:', error);
       // Update payment with sanitized error (don't expose internal details)
-      await snap.ref.update({
+      await change.after.ref.update({
         error: 'Payment processing failed',
         errorCode: error.code || 'UNKNOWN',
         processedAt: admin.firestore.Timestamp.now(),

@@ -300,8 +300,9 @@ async function handlePlanSelection(plan) {
   try {
     showLoading('Processing your selection...');
 
-    // Store selected plan
+    // Store selected plan details
     sessionStorage.setItem('selectedPlanId', plan.id);
+    sessionStorage.setItem('selectedPlanAmount', plan.price.toString());
 
     // For now, show a message
     // In a full implementation, this would redirect to another payment method
@@ -321,8 +322,9 @@ async function handleGooglePayClick(plan) {
   try {
     showLoading('Processing payment...');
 
-    // Store selected plan
+    // Store selected plan details
     sessionStorage.setItem('selectedPlanId', plan.id);
+    sessionStorage.setItem('selectedPlanAmount', plan.price.toString());
 
     // Process payment through Google Pay
     const result = await processGooglePayPayment(paymentsClient, plan.price, plan.id, plan.name);

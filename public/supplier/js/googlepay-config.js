@@ -164,43 +164,74 @@ function onPaymentAuthorized(paymentData) {
 /**
  * Process payment with Firebase extension
  * Writes payment data to Firestore for extension to process
+ * 
+ * The google-pay/make-payment extension expects:
+ * {
+ *   psp: 'braintree' (or other PSP),
+ *   total: 100 (amount in smallest currency unit, e.g., pence),
+ *   currency: 'GBP',
+ *   paymentToken: {...} (from Google Pay)
+ * }
  */
 async function processPaymentWithExtension(paymentData) {
   // Import Firebase from the config
-  const { db, addDoc, collection, auth, Timestamp } = await import('../assets/js/firebase-config.js');
+  const { db, addDoc, collection, auth, Timestamp, serverTimestamp } = await import('../assets/js/firebase-config.js');
 
   const user = auth.currentUser;
   if (!user) {
     throw new Error('User not authenticated');
   }
 
-  // Get supplier ID for current user
-  // This would need to be passed from the subscription page
+  // Get supplier ID and plan info
   const supplierId = sessionStorage.getItem('selectedSupplierId');
   const planId = sessionStorage.getItem('selectedPlanId');
+  const planAmount = sessionStorage.getItem('selectedPlanAmount'); // Should be set when plan is selected
 
-  if (!supplierId || !planId) {
+  if (!supplierId || !planId || !planAmount) {
     throw new Error('Missing supplier or plan information');
   }
 
-  // Write payment data to Firestore
-  // The Firebase extension will pick this up and process it
+  // Extract payment token from Google Pay response
+  const paymentToken = paymentData.paymentMethodData?.tokenizationData?.token;
+  if (!paymentToken) {
+    throw new Error('No payment token received from Google Pay');
+  }
+
+  // Parse the token if it's a string
+  let parsedToken;
+  try {
+    parsedToken = typeof paymentToken === 'string' ? JSON.parse(paymentToken) : paymentToken;
+  } catch (e) {
+    parsedToken = paymentToken;
+  }
+
+  // Convert amount to smallest currency unit (pence for GBP)
+  const totalInPence = Math.round(parseFloat(planAmount) * 100);
+
+  // Write payment request in the format expected by google-pay/make-payment extension
   const paymentDoc = {
+    // Required fields for the extension
+    // TODO: CRITICAL - Set this to your Payment Service Provider
+    // Options: 'braintree', 'stripe', 'square', etc.
+    // Must match the PSP configured in Firebase extension settings
+    psp: 'braintree',
+    total: totalInPence,
+    currency: 'GBP',
+    paymentToken: parsedToken,
+    
+    // Additional metadata for our subscription logic
     userId: user.uid,
     supplierId: supplierId,
     planId: planId,
-    amount: paymentData.transactionInfo?.totalPrice || '0',
-    currency: 'GBP',
-    paymentMethodData: paymentData.paymentMethodData,
-    status: 'pending',
-    createdAt: Timestamp.now(),
+    createdAt: serverTimestamp(),
   };
 
   const docRef = await addDoc(collection(db, 'payments'), paymentDoc);
 
-  console.log('Payment document created:', docRef.id);
+  console.log('Payment request written for extension:', docRef.id);
 
-  return docRef.id;
+  // Return the document reference to monitor for updates
+  return docRef;
 }
 
 /**

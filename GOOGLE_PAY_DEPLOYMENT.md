@@ -85,9 +85,31 @@ firebase deploy --only firestore:rules
    - Replace `merchantId` with your actual Merchant ID
    - Update gateway parameters if using a specific payment gateway
 
-3. **Configure Payment Gateway**
+3. **Configure Payment Gateway & Firebase Extension**
    - The Firebase extension `google-pay/make-payment@0.1.3` handles payment processing
-   - Ensure it's properly configured in Firebase Console
+   - Configure the extension in Firebase Console → Extensions
+   - Set up your Payment Service Provider (PSP):
+     - Braintree: Add Braintree merchant credentials
+     - Stripe: Add Stripe API keys
+     - Or configure another supported PSP
+   - The extension listens for payment documents in the `payments` collection
+   - Update `psp` field in `googlepay-config.js` to match your PSP (e.g., 'braintree', 'stripe')
+
+4. **How the Extension Works**
+   - Frontend writes payment request to Firestore with:
+     ```javascript
+     {
+       psp: 'braintree',      // Your Payment Service Provider
+       total: 999,             // Amount in pence (£9.99 = 999 pence)
+       currency: 'GBP',
+       paymentToken: {...},    // From Google Pay API
+       supplierId: '...',
+       planId: '...'
+     }
+     ```
+   - Extension processes payment with PSP
+   - Extension updates document with result (status: 'success' or 'error')
+   - Cloud Function `onPaymentSuccess` (onUpdate trigger) activates subscription
 
 ### 5. Deploy Frontend
 
