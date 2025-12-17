@@ -192,6 +192,14 @@
 <script type="module">
   // Display subscription status on dashboard
   import { db, auth, collection, query, where, getDocs, onAuthStateChanged } from '/assets/js/firebase-config.js';
+  import { 
+    initializeFeatureAccess, 
+    displayPackageLimitNotice, 
+    enforcePackageLimit 
+  } from '/supplier/js/feature-access.js';
+  
+  // Initialize feature access control
+  await initializeFeatureAccess();
   
   async function displaySubscriptionStatus() {
     const container = document.getElementById('supplier-subscription-card');
@@ -245,11 +253,43 @@
             }
           }
         }
+        
+        // Update package limit display
+        await updatePackageLimitDisplay();
+        
       } catch (error) {
         console.error('Error loading subscription status:', error);
         container.innerHTML = '<p class="small">Unable to load subscription status.</p>';
       }
     });
+  }
+  
+  async function updatePackageLimitDisplay() {
+    const limitContainer = document.getElementById('pkg-limit-note');
+    if (!limitContainer) return;
+    
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) return;
+      
+      try {
+        // Get package count
+        const packagesQuery = query(
+          collection(db, 'packages'),
+          where('ownerUserId', '==', user.uid)
+        );
+        
+        const packagesSnapshot = await getDocs(packagesQuery);
+        const packageCount = packagesSnapshot.size;
+        
+        // Display limit notice
+        displayPackageLimitNotice(limitContainer, packageCount);
+        
+      } catch (error) {
+        console.error('Error checking package limit:', error);
+      }
+    });
+  }
+
   }
   
   displaySubscriptionStatus();
