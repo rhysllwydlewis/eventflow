@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Subscription Activated</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5;">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+        <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+          <!-- Header -->
+          <tr>
+            <td style="background: linear-gradient(180deg, #16c3ad, #0ea896); padding: 40px 30px; text-align: center;">
+              <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 700;">Welcome to EventFlow {{planName}}! 🎉</h1>
+            </td>
+          </tr>
+          
+          <!-- Body -->
+          <tr>
+            <td style="padding: 40px 30px;">
+              <p style="margin: 0 0 20px; color: #333333; font-size: 16px; line-height: 1.6;">
+                Hi {{name}},
+              </p>
+              
+              <p style="margin: 0 0 20px; color: #333333; font-size: 16px; line-height: 1.6;">
+                Your subscription has been successfully activated! Thank you for choosing EventFlow {{planName}}.
+              </p>
+              
+              <!-- Subscription Details -->
+              <div style="background-color: #f8f9fa; border-radius: 8px; padding: 20px; margin: 30px 0;">
+                <h2 style="margin: 0 0 15px; color: #333333; font-size: 20px; font-weight: 600;">Subscription Details</h2>
+                <table width="100%" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td style="padding: 8px 0; color: #666666; font-size: 14px;">Plan:</td>
+                    <td style="padding: 8px 0; color: #333333; font-size: 14px; font-weight: 600; text-align: right;">{{planName}}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; color: #666666; font-size: 14px;">Status:</td>
+                    <td style="padding: 8px 0; color: #16c3ad; font-size: 14px; font-weight: 600; text-align: right;">{{status}}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; color: #666666; font-size: 14px;">Trial Period:</td>
+                    <td style="padding: 8px 0; color: #333333; font-size: 14px; font-weight: 600; text-align: right;">{{trialDays}} days</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; color: #666666; font-size: 14px;">Renews On:</td>
+                    <td style="padding: 8px 0; color: #333333; font-size: 14px; font-weight: 600; text-align: right;">{{renewalDate}}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; color: #666666; font-size: 14px;">Amount:</td>
+                    <td style="padding: 8px 0; color: #333333; font-size: 14px; font-weight: 600; text-align: right;">£{{amount}}/{{billingCycle}}</td>
+                  </tr>
+                </table>
+              </div>
+              
+              <p style="margin: 0 0 20px; color: #333333; font-size: 16px; line-height: 1.6;">
+                Your premium features are now active! Here's what you can do:
+              </p>
+              
+              <ul style="margin: 0 0 30px; padding-left: 20px; color: #333333; font-size: 15px; line-height: 1.8;">
+                {{features}}
+              </ul>
+              
+              <!-- CTA Button -->
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="{{baseUrl}}/dashboard-supplier.html" style="display: inline-block; padding: 14px 28px; background: linear-gradient(180deg, #16c3ad, #0ea896); color: #ffffff; text-decoration: none; border-radius: 12px; font-weight: 700; font-size: 16px;">
+                  View Your Dashboard
+                </a>
+              </div>
+              
+              <p style="margin: 0 0 10px; color: #666666; font-size: 14px; line-height: 1.6;">
+                You can manage your subscription anytime from your dashboard or the subscription page.
+              </p>
+            </td>
+          </tr>
+          
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #f8f9fa; padding: 30px; text-align: center; border-top: 1px solid #e9ecef;">
+              <p style="margin: 0 0 10px; color: #666666; font-size: 13px;">
+                Need help? <a href="{{baseUrl}}/contact.html" style="color: #16c3ad; text-decoration: none;">Contact Support</a>
+              </p>
+              <p style="margin: 0; color: #999999; font-size: 12px;">
+                © {{year}} EventFlow. All rights reserved.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

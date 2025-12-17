@@ -383,15 +383,25 @@ function displayCurrentSubscription() {
 
   let statusText = subscription.status.charAt(0).toUpperCase() + subscription.status.slice(1);
   if (subscription.status === 'trial') {
-    const daysLeft = Math.ceil(
+    const daysLeft = Math.max(0, Math.ceil(
       (subscription.trialEndDate.toDate() - new Date()) / (1000 * 60 * 60 * 24)
-    );
+    ));
     statusText = `Trial (${daysLeft} days left)`;
   }
 
   const endDateStr = subscription.endDate
-    ? new Date(subscription.endDate.toDate()).toLocaleDateString('en-GB')
+    ? new Date(subscription.endDate.toDate()).toLocaleDateString('en-GB', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      })
     : 'N/A';
+
+  // Check if renewal is needed soon (within 14 days)
+  const daysUntilRenewal = subscription.endDate
+    ? Math.ceil((subscription.endDate.toDate() - new Date()) / (1000 * 60 * 60 * 24))
+    : 0;
+  const showRenewalPrompt = !subscription.autoRenew && daysUntilRenewal > 0 && daysUntilRenewal <= 14;
 
   statusContainer.innerHTML = `
     <div class="subscription-status">
@@ -401,15 +411,32 @@ function displayCurrentSubscription() {
       </div>
       <p class="${statusClass}">${statusText}</p>
       <p class="small">Plan: ${plan ? plan.name : subscription.planId}</p>
-      <p class="small">Renews: ${endDateStr}</p>
+      ${subscription.cancelledAt 
+        ? `<p class="small">Cancelled - Access until: ${endDateStr}</p>`
+        : `<p class="small">${subscription.autoRenew ? 'Renews' : 'Expires'}: ${endDateStr}</p>`
+      }
       <p class="small">Auto-renew: ${subscription.autoRenew ? 'Yes' : 'No'}</p>
+      
+      ${showRenewalPrompt ? `
+        <div style="background-color: #fff3cd; border-left: 4px solid #ffc107; border-radius: 4px; padding: 12px; margin: 15px 0;">
+          <p style="margin: 0 0 10px; color: #856404; font-size: 14px; font-weight: 600;">
+            ⚠️ Your subscription expires in ${daysUntilRenewal} days
+          </p>
+          <p style="margin: 0; color: #856404; font-size: 13px;">
+            Renew now to keep your premium features without interruption.
+          </p>
+        </div>
+      ` : ''}
+      
       <div class="subscription-actions">
         ${
-          subscription.status === 'active' || subscription.status === 'trial'
+          (subscription.status === 'active' || subscription.status === 'trial') && !subscription.cancelledAt
             ? `
           <button class="btn-manage" id="cancel-subscription-btn">Cancel Subscription</button>
           <button class="btn-manage" id="change-plan-btn">Change Plan</button>
         `
+            : subscription.cancelledAt
+            ? `<button class="btn-manage" id="reactivate-subscription-btn">Reactivate Subscription</button>`
             : ''
         }
       </div>
@@ -428,13 +455,67 @@ function displayCurrentSubscription() {
       document.getElementById('subscription-plans').scrollIntoView({ behavior: 'smooth' });
     });
   }
+  
+  const reactivateBtn = document.getElementById('reactivate-subscription-btn');
+  if (reactivateBtn) {
+    reactivateBtn.addEventListener('click', handleReactivateSubscription);
+  }
+}
+
+/**
+ * Handle subscription reactivation
+ */
+async function handleReactivateSubscription() {
+  if (!confirm('Would you like to reactivate your subscription? Your premium features will continue without interruption.')) {
+    return;
+  }
+
+  try {
+    showLoading('Reactivating subscription...');
+
+    // Update supplier document to re-enable auto-renewal
+    const supplierRef = doc(db, 'suppliers', currentSupplier.id);
+    await setDoc(
+      supplierRef,
+      {
+        subscription: {
+          autoRenew: true,
+          cancelledAt: null,
+          lastUpdated: Timestamp.now(),
+        },
+      },
+      { merge: true }
+    );
+
+    showSuccess('Subscription reactivated successfully!');
+    
+    // Reload the page to update status
+    setTimeout(() => {
+      window.location.reload();
+    }, 1500);
+  } catch (error) {
+    console.error('Error reactivating subscription:', error);
+    showError('Failed to reactivate subscription. Please try again or contact support.');
+  } finally {
+    hideLoading();
+  }
 }
 
 /**
  * Handle subscription cancellation
  */
 async function handleCancelSubscription() {
-  if (!confirm('Are you sure you want to cancel your subscription? You will lose access to premium features at the end of your billing period.')) {
+  const endDate = currentSupplier.subscription?.endDate
+    ? new Date(currentSupplier.subscription.endDate.toDate()).toLocaleDateString('en-GB', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      })
+    : 'the end of your billing period';
+  
+  const confirmMessage = `Are you sure you want to cancel your subscription?\n\nYou'll lose access to premium features after ${endDate}.\n\nYou can reactivate anytime before this date.`;
+  
+  if (!confirm(confirmMessage)) {
     return;
   }
 

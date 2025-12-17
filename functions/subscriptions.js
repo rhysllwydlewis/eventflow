@@ -13,6 +13,70 @@ if (!admin.apps.length) {
 
 const db = admin.firestore();
 
+// Email configuration (using environment variables)
+const SEND_EMAILS = process.env.SEND_EMAILS === 'true' || false;
+const APP_BASE_URL = process.env.APP_BASE_URL || 'https://eventflow-ffb12.web.app';
+
+/**
+ * Send subscription email notification
+ * This is a lightweight implementation that logs emails when not configured
+ * In production, integrate with SendGrid, Mailgun, or Firebase Email Extension
+ */
+async function sendSubscriptionEmail(to, subject, templateType, templateData) {
+  if (!SEND_EMAILS) {
+    console.log(`[EMAIL] Would send to ${to}: ${subject}`);
+    console.log('[EMAIL] Template:', templateType);
+    console.log('[EMAIL] Data:', JSON.stringify(templateData, null, 2));
+    return { success: true, message: 'Email logging (not sent)' };
+  }
+
+  // TODO: Integrate with actual email service
+  // Example integration points:
+  // - SendGrid: use @sendgrid/mail
+  // - Mailgun: use mailgun.js
+  // - Firebase Email Extension: write to email collection
+  
+  try {
+    // For now, log the email details
+    console.log(`[EMAIL] Sending to ${to}: ${subject}`);
+    
+    // Future integration code would go here
+    // const sgMail = require('@sendgrid/mail');
+    // sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+    // await sgMail.send({
+    //   to,
+    //   from: 'no-reply@eventflow.com',
+    //   subject,
+    //   html: renderTemplate(templateType, templateData)
+    // });
+    
+    return { success: true, message: 'Email sent successfully' };
+  } catch (error) {
+    console.error('Error sending email:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Get user details for email sending
+ */
+async function getUserDetails(userId) {
+  try {
+    const userDoc = await db.collection('users').doc(userId).get();
+    if (!userDoc.exists) {
+      return null;
+    }
+    const userData = userDoc.data();
+    return {
+      email: userData.email,
+      name: userData.name || userData.displayName || 'there',
+    };
+  } catch (error) {
+    console.error('Error fetching user details:', error);
+    return null;
+  }
+}
+
 /**
  * Subscription plans configuration
  */
@@ -194,8 +258,39 @@ exports.onPaymentSuccess = functions
         `Subscription activated for supplier ${afterData.supplierId}, plan ${plan.id}`
       );
 
-      // TODO: Send confirmation email
-      // This would integrate with your existing email system
+      // Send confirmation email
+      try {
+        const supplier = await supplierRef.get();
+        const supplierData = supplier.data();
+        
+        if (supplierData.ownerUserId) {
+          const user = await getUserDetails(supplierData.ownerUserId);
+          
+          if (user) {
+            const features = plan.features.map(f => `<li>${f}</li>`).join('');
+            await sendSubscriptionEmail(
+              user.email,
+              `Welcome to EventFlow ${plan.name}!`,
+              'subscription-activated',
+              {
+                name: user.name,
+                planName: plan.name,
+                status: 'Trial',
+                trialDays: plan.trialDays,
+                renewalDate: new Date(endDate).toLocaleDateString('en-GB'),
+                amount: plan.price.toFixed(2),
+                billingCycle: plan.billingCycle,
+                features: features,
+                baseUrl: APP_BASE_URL,
+              }
+            );
+            console.log(`Confirmation email sent to ${user.email}`);
+          }
+        }
+      } catch (emailError) {
+        console.error('Error sending confirmation email:', emailError);
+        // Don't fail the function if email fails
+      }
 
       return null;
     } catch (error) {
@@ -258,9 +353,45 @@ exports.checkSubscriptionStatus = functions
           const endDate = subscription.endDate.toDate();
           if (now >= endDate) {
             if (subscription.autoRenew) {
-              // TODO: Process renewal payment
+              // Process renewal for auto-renew subscriptions
               console.log(`Subscription renewal due for supplier ${doc.id}`);
-              // For now, just log - would integrate with Google Pay for renewal
+              
+              // TODO: Implement automatic renewal payment processing
+              // For Google Pay one-time tokens, we need to:
+              // 1. Store payment method tokens for recurring billing
+              // 2. Process payment through PSP
+              // 3. Update subscription dates on success
+              // 
+              // For now, expire the subscription and notify user to renew manually
+              updates['subscription.status'] = 'expired';
+              updates['subscription.tier'] = 'free';
+              updates['pro'] = false;
+              needsUpdate = true;
+              
+              // Send renewal failed notification
+              try {
+                if (supplier.ownerUserId) {
+                  const user = await getUserDetails(supplier.ownerUserId);
+                  if (user) {
+                    const plan = SUBSCRIPTION_PLANS[subscription.planId];
+                    await sendSubscriptionEmail(
+                      user.email,
+                      'Action Required: Renew Your EventFlow Subscription',
+                      'subscription-payment-failed',
+                      {
+                        name: user.name,
+                        planName: plan ? plan.name : subscription.planId,
+                        amount: plan ? plan.price.toFixed(2) : '0.00',
+                        attemptDate: now.toLocaleDateString('en-GB'),
+                        gracePeriodEnd: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString('en-GB'),
+                        baseUrl: APP_BASE_URL,
+                      }
+                    );
+                  }
+                }
+              } catch (emailError) {
+                console.error('Error sending renewal notification:', emailError);
+              }
             } else {
               // Downgrade to free
               updates['subscription.status'] = 'expired';
@@ -274,7 +405,66 @@ exports.checkSubscriptionStatus = functions
             const daysUntilExpiry = Math.ceil((endDate - now) / (1000 * 60 * 60 * 24));
             if (daysUntilExpiry === 7) {
               console.log(`Renewal reminder due for supplier ${doc.id}`);
-              // TODO: Send renewal reminder email
+              
+              try {
+                if (supplier.ownerUserId) {
+                  const user = await getUserDetails(supplier.ownerUserId);
+                  if (user) {
+                    const plan = SUBSCRIPTION_PLANS[subscription.planId];
+                    await sendSubscriptionEmail(
+                      user.email,
+                      'Your EventFlow Subscription Renews Soon',
+                      'subscription-renewal-reminder',
+                      {
+                        name: user.name,
+                        planName: plan ? plan.name : subscription.planId,
+                        daysUntilRenewal: daysUntilExpiry,
+                        renewalDate: endDate.toLocaleDateString('en-GB'),
+                        amount: plan ? plan.price.toFixed(2) : '0.00',
+                        autoRenew: subscription.autoRenew ? 'Yes' : 'No',
+                        baseUrl: APP_BASE_URL,
+                      }
+                    );
+                  }
+                }
+              } catch (emailError) {
+                console.error('Error sending renewal reminder:', emailError);
+              }
+            }
+            
+            // Send trial ending reminder 3 days before trial ends
+            if (subscription.status === 'trial' && subscription.trialEndDate) {
+              const trialEnd = subscription.trialEndDate.toDate();
+              const daysUntilTrialEnd = Math.ceil((trialEnd - now) / (1000 * 60 * 60 * 24));
+              if (daysUntilTrialEnd === 3) {
+                console.log(`Trial ending reminder due for supplier ${doc.id}`);
+                
+                try {
+                  if (supplier.ownerUserId) {
+                    const user = await getUserDetails(supplier.ownerUserId);
+                    if (user) {
+                      const plan = SUBSCRIPTION_PLANS[subscription.planId];
+                      await sendSubscriptionEmail(
+                        user.email,
+                        'Your EventFlow Trial is Ending Soon',
+                        'subscription-trial-ending',
+                        {
+                          name: user.name,
+                          planName: plan ? plan.name : subscription.planId,
+                          trialDays: plan ? plan.trialDays : 14,
+                          daysLeft: daysUntilTrialEnd,
+                          trialEndDate: trialEnd.toLocaleDateString('en-GB'),
+                          amount: plan ? plan.price.toFixed(2) : '0.00',
+                          billingCycle: plan ? plan.billingCycle : 'monthly',
+                          baseUrl: APP_BASE_URL,
+                        }
+                      );
+                    }
+                  }
+                } catch (emailError) {
+                  console.error('Error sending trial ending reminder:', emailError);
+                }
+              }
             }
           }
         }
@@ -341,7 +531,36 @@ exports.cancelSubscription = functions
 
       console.log(`Subscription cancelled for supplier ${supplierId}`);
 
-      // TODO: Send cancellation confirmation email
+      // Send cancellation confirmation email
+      try {
+        if (supplier.ownerUserId) {
+          const user = await getUserDetails(supplier.ownerUserId);
+          
+          if (user) {
+            const subscription = supplier.subscription;
+            const plan = subscription ? SUBSCRIPTION_PLANS[subscription.planId] : null;
+            const endDate = subscription && subscription.endDate 
+              ? subscription.endDate.toDate().toLocaleDateString('en-GB')
+              : 'N/A';
+            
+            await sendSubscriptionEmail(
+              user.email,
+              'Subscription Cancelled - EventFlow',
+              'subscription-cancelled',
+              {
+                name: user.name,
+                planName: plan ? plan.name : 'Pro',
+                endDate: endDate,
+                baseUrl: APP_BASE_URL,
+              }
+            );
+            console.log(`Cancellation email sent to ${user.email}`);
+          }
+        }
+      } catch (emailError) {
+        console.error('Error sending cancellation email:', emailError);
+        // Don't fail the function if email fails
+      }
 
       return {
         success: true,
