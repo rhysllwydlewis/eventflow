@@ -104,5 +104,28 @@ service cloud.firestore {
       // Only admins can delete tickets
       allow delete: if isAdmin();
     }
+    
+    // Subscription Plans collection
+    match /subscriptionPlans/{planId} {
+      // Anyone can read subscription plans
+      allow read: if true;
+      // Only admins can write
+      allow write: if isAdmin();
+    }
+    
+    // Payments collection
+    match /payments/{paymentId} {
+      // Users can read their own payments, admins can read all
+      allow read: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        isAdmin()
+      );
+      // Authenticated users can create payments
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      // Cloud Functions and admins can update payments
+      allow update: if isAdmin();
+      // Only admins can delete payments
+      allow delete: if isAdmin();
+    }
   }
 }

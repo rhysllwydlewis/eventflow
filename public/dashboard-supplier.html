@@ -161,10 +161,10 @@
     <input type="hidden" name="supplierId" id="pkg-supplier-id-hidden">
     <input type="hidden" name="id" id="pkg-id-hidden">
   </form>
-</div><div class="card" style="margin-top:16px; display:none;">
-  <h3>Billing &amp; subscription</h3>
-  <div id="supplier-billing-card" class="section">
-    <p class="small">Checking billing status…</p>
+</div><div class="card" style="margin-top:16px;">
+  <h3>Subscription</h3>
+  <div id="supplier-subscription-card" class="section">
+    <p class="small">Checking subscription status…</p>
   </div>
 </div>
 
@@ -189,6 +189,109 @@
 <script type="module" src="/assets/js/supplier-tickets.js"></script>
 <script type="module" src="/assets/js/supplier-messages.js"></script>
 <script type="module" src="/assets/js/supplier-gallery.js"></script>
+<script type="module">
+  // Display subscription status on dashboard
+  import { db, auth, collection, query, where, getDocs, onAuthStateChanged } from '/assets/js/firebase-config.js';
+  import { 
+    initializeFeatureAccess, 
+    displayPackageLimitNotice, 
+    enforcePackageLimit 
+  } from '/supplier/js/feature-access.js';
+  
+  // Initialize feature access control
+  await initializeFeatureAccess();
+  
+  async function displaySubscriptionStatus() {
+    const container = document.getElementById('supplier-subscription-card');
+    if (!container) return;
+    
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        container.innerHTML = '<p class="small">Please log in to view subscription status.</p>';
+        return;
+      }
+      
+      try {
+        const suppliersQuery = query(
+          collection(db, 'suppliers'),
+          where('ownerUserId', '==', user.uid)
+        );
+        
+        const suppliersSnapshot = await getDocs(suppliersQuery);
+        
+        if (suppliersSnapshot.empty) {
+          container.innerHTML = '<p class="small">Create a supplier profile to manage subscriptions.</p>';
+          return;
+        }
+        
+        const supplier = suppliersSnapshot.docs[0].data();
+        const subscription = supplier.subscription;
+        
+        if (!subscription || !subscription.tier || subscription.tier === 'free') {
+          container.innerHTML = `
+            <p class="small"><strong>Free Plan</strong></p>
+            <p class="small">Upgrade to unlock premium features and boost your visibility.</p>
+            <a href="/supplier/subscription.html" class="cta" style="margin-top:0.5rem;display:inline-block;">View Plans</a>
+          `;
+        } else {
+          const tierName = subscription.tier === 'pro' ? 'Pro' : 'Pro+';
+          const statusText = subscription.status === 'trial' ? 'Trial' : subscription.status.charAt(0).toUpperCase() + subscription.status.slice(1);
+          
+          container.innerHTML = `
+            <p class="small"><strong>${tierName}</strong> - ${statusText}</p>
+            <p class="small">Thank you for supporting EventFlow!</p>
+            <a href="/supplier/subscription.html" class="cta" style="margin-top:0.5rem;display:inline-block;">Manage Subscription</a>
+          `;
+          
+          // Show pro ribbon
+          const ribbon = document.getElementById('supplier-pro-ribbon');
+          if (ribbon) {
+            ribbon.style.display = 'block';
+            ribbon.textContent = `✨ You're on EventFlow ${tierName}`;
+            if (subscription.tier === 'pro_plus') {
+              ribbon.style.background = 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)';
+            }
+          }
+        }
+        
+        // Update package limit display
+        await updatePackageLimitDisplay();
+        
+      } catch (error) {
+        console.error('Error loading subscription status:', error);
+        container.innerHTML = '<p class="small">Unable to load subscription status.</p>';
+      }
+    });
+  }
+  
+  async function updatePackageLimitDisplay() {
+    const limitContainer = document.getElementById('pkg-limit-note');
+    if (!limitContainer) return;
+    
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) return;
+      
+      try {
+        // Get package count
+        const packagesQuery = query(
+          collection(db, 'packages'),
+          where('ownerUserId', '==', user.uid)
+        );
+        
+        const packagesSnapshot = await getDocs(packagesQuery);
+        const packageCount = packagesSnapshot.size;
+        
+        // Display limit notice
+        displayPackageLimitNotice(limitContainer, packageCount);
+        
+      } catch (error) {
+        console.error('Error checking package limit:', error);
+      }
+    });
+  }
+  
+  displaySubscriptionStatus();
+</script>
 <script>window.__EF_PAGE__='dash_supplier'</script>
 </div></main>
 <footer class="footer" role="contentinfo">

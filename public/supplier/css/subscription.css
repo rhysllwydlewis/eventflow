@@ -1,0 +1,501 @@
+/**
+ * Subscription Page Styles for EventFlow
+ * Styles for subscription plans, cards, badges, and management UI
+ */
+
+/* Subscription Page Layout */
+.subscription-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.subscription-header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.subscription-header h1 {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+  color: var(--color-text, #333);
+}
+
+.subscription-header p {
+  font-size: 1.1rem;
+  color: var(--color-text-light, #666);
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* Subscription Tabs */
+.subscription-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  border-bottom: 2px solid var(--color-border, #e0e0e0);
+}
+
+.tab-button {
+  background: none;
+  border: none;
+  padding: 1rem 2rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--color-text-light, #666);
+  cursor: pointer;
+  position: relative;
+  transition: color 0.3s;
+}
+
+.tab-button:hover {
+  color: var(--color-primary, #007bff);
+}
+
+.tab-button.active {
+  color: var(--color-primary, #007bff);
+}
+
+.tab-button.active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--color-primary, #007bff);
+}
+
+/* Plans Container */
+.plans-container {
+  display: none;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+  margin-bottom: 3rem;
+}
+
+.plans-container.active {
+  display: grid;
+}
+
+/* Subscription Card */
+.subscription-card {
+  background: white;
+  border: 2px solid var(--color-border, #e0e0e0);
+  border-radius: 12px;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.3s, box-shadow 0.3s;
+  position: relative;
+}
+
+.subscription-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.subscription-card.featured {
+  border-color: var(--color-primary, #007bff);
+  border-width: 3px;
+}
+
+.subscription-card.featured::before {
+  content: '⭐ RECOMMENDED';
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--color-primary, #007bff);
+  color: white;
+  padding: 0.25rem 1rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+/* Plan Header */
+.plan-header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.plan-header h3 {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+  color: var(--color-text, #333);
+}
+
+.badge-recommended {
+  display: inline-block;
+  background: var(--color-primary, #007bff);
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 15px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+/* Plan Price */
+.plan-price {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.plan-price .price {
+  font-size: 3rem;
+  font-weight: 700;
+  color: var(--color-text, #333);
+}
+
+.plan-price .period {
+  font-size: 1rem;
+  color: var(--color-text-light, #666);
+}
+
+/* Plan Trial */
+.plan-trial {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.trial-badge {
+  display: inline-block;
+  background: var(--color-success, #28a745);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+/* Plan Features */
+.plan-features {
+  flex: 1;
+  margin-bottom: 1.5rem;
+}
+
+.plan-features ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.plan-features li {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--color-border, #e0e0e0);
+  display: flex;
+  align-items: flex-start;
+}
+
+.plan-features li:last-child {
+  border-bottom: none;
+}
+
+.plan-features li::before {
+  content: '✓';
+  color: var(--color-success, #28a745);
+  font-weight: 700;
+  margin-right: 0.75rem;
+  font-size: 1.2rem;
+}
+
+/* Plan Action */
+.plan-action {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.btn-select,
+.btn-current,
+.btn-manage {
+  width: 100%;
+  padding: 1rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s, transform 0.2s;
+}
+
+.btn-select {
+  background: var(--color-primary, #007bff);
+  color: white;
+}
+
+.btn-select:hover {
+  background: var(--color-primary-dark, #0056b3);
+  transform: scale(1.02);
+}
+
+.btn-current {
+  background: var(--color-border, #e0e0e0);
+  color: var(--color-text-light, #666);
+  cursor: not-allowed;
+}
+
+.btn-manage {
+  background: var(--color-secondary, #6c757d);
+  color: white;
+}
+
+.btn-manage:hover {
+  background: var(--color-secondary-dark, #545b62);
+}
+
+/* Google Pay Button Container */
+.gpay-button-container {
+  display: flex;
+  justify-content: center;
+}
+
+.gpay-button {
+  width: 100% !important;
+  max-width: 100%;
+}
+
+/* Current Subscription Status */
+.subscription-status {
+  background: white;
+  border: 2px solid var(--color-border, #e0e0e0);
+  border-radius: 12px;
+  padding: 2rem;
+  margin-bottom: 3rem;
+}
+
+.subscription-status h3 {
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  font-size: 1.5rem;
+}
+
+.subscription-badge {
+  display: inline-block;
+  padding: 0.5rem 1.5rem;
+  border-radius: 25px;
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+
+.subscription-badge.pro {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.subscription-badge.pro_plus {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  color: white;
+}
+
+.status-free {
+  color: var(--color-text-light, #666);
+  font-size: 1.1rem;
+  margin-bottom: 0.5rem;
+}
+
+.status-active {
+  color: var(--color-success, #28a745);
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.status-trial {
+  color: var(--color-info, #17a2b8);
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.status-expired {
+  color: var(--color-danger, #dc3545);
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.subscription-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+/* Badges for Supplier Profiles */
+.supplier-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 15px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-left: 0.5rem;
+}
+
+.supplier-badge.pro {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.supplier-badge.pro::before {
+  content: '⭐';
+}
+
+.supplier-badge.pro_plus {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  color: white;
+}
+
+.supplier-badge.pro_plus::before {
+  content: '👑';
+}
+
+/* Pro Ribbon */
+.pro-ribbon {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 0.75rem;
+  text-align: center;
+  font-weight: 600;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+}
+
+.pro-ribbon.pro_plus {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+/* Loading Overlay */
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.loading-content {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  text-align: center;
+}
+
+.spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid var(--color-border, #e0e0e0);
+  border-top-color: var(--color-primary, #007bff);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Notifications */
+.notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 1rem 1.5rem;
+  border-radius: 8px;
+  color: white;
+  font-weight: 600;
+  z-index: 10000;
+  transform: translateX(400px);
+  transition: transform 0.3s;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.notification.show {
+  transform: translateX(0);
+}
+
+.notification-success {
+  background: var(--color-success, #28a745);
+}
+
+.notification-error {
+  background: var(--color-danger, #dc3545);
+}
+
+.notification-warning {
+  background: var(--color-warning, #ffc107);
+  color: #333;
+}
+
+.notification-info {
+  background: var(--color-info, #17a2b8);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .subscription-header h1 {
+    font-size: 2rem;
+  }
+
+  .plans-container {
+    grid-template-columns: 1fr;
+  }
+
+  .subscription-tabs {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .tab-button {
+    padding: 0.75rem 1rem;
+  }
+
+  .plan-price .price {
+    font-size: 2.5rem;
+  }
+
+  .subscription-actions {
+    flex-direction: column;
+  }
+}
+
+/* Feature Lock Overlay */
+.feature-locked {
+  position: relative;
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.feature-lock-badge {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.9);
+  color: white;
+  padding: 1rem 2rem;
+  border-radius: 8px;
+  font-weight: 600;
+  z-index: 10;
+  text-align: center;
+}
+
+.upgrade-cta {
+  display: block;
+  margin-top: 0.5rem;
+  color: var(--color-primary, #007bff);
+  text-decoration: underline;
+  cursor: pointer;
+}
