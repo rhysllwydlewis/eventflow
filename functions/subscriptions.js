@@ -670,6 +670,79 @@ exports.updateSubscription = functions
   });
 
 /**
+ * Get subscription status for a supplier
+ * Callable function from frontend
+ */
+exports.getSubscriptionStatus = functions
+  .region('europe-west2')
+  .https.onCall(async (data, context) => {
+    // Verify user is authenticated
+    if (!context.auth) {
+      throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+    }
+
+    const userId = context.auth.uid;
+    const { supplierId } = data;
+
+    try {
+      // Get supplier document
+      const supplierDoc = await db.collection('suppliers').doc(supplierId).get();
+
+      if (!supplierDoc.exists) {
+        throw new functions.https.HttpsError('not-found', 'Supplier not found');
+      }
+
+      const supplier = supplierDoc.data();
+
+      // Check if user owns this supplier
+      if (supplier.ownerUserId !== userId) {
+        throw new functions.https.HttpsError(
+          'permission-denied',
+          'User does not own this supplier'
+        );
+      }
+
+      const subscription = supplier.subscription;
+      
+      if (!subscription) {
+        return {
+          tier: 'free',
+          status: 'free',
+          hasSubscription: false,
+        };
+      }
+
+      // Calculate days remaining
+      let daysRemaining = 0;
+      if (subscription.endDate) {
+        const endDate = subscription.endDate.toDate();
+        const now = new Date();
+        daysRemaining = Math.max(0, Math.ceil((endDate - now) / (1000 * 60 * 60 * 24)));
+      }
+
+      return {
+        tier: subscription.tier,
+        status: subscription.status,
+        planId: subscription.planId,
+        startDate: subscription.startDate,
+        endDate: subscription.endDate,
+        trialEndDate: subscription.trialEndDate,
+        autoRenew: subscription.autoRenew,
+        billingCycle: subscription.billingCycle,
+        daysRemaining: daysRemaining,
+        cancelledAt: subscription.cancelledAt || null,
+        hasSubscription: true,
+      };
+    } catch (error) {
+      console.error('Error getting subscription status:', error);
+      if (error instanceof functions.https.HttpsError) {
+        throw error;
+      }
+      throw new functions.https.HttpsError('internal', 'Failed to get subscription status');
+    }
+  });
+
+/**
  * Initialize subscription plans in Firestore
  * This is a one-time setup function
  */
