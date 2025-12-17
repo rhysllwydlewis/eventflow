@@ -13,7 +13,6 @@ const validator = require('validator');
 const { read, write, uid } = require('../store');
 const {
   authRequired,
-  roleRequired,
   setAuthCookie,
   clearAuthCookie,
   getUserFromCookie,

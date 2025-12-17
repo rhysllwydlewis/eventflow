@@ -50,6 +50,7 @@ try {
     const stripeLib = require('stripe');
     stripe = stripeLib(secret);
     STRIPE_ENABLED = true;
+    // Note: stripe variable is initialized for future payment integration
   }
 } catch (err) {
   console.warn('Stripe is not configured:', err.message);
@@ -3681,7 +3682,7 @@ app.post('/api/photos/bulk-edit', authRequired, csrfProtection, async (req, res)
  */
 app.post('/api/photos/:id/filters', authRequired, csrfProtection, async (req, res) => {
   try {
-    const { id } = req.params;
+    const { id: _id } = req.params; // Photo ID from URL (not currently used)
     const { imageUrl, brightness, contrast, saturation } = req.body;
 
     if (!imageUrl) {
