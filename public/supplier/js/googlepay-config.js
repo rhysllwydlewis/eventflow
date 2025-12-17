@@ -11,7 +11,9 @@ const GOOGLE_PAY_CONFIG = {
   apiVersionMinor: 0,
   merchantInfo: {
     merchantName: 'EventFlow',
-    merchantId: '12345678901234567890', // Replace with actual merchant ID from Google Pay
+    // TODO: CRITICAL - Replace with actual merchant ID from Google Pay Business Console
+    // https://pay.google.com/business/console
+    merchantId: '12345678901234567890',
   },
 };
 
@@ -32,8 +34,10 @@ function getGooglePaymentDataRequest(amount, planId, planName) {
         tokenizationSpecification: {
           type: 'PAYMENT_GATEWAY',
           parameters: {
-            gateway: 'example', // Replace with actual gateway
-            gatewayMerchantId: 'exampleGatewayMerchantId', // Replace with actual ID
+            // TODO: CRITICAL - Replace with actual payment gateway configuration
+            // Example gateways: 'stripe', 'braintree', 'square'
+            gateway: 'example',
+            gatewayMerchantId: 'exampleGatewayMerchantId',
           },
         },
       },
@@ -67,7 +71,9 @@ async function initializeGooglePay() {
   }
 
   const paymentsClient = new google.payments.api.PaymentsClient({
-    environment: 'TEST', // Change to 'PRODUCTION' for live
+    // TODO: CRITICAL - Change to 'PRODUCTION' before deploying to live environment
+    // TEST environment is only for development and testing with test cards
+    environment: 'TEST',
   });
 
   return paymentsClient;

@@ -162,12 +162,14 @@ exports.onPaymentSuccess = functions
       return null;
     } catch (error) {
       console.error('Error processing payment:', error);
-      // Update payment with error
+      // Update payment with sanitized error (don't expose internal details)
       await snap.ref.update({
-        error: error.message,
+        error: 'Payment processing failed',
+        errorCode: error.code || 'UNKNOWN',
         processedAt: admin.firestore.Timestamp.now(),
       });
-      throw error;
+      // Re-throw for Cloud Functions error logging
+      throw new Error('Payment processing failed');
     }
   });
 
