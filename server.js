@@ -50,6 +50,7 @@ try {
     const stripeLib = require('stripe');
     stripe = stripeLib(secret);
     STRIPE_ENABLED = true;
+    // Note: stripe variable is initialized for future payment integration
   }
 } catch (err) {
   console.warn('Stripe is not configured:', err.message);
@@ -195,7 +196,13 @@ app.use(
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", "'unsafe-eval'", 'https://cdn.jsdelivr.net', 'https://maps.googleapis.com', 'https://maps.gstatic.com'],
+        scriptSrc: [
+          "'self'",
+          "'unsafe-eval'",
+          'https://cdn.jsdelivr.net',
+          'https://maps.googleapis.com',
+          'https://maps.gstatic.com',
+        ],
         styleSrc: [
           "'self'",
           "'unsafe-inline'",
@@ -2457,7 +2464,7 @@ app.put(
     if (req.body.tags !== undefined) {
       supplier.tags = req.body.tags;
     }
-    
+
     supplier.updatedAt = now;
 
     suppliers[supplierIndex] = supplier;
@@ -3675,7 +3682,7 @@ app.post('/api/photos/bulk-edit', authRequired, csrfProtection, async (req, res)
  */
 app.post('/api/photos/:id/filters', authRequired, csrfProtection, async (req, res) => {
   try {
-    const { id } = req.params;
+    const { id: _id } = req.params; // Photo ID from URL (not currently used)
     const { imageUrl, brightness, contrast, saturation } = req.body;
 
     if (!imageUrl) {

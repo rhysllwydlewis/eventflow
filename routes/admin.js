@@ -797,7 +797,13 @@ router.put('/users/:id', authRequired, roleRequired('admin'), (req, res) => {
   if (!user.versionHistory) {
     user.versionHistory = [];
   }
-  const { password, passwordHash, resetToken, twoFactorSecret, ...safeState } = user;
+  const {
+    password: _password,
+    passwordHash: _passwordHash,
+    resetToken: _resetToken,
+    twoFactorSecret: _twoFactorSecret,
+    ...safeState
+  } = user;
   user.versionHistory.push({
     timestamp: new Date().toISOString(),
     editedBy: req.user.id,

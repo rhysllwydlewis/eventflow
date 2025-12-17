@@ -14,7 +14,7 @@ const { read } = require('./store');
  */
 async function searchSuppliers(query) {
   const suppliers = await read('suppliers');
-  const reviews = await read('reviews');
+  const reviews = await read('reviews'); // TODO: Use for rating-based sorting
 
   let results = suppliers.filter(s => s.approved);
 
