@@ -11,59 +11,59 @@
   <link rel='stylesheet' href='/assets/css/animations.css'>
   <link rel='icon' href='/favicon.svg'>
   <style>
-    .legal-hub-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 24px;
-      margin-top: 32px;
-    }
-    .legal-card {
-      background: #fff;
+    .legal-toc {
+      background: linear-gradient(135deg, #F9FAFB 0%, #F3F4F6 100%);
       border: 1px solid #E7EAF0;
       border-radius: 12px;
       padding: 24px;
-      transition: all 0.3s ease;
+      margin-bottom: 32px;
+      position: sticky;
+      top: 80px;
+    }
+    .legal-toc h2 {
+      margin-top: 0;
+      font-size: 1.25rem;
+      color: var(--ink, #0B8073);
+    }
+    .legal-toc ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .legal-toc li {
+      margin: 8px 0;
+    }
+    .legal-toc a {
+      color: #0B1220;
       text-decoration: none;
-      color: inherit;
-      display: block;
-    }
-    .legal-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-      border-color: var(--ink, #0B8073);
-    }
-    .legal-card-icon {
-      width: 48px;
-      height: 48px;
-      background: linear-gradient(135deg, var(--ink, #0B8073), var(--accent, #13B6A2));
-      border-radius: 12px;
       display: flex;
       align-items: center;
-      justify-content: center;
-      font-size: 24px;
-      margin-bottom: 16px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      transition: all 0.2s;
     }
-    .legal-card h3 {
-      margin: 0 0 8px 0;
+    .legal-toc a:hover {
+      background: #fff;
+      color: var(--ink, #0B8073);
+      transform: translateX(4px);
+    }
+    .legal-toc-icon {
+      margin-right: 12px;
       font-size: 1.25rem;
-      color: #0B1220;
     }
-    .legal-card p {
-      margin: 0;
-      font-size: 0.9rem;
-      color: #667085;
-      line-height: 1.5;
-    }
-    .legal-intro {
-      background: linear-gradient(135deg, #F9FAFB 0%, #F3F4F6 100%);
+    .legal-section {
+      background: #fff;
+      border: 1px solid #E7EAF0;
       border-radius: 12px;
       padding: 32px;
-      margin-bottom: 32px;
-      border: 1px solid #E7EAF0;
+      margin-bottom: 24px;
+      scroll-margin-top: 100px;
     }
-    .legal-intro h2 {
-      margin-top: 0;
+    .legal-section h2 {
       color: var(--ink, #0B8073);
+      border-bottom: 2px solid #E7EAF0;
+      padding-bottom: 12px;
+      margin-top: 0;
     }
     .last-updated {
       display: inline-block;
@@ -74,6 +74,11 @@
       font-size: 0.85rem;
       font-weight: 600;
       margin-bottom: 16px;
+    }
+    @media (max-width: 768px) {
+      .legal-toc {
+        position: static;
+      }
     }
   </style>
 </head>
@@ -115,15 +120,455 @@
 <script src="/assets/js/auth-nav.js" defer></script>
 
 <main class='section'>
-  <div class='container'>
+  <div class='container' style="max-width: 1200px;">
     <span class="last-updated">Last Updated: December 2024</span>
     <h1>Legal Hub</h1>
-    
-    <div class="legal-intro">
-      <h2>Welcome to the EventFlow Legal Hub</h2>
-      <p>This page provides easy access to all our legal documents, policies, and guidelines. We believe in transparency and want to ensure you understand how EventFlow operates, your rights as a user, and our commitments to you.</p>
-      <p style="margin-top: 12px;">If you have any questions about these documents or need assistance, please don't hesitate to <a href="/contact.html">contact us</a>.</p>
+    <p style="font-size: 1.1rem; color: #667085; margin-bottom: 32px;">All EventFlow legal documents, policies, and guidelines in one place. Navigate using the menu below.</p>
+
+    <div style="display: grid; grid-template-columns: 280px 1fr; gap: 32px; align-items: start;">
+      
+      <!-- Table of Contents -->
+      <aside class="legal-toc">
+        <h2>📑 Quick Navigation</h2>
+        <ul>
+          <li><a href="#overview"><span class="legal-toc-icon">📋</span> Overview</a></li>
+          <li><a href="#terms"><span class="legal-toc-icon">📋</span> Terms of Use</a></li>
+          <li><a href="#privacy"><span class="legal-toc-icon">🔒</span> Privacy Notice</a></li>
+          <li><a href="#cookies"><span class="legal-toc-icon">🍪</span> Cookie Policy</a></li>
+          <li><a href="#gdpr"><span class="legal-toc-icon">🛡️</span> GDPR Rights</a></li>
+          <li><a href="#acceptable-use"><span class="legal-toc-icon">✓</span> Acceptable Use</a></li>
+          <li><a href="#copyright"><span class="legal-toc-icon">©</span> Copyright</a></li>
+          <li><a href="#supplier-terms"><span class="legal-toc-icon">🤝</span> Supplier Terms</a></li>
+          <li><a href="#community"><span class="legal-toc-icon">👥</span> Community</a></li>
+          <li><a href="#accessibility"><span class="legal-toc-icon">♿</span> Accessibility</a></li>
+          <li><a href="#security"><span class="legal-toc-icon">🔐</span> Security</a></li>
+          <li><a href="#contact"><span class="legal-toc-icon">📧</span> Contact</a></li>
+        </ul>
+      </aside>
+
+      <!-- Main Content -->
+      <div>
+        
+        <!-- Overview Section -->
+        <section id="overview" class="legal-section">
+          <h2>📋 Overview</h2>
+          <p>Welcome to the EventFlow Legal Hub. This page contains all our legal documentation in one convenient location.</p>
+          <p><strong>EventFlow Limited</strong> is a UK-registered company providing event planning services. We are committed to:</p>
+          <ul>
+            <li>Transparency in how we operate</li>
+            <li>Protecting your personal data under UK GDPR</li>
+            <li>Providing clear terms and policies</li>
+            <li>Maintaining a safe and respectful community</li>
+          </ul>
+          <p><strong>Key Links:</strong></p>
+          <ul>
+            <li><a href="/terms.html">Full Terms of Use</a> - Complete terms document</li>
+            <li><a href="/privacy.html">Full Privacy Notice</a> - Detailed privacy policy</li>
+            <li><a href="/data-rights.html">Data Subject Rights</a> - Exercise your GDPR rights</li>
+          </ul>
+        </section>
+
+        <!-- Terms Summary -->
+        <section id="terms" class="legal-section">
+          <h2>📋 Terms of Use Summary</h2>
+          <p>Our Terms of Use govern your use of EventFlow services. Key points include:</p>
+          <ul>
+            <li><strong>Acceptance:</strong> By using our services, you agree to these terms</li>
+            <li><strong>Account Security:</strong> You are responsible for protecting your password</li>
+            <li><strong>User Conduct:</strong> You must not misuse the platform or violate others' rights</li>
+            <li><strong>Intellectual Property:</strong> Content on EventFlow is protected by copyright</li>
+            <li><strong>Liability:</strong> Our liability is limited as set out in the full terms</li>
+            <li><strong>Governing Law:</strong> These terms are governed by English law</li>
+          </ul>
+          <p><a href="/terms.html" class="cta">Read Full Terms of Use →</a></p>
+        </section>
+
+        <!-- Privacy Summary -->
+        <section id="privacy" class="legal-section">
+          <h2>🔒 Privacy Notice Summary</h2>
+          <p>We take your privacy seriously. Our Privacy Notice explains:</p>
+          <ul>
+            <li><strong>What we collect:</strong> Account data, event plans, messages, photos</li>
+            <li><strong>Why we collect it:</strong> To provide services, security, and communication</li>
+            <li><strong>How we protect it:</strong> Encryption, secure storage, access controls</li>
+            <li><strong>Your rights:</strong> Access, rectification, erasure, portability, objection</li>
+            <li><strong>Retention:</strong> We keep data only as long as necessary</li>
+            <li><strong>Contact:</strong> admin@event-flow.co.uk for data protection queries</li>
+          </ul>
+          <p><a href="/privacy.html" class="cta">Read Full Privacy Notice →</a></p>
+        </section>
+
+        <!-- Cookie Policy -->
+        <section id="cookies" class="legal-section">
+          <h2>🍪 Cookie Policy</h2>
+          <p>EventFlow uses cookies to provide and improve our services.</p>
+          
+          <h3 class="h5">Essential Cookies (Always Active)</h3>
+          <ul>
+            <li><strong>Authentication Token:</strong> Keeps you logged in (7 days)</li>
+            <li><strong>Cookie Consent:</strong> Remembers your cookie preferences (1 year)</li>
+          </ul>
+          
+          <h3 class="h5">Optional Cookies (With Your Consent)</h3>
+          <ul>
+            <li><strong>Theme Preference:</strong> Remembers dark/light mode</li>
+            <li><strong>UI Settings:</strong> Saves interface preferences</li>
+          </ul>
+          
+          <h3 class="h5">Managing Cookies</h3>
+          <p>You control optional cookies through our consent banner that appears on your first visit. You can:</p>
+          <ul>
+            <li><strong>Accept:</strong> Allow all cookies</li>
+            <li><strong>Reject:</strong> Only essential cookies</li>
+            <li><strong>Browser Settings:</strong> Control cookies via your browser</li>
+          </ul>
+          
+          <p><strong>Third-Party Cookies:</strong> We do not use third-party tracking or advertising cookies.</p>
+          
+          <p class="small" style="color:#667085; margin-top: 16px;"><em>This policy complies with UK PECR 2003 and UK GDPR.</em></p>
+        </section>
+
+        <!-- GDPR & Data Rights -->
+        <section id="gdpr" class="legal-section">
+          <h2>🛡️ GDPR Compliance & Your Rights</h2>
+          <p>Under UK GDPR, you have the following rights regarding your personal data:</p>
+          
+          <div class="card" style="background: #F9FAFB; border: 1px solid #E7EAF0; margin: 16px 0;">
+            <h3 class="h5">Right to Access</h3>
+            <p>Request a copy of all your personal data we hold.</p>
+            <p><strong>How:</strong> Email admin@event-flow.co.uk with "Data Access Request"</p>
+          </div>
+          
+          <div class="card" style="background: #F9FAFB; border: 1px solid #E7EAF0; margin: 16px 0;">
+            <h3 class="h5">Right to Rectification</h3>
+            <p>Correct inaccurate or incomplete information.</p>
+            <p><strong>How:</strong> Update in <a href="/settings.html">Settings</a> or contact us</p>
+          </div>
+          
+          <div class="card" style="background: #F9FAFB; border: 1px solid #E7EAF0; margin: 16px 0;">
+            <h3 class="h5">Right to Erasure</h3>
+            <p>Request deletion of your personal data ("right to be forgotten").</p>
+            <p><strong>How:</strong> Email admin@event-flow.co.uk with "Account Deletion Request"</p>
+          </div>
+          
+          <div class="card" style="background: #F9FAFB; border: 1px solid #E7EAF0; margin: 16px 0;">
+            <h3 class="h5">Right to Data Portability</h3>
+            <p>Receive your data in machine-readable format (JSON).</p>
+            <p><strong>How:</strong> Email admin@event-flow.co.uk with "Data Portability Request"</p>
+          </div>
+          
+          <div class="card" style="background: #F9FAFB; border: 1px solid #E7EAF0; margin: 16px 0;">
+            <h3 class="h5">Right to Object</h3>
+            <p>Object to certain processing, especially marketing.</p>
+            <p><strong>How:</strong> Unsubscribe from emails or update Settings</p>
+          </div>
+          
+          <p><strong>Response Time:</strong> We respond to all requests within 30 days.</p>
+          <p><a href="/data-rights.html" class="cta">Detailed GDPR Rights Guide →</a></p>
+        </section>
+
+        <!-- Acceptable Use Policy -->
+        <section id="acceptable-use" class="legal-section">
+          <h2>✓ Acceptable Use Policy</h2>
+          <p>To maintain a safe and respectful community, users must not:</p>
+          
+          <h3 class="h5">Prohibited Activities</h3>
+          <ul>
+            <li>Impersonate others or create fake accounts</li>
+            <li>Use the platform for illegal purposes</li>
+            <li>Harass, abuse, or threaten other users</li>
+            <li>Post spam, malware, or malicious content</li>
+            <li>Scrape or collect data without permission</li>
+            <li>Reverse engineer or hack the platform</li>
+            <li>Violate intellectual property rights</li>
+            <li>Discriminate based on protected characteristics</li>
+          </ul>
+          
+          <h3 class="h5">Content Guidelines</h3>
+          <ul>
+            <li>Be respectful and professional</li>
+            <li>Keep content relevant to events</li>
+            <li>Don't post offensive or inappropriate material</li>
+            <li>Respect others' privacy</li>
+            <li>Don't share false or misleading information</li>
+          </ul>
+          
+          <h3 class="h5">Enforcement</h3>
+          <p>Violations may result in:</p>
+          <ul>
+            <li>Content removal</li>
+            <li>Account warnings</li>
+            <li>Temporary suspension</li>
+            <li>Permanent account termination</li>
+            <li>Legal action in serious cases</li>
+          </ul>
+          
+          <p><strong>Report Violations:</strong> Email abuse@event-flow.co.uk</p>
+        </section>
+
+        <!-- Copyright Policy -->
+        <section id="copyright" class="legal-section">
+          <h2>© Copyright & Intellectual Property</h2>
+          
+          <h3 class="h5">Our Content</h3>
+          <p>All content on EventFlow (text, graphics, logos, designs) is owned by EventFlow Limited or our licensors and protected by:</p>
+          <ul>
+            <li>UK Copyright Law</li>
+            <li>Trademark Law</li>
+            <li>Design Rights</li>
+            <li>Database Rights</li>
+          </ul>
+          
+          <h3 class="h5">Your Content</h3>
+          <p>When you upload content (photos, reviews, messages), you:</p>
+          <ul>
+            <li>Retain ownership of your content</li>
+            <li>Grant us a license to display and use it on the platform</li>
+            <li>Confirm you have the right to upload it</li>
+            <li>Agree not to upload copyrighted material you don't own</li>
+          </ul>
+          
+          <h3 class="h5">Copyright Infringement</h3>
+          <p>If you believe content on EventFlow infringes your copyright:</p>
+          <ol>
+            <li>Email admin@event-flow.co.uk with "Copyright Claim"</li>
+            <li>Provide details of the copyrighted work</li>
+            <li>Identify the infringing content (URL)</li>
+            <li>Include your contact information</li>
+            <li>Confirm good faith belief of infringement</li>
+          </ol>
+          
+          <p>We will review and respond within 7-14 days.</p>
+        </section>
+
+        <!-- Supplier Terms -->
+        <section id="supplier-terms" class="legal-section">
+          <h2>🤝 Supplier-Specific Terms</h2>
+          <p>If you are a supplier listing services on EventFlow, additional terms apply:</p>
+          
+          <h3 class="h5">Listing Requirements</h3>
+          <ul>
+            <li>Provide accurate business information</li>
+            <li>Use real photos of your work</li>
+            <li>Keep pricing and availability up to date</li>
+            <li>Respond to inquiries promptly</li>
+            <li>Have valid business licenses and insurance</li>
+          </ul>
+          
+          <h3 class="h5">Supplier Responsibilities</h3>
+          <ul>
+            <li>Deliver services as described</li>
+            <li>Communicate professionally with customers</li>
+            <li>Honor quoted prices and terms</li>
+            <li>Comply with all applicable laws</li>
+            <li>Maintain professional liability insurance</li>
+          </ul>
+          
+          <h3 class="h5">Prohibited Practices</h3>
+          <ul>
+            <li>Posting fake reviews or ratings</li>
+            <li>Misrepresenting services or capabilities</li>
+            <li>Taking customers off-platform to avoid fees (if applicable)</li>
+            <li>Discriminating against customers</li>
+            <li>Using competitors' photos or content</li>
+          </ul>
+          
+          <h3 class="h5">Suspension & Removal</h3>
+          <p>Supplier listings may be removed for:</p>
+          <ul>
+            <li>Violations of these terms</li>
+            <li>Customer complaints</li>
+            <li>Inactive accounts (6+ months)</li>
+            <li>False information</li>
+          </ul>
+          
+          <p>See our full <a href="/terms.html">Terms of Use</a> for complete supplier terms.</p>
+        </section>
+
+        <!-- Community Guidelines -->
+        <section id="community" class="legal-section">
+          <h2>👥 Community Guidelines</h2>
+          <p>EventFlow is a community of event planners and suppliers. We expect everyone to:</p>
+          
+          <h3 class="h5">Be Respectful</h3>
+          <ul>
+            <li>Treat all users with courtesy and professionalism</li>
+            <li>Value diverse perspectives and experiences</li>
+            <li>Use appropriate language</li>
+            <li>Respect cultural differences</li>
+          </ul>
+          
+          <h3 class="h5">Be Honest</h3>
+          <ul>
+            <li>Provide accurate information in profiles and listings</li>
+            <li>Write genuine reviews based on real experiences</li>
+            <li>Be transparent about conflicts of interest</li>
+            <li>Don't mislead other users</li>
+          </ul>
+          
+          <h3 class="h5">Be Safe</h3>
+          <ul>
+            <li>Protect your personal information</li>
+            <li>Don't share sensitive data publicly</li>
+            <li>Report suspicious behavior</li>
+            <li>Use secure payment methods</li>
+          </ul>
+          
+          <h3 class="h5">Reviews & Ratings</h3>
+          <ul>
+            <li>Reviews must be based on genuine experiences</li>
+            <li>Be fair and constructive in criticism</li>
+            <li>Don't review competitors or write fake reviews</li>
+            <li>Focus on service quality, not personal attacks</li>
+          </ul>
+          
+          <p><strong>Report Issues:</strong> If you see behavior that violates these guidelines, email abuse@event-flow.co.uk</p>
+        </section>
+
+        <!-- Accessibility Statement -->
+        <section id="accessibility" class="legal-section">
+          <h2>♿ Accessibility Statement</h2>
+          <p>EventFlow is committed to ensuring digital accessibility for people with disabilities.</p>
+          
+          <h3 class="h5">Our Commitment</h3>
+          <p>We aim to conform to WCAG 2.1 Level AA standards. We strive to:</p>
+          <ul>
+            <li>Provide clear navigation and structure</li>
+            <li>Use semantic HTML markup</li>
+            <li>Ensure sufficient color contrast</li>
+            <li>Support keyboard navigation</li>
+            <li>Include alt text for images</li>
+            <li>Use ARIA labels where appropriate</li>
+          </ul>
+          
+          <h3 class="h5">Current Features</h3>
+          <ul>
+            <li>Responsive design for various screen sizes</li>
+            <li>Keyboard-accessible navigation</li>
+            <li>Screen reader compatible structure</li>
+            <li>Clear heading hierarchy</li>
+            <li>Focus indicators on interactive elements</li>
+          </ul>
+          
+          <h3 class="h5">Known Limitations</h3>
+          <p>We are actively working to improve:</p>
+          <ul>
+            <li>Some third-party content may not be fully accessible</li>
+            <li>User-uploaded images may lack alt text</li>
+            <li>Some dynamic features may need enhancement</li>
+          </ul>
+          
+          <h3 class="h5">Feedback</h3>
+          <p>If you encounter accessibility barriers, please let us know:</p>
+          <p><strong>Email:</strong> admin@event-flow.co.uk<br>
+          <strong>Subject:</strong> "Accessibility Feedback"</p>
+          
+          <p>We will respond within 7 days and work to address the issue.</p>
+        </section>
+
+        <!-- Security Policy -->
+        <section id="security" class="legal-section">
+          <h2>🔐 Security Policy</h2>
+          
+          <h3 class="h5">How We Protect Your Data</h3>
+          <ul>
+            <li><strong>Encryption:</strong> HTTPS/TLS for all data in transit</li>
+            <li><strong>Password Security:</strong> Bcrypt hashing with salt</li>
+            <li><strong>Authentication:</strong> JWT tokens with HTTP-only cookies</li>
+            <li><strong>Database Security:</strong> Encrypted at rest, access controls</li>
+            <li><strong>Rate Limiting:</strong> Protection against brute force attacks</li>
+            <li><strong>CSRF Protection:</strong> Tokens on all form submissions</li>
+          </ul>
+          
+          <h3 class="h5">Your Security Responsibilities</h3>
+          <ul>
+            <li>Use a strong, unique password</li>
+            <li>Don't share your login credentials</li>
+            <li>Log out on shared devices</li>
+            <li>Report suspicious activity immediately</li>
+            <li>Keep your contact information current</li>
+          </ul>
+          
+          <h3 class="h5">Reporting Security Issues</h3>
+          <p>If you discover a security vulnerability:</p>
+          <ol>
+            <li>Email admin@event-flow.co.uk with "Security Issue"</li>
+            <li>Describe the vulnerability in detail</li>
+            <li>Do not publicly disclose before we can address it</li>
+            <li>We will respond within 48 hours</li>
+          </ol>
+          
+          <h3 class="h5">Data Breach Response</h3>
+          <p>In the event of a data breach, we will:</p>
+          <ul>
+            <li>Contain and assess the breach immediately</li>
+            <li>Notify the ICO within 72 hours if required</li>
+            <li>Inform affected users without undue delay</li>
+            <li>Document the incident</li>
+            <li>Implement measures to prevent recurrence</li>
+          </ul>
+        </section>
+
+        <!-- Contact Section -->
+        <section id="contact" class="legal-section">
+          <h2>📧 Contact Information</h2>
+          
+          <div class="card" style="background: linear-gradient(135deg, #F9FAFB 0%, #F3F4F6 100%); border: 1px solid #E7EAF0;">
+            <h3 class="h5">EventFlow Limited</h3>
+            <p><strong>Company:</strong> EventFlow Limited (UK)<br>
+            <strong>Website:</strong> www.event-flow.co.uk</p>
+            
+            <h4 style="margin-top: 24px; margin-bottom: 8px;">General Inquiries</h4>
+            <p><strong>Email:</strong> <a href="mailto:support@event-flow.co.uk">support@event-flow.co.uk</a></p>
+            
+            <h4 style="margin-top: 24px; margin-bottom: 8px;">Privacy & Data Protection</h4>
+            <p><strong>Email:</strong> <a href="mailto:admin@event-flow.co.uk">admin@event-flow.co.uk</a><br>
+            <strong>Data Protection Officer:</strong> admin@event-flow.co.uk</p>
+            
+            <h4 style="margin-top: 24px; margin-bottom: 8px;">Report Abuse or Violations</h4>
+            <p><strong>Email:</strong> <a href="mailto:abuse@event-flow.co.uk">abuse@event-flow.co.uk</a></p>
+            
+            <h4 style="margin-top: 24px; margin-bottom: 8px;">UK Supervisory Authority</h4>
+            <p>Information Commissioner's Office (ICO)<br>
+            Wycliffe House, Water Lane<br>
+            Wilmslow, Cheshire SK9 5AF<br>
+            <strong>Tel:</strong> 0303 123 1113<br>
+            <strong>Web:</strong> <a href="https://ico.org.uk" target="_blank" rel="noopener">ico.org.uk</a></p>
+          </div>
+          
+          <p style="margin-top: 24px;"><a href="/contact.html" class="cta">Contact Form →</a></p>
+        </section>
+
+      </div>
     </div>
+
+    <!-- Bottom Notice -->
+    <div class="card" style="margin-top: 48px; background: #F9FAFB; text-align: center;">
+      <p><strong>Important:</strong> These legal documents are regularly updated to reflect changes in our services and applicable laws. We recommend reviewing them periodically.</p>
+      <p class="small" style="margin-top: 12px; color: #667085;">Last Updated: December 2024 | Effective Date: December 2024</p>
+    </div>
+
+  </div>
+</main>
+
+<footer class="footer" role="contentinfo">
+  <div class="container" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+    <div><strong>EventFlow</strong><br><span class="small">Event planning made simple.</span></div>
+    <div class="version">Version: v17.0.0</div>
+    <div class="small">
+      <a href="/blog.html">Blog</a> ·
+      <a href="/credits.html">Credits</a> ·
+      <a href="/contact.html">Contact</a> ·
+      <a href="/terms.html">Terms</a> ·
+      <a href="/privacy.html">Privacy</a>
+    </div>
+  </div>
+</footer>
+
+<script src="/assets/js/components/footer-nav.js" defer></script>
+<script src="/assets/js/cookie-consent.js" defer></script>
+</body>
+</html>
 
     <div class="legal-hub-grid">
       <a href="/terms.html" class="legal-card">
@@ -186,7 +631,7 @@
         <p>Our commitment to making EventFlow accessible to all users, including those with disabilities.</p>
       </a>
 
-      <a href="/data-request.html" class="legal-card">
+      <a href="/data-rights.html" class="legal-card">
         <div class="legal-card-icon">📄</div>
         <h3>Data Subject Rights</h3>
         <p>Exercise your rights to access, modify, delete, or export your personal data in accordance with data protection laws.</p>
@@ -204,8 +649,8 @@
       <p>If you have questions about any of our legal documents or policies, we're here to help:</p>
       <ul>
         <li><strong>General Inquiries:</strong> <a href="mailto:support@event-flow.co.uk">support@event-flow.co.uk</a></li>
-        <li><strong>Privacy Questions:</strong> <a href="mailto:privacy@event-flow.co.uk">privacy@event-flow.co.uk</a></li>
-        <li><strong>Legal Matters:</strong> <a href="mailto:legal@event-flow.co.uk">legal@event-flow.co.uk</a></li>
+        <li><strong>Privacy &amp; Data Protection:</strong> <a href="mailto:admin@event-flow.co.uk">admin@event-flow.co.uk</a></li>
+        <li><strong>Legal Matters:</strong> <a href="mailto:admin@event-flow.co.uk">admin@event-flow.co.uk</a></li>
         <li><strong>Report Abuse:</strong> <a href="mailto:abuse@event-flow.co.uk">abuse@event-flow.co.uk</a></li>
       </ul>
       <p style="margin-top: 16px;"><a href="/contact.html" class="cta">Contact Us</a></p>
@@ -234,5 +679,6 @@
 </footer>
 
 <script src="/assets/js/components/footer-nav.js" defer></script>
+<script src="/assets/js/cookie-consent.js" defer></script>
 </body>
 </html>
