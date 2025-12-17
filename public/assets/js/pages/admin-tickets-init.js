@@ -16,17 +16,19 @@ async function loadTickets() {
   } catch (error) {
     console.error('Error loading tickets:', error);
     const container = document.getElementById('ticketsContainer');
-    container.innerHTML = '<p class="small" style="color:#ef4444;">Failed to load tickets. Make sure you are signed in as an admin.</p>';
+    container.innerHTML =
+      '<p class="small" style="color:#ef4444;">Failed to load tickets. Make sure you are signed in as an admin.</p>';
   }
 }
 
 function renderTickets() {
   const container = document.getElementById('ticketsContainer');
-  if (!container) return;
+  if (!container) {
+    return;
+  }
 
-  const filtered = currentFilter === 'all' 
-    ? allTickets 
-    : allTickets.filter(t => t.status === currentFilter);
+  const filtered =
+    currentFilter === 'all' ? allTickets : allTickets.filter(t => t.status === currentFilter);
 
   if (!filtered.length) {
     container.innerHTML = '<p class="small">No tickets found.</p>';
@@ -34,13 +36,13 @@ function renderTickets() {
   }
 
   let html = '<div class="ticket-list">';
-  
+
   filtered.forEach(ticket => {
     const statusClass = ticketingSystem.getStatusClass(ticket.status);
     const priorityClass = ticketingSystem.getPriorityClass(ticket.priority);
     const createdAt = ticketingSystem.formatTimestamp(ticket.createdAt);
     const responseCount = ticket.responses ? ticket.responses.length : 0;
-    
+
     html += `
       <div class="ticket-item" style="border:1px solid #e4e4e7;padding:1rem;margin-bottom:0.5rem;border-radius:4px;cursor:pointer;" data-ticket-id="${ticket.id}">
         <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:0.5rem;">
@@ -65,7 +67,7 @@ function renderTickets() {
       </div>
     `;
   });
-  
+
   html += '</div>';
   container.innerHTML = html;
 
@@ -83,7 +85,7 @@ function viewTicket(ticketId) {
   modal.className = 'modal-overlay';
   modal.style.opacity = '1';
   modal.style.visibility = 'visible';
-  
+
   modal.innerHTML = `
     <div class="modal" style="max-width:700px;">
       <div class="modal-header">
@@ -99,18 +101,22 @@ function viewTicket(ticketId) {
   document.body.appendChild(modal);
 
   const closeModal = () => {
-    if (ticketUnsubscribe) ticketUnsubscribe();
+    if (ticketUnsubscribe) {
+      ticketUnsubscribe();
+    }
     modal.remove();
   };
 
   modal.querySelector('.modal-close').addEventListener('click', closeModal);
-  modal.addEventListener('click', (e) => {
-    if (e.target === modal) closeModal();
+  modal.addEventListener('click', e => {
+    if (e.target === modal) {
+      closeModal();
+    }
   });
 
   let ticketUnsubscribe = null;
 
-  const renderTicketDetails = (ticket) => {
+  const renderTicketDetails = ticket => {
     if (!ticket) {
       document.getElementById('ticketDetails').innerHTML = '<p class="small">Ticket not found.</p>';
       return;
@@ -146,12 +152,13 @@ function viewTicket(ticketId) {
 
     if (ticket.responses && ticket.responses.length > 0) {
       html += '<h4>Responses</h4>';
-      html += '<div class="responses-list" style="max-height:300px;overflow-y:auto;margin-bottom:1rem;">';
-      
+      html +=
+        '<div class="responses-list" style="max-height:300px;overflow-y:auto;margin-bottom:1rem;">';
+
       ticket.responses.forEach(response => {
         const respTimestamp = ticketingSystem.formatTimestamp(response.timestamp);
         const isAdmin = response.responderType === 'admin';
-        
+
         html += `
           <div style="margin-bottom:1rem;padding:1rem;background:${isAdmin ? '#eff6ff' : '#fafafa'};border-radius:4px;border-left:3px solid ${isAdmin ? '#3b82f6' : '#9ca3af'};">
             <div style="display:flex;justify-content:space-between;margin-bottom:0.5rem;">
@@ -162,7 +169,7 @@ function viewTicket(ticketId) {
           </div>
         `;
       });
-      
+
       html += '</div>';
     }
 
@@ -182,7 +189,7 @@ function viewTicket(ticketId) {
     document.getElementById('ticketDetails').innerHTML = html;
 
     // Status change handler
-    document.getElementById('statusSelect').addEventListener('change', async (e) => {
+    document.getElementById('statusSelect').addEventListener('change', async e => {
       try {
         await ticketingSystem.updateStatus(ticketId, e.target.value);
         if (typeof Toast !== 'undefined') {
@@ -198,11 +205,13 @@ function viewTicket(ticketId) {
     });
 
     // Response form handler
-    document.getElementById('responseForm').addEventListener('submit', async (e) => {
+    document.getElementById('responseForm').addEventListener('submit', async e => {
       e.preventDefault();
-      
+
       const messageText = document.getElementById('responseMessage').value.trim();
-      if (!messageText) return;
+      if (!messageText) {
+        return;
+      }
 
       try {
         const submitBtn = e.target.querySelector('button[type="submit"]');
@@ -217,11 +226,11 @@ function viewTicket(ticketId) {
           responderId: user.id,
           responderType: 'admin',
           responderName: user.name || user.email || 'Admin',
-          message: messageText
+          message: messageText,
         });
 
         document.getElementById('responseMessage').value = '';
-        
+
         if (typeof Toast !== 'undefined') {
           Toast.success('Response sent');
         }
@@ -233,7 +242,7 @@ function viewTicket(ticketId) {
         if (typeof Toast !== 'undefined') {
           Toast.error('Failed to send response');
         }
-        
+
         const submitBtn = e.target.querySelector('button[type="submit"]');
         submitBtn.disabled = false;
         submitBtn.textContent = 'Send Response';
@@ -255,12 +264,12 @@ document.querySelectorAll('.filter-btn').forEach(btn => {
 });
 
 // Back to dashboard button
-document.getElementById('backToDashboard').addEventListener('click', function() {
+document.getElementById('backToDashboard').addEventListener('click', () => {
   location.href = '/admin.html';
 });
 
 // Initialize
-ticketingSystem.listenToAllTickets((tickets) => {
+ticketingSystem.listenToAllTickets(tickets => {
   allTickets = tickets;
   renderTickets();
 });

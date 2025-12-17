@@ -1,9 +1,28 @@
 // Standalone admin users loader (doesn't depend on app.js functions)
-(function() {
+(function () {
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function formatDate(dateStr) {
+    if (!dateStr) {
+      return 'Never';
+    }
+    try {
+      return new Date(dateStr).toLocaleString();
+    } catch (e) {
+      return dateStr;
+    }
+  }
+
   async function loadAdminUsers() {
-    var summary = document.getElementById('user-summary');
-    var tbody = document.querySelector('table.table tbody');
-    if(!summary || !tbody) return;
+    const summary = document.getElementById('user-summary');
+    const tbody = document.querySelector('table.table tbody');
+    if (!summary || !tbody) {
+      return;
+    }
 
     summary.textContent = 'Loading users…';
 
@@ -16,7 +35,7 @@
       const items = (data && data.items) || [];
 
       summary.textContent = items.length
-        ? (items.length + ' user' + (items.length === 1 ? '' : 's') + ' registered.')
+        ? `${items.length} user${items.length === 1 ? '' : 's'} registered.`
         : 'No users found.';
 
       if (!items.length) {
@@ -24,36 +43,26 @@
         return;
       }
 
-      function escapeHtml(str) {
-        const div = document.createElement('div');
-        div.textContent = str;
-        return div.innerHTML;
-      }
-
-      function formatDate(dateStr) {
-        if (!dateStr) return 'Never';
-        try {
-          return new Date(dateStr).toLocaleString();
-        } catch(e) {
-          return dateStr;
-        }
-      }
-
-      tbody.innerHTML = items.map(function(u){
-        return '<tr>'
-          + '<td>' + escapeHtml(u.name || '') + '</td>'
-          + '<td>' + escapeHtml(u.email || '') + '</td>'
-          + '<td>' + escapeHtml(u.role || '') + '</td>'
-          + '<td>' + (u.verified ? 'Yes' : 'No') + '</td>'
-          + '<td>' + (u.marketingOptIn ? 'Yes' : 'No') + '</td>'
-          + '<td>' + formatDate(u.createdAt) + '</td>'
-          + '<td>' + formatDate(u.lastLoginAt) + '</td>'
-          + '</tr>';
-      }).join('');
-    } catch(e) {
+      tbody.innerHTML = items
+        .map(u => {
+          return (
+            `<tr>` +
+            `<td>${escapeHtml(u.name || '')}</td>` +
+            `<td>${escapeHtml(u.email || '')}</td>` +
+            `<td>${escapeHtml(u.role || '')}</td>` +
+            `<td>${u.verified ? 'Yes' : 'No'}</td>` +
+            `<td>${u.marketingOptIn ? 'Yes' : 'No'}</td>` +
+            `<td>${formatDate(u.createdAt)}</td>` +
+            `<td>${formatDate(u.lastLoginAt)}</td>` +
+            `</tr>`
+          );
+        })
+        .join('');
+    } catch (e) {
       console.error('Admin users load failed', e);
       summary.textContent = 'Error loading users';
-      tbody.innerHTML = '<tr><td colspan="7" class="small" style="color:#ef4444;">Failed to load users. Please make sure you are logged in as an admin.</td></tr>';
+      tbody.innerHTML =
+        '<tr><td colspan="7" class="small" style="color:#ef4444;">Failed to load users. Please make sure you are logged in as an admin.</td></tr>';
     }
   }
 

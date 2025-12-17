@@ -1,4 +1,4 @@
-(async function() {
+(async function () {
   // Check admin authentication
   try {
     const response = await fetch('/api/auth/me');
@@ -18,7 +18,9 @@
 
   // HTML sanitization helper
   function escapeHtml(unsafe) {
-    if (!unsafe) return '';
+    if (!unsafe) {
+      return '';
+    }
     return String(unsafe)
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
@@ -35,23 +37,27 @@
         categories = data.items || [];
         renderCategories();
       } else {
-        categoryListElement.innerHTML = '<div class="card"><p class="small">Failed to load categories. Please try again.</p></div>';
+        categoryListElement.innerHTML =
+          '<div class="card"><p class="small">Failed to load categories. Please try again.</p></div>';
       }
     } catch (err) {
       console.error('Error loading categories:', err);
-      categoryListElement.innerHTML = '<div class="card"><p class="small">Failed to load categories. Please try again.</p></div>';
+      categoryListElement.innerHTML =
+        '<div class="card"><p class="small">Failed to load categories. Please try again.</p></div>';
     }
   }
 
   function renderCategories() {
     if (categories.length === 0) {
-      categoryListElement.innerHTML = '<div class="card"><p class="small">No categories found.</p></div>';
+      categoryListElement.innerHTML =
+        '<div class="card"><p class="small">No categories found.</p></div>';
       return;
     }
 
-    categoryListElement.innerHTML = categories.map(category => {
-      const hasImage = category.heroImage && category.heroImage.trim() !== '';
-      return `
+    categoryListElement.innerHTML = categories
+      .map(category => {
+        const hasImage = category.heroImage && category.heroImage.trim() !== '';
+        return `
         <div class="category-card" data-category-id="${escapeHtml(category.id)}">
           <div class="category-card-header">
             <h3 class="category-card-title">
@@ -60,9 +66,10 @@
             </h3>
           </div>
           <div class="category-card-body">
-            ${hasImage 
-              ? `<img src="${escapeHtml(category.heroImage)}" alt="${escapeHtml(category.name)}" class="category-preview" id="preview-${escapeHtml(category.id)}">`
-              : `<div class="category-placeholder" id="preview-${escapeHtml(category.id)}">No image set</div>`
+            ${
+              hasImage
+                ? `<img src="${escapeHtml(category.heroImage)}" alt="${escapeHtml(category.name)}" class="category-preview" id="preview-${escapeHtml(category.id)}">`
+                : `<div class="category-placeholder" id="preview-${escapeHtml(category.id)}">No image set</div>`
             }
             <div class="upload-area" id="drop-${escapeHtml(category.id)}">
               <div>📤 Click to upload or drag & drop</div>
@@ -75,7 +82,8 @@
           </div>
         </div>
       `;
-    }).join('');
+      })
+      .join('');
 
     // Attach event listeners after rendering
     categories.forEach(category => {
@@ -84,7 +92,7 @@
       const removeBtn = document.querySelector(`.remove-btn[data-category-id="${category.id}"]`);
 
       if (fileInput) {
-        fileInput.addEventListener('change', (e) => handleFileSelect(e, category.id));
+        fileInput.addEventListener('change', e => handleFileSelect(e, category.id));
       }
 
       if (dropArea) {
@@ -95,7 +103,7 @@
         });
         dropArea.addEventListener('dragover', handleDragOver);
         dropArea.addEventListener('dragleave', handleDragLeave);
-        dropArea.addEventListener('drop', (e) => handleDrop(e, category.id));
+        dropArea.addEventListener('drop', e => handleDrop(e, category.id));
       }
 
       if (removeBtn) {
@@ -159,9 +167,9 @@
       const response = await fetch(`/api/admin/categories/${categoryId}/hero-image`, {
         method: 'POST',
         headers: {
-          'X-CSRF-Token': csrfToken
+          'X-CSRF-Token': csrfToken,
         },
-        body: formData
+        body: formData,
       });
 
       if (response.ok) {
@@ -192,8 +200,8 @@
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
-          'X-CSRF-Token': csrfToken
-        }
+          'X-CSRF-Token': csrfToken,
+        },
       });
 
       if (response.ok) {
@@ -212,7 +220,9 @@
   function showSuccess(categoryId) {
     const successEl = document.getElementById(`success-${categoryId}`);
     const errorEl = document.getElementById(`error-${categoryId}`);
-    if (errorEl) errorEl.style.display = 'none';
+    if (errorEl) {
+      errorEl.style.display = 'none';
+    }
     if (successEl) {
       successEl.style.display = 'block';
       setTimeout(() => {
@@ -224,7 +234,9 @@
   function showError(categoryId, message) {
     const successEl = document.getElementById(`success-${categoryId}`);
     const errorEl = document.getElementById(`error-${categoryId}`);
-    if (successEl) successEl.style.display = 'none';
+    if (successEl) {
+      successEl.style.display = 'none';
+    }
     if (errorEl) {
       errorEl.textContent = message;
       errorEl.style.display = 'block';
@@ -239,8 +251,8 @@
 
   // Event listeners
   document.getElementById('refreshBtn').addEventListener('click', loadCategories);
-  
-  document.getElementById('backToDashboard').addEventListener('click', function() {
+
+  document.getElementById('backToDashboard').addEventListener('click', () => {
     location.href = '/admin.html';
   });
 })();
