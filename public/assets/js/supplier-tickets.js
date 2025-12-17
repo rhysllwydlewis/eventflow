@@ -287,7 +287,15 @@ async function init() {
   }
 
   // Listen to user's tickets with real-time updates
-  ticketingSystem.listenToUserTickets(user.id, 'supplier', renderTickets);
+  try {
+    ticketingSystem.listenToUserTickets(user.id, 'supplier', renderTickets);
+  } catch (error) {
+    console.error('Error listening to tickets:', error);
+    const container = document.getElementById('tickets-sup');
+    if (container) {
+      container.innerHTML = '<p class="small">Unable to load tickets. Please try refreshing the page.</p>';
+    }
+  }
 }
 
 // Run on load

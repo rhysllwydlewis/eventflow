@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Payment Analytics — Admin Panel — EventFlow</title>
+  <link rel="stylesheet" href="/assets/css/styles.css">
+  <link rel="stylesheet" href="/assets/css/eventflow-17.0.0.css">
+  <link rel="stylesheet" href="/assets/css/utilities.css">
+  <link rel="stylesheet" href="/assets/css/components.css">
+  <link rel="stylesheet" href="/assets/css/animations.css">
+  <link rel="stylesheet" href="/assets/css/admin.css">
+  <link rel="icon" href="/favicon.svg">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+  <script src="/assets/js/components.js" defer></script>
+  <style>
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    
+    .stat-card {
+      background: white;
+      padding: 1.5rem;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+    
+    .stat-card h3 {
+      margin: 0 0 0.5rem 0;
+      font-size: 0.875rem;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    
+    .stat-value {
+      font-size: 2rem;
+      font-weight: bold;
+      color: #1a1a1a;
+      margin: 0;
+    }
+    
+    .stat-change {
+      font-size: 0.875rem;
+      margin-top: 0.5rem;
+    }
+    
+    .stat-change.positive {
+      color: #10b981;
+    }
+    
+    .stat-change.negative {
+      color: #ef4444;
+    }
+    
+    .chart-container {
+      background: white;
+      padding: 1.5rem;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      margin-bottom: 2rem;
+    }
+    
+    .chart-container h3 {
+      margin: 0 0 1rem 0;
+      font-size: 1.125rem;
+      color: #1a1a1a;
+    }
+    
+    .payments-table {
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+    }
+    
+    .payments-table h3 {
+      margin: 0;
+      padding: 1.5rem;
+      font-size: 1.125rem;
+      color: #1a1a1a;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    
+    .table-wrapper {
+      overflow-x: auto;
+    }
+    
+    .payments-table table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    
+    .payments-table th,
+    .payments-table td {
+      padding: 0.75rem 1.5rem;
+      text-align: left;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    
+    .payments-table th {
+      background: #f9fafb;
+      font-weight: 600;
+      font-size: 0.875rem;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    
+    .payments-table tr:hover {
+      background: #f9fafb;
+    }
+    
+    .status-badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    
+    .status-badge.success {
+      background: #d1fae5;
+      color: #065f46;
+    }
+    
+    .status-badge.pending {
+      background: #fef3c7;
+      color: #92400e;
+    }
+    
+    .status-badge.failed {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+    
+    .filter-bar {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+    }
+    
+    .filter-bar select,
+    .filter-bar input {
+      padding: 0.5rem 1rem;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 0.875rem;
+    }
+    
+    .note-box {
+      background: #fef3c7;
+      border-left: 4px solid #f59e0b;
+      padding: 1rem 1.5rem;
+      margin-bottom: 2rem;
+      border-radius: 4px;
+    }
+    
+    .note-box h4 {
+      margin: 0 0 0.5rem 0;
+      color: #92400e;
+      font-size: 0.875rem;
+      font-weight: 600;
+    }
+    
+    .note-box p {
+      margin: 0;
+      color: #78350f;
+      font-size: 0.875rem;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <header class="header" role="banner">
+    <div class="container header-inner">
+      <a class="brand" href="/" aria-label="EventFlow home">
+        <span class="logo" aria-hidden="true"></span>
+        <span class="brand-text">EventFlow</span>
+      </a>
+      <div class="header-actions">
+        <nav class="nav nav-inline" aria-label="Admin navigation">
+          <a href="/admin.html" class="nav-link">Dashboard</a>
+          <a href="/admin-users.html" class="nav-link">Users</a>
+          <a href="/admin-tickets.html" class="nav-link">Tickets</a>
+          <a href="/admin-payments.html" class="nav-link active">Payments</a>
+        </nav>
+      </div>
+    </div>
+  </header>
+
+  <main class="section">
+    <div class="container">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <h1>Payment Analytics</h1>
+        <button id="adminLogoutBtn" style="padding: 0.5rem 1rem;">Sign out</button>
+      </div>
+
+      <div class="note-box">
+        <h4>⚠️ Note on Google Pay Analytics Limitations</h4>
+        <p>
+          Due to Google Pay's privacy and security requirements, detailed transaction analytics are limited.
+          We capture basic payment metadata (amount, plan, timestamp) but cannot access full payment details
+          or customer financial information. This dashboard shows aggregated data based on our subscription
+          records and Firebase payment logs.
+        </p>
+      </div>
+
+      <!-- Stats Overview -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <h3>Total Revenue (All Time)</h3>
+          <p class="stat-value" id="totalRevenue">£0.00</p>
+          <p class="stat-change" id="revenueChange">—</p>
+        </div>
+        
+        <div class="stat-card">
+          <h3>Active Subscriptions</h3>
+          <p class="stat-value" id="activeSubscriptions">0</p>
+          <p class="stat-change" id="subscriptionChange">—</p>
+        </div>
+        
+        <div class="stat-card">
+          <h3>Total Transactions</h3>
+          <p class="stat-value" id="totalTransactions">0</p>
+          <p class="stat-change" id="transactionChange">—</p>
+        </div>
+        
+        <div class="stat-card">
+          <h3>This Month's Revenue</h3>
+          <p class="stat-value" id="monthRevenue">£0.00</p>
+          <p class="stat-change" id="monthChange">—</p>
+        </div>
+      </div>
+
+      <!-- Charts -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+        <div class="chart-container">
+          <h3>Revenue Over Time</h3>
+          <canvas id="revenueChart"></canvas>
+        </div>
+        
+        <div class="chart-container">
+          <h3>Subscription Plans Distribution</h3>
+          <canvas id="plansChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Filter Bar -->
+      <div class="filter-bar">
+        <select id="statusFilter">
+          <option value="all">All Statuses</option>
+          <option value="success">Success</option>
+          <option value="pending">Pending</option>
+          <option value="failed">Failed</option>
+        </select>
+        
+        <select id="planFilter">
+          <option value="all">All Plans</option>
+          <option value="pro_monthly">Pro Monthly</option>
+          <option value="pro_plus_monthly">Pro+ Monthly</option>
+          <option value="pro_yearly">Pro Yearly</option>
+          <option value="pro_plus_yearly">Pro+ Yearly</option>
+        </select>
+        
+        <select id="dateFilter">
+          <option value="all">All Time</option>
+          <option value="7">Last 7 Days</option>
+          <option value="30">Last 30 Days</option>
+          <option value="90">Last 90 Days</option>
+        </select>
+        
+        <button id="refreshBtn" style="margin-left: auto;">Refresh Data</button>
+      </div>
+
+      <!-- Payments Table -->
+      <div class="payments-table">
+        <h3>Recent Transactions</h3>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Supplier</th>
+                <th>Plan</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Transaction ID</th>
+              </tr>
+            </thead>
+            <tbody id="paymentsTableBody">
+              <tr>
+                <td colspan="6" style="text-align: center; padding: 2rem; color: #6b7280;">
+                  Loading payment data...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer" role="contentinfo">
+    <div class="container" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+      <div><strong>EventFlow</strong><br><span class="small">Event planning made simple.</span></div>
+      <div class="version">Version: v17.0.0</div>
+      <div class="small">
+        <a href="/blog.html">Blog</a> ·
+        <a href="/credits.html">Credits</a> ·
+        <a href="/contact.html">Contact</a> ·
+        <a href="/legal.html">Legal Hub</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="/assets/js/components/footer-nav.js" defer></script>
+  <script type="module" src="/assets/js/pages/admin-payments-init.js"></script>
+</body>
+</html>
