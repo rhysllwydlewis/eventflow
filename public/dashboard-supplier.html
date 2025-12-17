@@ -238,8 +238,32 @@
           const tierName = subscription.tier === 'pro' ? 'Pro' : 'Pro+';
           const statusText = subscription.status === 'trial' ? 'Trial' : subscription.status.charAt(0).toUpperCase() + subscription.status.slice(1);
           
+          // Format renewal date
+          let renewalInfo = '';
+          if (subscription.endDate) {
+            const endDate = subscription.endDate.toDate();
+            const renewalDate = endDate.toLocaleDateString('en-GB', { 
+              year: 'numeric', 
+              month: 'long', 
+              day: 'numeric' 
+            });
+            
+            if (subscription.status === 'trial' && subscription.trialEndDate) {
+              const trialEnd = subscription.trialEndDate.toDate();
+              const daysLeft = Math.max(0, Math.ceil((trialEnd - new Date()) / (1000 * 60 * 60 * 24)));
+              renewalInfo = `<p class="small">Trial ends in ${daysLeft} days • Renews ${renewalDate}</p>`;
+            } else if (subscription.cancelledAt) {
+              renewalInfo = `<p class="small">Access until ${renewalDate} • Cancelled</p>`;
+            } else if (subscription.autoRenew) {
+              renewalInfo = `<p class="small">Next billing: ${renewalDate}</p>`;
+            } else {
+              renewalInfo = `<p class="small">Expires ${renewalDate} • Manual renewal needed</p>`;
+            }
+          }
+          
           container.innerHTML = `
             <p class="small"><strong>${tierName}</strong> - ${statusText}</p>
+            ${renewalInfo}
             <p class="small">Thank you for supporting EventFlow!</p>
             <a href="/supplier/subscription.html" class="cta" style="margin-top:0.5rem;display:inline-block;">Manage Subscription</a>
           `;

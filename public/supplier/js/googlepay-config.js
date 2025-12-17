@@ -32,12 +32,19 @@ function getBaseCardPaymentMethod() {
 
 /**
  * Get tokenization specification for Google Pay
- * Uses DIRECT tokenization for Firebase extension processing
+ * Uses DIRECT tokenization for testing/demo purposes
+ * 
+ * IMPORTANT: For production, replace with actual PSP configuration:
+ * - For Stripe: gateway: 'stripe', gatewayMerchantId: 'your_stripe_merchant_id'
+ * - For Braintree: gateway: 'braintree', gatewayMerchantId: 'your_braintree_merchant_id'
+ * - For Adyen: gateway: 'adyen', gatewayMerchantId: 'your_adyen_merchant_id'
  */
 function getTokenizationSpecification() {
   return {
     type: 'PAYMENT_GATEWAY',
     parameters: {
+      // Using 'example' gateway for TEST mode
+      // This allows testing without a real PSP integration
       gateway: 'example',
       gatewayMerchantId: 'exampleGatewayMerchantId',
     },
