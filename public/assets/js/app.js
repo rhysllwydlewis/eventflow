@@ -177,7 +177,19 @@ function supplierCard(s, user) {
     tags.unshift('<span class="badge">Featured</span>');
   }
 
-  const proBadge = s.isPro ? '<span class="pro-badge"><span>Pro supplier</span></span>' : '';
+  // Enhanced badge rendering for Pro and Pro+ tiers
+  let proBadge = '';
+  if (s.subscription && s.subscription.tier) {
+    const tier = s.subscription.tier;
+    if (tier === 'pro') {
+      proBadge = '<span class="supplier-badge pro">Pro</span>';
+    } else if (tier === 'pro_plus') {
+      proBadge = '<span class="supplier-badge pro_plus">Pro+</span>';
+    }
+  } else if (s.isPro || s.pro) {
+    // Legacy support
+    proBadge = '<span class="pro-badge"><span>Pro supplier</span></span>';
+  }
 
   return `<div class="card supplier-card">
     <img src="${img}" alt="${s.name} image"><div>
@@ -377,7 +389,19 @@ async function initSupplier() {
       )
       .join('') || `<div class="card"><p class="small">No approved packages yet.</p></div>`;
 
-  const proBadge = s.isPro ? '<span class="pro-badge"><span>Pro supplier</span></span>' : '';
+  // Enhanced badge rendering for Pro and Pro+ tiers
+  let proBadge = '';
+  if (s.subscription && s.subscription.tier) {
+    const tier = s.subscription.tier;
+    if (tier === 'pro') {
+      proBadge = '<span class="supplier-badge pro">Pro</span>';
+    } else if (tier === 'pro_plus') {
+      proBadge = '<span class="supplier-badge pro_plus">Pro+</span>';
+    }
+  } else if (s.isPro || s.pro) {
+    // Legacy support
+    proBadge = '<span class="pro-badge"><span>Pro supplier</span></span>';
+  }
 
   document.getElementById('supplier-container').innerHTML = `
     <div class="card"><div class="supplier-card">
@@ -1478,10 +1502,25 @@ async function initDashSupplier() {
     }
     supWrap.innerHTML = items
       .map(
-        s => `<div class="supplier-card card" style="margin-bottom:10px">
+        s => {
+          // Enhanced badge rendering for Pro and Pro+ tiers
+          let proBadge = '';
+          if (s.subscription && s.subscription.tier) {
+            const tier = s.subscription.tier;
+            if (tier === 'pro') {
+              proBadge = '<span class="supplier-badge pro">Pro</span>';
+            } else if (tier === 'pro_plus') {
+              proBadge = '<span class="supplier-badge pro_plus">Pro+</span>';
+            }
+          } else if (s.isPro || s.pro) {
+            // Legacy support
+            proBadge = '<span class="pro-badge"><span>Pro supplier</span></span>';
+          }
+          
+          return `<div class="supplier-card card" style="margin-bottom:10px">
       <img src="${(s.photos && s.photos[0]) || '/assets/images/collage-venue.svg'}">
       <div>
-        <h3>${s.name} ${s.isPro ? '<span class="pro-badge"><span>Pro supplier</span></span>' : ''} ${s.approved ? '<span class="badge">Approved</span>' : '<span class="badge" style="background:#FFF5E6;color:#8A5A00">Awaiting review</span>'}</h3>
+        <h3>${s.name} ${proBadge} ${s.approved ? '<span class="badge">Approved</span>' : '<span class="badge" style="background:#FFF5E6;color:#8A5A00">Awaiting review</span>'}</h3>
         <div class="small">${s.location || 'Location not set'} · <span class="badge">${s.category}</span> ${s.price_display ? `· ${s.price_display}` : ''}</div>
         <p class="small">${s.description_short || ''}</p>
         <div class="listing-health">
@@ -1491,7 +1530,8 @@ async function initDashSupplier() {
           <div class="listing-health-label">Listing health: calculating…</div>
         </div>
       </div>
-    </div>`
+    </div>`;
+        }
       )
       .join('');
 

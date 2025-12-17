@@ -1179,6 +1179,69 @@ button, .cta{
   display:inline-block;
 }
 
+/* Pro+ Badge - Premium Tier */
+.pro-plus-badge {
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  padding:3px 8px;
+  border-radius:999px;
+  background:linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  color:#fff;
+  font-size:0.75rem;
+  font-weight:600;
+  text-transform:uppercase;
+}
+.pro-plus-badge span{
+  display:inline-block;
+}
+
+/* Supplier badge for profile display */
+.supplier-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 15px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-left: 0.5rem;
+}
+
+.supplier-badge.pro {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.supplier-badge.pro::before {
+  content: '⭐';
+}
+
+.supplier-badge.pro_plus {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  color: white;
+}
+
+.supplier-badge.pro_plus::before {
+  content: '👑';
+}
+
+/* Pro Ribbon for dashboard */
+.pro-ribbon {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 0.75rem;
+  text-align: center;
+  font-weight: 600;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+}
+
+.pro-ribbon.pro_plus {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+
 /* Home Page Enhancements - v17.1.0 */
 
 /* Top categories grid next to hero */
