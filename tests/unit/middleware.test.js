@@ -44,6 +44,21 @@ describe('Sanitization Middleware', () => {
       expect(next).toHaveBeenCalled();
     });
 
+    it('should remove null bytes from params', () => {
+      const req = {
+        body: {},
+        query: {},
+        params: { id: 'test\0id' },
+      };
+      const res = {};
+      const next = jest.fn();
+
+      inputValidationMiddleware(req, res, next);
+
+      expect(req.params.id).toBe('testid');
+      expect(next).toHaveBeenCalled();
+    });
+
     it('should handle nested objects', () => {
       const req = {
         body: {
@@ -62,6 +77,72 @@ describe('Sanitization Middleware', () => {
 
       expect(req.body.user.name).toBe('testname');
       expect(req.body.user.address.city).toBe('testcity');
+      expect(next).toHaveBeenCalled();
+    });
+
+    it('should handle arrays with null bytes', () => {
+      const req = {
+        body: {
+          tags: ['test\0tag1', 'test\0tag2'],
+        },
+        query: {},
+        params: {},
+      };
+      const res = {};
+      const next = jest.fn();
+
+      inputValidationMiddleware(req, res, next);
+
+      expect(req.body.tags[0]).toBe('testtag1');
+      expect(req.body.tags[1]).toBe('testtag2');
+      expect(next).toHaveBeenCalled();
+    });
+
+    it('should handle missing body, query, or params', () => {
+      const req = {};
+      const res = {};
+      const next = jest.fn();
+
+      expect(() => {
+        inputValidationMiddleware(req, res, next);
+      }).not.toThrow();
+
+      expect(next).toHaveBeenCalled();
+    });
+
+    it('should preserve non-string values', () => {
+      const req = {
+        body: {
+          count: 42,
+          active: true,
+          items: null,
+        },
+        query: {},
+        params: {},
+      };
+      const res = {};
+      const next = jest.fn();
+
+      inputValidationMiddleware(req, res, next);
+
+      expect(req.body.count).toBe(42);
+      expect(req.body.active).toBe(true);
+      expect(req.body.items).toBeNull();
+      expect(next).toHaveBeenCalled();
+    });
+
+    it('should handle multiple null bytes in single string', () => {
+      const req = {
+        body: { text: 'test\0\0\0string' },
+        query: {},
+        params: {},
+      };
+      const res = {};
+      const next = jest.fn();
+
+      inputValidationMiddleware(req, res, next);
+
+      expect(req.body.text).toBe('teststring');
       expect(next).toHaveBeenCalled();
     });
   });
