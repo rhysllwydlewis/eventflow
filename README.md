@@ -191,6 +191,7 @@ See [DOCKER_GUIDE.md](DOCKER_GUIDE.md) for details.
 
 - Node.js & Express.js
 - MongoDB with Mongoose schemas
+- Firebase (Authentication, Firestore, Storage, Analytics)
 - JWT authentication
 - Multer (file uploads)
 - Sharp (image processing)
@@ -323,30 +324,137 @@ Get your real connection string: **[MongoDB Setup Guide](MONGODB_SETUP_SIMPLE.md
 
 See [.env.example](.env.example) for all options.
 
+## 🔥 Firebase Setup
+
+EventFlow includes Firebase integration for authentication, real-time database (Firestore), cloud storage, and analytics. Firebase is already configured and ready to use.
+
+### Quick Start
+
+1. **Firebase is pre-configured** with the EventFlow project:
+   - Project ID: `eventflow-ffb12`
+   - Already initialized in the codebase
+   - Configuration files are ready to use
+
+2. **Two Configuration Files Available:**
+   - **For npm/build tools (Vite, Webpack, etc.):**
+
+     ```javascript
+     // Use npm package imports
+     import { auth, db } from './src/config/firebase.js';
+     // Or alternative path:
+     import { auth, db } from './src/firebase.js';
+     ```
+
+   - **For browser (no build step):**
+     ```javascript
+     // Uses CDN imports (already in use)
+     import { auth, db } from '/assets/js/firebase-config.js';
+     ```
+
+3. **Available Services:**
+   - **Authentication** (`auth`) - User sign-in/sign-up with email/password
+   - **Firestore** (`db`) - Real-time NoSQL database
+   - **Storage** - File and image uploads (configured in `firebase-config.js`)
+   - **Analytics** (optional) - User engagement tracking
+
+### Usage Examples
+
+**Authentication:**
+
+```javascript
+import { auth } from './src/config/firebase.js';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+
+// Sign in user
+const userCredential = await signInWithEmailAndPassword(auth, email, password);
+console.log('User:', userCredential.user);
+```
+
+**Firestore Database:**
+
+```javascript
+import { db } from './src/config/firebase.js';
+import { collection, addDoc, getDocs } from 'firebase/firestore';
+
+// Add a document
+const docRef = await addDoc(collection(db, 'events'), {
+  title: 'Wedding',
+  date: '2024-06-15',
+  location: 'London',
+});
+
+// Get all documents
+const querySnapshot = await getDocs(collection(db, 'events'));
+querySnapshot.forEach(doc => {
+  console.log(doc.id, '=>', doc.data());
+});
+```
+
+### Environment Variables (Optional)
+
+While Firebase is pre-configured, you can optionally override settings using environment variables:
+
+```env
+FIREBASE_API_KEY=AIzaSyAbFoGEvaAQcAvjL716cPSs1KDMkriahqc
+FIREBASE_AUTH_DOMAIN=eventflow-ffb12.firebaseapp.com
+FIREBASE_PROJECT_ID=eventflow-ffb12
+FIREBASE_STORAGE_BUCKET=eventflow-ffb12.firebasestorage.app
+FIREBASE_MESSAGING_SENDER_ID=253829522456
+FIREBASE_APP_ID=1:253829522456:web:3fae1bcec63932321bcf6d
+FIREBASE_MEASUREMENT_ID=G-JRT11771YD
+```
+
+### Security Notes
+
+- **API keys are safe to expose** - Firebase API keys are public identifiers
+- Security is enforced through **Firestore Security Rules** and **Storage Rules**
+- See `firestore.rules` and `storage.rules` for access control configuration
+- Never expose Firebase Admin SDK credentials (service account keys) in client code
+
+### For Backend (Node.js)
+
+Use Firebase Admin SDK for server-side operations:
+
+```javascript
+const { getFirestore } = require('./firebase-admin.js');
+const db = getFirestore();
+
+// Server-side database operations
+const snapshot = await db.collection('events').get();
+```
+
+See `firebase-admin.js` for backend Firebase configuration.
+
 ## 📁 Project Structure
 
 ```
 eventflow/
-├── middleware/          # Reusable middleware functions
-│   ├── auth.js         # Authentication & authorization
-│   ├── validation.js   # Input validation helpers
-│   └── rateLimit.js    # Rate limiting configuration
-├── routes/             # Modular route handlers
-│   ├── auth.js         # Authentication routes
-│   └── admin.js        # Admin-only routes
-├── models/             # Database models and schemas
-├── public/             # Frontend assets
+├── src/                # Source modules (npm imports)
+│   ├── config/        # Configuration files
+│   │   └── firebase.js # Firebase config (npm package)
+│   └── firebase.js    # Firebase re-export (convenience)
+├── middleware/         # Reusable middleware functions
+│   ├── auth.js        # Authentication & authorization
+│   ├── validation.js  # Input validation helpers
+│   └── rateLimit.js   # Rate limiting configuration
+├── routes/            # Modular route handlers
+│   ├── auth.js        # Authentication routes
+│   └── admin.js       # Admin-only routes
+├── models/            # Database models and schemas
+├── public/            # Frontend assets
 │   ├── assets/
-│   │   ├── css/       # Stylesheets
-│   │   └── js/        # JavaScript modules
-│   └── *.html         # Page templates
-├── data/              # JSON data storage (development)
-├── photo-upload.js    # Photo upload utilities
-├── reviews.js         # Reviews system module
-├── search.js          # Search & discovery module
+│   │   ├── css/      # Stylesheets
+│   │   └── js/       # JavaScript modules
+│   │       └── firebase-config.js # Firebase config (CDN)
+│   └── *.html        # Page templates
+├── data/             # JSON data storage (development)
+├── firebase-admin.js # Firebase Admin SDK (backend)
+├── photo-upload.js   # Photo upload utilities
+├── reviews.js        # Reviews system module
+├── search.js         # Search & discovery module
 ├── websocket-server.js # Real-time WebSocket server
-├── server.js          # Main application server
-└── package.json       # Dependencies and scripts
+├── server.js         # Main application server
+└── package.json      # Dependencies and scripts
 ```
 
 ## 🗄️ Database Schema
