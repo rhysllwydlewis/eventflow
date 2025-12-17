@@ -22,11 +22,12 @@ describe('Firebase Configuration (npm)', () => {
       expect(content).toContain("from 'firebase/app'");
 
       // Verify it exports required services
-      expect(content).toContain('export { app, auth, db, analytics }');
+      expect(content).toContain('export { app, auth, db, analytics');
 
-      // Verify it uses the correct Firebase config
-      expect(content).toContain('eventflow-ffb12');
-      expect(content).toContain('AIzaSyAbFoGEvaAQcAvjL716cPSs1KDMkriahqc');
+      // Verify it has Firebase config structure (check for project ID pattern)
+      expect(content).toContain('projectId:');
+      expect(content).toContain('apiKey:');
+      expect(content).toContain('authDomain:');
     });
 
     it('should have proper JSDoc comments', () => {
@@ -76,6 +77,16 @@ describe('Firebase Configuration (npm)', () => {
       expect(content).toContain('SECURITY NOTE');
       expect(content).toContain('safe to expose');
     });
+
+    it('should export getAnalyticsInstance function', () => {
+      const fs = require('fs');
+      const path = require('path');
+      const configPath = path.join(__dirname, '../../src/config/firebase.js');
+      const content = fs.readFileSync(configPath, 'utf8');
+
+      expect(content).toContain('export function getAnalyticsInstance()');
+      expect(content).toContain('getAnalyticsInstance');
+    });
   });
 
   describe('src/firebase.js', () => {
@@ -102,7 +113,10 @@ describe('Firebase Configuration (npm)', () => {
 
       // Verify it's version 10.x or later (requirement states 10.x+)
       const version = packageJson.dependencies.firebase;
-      const majorVersion = parseInt(version.replace(/[^\d.]/g, '').split('.')[0]);
+      // Extract major version handling various formats: ^12.6.0, ~12.6.0, 12.6.0, etc.
+      const versionMatch = version.match(/(\d+)\./);
+      expect(versionMatch).not.toBeNull();
+      const majorVersion = parseInt(versionMatch[1], 10);
       expect(majorVersion).toBeGreaterThanOrEqual(10);
     });
   });

@@ -109,22 +109,49 @@ const db = getFirestore(app);
  * Note: Analytics initialization is async and may not be supported in all environments
  * (e.g., server-side rendering, certain browsers with privacy settings).
  *
+ * Use getAnalyticsInstance() to get the analytics object after initialization.
+ *
  * @type {Analytics | null}
  */
 let analytics = null;
+let analyticsPromise = null;
 
 // Initialize analytics only in browser environments where it's supported
 if (typeof window !== 'undefined') {
-  isSupported()
+  analyticsPromise = isSupported()
     .then(supported => {
       if (supported) {
         analytics = getAnalytics(app);
         console.log('Firebase Analytics initialized');
+        return analytics;
       }
+      return null;
     })
     .catch(error => {
       console.warn('Firebase Analytics not supported:', error.message);
+      return null;
     });
+}
+
+/**
+ * Get Analytics instance (async)
+ *
+ * Returns a promise that resolves to the Analytics instance once initialized.
+ * Returns null if analytics is not supported or initialization failed.
+ *
+ * Usage:
+ * ```javascript
+ * import { getAnalyticsInstance } from './firebase';
+ * const analytics = await getAnalyticsInstance();
+ * if (analytics) {
+ *   logEvent(analytics, 'page_view');
+ * }
+ * ```
+ *
+ * @returns {Promise<Analytics | null>}
+ */
+export function getAnalyticsInstance() {
+  return analyticsPromise || Promise.resolve(null);
 }
 
 /**
@@ -135,6 +162,7 @@ if (typeof window !== 'undefined') {
  * - auth: Authentication service
  * - db: Firestore database service
  * - analytics: Analytics service (may be null if not supported)
+ * - getAnalyticsInstance: Function to get analytics after async initialization
  */
 export { app, auth, db, analytics };
 
@@ -151,6 +179,7 @@ export default {
   auth,
   db,
   analytics,
+  getAnalyticsInstance,
 };
 
 // Log successful initialization (useful for debugging)
