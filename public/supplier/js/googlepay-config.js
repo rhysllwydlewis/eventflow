@@ -48,13 +48,9 @@ function getTokenizationSpecification() {
  * Get card payment method with tokenization
  */
 function getCardPaymentMethod() {
-  const cardPaymentMethod = Object.assign(
-    {},
-    getBaseCardPaymentMethod(),
-    {
-      tokenizationSpecification: getTokenizationSpecification(),
-    }
-  );
+  const cardPaymentMethod = Object.assign({}, getBaseCardPaymentMethod(), {
+    tokenizationSpecification: getTokenizationSpecification(),
+  });
   return cardPaymentMethod;
 }
 
@@ -90,7 +86,12 @@ function getGooglePaymentDataRequest(amount, planId, planName) {
  */
 async function initializeGooglePay() {
   // Check if Google Pay API is available
-  if (typeof window === 'undefined' || !window.google || !window.google.payments || !window.google.payments.api) {
+  if (
+    typeof window === 'undefined' ||
+    !window.google ||
+    !window.google.payments ||
+    !window.google.payments.api
+  ) {
     console.warn('Google Pay API not available');
     return null;
   }
@@ -172,7 +173,7 @@ async function processGooglePayPayment(paymentsClient, amount, planId, planName)
     };
   } catch (error) {
     console.error('Error processing Google Pay payment:', error);
-    
+
     // Handle user cancellation gracefully
     if (error.statusCode === 'CANCELED') {
       return {
@@ -199,7 +200,8 @@ async function processGooglePayPayment(paymentsClient, amount, planId, planName)
  */
 async function writePaymentToFirestore(paymentData, amount, planId) {
   // Import Firebase from the config
-  const { db, auth, collection, addDoc, serverTimestamp } = await import('../../assets/js/firebase-config.js');
+  const { db, auth, collection, addDoc, serverTimestamp } =
+    await import('../../assets/js/firebase-config.js');
 
   const user = auth.currentUser;
   if (!user) {
@@ -231,7 +233,7 @@ async function writePaymentToFirestore(paymentData, amount, planId) {
     paymentToken: parsedToken,
     status: 'pending',
     createdAt: serverTimestamp(),
-    
+
     // Additional metadata for subscription processing
     userId: user.uid,
     supplierId: supplierId,
@@ -258,7 +260,12 @@ function createGooglePayButton(container, onClick) {
   }
 
   // Check if Google Pay API is available
-  if (typeof window === 'undefined' || !window.google || !window.google.payments || !window.google.payments.api) {
+  if (
+    typeof window === 'undefined' ||
+    !window.google ||
+    !window.google.payments ||
+    !window.google.payments.api
+  ) {
     console.warn('Google Pay API not available - button will not render');
     return null;
   }
@@ -288,6 +295,7 @@ function createGooglePayButton(container, onClick) {
   container.appendChild(button);
 
   return button;
+}
 
 export {
   GOOGLE_PAY_CONFIG,
@@ -297,4 +305,3 @@ export {
   createGooglePayButton,
   getGooglePaymentDataRequest,
 };
-
