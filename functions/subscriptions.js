@@ -21,6 +21,12 @@ const APP_BASE_URL = process.env.APP_BASE_URL || 'https://eventflow-ffb12.web.ap
  * Send subscription email notification
  * This is a lightweight implementation that logs emails when not configured
  * In production, integrate with SendGrid, Mailgun, or Firebase Email Extension
+ * 
+ * @param {string} to - Recipient email address
+ * @param {string} subject - Email subject line
+ * @param {string} templateType - Template name (e.g., 'subscription-activated')
+ * @param {Object} templateData - Data to populate template variables
+ * @returns {Promise<Object>} Result object with success status and message
  */
 async function sendSubscriptionEmail(to, subject, templateType, templateData) {
   if (!SEND_EMAILS) {
@@ -59,6 +65,9 @@ async function sendSubscriptionEmail(to, subject, templateType, templateData) {
 
 /**
  * Get user details for email sending
+ * 
+ * @param {string} userId - Firebase user ID
+ * @returns {Promise<Object|null>} User object with email and name, or null if not found
  */
 async function getUserDetails(userId) {
   try {
@@ -411,6 +420,12 @@ exports.checkSubscriptionStatus = functions
                   const user = await getUserDetails(supplier.ownerUserId);
                   if (user) {
                     const plan = SUBSCRIPTION_PLANS[subscription.planId];
+                    const renewalMessage = subscription.autoRenew
+                      ? `Your subscription will automatically renew on <strong>${endDate.toLocaleDateString('en-GB')}</strong>. No action is needed on your part.<br><br>If you'd like to cancel or change your subscription, please visit your dashboard before the renewal date.`
+                      : `Your subscription is set to expire on <strong>${endDate.toLocaleDateString('en-GB')}</strong> and will not automatically renew.<br><br>To continue enjoying premium features, please renew your subscription before it expires.`;
+                    
+                    const ctaText = subscription.autoRenew ? 'Manage Subscription' : 'Renew Now';
+                    
                     await sendSubscriptionEmail(
                       user.email,
                       'Your EventFlow Subscription Renews Soon',
@@ -422,6 +437,8 @@ exports.checkSubscriptionStatus = functions
                         renewalDate: endDate.toLocaleDateString('en-GB'),
                         amount: plan ? plan.price.toFixed(2) : '0.00',
                         autoRenew: subscription.autoRenew ? 'Yes' : 'No',
+                        renewalMessage: renewalMessage,
+                        ctaText: ctaText,
                         baseUrl: APP_BASE_URL,
                       }
                     );
