@@ -81,7 +81,6 @@ const mailgun = require('./utils/mailgun');
 
 // Database modules for startup validation
 const dbUnified = require('./db-unified');
-const { isFirebaseAvailable } = require('./firebase-admin');
 const mongoDb = require('./db');
 const { isMongoAvailable } = mongoDb;
 
@@ -482,6 +481,25 @@ function roleRequired(role) {
     }
     next();
   };
+}
+
+/**
+ * Middleware to check if database is ready
+ * Returns 503 if database is not connected
+ * Use this for routes that require database access
+ */
+function dbRequired(req, res, next) {
+  const isMongoConnected = mongoDb.isConnected && mongoDb.isConnected();
+
+  if (!isMongoConnected) {
+    return res.status(503).json({
+      error: 'Service temporarily unavailable',
+      message: 'Database is not connected. Please try again in a moment.',
+      retry: true,
+    });
+  }
+
+  next();
 }
 
 function passwordOk(pw = '') {
@@ -3797,6 +3815,37 @@ app.get('/api/health', healthCheckLimiter, async (_req, res) => {
   res.status(200).json(response);
 });
 
+// Readiness check endpoint - returns 200 only when MongoDB is connected
+// Use this for load balancers, uptime monitors, or readiness probes
+app.get('/api/ready', healthCheckLimiter, async (_req, res) => {
+  const timestamp = new Date().toISOString();
+
+  // Check if MongoDB is actually connected
+  const isMongoConnected = mongoDb.isConnected && mongoDb.isConnected();
+
+  if (!isMongoConnected) {
+    return res.status(503).json({
+      status: 'not_ready',
+      timestamp,
+      reason: 'Database not connected',
+      services: {
+        server: 'running',
+        mongodb: mongoDb.getConnectionState ? mongoDb.getConnectionState() : 'disconnected',
+      },
+    });
+  }
+
+  // MongoDB is connected, server is ready
+  return res.status(200).json({
+    status: 'ready',
+    timestamp,
+    services: {
+      server: 'running',
+      mongodb: 'connected',
+    },
+  });
+});
+
 // ---------- Static & 404 ----------
 // API Documentation (Swagger UI)
 app.use(
@@ -3944,7 +3993,7 @@ async function startServer() {
 
     // Warn if using local storage in production (before initialization)
     if (isProduction) {
-      if (!isFirebaseAvailable() && !isMongoAvailable()) {
+      if (!isMongoAvailable()) {
         console.warn('');
         console.warn('='.repeat(70));
         console.warn('⚠️  WARNING: NO CLOUD DATABASE CONFIGURED');
@@ -3957,22 +4006,11 @@ async function startServer() {
         console.warn('   • Data will be LOST on server restart/redeployment');
         console.warn('   • NOT RECOMMENDED for production with real user data');
         console.warn('');
-        console.warn('For persistent data storage, set up a cloud database:');
+        console.warn('To set up persistent data storage with MongoDB Atlas:');
+        console.warn('   1. Create account at: https://cloud.mongodb.com/');
+        console.warn('   2. Follow the setup guide: MONGODB_SETUP_SIMPLE.md');
+        console.warn('   3. Set MONGODB_URI environment variable');
         console.warn('');
-        console.warn('  Option A - MongoDB Atlas (free tier available):');
-        console.warn('    1. Create account at: https://cloud.mongodb.com/');
-        console.warn('    2. Follow the setup guide: MONGODB_SETUP_SIMPLE.md');
-        console.warn('    3. Set MONGODB_URI environment variable');
-        console.warn('');
-        console.warn('  Option B - Firebase Firestore:');
-        console.warn('    1. Set FIREBASE_PROJECT_ID');
-        console.warn('    2. Set FIREBASE_SERVICE_ACCOUNT_KEY');
-        console.warn('');
-        if (process.env.FIREBASE_PROJECT_ID && !isFirebaseAvailable()) {
-          console.warn('Note: FIREBASE_PROJECT_ID is set but Firebase Admin failed to initialize.');
-          console.warn('      Add FIREBASE_SERVICE_ACCOUNT_KEY or switch to MongoDB Atlas.');
-          console.warn('');
-        }
         console.warn('📚 Documentation:');
         console.warn('   → Simple guide: MONGODB_SETUP_SIMPLE.md');
         console.warn('   → Technical guide: MONGODB_SETUP.md');

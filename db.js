@@ -322,7 +322,56 @@ async function connect(maxRetries = 3, retryDelay = 2000) {
   }
 
   // All retries failed
+  connectionState = 'error';
+  connectionError = lastError.message;
+
+  // Start periodic reconnection attempts (every 30 seconds)
+  // This ensures the system keeps trying instead of giving up forever
+  console.log('⏰ Will retry connection every 30 seconds in background...');
+  startPeriodicReconnect();
+
   throw lastError;
+}
+
+/**
+ * Periodic reconnection attempt (runs in background)
+ * Called after initial connection attempts fail
+ * Keeps trying to reconnect every 30 seconds
+ */
+let reconnectTimer = null;
+
+function startPeriodicReconnect() {
+  // Don't start multiple timers
+  if (reconnectTimer) {
+    return;
+  }
+
+  reconnectTimer = setInterval(async () => {
+    // Only try to reconnect if we're in error state
+    if (connectionState === 'error' || connectionState === 'disconnected') {
+      console.log('⏰ Attempting periodic reconnection to MongoDB...');
+      try {
+        await connect(1, 0); // Single attempt, no delay
+        console.log('✅ Periodic reconnection successful!');
+        // Stop periodic reconnection once connected
+        if (reconnectTimer) {
+          clearInterval(reconnectTimer);
+          reconnectTimer = null;
+        }
+      } catch (error) {
+        console.log('⏰ Periodic reconnection failed, will retry in 30s');
+      }
+    } else if (connectionState === 'connected') {
+      // Stop timer if we're somehow connected
+      if (reconnectTimer) {
+        clearInterval(reconnectTimer);
+        reconnectTimer = null;
+      }
+    }
+  }, 30000); // 30 seconds
+
+  // Unref the timer so it doesn't keep the process alive
+  reconnectTimer.unref();
 }
 
 /**

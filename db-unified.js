@@ -1,17 +1,15 @@
 /**
  * Unified Database Layer for EventFlow
- * Provides a single interface that works with Firebase Firestore, MongoDB, or local files
- * Automatically selects the best available option
+ * Provides a single interface that works with MongoDB or local storage
+ * MongoDB is the primary database; local storage is fallback only
  */
 
 'use strict';
 
-const { initializeFirebaseAdmin, isFirebaseAvailable, getFirestore } = require('./firebase-admin');
 const db = require('./db');
 const store = require('./store');
 
 let dbType = null;
-let firestore = null;
 let mongodb = null;
 
 // Database initialization state tracking for health checks
@@ -39,7 +37,7 @@ function withTimeout(promise, timeoutMs, operationName) {
 
 /**
  * Initialize the database layer
- * Tries MongoDB first (PRIMARY), then Firestore, then falls back to local files
+ * Tries MongoDB first (PRIMARY), then falls back to local files
  * Includes 10 second timeout to prevent hanging
  */
 async function initializeDatabase() {
@@ -54,7 +52,7 @@ async function initializeDatabase() {
   // Mark initialization as in progress
   initializationState = 'in_progress';
 
-  // Try MongoDB first (with timeout) - PRIMARY DATABASE
+  // Try MongoDB (with timeout) - PRIMARY DATABASE
   try {
     if (db.isMongoAvailable()) {
       mongodb = await withTimeout(db.connect(), 10000, 'MongoDB connection');
@@ -69,42 +67,12 @@ async function initializeDatabase() {
     initializationError = error.message;
   }
 
-  // Try Firebase Firestore as fallback (with timeout)
-  try {
-    // Firebase Admin initialization is synchronous, but admin.initializeApp()
-    // may hang when trying to fetch Application Default Credentials in production
-    // without proper configuration. We wrap this in a timeout to prevent hanging.
-    const initPromise = new Promise((resolve, reject) => {
-      try {
-        const result = initializeFirebaseAdmin();
-        resolve(result);
-      } catch (error) {
-        reject(error);
-      }
-    });
-
-    const { db: firestoreDb } = await withTimeout(initPromise, 10000, 'Firebase initialization');
-    if (firestoreDb) {
-      firestore = firestoreDb;
-      dbType = 'firestore';
-      initializationState = 'completed';
-      initializationError = null;
-      console.log('✅ Using Firebase Firestore for data storage');
-      return dbType;
-    }
-  } catch (error) {
-    console.log('Firebase Firestore not available:', error.message);
-    if (!initializationError) {
-      initializationError = error.message;
-    }
-  }
-
   // Fallback to local files
   dbType = 'local';
   initializationState = 'completed';
   initializationError = null;
   console.log('⚠️  Using local file storage (not suitable for production)');
-  console.log('   Set MONGODB_URI (recommended) or FIREBASE_PROJECT_ID for cloud storage');
+  console.log('   Set MONGODB_URI for cloud database storage');
   return dbType;
 }
 
@@ -117,14 +85,7 @@ async function read(collectionName) {
   await initializeDatabase();
 
   try {
-    if (dbType === 'firestore') {
-      const snapshot = await firestore.collection(collectionName).get();
-      const docs = [];
-      snapshot.forEach(doc => {
-        docs.push({ id: doc.id, ...doc.data() });
-      });
-      return docs;
-    } else if (dbType === 'mongodb') {
+    if (dbType === 'mongodb') {
       const collection = mongodb.collection(collectionName);
       return await collection.find({}).toArray();
     } else {
@@ -152,35 +113,7 @@ async function write(collectionName, data) {
   await initializeDatabase();
 
   try {
-    if (dbType === 'firestore') {
-      // For Firestore, we should update individual documents
-      // But for compatibility with existing code, we'll handle this carefully
-      console.warn(
-        `write() called on Firestore for ${collectionName} - use individual document operations instead`
-      );
-
-      // Get existing docs
-      const snapshot = await firestore.collection(collectionName).get();
-      const batch = firestore.batch();
-
-      // Delete all existing
-      snapshot.forEach(doc => {
-        batch.delete(doc.ref);
-      });
-
-      // Add new docs
-      if (Array.isArray(data)) {
-        data.forEach(item => {
-          if (item.id) {
-            const docRef = firestore.collection(collectionName).doc(item.id);
-            batch.set(docRef, item);
-          }
-        });
-      }
-
-      await batch.commit();
-      return true;
-    } else if (dbType === 'mongodb') {
+    if (dbType === 'mongodb') {
       const collection = mongodb.collection(collectionName);
       await collection.deleteMany({});
       if (Array.isArray(data) && data.length > 0) {
@@ -213,27 +146,7 @@ async function findOne(collectionName, filter) {
   await initializeDatabase();
 
   try {
-    if (dbType === 'firestore') {
-      if (typeof filter === 'function') {
-        // For function filters, get all and filter in memory
-        const all = await read(collectionName);
-        return all.find(filter) || null;
-      } else if (filter.id) {
-        // If filtering by ID, use direct doc get
-        const docRef = firestore.collection(collectionName).doc(filter.id);
-        const doc = await docRef.get();
-        return doc.exists ? { id: doc.id, ...doc.data() } : null;
-      } else {
-        // For object filters, get all and filter in memory
-        // TODO: Convert to Firestore queries for better performance
-        const all = await read(collectionName);
-        return (
-          all.find(item => {
-            return Object.keys(filter).every(key => item[key] === filter[key]);
-          }) || null
-        );
-      }
-    } else if (dbType === 'mongodb') {
+    if (dbType === 'mongodb') {
       if (typeof filter === 'function') {
         const all = await read(collectionName);
         return all.find(filter) || null;
@@ -268,11 +181,7 @@ async function updateOne(collectionName, id, updates) {
   await initializeDatabase();
 
   try {
-    if (dbType === 'firestore') {
-      const docRef = firestore.collection(collectionName).doc(id);
-      await docRef.update(updates);
-      return true;
-    } else if (dbType === 'mongodb') {
+    if (dbType === 'mongodb') {
       const collection = mongodb.collection(collectionName);
       const result = await collection.updateOne({ id }, { $set: updates });
       return result.modifiedCount > 0;
@@ -302,12 +211,7 @@ async function insertOne(collectionName, document) {
   await initializeDatabase();
 
   try {
-    if (dbType === 'firestore') {
-      const id = document.id || firestore.collection(collectionName).doc().id;
-      const docRef = firestore.collection(collectionName).doc(id);
-      await docRef.set(document);
-      return { id, ...document };
-    } else if (dbType === 'mongodb') {
+    if (dbType === 'mongodb') {
       const collection = mongodb.collection(collectionName);
       await collection.insertOne(document);
       return document;
@@ -333,11 +237,7 @@ async function deleteOne(collectionName, id) {
   await initializeDatabase();
 
   try {
-    if (dbType === 'firestore') {
-      const docRef = firestore.collection(collectionName).doc(id);
-      await docRef.delete();
-      return true;
-    } else if (dbType === 'mongodb') {
+    if (dbType === 'mongodb') {
       const collection = mongodb.collection(collectionName);
       const result = await collection.deleteOne({ id });
       return result.deletedCount > 0;
@@ -367,7 +267,7 @@ function uid(prefix = 'id') {
 
 /**
  * Get the current database type
- * @returns {string} 'firestore', 'mongodb', or 'local'
+ * @returns {string} 'mongodb' or 'local'
  */
 function getDatabaseType() {
   return dbType || 'unknown';

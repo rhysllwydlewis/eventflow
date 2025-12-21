@@ -1,34 +1,33 @@
 /**
  * Unified Data Access Layer for EventFlow
- * Provides a single interface for reading/writing data that works with both:
- * - Firebase Firestore (when configured)
+ * Provides a single interface for reading/writing data that works with:
+ * - MongoDB (when configured)
  * - Local JSON files (fallback)
  *
- * This allows gradual migration from local storage to Firebase.
+ * MongoDB is the primary database; local storage is for development only.
  */
 
 const { read: readLocal, write: writeLocal, uid, DATA_DIR } = require('./store');
-const {
-  initializeFirebaseAdmin,
-  isFirebaseAvailable,
-  getCollection,
-  getDocument,
-  setDocument,
-  deleteDocument,
-  queryDocuments,
-} = require('./firebase-admin');
+const db = require('./db');
 
-// Initialize Firebase on module load
-initializeFirebaseAdmin();
+// Track whether MongoDB is available
+let MONGODB_ENABLED = false;
+let mongoClient = null;
 
-// Track whether Firebase is available
-const FIREBASE_ENABLED = isFirebaseAvailable();
-
-if (FIREBASE_ENABLED) {
-  console.log('✅ Data Access Layer: Firebase is available, will use Firestore');
-} else {
-  console.log('⚠️  Data Access Layer: Firebase not available, using local storage');
-}
+// Check MongoDB availability
+(async () => {
+  try {
+    if (db.isMongoAvailable()) {
+      mongoClient = await db.connect();
+      MONGODB_ENABLED = true;
+      console.log('✅ Data Access Layer: MongoDB is available');
+    } else {
+      console.log('⚠️  Data Access Layer: MongoDB not available, using local storage');
+    }
+  } catch (error) {
+    console.log('⚠️  Data Access Layer: MongoDB connection failed, using local storage');
+  }
+})();
 
 /**
  * Read all documents from a collection
@@ -36,13 +35,13 @@ if (FIREBASE_ENABLED) {
  * @returns {Promise<Array>} - Array of documents
  */
 async function read(collectionName) {
-  if (FIREBASE_ENABLED) {
+  if (MONGODB_ENABLED && mongoClient) {
     try {
-      const docs = await getCollection(collectionName);
-      return docs;
+      const collection = mongoClient.collection(collectionName);
+      return await collection.find({}).toArray();
     } catch (error) {
       console.error(
-        `Firebase read error for ${collectionName}, falling back to local:`,
+        `MongoDB read error for ${collectionName}, falling back to local:`,
         error.message
       );
       return readLocal(collectionName);
@@ -54,13 +53,9 @@ async function read(collectionName) {
 /**
  * Write all documents to a collection
  *
- * WARNING: This does NOT perform a true collection replacement in Firebase.
- * It only updates/creates the documents provided. Existing documents not in
- * the array will remain in Firebase. For true replacement, use remove() to
- * delete documents first, or manage documents individually with create/update.
- *
- * This behavior is intentional for backward compatibility and safety.
+ * WARNING: This performs a full collection replacement.
  * Local storage is always fully replaced.
+ * MongoDB deletes all existing documents and inserts new ones.
  *
  * @param {string} collectionName - Name of the collection
  * @param {Array} data - Array of documents to write
@@ -70,21 +65,15 @@ async function write(collectionName, data) {
   // Always write to local storage for backward compatibility (full replacement)
   writeLocal(collectionName, data);
 
-  if (FIREBASE_ENABLED) {
+  if (MONGODB_ENABLED && mongoClient) {
     try {
-      // Update/create documents in Firebase (does NOT delete existing docs not in array)
-      const promises = data.map(doc => {
-        if (!doc.id) {
-          console.warn(
-            `[data-access] Skipping document without ID in ${collectionName} for Firebase write`
-          );
-          return Promise.resolve();
-        }
-        return setDocument(collectionName, doc.id, doc);
-      });
-      await Promise.all(promises);
+      const collection = mongoClient.collection(collectionName);
+      await collection.deleteMany({});
+      if (Array.isArray(data) && data.length > 0) {
+        await collection.insertMany(data);
+      }
     } catch (error) {
-      console.error(`Firebase write error for ${collectionName}:`, error.message);
+      console.error(`MongoDB write error for ${collectionName}:`, error.message);
       // Local write already succeeded, so don't throw
     }
   }
@@ -97,13 +86,13 @@ async function write(collectionName, data) {
  * @returns {Promise<Object|null>} - Document or null if not found
  */
 async function getById(collectionName, docId) {
-  if (FIREBASE_ENABLED) {
+  if (MONGODB_ENABLED && mongoClient) {
     try {
-      const doc = await getDocument(collectionName, docId);
-      return doc;
+      const collection = mongoClient.collection(collectionName);
+      return await collection.findOne({ id: docId });
     } catch (error) {
       console.error(
-        `Firebase getById error for ${collectionName}/${docId}, falling back to local:`,
+        `MongoDB getById error for ${collectionName}/${docId}, falling back to local:`,
         error.message
       );
       const items = readLocal(collectionName);
@@ -133,12 +122,13 @@ async function update(collectionName, docId, updates) {
   items[index] = { ...items[index], ...updates };
   writeLocal(collectionName, items);
 
-  // Update in Firebase if available
-  if (FIREBASE_ENABLED) {
+  // Update in MongoDB if available
+  if (MONGODB_ENABLED && mongoClient) {
     try {
-      await setDocument(collectionName, docId, items[index]);
+      const collection = mongoClient.collection(collectionName);
+      await collection.updateOne({ id: docId }, { $set: updates });
     } catch (error) {
-      console.error(`Firebase update error for ${collectionName}/${docId}:`, error.message);
+      console.error(`MongoDB update error for ${collectionName}/${docId}:`, error.message);
       // Local update succeeded, continue
     }
   }
@@ -171,12 +161,13 @@ async function create(collectionName, data) {
   items.push(doc);
   writeLocal(collectionName, items);
 
-  // Create in Firebase if available
-  if (FIREBASE_ENABLED) {
+  // Create in MongoDB if available
+  if (MONGODB_ENABLED && mongoClient) {
     try {
-      await setDocument(collectionName, doc.id, doc);
+      const collection = mongoClient.collection(collectionName);
+      await collection.insertOne(doc);
     } catch (error) {
-      console.error(`Firebase create error for ${collectionName}:`, error.message);
+      console.error(`MongoDB create error for ${collectionName}:`, error.message);
       // Local create succeeded, continue
     }
   }
@@ -201,12 +192,13 @@ async function remove(collectionName, docId) {
 
   writeLocal(collectionName, filteredItems);
 
-  // Delete from Firebase if available
-  if (FIREBASE_ENABLED) {
+  // Delete from MongoDB if available
+  if (MONGODB_ENABLED && mongoClient) {
     try {
-      await deleteDocument(collectionName, docId);
+      const collection = mongoClient.collection(collectionName);
+      await collection.deleteOne({ id: docId });
     } catch (error) {
-      console.error(`Firebase delete error for ${collectionName}/${docId}:`, error.message);
+      console.error(`MongoDB delete error for ${collectionName}/${docId}:`, error.message);
       // Local delete succeeded, continue
     }
   }
@@ -237,19 +229,67 @@ async function findOne(collectionName, predicate) {
 }
 
 /**
- * Query documents with Firebase-style filters (when Firebase is available)
+ * Query documents with MongoDB-style filters
  * Falls back to in-memory filtering for local storage
  * @param {string} collectionName - Name of the collection
  * @param {Object} filters - Query filters { where: [[field, op, value]], orderBy: {field, direction}, limit: n }
  * @returns {Promise<Array>} - Matching documents
  */
 async function query(collectionName, filters = {}) {
-  if (FIREBASE_ENABLED) {
+  if (MONGODB_ENABLED && mongoClient) {
     try {
-      return await queryDocuments(collectionName, filters);
+      const collection = mongoClient.collection(collectionName);
+      let cursor = collection.find({});
+
+      // Apply where filters (convert to MongoDB query)
+      if (filters.where) {
+        const mongoQuery = {};
+        for (const [field, operator, value] of filters.where) {
+          switch (operator) {
+            case '==':
+              mongoQuery[field] = value;
+              break;
+            case '!=':
+              mongoQuery[field] = { $ne: value };
+              break;
+            case '<':
+              mongoQuery[field] = { $lt: value };
+              break;
+            case '<=':
+              mongoQuery[field] = { $lte: value };
+              break;
+            case '>':
+              mongoQuery[field] = { $gt: value };
+              break;
+            case '>=':
+              mongoQuery[field] = { $gte: value };
+              break;
+            case 'in':
+              mongoQuery[field] = { $in: value };
+              break;
+            case 'array-contains':
+              mongoQuery[field] = value;
+              break;
+          }
+        }
+        cursor = collection.find(mongoQuery);
+      }
+
+      // Apply orderBy
+      if (filters.orderBy) {
+        const { field, direction = 'asc' } = filters.orderBy;
+        cursor = cursor.sort({ [field]: direction === 'desc' ? -1 : 1 });
+      }
+
+      // Apply limit
+      if (filters.limit) {
+        cursor = cursor.limit(filters.limit);
+      }
+
+      return await cursor.toArray();
     } catch (error) {
       console.error(
-        `Firebase query error for ${collectionName}, falling back to local:`,
+        `MongoDB query error for ${collectionName}, falling back to local:`,
         error.message
       );
       // Fall through to local query
@@ -319,43 +359,36 @@ module.exports = {
   query,
   uid,
   DATA_DIR,
-  isFirebaseEnabled: () => FIREBASE_ENABLED,
+  isMongoDBEnabled: () => MONGODB_ENABLED,
 
   /**
    * Replace entire collection (DANGEROUS - deletes all existing docs)
-   * Use with caution. Only available when Firebase is enabled.
+   * Use with caution. Only available when MongoDB is enabled.
    * @param {string} collectionName - Name of the collection
    * @param {Array} data - Array of documents to write
    * @returns {Promise<void>}
    */
   async replaceCollection(collectionName, data) {
-    if (!FIREBASE_ENABLED) {
+    if (!MONGODB_ENABLED || !mongoClient) {
       writeLocal(collectionName, data);
       return;
     }
 
     try {
-      // Get all existing documents
-      const existing = await getCollection(collectionName);
+      const collection = mongoClient.collection(collectionName);
 
       // Delete all existing documents
-      const deletePromises = existing.map(doc => deleteDocument(collectionName, doc.id));
-      await Promise.all(deletePromises);
+      await collection.deleteMany({});
 
       // Write new documents
-      const createPromises = data.map(doc => {
-        if (!doc.id) {
-          console.warn(`[data-access] Skipping document without ID in ${collectionName}`);
-          return Promise.resolve();
-        }
-        return setDocument(collectionName, doc.id, doc);
-      });
-      await Promise.all(createPromises);
+      if (Array.isArray(data) && data.length > 0) {
+        await collection.insertMany(data);
+      }
 
       // Update local storage
       writeLocal(collectionName, data);
     } catch (error) {
-      console.error(`Firebase replaceCollection error for ${collectionName}:`, error.message);
+      console.error(`MongoDB replaceCollection error for ${collectionName}:`, error.message);
       throw error;
     }
   },

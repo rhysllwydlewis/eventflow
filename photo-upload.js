@@ -1,6 +1,6 @@
 /**
  * Photo Upload Middleware and Utilities
- * Handles file uploads, image optimization, and storage (local + AWS S3)
+ * Handles file uploads, image optimization, and local storage only
  */
 
 'use strict';
@@ -10,28 +10,6 @@ const sharp = require('sharp');
 const path = require('path');
 const fs = require('fs').promises;
 const crypto = require('crypto');
-
-// AWS S3 setup (optional, only if configured)
-let s3 = null;
-let S3_ENABLED = false;
-
-try {
-  const AWS = require('aws-sdk');
-  const bucketName = process.env.AWS_S3_BUCKET;
-  const region = process.env.AWS_S3_REGION;
-
-  if (bucketName && region) {
-    s3 = new AWS.S3({
-      region,
-      accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-    });
-    S3_ENABLED = true;
-    console.log(`AWS S3 enabled: bucket=${bucketName}, region=${region}`);
-  }
-} catch (err) {
-  console.log('AWS S3 not configured (using local storage)');
-}
 
 // Upload directories
 const UPLOAD_DIRS = {
@@ -137,31 +115,6 @@ async function saveToLocal(buffer, filename, directory = 'original') {
 }
 
 /**
- * Upload image to AWS S3
- * @param {Buffer} buffer - Image buffer
- * @param {string} filename - Filename to save
- * @param {string} directory - Directory type (original, thumbnails, optimized)
- * @returns {Promise<string>} S3 URL
- */
-async function uploadToS3(buffer, filename, directory = 'original') {
-  if (!S3_ENABLED) {
-    throw new Error('AWS S3 is not configured');
-  }
-
-  const key = `${directory}/${filename}`;
-  const params = {
-    Bucket: process.env.AWS_S3_BUCKET,
-    Key: key,
-    Body: buffer,
-    ContentType: 'image/jpeg',
-    ACL: 'public-read',
-  };
-
-  const result = await s3.upload(params).promise();
-  return result.Location;
-}
-
-/**
  * Process and save image with multiple sizes
  * @param {Buffer} buffer - Original image buffer
  * @param {string} originalFilename - Original filename
@@ -187,36 +140,20 @@ async function processAndSaveImage(buffer, originalFilename) {
       processImage(buffer, IMAGE_CONFIGS.large),
     ]);
 
-    // Save locally or to S3
-    if (S3_ENABLED) {
-      // Upload to S3
-      const [originalUrl, thumbnailUrl, optimizedUrl, largeUrl] = await Promise.all([
-        uploadToS3(originalProcessed, `${baseFilename}.jpg`, 'original'),
-        uploadToS3(thumbnail, `${baseFilename}-thumb.jpg`, 'thumbnails'),
-        uploadToS3(optimized, `${baseFilename}-opt.jpg`, 'optimized'),
-        uploadToS3(large, `${baseFilename}-large.jpg`, 'large'),
-      ]);
+    // Save to local filesystem
+    await Promise.all([
+      saveToLocal(originalProcessed, `${baseFilename}.jpg`, 'original'),
+      saveToLocal(thumbnail, `${baseFilename}-thumb.jpg`, 'thumbnails'),
+      saveToLocal(optimized, `${baseFilename}-opt.jpg`, 'optimized'),
+      saveToLocal(large, `${baseFilename}-large.jpg`, 'large'),
+    ]);
 
-      results.original = originalUrl;
-      results.thumbnail = thumbnailUrl;
-      results.optimized = optimizedUrl;
-      results.large = largeUrl;
-    } else {
-      // Save to local filesystem
-      await Promise.all([
-        saveToLocal(originalProcessed, `${baseFilename}.jpg`, 'original'),
-        saveToLocal(thumbnail, `${baseFilename}-thumb.jpg`, 'thumbnails'),
-        saveToLocal(optimized, `${baseFilename}-opt.jpg`, 'optimized'),
-        saveToLocal(large, `${baseFilename}-large.jpg`, 'large'),
-      ]);
-
-      // Return local URLs
-      const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
-      results.original = `${baseUrl}/uploads/original/${baseFilename}.jpg`;
-      results.thumbnail = `${baseUrl}/uploads/thumbnails/${baseFilename}-thumb.jpg`;
-      results.optimized = `${baseUrl}/uploads/optimized/${baseFilename}-opt.jpg`;
-      results.large = `${baseUrl}/uploads/large/${baseFilename}-large.jpg`;
-    }
+    // Return local URLs
+    const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+    results.original = `${baseUrl}/uploads/original/${baseFilename}.jpg`;
+    results.thumbnail = `${baseUrl}/uploads/thumbnails/${baseFilename}-thumb.jpg`;
+    results.optimized = `${baseUrl}/uploads/optimized/${baseFilename}-opt.jpg`;
+    results.large = `${baseUrl}/uploads/large/${baseFilename}-large.jpg`;
 
     // Also save to public folder for serving
     await saveToLocal(optimized, `${baseFilename}-opt.jpg`, 'public');
@@ -234,30 +171,16 @@ async function processAndSaveImage(buffer, originalFilename) {
  * @returns {Promise<void>}
  */
 async function deleteImage(url) {
-  // Validate S3 URL more strictly - must start with https:// and contain amazonaws.com in the domain
-  const isS3Url = S3_ENABLED && /^https:\/\/[^/]*\.amazonaws\.com\//.test(url);
+  // Delete from local filesystem
+  const filename = path.basename(url);
+  const dirs = ['original', 'thumbnails', 'optimized', 'large', 'public'];
 
-  if (isS3Url) {
-    // Delete from S3
-    const key = url.split('.com/')[1];
-    await s3
-      .deleteObject({
-        Bucket: process.env.AWS_S3_BUCKET,
-        Key: key,
-      })
-      .promise();
-  } else {
-    // Delete from local filesystem
-    const filename = path.basename(url);
-    const dirs = ['original', 'thumbnails', 'optimized', 'public'];
-
-    await Promise.allSettled(
-      dirs.map(dir => {
-        const filepath = path.join(UPLOAD_DIRS[dir], filename);
-        return fs.unlink(filepath).catch(() => {});
-      })
-    );
-  }
+  await Promise.allSettled(
+    dirs.map(dir => {
+      const filepath = path.join(UPLOAD_DIRS[dir], filename);
+      return fs.unlink(filepath).catch(() => {});
+    })
+  );
 }
 
 /**
@@ -283,26 +206,10 @@ async function getImageMetadata(buffer) {
  * @returns {Promise<Object>} New cropped image URLs
  */
 async function cropImage(imageUrl, cropData) {
-  // Download image (either from S3 or local)
-  let buffer;
-
-  // Validate S3 URL more strictly - must start with https:// and contain amazonaws.com in the domain
-  const isS3Url = S3_ENABLED && /^https:\/\/[^/]*\.amazonaws\.com\//.test(imageUrl);
-
-  if (isS3Url) {
-    const key = imageUrl.split('.com/')[1];
-    const data = await s3
-      .getObject({
-        Bucket: process.env.AWS_S3_BUCKET,
-        Key: key,
-      })
-      .promise();
-    buffer = data.Body;
-  } else {
-    const filename = path.basename(imageUrl);
-    const filepath = path.join(UPLOAD_DIRS.original, filename);
-    buffer = await fs.readFile(filepath);
-  }
+  // Download image from local storage
+  const filename = path.basename(imageUrl);
+  const filepath = path.join(UPLOAD_DIRS.original, filename);
+  const buffer = await fs.readFile(filepath);
 
   // Perform crop
   const cropped = await sharp(buffer)
@@ -365,22 +272,10 @@ async function replacePhoto(photoId, newImageBuffer, existingMetadata) {
 async function applyFilters(imageUrl, filters) {
   const { brightness = 1, contrast = 1, saturation = 1 } = filters;
 
-  let buffer;
-
-  if (S3_ENABLED) {
-    const key = imageUrl.replace(/^https?:\/\/[^/]+\//, '');
-    const data = await s3
-      .getObject({
-        Bucket: process.env.AWS_S3_BUCKET,
-        Key: key,
-      })
-      .promise();
-    buffer = data.Body;
-  } else {
-    const filename = path.basename(imageUrl);
-    const filepath = path.join(UPLOAD_DIRS.original, filename);
-    buffer = await fs.readFile(filepath);
-  }
+  // Load image from local storage
+  const filename = path.basename(imageUrl);
+  const filepath = path.join(UPLOAD_DIRS.original, filename);
+  const buffer = await fs.readFile(filepath);
 
   // Apply filters using Sharp
   let image = sharp(buffer);
@@ -430,6 +325,5 @@ module.exports = {
   replacePhoto,
   applyFilters,
   updatePhotoOrder,
-  S3_ENABLED,
   IMAGE_CONFIGS,
 };
