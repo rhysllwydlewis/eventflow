@@ -483,6 +483,25 @@ function roleRequired(role) {
   };
 }
 
+/**
+ * Middleware to check if database is ready
+ * Returns 503 if database is not connected
+ * Use this for routes that require database access
+ */
+function dbRequired(req, res, next) {
+  const isMongoConnected = mongoDb.isConnected && mongoDb.isConnected();
+
+  if (!isMongoConnected) {
+    return res.status(503).json({
+      error: 'Service temporarily unavailable',
+      message: 'Database is not connected. Please try again in a moment.',
+      retry: true,
+    });
+  }
+
+  next();
+}
+
 function passwordOk(pw = '') {
   return typeof pw === 'string' && pw.length >= 8 && /[A-Za-z]/.test(pw) && /\d/.test(pw);
 }
@@ -3794,6 +3813,37 @@ app.get('/api/health', healthCheckLimiter, async (_req, res) => {
   // Always return 200 OK - Railway health checks should pass immediately
   // even if database is still connecting (degraded state)
   res.status(200).json(response);
+});
+
+// Readiness check endpoint - returns 200 only when MongoDB is connected
+// Use this for load balancers, uptime monitors, or readiness probes
+app.get('/api/ready', healthCheckLimiter, async (_req, res) => {
+  const timestamp = new Date().toISOString();
+
+  // Check if MongoDB is actually connected
+  const isMongoConnected = mongoDb.isConnected && mongoDb.isConnected();
+
+  if (!isMongoConnected) {
+    return res.status(503).json({
+      status: 'not_ready',
+      timestamp,
+      reason: 'Database not connected',
+      services: {
+        server: 'running',
+        mongodb: mongoDb.getConnectionState ? mongoDb.getConnectionState() : 'disconnected',
+      },
+    });
+  }
+
+  // MongoDB is connected, server is ready
+  return res.status(200).json({
+    status: 'ready',
+    timestamp,
+    services: {
+      server: 'running',
+      mongodb: 'connected',
+    },
+  });
 });
 
 // ---------- Static & 404 ----------
