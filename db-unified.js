@@ -1,7 +1,7 @@
 /**
  * Unified Database Layer for EventFlow
- * Provides a single interface that works with MongoDB or local files
- * MongoDB is the primary database; local files are fallback only
+ * Provides a single interface that works with MongoDB or local storage
+ * MongoDB is the primary database; local storage is fallback only
  */
 
 'use strict';

@@ -376,7 +376,7 @@ module.exports = {
 
     try {
       const collection = mongoClient.collection(collectionName);
-      
+
       // Delete all existing documents
       await collection.deleteMany({});
 
