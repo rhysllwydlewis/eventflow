@@ -3981,8 +3981,11 @@ async function startServer() {
         console.error('⚠️  DATABASE CONNECTION FAILED');
         console.error('='.repeat(70));
         console.error('');
-        console.error('Could not connect to the database.');
-        console.error('Server will continue running with limited functionality.');
+        console.error('Warning: Could not connect to the database.');
+        console.error('Server will continue running with limited functionality:');
+        console.error('   • User authentication and data may not persist');
+        console.error('   • Local file storage will be used (non-persistent)');
+        console.error('   • Data will be lost on server restart');
         console.error('');
         console.error('Error details:');
         console.error(`   ${error.message}`);
