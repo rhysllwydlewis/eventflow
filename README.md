@@ -121,9 +121,10 @@ Getting "502 Bad Gateway" or "connection refused" errors? This usually means Mon
 ### Prerequisites
 
 - Node.js 16+ and npm
-- **Optional:** MongoDB 6.0+ (local or Atlas) for production deployments
+- **MongoDB Atlas** (cloud database) - **Recommended for production** (free tier available)
+- **Optional:** Local MongoDB 6.0+ for development
 
-**Note:** EventFlow uses file-based JSON storage by default for zero-configuration setup. MongoDB is available for production use - see [MONGODB_SETUP.md](MONGODB_SETUP.md).
+**Note:** EventFlow is configured to use MongoDB Atlas as the primary database. For development, it can fall back to file-based JSON storage. For production deployments, MongoDB Atlas is strongly recommended - see [MONGODB_SETUP.md](MONGODB_SETUP.md).
 
 ### Installation
 
@@ -137,16 +138,19 @@ npm install
 
 # Set up environment
 cp .env.example .env
-# Edit .env with your configuration (MongoDB is optional)
+# Edit .env with your MongoDB Atlas connection string
+# The .env.example file includes a working MongoDB connection string
 
-# Start server (no migration needed for file-based storage)
+# Start server
 npm start
 
-# Optional: Migrate to MongoDB (for production)
+# Optional: Migrate existing data to MongoDB (if you have local JSON data)
 # npm run migrate
 ```
 
 Visit http://localhost:3000
+
+**Important:** For production deployments, configure your MongoDB Atlas connection string in the `MONGODB_URI` environment variable. See the [MongoDB Setup Guide](MONGODB_SETUP.md) for detailed instructions.
 
 ### Docker Quick Start
 
