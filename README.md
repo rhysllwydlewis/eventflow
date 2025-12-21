@@ -32,7 +32,7 @@ A production-ready, feature-rich platform connecting event service suppliers (ph
    MONGODB_URI=mongodb+srv://your-actual-connection-string
    JWT_SECRET=your-random-secret-min-32-chars
    NODE_ENV=production
-   BASE_URL=https://your-app.railway.app
+   BASE_URL=https://event-flow.co.uk
 
    # Recommended (optional)
    EMAIL_ENABLED=true
@@ -42,7 +42,7 @@ A production-ready, feature-rich platform connecting event service suppliers (ph
 
 3. **Deploy your app** - Push to your platform (Railway, Heroku, etc.)
 
-4. **Verify it works** - Visit `https://your-app.railway.app/api/health`
+4. **Verify it works** - Visit `https://event-flow.co.uk/api/health`
    - Should show `"databaseStatus": "connected"`
 
 ### Troubleshooting 502 Errors
@@ -445,13 +445,14 @@ See `firebase-admin.js` for backend Firebase configuration.
    - Set `STORAGE_TYPE=firebase` in `.env` (already default)
 
 3. **Production Setup**: To use Firebase in production:
+
    ```env
    # Required: Firebase Project ID
    FIREBASE_PROJECT_ID=eventflow-ffb12
-   
+
    # Required for production: Service Account Key (download from Firebase Console)
    FIREBASE_SERVICE_ACCOUNT_KEY='{"type":"service_account","project_id":"eventflow-ffb12",...}'
-   
+
    # Storage Configuration
    STORAGE_TYPE=firebase
    FIREBASE_STORAGE_BUCKET=eventflow-ffb12.firebasestorage.app
