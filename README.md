@@ -141,7 +141,7 @@ npm install
 # Set up environment
 cp .env.example .env
 # Edit .env with your MongoDB Atlas connection string
-# The .env.example file includes a working MongoDB connection string
+# Replace the placeholder in .env.example with your actual MongoDB credentials
 
 # Start server
 npm start
@@ -436,41 +436,48 @@ const snapshot = await db.collection('events').get();
 
 See `firebase-admin.js` for backend Firebase configuration.
 
-### Firebase as Primary Storage
+### Database Configuration
 
-**EventFlow is configured to use Firebase as the primary cloud storage solution:**
+**EventFlow is configured to use MongoDB Atlas as the primary database:**
 
-1. **Database (Firestore)**: The system automatically prioritizes Firebase Firestore over MongoDB and local storage
-   - All data (users, packages, posts, reviews, etc.) stored in Firestore
-   - Configured in `db-unified.js` to try Firestore first
-   - Set `FIREBASE_PROJECT_ID` or `FIREBASE_SERVICE_ACCOUNT_KEY` in environment variables
-
-2. **File Storage**: Photos and media files are stored in Firebase Storage
-   - Supplier photos use Firebase Storage (`supplier-photo-upload.js`)
-   - Storage bucket: `eventflow-ffb12.firebasestorage.app`
-   - Set `STORAGE_TYPE=firebase` in `.env` (already default)
-
-3. **Production Setup**: To use Firebase in production:
+1. **Database Priority Order**: The system tries databases in this order:
+   - **MongoDB Atlas** (Primary - recommended for production)
+   - **Firebase Firestore** (Secondary cloud option)
+   - **Local JSON files** (Development fallback only)
+2. **MongoDB Setup** (Recommended):
 
    ```env
-   # Required: Firebase Project ID
-   FIREBASE_PROJECT_ID=eventflow-ffb12
+   # Required: MongoDB Atlas connection string
+   MONGODB_URI=mongodb+srv://username:password@cluster0.xxxxx.mongodb.net/eventflow?retryWrites=true&w=majority
 
-   # Required for production: Service Account Key (download from Firebase Console)
-   FIREBASE_SERVICE_ACCOUNT_KEY='{"type":"service_account","project_id":"eventflow-ffb12",...}'
-
-   # Storage Configuration
-   STORAGE_TYPE=firebase
-   FIREBASE_STORAGE_BUCKET=eventflow-ffb12.firebasestorage.app
+   # Optional: Database name (defaults to 'eventflow')
+   MONGODB_DB_NAME=eventflow
    ```
 
-4. **How it works**:
-   - On startup, `db-unified.js` attempts Firebase Firestore connection first
-   - If Firebase is available, all database operations use Firestore
-   - If not configured, falls back to MongoDB, then local files (dev only)
-   - Check logs on startup for: `✅ Using Firebase Firestore for data storage`
+   - See [MONGODB_SETUP.md](.github/docs/MONGODB_SETUP.md) for detailed setup
+   - Free tier available at https://cloud.mongodb.com/
 
-**To verify Firebase is active**: Check server logs after starting the app. You should see "Using Firebase Firestore for data storage" instead of "Using local file storage".
+3. **Firebase Firestore** (Alternative):
+
+   ```env
+   # Firebase Project ID
+   FIREBASE_PROJECT_ID=eventflow-ffb12
+
+   # Service Account Key (for production)
+   FIREBASE_SERVICE_ACCOUNT_KEY='{"type":"service_account","project_id":"eventflow-ffb12",...}'
+   ```
+
+4. **File Storage**: Photos and media files can use Firebase Storage or AWS S3
+   - Firebase Storage bucket: `eventflow-ffb12.firebasestorage.app`
+   - Set `STORAGE_TYPE=firebase` or `STORAGE_TYPE=s3` in `.env`
+
+5. **How it works**:
+   - On startup, `db-unified.js` attempts MongoDB connection first
+   - If MongoDB is configured and available, all database operations use MongoDB
+   - If not configured, falls back to Firebase Firestore, then local files (dev only)
+   - Check logs on startup for: `✅ Using MongoDB for data storage`
+
+**To verify database connection**: Check server logs after starting the app, or visit `/api/health` endpoint to see which database is active.
 
 ## 📁 Project Structure
 
