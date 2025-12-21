@@ -1,7 +1,7 @@
 /**
  * Unified Database Layer for EventFlow
- * Provides a single interface that works with Firebase Firestore, MongoDB, or local files
- * Automatically selects the best available option
+ * Provides a single interface that works with MongoDB, Firebase Firestore, or local files
+ * Automatically selects the best available option (MongoDB has priority)
  */
 
 'use strict';
@@ -35,7 +35,7 @@ function withTimeout(promise, timeoutMs, operationName) {
 
 /**
  * Initialize the database layer
- * Tries Firestore first, then MongoDB, then falls back to local files
+ * Tries MongoDB first, then Firestore, then falls back to local files
  * Includes 10 second timeout to prevent hanging
  */
 async function initializeDatabase() {
@@ -43,7 +43,19 @@ async function initializeDatabase() {
     return dbType;
   }
 
-  // Try Firebase Firestore first (with timeout)
+  // Try MongoDB first (with timeout)
+  try {
+    if (db.isMongoAvailable()) {
+      mongodb = await withTimeout(db.connect(), 10000, 'MongoDB connection');
+      dbType = 'mongodb';
+      console.log('✅ Using MongoDB for data storage');
+      return dbType;
+    }
+  } catch (error) {
+    console.log('MongoDB not available:', error.message);
+  }
+
+  // Try Firebase Firestore next (with timeout)
   try {
     // Firebase Admin initialization is synchronous, but admin.initializeApp()
     // may hang when trying to fetch Application Default Credentials in production
@@ -68,22 +80,10 @@ async function initializeDatabase() {
     console.log('Firebase Firestore not available:', error.message);
   }
 
-  // Try MongoDB next (with timeout)
-  try {
-    if (db.isMongoAvailable()) {
-      mongodb = await withTimeout(db.connect(), 10000, 'MongoDB connection');
-      dbType = 'mongodb';
-      console.log('✅ Using MongoDB for data storage');
-      return dbType;
-    }
-  } catch (error) {
-    console.log('MongoDB not available:', error.message);
-  }
-
   // Fallback to local files
   dbType = 'local';
   console.log('⚠️  Using local file storage (not suitable for production)');
-  console.log('   Set FIREBASE_PROJECT_ID or MONGODB_URI for cloud storage');
+  console.log('   Set MONGODB_URI (recommended) or FIREBASE_PROJECT_ID for cloud storage');
   return dbType;
 }
 

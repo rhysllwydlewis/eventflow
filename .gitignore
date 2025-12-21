@@ -5,6 +5,9 @@ package-lock.json
 # Environment variables
 .env
 
+# Deployment notes with sensitive credentials
+DEPLOYMENT_NOTES.md
+
 # Logs
 logs/
 *.log
