@@ -198,14 +198,14 @@ if (isProduction) {
     
     if (!isSecure) {
       // Redirect to HTTPS
-      const baseUrl = process.env.BASE_URL || `https://${req.headers.host}`;
-      const redirectUrl = `${baseUrl}${req.url}`;
+      const httpsUrl = process.env.BASE_URL || `https://${req.headers.host}`;
+      const redirectUrl = `${httpsUrl}${req.url}`;
       return res.redirect(301, redirectUrl);
     }
     
     // Check for non-www to www redirect (only if BASE_URL contains www)
-    const baseUrl = process.env.BASE_URL || '';
-    if (baseUrl.includes('www.') && req.headers.host && !req.headers.host.startsWith('www.')) {
+    const configuredBaseUrl = process.env.BASE_URL || '';
+    if (configuredBaseUrl.includes('www.') && req.headers.host && !req.headers.host.startsWith('www.')) {
       const wwwUrl = `https://www.${req.headers.host}${req.url}`;
       return res.redirect(301, wwwUrl);
     }
