@@ -152,3 +152,4 @@ data/*.json.bak
 
 # Preserve sample data for reference
 !data/sample/
+optimize-images.js

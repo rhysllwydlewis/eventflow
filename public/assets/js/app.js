@@ -2485,12 +2485,45 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-// simple pageview beacon
-fetch('/api/metrics/track', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': window.__CSRF_TOKEN__ || '' },
-  body: JSON.stringify({ type: 'pageview', meta: { path: location.pathname } }),
-}).catch(() => {});
+// Simple pageview beacon - deferred to ensure CSRF token is loaded
+// Fixes 403 Forbidden error from empty CSRF token
+(function sendPageview() {
+  // Wait for CSRF token to be available or timeout after 2 seconds
+  const maxWait = 2000;
+  const startTime = Date.now();
+  let timeoutId = null;
+  let hasSent = false;
+  
+  function attemptSend() {
+    // Prevent sending after page unload or if already sent
+    if (hasSent || document.hidden) {
+      return;
+    }
+    
+    if (window.__CSRF_TOKEN__) {
+      hasSent = true;
+      fetch('/api/metrics/track', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': window.__CSRF_TOKEN__ },
+        body: JSON.stringify({ type: 'pageview', meta: { path: location.pathname } }),
+      }).catch(() => {});
+    } else if (Date.now() - startTime < maxWait) {
+      // Retry after a short delay
+      timeoutId = setTimeout(attemptSend, 100);
+    }
+    // If token isn't available after maxWait, skip silently (it's just a tracking beacon)
+  }
+  
+  // Clean up timeout on page unload to prevent memory leak
+  window.addEventListener('beforeunload', function cleanup() {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      timeoutId = null;
+    }
+  }, { once: true });
+  
+  attemptSend();
+})();
 
 // Admin charts
 async function adminCharts() {
