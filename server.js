@@ -83,7 +83,7 @@ const mailgun = require('./utils/mailgun');
 const dbUnified = require('./db-unified');
 const { isFirebaseAvailable } = require('./firebase-admin');
 const mongoDb = require('./db');
-const { isMongoAvailable } = require('./db');
+const { isMongoAvailable } = mongoDb;
 
 // Photo upload utilities
 const photoUpload = require('./photo-upload');

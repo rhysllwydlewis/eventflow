@@ -212,9 +212,7 @@ async function connect(maxRetries = 3, retryDelay = 2000) {
 
       // Log connection attempt (without exposing credentials)
       const sanitizedUri = uri.replace(/\/\/([^:]+):([^@]+)@/, '//<credentials>@');
-      console.log(
-        `Connecting to MongoDB... (attempt ${attempt}/${maxRetries})`
-      );
+      console.log(`Connecting to MongoDB... (attempt ${attempt}/${maxRetries})`);
       console.log(`Environment: ${isProduction ? 'production' : 'development'}`);
       console.log(`URI: ${sanitizedUri}`);
 
@@ -305,7 +303,7 @@ async function connect(maxRetries = 3, retryDelay = 2000) {
 
       // If not the last attempt, wait before retrying with exponential backoff
       if (attempt < maxRetries) {
-        const waitTime = retryDelay * Math.pow(2, attempt - 1);
+        const waitTime = retryDelay * 2 ** (attempt - 1);
         console.error(`⏳ Retrying in ${waitTime / 1000} seconds...`);
         console.error('');
         await new Promise(resolve => setTimeout(resolve, waitTime));
