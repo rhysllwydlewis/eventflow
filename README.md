@@ -27,11 +27,11 @@ A production-ready, feature-rich platform connecting event service suppliers (ph
 
 2. **Configure Environment Variables** on your deployment platform:
 
-   > **Note:** The `.env.example` file includes a pre-configured MongoDB connection string for this EventFlow instance. You can use it directly or replace it with your own MongoDB Atlas credentials.
+   > **Note:** The MongoDB connection string should be configured as an environment variable in your deployment platform for security. Contact your administrator for the actual connection string, or set up your own MongoDB Atlas instance following the [MongoDB Setup Guide](MONGODB_SETUP.md).
 
    ```bash
    # Required
-   MONGODB_URI=mongodb+srv://rhysllwydlewis_db_user:PFURJbvrEVlZ1Jvj@cluster0.ex621ix.mongodb.net/eventflow?retryWrites=true&w=majority
+   MONGODB_URI=mongodb+srv://your-username:your-password@cluster0.xxxxx.mongodb.net/eventflow?retryWrites=true&w=majority
    JWT_SECRET=your-random-secret-min-32-chars
    NODE_ENV=production
    BASE_URL=https://your-app.railway.app

@@ -83,7 +83,7 @@ async function initializeDatabase() {
   // Fallback to local files
   dbType = 'local';
   console.log('⚠️  Using local file storage (not suitable for production)');
-  console.log('   Set MONGODB_URI or FIREBASE_PROJECT_ID for cloud storage');
+  console.log('   Set MONGODB_URI (recommended) or FIREBASE_PROJECT_ID for cloud storage');
   return dbType;
 }
 
