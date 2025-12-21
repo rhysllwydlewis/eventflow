@@ -190,6 +190,30 @@ if (shouldTrustProxy) {
 
 app.disable('x-powered-by');
 
+// Force HTTPS redirect in production (fixes 3.2s latency from HTTP→HTTPS redirect)
+if (isProduction) {
+  app.use((req, res, next) => {
+    // Check if request is not secure (HTTP)
+    const isSecure = req.secure || req.headers['x-forwarded-proto'] === 'https';
+    
+    if (!isSecure) {
+      // Redirect to HTTPS
+      const baseUrl = process.env.BASE_URL || `https://${req.headers.host}`;
+      const redirectUrl = `${baseUrl}${req.url}`;
+      return res.redirect(301, redirectUrl);
+    }
+    
+    // Check for non-www to www redirect (only if BASE_URL contains www)
+    const baseUrl = process.env.BASE_URL || '';
+    if (baseUrl.includes('www.') && req.headers.host && !req.headers.host.startsWith('www.')) {
+      const wwwUrl = `https://www.${req.headers.host}${req.url}`;
+      return res.redirect(301, wwwUrl);
+    }
+    
+    next();
+  });
+}
+
 // Enhanced CSP headers
 app.use(
   helmet({
@@ -3855,6 +3879,31 @@ app.use(
     customSiteTitle: 'EventFlow API Documentation',
   })
 );
+
+// Static assets with caching strategy (fixes poor cache headers)
+// Cache immutable assets for 1 year, other assets for 1 hour
+app.use((req, res, next) => {
+  // Skip caching for HTML files (they might change more often)
+  if (req.path.endsWith('.html')) {
+    res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
+    return next();
+  }
+  
+  // Cache versioned assets (with hash in filename) for 1 year
+  if (req.path.match(/\.[0-9a-f]{8,}\.(css|js|jpg|jpeg|png|gif|webp|svg|woff|woff2|ttf|eot)$/i)) {
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    return next();
+  }
+  
+  // Cache static assets (images, fonts, CSS, JS) for 1 week
+  if (req.path.match(/\.(css|js|jpg|jpeg|png|gif|webp|svg|woff|woff2|ttf|eot|ico)$/i)) {
+    res.setHeader('Cache-Control', 'public, max-age=604800, must-revalidate');
+    return next();
+  }
+  
+  // Default: no special caching
+  next();
+});
 
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));

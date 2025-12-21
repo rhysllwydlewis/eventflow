@@ -2485,12 +2485,29 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-// simple pageview beacon
-fetch('/api/metrics/track', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': window.__CSRF_TOKEN__ || '' },
-  body: JSON.stringify({ type: 'pageview', meta: { path: location.pathname } }),
-}).catch(() => {});
+// Simple pageview beacon - deferred to ensure CSRF token is loaded
+// Fixes 403 Forbidden error from empty CSRF token
+(function sendPageview() {
+  // Wait for CSRF token to be available or timeout after 2 seconds
+  const maxWait = 2000;
+  const startTime = Date.now();
+  
+  function attemptSend() {
+    if (window.__CSRF_TOKEN__) {
+      fetch('/api/metrics/track', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': window.__CSRF_TOKEN__ },
+        body: JSON.stringify({ type: 'pageview', meta: { path: location.pathname } }),
+      }).catch(() => {});
+    } else if (Date.now() - startTime < maxWait) {
+      // Retry after a short delay
+      setTimeout(attemptSend, 100);
+    }
+    // If token isn't available after maxWait, skip silently (it's just a tracking beacon)
+  }
+  
+  attemptSend();
+})();
 
 // Admin charts
 async function adminCharts() {

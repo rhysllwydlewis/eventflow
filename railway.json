@@ -10,5 +10,13 @@
     "restartPolicyMaxRetries": 3,
     "healthcheckPath": "/api/health",
     "healthcheckTimeout": 60
+  },
+  "environments": {
+    "production": {
+      "variables": {
+        "NODE_ENV": "production",
+        "RAILWAY_STATIC_URL": "https://www.event-flow.co.uk"
+      }
+    }
   }
 }

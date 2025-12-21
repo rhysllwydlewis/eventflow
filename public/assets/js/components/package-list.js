@@ -200,7 +200,7 @@ class PackageList {
       ? '<div class="package-card-featured-badge">Featured</div>'
       : '';
 
-    const imageUrl = pkg.image || 'https://source.unsplash.com/featured/800x600/?package,event';
+    const imageUrl = pkg.image || '/assets/images/placeholders/package-event.svg';
 
     card.innerHTML = `
       ${featuredBadge}
