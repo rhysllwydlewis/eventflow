@@ -17,7 +17,7 @@
  * - Check server startup logs for validation errors
  * - If using MongoDB, ensure MONGODB_URI points to cloud database (not localhost)
  * - Verify BASE_URL matches your actual domain
- * - Email service (AWS SES/SMTP) is optional - warnings logged if not configured
+ * - Email service (Mailgun) is optional - warnings logged if not configured
  * - Check /api/health endpoint for service status
  */
 
@@ -325,61 +325,13 @@ const healthCheckLimiter = rateLimit({
   message: 'Too many health check requests',
 });
 
-// ---------- Email (safe dev mode) ----------
+// ---------- Email Configuration ----------
+// Mailgun is the only supported email provider
 const EMAIL_ENABLED = String(process.env.EMAIL_ENABLED || 'false').toLowerCase() === 'true';
 const FROM_EMAIL = process.env.FROM_EMAIL || 'no-reply@eventflow.local';
 
-// AWS SES Configuration
-const AWS_SES_REGION = process.env.AWS_SES_REGION || 'eu-west-2';
-const AWS_SES_ACCESS_KEY = process.env.AWS_SES_ACCESS_KEY_ID;
-const AWS_SES_SECRET_KEY = process.env.AWS_SECRET_ACCESS_KEY;
-
-let sesClient = null;
-let AWS_SES_ENABLED = false;
-
-// Initialize AWS SES if credentials are provided
-if (AWS_SES_ACCESS_KEY && AWS_SES_SECRET_KEY) {
-  try {
-    const AWS = require('aws-sdk');
-    AWS.config.update({
-      region: AWS_SES_REGION,
-      accessKeyId: AWS_SES_ACCESS_KEY,
-      secretAccessKey: AWS_SES_SECRET_KEY,
-    });
-    sesClient = new AWS.SES({ apiVersion: '2010-12-01' });
-    AWS_SES_ENABLED = true;
-    console.log(`AWS SES configured for region: ${AWS_SES_REGION}`);
-  } catch (err) {
-    console.warn('AWS SES configuration failed:', err.message);
-  }
-}
-
-/**
- * Optional SendGrid helper:
- * If SENDGRID_API_KEY is set (and no explicit SMTP_HOST), configure SMTP to use SendGrid.
- * This works both locally and in production.
- */
-if (!process.env.SMTP_HOST && process.env.SENDGRID_API_KEY && !AWS_SES_ENABLED) {
-  process.env.SMTP_HOST = 'smtp.sendgrid.net';
-  process.env.SMTP_PORT = process.env.SMTP_PORT || '587';
-  // For SendGrid SMTP, the username is always literally 'apikey'
-  process.env.SMTP_USER = process.env.SMTP_USER || 'apikey';
-  process.env.SMTP_PASS = process.env.SMTP_PASS || process.env.SENDGRID_API_KEY;
-}
-
-let transporter = null;
-
-if (EMAIL_ENABLED && process.env.SMTP_HOST && !AWS_SES_ENABLED) {
-  transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: Number(process.env.SMTP_PORT || 587),
-    secure: false,
-    auth:
-      process.env.SMTP_USER && process.env.SMTP_PASS
-        ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
-        : undefined,
-  });
-}
+// Note: Mailgun configuration is handled by utils/mailgun.js
+// This section is kept minimal as email is now exclusively via Mailgun
 
 // Validate production environment
 if (process.env.NODE_ENV === 'production') {
@@ -401,10 +353,11 @@ if (process.env.NODE_ENV === 'production') {
 
   // Warn about email configuration but don't block startup
   if (EMAIL_ENABLED) {
-    if (!AWS_SES_ENABLED && !transporter) {
-      console.warn('Warning: EMAIL_ENABLED=true but no email service configured.');
-      console.warn('Set up AWS SES or SMTP for email delivery, or set EMAIL_ENABLED=false.');
-      console.warn('Emails will be saved to /outbox folder until service is configured.');
+    const mailgunUtil = require('./utils/mailgun');
+    if (!mailgunUtil.isMailgunEnabled()) {
+      console.warn('Warning: EMAIL_ENABLED=true but Mailgun is not configured.');
+      console.warn('Set MAILGUN_API_KEY and MAILGUN_DOMAIN in your .env file.');
+      console.warn('Emails will be saved to /outbox folder until Mailgun is configured.');
     }
     if (!process.env.FROM_EMAIL) {
       console.warn('Warning: FROM_EMAIL not set. Using default value: no-reply@eventflow.local');
@@ -456,93 +409,24 @@ function loadEmailTemplate(templateName, data) {
 }
 
 async function sendMail(toOrOpts, subject, text) {
-  // Support both legacy (to, subject, text) and object-based calls: sendMail({ to, subject, text, html, template, templateData })
-  let to = toOrOpts;
-  let subj = subject;
-  let body = text;
-  let html = null;
-  let template = null;
-  let templateData = {};
-
+  // Mailgun is the only email provider - delegate to utils/mailgun.js
+  const mailgunUtil = require('./utils/mailgun');
+  
+  // Support both legacy (to, subject, text) and object-based calls
+  let options = {};
+  
   if (toOrOpts && typeof toOrOpts === 'object') {
-    to = toOrOpts.to;
-    subj = toOrOpts.subject;
-    body = toOrOpts.text || '';
-    html = toOrOpts.html || null;
-    template = toOrOpts.template || null;
-    templateData = toOrOpts.templateData || {};
+    options = toOrOpts;
+  } else {
+    options = {
+      to: toOrOpts,
+      subject: subject,
+      text: text,
+    };
   }
-
-  // Load template if specified
-  if (template && !html) {
-    html = loadEmailTemplate(template, templateData);
-  }
-
-  const outDir = ensureOutbox();
-  const safeTo = Array.isArray(to) ? to.join(', ') : to;
-  const blob = `To: ${safeTo}\nFrom: ${FROM_EMAIL}\nSubject: ${subj}\n\n${html || body}\n`;
-  fs.writeFileSync(path.join(outDir, `email-${Date.now()}.eml`), blob, 'utf8');
-
-  // Try AWS SES first
-  if (AWS_SES_ENABLED && sesClient && to) {
-    try {
-      const params = {
-        Source: FROM_EMAIL,
-        Destination: {
-          ToAddresses: Array.isArray(to) ? to : [to],
-        },
-        Message: {
-          Subject: {
-            Data: subj,
-            Charset: 'UTF-8',
-          },
-          Body: html
-            ? {
-                Html: {
-                  Data: html,
-                  Charset: 'UTF-8',
-                },
-              }
-            : {
-                Text: {
-                  Data: body,
-                  Charset: 'UTF-8',
-                },
-              },
-        },
-      };
-
-      await sesClient.sendEmail(params).promise();
-      console.log(`Email sent via AWS SES to ${safeTo}`);
-      return;
-    } catch (e) {
-      console.error('Error sending email via AWS SES:', e.message);
-      // Fall through to SMTP if SES fails
-    }
-  }
-
-  // Fall back to SMTP/SendGrid
-  if (transporter && to) {
-    try {
-      const mailOptions = {
-        from: FROM_EMAIL,
-        to,
-        subject: subj,
-      };
-
-      if (html) {
-        mailOptions.html = html;
-        mailOptions.text = body; // Provide text fallback
-      } else {
-        mailOptions.text = body;
-      }
-
-      await transporter.sendMail(mailOptions);
-      console.log(`Email sent via SMTP to ${safeTo}`);
-    } catch (e) {
-      console.error('Error sending email via transporter:', e.message);
-    }
-  }
+  
+  // Delegate to Mailgun utility
+  return mailgunUtil.sendMail(options);
 }
 
 // ---------- Auth helpers ----------
@@ -3811,13 +3695,9 @@ app.get('/api/health', healthCheckLimiter, async (_req, res) => {
     version: APP_VERSION,
     time: new Date().toISOString(),
     email: EMAIL_ENABLED
-      ? AWS_SES_ENABLED
-        ? 'aws-ses'
-        : transporter
-          ? 'smtp'
-          : mailgun.isMailgunEnabled()
-            ? 'mailgun'
-            : 'disabled'
+      ? mailgun.isMailgunEnabled()
+        ? 'mailgun'
+        : 'disabled'
       : 'disabled',
     environment: process.env.NODE_ENV || 'development',
   };
@@ -3834,28 +3714,11 @@ app.get('/api/health', healthCheckLimiter, async (_req, res) => {
     checks.databaseError = error.message;
   }
 
-  // Check email service (non-critical, won't affect overall health)
+  // Check Mailgun status (non-critical, won't affect overall health)
   if (mailgun.isMailgunEnabled()) {
-    // Mailgun is configured
     const mailgunStatus = mailgun.getMailgunStatus();
     checks.emailStatus = 'configured';
     checks.mailgunDomain = mailgunStatus.domain;
-  } else if (AWS_SES_ENABLED && sesClient) {
-    try {
-      await sesClient.getSendQuota().promise();
-      checks.emailStatus = 'connected';
-    } catch (e) {
-      checks.emailStatus = 'error';
-      checks.emailError = e.message;
-    }
-  } else if (transporter && EMAIL_ENABLED) {
-    try {
-      await transporter.verify();
-      checks.emailStatus = 'connected';
-    } catch (e) {
-      checks.emailStatus = 'error';
-      checks.emailError = e.message;
-    }
   } else {
     checks.emailStatus = EMAIL_ENABLED ? 'not_configured' : 'disabled';
   }
@@ -4101,31 +3964,9 @@ async function startServer() {
         const mailgunStatus = mailgun.getMailgunStatus();
         console.log(`   ✅ Email: Mailgun configured (${mailgunStatus.domain})`);
         console.log('   ✅ Mailgun ready to send emails');
-      } else if (AWS_SES_ENABLED) {
-        console.log('   ✅ Email: AWS SES configured');
-        // Test AWS SES connection
-        try {
-          await sesClient.getSendQuota().promise();
-          console.log('   ✅ AWS SES connection verified');
-        } catch (error) {
-          console.warn('   ⚠️  AWS SES connection failed:', error.message);
-          console.warn('   Email features may not work correctly');
-          console.warn('   Check your AWS SES credentials and permissions');
-        }
-      } else if (transporter) {
-        console.log('   ✅ Email: SMTP configured');
-        // Test SMTP connection
-        try {
-          await transporter.verify();
-          console.log('   ✅ SMTP connection verified');
-        } catch (error) {
-          console.warn('   ⚠️  SMTP connection failed:', error.message);
-          console.warn('   Email features may not work correctly');
-          console.warn('   Check your SMTP credentials and configuration');
-        }
       } else {
-        console.warn('   ⚠️  Email enabled but no service configured');
-        console.warn('   Set up Mailgun, AWS SES or SMTP credentials for email delivery');
+        console.warn('   ⚠️  Email enabled but Mailgun not configured');
+        console.warn('   Set MAILGUN_API_KEY and MAILGUN_DOMAIN in your .env file');
         console.warn('   Emails will be saved to /outbox folder instead');
       }
     } else {

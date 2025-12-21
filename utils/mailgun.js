@@ -23,8 +23,11 @@ let MAILGUN_ENABLED = false;
 // Configuration
 const MAILGUN_API_KEY = process.env.MAILGUN_API_KEY;
 const MAILGUN_DOMAIN = process.env.MAILGUN_DOMAIN;
-const MAILGUN_BASE_URL = process.env.MAILGUN_BASE_URL || 'https://api.eu.mailgun.net';
-const MAILGUN_FROM = process.env.MAILGUN_FROM || process.env.FROM_EMAIL || 'no-reply@eventflow.com';
+const MAILGUN_BASE_URL = process.env.MAILGUN_BASE_URL || 'https://api.mailgun.net';
+const MAILGUN_FROM =
+  process.env.MAILGUN_FROM ||
+  process.env.FROM_EMAIL ||
+  'postmaster@sandbox1cdf791145ab4b3b86f0ae40b56e221f.mailgun.org';
 const APP_BASE_URL = process.env.APP_BASE_URL || process.env.BASE_URL || 'http://localhost:3000';
 const UNSUBSCRIBE_SECRET =
   process.env.UNSUBSCRIBE_SECRET || process.env.JWT_SECRET || 'default-secret-change-in-production';
