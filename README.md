@@ -27,9 +27,11 @@ A production-ready, feature-rich platform connecting event service suppliers (ph
 
 2. **Configure Environment Variables** on your deployment platform:
 
+   > **Note:** The `.env.example` file includes a pre-configured MongoDB connection string for this EventFlow instance. You can use it directly or replace it with your own MongoDB Atlas credentials.
+
    ```bash
    # Required
-   MONGODB_URI=mongodb+srv://your-actual-connection-string
+   MONGODB_URI=mongodb+srv://rhysllwydlewis_db_user:PFURJbvrEVlZ1Jvj@cluster0.ex621ix.mongodb.net/eventflow?retryWrites=true&w=majority
    JWT_SECRET=your-random-secret-min-32-chars
    NODE_ENV=production
    BASE_URL=https://your-app.railway.app
@@ -449,13 +451,14 @@ See `firebase-admin.js` for backend Firebase configuration.
    - Set `STORAGE_TYPE=firebase` in `.env` (already default)
 
 3. **Production Setup**: To use Firebase in production:
+
    ```env
    # Required: Firebase Project ID
    FIREBASE_PROJECT_ID=eventflow-ffb12
-   
+
    # Required for production: Service Account Key (download from Firebase Console)
    FIREBASE_SERVICE_ACCOUNT_KEY='{"type":"service_account","project_id":"eventflow-ffb12",...}'
-   
+
    # Storage Configuration
    STORAGE_TYPE=firebase
    FIREBASE_STORAGE_BUCKET=eventflow-ffb12.firebasestorage.app
