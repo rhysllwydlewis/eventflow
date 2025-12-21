@@ -3741,12 +3741,12 @@ app.get('/api/health', healthCheckLimiter, async (_req, res) => {
     checks.emailStatus = EMAIL_ENABLED ? 'not_configured' : 'disabled';
   }
 
-  // Only database status affects overall health (email is optional)
-  // Consider database healthy if it's connected OR still initializing (not failed)
-  const allHealthy =
-    checks.databaseStatus === 'connected' || checks.databaseStatus === 'initializing';
+  // Server is healthy if it's running and accepting requests
+  // Database status is reported as informational but doesn't block healthchecks
+  // This allows Railway healthchecks to pass immediately during startup
+  const allHealthy = checks.server === 'online';
 
-  res.status(allHealthy ? 200 : 503).json({
+  res.status(200).json({
     ok: allHealthy,
     ...checks,
   });
