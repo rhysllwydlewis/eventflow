@@ -3940,76 +3940,8 @@ async function startServer() {
       }
     }
 
-    // 3. Initialize database connection
-    console.log('');
-    console.log('🔌 Connecting to database...');
-    try {
-      await dbUnified.initializeDatabase();
-      console.log('   ✅ Database connection successful');
-    } catch (error) {
-      console.error('');
-      console.error('='.repeat(70));
-      console.error('❌ DATABASE CONNECTION FAILED');
-      console.error('='.repeat(70));
-      console.error('');
-      console.error('Could not connect to the database.');
-      console.error('');
-      console.error('Error details:');
-      console.error(`   ${error.message}`);
-      console.error('');
-
-      if (
-        error.message.includes('Invalid scheme') ||
-        error.message.includes('placeholder') ||
-        error.message.includes('MONGODB_URI')
-      ) {
-        console.error('🔍 This looks like a MongoDB configuration issue.');
-        console.error('');
-        console.error('📚 Follow the setup guide:');
-        console.error('   → MONGODB_SETUP_SIMPLE.md (beginner-friendly)');
-        console.error('   → Get MongoDB Atlas free: https://cloud.mongodb.com/');
-        console.error('');
-      }
-
-      console.error('='.repeat(70));
-      console.error('');
-      process.exit(1);
-    }
-
-    // 4. Check email service
-    console.log('');
-    console.log('📧 Checking email configuration...');
-    if (EMAIL_ENABLED) {
-      if (mailgun.isMailgunEnabled()) {
-        const mailgunStatus = mailgun.getMailgunStatus();
-        console.log(`   ✅ Email: Mailgun configured (${mailgunStatus.domain})`);
-        console.log('   ✅ Mailgun ready to send emails');
-      } else {
-        console.warn('   ⚠️  Email enabled but Mailgun not configured');
-        console.warn('   Set MAILGUN_API_KEY and MAILGUN_DOMAIN in your .env file');
-        console.warn('   Emails will be saved to /outbox folder instead');
-      }
-    } else {
-      console.log('   ℹ️  Email disabled (EMAIL_ENABLED=false)');
-      console.log('   Emails will be saved to /outbox folder');
-    }
-
-    // 5. Check optional services
-    console.log('');
-    console.log('🔧 Checking optional services...');
-    if (STRIPE_ENABLED) {
-      console.log('   ✅ Stripe: Configured');
-    } else {
-      console.log('   ℹ️  Stripe: Not configured (optional)');
-    }
-
-    if (AI_ENABLED) {
-      console.log('   ✅ OpenAI: Configured');
-    } else {
-      console.log('   ℹ️  OpenAI: Not configured (optional)');
-    }
-
-    // 6. Start the server
+    // 3. Start the server IMMEDIATELY (before database initialization)
+    // This ensures Railway healthchecks can reach /api/health without waiting for database
     console.log('');
     console.log('🚀 Starting server...');
 
@@ -4032,7 +3964,86 @@ async function startServer() {
       console.log('');
       console.log('WebSocket server initialized for real-time features');
       console.log('Server is now accepting requests');
+      console.log('');
+      console.log('🔌 Database initialization running in background...');
     });
+
+    // 4. Initialize database connection in background (non-blocking)
+    // This allows the server to respond to healthchecks while database initializes
+    (async () => {
+      try {
+        console.log('   Connecting to database...');
+        await dbUnified.initializeDatabase();
+        console.log('   ✅ Database connection successful');
+      } catch (error) {
+        console.error('');
+        console.error('='.repeat(70));
+        console.error('⚠️  DATABASE CONNECTION FAILED');
+        console.error('='.repeat(70));
+        console.error('');
+        console.error('Warning: Could not connect to the database.');
+        console.error('Server will continue running with limited functionality:');
+        console.error('   • User authentication and data may not persist');
+        console.error('   • Local file storage will be used (non-persistent)');
+        console.error('   • Data will be lost on server restart');
+        console.error('');
+        console.error('Error details:');
+        console.error(`   ${error.message}`);
+        console.error('');
+
+        if (
+          error.message.includes('Invalid scheme') ||
+          error.message.includes('placeholder') ||
+          error.message.includes('MONGODB_URI')
+        ) {
+          console.error('🔍 This looks like a MongoDB configuration issue.');
+          console.error('');
+          console.error('📚 Follow the setup guide:');
+          console.error('   → MONGODB_SETUP_SIMPLE.md (beginner-friendly)');
+          console.error('   → Get MongoDB Atlas free: https://cloud.mongodb.com/');
+          console.error('');
+        }
+
+        console.error('='.repeat(70));
+        console.error('');
+      }
+
+      // 5. Check email service
+      console.log('');
+      console.log('📧 Checking email configuration...');
+      if (EMAIL_ENABLED) {
+        if (mailgun.isMailgunEnabled()) {
+          const mailgunStatus = mailgun.getMailgunStatus();
+          console.log(`   ✅ Email: Mailgun configured (${mailgunStatus.domain})`);
+          console.log('   ✅ Mailgun ready to send emails');
+        } else {
+          console.warn('   ⚠️  Email enabled but Mailgun not configured');
+          console.warn('   Set MAILGUN_API_KEY and MAILGUN_DOMAIN in your .env file');
+          console.warn('   Emails will be saved to /outbox folder instead');
+        }
+      } else {
+        console.log('   ℹ️  Email disabled (EMAIL_ENABLED=false)');
+        console.log('   Emails will be saved to /outbox folder');
+      }
+
+      // 6. Check optional services
+      console.log('');
+      console.log('🔧 Checking optional services...');
+      if (STRIPE_ENABLED) {
+        console.log('   ✅ Stripe: Configured');
+      } else {
+        console.log('   ℹ️  Stripe: Not configured (optional)');
+      }
+
+      if (AI_ENABLED) {
+        console.log('   ✅ OpenAI: Configured');
+      } else {
+        console.log('   ℹ️  OpenAI: Not configured (optional)');
+      }
+
+      console.log('');
+      console.log('🎉 Background initialization complete!');
+    })();
   } catch (error) {
     // Clear startup timeout
     clearTimeout(startupTimeout);
