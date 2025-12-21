@@ -3707,13 +3707,16 @@ app.get('/api/health', healthCheckLimiter, async (_req, res) => {
 
   if (dbStatus) {
     checks.database = dbStatus.type;
-    checks.databaseStatus = dbStatus.connected
-      ? 'connected'
-      : dbStatus.state === 'in_progress'
-        ? 'initializing'
-        : dbStatus.state === 'failed'
-          ? 'disconnected'
-          : 'disconnected';
+
+    // Determine database status based on state
+    if (dbStatus.connected) {
+      checks.databaseStatus = 'connected';
+    } else if (dbStatus.state === 'in_progress') {
+      checks.databaseStatus = 'initializing';
+    } else {
+      checks.databaseStatus = 'disconnected';
+    }
+
     if (dbStatus.error) {
       checks.databaseError = dbStatus.error;
     }

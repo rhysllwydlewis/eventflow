@@ -16,7 +16,7 @@ let mongodb = null;
 
 // Database initialization state tracking for health checks
 let initializationState = 'not_started'; // 'not_started', 'in_progress', 'completed', 'failed'
-let initializationError = null;
+const initializationError = null;
 
 /**
  * Timeout wrapper for database operations
@@ -50,58 +50,51 @@ async function initializeDatabase() {
   // Mark initialization as in progress
   initializationState = 'in_progress';
 
+  // Try Firebase Firestore first (with timeout)
   try {
-    // Try Firebase Firestore first (with timeout)
-    try {
-      // Firebase Admin initialization is synchronous, but admin.initializeApp()
-      // may hang when trying to fetch Application Default Credentials in production
-      // without proper configuration. We wrap this in a timeout to prevent hanging.
-      const initPromise = new Promise((resolve, reject) => {
-        try {
-          const result = initializeFirebaseAdmin();
-          resolve(result);
-        } catch (error) {
-          reject(error);
-        }
-      });
-
-      const { db } = await withTimeout(initPromise, 10000, 'Firebase initialization');
-      if (db) {
-        firestore = db;
-        dbType = 'firestore';
-        initializationState = 'completed';
-        console.log('✅ Using Firebase Firestore for data storage');
-        return dbType;
+    // Firebase Admin initialization is synchronous, but admin.initializeApp()
+    // may hang when trying to fetch Application Default Credentials in production
+    // without proper configuration. We wrap this in a timeout to prevent hanging.
+    const initPromise = new Promise((resolve, reject) => {
+      try {
+        const result = initializeFirebaseAdmin();
+        resolve(result);
+      } catch (error) {
+        reject(error);
       }
-    } catch (error) {
-      console.log('Firebase Firestore not available:', error.message);
-    }
+    });
 
-    // Try MongoDB next (with timeout)
-    try {
-      if (db.isMongoAvailable()) {
-        mongodb = await withTimeout(db.connect(), 10000, 'MongoDB connection');
-        dbType = 'mongodb';
-        initializationState = 'completed';
-        console.log('✅ Using MongoDB for data storage');
-        return dbType;
-      }
-    } catch (error) {
-      console.log('MongoDB not available:', error.message);
+    const { db } = await withTimeout(initPromise, 10000, 'Firebase initialization');
+    if (db) {
+      firestore = db;
+      dbType = 'firestore';
+      initializationState = 'completed';
+      console.log('✅ Using Firebase Firestore for data storage');
+      return dbType;
     }
-
-    // Fallback to local files
-    dbType = 'local';
-    initializationState = 'completed';
-    console.log('⚠️  Using local file storage (not suitable for production)');
-    console.log('   Set FIREBASE_PROJECT_ID or MONGODB_URI for cloud storage');
-    return dbType;
   } catch (error) {
-    // If initialization completely fails, mark as failed
-    initializationState = 'failed';
-    initializationError = error.message;
-    throw error;
+    console.log('Firebase Firestore not available:', error.message);
   }
+
+  // Try MongoDB next (with timeout)
+  try {
+    if (db.isMongoAvailable()) {
+      mongodb = await withTimeout(db.connect(), 10000, 'MongoDB connection');
+      dbType = 'mongodb';
+      initializationState = 'completed';
+      console.log('✅ Using MongoDB for data storage');
+      return dbType;
+    }
+  } catch (error) {
+    console.log('MongoDB not available:', error.message);
+  }
+
+  // Fallback to local files
+  dbType = 'local';
+  initializationState = 'completed';
+  console.log('⚠️  Using local file storage (not suitable for production)');
+  console.log('   Set FIREBASE_PROJECT_ID or MONGODB_URI for cloud storage');
+  return dbType;
 }
 
 /**
