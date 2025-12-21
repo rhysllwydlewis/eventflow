@@ -153,3 +153,6 @@ data/*.json.bak
 # Preserve sample data for reference
 !data/sample/
 optimize-images.js
+
+# Deployment notes (may contain sensitive information)
+DEPLOYMENT_NOTES.md

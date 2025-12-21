@@ -21,8 +21,8 @@ A production-ready, feature-rich platform connecting event service suppliers (ph
 ### Essential Steps (15 minutes)
 
 1. **Set up MongoDB Atlas** (Required - app won't start without this!)
-   - 📚 **[Follow our simple step-by-step guide →](MONGODB_SETUP_SIMPLE.md)** (no technical knowledge needed)
-   - 📚 Or see [MONGODB_SETUP.md](MONGODB_SETUP.md) for technical details
+   - 📚 **[Follow our simple step-by-step guide →](.github/docs/MONGODB_SETUP_SIMPLE.md)** (no technical knowledge needed)
+   - 📚 Or see [MONGODB_SETUP.md](.github/docs/MONGODB_SETUP.md) for technical details
    - Get your connection string from MongoDB Atlas
 
 2. **Configure Environment Variables** on your deployment platform:
@@ -49,14 +49,14 @@ A production-ready, feature-rich platform connecting event service suppliers (ph
 
 Getting "502 Bad Gateway" or "connection refused" errors? This usually means MongoDB isn't configured:
 
-| Error Message                                   | Solution                                                                                                                                    |
-| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| "Invalid scheme, expected connection string..." | You're using the placeholder from `.env.example`. Get your real connection string from MongoDB Atlas - [see guide](MONGODB_SETUP_SIMPLE.md) |
-| "Authentication failed" or "bad auth"           | Wrong password in connection string. Reset it in MongoDB Atlas → Database Access                                                            |
-| "Connection timeout" or "ENOTFOUND"             | IP not whitelisted. Add `0.0.0.0/0` in MongoDB Atlas → Network Access                                                                       |
-| "No cloud database configured"                  | `MONGODB_URI` environment variable not set on your deployment platform                                                                      |
+| Error Message                                   | Solution                                                                                                                                                 |
+| ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| "Invalid scheme, expected connection string..." | You're using the placeholder from `.env.example`. Get your real connection string from MongoDB Atlas - [see guide](.github/docs/MONGODB_SETUP_SIMPLE.md) |
+| "Authentication failed" or "bad auth"           | Wrong password in connection string. Reset it in MongoDB Atlas → Database Access                                                                         |
+| "Connection timeout" or "ENOTFOUND"             | IP not whitelisted. Add `0.0.0.0/0` in MongoDB Atlas → Network Access                                                                                    |
+| "No cloud database configured"                  | `MONGODB_URI` environment variable not set on your deployment platform                                                                                   |
 
-**📚 Detailed troubleshooting:** See [MONGODB_SETUP_SIMPLE.md](MONGODB_SETUP_SIMPLE.md#common-problems-and-solutions)
+**📚 Detailed troubleshooting:** See [MONGODB_SETUP_SIMPLE.md](.github/docs/MONGODB_SETUP_SIMPLE.md#common-problems-and-solutions)
 
 ---
 
@@ -123,7 +123,7 @@ Getting "502 Bad Gateway" or "connection refused" errors? This usually means Mon
 - Node.js 16+ and npm
 - **Optional:** MongoDB 6.0+ (local or Atlas) for production deployments
 
-**Note:** EventFlow uses file-based JSON storage by default for zero-configuration setup. MongoDB is available for production use - see [MONGODB_SETUP.md](MONGODB_SETUP.md).
+**Note:** EventFlow uses file-based JSON storage by default for zero-configuration setup. MongoDB is available for production use - see [MONGODB_SETUP.md](.github/docs/MONGODB_SETUP.md).
 
 ### Installation
 
@@ -174,7 +174,7 @@ See [DOCKER_GUIDE.md](DOCKER_GUIDE.md) for details.
 ### Getting Started
 
 - **[Production Deployment Quick Start](#-quick-start---production-deployment)** - Deploy in 15 minutes
-- **[MongoDB Setup (Simple Guide)](MONGODB_SETUP_SIMPLE.md)** - For non-technical users
+- **[MongoDB Setup (Simple Guide)](.github/docs/MONGODB_SETUP_SIMPLE.md)** - For non-technical users
 - **[Troubleshooting 502 Errors](#troubleshooting-502-errors)** - Common deployment issues
 
 ### Complete Guides
@@ -182,7 +182,7 @@ See [DOCKER_GUIDE.md](DOCKER_GUIDE.md) for details.
 - **[API Documentation](API_DOCUMENTATION.md)** - Complete API reference with examples
 - **[Firebase Storage Guide](FIREBASE_STORAGE_GUIDE.md)** - Using Firebase as primary storage (database + files)
 - **[Deployment Guide](DEPLOYMENT_GUIDE.md)** - Production deployment instructions
-- **[MongoDB Setup (Technical)](MONGODB_SETUP.md)** - Database configuration guide
+- **[MongoDB Setup (Technical)](.github/docs/MONGODB_SETUP.md)** - Database configuration guide
 - **[Docker Guide](DOCKER_GUIDE.md)** - Docker Compose usage
 - **[Interactive API Docs](http://localhost:3000/api-docs)** - Swagger UI (when running)
 
@@ -293,7 +293,7 @@ See [ADMIN_API.md](ADMIN_API.md) for detailed admin endpoint documentation.
 ```env
 # Database - MOST IMPORTANT! App won't start without this
 MONGODB_URI=mongodb+srv://user:pass@cluster.mongodb.net/eventflow
-# 👆 Get this from MongoDB Atlas - see MONGODB_SETUP_SIMPLE.md
+# 👆 Get this from MongoDB Atlas - see .github/docs/MONGODB_SETUP_SIMPLE.md
 
 # Security
 JWT_SECRET=your-secret-key-min-32-chars
@@ -321,7 +321,7 @@ AWS_SECRET_ACCESS_KEY=your-secret
 ```
 
 **⚠️ Common mistake:** Using the placeholder value from `.env.example` will cause 502 errors!  
-Get your real connection string: **[MongoDB Setup Guide](MONGODB_SETUP_SIMPLE.md)**
+Get your real connection string: **[MongoDB Setup Guide](.github/docs/MONGODB_SETUP_SIMPLE.md)**
 
 See [.env.example](.env.example) for all options.
 
@@ -430,41 +430,75 @@ const snapshot = await db.collection('events').get();
 
 See `firebase-admin.js` for backend Firebase configuration.
 
-### Firebase as Primary Storage
+### Database Configuration
 
-**EventFlow is configured to use Firebase as the primary cloud storage solution:**
+**EventFlow uses MongoDB Atlas as the primary database for production deployments:**
 
-1. **Database (Firestore)**: The system automatically prioritizes Firebase Firestore over MongoDB and local storage
-   - All data (users, packages, posts, reviews, etc.) stored in Firestore
-   - Configured in `db-unified.js` to try Firestore first
+1. **MongoDB Atlas (PRIMARY - Recommended for Production)**
+   - The system automatically prioritizes MongoDB over Firebase Firestore and local storage
+   - All data (users, packages, posts, reviews, etc.) stored in MongoDB Atlas
+   - Configured in `db-unified.js` to try MongoDB first
+   - Set `MONGODB_URI` in environment variables with your Atlas connection string
+
+   **Setup Instructions:**
+   - Create a free MongoDB Atlas account at https://cloud.mongodb.com/
+   - Follow the [MongoDB Setup Guide](.github/docs/MONGODB_SETUP_SIMPLE.md) for step-by-step instructions
+   - Get your connection string and configure it in Railway or your hosting platform
+   - **Important**: Never commit your actual connection string to git
+
+   ```env
+   # Production MongoDB Configuration
+   MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/?retryWrites=true&w=majority
+   MONGODB_DB_NAME=eventflow
+   ```
+
+2. **Firebase Firestore (Fallback Option)**
+   - If MongoDB is not available, the system falls back to Firebase Firestore
+   - Useful for Firebase-specific features or as an alternative cloud database
    - Set `FIREBASE_PROJECT_ID` or `FIREBASE_SERVICE_ACCOUNT_KEY` in environment variables
 
-2. **File Storage**: Photos and media files are stored in Firebase Storage
+   ```env
+   # Firebase Configuration (optional fallback)
+   FIREBASE_PROJECT_ID=eventflow-ffb12
+   FIREBASE_SERVICE_ACCOUNT_KEY='{"type":"service_account","project_id":"eventflow-ffb12",...}'
+   ```
+
+3. **Local Storage (Development Only)**
+   - If neither MongoDB nor Firebase is configured, falls back to local file storage
+   - **Not suitable for production** - data is stored in JSON files
+   - Useful for quick local development and testing
+
+4. **File Storage (Photos & Media)**
+   - Photos and media files are stored in Firebase Storage
    - Supplier photos use Firebase Storage (`supplier-photo-upload.js`)
    - Storage bucket: `eventflow-ffb12.firebasestorage.app`
    - Set `STORAGE_TYPE=firebase` in `.env` (already default)
 
-3. **Production Setup**: To use Firebase in production:
-
    ```env
-   # Required: Firebase Project ID
-   FIREBASE_PROJECT_ID=eventflow-ffb12
-
-   # Required for production: Service Account Key (download from Firebase Console)
-   FIREBASE_SERVICE_ACCOUNT_KEY='{"type":"service_account","project_id":"eventflow-ffb12",...}'
-
    # Storage Configuration
    STORAGE_TYPE=firebase
    FIREBASE_STORAGE_BUCKET=eventflow-ffb12.firebasestorage.app
    ```
 
-4. **How it works**:
-   - On startup, `db-unified.js` attempts Firebase Firestore connection first
-   - If Firebase is available, all database operations use Firestore
-   - If not configured, falls back to MongoDB, then local files (dev only)
-   - Check logs on startup for: `✅ Using Firebase Firestore for data storage`
+5. **How Database Priority Works**:
+   - On startup, `db-unified.js` attempts MongoDB connection first (PRIMARY)
+   - If MongoDB is not available or fails, it tries Firebase Firestore
+   - If neither cloud database is configured, falls back to local files (dev only)
+   - Check logs on startup for connection status:
+     - `✅ Using MongoDB for data storage (PRIMARY)` - Production ready
+     - `✅ Using Firebase Firestore for data storage` - Fallback active
+     - `⚠️  Using local file storage` - Development only, not for production
 
-**To verify Firebase is active**: Check server logs after starting the app. You should see "Using Firebase Firestore for data storage" instead of "Using local file storage".
+**To verify your database is connected**: Check server logs after starting the app, or visit `/api/health` endpoint. You should see MongoDB or Firestore status, not local storage in production.
+
+**Production Deployment Checklist**:
+
+- ✅ MongoDB Atlas account created and cluster configured
+- ✅ Database user with read/write permissions created
+- ✅ Network access configured (IP whitelist or allow all)
+- ✅ `MONGODB_URI` environment variable set in Railway/hosting platform
+- ✅ Connection string uses actual credentials (not placeholders)
+- ✅ Never commit real credentials to git - use environment variables only
 
 ## 📁 Project Structure
 
@@ -599,7 +633,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **[ADMIN_API.md](ADMIN_API.md)** - Admin API endpoint documentation
 - **[GDPR_COMPLIANCE.md](GDPR_COMPLIANCE.md)** - Data protection and privacy
 - **[DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)** - Production deployment
-- **[MONGODB_SETUP.md](MONGODB_SETUP.md)** - Database configuration
+- **[MONGODB_SETUP.md](.github/docs/MONGODB_SETUP.md)** - Database configuration
 - **[AWS_SES_SETUP.md](AWS_SES_SETUP.md)** - Email service setup
 - **[2FA_IMPLEMENTATION.md](2FA_IMPLEMENTATION.md)** - Two-factor auth (planned)
 
