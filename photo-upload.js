@@ -1,6 +1,6 @@
 /**
  * Photo Upload Middleware and Utilities
- * Handles file uploads, image optimization, and local storage
+ * Handles file uploads, image optimization, and local storage only
  */
 
 'use strict';

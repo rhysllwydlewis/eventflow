@@ -3956,12 +3956,10 @@ async function startServer() {
         console.warn('   • Data will be LOST on server restart/redeployment');
         console.warn('   • NOT RECOMMENDED for production with real user data');
         console.warn('');
-        console.warn('For persistent data storage, set up MongoDB Atlas:');
-        console.warn('');
-        console.warn('  MongoDB Atlas (free tier available):');
-        console.warn('    1. Create account at: https://cloud.mongodb.com/');
-        console.warn('    2. Follow the setup guide: MONGODB_SETUP_SIMPLE.md');
-        console.warn('    3. Set MONGODB_URI environment variable');
+        console.warn('To set up persistent data storage with MongoDB Atlas:');
+        console.warn('   1. Create account at: https://cloud.mongodb.com/');
+        console.warn('   2. Follow the setup guide: MONGODB_SETUP_SIMPLE.md');
+        console.warn('   3. Set MONGODB_URI environment variable');
         console.warn('');
         console.warn('📚 Documentation:');
         console.warn('   → Simple guide: MONGODB_SETUP_SIMPLE.md');
