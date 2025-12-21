@@ -82,7 +82,8 @@ const mailgun = require('./utils/mailgun');
 // Database modules for startup validation
 const dbUnified = require('./db-unified');
 const { isFirebaseAvailable } = require('./firebase-admin');
-const { isMongoAvailable } = require('./db');
+const mongoDb = require('./db');
+const { isMongoAvailable } = mongoDb;
 
 // Photo upload utilities
 const photoUpload = require('./photo-upload');
@@ -3694,62 +3695,106 @@ app.get('/api/admin/audit-logs', authRequired, roleRequired('admin'), (req, res)
 
 // Basic API healthcheck with rate limiting
 app.get('/api/health', healthCheckLimiter, async (_req, res) => {
+  // Server is always "ok" if it's running and accepting requests
+  // Database status is reported as a service status, not overall health
+  const timestamp = new Date().toISOString();
+
   // Determine email status
   let emailStatus = 'disabled';
   if (EMAIL_ENABLED) {
     emailStatus = mailgun.isMailgunEnabled() ? 'mailgun' : 'disabled';
   }
 
-  const checks = {
-    server: 'online',
-    version: APP_VERSION,
-    time: new Date().toISOString(),
-    email: emailStatus,
-    environment: process.env.NODE_ENV || 'development',
+  // Initialize response with server status
+  const response = {
+    status: 'ok', // Always ok if server is running
+    timestamp,
+    services: {
+      server: 'running',
+    },
   };
 
-  // Check database status using cached state (fast, doesn't re-initialize)
-  const dbStatus = dbUnified.getDatabaseStatus ? dbUnified.getDatabaseStatus() : null;
+  // Check MongoDB connection status (non-blocking)
+  try {
+    const mongoState = mongoDb.getConnectionState ? mongoDb.getConnectionState() : null;
+    const mongoError = mongoDb.getConnectionError ? mongoDb.getConnectionError() : null;
 
-  if (dbStatus) {
-    checks.database = dbStatus.type;
-
-    // Determine database status based on state
-    if (dbStatus.connected) {
-      checks.databaseStatus = 'connected';
-    } else if (dbStatus.state === 'in_progress') {
-      checks.databaseStatus = 'initializing';
+    if (mongoState) {
+      // Map MongoDB states to service status
+      if (mongoState === 'connected') {
+        response.services.mongodb = 'connected';
+      } else if (mongoState === 'connecting') {
+        response.services.mongodb = 'connecting';
+        response.status = 'degraded'; // Server is degraded while DB is connecting
+      } else if (mongoState === 'error') {
+        response.services.mongodb = 'disconnected';
+        response.status = 'degraded';
+        if (mongoError) {
+          response.services.mongodbError = mongoError;
+        }
+      } else {
+        response.services.mongodb = 'disconnected';
+      }
     } else {
-      checks.databaseStatus = 'disconnected';
+      // Fallback for older db.js without state tracking
+      response.services.mongodb = mongoDb.isConnected() ? 'connected' : 'disconnected';
     }
-
-    if (dbStatus.error) {
-      checks.databaseError = dbStatus.error;
-    }
-  } else {
-    // Fallback for older db-unified versions without getDatabaseStatus
-    checks.database = dbUnified.getDatabaseType ? dbUnified.getDatabaseType() : 'unknown';
-    checks.databaseStatus = 'unknown';
+  } catch (error) {
+    // If MongoDB check fails, report it but still return healthy
+    response.services.mongodb = 'unknown';
+    response.services.mongodbError = error.message;
+    response.status = 'degraded';
   }
 
-  // Check Mailgun status (non-critical, won't affect overall health)
+  // Check database status from unified layer
+  try {
+    const dbStatus = dbUnified.getDatabaseStatus ? dbUnified.getDatabaseStatus() : null;
+
+    if (dbStatus) {
+      response.services.database = dbStatus.type;
+
+      // Determine database status based on state
+      if (dbStatus.connected) {
+        response.services.databaseStatus = 'connected';
+      } else if (dbStatus.state === 'in_progress') {
+        response.services.databaseStatus = 'initializing';
+        response.status = 'degraded';
+      } else {
+        response.services.databaseStatus = 'disconnected';
+      }
+
+      if (dbStatus.error) {
+        response.services.databaseError = dbStatus.error;
+      }
+    } else {
+      // Fallback for older db-unified versions
+      response.services.database = dbUnified.getDatabaseType
+        ? dbUnified.getDatabaseType()
+        : 'unknown';
+      response.services.databaseStatus = 'unknown';
+    }
+  } catch (error) {
+    response.services.database = 'unknown';
+    response.services.databaseError = error.message;
+  }
+
+  // Add additional service information
+  response.version = APP_VERSION;
+  response.environment = process.env.NODE_ENV || 'development';
+  response.email = emailStatus;
+
+  // Check Mailgun status (non-critical)
   if (mailgun.isMailgunEnabled()) {
     const mailgunStatus = mailgun.getMailgunStatus();
-    checks.emailStatus = 'configured';
-    checks.mailgunDomain = mailgunStatus.domain;
+    response.services.emailStatus = 'configured';
+    response.services.mailgunDomain = mailgunStatus.domain;
   } else {
-    checks.emailStatus = EMAIL_ENABLED ? 'not_configured' : 'disabled';
+    response.services.emailStatus = EMAIL_ENABLED ? 'not_configured' : 'disabled';
   }
 
-  // Server is healthy if it's running and accepting requests
-  // Database status is reported as informational but doesn't block healthchecks
-  // This allows Railway healthchecks to pass immediately during startup
-  const allHealthy = checks.server === 'online';
-
-  res.status(200).json({
-    ok: allHealthy,
-    ...checks,
-  });
+  // Always return 200 OK - Railway health checks should pass immediately
+  // even if database is still connecting (degraded state)
+  res.status(200).json(response);
 });
 
 // ---------- Static & 404 ----------

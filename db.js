@@ -9,13 +9,16 @@ const { MongoClient } = require('mongodb');
 
 let client = null;
 let db = null;
+let connectionState = 'disconnected'; // 'disconnected', 'connecting', 'connected', 'error'
+let connectionError = null;
 
 // Connection options for better reliability
 const options = {
   maxPoolSize: 10,
   minPoolSize: 2,
-  serverSelectionTimeoutMS: 5000,
+  serverSelectionTimeoutMS: 30000, // Increased for Railway DNS resolution
   socketTimeoutMS: 45000,
+  connectTimeoutMS: 30000, // Increased for Railway
   retryWrites: true,
   retryReads: true,
 };
@@ -180,112 +183,146 @@ function getConnectionUri() {
 }
 
 /**
- * Connect to MongoDB database
+ * Connect to MongoDB database with retry logic
+ * @param {number} maxRetries - Maximum number of retry attempts
+ * @param {number} retryDelay - Initial delay between retries in ms
  * @returns {Promise<Object>} Database instance
  */
-async function connect() {
-  if (db) {
+async function connect(maxRetries = 3, retryDelay = 2000) {
+  if (db && connectionState === 'connected') {
     return db;
   }
 
-  try {
-    const uri = getConnectionUri();
-    const isProduction = process.env.NODE_ENV === 'production';
-
-    // Log connection attempt (without exposing credentials)
-    const sanitizedUri = uri.replace(/\/\/([^:]+):([^@]+)@/, '//<credentials>@');
-    console.log(`Connecting to MongoDB...`);
-    console.log(`Environment: ${isProduction ? 'production' : 'development'}`);
-    console.log(`URI: ${sanitizedUri}`);
-
-    client = new MongoClient(uri, options);
-    await client.connect();
-
-    // Get database name from URI or use default
-    const dbName = process.env.MONGODB_DB_NAME || 'eventflow';
-    db = client.db(dbName);
-
-    console.log(`✅ Connected to MongoDB database: ${dbName}`);
-
-    // Test the connection
-    await db.admin().ping();
-    console.log('✅ MongoDB connection verified');
-
-    return db;
-  } catch (error) {
-    console.error('');
-    console.error('='.repeat(70));
-    console.error('❌ Failed to connect to MongoDB');
-    console.error('='.repeat(70));
-    console.error('');
-    console.error(`Error: ${error.message}`);
-    console.error('');
-
-    // Provide helpful error messages based on error type
-    if (error.message.includes('ENOTFOUND') || error.message.includes('ECONNREFUSED')) {
-      console.error('🔍 Diagnosis: Network error - Cannot reach MongoDB server');
-      console.error('');
-      console.error('This usually means:');
-      console.error('  • Your MongoDB cluster hostname is incorrect');
-      console.error('  • The cluster is not accessible from your network');
-      console.error('  • Your IP address is not whitelisted in MongoDB Atlas');
-      console.error('');
-      console.error('What to check:');
-      console.error('  1. Verify your MONGODB_URI connection string is correct');
-      console.error('  2. In MongoDB Atlas, go to Network Access and add your IP');
-      console.error('     (or use 0.0.0.0/0 to allow all IPs for testing)');
-      console.error('  3. Check that your cluster is running and not paused');
-      console.error('');
-    } else if (
-      error.message.includes('authentication') ||
-      error.message.includes('AuthenticationFailed')
-    ) {
-      console.error('🔍 Diagnosis: Authentication failed');
-      console.error('');
-      console.error('This means your username or password is incorrect.');
-      console.error('');
-      console.error('What to do:');
-      console.error('  1. Go to MongoDB Atlas → Database Access');
-      console.error('  2. Check your database user exists');
-      console.error('  3. If needed, create a new user with a strong password');
-      console.error('  4. Update MONGODB_URI with the correct credentials:');
-      console.error('     mongodb+srv://USERNAME:PASSWORD@cluster...');
-      console.error('');
-      console.error('⚠️  Note: The password should be URL-encoded if it contains');
-      console.error('   special characters like @, :, /, ?, #, [, ]');
-      console.error('');
-    } else if (error.message.includes('timeout')) {
-      console.error('🔍 Diagnosis: Connection timeout');
-      console.error('');
-      console.error('The MongoDB server is not responding.');
-      console.error('');
-      console.error('What to check:');
-      console.error('  1. Your internet connection is working');
-      console.error('  2. MongoDB Atlas cluster is not paused');
-      console.error('  3. Network Access settings allow your IP address');
-      console.error('  4. No firewall is blocking the connection');
-      console.error('');
-    } else if (error.message.includes('Invalid scheme')) {
-      console.error('🔍 Diagnosis: Invalid connection string format');
-      console.error('');
-      console.error('Your MONGODB_URI must start with:');
-      console.error('  • mongodb:// for standard connection');
-      console.error('  • mongodb+srv:// for MongoDB Atlas (recommended)');
-      console.error('');
+  // If already connecting, wait a bit and check again
+  if (connectionState === 'connecting') {
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    if (db && connectionState === 'connected') {
+      return db;
     }
-
-    console.error('📚 Need help?');
-    console.error('   → See MONGODB_SETUP_SIMPLE.md for detailed setup guide');
-    console.error('   → MongoDB Atlas: https://cloud.mongodb.com/');
-    console.error(
-      '   → Documentation: https://github.com/rhysllwydlewis/eventflow#troubleshooting'
-    );
-    console.error('');
-    console.error('='.repeat(70));
-    console.error('');
-
-    throw error;
   }
+
+  connectionState = 'connecting';
+  connectionError = null;
+  let lastError = null;
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const uri = getConnectionUri();
+      const isProduction = process.env.NODE_ENV === 'production';
+
+      // Log connection attempt (without exposing credentials)
+      const sanitizedUri = uri.replace(/\/\/([^:]+):([^@]+)@/, '//<credentials>@');
+      console.log(`Connecting to MongoDB... (attempt ${attempt}/${maxRetries})`);
+      console.log(`Environment: ${isProduction ? 'production' : 'development'}`);
+      console.log(`URI: ${sanitizedUri}`);
+
+      client = new MongoClient(uri, options);
+      await client.connect();
+
+      // Get database name from URI or use default
+      const dbName = process.env.MONGODB_DB_NAME || 'eventflow';
+      db = client.db(dbName);
+
+      console.log(`✅ Connected to MongoDB database: ${dbName}`);
+
+      // Test the connection
+      await db.admin().ping();
+      console.log('✅ MongoDB connection verified');
+
+      connectionState = 'connected';
+      connectionError = null;
+      return db;
+    } catch (error) {
+      lastError = error;
+      connectionState = 'error';
+      connectionError = error.message;
+
+      console.error('');
+      console.error('='.repeat(70));
+      console.error(`❌ Failed to connect to MongoDB (attempt ${attempt}/${maxRetries})`);
+      console.error('='.repeat(70));
+      console.error('');
+      console.error(`Error: ${error.message}`);
+      console.error('');
+
+      // Provide helpful error messages based on error type
+      if (error.message.includes('ENOTFOUND') || error.message.includes('ECONNREFUSED')) {
+        console.error('🔍 Diagnosis: Network error - Cannot reach MongoDB server');
+        console.error('');
+        console.error('This usually means:');
+        console.error('  • Your MongoDB cluster hostname is incorrect');
+        console.error('  • The cluster is not accessible from your network');
+        console.error('  • Your IP address is not whitelisted in MongoDB Atlas');
+        console.error('  • DNS resolution is failing (common on Railway/cloud platforms)');
+        console.error('');
+        console.error('What to check:');
+        console.error('  1. Verify your MONGODB_URI connection string is correct');
+        console.error('  2. In MongoDB Atlas, go to Network Access and add 0.0.0.0/0');
+        console.error('     (allows connections from anywhere, including Railway)');
+        console.error('  3. Check that your cluster is running and not paused');
+        console.error('  4. Try using mongodb:// format instead of mongodb+srv://');
+        console.error('');
+      } else if (
+        error.message.includes('authentication') ||
+        error.message.includes('AuthenticationFailed')
+      ) {
+        console.error('🔍 Diagnosis: Authentication failed');
+        console.error('');
+        console.error('This means your username or password is incorrect.');
+        console.error('');
+        console.error('What to do:');
+        console.error('  1. Go to MongoDB Atlas → Database Access');
+        console.error('  2. Check your database user exists');
+        console.error('  3. If needed, create a new user with a strong password');
+        console.error('  4. Update MONGODB_URI with the correct credentials:');
+        console.error('     mongodb+srv://USERNAME:PASSWORD@cluster...');
+        console.error('');
+        console.error('⚠️  Note: The password should be URL-encoded if it contains');
+        console.error('   special characters like @, :, /, ?, #, [, ]');
+        console.error('');
+      } else if (error.message.includes('timeout')) {
+        console.error('🔍 Diagnosis: Connection timeout');
+        console.error('');
+        console.error('The MongoDB server is not responding.');
+        console.error('');
+        console.error('What to check:');
+        console.error('  1. Your internet connection is working');
+        console.error('  2. MongoDB Atlas cluster is not paused');
+        console.error('  3. Network Access settings allow your IP address (0.0.0.0/0)');
+        console.error('  4. No firewall is blocking the connection');
+        console.error('  5. Try increasing timeout values or using mongodb:// format');
+        console.error('');
+      } else if (error.message.includes('Invalid scheme')) {
+        console.error('🔍 Diagnosis: Invalid connection string format');
+        console.error('');
+        console.error('Your MONGODB_URI must start with:');
+        console.error('  • mongodb:// for standard connection');
+        console.error('  • mongodb+srv:// for MongoDB Atlas (recommended)');
+        console.error('');
+      }
+
+      // If not the last attempt, wait before retrying with exponential backoff
+      if (attempt < maxRetries) {
+        const waitTime = retryDelay * 2 ** (attempt - 1);
+        console.error(`⏳ Retrying in ${waitTime / 1000} seconds...`);
+        console.error('');
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+      } else {
+        console.error('📚 Need help?');
+        console.error('   → See MONGODB_SETUP_SIMPLE.md for detailed setup guide');
+        console.error('   → MongoDB Atlas: https://cloud.mongodb.com/');
+        console.error(
+          '   → Documentation: https://github.com/rhysllwydlewis/eventflow#troubleshooting'
+        );
+        console.error('');
+        console.error('='.repeat(70));
+        console.error('');
+      }
+    }
+  }
+
+  // All retries failed
+  throw lastError;
 }
 
 /**
@@ -328,7 +365,23 @@ async function close() {
  * @returns {boolean} Connection status
  */
 function isConnected() {
-  return !!db;
+  return connectionState === 'connected' && !!db;
+}
+
+/**
+ * Get MongoDB connection state
+ * @returns {string} Connection state: 'disconnected', 'connecting', 'connected', 'error'
+ */
+function getConnectionState() {
+  return connectionState;
+}
+
+/**
+ * Get last connection error
+ * @returns {string|null} Error message or null
+ */
+function getConnectionError() {
+  return connectionError;
 }
 
 /**
@@ -373,5 +426,7 @@ module.exports = {
   getCollection,
   close,
   isConnected,
+  getConnectionState,
+  getConnectionError,
   isMongoAvailable,
 };
