@@ -14,6 +14,10 @@ let dbType = null;
 let firestore = null;
 let mongodb = null;
 
+// Database initialization state tracking for health checks
+let initializationState = 'not_started'; // 'not_started', 'in_progress', 'completed', 'failed'
+const initializationError = null;
+
 /**
  * Timeout wrapper for database operations
  * Prevents hanging during initialization
@@ -40,8 +44,15 @@ function withTimeout(promise, timeoutMs, operationName) {
  */
 async function initializeDatabase() {
   if (dbType) {
+    // Database was already initialized, ensure state reflects this
+    if (initializationState !== 'completed') {
+      initializationState = 'completed';
+    }
     return dbType;
   }
+
+  // Mark initialization as in progress
+  initializationState = 'in_progress';
 
   // Try Firebase Firestore first (with timeout)
   try {
@@ -61,6 +72,7 @@ async function initializeDatabase() {
     if (db) {
       firestore = db;
       dbType = 'firestore';
+      initializationState = 'completed';
       console.log('✅ Using Firebase Firestore for data storage');
       return dbType;
     }
@@ -73,6 +85,7 @@ async function initializeDatabase() {
     if (db.isMongoAvailable()) {
       mongodb = await withTimeout(db.connect(), 10000, 'MongoDB connection');
       dbType = 'mongodb';
+      initializationState = 'completed';
       console.log('✅ Using MongoDB for data storage');
       return dbType;
     }
@@ -82,6 +95,7 @@ async function initializeDatabase() {
 
   // Fallback to local files
   dbType = 'local';
+  initializationState = 'completed';
   console.log('⚠️  Using local file storage (not suitable for production)');
   console.log('   Set FIREBASE_PROJECT_ID or MONGODB_URI for cloud storage');
   return dbType;
@@ -352,6 +366,20 @@ function getDatabaseType() {
   return dbType || 'unknown';
 }
 
+/**
+ * Get the database initialization and connection status (for health checks)
+ * Returns cached status without re-initializing the database
+ * @returns {Object} Status object with state, type, and error information
+ */
+function getDatabaseStatus() {
+  return {
+    state: initializationState,
+    type: dbType || 'unknown',
+    connected: initializationState === 'completed' && dbType !== null,
+    error: initializationError,
+  };
+}
+
 module.exports = {
   initializeDatabase,
   read,
@@ -362,4 +390,5 @@ module.exports = {
   deleteOne,
   uid,
   getDatabaseType,
+  getDatabaseStatus,
 };
