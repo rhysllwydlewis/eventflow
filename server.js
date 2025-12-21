@@ -82,6 +82,7 @@ const mailgun = require('./utils/mailgun');
 // Database modules for startup validation
 const dbUnified = require('./db-unified');
 const { isFirebaseAvailable } = require('./firebase-admin');
+const mongoDb = require('./db');
 const { isMongoAvailable } = require('./db');
 
 // Photo upload utilities
@@ -3697,7 +3698,7 @@ app.get('/api/health', healthCheckLimiter, async (_req, res) => {
   // Server is always "ok" if it's running and accepting requests
   // Database status is reported as a service status, not overall health
   const timestamp = new Date().toISOString();
-  
+
   // Determine email status
   let emailStatus = 'disabled';
   if (EMAIL_ENABLED) {
@@ -3715,9 +3716,9 @@ app.get('/api/health', healthCheckLimiter, async (_req, res) => {
 
   // Check MongoDB connection status (non-blocking)
   try {
-    const mongoState = db.getConnectionState ? db.getConnectionState() : null;
-    const mongoError = db.getConnectionError ? db.getConnectionError() : null;
-    
+    const mongoState = mongoDb.getConnectionState ? mongoDb.getConnectionState() : null;
+    const mongoError = mongoDb.getConnectionError ? mongoDb.getConnectionError() : null;
+
     if (mongoState) {
       // Map MongoDB states to service status
       if (mongoState === 'connected') {
@@ -3736,7 +3737,7 @@ app.get('/api/health', healthCheckLimiter, async (_req, res) => {
       }
     } else {
       // Fallback for older db.js without state tracking
-      response.services.mongodb = db.isConnected() ? 'connected' : 'disconnected';
+      response.services.mongodb = mongoDb.isConnected() ? 'connected' : 'disconnected';
     }
   } catch (error) {
     // If MongoDB check fails, report it but still return healthy
@@ -3748,10 +3749,10 @@ app.get('/api/health', healthCheckLimiter, async (_req, res) => {
   // Check database status from unified layer
   try {
     const dbStatus = dbUnified.getDatabaseStatus ? dbUnified.getDatabaseStatus() : null;
-    
+
     if (dbStatus) {
       response.services.database = dbStatus.type;
-      
+
       // Determine database status based on state
       if (dbStatus.connected) {
         response.services.databaseStatus = 'connected';
@@ -3761,13 +3762,15 @@ app.get('/api/health', healthCheckLimiter, async (_req, res) => {
       } else {
         response.services.databaseStatus = 'disconnected';
       }
-      
+
       if (dbStatus.error) {
         response.services.databaseError = dbStatus.error;
       }
     } else {
       // Fallback for older db-unified versions
-      response.services.database = dbUnified.getDatabaseType ? dbUnified.getDatabaseType() : 'unknown';
+      response.services.database = dbUnified.getDatabaseType
+        ? dbUnified.getDatabaseType()
+        : 'unknown';
       response.services.databaseStatus = 'unknown';
     }
   } catch (error) {
@@ -3779,7 +3782,7 @@ app.get('/api/health', healthCheckLimiter, async (_req, res) => {
   response.version = APP_VERSION;
   response.environment = process.env.NODE_ENV || 'development';
   response.email = emailStatus;
-  
+
   // Check Mailgun status (non-critical)
   if (mailgun.isMailgunEnabled()) {
     const mailgunStatus = mailgun.getMailgunStatus();
