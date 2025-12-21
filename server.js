@@ -195,21 +195,25 @@ if (isProduction) {
   app.use((req, res, next) => {
     // Check if request is not secure (HTTP)
     const isSecure = req.secure || req.headers['x-forwarded-proto'] === 'https';
-    
+
     if (!isSecure) {
       // Redirect to HTTPS
       const httpsUrl = process.env.BASE_URL || `https://${req.headers.host}`;
       const redirectUrl = `${httpsUrl}${req.url}`;
       return res.redirect(301, redirectUrl);
     }
-    
+
     // Check for non-www to www redirect (only if BASE_URL contains www)
     const configuredBaseUrl = process.env.BASE_URL || '';
-    if (configuredBaseUrl.includes('www.') && req.headers.host && !req.headers.host.startsWith('www.')) {
+    if (
+      configuredBaseUrl.includes('www.') &&
+      req.headers.host &&
+      !req.headers.host.startsWith('www.')
+    ) {
       const wwwUrl = `https://www.${req.headers.host}${req.url}`;
       return res.redirect(301, wwwUrl);
     }
-    
+
     next();
   });
 }
@@ -411,10 +415,10 @@ function loadEmailTemplate(templateName, data) {
 async function sendMail(toOrOpts, subject, text) {
   // Mailgun is the only email provider - delegate to utils/mailgun.js
   const mailgunUtil = require('./utils/mailgun');
-  
+
   // Support both legacy (to, subject, text) and object-based calls
   let options = {};
-  
+
   if (toOrOpts && typeof toOrOpts === 'object') {
     options = toOrOpts;
   } else {
@@ -424,7 +428,7 @@ async function sendMail(toOrOpts, subject, text) {
       text: text,
     };
   }
-  
+
   // Delegate to Mailgun utility
   return mailgunUtil.sendMail(options);
 }
@@ -3694,24 +3698,29 @@ app.get('/api/health', healthCheckLimiter, async (_req, res) => {
     server: 'online',
     version: APP_VERSION,
     time: new Date().toISOString(),
-    email: EMAIL_ENABLED
-      ? mailgun.isMailgunEnabled()
-        ? 'mailgun'
-        : 'disabled'
-      : 'disabled',
+    email: EMAIL_ENABLED ? (mailgun.isMailgunEnabled() ? 'mailgun' : 'disabled') : 'disabled',
     environment: process.env.NODE_ENV || 'development',
   };
 
-  // Check database status
-  try {
-    await dbUnified.initializeDatabase();
-    const dbType = dbUnified.getDatabaseType ? dbUnified.getDatabaseType() : 'unknown';
-    checks.database = dbType || 'unknown';
-    checks.databaseStatus = 'connected';
-  } catch (error) {
-    checks.database = 'error';
-    checks.databaseStatus = 'disconnected';
-    checks.databaseError = error.message;
+  // Check database status using cached state (fast, doesn't re-initialize)
+  const dbStatus = dbUnified.getDatabaseStatus ? dbUnified.getDatabaseStatus() : null;
+
+  if (dbStatus) {
+    checks.database = dbStatus.type;
+    checks.databaseStatus = dbStatus.connected
+      ? 'connected'
+      : dbStatus.state === 'in_progress'
+        ? 'initializing'
+        : dbStatus.state === 'failed'
+          ? 'disconnected'
+          : 'disconnected';
+    if (dbStatus.error) {
+      checks.databaseError = dbStatus.error;
+    }
+  } else {
+    // Fallback for older db-unified versions without getDatabaseStatus
+    checks.database = dbUnified.getDatabaseType ? dbUnified.getDatabaseType() : 'unknown';
+    checks.databaseStatus = 'unknown';
   }
 
   // Check Mailgun status (non-critical, won't affect overall health)
@@ -3724,7 +3733,9 @@ app.get('/api/health', healthCheckLimiter, async (_req, res) => {
   }
 
   // Only database status affects overall health (email is optional)
-  const allHealthy = checks.databaseStatus !== 'disconnected';
+  // Consider database healthy if it's connected OR still initializing (not failed)
+  const allHealthy =
+    checks.databaseStatus === 'connected' || checks.databaseStatus === 'initializing';
 
   res.status(allHealthy ? 200 : 503).json({
     ok: allHealthy,
@@ -3751,19 +3762,19 @@ app.use((req, res, next) => {
     res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
     return next();
   }
-  
+
   // Cache versioned assets (with hash in filename) for 1 year
   if (req.path.match(/\.[0-9a-f]{8,}\.(css|js|jpg|jpeg|png|gif|webp|svg|woff|woff2|ttf|eot)$/i)) {
     res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
     return next();
   }
-  
+
   // Cache static assets (images, fonts, CSS, JS) for 1 week
   if (req.path.match(/\.(css|js|jpg|jpeg|png|gif|webp|svg|woff|woff2|ttf|eot|ico)$/i)) {
     res.setHeader('Cache-Control', 'public, max-age=604800, must-revalidate');
     return next();
   }
-  
+
   // Default: no special caching
   next();
 });

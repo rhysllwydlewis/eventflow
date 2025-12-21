@@ -14,6 +14,10 @@ let dbType = null;
 let firestore = null;
 let mongodb = null;
 
+// Database initialization state tracking for health checks
+let initializationState = 'not_started'; // 'not_started', 'in_progress', 'completed', 'failed'
+let initializationError = null;
+
 /**
  * Timeout wrapper for database operations
  * Prevents hanging during initialization
@@ -43,48 +47,61 @@ async function initializeDatabase() {
     return dbType;
   }
 
-  // Try Firebase Firestore first (with timeout)
+  // Mark initialization as in progress
+  initializationState = 'in_progress';
+
   try {
-    // Firebase Admin initialization is synchronous, but admin.initializeApp()
-    // may hang when trying to fetch Application Default Credentials in production
-    // without proper configuration. We wrap this in a timeout to prevent hanging.
-    const initPromise = new Promise((resolve, reject) => {
-      try {
-        const result = initializeFirebaseAdmin();
-        resolve(result);
-      } catch (error) {
-        reject(error);
+    // Try Firebase Firestore first (with timeout)
+    try {
+      // Firebase Admin initialization is synchronous, but admin.initializeApp()
+      // may hang when trying to fetch Application Default Credentials in production
+      // without proper configuration. We wrap this in a timeout to prevent hanging.
+      const initPromise = new Promise((resolve, reject) => {
+        try {
+          const result = initializeFirebaseAdmin();
+          resolve(result);
+        } catch (error) {
+          reject(error);
+        }
+      });
+
+      const { db } = await withTimeout(initPromise, 10000, 'Firebase initialization');
+      if (db) {
+        firestore = db;
+        dbType = 'firestore';
+        initializationState = 'completed';
+        console.log('✅ Using Firebase Firestore for data storage');
+        return dbType;
       }
-    });
-
-    const { db } = await withTimeout(initPromise, 10000, 'Firebase initialization');
-    if (db) {
-      firestore = db;
-      dbType = 'firestore';
-      console.log('✅ Using Firebase Firestore for data storage');
-      return dbType;
+    } catch (error) {
+      console.log('Firebase Firestore not available:', error.message);
     }
-  } catch (error) {
-    console.log('Firebase Firestore not available:', error.message);
-  }
 
-  // Try MongoDB next (with timeout)
-  try {
-    if (db.isMongoAvailable()) {
-      mongodb = await withTimeout(db.connect(), 10000, 'MongoDB connection');
-      dbType = 'mongodb';
-      console.log('✅ Using MongoDB for data storage');
-      return dbType;
+    // Try MongoDB next (with timeout)
+    try {
+      if (db.isMongoAvailable()) {
+        mongodb = await withTimeout(db.connect(), 10000, 'MongoDB connection');
+        dbType = 'mongodb';
+        initializationState = 'completed';
+        console.log('✅ Using MongoDB for data storage');
+        return dbType;
+      }
+    } catch (error) {
+      console.log('MongoDB not available:', error.message);
     }
-  } catch (error) {
-    console.log('MongoDB not available:', error.message);
-  }
 
-  // Fallback to local files
-  dbType = 'local';
-  console.log('⚠️  Using local file storage (not suitable for production)');
-  console.log('   Set FIREBASE_PROJECT_ID or MONGODB_URI for cloud storage');
-  return dbType;
+    // Fallback to local files
+    dbType = 'local';
+    initializationState = 'completed';
+    console.log('⚠️  Using local file storage (not suitable for production)');
+    console.log('   Set FIREBASE_PROJECT_ID or MONGODB_URI for cloud storage');
+    return dbType;
+  } catch (error) {
+    // If initialization completely fails, mark as failed
+    initializationState = 'failed';
+    initializationError = error.message;
+    throw error;
+  }
 }
 
 /**
@@ -352,6 +369,20 @@ function getDatabaseType() {
   return dbType || 'unknown';
 }
 
+/**
+ * Get the database initialization and connection status (for health checks)
+ * Returns cached status without re-initializing the database
+ * @returns {Object} Status object with state, type, and error information
+ */
+function getDatabaseStatus() {
+  return {
+    state: initializationState,
+    type: dbType || 'unknown',
+    connected: initializationState === 'completed' && dbType !== null,
+    error: initializationError,
+  };
+}
+
 module.exports = {
   initializeDatabase,
   read,
@@ -362,4 +393,5 @@ module.exports = {
   deleteOne,
   uid,
   getDatabaseType,
+  getDatabaseStatus,
 };
