@@ -81,7 +81,6 @@ const mailgun = require('./utils/mailgun');
 
 // Database modules for startup validation
 const dbUnified = require('./db-unified');
-const { isFirebaseAvailable } = require('./firebase-admin');
 const mongoDb = require('./db');
 const { isMongoAvailable } = mongoDb;
 
@@ -3944,7 +3943,7 @@ async function startServer() {
 
     // Warn if using local storage in production (before initialization)
     if (isProduction) {
-      if (!isFirebaseAvailable() && !isMongoAvailable()) {
+      if (!isMongoAvailable()) {
         console.warn('');
         console.warn('='.repeat(70));
         console.warn('⚠️  WARNING: NO CLOUD DATABASE CONFIGURED');
@@ -3957,22 +3956,13 @@ async function startServer() {
         console.warn('   • Data will be LOST on server restart/redeployment');
         console.warn('   • NOT RECOMMENDED for production with real user data');
         console.warn('');
-        console.warn('For persistent data storage, set up a cloud database:');
+        console.warn('For persistent data storage, set up MongoDB Atlas:');
         console.warn('');
-        console.warn('  Option A - MongoDB Atlas (free tier available):');
+        console.warn('  MongoDB Atlas (free tier available):');
         console.warn('    1. Create account at: https://cloud.mongodb.com/');
         console.warn('    2. Follow the setup guide: MONGODB_SETUP_SIMPLE.md');
         console.warn('    3. Set MONGODB_URI environment variable');
         console.warn('');
-        console.warn('  Option B - Firebase Firestore:');
-        console.warn('    1. Set FIREBASE_PROJECT_ID');
-        console.warn('    2. Set FIREBASE_SERVICE_ACCOUNT_KEY');
-        console.warn('');
-        if (process.env.FIREBASE_PROJECT_ID && !isFirebaseAvailable()) {
-          console.warn('Note: FIREBASE_PROJECT_ID is set but Firebase Admin failed to initialize.');
-          console.warn('      Add FIREBASE_SERVICE_ACCOUNT_KEY or switch to MongoDB Atlas.');
-          console.warn('');
-        }
         console.warn('📚 Documentation:');
         console.warn('   → Simple guide: MONGODB_SETUP_SIMPLE.md');
         console.warn('   → Technical guide: MONGODB_SETUP.md');
