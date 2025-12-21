@@ -39,7 +39,7 @@ function withTimeout(promise, timeoutMs, operationName) {
 
 /**
  * Initialize the database layer
- * Tries Firestore first, then MongoDB, then falls back to local files
+ * Tries MongoDB first (PRIMARY), then Firestore, then falls back to local files
  * Includes 10 second timeout to prevent hanging
  */
 async function initializeDatabase() {
@@ -54,7 +54,20 @@ async function initializeDatabase() {
   // Mark initialization as in progress
   initializationState = 'in_progress';
 
-  // Try Firebase Firestore first (with timeout)
+  // Try MongoDB first (with timeout) - PRIMARY DATABASE
+  try {
+    if (db.isMongoAvailable()) {
+      mongodb = await withTimeout(db.connect(), 10000, 'MongoDB connection');
+      dbType = 'mongodb';
+      initializationState = 'completed';
+      console.log('✅ Using MongoDB for data storage (PRIMARY)');
+      return dbType;
+    }
+  } catch (error) {
+    console.log('MongoDB not available:', error.message);
+  }
+
+  // Try Firebase Firestore as fallback (with timeout)
   try {
     // Firebase Admin initialization is synchronous, but admin.initializeApp()
     // may hang when trying to fetch Application Default Credentials in production
@@ -80,24 +93,11 @@ async function initializeDatabase() {
     console.log('Firebase Firestore not available:', error.message);
   }
 
-  // Try MongoDB next (with timeout)
-  try {
-    if (db.isMongoAvailable()) {
-      mongodb = await withTimeout(db.connect(), 10000, 'MongoDB connection');
-      dbType = 'mongodb';
-      initializationState = 'completed';
-      console.log('✅ Using MongoDB for data storage');
-      return dbType;
-    }
-  } catch (error) {
-    console.log('MongoDB not available:', error.message);
-  }
-
   // Fallback to local files
   dbType = 'local';
   initializationState = 'completed';
   console.log('⚠️  Using local file storage (not suitable for production)');
-  console.log('   Set FIREBASE_PROJECT_ID or MONGODB_URI for cloud storage');
+  console.log('   Set MONGODB_URI (recommended) or FIREBASE_PROJECT_ID for cloud storage');
   return dbType;
 }
 

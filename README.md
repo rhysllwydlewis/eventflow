@@ -430,41 +430,74 @@ const snapshot = await db.collection('events').get();
 
 See `firebase-admin.js` for backend Firebase configuration.
 
-### Firebase as Primary Storage
+### Database Configuration
 
-**EventFlow is configured to use Firebase as the primary cloud storage solution:**
+**EventFlow uses MongoDB Atlas as the primary database for production deployments:**
 
-1. **Database (Firestore)**: The system automatically prioritizes Firebase Firestore over MongoDB and local storage
-   - All data (users, packages, posts, reviews, etc.) stored in Firestore
-   - Configured in `db-unified.js` to try Firestore first
+1. **MongoDB Atlas (PRIMARY - Recommended for Production)**
+   - The system automatically prioritizes MongoDB over Firebase Firestore and local storage
+   - All data (users, packages, posts, reviews, etc.) stored in MongoDB Atlas
+   - Configured in `db-unified.js` to try MongoDB first
+   - Set `MONGODB_URI` in environment variables with your Atlas connection string
+   
+   **Setup Instructions:**
+   - Create a free MongoDB Atlas account at https://cloud.mongodb.com/
+   - Follow the [MongoDB Setup Guide](MONGODB_SETUP_SIMPLE.md) for step-by-step instructions
+   - Get your connection string and configure it in Railway or your hosting platform
+   - **Important**: Never commit your actual connection string to git
+   
+   ```env
+   # Production MongoDB Configuration
+   MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/?retryWrites=true&w=majority
+   MONGODB_DB_NAME=eventflow
+   ```
+
+2. **Firebase Firestore (Fallback Option)**
+   - If MongoDB is not available, the system falls back to Firebase Firestore
+   - Useful for Firebase-specific features or as an alternative cloud database
    - Set `FIREBASE_PROJECT_ID` or `FIREBASE_SERVICE_ACCOUNT_KEY` in environment variables
+   
+   ```env
+   # Firebase Configuration (optional fallback)
+   FIREBASE_PROJECT_ID=eventflow-ffb12
+   FIREBASE_SERVICE_ACCOUNT_KEY='{"type":"service_account","project_id":"eventflow-ffb12",...}'
+   ```
 
-2. **File Storage**: Photos and media files are stored in Firebase Storage
+3. **Local Storage (Development Only)**
+   - If neither MongoDB nor Firebase is configured, falls back to local file storage
+   - **Not suitable for production** - data is stored in JSON files
+   - Useful for quick local development and testing
+
+4. **File Storage (Photos & Media)**
+   - Photos and media files are stored in Firebase Storage
    - Supplier photos use Firebase Storage (`supplier-photo-upload.js`)
    - Storage bucket: `eventflow-ffb12.firebasestorage.app`
    - Set `STORAGE_TYPE=firebase` in `.env` (already default)
-
-3. **Production Setup**: To use Firebase in production:
-
+   
    ```env
-   # Required: Firebase Project ID
-   FIREBASE_PROJECT_ID=eventflow-ffb12
-
-   # Required for production: Service Account Key (download from Firebase Console)
-   FIREBASE_SERVICE_ACCOUNT_KEY='{"type":"service_account","project_id":"eventflow-ffb12",...}'
-
    # Storage Configuration
    STORAGE_TYPE=firebase
    FIREBASE_STORAGE_BUCKET=eventflow-ffb12.firebasestorage.app
    ```
 
-4. **How it works**:
-   - On startup, `db-unified.js` attempts Firebase Firestore connection first
-   - If Firebase is available, all database operations use Firestore
-   - If not configured, falls back to MongoDB, then local files (dev only)
-   - Check logs on startup for: `✅ Using Firebase Firestore for data storage`
+5. **How Database Priority Works**:
+   - On startup, `db-unified.js` attempts MongoDB connection first (PRIMARY)
+   - If MongoDB is not available or fails, it tries Firebase Firestore
+   - If neither cloud database is configured, falls back to local files (dev only)
+   - Check logs on startup for connection status:
+     - `✅ Using MongoDB for data storage (PRIMARY)` - Production ready
+     - `✅ Using Firebase Firestore for data storage` - Fallback active
+     - `⚠️  Using local file storage` - Development only, not for production
 
-**To verify Firebase is active**: Check server logs after starting the app. You should see "Using Firebase Firestore for data storage" instead of "Using local file storage".
+**To verify your database is connected**: Check server logs after starting the app, or visit `/api/health` endpoint. You should see MongoDB or Firestore status, not local storage in production.
+
+**Production Deployment Checklist**:
+- ✅ MongoDB Atlas account created and cluster configured
+- ✅ Database user with read/write permissions created
+- ✅ Network access configured (IP whitelist or allow all)
+- ✅ `MONGODB_URI` environment variable set in Railway/hosting platform
+- ✅ Connection string uses actual credentials (not placeholders)
+- ✅ Never commit real credentials to git - use environment variables only
 
 ## 📁 Project Structure
 
