@@ -3694,11 +3694,17 @@ app.get('/api/admin/audit-logs', authRequired, roleRequired('admin'), (req, res)
 
 // Basic API healthcheck with rate limiting
 app.get('/api/health', healthCheckLimiter, async (_req, res) => {
+  // Determine email status
+  let emailStatus = 'disabled';
+  if (EMAIL_ENABLED) {
+    emailStatus = mailgun.isMailgunEnabled() ? 'mailgun' : 'disabled';
+  }
+
   const checks = {
     server: 'online',
     version: APP_VERSION,
     time: new Date().toISOString(),
-    email: EMAIL_ENABLED ? (mailgun.isMailgunEnabled() ? 'mailgun' : 'disabled') : 'disabled',
+    email: emailStatus,
     environment: process.env.NODE_ENV || 'development',
   };
 
