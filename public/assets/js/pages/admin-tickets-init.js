@@ -1,12 +1,34 @@
 import ticketingSystem from './assets/js/ticketing.js';
 
 let allTickets = [];
-let currentFilter = 'all';
 
 function escapeHtml(text) {
   const div = document.createElement('div');
   div.textContent = text || '';
   return div.innerHTML;
+}
+
+function formatDate(timestamp) {
+  if (!timestamp) return 'Unknown';
+  const date = new Date(timestamp);
+  const now = new Date();
+  const diff = now - date;
+  const seconds = Math.floor(diff / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+
+  if (days > 7) {
+    return date.toLocaleDateString('en-GB');
+  } else if (days > 0) {
+    return `${days} day${days !== 1 ? 's' : ''} ago`;
+  } else if (hours > 0) {
+    return `${hours} hour${hours !== 1 ? 's' : ''} ago`;
+  } else if (minutes > 0) {
+    return `${minutes} minute${minutes !== 1 ? 's' : ''} ago`;
+  } else {
+    return 'Just now';
+  }
 }
 
 async function loadTickets() {
@@ -27,54 +49,114 @@ function renderTickets() {
     return;
   }
 
-  const filtered =
-    currentFilter === 'all' ? allTickets : allTickets.filter(t => t.status === currentFilter);
+  // Get filter values
+  const searchTerm = document.getElementById('ticketSearch')?.value.toLowerCase() || '';
+  const statusFilter = document.getElementById('statusFilter')?.value || '';
+  const priorityFilter = document.getElementById('priorityFilter')?.value || '';
+  const assignedFilter = document.getElementById('assignedFilter')?.value || '';
+
+  // Filter tickets
+  let filtered = allTickets.filter(ticket => {
+    // Search filter
+    if (searchTerm) {
+      const subject = (ticket.subject || '').toLowerCase();
+      const message = (ticket.message || '').toLowerCase();
+      const senderName = (ticket.senderName || '').toLowerCase();
+      if (!subject.includes(searchTerm) && !message.includes(searchTerm) && !senderName.includes(searchTerm)) {
+        return false;
+      }
+    }
+
+    // Status filter
+    if (statusFilter && ticket.status !== statusFilter) {
+      return false;
+    }
+
+    // Priority filter
+    if (priorityFilter && ticket.priority !== priorityFilter) {
+      return false;
+    }
+
+    // Assignment filter
+    if (assignedFilter) {
+      if (assignedFilter === 'unassigned' && ticket.assignedTo) {
+        return false;
+      }
+      if (assignedFilter === 'assigned' && !ticket.assignedTo) {
+        return false;
+      }
+    }
+
+    return true;
+  });
 
   if (!filtered.length) {
-    container.innerHTML = '<p class="small">No tickets found.</p>';
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-state-icon">🎫</div>
+        <h3 class="empty-state-title">No tickets found</h3>
+        <p class="empty-state-description">
+          ${allTickets.length === 0 ? 'Support tickets will appear here when customers submit them.' : 'No tickets match your current filters.'}
+        </p>
+        <button class="btn btn-primary" id="refreshBtn">Refresh</button>
+      </div>
+    `;
+    
+    document.getElementById('refreshBtn')?.addEventListener('click', loadTickets);
     return;
   }
 
-  let html = '<div class="ticket-list">';
+  let html = '';
 
   filtered.forEach(ticket => {
     const statusClass = ticketingSystem.getStatusClass(ticket.status);
     const priorityClass = ticketingSystem.getPriorityClass(ticket.priority);
-    const createdAt = ticketingSystem.formatTimestamp(ticket.createdAt);
+    const createdAt = formatDate(ticket.createdAt);
     const responseCount = ticket.responses ? ticket.responses.length : 0;
+    const userName = ticket.senderName || ticket.senderEmail || 'Unknown User';
+    const userId = ticket.senderId || '';
 
     html += `
-      <div class="ticket-item" style="border:1px solid #e4e4e7;padding:1rem;margin-bottom:0.5rem;border-radius:4px;cursor:pointer;" data-ticket-id="${ticket.id}">
+      <div class="ticket-card" data-ticket-id="${ticket.id}">
         <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:0.5rem;">
           <div>
-            <strong>${escapeHtml(ticket.subject)}</strong>
-            <div class="small" style="color:#9ca3af;margin-top:0.25rem;">
-              From: ${escapeHtml(ticket.senderName)} (${escapeHtml(ticket.senderType)})
+            <h3 style="margin:0 0 0.25rem 0;font-size:1rem;">
+              <a href="/admin-ticket-detail.html?id=${ticket.id}" style="color:#1a1a1a;text-decoration:none;">${escapeHtml(ticket.subject)}</a>
+            </h3>
+            <div class="small">
+              By: <a href="/admin-user-detail.html?id=${userId}" style="color:#3b82f6;">${escapeHtml(userName)}</a>
+              • ${createdAt}
             </div>
           </div>
-          <div style="display:flex;gap:0.5rem;flex-direction:column;align-items:flex-end;">
-            <div style="display:flex;gap:0.5rem;">
-              <span class="badge ${statusClass}">${ticket.status.replace('_', ' ')}</span>
-              <span class="badge ${priorityClass}">${ticket.priority}</span>
-            </div>
-            <span class="small" style="color:#9ca3af;">${createdAt}</span>
+          <div style="display:flex;gap:0.25rem;">
+            <span class="badge badge-${ticket.status}">${ticket.status.replace('_', ' ')}</span>
+            <span class="badge badge-priority-${ticket.priority}">${ticket.priority}</span>
           </div>
         </div>
-        <p class="small" style="margin:0.5rem 0;color:#6b7280;">${escapeHtml(ticket.message.substring(0, 150))}${ticket.message.length > 150 ? '...' : ''}</p>
-        <div class="small" style="color:#9ca3af;">
-          ${responseCount} response${responseCount !== 1 ? 's' : ''}
+        <p class="small" style="margin:0.5rem 0;color:#6b7280;">${escapeHtml((ticket.message || '').substring(0, 120))}${(ticket.message || '').length > 120 ? '...' : ''}</p>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:0.5rem;">
+          <div class="small" style="color:#9ca3af;">
+            ${responseCount} response${responseCount !== 1 ? 's' : ''}
+          </div>
+          <div style="display:flex;gap:0.5rem;">
+            <button class="btn btn-small btn-primary" data-action="viewTicket" data-id="${ticket.id}">View</button>
+            <button class="btn btn-small btn-secondary" data-action="assignTicket" data-id="${ticket.id}">Assign</button>
+          </div>
         </div>
       </div>
     `;
   });
 
-  html += '</div>';
   container.innerHTML = html;
 
-  // Add click handlers
-  container.querySelectorAll('.ticket-item').forEach(item => {
-    item.addEventListener('click', () => {
-      const ticketId = item.getAttribute('data-ticket-id');
+  // Add click handlers for ticket cards
+  container.querySelectorAll('.ticket-card').forEach(card => {
+    card.addEventListener('click', (e) => {
+      // Don't trigger if clicking on a button or link
+      if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A' || e.target.closest('button') || e.target.closest('a')) {
+        return;
+      }
+      const ticketId = card.getAttribute('data-ticket-id');
       viewTicket(ticketId);
     });
   });
@@ -124,14 +206,14 @@ function viewTicket(ticketId) {
 
     const statusClass = ticketingSystem.getStatusClass(ticket.status);
     const priorityClass = ticketingSystem.getPriorityClass(ticket.priority);
-    const createdAt = ticketingSystem.formatTimestamp(ticket.createdAt);
+    const createdAt = formatDate(ticket.createdAt);
 
     let html = `
       <div style="margin-bottom:1rem;padding-bottom:1rem;border-bottom:1px solid #e4e4e7;">
         <div style="display:flex;justify-content:space-between;margin-bottom:1rem;">
           <div style="display:flex;gap:0.5rem;">
-            <span class="badge ${statusClass}">${ticket.status.replace('_', ' ')}</span>
-            <span class="badge ${priorityClass}">${ticket.priority}</span>
+            <span class="badge badge-${ticket.status}">${ticket.status.replace('_', ' ')}</span>
+            <span class="badge badge-priority-${ticket.priority}">${ticket.priority}</span>
           </div>
           <div style="display:flex;gap:0.5rem;">
             <select id="statusSelect" style="padding:0.25rem 0.5rem;border:1px solid #d4d4d8;border-radius:4px;font-size:12px;">
@@ -156,7 +238,7 @@ function viewTicket(ticketId) {
         '<div class="responses-list" style="max-height:300px;overflow-y:auto;margin-bottom:1rem;">';
 
       ticket.responses.forEach(response => {
-        const respTimestamp = ticketingSystem.formatTimestamp(response.timestamp);
+        const respTimestamp = formatDate(response.timestamp);
         const isAdmin = response.responderType === 'admin';
 
         html += `
@@ -253,22 +335,60 @@ function viewTicket(ticketId) {
   ticketUnsubscribe = ticketingSystem.listenToTicket(ticketId, renderTicketDetails);
 }
 
-// Filter buttons
-document.querySelectorAll('.filter-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    currentFilter = btn.getAttribute('data-filter');
-    renderTickets();
-  });
-});
+// Setup filter listeners
+function setupFilterListeners() {
+  const searchInput = document.getElementById('ticketSearch');
+  const statusFilter = document.getElementById('statusFilter');
+  const priorityFilter = document.getElementById('priorityFilter');
+  const assignedFilter = document.getElementById('assignedFilter');
+
+  if (searchInput) {
+    searchInput.addEventListener('input', renderTickets);
+  }
+
+  if (statusFilter) {
+    statusFilter.addEventListener('change', renderTickets);
+  }
+
+  if (priorityFilter) {
+    priorityFilter.addEventListener('change', renderTickets);
+  }
+
+  if (assignedFilter) {
+    assignedFilter.addEventListener('change', renderTickets);
+  }
+}
 
 // Back to dashboard button
-document.getElementById('backToDashboard').addEventListener('click', () => {
+document.getElementById('backToDashboard')?.addEventListener('click', () => {
   location.href = '/admin.html';
 });
 
+// Event delegation for dynamically created buttons
+document.body.addEventListener('click', function(e) {
+  var target = e.target;
+  if (target.tagName !== 'BUTTON') return;
+  
+  var action = target.getAttribute('data-action');
+  if (!action) return;
+  
+  var id = target.getAttribute('data-id');
+  
+  switch(action) {
+    case 'viewTicket':
+      if (id) viewTicket(id);
+      break;
+    case 'assignTicket':
+      if (id) {
+        // TODO: Implement assign functionality
+        alert('Assign functionality coming soon');
+      }
+      break;
+  }
+});
+
 // Initialize
+setupFilterListeners();
 ticketingSystem.listenToAllTickets(tickets => {
   allTickets = tickets;
   renderTickets();
