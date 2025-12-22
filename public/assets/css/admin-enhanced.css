@@ -805,3 +805,183 @@ tbody tr:hover {
   gap: 0.5rem;
   flex-wrap: wrap;
 }
+
+/* ====================
+   PHOTO MODERATION QUEUE STYLES
+   ==================== */
+.photo-queue {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.photo-queue__item {
+  background: #fff;
+  border: 1px solid #e4e4e7;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s, box-shadow 0.2s;
+  position: relative;
+}
+
+.photo-queue__item:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.photo-queue__item.selected {
+  border: 2px solid #3b82f6;
+}
+
+.photo-queue__image {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  cursor: pointer;
+}
+
+.photo-queue__details {
+  padding: 1rem;
+}
+
+.photo-queue__meta {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.photo-queue__badge {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  background: #e4e4e7;
+  color: #3f3f46;
+}
+
+.photo-queue__badge--pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.photo-queue__supplier {
+  font-size: 0.9rem;
+  color: #52525b;
+  margin-bottom: 0.5rem;
+}
+
+.photo-queue__supplier a {
+  color: #3b82f6;
+  text-decoration: none;
+}
+
+.photo-queue__supplier a:hover {
+  color: #2563eb;
+  text-decoration: underline;
+}
+
+.photo-queue__actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.photo-queue__btn {
+  flex: 1;
+  padding: 0.5rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.photo-queue__btn--approve {
+  background: #22c55e;
+  color: white;
+}
+
+.photo-queue__btn--approve:hover {
+  background: #16a34a;
+}
+
+.photo-queue__btn--approve:focus {
+  outline: 2px solid #86efac;
+  outline-offset: 2px;
+}
+
+.photo-queue__btn--reject {
+  background: #ef4444;
+  color: white;
+}
+
+.photo-queue__btn--reject:hover {
+  background: #dc2626;
+}
+
+.photo-queue__btn--reject:focus {
+  outline: 2px solid #fca5a5;
+  outline-offset: 2px;
+}
+
+.photo-queue__empty {
+  text-align: center;
+  padding: 3rem;
+  color: #71717a;
+}
+
+.photo-queue__empty-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+}
+
+.photo-select {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  z-index: 10;
+}
+
+.batch-actions {
+  position: sticky;
+  top: 0;
+  background: #fff;
+  border: 1px solid #e4e4e7;
+  padding: 1rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-bottom: 1rem;
+  z-index: 100;
+  display: none;
+}
+
+.batch-actions.active {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.batch-actions__count {
+  font-weight: 600;
+  color: #3b82f6;
+}
+
+.batch-actions__buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+@media (max-width: 768px) {
+  .photo-queue {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+  }
+}
