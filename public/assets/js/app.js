@@ -1506,11 +1506,11 @@ async function initDashSupplier() {
     /* Ignore conversation fetch errors */
   }
 
-  async function api(path, opts) {
-    // Ensure credentials are included, but allow override if explicitly set
+  async function api(path, opts = {}) {
+    // Always include credentials for cookie-based auth
     const options = {
-      credentials: 'include',
       ...opts,
+      credentials: opts.credentials || 'include',
     };
     const r = await fetch(path, options);
     if (!r.ok) {
