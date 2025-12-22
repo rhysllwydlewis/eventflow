@@ -201,7 +201,7 @@ const AdminShared = (function () {
     const sidebar = document.getElementById('adminSidebar');
 
     if (toggle && sidebar) {
-      // Restore sidebar state from localStorage
+      // Restore sidebar state from localStorage on mobile only
       const savedState = localStorage.getItem('adminSidebarOpen');
       if (savedState === 'true' && window.innerWidth <= 1024) {
         sidebar.classList.add('open');
@@ -231,12 +231,14 @@ const AdminShared = (function () {
         }
       });
 
-      // Handle responsive changes
+      // Handle responsive changes - ensure sidebar state is correct
       window.addEventListener('resize', () => {
         if (window.innerWidth > 1024) {
-          // On desktop, ensure sidebar is visible
-          sidebar.classList.remove('open');
-          toggle.setAttribute('aria-expanded', 'false');
+          // On desktop, remove the 'open' class (sidebar is visible by default via CSS)
+          if (sidebar.classList.contains('open')) {
+            sidebar.classList.remove('open');
+            toggle.setAttribute('aria-expanded', 'false');
+          }
         }
       });
 

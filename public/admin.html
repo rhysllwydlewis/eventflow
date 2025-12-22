@@ -76,8 +76,8 @@
   <div class="dashboard-header">
     <div class="header-content">
       <div>
-        <h1 style="margin: 0; font-size: 32px; font-weight: 700; color: #0a0a0a;">Admin Dashboard</h1>
-        <p style="margin: 8px 0 0 0; color: #6b7280; font-size: 15px;">Welcome back! Here's what's happening today.</p>
+        <h1 class="dashboard-title">Admin Dashboard</h1>
+        <p class="dashboard-subtitle">Welcome back! Here's what's happening today.</p>
       </div>
       <div class="header-actions">
         <div id="status" class="status-badge">Loading…</div>
@@ -94,7 +94,7 @@
   <!-- Quick Stats Overview -->
   <div class="stats-grid">
     <div class="stat-card stat-primary">
-      <div class="stat-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+      <div class="stat-icon stat-icon-purple">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
           <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
           <circle cx="9" cy="7" r="4"></circle>
@@ -109,7 +109,7 @@
     </div>
 
     <div class="stat-card stat-success">
-      <div class="stat-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+      <div class="stat-icon stat-icon-pink">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
           <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
           <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
@@ -123,7 +123,7 @@
     </div>
 
     <div class="stat-card stat-warning">
-      <div class="stat-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+      <div class="stat-icon stat-icon-blue">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
           <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
           <path d="M2 17l10 5 10-5M2 12l10 5 10-5"></path>
@@ -137,7 +137,7 @@
     </div>
 
     <div class="stat-card stat-info">
-      <div class="stat-icon" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+      <div class="stat-icon stat-icon-orange">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
           <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
         </svg>
@@ -152,8 +152,8 @@
 
   <!-- Moderation Queue -->
   <div class="section-header">
-    <h2 style="margin: 0; font-size: 20px; font-weight: 600; color: #0a0a0a;">Moderation Queue</h2>
-    <p style="margin: 4px 0 0 0; color: #6b7280; font-size: 14px;">Items requiring your attention</p>
+    <h2 class="section-title">Moderation Queue</h2>
+    <p class="section-description">Items requiring your attention</p>
   </div>
 
   <div class="moderation-grid">
@@ -199,9 +199,9 @@
   </div>
 
   <!-- Quick Actions -->
-  <div class="section-header" style="margin-top: 2.5rem;">
-    <h2 style="margin: 0; font-size: 20px; font-weight: 600; color: #0a0a0a;">Quick Actions</h2>
-    <p style="margin: 4px 0 0 0; color: #6b7280; font-size: 14px;">Frequently used admin tools</p>
+  <div class="section-header section-spacer">
+    <h2 class="section-title">Quick Actions</h2>
+    <p class="section-description">Frequently used admin tools</p>
   </div>
 
   <div class="quick-actions">
@@ -240,9 +240,9 @@
   </div>
 
   <!-- Data Tables Section -->
-  <div class="section-header" style="margin-top: 2.5rem;">
-    <h2 style="margin: 0; font-size: 20px; font-weight: 600; color: #0a0a0a;">Recent Activity</h2>
-    <div style="display: flex; gap: 0.5rem;">
+  <div class="section-header section-spacer">
+    <h2 class="section-title">Recent Activity</h2>
+    <div class="button-group">
       <button id="downloadMarketingCsv" class="btn-sm">Export Marketing</button>
       <button id="downloadAllJson" class="btn-sm">Export All Data</button>
     </div>
@@ -251,8 +251,8 @@
   <!-- Suppliers Section -->
   <div class="data-section">
     <div class="data-header">
-      <h3 style="margin: 0; font-size: 16px; font-weight: 600;">Suppliers</h3>
-      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+      <h3 class="subsection-title">Suppliers</h3>
+      <div class="button-group">
         <button id="bulkApproveSuppliers" class="btn-sm btn-success" style="display:none;">✓ Approve Selected</button>
         <button id="bulkRejectSuppliers" class="btn-sm btn-danger" style="display:none;">✗ Reject Selected</button>
         <button id="bulkDeleteSuppliers" class="btn-sm btn-danger" style="display:none;">🗑 Delete Selected</button>
@@ -267,8 +267,8 @@
   <!-- Packages Section -->
   <div class="data-section">
     <div class="data-header">
-      <h3 style="margin: 0; font-size: 16px; font-weight: 600;">Packages</h3>
-      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+      <h3 class="subsection-title">Packages</h3>
+      <div class="button-group">
         <button id="bulkApprovePackages" class="btn-sm btn-success" style="display:none;">✓ Approve Selected</button>
         <button id="bulkFeaturePackages" class="btn-sm btn-primary" style="display:none;">⭐ Feature Selected</button>
         <button id="bulkDeletePackages" class="btn-sm btn-danger" style="display:none;">🗑 Delete Selected</button>
@@ -282,7 +282,7 @@
   <!-- Users Section -->
   <div class="data-section">
     <div class="data-header">
-      <h3 style="margin: 0; font-size: 16px; font-weight: 600;">Users</h3>
+      <h3 class="subsection-title">Users</h3>
       <div class="data-controls">
         <button id="createUserBtn" class="btn-sm btn-success">+ Create User</button>
         <input id="userSearch" type="text" placeholder="Search users..." class="search-input">
@@ -301,7 +301,7 @@
   <!-- System Analytics -->
   <div class="data-section">
     <div class="data-header">
-      <h3 style="margin: 0; font-size: 16px; font-weight: 600;">System Analytics</h3>
+      <h3 class="subsection-title">System Analytics</h3>
     </div>
     <div id="analytics" class="analytics-grid"></div>
   </div>
