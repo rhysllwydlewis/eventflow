@@ -31,14 +31,14 @@
   </div>
 
   <div class="controls">
-    <select id="statusFilter" onchange="loadReports()">
+    <select id="statusFilter">
       <option value="pending">Pending</option>
       <option value="">All Status</option>
       <option value="reviewing">Reviewing</option>
       <option value="resolved">Resolved</option>
       <option value="dismissed">Dismissed</option>
     </select>
-    <select id="typeFilter" onchange="loadReports()">
+    <select id="typeFilter">
       <option value="">All Types</option>
       <option value="supplier">Supplier</option>
       <option value="review">Review</option>
@@ -242,6 +242,10 @@
           break;
       }
     });
+
+  // Setup filter event listeners
+  document.getElementById('statusFilter').addEventListener('change', loadReports);
+  document.getElementById('typeFilter').addEventListener('change', loadReports);
   </script>
 <footer class="footer" role="contentinfo">
   <div class="container" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">

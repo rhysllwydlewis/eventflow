@@ -54,8 +54,8 @@ class WebSocketClient {
     return new Promise((resolve, reject) => {
       const script = document.createElement('script');
       script.src = 'https://cdn.socket.io/4.8.1/socket.io.min.js';
-      script.onload = resolve;
-      script.onerror = reject;
+      script.addEventListener('load', resolve);
+      script.addEventListener('error', reject);
       document.head.appendChild(script);
     });
   }

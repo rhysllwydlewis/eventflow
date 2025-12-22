@@ -30,7 +30,7 @@
   </div>
 
   <div class="controls">
-    <select id="actionFilter" onchange="applyFilters()">
+    <select id="actionFilter">
       <option value="">All Actions</option>
       <option value="user_suspended">User Suspended</option>
       <option value="user_banned">User Banned</option>
@@ -42,7 +42,7 @@
       <option value="report_resolved">Report Resolved</option>
       <option value="report_dismissed">Report Dismissed</option>
     </select>
-    <select id="targetTypeFilter" onchange="applyFilters()">
+    <select id="targetTypeFilter">
       <option value="">All Types</option>
       <option value="user">User</option>
       <option value="supplier">Supplier</option>
@@ -50,8 +50,8 @@
       <option value="report">Report</option>
       <option value="photo">Photo</option>
     </select>
-    <label>From: <input type="date" id="dateFrom" onchange="applyFilters()"></label>
-    <label>To: <input type="date" id="dateTo" onchange="applyFilters()"></label>
+    <label>From: <input type="date" id="dateFrom"></label>
+    <label>To: <input type="date" id="dateTo"></label>
   </div>
 
   <div id="status">Loading audit logs...</div>
@@ -257,6 +257,12 @@
     document.getElementById('exportAuditLogs').addEventListener('click', function() {
       exportAuditLogs();
     });
+
+  // Setup filter event listeners
+  document.getElementById('actionFilter').addEventListener('change', applyFilters);
+  document.getElementById('targetTypeFilter').addEventListener('change', applyFilters);
+  document.getElementById('dateFrom').addEventListener('change', applyFilters);
+  document.getElementById('dateTo').addEventListener('change', applyFilters);
   </script>
 
 <footer class="footer" role="contentinfo">

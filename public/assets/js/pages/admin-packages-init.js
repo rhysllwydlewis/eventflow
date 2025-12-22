@@ -288,7 +288,7 @@ import {
 
     // Show preview
     const reader = new FileReader();
-    reader.onload = function (e) {
+    reader.addEventListener('load', function (e) {
       const placeholder = document.getElementById('uploadPlaceholder');
       const preview = document.getElementById('imagePreview');
       const previewImage = document.getElementById('previewImage');
@@ -296,7 +296,7 @@ import {
       previewImage.src = e.target.result;
       placeholder.style.display = 'none';
       preview.style.display = 'block';
-    };
+    });
     reader.readAsDataURL(file);
   }
 

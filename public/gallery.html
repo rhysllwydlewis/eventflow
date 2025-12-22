@@ -440,10 +440,10 @@
       <input type="file" id="fileInput" class="file-input" accept="image/*" multiple>
       
       <div class="upload-controls">
-        <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
+        <button class="btn btn-primary" id="browseFilesBtn">
           📁 Browse Files
         </button>
-        <button class="btn btn-secondary" onclick="uploadFiles()" id="uploadBtn" disabled>
+        <button class="btn btn-secondary" id="uploadBtn" disabled>
           ⬆️ Upload Selected (<span id="fileCount">0</span>)
         </button>
       </div>
@@ -459,12 +459,12 @@
     <div class="gallery-header">
       <h2>Your Photos (<span id="photoCount">0</span>)</h2>
       <div class="gallery-filters">
-        <select class="filter-select" id="filterType" onchange="loadGallery()">
+        <select class="filter-select" id="filterType">
           <option value="all">All Types</option>
           <option value="supplier">Suppliers Only</option>
           <option value="package">Packages Only</option>
         </select>
-        <select class="filter-select" id="filterStatus" onchange="loadGallery()">
+        <select class="filter-select" id="filterStatus">
           <option value="all">All Status</option>
           <option value="pending">Pending Approval</option>
           <option value="approved">Approved</option>
@@ -487,12 +487,12 @@
   </div>
 
   <!-- Lightbox -->
-  <div class="lightbox" id="lightbox" onclick="closeLightbox(event)">
+  <div class="lightbox" id="lightbox">
     <div class="lightbox-content">
-      <span class="lightbox-close" onclick="closeLightbox(event)">×</span>
-      <span class="lightbox-nav lightbox-prev" onclick="navigateLightbox(-1); event.stopPropagation();">‹</span>
+      <span class="lightbox-close" id="lightboxClose">×</span>
+      <span class="lightbox-nav lightbox-prev" id="lightboxPrev">‹</span>
       <img class="lightbox-image" id="lightboxImage" src="" alt="Photo">
-      <span class="lightbox-nav lightbox-next" onclick="navigateLightbox(1); event.stopPropagation();">›</span>
+      <span class="lightbox-nav lightbox-next" id="lightboxNext">›</span>
     </div>
   </div>
 
@@ -668,23 +668,41 @@
         const item = document.createElement('div');
         item.className = `gallery-item ${image.approved ? 'approved' : 'pending'}`;
         
-        item.innerHTML = `
-          <div class="image-wrapper" onclick="openLightbox(${index})">
-            <img class="gallery-image" src="${image.thumbnail || image.url}" alt="Photo" loading="lazy">
-            <span class="image-status status-${image.approved ? 'approved' : 'pending'}">
-              ${image.approved ? '✓ Approved' : '⏳ Pending'}
-            </span>
-          </div>
-          <div class="image-actions">
-            <button class="btn btn-small btn-warning" onclick="viewImage('${image.large || image.url}')">
-              👁️ View
-            </button>
-            <button class="btn btn-small btn-danger" onclick="deleteImage('${image.url}', '${image.type}', '${image.id}')">
-              🗑️ Delete
-            </button>
-          </div>
-        `;
-
+        const imageWrapper = document.createElement('div');
+        imageWrapper.className = 'image-wrapper';
+        imageWrapper.addEventListener('click', () => openLightbox(index));
+        
+        const img = document.createElement('img');
+        img.className = 'gallery-image';
+        img.src = image.thumbnail || image.url;
+        img.alt = 'Photo';
+        img.loading = 'lazy';
+        
+        const status = document.createElement('span');
+        status.className = `image-status status-${image.approved ? 'approved' : 'pending'}`;
+        status.textContent = image.approved ? '✓ Approved' : '⏳ Pending';
+        
+        imageWrapper.appendChild(img);
+        imageWrapper.appendChild(status);
+        
+        const actions = document.createElement('div');
+        actions.className = 'image-actions';
+        
+        const viewBtn = document.createElement('button');
+        viewBtn.className = 'btn btn-small btn-warning';
+        viewBtn.textContent = '👁️ View';
+        viewBtn.addEventListener('click', () => viewImage(image.large || image.url));
+        
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'btn btn-small btn-danger';
+        deleteBtn.textContent = '🗑️ Delete';
+        deleteBtn.addEventListener('click', () => deleteImage(image.url, image.type, image.id));
+        
+        actions.appendChild(viewBtn);
+        actions.appendChild(deleteBtn);
+        
+        item.appendChild(imageWrapper);
+        item.appendChild(actions);
         galleryGrid.appendChild(item);
       });
     }
@@ -696,10 +714,8 @@
       document.getElementById('lightbox').classList.add('active');
     }
 
-    function closeLightbox(event) {
-      if (event.target.id === 'lightbox' || event.target.classList.contains('lightbox-close')) {
-        document.getElementById('lightbox').classList.remove('active');
-      }
+    function closeLightbox() {
+      document.getElementById('lightbox').classList.remove('active');
     }
 
     function navigateLightbox(direction) {
@@ -749,6 +765,36 @@
         if (e.key === 'ArrowRight') navigateLightbox(1);
         if (e.key === 'Escape') lightbox.classList.remove('active');
       }
+    });
+
+    // Setup event listeners for UI controls
+    document.getElementById('browseFilesBtn').addEventListener('click', () => {
+      document.getElementById('fileInput').click();
+    });
+
+    document.getElementById('uploadBtn').addEventListener('click', uploadFiles);
+
+    document.getElementById('filterType').addEventListener('change', loadGallery);
+    document.getElementById('filterStatus').addEventListener('change', loadGallery);
+
+    // Lightbox controls
+    const lightbox = document.getElementById('lightbox');
+    lightbox.addEventListener('click', (e) => {
+      if (e.target.id === 'lightbox') {
+        closeLightbox();
+      }
+    });
+
+    document.getElementById('lightboxClose').addEventListener('click', closeLightbox);
+    
+    document.getElementById('lightboxPrev').addEventListener('click', (e) => {
+      e.stopPropagation();
+      navigateLightbox(-1);
+    });
+    
+    document.getElementById('lightboxNext').addEventListener('click', (e) => {
+      e.stopPropagation();
+      navigateLightbox(1);
     });
 
     // Load gallery on page load

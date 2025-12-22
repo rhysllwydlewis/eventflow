@@ -115,7 +115,7 @@
           You can create a supplier account in a few minutes. Once your listing is approved, you’ll
           appear in relevant search results and can start receiving enquiries from customers.
         </p>
-        <button class="cta" onclick="location.href='/auth.html'">
+        <button class="cta" id="createSupplierAccountBtn">
           Create supplier account
         </button>
       </section>
@@ -138,6 +138,12 @@
     </div>
   </div>
 </footer>
+<script>
+  // Setup Create Supplier Account button
+  document.getElementById('createSupplierAccountBtn')?.addEventListener('click', () => {
+    window.location.href = '/auth.html';
+  });
+</script>
 <script src="/assets/js/components/footer-nav.js" defer></script>
 <script src="/assets/js/cookie-consent.js" defer></script>
 </body>

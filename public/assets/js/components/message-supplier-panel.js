@@ -240,21 +240,21 @@ class MessageSupplierPanel {
     const sendBtn = document.getElementById('send-message-btn');
 
     if (createAccountBtn) {
-      createAccountBtn.onclick = () => {
+      createAccountBtn.addEventListener('click', () => {
         this.savePendingMessage();
         window.location.href = `/auth.html?mode=register&return=${encodeURIComponent(window.location.href)}`;
-      };
+      });
     }
 
     if (loginBtn) {
-      loginBtn.onclick = () => {
+      loginBtn.addEventListener('click', () => {
         this.savePendingMessage();
         window.location.href = `/auth.html?return=${encodeURIComponent(window.location.href)}`;
-      };
+      });
     }
 
     if (sendBtn) {
-      sendBtn.onclick = () => this.sendMessage();
+      sendBtn.addEventListener('click', () => this.sendMessage());
     }
   }
 

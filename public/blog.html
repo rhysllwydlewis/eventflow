@@ -146,19 +146,49 @@
       const card = document.createElement('article');
       card.className = 'article-card';
       
-      card.innerHTML = `
-        <a href="${article.link}" class="article-card-link">
-          <img src="${article.image}" alt="${article.title}" class="article-card-image" loading="lazy">
-          <div class="article-card-content">
-            <span class="article-card-tag">${article.tag}</span>
-            ${article.affiliate ? '<span class="article-card-affiliate">Partner</span>' : ''}
-            <h3 class="article-card-title">${article.title}</h3>
-            <p class="article-card-excerpt">${article.excerpt}</p>
-            <span class="article-card-cta">Read more →</span>
-          </div>
-        </a>
-      `;
+      const link = document.createElement('a');
+      link.href = article.link;
+      link.className = 'article-card-link';
       
+      const img = document.createElement('img');
+      img.src = article.image;
+      img.alt = article.title;
+      img.className = 'article-card-image';
+      img.loading = 'lazy';
+      
+      const content = document.createElement('div');
+      content.className = 'article-card-content';
+      
+      const tag = document.createElement('span');
+      tag.className = 'article-card-tag';
+      tag.textContent = article.tag;
+      content.appendChild(tag);
+      
+      if (article.affiliate) {
+        const affiliateBadge = document.createElement('span');
+        affiliateBadge.className = 'article-card-affiliate';
+        affiliateBadge.textContent = 'Partner';
+        content.appendChild(affiliateBadge);
+      }
+      
+      const title = document.createElement('h3');
+      title.className = 'article-card-title';
+      title.textContent = article.title;
+      content.appendChild(title);
+      
+      const excerpt = document.createElement('p');
+      excerpt.className = 'article-card-excerpt';
+      excerpt.textContent = article.excerpt;
+      content.appendChild(excerpt);
+      
+      const cta = document.createElement('span');
+      cta.className = 'article-card-cta';
+      cta.textContent = 'Read more →';
+      content.appendChild(cta);
+      
+      link.appendChild(img);
+      link.appendChild(content);
+      card.appendChild(link);
       container.appendChild(card);
     });
   });

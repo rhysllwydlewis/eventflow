@@ -133,7 +133,7 @@ class SupplierGalleryManager {
   showPreview(file, previewContainer) {
     const reader = new FileReader();
 
-    reader.onload = e => {
+    reader.addEventListener('load', e => {
       const wrapper = document.createElement('div');
       wrapper.className = 'photo-preview-item';
       wrapper.style.position = 'relative';
@@ -173,7 +173,7 @@ class SupplierGalleryManager {
       wrapper.appendChild(img);
       wrapper.appendChild(removeBtn);
       previewContainer.appendChild(wrapper);
-    };
+    });
 
     reader.readAsDataURL(file);
   }

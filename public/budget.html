@@ -162,7 +162,7 @@
           <div style="font-size: 3rem; margin-bottom: 1rem;">💰</div>
           <div class="text-lg font-semibold mb-2">No expenses yet</div>
           <div class="small mb-4">Start tracking your event budget by adding your first expense</div>
-          <button class="cta" onclick="document.getElementById('add-expense').click()">
+          <button class="cta" id="addFirstExpenseBtn">
             Add First Expense
           </button>
         </div>
@@ -194,6 +194,14 @@
       }
     }
   });
+
+  // Setup "Add First Expense" button
+  const addFirstExpenseBtn = document.getElementById('addFirstExpenseBtn');
+  if (addFirstExpenseBtn) {
+    addFirstExpenseBtn.addEventListener('click', () => {
+      document.getElementById('add-expense')?.click();
+    });
+  }
 </script>
 
 <script src="/assets/js/components/footer-nav.js" defer></script>

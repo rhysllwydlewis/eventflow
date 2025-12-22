@@ -19,7 +19,7 @@ function efSetupPhotoDropZone(dropId, previewId, onImage) {
         return;
       }
       const reader = new FileReader();
-      reader.onload = function (ev) {
+      reader.addEventListener('load', ev => {
         const dataUrl = ev.target && ev.target.result;
         if (!dataUrl) {
           return;
@@ -32,7 +32,7 @@ function efSetupPhotoDropZone(dropId, previewId, onImage) {
           img.src = dataUrl;
           preview.appendChild(img);
         }
-      };
+      });
       reader.readAsDataURL(file);
     });
   }
@@ -2516,30 +2516,67 @@ async function initSettings() {
     const r = await fetch('/api/me/settings', {
       credentials: 'include',
     });
-    if (!r.ok) {
-      throw new Error('Not signed in');
+
+    if (r.status === 401) {
+      // Not authenticated - handle gracefully without console error
+      const container = document.querySelector('main .container');
+      if (container) {
+        container.innerHTML = '';
+        const card = document.createElement('div');
+        card.className = 'card';
+        const text = document.createElement('p');
+        text.className = 'small';
+        text.textContent = 'Sign in to change your settings.';
+        card.appendChild(text);
+        container.appendChild(card);
+      }
+      return;
     }
+
+    if (!r.ok) {
+      throw new Error('Failed to load settings');
+    }
+
     const d = await r.json();
     const cb = document.getElementById('notify');
-    cb.checked = !!d.notify;
-    document.getElementById('save-settings').addEventListener('click', async () => {
-      const rr = await fetch('/api/me/settings', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-Token': window.__CSRF_TOKEN__ || '',
-        },
-        credentials: 'include',
-        body: JSON.stringify({ notify: document.getElementById('notify').checked }),
+    if (cb) {
+      cb.checked = !!d.notify;
+    }
+
+    const saveBtn = document.getElementById('save-settings');
+    if (saveBtn) {
+      saveBtn.addEventListener('click', async () => {
+        const rr = await fetch('/api/me/settings', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': window.__CSRF_TOKEN__ || '',
+          },
+          credentials: 'include',
+          body: JSON.stringify({ notify: document.getElementById('notify').checked }),
+        });
+        if (rr.ok) {
+          const statusEl = document.getElementById('settings-status');
+          if (statusEl) {
+            statusEl.textContent = 'Saved';
+            setTimeout(() => (statusEl.textContent = ''), 1200);
+          }
+        }
       });
-      if (rr.ok) {
-        document.getElementById('settings-status').textContent = 'Saved';
-        setTimeout(() => (document.getElementById('settings-status').textContent = ''), 1200);
-      }
-    });
+    }
   } catch (e) {
-    document.querySelector('main .container').innerHTML =
-      '<div class="card"><p class="small">Sign in to change your settings.</p></div>';
+    console.error('Settings error:', e);
+    const container = document.querySelector('main .container');
+    if (container) {
+      container.innerHTML = '';
+      const card = document.createElement('div');
+      card.className = 'card';
+      const text = document.createElement('p');
+      text.className = 'small';
+      text.textContent = 'Unable to load settings.';
+      card.appendChild(text);
+      container.appendChild(card);
+    }
   }
 }
 
@@ -2609,7 +2646,7 @@ async function adminCharts() {
     document.querySelector('#metrics').after(c);
     const s = document.createElement('script');
     s.src = 'https://cdn.jsdelivr.net/npm/chart.js';
-    s.onload = () => {
+    s.addEventListener('load', () => {
       const ctx = c.getContext('2d');
       new Chart(ctx, {
         type: 'line',
@@ -2622,7 +2659,7 @@ async function adminCharts() {
           ],
         },
       });
-    };
+    });
     document.body.appendChild(s);
   } catch (e) {
     /* Ignore confetti errors */
@@ -2925,7 +2962,7 @@ function efConfetti() {
         return;
       }
       const reader = new FileReader();
-      reader.onload = () => {
+      reader.addEventListener('load', () => {
         if (!reader.result || typeof reader.result !== 'string') {
           return;
         }
@@ -2937,7 +2974,7 @@ function efConfetti() {
         img.alt = file.name || 'Selected image';
         item.appendChild(img);
         preview.appendChild(item);
-      };
+      });
       reader.readAsDataURL(file);
     });
   });

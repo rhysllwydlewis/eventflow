@@ -212,7 +212,7 @@ class GuestManager {
         }
 
         const reader = new FileReader();
-        reader.onload = e => {
+        reader.addEventListener('load', e => {
           try {
             const csv = e.target.result;
             const imported = this.parseCSV(csv);
@@ -224,7 +224,7 @@ class GuestManager {
             Toast.error('Failed to parse CSV file');
             console.error(error);
           }
-        };
+        });
         reader.readAsText(file);
       },
     });
