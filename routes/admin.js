@@ -1306,6 +1306,23 @@ router.post('/suppliers/smart-tags', authRequired, roleRequired('admin'), (req, 
 // ---------- Badge Counts ----------
 
 /**
+ * Generate a unique ID using crypto module
+ * @param {string} prefix - Prefix for the ID (e.g., 'announcement', 'faq')
+ * @returns {string} Unique ID
+ */
+function generateUniqueId(prefix) {
+  // Use crypto.randomUUID if available (Node 14.17+)
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return `${prefix}_${crypto.randomUUID()}`;
+  }
+  // Fallback for older Node versions
+  const timestamp = Date.now();
+  const random = Math.random().toString(36).substring(2, 15);
+  const random2 = Math.random().toString(36).substring(2, 15);
+  return `${prefix}_${timestamp}_${random}${random2}`;
+}
+
+/**
  * GET /api/admin/badge-counts
  * Get counts for sidebar badges (new users, pending photos, open tickets)
  */
@@ -1493,7 +1510,7 @@ router.post('/content/announcements', authRequired, roleRequired('admin'), (req,
   }
 
   const announcement = {
-    id: `announcement_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
+    id: generateUniqueId('announcement'),
     message,
     type: type || 'info',
     active: active !== false,
@@ -1634,7 +1651,7 @@ router.post('/content/faqs', authRequired, roleRequired('admin'), (req, res) => 
   }
 
   const faq = {
-    id: `faq_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
+    id: generateUniqueId('faq'),
     question,
     answer,
     category: category || 'General',
