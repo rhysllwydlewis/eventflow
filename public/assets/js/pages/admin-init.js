@@ -178,11 +178,11 @@
     }
 
     let rows =
-      '<tr><th>Name</th><th>Approved</th><th>Pro plan</th><th>Score</th><th>Tags</th><th>Actions</th></tr>';
+      '<tr><th><input type="checkbox" id="selectAllSuppliers" title="Select all"></th><th>Name</th><th>Email</th><th>Approved</th><th>Pro plan</th><th>Score</th><th>Tags</th><th>Actions</th></tr>';
     const items = (resp && resp.items) || [];
 
     if (!items.length) {
-      el.innerHTML = '<tr><td colspan="6">No suppliers yet.</td></tr>';
+      el.innerHTML = '<tr><td colspan="8">No suppliers yet.</td></tr>';
       return;
     }
 
@@ -209,6 +209,7 @@
       const actions =
         `<div style="display:flex;gap:4px;flex-wrap:wrap;flex-direction:column;">` +
         `<div style="display:flex;gap:4px;">` +
+        `<button data-action="viewSupplier" data-id="${s.id}" style="background:#3b82f6;border-color:#2563eb;" onclick="window.location.href='/admin-supplier-detail.html?id=${s.id}'">View Profile</button>` +
         `<button data-action="editSupplier" data-id="${s.id}">Edit</button>` +
         `<button data-action="approveSup" data-id="${s.id}">Approve</button>` +
         `<button data-action="rejectSup" data-id="${s.id}">Reject</button>` +
@@ -228,9 +229,15 @@
         `</div>` +
         `</div>`;
 
-      rows += `<tr><td>${s.name}</td><td>${s.approved ? 'Yes' : 'No'}</td><td>${plan}</td><td>${
+      // Make name clickable - link to admin supplier detail page
+      const nameLink = `<a href="/admin-supplier-detail.html?id=${s.id}" style="color:#3b82f6;font-weight:600;text-decoration:none;">${escapeHtml(s.name)}</a>`;
+      const emailLink = s.email
+        ? `<a href="mailto:${s.email}" style="color:#6b7280;text-decoration:none;">${escapeHtml(s.email)}</a>`
+        : '—';
+
+      rows += `<tr><td><input type="checkbox" class="supplier-checkbox" data-id="${s.id}"></td><td>${nameLink}</td><td>${emailLink}</td><td>${s.approved ? '<span style="color:#10b981;font-weight:600;">✓ Yes</span>' : '<span style="color:#ef4444;">✗ No</span>'}</td><td>${plan}</td><td>${
         score
-      }</td><td>${tags}</td><td>${actions}</td></tr>`;
+      }</td><td>${tags || '<span style="color:#9ca3af;">None</span>'}</td><td>${actions}</td></tr>`;
     });
 
     el.innerHTML = rows;
@@ -242,25 +249,45 @@
       return;
     }
 
-    let rows = '<tr><th>Title</th><th>Approved</th><th>Featured</th><th>Actions</th></tr>';
+    let rows =
+      '<tr><th><input type="checkbox" id="selectAllPackages" title="Select all"></th><th>Title</th><th>Supplier</th><th>Price</th><th>Approved</th><th>Featured</th><th>Actions</th></tr>';
     const items = (resp && resp.items) || [];
 
     if (!items.length) {
-      el.innerHTML = '<tr><td colspan="4">No packages yet.</td></tr>';
+      el.innerHTML = '<tr><td colspan="7">No packages yet.</td></tr>';
       return;
     }
 
     items.forEach(p => {
+      // Make title clickable to package page
+      const titleLink = `<a href="/package.html?id=${p.id}" style="color:#3b82f6;font-weight:600;text-decoration:none;" target="_blank">${escapeHtml(p.title)}</a>`;
+
+      // Make supplier name clickable
+      const supplierLink = p.supplierName
+        ? `<a href="/supplier.html?id=${p.supplierId}" style="color:#6b7280;text-decoration:none;" target="_blank">${escapeHtml(p.supplierName)}</a>`
+        : '—';
+
+      const price = p.price_display || p.price || '—';
+      const approved = p.approved
+        ? '<span style="color:#10b981;font-weight:600;">✓ Yes</span>'
+        : '<span style="color:#ef4444;">✗ No</span>';
+      const featured = p.featured
+        ? '<span style="color:#f59e0b;font-weight:600;">⭐ Yes</span>'
+        : '<span style="color:#9ca3af;">No</span>';
+
       rows +=
-        `<tr><td>${p.title}</td><td>${p.approved ? 'Yes' : 'No'}</td>` +
-        `<td>${p.featured ? 'Yes' : 'No'}</td>` +
+        `<tr><td><input type="checkbox" class="package-checkbox" data-id="${p.id}"></td><td>${titleLink}</td><td>${supplierLink}</td><td>${escapeHtml(price)}</td><td>${approved}</td>` +
+        `<td>${featured}</td>` +
         `<td>` +
+        `<div style="display:flex;gap:4px;flex-wrap:wrap;">` +
+        `<button data-action="viewPackage" data-id="${p.id}" style="background:#3b82f6;border-color:#2563eb;">View</button>` +
         `<button data-action="editPackage" data-id="${p.id}">Edit</button>` +
         `<button data-action="approvePkg" data-id="${p.id}" data-param="true">Approve</button>` +
         `<button data-action="approvePkg" data-id="${p.id}" data-param="false">Unapprove</button>` +
         `<button data-action="featurePkg" data-id="${p.id}" data-param="true">Feature</button>` +
         `<button data-action="featurePkg" data-id="${p.id}" data-param="false">Unfeature</button>` +
         `<button data-action="deletePackage" data-id="${p.id}">Delete</button>` +
+        `</div>` +
         `</td></tr>`;
     });
 
@@ -311,6 +338,22 @@
         out += '▮';
       }
       return out;
+    }
+
+    // Update stat cards
+    const totalUsersEl = document.getElementById('totalUsersCount');
+    if (totalUsersEl) {
+      totalUsersEl.textContent = counts.usersTotal || 0;
+    }
+
+    const totalPackagesEl = document.getElementById('totalPackagesCount');
+    if (totalPackagesEl) {
+      totalPackagesEl.textContent = counts.packagesTotal || 0;
+    }
+
+    const totalSuppliersEl = document.getElementById('totalSuppliersCount');
+    if (totalSuppliersEl) {
+      totalSuppliersEl.textContent = counts.suppliersTotal || 0;
     }
 
     el.innerHTML =
@@ -1654,6 +1697,16 @@
 
     // Call the appropriate function based on the action
     switch (action) {
+      case 'viewSupplier':
+        if (id) {
+          window.location.href = `/supplier.html?id=${id}`;
+        }
+        break;
+      case 'viewPackage':
+        if (id) {
+          window.location.href = `/package.html?id=${id}`;
+        }
+        break;
       case 'editUser':
         if (window.editUser && id) {
           window.editUser(id);
@@ -1736,4 +1789,193 @@
         break;
     }
   });
+
+  // Bulk operation handlers
+  function setupBulkOperations() {
+    // Show/hide bulk buttons based on checkbox selection
+    function updateBulkButtons(type) {
+      const checkboxes = document.querySelectorAll(`.${type}-checkbox:checked`);
+      const buttons = document.querySelectorAll(`#bulkApprove${type.charAt(0).toUpperCase() + type.slice(1)}s, #bulkReject${type.charAt(0).toUpperCase() + type.slice(1)}s, #bulkDelete${type.charAt(0).toUpperCase() + type.slice(1)}s, #bulkFeature${type.charAt(0).toUpperCase() + type.slice(1)}s`);
+      
+      buttons.forEach(btn => {
+        if (checkboxes.length > 0) {
+          btn.style.display = 'inline-block';
+          const match = btn.id.match(/bulk\w+/);
+          if (match) {
+            const text = btn.textContent.replace(/\(.*?\)/, '').trim();
+            btn.textContent = `${text} (${checkboxes.length})`;
+          }
+        } else {
+          btn.style.display = 'none';
+        }
+      });
+    }
+
+    // Select all checkboxes
+    document.getElementById('selectAllSuppliers')?.addEventListener('change', (e) => {
+      document.querySelectorAll('.supplier-checkbox').forEach(cb => cb.checked = e.target.checked);
+      updateBulkButtons('supplier');
+    });
+
+    document.getElementById('selectAllPackages')?.addEventListener('change', (e) => {
+      document.querySelectorAll('.package-checkbox').forEach(cb => cb.checked = e.target.checked);
+      updateBulkButtons('package');
+    });
+
+    // Listen for individual checkbox changes
+    document.addEventListener('change', (e) => {
+      if (e.target.classList.contains('supplier-checkbox')) {
+        updateBulkButtons('supplier');
+      } else if (e.target.classList.contains('package-checkbox')) {
+        updateBulkButtons('package');
+      }
+    });
+
+    // Bulk approve suppliers
+    document.getElementById('bulkApproveSuppliers')?.addEventListener('click', async () => {
+      const selected = Array.from(document.querySelectorAll('.supplier-checkbox:checked')).map(cb => cb.dataset.id);
+      if (!selected.length) return;
+      
+      if (!confirm(`Approve ${selected.length} supplier(s)?`)) return;
+      
+      try {
+        await Promise.all(selected.map(id => api(`/api/admin/suppliers/${id}/approve`, 'POST')));
+        if (typeof Toast !== 'undefined') {
+          Toast.success(`Approved ${selected.length} supplier(s)`);
+        } else {
+          alert(`Approved ${selected.length} supplier(s)`);
+        }
+        loadAll();
+      } catch (err) {
+        if (typeof Toast !== 'undefined') {
+          Toast.error('Failed to approve suppliers');
+        } else {
+          alert('Failed to approve suppliers');
+        }
+      }
+    });
+
+    // Bulk reject suppliers
+    document.getElementById('bulkRejectSuppliers')?.addEventListener('click', async () => {
+      const selected = Array.from(document.querySelectorAll('.supplier-checkbox:checked')).map(cb => cb.dataset.id);
+      if (!selected.length) return;
+      
+      if (!confirm(`Reject ${selected.length} supplier(s)?`)) return;
+      
+      try {
+        await Promise.all(selected.map(id => api(`/api/admin/suppliers/${id}/reject`, 'POST')));
+        if (typeof Toast !== 'undefined') {
+          Toast.success(`Rejected ${selected.length} supplier(s)`);
+        } else {
+          alert(`Rejected ${selected.length} supplier(s)`);
+        }
+        loadAll();
+      } catch (err) {
+        if (typeof Toast !== 'undefined') {
+          Toast.error('Failed to reject suppliers');
+        } else {
+          alert('Failed to reject suppliers');
+        }
+      }
+    });
+
+    // Bulk delete suppliers
+    document.getElementById('bulkDeleteSuppliers')?.addEventListener('click', async () => {
+      const selected = Array.from(document.querySelectorAll('.supplier-checkbox:checked')).map(cb => cb.dataset.id);
+      if (!selected.length) return;
+      
+      if (!confirm(`DELETE ${selected.length} supplier(s)? This cannot be undone.`)) return;
+      
+      try {
+        await Promise.all(selected.map(id => api(`/api/admin/suppliers/${id}`, 'DELETE')));
+        if (typeof Toast !== 'undefined') {
+          Toast.success(`Deleted ${selected.length} supplier(s)`);
+        } else {
+          alert(`Deleted ${selected.length} supplier(s)`);
+        }
+        loadAll();
+      } catch (err) {
+        if (typeof Toast !== 'undefined') {
+          Toast.error('Failed to delete suppliers');
+        } else {
+          alert('Failed to delete suppliers');
+        }
+      }
+    });
+
+    // Bulk approve packages
+    document.getElementById('bulkApprovePackages')?.addEventListener('click', async () => {
+      const selected = Array.from(document.querySelectorAll('.package-checkbox:checked')).map(cb => cb.dataset.id);
+      if (!selected.length) return;
+      
+      if (!confirm(`Approve ${selected.length} package(s)?`)) return;
+      
+      try {
+        await Promise.all(selected.map(id => api(`/api/admin/packages/${id}/approve`, 'POST', { approved: true })));
+        if (typeof Toast !== 'undefined') {
+          Toast.success(`Approved ${selected.length} package(s)`);
+        } else {
+          alert(`Approved ${selected.length} package(s)`);
+        }
+        loadAll();
+      } catch (err) {
+        if (typeof Toast !== 'undefined') {
+          Toast.error('Failed to approve packages');
+        } else {
+          alert('Failed to approve packages');
+        }
+      }
+    });
+
+    // Bulk feature packages
+    document.getElementById('bulkFeaturePackages')?.addEventListener('click', async () => {
+      const selected = Array.from(document.querySelectorAll('.package-checkbox:checked')).map(cb => cb.dataset.id);
+      if (!selected.length) return;
+      
+      if (!confirm(`Feature ${selected.length} package(s)?`)) return;
+      
+      try {
+        await Promise.all(selected.map(id => api(`/api/admin/packages/${id}/feature`, 'POST', { featured: true })));
+        if (typeof Toast !== 'undefined') {
+          Toast.success(`Featured ${selected.length} package(s)`);
+        } else {
+          alert(`Featured ${selected.length} package(s)`);
+        }
+        loadAll();
+      } catch (err) {
+        if (typeof Toast !== 'undefined') {
+          Toast.error('Failed to feature packages');
+        } else {
+          alert('Failed to feature packages');
+        }
+      }
+    });
+
+    // Bulk delete packages
+    document.getElementById('bulkDeletePackages')?.addEventListener('click', async () => {
+      const selected = Array.from(document.querySelectorAll('.package-checkbox:checked')).map(cb => cb.dataset.id);
+      if (!selected.length) return;
+      
+      if (!confirm(`DELETE ${selected.length} package(s)? This cannot be undone.`)) return;
+      
+      try {
+        await Promise.all(selected.map(id => api(`/api/admin/packages/${id}`, 'DELETE')));
+        if (typeof Toast !== 'undefined') {
+          Toast.success(`Deleted ${selected.length} package(s)`);
+        } else {
+          alert(`Deleted ${selected.length} package(s)`);
+        }
+        loadAll();
+      } catch (err) {
+        if (typeof Toast !== 'undefined') {
+          Toast.error('Failed to delete packages');
+        } else {
+          alert('Failed to delete packages');
+        }
+      }
+    });
+  }
+
+  // Initialize bulk operations
+  setupBulkOperations();
 })();

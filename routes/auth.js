@@ -19,7 +19,7 @@ const {
 } = require('../middleware/auth');
 const { passwordOk } = require('../middleware/validation');
 const { authLimiter } = require('../middleware/rateLimit');
-const mailgun = require('../utils/mailgun');
+const postmark = require('../utils/postmark');
 
 const router = express.Router();
 
@@ -101,7 +101,7 @@ router.post('/register', authLimiter, (req, res) => {
   // Send verification email via Mailgun
   (async () => {
     try {
-      await mailgun.sendVerificationEmail(user, verificationToken);
+      await postmark.sendVerificationEmail(user, verificationToken);
     } catch (e) {
       console.error('Failed to send verification email via Mailgun', e);
       // Fallback to legacy sendMail if available
@@ -347,7 +347,7 @@ router.get('/unsubscribe', (req, res) => {
 
   // Verify the token matches the email
   try {
-    if (!mailgun.verifyUnsubscribeToken(email, token)) {
+    if (!postmark.verifyUnsubscribeToken(email, token)) {
       return res.status(400).json({ error: 'Invalid unsubscribe token' });
     }
   } catch (err) {

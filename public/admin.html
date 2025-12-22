@@ -10,84 +10,306 @@
   <link rel="stylesheet" href="/assets/css/components.css">
   <link rel="stylesheet" href="/assets/css/animations.css">
   <link rel="stylesheet" href="/assets/css/admin.css">
+  <link rel="stylesheet" href="/assets/css/admin-enhanced.css">
   <link rel="icon" href="/favicon.svg">
   <script src="/assets/js/components.js" defer></script>
 </head>
 <body>
-  <h1>Admin Dashboard</h1>
-  <div id="status">Loading…</div>
+<aside class="admin-sidebar" id="adminSidebar">
+  <div class="admin-sidebar-header">
+    <h3>Admin Panel</h3>
+    <button id="sidebarToggle" class="sidebar-toggle" aria-label="Toggle sidebar">☰</button>
+  </div>
+  <nav class="admin-sidebar-nav">
+    <a href="/admin.html" class="admin-nav-link">
+      <span class="nav-icon">■</span>
+      <span class="nav-label">Dashboard</span>
+    </a>
+    <a href="/admin-users.html" class="admin-nav-link">
+      <span class="nav-icon">◉</span>
+      <span class="nav-label">Users</span>
+      <span class="nav-badge" id="newUsersCount"></span>
+    </a>
+    <a href="/admin-packages.html" class="admin-nav-link">
+      <span class="nav-icon">▣</span>
+      <span class="nav-label">Packages</span>
+    </a>
+    <a href="/admin-photos.html" class="admin-nav-link">
+      <span class="nav-icon">◈</span>
+      <span class="nav-label">Photos</span>
+      <span class="nav-badge badge-warning" id="pendingPhotosCount"></span>
+    </a>
+    <a href="/admin-tickets.html" class="admin-nav-link">
+      <span class="nav-icon">▤</span>
+      <span class="nav-label">Tickets</span>
+      <span class="nav-badge badge-danger" id="openTicketsCount"></span>
+    </a>
+    <a href="/admin-reports.html" class="admin-nav-link">
+      <span class="nav-icon">▲</span>
+      <span class="nav-label">Reports</span>
+    </a>
+    <a href="/admin-audit.html" class="admin-nav-link">
+      <span class="nav-icon">☰</span>
+      <span class="nav-label">Audit Log</span>
+    </a>
+    <a href="/admin-homepage.html" class="admin-nav-link">
+      <span class="nav-icon">⌂</span>
+      <span class="nav-label">Homepage</span>
+    </a>
+    <a href="/admin-payments.html" class="admin-nav-link">
+      <span class="nav-icon">▬</span>
+      <span class="nav-label">Payments</span>
+    </a>
+    <a href="/admin-content.html" class="admin-nav-link">
+      <span class="nav-icon">✎</span>
+      <span class="nav-label">Content</span>
+    </a>
+    <a href="/admin-settings.html" class="admin-nav-link">
+      <span class="nav-icon">⚙</span>
+      <span class="nav-label">Settings</span>
+    </a>
+  </nav>
+</aside>
 
-  <div class="controls">
-    <button id="refreshBtn">Refresh</button>
-    <button id="downloadUsersCsv">Download users CSV</button>
-    <button id="downloadMarketingCsv">Download marketing CSV</button>
-    <button id="downloadAllJson">Download full export (JSON)</button>
-    <button id="adminLogoutBtn">Sign out</button>
+
+  <!-- Modern Dashboard Header -->
+  <div class="dashboard-header">
+    <div class="header-content">
+      <div>
+        <h1 style="margin: 0; font-size: 32px; font-weight: 700; color: #0a0a0a;">Admin Dashboard</h1>
+        <p style="margin: 8px 0 0 0; color: #6b7280; font-size: 15px;">Welcome back! Here's what's happening today.</p>
+      </div>
+      <div class="header-actions">
+        <div id="status" class="status-badge">Loading…</div>
+        <button id="refreshBtn" class="btn-icon" title="Refresh data">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+          </svg>
+        </button>
+        <button id="adminLogoutBtn" class="btn-secondary">Sign out</button>
+      </div>
+    </div>
   </div>
 
-  <h2>Moderation Queue</h2>
-  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 10px; margin-bottom: 20px;">
-    <div class="card">
-      <h3 style="margin: 0 0 10px 0; font-size: 16px;">Pending Photos</h3>
-      <div style="font-size: 28px; font-weight: bold; color: #fbbf24;" id="pendingPhotosCount">—</div>
-      <div class="small" style="margin-top: 5px;">Photos awaiting approval</div>
-      <button id="reviewPhotosBtn" style="margin-top: 10px; width: 100%;">Review Photos</button>
+  <!-- Quick Stats Overview -->
+  <div class="stats-grid">
+    <div class="stat-card stat-primary">
+      <div class="stat-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+          <circle cx="9" cy="7" r="4"></circle>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"></path>
+        </svg>
+      </div>
+      <div class="stat-content">
+        <div class="stat-label">Total Users</div>
+        <div class="stat-value" id="totalUsersCount">—</div>
+        <div class="stat-change positive">↑ 12% from last month</div>
+      </div>
     </div>
-    <div class="card">
-      <h3 style="margin: 0 0 10px 0; font-size: 16px;">Pending Reviews</h3>
-      <div style="font-size: 28px; font-weight: bold; color: #fbbf24;" id="pendingReviewsCount">—</div>
-      <div class="small" style="margin-top: 5px;">Reviews awaiting approval</div>
-      <button id="reviewReviewsBtn" style="margin-top: 10px; width: 100%;">Review Reviews</button>
+
+    <div class="stat-card stat-success">
+      <div class="stat-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+          <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+          <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+        </svg>
+      </div>
+      <div class="stat-content">
+        <div class="stat-label">Active Packages</div>
+        <div class="stat-value" id="totalPackagesCount">—</div>
+        <div class="stat-change positive">↑ 5 new this week</div>
+      </div>
     </div>
-    <div class="card">
-      <h3 style="margin: 0 0 10px 0; font-size: 16px;">Pending Reports</h3>
-      <div style="font-size: 28px; font-weight: bold; color: #ef4444;" id="pendingReportsCount">—</div>
-      <div class="small" style="margin-top: 5px;">Content reports to review</div>
-      <button id="reviewReportsBtn" style="margin-top: 10px; width: 100%;">Review Reports</button>
+
+    <div class="stat-card stat-warning">
+      <div class="stat-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+          <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+          <path d="M2 17l10 5 10-5M2 12l10 5 10-5"></path>
+        </svg>
+      </div>
+      <div class="stat-content">
+        <div class="stat-label">Suppliers</div>
+        <div class="stat-value" id="totalSuppliersCount">—</div>
+        <div class="stat-change neutral">3 pending verification</div>
+      </div>
     </div>
-    <div class="card">
-      <h3 style="margin: 0 0 10px 0; font-size: 16px;">Suppliers Pending Verification</h3>
-      <div style="font-size: 28px; font-weight: bold; color: #3b82f6;" id="pendingSupplierVerificationCount">—</div>
-      <div class="small" style="margin-top: 5px;">Suppliers awaiting verification</div>
-      <button id="verifySuppliersBtn" style="margin-top: 10px; width: 100%;">Verify Suppliers</button>
+
+    <div class="stat-card stat-info">
+      <div class="stat-icon" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+          <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+        </svg>
+      </div>
+      <div class="stat-content">
+        <div class="stat-label">Revenue</div>
+        <div class="stat-value">£24.5K</div>
+        <div class="stat-change positive">↑ 18% from last month</div>
+      </div>
     </div>
   </div>
 
-  <div class="controls">
-    <button id="userManagementBtn">User Management</button>
-    <button id="packageManagementBtn">Package Management</button>
-    <button id="homepageChangesBtn">Homepage Changes</button>
-    <button id="supportTicketsBtn">Support Tickets</button>
-    <button id="paymentsAnalyticsBtn">Payment Analytics</button>
-    <button id="reportsQueueBtn">Reports Queue</button>
-    <button id="auditLogBtn">Audit Log</button>
+  <!-- Moderation Queue -->
+  <div class="section-header">
+    <h2 style="margin: 0; font-size: 20px; font-weight: 600; color: #0a0a0a;">Moderation Queue</h2>
+    <p style="margin: 4px 0 0 0; color: #6b7280; font-size: 14px;">Items requiring your attention</p>
   </div>
 
-  <h2>Suppliers</h2>
-  <div class="controls"><button id="smartTagSuppliersBtn" type="button">Run smart tagging (beta)</button></div>
-  <table id="suppliers"></table>
+  <div class="moderation-grid">
+    <div class="mod-card mod-warning">
+      <div class="mod-header">
+        <div class="mod-icon">📷</div>
+        <div class="mod-badge" id="pendingPhotosCount">—</div>
+      </div>
+      <h3 class="mod-title">Pending Photos</h3>
+      <p class="mod-description">Photos awaiting approval</p>
+      <button id="reviewPhotosBtn" class="btn-mod">Review Now →</button>
+    </div>
 
-  <h2>Packages</h2>
-  <table id="packages"></table>
+    <div class="mod-card mod-info">
+      <div class="mod-header">
+        <div class="mod-icon">⭐</div>
+        <div class="mod-badge" id="pendingReviewsCount">—</div>
+      </div>
+      <h3 class="mod-title">Pending Reviews</h3>
+      <p class="mod-description">Customer reviews to moderate</p>
+      <button id="reviewReviewsBtn" class="btn-mod">Review Now →</button>
+    </div>
 
-  <h2>Users</h2>
-  <div class="controls">
-    <button id="createUserBtn" type="button" style="background:#10b981;border-color:#059669;">Create User</button>
-    <input id="userSearch" type="text" placeholder="Search users by name or email">
-    <select id="userDateFilter">
-      <option value="all" selected>All time</option>
-      <option value="7">Joined in last 7 days</option>
-      <option value="30">Joined in last 30 days</option>
-    </select>
+    <div class="mod-card mod-danger">
+      <div class="mod-header">
+        <div class="mod-icon">⚠️</div>
+        <div class="mod-badge" id="pendingReportsCount">—</div>
+      </div>
+      <h3 class="mod-title">Content Reports</h3>
+      <p class="mod-description">Reports requiring action</p>
+      <button id="reviewReportsBtn" class="btn-mod">Review Now →</button>
+    </div>
+
+    <div class="mod-card mod-primary">
+      <div class="mod-header">
+        <div class="mod-icon">🏢</div>
+        <div class="mod-badge" id="pendingSupplierVerificationCount">—</div>
+      </div>
+      <h3 class="mod-title">Supplier Verification</h3>
+      <p class="mod-description">New suppliers to verify</p>
+      <button id="verifySuppliersBtn" class="btn-mod">Verify Now →</button>
+    </div>
   </div>
-  <table id="users"></table>
 
-  <h2>System Analytics</h2>
-  <div id="analytics"></div>
+  <!-- Quick Actions -->
+  <div class="section-header" style="margin-top: 2.5rem;">
+    <h2 style="margin: 0; font-size: 20px; font-weight: 600; color: #0a0a0a;">Quick Actions</h2>
+    <p style="margin: 4px 0 0 0; color: #6b7280; font-size: 14px;">Frequently used admin tools</p>
+  </div>
+
+  <div class="quick-actions">
+    <button id="userManagementBtn" class="action-btn">
+      <div class="action-icon">👥</div>
+      <div class="action-label">User Management</div>
+    </button>
+    <button id="packageManagementBtn" class="action-btn">
+      <div class="action-icon">📦</div>
+      <div class="action-label">Packages</div>
+    </button>
+    <button id="homepageChangesBtn" class="action-btn">
+      <div class="action-icon">🏠</div>
+      <div class="action-label">Homepage</div>
+    </button>
+    <button id="supportTicketsBtn" class="action-btn">
+      <div class="action-icon">🎫</div>
+      <div class="action-label">Tickets</div>
+    </button>
+    <button id="paymentsAnalyticsBtn" class="action-btn">
+      <div class="action-icon">💳</div>
+      <div class="action-label">Payments</div>
+    </button>
+    <button id="reportsQueueBtn" class="action-btn">
+      <div class="action-icon">📊</div>
+      <div class="action-label">Reports</div>
+    </button>
+    <button id="auditLogBtn" class="action-btn">
+      <div class="action-icon">📋</div>
+      <div class="action-label">Audit Log</div>
+    </button>
+    <button id="downloadUsersCsv" class="action-btn">
+      <div class="action-icon">📥</div>
+      <div class="action-label">Export Users</div>
+    </button>
+  </div>
+
+  <!-- Data Tables Section -->
+  <div class="section-header" style="margin-top: 2.5rem;">
+    <h2 style="margin: 0; font-size: 20px; font-weight: 600; color: #0a0a0a;">Recent Activity</h2>
+    <div style="display: flex; gap: 0.5rem;">
+      <button id="downloadMarketingCsv" class="btn-sm">Export Marketing</button>
+      <button id="downloadAllJson" class="btn-sm">Export All Data</button>
+    </div>
+  </div>
+
+  <!-- Suppliers Section -->
+  <div class="data-section">
+    <div class="data-header">
+      <h3 style="margin: 0; font-size: 16px; font-weight: 600;">Suppliers</h3>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+        <button id="bulkApproveSuppliers" class="btn-sm btn-success" style="display:none;">✓ Approve Selected</button>
+        <button id="bulkRejectSuppliers" class="btn-sm btn-danger" style="display:none;">✗ Reject Selected</button>
+        <button id="bulkDeleteSuppliers" class="btn-sm btn-danger" style="display:none;">🗑 Delete Selected</button>
+        <button id="smartTagSuppliersBtn" class="btn-sm btn-accent">🤖 Smart Tagging (Beta)</button>
+      </div>
+    </div>
+    <div class="table-wrapper">
+      <table id="suppliers"></table>
+    </div>
+  </div>
+
+  <!-- Packages Section -->
+  <div class="data-section">
+    <div class="data-header">
+      <h3 style="margin: 0; font-size: 16px; font-weight: 600;">Packages</h3>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+        <button id="bulkApprovePackages" class="btn-sm btn-success" style="display:none;">✓ Approve Selected</button>
+        <button id="bulkFeaturePackages" class="btn-sm btn-primary" style="display:none;">⭐ Feature Selected</button>
+        <button id="bulkDeletePackages" class="btn-sm btn-danger" style="display:none;">🗑 Delete Selected</button>
+      </div>
+    </div>
+    <div class="table-wrapper">
+      <table id="packages"></table>
+    </div>
+  </div>
+
+  <!-- Users Section -->
+  <div class="data-section">
+    <div class="data-header">
+      <h3 style="margin: 0; font-size: 16px; font-weight: 600;">Users</h3>
+      <div class="data-controls">
+        <button id="createUserBtn" class="btn-sm btn-success">+ Create User</button>
+        <input id="userSearch" type="text" placeholder="Search users..." class="search-input">
+        <select id="userDateFilter" class="filter-select">
+          <option value="all" selected>All time</option>
+          <option value="7">Last 7 days</option>
+          <option value="30">Last 30 days</option>
+        </select>
+      </div>
+    </div>
+    <div class="table-wrapper">
+      <table id="users"></table>
+    </div>
+  </div>
+
+  <!-- System Analytics -->
+  <div class="data-section">
+    <div class="data-header">
+      <h3 style="margin: 0; font-size: 16px; font-weight: 600;">System Analytics</h3>
+    </div>
+    <div id="analytics" class="analytics-grid"></div>
+  </div>
 
   
 
   <script src="/assets/js/pages/admin-init.js" defer></script>
+  <script src="/assets/js/admin-features.js" defer></script>
 </div>
 </main>
 
@@ -106,5 +328,6 @@
 
 <script src="/assets/js/components/footer-nav.js" defer></script>
 <script src="/assets/js/cookie-consent.js" defer></script>
+<script src="/assets/js/admin-shared.js"></script>
 </body>
 </html>

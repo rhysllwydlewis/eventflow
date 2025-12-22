@@ -17,7 +17,7 @@
  * - Check server startup logs for validation errors
  * - If using MongoDB, ensure MONGODB_URI points to cloud database (not localhost)
  * - Verify BASE_URL matches your actual domain
- * - Email service (Mailgun) is optional - warnings logged if not configured
+ * - Email service (Postmark) is optional - warnings logged if not configured
  * - Check /api/health endpoint for service status
  */
 
@@ -77,8 +77,8 @@ try {
 const dbUnified = require('./db-unified');
 const { uid, DATA_DIR } = require('./store');
 
-// Mailgun email utility
-const mailgun = require('./utils/mailgun');
+// Postmark email utility
+const postmark = require('./utils/postmark');
 
 // Database modules for startup validation
 const mongoDb = require('./db');
@@ -371,12 +371,12 @@ const healthCheckLimiter = rateLimit({
 });
 
 // ---------- Email Configuration ----------
-// Mailgun is the only supported email provider
+// Postmark is the only supported email provider
 const EMAIL_ENABLED = String(process.env.EMAIL_ENABLED || 'false').toLowerCase() === 'true';
 const FROM_EMAIL = process.env.FROM_EMAIL || 'no-reply@eventflow.local';
 
-// Note: Mailgun configuration is handled by utils/mailgun.js
-// This section is kept minimal as email is now exclusively via Mailgun
+// Note: Postmark configuration is handled by utils/postmark.js
+// This section is kept minimal as email is now exclusively via Postmark
 
 // Validate production environment
 if (process.env.NODE_ENV === 'production') {
@@ -398,11 +398,11 @@ if (process.env.NODE_ENV === 'production') {
 
   // Warn about email configuration but don't block startup
   if (EMAIL_ENABLED) {
-    const mailgunUtil = require('./utils/mailgun');
-    if (!mailgunUtil.isMailgunEnabled()) {
-      console.warn('Warning: EMAIL_ENABLED=true but Mailgun is not configured.');
-      console.warn('Set MAILGUN_API_KEY and MAILGUN_DOMAIN in your .env file.');
-      console.warn('Emails will be saved to /outbox folder until Mailgun is configured.');
+    const postmarkUtil = require('./utils/postmark');
+    if (!postmarkUtil.isPostmarkEnabled()) {
+      console.warn('Warning: EMAIL_ENABLED=true but Postmark is not configured.');
+      console.warn('Set POSTMARK_API_KEY in your .env file.');
+      console.warn('Emails will be saved to /outbox folder until Postmark is configured.');
     }
     if (!process.env.FROM_EMAIL) {
       console.warn('Warning: FROM_EMAIL not set. Using default value: no-reply@eventflow.local');
@@ -454,8 +454,8 @@ function loadEmailTemplate(templateName, data) {
 }
 
 async function sendMail(toOrOpts, subject, text) {
-  // Mailgun is the only email provider - delegate to utils/mailgun.js
-  const mailgunUtil = require('./utils/mailgun');
+  // Postmark is the only email provider - delegate to utils/postmark.js
+  const postmarkUtil = require('./utils/postmark');
 
   // Support both legacy (to, subject, text) and object-based calls
   let options = {};
@@ -470,8 +470,8 @@ async function sendMail(toOrOpts, subject, text) {
     };
   }
 
-  // Delegate to Mailgun utility
-  return mailgunUtil.sendMail(options);
+  // Delegate to Postmark utility
+  return postmarkUtil.sendMail(options);
 }
 
 // ---------- Auth helpers ----------
@@ -1537,8 +1537,7 @@ app.get('/api/packages/search', async (req, res) => {
   const items = (await dbUnified.read('packages')).filter(
     p =>
       p.approved &&
-      ((p.title || '').toLowerCase().includes(q) ||
-        (p.description || '').toLowerCase().includes(q))
+      ((p.title || '').toLowerCase().includes(q) || (p.description || '').toLowerCase().includes(q))
   );
   res.json({ items });
 });
@@ -1785,7 +1784,7 @@ app.post(
       photos: photos.length
         ? photos
         : [`https://source.unsplash.com/featured/800x600/?event,${encodeURIComponent(b.category)}`],
-      email: (((await dbUnified.read('users')).find(u => u.id === req.user.id)) || {}).email || '',
+      email: ((await dbUnified.read('users')).find(u => u.id === req.user.id) || {}).email || '',
       approved: false,
     };
     const all = await dbUnified.read('suppliers');
@@ -2073,9 +2072,9 @@ app.post(
       try {
         const otherEmail =
           req.user.role === 'customer'
-            ? (((await dbUnified.read('suppliers')).find(s => s.id === t.supplierId)) || {}).email ||
+            ? ((await dbUnified.read('suppliers')).find(s => s.id === t.supplierId) || {}).email ||
               null
-            : (((await dbUnified.read('users')).find(u => u.id === t.customerId)) || {}).email ||
+            : ((await dbUnified.read('users')).find(u => u.id === t.customerId) || {}).email ||
               null;
         const me = (await dbUnified.read('users')).find(u => u.id === req.user.id);
         if (otherEmail && me && me.notify !== false) {
@@ -3746,6 +3745,14 @@ app.post('/api/photos/reorder', authRequired, csrfProtection, async (req, res) =
   }
 });
 
+// ---------- Auth Routes ----------
+const authRoutes = require('./routes/auth');
+app.use('/api/auth', authRoutes);
+
+// ---------- Admin Routes ----------
+const adminRoutes = require('./routes/admin');
+app.use('/api/admin', adminRoutes);
+
 // ---------- Content Reporting System ----------
 const reportsRoutes = require('./routes/reports');
 app.use('/api', reportsRoutes);
@@ -3782,7 +3789,7 @@ app.get('/api/health', healthCheckLimiter, async (_req, res) => {
   // Determine email status
   let emailStatus = 'disabled';
   if (EMAIL_ENABLED) {
-    emailStatus = mailgun.isMailgunEnabled() ? 'mailgun' : 'disabled';
+    emailStatus = postmark.isPostmarkEnabled() ? 'postmark' : 'disabled';
   }
 
   // Initialize response with server status
@@ -3871,11 +3878,11 @@ app.get('/api/health', healthCheckLimiter, async (_req, res) => {
   response.environment = process.env.NODE_ENV || 'development';
   response.email = emailStatus;
 
-  // Check Mailgun status (non-critical)
-  if (mailgun.isMailgunEnabled()) {
-    const mailgunStatus = mailgun.getMailgunStatus();
+  // Check Postmark status (non-critical)
+  if (postmark.isPostmarkEnabled()) {
+    const postmarkStatus = postmark.getPostmarkStatus();
     response.services.emailStatus = 'configured';
-    response.services.mailgunDomain = mailgunStatus.domain;
+    response.services.postmarkFrom = postmarkStatus.domain;
   } else {
     response.services.emailStatus = EMAIL_ENABLED ? 'not_configured' : 'disabled';
   }
@@ -4200,12 +4207,12 @@ async function startServer() {
       console.log('');
       console.log('📧 Checking email configuration...');
       if (EMAIL_ENABLED) {
-        if (mailgun.isMailgunEnabled()) {
-          const mailgunStatus = mailgun.getMailgunStatus();
-          console.log(`   ✅ Email: Mailgun configured (${mailgunStatus.domain})`);
-          console.log('   ✅ Mailgun ready to send emails');
+        if (postmark.isPostmarkEnabled()) {
+          const postmarkStatus = postmark.getPostmarkStatus();
+          console.log(`   ✅ Email: Postmark configured (${postmarkStatus.domain})`);
+          console.log('   ✅ Postmark ready to send emails');
         } else {
-          console.warn('   ⚠️  Email enabled but Mailgun not configured');
+          console.warn('   ⚠️  Email enabled but Postmark not configured');
           console.warn('   Set MAILGUN_API_KEY and MAILGUN_DOMAIN in your .env file');
           console.warn('   Emails will be saved to /outbox folder instead');
         }

@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang='en-GB'>
+<head>
+<meta charset='utf-8'>
+<meta name='viewport' content='width=device-width,initial-scale=1'>
+<title>System Settings — EventFlow Admin</title>
+<link rel='stylesheet' href='/assets/css/styles.css'>
+<link rel='stylesheet' href='/assets/css/eventflow-17.0.0.css'>
+<link rel='stylesheet' href='/assets/css/utilities.css'>
+<link rel='stylesheet' href='/assets/css/components.css'>
+<link rel='stylesheet' href='/assets/css/animations.css'>
+<link rel='icon' href='/favicon.svg'>
+<style>
+  body{background:#f5f5f5;color:#1a1a1a;}
+  .section{background:#f5f5f5;}
+  .container{background:#f5f5f5;}
+  .card{background:#fff;border:1px solid #e4e4e7;padding:1.5rem;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.1);margin-bottom:1rem;}
+  h1, h2, h3{color:#0a0a0a;}
+  .small{color:#52525b;}
+  
+  /* Admin sidebar styles */
+  .admin-sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 260px;
+    background: #111;
+    color: #f5f5f5;
+    border-right: 1px solid #27272a;
+    padding: 1rem;
+    overflow-y: auto;
+    z-index: 1000;
+    transition: transform 0.3s;
+  }
+  
+  .admin-sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #27272a;
+  }
+  
+  .admin-sidebar-header h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    color: #f5f5f5;
+  }
+  
+  .sidebar-toggle {
+    display: none;
+    background: none;
+    border: none;
+    color: #f5f5f5;
+    font-size: 1.5rem;
+    cursor: pointer;
+  }
+  
+  .admin-sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  
+  .admin-nav-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    color: #d4d4d8;
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+  
+  .admin-nav-link:hover {
+    background: #1a1a1a;
+    color: #f5f5f5;
+  }
+  
+  .admin-nav-link.active {
+    background: #3b82f6;
+    color: #fff;
+  }
+  
+  .nav-icon {
+    font-size: 1.25rem;
+  }
+  
+  .nav-label {
+    flex: 1;
+    font-weight: 500;
+  }
+  
+  .nav-badge {
+    background: #3b82f6;
+    color: #fff;
+    font-size: 0.75rem;
+    padding: 0.125rem 0.5rem;
+    border-radius: 999px;
+    font-weight: 600;
+    display: none;
+  }
+  
+  .nav-badge.badge-warning {
+    background: #f59e0b;
+  }
+  
+  .nav-badge.badge-danger {
+    background: #ef4444;
+  }
+  
+  main.section {
+    margin-left: 260px;
+    transition: margin-left 0.3s;
+  }
+  
+  @media (max-width: 1024px) {
+    .admin-sidebar {
+      transform: translateX(-100%);
+    }
+    
+    .admin-sidebar.open {
+      transform: translateX(0);
+    }
+    
+    .sidebar-toggle {
+      display: block;
+    }
+    
+    main.section {
+      margin-left: 0;
+    }
+  }
+  
+  .form-row {
+    margin-bottom: 1rem;
+  }
+  
+  .form-row label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #1a1a1a;
+  }
+  
+  .form-row input,
+  .form-row textarea {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #d4d4d8;
+    border-radius: 4px;
+    font-size: 14px;
+  }
+  
+  .btn {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s;
+  }
+  
+  .btn-primary {
+    background: #3b82f6;
+    color: #fff;
+  }
+  
+  .btn-primary:hover {
+    background: #2563eb;
+  }
+  
+  .btn-secondary {
+    background: #6b7280;
+    color: #fff;
+  }
+  
+  .btn-secondary:hover {
+    background: #4b5563;
+  }
+  
+  .btn-danger {
+    background: #ef4444;
+    color: #fff;
+  }
+  
+  .btn-danger:hover {
+    background: #dc2626;
+  }
+  
+  .toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 24px;
+  }
+  
+  .toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+  
+  .toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #d4d4d8;
+    transition: 0.4s;
+    border-radius: 24px;
+  }
+  
+  .toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: 0.4s;
+    border-radius: 50%;
+  }
+  
+  input:checked + .toggle-slider {
+    background-color: #3b82f6;
+  }
+  
+  input:checked + .toggle-slider:before {
+    transform: translateX(26px);
+  }
+  
+  .feature-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background: #f9fafb;
+    border-radius: 4px;
+    margin-bottom: 0.5rem;
+  }
+  
+  .warning-banner {
+    background: #fef3c7;
+    border-left: 4px solid #f59e0b;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 4px;
+  }
+</style>
+</head>
+<body>
+<aside class="admin-sidebar" id="adminSidebar">
+  <div class="admin-sidebar-header">
+    <h3>Admin Panel</h3>
+    <button id="sidebarToggle" class="sidebar-toggle" aria-label="Toggle sidebar">☰</button>
+  </div>
+  <nav class="admin-sidebar-nav">
+    <a href="/admin.html" class="admin-nav-link">
+      <span class="nav-icon">■</span>
+      <span class="nav-label">Dashboard</span>
+    </a>
+    <a href="/admin-users.html" class="admin-nav-link">
+      <span class="nav-icon">◉</span>
+      <span class="nav-label">Users</span>
+      <span class="nav-badge" id="newUsersCount"></span>
+    </a>
+    <a href="/admin-packages.html" class="admin-nav-link">
+      <span class="nav-icon">▣</span>
+      <span class="nav-label">Packages</span>
+    </a>
+    <a href="/admin-photos.html" class="admin-nav-link">
+      <span class="nav-icon">◈</span>
+      <span class="nav-label">Photos</span>
+      <span class="nav-badge badge-warning" id="pendingPhotosCount"></span>
+    </a>
+    <a href="/admin-tickets.html" class="admin-nav-link">
+      <span class="nav-icon">▤</span>
+      <span class="nav-label">Tickets</span>
+      <span class="nav-badge badge-danger" id="openTicketsCount"></span>
+    </a>
+    <a href="/admin-reports.html" class="admin-nav-link">
+      <span class="nav-icon">▲</span>
+      <span class="nav-label">Reports</span>
+    </a>
+    <a href="/admin-audit.html" class="admin-nav-link">
+      <span class="nav-icon">☰</span>
+      <span class="nav-label">Audit Log</span>
+    </a>
+    <a href="/admin-homepage.html" class="admin-nav-link">
+      <span class="nav-icon">⌂</span>
+      <span class="nav-label">Homepage</span>
+    </a>
+    <a href="/admin-payments.html" class="admin-nav-link">
+      <span class="nav-icon">▬</span>
+      <span class="nav-label">Payments</span>
+    </a>
+    <a href="/admin-content.html" class="admin-nav-link">
+      <span class="nav-icon">✎</span>
+      <span class="nav-label">Content</span>
+    </a>
+    <a href="/admin-settings.html" class="admin-nav-link">
+      <span class="nav-icon">⚙</span>
+      <span class="nav-label">Settings</span>
+    </a>
+  </nav>
+</aside>
+
+<main class="section">
+  <div class="container">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;">
+      <h1 style="margin:0;">System Settings</h1>
+      <button class="btn btn-secondary" onclick="location.href='/admin.html'">← Back to Dashboard</button>
+    </div>
+    
+    <!-- Site Configuration -->
+    <div class="card">
+      <h2>Site Configuration</h2>
+      <form id="siteConfigForm">
+        <div class="form-row">
+          <label for="siteName">Site Name</label>
+          <input type="text" id="siteName" placeholder="EventFlow">
+        </div>
+        
+        <div class="form-row">
+          <label for="siteTagline">Tagline</label>
+          <input type="text" id="siteTagline" placeholder="Event planning made simple">
+        </div>
+        
+        <div class="form-row">
+          <label for="contactEmail">Contact Email</label>
+          <input type="email" id="contactEmail" placeholder="hello@eventflow.com">
+        </div>
+        
+        <div class="form-row">
+          <label for="supportEmail">Support Email</label>
+          <input type="email" id="supportEmail" placeholder="support@eventflow.com">
+        </div>
+        
+        <button type="submit" class="btn btn-primary">Save Site Configuration</button>
+      </form>
+    </div>
+    
+    <!-- Feature Flags -->
+    <div class="card">
+      <h2>Feature Flags</h2>
+      <p class="small">Enable or disable features across the platform.</p>
+      
+      <div id="featureFlags">
+        <div class="feature-item">
+          <div>
+            <strong>User Registration</strong>
+            <div class="small">Allow new users to register</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="featureRegistration">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        
+        <div class="feature-item">
+          <div>
+            <strong>Supplier Applications</strong>
+            <div class="small">Allow suppliers to apply to join</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="featureSupplierApply">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        
+        <div class="feature-item">
+          <div>
+            <strong>Package Reviews</strong>
+            <div class="small">Allow customers to leave reviews</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="featureReviews">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        
+        <div class="feature-item">
+          <div>
+            <strong>Photo Uploads</strong>
+            <div class="small">Allow suppliers to upload photos</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="featurePhotoUploads">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        
+        <div class="feature-item">
+          <div>
+            <strong>Support Tickets</strong>
+            <div class="small">Allow users to create support tickets</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="featureSupportTickets">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+      
+      <button class="btn btn-primary" id="saveFeatureFlags" style="margin-top:1rem;">Save Feature Flags</button>
+    </div>
+    
+    <!-- Maintenance Mode -->
+    <div class="card">
+      <h2>Maintenance Mode</h2>
+      <div class="warning-banner">
+        <strong>⚠️ Warning:</strong> Enabling maintenance mode will make the site inaccessible to all users except admins.
+      </div>
+      
+      <div class="feature-item">
+        <div>
+          <strong>Maintenance Mode</strong>
+          <div class="small">Put the site in maintenance mode</div>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="maintenanceMode">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      
+      <div class="form-row" style="margin-top:1rem;">
+        <label for="maintenanceMessage">Maintenance Message</label>
+        <textarea id="maintenanceMessage" rows="3" placeholder="We're performing scheduled maintenance. We'll be back soon!"></textarea>
+      </div>
+      
+      <button class="btn btn-danger" id="saveMaintenanceMode">Update Maintenance Mode</button>
+    </div>
+    
+    <!-- Email Templates -->
+    <div class="card">
+      <h2>Email Templates</h2>
+      <p class="small">Customize email templates sent to users.</p>
+      
+      <div style="display:flex;gap:0.5rem;margin-bottom:1rem;flex-wrap:wrap;">
+        <button class="btn btn-secondary" data-template="welcome">Welcome Email</button>
+        <button class="btn btn-secondary" data-template="verification">Email Verification</button>
+        <button class="btn btn-secondary" data-template="password-reset">Password Reset</button>
+        <button class="btn btn-secondary" data-template="ticket-response">Ticket Response</button>
+      </div>
+      
+      <div id="emailTemplateEditor" style="display:none;">
+        <div class="form-row">
+          <label for="emailSubject">Subject</label>
+          <input type="text" id="emailSubject">
+        </div>
+        
+        <div class="form-row">
+          <label for="emailBody">Body</label>
+          <textarea id="emailBody" rows="10"></textarea>
+        </div>
+        
+        <div style="display:flex;gap:0.5rem;">
+          <button class="btn btn-primary" id="saveEmailTemplate">Save Template</button>
+          <button class="btn btn-secondary" id="previewEmail">Preview</button>
+          <button class="btn btn-secondary" id="resetEmail">Reset to Default</button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- System Information -->
+    <div class="card">
+      <h2>System Information</h2>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;">
+        <div style="padding:1rem;background:#f9fafb;border-radius:4px;">
+          <div class="small">Version</div>
+          <strong id="systemVersion">v17.0.0</strong>
+        </div>
+        <div style="padding:1rem;background:#f9fafb;border-radius:4px;">
+          <div class="small">Environment</div>
+          <strong id="systemEnv">Production</strong>
+        </div>
+        <div style="padding:1rem;background:#f9fafb;border-radius:4px;">
+          <div class="small">Database</div>
+          <strong id="systemDB">MongoDB</strong>
+        </div>
+        <div style="padding:1rem;background:#f9fafb;border-radius:4px;">
+          <div class="small">Uptime</div>
+          <strong id="systemUptime">-</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer class="footer" role="contentinfo">
+  <div class="container" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+    <div><strong>EventFlow</strong><br><span class="small">Admin Panel</span></div>
+    <div class="small"><a href="/admin.html">Dashboard</a> · <a href="/admin-users.html">Users</a></div>
+  </div>
+</footer>
+
+<script src="/assets/js/admin-shared.js"></script>
+<script>
+(function() {
+  let currentEmailTemplate = null;
+  
+  // Load site configuration
+  async function loadSiteConfig() {
+    try {
+      const config = await AdminShared.api('/api/admin/settings/site');
+      document.getElementById('siteName').value = config.name || '';
+      document.getElementById('siteTagline').value = config.tagline || '';
+      document.getElementById('contactEmail').value = config.contactEmail || '';
+      document.getElementById('supportEmail').value = config.supportEmail || '';
+    } catch (err) {
+      console.error('Failed to load site config:', err);
+    }
+  }
+  
+  // Save site configuration
+  document.getElementById('siteConfigForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const data = {
+      name: document.getElementById('siteName').value,
+      tagline: document.getElementById('siteTagline').value,
+      contactEmail: document.getElementById('contactEmail').value,
+      supportEmail: document.getElementById('supportEmail').value,
+    };
+    
+    try {
+      await AdminShared.api('/api/admin/settings/site', 'PUT', data);
+      AdminShared.showToast('Site configuration saved', 'success');
+    } catch (err) {
+      AdminShared.showToast(`Failed to save: ${err.message}`, 'error');
+    }
+  });
+  
+  // Load feature flags
+  async function loadFeatureFlags() {
+    try {
+      const flags = await AdminShared.api('/api/admin/settings/features');
+      document.getElementById('featureRegistration').checked = flags.registration !== false;
+      document.getElementById('featureSupplierApply').checked = flags.supplierApplications !== false;
+      document.getElementById('featureReviews').checked = flags.reviews !== false;
+      document.getElementById('featurePhotoUploads').checked = flags.photoUploads !== false;
+      document.getElementById('featureSupportTickets').checked = flags.supportTickets !== false;
+    } catch (err) {
+      console.error('Failed to load feature flags:', err);
+    }
+  }
+  
+  // Save feature flags
+  document.getElementById('saveFeatureFlags').addEventListener('click', async () => {
+    const data = {
+      registration: document.getElementById('featureRegistration').checked,
+      supplierApplications: document.getElementById('featureSupplierApply').checked,
+      reviews: document.getElementById('featureReviews').checked,
+      photoUploads: document.getElementById('featurePhotoUploads').checked,
+      supportTickets: document.getElementById('featureSupportTickets').checked,
+    };
+    
+    try {
+      await AdminShared.api('/api/admin/settings/features', 'PUT', data);
+      AdminShared.showToast('Feature flags updated', 'success');
+    } catch (err) {
+      AdminShared.showToast(`Failed to save: ${err.message}`, 'error');
+    }
+  });
+  
+  // Load maintenance mode
+  async function loadMaintenanceMode() {
+    try {
+      const maintenance = await AdminShared.api('/api/admin/settings/maintenance');
+      document.getElementById('maintenanceMode').checked = maintenance.enabled || false;
+      document.getElementById('maintenanceMessage').value = maintenance.message || '';
+    } catch (err) {
+      console.error('Failed to load maintenance mode:', err);
+    }
+  }
+  
+  // Save maintenance mode
+  document.getElementById('saveMaintenanceMode').addEventListener('click', async () => {
+    const data = {
+      enabled: document.getElementById('maintenanceMode').checked,
+      message: document.getElementById('maintenanceMessage').value,
+    };
+    
+    if (data.enabled && !AdminShared.confirm('Are you sure you want to enable maintenance mode? The site will be inaccessible to non-admin users.')) {
+      return;
+    }
+    
+    try {
+      await AdminShared.api('/api/admin/settings/maintenance', 'PUT', data);
+      AdminShared.showToast('Maintenance mode updated', 'success');
+    } catch (err) {
+      AdminShared.showToast(`Failed to save: ${err.message}`, 'error');
+    }
+  });
+  
+  // Email template buttons
+  document.querySelectorAll('[data-template]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const templateName = btn.dataset.template;
+      currentEmailTemplate = templateName;
+      
+      try {
+        const template = await AdminShared.api(`/api/admin/settings/email-templates/${templateName}`);
+        document.getElementById('emailSubject').value = template.subject || '';
+        document.getElementById('emailBody').value = template.body || '';
+        document.getElementById('emailTemplateEditor').style.display = 'block';
+      } catch (err) {
+        AdminShared.showToast(`Failed to load template: ${err.message}`, 'error');
+      }
+    });
+  });
+  
+  // Save email template
+  document.getElementById('saveEmailTemplate').addEventListener('click', async () => {
+    if (!currentEmailTemplate) return;
+    
+    const data = {
+      subject: document.getElementById('emailSubject').value,
+      body: document.getElementById('emailBody').value,
+    };
+    
+    try {
+      await AdminShared.api(`/api/admin/settings/email-templates/${currentEmailTemplate}`, 'PUT', data);
+      AdminShared.showToast('Email template saved', 'success');
+    } catch (err) {
+      AdminShared.showToast(`Failed to save: ${err.message}`, 'error');
+    }
+  });
+  
+  // Preview email
+  document.getElementById('previewEmail').addEventListener('click', () => {
+    const subject = document.getElementById('emailSubject').value;
+    const body = document.getElementById('emailBody').value;
+    
+    // Create safe HTML content
+    const safeSubject = AdminShared.escapeHtml(subject);
+    const safeBody = AdminShared.escapeHtml(body).replace(/\n/g, '<br>');
+    
+    const preview = window.open('', '_blank');
+    if (preview) {
+      preview.document.write(`
+        <html>
+          <head><title>${safeSubject}</title></head>
+          <body style="font-family:sans-serif;padding:2rem;">
+            <h2>Subject: ${safeSubject}</h2>
+            <hr>
+            <div>${safeBody}</div>
+          </body>
+        </html>
+      `);
+      preview.document.close();
+    }
+  });
+  
+  // Reset email
+  document.getElementById('resetEmail').addEventListener('click', async () => {
+    if (!currentEmailTemplate) return;
+    
+    if (!AdminShared.confirm('Reset this template to default? Your changes will be lost.')) {
+      return;
+    }
+    
+    try {
+      await AdminShared.api(`/api/admin/settings/email-templates/${currentEmailTemplate}/reset`, 'POST');
+      AdminShared.showToast('Template reset to default', 'success');
+      // Reload template
+      const template = await AdminShared.api(`/api/admin/settings/email-templates/${currentEmailTemplate}`);
+      document.getElementById('emailSubject').value = template.subject || '';
+      document.getElementById('emailBody').value = template.body || '';
+    } catch (err) {
+      AdminShared.showToast(`Failed to reset: ${err.message}`, 'error');
+    }
+  });
+  
+  // Load system info
+  async function loadSystemInfo() {
+    try {
+      const info = await AdminShared.api('/api/admin/settings/system-info');
+      document.getElementById('systemVersion').textContent = info.version || 'v17.0.0';
+      document.getElementById('systemEnv').textContent = info.environment || 'Production';
+      document.getElementById('systemDB').textContent = info.database || 'MongoDB';
+      document.getElementById('systemUptime').textContent = info.uptime || '-';
+    } catch (err) {
+      console.error('Failed to load system info:', err);
+    }
+  }
+  
+  // Initial load
+  loadSiteConfig();
+  loadFeatureFlags();
+  loadMaintenanceMode();
+  loadSystemInfo();
+})();
+</script>
+</body>
+</html>

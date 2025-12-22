@@ -6,9 +6,10 @@
 'use strict';
 
 const express = require('express');
-const { read, write } = require('../store');
+const { read, write, uid } = require('../store');
 const { authRequired, roleRequired } = require('../middleware/auth');
 const { auditLog, AUDIT_ACTIONS } = require('../middleware/audit');
+const postmark = require('../utils/postmark');
 
 const router = express.Router();
 
@@ -649,132 +650,140 @@ function parseDuration(duration) {
  * PUT /api/admin/packages/:id
  * Edit package details (admin only)
  */
-router.put(
-  '/packages/:id',
-  authRequired,
-  roleRequired('admin'),
-  auditLog(AUDIT_ACTIONS.PACKAGE_EDITED),
-  (req, res) => {
-    const { id } = req.params;
-    const { title, description, price, features, availability, status, scheduledPublishAt } =
-      req.body;
+router.put('/packages/:id', authRequired, roleRequired('admin'), (req, res) => {
+  const { id } = req.params;
+  const { title, description, price, features, availability, status, scheduledPublishAt } =
+    req.body;
 
-    const packages = read('packages');
-    const pkgIndex = packages.findIndex(p => p.id === id);
+  const packages = read('packages');
+  const pkgIndex = packages.findIndex(p => p.id === id);
 
-    if (pkgIndex === -1) {
-      return res.status(404).json({ error: 'Package not found' });
-    }
-
-    const pkg = packages[pkgIndex];
-
-    // Store previous version for history
-    if (!pkg.versionHistory) {
-      pkg.versionHistory = [];
-    }
-    pkg.versionHistory.push({
-      timestamp: new Date().toISOString(),
-      editedBy: req.user.id,
-      previousState: { ...pkg },
-    });
-
-    // Update fields if provided
-    if (title !== undefined) {
-      pkg.title = title;
-    }
-    if (description !== undefined) {
-      pkg.description = description;
-    }
-    if (price !== undefined) {
-      pkg.price = price;
-    }
-    if (features !== undefined) {
-      pkg.features = features;
-    }
-    if (availability !== undefined) {
-      pkg.availability = availability;
-    }
-    if (status !== undefined) {
-      pkg.status = status;
-    }
-    if (scheduledPublishAt !== undefined) {
-      pkg.scheduledPublishAt = scheduledPublishAt;
-    }
-
-    pkg.updatedAt = new Date().toISOString();
-    pkg.lastEditedBy = req.user.id;
-
-    packages[pkgIndex] = pkg;
-    write('packages', packages);
-
-    res.json({ success: true, package: pkg });
+  if (pkgIndex === -1) {
+    return res.status(404).json({ error: 'Package not found' });
   }
-);
+
+  const pkg = packages[pkgIndex];
+
+  // Store previous version for history
+  if (!pkg.versionHistory) {
+    pkg.versionHistory = [];
+  }
+  pkg.versionHistory.push({
+    timestamp: new Date().toISOString(),
+    editedBy: req.user.id,
+    previousState: { ...pkg },
+  });
+
+  // Update fields if provided
+  if (title !== undefined) {
+    pkg.title = title;
+  }
+  if (description !== undefined) {
+    pkg.description = description;
+  }
+  if (price !== undefined) {
+    pkg.price = price;
+  }
+  if (features !== undefined) {
+    pkg.features = features;
+  }
+  if (availability !== undefined) {
+    pkg.availability = availability;
+  }
+  if (status !== undefined) {
+    pkg.status = status;
+  }
+  if (scheduledPublishAt !== undefined) {
+    pkg.scheduledPublishAt = scheduledPublishAt;
+  }
+
+  pkg.updatedAt = new Date().toISOString();
+  pkg.lastEditedBy = req.user.id;
+
+  packages[pkgIndex] = pkg;
+  write('packages', packages);
+
+  // Create audit log
+  auditLog({
+    adminId: req.user.id,
+    adminEmail: req.user.email,
+    action: AUDIT_ACTIONS.PACKAGE_EDITED,
+    targetType: 'package',
+    targetId: id,
+    details: { packageTitle: pkg.title, changes: req.body },
+  });
+
+  res.json({ success: true, package: pkg });
+});
 
 /**
  * PUT /api/admin/suppliers/:id
  * Edit supplier profile (admin only)
  */
-router.put(
-  '/suppliers/:id',
-  authRequired,
-  roleRequired('admin'),
-  auditLog(AUDIT_ACTIONS.SUPPLIER_EDITED),
-  (req, res) => {
-    const { id } = req.params;
-    const { name, description, contact, categories, amenities, location, serviceAreas } = req.body;
+router.put('/suppliers/:id', authRequired, roleRequired('admin'), (req, res) => {
+  const { id } = req.params;
+  const { name, description, contact, categories, amenities, location, serviceAreas } = req.body;
 
-    const suppliers = read('suppliers');
-    const supplierIndex = suppliers.findIndex(s => s.id === id);
+  const suppliers = read('suppliers');
+  const supplierIndex = suppliers.findIndex(s => s.id === id);
 
-    if (supplierIndex === -1) {
-      return res.status(404).json({ error: 'Supplier not found' });
-    }
-
-    const supplier = suppliers[supplierIndex];
-
-    // Store previous version for history
-    if (!supplier.versionHistory) {
-      supplier.versionHistory = [];
-    }
-    supplier.versionHistory.push({
-      timestamp: new Date().toISOString(),
-      editedBy: req.user.id,
-      previousState: { ...supplier },
-    });
-
-    // Update fields if provided
-    if (name !== undefined) {
-      supplier.name = name;
-    }
-    if (description !== undefined) {
-      supplier.description = description;
-    }
-    if (contact !== undefined) {
-      supplier.contact = contact;
-    }
-    if (categories !== undefined) {
-      supplier.categories = categories;
-    }
-    if (amenities !== undefined) {
-      supplier.amenities = amenities;
-    }
-    if (location !== undefined) {
-      supplier.location = location;
-    }
-    if (serviceAreas !== undefined) {
-      supplier.serviceAreas = serviceAreas;
-    }
-
-    supplier.updatedAt = new Date().toISOString();
-    supplier.lastEditedBy = req.user.id;
-
-    suppliers[supplierIndex] = supplier;
-    write('suppliers', suppliers);
-
-    res.json({ success: true, supplier });
+  if (supplierIndex === -1) {
+    return res.status(404).json({ error: 'Supplier not found' });
   }
-);
+
+  const supplier = suppliers[supplierIndex];
+
+  // Store previous version for history
+  if (!supplier.versionHistory) {
+    supplier.versionHistory = [];
+  }
+  supplier.versionHistory.push({
+    timestamp: new Date().toISOString(),
+    editedBy: req.user.id,
+    previousState: { ...supplier },
+  });
+
+  // Update fields if provided
+  if (name !== undefined) {
+    supplier.name = name;
+  }
+  if (description !== undefined) {
+    supplier.description = description;
+  }
+  if (contact !== undefined) {
+    supplier.contact = contact;
+  }
+  if (categories !== undefined) {
+    supplier.categories = categories;
+  }
+  if (amenities !== undefined) {
+    supplier.amenities = amenities;
+  }
+  if (location !== undefined) {
+    supplier.location = location;
+  }
+  if (serviceAreas !== undefined) {
+    supplier.serviceAreas = serviceAreas;
+  }
+
+  supplier.updatedAt = new Date().toISOString();
+  supplier.lastEditedBy = req.user.id;
+
+  suppliers[supplierIndex] = supplier;
+  write('suppliers', suppliers);
+
+  // Create audit log
+  auditLog({
+    adminId: req.user.id,
+    adminEmail: req.user.email,
+    action: AUDIT_ACTIONS.SUPPLIER_EDITED,
+    targetType: 'supplier',
+    targetId: id,
+    details: { supplierName: supplier.name, changes: req.body },
+  });
+
+  res.json({ success: true, supplier });
+});
 
 /**
  * PUT /api/admin/users/:id
@@ -1300,6 +1309,765 @@ router.post('/suppliers/smart-tags', authRequired, roleRequired('admin'), (req, 
     success: true,
     message: `Smart tags generated for ${taggedCount} suppliers`,
     taggedCount,
+  });
+});
+
+// ---------- Badge Counts ----------
+
+/**
+ * Generate a unique ID using crypto module
+ * @param {string} prefix - Prefix for the ID (e.g., 'announcement', 'faq')
+ * @returns {string} Unique ID
+ */
+function generateUniqueId(prefix) {
+  // Use crypto.randomUUID if available (Node 14.17+)
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return `${prefix}_${crypto.randomUUID()}`;
+  }
+  // Fallback for older Node versions
+  const timestamp = Date.now();
+  const random = Math.random().toString(36).substring(2, 15);
+  const random2 = Math.random().toString(36).substring(2, 15);
+  return `${prefix}_${timestamp}_${random}${random2}`;
+}
+
+/**
+ * GET /api/admin/badge-counts
+ * Get counts for sidebar badges (new users, pending photos, open tickets)
+ */
+router.get('/badge-counts', authRequired, roleRequired('admin'), (req, res) => {
+  const users = read('users');
+  const photos = read('photos') || [];
+  const tickets = read('tickets') || [];
+
+  // Count users created in last 7 days
+  const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  const newUsers = users.filter(u => {
+    if (!u.createdAt) {
+      return false;
+    }
+    return new Date(u.createdAt).getTime() > sevenDaysAgo;
+  }).length;
+
+  // Count pending photos
+  const pendingPhotos = photos.filter(p => !p.approved && !p.rejected).length;
+
+  // Count open tickets
+  const openTickets = tickets.filter(t => t.status === 'open' || t.status === 'in_progress').length;
+
+  res.json({
+    newUsers,
+    pendingPhotos,
+    openTickets,
+  });
+});
+
+// ---------- User Detail Operations ----------
+
+/**
+ * GET /api/admin/users/:id
+ * Get detailed information about a specific user
+ */
+router.get('/users/:id', authRequired, roleRequired('admin'), (req, res) => {
+  const users = read('users');
+  const user = users.find(u => u.id === req.params.id);
+
+  if (!user) {
+    return res.status(404).json({ error: 'User not found' });
+  }
+
+  // Return user without password
+  const { password, ...userWithoutPassword } = user;
+  res.json(userWithoutPassword);
+});
+
+/**
+ * POST /api/admin/users/:id/reset-password
+ * Send password reset email to user
+ */
+router.post('/users/:id/reset-password', authRequired, roleRequired('admin'), async (req, res) => {
+  const users = read('users');
+  const userIndex = users.findIndex(u => u.id === req.params.id);
+
+  if (userIndex === -1) {
+    return res.status(404).json({ error: 'User not found' });
+  }
+
+  const user = users[userIndex];
+
+  // Generate reset token
+  const token = uid('reset');
+  const expires = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // 1 hour
+
+  // Save reset token to user
+  users[userIndex].resetToken = token;
+  users[userIndex].resetTokenExpiresAt = expires;
+  write('users', users);
+
+  // Send password reset email
+  const resetLink = `${process.env.APP_BASE_URL || process.env.BASE_URL || 'http://localhost:3000'}/reset-password.html?token=${encodeURIComponent(token)}`;
+
+  try {
+    if (postmark.isPostmarkEnabled()) {
+      await postmark.sendMail({
+        to: user.email,
+        subject: 'Reset your EventFlow password',
+        template: 'password-reset',
+        templateData: {
+          name: user.name || 'there',
+          resetLink: resetLink,
+        },
+        tags: ['password-reset', 'admin-initiated', 'transactional'],
+        messageStream: 'password-reset',
+      });
+    } else {
+      // Fallback: send simple email
+      await postmark.sendMail({
+        to: user.email,
+        subject: 'Reset your EventFlow password',
+        text: `Hi ${user.name || 'there'},\n\nAn administrator has initiated a password reset for your account.\n\nClick the link below to reset your password:\n\n${resetLink}\n\nThis link expires in 1 hour.\n\nIf you didn't request this, please ignore this email.\n\nBest regards,\nThe EventFlow Team`,
+        messageStream: 'password-reset',
+      });
+    }
+
+    auditLog({
+      adminId: req.user.id,
+      adminEmail: req.user.email,
+      action: AUDIT_ACTIONS.USER_PASSWORD_RESET,
+      targetType: 'user',
+      targetId: user.id,
+      details: { userEmail: user.email, emailSent: true },
+    });
+
+    res.json({
+      success: true,
+      message: 'Password reset email sent successfully',
+    });
+  } catch (err) {
+    console.error('Failed to send password reset email:', err);
+
+    auditLog({
+      adminId: req.user.id,
+      adminEmail: req.user.email,
+      action: AUDIT_ACTIONS.USER_PASSWORD_RESET,
+      targetType: 'user',
+      targetId: user.id,
+      details: { userEmail: user.email, emailSent: false, error: err.message },
+    });
+
+    res.status(500).json({
+      error: 'Failed to send password reset email',
+      details: err.message,
+    });
+  }
+});
+
+/**
+ * POST /api/admin/users/:id/unsuspend
+ * Unsuspend a user
+ */
+router.post('/users/:id/unsuspend', authRequired, roleRequired('admin'), (req, res) => {
+  const users = read('users');
+  const userIndex = users.findIndex(u => u.id === req.params.id);
+
+  if (userIndex === -1) {
+    return res.status(404).json({ error: 'User not found' });
+  }
+
+  users[userIndex].suspended = false;
+  users[userIndex].suspendedAt = null;
+  users[userIndex].suspendedBy = null;
+  users[userIndex].suspendedReason = null;
+
+  write('users', users);
+
+  auditLog({
+    adminId: req.user.id,
+    adminEmail: req.user.email,
+    action: 'USER_UNSUSPENDED',
+    targetType: 'user',
+    targetId: req.params.id,
+    details: { userEmail: users[userIndex].email },
+  });
+
+  res.json({ success: true, message: 'User unsuspended', user: users[userIndex] });
+});
+
+// ---------- Content Management ----------
+
+/**
+ * GET /api/admin/content/homepage
+ * Get homepage hero content
+ */
+router.get('/content/homepage', authRequired, roleRequired('admin'), (req, res) => {
+  const content = read('content') || {};
+  const homepage = content.homepage || {
+    title: 'Plan Your Perfect Event',
+    subtitle: 'Discover amazing suppliers and packages for your special day',
+    ctaText: 'Start Planning',
+  };
+  res.json(homepage);
+});
+
+/**
+ * PUT /api/admin/content/homepage
+ * Update homepage hero content
+ */
+router.put('/content/homepage', authRequired, roleRequired('admin'), (req, res) => {
+  const { title, subtitle, ctaText } = req.body;
+
+  const content = read('content') || {};
+  content.homepage = {
+    title: title || 'Plan Your Perfect Event',
+    subtitle: subtitle || 'Discover amazing suppliers and packages for your special day',
+    ctaText: ctaText || 'Start Planning',
+    updatedAt: new Date().toISOString(),
+    updatedBy: req.user.email,
+  };
+
+  write('content', content);
+
+  auditLog({
+    adminId: req.user.id,
+    adminEmail: req.user.email,
+    action: 'CONTENT_UPDATED',
+    targetType: 'homepage',
+    targetId: null,
+    details: { title, subtitle, ctaText },
+  });
+
+  res.json({ success: true, content: content.homepage });
+});
+
+/**
+ * GET /api/admin/content/announcements
+ * Get all announcements
+ */
+router.get('/content/announcements', authRequired, roleRequired('admin'), (req, res) => {
+  const content = read('content') || {};
+  const announcements = content.announcements || [];
+  res.json(announcements);
+});
+
+/**
+ * POST /api/admin/content/announcements
+ * Create a new announcement
+ */
+router.post('/content/announcements', authRequired, roleRequired('admin'), (req, res) => {
+  const { message, type, active } = req.body;
+
+  if (!message) {
+    return res.status(400).json({ error: 'Message is required' });
+  }
+
+  const content = read('content') || {};
+  if (!content.announcements) {
+    content.announcements = [];
+  }
+
+  const announcement = {
+    id: generateUniqueId('announcement'),
+    message,
+    type: type || 'info',
+    active: active !== false,
+    createdAt: new Date().toISOString(),
+    createdBy: req.user.email,
+  };
+
+  content.announcements.push(announcement);
+  write('content', content);
+
+  auditLog({
+    adminId: req.user.id,
+    adminEmail: req.user.email,
+    action: 'ANNOUNCEMENT_CREATED',
+    targetType: 'announcement',
+    targetId: announcement.id,
+    details: { message, type },
+  });
+
+  res.json({ success: true, announcement });
+});
+
+/**
+ * GET /api/admin/content/announcements/:id
+ * Get a specific announcement
+ */
+router.get('/content/announcements/:id', authRequired, roleRequired('admin'), (req, res) => {
+  const content = read('content') || {};
+  const announcements = content.announcements || [];
+  const announcement = announcements.find(a => a.id === req.params.id);
+
+  if (!announcement) {
+    return res.status(404).json({ error: 'Announcement not found' });
+  }
+
+  res.json(announcement);
+});
+
+/**
+ * PUT /api/admin/content/announcements/:id
+ * Update an announcement
+ */
+router.put('/content/announcements/:id', authRequired, roleRequired('admin'), (req, res) => {
+  const { message, type, active } = req.body;
+
+  const content = read('content') || {};
+  if (!content.announcements) {
+    return res.status(404).json({ error: 'Announcement not found' });
+  }
+
+  const announcementIndex = content.announcements.findIndex(a => a.id === req.params.id);
+  if (announcementIndex === -1) {
+    return res.status(404).json({ error: 'Announcement not found' });
+  }
+
+  content.announcements[announcementIndex] = {
+    ...content.announcements[announcementIndex],
+    message: message || content.announcements[announcementIndex].message,
+    type: type || content.announcements[announcementIndex].type,
+    active: active !== undefined ? active : content.announcements[announcementIndex].active,
+    updatedAt: new Date().toISOString(),
+    updatedBy: req.user.email,
+  };
+
+  write('content', content);
+
+  auditLog({
+    adminId: req.user.id,
+    adminEmail: req.user.email,
+    action: 'ANNOUNCEMENT_UPDATED',
+    targetType: 'announcement',
+    targetId: req.params.id,
+    details: { message, type, active },
+  });
+
+  res.json({ success: true, announcement: content.announcements[announcementIndex] });
+});
+
+/**
+ * DELETE /api/admin/content/announcements/:id
+ * Delete an announcement
+ */
+router.delete('/content/announcements/:id', authRequired, roleRequired('admin'), (req, res) => {
+  const content = read('content') || {};
+  if (!content.announcements) {
+    return res.status(404).json({ error: 'Announcement not found' });
+  }
+
+  const announcementIndex = content.announcements.findIndex(a => a.id === req.params.id);
+  if (announcementIndex === -1) {
+    return res.status(404).json({ error: 'Announcement not found' });
+  }
+
+  const deleted = content.announcements.splice(announcementIndex, 1)[0];
+  write('content', content);
+
+  auditLog({
+    adminId: req.user.id,
+    adminEmail: req.user.email,
+    action: 'ANNOUNCEMENT_DELETED',
+    targetType: 'announcement',
+    targetId: req.params.id,
+    details: { message: deleted.message },
+  });
+
+  res.json({ success: true, message: 'Announcement deleted' });
+});
+
+/**
+ * GET /api/admin/content/faqs
+ * Get all FAQs
+ */
+router.get('/content/faqs', authRequired, roleRequired('admin'), (req, res) => {
+  const content = read('content') || {};
+  const faqs = content.faqs || [];
+  res.json(faqs);
+});
+
+/**
+ * POST /api/admin/content/faqs
+ * Create a new FAQ
+ */
+router.post('/content/faqs', authRequired, roleRequired('admin'), (req, res) => {
+  const { question, answer, category } = req.body;
+
+  if (!question || !answer) {
+    return res.status(400).json({ error: 'Question and answer are required' });
+  }
+
+  const content = read('content') || {};
+  if (!content.faqs) {
+    content.faqs = [];
+  }
+
+  const faq = {
+    id: generateUniqueId('faq'),
+    question,
+    answer,
+    category: category || 'General',
+    createdAt: new Date().toISOString(),
+    createdBy: req.user.email,
+  };
+
+  content.faqs.push(faq);
+  write('content', content);
+
+  auditLog({
+    adminId: req.user.id,
+    adminEmail: req.user.email,
+    action: 'FAQ_CREATED',
+    targetType: 'faq',
+    targetId: faq.id,
+    details: { question, category },
+  });
+
+  res.json({ success: true, faq });
+});
+
+/**
+ * GET /api/admin/content/faqs/:id
+ * Get a specific FAQ
+ */
+router.get('/content/faqs/:id', authRequired, roleRequired('admin'), (req, res) => {
+  const content = read('content') || {};
+  const faqs = content.faqs || [];
+  const faq = faqs.find(f => f.id === req.params.id);
+
+  if (!faq) {
+    return res.status(404).json({ error: 'FAQ not found' });
+  }
+
+  res.json(faq);
+});
+
+/**
+ * PUT /api/admin/content/faqs/:id
+ * Update a FAQ
+ */
+router.put('/content/faqs/:id', authRequired, roleRequired('admin'), (req, res) => {
+  const { question, answer, category } = req.body;
+
+  const content = read('content') || {};
+  if (!content.faqs) {
+    return res.status(404).json({ error: 'FAQ not found' });
+  }
+
+  const faqIndex = content.faqs.findIndex(f => f.id === req.params.id);
+  if (faqIndex === -1) {
+    return res.status(404).json({ error: 'FAQ not found' });
+  }
+
+  content.faqs[faqIndex] = {
+    ...content.faqs[faqIndex],
+    question: question || content.faqs[faqIndex].question,
+    answer: answer || content.faqs[faqIndex].answer,
+    category: category || content.faqs[faqIndex].category,
+    updatedAt: new Date().toISOString(),
+    updatedBy: req.user.email,
+  };
+
+  write('content', content);
+
+  auditLog({
+    adminId: req.user.id,
+    adminEmail: req.user.email,
+    action: 'FAQ_UPDATED',
+    targetType: 'faq',
+    targetId: req.params.id,
+    details: { question, category },
+  });
+
+  res.json({ success: true, faq: content.faqs[faqIndex] });
+});
+
+/**
+ * DELETE /api/admin/content/faqs/:id
+ * Delete a FAQ
+ */
+router.delete('/content/faqs/:id', authRequired, roleRequired('admin'), (req, res) => {
+  const content = read('content') || {};
+  if (!content.faqs) {
+    return res.status(404).json({ error: 'FAQ not found' });
+  }
+
+  const faqIndex = content.faqs.findIndex(f => f.id === req.params.id);
+  if (faqIndex === -1) {
+    return res.status(404).json({ error: 'FAQ not found' });
+  }
+
+  const deleted = content.faqs.splice(faqIndex, 1)[0];
+  write('content', content);
+
+  auditLog({
+    adminId: req.user.id,
+    adminEmail: req.user.email,
+    action: 'FAQ_DELETED',
+    targetType: 'faq',
+    targetId: req.params.id,
+    details: { question: deleted.question },
+  });
+
+  res.json({ success: true, message: 'FAQ deleted' });
+});
+
+// ---------- System Settings ----------
+
+/**
+ * GET /api/admin/settings/site
+ * Get site configuration
+ */
+router.get('/settings/site', authRequired, roleRequired('admin'), (req, res) => {
+  const settings = read('settings') || {};
+  const site = settings.site || {
+    name: 'EventFlow',
+    tagline: 'Event planning made simple',
+    contactEmail: 'hello@eventflow.com',
+    supportEmail: 'support@eventflow.com',
+  };
+  res.json(site);
+});
+
+/**
+ * PUT /api/admin/settings/site
+ * Update site configuration
+ */
+router.put('/settings/site', authRequired, roleRequired('admin'), (req, res) => {
+  const { name, tagline, contactEmail, supportEmail } = req.body;
+
+  const settings = read('settings') || {};
+  settings.site = {
+    name: name || 'EventFlow',
+    tagline: tagline || 'Event planning made simple',
+    contactEmail: contactEmail || 'hello@eventflow.com',
+    supportEmail: supportEmail || 'support@eventflow.com',
+    updatedAt: new Date().toISOString(),
+    updatedBy: req.user.email,
+  };
+
+  write('settings', settings);
+
+  auditLog({
+    adminId: req.user.id,
+    adminEmail: req.user.email,
+    action: 'SETTINGS_UPDATED',
+    targetType: 'site',
+    targetId: null,
+    details: { name, tagline },
+  });
+
+  res.json({ success: true, site: settings.site });
+});
+
+/**
+ * GET /api/admin/settings/features
+ * Get feature flags
+ */
+router.get('/settings/features', authRequired, roleRequired('admin'), (req, res) => {
+  const settings = read('settings') || {};
+  const features = settings.features || {
+    registration: true,
+    supplierApplications: true,
+    reviews: true,
+    photoUploads: true,
+    supportTickets: true,
+  };
+  res.json(features);
+});
+
+/**
+ * PUT /api/admin/settings/features
+ * Update feature flags
+ */
+router.put('/settings/features', authRequired, roleRequired('admin'), (req, res) => {
+  const { registration, supplierApplications, reviews, photoUploads, supportTickets } = req.body;
+
+  const settings = read('settings') || {};
+  settings.features = {
+    registration: registration !== false,
+    supplierApplications: supplierApplications !== false,
+    reviews: reviews !== false,
+    photoUploads: photoUploads !== false,
+    supportTickets: supportTickets !== false,
+    updatedAt: new Date().toISOString(),
+    updatedBy: req.user.email,
+  };
+
+  write('settings', settings);
+
+  auditLog({
+    adminId: req.user.id,
+    adminEmail: req.user.email,
+    action: 'FEATURES_UPDATED',
+    targetType: 'features',
+    targetId: null,
+    details: settings.features,
+  });
+
+  res.json({ success: true, features: settings.features });
+});
+
+/**
+ * GET /api/admin/settings/maintenance
+ * Get maintenance mode settings
+ */
+router.get('/settings/maintenance', authRequired, roleRequired('admin'), (req, res) => {
+  const settings = read('settings') || {};
+  const maintenance = settings.maintenance || {
+    enabled: false,
+    message: "We're performing scheduled maintenance. We'll be back soon!",
+  };
+  res.json(maintenance);
+});
+
+/**
+ * PUT /api/admin/settings/maintenance
+ * Update maintenance mode settings
+ */
+router.put('/settings/maintenance', authRequired, roleRequired('admin'), (req, res) => {
+  const { enabled, message } = req.body;
+
+  const settings = read('settings') || {};
+  settings.maintenance = {
+    enabled: enabled === true,
+    message: message || "We're performing scheduled maintenance. We'll be back soon!",
+    updatedAt: new Date().toISOString(),
+    updatedBy: req.user.email,
+  };
+
+  write('settings', settings);
+
+  auditLog({
+    adminId: req.user.id,
+    adminEmail: req.user.email,
+    action: 'MAINTENANCE_UPDATED',
+    targetType: 'maintenance',
+    targetId: null,
+    details: { enabled, message },
+  });
+
+  res.json({ success: true, maintenance: settings.maintenance });
+});
+
+/**
+ * GET /api/admin/settings/email-templates/:name
+ * Get email template
+ */
+router.get('/settings/email-templates/:name', authRequired, roleRequired('admin'), (req, res) => {
+  const settings = read('settings') || {};
+  const emailTemplates = settings.emailTemplates || {};
+
+  const defaultTemplates = {
+    welcome: {
+      subject: 'Welcome to EventFlow!',
+      body: "Hi {{name}},\n\nWelcome to EventFlow! We're excited to help you plan your perfect event.\n\nBest regards,\nThe EventFlow Team",
+    },
+    verification: {
+      subject: 'Verify your email address',
+      body: 'Hi {{name}},\n\nPlease verify your email address by clicking the link below:\n\n{{verificationLink}}\n\nBest regards,\nThe EventFlow Team',
+    },
+    'password-reset': {
+      subject: 'Reset your password',
+      body: "Hi {{name}},\n\nYou requested a password reset. Click the link below to reset your password:\n\n{{resetLink}}\n\nIf you didn't request this, please ignore this email.\n\nBest regards,\nThe EventFlow Team",
+    },
+    'ticket-response': {
+      subject: 'New response to your support ticket',
+      body: 'Hi {{name}},\n\nYou have received a new response to your support ticket #{{ticketId}}.\n\n{{response}}\n\nBest regards,\nThe EventFlow Team',
+    },
+  };
+
+  const template = emailTemplates[req.params.name] || defaultTemplates[req.params.name];
+
+  if (!template) {
+    return res.status(404).json({ error: 'Template not found' });
+  }
+
+  res.json(template);
+});
+
+/**
+ * PUT /api/admin/settings/email-templates/:name
+ * Update email template
+ */
+router.put('/settings/email-templates/:name', authRequired, roleRequired('admin'), (req, res) => {
+  const { subject, body } = req.body;
+
+  if (!subject || !body) {
+    return res.status(400).json({ error: 'Subject and body are required' });
+  }
+
+  const settings = read('settings') || {};
+  if (!settings.emailTemplates) {
+    settings.emailTemplates = {};
+  }
+
+  settings.emailTemplates[req.params.name] = {
+    subject,
+    body,
+    updatedAt: new Date().toISOString(),
+    updatedBy: req.user.email,
+  };
+
+  write('settings', settings);
+
+  auditLog({
+    adminId: req.user.id,
+    adminEmail: req.user.email,
+    action: 'EMAIL_TEMPLATE_UPDATED',
+    targetType: 'email-template',
+    targetId: req.params.name,
+    details: { subject },
+  });
+
+  res.json({ success: true, template: settings.emailTemplates[req.params.name] });
+});
+
+/**
+ * POST /api/admin/settings/email-templates/:name/reset
+ * Reset email template to default
+ */
+router.post(
+  '/settings/email-templates/:name/reset',
+  authRequired,
+  roleRequired('admin'),
+  (req, res) => {
+    const settings = read('settings') || {};
+    if (!settings.emailTemplates) {
+      settings.emailTemplates = {};
+    }
+
+    // Remove the custom template, will fall back to default
+    delete settings.emailTemplates[req.params.name];
+    write('settings', settings);
+
+    auditLog({
+      adminId: req.user.id,
+      adminEmail: req.user.email,
+      action: 'EMAIL_TEMPLATE_RESET',
+      targetType: 'email-template',
+      targetId: req.params.name,
+      details: {},
+    });
+
+    res.json({ success: true, message: 'Template reset to default' });
+  }
+);
+
+/**
+ * GET /api/admin/settings/system-info
+ * Get system information
+ */
+router.get('/settings/system-info', authRequired, roleRequired('admin'), (req, res) => {
+  const uptime = process.uptime();
+  const hours = Math.floor(uptime / 3600);
+  const minutes = Math.floor((uptime % 3600) / 60);
+  const uptimeStr = `${hours}h ${minutes}m`;
+
+  res.json({
+    version: 'v17.0.0',
+    environment: process.env.NODE_ENV || 'production',
+    database: 'JSON File Store',
+    uptime: uptimeStr,
   });
 });
 
