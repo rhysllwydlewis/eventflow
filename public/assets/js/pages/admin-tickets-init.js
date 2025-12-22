@@ -9,7 +9,9 @@ function escapeHtml(text) {
 }
 
 function formatDate(timestamp) {
-  if (!timestamp) return 'Unknown';
+  if (!timestamp) {
+    return 'Unknown';
+  }
   const date = new Date(timestamp);
   const now = new Date();
   const diff = now - date;
@@ -56,13 +58,17 @@ function renderTickets() {
   const assignedFilter = document.getElementById('assignedFilter')?.value || '';
 
   // Filter tickets
-  let filtered = allTickets.filter(ticket => {
+  const filtered = allTickets.filter(ticket => {
     // Search filter
     if (searchTerm) {
       const subject = (ticket.subject || '').toLowerCase();
       const message = (ticket.message || '').toLowerCase();
       const senderName = (ticket.senderName || '').toLowerCase();
-      if (!subject.includes(searchTerm) && !message.includes(searchTerm) && !senderName.includes(searchTerm)) {
+      if (
+        !subject.includes(searchTerm) &&
+        !message.includes(searchTerm) &&
+        !senderName.includes(searchTerm)
+      ) {
         return false;
       }
     }
@@ -101,7 +107,7 @@ function renderTickets() {
         <button class="btn btn-primary" id="refreshBtn">Refresh</button>
       </div>
     `;
-    
+
     document.getElementById('refreshBtn')?.addEventListener('click', loadTickets);
     return;
   }
@@ -109,8 +115,6 @@ function renderTickets() {
   let html = '';
 
   filtered.forEach(ticket => {
-    const statusClass = ticketingSystem.getStatusClass(ticket.status);
-    const priorityClass = ticketingSystem.getPriorityClass(ticket.priority);
     const createdAt = formatDate(ticket.createdAt);
     const responseCount = ticket.responses ? ticket.responses.length : 0;
     const userName = ticket.senderName || ticket.senderEmail || 'Unknown User';
@@ -151,9 +155,14 @@ function renderTickets() {
 
   // Add click handlers for ticket cards
   container.querySelectorAll('.ticket-card').forEach(card => {
-    card.addEventListener('click', (e) => {
+    card.addEventListener('click', e => {
       // Don't trigger if clicking on a button or link
-      if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A' || e.target.closest('button') || e.target.closest('a')) {
+      if (
+        e.target.tagName === 'BUTTON' ||
+        e.target.tagName === 'A' ||
+        e.target.closest('button') ||
+        e.target.closest('a')
+      ) {
         return;
       }
       const ticketId = card.getAttribute('data-ticket-id');
@@ -204,8 +213,6 @@ function viewTicket(ticketId) {
       return;
     }
 
-    const statusClass = ticketingSystem.getStatusClass(ticket.status);
-    const priorityClass = ticketingSystem.getPriorityClass(ticket.priority);
     const createdAt = formatDate(ticket.createdAt);
 
     let html = `
@@ -365,18 +372,24 @@ document.getElementById('backToDashboard')?.addEventListener('click', () => {
 });
 
 // Event delegation for dynamically created buttons
-document.body.addEventListener('click', function(e) {
-  var target = e.target;
-  if (target.tagName !== 'BUTTON') return;
-  
-  var action = target.getAttribute('data-action');
-  if (!action) return;
-  
-  var id = target.getAttribute('data-id');
-  
-  switch(action) {
+document.body.addEventListener('click', e => {
+  const target = e.target;
+  if (target.tagName !== 'BUTTON') {
+    return;
+  }
+
+  const action = target.getAttribute('data-action');
+  if (!action) {
+    return;
+  }
+
+  const id = target.getAttribute('data-id');
+
+  switch (action) {
     case 'viewTicket':
-      if (id) viewTicket(id);
+      if (id) {
+        viewTicket(id);
+      }
       break;
     case 'assignTicket':
       if (id) {

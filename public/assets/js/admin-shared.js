@@ -8,7 +8,9 @@ const AdminShared = (function () {
 
   // HTML escaping to prevent XSS
   function escapeHtml(unsafe) {
-    if (!unsafe) return '';
+    if (!unsafe) {
+      return '';
+    }
     const div = document.createElement('div');
     div.textContent = String(unsafe);
     return div.innerHTML;
@@ -16,7 +18,9 @@ const AdminShared = (function () {
 
   // Format dates consistently
   function formatDate(dateStr) {
-    if (!dateStr) return 'Never';
+    if (!dateStr) {
+      return 'Never';
+    }
     try {
       const date = new Date(dateStr);
       return date.toLocaleDateString('en-GB', {
@@ -33,7 +37,9 @@ const AdminShared = (function () {
 
   // Format timestamps for relative time
   function formatTimestamp(timestamp) {
-    if (!timestamp) return 'Unknown';
+    if (!timestamp) {
+      return 'Unknown';
+    }
     const date = new Date(timestamp);
     const now = new Date();
     const diff = now - date;
@@ -150,7 +156,7 @@ const AdminShared = (function () {
   async function loadBadgeCounts() {
     try {
       const counts = await api('/api/admin/badge-counts');
-      
+
       const elements = {
         newUsersCount: counts.newUsers || 0,
         pendingPhotosCount: counts.pendingPhotos || 0,
@@ -184,14 +190,14 @@ const AdminShared = (function () {
   function initSidebarToggle() {
     const toggle = document.getElementById('sidebarToggle');
     const sidebar = document.getElementById('adminSidebar');
-    
+
     if (toggle && sidebar) {
       toggle.addEventListener('click', () => {
         sidebar.classList.toggle('open');
       });
 
       // Close sidebar when clicking outside on mobile
-      document.addEventListener('click', (e) => {
+      document.addEventListener('click', e => {
         if (window.innerWidth <= 1024) {
           if (!sidebar.contains(e.target) && !toggle.contains(e.target)) {
             sidebar.classList.remove('open');
@@ -208,11 +214,13 @@ const AdminShared = (function () {
 
   // Format file size
   function formatFileSize(bytes) {
-    if (!bytes || bytes === 0) return '0 B';
+    if (!bytes || bytes === 0) {
+      return '0 B';
+    }
     const k = 1024;
     const sizes = ['B', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
+    return `${Math.round((bytes / Math.pow(k, i)) * 100) / 100} ${sizes[i]}`;
   }
 
   // Initialize admin page

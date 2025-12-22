@@ -1,7 +1,7 @@
 // Standalone admin users loader with search and filters
 (function () {
   let allUsers = [];
-  
+
   function escapeHtml(str) {
     const div = document.createElement('div');
     div.textContent = str;
@@ -44,18 +44,18 @@
         '<tr><td colspan="7" class="small" style="color:#ef4444;">Failed to load users. Please make sure you are logged in as an admin.</td></tr>';
     }
   }
-  
+
   function renderUsers() {
     const summary = document.getElementById('user-summary');
     const tbody = document.querySelector('table.table tbody');
-    
+
     // Get filter values
     const searchTerm = document.getElementById('userSearch')?.value.toLowerCase() || '';
     const roleFilter = document.getElementById('roleFilter')?.value || '';
     const verifiedFilter = document.getElementById('verifiedFilter')?.value || '';
-    
+
     // Filter users
-    let filtered = allUsers.filter(u => {
+    const filtered = allUsers.filter(u => {
       // Search filter
       if (searchTerm) {
         const name = (u.name || '').toLowerCase();
@@ -64,12 +64,12 @@
           return false;
         }
       }
-      
+
       // Role filter
       if (roleFilter && u.role !== roleFilter) {
         return false;
       }
-      
+
       // Verified filter
       if (verifiedFilter === 'yes' && !u.verified) {
         return false;
@@ -77,7 +77,7 @@
       if (verifiedFilter === 'no' && u.verified) {
         return false;
       }
-      
+
       return true;
     });
 
@@ -86,7 +86,8 @@
       : 'No users match the filters.';
 
     if (!filtered.length) {
-      tbody.innerHTML = '<tr><td colspan="7" class="small">No users found matching your filters.</td></tr>';
+      tbody.innerHTML =
+        '<tr><td colspan="7" class="small">No users found matching your filters.</td></tr>';
       return;
     }
 
@@ -106,30 +107,36 @@
       })
       .join('');
   }
-  
+
   function setupFilterListeners() {
     const searchInput = document.getElementById('userSearch');
     const roleFilter = document.getElementById('roleFilter');
     const verifiedFilter = document.getElementById('verifiedFilter');
     const clearBtn = document.getElementById('clearFilters');
-    
+
     if (searchInput) {
       searchInput.addEventListener('input', renderUsers);
     }
-    
+
     if (roleFilter) {
       roleFilter.addEventListener('change', renderUsers);
     }
-    
+
     if (verifiedFilter) {
       verifiedFilter.addEventListener('change', renderUsers);
     }
-    
+
     if (clearBtn) {
       clearBtn.addEventListener('click', () => {
-        if (searchInput) searchInput.value = '';
-        if (roleFilter) roleFilter.value = '';
-        if (verifiedFilter) verifiedFilter.value = '';
+        if (searchInput) {
+          searchInput.value = '';
+        }
+        if (roleFilter) {
+          roleFilter.value = '';
+        }
+        if (verifiedFilter) {
+          verifiedFilter.value = '';
+        }
         renderUsers();
       });
     }
