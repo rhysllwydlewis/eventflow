@@ -1,10 +1,3 @@
-import {
-  uploadImage,
-  saveDocument,
-  getDocuments,
-  deleteDocument,
-} from '/assets/js/firebase-config.js';
-
 (function () {
   'use strict';
 
@@ -81,22 +74,7 @@ import {
 
   async function loadPackages() {
     try {
-      // Load from Firebase first, then fallback to local API
-      try {
-        const firebasePackages = await getDocuments('packages', {
-          orderBy: { field: 'createdAt', direction: 'desc' },
-        });
-        // If Firebase returns a valid response (array), use it even if empty
-        if (Array.isArray(firebasePackages)) {
-          allPackages = firebasePackages;
-          renderPackages(allPackages);
-          return;
-        }
-      } catch (fbError) {
-        console.log('Firebase not available, using local API:', fbError.message);
-      }
-
-      // Fallback to local API
+      // Load from MongoDB API
       const data = await api('/api/admin/packages');
       allPackages = data.items || [];
       renderPackages(allPackages);
@@ -110,22 +88,7 @@ import {
 
   async function loadSuppliers() {
     try {
-      // Load from Firebase first, then fallback to local API
-      try {
-        const firebaseSuppliers = await getDocuments('suppliers', {
-          orderBy: { field: 'name', direction: 'asc' },
-        });
-        // If Firebase returns a valid response (array), use it even if empty
-        if (Array.isArray(firebaseSuppliers)) {
-          allSuppliers = firebaseSuppliers;
-          populateSupplierSelect();
-          return;
-        }
-      } catch (fbError) {
-        console.log('Firebase not available, using local API');
-      }
-
-      // Fallback to local API
+      // Load from MongoDB API
       const data = await api('/api/admin/suppliers');
       allSuppliers = data.items || [];
       populateSupplierSelect();
@@ -288,7 +251,7 @@ import {
 
     // Show preview
     const reader = new FileReader();
-    reader.addEventListener('load', function (e) {
+    reader.addEventListener('load', e => {
       const placeholder = document.getElementById('uploadPlaceholder');
       const preview = document.getElementById('imagePreview');
       const previewImage = document.getElementById('previewImage');
@@ -466,19 +429,17 @@ import {
         progressBar.style.width = '50%';
 
         const packageId = id || generateId('pkg');
-        const imagePath = `packages/${packageId}/${currentImageFile.name}`;
 
-        try {
-          packageData.image = await uploadImage(currentImageFile, imagePath);
-          progressBar.style.width = '100%';
-          uploadStatus.textContent = 'Upload complete';
-        } catch (uploadErr) {
-          throw new Error(`Failed to upload image: ${uploadErr.message}`);
+        // Handle image upload if there's a new file
+        if (currentImageFile) {
+          // TODO: Implement image upload to local storage or S3
+          // For now, just use a placeholder or existing URL
+          throw new Error('Image upload not yet implemented with MongoDB backend');
+        } else if (currentImageUrl) {
+          packageData.image = currentImageUrl;
+        } else {
+          packageData.image = document.getElementById('packageImage').value;
         }
-
-        uploadProgress.style.display = 'none';
-      } else if (currentImageUrl) {
-        packageData.image = currentImageUrl;
       } else {
         packageData.image = document.getElementById('packageImage').value;
       }
@@ -487,18 +448,14 @@ import {
         throw new Error('Please select an image for the package');
       }
 
-      // Save to Firebase
+      // Save to MongoDB via API
       packageData.createdAt = id ? undefined : new Date().toISOString();
       packageData.updatedAt = new Date().toISOString();
 
       if (id) {
-        await saveDocument('packages', id, packageData);
-        // Also update via local API for backward compatibility
         await api(`/api/admin/packages/${id}`, 'PUT', packageData);
       } else {
-        const newId = await saveDocument('packages', null, packageData);
-        // Also create via local API for backward compatibility
-        await api('/api/admin/packages', 'POST', { ...packageData, id: newId });
+        await api('/api/admin/packages', 'POST', packageData);
       }
 
       if (typeof Toast !== 'undefined') {
