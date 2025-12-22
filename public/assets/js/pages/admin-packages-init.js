@@ -433,8 +433,20 @@
         // Handle image upload if there's a new file
         if (currentImageFile) {
           // TODO: Implement image upload to local storage or S3
-          // For now, just use a placeholder or existing URL
-          throw new Error('Image upload not yet implemented with MongoDB backend');
+          // For now, show a warning and skip the new image
+          console.warn('Image upload not yet implemented with MongoDB backend');
+          if (typeof Toast !== 'undefined') {
+            Toast.warning(
+              'Image upload temporarily disabled. Please provide an image URL instead.'
+            );
+          }
+          uploadProgress.style.display = 'none';
+          // Use existing URL if available
+          if (currentImageUrl) {
+            packageData.image = currentImageUrl;
+          } else {
+            packageData.image = document.getElementById('packageImage').value;
+          }
         } else if (currentImageUrl) {
           packageData.image = currentImageUrl;
         } else {
