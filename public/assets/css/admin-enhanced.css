@@ -722,3 +722,86 @@ tbody tr:hover {
   transition-duration: 200ms;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+/* Dashboard Title Styles */
+.dashboard-title {
+  margin: 0;
+  font-size: 32px;
+  font-weight: 700;
+  color: #0a0a0a;
+}
+
+.dashboard-subtitle {
+  margin: 8px 0 0 0;
+  color: #6b7280;
+  font-size: 15px;
+}
+
+/* Section Header Styles */
+.section-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+/* Info Card Styles */
+.info-card {
+  background: #eff6ff;
+  border-color: #3b82f6;
+  margin-bottom: 1rem;
+}
+
+.info-card-text {
+  margin: 0;
+  color: #1e40af;
+}
+
+/* Section Title Styles */
+.section-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #0a0a0a;
+}
+
+.section-description {
+  margin: 4px 0 0 0;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+/* Stat Icon Gradient Variations */
+.stat-icon-purple {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.stat-icon-pink {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.stat-icon-blue {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.stat-icon-orange {
+  background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+}
+
+.section-spacer {
+  margin-top: 2.5rem;
+}
+
+/* Subsection Title */
+.subsection-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+/* Button Groups */
+.button-group {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
