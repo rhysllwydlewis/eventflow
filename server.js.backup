@@ -5,7 +5,7 @@
  *
  * PRODUCTION DEPLOYMENT:
  * - Server performs startup health checks before accepting requests
- * - Cloud database (MongoDB Atlas or Firebase) is RECOMMENDED but not required
+ * - Cloud database (MongoDB Atlas) is RECOMMENDED but not required
  * - Falls back to local JSON storage if no cloud database is configured
  * - LOCAL STORAGE WARNING: Data is non-persistent and will be lost on restart
  * - Email service is optional but recommended for production

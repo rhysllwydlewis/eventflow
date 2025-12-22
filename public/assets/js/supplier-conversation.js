@@ -1,9 +1,7 @@
 /**
- * Firebase integration for supplier page conversations
- * Hooks into existing conversation flow and stores in Firebase
+ * MongoDB-based supplier page conversations
+ * Uses REST API for thread messaging
  */
-
-import messagingSystem from './messaging.js';
 
 // Get current user
 async function getCurrentUser() {
@@ -43,14 +41,13 @@ function setupFirebaseConversation(originalButton) {
   };
 
   // Store original click handler
-  const originalHandler = originalButton.onclick;
   const originalListeners = originalButton._listeners || [];
 
   // Remove all existing listeners
   const newButton = originalButton.cloneNode(true);
   originalButton.parentNode.replaceChild(newButton, originalButton);
 
-  // Add new Firebase-enhanced handler
+  // Add new conversation handler
   newButton.addEventListener('click', async () => {
     const user = await getCurrentUser();
     if (!user) {
@@ -143,34 +140,19 @@ function openFirebaseConversationModal(user, supplierId, supplierInfo) {
       submitBtn.disabled = true;
       submitBtn.textContent = 'Sending...';
 
-      // Start conversation in Firebase
-      const conversationId = await messagingSystem.startConversation({
-        customerId: user.id,
-        customerName: user.name || user.email,
-        supplierId: supplierId,
-        supplierName: supplierInfo?.name || 'Supplier',
+      // Send message via MongoDB API
+      const response = await fetch('/api/threads/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          supplierId: supplierId,
+          message: messageText,
+        }),
       });
 
-      // Send the first message
-      await messagingSystem.sendMessage(conversationId, {
-        senderId: user.id,
-        senderType: 'customer',
-        senderName: user.name || user.email,
-        message: messageText,
-      });
-
-      // Also send via legacy API for backward compatibility
-      try {
-        await fetch('/api/threads/start', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            supplierId: supplierId,
-            message: messageText,
-          }),
-        });
-      } catch (apiError) {
-        console.log('Legacy API call failed (expected if using Firebase only):', apiError);
+      if (!response.ok) {
+        throw new Error('Failed to send message');
       }
 
       closeModal();

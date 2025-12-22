@@ -152,7 +152,7 @@
           <div style="font-size: 3rem; margin-bottom: 1rem;">👥</div>
           <div class="text-lg font-semibold mb-2">No guests yet</div>
           <div class="small mb-4">Start building your guest list by adding your first guest</div>
-          <button class="cta" onclick="document.getElementById('add-guest').click()">
+          <button class="cta" id="add-first-guest-btn">
             Add First Guest
           </button>
         </div>
@@ -189,5 +189,11 @@
 
 <script src="/assets/js/components/footer-nav.js" defer></script>
 <script src="/assets/js/cookie-consent.js" defer></script>
+<script>
+  // Fix CSP violation - move inline onclick to event listener
+  document.getElementById('add-first-guest-btn')?.addEventListener('click', () => {
+    document.getElementById('add-guest')?.click();
+  });
+</script>
 </body>
 </html>

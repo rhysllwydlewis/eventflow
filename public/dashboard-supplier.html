@@ -189,8 +189,7 @@
 <script type="module" src="/assets/js/supplier-messages.js"></script>
 <script type="module" src="/assets/js/supplier-gallery.js"></script>
 <script type="module">
-  // Display subscription status on dashboard
-  import { db, auth, collection, query, where, getDocs, onAuthStateChanged } from '/assets/js/firebase-config.js';
+  // Display subscription status on dashboard using MongoDB API
   import { 
     initializeFeatureAccess, 
     displayPackageLimitNotice, 
@@ -206,113 +205,35 @@
     const container = document.getElementById('supplier-subscription-card');
     if (!container) return;
     
-    onAuthStateChanged(auth, async (user) => {
-      if (!user) {
-        container.innerHTML = '<p class="small">Please log in to view subscription status.</p>';
-        return;
-      }
+    try {
+      // TODO: Create API endpoint to get current user's supplier subscription
+      // For now, show a simple message
+      container.innerHTML = `
+        <p class="small"><strong>Subscription Management</strong></p>
+        <p class="small">Contact support to manage your subscription.</p>
+      `;
       
-      try {
-        const suppliersQuery = query(
-          collection(db, 'suppliers'),
-          where('ownerUserId', '==', user.uid)
-        );
-        
-        const suppliersSnapshot = await getDocs(suppliersQuery);
-        
-        if (suppliersSnapshot.empty) {
-          container.innerHTML = '<p class="small">Create a supplier profile to manage subscriptions.</p>';
-          return;
-        }
-        
-        const supplier = suppliersSnapshot.docs[0].data();
-        const subscription = supplier.subscription;
-        
-        if (!subscription || !subscription.tier || subscription.tier === 'free') {
-          container.innerHTML = `
-            <p class="small"><strong>Free Plan</strong></p>
-            <p class="small">Upgrade to unlock premium features and boost your visibility.</p>
-            <a href="/supplier/subscription.html" class="cta" style="margin-top:0.5rem;display:inline-block;">View Plans</a>
-          `;
-        } else {
-          const tierName = subscription.tier === 'pro' ? 'Pro' : 'Pro+';
-          const statusText = subscription.status === 'trial' ? 'Trial' : subscription.status.charAt(0).toUpperCase() + subscription.status.slice(1);
-          
-          // Format renewal date
-          let renewalInfo = '';
-          if (subscription.endDate) {
-            const endDate = subscription.endDate.toDate();
-            const renewalDate = endDate.toLocaleDateString('en-GB', { 
-              year: 'numeric', 
-              month: 'long', 
-              day: 'numeric' 
-            });
-            
-            if (subscription.status === 'trial' && subscription.trialEndDate) {
-              const trialEnd = subscription.trialEndDate.toDate();
-              const daysLeft = Math.max(0, Math.ceil((trialEnd - new Date()) / (1000 * 60 * 60 * 24)));
-              renewalInfo = `<p class="small">Trial ends in ${daysLeft} days • Renews ${renewalDate}</p>`;
-            } else if (subscription.cancelledAt) {
-              renewalInfo = `<p class="small">Access until ${renewalDate} • Cancelled</p>`;
-            } else if (subscription.autoRenew) {
-              renewalInfo = `<p class="small">Next billing: ${renewalDate}</p>`;
-            } else {
-              renewalInfo = `<p class="small">Expires ${renewalDate} • Manual renewal needed</p>`;
-            }
-          }
-          
-          container.innerHTML = `
-            <p class="small"><strong>${tierName}</strong> - ${statusText}</p>
-            ${renewalInfo}
-            <p class="small">Thank you for supporting EventFlow!</p>
-            <a href="/supplier/subscription.html" class="cta" style="margin-top:0.5rem;display:inline-block;">Manage Subscription</a>
-          `;
-          
-          // Show pro ribbon
-          const ribbon = document.getElementById('supplier-pro-ribbon');
-          if (ribbon) {
-            ribbon.style.display = 'block';
-            ribbon.textContent = `✨ You're on EventFlow ${tierName}`;
-            if (subscription.tier === 'pro_plus') {
-              ribbon.style.background = 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)';
-            }
-          }
-        }
-        
-        // Update package limit display
-        await updatePackageLimitDisplay();
-        
-      } catch (error) {
-        console.error('Error loading subscription status:', error);
-        container.innerHTML = '<p class="small">Unable to load subscription status.</p>';
-      }
-    });
+      // Update package limit display
+      await updatePackageLimitDisplay();
+      
+    } catch (error) {
+      console.error('Error loading subscription status:', error);
+      container.innerHTML = '<p class="small">Unable to load subscription status.</p>';
+    }
   }
   
   async function updatePackageLimitDisplay() {
     const limitContainer = document.getElementById('pkg-limit-note');
     if (!limitContainer) return;
     
-    onAuthStateChanged(auth, async (user) => {
-      if (!user) return;
+    try {
+      // TODO: Fetch package count from MongoDB API
+      // For now, just hide the limit notice
+      limitContainer.style.display = 'none';
       
-      try {
-        // Get package count
-        const packagesQuery = query(
-          collection(db, 'packages'),
-          where('ownerUserId', '==', user.uid)
-        );
-        
-        const packagesSnapshot = await getDocs(packagesQuery);
-        const packageCount = packagesSnapshot.size;
-        
-        // Display limit notice
-        displayPackageLimitNotice(limitContainer, packageCount);
-        
-      } catch (error) {
-        console.error('Error checking package limit:', error);
-      }
-    });
+    } catch (error) {
+      console.error('Error checking package limit:', error);
+    }
   }
   
   displaySubscriptionStatus();

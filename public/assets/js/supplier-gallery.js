@@ -179,8 +179,6 @@ class SupplierGalleryManager {
   }
 
   setupFormIntercept(form) {
-    const originalSubmit = form.onsubmit;
-
     form.addEventListener('submit', async e => {
       e.preventDefault();
 
