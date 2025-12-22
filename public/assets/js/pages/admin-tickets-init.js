@@ -393,8 +393,7 @@ document.body.addEventListener('click', e => {
       break;
     case 'assignTicket':
       if (id) {
-        // TODO: Implement assign functionality
-        alert('Assign functionality coming soon');
+        AdminShared.showToast('Assign functionality coming soon', 'info');
       }
       break;
   }

@@ -497,11 +497,12 @@
   }
   
   async function deleteUser() {
-    if (!AdminShared.confirm('Are you sure you want to DELETE this user? This action cannot be undone!')) {
-      return;
-    }
+    const confirmText = prompt('Are you sure you want to DELETE this user? Type "YES" to confirm:');
     
-    if (!AdminShared.confirm('Really delete? Type YES to confirm.')) {
+    if (confirmText !== 'YES') {
+      if (confirmText !== null) {
+        AdminShared.showToast('Delete cancelled - you must type YES to confirm', 'info');
+      }
       return;
     }
     

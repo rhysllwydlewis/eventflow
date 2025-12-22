@@ -137,12 +137,21 @@ const AdminShared = (function () {
       border-radius: 8px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.15);
       z-index: 10000;
-      animation: slideIn 0.3s ease;
+      opacity: 0;
+      transform: translateX(400px);
+      transition: all 0.3s ease;
     `;
     document.body.appendChild(toast);
 
+    // Trigger animation
     setTimeout(() => {
-      toast.style.animation = 'slideOut 0.3s ease';
+      toast.style.opacity = '1';
+      toast.style.transform = 'translateX(0)';
+    }, 10);
+
+    setTimeout(() => {
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateX(400px)';
       setTimeout(() => toast.remove(), 300);
     }, 3000);
   }

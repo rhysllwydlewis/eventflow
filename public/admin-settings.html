@@ -640,18 +640,24 @@
     const subject = document.getElementById('emailSubject').value;
     const body = document.getElementById('emailBody').value;
     
+    // Create safe HTML content
+    const safeSubject = AdminShared.escapeHtml(subject);
+    const safeBody = AdminShared.escapeHtml(body).replace(/\n/g, '<br>');
+    
     const preview = window.open('', '_blank');
-    preview.document.write(`
-      <html>
-        <head><title>${AdminShared.escapeHtml(subject)}</title></head>
-        <body style="font-family:sans-serif;padding:2rem;">
-          <h2>Subject: ${AdminShared.escapeHtml(subject)}</h2>
-          <hr>
-          <div>${AdminShared.escapeHtml(body).replace(/\n/g, '<br>')}</div>
-        </body>
-      </html>
-    `);
-    preview.document.close();
+    if (preview) {
+      preview.document.write(`
+        <html>
+          <head><title>${safeSubject}</title></head>
+          <body style="font-family:sans-serif;padding:2rem;">
+            <h2>Subject: ${safeSubject}</h2>
+            <hr>
+            <div>${safeBody}</div>
+          </body>
+        </html>
+      `);
+      preview.document.close();
+    }
   });
   
   // Reset email

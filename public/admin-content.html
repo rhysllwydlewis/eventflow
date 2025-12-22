@@ -544,22 +544,38 @@
         return;
       }
       
-      container.innerHTML = announcements.map(a => `
-        <div class="announcement-item">
-          <div style="display:flex;justify-content:space-between;align-items:start;">
-            <div style="flex:1;">
-              <strong>${AdminShared.escapeHtml(a.message)}</strong>
-              <div class="small" style="margin-top:0.25rem;">
-                Type: ${a.type} • ${a.active ? '<span style="color:#22c55e;">Active</span>' : '<span style="color:#6b7280;">Inactive</span>'}
+      container.innerHTML = announcements.map(a => {
+        const escapedId = AdminShared.escapeHtml(a.id);
+        return `
+          <div class="announcement-item" data-id="${escapedId}">
+            <div style="display:flex;justify-content:space-between;align-items:start;">
+              <div style="flex:1;">
+                <strong>${AdminShared.escapeHtml(a.message)}</strong>
+                <div class="small" style="margin-top:0.25rem;">
+                  Type: ${a.type} • ${a.active ? '<span style="color:#22c55e;">Active</span>' : '<span style="color:#6b7280;">Inactive</span>'}
+                </div>
+              </div>
+              <div style="display:flex;gap:0.5rem;">
+                <button class="btn btn-secondary btn-small" data-action="edit" data-id="${escapedId}">Edit</button>
+                <button class="btn btn-danger btn-small" data-action="delete" data-id="${escapedId}">Delete</button>
               </div>
             </div>
-            <div style="display:flex;gap:0.5rem;">
-              <button class="btn btn-secondary btn-small" onclick="editAnnouncement('${a.id}')">Edit</button>
-              <button class="btn btn-danger btn-small" onclick="deleteAnnouncement('${a.id}')">Delete</button>
-            </div>
           </div>
-        </div>
-      `).join('');
+        `;
+      }).join('');
+      
+      // Add event delegation
+      container.querySelectorAll('button[data-action]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const action = e.target.dataset.action;
+          const id = e.target.dataset.id;
+          if (action === 'edit') {
+            editAnnouncement(id);
+          } else if (action === 'delete') {
+            deleteAnnouncement(id);
+          }
+        });
+      });
     } catch (err) {
       document.getElementById('announcementsList').innerHTML = '<p class="small" style="color:#ef4444;">Failed to load announcements</p>';
     }
@@ -644,21 +660,37 @@
         return;
       }
       
-      container.innerHTML = faqs.map(f => `
-        <div class="faq-item">
-          <div style="display:flex;justify-content:space-between;align-items:start;">
-            <div style="flex:1;">
-              <strong>${AdminShared.escapeHtml(f.question)}</strong>
-              <p class="small" style="margin:0.5rem 0 0 0;">${AdminShared.escapeHtml(f.answer)}</p>
-              <div class="small" style="margin-top:0.5rem;color:#9ca3af;">Category: ${AdminShared.escapeHtml(f.category || 'General')}</div>
-            </div>
-            <div style="display:flex;gap:0.5rem;">
-              <button class="btn btn-secondary btn-small" onclick="editFAQ('${f.id}')">Edit</button>
-              <button class="btn btn-danger btn-small" onclick="deleteFAQ('${f.id}')">Delete</button>
+      container.innerHTML = faqs.map(f => {
+        const escapedId = AdminShared.escapeHtml(f.id);
+        return `
+          <div class="faq-item" data-id="${escapedId}">
+            <div style="display:flex;justify-content:space-between;align-items:start;">
+              <div style="flex:1;">
+                <strong>${AdminShared.escapeHtml(f.question)}</strong>
+                <p class="small" style="margin:0.5rem 0 0 0;">${AdminShared.escapeHtml(f.answer)}</p>
+                <div class="small" style="margin-top:0.5rem;color:#9ca3af;">Category: ${AdminShared.escapeHtml(f.category || 'General')}</div>
+              </div>
+              <div style="display:flex;gap:0.5rem;">
+                <button class="btn btn-secondary btn-small" data-action="edit" data-id="${escapedId}">Edit</button>
+                <button class="btn btn-danger btn-small" data-action="delete" data-id="${escapedId}">Delete</button>
+              </div>
             </div>
           </div>
-        </div>
-      `).join('');
+        `;
+      }).join('');
+      
+      // Add event delegation
+      container.querySelectorAll('button[data-action]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const action = e.target.dataset.action;
+          const id = e.target.dataset.id;
+          if (action === 'edit') {
+            editFAQ(id);
+          } else if (action === 'delete') {
+            deleteFAQ(id);
+          }
+        });
+      });
     } catch (err) {
       document.getElementById('faqsList').innerHTML = '<p class="small" style="color:#ef4444;">Failed to load FAQs</p>';
     }
@@ -675,17 +707,28 @@
         return;
       }
       
-      container.innerHTML = packages.items.map(p => `
-        <div style="padding:1rem;background:#f9fafb;border-radius:4px;margin-bottom:0.5rem;">
-          <div style="display:flex;justify-content:space-between;align-items:center;">
-            <div>
-              <strong>${AdminShared.escapeHtml(p.title)}</strong>
-              <div class="small">Supplier: ${AdminShared.escapeHtml(p.supplierName || 'Unknown')}</div>
+      container.innerHTML = packages.items.map(p => {
+        const escapedId = AdminShared.escapeHtml(p.id);
+        return `
+          <div style="padding:1rem;background:#f9fafb;border-radius:4px;margin-bottom:0.5rem;" data-id="${escapedId}">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <div>
+                <strong>${AdminShared.escapeHtml(p.title)}</strong>
+                <div class="small">Supplier: ${AdminShared.escapeHtml(p.supplierName || 'Unknown')}</div>
+              </div>
+              <button class="btn btn-danger btn-small" data-action="unfeature" data-id="${escapedId}">Remove Featured</button>
             </div>
-            <button class="btn btn-danger btn-small" onclick="unfeaturePackage('${p.id}')">Remove Featured</button>
           </div>
-        </div>
-      `).join('');
+        `;
+      }).join('');
+      
+      // Add event delegation
+      container.querySelectorAll('button[data-action="unfeature"]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const id = e.target.dataset.id;
+          unfeaturePackage(id);
+        });
+      });
     } catch (err) {
       document.getElementById('featuredPackagesList').innerHTML = '<p class="small" style="color:#ef4444;">Failed to load featured packages</p>';
     }
