@@ -1,7 +1,9 @@
 (async function () {
   // Check admin authentication
   try {
-    const response = await fetch('/api/auth/me');
+    const response = await fetch('/api/auth/me', {
+      credentials: 'include',
+    });
     const data = await response.json();
     const user = data.user;
     if (!user || user.role !== 'admin') {
@@ -31,7 +33,9 @@
 
   async function loadCategories() {
     try {
-      const response = await fetch('/api/categories');
+      const response = await fetch('/api/categories', {
+        credentials: 'include',
+      });
       if (response.ok) {
         const data = await response.json();
         categories = data.items || [];
@@ -160,7 +164,9 @@
 
     try {
       // Get CSRF token
-      const csrfResponse = await fetch('/api/csrf-token');
+      const csrfResponse = await fetch('/api/csrf-token', {
+        credentials: 'include',
+      });
       const csrfData = await csrfResponse.json();
       const csrfToken = csrfData.csrfToken;
 
@@ -169,6 +175,7 @@
         headers: {
           'X-CSRF-Token': csrfToken,
         },
+        credentials: 'include',
         body: formData,
       });
 
@@ -192,7 +199,9 @@
 
     try {
       // Get CSRF token
-      const csrfResponse = await fetch('/api/csrf-token');
+      const csrfResponse = await fetch('/api/csrf-token', {
+        credentials: 'include',
+      });
       const csrfData = await csrfResponse.json();
       const csrfToken = csrfData.csrfToken;
 
@@ -202,6 +211,7 @@
           'Content-Type': 'application/json',
           'X-CSRF-Token': csrfToken,
         },
+        credentials: 'include',
       });
 
       if (response.ok) {

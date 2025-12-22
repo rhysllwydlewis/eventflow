@@ -141,7 +141,9 @@ function removeLocal(id) {
 
 async function me() {
   try {
-    const r = await fetch('/api/auth/me');
+    const r = await fetch('/api/auth/me', {
+      credentials: 'include',
+    });
     return (await r.json()).user;
   } catch (_) {
     return null;
@@ -149,7 +151,9 @@ async function me() {
 }
 async function listSuppliers(params = {}) {
   const q = new URLSearchParams(params).toString();
-  const r = await fetch(`/api/suppliers${q ? `?${q}` : ''}`);
+  const r = await fetch(`/api/suppliers${q ? `?${q}` : ''}`, {
+    credentials: 'include',
+  });
   const d = await r.json();
   return d.items || [];
 }
@@ -206,7 +210,9 @@ async function initHome() {
   if (!wrap) {
     return;
   }
-  const r = await fetch('/api/packages/featured');
+  const r = await fetch('/api/packages/featured', {
+    credentials: 'include',
+  });
   const d = await r.json();
   const items = d.items || [];
   wrap.innerHTML = items.length
@@ -286,7 +292,11 @@ async function initResults() {
         const id = btn.getAttribute('data-add');
         const r = await fetch('/api/plan', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': window.__CSRF_TOKEN__ || '',
+          },
+          credentials: 'include',
           body: JSON.stringify({ supplierId: id }),
         });
         if (!r.ok) {
@@ -357,7 +367,9 @@ async function initSupplier() {
   const user = await me();
   const params = new URLSearchParams(location.search);
   const id = params.get('id');
-  const r = await fetch(`/api/suppliers/${encodeURIComponent(id)}`);
+  const r = await fetch(`/api/suppliers/${encodeURIComponent(id)}`, {
+    credentials: 'include',
+  });
   if (!r.ok) {
     const c = document.getElementById('supplier-container');
     if (c) {
@@ -366,7 +378,11 @@ async function initSupplier() {
     return;
   }
   const s = await r.json();
-  const pkgs = await (await fetch(`/api/suppliers/${encodeURIComponent(id)}/packages`)).json();
+  const pkgs = await (
+    await fetch(`/api/suppliers/${encodeURIComponent(id)}/packages`, {
+      credentials: 'include',
+    })
+  ).json();
   const img = (s.photos && s.photos[0]) || '/assets/images/hero-venue.svg';
   const gallery = (s.photos || [])
     .slice(1)
@@ -427,7 +443,9 @@ async function initSupplier() {
     if (user && user.role === 'customer') {
       // For authenticated users, check server-side plan
       try {
-        const planResp = await fetch('/api/plan');
+        const planResp = await fetch('/api/plan', {
+          credentials: 'include',
+        });
         if (planResp.ok) {
           const planData = await planResp.json();
           isInPlan = (planData.items || []).some(item => item.id === s.id);
@@ -467,6 +485,10 @@ async function initSupplier() {
         try {
           const r = await fetch(`/api/plan/${encodeURIComponent(s.id)}`, {
             method: 'DELETE',
+            headers: {
+              'X-CSRF-Token': window.__CSRF_TOKEN__ || '',
+            },
+            credentials: 'include',
           });
           if (r.ok) {
             addBtn.textContent = 'Add to my plan';
@@ -484,7 +506,11 @@ async function initSupplier() {
         try {
           const r = await fetch('/api/plan', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRF-Token': window.__CSRF_TOKEN__ || '',
+            },
+            credentials: 'include',
             body: JSON.stringify({ supplierId: s.id }),
           });
           if (r.ok) {
@@ -534,7 +560,11 @@ async function initSupplier() {
         const payload = { supplierId: s.id, text: msg };
         const r = await fetch('/api/threads', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': window.__CSRF_TOKEN__ || '',
+          },
+          credentials: 'include',
           body: JSON.stringify(payload),
         });
         let d = {};
@@ -632,7 +662,9 @@ async function initPlan() {
   // For authenticated users, always fetch from server
   if (user && user.role === 'customer') {
     try {
-      const r = await fetch('/api/plan');
+      const r = await fetch('/api/plan', {
+        credentials: 'include',
+      });
       if (r.ok) {
         const d = await r.json();
         items = d.items || [];
@@ -715,7 +747,11 @@ async function initPlan() {
         try {
           const r = await fetch('/api/ai/plan', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRF-Token': window.__CSRF_TOKEN__ || '',
+            },
+            credentials: 'include',
             body: JSON.stringify({ prompt: finalPrompt, plan }),
           });
           if (!r.ok) {
@@ -1203,7 +1239,9 @@ async function renderThreads(targetEl) {
   }
 
   try {
-    const r = await fetch('/api/threads/my');
+    const r = await fetch('/api/threads/my', {
+      credentials: 'include',
+    });
     if (!r.ok) {
       host.innerHTML = '<p class="small">Could not load conversations.</p>';
       return;
@@ -1303,7 +1341,9 @@ async function openThread(id) {
 
   async function load(scroll) {
     try {
-      const r = await fetch(`/api/threads/${encodeURIComponent(id)}/messages`);
+      const r = await fetch(`/api/threads/${encodeURIComponent(id)}/messages`, {
+        credentials: 'include',
+      });
       if (!r.ok) {
         box.innerHTML = '<p class="small">Could not load messages.</p>';
         return;
@@ -1356,7 +1396,11 @@ async function openThread(id) {
     try {
       const r = await fetch(`/api/threads/${encodeURIComponent(id)}/messages`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': window.__CSRF_TOKEN__ || '',
+        },
+        credentials: 'include',
         body: JSON.stringify({ text }),
       });
       if (!r.ok) {
@@ -1453,6 +1497,7 @@ async function initDashSupplier() {
       fetch('/api/me/subscription/upgrade', {
         method: 'POST',
         headers: { 'X-CSRF-Token': window.__CSRF_TOKEN__ || '' },
+        credentials: 'include',
       }).catch(() => {
         /* Ignore errors */
       });
@@ -1461,8 +1506,13 @@ async function initDashSupplier() {
     /* Ignore conversation fetch errors */
   }
 
-  async function api(path, opts) {
-    const r = await fetch(path, opts);
+  async function api(path, opts = {}) {
+    // Always include credentials for cookie-based auth
+    const options = {
+      ...opts,
+      credentials: opts.credentials || 'include',
+    };
+    const r = await fetch(path, options);
     if (!r.ok) {
       throw new Error((await r.json()).error || 'Request failed');
     }
@@ -1501,23 +1551,22 @@ async function initDashSupplier() {
       return;
     }
     supWrap.innerHTML = items
-      .map(
-        s => {
-          // Enhanced badge rendering for Pro and Pro+ tiers
-          let proBadge = '';
-          if (s.subscription && s.subscription.tier) {
-            const tier = s.subscription.tier;
-            if (tier === 'pro') {
-              proBadge = '<span class="supplier-badge pro">Pro</span>';
-            } else if (tier === 'pro_plus') {
-              proBadge = '<span class="supplier-badge pro_plus">Pro+</span>';
-            }
-          } else if (s.isPro || s.pro) {
-            // Legacy support
-            proBadge = '<span class="pro-badge"><span>Pro supplier</span></span>';
+      .map(s => {
+        // Enhanced badge rendering for Pro and Pro+ tiers
+        let proBadge = '';
+        if (s.subscription && s.subscription.tier) {
+          const tier = s.subscription.tier;
+          if (tier === 'pro') {
+            proBadge = '<span class="supplier-badge pro">Pro</span>';
+          } else if (tier === 'pro_plus') {
+            proBadge = '<span class="supplier-badge pro_plus">Pro+</span>';
           }
-          
-          return `<div class="supplier-card card" style="margin-bottom:10px">
+        } else if (s.isPro || s.pro) {
+          // Legacy support
+          proBadge = '<span class="pro-badge"><span>Pro supplier</span></span>';
+        }
+
+        return `<div class="supplier-card card" style="margin-bottom:10px">
       <img src="${(s.photos && s.photos[0]) || '/assets/images/collage-venue.svg'}">
       <div>
         <h3>${s.name} ${proBadge} ${s.approved ? '<span class="badge">Approved</span>' : '<span class="badge" style="background:#FFF5E6;color:#8A5A00">Awaiting review</span>'}</h3>
@@ -1531,8 +1580,7 @@ async function initDashSupplier() {
         </div>
       </div>
     </div>`;
-        }
-      )
+      })
       .join('');
 
     // Listing health based on smart score if present
@@ -1739,7 +1787,11 @@ async function initDashSupplier() {
           try {
             const resp = await fetch('/api/billing/checkout', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': window.__CSRF_TOKEN__ || '',
+              },
+              credentials: 'include',
               body: JSON.stringify({}),
             });
             const payload = await resp.json().catch(() => ({}));
@@ -1785,6 +1837,7 @@ async function initAdmin() {
             'Content-Type': 'application/json',
             'X-CSRF-Token': window.__CSRF_TOKEN__ || '',
           },
+          credentials: 'include',
         });
         if (!r.ok) {
           alert(`Reset failed (${r.status}).`);
@@ -1805,6 +1858,7 @@ async function initAdmin() {
   function addCsrfToken(opts) {
     opts = opts || {};
     opts.headers = opts.headers || {};
+    opts.credentials = 'include';
     if (
       window.__CSRF_TOKEN__ &&
       opts.method &&
@@ -1995,7 +2049,9 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!label) {
         return;
       }
-      const r = await fetch('/api/meta');
+      const r = await fetch('/api/meta', {
+        credentials: 'include',
+      });
       if (!r.ok) {
         label.textContent = 'unknown';
         return;
@@ -2127,6 +2183,7 @@ document.addEventListener('DOMContentLoaded', () => {
           await fetch('/api/auth/forgot', {
             method: 'POST',
             headers: getHeadersWithCsrf({ 'Content-Type': 'application/json' }),
+            credentials: 'include',
             body: JSON.stringify({ email }),
           });
           if (loginStatus) {
@@ -2277,6 +2334,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const r = await fetch('/api/auth/login', {
             method: 'POST',
             headers: getHeadersWithCsrf({ 'Content-Type': 'application/json' }),
+            credentials: 'include',
             body: JSON.stringify({ email, password }),
           });
           let data = {};
@@ -2355,6 +2413,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const r = await fetch('/api/auth/register', {
             method: 'POST',
             headers: getHeadersWithCsrf({ 'Content-Type': 'application/json' }),
+            credentials: 'include',
             body: JSON.stringify({ name, email, password, role, marketingOptIn }),
           });
           let data = {};
@@ -2416,7 +2475,9 @@ async function initVerify() {
   }
 
   try {
-    const r = await fetch(`/api/auth/verify?token=${encodeURIComponent(token)}`);
+    const r = await fetch(`/api/auth/verify?token=${encodeURIComponent(token)}`, {
+      credentials: 'include',
+    });
     const data = await r.json();
 
     if (!r.ok) {
@@ -2452,7 +2513,9 @@ async function initVerify() {
 // Settings page
 async function initSettings() {
   try {
-    const r = await fetch('/api/me/settings');
+    const r = await fetch('/api/me/settings', {
+      credentials: 'include',
+    });
     if (!r.ok) {
       throw new Error('Not signed in');
     }
@@ -2466,6 +2529,7 @@ async function initSettings() {
           'Content-Type': 'application/json',
           'X-CSRF-Token': window.__CSRF_TOKEN__ || '',
         },
+        credentials: 'include',
         body: JSON.stringify({ notify: document.getElementById('notify').checked }),
       });
       if (rr.ok) {
@@ -2493,18 +2557,19 @@ document.addEventListener('DOMContentLoaded', () => {
   const startTime = Date.now();
   let timeoutId = null;
   let hasSent = false;
-  
+
   function attemptSend() {
     // Prevent sending after page unload or if already sent
     if (hasSent || document.hidden) {
       return;
     }
-    
+
     if (window.__CSRF_TOKEN__) {
       hasSent = true;
       fetch('/api/metrics/track', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': window.__CSRF_TOKEN__ },
+        credentials: 'include',
         body: JSON.stringify({ type: 'pageview', meta: { path: location.pathname } }),
       }).catch(() => {});
     } else if (Date.now() - startTime < maxWait) {
@@ -2513,22 +2578,28 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     // If token isn't available after maxWait, skip silently (it's just a tracking beacon)
   }
-  
+
   // Clean up timeout on page unload to prevent memory leak
-  window.addEventListener('beforeunload', function cleanup() {
-    if (timeoutId) {
-      clearTimeout(timeoutId);
-      timeoutId = null;
-    }
-  }, { once: true });
-  
+  window.addEventListener(
+    'beforeunload',
+    () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+    },
+    { once: true }
+  );
+
   attemptSend();
 })();
 
 // Admin charts
 async function adminCharts() {
   try {
-    const r = await fetch('/api/admin/metrics/timeseries');
+    const r = await fetch('/api/admin/metrics/timeseries', {
+      credentials: 'include',
+    });
     if (!r.ok) {
       return;
     }
@@ -2577,9 +2648,13 @@ document.addEventListener('DOMContentLoaded', () => {
   if (window.__EF_PAGE__ === 'dash_supplier') {
     (async () => {
       try {
-        const me = await fetch('/api/me/suppliers');
+        const me = await fetch('/api/me/suppliers', {
+          credentials: 'include',
+        });
         const ms = await me.json();
-        const pk = await fetch('/api/me/packages');
+        const pk = await fetch('/api/me/packages', {
+          credentials: 'include',
+        });
         const mp = await pk.json();
         const box = document.createElement('div');
         box.className = 'card';

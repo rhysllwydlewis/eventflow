@@ -292,7 +292,9 @@ class MessageSupplierPanel {
 
     try {
       // Get CSRF token
-      const csrfResponse = await fetch('/api/csrf-token');
+      const csrfResponse = await fetch('/api/csrf-token', {
+        credentials: 'include',
+      });
       const csrfData = await csrfResponse.json();
 
       // Start thread and send message
@@ -300,8 +302,9 @@ class MessageSupplierPanel {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-CSRF-Token': csrfData.token,
+          'X-CSRF-Token': csrfData.csrfToken,
         },
+        credentials: 'include',
         body: JSON.stringify({
           supplierId: this.options.supplierId,
           packageId: this.options.packageId,

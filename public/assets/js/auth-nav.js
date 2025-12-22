@@ -5,7 +5,9 @@
   // Fetch CSRF token on page load
   async function fetchCsrfToken() {
     try {
-      const response = await fetch('/api/csrf-token');
+      const response = await fetch('/api/csrf-token', {
+        credentials: 'include',
+      });
       if (response.ok) {
         const data = await response.json();
         csrfToken = data.csrfToken;
@@ -166,7 +168,9 @@
   // --- Auth helper ---
   async function me() {
     try {
-      const r = await fetch('/api/auth/me');
+      const r = await fetch('/api/auth/me', {
+        credentials: 'include',
+      });
       const data = await r.json();
       return data.user || null;
     } catch (_) {
@@ -217,6 +221,7 @@
             await fetch('/api/auth/logout', {
               method: 'POST',
               headers: { 'X-CSRF-Token': window.__CSRF_TOKEN__ || '' },
+              credentials: 'include',
             });
           } catch (_) {
             /* Ignore logout errors */
@@ -251,6 +256,7 @@
             await fetch('/api/auth/logout', {
               method: 'POST',
               headers: { 'X-CSRF-Token': window.__CSRF_TOKEN__ || '' },
+              credentials: 'include',
             });
           } catch (_) {
             /* Ignore logout errors */

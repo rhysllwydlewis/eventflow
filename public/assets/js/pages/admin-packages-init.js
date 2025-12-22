@@ -14,7 +14,9 @@ import {
   let currentImageUrl = null;
 
   // Fetch CSRF token on page load
-  fetch('/api/csrf-token')
+  fetch('/api/csrf-token', {
+    credentials: 'include',
+  })
     .then(r => r.json())
     .then(data => {
       if (data && data.csrfToken) {
@@ -27,6 +29,7 @@ import {
     const opts = {
       method: method || 'GET',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
     };
 
     // Add CSRF token for state-changing requests
