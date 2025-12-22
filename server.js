@@ -1537,8 +1537,7 @@ app.get('/api/packages/search', async (req, res) => {
   const items = (await dbUnified.read('packages')).filter(
     p =>
       p.approved &&
-      ((p.title || '').toLowerCase().includes(q) ||
-        (p.description || '').toLowerCase().includes(q))
+      ((p.title || '').toLowerCase().includes(q) || (p.description || '').toLowerCase().includes(q))
   );
   res.json({ items });
 });
@@ -1785,7 +1784,7 @@ app.post(
       photos: photos.length
         ? photos
         : [`https://source.unsplash.com/featured/800x600/?event,${encodeURIComponent(b.category)}`],
-      email: (((await dbUnified.read('users')).find(u => u.id === req.user.id)) || {}).email || '',
+      email: ((await dbUnified.read('users')).find(u => u.id === req.user.id) || {}).email || '',
       approved: false,
     };
     const all = await dbUnified.read('suppliers');
@@ -2073,9 +2072,9 @@ app.post(
       try {
         const otherEmail =
           req.user.role === 'customer'
-            ? (((await dbUnified.read('suppliers')).find(s => s.id === t.supplierId)) || {}).email ||
+            ? ((await dbUnified.read('suppliers')).find(s => s.id === t.supplierId) || {}).email ||
               null
-            : (((await dbUnified.read('users')).find(u => u.id === t.customerId)) || {}).email ||
+            : ((await dbUnified.read('users')).find(u => u.id === t.customerId) || {}).email ||
               null;
         const me = (await dbUnified.read('users')).find(u => u.id === req.user.id);
         if (otherEmail && me && me.notify !== false) {
@@ -3745,6 +3744,14 @@ app.post('/api/photos/reorder', authRequired, csrfProtection, async (req, res) =
     res.status(500).json({ error: 'Failed to reorder photos', details: error.message });
   }
 });
+
+// ---------- Auth Routes ----------
+const authRoutes = require('./routes/auth');
+app.use('/api/auth', authRoutes);
+
+// ---------- Admin Routes ----------
+const adminRoutes = require('./routes/admin');
+app.use('/api/admin', adminRoutes);
 
 // ---------- Content Reporting System ----------
 const reportsRoutes = require('./routes/reports');

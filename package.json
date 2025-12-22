@@ -38,6 +38,7 @@
     "multer": "^2.0.2",
     "nodemailer": "^7.0.10",
     "pdfkit": "^0.15.0",
+    "postmark": "^4.0.5",
     "sharp": "^0.33.5",
     "socket.io": "^4.8.1",
     "swagger-jsdoc": "^6.2.8",
