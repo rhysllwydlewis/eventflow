@@ -5,7 +5,6 @@
 describe('Database Unified - Status Caching', () => {
   // Mock the dependencies
   let dbUnified;
-  let mockInitializeFirebaseAdmin;
   let mockDb;
   let mockStore;
 
@@ -14,7 +13,6 @@ describe('Database Unified - Status Caching', () => {
     jest.resetModules();
 
     // Mock the dependencies
-    mockInitializeFirebaseAdmin = jest.fn();
     mockDb = {
       isMongoAvailable: jest.fn(() => false),
       connect: jest.fn(),
@@ -24,11 +22,6 @@ describe('Database Unified - Status Caching', () => {
     };
 
     // Mock the required modules
-    jest.mock('../../firebase-admin', () => ({
-      initializeFirebaseAdmin: mockInitializeFirebaseAdmin,
-      isFirebaseAvailable: jest.fn(() => false),
-      getFirestore: jest.fn(),
-    }));
     jest.mock('../../db', () => mockDb);
     jest.mock('../../store', () => mockStore);
 
