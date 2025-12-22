@@ -28,6 +28,7 @@
       headers: {
         'Content-Type': 'application/json',
       },
+      credentials: 'include',
     };
 
     // Add CSRF token for state-changing requests
