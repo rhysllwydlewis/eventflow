@@ -80,6 +80,7 @@ const { uid, DATA_DIR } = require('./store');
 const mailgun = require('./utils/mailgun');
 
 // Database modules for startup validation
+const dbUnified = require('./db-unified');
 const mongoDb = require('./db');
 const { isMongoAvailable } = mongoDb;
 
@@ -123,8 +124,14 @@ function supplierIsProActive(s) {
 const { seed } = require('./seed');
 
 // ---------- Initialisation ----------
-// Seed will be called after database initialization during startup
+// In production, preserve existing users. In development, create demo users.
 const isProduction = process.env.NODE_ENV === 'production';
+seed({
+  skipIfExists: isProduction,
+  seedUsers: true,
+  seedSuppliers: !isProduction, // Only seed demo suppliers in dev
+  seedPackages: !isProduction, // Only seed demo packages in dev
+});
 
 const app = express();
 const PDFDocument = require('pdfkit');
@@ -519,7 +526,7 @@ app.post('/api/auth/register', strictAuthLimiter, csrfProtection, async (req, re
   }
   const roleFinal = role === 'supplier' || role === 'customer' ? role : 'customer';
 
-  const users = await dbUnified.read('users');
+  const users = read('users');
   if (users.find(u => u.email.toLowerCase() === String(email).toLowerCase())) {
     return res.status(409).json({ error: 'Email already registered' });
   }
@@ -538,7 +545,7 @@ app.post('/api/auth/register', strictAuthLimiter, csrfProtection, async (req, re
     createdAt: new Date().toISOString(),
   };
   users.push(user);
-  await dbUnified.write('users', users);
+  write('users', users);
 
   // Send verification email (dev mode writes .eml files to /outbox)
   try {
@@ -558,9 +565,9 @@ app.post('/api/auth/register', strictAuthLimiter, csrfProtection, async (req, re
     console.error('Failed to send verification email', e);
 
     // Rollback user creation
-    const allUsers = await dbUnified.read('users');
+    const allUsers = read('users');
     const filteredUsers = allUsers.filter(u => u.id !== user.id);
-    await dbUnified.write('users', filteredUsers);
+    write('users', filteredUsers);
 
     return res.status(500).json({
       error: 'Failed to send verification email. Please try again or contact support.',
@@ -574,15 +581,15 @@ app.post('/api/auth/register', strictAuthLimiter, csrfProtection, async (req, re
   });
 });
 
-app.post('/api/auth/login', authLimiter, csrfProtection, async (req, res) => {
+app.post('/api/auth/login', authLimiter, csrfProtection, (req, res) => {
   const { email, password } = req.body || {};
   if (!email || !password) {
     return res.status(400).json({ error: 'Missing fields' });
   }
 
-  const user = await dbUnified
-    .read('users')
-    .find(u => (u.email || '').toLowerCase() === String(email).toLowerCase());
+  const user = read('users').find(
+    u => (u.email || '').toLowerCase() === String(email).toLowerCase()
+  );
   if (!user) {
     return res.status(401).json({ error: 'Invalid email or password' });
   }
@@ -595,11 +602,11 @@ app.post('/api/auth/login', authLimiter, csrfProtection, async (req, res) => {
 
   // Update last login timestamp (non-blocking)
   try {
-    const allUsers = await dbUnified.read('users');
+    const allUsers = read('users');
     const idx = allUsers.findIndex(u => u.id === user.id);
     if (idx !== -1) {
       allUsers[idx].lastLoginAt = new Date().toISOString();
-      await dbUnified.write('users', allUsers);
+      write('users', allUsers);
     }
   } catch (e) {
     console.error('Failed to update lastLoginAt', e);
@@ -623,7 +630,7 @@ app.post('/api/auth/forgot', passwordResetLimiter, csrfProtection, async (req, r
   }
 
   // Look up user by email (case-insensitive)
-  const users = await dbUnified.read('users');
+  const users = read('users');
   const idx = users.findIndex(u => (u.email || '').toLowerCase() === String(email).toLowerCase());
 
   if (idx === -1) {
@@ -637,7 +644,7 @@ app.post('/api/auth/forgot', passwordResetLimiter, csrfProtection, async (req, r
 
   user.resetToken = token;
   user.resetTokenExpiresAt = expires;
-  await dbUnified.write('users', users);
+  write('users', users);
 
   // Fire-and-forget email (demo only — in dev this usually logs to console)
   (async () => {
@@ -665,12 +672,12 @@ app.post('/api/auth/forgot', passwordResetLimiter, csrfProtection, async (req, r
   res.json({ ok: true });
 });
 
-app.get('/api/auth/verify', async (req, res) => {
+app.get('/api/auth/verify', (req, res) => {
   const { token } = req.query || {};
   if (!token) {
     return res.status(400).json({ error: 'Missing token' });
   }
-  const users = await dbUnified.read('users');
+  const users = read('users');
   const idx = users.findIndex(u => u.verificationToken === token);
   if (idx === -1) {
     return res.status(400).json({ error: 'Invalid or expired token' });
@@ -690,7 +697,7 @@ app.get('/api/auth/verify', async (req, res) => {
   users[idx].verified = true;
   delete users[idx].verificationToken;
   delete users[idx].verificationTokenExpiresAt;
-  await dbUnified.write('users', users);
+  write('users', users);
 
   // Send welcome email after successful verification
   const user = users[idx];
@@ -716,7 +723,7 @@ app.post('/api/auth/resend-verification', authLimiter, csrfProtection, async (re
     return res.status(400).json({ error: 'Missing email' });
   }
 
-  const users = await dbUnified.read('users');
+  const users = read('users');
   const idx = users.findIndex(u => u.email.toLowerCase() === String(email).toLowerCase());
 
   if (idx === -1) {
@@ -733,7 +740,7 @@ app.post('/api/auth/resend-verification', authLimiter, csrfProtection, async (re
   const newToken = uid('verify');
   users[idx].verificationToken = newToken;
   users[idx].verificationTokenExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
-  await dbUnified.write('users', users);
+  write('users', users);
 
   try {
     const baseUrl = process.env.BASE_URL || `http://localhost:${PORT}`;
@@ -761,14 +768,14 @@ app.post('/api/auth/resend-verification', authLimiter, csrfProtection, async (re
 
 // CSRF token endpoint - provides token for frontend use
 // Apply authLimiter to prevent token exhaustion attacks
-app.get('/api/csrf-token', authLimiter, async (req, res) => {
+app.get('/api/csrf-token', authLimiter, (req, res) => {
   const token = getToken(req);
   res.json({ csrfToken: token });
 });
 
 // Client config endpoint - provides public configuration values
 // Apply rate limiting to prevent abuse of API key exposure
-app.get('/api/config', authLimiter, async (req, res) => {
+app.get('/api/config', authLimiter, (req, res) => {
   res.json({
     googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || '',
     version: APP_VERSION,
@@ -776,8 +783,8 @@ app.get('/api/config', authLimiter, async (req, res) => {
 });
 
 // Admin: list users (without password hashes)
-app.get('/api/admin/users', authRequired, roleRequired('admin'), async (req, res) => {
-  const users = await dbUnified.read('users').map(u => ({
+app.get('/api/admin/users', authRequired, roleRequired('admin'), (req, res) => {
+  const users = read('users').map(u => ({
     id: u.id,
     name: u.name,
     email: u.email,
@@ -804,8 +811,8 @@ app.get('/api/admin/users', authRequired, roleRequired('admin'), async (req, res
 });
 
 // Admin: export only marketing-opt-in users as CSV
-app.get('/api/admin/marketing-export', authRequired, roleRequired('admin'), async (req, res) => {
-  const users = await dbUnified.read('users').filter(u => u.marketingOptIn);
+app.get('/api/admin/marketing-export', authRequired, roleRequired('admin'), (req, res) => {
+  const users = read('users').filter(u => u.marketingOptIn);
   const header = 'name,email,role\n';
   const rows = users
     .map(u => {
@@ -822,8 +829,8 @@ app.get('/api/admin/marketing-export', authRequired, roleRequired('admin'), asyn
 });
 
 // Admin: export all users as CSV
-app.get('/api/admin/users-export', authRequired, roleRequired('admin'), async (req, res) => {
-  const users = await dbUnified.read('users');
+app.get('/api/admin/users-export', authRequired, roleRequired('admin'), (req, res) => {
+  const users = read('users');
   const header = 'id,name,email,role,verified,marketingOptIn,createdAt,lastLoginAt\n';
   const rows = users
     .map(u => {
@@ -874,7 +881,7 @@ app.post(
     const roleFinal = VALID_USER_ROLES.includes(role) ? role : 'customer';
 
     // Check if user already exists
-    const users = await dbUnified.read('users');
+    const users = read('users');
     if (users.find(u => u.email.toLowerCase() === String(email).toLowerCase())) {
       return res.status(409).json({ error: 'A user with this email already exists' });
     }
@@ -894,7 +901,7 @@ app.post(
     };
 
     users.push(user);
-    await dbUnified.write('users', users);
+    write('users', users);
 
     // Create audit log
     auditLog({
@@ -933,9 +940,9 @@ app.post(
   authRequired,
   roleRequired('admin'),
   csrfProtection,
-  async (req, res) => {
+  (req, res) => {
     const { id } = req.params;
-    const users = await dbUnified.read('users');
+    const users = read('users');
     const userIndex = users.findIndex(u => u.id === id);
 
     if (userIndex === -1) {
@@ -958,7 +965,7 @@ app.post(
     user.updatedAt = now;
 
     users[userIndex] = user;
-    await dbUnified.write('users', users);
+    write('users', users);
 
     // Create audit log
     auditLog({
@@ -995,10 +1002,10 @@ app.post(
   authRequired,
   roleRequired('admin'),
   csrfProtection,
-  async (req, res) => {
+  (req, res) => {
     const { id } = req.params;
     const { newRole = 'customer' } = req.body;
-    const users = await dbUnified.read('users');
+    const users = read('users');
     const userIndex = users.findIndex(u => u.id === id);
 
     if (userIndex === -1) {
@@ -1038,7 +1045,7 @@ app.post(
     user.updatedAt = now;
 
     users[userIndex] = user;
-    await dbUnified.write('users', users);
+    write('users', users);
 
     // Create audit log
     auditLog({
@@ -1067,17 +1074,17 @@ app.post(
 );
 
 // Admin: export all core collections as JSON
-app.get('/api/admin/export/all', authRequired, roleRequired('admin'), async (_req, res) => {
+app.get('/api/admin/export/all', authRequired, roleRequired('admin'), (_req, res) => {
   const payload = {
     exportedAt: new Date().toISOString(),
-    users: await dbUnified.read('users'),
-    suppliers: await dbUnified.read('suppliers'),
-    packages: await dbUnified.read('packages'),
-    plans: await dbUnified.read('plans'),
-    notes: await dbUnified.read('notes'),
-    events: await dbUnified.read('events'),
-    threads: await dbUnified.read('threads'),
-    messages: await dbUnified.read('messages'),
+    users: read('users'),
+    suppliers: read('suppliers'),
+    packages: read('packages'),
+    plans: read('plans'),
+    notes: read('notes'),
+    events: read('events'),
+    threads: read('threads'),
+    messages: read('messages'),
   };
   const json = JSON.stringify(payload, null, 2);
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
@@ -1085,17 +1092,17 @@ app.get('/api/admin/export/all', authRequired, roleRequired('admin'), async (_re
   res.send(json);
 });
 
-app.post('/api/auth/logout', csrfProtection, async (_req, res) => {
+app.post('/api/auth/logout', csrfProtection, (_req, res) => {
   clearAuthCookie(res);
   res.json({ ok: true });
 });
 
-app.get('/api/auth/me', async (req, res) => {
+app.get('/api/auth/me', (req, res) => {
   const p = getUserFromCookie(req);
   if (!p) {
     return res.json({ user: null });
   }
-  const u = await dbUnified.read('users').find(x => x.id === p.id);
+  const u = read('users').find(x => x.id === p.id);
   res.json({
     user: u
       ? { id: u.id, name: u.name, email: u.email, role: u.role, notify: u.notify !== false }
@@ -1104,9 +1111,9 @@ app.get('/api/auth/me', async (req, res) => {
 });
 
 // ---------- Suppliers (public) ----------
-app.get('/api/suppliers', async (req, res) => {
+app.get('/api/suppliers', (req, res) => {
   const { category, q, price } = req.query;
-  let items = await dbUnified.read('suppliers').filter(s => s.approved);
+  let items = read('suppliers').filter(s => s.approved);
   if (category) {
     items = items.filter(s => s.category === category);
   }
@@ -1124,7 +1131,7 @@ app.get('/api/suppliers', async (req, res) => {
   }
 
   // Mark suppliers that have at least one featured package and compute active Pro flag
-  const pkgs = await dbUnified.read('packages');
+  const pkgs = read('packages');
   items = items.map(s => {
     const featuredSupplier = pkgs.some(p => p.supplierId === s.id && p.featured);
     const isProActive = supplierIsProActive(s);
@@ -1296,7 +1303,7 @@ app.post(
   roleRequired('admin'),
   csrfProtection,
   async (req, res) => {
-    const all = await dbUnified.read('suppliers');
+    const all = read('suppliers');
     const now = new Date().toISOString();
     const updated = [];
 
@@ -1335,7 +1342,7 @@ app.post(
       updated.push({ id: s.id, aiTags: tags, aiScore: score });
     });
 
-    await dbUnified.write('suppliers', all);
+    write('suppliers', all);
     res.json({ ok: true, items: updated, aiEnabled: AI_ENABLED });
   }
 );
@@ -1346,12 +1353,12 @@ app.post(
  * GET /api/admin/photos/pending
  * Get all photos pending approval
  */
-app.get('/api/admin/photos/pending', authRequired, roleRequired('admin'), async (req, res) => {
-  const photos = await dbUnified.read('photos');
+app.get('/api/admin/photos/pending', authRequired, roleRequired('admin'), (req, res) => {
+  const photos = read('photos');
   const pendingPhotos = photos.filter(p => p.status === 'pending');
 
   // Enrich with supplier information
-  const suppliers = await dbUnified.read('suppliers');
+  const suppliers = read('suppliers');
   const enrichedPhotos = pendingPhotos.map(photo => {
     const supplier = suppliers.find(s => s.id === photo.supplierId);
     return {
@@ -1373,9 +1380,9 @@ app.post(
   authRequired,
   roleRequired('admin'),
   csrfProtection,
-  async (req, res) => {
+  (req, res) => {
     const { id } = req.params;
-    const photos = await dbUnified.read('photos');
+    const photos = read('photos');
     const photoIndex = photos.findIndex(p => p.id === id);
 
     if (photoIndex === -1) {
@@ -1391,10 +1398,10 @@ app.post(
     photo.approvedBy = req.user.id;
 
     photos[photoIndex] = photo;
-    await dbUnified.write('photos', photos);
+    write('photos', photos);
 
     // Add photo to supplier's photos array if not already there
-    const suppliers = await dbUnified.read('suppliers');
+    const suppliers = read('suppliers');
     const supplierIndex = suppliers.findIndex(s => s.id === photo.supplierId);
 
     if (supplierIndex !== -1) {
@@ -1403,7 +1410,7 @@ app.post(
       }
       if (!suppliers[supplierIndex].photos.includes(photo.url)) {
         suppliers[supplierIndex].photos.push(photo.url);
-        await dbUnified.write('suppliers', suppliers);
+        write('suppliers', suppliers);
       }
     }
 
@@ -1420,10 +1427,10 @@ app.post(
   authRequired,
   roleRequired('admin'),
   csrfProtection,
-  async (req, res) => {
+  (req, res) => {
     const { id } = req.params;
     const { reason } = req.body;
-    const photos = await dbUnified.read('photos');
+    const photos = read('photos');
     const photoIndex = photos.findIndex(p => p.id === id);
 
     if (photoIndex === -1) {
@@ -1440,19 +1447,19 @@ app.post(
     photo.rejectionReason = reason || 'No reason provided';
 
     photos[photoIndex] = photo;
-    await dbUnified.write('photos', photos);
+    write('photos', photos);
 
     res.json({ success: true, message: 'Photo rejected successfully', photo });
   }
 );
 
-app.get('/api/suppliers/:id', async (req, res) => {
-  const sRaw = await dbUnified.read('suppliers').find(x => x.id === req.params.id && x.approved);
+app.get('/api/suppliers/:id', (req, res) => {
+  const sRaw = read('suppliers').find(x => x.id === req.params.id && x.approved);
   if (!sRaw) {
     return res.status(404).json({ error: 'Not found' });
   }
 
-  const pkgs = await dbUnified.read('packages');
+  const pkgs = read('packages');
   const featuredSupplier = pkgs.some(p => p.supplierId === sRaw.id && p.featured);
   const isProActive = supplierIsProActive(sRaw);
   const s = {
@@ -1465,16 +1472,12 @@ app.get('/api/suppliers/:id', async (req, res) => {
   res.json(s);
 });
 
-app.get('/api/suppliers/:id/packages', async (req, res) => {
-  const supplier = await dbUnified
-    .read('suppliers')
-    .find(x => x.id === req.params.id && x.approved);
+app.get('/api/suppliers/:id/packages', (req, res) => {
+  const supplier = read('suppliers').find(x => x.id === req.params.id && x.approved);
   if (!supplier) {
     return res.status(404).json({ error: 'Supplier not found' });
   }
-  const pkgs = await dbUnified
-    .read('packages')
-    .filter(p => p.supplierId === supplier.id && p.approved);
+  const pkgs = read('packages').filter(p => p.supplierId === supplier.id && p.approved);
   res.json({ items: pkgs });
 });
 
@@ -1483,30 +1486,26 @@ function isFeaturedPackage(pkg) {
   return pkg.featured === true || pkg.isFeatured === true;
 }
 
-app.get('/api/packages/featured', async (_req, res) => {
-  const items = await dbUnified
-    .read('packages')
+app.get('/api/packages/featured', (_req, res) => {
+  const items = read('packages')
     .filter(p => p.approved && isFeaturedPackage(p))
     .slice(0, 6);
   res.json({ items });
 });
 
-app.get('/api/packages/search', async (req, res) => {
+app.get('/api/packages/search', (req, res) => {
   const q = String(req.query.q || '').toLowerCase();
-  const items = await dbUnified
-    .read('packages')
-    .filter(
-      p =>
-        p.approved &&
-        ((p.title || '').toLowerCase().includes(q) ||
-          (p.description || '').toLowerCase().includes(q))
-    );
+  const items = read('packages').filter(
+    p =>
+      p.approved &&
+      ((p.title || '').toLowerCase().includes(q) || (p.description || '').toLowerCase().includes(q))
+  );
   res.json({ items });
 });
 
 // ---------- Category browsing endpoints ----------
-app.get('/api/categories', async (_req, res) => {
-  const categories = await dbUnified.read('categories');
+app.get('/api/categories', (_req, res) => {
+  const categories = read('categories');
   const sorted = categories.sort((a, b) => (a.order || 0) - (b.order || 0));
   res.json({ items: sorted });
 });
@@ -1521,7 +1520,7 @@ app.post(
   async (req, res) => {
     try {
       const categoryId = req.params.id;
-      const categories = await dbUnified.read('categories');
+      const categories = read('categories');
       const categoryIndex = categories.findIndex(c => c.id === categoryId);
 
       if (categoryIndex === -1) {
@@ -1541,7 +1540,7 @@ app.post(
       // Update category with new hero image URL
       categories[categoryIndex].heroImage = imageData.optimized || imageData.large;
 
-      await dbUnified.write('categories', categories);
+      write('categories', categories);
 
       res.json({
         ok: true,
@@ -1564,7 +1563,7 @@ app.delete(
   async (req, res) => {
     try {
       const categoryId = req.params.id;
-      const categories = await dbUnified.read('categories');
+      const categories = read('categories');
       const categoryIndex = categories.findIndex(c => c.id === categoryId);
 
       if (categoryIndex === -1) {
@@ -1576,7 +1575,7 @@ app.delete(
       // Remove the hero image URL
       delete categories[categoryIndex].heroImage;
 
-      await dbUnified.write('categories', categories);
+      write('categories', categories);
 
       // Optionally delete the old image file if it exists
       if (oldImageUrl && typeof oldImageUrl === 'string' && oldImageUrl.trim() !== '') {
@@ -1599,15 +1598,15 @@ app.delete(
   }
 );
 
-app.get('/api/categories/:slug', async (req, res) => {
-  const categories = await dbUnified.read('categories');
+app.get('/api/categories/:slug', (req, res) => {
+  const categories = read('categories');
   const category = categories.find(c => c.slug === req.params.slug);
   if (!category) {
     return res.status(404).json({ error: 'Category not found' });
   }
 
   // Get all approved packages in this category
-  const allPackages = await dbUnified.read('packages');
+  const allPackages = read('packages');
   const categoryPackages = allPackages.filter(p => {
     if (!p.approved) {
       return false;
@@ -1634,8 +1633,8 @@ app.get('/api/categories/:slug', async (req, res) => {
   res.json({ category, packages: sorted });
 });
 
-app.get('/api/packages/:slug', async (req, res) => {
-  const packages = await dbUnified.read('packages');
+app.get('/api/packages/:slug', (req, res) => {
+  const packages = read('packages');
   const pkg = packages.find(p => p.slug === req.params.slug && p.approved);
 
   if (!pkg) {
@@ -1643,7 +1642,7 @@ app.get('/api/packages/:slug', async (req, res) => {
   }
 
   // Get supplier details
-  const suppliers = await dbUnified.read('suppliers');
+  const suppliers = read('suppliers');
   const supplier = suppliers.find(s => s.id === pkg.supplierId && s.approved);
 
   if (!supplier) {
@@ -1651,7 +1650,7 @@ app.get('/api/packages/:slug', async (req, res) => {
   }
 
   // Get category details
-  const categories = await dbUnified.read('categories');
+  const categories = read('categories');
   const packageCategories = (pkg.categories || [])
     .map(slug => categories.find(c => c.slug === slug))
     .filter(Boolean);
@@ -1664,8 +1663,8 @@ app.get('/api/packages/:slug', async (req, res) => {
 });
 
 // ---------- Supplier dashboard ----------
-app.get('/api/me/suppliers', authRequired, roleRequired('supplier'), async (req, res) => {
-  const listRaw = await dbUnified.read('suppliers').filter(s => s.ownerUserId === req.user.id);
+app.get('/api/me/suppliers', authRequired, roleRequired('supplier'), (req, res) => {
+  const listRaw = read('suppliers').filter(s => s.ownerUserId === req.user.id);
   const list = listRaw.map(s => ({
     ...s,
     isPro: supplierIsProActive(s),
@@ -1680,8 +1679,8 @@ app.post(
   authRequired,
   roleRequired('supplier'),
   csrfProtection,
-  async (req, res) => {
-    const suppliers = await dbUnified.read('suppliers');
+  (req, res) => {
+    const suppliers = read('suppliers');
     let changed = 0;
     suppliers.forEach(s => {
       if (s.ownerUserId === req.user.id) {
@@ -1691,15 +1690,15 @@ app.post(
         }
       }
     });
-    await dbUnified.write('suppliers', suppliers);
+    write('suppliers', suppliers);
 
     // Optionally also mirror this onto the user record if present
     try {
-      const users = await dbUnified.read('users');
+      const users = read('users');
       const u = users.find(u => u.id === req.user.id);
       if (u) {
         u.isPro = true;
-        await dbUnified.write('users', users);
+        write('users', users);
       }
     } catch (_e) {
       // ignore if users store is not present
@@ -1715,7 +1714,7 @@ app.post(
   authRequired,
   roleRequired('supplier'),
   csrfProtection,
-  async (req, res) => {
+  (req, res) => {
     const b = req.body || {};
     if (!b.name || !b.category) {
       return res.status(400).json({ error: 'Missing fields' });
@@ -1746,12 +1745,12 @@ app.post(
       photos: photos.length
         ? photos
         : [`https://source.unsplash.com/featured/800x600/?event,${encodeURIComponent(b.category)}`],
-      email: ((await dbUnified.read('users').find(u => u.id === req.user.id)) || {}).email || '',
+      email: (read('users').find(u => u.id === req.user.id) || {}).email || '',
       approved: false,
     };
-    const all = await dbUnified.read('suppliers');
+    const all = read('suppliers');
     all.push(s);
-    await dbUnified.write('suppliers', all);
+    write('suppliers', all);
     res.json({ ok: true, supplier: s });
   }
 );
@@ -1761,8 +1760,8 @@ app.patch(
   writeLimiter,
   authRequired,
   roleRequired('supplier'),
-  async (req, res) => {
-    const all = await dbUnified.read('suppliers');
+  (req, res) => {
+    const all = read('suppliers');
     const i = all.findIndex(s => s.id === req.params.id && s.ownerUserId === req.user.id);
     if (i < 0) {
       return res.status(404).json({ error: 'Not found' });
@@ -1804,17 +1803,16 @@ app.patch(
       }
     }
     all[i].approved = false;
-    await dbUnified.write('suppliers', all);
+    write('suppliers', all);
     res.json({ ok: true, supplier: all[i] });
   }
 );
 
-app.get('/api/me/packages', authRequired, roleRequired('supplier'), async (req, res) => {
-  const mine = await dbUnified
-    .read('suppliers')
+app.get('/api/me/packages', authRequired, roleRequired('supplier'), (req, res) => {
+  const mine = read('suppliers')
     .filter(s => s.ownerUserId === req.user.id)
     .map(s => s.id);
-  const items = await dbUnified.read('packages').filter(p => mine.includes(p.supplierId));
+  const items = read('packages').filter(p => mine.includes(p.supplierId));
   res.json({ items });
 });
 
@@ -1824,14 +1822,12 @@ app.post(
   authRequired,
   roleRequired('supplier'),
   csrfProtection,
-  async (req, res) => {
+  (req, res) => {
     const { supplierId, title, description, price, image } = req.body || {};
     if (!supplierId || !title) {
       return res.status(400).json({ error: 'Missing fields' });
     }
-    const own = await dbUnified
-      .read('suppliers')
-      .find(s => s.id === supplierId && s.ownerUserId === req.user.id);
+    const own = read('suppliers').find(s => s.id === supplierId && s.ownerUserId === req.user.id);
     if (!own) {
       return res.status(403).json({ error: 'Forbidden' });
     }
@@ -1841,7 +1837,7 @@ app.post(
     // Enforce a simple Free vs Pro package limit:
     // - Free suppliers can create up to FREE_PACKAGE_LIMIT packages (default 3)
     // - Pro suppliers have no limit
-    const allPkgs = await dbUnified.read('packages');
+    const allPkgs = read('packages');
     const existingForSupplier = allPkgs.filter(p => p.supplierId === supplierId);
     const freeLimit = Number(process.env.FREE_PACKAGE_LIMIT || 3);
     if (!ownIsPro && existingForSupplier.length >= freeLimit) {
@@ -1862,7 +1858,7 @@ app.post(
     };
     const all = allPkgs;
     all.push(pkg);
-    await dbUnified.write('packages', all);
+    write('packages', all);
     res.json({ ok: true, package: pkg });
   }
 );
@@ -1873,12 +1869,12 @@ app.post('/api/threads/start', writeLimiter, authRequired, csrfProtection, async
   if (!supplierId) {
     return res.status(400).json({ error: 'Missing supplierId' });
   }
-  const supplier = await dbUnified.read('suppliers').find(s => s.id === supplierId && s.approved);
+  const supplier = read('suppliers').find(s => s.id === supplierId && s.approved);
   if (!supplier) {
     return res.status(404).json({ error: 'Supplier not found' });
   }
 
-  const threads = await dbUnified.read('threads');
+  const threads = read('threads');
   let thread = threads.find(t => t.supplierId === supplierId && t.customerId === req.user.id);
   if (!thread) {
     thread = {
@@ -1895,12 +1891,12 @@ app.post('/api/threads/start', writeLimiter, authRequired, csrfProtection, async
       guests: guests || null,
     };
     threads.push(thread);
-    await dbUnified.write('threads', threads);
+    write('threads', threads);
   }
 
   // If an initial message was included, create it immediately
   if (message && String(message).trim()) {
-    const msgs = await dbUnified.read('messages');
+    const msgs = read('messages');
     const entry = {
       id: uid('msg'),
       threadId: thread.id,
@@ -1912,21 +1908,21 @@ app.post('/api/threads/start', writeLimiter, authRequired, csrfProtection, async
       createdAt: new Date().toISOString(),
     };
     msgs.push(entry);
-    await dbUnified.write('messages', msgs);
+    write('messages', msgs);
 
     // Update thread timestamp
-    const allThreads = await dbUnified.read('threads');
+    const allThreads = read('threads');
     const idx = allThreads.findIndex(t => t.id === thread.id);
     if (idx >= 0) {
       allThreads[idx].updatedAt = entry.createdAt;
-      await dbUnified.write('threads', allThreads);
+      write('threads', allThreads);
     }
   }
 
   // Email notify supplier (safe IIFE)
   (async () => {
     try {
-      const customer = await dbUnified.read('users').find(u => u.id === req.user.id);
+      const customer = read('users').find(u => u.id === req.user.id);
       if (supplier.email && customer && customer.notify !== false) {
         await sendMail(
           supplier.email,
@@ -1942,21 +1938,20 @@ app.post('/api/threads/start', writeLimiter, authRequired, csrfProtection, async
   res.json({ ok: true, thread });
 });
 
-app.get('/api/threads/my', authRequired, async (req, res) => {
-  const ts = await dbUnified.read('threads');
+app.get('/api/threads/my', authRequired, (req, res) => {
+  const ts = read('threads');
   let items = [];
   if (req.user.role === 'customer') {
     items = ts.filter(t => t.customerId === req.user.id);
   } else if (req.user.role === 'supplier') {
-    const mine = await dbUnified
-      .read('suppliers')
+    const mine = read('suppliers')
       .filter(s => s.ownerUserId === req.user.id)
       .map(s => s.id);
     items = ts.filter(t => mine.includes(t.supplierId));
   } else if (req.user.role === 'admin') {
     items = ts;
   }
-  const msgs = await dbUnified.read('messages');
+  const msgs = read('messages');
   items = items.map(t => ({
     ...t,
     last:
@@ -1967,109 +1962,96 @@ app.get('/api/threads/my', authRequired, async (req, res) => {
   res.json({ items });
 });
 
-app.get('/api/threads/:id/messages', authRequired, async (req, res) => {
-  const t = await dbUnified.read('threads').find(x => x.id === req.params.id);
+app.get('/api/threads/:id/messages', authRequired, (req, res) => {
+  const t = read('threads').find(x => x.id === req.params.id);
   if (!t) {
     return res.status(404).json({ error: 'Thread not found' });
   }
   if (req.user.role !== 'admin' && t.customerId !== req.user.id) {
-    const own = await dbUnified
-      .read('suppliers')
-      .find(s => s.id === t.supplierId && s.ownerUserId === req.user.id);
+    const own = read('suppliers').find(s => s.id === t.supplierId && s.ownerUserId === req.user.id);
     if (!own) {
       return res.status(403).json({ error: 'Forbidden' });
     }
   }
-  const msgs = await dbUnified
-    .read('messages')
+  const msgs = read('messages')
     .filter(m => m.threadId === t.id)
     .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
   res.json({ items: msgs });
 });
 
-app.post(
-  '/api/threads/:id/messages',
-  writeLimiter,
-  authRequired,
-  csrfProtection,
-  async (req, res) => {
-    const { text, packageId } = req.body || {};
-    if (!text) {
-      return res.status(400).json({ error: 'Missing text' });
-    }
-    const t = await dbUnified.read('threads').find(x => x.id === req.params.id);
-    if (!t) {
-      return res.status(404).json({ error: 'Thread not found' });
-    }
-    if (req.user.role !== 'admin' && t.customerId !== req.user.id) {
-      const own = await dbUnified
-        .read('suppliers')
-        .find(s => s.id === t.supplierId && s.ownerUserId === req.user.id);
-      if (!own) {
-        return res.status(403).json({ error: 'Forbidden' });
-      }
-    }
-    const msgs = await dbUnified.read('messages');
-    const entry = {
-      id: uid('msg'),
-      threadId: t.id,
-      fromUserId: req.user.id,
-      fromRole: req.user.role,
-      text: String(text).slice(0, 4000),
-      packageId: packageId || t.packageId || null,
-      supplierId: t.supplierId || null,
-      status: 'sent',
-      createdAt: new Date().toISOString(),
-    };
-    msgs.push(entry);
-    await dbUnified.write('messages', msgs);
-
-    // Update thread timestamp
-    const th = await dbUnified.read('threads');
-    const i = th.findIndex(x => x.id === t.id);
-    if (i >= 0) {
-      th[i].updatedAt = entry.createdAt;
-      await dbUnified.write('threads', th);
-    }
-
-    // Email notify other party (safe IIFE)
-    (async () => {
-      try {
-        const otherEmail =
-          req.user.role === 'customer'
-            ? ((await dbUnified.read('suppliers').find(s => s.id === t.supplierId)) || {}).email ||
-              null
-            : ((await dbUnified.read('users').find(u => u.id === t.customerId)) || {}).email ||
-              null;
-        const me = await dbUnified.read('users').find(u => u.id === req.user.id);
-        if (otherEmail && me && me.notify !== false) {
-          await sendMail(
-            otherEmail,
-            'New message on EventFlow',
-            `You have a new message in a conversation.\n\n${entry.text.slice(0, 500)}`
-          );
-        }
-      } catch (e) {
-        // dev-safe
-      }
-    })();
-
-    res.json({ ok: true, message: entry });
+app.post('/api/threads/:id/messages', writeLimiter, authRequired, csrfProtection, (req, res) => {
+  const { text, packageId } = req.body || {};
+  if (!text) {
+    return res.status(400).json({ error: 'Missing text' });
   }
-);
+  const t = read('threads').find(x => x.id === req.params.id);
+  if (!t) {
+    return res.status(404).json({ error: 'Thread not found' });
+  }
+  if (req.user.role !== 'admin' && t.customerId !== req.user.id) {
+    const own = read('suppliers').find(s => s.id === t.supplierId && s.ownerUserId === req.user.id);
+    if (!own) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+  }
+  const msgs = read('messages');
+  const entry = {
+    id: uid('msg'),
+    threadId: t.id,
+    fromUserId: req.user.id,
+    fromRole: req.user.role,
+    text: String(text).slice(0, 4000),
+    packageId: packageId || t.packageId || null,
+    supplierId: t.supplierId || null,
+    status: 'sent',
+    createdAt: new Date().toISOString(),
+  };
+  msgs.push(entry);
+  write('messages', msgs);
+
+  // Update thread timestamp
+  const th = read('threads');
+  const i = th.findIndex(x => x.id === t.id);
+  if (i >= 0) {
+    th[i].updatedAt = entry.createdAt;
+    write('threads', th);
+  }
+
+  // Email notify other party (safe IIFE)
+  (async () => {
+    try {
+      const otherEmail =
+        req.user.role === 'customer'
+          ? (read('suppliers').find(s => s.id === t.supplierId) || {}).email || null
+          : (read('users').find(u => u.id === t.customerId) || {}).email || null;
+      const me = read('users').find(u => u.id === req.user.id);
+      if (otherEmail && me && me.notify !== false) {
+        await sendMail(
+          otherEmail,
+          'New message on EventFlow',
+          `You have a new message in a conversation.\n\n${entry.text.slice(0, 500)}`
+        );
+      }
+    } catch (e) {
+      // dev-safe
+    }
+  })();
+
+  res.json({ ok: true, message: entry });
+});
 
 // ---------- Plan & Notes (customer) ----------
-app.get('/api/plan', authRequired, async (req, res) => {
+app.get('/api/plan', authRequired, (req, res) => {
   if (req.user.role !== 'customer') {
     return res.status(403).json({ error: 'Customers only' });
   }
-  const plans = await dbUnified.read('plans').filter(p => p.userId === req.user.id);
-  const suppliers = await dbUnified.read('suppliers').filter(s => s.approved);
+  const plans = read('plans').filter(p => p.userId === req.user.id);
+  const suppliers = read('suppliers').filter(s => s.approved);
   const items = plans.map(p => suppliers.find(s => s.id === p.supplierId)).filter(Boolean);
   res.json({ items });
 });
 
-app.post('/api/plan', authRequired, csrfProtection, async (req, res) => {
+app.post('/api/plan', authRequired, csrfProtection, (req, res) => {
   if (req.user.role !== 'customer') {
     return res.status(403).json({ error: 'Customers only' });
   }
@@ -2077,11 +2059,11 @@ app.post('/api/plan', authRequired, csrfProtection, async (req, res) => {
   if (!supplierId) {
     return res.status(400).json({ error: 'Missing supplierId' });
   }
-  const s = await dbUnified.read('suppliers').find(x => x.id === supplierId && x.approved);
+  const s = read('suppliers').find(x => x.id === supplierId && x.approved);
   if (!s) {
     return res.status(404).json({ error: 'Supplier not found' });
   }
-  const all = await dbUnified.read('plans');
+  const all = read('plans');
   if (!all.find(p => p.userId === req.user.id && p.supplierId === supplierId)) {
     all.push({
       id: uid('pln'),
@@ -2090,34 +2072,34 @@ app.post('/api/plan', authRequired, csrfProtection, async (req, res) => {
       createdAt: new Date().toISOString(),
     });
   }
-  await dbUnified.write('plans', all);
+  write('plans', all);
   res.json({ ok: true });
 });
 
-app.delete('/api/plan/:supplierId', authRequired, csrfProtection, async (req, res) => {
+app.delete('/api/plan/:supplierId', authRequired, csrfProtection, (req, res) => {
   if (req.user.role !== 'customer') {
     return res.status(403).json({ error: 'Customers only' });
   }
-  const all = await dbUnified
-    .read('plans')
-    .filter(p => !(p.userId === req.user.id && p.supplierId === req.params.supplierId));
-  await dbUnified.write('plans', all);
+  const all = read('plans').filter(
+    p => !(p.userId === req.user.id && p.supplierId === req.params.supplierId)
+  );
+  write('plans', all);
   res.json({ ok: true });
 });
 
-app.get('/api/notes', authRequired, async (req, res) => {
+app.get('/api/notes', authRequired, (req, res) => {
   if (req.user.role !== 'customer') {
     return res.status(403).json({ error: 'Customers only' });
   }
-  const n = await dbUnified.read('notes').find(x => x.userId === req.user.id);
+  const n = read('notes').find(x => x.userId === req.user.id);
   res.json({ text: (n && n.text) || '' });
 });
 
-app.post('/api/notes', authRequired, csrfProtection, async (req, res) => {
+app.post('/api/notes', authRequired, csrfProtection, (req, res) => {
   if (req.user.role !== 'customer') {
     return res.status(403).json({ error: 'Customers only' });
   }
-  const all = await dbUnified.read('notes');
+  const all = read('notes');
   const i = all.findIndex(x => x.userId === req.user.id);
   if (i >= 0) {
     all[i].text = String((req.body && req.body.text) || '');
@@ -2130,13 +2112,13 @@ app.post('/api/notes', authRequired, csrfProtection, async (req, res) => {
       createdAt: new Date().toISOString(),
     });
   }
-  await dbUnified.write('notes', all);
+  write('notes', all);
   res.json({ ok: true });
 });
 
 // ---------- Settings ----------
-app.get('/api/me/settings', authRequired, async (req, res) => {
-  const users = await dbUnified.read('users');
+app.get('/api/me/settings', authRequired, (req, res) => {
+  const users = read('users');
   const i = users.findIndex(u => u.id === req.user.id);
   if (i < 0) {
     return res.status(404).json({ error: 'Not found' });
@@ -2144,19 +2126,19 @@ app.get('/api/me/settings', authRequired, async (req, res) => {
   res.json({ notify: users[i].notify !== false });
 });
 
-app.post('/api/me/settings', authRequired, csrfProtection, async (req, res) => {
-  const users = await dbUnified.read('users');
+app.post('/api/me/settings', authRequired, csrfProtection, (req, res) => {
+  const users = read('users');
   const i = users.findIndex(u => u.id === req.user.id);
   if (i < 0) {
     return res.status(404).json({ error: 'Not found' });
   }
   users[i].notify = !!(req.body && req.body.notify);
-  await dbUnified.write('users', users);
+  write('users', users);
   res.json({ ok: true, notify: users[i].notify });
 });
 
 // ---------- Meta & status ----------
-app.get('/api/meta', async (_req, res) => {
+app.get('/api/meta', (_req, res) => {
   res.json({
     ok: true,
     version: APP_VERSION,
@@ -2166,13 +2148,13 @@ app.get('/api/meta', async (_req, res) => {
 });
 
 // Lightweight metrics endpoints (no-op by default)
-app.post('/api/metrics/track', csrfProtection, async (req, res) => {
+app.post('/api/metrics/track', csrfProtection, (req, res) => {
   // In a real deployment you could log req.body here.
   res.json({ ok: true });
 });
 
 // Simple synthetic timeseries for admin charts
-app.get('/api/admin/metrics/timeseries', authRequired, roleRequired('admin'), async (_req, res) => {
+app.get('/api/admin/metrics/timeseries', authRequired, roleRequired('admin'), (_req, res) => {
   const today = new Date();
   const days = 14;
   const series = [];
@@ -2191,13 +2173,13 @@ app.get('/api/admin/metrics/timeseries', authRequired, roleRequired('admin'), as
 });
 
 // ---------- Admin ----------
-app.get('/api/admin/metrics', authRequired, roleRequired('admin'), async (_req, res) => {
-  const users = await dbUnified.read('users');
-  const suppliers = await dbUnified.read('suppliers');
-  const plans = await dbUnified.read('plans');
-  const msgs = await dbUnified.read('messages');
-  const pkgs = await dbUnified.read('packages');
-  const threads = await dbUnified.read('threads');
+app.get('/api/admin/metrics', authRequired, roleRequired('admin'), (_req, res) => {
+  const users = read('users');
+  const suppliers = read('suppliers');
+  const plans = read('plans');
+  const msgs = read('messages');
+  const pkgs = read('packages');
+  const threads = read('threads');
   res.json({
     counts: {
       usersTotal: users.length,
@@ -2219,7 +2201,7 @@ app.post(
   authRequired,
   roleRequired('admin'),
   csrfProtection,
-  async (req, res) => {
+  (req, res) => {
     try {
       // Clear key collections and rerun seeding
       const collections = [
@@ -2232,10 +2214,8 @@ app.post(
         'threads',
         'events',
       ];
-      for (const name of collections) {
-        await dbUnified.write(name, []);
-      }
-      await seed();
+      collections.forEach(name => write(name, []));
+      seed();
       res.json({ ok: true });
     } catch (err) {
       console.error('Reset demo failed', err);
@@ -2244,8 +2224,8 @@ app.post(
   }
 );
 
-app.get('/api/admin/suppliers', authRequired, roleRequired('admin'), async (_req, res) => {
-  const raw = await dbUnified.read('suppliers');
+app.get('/api/admin/suppliers', authRequired, roleRequired('admin'), (_req, res) => {
+  const raw = read('suppliers');
   const items = raw.map(s => ({
     ...s,
     isPro: supplierIsProActive(s),
@@ -2262,9 +2242,9 @@ app.get(
   '/api/admin/suppliers/pending-verification',
   authRequired,
   roleRequired('admin'),
-  async (_req, res) => {
+  (_req, res) => {
     try {
-      const suppliers = (await dbUnified.read('suppliers')) || [];
+      const suppliers = read('suppliers') || [];
       const pending = suppliers.filter(
         s => !s.verified && (!s.verificationStatus || s.verificationStatus === 'pending')
       );
@@ -2292,14 +2272,14 @@ app.post(
   authRequired,
   roleRequired('admin'),
   csrfProtection,
-  async (req, res) => {
-    const all = await dbUnified.read('suppliers');
+  (req, res) => {
+    const all = read('suppliers');
     const i = all.findIndex(s => s.id === req.params.id);
     if (i < 0) {
       return res.status(404).json({ error: 'Not found' });
     }
     all[i].approved = !!(req.body && req.body.approved);
-    await dbUnified.write('suppliers', all);
+    write('suppliers', all);
     res.json({ ok: true, supplier: all[i] });
   }
 );
@@ -2309,9 +2289,9 @@ app.post(
   authRequired,
   roleRequired('admin'),
   csrfProtection,
-  async (req, res) => {
+  (req, res) => {
     const { mode, duration } = req.body || {};
-    const all = await dbUnified.read('suppliers');
+    const all = read('suppliers');
     const i = all.findIndex(s => s.id === req.params.id);
     if (i < 0) {
       return res.status(404).json({ error: 'Not found' });
@@ -2350,11 +2330,11 @@ app.post(
     // Optionally mirror Pro flag to the owning user, if present.
     try {
       if (s.ownerUserId) {
-        const users = await dbUnified.read('users');
+        const users = read('users');
         const u = users.find(u => u.id === s.ownerUserId);
         if (u) {
           u.isPro = !!s.isPro;
-          await dbUnified.write('users', users);
+          write('users', users);
         }
       }
     } catch (_e) {
@@ -2362,7 +2342,7 @@ app.post(
     }
 
     all[i] = s;
-    await dbUnified.write('suppliers', all);
+    write('suppliers', all);
 
     const active = supplierIsProActive(s);
     res.json({
@@ -2385,9 +2365,9 @@ app.put(
   authRequired,
   roleRequired('admin'),
   csrfProtection,
-  async (req, res) => {
+  (req, res) => {
     const { id } = req.params;
-    const suppliers = await dbUnified.read('suppliers');
+    const suppliers = read('suppliers');
     const supplierIndex = suppliers.findIndex(s => s.id === id);
 
     if (supplierIndex === -1) {
@@ -2447,14 +2427,14 @@ app.put(
     supplier.updatedAt = now;
 
     suppliers[supplierIndex] = supplier;
-    await dbUnified.write('suppliers', suppliers);
+    write('suppliers', suppliers);
 
     res.json({ ok: true, supplier });
   }
 );
 
-app.get('/api/admin/packages', authRequired, roleRequired('admin'), async (_req, res) => {
-  res.json({ items: await dbUnified.read('packages') });
+app.get('/api/admin/packages', authRequired, roleRequired('admin'), (_req, res) => {
+  res.json({ items: read('packages') });
 });
 
 app.post(
@@ -2462,14 +2442,14 @@ app.post(
   authRequired,
   roleRequired('admin'),
   csrfProtection,
-  async (req, res) => {
-    const all = await dbUnified.read('packages');
+  (req, res) => {
+    const all = read('packages');
     const i = all.findIndex(p => p.id === req.params.id);
     if (i < 0) {
       return res.status(404).json({ error: 'Not found' });
     }
     all[i].approved = !!(req.body && req.body.approved);
-    await dbUnified.write('packages', all);
+    write('packages', all);
     res.json({ ok: true, package: all[i] });
   }
 );
@@ -2479,14 +2459,14 @@ app.post(
   authRequired,
   roleRequired('admin'),
   csrfProtection,
-  async (req, res) => {
-    const all = await dbUnified.read('packages');
+  (req, res) => {
+    const all = read('packages');
     const i = all.findIndex(p => p.id === req.params.id);
     if (i < 0) {
       return res.status(404).json({ error: 'Not found' });
     }
     all[i].featured = !!(req.body && req.body.featured);
-    await dbUnified.write('packages', all);
+    write('packages', all);
     res.json({ ok: true, package: all[i] });
   }
 );
@@ -2500,9 +2480,9 @@ app.put(
   authRequired,
   roleRequired('admin'),
   csrfProtection,
-  async (req, res) => {
+  (req, res) => {
     const { id } = req.params;
-    const packages = await dbUnified.read('packages');
+    const packages = read('packages');
     const pkgIndex = packages.findIndex(p => p.id === id);
 
     if (pkgIndex === -1) {
@@ -2534,7 +2514,7 @@ app.put(
     pkg.updatedAt = now;
 
     packages[pkgIndex] = pkg;
-    await dbUnified.write('packages', packages);
+    write('packages', packages);
 
     res.json({ ok: true, package: pkg });
   }
@@ -2549,25 +2529,24 @@ app.delete(
   authRequired,
   roleRequired('admin'),
   csrfProtection,
-  async (req, res) => {
+  (req, res) => {
     const { id } = req.params;
-    const packages = await dbUnified.read('packages');
+    const packages = read('packages');
     const filtered = packages.filter(p => p.id !== id);
 
     if (filtered.length === packages.length) {
       return res.status(404).json({ error: 'Package not found' });
     }
 
-    await dbUnified.write('packages', filtered);
+    write('packages', filtered);
     res.json({ ok: true, message: 'Package deleted successfully' });
   }
 );
 
 // ---------- Sitemap ----------
-app.get('/sitemap.xml', async (_req, res) => {
+app.get('/sitemap.xml', (_req, res) => {
   const base = `http://localhost:${PORT}`;
-  const suppliers = await dbUnified
-    .read('suppliers')
+  const suppliers = read('suppliers')
     .filter(s => s.approved)
     .map(s => `${base}/supplier.html?id=${s.id}`);
   const urls = [
@@ -2591,21 +2570,21 @@ app.get('/sitemap.xml', async (_req, res) => {
 // ---------- Protected HTML routes ----------
 const sendHTML = (res, file) => res.sendFile(path.join(__dirname, 'public', file));
 
-app.get('/dashboard/customer', authRequired, async (req, res) => {
+app.get('/dashboard/customer', authRequired, (req, res) => {
   if (req.user.role !== 'customer') {
     return res.redirect('/auth.html');
   }
   sendHTML(res, 'dashboard-customer.html');
 });
 
-app.get('/dashboard/supplier', authRequired, async (req, res) => {
+app.get('/dashboard/supplier', authRequired, (req, res) => {
   if (req.user.role !== 'supplier') {
     return res.redirect('/auth.html');
   }
   sendHTML(res, 'dashboard-supplier.html');
 });
 
-app.get('/admin', authRequired, async (req, res) => {
+app.get('/admin', authRequired, (req, res) => {
   if (req.user.role !== 'admin') {
     return res.redirect('/auth.html');
   }
@@ -2622,12 +2601,12 @@ function planOwnerOnly(req, res, next) {
   next();
 }
 
-app.post('/api/me/plan/save', authRequired, planOwnerOnly, csrfProtection, async (req, res) => {
+app.post('/api/me/plan/save', authRequired, planOwnerOnly, csrfProtection, (req, res) => {
   const { plan } = req.body || {};
   if (!plan) {
     return res.status(400).json({ error: 'Missing plan' });
   }
-  const plans = await dbUnified.read('plans');
+  const plans = read('plans');
   let p = plans.find(x => x.userId === req.userId);
   if (!p) {
     p = { id: uid('pln'), userId: req.userId, plan };
@@ -2635,12 +2614,12 @@ app.post('/api/me/plan/save', authRequired, planOwnerOnly, csrfProtection, async
   } else {
     p.plan = plan;
   }
-  await dbUnified.write('plans', plans);
+  write('plans', plans);
   res.json({ ok: true, plan: p });
 });
 
-app.get('/api/me/plan', authRequired, planOwnerOnly, async (req, res) => {
-  const plans = await dbUnified.read('plans');
+app.get('/api/me/plan', authRequired, planOwnerOnly, (req, res) => {
+  const plans = read('plans');
   const p = plans.find(x => x.userId === req.userId);
   if (!p) {
     return res.json({ ok: true, plan: null });
@@ -2650,14 +2629,14 @@ app.get('/api/me/plan', authRequired, planOwnerOnly, async (req, res) => {
 
 // --- PDF EXPORT ---
 app.get('/api/plan/export/pdf', authRequired, planOwnerOnly, async (req, res) => {
-  const plans = await dbUnified.read('plans');
+  const plans = read('plans');
   const p = plans.find(x => x.userId === req.userId);
   if (!p) {
     return res.status(400).json({ error: 'No plan saved' });
   }
 
-  const suppliers = await dbUnified.read('suppliers');
-  const packages = await dbUnified.read('packages'); // currently unused, but kept for future detail
+  const suppliers = read('suppliers');
+  const packages = read('packages'); // currently unused, but kept for future detail
 
   res.setHeader('Content-Type', 'application/pdf');
   res.setHeader('Content-Disposition', 'attachment; filename=event_plan.pdf');
@@ -2731,12 +2710,12 @@ function saveImageBase64(base64, ownerType, ownerId) {
 }
 
 // Supplier image upload
-app.post('/api/me/suppliers/:id/photos', authRequired, csrfProtection, async (req, res) => {
+app.post('/api/me/suppliers/:id/photos', authRequired, csrfProtection, (req, res) => {
   const { image } = req.body || {};
   if (!image) {
     return res.status(400).json({ error: 'Missing image' });
   }
-  const suppliers = await dbUnified.read('suppliers');
+  const suppliers = read('suppliers');
   const s = suppliers.find(x => x.id === req.params.id && x.ownerUserId === req.userId);
   if (!s) {
     return res.status(403).json({ error: 'Not owner' });
@@ -2749,22 +2728,22 @@ app.post('/api/me/suppliers/:id/photos', authRequired, csrfProtection, async (re
     s.photosGallery = [];
   }
   s.photosGallery.push({ url, approved: false, uploadedAt: Date.now() });
-  await dbUnified.write('suppliers', suppliers);
+  write('suppliers', suppliers);
   res.json({ ok: true, url });
 });
 
 // Package image upload
-app.post('/api/me/packages/:id/photos', authRequired, csrfProtection, async (req, res) => {
+app.post('/api/me/packages/:id/photos', authRequired, csrfProtection, (req, res) => {
   const { image } = req.body || {};
   if (!image) {
     return res.status(400).json({ error: 'Missing image' });
   }
-  const pkgs = await dbUnified.read('packages');
+  const pkgs = read('packages');
   const p = pkgs.find(x => x.id === req.params.id);
   if (!p) {
     return res.status(404).json({ error: 'Not found' });
   }
-  const suppliers = await dbUnified.read('suppliers');
+  const suppliers = read('suppliers');
   const own = suppliers.find(x => x.id === p.supplierId && x.ownerUserId === req.userId);
   if (!own) {
     return res.status(403).json({ error: 'Not owner' });
@@ -2777,7 +2756,7 @@ app.post('/api/me/packages/:id/photos', authRequired, csrfProtection, async (req
     p.gallery = [];
   }
   p.gallery.push({ url, approved: false, uploadedAt: Date.now() });
-  await dbUnified.write('packages', pkgs);
+  write('packages', pkgs);
   res.json({ ok: true, url });
 });
 
@@ -2963,14 +2942,14 @@ app.post('/api/reviews', authRequired, csrfProtection, async (req, res) => {
     }
 
     // Check if supplier exists
-    const suppliers = await await dbUnified.read('suppliers');
+    const suppliers = await read('suppliers');
     const supplier = suppliers.find(s => s.id === supplierId);
     if (!supplier) {
       return res.status(404).json({ error: 'Supplier not found' });
     }
 
     // Get user info
-    const users = await await dbUnified.read('users');
+    const users = await read('users');
     const user = users.find(u => u.id === req.user.id);
 
     // Create review
@@ -3178,7 +3157,7 @@ app.post(
 
       // Update supplier or package with new photo
       if (type === 'supplier') {
-        const suppliers = await await dbUnified.read('suppliers');
+        const suppliers = await read('suppliers');
         const supplier = suppliers.find(s => s.id === id);
 
         if (!supplier) {
@@ -3196,7 +3175,7 @@ app.post(
         }
         supplier.photosGallery.push(photoRecord);
 
-        await await dbUnified.write('suppliers', suppliers);
+        await write('suppliers', suppliers);
 
         return res.json({
           success: true,
@@ -3204,7 +3183,7 @@ app.post(
           message: 'Photo uploaded successfully. Pending admin approval.',
         });
       } else if (type === 'package') {
-        const packages = await await dbUnified.read('packages');
+        const packages = await read('packages');
         const pkg = packages.find(p => p.id === id);
 
         if (!pkg) {
@@ -3212,7 +3191,7 @@ app.post(
         }
 
         // Check if user owns this package's supplier
-        const suppliers = await await dbUnified.read('suppliers');
+        const suppliers = await read('suppliers');
         const supplier = suppliers.find(s => s.id === pkg.supplierId);
 
         if (!supplier || (supplier.ownerUserId !== req.user.id && req.user.role !== 'admin')) {
@@ -3225,7 +3204,7 @@ app.post(
         }
         pkg.gallery.push(photoRecord);
 
-        await await dbUnified.write('packages', packages);
+        await write('packages', packages);
 
         return res.json({
           success: true,
@@ -3292,7 +3271,7 @@ app.post(
 
       // Update supplier or package with new photos
       if (type === 'supplier') {
-        const suppliers = await await dbUnified.read('suppliers');
+        const suppliers = await read('suppliers');
         const supplier = suppliers.find(s => s.id === id);
 
         if (!supplier) {
@@ -3308,16 +3287,16 @@ app.post(
         }
         supplier.photosGallery.push(...uploadedPhotos);
 
-        await await dbUnified.write('suppliers', suppliers);
+        await write('suppliers', suppliers);
       } else if (type === 'package') {
-        const packages = await await dbUnified.read('packages');
+        const packages = await read('packages');
         const pkg = packages.find(p => p.id === id);
 
         if (!pkg) {
           return res.status(404).json({ error: 'Package not found' });
         }
 
-        const suppliers = await await dbUnified.read('suppliers');
+        const suppliers = await read('suppliers');
         const supplier = suppliers.find(s => s.id === pkg.supplierId);
 
         if (!supplier || (supplier.ownerUserId !== req.user.id && req.user.role !== 'admin')) {
@@ -3329,7 +3308,7 @@ app.post(
         }
         pkg.gallery.push(...uploadedPhotos);
 
-        await await dbUnified.write('packages', packages);
+        await write('packages', packages);
       } else {
         return res.status(400).json({ error: 'Invalid type' });
       }
@@ -3364,7 +3343,7 @@ app.delete('/api/photos/delete', authRequired, csrfProtection, async (req, res) 
     const decodedUrl = decodeURIComponent(photoUrl);
 
     if (type === 'supplier') {
-      const suppliers = await await dbUnified.read('suppliers');
+      const suppliers = await read('suppliers');
       const supplier = suppliers.find(s => s.id === id);
 
       if (!supplier) {
@@ -3377,20 +3356,20 @@ app.delete('/api/photos/delete', authRequired, csrfProtection, async (req, res) 
 
       if (supplier.photosGallery) {
         supplier.photosGallery = supplier.photosGallery.filter(p => p.url !== decodedUrl);
-        await await dbUnified.write('suppliers', suppliers);
+        await write('suppliers', suppliers);
 
         // Delete physical files
         await photoUpload.deleteImage(decodedUrl);
       }
     } else if (type === 'package') {
-      const packages = await await dbUnified.read('packages');
+      const packages = await read('packages');
       const pkg = packages.find(p => p.id === id);
 
       if (!pkg) {
         return res.status(404).json({ error: 'Package not found' });
       }
 
-      const suppliers = await await dbUnified.read('suppliers');
+      const suppliers = await read('suppliers');
       const supplier = suppliers.find(s => s.id === pkg.supplierId);
 
       if (!supplier || (supplier.ownerUserId !== req.user.id && req.user.role !== 'admin')) {
@@ -3399,7 +3378,7 @@ app.delete('/api/photos/delete', authRequired, csrfProtection, async (req, res) 
 
       if (pkg.gallery) {
         pkg.gallery = pkg.gallery.filter(p => p.url !== decodedUrl);
-        await await dbUnified.write('packages', packages);
+        await write('packages', packages);
 
         // Delete physical files
         await photoUpload.deleteImage(decodedUrl);
@@ -3432,7 +3411,7 @@ app.post(
       }
 
       if (type === 'supplier') {
-        const suppliers = await await dbUnified.read('suppliers');
+        const suppliers = await read('suppliers');
         const supplier = suppliers.find(s => s.id === id);
 
         if (!supplier) {
@@ -3445,11 +3424,11 @@ app.post(
             photo.approved = approved;
             photo.approvedAt = Date.now();
             photo.approvedBy = req.user.id;
-            await await dbUnified.write('suppliers', suppliers);
+            await write('suppliers', suppliers);
           }
         }
       } else if (type === 'package') {
-        const packages = await await dbUnified.read('packages');
+        const packages = await read('packages');
         const pkg = packages.find(p => p.id === id);
 
         if (!pkg) {
@@ -3462,7 +3441,7 @@ app.post(
             photo.approved = approved;
             photo.approvedAt = Date.now();
             photo.approvedBy = req.user.id;
-            await await dbUnified.write('packages', packages);
+            await write('packages', packages);
           }
         }
       }
@@ -3518,7 +3497,7 @@ app.get('/api/photos/pending', authRequired, roleRequired('admin'), async (req, 
     const pendingPhotos = [];
 
     // Get pending supplier photos
-    const suppliers = await await dbUnified.read('suppliers');
+    const suppliers = await read('suppliers');
     for (const supplier of suppliers) {
       if (supplier.photosGallery) {
         const pending = supplier.photosGallery
@@ -3534,7 +3513,7 @@ app.get('/api/photos/pending', authRequired, roleRequired('admin'), async (req, 
     }
 
     // Get pending package photos
-    const packages = await await dbUnified.read('packages');
+    const packages = await read('packages');
     for (const pkg of packages) {
       if (pkg.gallery) {
         const pending = pkg.gallery
@@ -3722,7 +3701,7 @@ const { getAuditLogs, auditLog, AUDIT_ACTIONS } = require('./middleware/audit');
  * GET /api/admin/audit-logs
  * Get audit logs with optional filtering
  */
-app.get('/api/admin/audit-logs', authRequired, roleRequired('admin'), async (req, res) => {
+app.get('/api/admin/audit-logs', authRequired, roleRequired('admin'), (req, res) => {
   const { adminId, action, targetType, targetId, startDate, endDate, limit } = req.query;
 
   const logs = getAuditLogs({
@@ -4116,17 +4095,6 @@ async function startServer() {
         console.log('   Connecting to database...');
         await dbUnified.initializeDatabase();
         console.log('   ✅ Database connection successful');
-
-        // 4a. Seed database with initial data
-        console.log('');
-        console.log('📊 Seeding database...');
-        await seed({
-          skipIfExists: isProduction,
-          seedUsers: true,
-          seedSuppliers: !isProduction, // Only seed demo suppliers in dev
-          seedPackages: !isProduction, // Only seed demo packages in dev
-        });
-        console.log('   ✅ Database seeding complete');
       } catch (error) {
         console.error('');
         console.error('='.repeat(70));

@@ -1,16 +1,16 @@
 const bcrypt = require('bcryptjs');
-const { read, write, uid } = require('./store');
+const dbUnified = require('./db-unified');
+const { uid } = require('./store');
 
-// Seed the local JSON "database" with default records.
-// For this demo build, we reset core demo data on startup
-// so the logins and sample content are predictable.
+// Seed the database with default records.
+// MongoDB-first: Data goes to MongoDB when available, local storage as fallback.
 //
 // Options:
 // - skipIfExists: Don't overwrite existing data (for production)
 // - seedUsers: Include default users (admin, supplier, customer)
 // - seedSuppliers: Include demo suppliers
 // - seedPackages: Include demo packages
-function seed(options = {}) {
+async function seed(options = {}) {
   const {
     skipIfExists = false,
     seedUsers = true,
@@ -20,7 +20,7 @@ function seed(options = {}) {
 
   // Users (owner account, and optional demo users)
   if (seedUsers) {
-    const existingUsers = read('users');
+    const existingUsers = await dbUnified.read('users');
     const now = new Date().toISOString();
     let usersModified = false;
 
@@ -113,7 +113,7 @@ function seed(options = {}) {
 
     // Only write if we made changes
     if (usersModified) {
-      write('users', existingUsers);
+      await dbUnified.write('users', existingUsers);
     }
 
     if (skipIfExists && existingUsers.length > 0) {
@@ -122,7 +122,7 @@ function seed(options = {}) {
   }
 
   // Categories
-  const existingCategories = read('categories');
+  const existingCategories = await dbUnified.read('categories');
   if (!Array.isArray(existingCategories) || existingCategories.length === 0) {
     const categories = [
       {
@@ -208,13 +208,13 @@ function seed(options = {}) {
         order: 9,
       },
     ];
-    write('categories', categories);
+    await dbUnified.write('categories', categories);
     console.log('Created demo categories');
   }
 
   // Suppliers
   if (seedSuppliers) {
-    const existingSuppliers = read('suppliers');
+    const existingSuppliers = await dbUnified.read('suppliers');
     if (skipIfExists && existingSuppliers.length > 0) {
       console.log('Suppliers already exist, skipping supplier seed');
     } else if (!Array.isArray(existingSuppliers) || existingSuppliers.length === 0) {
@@ -280,14 +280,14 @@ function seed(options = {}) {
           approved: true,
         },
       ];
-      write('suppliers', defaults);
+      await dbUnified.write('suppliers', defaults);
       console.log('Created demo suppliers');
     }
   }
 
   // Packages
   if (seedPackages) {
-    const existingPackages = read('packages');
+    const existingPackages = await dbUnified.read('packages');
     if (skipIfExists && existingPackages.length > 0) {
       console.log('Packages already exist, skipping package seed');
     } else if (!Array.isArray(existingPackages) || existingPackages.length === 0) {
@@ -367,7 +367,7 @@ function seed(options = {}) {
           isFeatured: true,
         },
       ];
-      write('packages', defaults);
+      await dbUnified.write('packages', defaults);
       console.log('Created demo packages');
     }
   }
@@ -386,9 +386,9 @@ function seed(options = {}) {
     'search_history',
     'photos',
   ]) {
-    const items = read(name);
+    const items = await dbUnified.read(name);
     if (!Array.isArray(items) || items.length === 0) {
-      write(name, []);
+      await dbUnified.write(name, []);
     }
   }
 

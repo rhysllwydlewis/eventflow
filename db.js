@@ -212,18 +212,38 @@ async function connect(maxRetries = 3, retryDelay = 2000) {
 
       // Log connection attempt (without exposing credentials)
       const sanitizedUri = uri.replace(/\/\/([^:]+):([^@]+)@/, '//<credentials>@');
+
+      // Extract and log host and database name safely
+      let host = 'unknown';
+      let dbName = process.env.MONGODB_DB_NAME || 'eventflow';
+      try {
+        const url = new URL(uri);
+        host = url.hostname || url.host;
+        // Extract database name from path if present
+        if (url.pathname && url.pathname.length > 1) {
+          const pathDb = url.pathname.substring(1).split('?')[0];
+          if (pathDb) {
+            dbName = pathDb;
+          }
+        }
+      } catch (parseError) {
+        // If URL parsing fails, use sanitized URI
+        host = sanitizedUri.split('@')[1]?.split('/')[0] || 'unknown';
+      }
+
       console.log(`Connecting to MongoDB... (attempt ${attempt}/${maxRetries})`);
       console.log(`Environment: ${isProduction ? 'production' : 'development'}`);
-      console.log(`URI: ${sanitizedUri}`);
+      console.log(`Host: ${host}`);
+      console.log(`Database: ${dbName}`);
 
       client = new MongoClient(uri, options);
       await client.connect();
 
       // Get database name from URI or use default
-      const dbName = process.env.MONGODB_DB_NAME || 'eventflow';
       db = client.db(dbName);
 
       console.log(`✅ Connected to MongoDB database: ${dbName}`);
+      console.log(`✅ Host: ${host}`);
 
       // Test the connection
       await db.admin().ping();
