@@ -58,18 +58,10 @@ MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/eventflow?retryW
 MONGODB_DB_NAME=eventflow
 ```
 
-**Option B: Firebase Firestore**
+**Option B: No Database (Local Storage Mode)**
 
 ```bash
-FIREBASE_PROJECT_ID=eventflow-ffb12
-# Optional: For better security, also set
-FIREBASE_SERVICE_ACCOUNT_KEY={"type":"service_account",...}
-```
-
-**Option C: No Database (Local Storage Mode)**
-
-```bash
-# Do not set MONGODB_URI or FIREBASE_PROJECT_ID
+# Do not set MONGODB_URI
 # App will run with local JSON storage (non-persistent)
 # A warning will be displayed at startup
 ```
@@ -108,18 +100,6 @@ SMTP_PASS=<app-password>
 ```
 
 ### 🎨 Optional Variables (Not required, but recommended)
-
-**Firebase Client (for real-time features)**
-
-```bash
-FIREBASE_API_KEY=AIzaSyAbFoGEvaAQcAvjL716cPSs1KDMkriahqc
-FIREBASE_AUTH_DOMAIN=eventflow-ffb12.firebaseapp.com
-FIREBASE_PROJECT_ID=eventflow-ffb12
-FIREBASE_STORAGE_BUCKET=eventflow-ffb12.firebasestorage.app
-FIREBASE_MESSAGING_SENDER_ID=253829522456
-FIREBASE_APP_ID=1:253829522456:web:3fae1bcec63932321bcf6d
-STORAGE_TYPE=firebase
-```
 
 **Stripe (for subscriptions)**
 

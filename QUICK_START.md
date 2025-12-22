@@ -9,25 +9,17 @@
    git clone https://github.com/rhysllwydlewis/eventflow.git
    cd eventflow
    npm install
-   cd functions
-   npm install
-   cd ..
    ```
 
-2. **Firebase Setup**
+2. **Environment Setup**
    ```bash
-   npm install -g firebase-tools
-   firebase login
-   firebase use eventflow-ffb12
+   cp .env.example .env
+   # Edit .env with your MongoDB connection string and other settings
    ```
 
 3. **Start Local Development**
    ```bash
-   # Terminal 1: Start the main app
    npm run dev
-
-   # Terminal 2: Start Firebase emulators (optional)
-   firebase emulators:start
    ```
 
 ### Testing Subscription Flow
@@ -121,60 +113,38 @@ In `functions/subscriptions.js`, find TODO comments:
 
 ### Debugging
 
-#### View Cloud Function Logs
+#### View Application Logs
 ```bash
-firebase functions:log
-firebase functions:log --only onPaymentSuccess
-```
-
-#### Check Firestore Data
-```bash
-firebase firestore:indexes
-# Or use Firebase Console
-```
-
-#### Test Scheduled Function Locally
-```bash
-firebase functions:shell
-> checkSubscriptionStatus()
+# Check server logs
+npm run dev
+# Monitor MongoDB queries in the terminal
 ```
 
 ### Deployment
 
-#### Deploy Everything
+#### Deploy to Railway or Similar Platform
 ```bash
-firebase deploy
-```
+# Push code to GitHub
+git push origin main
 
-#### Deploy Only Functions
-```bash
-firebase deploy --only functions
-```
-
-#### Deploy Only Rules
-```bash
-firebase deploy --only firestore:rules
-```
-
-#### Deploy Only Hosting
-```bash
-firebase deploy --only hosting
+# Railway will auto-deploy from GitHub
+# Configure environment variables in Railway dashboard
 ```
 
 ### Environment Variables
 
-Set these in Firebase Console (Functions > Configuration):
+Set these in your hosting platform (Railway, Heroku, etc.):
 
 ```bash
-# If needed for email, payment gateway, etc.
-SENDGRID_API_KEY=xxx
-PAYMENT_GATEWAY_SECRET=xxx
+MONGODB_URI=your_mongodb_connection_string
+JWT_SECRET=your_secret_key
+SENDGRID_API_KEY=xxx  # If using SendGrid for emails
 ```
 
 ### Monitoring
 
 #### Check Subscription Status
-1. Open Firestore in Firebase Console
+1. Connect to MongoDB Atlas
 2. Navigate to `suppliers` collection
 3. Check `subscription` field for any supplier
 
@@ -182,35 +152,26 @@ PAYMENT_GATEWAY_SECRET=xxx
 1. Navigate to `payments` collection
 2. Filter by `status: "success"`
 
-#### Monitor Function Execution
-1. Firebase Console > Functions
-2. View logs, metrics, and health
-
 ### Troubleshooting
 
 | Issue | Solution |
 |-------|----------|
 | Google Pay button not showing | Check browser console, verify Google Pay script loaded |
-| Payment not processing | Check Firebase extension is enabled, view function logs |
+| Payment not processing | Check server logs, verify payment gateway configuration |
 | Badge not displaying | Verify supplier has `subscription.tier` field |
 | Package limit not enforced | Check `feature-access.js` imported in dashboard |
-| Function deployment fails | Check Node version (need 18+), run `npm install` in functions/ |
 
 ### Useful Commands
 
 ```bash
-# Check function status
-firebase functions:list
-
-# View realtime logs
-firebase functions:log --only onPaymentSuccess
-
-# Clear local functions
-rm -rf functions/node_modules
-cd functions && npm install
-
-# Test local
+# Start development server
 npm run dev
+
+# Run linter
+npm run lint
+
+# Run tests
+npm test
 
 # Syntax check
 node -c public/supplier/js/subscription.js

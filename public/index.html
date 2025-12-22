@@ -79,7 +79,7 @@
           start conversations when you’re ready, and keep everything together.
         </p>
         <div class="hero-cta">
-          <button class="cta" onclick="location.href='/start.html'">Start planning</button>
+          <button class="cta" id="start-planning-btn">Start planning</button>
           <a class="cta secondary" href="/auth.html">Create a free account</a>
         </div>
       </div>
@@ -229,5 +229,11 @@
 <script src="/assets/js/pages/home-init.js" defer></script>
 <script src="/assets/js/components/footer-nav.js" defer></script>
 <script src="/assets/js/cookie-consent.js" defer></script>
+<script>
+  // Fix CSP violation - move inline onclick to event listener
+  document.getElementById('start-planning-btn')?.addEventListener('click', () => {
+    window.location.href = '/start.html';
+  });
+</script>
 </body>
 </html>

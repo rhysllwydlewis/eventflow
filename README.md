@@ -180,7 +180,6 @@ See [DOCKER_GUIDE.md](DOCKER_GUIDE.md) for details.
 ### Complete Guides
 
 - **[API Documentation](API_DOCUMENTATION.md)** - Complete API reference with examples
-- **[Firebase Storage Guide](FIREBASE_STORAGE_GUIDE.md)** - Using Firebase as primary storage (database + files)
 - **[Deployment Guide](DEPLOYMENT_GUIDE.md)** - Production deployment instructions
 - **[MongoDB Setup (Technical)](.github/docs/MONGODB_SETUP.md)** - Database configuration guide
 - **[Docker Guide](DOCKER_GUIDE.md)** - Docker Compose usage
@@ -192,7 +191,6 @@ See [DOCKER_GUIDE.md](DOCKER_GUIDE.md) for details.
 
 - Node.js & Express.js
 - MongoDB with Mongoose schemas
-- Firebase (Authentication, Firestore, Storage, Analytics)
 - JWT authentication
 - Multer (file uploads)
 - Sharp (image processing)
@@ -325,117 +323,12 @@ Get your real connection string: **[MongoDB Setup Guide](.github/docs/MONGODB_SE
 
 See [.env.example](.env.example) for all options.
 
-## 🔥 Firebase Setup
-
-**Firebase is the primary cloud storage solution for EventFlow** - storing all application data (users, packages, posts, reviews) in Firestore and all media files (photos, images) in Firebase Storage. The system is pre-configured to use Firebase first, with automatic fallback to MongoDB or local storage if Firebase is not available.
-
-EventFlow includes Firebase integration for authentication, real-time database (Firestore), cloud storage, and analytics. Firebase is already configured and ready to use.
-
-📖 **See [FIREBASE_STORAGE_GUIDE.md](FIREBASE_STORAGE_GUIDE.md) for complete setup instructions and troubleshooting.**
-
-### Quick Start
-
-1. **Firebase is pre-configured** with the EventFlow project:
-   - Project ID: `eventflow-ffb12`
-   - Already initialized in the codebase
-   - Configuration files are ready to use
-
-2. **Two Configuration Files Available:**
-   - **For npm/build tools (Vite, Webpack, etc.):**
-
-     ```javascript
-     // Use npm package imports
-     import { auth, db } from './src/config/firebase.js';
-     // Or alternative path:
-     import { auth, db } from './src/firebase.js';
-     ```
-
-   - **For browser (no build step):**
-     ```javascript
-     // Uses CDN imports (already in use)
-     import { auth, db } from '/assets/js/firebase-config.js';
-     ```
-
-3. **Available Services:**
-   - **Authentication** (`auth`) - User sign-in/sign-up with email/password
-   - **Firestore** (`db`) - Real-time NoSQL database
-   - **Storage** - File and image uploads (configured in `firebase-config.js`)
-   - **Analytics** (optional) - User engagement tracking
-
-### Usage Examples
-
-**Authentication:**
-
-```javascript
-import { auth } from './src/config/firebase.js';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-
-// Sign in user
-const userCredential = await signInWithEmailAndPassword(auth, email, password);
-console.log('User:', userCredential.user);
-```
-
-**Firestore Database:**
-
-```javascript
-import { db } from './src/config/firebase.js';
-import { collection, addDoc, getDocs } from 'firebase/firestore';
-
-// Add a document
-const docRef = await addDoc(collection(db, 'events'), {
-  title: 'Wedding',
-  date: '2024-06-15',
-  location: 'London',
-});
-
-// Get all documents
-const querySnapshot = await getDocs(collection(db, 'events'));
-querySnapshot.forEach(doc => {
-  console.log(doc.id, '=>', doc.data());
-});
-```
-
-### Environment Variables (Optional)
-
-While Firebase is pre-configured, you can optionally override settings using environment variables:
-
-```env
-FIREBASE_API_KEY=AIzaSyAbFoGEvaAQcAvjL716cPSs1KDMkriahqc
-FIREBASE_AUTH_DOMAIN=eventflow-ffb12.firebaseapp.com
-FIREBASE_PROJECT_ID=eventflow-ffb12
-FIREBASE_STORAGE_BUCKET=eventflow-ffb12.firebasestorage.app
-FIREBASE_MESSAGING_SENDER_ID=253829522456
-FIREBASE_APP_ID=1:253829522456:web:3fae1bcec63932321bcf6d
-FIREBASE_MEASUREMENT_ID=G-JRT11771YD
-```
-
-### Security Notes
-
-- **API keys are safe to expose** - Firebase API keys are public identifiers
-- Security is enforced through **Firestore Security Rules** and **Storage Rules**
-- See `firestore.rules` and `storage.rules` for access control configuration
-- Never expose Firebase Admin SDK credentials (service account keys) in client code
-
-### For Backend (Node.js)
-
-Use Firebase Admin SDK for server-side operations:
-
-```javascript
-const { getFirestore } = require('./firebase-admin.js');
-const db = getFirestore();
-
-// Server-side database operations
-const snapshot = await db.collection('events').get();
-```
-
-See `firebase-admin.js` for backend Firebase configuration.
-
 ### Database Configuration
 
 **EventFlow uses MongoDB Atlas as the primary database for production deployments:**
 
 1. **MongoDB Atlas (PRIMARY - Recommended for Production)**
-   - The system automatically prioritizes MongoDB over Firebase Firestore and local storage
+   - The system automatically prioritizes MongoDB over local storage
    - All data (users, packages, posts, reviews, etc.) stored in MongoDB Atlas
    - Configured in `db-unified.js` to try MongoDB first
    - Set `MONGODB_URI` in environment variables with your Atlas connection string
@@ -452,44 +345,29 @@ See `firebase-admin.js` for backend Firebase configuration.
    MONGODB_DB_NAME=eventflow
    ```
 
-2. **Firebase Firestore (Fallback Option)**
-   - If MongoDB is not available, the system falls back to Firebase Firestore
-   - Useful for Firebase-specific features or as an alternative cloud database
-   - Set `FIREBASE_PROJECT_ID` or `FIREBASE_SERVICE_ACCOUNT_KEY` in environment variables
-
-   ```env
-   # Firebase Configuration (optional fallback)
-   FIREBASE_PROJECT_ID=eventflow-ffb12
-   FIREBASE_SERVICE_ACCOUNT_KEY='{"type":"service_account","project_id":"eventflow-ffb12",...}'
-   ```
-
-3. **Local Storage (Development Only)**
-   - If neither MongoDB nor Firebase is configured, falls back to local file storage
+2. **Local Storage (Development Only)**
+   - If MongoDB is not configured, falls back to local file storage
    - **Not suitable for production** - data is stored in JSON files
    - Useful for quick local development and testing
 
-4. **File Storage (Photos & Media)**
-   - Photos and media files are stored in Firebase Storage
-   - Supplier photos use Firebase Storage (`supplier-photo-upload.js`)
-   - Storage bucket: `eventflow-ffb12.firebasestorage.app`
-   - Set `STORAGE_TYPE=firebase` in `.env` (already default)
+3. **File Storage (Photos & Media)**
+   - Photos and media files are stored locally or in S3
+   - Supplier photos are uploaded via the photo upload system
+   - Set `STORAGE_TYPE` in `.env` (local or s3)
 
    ```env
    # Storage Configuration
-   STORAGE_TYPE=firebase
-   FIREBASE_STORAGE_BUCKET=eventflow-ffb12.firebasestorage.app
+   STORAGE_TYPE=local  # or 's3' for AWS S3
    ```
 
-5. **How Database Priority Works**:
+4. **How Database Priority Works**:
    - On startup, `db-unified.js` attempts MongoDB connection first (PRIMARY)
-   - If MongoDB is not available or fails, it tries Firebase Firestore
-   - If neither cloud database is configured, falls back to local files (dev only)
+   - If MongoDB is not available, falls back to local files (dev only)
    - Check logs on startup for connection status:
      - `✅ Using MongoDB for data storage (PRIMARY)` - Production ready
-     - `✅ Using Firebase Firestore for data storage` - Fallback active
      - `⚠️  Using local file storage` - Development only, not for production
 
-**To verify your database is connected**: Check server logs after starting the app, or visit `/api/health` endpoint. You should see MongoDB or Firestore status, not local storage in production.
+**To verify your database is connected**: Check server logs after starting the app, or visit `/api/health` endpoint. You should see MongoDB status, not local storage in production.
 
 **Production Deployment Checklist**:
 
@@ -520,10 +398,8 @@ eventflow/
 │   ├── assets/
 │   │   ├── css/      # Stylesheets
 │   │   └── js/       # JavaScript modules
-│   │       └── firebase-config.js # Firebase config (CDN)
 │   └── *.html        # Page templates
 ├── data/             # JSON data storage (development)
-├── firebase-admin.js # Firebase Admin SDK (backend)
 ├── photo-upload.js   # Photo upload utilities
 ├── reviews.js        # Reviews system module
 ├── search.js         # Search & discovery module
