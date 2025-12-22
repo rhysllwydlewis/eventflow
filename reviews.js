@@ -5,7 +5,8 @@
 
 'use strict';
 
-const { read, write, uid } = require('./store');
+const dbUnified = require('./db-unified');
+const { uid } = require('./store');
 
 /**
  * Create a review for a supplier
@@ -13,7 +14,7 @@ const { read, write, uid } = require('./store');
  * @returns {Promise<Object>} Created review
  */
 async function createReview(reviewData) {
-  const reviews = await read('reviews');
+  const reviews = await dbUnified.read('reviews');
 
   const review = {
     id: uid('rev'),
@@ -32,7 +33,7 @@ async function createReview(reviewData) {
   };
 
   reviews.push(review);
-  await write('reviews', reviews);
+  await dbUnified.write('reviews', reviews);
 
   // Update supplier's average rating
   await updateSupplierRating(reviewData.supplierId);
@@ -46,8 +47,8 @@ async function createReview(reviewData) {
  * @returns {Promise<void>}
  */
 async function updateSupplierRating(supplierId) {
-  const reviews = await read('reviews');
-  const suppliers = await read('suppliers');
+  const reviews = await dbUnified.read('reviews');
+  const suppliers = await dbUnified.read('suppliers');
 
   const supplierReviews = reviews.filter(r => r.supplierId === supplierId && r.approved);
 
@@ -65,7 +66,7 @@ async function updateSupplierRating(supplierId) {
     supplier.reviewCount = 0;
   }
 
-  await write('suppliers', suppliers);
+  await dbUnified.write('suppliers', suppliers);
 }
 
 /**
@@ -75,7 +76,7 @@ async function updateSupplierRating(supplierId) {
  * @returns {Promise<Array>} List of reviews
  */
 async function getSupplierReviews(supplierId, options = {}) {
-  const reviews = await read('reviews');
+  const reviews = await dbUnified.read('reviews');
 
   let filtered = reviews.filter(r => r.supplierId === supplierId);
 
@@ -107,7 +108,7 @@ async function getSupplierReviews(supplierId, options = {}) {
  * @returns {Promise<Object>} Updated review
  */
 async function approveReview(reviewId, approved, adminId) {
-  const reviews = await read('reviews');
+  const reviews = await dbUnified.read('reviews');
   const review = reviews.find(r => r.id === reviewId);
 
   if (!review) {
@@ -118,7 +119,7 @@ async function approveReview(reviewId, approved, adminId) {
   review.approvedAt = new Date().toISOString();
   review.approvedBy = adminId;
 
-  await write('reviews', reviews);
+  await dbUnified.write('reviews', reviews);
 
   // Update supplier rating
   await updateSupplierRating(review.supplierId);
@@ -132,7 +133,7 @@ async function approveReview(reviewId, approved, adminId) {
  * @returns {Promise<Object>} Updated review
  */
 async function markHelpful(reviewId) {
-  const reviews = await read('reviews');
+  const reviews = await dbUnified.read('reviews');
   const review = reviews.find(r => r.id === reviewId);
 
   if (!review) {
@@ -140,7 +141,7 @@ async function markHelpful(reviewId) {
   }
 
   review.helpful = (review.helpful || 0) + 1;
-  await write('reviews', reviews);
+  await dbUnified.write('reviews', reviews);
 
   return review;
 }
@@ -150,8 +151,8 @@ async function markHelpful(reviewId) {
  * @returns {Promise<Array>} List of pending reviews
  */
 async function getPendingReviews() {
-  const reviews = await read('reviews');
-  const suppliers = await read('suppliers');
+  const reviews = await dbUnified.read('reviews');
+  const suppliers = await dbUnified.read('suppliers');
 
   const pending = reviews
     .filter(r => !r.approved)
@@ -173,7 +174,7 @@ async function getPendingReviews() {
  * @returns {Promise<Object>} Rating distribution
  */
 async function getRatingDistribution(supplierId) {
-  const reviews = await read('reviews');
+  const reviews = await dbUnified.read('reviews');
   const supplierReviews = reviews.filter(r => r.supplierId === supplierId && r.approved);
 
   const distribution = {
@@ -206,7 +207,7 @@ async function getRatingDistribution(supplierId) {
  * @returns {Promise<void>}
  */
 async function deleteReview(reviewId, userId, isAdmin = false) {
-  const reviews = await read('reviews');
+  const reviews = await dbUnified.read('reviews');
   const review = reviews.find(r => r.id === reviewId);
 
   if (!review) {
@@ -221,7 +222,7 @@ async function deleteReview(reviewId, userId, isAdmin = false) {
   const supplierId = review.supplierId;
   const filtered = reviews.filter(r => r.id !== reviewId);
 
-  await write('reviews', filtered);
+  await dbUnified.write('reviews', filtered);
 
   // Update supplier rating
   await updateSupplierRating(supplierId);

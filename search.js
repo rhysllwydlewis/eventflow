@@ -5,7 +5,7 @@
 
 'use strict';
 
-const { read } = require('./store');
+const dbUnified = require('./db-unified');
 
 /**
  * Search suppliers with advanced filters
@@ -13,8 +13,8 @@ const { read } = require('./store');
  * @returns {Promise<Object>} Search results
  */
 async function searchSuppliers(query) {
-  const suppliers = await read('suppliers');
-  const reviews = await read('reviews'); // TODO: Use for rating-based sorting
+  const suppliers = await dbUnified.read('suppliers');
+  const reviews = await dbUnified.read('reviews'); // TODO: Use for rating-based sorting
 
   let results = suppliers.filter(s => s.approved);
 
@@ -162,7 +162,7 @@ async function searchSuppliers(query) {
  * @returns {Promise<Array>} Trending suppliers
  */
 async function getTrendingSuppliers(limit = 10) {
-  const suppliers = await read('suppliers');
+  const suppliers = await dbUnified.read('suppliers');
 
   // Filter approved and sort by view count (if available) or review count
   const trending = suppliers
@@ -183,7 +183,7 @@ async function getTrendingSuppliers(limit = 10) {
  * @returns {Promise<Array>} New suppliers
  */
 async function getNewArrivals(limit = 10) {
-  const suppliers = await read('suppliers');
+  const suppliers = await dbUnified.read('suppliers');
 
   const newSuppliers = suppliers
     .filter(s => s.approved)
@@ -199,7 +199,7 @@ async function getNewArrivals(limit = 10) {
  * @returns {Promise<Array>} Popular packages
  */
 async function getPopularPackages(limit = 10) {
-  const packages = await read('packages');
+  const packages = await dbUnified.read('packages');
 
   const popular = packages
     .filter(p => p.approved)
@@ -220,8 +220,8 @@ async function getPopularPackages(limit = 10) {
  * @returns {Promise<Array>} Recommended suppliers
  */
 async function getRecommendations(userId, limit = 10) {
-  const suppliers = await read('suppliers');
-  const searchHistory = (await read('searchHistory')) || [];
+  const suppliers = await dbUnified.read('suppliers');
+  const searchHistory = (await dbUnified.read('searchHistory')) || [];
 
   // Get user's search history
   const userHistory = searchHistory
@@ -295,7 +295,7 @@ async function getRecommendations(userId, limit = 10) {
  * @returns {Promise<void>}
  */
 async function saveSearchHistory(userId, query) {
-  const searchHistory = (await read('searchHistory')) || [];
+  const searchHistory = (await dbUnified.read('searchHistory')) || [];
 
   const historyEntry = {
     id: `hist_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -313,8 +313,7 @@ async function saveSearchHistory(userId, query) {
     searchHistory.splice(0, searchHistory.length - 1000);
   }
 
-  const { write } = require('./store');
-  await write('searchHistory', searchHistory);
+  await dbUnified.write('searchHistory', searchHistory);
 }
 
 /**
@@ -324,7 +323,7 @@ async function saveSearchHistory(userId, query) {
  * @returns {Promise<Array>} Search history
  */
 async function getUserSearchHistory(userId, limit = 20) {
-  const searchHistory = (await read('searchHistory')) || [];
+  const searchHistory = (await dbUnified.read('searchHistory')) || [];
 
   return searchHistory
     .filter(h => h.userId === userId)
@@ -337,7 +336,7 @@ async function getUserSearchHistory(userId, limit = 20) {
  * @returns {Promise<Array>} List of categories with counts
  */
 async function getCategories() {
-  const suppliers = await read('suppliers');
+  const suppliers = await dbUnified.read('suppliers');
 
   const categoryCounts = {};
   suppliers
@@ -358,7 +357,7 @@ async function getCategories() {
  * @returns {Promise<Array>} List of amenities with counts
  */
 async function getAmenities() {
-  const suppliers = await read('suppliers');
+  const suppliers = await dbUnified.read('suppliers');
 
   const amenityCounts = {};
   suppliers
