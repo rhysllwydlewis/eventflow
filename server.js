@@ -3755,6 +3755,7 @@ app.get('/api/health', healthCheckLimiter, async (_req, res) => {
         response.status = 'degraded';
         if (mongoError) {
           response.services.mongodbError = mongoError;
+          response.services.lastConnectionError = mongoError; // For debugging
         }
       } else {
         response.services.mongodb = 'disconnected';
@@ -3767,15 +3768,17 @@ app.get('/api/health', healthCheckLimiter, async (_req, res) => {
     // If MongoDB check fails, report it but still return healthy
     response.services.mongodb = 'unknown';
     response.services.mongodbError = error.message;
+    response.services.lastConnectionError = error.message;
     response.status = 'degraded';
   }
 
-  // Check database status from unified layer
+  // Check database status from unified layer and determine active backend
   try {
     const dbStatus = dbUnified.getDatabaseStatus ? dbUnified.getDatabaseStatus() : null;
 
     if (dbStatus) {
       response.services.database = dbStatus.type;
+      response.services.activeBackend = dbStatus.type; // mongodb or local
 
       // Determine database status based on state
       if (dbStatus.connected) {
@@ -3789,6 +3792,9 @@ app.get('/api/health', healthCheckLimiter, async (_req, res) => {
 
       if (dbStatus.error) {
         response.services.databaseError = dbStatus.error;
+        if (!response.services.lastConnectionError) {
+          response.services.lastConnectionError = dbStatus.error;
+        }
       }
     } else {
       // Fallback for older db-unified versions
@@ -3796,10 +3802,12 @@ app.get('/api/health', healthCheckLimiter, async (_req, res) => {
         ? dbUnified.getDatabaseType()
         : 'unknown';
       response.services.databaseStatus = 'unknown';
+      response.services.activeBackend = response.services.database;
     }
   } catch (error) {
     response.services.database = 'unknown';
     response.services.databaseError = error.message;
+    response.services.activeBackend = 'unknown';
   }
 
   // Add additional service information
@@ -3828,15 +3836,36 @@ app.get('/api/ready', healthCheckLimiter, async (_req, res) => {
 
   // Check if MongoDB is actually connected
   const isMongoConnected = mongoDb.isConnected && mongoDb.isConnected();
+  const mongoState = mongoDb.getConnectionState ? mongoDb.getConnectionState() : 'disconnected';
+  const mongoError = mongoDb.getConnectionError ? mongoDb.getConnectionError() : null;
+
+  // Get active backend from unified database layer
+  let activeBackend = 'unknown';
+  try {
+    const dbStatus = dbUnified.getDatabaseStatus ? dbUnified.getDatabaseStatus() : null;
+    if (dbStatus) {
+      activeBackend = dbStatus.type; // 'mongodb' or 'local'
+    }
+  } catch (error) {
+    // Ignore errors in determining backend
+  }
 
   if (!isMongoConnected) {
     return res.status(503).json({
       status: 'not_ready',
       timestamp,
       reason: 'Database not connected',
+      details: mongoError || 'MongoDB connection is not established',
       services: {
         server: 'running',
-        mongodb: mongoDb.getConnectionState ? mongoDb.getConnectionState() : 'disconnected',
+        mongodb: mongoState,
+        activeBackend: activeBackend,
+      },
+      debug: {
+        mongoState: mongoState,
+        lastConnectionError: mongoError,
+        message:
+          'Server is operational but MongoDB is not connected. Using fallback storage if configured.',
       },
     });
   }
@@ -3848,7 +3877,9 @@ app.get('/api/ready', healthCheckLimiter, async (_req, res) => {
     services: {
       server: 'running',
       mongodb: 'connected',
+      activeBackend: 'mongodb',
     },
+    message: 'All systems operational',
   });
 });
 
