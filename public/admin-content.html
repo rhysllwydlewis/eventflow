@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang='en-GB'>
+<head>
+<meta charset='utf-8'>
+<meta name='viewport' content='width=device-width,initial-scale=1'>
+<title>Content Management — EventFlow Admin</title>
+<link rel='stylesheet' href='/assets/css/styles.css'>
+<link rel='stylesheet' href='/assets/css/eventflow-17.0.0.css'>
+<link rel='stylesheet' href='/assets/css/utilities.css'>
+<link rel='stylesheet' href='/assets/css/components.css'>
+<link rel='stylesheet' href='/assets/css/animations.css'>
+<link rel='icon' href='/favicon.svg'>
+<style>
+  body{background:#f5f5f5;color:#1a1a1a;}
+  .section{background:#f5f5f5;}
+  .container{background:#f5f5f5;}
+  .card{background:#fff;border:1px solid #e4e4e7;padding:1.5rem;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.1);margin-bottom:1rem;}
+  h1, h2, h3{color:#0a0a0a;}
+  .small{color:#52525b;}
+  
+  /* Admin sidebar styles */
+  .admin-sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 260px;
+    background: #111;
+    color: #f5f5f5;
+    border-right: 1px solid #27272a;
+    padding: 1rem;
+    overflow-y: auto;
+    z-index: 1000;
+    transition: transform 0.3s;
+  }
+  
+  .admin-sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #27272a;
+  }
+  
+  .admin-sidebar-header h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    color: #f5f5f5;
+  }
+  
+  .sidebar-toggle {
+    display: none;
+    background: none;
+    border: none;
+    color: #f5f5f5;
+    font-size: 1.5rem;
+    cursor: pointer;
+  }
+  
+  .admin-sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  
+  .admin-nav-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    color: #d4d4d8;
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+  
+  .admin-nav-link:hover {
+    background: #1a1a1a;
+    color: #f5f5f5;
+  }
+  
+  .admin-nav-link.active {
+    background: #3b82f6;
+    color: #fff;
+  }
+  
+  .nav-icon {
+    font-size: 1.25rem;
+  }
+  
+  .nav-label {
+    flex: 1;
+    font-weight: 500;
+  }
+  
+  .nav-badge {
+    background: #3b82f6;
+    color: #fff;
+    font-size: 0.75rem;
+    padding: 0.125rem 0.5rem;
+    border-radius: 999px;
+    font-weight: 600;
+    display: none;
+  }
+  
+  .nav-badge.badge-warning {
+    background: #f59e0b;
+  }
+  
+  .nav-badge.badge-danger {
+    background: #ef4444;
+  }
+  
+  main.section {
+    margin-left: 260px;
+    transition: margin-left 0.3s;
+  }
+  
+  @media (max-width: 1024px) {
+    .admin-sidebar {
+      transform: translateX(-100%);
+    }
+    
+    .admin-sidebar.open {
+      transform: translateX(0);
+    }
+    
+    .sidebar-toggle {
+      display: block;
+    }
+    
+    main.section {
+      margin-left: 0;
+    }
+  }
+  
+  .form-row {
+    margin-bottom: 1rem;
+  }
+  
+  .form-row label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #1a1a1a;
+  }
+  
+  .form-row input,
+  .form-row textarea,
+  .form-row select {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #d4d4d8;
+    border-radius: 4px;
+    font-size: 14px;
+  }
+  
+  .btn {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s;
+  }
+  
+  .btn-primary {
+    background: #3b82f6;
+    color: #fff;
+  }
+  
+  .btn-primary:hover {
+    background: #2563eb;
+  }
+  
+  .btn-secondary {
+    background: #6b7280;
+    color: #fff;
+  }
+  
+  .btn-secondary:hover {
+    background: #4b5563;
+  }
+  
+  .btn-success {
+    background: #22c55e;
+    color: #fff;
+  }
+  
+  .btn-success:hover {
+    background: #16a34a;
+  }
+  
+  .btn-danger {
+    background: #ef4444;
+    color: #fff;
+  }
+  
+  .btn-danger:hover {
+    background: #dc2626;
+  }
+  
+  .content-section {
+    display: grid;
+    gap: 1rem;
+  }
+  
+  .action-buttons {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+  }
+  
+  .tab-buttons {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    border-bottom: 2px solid #e4e4e7;
+  }
+  
+  .tab-button {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-weight: 500;
+    color: #6b7280;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+  }
+  
+  .tab-button.active {
+    color: #3b82f6;
+    border-bottom-color: #3b82f6;
+  }
+  
+  .tab-content {
+    display: none;
+  }
+  
+  .tab-content.active {
+    display: block;
+  }
+  
+  .faq-item {
+    padding: 1rem;
+    background: #f9fafb;
+    border-radius: 4px;
+    margin-bottom: 0.5rem;
+  }
+  
+  .announcement-item {
+    padding: 1rem;
+    background: #eff6ff;
+    border-left: 4px solid #3b82f6;
+    margin-bottom: 0.5rem;
+  }
+</style>
+</head>
+<body>
+<aside class="admin-sidebar" id="adminSidebar">
+  <div class="admin-sidebar-header">
+    <h3>Admin Panel</h3>
+    <button id="sidebarToggle" class="sidebar-toggle" aria-label="Toggle sidebar">☰</button>
+  </div>
+  <nav class="admin-sidebar-nav">
+    <a href="/admin.html" class="admin-nav-link">
+      <span class="nav-icon">📊</span>
+      <span class="nav-label">Dashboard</span>
+    </a>
+    <a href="/admin-users.html" class="admin-nav-link">
+      <span class="nav-icon">👥</span>
+      <span class="nav-label">Users</span>
+      <span class="nav-badge" id="newUsersCount"></span>
+    </a>
+    <a href="/admin-packages.html" class="admin-nav-link">
+      <span class="nav-icon">📦</span>
+      <span class="nav-label">Packages</span>
+    </a>
+    <a href="/admin-photos.html" class="admin-nav-link">
+      <span class="nav-icon">📷</span>
+      <span class="nav-label">Photos</span>
+      <span class="nav-badge badge-warning" id="pendingPhotosCount"></span>
+    </a>
+    <a href="/admin-tickets.html" class="admin-nav-link">
+      <span class="nav-icon">🎫</span>
+      <span class="nav-label">Tickets</span>
+      <span class="nav-badge badge-danger" id="openTicketsCount"></span>
+    </a>
+    <a href="/admin-reports.html" class="admin-nav-link">
+      <span class="nav-icon">⚠️</span>
+      <span class="nav-label">Reports</span>
+    </a>
+    <a href="/admin-audit.html" class="admin-nav-link">
+      <span class="nav-icon">📋</span>
+      <span class="nav-label">Audit Log</span>
+    </a>
+    <a href="/admin-homepage.html" class="admin-nav-link">
+      <span class="nav-icon">🏠</span>
+      <span class="nav-label">Homepage</span>
+    </a>
+    <a href="/admin-payments.html" class="admin-nav-link">
+      <span class="nav-icon">💳</span>
+      <span class="nav-label">Payments</span>
+    </a>
+    <a href="/admin-content.html" class="admin-nav-link">
+      <span class="nav-icon">📝</span>
+      <span class="nav-label">Content</span>
+    </a>
+    <a href="/admin-settings.html" class="admin-nav-link">
+      <span class="nav-icon">⚙️</span>
+      <span class="nav-label">Settings</span>
+    </a>
+  </nav>
+</aside>
+
+<main class="section">
+  <div class="container">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;">
+      <h1 style="margin:0;">Content Management</h1>
+      <button class="btn btn-secondary" onclick="location.href='/admin.html'">← Back to Dashboard</button>
+    </div>
+    
+    <div class="tab-buttons">
+      <button class="tab-button active" data-tab="homepage">Homepage</button>
+      <button class="tab-button" data-tab="announcements">Announcements</button>
+      <button class="tab-button" data-tab="faqs">FAQs</button>
+      <button class="tab-button" data-tab="featured">Featured Packages</button>
+    </div>
+    
+    <!-- Homepage Content Tab -->
+    <div id="homepage" class="tab-content active">
+      <div class="card">
+        <h2>Homepage Hero Section</h2>
+        <form id="heroForm">
+          <div class="form-row">
+            <label for="heroTitle">Hero Title</label>
+            <input type="text" id="heroTitle" placeholder="Plan Your Perfect Event">
+          </div>
+          
+          <div class="form-row">
+            <label for="heroSubtitle">Hero Subtitle</label>
+            <textarea id="heroSubtitle" rows="2" placeholder="Discover amazing suppliers and packages for your special day"></textarea>
+          </div>
+          
+          <div class="form-row">
+            <label for="heroCTA">Call-to-Action Text</label>
+            <input type="text" id="heroCTA" placeholder="Start Planning">
+          </div>
+          
+          <div class="action-buttons">
+            <button type="submit" class="btn btn-primary">Save Homepage Content</button>
+            <button type="button" class="btn btn-secondary" id="previewHero">Preview</button>
+          </div>
+        </form>
+      </div>
+    </div>
+    
+    <!-- Announcements Tab -->
+    <div id="announcements" class="tab-content">
+      <div class="card">
+        <h2>Site-Wide Announcements</h2>
+        <p class="small">Create announcements that appear at the top of the site for all users.</p>
+        
+        <button class="btn btn-success" id="addAnnouncementBtn" style="margin-bottom:1rem;">+ Add Announcement</button>
+        
+        <div id="announcementsList">
+          <p class="small">Loading announcements...</p>
+        </div>
+      </div>
+    </div>
+    
+    <!-- FAQs Tab -->
+    <div id="faqs" class="tab-content">
+      <div class="card">
+        <h2>Manage FAQs</h2>
+        <p class="small">Add, edit, or remove frequently asked questions.</p>
+        
+        <button class="btn btn-success" id="addFAQBtn" style="margin-bottom:1rem;">+ Add FAQ</button>
+        
+        <div id="faqsList">
+          <p class="small">Loading FAQs...</p>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Featured Packages Tab -->
+    <div id="featured" class="tab-content">
+      <div class="card">
+        <h2>Featured Packages</h2>
+        <p class="small">Select packages to feature on the homepage.</p>
+        
+        <div id="featuredPackagesList">
+          <p class="small">Loading packages...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer class="footer" role="contentinfo">
+  <div class="container" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+    <div><strong>EventFlow</strong><br><span class="small">Admin Panel</span></div>
+    <div class="small"><a href="/admin.html">Dashboard</a> · <a href="/admin-users.html">Users</a></div>
+  </div>
+</footer>
+
+<script src="/assets/js/admin-shared.js"></script>
+<script>
+(function() {
+  // Tab switching
+  document.querySelectorAll('.tab-button').forEach(button => {
+    button.addEventListener('click', () => {
+      const tabName = button.dataset.tab;
+      
+      // Update active states
+      document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+      
+      button.classList.add('active');
+      document.getElementById(tabName).classList.add('active');
+    });
+  });
+  
+  // Homepage hero form
+  document.getElementById('heroForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const data = {
+      title: document.getElementById('heroTitle').value,
+      subtitle: document.getElementById('heroSubtitle').value,
+      ctaText: document.getElementById('heroCTA').value,
+    };
+    
+    try {
+      await AdminShared.api('/api/admin/content/homepage', 'PUT', data);
+      AdminShared.showToast('Homepage content updated successfully', 'success');
+    } catch (err) {
+      AdminShared.showToast(`Failed to update: ${err.message}`, 'error');
+    }
+  });
+  
+  // Preview hero
+  document.getElementById('previewHero').addEventListener('click', () => {
+    window.open('/', '_blank');
+  });
+  
+  // Load homepage content
+  async function loadHomepageContent() {
+    try {
+      const content = await AdminShared.api('/api/admin/content/homepage');
+      document.getElementById('heroTitle').value = content.title || '';
+      document.getElementById('heroSubtitle').value = content.subtitle || '';
+      document.getElementById('heroCTA').value = content.ctaText || '';
+    } catch (err) {
+      console.error('Failed to load homepage content:', err);
+    }
+  }
+  
+  // Add announcement
+  document.getElementById('addAnnouncementBtn').addEventListener('click', () => {
+    showAnnouncementModal();
+  });
+  
+  function showAnnouncementModal(announcement = null) {
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999;';
+    
+    modal.innerHTML = `
+      <div class="modal" style="max-width:600px;background:#fff;padding:2rem;border-radius:8px;">
+        <h3>${announcement ? 'Edit' : 'Add'} Announcement</h3>
+        <form id="announcementForm">
+          <div class="form-row">
+            <label>Message</label>
+            <textarea id="announcementMessage" rows="3" required>${announcement ? AdminShared.escapeHtml(announcement.message) : ''}</textarea>
+          </div>
+          
+          <div class="form-row">
+            <label>Type</label>
+            <select id="announcementType">
+              <option value="info" ${announcement && announcement.type === 'info' ? 'selected' : ''}>Info</option>
+              <option value="warning" ${announcement && announcement.type === 'warning' ? 'selected' : ''}>Warning</option>
+              <option value="success" ${announcement && announcement.type === 'success' ? 'selected' : ''}>Success</option>
+            </select>
+          </div>
+          
+          <div class="form-row">
+            <label>
+              <input type="checkbox" id="announcementActive" ${announcement && announcement.active ? 'checked' : ''}>
+              Active (visible to users)
+            </label>
+          </div>
+          
+          <div class="action-buttons">
+            <button type="submit" class="btn btn-primary">${announcement ? 'Update' : 'Create'} Announcement</button>
+            <button type="button" class="btn btn-secondary" id="closeModal">Cancel</button>
+          </div>
+        </form>
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    modal.querySelector('#closeModal').addEventListener('click', () => modal.remove());
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) modal.remove();
+    });
+    
+    modal.querySelector('#announcementForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const data = {
+        message: document.getElementById('announcementMessage').value,
+        type: document.getElementById('announcementType').value,
+        active: document.getElementById('announcementActive').checked,
+      };
+      
+      try {
+        if (announcement) {
+          await AdminShared.api(`/api/admin/content/announcements/${announcement.id}`, 'PUT', data);
+        } else {
+          await AdminShared.api('/api/admin/content/announcements', 'POST', data);
+        }
+        AdminShared.showToast('Announcement saved successfully', 'success');
+        modal.remove();
+        loadAnnouncements();
+      } catch (err) {
+        AdminShared.showToast(`Failed to save: ${err.message}`, 'error');
+      }
+    });
+  }
+  
+  // Load announcements
+  async function loadAnnouncements() {
+    try {
+      const announcements = await AdminShared.api('/api/admin/content/announcements');
+      const container = document.getElementById('announcementsList');
+      
+      if (!announcements || announcements.length === 0) {
+        container.innerHTML = '<p class="small">No announcements yet. Click "Add Announcement" to create one.</p>';
+        return;
+      }
+      
+      container.innerHTML = announcements.map(a => `
+        <div class="announcement-item">
+          <div style="display:flex;justify-content:space-between;align-items:start;">
+            <div style="flex:1;">
+              <strong>${AdminShared.escapeHtml(a.message)}</strong>
+              <div class="small" style="margin-top:0.25rem;">
+                Type: ${a.type} • ${a.active ? '<span style="color:#22c55e;">Active</span>' : '<span style="color:#6b7280;">Inactive</span>'}
+              </div>
+            </div>
+            <div style="display:flex;gap:0.5rem;">
+              <button class="btn btn-secondary btn-small" onclick="editAnnouncement('${a.id}')">Edit</button>
+              <button class="btn btn-danger btn-small" onclick="deleteAnnouncement('${a.id}')">Delete</button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    } catch (err) {
+      document.getElementById('announcementsList').innerHTML = '<p class="small" style="color:#ef4444;">Failed to load announcements</p>';
+    }
+  }
+  
+  // Add FAQ
+  document.getElementById('addFAQBtn').addEventListener('click', () => {
+    showFAQModal();
+  });
+  
+  function showFAQModal(faq = null) {
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999;';
+    
+    modal.innerHTML = `
+      <div class="modal" style="max-width:600px;background:#fff;padding:2rem;border-radius:8px;">
+        <h3>${faq ? 'Edit' : 'Add'} FAQ</h3>
+        <form id="faqForm">
+          <div class="form-row">
+            <label>Question</label>
+            <input type="text" id="faqQuestion" required value="${faq ? AdminShared.escapeHtml(faq.question) : ''}">
+          </div>
+          
+          <div class="form-row">
+            <label>Answer</label>
+            <textarea id="faqAnswer" rows="4" required>${faq ? AdminShared.escapeHtml(faq.answer) : ''}</textarea>
+          </div>
+          
+          <div class="form-row">
+            <label>Category</label>
+            <input type="text" id="faqCategory" placeholder="General" value="${faq ? AdminShared.escapeHtml(faq.category || '') : ''}">
+          </div>
+          
+          <div class="action-buttons">
+            <button type="submit" class="btn btn-primary">${faq ? 'Update' : 'Create'} FAQ</button>
+            <button type="button" class="btn btn-secondary" id="closeModal">Cancel</button>
+          </div>
+        </form>
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    modal.querySelector('#closeModal').addEventListener('click', () => modal.remove());
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) modal.remove();
+    });
+    
+    modal.querySelector('#faqForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const data = {
+        question: document.getElementById('faqQuestion').value,
+        answer: document.getElementById('faqAnswer').value,
+        category: document.getElementById('faqCategory').value || 'General',
+      };
+      
+      try {
+        if (faq) {
+          await AdminShared.api(`/api/admin/content/faqs/${faq.id}`, 'PUT', data);
+        } else {
+          await AdminShared.api('/api/admin/content/faqs', 'POST', data);
+        }
+        AdminShared.showToast('FAQ saved successfully', 'success');
+        modal.remove();
+        loadFAQs();
+      } catch (err) {
+        AdminShared.showToast(`Failed to save: ${err.message}`, 'error');
+      }
+    });
+  }
+  
+  // Load FAQs
+  async function loadFAQs() {
+    try {
+      const faqs = await AdminShared.api('/api/admin/content/faqs');
+      const container = document.getElementById('faqsList');
+      
+      if (!faqs || faqs.length === 0) {
+        container.innerHTML = '<p class="small">No FAQs yet. Click "Add FAQ" to create one.</p>';
+        return;
+      }
+      
+      container.innerHTML = faqs.map(f => `
+        <div class="faq-item">
+          <div style="display:flex;justify-content:space-between;align-items:start;">
+            <div style="flex:1;">
+              <strong>${AdminShared.escapeHtml(f.question)}</strong>
+              <p class="small" style="margin:0.5rem 0 0 0;">${AdminShared.escapeHtml(f.answer)}</p>
+              <div class="small" style="margin-top:0.5rem;color:#9ca3af;">Category: ${AdminShared.escapeHtml(f.category || 'General')}</div>
+            </div>
+            <div style="display:flex;gap:0.5rem;">
+              <button class="btn btn-secondary btn-small" onclick="editFAQ('${f.id}')">Edit</button>
+              <button class="btn btn-danger btn-small" onclick="deleteFAQ('${f.id}')">Delete</button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    } catch (err) {
+      document.getElementById('faqsList').innerHTML = '<p class="small" style="color:#ef4444;">Failed to load FAQs</p>';
+    }
+  }
+  
+  // Load featured packages
+  async function loadFeaturedPackages() {
+    try {
+      const packages = await AdminShared.api('/api/admin/packages?featured=true');
+      const container = document.getElementById('featuredPackagesList');
+      
+      if (!packages || !packages.items || packages.items.length === 0) {
+        container.innerHTML = '<p class="small">No featured packages. Go to Package Management to feature packages.</p>';
+        return;
+      }
+      
+      container.innerHTML = packages.items.map(p => `
+        <div style="padding:1rem;background:#f9fafb;border-radius:4px;margin-bottom:0.5rem;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div>
+              <strong>${AdminShared.escapeHtml(p.title)}</strong>
+              <div class="small">Supplier: ${AdminShared.escapeHtml(p.supplierName || 'Unknown')}</div>
+            </div>
+            <button class="btn btn-danger btn-small" onclick="unfeaturePackage('${p.id}')">Remove Featured</button>
+          </div>
+        </div>
+      `).join('');
+    } catch (err) {
+      document.getElementById('featuredPackagesList').innerHTML = '<p class="small" style="color:#ef4444;">Failed to load featured packages</p>';
+    }
+  }
+  
+  // Global functions for inline onclick handlers
+  window.editAnnouncement = async (id) => {
+    try {
+      const announcement = await AdminShared.api(`/api/admin/content/announcements/${id}`);
+      showAnnouncementModal(announcement);
+    } catch (err) {
+      AdminShared.showToast(`Failed to load announcement: ${err.message}`, 'error');
+    }
+  };
+  
+  window.deleteAnnouncement = async (id) => {
+    if (!AdminShared.confirm('Delete this announcement?')) return;
+    
+    try {
+      await AdminShared.api(`/api/admin/content/announcements/${id}`, 'DELETE');
+      AdminShared.showToast('Announcement deleted', 'success');
+      loadAnnouncements();
+    } catch (err) {
+      AdminShared.showToast(`Failed to delete: ${err.message}`, 'error');
+    }
+  };
+  
+  window.editFAQ = async (id) => {
+    try {
+      const faq = await AdminShared.api(`/api/admin/content/faqs/${id}`);
+      showFAQModal(faq);
+    } catch (err) {
+      AdminShared.showToast(`Failed to load FAQ: ${err.message}`, 'error');
+    }
+  };
+  
+  window.deleteFAQ = async (id) => {
+    if (!AdminShared.confirm('Delete this FAQ?')) return;
+    
+    try {
+      await AdminShared.api(`/api/admin/content/faqs/${id}`, 'DELETE');
+      AdminShared.showToast('FAQ deleted', 'success');
+      loadFAQs();
+    } catch (err) {
+      AdminShared.showToast(`Failed to delete: ${err.message}`, 'error');
+    }
+  };
+  
+  window.unfeaturePackage = async (id) => {
+    if (!AdminShared.confirm('Remove this package from featured?')) return;
+    
+    try {
+      await AdminShared.api(`/api/admin/packages/${id}`, 'PUT', { featured: false });
+      AdminShared.showToast('Package unfeatured', 'success');
+      loadFeaturedPackages();
+    } catch (err) {
+      AdminShared.showToast(`Failed to update: ${err.message}`, 'error');
+    }
+  };
+  
+  // Initial load
+  loadHomepageContent();
+  loadAnnouncements();
+  loadFAQs();
+  loadFeaturedPackages();
+})();
+</script>
+</body>
+</html>
