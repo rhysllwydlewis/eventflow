@@ -178,11 +178,11 @@
     }
 
     let rows =
-      '<tr><th>Name</th><th>Approved</th><th>Pro plan</th><th>Score</th><th>Tags</th><th>Actions</th></tr>';
+      '<tr><th>Name</th><th>Email</th><th>Approved</th><th>Pro plan</th><th>Score</th><th>Tags</th><th>Actions</th></tr>';
     const items = (resp && resp.items) || [];
 
     if (!items.length) {
-      el.innerHTML = '<tr><td colspan="6">No suppliers yet.</td></tr>';
+      el.innerHTML = '<tr><td colspan="7">No suppliers yet.</td></tr>';
       return;
     }
 
@@ -209,6 +209,7 @@
       const actions =
         `<div style="display:flex;gap:4px;flex-wrap:wrap;flex-direction:column;">` +
         `<div style="display:flex;gap:4px;">` +
+        `<button data-action="viewSupplier" data-id="${s.id}" style="background:#3b82f6;border-color:#2563eb;">View Profile</button>` +
         `<button data-action="editSupplier" data-id="${s.id}">Edit</button>` +
         `<button data-action="approveSup" data-id="${s.id}">Approve</button>` +
         `<button data-action="rejectSup" data-id="${s.id}">Reject</button>` +
@@ -228,9 +229,15 @@
         `</div>` +
         `</div>`;
 
-      rows += `<tr><td>${s.name}</td><td>${s.approved ? 'Yes' : 'No'}</td><td>${plan}</td><td>${
+      // Make name clickable
+      const nameLink = `<a href="/supplier.html?id=${s.id}" style="color:#3b82f6;font-weight:600;text-decoration:none;" target="_blank">${escapeHtml(s.name)}</a>`;
+      const emailLink = s.email
+        ? `<a href="mailto:${s.email}" style="color:#6b7280;text-decoration:none;">${escapeHtml(s.email)}</a>`
+        : '—';
+
+      rows += `<tr><td>${nameLink}</td><td>${emailLink}</td><td>${s.approved ? '<span style="color:#10b981;font-weight:600;">✓ Yes</span>' : '<span style="color:#ef4444;">✗ No</span>'}</td><td>${plan}</td><td>${
         score
-      }</td><td>${tags}</td><td>${actions}</td></tr>`;
+      }</td><td>${tags || '<span style="color:#9ca3af;">None</span>'}</td><td>${actions}</td></tr>`;
     });
 
     el.innerHTML = rows;
@@ -242,25 +249,45 @@
       return;
     }
 
-    let rows = '<tr><th>Title</th><th>Approved</th><th>Featured</th><th>Actions</th></tr>';
+    let rows =
+      '<tr><th>Title</th><th>Supplier</th><th>Price</th><th>Approved</th><th>Featured</th><th>Actions</th></tr>';
     const items = (resp && resp.items) || [];
 
     if (!items.length) {
-      el.innerHTML = '<tr><td colspan="4">No packages yet.</td></tr>';
+      el.innerHTML = '<tr><td colspan="6">No packages yet.</td></tr>';
       return;
     }
 
     items.forEach(p => {
+      // Make title clickable to package page
+      const titleLink = `<a href="/package.html?id=${p.id}" style="color:#3b82f6;font-weight:600;text-decoration:none;" target="_blank">${escapeHtml(p.title)}</a>`;
+
+      // Make supplier name clickable
+      const supplierLink = p.supplierName
+        ? `<a href="/supplier.html?id=${p.supplierId}" style="color:#6b7280;text-decoration:none;" target="_blank">${escapeHtml(p.supplierName)}</a>`
+        : '—';
+
+      const price = p.price_display || p.price || '—';
+      const approved = p.approved
+        ? '<span style="color:#10b981;font-weight:600;">✓ Yes</span>'
+        : '<span style="color:#ef4444;">✗ No</span>';
+      const featured = p.featured
+        ? '<span style="color:#f59e0b;font-weight:600;">⭐ Yes</span>'
+        : '<span style="color:#9ca3af;">No</span>';
+
       rows +=
-        `<tr><td>${p.title}</td><td>${p.approved ? 'Yes' : 'No'}</td>` +
-        `<td>${p.featured ? 'Yes' : 'No'}</td>` +
+        `<tr><td>${titleLink}</td><td>${supplierLink}</td><td>${escapeHtml(price)}</td><td>${approved}</td>` +
+        `<td>${featured}</td>` +
         `<td>` +
+        `<div style="display:flex;gap:4px;flex-wrap:wrap;">` +
+        `<button data-action="viewPackage" data-id="${p.id}" style="background:#3b82f6;border-color:#2563eb;">View</button>` +
         `<button data-action="editPackage" data-id="${p.id}">Edit</button>` +
         `<button data-action="approvePkg" data-id="${p.id}" data-param="true">Approve</button>` +
         `<button data-action="approvePkg" data-id="${p.id}" data-param="false">Unapprove</button>` +
         `<button data-action="featurePkg" data-id="${p.id}" data-param="true">Feature</button>` +
         `<button data-action="featurePkg" data-id="${p.id}" data-param="false">Unfeature</button>` +
         `<button data-action="deletePackage" data-id="${p.id}">Delete</button>` +
+        `</div>` +
         `</td></tr>`;
     });
 
@@ -1670,6 +1697,16 @@
 
     // Call the appropriate function based on the action
     switch (action) {
+      case 'viewSupplier':
+        if (id) {
+          window.location.href = `/supplier.html?id=${id}`;
+        }
+        break;
+      case 'viewPackage':
+        if (id) {
+          window.location.href = `/package.html?id=${id}`;
+        }
+        break;
       case 'editUser':
         if (window.editUser && id) {
           window.editUser(id);
