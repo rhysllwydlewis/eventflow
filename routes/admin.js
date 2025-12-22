@@ -1303,5 +1303,709 @@ router.post('/suppliers/smart-tags', authRequired, roleRequired('admin'), (req, 
   });
 });
 
+// ---------- Badge Counts ----------
+
+/**
+ * GET /api/admin/badge-counts
+ * Get counts for sidebar badges (new users, pending photos, open tickets)
+ */
+router.get('/badge-counts', authRequired, roleRequired('admin'), (req, res) => {
+  const users = read('users');
+  const photos = read('photos') || [];
+  const tickets = read('tickets') || [];
+
+  // Count users created in last 7 days
+  const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  const newUsers = users.filter(u => {
+    if (!u.createdAt) return false;
+    return new Date(u.createdAt).getTime() > sevenDaysAgo;
+  }).length;
+
+  // Count pending photos
+  const pendingPhotos = photos.filter(p => !p.approved && !p.rejected).length;
+
+  // Count open tickets
+  const openTickets = tickets.filter(
+    t => t.status === 'open' || t.status === 'in_progress'
+  ).length;
+
+  res.json({
+    newUsers,
+    pendingPhotos,
+    openTickets,
+  });
+});
+
+// ---------- User Detail Operations ----------
+
+/**
+ * GET /api/admin/users/:id
+ * Get detailed information about a specific user
+ */
+router.get('/users/:id', authRequired, roleRequired('admin'), (req, res) => {
+  const users = read('users');
+  const user = users.find(u => u.id === req.params.id);
+
+  if (!user) {
+    return res.status(404).json({ error: 'User not found' });
+  }
+
+  // Return user without password
+  const { password, ...userWithoutPassword } = user;
+  res.json(userWithoutPassword);
+});
+
+/**
+ * POST /api/admin/users/:id/reset-password
+ * Send password reset email to user
+ */
+router.post(
+  '/users/:id/reset-password',
+  authRequired,
+  roleRequired('admin'),
+  (req, res) => {
+    const users = read('users');
+    const user = users.find(u => u.id === req.params.id);
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // In a real implementation, this would send an email
+    // For now, just log the action
+    auditLog({
+      adminId: req.user.id,
+      adminEmail: req.user.email,
+      action: AUDIT_ACTIONS.USER_PASSWORD_RESET,
+      targetType: 'user',
+      targetId: user.id,
+      details: { userEmail: user.email },
+    });
+
+    res.json({
+      success: true,
+      message: 'Password reset email sent (simulated)',
+    });
+  }
+);
+
+/**
+ * POST /api/admin/users/:id/unsuspend
+ * Unsuspend a user
+ */
+router.post('/users/:id/unsuspend', authRequired, roleRequired('admin'), (req, res) => {
+  const users = read('users');
+  const userIndex = users.findIndex(u => u.id === req.params.id);
+
+  if (userIndex === -1) {
+    return res.status(404).json({ error: 'User not found' });
+  }
+
+  users[userIndex].suspended = false;
+  users[userIndex].suspendedAt = null;
+  users[userIndex].suspendedBy = null;
+  users[userIndex].suspendedReason = null;
+
+  write('users', users);
+
+  auditLog({
+    adminId: req.user.id,
+    adminEmail: req.user.email,
+    action: 'USER_UNSUSPENDED',
+    targetType: 'user',
+    targetId: req.params.id,
+    details: { userEmail: users[userIndex].email },
+  });
+
+  res.json({ success: true, message: 'User unsuspended', user: users[userIndex] });
+});
+
+// ---------- Content Management ----------
+
+/**
+ * GET /api/admin/content/homepage
+ * Get homepage hero content
+ */
+router.get('/content/homepage', authRequired, roleRequired('admin'), (req, res) => {
+  const content = read('content') || {};
+  const homepage = content.homepage || {
+    title: 'Plan Your Perfect Event',
+    subtitle: 'Discover amazing suppliers and packages for your special day',
+    ctaText: 'Start Planning',
+  };
+  res.json(homepage);
+});
+
+/**
+ * PUT /api/admin/content/homepage
+ * Update homepage hero content
+ */
+router.put('/content/homepage', authRequired, roleRequired('admin'), (req, res) => {
+  const { title, subtitle, ctaText } = req.body;
+
+  let content = read('content') || {};
+  content.homepage = {
+    title: title || 'Plan Your Perfect Event',
+    subtitle: subtitle || 'Discover amazing suppliers and packages for your special day',
+    ctaText: ctaText || 'Start Planning',
+    updatedAt: new Date().toISOString(),
+    updatedBy: req.user.email,
+  };
+
+  write('content', content);
+
+  auditLog({
+    adminId: req.user.id,
+    adminEmail: req.user.email,
+    action: 'CONTENT_UPDATED',
+    targetType: 'homepage',
+    targetId: null,
+    details: { title, subtitle, ctaText },
+  });
+
+  res.json({ success: true, content: content.homepage });
+});
+
+/**
+ * GET /api/admin/content/announcements
+ * Get all announcements
+ */
+router.get('/content/announcements', authRequired, roleRequired('admin'), (req, res) => {
+  const content = read('content') || {};
+  const announcements = content.announcements || [];
+  res.json(announcements);
+});
+
+/**
+ * POST /api/admin/content/announcements
+ * Create a new announcement
+ */
+router.post('/content/announcements', authRequired, roleRequired('admin'), (req, res) => {
+  const { message, type, active } = req.body;
+
+  if (!message) {
+    return res.status(400).json({ error: 'Message is required' });
+  }
+
+  let content = read('content') || {};
+  if (!content.announcements) {
+    content.announcements = [];
+  }
+
+  const announcement = {
+    id: `announcement_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
+    message,
+    type: type || 'info',
+    active: active !== false,
+    createdAt: new Date().toISOString(),
+    createdBy: req.user.email,
+  };
+
+  content.announcements.push(announcement);
+  write('content', content);
+
+  auditLog({
+    adminId: req.user.id,
+    adminEmail: req.user.email,
+    action: 'ANNOUNCEMENT_CREATED',
+    targetType: 'announcement',
+    targetId: announcement.id,
+    details: { message, type },
+  });
+
+  res.json({ success: true, announcement });
+});
+
+/**
+ * GET /api/admin/content/announcements/:id
+ * Get a specific announcement
+ */
+router.get('/content/announcements/:id', authRequired, roleRequired('admin'), (req, res) => {
+  const content = read('content') || {};
+  const announcements = content.announcements || [];
+  const announcement = announcements.find(a => a.id === req.params.id);
+
+  if (!announcement) {
+    return res.status(404).json({ error: 'Announcement not found' });
+  }
+
+  res.json(announcement);
+});
+
+/**
+ * PUT /api/admin/content/announcements/:id
+ * Update an announcement
+ */
+router.put('/content/announcements/:id', authRequired, roleRequired('admin'), (req, res) => {
+  const { message, type, active } = req.body;
+
+  let content = read('content') || {};
+  if (!content.announcements) {
+    return res.status(404).json({ error: 'Announcement not found' });
+  }
+
+  const announcementIndex = content.announcements.findIndex(a => a.id === req.params.id);
+  if (announcementIndex === -1) {
+    return res.status(404).json({ error: 'Announcement not found' });
+  }
+
+  content.announcements[announcementIndex] = {
+    ...content.announcements[announcementIndex],
+    message: message || content.announcements[announcementIndex].message,
+    type: type || content.announcements[announcementIndex].type,
+    active: active !== undefined ? active : content.announcements[announcementIndex].active,
+    updatedAt: new Date().toISOString(),
+    updatedBy: req.user.email,
+  };
+
+  write('content', content);
+
+  auditLog({
+    adminId: req.user.id,
+    adminEmail: req.user.email,
+    action: 'ANNOUNCEMENT_UPDATED',
+    targetType: 'announcement',
+    targetId: req.params.id,
+    details: { message, type, active },
+  });
+
+  res.json({ success: true, announcement: content.announcements[announcementIndex] });
+});
+
+/**
+ * DELETE /api/admin/content/announcements/:id
+ * Delete an announcement
+ */
+router.delete(
+  '/content/announcements/:id',
+  authRequired,
+  roleRequired('admin'),
+  (req, res) => {
+    let content = read('content') || {};
+    if (!content.announcements) {
+      return res.status(404).json({ error: 'Announcement not found' });
+    }
+
+    const announcementIndex = content.announcements.findIndex(a => a.id === req.params.id);
+    if (announcementIndex === -1) {
+      return res.status(404).json({ error: 'Announcement not found' });
+    }
+
+    const deleted = content.announcements.splice(announcementIndex, 1)[0];
+    write('content', content);
+
+    auditLog({
+      adminId: req.user.id,
+      adminEmail: req.user.email,
+      action: 'ANNOUNCEMENT_DELETED',
+      targetType: 'announcement',
+      targetId: req.params.id,
+      details: { message: deleted.message },
+    });
+
+    res.json({ success: true, message: 'Announcement deleted' });
+  }
+);
+
+/**
+ * GET /api/admin/content/faqs
+ * Get all FAQs
+ */
+router.get('/content/faqs', authRequired, roleRequired('admin'), (req, res) => {
+  const content = read('content') || {};
+  const faqs = content.faqs || [];
+  res.json(faqs);
+});
+
+/**
+ * POST /api/admin/content/faqs
+ * Create a new FAQ
+ */
+router.post('/content/faqs', authRequired, roleRequired('admin'), (req, res) => {
+  const { question, answer, category } = req.body;
+
+  if (!question || !answer) {
+    return res.status(400).json({ error: 'Question and answer are required' });
+  }
+
+  let content = read('content') || {};
+  if (!content.faqs) {
+    content.faqs = [];
+  }
+
+  const faq = {
+    id: `faq_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
+    question,
+    answer,
+    category: category || 'General',
+    createdAt: new Date().toISOString(),
+    createdBy: req.user.email,
+  };
+
+  content.faqs.push(faq);
+  write('content', content);
+
+  auditLog({
+    adminId: req.user.id,
+    adminEmail: req.user.email,
+    action: 'FAQ_CREATED',
+    targetType: 'faq',
+    targetId: faq.id,
+    details: { question, category },
+  });
+
+  res.json({ success: true, faq });
+});
+
+/**
+ * GET /api/admin/content/faqs/:id
+ * Get a specific FAQ
+ */
+router.get('/content/faqs/:id', authRequired, roleRequired('admin'), (req, res) => {
+  const content = read('content') || {};
+  const faqs = content.faqs || [];
+  const faq = faqs.find(f => f.id === req.params.id);
+
+  if (!faq) {
+    return res.status(404).json({ error: 'FAQ not found' });
+  }
+
+  res.json(faq);
+});
+
+/**
+ * PUT /api/admin/content/faqs/:id
+ * Update a FAQ
+ */
+router.put('/content/faqs/:id', authRequired, roleRequired('admin'), (req, res) => {
+  const { question, answer, category } = req.body;
+
+  let content = read('content') || {};
+  if (!content.faqs) {
+    return res.status(404).json({ error: 'FAQ not found' });
+  }
+
+  const faqIndex = content.faqs.findIndex(f => f.id === req.params.id);
+  if (faqIndex === -1) {
+    return res.status(404).json({ error: 'FAQ not found' });
+  }
+
+  content.faqs[faqIndex] = {
+    ...content.faqs[faqIndex],
+    question: question || content.faqs[faqIndex].question,
+    answer: answer || content.faqs[faqIndex].answer,
+    category: category || content.faqs[faqIndex].category,
+    updatedAt: new Date().toISOString(),
+    updatedBy: req.user.email,
+  };
+
+  write('content', content);
+
+  auditLog({
+    adminId: req.user.id,
+    adminEmail: req.user.email,
+    action: 'FAQ_UPDATED',
+    targetType: 'faq',
+    targetId: req.params.id,
+    details: { question, category },
+  });
+
+  res.json({ success: true, faq: content.faqs[faqIndex] });
+});
+
+/**
+ * DELETE /api/admin/content/faqs/:id
+ * Delete a FAQ
+ */
+router.delete('/content/faqs/:id', authRequired, roleRequired('admin'), (req, res) => {
+  let content = read('content') || {};
+  if (!content.faqs) {
+    return res.status(404).json({ error: 'FAQ not found' });
+  }
+
+  const faqIndex = content.faqs.findIndex(f => f.id === req.params.id);
+  if (faqIndex === -1) {
+    return res.status(404).json({ error: 'FAQ not found' });
+  }
+
+  const deleted = content.faqs.splice(faqIndex, 1)[0];
+  write('content', content);
+
+  auditLog({
+    adminId: req.user.id,
+    adminEmail: req.user.email,
+    action: 'FAQ_DELETED',
+    targetType: 'faq',
+    targetId: req.params.id,
+    details: { question: deleted.question },
+  });
+
+  res.json({ success: true, message: 'FAQ deleted' });
+});
+
+// ---------- System Settings ----------
+
+/**
+ * GET /api/admin/settings/site
+ * Get site configuration
+ */
+router.get('/settings/site', authRequired, roleRequired('admin'), (req, res) => {
+  const settings = read('settings') || {};
+  const site = settings.site || {
+    name: 'EventFlow',
+    tagline: 'Event planning made simple',
+    contactEmail: 'hello@eventflow.com',
+    supportEmail: 'support@eventflow.com',
+  };
+  res.json(site);
+});
+
+/**
+ * PUT /api/admin/settings/site
+ * Update site configuration
+ */
+router.put('/settings/site', authRequired, roleRequired('admin'), (req, res) => {
+  const { name, tagline, contactEmail, supportEmail } = req.body;
+
+  let settings = read('settings') || {};
+  settings.site = {
+    name: name || 'EventFlow',
+    tagline: tagline || 'Event planning made simple',
+    contactEmail: contactEmail || 'hello@eventflow.com',
+    supportEmail: supportEmail || 'support@eventflow.com',
+    updatedAt: new Date().toISOString(),
+    updatedBy: req.user.email,
+  };
+
+  write('settings', settings);
+
+  auditLog({
+    adminId: req.user.id,
+    adminEmail: req.user.email,
+    action: 'SETTINGS_UPDATED',
+    targetType: 'site',
+    targetId: null,
+    details: { name, tagline },
+  });
+
+  res.json({ success: true, site: settings.site });
+});
+
+/**
+ * GET /api/admin/settings/features
+ * Get feature flags
+ */
+router.get('/settings/features', authRequired, roleRequired('admin'), (req, res) => {
+  const settings = read('settings') || {};
+  const features = settings.features || {
+    registration: true,
+    supplierApplications: true,
+    reviews: true,
+    photoUploads: true,
+    supportTickets: true,
+  };
+  res.json(features);
+});
+
+/**
+ * PUT /api/admin/settings/features
+ * Update feature flags
+ */
+router.put('/settings/features', authRequired, roleRequired('admin'), (req, res) => {
+  const { registration, supplierApplications, reviews, photoUploads, supportTickets } = req.body;
+
+  let settings = read('settings') || {};
+  settings.features = {
+    registration: registration !== false,
+    supplierApplications: supplierApplications !== false,
+    reviews: reviews !== false,
+    photoUploads: photoUploads !== false,
+    supportTickets: supportTickets !== false,
+    updatedAt: new Date().toISOString(),
+    updatedBy: req.user.email,
+  };
+
+  write('settings', settings);
+
+  auditLog({
+    adminId: req.user.id,
+    adminEmail: req.user.email,
+    action: 'FEATURES_UPDATED',
+    targetType: 'features',
+    targetId: null,
+    details: settings.features,
+  });
+
+  res.json({ success: true, features: settings.features });
+});
+
+/**
+ * GET /api/admin/settings/maintenance
+ * Get maintenance mode settings
+ */
+router.get('/settings/maintenance', authRequired, roleRequired('admin'), (req, res) => {
+  const settings = read('settings') || {};
+  const maintenance = settings.maintenance || {
+    enabled: false,
+    message: "We're performing scheduled maintenance. We'll be back soon!",
+  };
+  res.json(maintenance);
+});
+
+/**
+ * PUT /api/admin/settings/maintenance
+ * Update maintenance mode settings
+ */
+router.put('/settings/maintenance', authRequired, roleRequired('admin'), (req, res) => {
+  const { enabled, message } = req.body;
+
+  let settings = read('settings') || {};
+  settings.maintenance = {
+    enabled: enabled === true,
+    message: message || "We're performing scheduled maintenance. We'll be back soon!",
+    updatedAt: new Date().toISOString(),
+    updatedBy: req.user.email,
+  };
+
+  write('settings', settings);
+
+  auditLog({
+    adminId: req.user.id,
+    adminEmail: req.user.email,
+    action: 'MAINTENANCE_UPDATED',
+    targetType: 'maintenance',
+    targetId: null,
+    details: { enabled, message },
+  });
+
+  res.json({ success: true, maintenance: settings.maintenance });
+});
+
+/**
+ * GET /api/admin/settings/email-templates/:name
+ * Get email template
+ */
+router.get('/settings/email-templates/:name', authRequired, roleRequired('admin'), (req, res) => {
+  const settings = read('settings') || {};
+  const emailTemplates = settings.emailTemplates || {};
+
+  const defaultTemplates = {
+    welcome: {
+      subject: 'Welcome to EventFlow!',
+      body:
+        'Hi {{name}},\n\nWelcome to EventFlow! We\'re excited to help you plan your perfect event.\n\nBest regards,\nThe EventFlow Team',
+    },
+    verification: {
+      subject: 'Verify your email address',
+      body:
+        'Hi {{name}},\n\nPlease verify your email address by clicking the link below:\n\n{{verificationLink}}\n\nBest regards,\nThe EventFlow Team',
+    },
+    'password-reset': {
+      subject: 'Reset your password',
+      body:
+        'Hi {{name}},\n\nYou requested a password reset. Click the link below to reset your password:\n\n{{resetLink}}\n\nIf you didn\'t request this, please ignore this email.\n\nBest regards,\nThe EventFlow Team',
+    },
+    'ticket-response': {
+      subject: 'New response to your support ticket',
+      body:
+        'Hi {{name}},\n\nYou have received a new response to your support ticket #{{ticketId}}.\n\n{{response}}\n\nBest regards,\nThe EventFlow Team',
+    },
+  };
+
+  const template = emailTemplates[req.params.name] || defaultTemplates[req.params.name];
+
+  if (!template) {
+    return res.status(404).json({ error: 'Template not found' });
+  }
+
+  res.json(template);
+});
+
+/**
+ * PUT /api/admin/settings/email-templates/:name
+ * Update email template
+ */
+router.put('/settings/email-templates/:name', authRequired, roleRequired('admin'), (req, res) => {
+  const { subject, body } = req.body;
+
+  if (!subject || !body) {
+    return res.status(400).json({ error: 'Subject and body are required' });
+  }
+
+  let settings = read('settings') || {};
+  if (!settings.emailTemplates) {
+    settings.emailTemplates = {};
+  }
+
+  settings.emailTemplates[req.params.name] = {
+    subject,
+    body,
+    updatedAt: new Date().toISOString(),
+    updatedBy: req.user.email,
+  };
+
+  write('settings', settings);
+
+  auditLog({
+    adminId: req.user.id,
+    adminEmail: req.user.email,
+    action: 'EMAIL_TEMPLATE_UPDATED',
+    targetType: 'email-template',
+    targetId: req.params.name,
+    details: { subject },
+  });
+
+  res.json({ success: true, template: settings.emailTemplates[req.params.name] });
+});
+
+/**
+ * POST /api/admin/settings/email-templates/:name/reset
+ * Reset email template to default
+ */
+router.post(
+  '/settings/email-templates/:name/reset',
+  authRequired,
+  roleRequired('admin'),
+  (req, res) => {
+    let settings = read('settings') || {};
+    if (!settings.emailTemplates) {
+      settings.emailTemplates = {};
+    }
+
+    // Remove the custom template, will fall back to default
+    delete settings.emailTemplates[req.params.name];
+    write('settings', settings);
+
+    auditLog({
+      adminId: req.user.id,
+      adminEmail: req.user.email,
+      action: 'EMAIL_TEMPLATE_RESET',
+      targetType: 'email-template',
+      targetId: req.params.name,
+      details: {},
+    });
+
+    res.json({ success: true, message: 'Template reset to default' });
+  }
+);
+
+/**
+ * GET /api/admin/settings/system-info
+ * Get system information
+ */
+router.get('/settings/system-info', authRequired, roleRequired('admin'), (req, res) => {
+  const uptime = process.uptime();
+  const hours = Math.floor(uptime / 3600);
+  const minutes = Math.floor((uptime % 3600) / 60);
+  const uptimeStr = `${hours}h ${minutes}m`;
+
+  res.json({
+    version: 'v17.0.0',
+    environment: process.env.NODE_ENV || 'production',
+    database: 'JSON File Store',
+    uptime: uptimeStr,
+  });
+});
+
 module.exports = router;
 module.exports.setHelperFunctions = setHelperFunctions;
