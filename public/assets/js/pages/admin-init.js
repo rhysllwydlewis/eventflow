@@ -313,6 +313,22 @@
       return out;
     }
 
+    // Update stat cards
+    const totalUsersEl = document.getElementById('totalUsersCount');
+    if (totalUsersEl) {
+      totalUsersEl.textContent = counts.usersTotal || 0;
+    }
+
+    const totalPackagesEl = document.getElementById('totalPackagesCount');
+    if (totalPackagesEl) {
+      totalPackagesEl.textContent = counts.packagesTotal || 0;
+    }
+
+    const totalSuppliersEl = document.getElementById('totalSuppliersCount');
+    if (totalSuppliersEl) {
+      totalSuppliersEl.textContent = counts.suppliersTotal || 0;
+    }
+
     el.innerHTML =
       `<div class="card">` +
       `<p><b>Total Users:</b> ${counts.usersTotal || 0}</p>` +
