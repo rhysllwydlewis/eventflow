@@ -19,7 +19,7 @@ function efSetupPhotoDropZone(dropId, previewId, onImage) {
         return;
       }
       const reader = new FileReader();
-      reader.addEventListener('load', function (ev) {
+      reader.addEventListener('load', ev => {
         const dataUrl = ev.target && ev.target.result;
         if (!dataUrl) {
           return;
@@ -2516,22 +2516,33 @@ async function initSettings() {
     const r = await fetch('/api/me/settings', {
       credentials: 'include',
     });
-    
+
     if (r.status === 401) {
       // Not authenticated - handle gracefully without console error
-      document.querySelector('main .container').innerHTML =
-        '<div class="card"><p class="small">Sign in to change your settings.</p></div>';
+      const container = document.querySelector('main .container');
+      if (container) {
+        container.innerHTML = '';
+        const card = document.createElement('div');
+        card.className = 'card';
+        const text = document.createElement('p');
+        text.className = 'small';
+        text.textContent = 'Sign in to change your settings.';
+        card.appendChild(text);
+        container.appendChild(card);
+      }
       return;
     }
-    
+
     if (!r.ok) {
       throw new Error('Failed to load settings');
     }
-    
+
     const d = await r.json();
     const cb = document.getElementById('notify');
-    if (cb) cb.checked = !!d.notify;
-    
+    if (cb) {
+      cb.checked = !!d.notify;
+    }
+
     const saveBtn = document.getElementById('save-settings');
     if (saveBtn) {
       saveBtn.addEventListener('click', async () => {
@@ -2555,8 +2566,17 @@ async function initSettings() {
     }
   } catch (e) {
     console.error('Settings error:', e);
-    document.querySelector('main .container').innerHTML =
-      '<div class="card"><p class="small">Unable to load settings.</p></div>';
+    const container = document.querySelector('main .container');
+    if (container) {
+      container.innerHTML = '';
+      const card = document.createElement('div');
+      card.className = 'card';
+      const text = document.createElement('p');
+      text.className = 'small';
+      text.textContent = 'Unable to load settings.';
+      card.appendChild(text);
+      container.appendChild(card);
+    }
   }
 }
 
