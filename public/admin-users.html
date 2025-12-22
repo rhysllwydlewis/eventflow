@@ -31,48 +31,234 @@
   a:hover{color:#2563eb;}
   h1, h2, h3{color:#0a0a0a;}
   p{color:#1a1a1a;}
+  
+  /* Admin sidebar styles */
+  .admin-sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 260px;
+    background: #111;
+    color: #f5f5f5;
+    border-right: 1px solid #27272a;
+    padding: 1rem;
+    overflow-y: auto;
+    z-index: 1000;
+    transition: transform 0.3s;
+  }
+  
+  .admin-sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #27272a;
+  }
+  
+  .admin-sidebar-header h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    color: #f5f5f5;
+  }
+  
+  .sidebar-toggle {
+    display: none;
+    background: none;
+    border: none;
+    color: #f5f5f5;
+    font-size: 1.5rem;
+    cursor: pointer;
+  }
+  
+  .admin-sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  
+  .admin-nav-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    color: #d4d4d8;
+    text-decoration: none;
+    transition: all 0.2s;
+    position: relative;
+  }
+  
+  .admin-nav-link:hover {
+    background: #1a1a1a;
+    color: #f5f5f5;
+  }
+  
+  .admin-nav-link.active {
+    background: #3b82f6;
+    color: #fff;
+  }
+  
+  .nav-icon {
+    font-size: 1.25rem;
+  }
+  
+  .nav-label {
+    flex: 1;
+    font-weight: 500;
+  }
+  
+  .nav-badge {
+    background: #3b82f6;
+    color: #fff;
+    font-size: 0.75rem;
+    padding: 0.125rem 0.5rem;
+    border-radius: 999px;
+    font-weight: 600;
+    display: none;
+  }
+  
+  .nav-badge.badge-warning {
+    background: #f59e0b;
+  }
+  
+  .nav-badge.badge-danger {
+    background: #ef4444;
+  }
+  
+  /* Adjust main content */
+  main.section {
+    margin-left: 260px;
+    transition: margin-left 0.3s;
+  }
+  
+  @media (max-width: 1024px) {
+    .admin-sidebar {
+      transform: translateX(-100%);
+    }
+    
+    .admin-sidebar.open {
+      transform: translateX(0);
+    }
+    
+    .sidebar-toggle {
+      display: block;
+    }
+    
+    main.section {
+      margin-left: 0;
+    }
+  }
+  
+  /* Admin toolbar styles */
+  .admin-toolbar {
+    margin-bottom: 1rem;
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+  
+  .admin-toolbar input,
+  .admin-toolbar select {
+    flex: 1;
+    min-width: 200px;
+    padding: 0.5rem;
+    border: 1px solid #d4d4d8;
+    border-radius: 4px;
+  }
+  
+  .btn {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s;
+  }
+  
+  .btn-secondary {
+    background: #6b7280;
+    color: #fff;
+  }
+  
+  .btn-secondary:hover {
+    background: #4b5563;
+  }
 </style>
 </head>
 <body>
-<header class="header" role="banner">
-  <div class="container header-inner">
-    <a class="brand" href="/" aria-label="EventFlow home">
-      <span class="logo" aria-hidden="true"></span>
-      <span class="brand-text">EventFlow</span>
-    </a>
-    <div class="header-actions">
-      <nav class="nav nav-inline" aria-label="Quick navigation">
-        <a href="/start.html" class="nav-link nav-main">Plan</a>
-        <a href="/suppliers.html" class="nav-link nav-main">Suppliers</a>
-        <a href="/blog.html" class="nav-link nav-main">Blog</a>
-        <a href="/auth.html" class="nav-link nav-main nav-main-login">Log in</a>
-      </nav>
-      <button id="burger" class="nav-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false">
-        <span class="nav-toggle-bar"></span>
-        <span class="nav-toggle-bar"></span>
-        <span class="nav-toggle-bar"></span>
-      </button>
-    </div>
+<aside class="admin-sidebar" id="adminSidebar">
+  <div class="admin-sidebar-header">
+    <h3>Admin Panel</h3>
+    <button id="sidebarToggle" class="sidebar-toggle" aria-label="Toggle sidebar">☰</button>
   </div>
-  <nav class="nav nav-menu" aria-label="Primary navigation">
-    <a href="/start.html">Plan an Event</a>
-    <a href="/suppliers.html">Suppliers</a>
-    <a href="/plan.html">My Plan</a>
-    <a href="/blog.html">Blog</a>
-    <a href="/for-suppliers.html">For Suppliers</a>
-    <a href="/faq.html">FAQ</a>
-    <a href="/settings.html">Settings</a>
-    <a href="/auth.html" id="nav-auth">Log in</a>
-    <a href="#" id="nav-dashboard" style="display:none">Dashboard</a>
-    <a href="#" id="nav-signout" style="display:none">Sign out</a>
+  <nav class="admin-sidebar-nav">
+    <a href="/admin.html" class="admin-nav-link">
+      <span class="nav-icon">📊</span>
+      <span class="nav-label">Dashboard</span>
+    </a>
+    <a href="/admin-users.html" class="admin-nav-link">
+      <span class="nav-icon">👥</span>
+      <span class="nav-label">Users</span>
+      <span class="nav-badge" id="newUsersCount"></span>
+    </a>
+    <a href="/admin-packages.html" class="admin-nav-link">
+      <span class="nav-icon">📦</span>
+      <span class="nav-label">Packages</span>
+    </a>
+    <a href="/admin-photos.html" class="admin-nav-link">
+      <span class="nav-icon">📷</span>
+      <span class="nav-label">Photos</span>
+      <span class="nav-badge badge-warning" id="pendingPhotosCount"></span>
+    </a>
+    <a href="/admin-tickets.html" class="admin-nav-link">
+      <span class="nav-icon">🎫</span>
+      <span class="nav-label">Tickets</span>
+      <span class="nav-badge badge-danger" id="openTicketsCount"></span>
+    </a>
+    <a href="/admin-reports.html" class="admin-nav-link">
+      <span class="nav-icon">⚠️</span>
+      <span class="nav-label">Reports</span>
+    </a>
+    <a href="/admin-audit.html" class="admin-nav-link">
+      <span class="nav-icon">📋</span>
+      <span class="nav-label">Audit Log</span>
+    </a>
+    <a href="/admin-homepage.html" class="admin-nav-link">
+      <span class="nav-icon">🏠</span>
+      <span class="nav-label">Homepage</span>
+    </a>
+    <a href="/admin-payments.html" class="admin-nav-link">
+      <span class="nav-icon">💳</span>
+      <span class="nav-label">Payments</span>
+    </a>
   </nav>
-</header>
-<script src="/assets/js/auth-nav.js" defer></script>
+</aside>
+
 <main class="section">
   <div class="container">
     <h1>Users</h1>
     <p class="small">Overview of all accounts registered on EventFlow.</p>
+    
     <div class="card">
+      <div class="admin-toolbar">
+        <input type="text" id="userSearch" placeholder="Search by name, email..." style="flex:1;min-width:200px;">
+        <select id="roleFilter">
+          <option value="">All Roles</option>
+          <option value="admin">Admin</option>
+          <option value="customer">Customer</option>
+          <option value="supplier">Supplier</option>
+        </select>
+        <select id="verifiedFilter">
+          <option value="">All Verification</option>
+          <option value="yes">Verified</option>
+          <option value="no">Unverified</option>
+        </select>
+        <button id="clearFilters" class="btn btn-secondary">Clear</button>
+      </div>
+      
       <div class="small" id="user-summary">Loading…</div>
       <div style="overflow-x:auto;margin-top:10px">
         <table class="table">
@@ -93,7 +279,7 @@
         </table>
       </div>
       <p class="small" style="margin-top:8px">
-        Data is read-only here. To remove a user you can edit <code>data/users.json</code> on the server.
+        Click on a name or email to view full user details.
       </p>
       <p class="small" style="margin-top:4px">
         <a href="/api/admin/marketing-export" target="_blank" rel="noopener">Download marketing list (CSV)</a>
@@ -109,6 +295,7 @@
       <a href="/credits.html">Credits</a> · <a href="/contact.html">Contact</a> · <a href="/legal.html">Legal Hub</a></div>
   </div>
 </footer>
+<script src="/assets/js/admin-shared.js"></script>
 <script src="/assets/js/app.js"></script>
 <script>window.__EF_PAGE__='admin_users'</script>
 <script src="/assets/js/pages/admin-users-init.js"></script>
