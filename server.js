@@ -193,6 +193,12 @@ app.disable('x-powered-by');
 // Force HTTPS redirect in production (fixes 3.2s latency from HTTP→HTTPS redirect)
 if (isProduction) {
   app.use((req, res, next) => {
+    // Skip HTTPS redirect for health check and readiness endpoints
+    // This allows platform health probes (Railway, etc.) to work over HTTP
+    if (req.path === '/api/health' || req.path === '/api/ready') {
+      return next();
+    }
+
     // Check if request is not secure (HTTP)
     const isSecure = req.secure || req.headers['x-forwarded-proto'] === 'https';
 
