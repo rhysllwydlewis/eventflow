@@ -302,7 +302,7 @@ class MessageSupplierPanel {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-CSRF-Token': csrfData.token,
+          'X-CSRF-Token': csrfData.csrfToken,
         },
         credentials: 'include',
         body: JSON.stringify({

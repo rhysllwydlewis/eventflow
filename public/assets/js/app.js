@@ -1507,7 +1507,12 @@ async function initDashSupplier() {
   }
 
   async function api(path, opts) {
-    const r = await fetch(path, { ...opts, credentials: 'include' });
+    // Ensure credentials are included, but allow override if explicitly set
+    const options = {
+      credentials: 'include',
+      ...opts,
+    };
+    const r = await fetch(path, options);
     if (!r.ok) {
       throw new Error((await r.json()).error || 'Request failed');
     }
