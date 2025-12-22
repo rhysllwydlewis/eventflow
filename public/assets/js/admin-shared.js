@@ -201,18 +201,47 @@ const AdminShared = (function () {
     const sidebar = document.getElementById('adminSidebar');
 
     if (toggle && sidebar) {
-      toggle.addEventListener('click', () => {
+      // Restore sidebar state from localStorage
+      const savedState = localStorage.getItem('adminSidebarOpen');
+      if (savedState === 'true' && window.innerWidth <= 1024) {
+        sidebar.classList.add('open');
+      }
+
+      // Toggle sidebar and save state
+      toggle.addEventListener('click', (e) => {
+        e.stopPropagation();
         sidebar.classList.toggle('open');
+        const isOpen = sidebar.classList.contains('open');
+        localStorage.setItem('adminSidebarOpen', isOpen);
+        
+        // Update ARIA attribute for accessibility
+        toggle.setAttribute('aria-expanded', isOpen);
       });
 
       // Close sidebar when clicking outside on mobile
       document.addEventListener('click', e => {
         if (window.innerWidth <= 1024) {
           if (!sidebar.contains(e.target) && !toggle.contains(e.target)) {
-            sidebar.classList.remove('open');
+            if (sidebar.classList.contains('open')) {
+              sidebar.classList.remove('open');
+              localStorage.setItem('adminSidebarOpen', 'false');
+              toggle.setAttribute('aria-expanded', 'false');
+            }
           }
         }
       });
+
+      // Handle responsive changes
+      window.addEventListener('resize', () => {
+        if (window.innerWidth > 1024) {
+          // On desktop, ensure sidebar is visible
+          sidebar.classList.remove('open');
+          toggle.setAttribute('aria-expanded', 'false');
+        }
+      });
+
+      // Set initial ARIA state
+      toggle.setAttribute('aria-expanded', sidebar.classList.contains('open'));
     }
   }
 
