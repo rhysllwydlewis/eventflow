@@ -191,9 +191,9 @@ class PackageList {
   createPackageCard(pkg) {
     const card = document.createElement('div');
     card.className = 'package-card';
-    card.onclick = () => {
+    card.addEventListener('click', () => {
       window.location.href = `/package.html?slug=${pkg.slug}`;
-    };
+    });
 
     const isFeatured = pkg.featured || pkg.isFeatured || false;
     const featuredBadge = isFeatured

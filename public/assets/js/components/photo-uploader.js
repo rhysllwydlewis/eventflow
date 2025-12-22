@@ -385,7 +385,7 @@ class PhotoUploader {
 
   addPreview(file) {
     const reader = new FileReader();
-    reader.onload = e => {
+    reader.addEventListener('load', e => {
       const preview = document.createElement('div');
       preview.className = 'photo-uploader__preview';
       preview.dataset.filename = file.name;
@@ -396,7 +396,8 @@ class PhotoUploader {
       `;
 
       // Remove button
-      preview.querySelector('.photo-uploader__preview-remove').addEventListener('click', () => {
+      const removeBtn = preview.querySelector('.photo-uploader__preview-remove');
+      removeBtn.addEventListener('click', () => {
         this.removeFile(file.name);
         preview.remove();
 
@@ -406,7 +407,7 @@ class PhotoUploader {
       });
 
       this.previews.appendChild(preview);
-    };
+    });
     reader.readAsDataURL(file);
   }
 

@@ -195,12 +195,12 @@ class PackageGallery {
       const prevBtn = document.createElement('button');
       prevBtn.className = 'package-gallery-nav prev';
       prevBtn.innerHTML = '‹';
-      prevBtn.onclick = () => this.navigate(-1);
+      prevBtn.addEventListener('click', () => this.navigate(-1));
 
       const nextBtn = document.createElement('button');
       nextBtn.className = 'package-gallery-nav next';
       nextBtn.innerHTML = '›';
-      nextBtn.onclick = () => this.navigate(1);
+      nextBtn.addEventListener('click', () => this.navigate(1));
 
       const counter = document.createElement('div');
       counter.className = 'package-gallery-counter';
@@ -227,7 +227,7 @@ class PackageGallery {
         }
         thumb.src = img.url || img;
         thumb.alt = `Thumbnail ${index + 1}`;
-        thumb.onclick = () => this.goToImage(index);
+        thumb.addEventListener('click', () => this.goToImage(index));
         thumbnails.appendChild(thumb);
       });
 

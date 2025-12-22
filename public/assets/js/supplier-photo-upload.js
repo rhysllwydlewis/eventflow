@@ -129,10 +129,10 @@ class SupplierPhotoUpload {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
 
-      reader.onload = e => {
+      reader.addEventListener('load', e => {
         const img = new Image();
 
-        img.onload = () => {
+        img.addEventListener('load', () => {
           const canvas = document.createElement('canvas');
           const ctx = canvas.getContext('2d');
 
@@ -181,18 +181,18 @@ class SupplierPhotoUpload {
             'image/jpeg',
             this.compressionQuality
           );
-        };
+        });
 
-        img.onerror = () => {
+        img.addEventListener('error', () => {
           reject(new Error('Failed to load image'));
-        };
+        });
 
         img.src = e.target.result;
-      };
+      });
 
-      reader.onerror = () => {
+      reader.addEventListener('error', () => {
         reject(new Error('Failed to read file'));
-      };
+      });
 
       reader.readAsDataURL(file);
     });
