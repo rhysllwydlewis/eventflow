@@ -4158,8 +4158,9 @@ async function startServer() {
         await seed({
           skipIfExists: isProduction,
           seedUsers: true,
-          seedSuppliers: !isProduction, // Only seed demo suppliers in dev
-          seedPackages: !isProduction, // Only seed demo packages in dev
+          seedSuppliers: true, // Seed demo suppliers in production if empty (after auto-migration)
+          seedPackages: true, // Seed demo packages in production if empty (after auto-migration)
+          autoMigrateFromLocal: true, // Auto-migrate from local storage if detected
         });
         console.log('   ✅ Database seeding complete');
       } catch (error) {
