@@ -252,7 +252,12 @@
   <div class="data-section">
     <div class="data-header">
       <h3 style="margin: 0; font-size: 16px; font-weight: 600;">Suppliers</h3>
-      <button id="smartTagSuppliersBtn" class="btn-sm btn-accent">🤖 Smart Tagging (Beta)</button>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+        <button id="bulkApproveSuppliers" class="btn-sm btn-success" style="display:none;">✓ Approve Selected</button>
+        <button id="bulkRejectSuppliers" class="btn-sm btn-danger" style="display:none;">✗ Reject Selected</button>
+        <button id="bulkDeleteSuppliers" class="btn-sm btn-danger" style="display:none;">🗑 Delete Selected</button>
+        <button id="smartTagSuppliersBtn" class="btn-sm btn-accent">🤖 Smart Tagging (Beta)</button>
+      </div>
     </div>
     <div class="table-wrapper">
       <table id="suppliers"></table>
@@ -263,6 +268,11 @@
   <div class="data-section">
     <div class="data-header">
       <h3 style="margin: 0; font-size: 16px; font-weight: 600;">Packages</h3>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+        <button id="bulkApprovePackages" class="btn-sm btn-success" style="display:none;">✓ Approve Selected</button>
+        <button id="bulkFeaturePackages" class="btn-sm btn-primary" style="display:none;">⭐ Feature Selected</button>
+        <button id="bulkDeletePackages" class="btn-sm btn-danger" style="display:none;">🗑 Delete Selected</button>
+      </div>
     </div>
     <div class="table-wrapper">
       <table id="packages"></table>
