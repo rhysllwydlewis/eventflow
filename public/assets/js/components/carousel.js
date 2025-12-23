@@ -462,9 +462,6 @@ class Carousel {
           });
         });
       }
-      
-      // Reset didDrag for next interaction
-      didDrag = false;
     };
 
     this.carouselContainer.addEventListener('pointerdown', onPointerDown);

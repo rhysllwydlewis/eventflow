@@ -435,14 +435,10 @@
           Toast.warning('Image upload temporarily disabled. Using image preview data URL.');
         }
         uploadProgress.style.display = 'none';
-        // Use the current preview/image URL if available
-        if (currentImageUrl) {
-          packageData.image = currentImageUrl;
-        } else {
-          // Fallback to URL input field
-          packageData.image = document.getElementById('packageImage').value;
-        }
-      } else if (currentImageUrl) {
+      }
+
+      // Set image URL from currentImageUrl or input field
+      if (currentImageUrl) {
         packageData.image = currentImageUrl;
       } else {
         packageData.image = document.getElementById('packageImage').value;
