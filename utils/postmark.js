@@ -59,8 +59,7 @@ let POSTMARK_ENABLED = false;
 
 // Configuration - use the provided production token
 const POSTMARK_API_KEY = process.env.POSTMARK_API_KEY || process.env.POSTMARK_SERVER_TOKEN;
-const POSTMARK_FROM =
-  process.env.POSTMARK_FROM || process.env.FROM_EMAIL || 'noreply@eventflow.com';
+const POSTMARK_FROM = process.env.POSTMARK_FROM || process.env.FROM_EMAIL || 'noreply@event-flow.co.uk';
 const APP_BASE_URL = process.env.APP_BASE_URL || process.env.BASE_URL || 'http://localhost:3000';
 const UNSUBSCRIBE_SECRET =
   process.env.UNSUBSCRIBE_SECRET || process.env.JWT_SECRET || 'default-secret-change-in-production';
@@ -91,7 +90,10 @@ function initializePostmark() {
 
     POSTMARK_ENABLED = true;
     console.log(`✓ Postmark configured with sender: ${POSTMARK_FROM}`);
-    console.log(`  API key: ${POSTMARK_API_KEY.substring(0, 8)}...`); // Show first 8 chars only
+    // Only log API key preview in development
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`  API key: ${POSTMARK_API_KEY.substring(0, 8)}...`); // Show first 8 chars only
+    }
     return true;
   } catch (err) {
     console.error('❌ Failed to initialize Postmark:', err.message);
