@@ -5,6 +5,10 @@
   let allSuppliers = [];
   let currentImageFile = null;
   let currentImageUrl = null;
+  let csrfToken = null;
+
+  // Configuration
+  const PLACEHOLDER_IMAGE = '/assets/images/placeholder-package.jpg';
 
   // Fetch CSRF token on page load
   fetch('/api/csrf-token', {
@@ -14,6 +18,7 @@
     .then(data => {
       if (data && data.csrfToken) {
         window.__CSRF_TOKEN__ = data.csrfToken;
+        csrfToken = data.csrfToken;
       }
     })
     .catch(err => console.warn('Could not fetch CSRF token:', err));
@@ -423,18 +428,20 @@
 
       // If user uploaded a file, upload it after creating/updating the package
       if (currentImageFile) {
-        // Get CSRF token once
-        const csrfResponse = await fetch('/api/csrf-token', {
-          credentials: 'include',
-        });
-        const csrfData = await csrfResponse.json();
-        const csrfToken = csrfData.csrfToken;
+        // Use cached CSRF token
+        if (!csrfToken) {
+          const csrfResponse = await fetch('/api/csrf-token', {
+            credentials: 'include',
+          });
+          const csrfData = await csrfResponse.json();
+          csrfToken = csrfData.csrfToken;
+        }
 
         let packageId = id;
 
         // If creating new package, create it first with placeholder
         if (!isEditing) {
-          packageData.image = '/assets/images/placeholder-package.jpg';
+          packageData.image = PLACEHOLDER_IMAGE;
           const createResponse = await api('/api/admin/packages', 'POST', packageData);
           packageId = createResponse.package.id;
         }
@@ -471,7 +478,7 @@
         if (currentImageUrl) {
           imageUrl = currentImageUrl;
         } else if (!imageUrl) {
-          imageUrl = '/assets/images/placeholder-package.jpg';
+          imageUrl = PLACEHOLDER_IMAGE;
         }
 
         packageData.image = imageUrl;
