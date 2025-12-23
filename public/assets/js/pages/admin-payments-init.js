@@ -8,7 +8,7 @@ let revenueChart = null;
 let plansChart = null;
 
 // Filter state
-let currentFilters = {
+const currentFilters = {
   status: 'all',
   plan: 'all',
   days: 'all',
@@ -35,13 +35,13 @@ async function loadSuppliers() {
   try {
     const response = await AdminShared.api('/api/admin/suppliers');
     const suppliers = {};
-    
+
     if (response.items) {
       response.items.forEach(supplier => {
         suppliers[supplier.id] = supplier;
       });
     }
-    
+
     return suppliers;
   } catch (error) {
     console.error('Error loading suppliers:', error);
@@ -102,7 +102,11 @@ function calculateStats(payments) {
     const monthKey = `${paymentDate.getFullYear()}-${String(paymentDate.getMonth() + 1).padStart(2, '0')}`;
 
     // Total revenue (only successful payments)
-    if (payment.status === 'success' || payment.status === 'completed' || payment.status === 'pending') {
+    if (
+      payment.status === 'success' ||
+      payment.status === 'completed' ||
+      payment.status === 'pending'
+    ) {
       stats.totalRevenue += amount;
 
       // Revenue by month
@@ -112,10 +116,7 @@ function calculateStats(payments) {
       stats.revenueByMonth[monthKey] += amount;
 
       // This month's revenue
-      if (
-        paymentDate.getMonth() === currentMonth &&
-        paymentDate.getFullYear() === currentYear
-      ) {
+      if (paymentDate.getMonth() === currentMonth && paymentDate.getFullYear() === currentYear) {
         stats.monthRevenue += amount;
       }
     }
@@ -145,10 +146,18 @@ function renderStats(stats) {
   const totalTransactionsEl = document.getElementById('totalTransactions');
   const monthRevenueEl = document.getElementById('monthRevenue');
 
-  if (totalRevenueEl) totalRevenueEl.textContent = `£${stats.totalRevenue.toFixed(2)}`;
-  if (activeSubscriptionsEl) activeSubscriptionsEl.textContent = stats.activeSubscriptions;
-  if (totalTransactionsEl) totalTransactionsEl.textContent = stats.totalTransactions;
-  if (monthRevenueEl) monthRevenueEl.textContent = `£${stats.monthRevenue.toFixed(2)}`;
+  if (totalRevenueEl) {
+    totalRevenueEl.textContent = `£${stats.totalRevenue.toFixed(2)}`;
+  }
+  if (activeSubscriptionsEl) {
+    activeSubscriptionsEl.textContent = stats.activeSubscriptions;
+  }
+  if (totalTransactionsEl) {
+    totalTransactionsEl.textContent = stats.totalTransactions;
+  }
+  if (monthRevenueEl) {
+    monthRevenueEl.textContent = `£${stats.monthRevenue.toFixed(2)}`;
+  }
 
   // Update change indicators
   const revenueChangeEl = document.getElementById('revenueChange');
@@ -156,10 +165,18 @@ function renderStats(stats) {
   const transactionChangeEl = document.getElementById('transactionChange');
   const monthChangeEl = document.getElementById('monthChange');
 
-  if (revenueChangeEl) revenueChangeEl.textContent = 'All time total';
-  if (subscriptionChangeEl) subscriptionChangeEl.textContent = 'Currently active';
-  if (transactionChangeEl) transactionChangeEl.textContent = 'All transactions';
-  if (monthChangeEl) monthChangeEl.textContent = 'This month';
+  if (revenueChangeEl) {
+    revenueChangeEl.textContent = 'All time total';
+  }
+  if (subscriptionChangeEl) {
+    subscriptionChangeEl.textContent = 'Currently active';
+  }
+  if (transactionChangeEl) {
+    transactionChangeEl.textContent = 'All transactions';
+  }
+  if (monthChangeEl) {
+    monthChangeEl.textContent = 'This month';
+  }
 }
 
 /**
@@ -167,7 +184,9 @@ function renderStats(stats) {
  */
 function renderRevenueChart(stats) {
   const ctx = document.getElementById('revenueChart');
-  if (!ctx) return;
+  if (!ctx) {
+    return;
+  }
 
   // Destroy existing chart
   if (revenueChart) {
@@ -216,7 +235,7 @@ function renderRevenueChart(stats) {
           beginAtZero: true,
           ticks: {
             callback: function (value) {
-              return '£' + value.toFixed(0);
+              return `£${value.toFixed(0)}`;
             },
           },
         },
@@ -230,7 +249,9 @@ function renderRevenueChart(stats) {
  */
 function renderPlansChart(stats) {
   const ctx = document.getElementById('plansChart');
-  if (!ctx) return;
+  if (!ctx) {
+    return;
+  }
 
   // Destroy existing chart
   if (plansChart) {
@@ -288,7 +309,9 @@ function renderPlansChart(stats) {
  */
 function renderPaymentsTable(payments, suppliers) {
   const tbody = document.getElementById('paymentsTableBody');
-  if (!tbody) return;
+  if (!tbody) {
+    return;
+  }
 
   if (payments.length === 0) {
     tbody.innerHTML = `
@@ -326,8 +349,8 @@ function renderPaymentsTable(payments, suppliers) {
         payment.status === 'success' || payment.status === 'completed'
           ? 'success'
           : payment.status === 'pending'
-          ? 'pending'
-          : 'failed';
+            ? 'pending'
+            : 'failed';
 
       return `
         <tr>
