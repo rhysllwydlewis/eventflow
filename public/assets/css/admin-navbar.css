@@ -202,7 +202,12 @@
   background: white;
   color: #6b7280;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s, transform 0.6s ease;
+}
+
+.navbar-icon-btn svg {
+  stroke: currentColor;
+  fill: none;
 }
 
 .navbar-icon-btn:hover {

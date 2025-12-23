@@ -3745,6 +3745,21 @@ app.post('/api/photos/reorder', authRequired, csrfProtection, async (req, res) =
   }
 });
 
+// ---------- Maintenance Mode ----------
+// Extract user from cookie for all requests (optional - doesn't block if not authenticated)
+app.use((req, res, next) => {
+  const u = getUserFromCookie(req);
+  if (u) {
+    req.user = u;
+    req.userId = u.id;
+  }
+  next();
+});
+
+// Maintenance mode check - blocks non-admin users if enabled
+const maintenanceMode = require('./middleware/maintenance');
+app.use(maintenanceMode);
+
 // ---------- Auth Routes ----------
 const authRoutes = require('./routes/auth');
 app.use('/api/auth', authRoutes);

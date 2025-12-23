@@ -231,7 +231,12 @@
     
     <!-- Maintenance Mode -->
     <div class="card">
-      <h2>Maintenance Mode</h2>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+        <h2 style="margin:0;">Maintenance Mode</h2>
+        <button class="btn" id="quickToggleMaintenance" style="min-width:120px;">
+          <span id="maintenanceStatusText">Loading...</span>
+        </button>
+      </div>
       <div class="warning-banner">
         <strong>⚠️ Warning:</strong> Enabling maintenance mode will make the site inaccessible to all users except admins.
       </div>
@@ -391,12 +396,57 @@
   async function loadMaintenanceMode() {
     try {
       const maintenance = await AdminShared.api('/api/admin/settings/maintenance');
-      document.getElementById('maintenanceMode').checked = maintenance.enabled || false;
+      const isEnabled = maintenance.enabled || false;
+      document.getElementById('maintenanceMode').checked = isEnabled;
       document.getElementById('maintenanceMessage').value = maintenance.message || '';
+      
+      // Update quick toggle button
+      updateMaintenanceButton(isEnabled);
     } catch (err) {
       console.error('Failed to load maintenance mode:', err);
     }
   }
+  
+  // Update maintenance button appearance
+  function updateMaintenanceButton(enabled) {
+    const btn = document.getElementById('quickToggleMaintenance');
+    const text = document.getElementById('maintenanceStatusText');
+    if (enabled) {
+      btn.className = 'btn btn-danger';
+      text.textContent = '🔴 ON - Disable';
+    } else {
+      btn.className = 'btn btn-success';
+      text.textContent = '🟢 OFF - Enable';
+    }
+  }
+  
+  // Quick toggle maintenance mode
+  document.getElementById('quickToggleMaintenance').addEventListener('click', async () => {
+    const currentState = document.getElementById('maintenanceMode').checked;
+    const newState = !currentState;
+    
+    if (newState && !AdminShared.confirm('Enable maintenance mode? The site will be inaccessible to non-admin users.')) {
+      return;
+    }
+    
+    if (!newState && !AdminShared.confirm('Disable maintenance mode? The site will become accessible to all users.')) {
+      return;
+    }
+    
+    try {
+      const data = {
+        enabled: newState,
+        message: document.getElementById('maintenanceMessage').value || "We're performing scheduled maintenance. We'll be back soon!",
+      };
+      
+      await AdminShared.api('/api/admin/settings/maintenance', 'PUT', data);
+      document.getElementById('maintenanceMode').checked = newState;
+      updateMaintenanceButton(newState);
+      AdminShared.showToast(`Maintenance mode ${newState ? 'enabled' : 'disabled'}`, 'success');
+    } catch (err) {
+      AdminShared.showToast(`Failed to toggle: ${err.message}`, 'error');
+    }
+  });
   
   // Save maintenance mode
   document.getElementById('saveMaintenanceMode').addEventListener('click', async () => {
@@ -411,6 +461,7 @@
     
     try {
       await AdminShared.api('/api/admin/settings/maintenance', 'PUT', data);
+      updateMaintenanceButton(data.enabled);
       AdminShared.showToast('Maintenance mode updated', 'success');
     } catch (err) {
       AdminShared.showToast(`Failed to save: ${err.message}`, 'error');
@@ -464,8 +515,10 @@
     if (preview) {
       preview.document.write(`
         <html>
-          <head><title>${safeSubject}</title><script src="/assets/js/admin-navbar.js" defer></script>
-</head>
+          <head>
+            <title>${safeSubject}</title>
+            <script src="/assets/js/admin-navbar.js" defer><\/script>
+          </head>
           <body style="font-family:sans-serif;padding:2rem;" class="has-admin-navbar">
             <h2>Subject: ${safeSubject}</h2>
             <hr>

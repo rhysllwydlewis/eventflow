@@ -18,6 +18,8 @@ const files = {
   audit_logs: path.join(DATA_DIR, 'audit_logs.json'),
   search_history: path.join(DATA_DIR, 'search_history.json'),
   photos: path.join(DATA_DIR, 'photos.json'),
+  payments: path.join(DATA_DIR, 'payments.json'),
+  settings: path.join(DATA_DIR, 'settings.json'),
 };
 
 function ensure() {
@@ -35,18 +37,21 @@ function read(name) {
   ensure();
   try {
     const raw = fs.readFileSync(files[name], 'utf8') || '[]';
-    return JSON.parse(raw);
+    // Settings should be an object, not an array
+    const defaultValue = name === 'settings' ? '{}' : '[]';
+    return JSON.parse(raw || defaultValue);
   } catch (_err) {
-    // If a file is corrupt, fall back to backup if available; otherwise empty array.
+    // If a file is corrupt, fall back to backup if available; otherwise empty array/object.
     const backup = `${files[name]}.bak`;
     if (fs.existsSync(backup)) {
       try {
-        return JSON.parse(fs.readFileSync(backup, 'utf8') || '[]');
+        const defaultValue = name === 'settings' ? '{}' : '[]';
+        return JSON.parse(fs.readFileSync(backup, 'utf8') || defaultValue);
       } catch (_err2) {
-        return [];
+        return name === 'settings' ? {} : [];
       }
     }
-    return [];
+    return name === 'settings' ? {} : [];
   }
 }
 
