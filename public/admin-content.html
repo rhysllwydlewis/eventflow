@@ -147,7 +147,7 @@
     <div id="homepage" class="tab-content active">
       <div class="card">
         <h2>Homepage Hero Section</h2>
-        <form id="heroForm">
+        <form id="heroForm" action="#">
           <div class="form-row">
             <label for="heroTitle">Hero Title</label>
             <input type="text" id="heroTitle" placeholder="Plan Your Perfect Event">
@@ -285,7 +285,7 @@
     modal.innerHTML = `
       <div class="modal modal-medium">
         <h3>${announcement ? 'Edit' : 'Add'} Announcement</h3>
-        <form id="announcementForm">
+        <form id="announcementForm" action="#">
           <div class="form-row">
             <label>Message</label>
             <textarea id="announcementMessage" rows="3" required>${announcement ? AdminShared.escapeHtml(announcement.message) : ''}</textarea>
@@ -407,7 +407,7 @@
     modal.innerHTML = `
       <div class="modal modal-medium">
         <h3>${faq ? 'Edit' : 'Add'} FAQ</h3>
-        <form id="faqForm">
+        <form id="faqForm" action="#">
           <div class="form-row">
             <label>Question</label>
             <input type="text" id="faqQuestion" required value="${faq ? AdminShared.escapeHtml(faq.question) : ''}">
