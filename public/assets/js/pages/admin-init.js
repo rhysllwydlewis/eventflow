@@ -229,8 +229,8 @@
         `</div>` +
         `</div>`;
 
-      // Make name clickable - link to admin supplier detail page
-      const nameLink = `<a href="/admin-supplier-detail.html?id=${s.id}" style="color:#3b82f6;font-weight:600;text-decoration:none;">${escapeHtml(s.name)}</a>`;
+      // Make name clickable - link to public supplier profile
+      const nameLink = `<a href="/supplier.html?id=${s.id}" style="color:#3b82f6;font-weight:600;text-decoration:none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${escapeHtml(s.name)}</a>`;
       const emailLink = s.email
         ? `<a href="mailto:${s.email}" style="color:#6b7280;text-decoration:none;">${escapeHtml(s.email)}</a>`
         : '—';
@@ -262,9 +262,9 @@
       // Make title clickable to package page
       const titleLink = `<a href="/package.html?id=${p.id}" style="color:#3b82f6;font-weight:600;text-decoration:none;" target="_blank">${escapeHtml(p.title)}</a>`;
 
-      // Make supplier name clickable
+      // Make supplier name clickable to public profile (same window)
       const supplierLink = p.supplierName
-        ? `<a href="/supplier.html?id=${p.supplierId}" style="color:#6b7280;text-decoration:none;" target="_blank">${escapeHtml(p.supplierName)}</a>`
+        ? `<a href="/supplier.html?id=${p.supplierId}" style="color:#6b7280;text-decoration:none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${escapeHtml(p.supplierName)}</a>`
         : '—';
 
       const price = p.price_display || p.price || '—';

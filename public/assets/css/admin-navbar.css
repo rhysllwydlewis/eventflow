@@ -1,0 +1,464 @@
+/**
+ * Modern Admin Top Navbar Styles
+ * EventFlow-themed navigation bar for admin panel
+ */
+
+/* Top Navbar Container */
+.admin-top-navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 70px;
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  border-bottom: 1px solid #e5e7eb;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  transition: all 0.3s ease;
+}
+
+/* Navbar Content Container */
+.admin-navbar-content {
+  width: 100%;
+  max-width: 1920px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+/* Brand Section (Left) */
+.admin-navbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.admin-navbar-logo {
+  font-size: 28px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-decoration: none;
+  letter-spacing: -0.5px;
+}
+
+.admin-navbar-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #6b7280;
+  padding-left: 12px;
+  border-left: 2px solid #e5e7eb;
+}
+
+/* Navigation Links (Center) */
+.admin-navbar-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  justify-content: center;
+  overflow-x: auto;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.admin-navbar-nav::-webkit-scrollbar {
+  display: none;
+}
+
+.admin-nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  color: #4b5563;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  position: relative;
+}
+
+.admin-nav-btn:hover {
+  background: rgba(102, 126, 234, 0.08);
+  color: #667eea;
+  transform: translateY(-1px);
+}
+
+.admin-nav-btn.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.admin-nav-btn .nav-icon {
+  font-size: 18px;
+  width: 20px;
+  text-align: center;
+}
+
+/* Badge on nav buttons */
+.admin-nav-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  background: #ef4444;
+  color: white;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.4);
+}
+
+.admin-nav-badge.badge-warning {
+  background: #f59e0b;
+}
+
+.admin-nav-badge.badge-info {
+  background: #3b82f6;
+}
+
+/* Right Section (User & Actions) */
+.admin-navbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+/* Database Status Indicator */
+.db-status-badge {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.db-status-badge.db-mongodb {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.db-status-badge.db-local {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.db-status-badge.db-loading {
+  background: #e5e7eb;
+  color: #6b7280;
+}
+
+.db-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Refresh Button */
+.navbar-icon-btn {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: white;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.navbar-icon-btn:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+  color: #374151;
+  transform: scale(1.05);
+}
+
+.navbar-icon-btn:active {
+  transform: scale(0.98);
+}
+
+/* User Dropdown */
+.admin-user-dropdown {
+  position: relative;
+}
+
+.admin-user-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  color: #374151;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.admin-user-btn:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+}
+
+.admin-user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.admin-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 200px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  padding: 8px;
+  display: none;
+  z-index: 1100;
+}
+
+.admin-dropdown-menu.show {
+  display: block;
+  animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.admin-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  color: #374151;
+  font-size: 14px;
+  text-decoration: none;
+  transition: all 0.15s;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+}
+
+.admin-dropdown-item:hover {
+  background: #f3f4f6;
+  color: #667eea;
+}
+
+.admin-dropdown-divider {
+  height: 1px;
+  background: #e5e7eb;
+  margin: 8px 0;
+}
+
+/* Mobile Hamburger Menu */
+.admin-hamburger {
+  display: none;
+  width: 40px;
+  height: 40px;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  background: transparent;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.admin-hamburger span {
+  width: 20px;
+  height: 2px;
+  background: #374151;
+  border-radius: 2px;
+  transition: all 0.3s;
+}
+
+.admin-hamburger:hover {
+  background: #f9fafb;
+}
+
+.admin-hamburger.active span:nth-child(1) {
+  transform: rotate(45deg) translate(5px, 5px);
+}
+
+.admin-hamburger.active span:nth-child(2) {
+  opacity: 0;
+}
+
+.admin-hamburger.active span:nth-child(3) {
+  transform: rotate(-45deg) translate(5px, -5px);
+}
+
+/* Content Padding (to account for fixed navbar) */
+body.has-admin-navbar {
+  padding-top: 90px;
+}
+
+.admin-main-content {
+  max-width: 1920px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .admin-navbar-nav {
+    gap: 4px;
+  }
+  
+  .admin-nav-btn {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .admin-navbar-title {
+    display: none;
+  }
+  
+  .admin-nav-btn .nav-label {
+    display: none;
+  }
+  
+  .admin-nav-btn {
+    padding: 10px;
+  }
+}
+
+@media (max-width: 768px) {
+  .admin-top-navbar {
+    padding: 0 16px;
+  }
+  
+  .admin-hamburger {
+    display: flex;
+  }
+  
+  .admin-navbar-nav {
+    position: fixed;
+    top: 70px;
+    left: 0;
+    right: 0;
+    background: white;
+    flex-direction: column;
+    align-items: stretch;
+    padding: 16px;
+    gap: 8px;
+    border-bottom: 1px solid #e5e7eb;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    max-height: calc(100vh - 70px);
+    overflow-y: auto;
+    display: none;
+  }
+  
+  .admin-navbar-nav.show {
+    display: flex;
+  }
+  
+  .admin-nav-btn .nav-label {
+    display: inline;
+  }
+  
+  .admin-nav-btn {
+    justify-content: flex-start;
+    padding: 12px 16px;
+  }
+  
+  .db-status-badge {
+    display: none;
+  }
+  
+  body.has-admin-navbar {
+    padding-top: 80px;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-navbar-logo {
+    font-size: 22px;
+  }
+  
+  .admin-navbar-actions {
+    gap: 8px;
+  }
+  
+  .navbar-icon-btn {
+    width: 36px;
+    height: 36px;
+  }
+}
+
+/* Print styles */
+@media print {
+  .admin-top-navbar {
+    display: none;
+  }
+  
+  body.has-admin-navbar {
+    padding-top: 0;
+  }
+}
