@@ -23,6 +23,8 @@ const UPLOAD_DIRS = {
 
 /**
  * Ensure all upload directories exist on module load
+ * Note: Uses synchronous operations intentionally to block until directories exist,
+ * preventing race conditions when the module is immediately used after require().
  */
 function ensureDirectoriesExist() {
   const dirs = Object.values(UPLOAD_DIRS);
@@ -125,10 +127,11 @@ async function processImage(buffer, config) {
  */
 async function saveToLocal(buffer, filename, directory = 'original') {
   const dir = UPLOAD_DIRS[directory];
-  
-  // Ensure directory exists before writing (defensive check)
+
+  // Defensive check: Ensure directory exists before writing
+  // This protects against runtime deletion of directories or misconfiguration
   await fs.mkdir(dir, { recursive: true });
-  
+
   const filepath = path.join(dir, filename);
   await fs.writeFile(filepath, buffer);
   return filepath;
