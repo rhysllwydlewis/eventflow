@@ -6,6 +6,19 @@
 (function () {
   'use strict';
 
+  // HTML escaping utility
+  function escapeHtml(unsafe) {
+    if (typeof unsafe !== 'string') {
+      return '';
+    }
+    return unsafe
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
   // Notification System
   class NotificationManager {
     constructor() {
@@ -44,10 +57,18 @@
       notification.innerHTML = `
         <div style="display: flex; align-items: center; gap: 12px;">
           <div class="notification-icon">${icons[type] || icons.info}</div>
-          <div class="notification-content">${message}</div>
-          <button class="notification-close" onclick="this.parentElement.parentElement.remove()">×</button>
+          <div class="notification-content">${escapeHtml(message)}</div>
+          <button class="notification-close">×</button>
         </div>
       `;
+
+      // Add close button handler
+      const closeBtn = notification.querySelector('.notification-close');
+      if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+          notification.remove();
+        });
+      }
 
       this.container.appendChild(notification);
       this.notifications.push(notification);
@@ -184,9 +205,18 @@
               <kbd style="padding: 4px 8px; background: #f3f4f6; border-radius: 4px; font-size: 12px;">S</kbd>
             </div>
           </div>
-          <button onclick="this.parentElement.parentElement.remove()" style="margin-top: 1.5rem; width: 100%; padding: 0.75rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">Close</button>
+          <button class="modal-close-button" style="margin-top: 1.5rem; width: 100%; padding: 0.75rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">Close</button>
         </div>
       `;
+
+      // Add close button handler
+      const closeBtn = modal.querySelector('.modal-close-button');
+      if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+          modal.remove();
+        });
+      }
+
       modal.addEventListener('click', e => {
         if (e.target === modal) {
           modal.remove();
@@ -292,7 +322,7 @@
             ${activity.icon || '•'}
           </div>
           <div style="flex: 1;">
-            <div style="font-size: 14px; color: #1f2937; font-weight: 500;">${activity.message}</div>
+            <div style="font-size: 14px; color: #1f2937; font-weight: 500;">${escapeHtml(activity.message)}</div>
             <div style="font-size: 12px; color: #6b7280; margin-top: 2px;">${this.formatTime(activity.timestamp)}</div>
           </div>
         </div>
@@ -341,8 +371,8 @@
               (item, i) => `
             <div>
               <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                <span style="font-size: 14px; color: #6b7280; font-weight: 500;">${item.label}</span>
-                <span style="font-size: 14px; color: #1f2937; font-weight: 700;">${item.value}</span>
+                <span style="font-size: 14px; color: #6b7280; font-weight: 500;">${escapeHtml(String(item.label))}</span>
+                <span style="font-size: 14px; color: #1f2937; font-weight: 700;">${escapeHtml(String(item.value))}</span>
               </div>
               <div style="background: #f3f4f6; height: 8px; border-radius: 999px; overflow: hidden;">
                 <div style="height: 100%; background: ${colors[i % colors.length]}; width: ${(item.value / maxValue) * 100}%; transition: width 1s ease;"></div>
@@ -401,8 +431,8 @@
                 seg => `
               <div style="display: flex; align-items: center; gap: 12px;">
                 <div style="width: 12px; height: 12px; border-radius: 2px; background: ${seg.color};"></div>
-                <span style="flex: 1; font-size: 14px; color: #6b7280;">${seg.label}</span>
-                <span style="font-size: 14px; color: #1f2937; font-weight: 600;">${seg.value} (${seg.percentage}%)</span>
+                <span style="flex: 1; font-size: 14px; color: #6b7280;">${escapeHtml(String(seg.label))}</span>
+                <span style="font-size: 14px; color: #1f2937; font-weight: 600;">${escapeHtml(String(seg.value))} (${escapeHtml(String(seg.percentage))}%)</span>
               </div>
             `
               )
@@ -446,7 +476,7 @@
       wrapper.appendChild(this.input);
 
       const clearBtn = document.createElement('button');
-      clearBtn.innerHTML = '×';
+      clearBtn.textContent = '×';
       clearBtn.style.cssText = `
         position: absolute;
         right: 8px;
