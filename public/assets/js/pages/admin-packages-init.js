@@ -175,9 +175,6 @@
   function setupImageUpload() {
     const uploadZone = document.getElementById('imageUploadZone');
     const fileInput = document.getElementById('imageFileInput');
-    const placeholder = document.getElementById('uploadPlaceholder');
-    const preview = document.getElementById('imagePreview');
-    const previewImage = document.getElementById('previewImage');
     const changeBtn = document.getElementById('changeImageBtn');
 
     // Click to upload
@@ -430,16 +427,12 @@
         uploadStatus.textContent = 'Uploading image...';
         progressBar.style.width = '50%';
 
-        const packageId = id || generateId('pkg');
-
         // Handle image upload if there's a new file
         // TODO: Implement image upload to local storage or S3
         // For now, show a warning and use the preview data URL
         console.warn('Image upload not yet implemented with MongoDB backend');
         if (typeof Toast !== 'undefined') {
-          Toast.warning(
-            'Image upload temporarily disabled. Using image preview data URL.'
-          );
+          Toast.warning('Image upload temporarily disabled. Using image preview data URL.');
         }
         uploadProgress.style.display = 'none';
         // Use the current preview/image URL if available
