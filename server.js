@@ -1637,6 +1637,51 @@ app.delete(
   }
 );
 
+// Admin: Upload package image
+app.post(
+  '/api/admin/packages/:id/image',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  photoUpload.upload.single('image'),
+  async (req, res) => {
+    try {
+      const packageId = req.params.id;
+      const packages = await dbUnified.read('packages');
+      const packageIndex = packages.findIndex(p => p.id === packageId);
+
+      if (packageIndex === -1) {
+        return res.status(404).json({ error: 'Package not found' });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({ error: 'No image file provided' });
+      }
+
+      // Process and save the image
+      const imageData = await photoUpload.processAndSaveImage(
+        req.file.buffer,
+        req.file.originalname
+      );
+
+      // Update package with new image URL
+      packages[packageIndex].image = imageData.optimized || imageData.large;
+      packages[packageIndex].updatedAt = new Date().toISOString();
+
+      await dbUnified.write('packages', packages);
+
+      res.json({
+        ok: true,
+        package: packages[packageIndex],
+        imageUrl: packages[packageIndex].image,
+      });
+    } catch (error) {
+      console.error('Error uploading package image:', error);
+      res.status(500).json({ error: 'Failed to upload image', details: error.message });
+    }
+  }
+);
+
 app.get('/api/categories/:slug', async (req, res) => {
   const categories = await dbUnified.read('categories');
   const category = categories.find(c => c.slug === req.params.slug);

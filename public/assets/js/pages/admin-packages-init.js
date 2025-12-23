@@ -417,30 +417,86 @@
       saveBtn.disabled = true;
       saveBtn.textContent = 'Saving...';
 
-      // Handle image - simplified logic
+      // Handle image upload
       let imageUrl = document.getElementById('packageImage').value;
 
+      // If user uploaded a file, upload it first
       if (currentImageFile) {
-        // If user selected a new file, use the preview URL (already stored as base64 from handleImageFile)
-        imageUrl = currentImageUrl;
+        const formData = new FormData();
+        formData.append('image', currentImageFile);
+
+        // Get CSRF token
+        const csrfResponse = await fetch('/api/csrf-token', {
+          credentials: 'include',
+        });
+        const csrfData = await csrfResponse.json();
+        const csrfToken = csrfData.csrfToken;
+
+        // Create a placeholder package first if it's a new package
+        let packageId = id;
+        if (!id) {
+          // Create the package first without image
+          packageData.image = '/assets/images/placeholder-package.jpg';
+          const createResponse = await api('/api/admin/packages', 'POST', packageData);
+          packageId = createResponse.package.id;
+        }
+
+        // Upload the image
+        const uploadResponse = await fetch(`/api/admin/packages/${packageId}/image`, {
+          method: 'POST',
+          headers: {
+            'X-CSRF-Token': csrfToken,
+          },
+          credentials: 'include',
+          body: formData,
+        });
+
+        if (!uploadResponse.ok) {
+          const errorData = await uploadResponse.json();
+          throw new Error(errorData.error || 'Failed to upload image');
+        }
+
+        const uploadData = await uploadResponse.json();
+        imageUrl = uploadData.imageUrl;
+
+        // Update the package with the new image URL if editing
+        if (id) {
+          packageData.image = imageUrl;
+          await api(`/api/admin/packages/${id}`, 'PUT', packageData);
+        }
       } else if (currentImageUrl) {
+        // User provided a URL
         imageUrl = currentImageUrl;
-      }
+        packageData.image = imageUrl;
 
-      if (!imageUrl) {
-        throw new Error('Please select an image URL or upload an image file');
-      }
+        // Save package
+        if (id) {
+          await api(`/api/admin/packages/${id}`, 'PUT', packageData);
+        } else {
+          await api('/api/admin/packages', 'POST', packageData);
+        }
+      } else if (!imageUrl) {
+        // No image provided - use placeholder or keep existing
+        if (!id) {
+          packageData.image = '/assets/images/placeholder-package.jpg';
+        }
 
-      packageData.image = imageUrl;
-
-      // Save to MongoDB via API
-      packageData.createdAt = id ? undefined : new Date().toISOString();
-      packageData.updatedAt = new Date().toISOString();
-
-      if (id) {
-        await api(`/api/admin/packages/${id}`, 'PUT', packageData);
+        // Save package
+        if (id) {
+          await api(`/api/admin/packages/${id}`, 'PUT', packageData);
+        } else {
+          await api('/api/admin/packages', 'POST', packageData);
+        }
       } else {
-        await api('/api/admin/packages', 'POST', packageData);
+        // URL provided in text field
+        packageData.image = imageUrl;
+
+        // Save package
+        if (id) {
+          await api(`/api/admin/packages/${id}`, 'PUT', packageData);
+        } else {
+          await api('/api/admin/packages', 'POST', packageData);
+        }
       }
 
       if (typeof Toast !== 'undefined') {
