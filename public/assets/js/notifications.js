@@ -315,17 +315,21 @@ class NotificationCenter {
           warning: '⚠',
           info: 'ℹ',
         };
+        const escapedId = this.escapeHtml(String(n.id));
+        const isRead = Boolean(n.read);
+        const readBg = isRead ? 'transparent' : 'rgba(11, 128, 115, 0.05)';
+        const readBorder = isRead ? 'transparent' : 'rgba(11, 128, 115, 0.1)';
 
         return `
-        <div class="notification-item" data-id="${n.id}" style="
+        <div class="notification-item" data-id="${escapedId}" data-read="${isRead}" style="
           padding: 0.75rem;
           border-radius: 8px;
           margin-bottom: 0.5rem;
           cursor: pointer;
-          background: ${n.read ? 'transparent' : 'rgba(11, 128, 115, 0.05)'};
-          border: 1px solid ${n.read ? 'transparent' : 'rgba(11, 128, 115, 0.1)'};
+          background: ${readBg};
+          border: 1px solid ${readBorder};
           transition: background 0.2s ease-out;
-        " onmouseover="this.style.background='rgba(11, 128, 115, 0.08)'" onmouseout="this.style.background='${n.read ? 'transparent' : 'rgba(11, 128, 115, 0.05)'}'">
+        ">
           <div style="display: flex; gap: 0.75rem; align-items: flex-start;">
             <div style="
               width: 24px;
@@ -357,8 +361,21 @@ class NotificationCenter {
       })
       .join('');
 
-    // Add click handlers
+    // Add click and hover handlers
     listContainer.querySelectorAll('.notification-item').forEach(item => {
+      const isRead = item.dataset.read === 'true';
+      const defaultBg = isRead ? 'transparent' : 'rgba(11, 128, 115, 0.05)';
+      const hoverBg = 'rgba(11, 128, 115, 0.08)';
+
+      // Hover effect
+      item.addEventListener('mouseenter', () => {
+        item.style.background = hoverBg;
+      });
+      item.addEventListener('mouseleave', () => {
+        item.style.background = defaultBg;
+      });
+
+      // Click handler
       item.addEventListener('click', () => {
         const id = item.dataset.id;
         this.manager.markAsRead(id);

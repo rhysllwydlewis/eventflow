@@ -157,7 +157,7 @@
 
     <div id="packageFormSection" class="card">
       <h2 id="formTitle">Add Package</h2>
-      <form id="packageForm">
+      <form id="packageForm" action="#">
         <input type="hidden" id="packageId" name="id">
         
         <div class="form-row">
@@ -193,7 +193,7 @@
               <p style="margin:0;font-size:12px;color:#6b7280;">Supports: JPG, PNG, GIF (max 5MB)</p>
             </div>
             <div id="imagePreview" class="hidden">
-              <img id="previewImage" style="max-width:200px;max-height:200px;border-radius:4px;margin-bottom:1rem;">
+              <img id="previewImage" alt="Package preview image" style="max-width:200px;max-height:200px;border-radius:4px;margin-bottom:1rem;">
               <div>
                 <button type="button" class="btn btn-secondary btn-small" id="changeImageBtn">Change Image</button>
               </div>
