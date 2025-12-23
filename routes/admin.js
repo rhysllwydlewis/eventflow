@@ -1356,96 +1356,101 @@ router.post('/photos/:id/reject', authRequired, roleRequired('admin'), (req, res
  * POST /api/admin/suppliers/smart-tags
  * Generate smart tags for all suppliers based on their descriptions and categories
  */
-router.post('/suppliers/smart-tags', authRequired, roleRequired('admin'), (req, res) => {
-  const suppliers = read('suppliers');
-  let taggedCount = 0;
+router.post('/suppliers/smart-tags', authRequired, roleRequired('admin'), async (req, res) => {
+  try {
+    const suppliers = await dbUnified.read('suppliers');
+    let taggedCount = 0;
 
-  // Common wedding/event industry tags
-  const tagMapping = {
-    venues: ['venue', 'location', 'space', 'ceremony', 'reception'],
-    catering: ['food', 'catering', 'menu', 'dining', 'buffet', 'meal'],
-    photography: ['photo', 'photography', 'photographer', 'camera', 'pictures'],
-    entertainment: ['music', 'band', 'dj', 'entertainment', 'performance'],
-    flowers: ['flowers', 'floral', 'bouquet', 'decoration', 'decor'],
-    transport: ['transport', 'car', 'vehicle', 'limousine', 'travel'],
-    extras: ['extras', 'accessories', 'favors', 'gifts'],
-  };
+    // Common wedding/event industry tags
+    const tagMapping = {
+      venues: ['venue', 'location', 'space', 'ceremony', 'reception'],
+      catering: ['food', 'catering', 'menu', 'dining', 'buffet', 'meal'],
+      photography: ['photo', 'photography', 'photographer', 'camera', 'pictures'],
+      entertainment: ['music', 'band', 'dj', 'entertainment', 'performance'],
+      flowers: ['flowers', 'floral', 'bouquet', 'decoration', 'decor'],
+      transport: ['transport', 'car', 'vehicle', 'limousine', 'travel'],
+      extras: ['extras', 'accessories', 'favors', 'gifts'],
+    };
 
-  // Additional context-based tags
-  const contextTags = {
-    wedding: ['wedding', 'bride', 'groom', 'marriage', 'nuptial'],
-    outdoor: ['outdoor', 'garden', 'countryside', 'open-air'],
-    indoor: ['indoor', 'barn', 'hall', 'ballroom'],
-    luxury: ['luxury', 'premium', 'exclusive', 'upscale'],
-    rustic: ['rustic', 'countryside', 'barn', 'rural'],
-    modern: ['modern', 'contemporary', 'stylish'],
-    traditional: ['traditional', 'classic', 'formal'],
-    budget: ['affordable', 'budget', 'value'],
-  };
+    // Additional context-based tags
+    const contextTags = {
+      wedding: ['wedding', 'bride', 'groom', 'marriage', 'nuptial'],
+      outdoor: ['outdoor', 'garden', 'countryside', 'open-air'],
+      indoor: ['indoor', 'barn', 'hall', 'ballroom'],
+      luxury: ['luxury', 'premium', 'exclusive', 'upscale'],
+      rustic: ['rustic', 'countryside', 'barn', 'rural'],
+      modern: ['modern', 'contemporary', 'stylish'],
+      traditional: ['traditional', 'classic', 'formal'],
+      budget: ['affordable', 'budget', 'value'],
+    };
 
-  suppliers.forEach((supplier, index) => {
-    if (!supplier.approved) {
-      return;
-    }
+    suppliers.forEach((supplier, index) => {
+      if (!supplier.approved) {
+        return;
+      }
 
-    const tags = new Set();
-    const text = [
-      supplier.name || '',
-      supplier.description_short || '',
-      supplier.description_long || '',
-      supplier.category || '',
-      ...(supplier.amenities || []),
-    ]
-      .join(' ')
-      .toLowerCase();
+      const tags = new Set();
+      const text = [
+        supplier.name || '',
+        supplier.description_short || '',
+        supplier.description_long || '',
+        supplier.category || '',
+        ...(supplier.amenities || []),
+      ]
+        .join(' ')
+        .toLowerCase();
 
-    // Add category-based tags
-    const categoryKey = (supplier.category || '').toLowerCase().replace(/[^a-z]/g, '');
-    if (tagMapping[categoryKey]) {
-      tagMapping[categoryKey].forEach(tag => tags.add(tag));
-    }
+      // Add category-based tags
+      const categoryKey = (supplier.category || '').toLowerCase().replace(/[^a-z]/g, '');
+      if (tagMapping[categoryKey]) {
+        tagMapping[categoryKey].forEach(tag => tags.add(tag));
+      }
 
-    // Add context-based tags
-    Object.entries(contextTags).forEach(([tag, keywords]) => {
-      if (keywords.some(keyword => text.includes(keyword))) {
-        tags.add(tag);
+      // Add context-based tags
+      Object.entries(contextTags).forEach(([tag, keywords]) => {
+        if (keywords.some(keyword => text.includes(keyword))) {
+          tags.add(tag);
+        }
+      });
+
+      // Add location tag if available
+      if (supplier.location) {
+        const locationWords = supplier.location.toLowerCase().split(/[,\s]+/);
+        locationWords.forEach(word => {
+          if (word.length > 3) {
+            tags.add(word);
+          }
+        });
+      }
+
+      // Only update if we generated tags
+      if (tags.size > 0) {
+        suppliers[index].tags = Array.from(tags).slice(0, 10); // Limit to 10 tags
+        taggedCount++;
       }
     });
 
-    // Add location tag if available
-    if (supplier.location) {
-      const locationWords = supplier.location.toLowerCase().split(/[,\s]+/);
-      locationWords.forEach(word => {
-        if (word.length > 3) {
-          tags.add(word);
-        }
-      });
-    }
+    await dbUnified.write('suppliers', suppliers);
 
-    // Only update if we generated tags
-    if (tags.size > 0) {
-      suppliers[index].tags = Array.from(tags).slice(0, 10); // Limit to 10 tags
-      taggedCount++;
-    }
-  });
+    // Create audit log
+    auditLog({
+      adminId: req.user.id,
+      adminEmail: req.user.email,
+      action: 'SMART_TAGS_GENERATED',
+      targetType: 'suppliers',
+      targetId: null,
+      details: { suppliersTagged: taggedCount },
+    });
 
-  write('suppliers', suppliers);
-
-  // Create audit log
-  auditLog({
-    adminId: req.user.id,
-    adminEmail: req.user.email,
-    action: 'SMART_TAGS_GENERATED',
-    targetType: 'suppliers',
-    targetId: null,
-    details: { suppliersTagged: taggedCount },
-  });
-
-  res.json({
-    success: true,
-    message: `Smart tags generated for ${taggedCount} suppliers`,
-    taggedCount,
-  });
+    res.json({
+      success: true,
+      message: `Smart tags generated for ${taggedCount} suppliers`,
+      taggedCount,
+    });
+  } catch (error) {
+    console.error('Error generating smart tags:', error);
+    res.status(500).json({ error: 'Failed to generate smart tags', details: error.message });
+  }
 });
 
 // ---------- Badge Counts ----------
@@ -1955,7 +1960,7 @@ router.delete('/content/faqs/:id', authRequired, roleRequired('admin'), (req, re
  */
 router.get('/settings/site', authRequired, roleRequired('admin'), async (req, res) => {
   try {
-    const settings = await dbUnified.read('settings') || {};
+    const settings = (await dbUnified.read('settings')) || {};
     const site = settings.site || {
       name: 'EventFlow',
       tagline: 'Event planning made simple',
@@ -1977,7 +1982,7 @@ router.put('/settings/site', authRequired, roleRequired('admin'), async (req, re
   try {
     const { name, tagline, contactEmail, supportEmail } = req.body;
 
-    const settings = await dbUnified.read('settings') || {};
+    const settings = (await dbUnified.read('settings')) || {};
     settings.site = {
       name: name || 'EventFlow',
       tagline: tagline || 'Event planning made simple',
@@ -2011,7 +2016,7 @@ router.put('/settings/site', authRequired, roleRequired('admin'), async (req, re
  */
 router.get('/settings/features', authRequired, roleRequired('admin'), async (req, res) => {
   try {
-    const settings = await dbUnified.read('settings') || {};
+    const settings = (await dbUnified.read('settings')) || {};
     const features = settings.features || {
       registration: true,
       supplierApplications: true,
@@ -2034,7 +2039,7 @@ router.put('/settings/features', authRequired, roleRequired('admin'), async (req
   try {
     const { registration, supplierApplications, reviews, photoUploads, supportTickets } = req.body;
 
-    const settings = await dbUnified.read('settings') || {};
+    const settings = (await dbUnified.read('settings')) || {};
     settings.features = {
       registration: registration !== false,
       supplierApplications: supplierApplications !== false,
@@ -2069,7 +2074,7 @@ router.put('/settings/features', authRequired, roleRequired('admin'), async (req
  */
 router.get('/settings/maintenance', authRequired, roleRequired('admin'), async (req, res) => {
   try {
-    const settings = await dbUnified.read('settings') || {};
+    const settings = (await dbUnified.read('settings')) || {};
     const maintenance = settings.maintenance || {
       enabled: false,
       message: "We're performing scheduled maintenance. We'll be back soon!",
@@ -2089,7 +2094,7 @@ router.put('/settings/maintenance', authRequired, roleRequired('admin'), async (
   try {
     const { enabled, message } = req.body;
 
-    const settings = await dbUnified.read('settings') || {};
+    const settings = (await dbUnified.read('settings')) || {};
     settings.maintenance = {
       enabled: enabled === true,
       message: message || "We're performing scheduled maintenance. We'll be back soon!",
@@ -2119,84 +2124,94 @@ router.put('/settings/maintenance', authRequired, roleRequired('admin'), async (
  * GET /api/admin/settings/email-templates/:name
  * Get email template
  */
-router.get('/settings/email-templates/:name', authRequired, roleRequired('admin'), async (req, res) => {
-  try {
-    const settings = await dbUnified.read('settings') || {};
-    const emailTemplates = settings.emailTemplates || {};
+router.get(
+  '/settings/email-templates/:name',
+  authRequired,
+  roleRequired('admin'),
+  async (req, res) => {
+    try {
+      const settings = (await dbUnified.read('settings')) || {};
+      const emailTemplates = settings.emailTemplates || {};
 
-    const defaultTemplates = {
-      welcome: {
-        subject: 'Welcome to EventFlow!',
-        body: "Hi {{name}},\n\nWelcome to EventFlow! We're excited to help you plan your perfect event.\n\nBest regards,\nThe EventFlow Team",
-      },
-      verification: {
-        subject: 'Verify your email address',
-        body: 'Hi {{name}},\n\nPlease verify your email address by clicking the link below:\n\n{{verificationLink}}\n\nBest regards,\nThe EventFlow Team',
-      },
-      'password-reset': {
-        subject: 'Reset your password',
-        body: "Hi {{name}},\n\nYou requested a password reset. Click the link below to reset your password:\n\n{{resetLink}}\n\nIf you didn't request this, please ignore this email.\n\nBest regards,\nThe EventFlow Team",
-      },
-      'ticket-response': {
-        subject: 'New response to your support ticket',
-        body: 'Hi {{name}},\n\nYou have received a new response to your support ticket #{{ticketId}}.\n\n{{response}}\n\nBest regards,\nThe EventFlow Team',
-      },
-    };
+      const defaultTemplates = {
+        welcome: {
+          subject: 'Welcome to EventFlow!',
+          body: "Hi {{name}},\n\nWelcome to EventFlow! We're excited to help you plan your perfect event.\n\nBest regards,\nThe EventFlow Team",
+        },
+        verification: {
+          subject: 'Verify your email address',
+          body: 'Hi {{name}},\n\nPlease verify your email address by clicking the link below:\n\n{{verificationLink}}\n\nBest regards,\nThe EventFlow Team',
+        },
+        'password-reset': {
+          subject: 'Reset your password',
+          body: "Hi {{name}},\n\nYou requested a password reset. Click the link below to reset your password:\n\n{{resetLink}}\n\nIf you didn't request this, please ignore this email.\n\nBest regards,\nThe EventFlow Team",
+        },
+        'ticket-response': {
+          subject: 'New response to your support ticket',
+          body: 'Hi {{name}},\n\nYou have received a new response to your support ticket #{{ticketId}}.\n\n{{response}}\n\nBest regards,\nThe EventFlow Team',
+        },
+      };
 
-    const template = emailTemplates[req.params.name] || defaultTemplates[req.params.name];
+      const template = emailTemplates[req.params.name] || defaultTemplates[req.params.name];
 
-    if (!template) {
-      return res.status(404).json({ error: 'Template not found' });
+      if (!template) {
+        return res.status(404).json({ error: 'Template not found' });
+      }
+
+      res.json(template);
+    } catch (error) {
+      console.error('Error reading email template:', error);
+      res.status(500).json({ error: 'Failed to read settings' });
     }
-
-    res.json(template);
-  } catch (error) {
-    console.error('Error reading email template:', error);
-    res.status(500).json({ error: 'Failed to read settings' });
   }
-});
+);
 
 /**
  * PUT /api/admin/settings/email-templates/:name
  * Update email template
  */
-router.put('/settings/email-templates/:name', authRequired, roleRequired('admin'), async (req, res) => {
-  try {
-    const { subject, body } = req.body;
+router.put(
+  '/settings/email-templates/:name',
+  authRequired,
+  roleRequired('admin'),
+  async (req, res) => {
+    try {
+      const { subject, body } = req.body;
 
-    if (!subject || !body) {
-      return res.status(400).json({ error: 'Subject and body are required' });
+      if (!subject || !body) {
+        return res.status(400).json({ error: 'Subject and body are required' });
+      }
+
+      const settings = (await dbUnified.read('settings')) || {};
+      if (!settings.emailTemplates) {
+        settings.emailTemplates = {};
+      }
+
+      settings.emailTemplates[req.params.name] = {
+        subject,
+        body,
+        updatedAt: new Date().toISOString(),
+        updatedBy: req.user.email,
+      };
+
+      await dbUnified.write('settings', settings);
+
+      auditLog({
+        adminId: req.user.id,
+        adminEmail: req.user.email,
+        action: 'EMAIL_TEMPLATE_UPDATED',
+        targetType: 'email-template',
+        targetId: req.params.name,
+        details: { subject },
+      });
+
+      res.json({ success: true, template: settings.emailTemplates[req.params.name] });
+    } catch (error) {
+      console.error('Error updating email template:', error);
+      res.status(500).json({ error: 'Failed to update settings' });
     }
-
-    const settings = await dbUnified.read('settings') || {};
-    if (!settings.emailTemplates) {
-      settings.emailTemplates = {};
-    }
-
-    settings.emailTemplates[req.params.name] = {
-      subject,
-      body,
-      updatedAt: new Date().toISOString(),
-      updatedBy: req.user.email,
-    };
-
-    await dbUnified.write('settings', settings);
-
-    auditLog({
-      adminId: req.user.id,
-      adminEmail: req.user.email,
-      action: 'EMAIL_TEMPLATE_UPDATED',
-      targetType: 'email-template',
-      targetId: req.params.name,
-      details: { subject },
-    });
-
-    res.json({ success: true, template: settings.emailTemplates[req.params.name] });
-  } catch (error) {
-    console.error('Error updating email template:', error);
-    res.status(500).json({ error: 'Failed to update settings' });
   }
-});
+);
 
 /**
  * POST /api/admin/settings/email-templates/:name/reset
@@ -2208,7 +2223,7 @@ router.post(
   roleRequired('admin'),
   async (req, res) => {
     try {
-      const settings = await dbUnified.read('settings') || {};
+      const settings = (await dbUnified.read('settings')) || {};
       if (!settings.emailTemplates) {
         settings.emailTemplates = {};
       }
