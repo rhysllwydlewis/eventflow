@@ -417,24 +417,14 @@
       saveBtn.disabled = true;
       saveBtn.textContent = 'Saving...';
 
-      // Upload image if new file selected
+      // Handle image - use preview URL if file selected, otherwise use input field
       if (currentImageFile) {
-        const uploadProgress = document.getElementById('uploadProgress');
-        const progressBar = document.getElementById('progressBar');
-        const uploadStatus = document.getElementById('uploadStatus');
-
-        uploadProgress.style.display = 'block';
-        uploadStatus.textContent = 'Uploading image...';
-        progressBar.style.width = '50%';
-
-        // Handle image upload if there's a new file
-        // TODO: Implement image upload to local storage or S3
-        // For now, show a warning and use the preview data URL
-        console.warn('Image upload not yet implemented with MongoDB backend');
+        // Image upload to cloud storage not yet implemented with MongoDB backend
+        // Using preview data URL stored directly in MongoDB as interim solution
+        console.log('Using image preview data URL (upload to cloud storage not yet implemented)');
         if (typeof Toast !== 'undefined') {
-          Toast.warning('Image upload temporarily disabled. Using image preview data URL.');
+          Toast.info('Using image preview. Cloud storage upload coming soon.');
         }
-        uploadProgress.style.display = 'none';
       }
 
       // Set image URL from currentImageUrl or input field
