@@ -464,8 +464,10 @@
     if (preview) {
       preview.document.write(`
         <html>
-          <head><title>${safeSubject}</title><script src="/assets/js/admin-navbar.js" defer></script>
-</head>
+          <head>
+            <title>${safeSubject}</title>
+            <script src="/assets/js/admin-navbar.js" defer><\/script>
+          </head>
           <body style="font-family:sans-serif;padding:2rem;" class="has-admin-navbar">
             <h2>Subject: ${safeSubject}</h2>
             <hr>

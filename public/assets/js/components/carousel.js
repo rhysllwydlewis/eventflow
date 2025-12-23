@@ -406,7 +406,7 @@ class Carousel {
     let didDrag = false;
     let startX = 0;
     let startScrollLeft = 0;
-    const DRAG_THRESHOLD_PX = 6;
+    const DRAG_THRESHOLD_PX = 10; // Increased threshold for better click detection
 
     const onPointerDown = e => {
       if (e.pointerType === 'mouse' && e.button !== 0) {
@@ -418,9 +418,8 @@ class Carousel {
       startX = e.clientX;
       startScrollLeft = this.carouselContainer.scrollLeft;
 
-      this.carouselContainer.classList.add('is-dragging');
+      // Don't add dragging class immediately - wait for actual drag
       this.carouselContainer.setPointerCapture?.(e.pointerId);
-      document.body.style.userSelect = 'none';
 
       this._stopAutoScroll();
     };
@@ -433,6 +432,9 @@ class Carousel {
 
       if (!didDrag && Math.abs(dx) > DRAG_THRESHOLD_PX) {
         didDrag = true;
+        // Only add dragging class and prevent selection when actually dragging
+        this.carouselContainer.classList.add('is-dragging');
+        document.body.style.userSelect = 'none';
       }
 
       if (didDrag) {

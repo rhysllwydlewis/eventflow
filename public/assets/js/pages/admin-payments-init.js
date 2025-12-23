@@ -1,20 +1,8 @@
 /**
  * Admin Payment Analytics Initialization
  * Displays payment analytics and transaction history for administrators
+ * Uses MongoDB API instead of Firebase
  */
-
-import {
-  db,
-  auth,
-  collection,
-  getDocs,
-  query,
-  where,
-  orderBy,
-  limit,
-  onAuthStateChanged,
-  Timestamp,
-} from '../firebase-config.js';
 
 let revenueChart = null;
 let plansChart = null;
@@ -27,60 +15,15 @@ let currentFilters = {
 };
 
 /**
- * Check if user is admin
- */
-async function checkAdminAccess() {
-  return new Promise((resolve, reject) => {
-    onAuthStateChanged(auth, async user => {
-      if (!user) {
-        window.location.href = '/auth.html';
-        return;
-      }
-
-      try {
-        const response = await fetch('/api/auth/me');
-        if (!response.ok) {
-          throw new Error('Not authenticated');
-        }
-
-        const data = await response.json();
-        if (!data.user || data.user.role !== 'admin') {
-          window.location.href = '/';
-          return;
-        }
-
-        resolve(user);
-      } catch (error) {
-        console.error('Error checking admin access:', error);
-        window.location.href = '/auth.html';
-      }
-    });
-  });
-}
-
-/**
- * Load payment data from Firestore
+ * Load payment data from MongoDB API
  */
 async function loadPayments() {
   try {
-    const paymentsRef = collection(db, 'payments');
-    let q = query(paymentsRef, orderBy('createdAt', 'desc'), limit(100));
-
-    const querySnapshot = await getDocs(q);
-    const payments = [];
-
-    querySnapshot.forEach(doc => {
-      const data = doc.data();
-      payments.push({
-        id: doc.id,
-        ...data,
-        createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt),
-      });
-    });
-
-    return payments;
+    const response = await AdminShared.api('/api/admin/payments');
+    return response.items || [];
   } catch (error) {
     console.error('Error loading payments:', error);
+    AdminShared.showToast('Failed to load payments', 'error');
     return [];
   }
 }
@@ -90,14 +33,15 @@ async function loadPayments() {
  */
 async function loadSuppliers() {
   try {
-    const suppliersRef = collection(db, 'suppliers');
-    const querySnapshot = await getDocs(suppliersRef);
+    const response = await AdminShared.api('/api/admin/suppliers');
     const suppliers = {};
-
-    querySnapshot.forEach(doc => {
-      suppliers[doc.id] = doc.data();
-    });
-
+    
+    if (response.items) {
+      response.items.forEach(supplier => {
+        suppliers[supplier.id] = supplier;
+      });
+    }
+    
     return suppliers;
   } catch (error) {
     console.error('Error loading suppliers:', error);
@@ -126,7 +70,10 @@ function filterPayments(payments) {
     const days = parseInt(currentFilters.days);
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - days);
-    filtered = filtered.filter(p => p.createdAt >= cutoffDate);
+    filtered = filtered.filter(p => {
+      const paymentDate = new Date(p.createdAt);
+      return paymentDate >= cutoffDate;
+    });
   }
 
   return filtered;
@@ -150,12 +97,12 @@ function calculateStats(payments) {
   };
 
   payments.forEach(payment => {
-    const amount = payment.total || 0;
-    const paymentDate = payment.createdAt;
+    const amount = payment.total || payment.amount || 0;
+    const paymentDate = new Date(payment.createdAt);
     const monthKey = `${paymentDate.getFullYear()}-${String(paymentDate.getMonth() + 1).padStart(2, '0')}`;
 
     // Total revenue (only successful payments)
-    if (payment.status === 'success' || payment.status === 'pending') {
+    if (payment.status === 'success' || payment.status === 'completed' || payment.status === 'pending') {
       stats.totalRevenue += amount;
 
       // Revenue by month
@@ -173,6 +120,11 @@ function calculateStats(payments) {
       }
     }
 
+    // Count active subscriptions (payments with active status)
+    if (payment.status === 'success' || payment.status === 'completed') {
+      stats.activeSubscriptions++;
+    }
+
     // Plan distribution
     const planId = payment.planId || 'unknown';
     if (!stats.planDistribution[planId]) {
@@ -188,16 +140,26 @@ function calculateStats(payments) {
  * Render statistics cards
  */
 function renderStats(stats) {
-  document.getElementById('totalRevenue').textContent = `£${stats.totalRevenue.toFixed(2)}`;
-  document.getElementById('activeSubscriptions').textContent = stats.activeSubscriptions;
-  document.getElementById('totalTransactions').textContent = stats.totalTransactions;
-  document.getElementById('monthRevenue').textContent = `£${stats.monthRevenue.toFixed(2)}`;
+  const totalRevenueEl = document.getElementById('totalRevenue');
+  const activeSubscriptionsEl = document.getElementById('activeSubscriptions');
+  const totalTransactionsEl = document.getElementById('totalTransactions');
+  const monthRevenueEl = document.getElementById('monthRevenue');
 
-  // You could add trend calculations here
-  document.getElementById('revenueChange').textContent = 'All time total';
-  document.getElementById('subscriptionChange').textContent = 'Currently active';
-  document.getElementById('transactionChange').textContent = 'All transactions';
-  document.getElementById('monthChange').textContent = 'This month';
+  if (totalRevenueEl) totalRevenueEl.textContent = `£${stats.totalRevenue.toFixed(2)}`;
+  if (activeSubscriptionsEl) activeSubscriptionsEl.textContent = stats.activeSubscriptions;
+  if (totalTransactionsEl) totalTransactionsEl.textContent = stats.totalTransactions;
+  if (monthRevenueEl) monthRevenueEl.textContent = `£${stats.monthRevenue.toFixed(2)}`;
+
+  // Update change indicators
+  const revenueChangeEl = document.getElementById('revenueChange');
+  const subscriptionChangeEl = document.getElementById('subscriptionChange');
+  const transactionChangeEl = document.getElementById('transactionChange');
+  const monthChangeEl = document.getElementById('monthChange');
+
+  if (revenueChangeEl) revenueChangeEl.textContent = 'All time total';
+  if (subscriptionChangeEl) subscriptionChangeEl.textContent = 'Currently active';
+  if (transactionChangeEl) transactionChangeEl.textContent = 'All transactions';
+  if (monthChangeEl) monthChangeEl.textContent = 'This month';
 }
 
 /**
@@ -349,10 +311,10 @@ function renderPaymentsTable(payments, suppliers) {
   tbody.innerHTML = payments
     .map(payment => {
       const supplier = suppliers[payment.supplierId];
-      const supplierName = supplier?.name || 'Unknown';
+      const supplierName = supplier?.name || supplier?.companyName || 'Unknown';
       const planName = planNames[payment.planId] || payment.planId || 'N/A';
-      const amount = payment.total || 0;
-      const date = payment.createdAt.toLocaleDateString('en-GB', {
+      const amount = payment.total || payment.amount || 0;
+      const date = new Date(payment.createdAt).toLocaleDateString('en-GB', {
         year: 'numeric',
         month: 'short',
         day: 'numeric',
@@ -361,7 +323,7 @@ function renderPaymentsTable(payments, suppliers) {
       });
 
       const statusClass =
-        payment.status === 'success'
+        payment.status === 'success' || payment.status === 'completed'
           ? 'success'
           : payment.status === 'pending'
           ? 'pending'
@@ -370,7 +332,7 @@ function renderPaymentsTable(payments, suppliers) {
       return `
         <tr>
           <td>${date}</td>
-          <td>${escapeHtml(supplierName)}</td>
+          <td>${AdminShared.escapeHtml(supplierName)}</td>
           <td>${planName}</td>
           <td>£${amount.toFixed(2)}</td>
           <td>
@@ -379,7 +341,7 @@ function renderPaymentsTable(payments, suppliers) {
             </span>
           </td>
           <td style="font-family: monospace; font-size: 0.875rem;">
-            ${payment.id.substring(0, 8)}...
+            ${(payment.id || '').substring(0, 8)}...
           </td>
         </tr>
       `;
@@ -388,21 +350,9 @@ function renderPaymentsTable(payments, suppliers) {
 }
 
 /**
- * Escape HTML to prevent XSS
- */
-function escapeHtml(text) {
-  const div = document.createElement('div');
-  div.textContent = text || '';
-  return div.innerHTML;
-}
-
-/**
  * Initialize the page
  */
 async function init() {
-  // Check admin access
-  await checkAdminAccess();
-
   // Load data
   const [payments, suppliers] = await Promise.all([loadPayments(), loadSuppliers()]);
 
@@ -427,36 +377,37 @@ async function init() {
  */
 function setupEventListeners(payments, suppliers) {
   // Filter listeners
-  document.getElementById('statusFilter').addEventListener('change', e => {
-    currentFilters.status = e.target.value;
-    refreshData(payments, suppliers);
-  });
+  const statusFilter = document.getElementById('statusFilter');
+  const planFilter = document.getElementById('planFilter');
+  const dateFilter = document.getElementById('dateFilter');
 
-  document.getElementById('planFilter').addEventListener('change', e => {
-    currentFilters.plan = e.target.value;
-    refreshData(payments, suppliers);
-  });
+  if (statusFilter) {
+    statusFilter.addEventListener('change', e => {
+      currentFilters.status = e.target.value;
+      refreshData(payments, suppliers);
+    });
+  }
 
-  document.getElementById('dateFilter').addEventListener('change', e => {
-    currentFilters.days = e.target.value;
-    refreshData(payments, suppliers);
-  });
+  if (planFilter) {
+    planFilter.addEventListener('change', e => {
+      currentFilters.plan = e.target.value;
+      refreshData(payments, suppliers);
+    });
+  }
 
-  // Refresh button
-  document.getElementById('refreshBtn').addEventListener('click', async () => {
+  if (dateFilter) {
+    dateFilter.addEventListener('change', e => {
+      currentFilters.days = e.target.value;
+      refreshData(payments, suppliers);
+    });
+  }
+
+  // Make refresh function available globally for navbar refresh button
+  window.refreshDashboardData = async () => {
     const [newPayments, newSuppliers] = await Promise.all([loadPayments(), loadSuppliers()]);
     refreshData(newPayments, newSuppliers);
-  });
-
-  // Logout button
-  document.getElementById('adminLogoutBtn').addEventListener('click', async () => {
-    try {
-      await auth.signOut();
-      window.location.href = '/auth.html';
-    } catch (error) {
-      console.error('Error signing out:', error);
-    }
-  });
+    AdminShared.showToast('Payment data refreshed', 'success');
+  };
 }
 
 /**

@@ -2183,6 +2183,23 @@ router.post('/tickets/:id/reply', authRequired, roleRequired('admin'), (req, res
   res.json({ ticket });
 });
 
+// ---------- Payments ----------
+
+/**
+ * GET /api/admin/payments
+ * List all payments for admin analytics
+ */
+router.get('/payments', authRequired, roleRequired('admin'), (_req, res) => {
+  const payments = read('payments');
+  // Sort by createdAt descending (newest first)
+  payments.sort((a, b) => {
+    const dateA = new Date(a.createdAt || 0);
+    const dateB = new Date(b.createdAt || 0);
+    return dateB - dateA;
+  });
+  res.json({ items: payments });
+});
+
 // ---------- Audit Logs ----------
 
 /**
