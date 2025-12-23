@@ -255,7 +255,7 @@ describe('MongoDB Validation and Availability', () => {
         await db.connect(1, 0);
       } catch (error) {
         expect(error.message).toContain('MONGODB_URI');
-        expect(error.message).toContain('production');
+        expect(error.message).toContain('Production error');
       }
     });
 
@@ -269,7 +269,7 @@ describe('MongoDB Validation and Availability', () => {
         await db.connect(1, 0);
       } catch (error) {
         expect(error.message).toContain('localhost');
-        expect(error.message).toContain('production');
+        expect(error.message).toContain('Production error');
       }
     });
 
@@ -288,7 +288,8 @@ describe('MongoDB Validation and Availability', () => {
 
     it('should provide clear error message for invalid scheme', async () => {
       process.env.NODE_ENV = 'production';
-      process.env.MONGODB_URI = 'mysql://user:pass@host.com/db';
+      // Use a URI with invalid scheme but no placeholder patterns
+      process.env.MONGODB_URI = 'mysql://realuser:realpassword123@realhost.mongodb.net/db';
 
       db = require('../../db');
 
