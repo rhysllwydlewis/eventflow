@@ -72,8 +72,9 @@
           <div class="category-card-body">
             ${
               hasImage
-                ? `<img src="${escapeHtml(category.heroImage)}" alt="${escapeHtml(category.name)}" class="category-preview" id="preview-${escapeHtml(category.id)}">`
-                : `<div class="category-placeholder" id="preview-${escapeHtml(category.id)}">No image set</div>`
+                ? `<img src="${escapeHtml(category.heroImage)}" alt="${escapeHtml(category.name)}" class="category-preview" id="preview-${escapeHtml(category.id)}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                   <div class="category-placeholder" id="placeholder-${escapeHtml(category.id)}" style="display: none;">${escapeHtml(category.icon || '📷')} ${escapeHtml(category.name)}<br><span class="small">Image failed to load</span></div>`
+                : `<div class="category-placeholder" id="preview-${escapeHtml(category.id)}">${escapeHtml(category.icon || '📷')} ${escapeHtml(category.name)}<br><span class="small">No image set</span></div>`
             }
             <div class="upload-area" id="drop-${escapeHtml(category.id)}">
               <div>📤 Click to upload or drag & drop</div>

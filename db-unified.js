@@ -79,7 +79,7 @@ async function initializeDatabase() {
 /**
  * Read all documents from a collection
  * @param {string} collectionName - Name of the collection
- * @returns {Promise<Array>} Array of documents
+ * @returns {Promise<Array|Object>} Array of documents or object (for settings)
  */
 async function read(collectionName) {
   await initializeDatabase();
@@ -87,6 +87,19 @@ async function read(collectionName) {
   try {
     if (dbType === 'mongodb') {
       const collection = mongodb.collection(collectionName);
+      
+      // Special handling for settings collection (stored as single object)
+      if (collectionName === 'settings') {
+        const doc = await collection.findOne({ id: 'system' });
+        if (doc) {
+          // Remove MongoDB's _id and our internal id field
+          const { _id, id, ...settings } = doc;
+          return settings;
+        }
+        return {};
+      }
+      
+      // Standard handling for array-based collections
       return await collection.find({}).toArray();
     } else {
       return store.read(collectionName);
@@ -98,7 +111,7 @@ async function read(collectionName) {
       console.log(`Falling back to local storage for ${collectionName}`);
       return store.read(collectionName);
     }
-    return [];
+    return collectionName === 'settings' ? {} : [];
   }
 }
 
@@ -106,7 +119,7 @@ async function read(collectionName) {
  * Write (replace) all documents in a collection
  * WARNING: Destructive operation - use with caution
  * @param {string} collectionName - Name of the collection
- * @param {Array} data - Array of documents to write
+ * @param {Array|Object} data - Array of documents or object (for settings) to write
  * @returns {Promise<boolean>} Success status
  */
 async function write(collectionName, data) {
@@ -115,6 +128,18 @@ async function write(collectionName, data) {
   try {
     if (dbType === 'mongodb') {
       const collection = mongodb.collection(collectionName);
+      
+      // Special handling for settings collection (stored as single object)
+      if (collectionName === 'settings') {
+        await collection.deleteMany({});
+        if (data && typeof data === 'object' && !Array.isArray(data)) {
+          // Store settings as a single document with a fixed ID
+          await collection.insertOne({ id: 'system', ...data });
+        }
+        return true;
+      }
+      
+      // Standard handling for array-based collections
       await collection.deleteMany({});
       if (Array.isArray(data) && data.length > 0) {
         await collection.insertMany(data);
