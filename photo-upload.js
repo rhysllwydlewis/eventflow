@@ -9,6 +9,7 @@ const multer = require('multer');
 const sharp = require('sharp');
 const path = require('path');
 const fs = require('fs').promises;
+const fsSync = require('fs');
 const crypto = require('crypto');
 
 // Upload directories
@@ -19,6 +20,23 @@ const UPLOAD_DIRS = {
   large: path.join(__dirname, 'uploads', 'large'),
   public: path.join(__dirname, 'public', 'uploads'),
 };
+
+/**
+ * Ensure all upload directories exist on module load
+ * Note: Uses synchronous operations intentionally to block until directories exist,
+ * preventing race conditions when the module is immediately used after require().
+ */
+function ensureDirectoriesExist() {
+  const dirs = Object.values(UPLOAD_DIRS);
+  for (const dir of dirs) {
+    if (!fsSync.existsSync(dir)) {
+      fsSync.mkdirSync(dir, { recursive: true });
+    }
+  }
+}
+
+// Call immediately when module loads to ensure directories exist
+ensureDirectoriesExist();
 
 // Image processing configurations
 const IMAGE_CONFIGS = {
@@ -109,6 +127,11 @@ async function processImage(buffer, config) {
  */
 async function saveToLocal(buffer, filename, directory = 'original') {
   const dir = UPLOAD_DIRS[directory];
+
+  // Defensive check: Ensure directory exists before writing
+  // This protects against runtime deletion of directories or misconfiguration
+  await fs.mkdir(dir, { recursive: true });
+
   const filepath = path.join(dir, filename);
   await fs.writeFile(filepath, buffer);
   return filepath;
