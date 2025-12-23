@@ -1,146 +1,18 @@
 <!DOCTYPE html>
-<html>
+<html lang="en-GB">
 <head>
-  <meta charset="utf-8">
-  <title>Reports Queue - Admin</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <style>
-    body{font-family:sans-serif;padding:20px;background:#0b0b0b;color:#f5f5f5;}
-    h1,h2{margin-top:20px;}
-    table{width:100%;border-collapse:collapse;margin-top:10px;margin-bottom:20px;background:#111;}
-    td,th{border:1px solid #333;padding:8px;font-size:14px;}
-    th{background:#161616;text-align:left;}
-    button{padding:6px 10px;margin:2px;font-size:12px;cursor:pointer;background:#222;color:#f5f5f5;border:1px solid #444;border-radius:3px;}
-    button:hover{background:#2b825b;border-color:#2b825b;}
-    button.danger{background:#7f1d1d;}
-    button.danger:hover{background:#991b1b;}
-    .controls{margin-top:10px;margin-bottom:10px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
-    select{padding:6px 8px;border-radius:3px;border:1px solid #444;background:#111;color:#f5f5f5;}
-    .badge{display:inline-block;padding:2px 6px;border-radius:999px;font-size:11px;background:#222;}
-    .badge-pending{background:#92400e;color:#fef3c7;}
-    .badge-resolved{background:#134e4a;color:#bbf7d0;}
-    .badge-dismissed{background:#3f3f46;color:#e4e4e7;}
-    .small{font-size:12px;color:#a1a1aa;}
-    .report-details{background:#1a1a1a;padding:10px;margin-top:5px;border-left:3px solid #ef4444;border-radius:3px;}
-    
-  /* Admin sidebar styles */
-  .admin-sidebar {
-    position: fixed;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 260px;
-    background: #111;
-    color: #f5f5f5;
-    border-right: 1px solid #27272a;
-    padding: 1rem;
-    overflow-y: auto;
-    z-index: 1000;
-    transition: transform 0.3s;
-  }
-  
-  .admin-sidebar-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.5rem;
-    padding-bottom: 1rem;
-    border-bottom: 1px solid #27272a;
-  }
-  
-  .admin-sidebar-header h3 {
-    margin: 0;
-    font-size: 1.25rem;
-    color: #f5f5f5;
-  }
-  
-  .sidebar-toggle {
-    display: none;
-    background: none;
-    border: none;
-    color: #f5f5f5;
-    font-size: 1.5rem;
-    cursor: pointer;
-  }
-  
-  .admin-sidebar-nav {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-  }
-  
-  .admin-nav-link {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.75rem 1rem;
-    border-radius: 6px;
-    color: #d4d4d8;
-    text-decoration: none;
-    transition: all 0.2s;
-  }
-  
-  .admin-nav-link:hover {
-    background: #1a1a1a;
-    color: #f5f5f5;
-  }
-  
-  .admin-nav-link.active {
-    background: #3b82f6;
-    color: #fff;
-  }
-  
-  .nav-icon {
-    font-size: 1.25rem;
-  }
-  
-  .nav-label {
-    flex: 1;
-    font-weight: 500;
-  }
-  
-  .nav-badge {
-    background: #3b82f6;
-    color: #fff;
-    font-size: 0.75rem;
-    padding: 0.125rem 0.5rem;
-    border-radius: 999px;
-    font-weight: 600;
-    display: none;
-  }
-  
-  .nav-badge.badge-warning {
-    background: #f59e0b;
-  }
-  
-  .nav-badge.badge-danger {
-    background: #ef4444;
-  }
-  
-  main.section {
-    margin-left: 260px;
-    transition: margin-left 0.3s;
-  }
-  
-  @media (max-width: 1024px) {
-    .admin-sidebar {
-      transform: translateX(-100%);
-    }
-    
-    .admin-sidebar.open {
-      transform: translateX(0);
-    }
-    
-    .sidebar-toggle {
-      display: block;
-    }
-    
-    main.section {
-      margin-left: 0;
-    }
-  }
-
-</style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Content Reports — EventFlow Admin</title>
+<link rel="stylesheet" href="/assets/css/styles.css">
+<link rel="stylesheet" href="/assets/css/eventflow-17.0.0.css">
+<link rel="stylesheet" href="/assets/css/utilities.css">
+<link rel="stylesheet" href="/assets/css/components.css">
+<link rel="stylesheet" href="/assets/css/animations.css">
+<link rel="stylesheet" href="/assets/css/admin.css">
+<link rel="stylesheet" href="/assets/css/admin-enhanced.css">
+<link rel="icon" href="/favicon.svg">
+<script src="/assets/js/components.js" defer></script>
 </head>
 <body>
 <aside class="admin-sidebar" id="adminSidebar">
@@ -199,245 +71,174 @@
   </nav>
 </aside>
 
-
-  <h1>Content Reports Queue</h1>
-  <div class="controls">
-    <button id="backToDashboard">← Back to Dashboard</button>
-    <button id="refreshReports">Refresh</button>
+<main class="section">
+  <!-- Modern Dashboard Header -->
+  <div class="dashboard-header">
+    <div class="header-content">
+      <div>
+        <h1 class="dashboard-title">Content Reports</h1>
+        <p class="dashboard-subtitle">Review user-submitted content reports and take action</p>
+      </div>
+      <div class="header-actions">
+        <button class="btn-secondary" id="backToDashboard">← Back to Dashboard</button>
+      </div>
+    </div>
   </div>
 
-  <div class="controls">
-    <select id="statusFilter">
-      <option value="pending">Pending</option>
-      <option value="">All Status</option>
-      <option value="reviewing">Reviewing</option>
-      <option value="resolved">Resolved</option>
-      <option value="dismissed">Dismissed</option>
-    </select>
-    <select id="typeFilter">
-      <option value="">All Types</option>
-      <option value="supplier">Supplier</option>
-      <option value="review">Review</option>
-      <option value="message">Message</option>
-      <option value="user">User</option>
-      <option value="photo">Photo</option>
-    </select>
+  <div class="container">
+    <div class="data-section">
+      <div class="admin-toolbar">
+        <select id="statusFilter" class="filter-select">
+          <option value="">All Status</option>
+          <option value="pending" selected>Pending</option>
+          <option value="resolved">Resolved</option>
+          <option value="dismissed">Dismissed</option>
+        </select>
+        <select id="typeFilter" class="filter-select">
+          <option value="">All Types</option>
+          <option value="supplier">Supplier</option>
+          <option value="review">Review</option>
+          <option value="message">Message</option>
+          <option value="photo">Photo</option>
+          <option value="user">User</option>
+        </select>
+      </div>
+      
+      <div id="reportsContainer">
+        <p class="small">Loading reports...</p>
+      </div>
+    </div>
   </div>
+</main>
 
-  <div id="status">Loading reports...</div>
-  <table id="reportsTable">
-    <thead>
-      <tr>
-        <th>Type</th>
-        <th>Reason</th>
-        <th>Reported By</th>
-        <th>Status</th>
-        <th>Created</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody id="reportsBody"></tbody>
-  </table>
-
-  <script src="/assets/js/admin-shared.js"></script>
-<script>
-    function api(url, method, body) {
-      const opts = {
-        method: method || 'GET',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' }
-      };
-      if (body) opts.body = JSON.stringify(body);
-      return fetch(url, opts).then(r => {
-        if (!r.ok) throw new Error('API error ' + r.status);
-        return r.json();
-      });
-    }
-
-    function loadReports() {
-      const status = document.getElementById('statusFilter').value;
-      const type = document.getElementById('typeFilter').value;
-      
-      let url = '/api/admin/reports?perPage=50';
-      if (status) url += '&status=' + status;
-      if (type) url += '&type=' + type;
-      
-      document.getElementById('status').innerText = 'Loading reports...';
-      
-      api(url, 'GET').then(data => {
-        const reports = data.reports || [];
-        renderReports(reports);
-        document.getElementById('status').innerText = `Loaded ${reports.length} reports`;
-      }).catch(err => {
-        console.error('Error loading reports:', err);
-        document.getElementById('status').innerText = 'Error loading reports: ' + err.message;
-      });
-    }
-
-    function renderReports(reports) {
-      const tbody = document.getElementById('reportsBody');
-      tbody.innerHTML = '';
-      
-      if (reports.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#a1a1aa;">No reports found</td></tr>';
-        return;
-      }
-      
-      reports.forEach(report => {
-        const row = document.createElement('tr');
-        
-        let statusBadge = '';
-        if (report.status === 'pending') statusBadge = '<span class="badge badge-pending">Pending</span>';
-        else if (report.status === 'resolved') statusBadge = '<span class="badge badge-resolved">Resolved</span>';
-        else if (report.status === 'dismissed') statusBadge = '<span class="badge badge-dismissed">Dismissed</span>';
-        else statusBadge = '<span class="badge">' + escapeHtml(report.status) + '</span>';
-        
-        const createdDate = report.createdAt ? new Date(report.createdAt).toLocaleString() : 'N/A';
-        
-        const reasonLabel = report.reason.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-        
-        row.innerHTML = `
-          <td>${escapeHtml(report.type)}</td>
-          <td>${escapeHtml(reasonLabel)}<br><span class="small">ID: ${report.targetId}</span></td>
-          <td>${escapeHtml(report.reporterEmail || 'Unknown')}</td>
-          <td>${statusBadge}</td>
-          <td><span class="small">${createdDate}</span></td>
-          <td>
-            <button data-action="viewReport" data-id="${report.id}">View Details</button>
-            ${report.status === 'pending' ? `
-              <button data-action="resolveReport" data-id="${report.id}">Resolve</button>
-              <button class="danger" data-action="dismissReport" data-id="${report.id}">Dismiss</button>
-            ` : ''}
-          </td>
-        `;
-        tbody.appendChild(row);
-        
-        // Add details row if needed (hidden by default)
-        if (report.details) {
-          const detailsRow = document.createElement('tr');
-          detailsRow.id = `details-${report.id}`;
-          detailsRow.style.display = 'none';
-          detailsRow.innerHTML = `
-            <td colspan="6">
-              <div class="report-details">
-                <strong>Details:</strong> ${escapeHtml(report.details)}<br>
-                ${report.resolutionNotes ? `<strong>Resolution:</strong> ${escapeHtml(report.resolutionNotes)}` : ''}
-              </div>
-            </td>
-          `;
-          tbody.appendChild(detailsRow);
-        }
-      });
-    }
-
-    function escapeHtml(text) {
-      const div = document.createElement('div');
-      div.textContent = text;
-      return div.innerHTML;
-    }
-
-    function viewReport(reportId) {
-      const detailsRow = document.getElementById(`details-${reportId}`);
-      if (detailsRow) {
-        detailsRow.style.display = detailsRow.style.display === 'none' ? 'table-row' : 'none';
-      }
-    }
-
-    function resolveReport(reportId) {
-      const resolution = prompt('Resolution type:\n1. valid (content violated rules)\n2. invalid (false report)\n3. duplicate (already reported)\n\nEnter 1, 2, or 3:');
-      if (!resolution) return;
-      
-      let resolutionType = '';
-      if (resolution === '1') resolutionType = 'valid';
-      else if (resolution === '2') resolutionType = 'invalid';
-      else if (resolution === '3') resolutionType = 'duplicate';
-      else {
-        alert('Invalid selection');
-        return;
-      }
-      
-      const action = prompt('Action taken:\n1. content_removed\n2. user_warned\n3. user_suspended\n4. no_action\n\nEnter 1, 2, 3, or 4:');
-      let actionType = 'no_action';
-      if (action === '1') actionType = 'content_removed';
-      else if (action === '2') actionType = 'user_warned';
-      else if (action === '3') actionType = 'user_suspended';
-      
-      const notes = prompt('Resolution notes (optional):');
-      
-      api(`/api/admin/reports/${reportId}/resolve`, 'POST', { 
-        resolution: resolutionType, 
-        action: actionType, 
-        notes: notes || '' 
-      }).then(() => {
-        alert('Report resolved successfully');
-        loadReports();
-      }).catch(err => alert('Error: ' + err.message));
-    }
-
-    function dismissReport(reportId) {
-      const notes = prompt('Dismissal reason (optional):');
-      if (!confirm('Dismiss this report?')) return;
-      
-      api(`/api/admin/reports/${reportId}/dismiss`, 'POST', { notes: notes || '' })
-        .then(() => {
-          alert('Report dismissed successfully');
-          loadReports();
-        }).catch(err => alert('Error: ' + err.message));
-    }
-
-    // Load reports on page load
-    loadReports();
-    
-    // Event listeners
-    document.getElementById('backToDashboard').addEventListener('click', function() {
-      location.href = '/admin.html';
-    });
-    
-    document.getElementById('refreshReports').addEventListener('click', function() {
-      loadReports();
-    });
-    
-    // Event delegation for dynamically created buttons
-    document.body.addEventListener('click', function(e) {
-      var target = e.target;
-      if (target.tagName !== 'BUTTON') return;
-      
-      var action = target.getAttribute('data-action');
-      if (!action) return;
-      
-      var id = target.getAttribute('data-id');
-      
-      switch(action) {
-        case 'viewReport':
-          if (id) viewReport(id);
-          break;
-        case 'resolveReport':
-          if (id) resolveReport(id);
-          break;
-        case 'dismissReport':
-          if (id) dismissReport(id);
-          break;
-      }
-    });
-
-  // Setup filter event listeners
-  document.getElementById('statusFilter').addEventListener('change', loadReports);
-  document.getElementById('typeFilter').addEventListener('change', loadReports);
-  </script>
 <footer class="footer" role="contentinfo">
   <div class="container" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
     <div><strong>EventFlow</strong><br><span class="small">Event planning made simple.</span></div>
     <div class="version">Version: v17.0.0</div>
     <div class="small">
-      <a href="/blog.html">Blog</a> &middot;
-      <a href="/credits.html">Credits</a> &middot;
-      <a href="/contact.html">Contact</a> &middot;
+      <a href="/blog.html">Blog</a> ·
+      <a href="/credits.html">Credits</a> ·
+      <a href="/contact.html">Contact</a> ·
       <a href="/legal.html">Legal Hub</a>
     </div>
   </div>
 </footer>
 
+<script src="/assets/js/admin-shared.js"></script>
+<script>
+(function() {
+  'use strict';
+  
+  let allReports = [];
+  
+  async function loadReports() {
+    try {
+      const data = await AdminShared.api('/api/admin/reports');
+      allReports = data.items || [];
+      renderReports();
+    } catch (error) {
+      console.error('Error loading reports:', error);
+      document.getElementById('reportsContainer').innerHTML = 
+        '<div class="data-section"><p class="small" style="color:#ef4444;">Failed to load reports. Please try again.</p></div>';
+    }
+  }
+  
+  function renderReports() {
+    const container = document.getElementById('reportsContainer');
+    if (!container) return;
+    
+    const statusFilter = document.getElementById('statusFilter')?.value || '';
+    const typeFilter = document.getElementById('typeFilter')?.value || '';
+    
+    const filtered = allReports.filter(report => {
+      if (statusFilter && report.status !== statusFilter) return false;
+      if (typeFilter && report.type !== typeFilter) return false;
+      return true;
+    });
+    
+    if (!filtered.length) {
+      container.innerHTML = `
+        <div style="text-align:center;padding:4rem 2rem;">
+          <div style="font-size:4rem;margin-bottom:1rem;">📋</div>
+          <h3 style="margin:0 0 0.5rem 0;">No reports found</h3>
+          <p style="color:#6b7280;">
+            ${allReports.length === 0 ? 'Content reports will appear here when users flag content.' : 'No reports match your filters.'}
+          </p>
+        </div>
+      `;
+      return;
+    }
+    
+    let html = '<div class="table-wrapper"><table><thead><tr><th>Type</th><th>Reason</th><th>Reported By</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead><tbody>';
+    
+    filtered.forEach(report => {
+      const createdAt = AdminShared.formatDate(report.createdAt);
+      html += `
+        <tr>
+          <td><span class="badge">${AdminShared.escapeHtml(report.type || 'unknown')}</span></td>
+          <td>${AdminShared.escapeHtml(report.reason || 'No reason')}</td>
+          <td>${AdminShared.escapeHtml(report.reporterEmail || 'Unknown')}</td>
+          <td><span class="badge badge-${report.status || 'pending'}">${report.status || 'pending'}</span></td>
+          <td class="small">${createdAt}</td>
+          <td>
+            ${report.status === 'pending' ? `
+              <button class="btn-sm btn-success" data-action="resolve" data-id="${report.id}">Resolve</button>
+              <button class="btn-sm btn-danger" data-action="dismiss" data-id="${report.id}">Dismiss</button>
+            ` : '<span class="small">—</span>'}
+          </td>
+        </tr>
+      `;
+    });
+    
+    html += '</tbody></table></div>';
+    container.innerHTML = html;
+  }
+  
+  // Event delegation for buttons
+  document.body.addEventListener('click', async e => {
+    const button = e.target.closest('button[data-action]');
+    if (!button) return;
+    
+    const action = button.getAttribute('data-action');
+    const id = button.getAttribute('data-id');
+    
+    if (action === 'resolve' && id) {
+      try {
+        button.disabled = true;
+        await AdminShared.api(`/api/admin/reports/${id}/resolve`, 'POST', {});
+        AdminShared.showToast('Report resolved', 'success');
+        await loadReports();
+      } catch (error) {
+        AdminShared.showToast(error.message || 'Failed to resolve report', 'error');
+        button.disabled = false;
+      }
+    } else if (action === 'dismiss' && id) {
+      try {
+        button.disabled = true;
+        await AdminShared.api(`/api/admin/reports/${id}/dismiss`, 'POST', {});
+        AdminShared.showToast('Report dismissed', 'success');
+        await loadReports();
+      } catch (error) {
+        AdminShared.showToast(error.message || 'Failed to dismiss report', 'error');
+        button.disabled = false;
+      }
+    }
+  });
+  
+  // Setup filters
+  document.getElementById('statusFilter')?.addEventListener('change', renderReports);
+  document.getElementById('typeFilter')?.addEventListener('change', renderReports);
+  
+  // Back button
+  document.getElementById('backToDashboard')?.addEventListener('click', () => {
+    window.location.href = '/admin.html';
+  });
+  
+  // Initialize
+  loadReports();
+})();
+</script>
 <script src="/assets/js/components/footer-nav.js" defer></script>
-<script src="/assets/js/cookie-consent.js" defer></script>
+
 </body>
 </html>
