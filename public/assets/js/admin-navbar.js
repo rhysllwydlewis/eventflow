@@ -29,13 +29,13 @@
     const nav = document.getElementById('adminNavbarNav');
 
     if (hamburger && nav) {
-      hamburger.addEventListener('click', function () {
+      hamburger.addEventListener('click', () => {
         hamburger.classList.toggle('active');
         nav.classList.toggle('show');
       });
 
       // Close menu when clicking outside
-      document.addEventListener('click', function (e) {
+      document.addEventListener('click', e => {
         if (
           !hamburger.contains(e.target) &&
           !nav.contains(e.target) &&
@@ -49,7 +49,7 @@
       // Close menu when clicking a link (on mobile)
       const navLinks = nav.querySelectorAll('.admin-nav-btn');
       navLinks.forEach(link => {
-        link.addEventListener('click', function () {
+        link.addEventListener('click', () => {
           if (window.innerWidth <= 768) {
             hamburger.classList.remove('active');
             nav.classList.remove('show');
@@ -67,13 +67,13 @@
     const dropdownMenu = document.getElementById('adminDropdownMenu');
 
     if (userBtn && dropdownMenu) {
-      userBtn.addEventListener('click', function (e) {
+      userBtn.addEventListener('click', e => {
         e.stopPropagation();
         dropdownMenu.classList.toggle('show');
       });
 
       // Close dropdown when clicking outside
-      document.addEventListener('click', function (e) {
+      document.addEventListener('click', e => {
         if (!userBtn.contains(e.target) && !dropdownMenu.contains(e.target)) {
           dropdownMenu.classList.remove('show');
         }
@@ -211,7 +211,7 @@
    */
   const refreshBtn = document.getElementById('navRefreshBtn');
   if (refreshBtn) {
-    refreshBtn.addEventListener('click', function () {
+    refreshBtn.addEventListener('click', () => {
       // Add spin animation
       refreshBtn.style.transform = 'rotate(360deg)';
       setTimeout(() => {
@@ -234,7 +234,7 @@
    */
   const logoutBtn = document.getElementById('adminLogoutBtn');
   if (logoutBtn) {
-    logoutBtn.addEventListener('click', function (e) {
+    logoutBtn.addEventListener('click', e => {
       e.preventDefault();
       if (confirm('Are you sure you want to sign out?')) {
         window.location.href = '/api/auth/logout';
