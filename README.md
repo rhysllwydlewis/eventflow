@@ -378,6 +378,30 @@ See [.env.example](.env.example) for all options.
 - ✅ Connection string uses actual credentials (not placeholders)
 - ✅ Never commit real credentials to git - use environment variables only
 
+### Email Configuration
+
+EventFlow uses Postmark for transactional emails:
+
+1. Sign up at https://postmarkapp.com
+2. Get your Server API Token from the dashboard
+3. Verify your sender domain or email address
+4. Add to `.env`:
+   ```bash
+   POSTMARK_API_KEY=your-server-token
+   POSTMARK_FROM=noreply@yourdomain.com
+   ```
+
+During development without Postmark configured, emails are saved to `/outbox` folder for inspection.
+
+**Production Email Checklist**:
+
+- ✅ Postmark account created
+- ✅ Server API token obtained
+- ✅ Sender domain/email verified in Postmark
+- ✅ `POSTMARK_API_KEY` environment variable set
+- ✅ `POSTMARK_FROM` set to verified sender address
+- ✅ Never commit API keys to git - use environment variables only
+
 ## 📁 Project Structure
 
 ```

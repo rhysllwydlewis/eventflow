@@ -98,12 +98,12 @@ router.post('/register', authLimiter, (req, res) => {
   users.push(user);
   write('users', users);
 
-  // Send verification email via Mailgun
+  // Send verification email via Postmark
   (async () => {
     try {
       await postmark.sendVerificationEmail(user, verificationToken);
     } catch (e) {
-      console.error('Failed to send verification email via Mailgun', e);
+      console.error('Failed to send verification email via Postmark', e);
       // Fallback to legacy sendMail if available
       if (sendMailFn) {
         try {
