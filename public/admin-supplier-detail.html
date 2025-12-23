@@ -70,21 +70,21 @@
   </nav>
 </aside>
 
-<main class="section" style="margin-left: 260px; padding: 2rem;">
-  <div style="max-width: 1400px; margin: 0 auto;">
+<main class="section section-with-sidebar">
+  <div class="container-max">
     <div style="margin-bottom: 1rem;">
-      <a href="/admin.html" style="color: white; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem;">
+      <a href="/admin.html" class="link-white">
         <span>←</span> Back to Dashboard
       </a>
     </div>
 
     <div class="supplier-header" id="supplierHeader">
-      <div style="display: flex; justify-content: space-between; align-items: start;">
+      <div class="flex-between-start">
         <div>
           <h1 id="supplierName">Loading...</h1>
           <div id="supplierStatus"></div>
         </div>
-        <div style="display: flex; gap: 0.5rem;">
+        <div class="flex-gap">
           <button class="btn btn-primary" id="editSupplierBtn">Edit Details</button>
           <button class="btn btn-success" id="approveBtn">Approve</button>
           <button class="btn btn-danger" id="rejectBtn">Reject</button>
@@ -120,8 +120,8 @@
 
     <div id="packages" class="tab-content">
       <div class="info-card">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-          <h3 style="margin: 0;">Packages</h3>
+        <div class="flex-between-mb-1">
+          <h3 class="h3-my-0">Packages</h3>
           <button class="btn btn-primary" id="addPackageBtn">Add New Package</button>
         </div>
         <div class="package-list" id="packageList"></div>
@@ -130,8 +130,8 @@
 
     <div id="photos" class="tab-content">
       <div class="info-card">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-          <h3 style="margin: 0;">Photo Gallery</h3>
+        <div class="flex-between-mb-1">
+          <h3 class="h3-my-0">Photo Gallery</h3>
           <button class="btn btn-primary" id="uploadPhotoBtn">Upload Photo</button>
         </div>
         <div class="photo-grid" id="photoGallery"></div>
@@ -149,19 +149,19 @@
       <div class="info-card">
         <h3>Performance Metrics</h3>
         <div class="stats-grid">
-          <div class="stat-box" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+          <div class="stat-box stat-box-purple">
             <h4 id="totalViews">0</h4>
             <p>Total Views</p>
           </div>
-          <div class="stat-box" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+          <div class="stat-box stat-box-pink">
             <h4 id="totalBookings">0</h4>
             <p>Total Bookings</p>
           </div>
-          <div class="stat-box" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+          <div class="stat-box stat-box-blue">
             <h4 id="avgRating">0.0</h4>
             <p>Average Rating</p>
           </div>
-          <div class="stat-box" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+          <div class="stat-box stat-box-orange">
             <h4 id="healthScore">0</h4>
             <p>Health Score</p>
           </div>
@@ -315,7 +315,7 @@
             <h4><a href="/package.html?id=${pkg.id}" target="_blank">${AdminShared.escapeHtml(pkg.title)}</a></h4>
             <p>${AdminShared.escapeHtml(pkg.price_display || pkg.price || 'Price not set')} • ${pkg.approved ? 'Approved' : 'Pending'}</p>
           </div>
-          <div style="display: flex; gap: 0.5rem;">
+          <div class="flex-gap">
             <button class="btn btn-small btn-primary" onclick="window.open('/package.html?id=${pkg.id}', '_blank')">View</button>
             <button class="btn btn-small btn-secondary" data-action="editPackage" data-id="${pkg.id}">Edit</button>
             ${!pkg.approved ? `<button class="btn btn-small btn-success" data-action="approvePackage" data-id="${pkg.id}">Approve</button>` : ''}
@@ -368,13 +368,13 @@
       }
 
       const html = reviews.map(review => `
-        <div style="border-bottom: 1px solid #e5e7eb; padding: 1rem 0;">
-          <div style="display: flex; justify-content: space-between; align-items: start;">
+        <div class="border-bottom-pad">
+          <div class="flex-between-start">
             <div>
               <strong>${AdminShared.escapeHtml(review.userName || 'Anonymous')}</strong>
               <span class="small"> • ${new Date(review.createdAt).toLocaleDateString()}</span>
             </div>
-            <div style="color: #f59e0b;">★★★★★</div>
+            <div class="stars-gold">★★★★★</div>
           </div>
           <p>${AdminShared.escapeHtml(review.comment || '')}</p>
         </div>

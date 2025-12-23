@@ -9,6 +9,8 @@
 <link rel='stylesheet' href='/assets/css/utilities.css'>
 <link rel='stylesheet' href='/assets/css/components.css'>
 <link rel='stylesheet' href='/assets/css/animations.css'>
+<link rel='stylesheet' href='/assets/css/admin.css'>
+<link rel='stylesheet' href='/assets/css/admin-enhanced.css'>
 <link rel='icon' href='/favicon.svg'>
 </head>
 <body>
@@ -70,8 +72,8 @@
 
 <main class="section">
   <div class="container">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;">
-      <h1 style="margin:0;">User Details</h1>
+    <div class="flex-between-mb">
+      <h1 class="my-0">User Details</h1>
       <button class="btn btn-secondary" onclick="location.href='/admin-users.html'">← Back to Users</button>
     </div>
     
@@ -84,7 +86,7 @@
 </main>
 
 <footer class="footer" role="contentinfo">
-  <div class="container" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+  <div class="container flex-between">
     <div><strong>EventFlow</strong><br><span class="small">Admin Panel</span></div>
     <div class="small"><a href="/admin.html">Dashboard</a> · <a href="/admin-users.html">Users</a></div>
   </div>
@@ -118,8 +120,8 @@
       <div class="card">
         <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:1.5rem;">
           <div>
-            <h2 style="margin:0 0 0.5rem 0;">${AdminShared.escapeHtml(user.name || 'Unnamed User')}</h2>
-            <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+            <h2 class="h2-mb">${AdminShared.escapeHtml(user.name || 'Unnamed User')}</h2>
+            <div class="flex-gap" style="flex-wrap:wrap;">
               <span class="badge badge-${user.role}">${AdminShared.escapeHtml(user.role || 'customer')}</span>
               <span class="badge badge-${user.verified ? 'yes' : 'no'}">${user.verified ? '✓ Verified' : '✗ Unverified'}</span>
               ${user.suspended ? '<span class="badge badge-danger">Suspended</span>' : ''}
@@ -195,7 +197,7 @@
       <div class="card">
         <h3>Activity Timeline</h3>
         <p class="small">Recent activity for this user will be displayed here.</p>
-        <div id="activityTimeline" style="margin-top:1rem;">
+        <div id="activityTimeline" class="mt-1">
           <p class="small" style="color:#9ca3af;">No recent activity recorded.</p>
         </div>
       </div>

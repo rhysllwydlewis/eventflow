@@ -132,14 +132,14 @@
               <p style="margin:0 0 0.5rem;font-weight:600;color:#1a1a1a;">Drop image here or click to browse</p>
               <p style="margin:0;font-size:12px;color:#6b7280;">Supports: JPG, PNG, GIF (max 5MB)</p>
             </div>
-            <div id="imagePreview" style="display:none;">
+            <div id="imagePreview" class="hidden">
               <img id="previewImage" style="max-width:200px;max-height:200px;border-radius:4px;margin-bottom:1rem;">
               <div>
                 <button type="button" class="btn btn-secondary btn-small" id="changeImageBtn">Change Image</button>
               </div>
             </div>
           </div>
-          <input type="file" id="imageFileInput" accept="image/*" style="display:none;">
+          <input type="file" id="imageFileInput" accept="image/*" class="hidden">
           <input type="hidden" id="packageImage" name="image">
           <div id="uploadProgress" style="display:none;margin-top:1rem;">
             <div style="background:#e4e4e7;border-radius:4px;height:8px;overflow:hidden;">
@@ -172,7 +172,7 @@
 
     <div class="card">
       <h2>All Packages</h2>
-      <div style="margin-bottom:1rem;">
+      <div class="mb-1">
         <input type="text" id="searchInput" placeholder="Search packages..." style="padding:0.5rem;border:1px solid #d4d4d8;border-radius:4px;width:300px;">
       </div>
       <div id="packagesContainer"></div>
@@ -181,7 +181,7 @@
 </main>
 
 <footer class="footer" role="contentinfo">
-  <div class="container" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+  <div class="container flex-between">
     <div><strong>EventFlow</strong><br><span class="small">Admin Panel</span></div>
     <div class="small"><a href="/admin.html">Dashboard</a> · <a href="/admin-users.html">Users</a> · <a href="/admin-audit.html">Audit Log</a></div>
   </div>

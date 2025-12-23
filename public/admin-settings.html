@@ -72,8 +72,8 @@
 
 <main class="section">
   <div class="container">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;">
-      <h1 style="margin:0;">System Settings</h1>
+    <div class="flex-between-mb">
+      <h1 class="my-0">System Settings</h1>
       <button class="btn btn-secondary" onclick="location.href='/admin.html'">← Back to Dashboard</button>
     </div>
     
@@ -167,7 +167,7 @@
         </div>
       </div>
       
-      <button class="btn btn-primary" id="saveFeatureFlags" style="margin-top:1rem;">Save Feature Flags</button>
+      <button class="btn btn-primary" id="saveFeatureFlags" class="mt-1">Save Feature Flags</button>
     </div>
     
     <!-- Maintenance Mode -->
@@ -188,7 +188,7 @@
         </label>
       </div>
       
-      <div class="form-row" style="margin-top:1rem;">
+      <div class="form-row" class="mt-1">
         <label for="maintenanceMessage">Maintenance Message</label>
         <textarea id="maintenanceMessage" rows="3" placeholder="We're performing scheduled maintenance. We'll be back soon!"></textarea>
       </div>
@@ -208,7 +208,7 @@
         <button class="btn btn-secondary" data-template="ticket-response">Ticket Response</button>
       </div>
       
-      <div id="emailTemplateEditor" style="display:none;">
+      <div id="emailTemplateEditor" class="hidden">
         <div class="form-row">
           <label for="emailSubject">Subject</label>
           <input type="text" id="emailSubject">
@@ -219,7 +219,7 @@
           <textarea id="emailBody" rows="10"></textarea>
         </div>
         
-        <div style="display:flex;gap:0.5rem;">
+        <div class="flex-gap">
           <button class="btn btn-primary" id="saveEmailTemplate">Save Template</button>
           <button class="btn btn-secondary" id="previewEmail">Preview</button>
           <button class="btn btn-secondary" id="resetEmail">Reset to Default</button>
@@ -231,19 +231,19 @@
     <div class="card">
       <h2>System Information</h2>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;">
-        <div style="padding:1rem;background:#f9fafb;border-radius:4px;">
+        <div class="card-info">
           <div class="small">Version</div>
           <strong id="systemVersion">v17.0.0</strong>
         </div>
-        <div style="padding:1rem;background:#f9fafb;border-radius:4px;">
+        <div class="card-info">
           <div class="small">Environment</div>
           <strong id="systemEnv">Production</strong>
         </div>
-        <div style="padding:1rem;background:#f9fafb;border-radius:4px;">
+        <div class="card-info">
           <div class="small">Database</div>
           <strong id="systemDB">MongoDB</strong>
         </div>
-        <div style="padding:1rem;background:#f9fafb;border-radius:4px;">
+        <div class="card-info">
           <div class="small">Uptime</div>
           <strong id="systemUptime">-</strong>
         </div>
@@ -253,7 +253,7 @@
 </main>
 
 <footer class="footer" role="contentinfo">
-  <div class="container" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+  <div class="container flex-between">
     <div><strong>EventFlow</strong><br><span class="small">Admin Panel</span></div>
     <div class="small"><a href="/admin.html">Dashboard</a> · <a href="/admin-users.html">Users</a></div>
   </div>

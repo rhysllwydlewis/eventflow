@@ -1137,3 +1137,191 @@ tbody tr:hover {
 .tab-content.active {
   display: block;
 }
+
+/* ====================
+   UTILITY CLASSES FOR COMMON PATTERNS
+   ==================== */
+
+/* Flexbox utilities */
+.flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.flex-between-start {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.flex-between-mb {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.flex-between-mb-1 {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.flex-gap {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.flex-1 {
+  flex: 1;
+}
+
+/* Container utilities */
+.container-max {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* Text utilities */
+.text-center-pad {
+  text-align: center;
+  padding: 4rem 2rem;
+}
+
+/* Card utilities */
+.card-info {
+  padding: 1rem;
+  background: #f9fafb;
+  border-radius: 4px;
+}
+
+.card-mt {
+  margin-top: 1rem;
+}
+
+.card-mb {
+  margin-bottom: 1rem;
+}
+
+/* Modal utilities */
+.modal-medium {
+  max-width: 600px;
+  background: #fff;
+  padding: 2rem;
+  border-radius: 8px;
+}
+
+/* Section utilities */
+.section-with-sidebar {
+  margin-left: 260px;
+  padding: 2rem;
+}
+
+@media (max-width: 1024px) {
+  .section-with-sidebar {
+    margin-left: 0;
+  }
+}
+
+/* Error text */
+.text-error {
+  color: #ef4444;
+}
+
+/* Display utilities */
+.hidden {
+  display: none;
+}
+
+.display-none {
+  display: none;
+}
+
+/* Margin utilities */
+.mt-025 {
+  margin-top: 0.25rem;
+}
+
+.mt-05 {
+  margin-top: 0.5rem;
+}
+
+.mt-1 {
+  margin-top: 1rem;
+}
+
+.mb-05 {
+  margin-bottom: 0.5rem;
+}
+
+.mb-1 {
+  margin-bottom: 1rem;
+}
+
+.mb-15 {
+  margin-bottom: 1.5rem;
+}
+
+.my-0 {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+/* Padding utilities */
+.p-2 {
+  padding: 2rem;
+}
+
+/* Header utilities */
+.h2-mb {
+  margin: 0 0 0.5rem 0;
+}
+
+.h3-my-0 {
+  margin: 0;
+}
+
+.h3-mb-05 {
+  margin: 0 0 0.5rem 0;
+}
+
+/* Stat box gradient backgrounds */
+.stat-box-purple {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.stat-box-pink {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.stat-box-blue {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.stat-box-orange {
+  background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+}
+
+/* Link utilities */
+.link-white {
+  color: white;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Border utilities */
+.border-bottom-pad {
+  border-bottom: 1px solid #e5e7eb;
+  padding: 1rem 0;
+}
+
+/* Rating stars */
+.stars-gold {
+  color: #f59e0b;
+}

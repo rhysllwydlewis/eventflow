@@ -112,7 +112,7 @@
 </main>
 
 <footer class="footer" role="contentinfo">
-  <div class="container" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+  <div class="container flex-between">
     <div><strong>EventFlow</strong><br><span class="small">Event planning made simple.</span></div>
     <div class="version">Version: v17.0.0</div>
     <div class="small">
@@ -158,9 +158,9 @@
     
     if (!filtered.length) {
       container.innerHTML = `
-        <div style="text-align:center;padding:4rem 2rem;">
+        <div class="text-center-pad">
           <div style="font-size:4rem;margin-bottom:1rem;">📋</div>
-          <h3 style="margin:0 0 0.5rem 0;">No reports found</h3>
+          <h3 class="h3-mb-05">No reports found</h3>
           <p style="color:#6b7280;">
             ${allReports.length === 0 ? 'Content reports will appear here when users flag content.' : 'No reports match your filters.'}
           </p>
