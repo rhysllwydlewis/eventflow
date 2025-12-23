@@ -70,6 +70,17 @@ function efSetupPhotoDropZone(dropId, previewId, onImage) {
     input.click();
   });
 }
+
+// HTML escaping utility
+function escapeHtml(unsafe) {
+  if (typeof unsafe !== 'string') {
+    return '';
+  }
+  const div = document.createElement('div');
+  div.textContent = unsafe;
+  return div.innerHTML;
+}
+
 // Global network error handler & fetch wrapper (v5.3)
 (function () {
   let efErrorBanner = null;
@@ -163,17 +174,17 @@ function supplierCard(s, user) {
   const showAddAccount = !!user && user.role === 'customer';
   const alreadyLocal = lsGet().includes(s.id);
   const addBtn = showAddAccount
-    ? `<button class="cta" data-add="${s.id}">Add to my plan</button>`
-    : `<button class="cta" data-add-local="${s.id}" ${alreadyLocal ? 'disabled' : ''}>${alreadyLocal ? 'Added' : 'Add to my plan'}</button>`;
+    ? `<button class="cta" data-add="${escapeHtml(s.id)}">Add to my plan</button>`
+    : `<button class="cta" data-add-local="${escapeHtml(s.id)}" ${alreadyLocal ? 'disabled' : ''}>${alreadyLocal ? 'Added' : 'Add to my plan'}</button>`;
 
   const tags = [];
   if (s.maxGuests && s.maxGuests > 0) {
-    tags.push(`<span class="badge">Up to ${s.maxGuests} guests</span>`);
+    tags.push(`<span class="badge">Up to ${escapeHtml(String(s.maxGuests))} guests</span>`);
   }
   if (Array.isArray(s.amenities)) {
     s.amenities.slice(0, 3).forEach(a => {
       tags.push(
-        `<span class="badge clickable-tag" data-amenity="${a}" style="cursor:pointer;" title="Click to filter by ${a}">${a}</span>`
+        `<span class="badge clickable-tag" data-amenity="${escapeHtml(a)}" style="cursor:pointer;" title="Click to filter by ${escapeHtml(a)}">${escapeHtml(a)}</span>`
       );
     });
   }
@@ -196,10 +207,10 @@ function supplierCard(s, user) {
   }
 
   return `<div class="card supplier-card">
-    <img src="${img}" alt="${s.name} image"><div>
-      <h3>${s.name} ${proBadge}</h3>
-      <div class="small">${s.location || ''} · <span class="badge">${s.category}</span> ${s.price_display ? `· ${s.price_display}` : ''}</div>
-      <p class="small">${s.description_short || ''}</p>
+    <img src="${escapeHtml(img)}" alt="${escapeHtml(s.name)} image"><div>
+      <h3>${escapeHtml(s.name)} ${proBadge}</h3>
+      <div class="small">${escapeHtml(s.location || '')} · <span class="badge">${escapeHtml(s.category)}</span> ${s.price_display ? `· ${escapeHtml(s.price_display)}` : ''}</div>
+      <p class="small">${escapeHtml(s.description_short || '')}</p>
       <div class="small" style="margin-top:4px">${tags.join(' ')}</div>
       <div class="form-actions">${addBtn}<a class="cta secondary" href="/supplier.html?id=${encodeURIComponent(s.id)}">View details</a></div>
     </div></div>`;
@@ -386,20 +397,22 @@ async function initSupplier() {
   const img = (s.photos && s.photos[0]) || '/assets/images/hero-venue.svg';
   const gallery = (s.photos || [])
     .slice(1)
-    .map(u => `<img loading="lazy" src="${u}" alt="${s.name}">`)
+    .map(u => `<img loading="lazy" src="${escapeHtml(u)}" alt="${escapeHtml(s.name)}">`)
     .join('');
-  const facts = `<div class="small">${s.website ? `<a href="${s.website}" target="_blank" rel="noopener">${s.website}</a> · ` : ''}${s.phone || ''} ${s.license || ''} ${s.maxGuests ? `· Max ${s.maxGuests} guests` : ''}</div>`;
-  const amenities = (s.amenities || []).map(a => `<span class="badge">${a}</span>`).join(' ');
+  const facts = `<div class="small">${s.website ? `<a href="${escapeHtml(s.website)}" target="_blank" rel="noopener">${escapeHtml(s.website)}</a> · ` : ''}${escapeHtml(s.phone || '')} ${escapeHtml(s.license || '')} ${s.maxGuests ? `· Max ${escapeHtml(String(s.maxGuests))} guests` : ''}</div>`;
+  const amenities = (s.amenities || [])
+    .map(a => `<span class="badge">${escapeHtml(a)}</span>`)
+    .join(' ');
   const packagesHtml =
     (pkgs.items || [])
       .map(
         p => `
     <div class="card pack">
-      <img src="${p.image}" alt="${p.title} image">
+      <img src="${escapeHtml(p.image)}" alt="${escapeHtml(p.title)} image">
       <div>
-        <h3>${p.title}</h3>
-        <div class="small"><span class="badge">${p.price_display || ''}</span></div>
-        <p class="small">${p.description || ''}</p>
+        <h3>${escapeHtml(p.title)}</h3>
+        <div class="small"><span class="badge">${escapeHtml(p.price_display || '')}</span></div>
+        <p class="small">${escapeHtml(p.description || '')}</p>
       </div>
     </div>`
       )
@@ -421,11 +434,11 @@ async function initSupplier() {
 
   document.getElementById('supplier-container').innerHTML = `
     <div class="card"><div class="supplier-card">
-      <img src="${img}" alt="${s.name} image"><div>
-        <h1>${s.name} ${proBadge}</h1><div class="small">${s.location || ''} · <span class="badge">${s.category}</span> ${s.price_display ? `· ${s.price_display}` : ''}</div>
+      <img src="${escapeHtml(img)}" alt="${escapeHtml(s.name)} image"><div>
+        <h1>${escapeHtml(s.name)} ${proBadge}</h1><div class="small">${escapeHtml(s.location || '')} · <span class="badge">${escapeHtml(s.category)}</span> ${s.price_display ? `· ${escapeHtml(s.price_display)}` : ''}</div>
         ${facts}
         <div class="small" style="margin-top:8px">${amenities}</div>
-        <p style="margin-top:8px">${s.description_long || s.description_short || ''}</p>
+        <p style="margin-top:8px">${escapeHtml(s.description_long || s.description_short || '')}</p>
         <div class="form-actions" style="margin-top:8px">
           <button class="cta" id="add">Add to my plan</button>
           <button class="cta secondary" id="start-thread">Start conversation</button>
