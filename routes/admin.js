@@ -2071,5 +2071,126 @@ router.get('/settings/system-info', authRequired, roleRequired('admin'), (req, r
   });
 });
 
+// ---------- Tickets Management ----------
+
+/**
+ * GET /api/admin/tickets
+ * List all support tickets
+ */
+router.get('/tickets', authRequired, roleRequired('admin'), (req, res) => {
+  const tickets = read('tickets');
+  
+  // Sort by date (newest first)
+  tickets.sort((a, b) => {
+    const aTime = new Date(a.createdAt || 0).getTime();
+    const bTime = new Date(b.createdAt || 0).getTime();
+    return bTime - aTime;
+  });
+  
+  res.json({ items: tickets });
+});
+
+/**
+ * GET /api/admin/tickets/:id
+ * Get single ticket details
+ */
+router.get('/tickets/:id', authRequired, roleRequired('admin'), (req, res) => {
+  const tickets = read('tickets');
+  const ticket = tickets.find(t => t.id === req.params.id);
+  
+  if (!ticket) {
+    return res.status(404).json({ error: 'Ticket not found' });
+  }
+  
+  res.json({ ticket });
+});
+
+/**
+ * PUT /api/admin/tickets/:id
+ * Update ticket (status, priority, assigned)
+ */
+router.put('/tickets/:id', authRequired, roleRequired('admin'), (req, res) => {
+  const tickets = read('tickets');
+  const index = tickets.findIndex(t => t.id === req.params.id);
+  
+  if (index < 0) {
+    return res.status(404).json({ error: 'Ticket not found' });
+  }
+  
+  const { status, priority, assignedTo } = req.body;
+  const ticket = tickets[index];
+  
+  if (status) ticket.status = status;
+  if (priority) ticket.priority = priority;
+  if (assignedTo !== undefined) ticket.assignedTo = assignedTo;
+  
+  ticket.updatedAt = new Date().toISOString();
+  ticket.updatedBy = req.user.id;
+  
+  tickets[index] = ticket;
+  write('tickets', tickets);
+  
+  res.json({ ticket });
+});
+
+/**
+ * POST /api/admin/tickets/:id/reply
+ * Add a reply to a ticket
+ */
+router.post('/tickets/:id/reply', authRequired, roleRequired('admin'), (req, res) => {
+  const tickets = read('tickets');
+  const index = tickets.findIndex(t => t.id === req.params.id);
+  
+  if (index < 0) {
+    return res.status(404).json({ error: 'Ticket not found' });
+  }
+  
+  const { message } = req.body;
+  if (!message) {
+    return res.status(400).json({ error: 'Message is required' });
+  }
+  
+  const ticket = tickets[index];
+  const reply = {
+    id: uid('reply'),
+    message,
+    authorId: req.user.id,
+    authorEmail: req.user.email,
+    createdAt: new Date().toISOString(),
+  };
+  
+  if (!ticket.replies) ticket.replies = [];
+  ticket.replies.push(reply);
+  ticket.updatedAt = new Date().toISOString();
+  
+  tickets[index] = ticket;
+  write('tickets', tickets);
+  
+  res.json({ ticket });
+});
+
+// ---------- Audit Logs ----------
+
+/**
+ * GET /api/admin/audit
+ * Get audit logs with optional filtering
+ */
+router.get('/audit', authRequired, roleRequired('admin'), (req, res) => {
+  const { adminId, action, targetType, startDate, endDate, limit } = req.query;
+  
+  const filters = {};
+  if (adminId) filters.adminId = adminId;
+  if (action) filters.action = action;
+  if (targetType) filters.targetType = targetType;
+  if (startDate) filters.startDate = startDate;
+  if (endDate) filters.endDate = endDate;
+  if (limit) filters.limit = parseInt(limit, 10);
+  
+  const { getAuditLogs } = require('../middleware/audit');
+  const logs = getAuditLogs(filters);
+  
+  res.json({ items: logs });
+});
+
 module.exports = router;
 module.exports.setHelperFunctions = setHelperFunctions;

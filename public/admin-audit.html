@@ -1,144 +1,18 @@
 <!DOCTYPE html>
-<html>
+<html lang="en-GB">
 <head>
-  <meta charset="utf-8">
-  <title>Audit Log - Admin</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <style>
-    body{font-family:sans-serif;padding:20px;background:#0b0b0b;color:#f5f5f5;}
-    h1,h2{margin-top:20px;}
-    table{width:100%;border-collapse:collapse;margin-top:10px;margin-bottom:20px;background:#111;font-size:13px;}
-    td,th{border:1px solid #333;padding:8px;}
-    th{background:#161616;text-align:left;}
-    button{padding:6px 10px;margin:2px;font-size:12px;cursor:pointer;background:#222;color:#f5f5f5;border:1px solid #444;border-radius:3px;}
-    button:hover{background:#2b825b;border-color:#2b825b;}
-    .controls{margin-top:10px;margin-bottom:10px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
-    select,input[type="date"]{padding:6px 8px;border-radius:3px;border:1px solid #444;background:#111;color:#f5f5f5;}
-    .badge{display:inline-block;padding:2px 6px;border-radius:999px;font-size:11px;background:#222;}
-    .badge-user{background:#1e3a8a;color:#bfdbfe;}
-    .badge-supplier{background:#713f12;color:#fde68a;}
-    .badge-review{background:#4c1d95;color:#ddd6fe;}
-    .badge-report{background:#7f1d1d;color:#fca5a5;}
-    .small{font-size:12px;color:#a1a1aa;}
-    
-  /* Admin sidebar styles */
-  .admin-sidebar {
-    position: fixed;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 260px;
-    background: #111;
-    color: #f5f5f5;
-    border-right: 1px solid #27272a;
-    padding: 1rem;
-    overflow-y: auto;
-    z-index: 1000;
-    transition: transform 0.3s;
-  }
-  
-  .admin-sidebar-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.5rem;
-    padding-bottom: 1rem;
-    border-bottom: 1px solid #27272a;
-  }
-  
-  .admin-sidebar-header h3 {
-    margin: 0;
-    font-size: 1.25rem;
-    color: #f5f5f5;
-  }
-  
-  .sidebar-toggle {
-    display: none;
-    background: none;
-    border: none;
-    color: #f5f5f5;
-    font-size: 1.5rem;
-    cursor: pointer;
-  }
-  
-  .admin-sidebar-nav {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-  }
-  
-  .admin-nav-link {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.75rem 1rem;
-    border-radius: 6px;
-    color: #d4d4d8;
-    text-decoration: none;
-    transition: all 0.2s;
-  }
-  
-  .admin-nav-link:hover {
-    background: #1a1a1a;
-    color: #f5f5f5;
-  }
-  
-  .admin-nav-link.active {
-    background: #3b82f6;
-    color: #fff;
-  }
-  
-  .nav-icon {
-    font-size: 1.25rem;
-  }
-  
-  .nav-label {
-    flex: 1;
-    font-weight: 500;
-  }
-  
-  .nav-badge {
-    background: #3b82f6;
-    color: #fff;
-    font-size: 0.75rem;
-    padding: 0.125rem 0.5rem;
-    border-radius: 999px;
-    font-weight: 600;
-    display: none;
-  }
-  
-  .nav-badge.badge-warning {
-    background: #f59e0b;
-  }
-  
-  .nav-badge.badge-danger {
-    background: #ef4444;
-  }
-  
-  main.section {
-    margin-left: 260px;
-    transition: margin-left 0.3s;
-  }
-  
-  @media (max-width: 1024px) {
-    .admin-sidebar {
-      transform: translateX(-100%);
-    }
-    
-    .admin-sidebar.open {
-      transform: translateX(0);
-    }
-    
-    .sidebar-toggle {
-      display: block;
-    }
-    
-    main.section {
-      margin-left: 0;
-    }
-  }
-
-</style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Audit Log — EventFlow Admin</title>
+<link rel="stylesheet" href="/assets/css/styles.css">
+<link rel="stylesheet" href="/assets/css/eventflow-17.0.0.css">
+<link rel="stylesheet" href="/assets/css/utilities.css">
+<link rel="stylesheet" href="/assets/css/components.css">
+<link rel="stylesheet" href="/assets/css/animations.css">
+<link rel="stylesheet" href="/assets/css/admin.css">
+<link rel="stylesheet" href="/assets/css/admin-enhanced.css">
+<link rel="icon" href="/favicon.svg">
+<script src="/assets/js/components.js" defer></script>
 </head>
 <body>
 <aside class="admin-sidebar" id="adminSidebar">
@@ -197,253 +71,58 @@
   </nav>
 </aside>
 
-
-  <h1>Audit Log</h1>
-  <div class="controls">
-    <button id="backToDashboard">← Back to Dashboard</button>
-    <button id="refreshAuditLogs">Refresh</button>
-    <button id="exportAuditLogs">Export CSV</button>
+<main class="section">
+  <!-- Modern Dashboard Header -->
+  <div class="dashboard-header">
+    <div class="header-content">
+      <div>
+        <h1 class="dashboard-title">Audit Log</h1>
+        <p class="dashboard-subtitle">Track all administrative actions for compliance and security</p>
+      </div>
+      <div class="header-actions">
+        <button class="btn-secondary" id="backToDashboard">← Back to Dashboard</button>
+      </div>
+    </div>
   </div>
 
-  <div class="controls">
-    <select id="actionFilter">
-      <option value="">All Actions</option>
-      <option value="user_suspended">User Suspended</option>
-      <option value="user_banned">User Banned</option>
-      <option value="user_verified">User Verified</option>
-      <option value="supplier_verified">Supplier Verified</option>
-      <option value="supplier_approved">Supplier Approved</option>
-      <option value="review_approved">Review Approved</option>
-      <option value="review_rejected">Review Rejected</option>
-      <option value="report_resolved">Report Resolved</option>
-      <option value="report_dismissed">Report Dismissed</option>
-    </select>
-    <select id="targetTypeFilter">
-      <option value="">All Types</option>
-      <option value="user">User</option>
-      <option value="supplier">Supplier</option>
-      <option value="review">Review</option>
-      <option value="report">Report</option>
-      <option value="photo">Photo</option>
-    </select>
-    <label>From: <input type="date" id="dateFrom"></label>
-    <label>To: <input type="date" id="dateTo"></label>
+  <div class="container">
+    <div class="data-section">
+      <div class="admin-toolbar">
+        <select id="actionFilter" class="filter-select">
+          <option value="">All Actions</option>
+          <option value="user_created">User Created</option>
+          <option value="user_suspended">User Suspended</option>
+          <option value="user_banned">User Banned</option>
+          <option value="user_verified">User Verified</option>
+          <option value="supplier_approved">Supplier Approved</option>
+          <option value="supplier_verified">Supplier Verified</option>
+          <option value="package_approved">Package Approved</option>
+          <option value="photo_approved">Photo Approved</option>
+          <option value="photo_rejected">Photo Rejected</option>
+        </select>
+        <select id="targetTypeFilter" class="filter-select">
+          <option value="">All Types</option>
+          <option value="user">User</option>
+          <option value="supplier">Supplier</option>
+          <option value="package">Package</option>
+          <option value="photo">Photo</option>
+          <option value="review">Review</option>
+          <option value="report">Report</option>
+        </select>
+        <input type="date" id="startDateFilter" class="filter-select">
+        <input type="date" id="endDateFilter" class="filter-select">
+        <button class="btn btn-secondary" id="clearFilters">Clear Filters</button>
+      </div>
+      
+      <div id="auditContainer">
+        <p class="small">Loading audit logs...</p>
+      </div>
+    </div>
   </div>
-
-  <div id="status">Loading audit logs...</div>
-  <div class="small" style="margin-bottom:10px;">Showing most recent <span id="logCount">0</span> actions</div>
-  
-  <table id="auditTable">
-    <thead>
-      <tr>
-        <th>Timestamp</th>
-        <th>Admin</th>
-        <th>Action</th>
-        <th>Target</th>
-        <th>Details</th>
-      </tr>
-    </thead>
-    <tbody id="auditBody"></tbody>
-  </table>
-
-  <script src="/assets/js/admin-shared.js"></script>
-<script>
-    let allLogs = [];
-    let filteredLogs = [];
-
-    // Mock API - in production this would call a real endpoint
-    function api(url, method, body) {
-      const opts = {
-        method: method || 'GET',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' }
-      };
-      if (body) opts.body = JSON.stringify(body);
-      return fetch(url, opts).then(r => {
-        if (!r.ok) throw new Error('API error ' + r.status);
-        return r.json();
-      });
-    }
-
-    function loadAuditLogs() {
-      document.getElementById('status').innerText = 'Loading audit logs...';
-      
-      // This endpoint doesn't exist yet, but we'll try to fetch
-      // For now, we'll show a message if it fails
-      api('/api/admin/audit-logs?limit=100', 'GET')
-        .then(data => {
-          allLogs = data.logs || [];
-          filteredLogs = allLogs;
-          renderAuditLogs(filteredLogs);
-          document.getElementById('status').innerText = 'Loaded successfully';
-          document.getElementById('logCount').innerText = filteredLogs.length;
-        })
-        .catch(err => {
-          console.error('Error loading audit logs:', err);
-          // Show sample data for demonstration
-          allLogs = generateSampleLogs();
-          filteredLogs = allLogs;
-          renderAuditLogs(filteredLogs);
-          document.getElementById('status').innerText = 'Showing sample data (endpoint not yet implemented)';
-          document.getElementById('logCount').innerText = filteredLogs.length;
-        });
-    }
-
-    function generateSampleLogs() {
-      // Generate sample audit log data for demonstration
-      const now = new Date();
-      const sampleLogs = [
-        {
-          id: 'audit_1',
-          timestamp: new Date(now - 3600000).toISOString(),
-          adminEmail: 'admin@eventflow.local',
-          action: 'user_suspended',
-          targetType: 'user',
-          targetId: 'usr_123',
-          details: { reason: 'Violating community guidelines', email: 'user@example.com' }
-        },
-        {
-          id: 'audit_2',
-          timestamp: new Date(now - 7200000).toISOString(),
-          adminEmail: 'admin@eventflow.local',
-          action: 'supplier_verified',
-          targetType: 'supplier',
-          targetId: 'sup_456',
-          details: { name: 'Example Venue', notes: 'All documents verified' }
-        },
-        {
-          id: 'audit_3',
-          timestamp: new Date(now - 10800000).toISOString(),
-          adminEmail: 'admin@eventflow.local',
-          action: 'report_resolved',
-          targetType: 'report',
-          targetId: 'report_789',
-          details: { reportType: 'review', resolution: 'valid', action: 'content_removed' }
-        }
-      ];
-      return sampleLogs;
-    }
-
-    function applyFilters() {
-      const actionFilter = document.getElementById('actionFilter').value;
-      const typeFilter = document.getElementById('targetTypeFilter').value;
-      const dateFrom = document.getElementById('dateFrom').value;
-      const dateTo = document.getElementById('dateTo').value;
-
-      filteredLogs = allLogs.filter(log => {
-        if (actionFilter && log.action !== actionFilter) return false;
-        if (typeFilter && log.targetType !== typeFilter) return false;
-        
-        if (dateFrom) {
-          const logDate = new Date(log.timestamp);
-          const fromDate = new Date(dateFrom);
-          if (logDate < fromDate) return false;
-        }
-        
-        if (dateTo) {
-          const logDate = new Date(log.timestamp);
-          const toDate = new Date(dateTo);
-          toDate.setHours(23, 59, 59, 999);
-          if (logDate > toDate) return false;
-        }
-        
-        return true;
-      });
-
-      renderAuditLogs(filteredLogs);
-      document.getElementById('logCount').innerText = filteredLogs.length;
-    }
-
-    function renderAuditLogs(logs) {
-      const tbody = document.getElementById('auditBody');
-      tbody.innerHTML = '';
-      
-      if (logs.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#a1a1aa;">No audit logs found</td></tr>';
-        return;
-      }
-      
-      logs.forEach(log => {
-        const row = document.createElement('tr');
-        
-        const timestamp = new Date(log.timestamp).toLocaleString();
-        const actionLabel = log.action.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-        
-        let targetBadge = '';
-        if (log.targetType === 'user') targetBadge = '<span class="badge badge-user">User</span>';
-        else if (log.targetType === 'supplier') targetBadge = '<span class="badge badge-supplier">Supplier</span>';
-        else if (log.targetType === 'review') targetBadge = '<span class="badge badge-review">Review</span>';
-        else if (log.targetType === 'report') targetBadge = '<span class="badge badge-report">Report</span>';
-        else targetBadge = '<span class="badge">' + escapeHtml(log.targetType) + '</span>';
-        
-        let detailsText = '';
-        if (log.details) {
-          if (log.details.reason) detailsText += 'Reason: ' + escapeHtml(log.details.reason);
-          if (log.details.email) detailsText += '<br>User: ' + escapeHtml(log.details.email);
-          if (log.details.name) detailsText += '<br>Name: ' + escapeHtml(log.details.name);
-          if (log.details.notes) detailsText += '<br>Notes: ' + escapeHtml(log.details.notes);
-        }
-        
-        row.innerHTML = `
-          <td><span class="small">${timestamp}</span></td>
-          <td>${escapeHtml(log.adminEmail || 'Unknown')}</td>
-          <td>${escapeHtml(actionLabel)}</td>
-          <td>${targetBadge}<br><span class="small">${log.targetId}</span></td>
-          <td><span class="small">${detailsText || 'No details'}</span></td>
-        `;
-        tbody.appendChild(row);
-      });
-    }
-
-    function escapeHtml(text) {
-      const div = document.createElement('div');
-      div.textContent = text;
-      return div.innerHTML;
-    }
-
-    function exportAuditLogs() {
-      let csv = 'Timestamp,Admin,Action,Target Type,Target ID,Details\n';
-      
-      filteredLogs.forEach(log => {
-        const timestamp = new Date(log.timestamp).toLocaleString();
-        const details = JSON.stringify(log.details || {}).replace(/"/g, '""');
-        csv += `"${timestamp}","${log.adminEmail}","${log.action}","${log.targetType}","${log.targetId}","${details}"\n`;
-      });
-      
-      const blob = new Blob([csv], { type: 'text/csv' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `audit-log-${new Date().toISOString().split('T')[0]}.csv`;
-      a.click();
-      window.URL.revokeObjectURL(url);
-    }
-
-    // Load audit logs on page load
-    loadAuditLogs();
-    
-    // Event listeners
-    document.getElementById('backToDashboard').addEventListener('click', function() {
-      location.href = '/admin.html';
-    });
-    
-    document.getElementById('refreshAuditLogs').addEventListener('click', function() {
-      loadAuditLogs();
-    });
-    
-    document.getElementById('exportAuditLogs').addEventListener('click', function() {
-      exportAuditLogs();
-    });
-
-  // Setup filter event listeners
-  document.getElementById('actionFilter').addEventListener('change', applyFilters);
-  document.getElementById('targetTypeFilter').addEventListener('change', applyFilters);
-  document.getElementById('dateFrom').addEventListener('change', applyFilters);
-  document.getElementById('dateTo').addEventListener('change', applyFilters);
-  </script>
+</main>
 
 <footer class="footer" role="contentinfo">
-  <div class="container" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+  <div class="container flex-between">
     <div><strong>EventFlow</strong><br><span class="small">Event planning made simple.</span></div>
     <div class="version">Version: v17.0.0</div>
     <div class="small">
@@ -455,7 +134,97 @@
   </div>
 </footer>
 
+<script src="/assets/js/admin-shared.js"></script>
+<script>
+(function() {
+  'use strict';
+  
+  let allLogs = [];
+  
+  async function loadAuditLogs() {
+    try {
+      const params = new URLSearchParams();
+      const action = document.getElementById('actionFilter')?.value;
+      const targetType = document.getElementById('targetTypeFilter')?.value;
+      const startDate = document.getElementById('startDateFilter')?.value;
+      const endDate = document.getElementById('endDateFilter')?.value;
+      
+      if (action) params.append('action', action);
+      if (targetType) params.append('targetType', targetType);
+      if (startDate) params.append('startDate', new Date(startDate).toISOString());
+      if (endDate) params.append('endDate', new Date(endDate).toISOString());
+      
+      const url = `/api/admin/audit${params.toString() ? '?' + params.toString() : ''}`;
+      const data = await AdminShared.api(url);
+      allLogs = data.items || [];
+      renderAuditLogs();
+    } catch (error) {
+      console.error('Error loading audit logs:', error);
+      document.getElementById('auditContainer').innerHTML = 
+        '<div class="data-section"><p class="small" style="color:#ef4444;">Failed to load audit logs. Please try again.</p></div>';
+    }
+  }
+  
+  function renderAuditLogs() {
+    const container = document.getElementById('auditContainer');
+    if (!container) return;
+    
+    if (!allLogs.length) {
+      container.innerHTML = `
+        <div class="text-center-pad">
+          <div style="font-size:4rem;margin-bottom:1rem;">📝</div>
+          <h3 class="h3-mb-05">No audit logs found</h3>
+          <p style="color:#6b7280;">Audit logs will appear here as admins perform actions.</p>
+        </div>
+      `;
+      return;
+    }
+    
+    let html = '<div class="table-wrapper"><table><thead><tr><th>Admin</th><th>Action</th><th>Target</th><th>Target ID</th><th>Timestamp</th></tr></thead><tbody>';
+    
+    allLogs.forEach(log => {
+      const timestamp = AdminShared.formatDate(log.timestamp);
+      const actionDisplay = (log.action || '').replace(/_/g, ' ');
+      html += `
+        <tr>
+          <td>${AdminShared.escapeHtml(log.adminEmail || 'Unknown')}</td>
+          <td><span class="badge">${AdminShared.escapeHtml(actionDisplay)}</span></td>
+          <td><span class="badge badge-${log.targetType || 'unknown'}">${AdminShared.escapeHtml(log.targetType || 'unknown')}</span></td>
+          <td class="small">${AdminShared.escapeHtml(log.targetId || 'N/A')}</td>
+          <td class="small">${timestamp}</td>
+        </tr>
+      `;
+    });
+    
+    html += '</tbody></table></div>';
+    container.innerHTML = html;
+  }
+  
+  // Setup filter listeners
+  document.getElementById('actionFilter')?.addEventListener('change', loadAuditLogs);
+  document.getElementById('targetTypeFilter')?.addEventListener('change', loadAuditLogs);
+  document.getElementById('startDateFilter')?.addEventListener('change', loadAuditLogs);
+  document.getElementById('endDateFilter')?.addEventListener('change', loadAuditLogs);
+  
+  // Clear filters
+  document.getElementById('clearFilters')?.addEventListener('click', () => {
+    document.getElementById('actionFilter').value = '';
+    document.getElementById('targetTypeFilter').value = '';
+    document.getElementById('startDateFilter').value = '';
+    document.getElementById('endDateFilter').value = '';
+    loadAuditLogs();
+  });
+  
+  // Back button
+  document.getElementById('backToDashboard')?.addEventListener('click', () => {
+    window.location.href = '/admin.html';
+  });
+  
+  // Initialize
+  loadAuditLogs();
+})();
+</script>
 <script src="/assets/js/components/footer-nav.js" defer></script>
-<script src="/assets/js/cookie-consent.js" defer></script>
+
 </body>
 </html>
