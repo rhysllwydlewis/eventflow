@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Maintenance Mode — EventFlow</title>
+  <link rel="icon" href="/favicon.svg">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      color: #333;
+    }
+
+    .maintenance-container {
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 600px;
+      width: 100%;
+      padding: 60px 40px;
+      text-align: center;
+      animation: slideUp 0.5s ease-out;
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .maintenance-icon {
+      font-size: 80px;
+      margin-bottom: 30px;
+      animation: bounce 2s infinite;
+    }
+
+    @keyframes bounce {
+      0%, 100% {
+        transform: translateY(0);
+      }
+      50% {
+        transform: translateY(-10px);
+      }
+    }
+
+    h1 {
+      font-size: 32px;
+      font-weight: 700;
+      color: #1a1a1a;
+      margin-bottom: 20px;
+      letter-spacing: -0.5px;
+    }
+
+    .maintenance-message {
+      font-size: 18px;
+      line-height: 1.6;
+      color: #666;
+      margin-bottom: 40px;
+    }
+
+    .admin-login-btn {
+      display: inline-block;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      text-decoration: none;
+      padding: 16px 40px;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    }
+
+    .admin-login-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+    }
+
+    .admin-login-btn:active {
+      transform: translateY(0);
+    }
+
+    .footer-note {
+      margin-top: 40px;
+      font-size: 14px;
+      color: #999;
+    }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+      .maintenance-container {
+        padding: 40px 30px;
+      }
+
+      h1 {
+        font-size: 26px;
+      }
+
+      .maintenance-icon {
+        font-size: 60px;
+      }
+
+      .maintenance-message {
+        font-size: 16px;
+      }
+    }
+
+    /* Loading indicator for message fetch */
+    .loading {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #667eea;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      vertical-align: middle;
+      margin-left: 10px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="maintenance-container">
+    <div class="maintenance-icon">🔧</div>
+    <h1>We'll Be Right Back</h1>
+    <p class="maintenance-message" id="maintenanceMessage">
+      We're performing scheduled maintenance. We'll be back soon!
+    </p>
+    <a href="/auth.html" class="admin-login-btn">Admin Login</a>
+    <p class="footer-note">
+      Thank you for your patience!
+    </p>
+  </div>
+
+  <script>
+    // Fetch and display the custom maintenance message from settings
+    (async function loadMaintenanceMessage() {
+      try {
+        const response = await fetch('/api/admin/settings/maintenance');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.message) {
+            document.getElementById('maintenanceMessage').textContent = data.message;
+          }
+        }
+      } catch (error) {
+        // If fetch fails, keep default message
+        console.log('Using default maintenance message');
+      }
+    })();
+  </script>
+</body>
+</html>
