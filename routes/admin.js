@@ -10,6 +10,7 @@ const { read, write, uid } = require('../store');
 const { authRequired, roleRequired } = require('../middleware/auth');
 const { auditLog, AUDIT_ACTIONS } = require('../middleware/audit');
 const postmark = require('../utils/postmark');
+const dbUnified = require('../db-unified');
 
 const router = express.Router();
 
@@ -26,6 +27,19 @@ function setHelperFunctions(supplierIsProActive, seed) {
   supplierIsProActiveFn = supplierIsProActive;
   seedFn = seed;
 }
+
+/**
+ * GET /api/admin/db-status
+ * Get database connection status
+ */
+router.get('/db-status', authRequired, roleRequired('admin'), (_req, res) => {
+  const status = dbUnified.getDatabaseStatus();
+  res.json({
+    dbType: status.type,
+    initialized: status.initialized,
+    state: status.state,
+  });
+});
 
 /**
  * GET /api/admin/users
