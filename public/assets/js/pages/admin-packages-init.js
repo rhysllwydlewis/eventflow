@@ -417,26 +417,25 @@
       saveBtn.disabled = true;
       saveBtn.textContent = 'Saving...';
 
-      // Handle image - use preview URL if file selected, otherwise use input field
+      // Handle image - simplified logic
+      let imageUrl = document.getElementById('packageImage').value;
+
       if (currentImageFile) {
-        // Image upload to cloud storage not yet implemented with MongoDB backend
-        // Using preview data URL stored directly in MongoDB as interim solution
-        console.log('Using image preview data URL (upload to cloud storage not yet implemented)');
+        // If user selected a new file, use the preview URL (already stored as base64 from handleImageFile)
+        imageUrl = currentImageUrl;
+
         if (typeof Toast !== 'undefined') {
-          Toast.info('Using image preview. Cloud storage upload coming soon.');
+          Toast.info('Image will be embedded in base64 format. For production, implement proper image upload.');
         }
+      } else if (currentImageUrl) {
+        imageUrl = currentImageUrl;
       }
 
-      // Set image URL from currentImageUrl or input field
-      if (currentImageUrl) {
-        packageData.image = currentImageUrl;
-      } else {
-        packageData.image = document.getElementById('packageImage').value;
+      if (!imageUrl) {
+        throw new Error('Please select an image URL or upload an image file');
       }
 
-      if (!packageData.image) {
-        throw new Error('Please provide an image URL or select an image file for the package');
-      }
+      packageData.image = imageUrl;
 
       // Save to MongoDB via API
       packageData.createdAt = id ? undefined : new Date().toISOString();

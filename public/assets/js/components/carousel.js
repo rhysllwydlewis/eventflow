@@ -449,19 +449,19 @@ class Carousel {
       this.carouselContainer.releasePointerCapture?.(e.pointerId);
       document.body.style.userSelect = '';
 
+      // Only prevent clicks if user actually dragged (moved more than threshold)
       if (didDrag) {
-        // Use requestAnimationFrame to ensure this runs after any pending events
-        requestAnimationFrame(() => {
-          const preventClick = ev => {
-            ev.preventDefault();
-            ev.stopPropagation();
-          };
-          this.carouselContainer.addEventListener('click', preventClick, {
-            capture: true,
-            once: true,
-          });
+        // Prevent the NEXT click event
+        const preventClick = ev => {
+          ev.preventDefault();
+          ev.stopPropagation();
+        };
+        this.carouselContainer.addEventListener('click', preventClick, {
+          capture: true,
+          once: true,
         });
       }
+      // If didn't drag, allow click to proceed normally
     };
 
     this.carouselContainer.addEventListener('pointerdown', onPointerDown);
