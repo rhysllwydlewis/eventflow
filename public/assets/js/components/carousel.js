@@ -450,15 +450,21 @@ class Carousel {
       document.body.style.userSelect = '';
 
       if (didDrag) {
-        const preventClick = ev => {
-          ev.preventDefault();
-          ev.stopPropagation();
-        };
-        this.carouselContainer.addEventListener('click', preventClick, {
-          capture: true,
-          once: true,
+        // Use requestAnimationFrame to ensure this runs after any pending events
+        requestAnimationFrame(() => {
+          const preventClick = ev => {
+            ev.preventDefault();
+            ev.stopPropagation();
+          };
+          this.carouselContainer.addEventListener('click', preventClick, {
+            capture: true,
+            once: true,
+          });
         });
       }
+      
+      // Reset didDrag for next interaction
+      didDrag = false;
     };
 
     this.carouselContainer.addEventListener('pointerdown', onPointerDown);

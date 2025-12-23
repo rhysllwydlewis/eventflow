@@ -257,6 +257,8 @@
       const previewImage = document.getElementById('previewImage');
 
       previewImage.src = e.target.result;
+      // Store the preview URL for use when upload is disabled
+      currentImageUrl = e.target.result;
       placeholder.style.display = 'none';
       preview.style.display = 'block';
     });
@@ -431,33 +433,30 @@
         const packageId = id || generateId('pkg');
 
         // Handle image upload if there's a new file
-        if (currentImageFile) {
-          // TODO: Implement image upload to local storage or S3
-          // For now, show a warning and skip the new image
-          console.warn('Image upload not yet implemented with MongoDB backend');
-          if (typeof Toast !== 'undefined') {
-            Toast.warning(
-              'Image upload temporarily disabled. Please provide an image URL instead.'
-            );
-          }
-          uploadProgress.style.display = 'none';
-          // Use existing URL if available
-          if (currentImageUrl) {
-            packageData.image = currentImageUrl;
-          } else {
-            packageData.image = document.getElementById('packageImage').value;
-          }
-        } else if (currentImageUrl) {
+        // TODO: Implement image upload to local storage or S3
+        // For now, show a warning and use the preview data URL
+        console.warn('Image upload not yet implemented with MongoDB backend');
+        if (typeof Toast !== 'undefined') {
+          Toast.warning(
+            'Image upload temporarily disabled. Using image preview data URL.'
+          );
+        }
+        uploadProgress.style.display = 'none';
+        // Use the current preview/image URL if available
+        if (currentImageUrl) {
           packageData.image = currentImageUrl;
         } else {
+          // Fallback to URL input field
           packageData.image = document.getElementById('packageImage').value;
         }
+      } else if (currentImageUrl) {
+        packageData.image = currentImageUrl;
       } else {
         packageData.image = document.getElementById('packageImage').value;
       }
 
       if (!packageData.image) {
-        throw new Error('Please select an image for the package');
+        throw new Error('Please provide an image URL or select an image file for the package');
       }
 
       // Save to MongoDB via API
