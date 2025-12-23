@@ -5,6 +5,10 @@
   let allSuppliers = [];
   let currentImageFile = null;
   let currentImageUrl = null;
+  let csrfToken = null;
+
+  // Configuration
+  const PLACEHOLDER_IMAGE = '/assets/images/placeholder-package.jpg';
 
   // Fetch CSRF token on page load
   fetch('/api/csrf-token', {
@@ -14,6 +18,7 @@
     .then(data => {
       if (data && data.csrfToken) {
         window.__CSRF_TOKEN__ = data.csrfToken;
+        csrfToken = data.csrfToken;
       }
     })
     .catch(err => console.warn('Could not fetch CSRF token:', err));
@@ -417,34 +422,77 @@
       saveBtn.disabled = true;
       saveBtn.textContent = 'Saving...';
 
-      // Handle image - simplified logic
+      // Handle image upload
       let imageUrl = document.getElementById('packageImage').value;
+      const isEditing = !!id;
 
+      // If user uploaded a file, upload it after creating/updating the package
       if (currentImageFile) {
-        // If user selected a new file, use the preview URL (already stored as base64 from handleImageFile)
-        imageUrl = currentImageUrl;
-      } else if (currentImageUrl) {
-        imageUrl = currentImageUrl;
-      }
+        // Use cached CSRF token
+        if (!csrfToken) {
+          const csrfResponse = await fetch('/api/csrf-token', {
+            credentials: 'include',
+          });
+          const csrfData = await csrfResponse.json();
+          csrfToken = csrfData.csrfToken;
+        }
 
-      if (!imageUrl) {
-        throw new Error('Please select an image URL or upload an image file');
-      }
+        let packageId = id;
 
-      packageData.image = imageUrl;
+        // If creating new package, create it first with placeholder
+        if (!isEditing) {
+          packageData.image = PLACEHOLDER_IMAGE;
+          const createResponse = await api('/api/admin/packages', 'POST', packageData);
+          packageId = createResponse.package.id;
+        }
 
-      // Save to MongoDB via API
-      packageData.createdAt = id ? undefined : new Date().toISOString();
-      packageData.updatedAt = new Date().toISOString();
+        // Upload the image
+        const formData = new FormData();
+        formData.append('image', currentImageFile);
 
-      if (id) {
-        await api(`/api/admin/packages/${id}`, 'PUT', packageData);
+        const uploadResponse = await fetch(`/api/admin/packages/${packageId}/image`, {
+          method: 'POST',
+          headers: {
+            'X-CSRF-Token': csrfToken,
+          },
+          credentials: 'include',
+          body: formData,
+        });
+
+        if (!uploadResponse.ok) {
+          const errorData = await uploadResponse.json();
+          throw new Error(errorData.error || 'Failed to upload image');
+        }
+
+        const uploadData = await uploadResponse.json();
+        imageUrl = uploadData.imageUrl;
+
+        // If editing, update with the new image URL
+        if (isEditing) {
+          packageData.image = imageUrl;
+          await api(`/api/admin/packages/${id}`, 'PUT', packageData);
+        }
+        // If creating, the image is already set via the upload endpoint
       } else {
-        await api('/api/admin/packages', 'POST', packageData);
+        // No file upload - use URL or placeholder
+        if (currentImageUrl) {
+          imageUrl = currentImageUrl;
+        } else if (!imageUrl) {
+          imageUrl = PLACEHOLDER_IMAGE;
+        }
+
+        packageData.image = imageUrl;
+
+        // Save package
+        if (isEditing) {
+          await api(`/api/admin/packages/${id}`, 'PUT', packageData);
+        } else {
+          await api('/api/admin/packages', 'POST', packageData);
+        }
       }
 
       if (typeof Toast !== 'undefined') {
-        Toast.success(id ? 'Package updated successfully' : 'Package created successfully');
+        Toast.success(isEditing ? 'Package updated successfully' : 'Package created successfully');
       }
 
       document.getElementById('packageFormSection').style.display = 'none';

@@ -321,6 +321,93 @@ router.get('/packages', authRequired, roleRequired('admin'), (_req, res) => {
 });
 
 /**
+ * Generate a URL-safe slug from a title
+ * @param {string} title - The title to convert to a slug
+ * @returns {string} URL-safe slug
+ */
+function generateSlug(title) {
+  if (!title) {
+    return '';
+  }
+  return String(title)
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+/**
+ * POST /api/admin/packages
+ * Create a new package
+ */
+router.post('/packages', authRequired, roleRequired('admin'), (req, res) => {
+  const { supplierId, title, description, price_display, image, approved, featured } = req.body;
+
+  // Validate required fields
+  if (!supplierId || !title) {
+    return res.status(400).json({ error: 'Supplier ID and title are required' });
+  }
+
+  // Validate that supplier exists
+  const suppliers = read('suppliers');
+  const supplier = suppliers.find(s => s.id === supplierId);
+  if (!supplier) {
+    return res.status(400).json({ error: 'Invalid supplier ID' });
+  }
+
+  const packages = read('packages');
+  const now = new Date().toISOString();
+
+  // Generate slug from title
+  const slug = generateSlug(title);
+  if (!slug) {
+    return res
+      .status(400)
+      .json({ error: 'Title must contain valid characters for slug generation' });
+  }
+
+  // Check if slug already exists
+  const existingPackage = packages.find(p => p.slug === slug);
+  if (existingPackage) {
+    return res
+      .status(400)
+      .json({ error: 'A package with this title already exists. Please use a different title.' });
+  }
+
+  // Create new package
+  const newPackage = {
+    id: uid(),
+    supplierId,
+    title,
+    slug,
+    description: description || '',
+    price_display: price_display || 'Contact for pricing',
+    image: image || '/assets/images/placeholder-package.jpg',
+    approved: approved === true,
+    featured: featured === true,
+    createdAt: now,
+    updatedAt: now,
+    createdBy: req.user.id,
+    versionHistory: [],
+  };
+
+  packages.push(newPackage);
+  write('packages', packages);
+
+  // Create audit log
+  auditLog({
+    adminId: req.user.id,
+    adminEmail: req.user.email,
+    action: AUDIT_ACTIONS.PACKAGE_CREATED,
+    targetType: 'package',
+    targetId: newPackage.id,
+    details: { packageTitle: newPackage.title },
+  });
+
+  res.status(201).json({ success: true, package: newPackage });
+});
+
+/**
  * POST /api/admin/packages/:id/approve
  * Approve or reject a package
  */
@@ -666,8 +753,19 @@ function parseDuration(duration) {
  */
 router.put('/packages/:id', authRequired, roleRequired('admin'), (req, res) => {
   const { id } = req.params;
-  const { title, description, price, features, availability, status, scheduledPublishAt } =
-    req.body;
+  const {
+    title,
+    description,
+    price,
+    price_display,
+    image,
+    approved,
+    featured,
+    features,
+    availability,
+    status,
+    scheduledPublishAt,
+  } = req.body;
 
   const packages = read('packages');
   const pkgIndex = packages.findIndex(p => p.id === id);
@@ -691,12 +789,36 @@ router.put('/packages/:id', authRequired, roleRequired('admin'), (req, res) => {
   // Update fields if provided
   if (title !== undefined) {
     pkg.title = title;
+    // Regenerate slug if title changes
+    const newSlug = generateSlug(title);
+    if (newSlug && newSlug !== pkg.slug) {
+      // Check if new slug is already taken
+      const existingPackage = packages.find((p, idx) => idx !== pkgIndex && p.slug === newSlug);
+      if (existingPackage) {
+        return res.status(400).json({
+          error: 'A package with this title already exists. Please use a different title.',
+        });
+      }
+      pkg.slug = newSlug;
+    }
   }
   if (description !== undefined) {
     pkg.description = description;
   }
   if (price !== undefined) {
     pkg.price = price;
+  }
+  if (price_display !== undefined) {
+    pkg.price_display = price_display;
+  }
+  if (image !== undefined) {
+    pkg.image = image;
+  }
+  if (approved !== undefined) {
+    pkg.approved = approved;
+  }
+  if (featured !== undefined) {
+    pkg.featured = featured;
   }
   if (features !== undefined) {
     pkg.features = features;
@@ -2093,14 +2215,14 @@ router.get('/settings/system-info', authRequired, roleRequired('admin'), (req, r
  */
 router.get('/tickets', authRequired, roleRequired('admin'), (req, res) => {
   const tickets = read('tickets');
-  
+
   // Sort by date (newest first)
   tickets.sort((a, b) => {
     const aTime = new Date(a.createdAt || 0).getTime();
     const bTime = new Date(b.createdAt || 0).getTime();
     return bTime - aTime;
   });
-  
+
   res.json({ items: tickets });
 });
 
@@ -2111,11 +2233,11 @@ router.get('/tickets', authRequired, roleRequired('admin'), (req, res) => {
 router.get('/tickets/:id', authRequired, roleRequired('admin'), (req, res) => {
   const tickets = read('tickets');
   const ticket = tickets.find(t => t.id === req.params.id);
-  
+
   if (!ticket) {
     return res.status(404).json({ error: 'Ticket not found' });
   }
-  
+
   res.json({ ticket });
 });
 
@@ -2126,24 +2248,30 @@ router.get('/tickets/:id', authRequired, roleRequired('admin'), (req, res) => {
 router.put('/tickets/:id', authRequired, roleRequired('admin'), (req, res) => {
   const tickets = read('tickets');
   const index = tickets.findIndex(t => t.id === req.params.id);
-  
+
   if (index < 0) {
     return res.status(404).json({ error: 'Ticket not found' });
   }
-  
+
   const { status, priority, assignedTo } = req.body;
   const ticket = tickets[index];
-  
-  if (status) ticket.status = status;
-  if (priority) ticket.priority = priority;
-  if (assignedTo !== undefined) ticket.assignedTo = assignedTo;
-  
+
+  if (status) {
+    ticket.status = status;
+  }
+  if (priority) {
+    ticket.priority = priority;
+  }
+  if (assignedTo !== undefined) {
+    ticket.assignedTo = assignedTo;
+  }
+
   ticket.updatedAt = new Date().toISOString();
   ticket.updatedBy = req.user.id;
-  
+
   tickets[index] = ticket;
   write('tickets', tickets);
-  
+
   res.json({ ticket });
 });
 
@@ -2154,16 +2282,16 @@ router.put('/tickets/:id', authRequired, roleRequired('admin'), (req, res) => {
 router.post('/tickets/:id/reply', authRequired, roleRequired('admin'), (req, res) => {
   const tickets = read('tickets');
   const index = tickets.findIndex(t => t.id === req.params.id);
-  
+
   if (index < 0) {
     return res.status(404).json({ error: 'Ticket not found' });
   }
-  
+
   const { message } = req.body;
   if (!message) {
     return res.status(400).json({ error: 'Message is required' });
   }
-  
+
   const ticket = tickets[index];
   const reply = {
     id: uid('reply'),
@@ -2172,14 +2300,16 @@ router.post('/tickets/:id/reply', authRequired, roleRequired('admin'), (req, res
     authorEmail: req.user.email,
     createdAt: new Date().toISOString(),
   };
-  
-  if (!ticket.replies) ticket.replies = [];
+
+  if (!ticket.replies) {
+    ticket.replies = [];
+  }
   ticket.replies.push(reply);
   ticket.updatedAt = new Date().toISOString();
-  
+
   tickets[index] = ticket;
   write('tickets', tickets);
-  
+
   res.json({ ticket });
 });
 
@@ -2208,18 +2338,30 @@ router.get('/payments', authRequired, roleRequired('admin'), (_req, res) => {
  */
 router.get('/audit', authRequired, roleRequired('admin'), (req, res) => {
   const { adminId, action, targetType, startDate, endDate, limit } = req.query;
-  
+
   const filters = {};
-  if (adminId) filters.adminId = adminId;
-  if (action) filters.action = action;
-  if (targetType) filters.targetType = targetType;
-  if (startDate) filters.startDate = startDate;
-  if (endDate) filters.endDate = endDate;
-  if (limit) filters.limit = parseInt(limit, 10);
-  
+  if (adminId) {
+    filters.adminId = adminId;
+  }
+  if (action) {
+    filters.action = action;
+  }
+  if (targetType) {
+    filters.targetType = targetType;
+  }
+  if (startDate) {
+    filters.startDate = startDate;
+  }
+  if (endDate) {
+    filters.endDate = endDate;
+  }
+  if (limit) {
+    filters.limit = parseInt(limit, 10);
+  }
+
   const { getAuditLogs } = require('../middleware/audit');
   const logs = getAuditLogs(filters);
-  
+
   res.json({ items: logs });
 });
 

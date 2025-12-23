@@ -195,6 +195,7 @@ const AUDIT_ACTIONS = {
   SUPPLIER_EDITED: 'supplier_edited',
 
   // Package management
+  PACKAGE_CREATED: 'package_created',
   PACKAGE_APPROVED: 'package_approved',
   PACKAGE_REJECTED: 'package_rejected',
   PACKAGE_DELETED: 'package_deleted',

@@ -88,5 +88,20 @@
     "approved": true,
     "featured": true,
     "isFeatured": true
+  },
+  {
+    "id": "id_4hx7459fihwmfe",
+    "supplierId": "sup_xmkgxc6kd04f",
+    "title": "Test Package Auto Generated",
+    "slug": "test-package-auto-generated",
+    "description": "This is a test package created by the verification script",
+    "price_display": "£999",
+    "image": "/assets/images/placeholder-package.jpg",
+    "approved": true,
+    "featured": false,
+    "createdAt": "2025-12-23T11:22:21.194Z",
+    "updatedAt": "2025-12-23T11:22:21.194Z",
+    "createdBy": "usr_rmn81e0h750rah",
+    "versionHistory": []
   }
 ]
