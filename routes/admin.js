@@ -361,7 +361,9 @@ router.post('/packages', authRequired, roleRequired('admin'), (req, res) => {
   // Generate slug from title
   const slug = generateSlug(title);
   if (!slug) {
-    return res.status(400).json({ error: 'Title must contain valid characters for slug generation' });
+    return res
+      .status(400)
+      .json({ error: 'Title must contain valid characters for slug generation' });
   }
 
   // Check if slug already exists
@@ -396,7 +398,7 @@ router.post('/packages', authRequired, roleRequired('admin'), (req, res) => {
   auditLog({
     adminId: req.user.id,
     adminEmail: req.user.email,
-    action: AUDIT_ACTIONS.PACKAGE_CREATED || 'package_created',
+    action: AUDIT_ACTIONS.PACKAGE_CREATED,
     targetType: 'package',
     targetId: newPackage.id,
     details: { packageTitle: newPackage.title },
@@ -2213,14 +2215,14 @@ router.get('/settings/system-info', authRequired, roleRequired('admin'), (req, r
  */
 router.get('/tickets', authRequired, roleRequired('admin'), (req, res) => {
   const tickets = read('tickets');
-  
+
   // Sort by date (newest first)
   tickets.sort((a, b) => {
     const aTime = new Date(a.createdAt || 0).getTime();
     const bTime = new Date(b.createdAt || 0).getTime();
     return bTime - aTime;
   });
-  
+
   res.json({ items: tickets });
 });
 
@@ -2231,11 +2233,11 @@ router.get('/tickets', authRequired, roleRequired('admin'), (req, res) => {
 router.get('/tickets/:id', authRequired, roleRequired('admin'), (req, res) => {
   const tickets = read('tickets');
   const ticket = tickets.find(t => t.id === req.params.id);
-  
+
   if (!ticket) {
     return res.status(404).json({ error: 'Ticket not found' });
   }
-  
+
   res.json({ ticket });
 });
 
@@ -2246,24 +2248,30 @@ router.get('/tickets/:id', authRequired, roleRequired('admin'), (req, res) => {
 router.put('/tickets/:id', authRequired, roleRequired('admin'), (req, res) => {
   const tickets = read('tickets');
   const index = tickets.findIndex(t => t.id === req.params.id);
-  
+
   if (index < 0) {
     return res.status(404).json({ error: 'Ticket not found' });
   }
-  
+
   const { status, priority, assignedTo } = req.body;
   const ticket = tickets[index];
-  
-  if (status) ticket.status = status;
-  if (priority) ticket.priority = priority;
-  if (assignedTo !== undefined) ticket.assignedTo = assignedTo;
-  
+
+  if (status) {
+    ticket.status = status;
+  }
+  if (priority) {
+    ticket.priority = priority;
+  }
+  if (assignedTo !== undefined) {
+    ticket.assignedTo = assignedTo;
+  }
+
   ticket.updatedAt = new Date().toISOString();
   ticket.updatedBy = req.user.id;
-  
+
   tickets[index] = ticket;
   write('tickets', tickets);
-  
+
   res.json({ ticket });
 });
 
@@ -2274,16 +2282,16 @@ router.put('/tickets/:id', authRequired, roleRequired('admin'), (req, res) => {
 router.post('/tickets/:id/reply', authRequired, roleRequired('admin'), (req, res) => {
   const tickets = read('tickets');
   const index = tickets.findIndex(t => t.id === req.params.id);
-  
+
   if (index < 0) {
     return res.status(404).json({ error: 'Ticket not found' });
   }
-  
+
   const { message } = req.body;
   if (!message) {
     return res.status(400).json({ error: 'Message is required' });
   }
-  
+
   const ticket = tickets[index];
   const reply = {
     id: uid('reply'),
@@ -2292,14 +2300,16 @@ router.post('/tickets/:id/reply', authRequired, roleRequired('admin'), (req, res
     authorEmail: req.user.email,
     createdAt: new Date().toISOString(),
   };
-  
-  if (!ticket.replies) ticket.replies = [];
+
+  if (!ticket.replies) {
+    ticket.replies = [];
+  }
   ticket.replies.push(reply);
   ticket.updatedAt = new Date().toISOString();
-  
+
   tickets[index] = ticket;
   write('tickets', tickets);
-  
+
   res.json({ ticket });
 });
 
@@ -2328,18 +2338,30 @@ router.get('/payments', authRequired, roleRequired('admin'), (_req, res) => {
  */
 router.get('/audit', authRequired, roleRequired('admin'), (req, res) => {
   const { adminId, action, targetType, startDate, endDate, limit } = req.query;
-  
+
   const filters = {};
-  if (adminId) filters.adminId = adminId;
-  if (action) filters.action = action;
-  if (targetType) filters.targetType = targetType;
-  if (startDate) filters.startDate = startDate;
-  if (endDate) filters.endDate = endDate;
-  if (limit) filters.limit = parseInt(limit, 10);
-  
+  if (adminId) {
+    filters.adminId = adminId;
+  }
+  if (action) {
+    filters.action = action;
+  }
+  if (targetType) {
+    filters.targetType = targetType;
+  }
+  if (startDate) {
+    filters.startDate = startDate;
+  }
+  if (endDate) {
+    filters.endDate = endDate;
+  }
+  if (limit) {
+    filters.limit = parseInt(limit, 10);
+  }
+
   const { getAuditLogs } = require('../middleware/audit');
   const logs = getAuditLogs(filters);
-  
+
   res.json({ items: logs });
 });
 

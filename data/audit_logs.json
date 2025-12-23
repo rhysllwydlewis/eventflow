@@ -14,5 +14,20 @@
     "userAgent": null,
     "timestamp": "2025-12-22T21:53:57.980Z",
     "createdAt": "2025-12-22T21:53:57.980Z"
+  },
+  {
+    "id": "audit_6kifcyl5ihwmff",
+    "adminId": "usr_rmn81e0h750rah",
+    "adminEmail": "admin@event-flow.co.uk",
+    "action": "package_created",
+    "targetType": "package",
+    "targetId": "id_4hx7459fihwmfe",
+    "details": {
+      "packageTitle": "Test Package Auto Generated"
+    },
+    "ipAddress": null,
+    "userAgent": null,
+    "timestamp": "2025-12-23T11:22:21.195Z",
+    "createdAt": "2025-12-23T11:22:21.195Z"
   }
 ]

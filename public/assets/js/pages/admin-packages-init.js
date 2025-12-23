@@ -419,29 +419,30 @@
 
       // Handle image upload
       let imageUrl = document.getElementById('packageImage').value;
+      const isEditing = !!id;
 
-      // If user uploaded a file, upload it first
+      // If user uploaded a file, upload it after creating/updating the package
       if (currentImageFile) {
-        const formData = new FormData();
-        formData.append('image', currentImageFile);
-
-        // Get CSRF token
+        // Get CSRF token once
         const csrfResponse = await fetch('/api/csrf-token', {
           credentials: 'include',
         });
         const csrfData = await csrfResponse.json();
         const csrfToken = csrfData.csrfToken;
 
-        // Create a placeholder package first if it's a new package
         let packageId = id;
-        if (!id) {
-          // Create the package first without image
+
+        // If creating new package, create it first with placeholder
+        if (!isEditing) {
           packageData.image = '/assets/images/placeholder-package.jpg';
           const createResponse = await api('/api/admin/packages', 'POST', packageData);
           packageId = createResponse.package.id;
         }
 
         // Upload the image
+        const formData = new FormData();
+        formData.append('image', currentImageFile);
+
         const uploadResponse = await fetch(`/api/admin/packages/${packageId}/image`, {
           method: 'POST',
           headers: {
@@ -459,40 +460,24 @@
         const uploadData = await uploadResponse.json();
         imageUrl = uploadData.imageUrl;
 
-        // Update the package with the new image URL if editing
-        if (id) {
+        // If editing, update with the new image URL
+        if (isEditing) {
           packageData.image = imageUrl;
           await api(`/api/admin/packages/${id}`, 'PUT', packageData);
         }
-      } else if (currentImageUrl) {
-        // User provided a URL
-        imageUrl = currentImageUrl;
-        packageData.image = imageUrl;
-
-        // Save package
-        if (id) {
-          await api(`/api/admin/packages/${id}`, 'PUT', packageData);
-        } else {
-          await api('/api/admin/packages', 'POST', packageData);
-        }
-      } else if (!imageUrl) {
-        // No image provided - use placeholder or keep existing
-        if (!id) {
-          packageData.image = '/assets/images/placeholder-package.jpg';
-        }
-
-        // Save package
-        if (id) {
-          await api(`/api/admin/packages/${id}`, 'PUT', packageData);
-        } else {
-          await api('/api/admin/packages', 'POST', packageData);
-        }
+        // If creating, the image is already set via the upload endpoint
       } else {
-        // URL provided in text field
+        // No file upload - use URL or placeholder
+        if (currentImageUrl) {
+          imageUrl = currentImageUrl;
+        } else if (!imageUrl) {
+          imageUrl = '/assets/images/placeholder-package.jpg';
+        }
+
         packageData.image = imageUrl;
 
         // Save package
-        if (id) {
+        if (isEditing) {
           await api(`/api/admin/packages/${id}`, 'PUT', packageData);
         } else {
           await api('/api/admin/packages', 'POST', packageData);
@@ -500,7 +485,7 @@
       }
 
       if (typeof Toast !== 'undefined') {
-        Toast.success(id ? 'Package updated successfully' : 'Package created successfully');
+        Toast.success(isEditing ? 'Package updated successfully' : 'Package created successfully');
       }
 
       document.getElementById('packageFormSection').style.display = 'none';
