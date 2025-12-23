@@ -175,9 +175,6 @@
   function setupImageUpload() {
     const uploadZone = document.getElementById('imageUploadZone');
     const fileInput = document.getElementById('imageFileInput');
-    const placeholder = document.getElementById('uploadPlaceholder');
-    const preview = document.getElementById('imagePreview');
-    const previewImage = document.getElementById('previewImage');
     const changeBtn = document.getElementById('changeImageBtn');
 
     // Click to upload
@@ -257,6 +254,8 @@
       const previewImage = document.getElementById('previewImage');
 
       previewImage.src = e.target.result;
+      // Store the preview URL for use when upload is disabled
+      currentImageUrl = e.target.result;
       placeholder.style.display = 'none';
       preview.style.display = 'block';
     });
@@ -418,46 +417,25 @@
       saveBtn.disabled = true;
       saveBtn.textContent = 'Saving...';
 
-      // Upload image if new file selected
+      // Handle image - use preview URL if file selected, otherwise use input field
       if (currentImageFile) {
-        const uploadProgress = document.getElementById('uploadProgress');
-        const progressBar = document.getElementById('progressBar');
-        const uploadStatus = document.getElementById('uploadStatus');
-
-        uploadProgress.style.display = 'block';
-        uploadStatus.textContent = 'Uploading image...';
-        progressBar.style.width = '50%';
-
-        const packageId = id || generateId('pkg');
-
-        // Handle image upload if there's a new file
-        if (currentImageFile) {
-          // TODO: Implement image upload to local storage or S3
-          // For now, show a warning and skip the new image
-          console.warn('Image upload not yet implemented with MongoDB backend');
-          if (typeof Toast !== 'undefined') {
-            Toast.warning(
-              'Image upload temporarily disabled. Please provide an image URL instead.'
-            );
-          }
-          uploadProgress.style.display = 'none';
-          // Use existing URL if available
-          if (currentImageUrl) {
-            packageData.image = currentImageUrl;
-          } else {
-            packageData.image = document.getElementById('packageImage').value;
-          }
-        } else if (currentImageUrl) {
-          packageData.image = currentImageUrl;
-        } else {
-          packageData.image = document.getElementById('packageImage').value;
+        // Image upload to cloud storage not yet implemented with MongoDB backend
+        // Using preview data URL stored directly in MongoDB as interim solution
+        console.log('Using image preview data URL (upload to cloud storage not yet implemented)');
+        if (typeof Toast !== 'undefined') {
+          Toast.info('Using image preview. Cloud storage upload coming soon.');
         }
+      }
+
+      // Set image URL from currentImageUrl or input field
+      if (currentImageUrl) {
+        packageData.image = currentImageUrl;
       } else {
         packageData.image = document.getElementById('packageImage').value;
       }
 
       if (!packageData.image) {
-        throw new Error('Please select an image for the package');
+        throw new Error('Please provide an image URL or select an image file for the package');
       }
 
       // Save to MongoDB via API
