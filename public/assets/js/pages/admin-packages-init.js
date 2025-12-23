@@ -423,11 +423,6 @@
       if (currentImageFile) {
         // If user selected a new file, use the preview URL (already stored as base64 from handleImageFile)
         imageUrl = currentImageUrl;
-
-        // Show info message only in development or first time
-        if (typeof Toast !== 'undefined' && process.env.NODE_ENV !== 'production') {
-          Toast.info('Image will be embedded in base64 format. For production, implement proper image upload.');
-        }
       } else if (currentImageUrl) {
         imageUrl = currentImageUrl;
       }
