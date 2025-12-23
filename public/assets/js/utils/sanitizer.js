@@ -19,6 +19,8 @@ function escapeHtml(str) {
 
 /**
  * Sanitize HTML by removing script tags and dangerous attributes
+ * Note: For most use cases, prefer using escapeHtml() which is safer.
+ * This function allows some HTML through but removes dangerous elements.
  * @param {string} html - The HTML string to sanitize
  * @returns {string} - The sanitized HTML
  */
@@ -27,9 +29,7 @@ function sanitizeHtml(html) {
     return '';
   }
 
-  const temp = document.createElement('div');
-  temp.textContent = String(html);
-  let sanitized = temp.innerHTML;
+  let sanitized = String(html);
 
   // Remove script tags
   sanitized = sanitized.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');

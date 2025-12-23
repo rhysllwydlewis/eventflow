@@ -316,16 +316,18 @@ class NotificationCenter {
           info: 'ℹ',
         };
         const escapedId = this.escapeHtml(String(n.id));
-        const readBg = n.read ? 'transparent' : 'rgba(11, 128, 115, 0.05)';
+        const isRead = Boolean(n.read);
+        const readBg = isRead ? 'transparent' : 'rgba(11, 128, 115, 0.05)';
+        const readBorder = isRead ? 'transparent' : 'rgba(11, 128, 115, 0.1)';
 
         return `
-        <div class="notification-item" data-id="${escapedId}" data-read="${n.read}" style="
+        <div class="notification-item" data-id="${escapedId}" data-read="${isRead}" style="
           padding: 0.75rem;
           border-radius: 8px;
           margin-bottom: 0.5rem;
           cursor: pointer;
           background: ${readBg};
-          border: 1px solid ${n.read ? 'transparent' : 'rgba(11, 128, 115, 0.1)'};
+          border: 1px solid ${readBorder};
           transition: background 0.2s ease-out;
         ">
           <div style="display: flex; gap: 0.75rem; align-items: flex-start;">
