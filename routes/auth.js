@@ -24,17 +24,16 @@ const postmark = require('../utils/postmark');
 const router = express.Router();
 
 const JWT_SECRET = String(process.env.JWT_SECRET || 'change_me');
-const PORT = Number(process.env.PORT || 3000);
 
-// This will be set by the main server.js when mounting these routes
-let sendMailFn = null;
+// This will be set by the main server.js when mounting these routes (legacy compatibility)
+let _sendMailFn = null;
 
 /**
- * Set the sendMail function (injected from server.js)
+ * Set the sendMail function (injected from server.js) - legacy compatibility
  * @param {Function} fn - The sendMail function
  */
 function setSendMailFunction(fn) {
-  sendMailFn = fn;
+  _sendMailFn = fn;
 }
 
 /**
