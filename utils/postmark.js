@@ -44,10 +44,9 @@ let POSTMARK_ENABLED = false;
 
 // Configuration - POSTMARK_API_KEY and POSTMARK_FROM are required
 const POSTMARK_API_KEY = process.env.POSTMARK_API_KEY;
-const POSTMARK_FROM = process.env.POSTMARK_FROM || 'admin@event-flow.co.uk';
+const POSTMARK_FROM = process.env.POSTMARK_FROM || 'noreply@localhost';
 const APP_BASE_URL = process.env.APP_BASE_URL || process.env.BASE_URL || 'http://localhost:3000';
-const UNSUBSCRIBE_SECRET =
-  process.env.UNSUBSCRIBE_SECRET || process.env.JWT_SECRET || 'default-secret-change-in-production';
+const UNSUBSCRIBE_SECRET = process.env.UNSUBSCRIBE_SECRET || process.env.JWT_SECRET;
 
 /**
  * Initialize Postmark client
@@ -101,6 +100,26 @@ function generateUnsubscribeToken(email) {
 function verifyUnsubscribeToken(email, token) {
   const expectedToken = generateUnsubscribeToken(email);
   return crypto.timingSafeEqual(Buffer.from(token), Buffer.from(expectedToken));
+}
+
+/**
+ * Mask email address for logging in production
+ * @param {string} email - Email address to mask
+ * @returns {string} Masked email address
+ */
+function maskEmail(email) {
+  if (!email || typeof email !== 'string') {
+    return '***';
+  }
+  const [localPart, domain] = email.split('@');
+  if (!domain) {
+    return '***';
+  }
+
+  // Show first char of local part and domain
+  const maskedLocal =
+    localPart.length > 1 ? localPart[0] + '*'.repeat(Math.min(localPart.length - 1, 5)) : '*';
+  return `${maskedLocal}@${domain}`;
 }
 
 /**
@@ -190,8 +209,15 @@ async function sendMail(options) {
     trackLinks = 'HtmlAndText',
   } = options;
 
-  // Log email attempt for debugging
-  console.log(`📧 Attempting to send email to ${Array.isArray(to) ? to.join(',') : to}`);
+  // Log email attempt for debugging (mask email in production)
+  const isProduction = process.env.NODE_ENV === 'production';
+  const recipientDisplay = isProduction
+    ? maskEmail(Array.isArray(to) ? to[0] : to)
+    : Array.isArray(to)
+      ? to.join(',')
+      : to;
+
+  console.log(`📧 Attempting to send email to ${recipientDisplay}`);
   console.log(`   Subject: ${subject || '(from template)'}`);
   console.log(`   Template: ${template || 'none'}`);
   console.log(`   Message Stream: ${options.messageStream || 'outbound'}`);

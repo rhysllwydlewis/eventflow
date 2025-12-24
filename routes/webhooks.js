@@ -29,6 +29,10 @@ const router = express.Router();
  * POST /api/webhooks/postmark
  * Handle Postmark webhook events
  *
+ * Security: Configure basic auth in Postmark webhook settings for production.
+ * Add username/password in Postmark dashboard and set POSTMARK_WEBHOOK_USER
+ * and POSTMARK_WEBHOOK_PASS environment variables.
+ *
  * Event Types:
  * - Delivery: { RecordType: "Delivery", MessageID, Recipient, DeliveredAt, ... }
  * - Bounce: { RecordType: "Bounce", MessageID, Email, BouncedAt, Type, Description, ... }
@@ -39,6 +43,31 @@ const router = express.Router();
  */
 router.post('/postmark', express.json(), async (req, res) => {
   try {
+    // Basic authentication check (if configured)
+    const authHeader = req.headers.authorization;
+    const webhookUser = process.env.POSTMARK_WEBHOOK_USER;
+    const webhookPass = process.env.POSTMARK_WEBHOOK_PASS;
+
+    if (webhookUser && webhookPass) {
+      // Verify basic auth if credentials are configured
+      if (!authHeader || !authHeader.startsWith('Basic ')) {
+        console.warn('⚠️  Webhook request missing authentication');
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      const base64Credentials = authHeader.split(' ')[1];
+      const credentials = Buffer.from(base64Credentials, 'base64').toString('ascii');
+      const [username, password] = credentials.split(':');
+
+      if (username !== webhookUser || password !== webhookPass) {
+        console.warn('⚠️  Webhook request with invalid credentials');
+        return res.status(401).json({ error: 'Invalid credentials' });
+      }
+    } else if (process.env.NODE_ENV === 'production') {
+      console.warn('⚠️  WARNING: Webhook authentication not configured in production!');
+      console.warn('   Set POSTMARK_WEBHOOK_USER and POSTMARK_WEBHOOK_PASS environment variables');
+    }
+
     const event = req.body;
 
     // Log the webhook event for monitoring

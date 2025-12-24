@@ -65,14 +65,21 @@ Webhooks allow you to track email delivery, bounces, and spam complaints:
    - ⚪ Click - Optional, for analytics
    - ⚪ Subscription Change - Optional, for unsubscribe tracking
 
-5. **Add basic auth** (recommended for security):
-   - Username: `postmark-webhook`
-   - Password: (generate a strong random password)
-   - Store these securely
+5. **Add basic auth** (REQUIRED for security):
+   - Username: `postmark-webhook` (or your choice)
+   - Password: Generate a strong random password (e.g., `openssl rand -base64 32`)
+   - Add these credentials in Postmark webhook settings
+   - Set environment variables:
+     ```bash
+     POSTMARK_WEBHOOK_USER=postmark-webhook
+     POSTMARK_WEBHOOK_PASS=your-generated-password
+     ```
 
 6. Test the webhook using Postmark's test feature
 
 **Webhook URL:** `https://event-flow.co.uk/api/webhooks/postmark`
+
+**Security Note:** The webhook endpoint validates basic auth credentials when `POSTMARK_WEBHOOK_USER` and `POSTMARK_WEBHOOK_PASS` are configured. This prevents unauthorized webhook events from being processed.
 
 ## Email Templates
 
