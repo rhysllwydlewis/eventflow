@@ -58,7 +58,7 @@ function updateLastLogin(userId) {
  * POST /api/auth/register
  * Register a new user account
  */
-router.post('/register', authLimiter, (req, res) => {
+router.post('/register', authLimiter, async (req, res) => {
   const { name, email, password, role } = req.body || {};
   if (!name || !email || !password) {
     return res.status(400).json({ error: 'Missing fields' });
@@ -95,37 +95,27 @@ router.post('/register', authLimiter, (req, res) => {
     verificationTokenExpiresAt: tokenExpiresAt,
     createdAt: new Date().toISOString(),
   };
+
+  // Send verification email via Postmark BEFORE saving user
+  // This ensures we only create accounts when email can be sent
+  try {
+    console.log(`📧 Attempting to send verification email to ${user.email}`);
+    await postmark.sendVerificationEmail(user, verificationToken);
+    console.log(`✅ Verification email sent successfully to ${user.email}`);
+  } catch (emailError) {
+    console.error('❌ Failed to send verification email:', emailError.message);
+
+    // If email sending fails, don't create the user account
+    // This prevents orphaned unverified accounts
+    return res.status(500).json({
+      error: 'Failed to send verification email. Please try again later.',
+      details: process.env.NODE_ENV === 'development' ? emailError.message : undefined,
+    });
+  }
+
+  // Only save user after email is successfully sent
   users.push(user);
   write('users', users);
-
-  // Send verification email via Postmark
-  (async () => {
-    try {
-      await postmark.sendVerificationEmail(user, verificationToken);
-    } catch (e) {
-      console.error('Failed to send verification email via Postmark', e);
-      // Fallback to legacy sendMail if available
-      if (sendMailFn) {
-        try {
-          const baseUrl = process.env.BASE_URL || `http://localhost:${PORT}`;
-          const verifyUrl = `${baseUrl}/verify.html?token=${encodeURIComponent(verificationToken)}`;
-          sendMailFn({
-            to: user.email,
-            subject: 'Confirm your EventFlow account',
-            text: `Hi ${user.name || ''},
-
-Please confirm your EventFlow account by visiting:
-
-${verifyUrl}
-
-If you did not create this account, you can ignore this email.`,
-          });
-        } catch (fallbackErr) {
-          console.error('Failed to send verification email via fallback', fallbackErr);
-        }
-      }
-    }
-  })();
 
   // Update last login timestamp (non-blocking)
   updateLastLogin(user.id);
@@ -201,26 +191,27 @@ router.post('/forgot', authLimiter, async (req, res) => {
   const token = uid('reset');
   const expires = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // 1 hour
 
-  user.resetToken = token;
-  user.resetTokenExpiresAt = expires;
-  write('users', users);
+  // Send password reset email via Postmark BEFORE saving token
+  // This ensures we only generate tokens when email can be sent
+  try {
+    console.log(`📧 Attempting to send password reset email to ${user.email}`);
+    await postmark.sendPasswordResetEmail(user, token);
+    console.log(`✅ Password reset email sent successfully to ${user.email}`);
+  } catch (emailError) {
+    console.error('❌ Failed to send password reset email:', emailError.message);
 
-  // Fire-and-forget email (demo only — in dev this usually logs to console)
-  (async () => {
-    try {
-      if (user.email && sendMailFn) {
-        await sendMailFn({
-          to: user.email,
-          subject: 'Reset your EventFlow password',
-          text:
-            `A password reset was requested for this address. ` +
-            `For this demo build, your reset token is: ${token}`,
-        });
-      }
-    } catch (err) {
-      console.error('Failed to send reset email', err);
-    }
-  })();
+    // Still return success to prevent email enumeration
+    // But log the error for debugging
+    return res.json({
+      ok: true,
+      // Don't expose error to client for security
+    });
+  }
+
+  // Only save reset token after email is successfully sent
+  users[idx].resetToken = token;
+  users[idx].resetTokenExpiresAt = expires;
+  write('users', users);
 
   res.json({ ok: true });
 });
@@ -229,7 +220,7 @@ router.post('/forgot', authLimiter, async (req, res) => {
  * GET /api/auth/verify
  * Verify email address with token
  */
-router.get('/verify', (req, res) => {
+router.get('/verify', async (req, res) => {
   const { token } = req.query || {};
   if (!token) {
     return res.status(400).json({ error: 'Missing token' });
@@ -260,7 +251,66 @@ router.get('/verify', (req, res) => {
   delete users[idx].verificationTokenExpiresAt;
   write('users', users);
 
+  // Send welcome email after successful verification (non-blocking)
+  (async () => {
+    try {
+      console.log(`📧 Sending welcome email to newly verified user: ${user.email}`);
+      await postmark.sendWelcomeEmail(user);
+      console.log(`✅ Welcome email sent to ${user.email}`);
+    } catch (emailError) {
+      // Don't fail verification if welcome email fails - just log it
+      console.error('❌ Failed to send welcome email:', emailError.message);
+    }
+  })();
+
   res.json({ ok: true, message: 'Email verified successfully' });
+});
+
+/**
+ * POST /api/auth/reset-password
+ * Complete password reset with token
+ */
+router.post('/reset-password', authLimiter, async (req, res) => {
+  const { token, password } = req.body || {};
+
+  if (!token || !password) {
+    return res.status(400).json({ error: 'Missing token or password' });
+  }
+
+  // Validate password strength
+  if (!passwordOk(password)) {
+    return res
+      .status(400)
+      .json({ error: 'Password must be at least 8 characters with a letter and number' });
+  }
+
+  const users = read('users');
+  const idx = users.findIndex(u => u.resetToken === token);
+
+  if (idx === -1) {
+    return res.status(400).json({ error: 'Invalid or expired reset token' });
+  }
+
+  const user = users[idx];
+
+  // Check if token has expired
+  if (user.resetTokenExpiresAt) {
+    const expiresAt = new Date(user.resetTokenExpiresAt);
+    if (expiresAt < new Date()) {
+      return res.status(400).json({ error: 'Reset token has expired. Please request a new one.' });
+    }
+  }
+
+  // Update password and clear reset token
+  users[idx].passwordHash = bcrypt.hashSync(password, 10);
+  users[idx].passwordResetRequired = false;
+  delete users[idx].resetToken;
+  delete users[idx].resetTokenExpiresAt;
+  write('users', users);
+
+  console.log(`✅ Password reset successful for ${user.email}`);
+
+  res.json({ ok: true, message: 'Password reset successful' });
 });
 
 /**

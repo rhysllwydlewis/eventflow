@@ -33,7 +33,6 @@ const rateLimit = require('express-rate-limit');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const validator = require('validator');
-const nodemailer = require('nodemailer');
 
 const APP_VERSION = 'v17.0.0';
 
@@ -371,12 +370,14 @@ const healthCheckLimiter = rateLimit({
 });
 
 // ---------- Email Configuration ----------
-// Postmark is the only supported email provider
+// Postmark is the ONLY supported email provider
+// All emails are sent via Postmark API using local HTML templates
 const EMAIL_ENABLED = String(process.env.EMAIL_ENABLED || 'false').toLowerCase() === 'true';
-const FROM_EMAIL = process.env.FROM_EMAIL || 'no-reply@eventflow.local';
 
-// Note: Postmark configuration is handled by utils/postmark.js
-// This section is kept minimal as email is now exclusively via Postmark
+// Postmark configuration is handled by utils/postmark.js
+// Required environment variables:
+// - POSTMARK_API_KEY: Your Postmark Server API key
+// - POSTMARK_FROM: Sender email (use admin@event-flow.co.uk)
 
 // Validate production environment
 if (process.env.NODE_ENV === 'production') {
@@ -398,14 +399,13 @@ if (process.env.NODE_ENV === 'production') {
 
   // Warn about email configuration but don't block startup
   if (EMAIL_ENABLED) {
-    const postmarkUtil = require('./utils/postmark');
-    if (!postmarkUtil.isPostmarkEnabled()) {
-      console.warn('Warning: EMAIL_ENABLED=true but Postmark is not configured.');
-      console.warn('Set POSTMARK_API_KEY in your .env file.');
-      console.warn('Emails will be saved to /outbox folder until Postmark is configured.');
+    if (!postmark.isPostmarkEnabled()) {
+      console.warn('⚠️  Warning: EMAIL_ENABLED=true but Postmark is not configured.');
+      console.warn('   Set POSTMARK_API_KEY and POSTMARK_FROM in your .env file.');
+      console.warn('   Emails will be saved to /outbox folder until Postmark is configured.');
     }
-    if (!process.env.FROM_EMAIL) {
-      console.warn('Warning: FROM_EMAIL not set. Using default value: no-reply@eventflow.local');
+    if (!process.env.POSTMARK_FROM) {
+      console.warn('⚠️  Warning: POSTMARK_FROM not set. Using default: admin@event-flow.co.uk');
     }
   }
 }
@@ -453,9 +453,19 @@ function loadEmailTemplate(templateName, data) {
   }
 }
 
+/**
+ * Send email via Postmark
+ * This is a wrapper function that delegates to utils/postmark.js
+ * Supports both legacy (to, subject, text) and modern object-based calls
+ *
+ * @param {string|Object} toOrOpts - Email address or options object
+ * @param {string} [subject] - Email subject (if using legacy format)
+ * @param {string} [text] - Email text body (if using legacy format)
+ * @returns {Promise<Object>} Postmark response
+ */
 async function sendMail(toOrOpts, subject, text) {
-  // Postmark is the only email provider - delegate to utils/postmark.js
-  const postmarkUtil = require('./utils/postmark');
+  // Delegate all email sending to Postmark utility
+  // Postmark is the ONLY email provider supported
 
   // Support both legacy (to, subject, text) and object-based calls
   let options = {};
@@ -471,7 +481,7 @@ async function sendMail(toOrOpts, subject, text) {
   }
 
   // Delegate to Postmark utility
-  return postmarkUtil.sendMail(options);
+  return postmark.sendMail(options);
 }
 
 // ---------- Auth helpers ----------
