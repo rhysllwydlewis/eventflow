@@ -3819,6 +3819,10 @@ app.use(maintenanceMode);
 const authRoutes = require('./routes/auth');
 app.use('/api/auth', authRoutes);
 
+// ---------- Webhook Routes ----------
+const webhookRoutes = require('./routes/webhooks');
+app.use('/api/webhooks', webhookRoutes);
+
 // ---------- Admin Routes ----------
 const adminRoutes = require('./routes/admin');
 app.use('/api/admin', adminRoutes);

@@ -198,8 +198,8 @@ See [DOCKER_GUIDE.md](DOCKER_GUIDE.md) for details.
 
 **Email:**
 
-- SendGrid or SMTP
-- Nodemailer
+- Postmark (transactional email delivery)
+- Local HTML templates (no hosted templates required)
 
 **Security:**
 
@@ -380,16 +380,20 @@ See [.env.example](.env.example) for all options.
 
 ### Email Configuration
 
-EventFlow uses Postmark for transactional emails:
+EventFlow uses **Postmark exclusively** for all transactional emails:
 
 1. Sign up at https://postmarkapp.com
 2. Get your Server API Token from the dashboard
 3. Verify your sender domain or email address
-4. Add to `.env`:
+4. Create message streams: `outbound` (default), `password-reset`, `broadcasts`
+5. Add to `.env`:
    ```bash
    POSTMARK_API_KEY=your-server-token
-   POSTMARK_FROM=noreply@yourdomain.com
+   POSTMARK_FROM=admin@event-flow.co.uk
+   EMAIL_ENABLED=true
    ```
+
+**📖 Full Setup Guide:** See [POSTMARK_SETUP.md](./POSTMARK_SETUP.md) for detailed configuration instructions including webhooks.
 
 During development without Postmark configured, emails are saved to `/outbox` folder for inspection.
 
@@ -398,9 +402,13 @@ During development without Postmark configured, emails are saved to `/outbox` fo
 - ✅ Postmark account created
 - ✅ Server API token obtained
 - ✅ Sender domain/email verified in Postmark
+- ✅ Message streams configured (outbound, password-reset, broadcasts)
 - ✅ `POSTMARK_API_KEY` environment variable set
-- ✅ `POSTMARK_FROM` set to verified sender address
+- ✅ `POSTMARK_FROM` set to verified sender address (admin@event-flow.co.uk)
+- ✅ Webhooks configured for delivery tracking (optional but recommended)
 - ✅ Never commit API keys to git - use environment variables only
+
+**Webhook URL (optional):** `https://your-domain.com/api/webhooks/postmark`
 
 ## 📁 Project Structure
 
