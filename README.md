@@ -322,8 +322,6 @@ PUT    /api/messages/:id                          - Update draft message
 DELETE /api/messages/:id                          - Delete draft message
 ```
 
-````
-
 See [API_DOCUMENTATION.md](API_DOCUMENTATION.md) for complete reference.
 See [ADMIN_API.md](ADMIN_API.md) for detailed admin endpoint documentation.
 
@@ -434,7 +432,7 @@ JWT_SECRET=your-secret-key-min-32-chars
 # Environment
 NODE_ENV=production
 BASE_URL=https://yourdomain.com
-````
+```
 
 **Recommended (Email functionality):**
 
