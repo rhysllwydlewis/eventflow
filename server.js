@@ -4120,7 +4120,7 @@ app.use((req, res) => {
   const acceptsJson = headers.accept && headers.accept.includes('application/json');
 
   // Log 404 for debugging (but not for common static assets)
-  if (!url.match(/\.(ico|png|jpg|jpeg|gif|svg|css|js|woff|woff2|ttf)$/)) {
+  if (!url.match(/\.(ico|png|jpg|jpeg|gif|svg|css|js|woff|woff2|ttf)$/i)) {
     console.warn(`404 Not Found: [${method}] ${url}`);
   }
 

@@ -208,6 +208,7 @@ class PackageGallery {
       // Add loading state
       image.addEventListener('loadstart', () => {
         image.style.opacity = '0.5';
+        image.setAttribute('aria-busy', 'true');
       });
 
       image.addEventListener('load', () => {

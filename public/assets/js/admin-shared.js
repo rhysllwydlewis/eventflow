@@ -94,10 +94,17 @@ const AdminShared = (function () {
           errorMessage = data.error || `Resource not found: ${url}`;
         } else if (response.status === 401) {
           errorMessage = 'Authentication required. Please log in again.';
-          // Optionally redirect to login after a delay
+          // Optionally redirect to login after a delay (with origin validation)
           setTimeout(() => {
-            if (window.location.pathname !== '/auth.html') {
-              window.location.href = '/auth.html?return=' + encodeURIComponent(window.location.href);
+            const currentPath = window.location.pathname;
+            if (currentPath !== '/auth.html') {
+              // Validate that we're staying on the same origin
+              const returnUrl = encodeURIComponent(window.location.href);
+              const loginUrl = `/auth.html?return=${returnUrl}`;
+              // Ensure the redirect is to the same origin
+              if (loginUrl.startsWith('/')) {
+                window.location.href = loginUrl;
+              }
             }
           }, 2000);
         } else if (response.status === 403) {

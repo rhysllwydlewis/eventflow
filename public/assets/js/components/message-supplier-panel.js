@@ -384,7 +384,6 @@ class MessageSupplierPanel {
     sendBtn.setAttribute('aria-busy', 'true');
     statusEl.textContent = 'Sending...';
     statusEl.className = 'message-panel-status';
-    statusEl.className = 'message-panel-status';
 
     try {
       // Get CSRF token
