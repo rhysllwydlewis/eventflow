@@ -194,7 +194,7 @@ router.post('/threads', authRequired, async (req, res) => {
     auditLog({
       adminId: userId,
       adminEmail: req.user.email,
-      action: AUDIT_ACTIONS.CREATE || 'THREAD_CREATED',
+      action: 'THREAD_CREATED',
       targetType: 'thread',
       targetId: newThread.id,
       details: { supplierId, packageId },

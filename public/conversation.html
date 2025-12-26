@@ -716,14 +716,29 @@
           exportedBy: currentUser?.email || currentUser?.name || 'Unknown'
         };
 
+        // CSV escaping function to prevent formula injection
+        function escapeCSV(value) {
+          if (value === null || value === undefined) return '';
+          const str = String(value);
+          // Prevent formula injection by prefixing dangerous characters
+          if (str.match(/^[=+\-@]/)) {
+            return `"'${str.replace(/"/g, '""')}"`;
+          }
+          return `"${str.replace(/"/g, '""')}"`;
+        }
+
         // Create CSV format
         const csvLines = [
           'Timestamp,From,Message',
           ...messages.map(msg => {
             const from = msg.fromUserId === currentUserId ? 'You' : otherPartyName;
             const timestamp = formatFullTimestamp(msg.sentAt || msg.createdAt);
-            const text = (msg.text || '').replace(/"/g, '""'); // Escape quotes
-            return `"${timestamp}","${from}","${text}"`;
+            const text = msg.text || '';
+            return [
+              escapeCSV(timestamp),
+              escapeCSV(from),
+              escapeCSV(text)
+            ].join(',');
           })
         ];
         const csv = csvLines.join('\n');
@@ -789,10 +804,10 @@
 
           alert(`Conversation ${isArchived ? 'unarchived' : 'archived'} successfully!`);
           
-          // Update thread status
+          // Update thread status  
           thread.status = isArchived ? 'open' : 'archived';
           
-          // Update button text
+          // Update button title - after unarchiving (isArchived=true), thread is now open, so show "Archive"
           const archiveBtn = document.getElementById('archiveBtn');
           if (archiveBtn) {
             archiveBtn.title = isArchived ? 'Archive conversation' : 'Unarchive conversation';

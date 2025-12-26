@@ -563,7 +563,7 @@
           const preview = draft.text.substring(0, 100);
 
           return `
-            <div class="thread-item" onclick="editDraft('${draft.id}', '${draft.threadId}')">
+            <div class="thread-item" data-draft-id="${escapeHtml(draft.id)}" data-thread-id="${escapeHtml(draft.threadId)}">
               <div class="thread-avatar">📝</div>
               <div class="thread-content">
                 <div class="thread-header">
@@ -575,6 +575,15 @@
             </div>
           `;
         }).join('');
+        
+        // Add click handlers using event delegation
+        container.querySelectorAll('.thread-item[data-draft-id]').forEach(item => {
+          item.addEventListener('click', () => {
+            const draftId = item.getAttribute('data-draft-id');
+            const threadId = item.getAttribute('data-thread-id');
+            editDraft(draftId, threadId);
+          });
+        });
       }
 
       function renderSentMessages() {
@@ -744,16 +753,35 @@
           }))
         };
 
+        // CSV escaping function to prevent formula injection
+        function escapeCSV(value) {
+          if (value === null || value === undefined) return '';
+          const str = String(value);
+          // Prevent formula injection by prefixing dangerous characters
+          if (str.match(/^[=+\-@]/)) {
+            return `"'${str.replace(/"/g, '""')}"`;
+          }
+          return `"${str.replace(/"/g, '""')}"`;
+        }
+
         // Create CSV format
         const csvLines = [
           'ID,Subject,With,Status,Created,Last Message,Unread Count',
           ...threads.map(thread => {
             const with_ = thread.supplierName || thread.customerName || 'Unknown';
-            const subject = (thread.subject || 'No subject').replace(/"/g, '""');
+            const subject = thread.subject || 'No subject';
             const created = new Date(thread.createdAt).toLocaleString('en-GB');
             const lastMsg = thread.lastMessageAt ? new Date(thread.lastMessageAt).toLocaleString('en-GB') : 'N/A';
             const unread = thread.unreadCount?.[userId] || 0;
-            return `"${thread.id}","${subject}","${with_}","${thread.status || 'open'}","${created}","${lastMsg}",${unread}`;
+            return [
+              escapeCSV(thread.id),
+              escapeCSV(subject),
+              escapeCSV(with_),
+              escapeCSV(thread.status || 'open'),
+              escapeCSV(created),
+              escapeCSV(lastMsg),
+              escapeCSV(unread)
+            ].join(',');
           })
         ];
         const csv = csvLines.join('\n');
