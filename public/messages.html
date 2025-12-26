@@ -406,13 +406,27 @@
       </button>
     </div>
 
-    <div class="messages-search" style="margin-bottom: 16px;">
-      <input 
-        type="text" 
-        id="searchInput" 
-        placeholder="Search messages..." 
-        style="width: 100%; padding: 12px 16px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px;"
-      />
+    <div style="display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap;">
+      <div class="messages-search" style="flex: 1; min-width: 200px;">
+        <input 
+          type="text" 
+          id="searchInput" 
+          placeholder="Search messages..." 
+          style="width: 100%; padding: 12px 16px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px;"
+        />
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <select id="dateFilter" style="padding: 12px 16px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; background: white;">
+          <option value="all">All time</option>
+          <option value="today">Today</option>
+          <option value="week">This week</option>
+          <option value="month">This month</option>
+          <option value="custom">Custom range...</option>
+        </select>
+        <button id="clearFilters" class="btn btn-secondary" style="padding: 12px 16px; white-space: nowrap;">
+          Clear Filters
+        </button>
+      </div>
     </div>
 
     <div id="errorMessage" class="error" style="display: none;"></div>
@@ -431,6 +445,7 @@
       let drafts = [];
       let sentMessages = [];
       let searchQuery = '';
+      let dateFilter = 'all';
 
       // Initialize
       document.addEventListener('DOMContentLoaded', init);
@@ -439,6 +454,7 @@
         setupTabHandlers();
         setupNewMessageHandler();
         setupSearchHandler();
+        setupDateFilterHandler();
         loadThreads();
       }
 
@@ -447,15 +463,81 @@
         if (searchInput) {
           searchInput.addEventListener('input', (e) => {
             searchQuery = e.target.value.toLowerCase();
-            if (currentTab === 'drafts') {
-              renderDrafts();
-            } else if (currentTab === 'sent') {
-              renderSentMessages();
-            } else {
-              renderThreads();
-            }
+            renderCurrentView();
           });
         }
+      }
+
+      function setupDateFilterHandler() {
+        const dateFilterSelect = document.getElementById('dateFilter');
+        const clearFiltersBtn = document.getElementById('clearFilters');
+        
+        if (dateFilterSelect) {
+          dateFilterSelect.addEventListener('change', (e) => {
+            dateFilter = e.target.value;
+            if (dateFilter === 'custom') {
+              // Show custom date picker (simplified)
+              const startDate = prompt('Enter start date (YYYY-MM-DD):');
+              const endDate = prompt('Enter end date (YYYY-MM-DD):');
+              if (startDate && endDate) {
+                dateFilter = { start: new Date(startDate), end: new Date(endDate) };
+              } else {
+                dateFilterSelect.value = 'all';
+                dateFilter = 'all';
+              }
+            }
+            renderCurrentView();
+          });
+        }
+        
+        if (clearFiltersBtn) {
+          clearFiltersBtn.addEventListener('click', () => {
+            searchQuery = '';
+            dateFilter = 'all';
+            document.getElementById('searchInput').value = '';
+            document.getElementById('dateFilter').value = 'all';
+            renderCurrentView();
+          });
+        }
+      }
+
+      function renderCurrentView() {
+        if (currentTab === 'drafts') {
+          renderDrafts();
+        } else if (currentTab === 'sent') {
+          renderSentMessages();
+        } else {
+          renderThreads();
+        }
+      }
+
+      function filterByDate(items, dateField = 'createdAt') {
+        if (dateFilter === 'all') {
+          return items;
+        }
+        
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        
+        return items.filter(item => {
+          const itemDate = new Date(item[dateField] || item.createdAt);
+          
+          if (dateFilter === 'today') {
+            return itemDate >= today;
+          } else if (dateFilter === 'week') {
+            const weekAgo = new Date(today);
+            weekAgo.setDate(weekAgo.getDate() - 7);
+            return itemDate >= weekAgo;
+          } else if (dateFilter === 'month') {
+            const monthAgo = new Date(today);
+            monthAgo.setMonth(monthAgo.getMonth() - 1);
+            return itemDate >= monthAgo;
+          } else if (typeof dateFilter === 'object') {
+            return itemDate >= dateFilter.start && itemDate <= dateFilter.end;
+          }
+          
+          return true;
+        });
       }
 
       function setupTabHandlers() {
@@ -724,7 +806,7 @@
         
         // Apply search filter
         if (searchQuery) {
-          filteredThreads = threads.filter(thread => {
+          filteredThreads = filteredThreads.filter(thread => {
             const searchText = [
               thread.supplierName,
               thread.customerName,
@@ -734,6 +816,9 @@
             return searchText.includes(searchQuery);
           });
         }
+        
+        // Apply date filter
+        filteredThreads = filterByDate(filteredThreads, 'lastMessageAt');
 
         if (filteredThreads.length === 0) {
           container.innerHTML = `
@@ -741,11 +826,12 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
               </svg>
-              <h3>${searchQuery ? 'No matching messages' : 'No messages yet'}</h3>
-              <p>${searchQuery ? 'Try a different search term' : 'Start a conversation with a supplier to plan your event'}</p>
+              <h3>${searchQuery || dateFilter !== 'all' ? 'No matching messages' : 'No messages yet'}</h3>
+              <p>${searchQuery || dateFilter !== 'all' ? 'Try adjusting your filters' : 'Start a conversation with a supplier to plan your event'}</p>
             </div>
           `;
           return;
+        }
         }
 
         getUserId().then(userId => {
@@ -834,11 +920,14 @@
         
         // Apply search filter
         if (searchQuery) {
-          filteredDrafts = drafts.filter(draft => {
+          filteredDrafts = filteredDrafts.filter(draft => {
             const searchText = draft.text.toLowerCase();
             return searchText.includes(searchQuery);
           });
         }
+        
+        // Apply date filter
+        filteredDrafts = filterByDate(filteredDrafts, 'updatedAt');
 
         if (filteredDrafts.length === 0) {
           container.innerHTML = `
@@ -846,8 +935,8 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
               </svg>
-              <h3>${searchQuery ? 'No matching drafts' : 'No drafts'}</h3>
-              <p>${searchQuery ? 'Try a different search term' : 'Your draft messages will appear here'}</p>
+              <h3>${searchQuery || dateFilter !== 'all' ? 'No matching drafts' : 'No drafts'}</h3>
+              <p>${searchQuery || dateFilter !== 'all' ? 'Try adjusting your filters' : 'Your draft messages will appear here'}</p>
             </div>
           `;
           return;
@@ -889,11 +978,14 @@
         
         // Apply search filter
         if (searchQuery) {
-          filteredMessages = sentMessages.filter(msg => {
+          filteredMessages = filteredMessages.filter(msg => {
             const searchText = msg.text.toLowerCase();
             return searchText.includes(searchQuery);
           });
         }
+        
+        // Apply date filter
+        filteredMessages = filterByDate(filteredMessages, 'sentAt');
 
         if (filteredMessages.length === 0) {
           container.innerHTML = `
@@ -901,8 +993,8 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
               </svg>
-              <h3>${searchQuery ? 'No matching sent messages' : 'No sent messages'}</h3>
-              <p>${searchQuery ? 'Try a different search term' : 'Messages you send will appear here'}</p>
+              <h3>${searchQuery || dateFilter !== 'all' ? 'No matching sent messages' : 'No sent messages'}</h3>
+              <p>${searchQuery || dateFilter !== 'all' ? 'Try adjusting your filters' : 'Messages you send will appear here'}</p>
             </div>
           `;
           return;
