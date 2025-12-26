@@ -3869,6 +3869,10 @@ app.use('/api/admin', adminRoutes);
 const reportsRoutes = require('./routes/reports');
 app.use('/api', reportsRoutes);
 
+// ---------- Messages Routes ----------
+const messagesRoutes = require('./routes/messages');
+app.use('/api/messages', messagesRoutes);
+
 // ---------- Audit Logging ----------
 const { getAuditLogs, auditLog, AUDIT_ACTIONS } = require('./middleware/audit');
 
