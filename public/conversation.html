@@ -359,13 +359,22 @@
 
     <div class="composer-area">
       <form class="composer-form" id="composerForm">
-        <textarea 
-          class="composer-input" 
-          id="messageInput" 
-          placeholder="Type your message... (Ctrl+Enter to send, Ctrl+D to save draft)"
-          rows="1"
-        ></textarea>
-        <div class="composer-actions">
+        <div style="display: flex; flex-direction: column; flex: 1; gap: 8px;">
+          <textarea 
+            class="composer-input" 
+            id="messageInput" 
+            placeholder="Type your message... (Ctrl+Enter to send, Ctrl+D to save draft)"
+            rows="1"
+          ></textarea>
+          <div id="attachmentPreview" style="display: none; padding: 8px; background: #f3f4f6; border-radius: 6px; font-size: 13px;"></div>
+        </div>
+        <div class="composer-actions" style="flex-direction: column; gap: 4px;">
+          <input type="file" id="fileInput" style="display: none;" multiple accept="image/*,.pdf,.doc,.docx,.txt">
+          <button type="button" class="btn btn-secondary" id="attachBtn" title="Attach file">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/>
+            </svg>
+          </button>
           <button type="button" class="btn btn-secondary" id="saveDraftBtn" title="Save as draft (Ctrl+D)">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
@@ -383,11 +392,12 @@
         </div>
       </form>
       <div style="text-align: center; padding: 8px 0; font-size: 11px; color: #9ca3af;">
-        <span title="Keyboard shortcuts">⌨️ Ctrl+Enter to send • Ctrl+D to save draft • Esc to blur</span>
+        <span title="Keyboard shortcuts">⌨️ Ctrl+Enter to send • Ctrl+D to save draft • Esc to blur • 📎 Click attach for files</span>
       </div>
     </div>
   </main>
 
+  <script src="/assets/js/websocket-client.js"></script>
   <script>
     (function () {
       'use strict';
@@ -397,6 +407,8 @@
       let messages = [];
       let currentUserId = null;
       let currentUser = null;
+      let wsClient = null;
+      let recipientId = null;
 
       // Initialize
       document.addEventListener('DOMContentLoaded', init);
@@ -414,6 +426,9 @@
         // Get current user first
         await loadCurrentUser();
 
+        // Initialize WebSocket for real-time updates
+        initializeWebSocket();
+
         setupEventHandlers();
         setupKeyboardShortcuts();
         await loadThread();
@@ -424,8 +439,75 @@
           await loadDraft(draftId);
         }
         
-        // Auto-refresh messages every 10 seconds
-        setInterval(loadMessages, 10000);
+        // Auto-refresh messages every 30 seconds (WebSocket handles real-time)
+        setInterval(loadMessages, 30000);
+      }
+
+      function initializeWebSocket() {
+        try {
+          wsClient = new WebSocketClient({
+            autoConnect: true,
+            onConnect: () => {
+              console.log('✓ Real-time messaging connected');
+              // Show connection indicator
+              showToast('✓ Connected', 'success');
+            },
+            onMessage: (data) => {
+              if (data.threadId === threadId) {
+                // New message received in this thread
+                messages.push(data.message);
+                renderMessages();
+                
+                // Show notification if not focused
+                if (document.hidden) {
+                  showNotification('New message', data.message.text.substring(0, 50));
+                }
+              }
+            },
+            onDisconnect: (reason) => {
+              console.warn('WebSocket disconnected:', reason);
+            },
+          });
+
+          // Join this thread's room for targeted updates
+          wsClient.joinRoom(`thread:${threadId}`);
+        } catch (error) {
+          console.error('Failed to initialize WebSocket:', error);
+          // Continue without WebSocket - polling will still work
+        }
+      }
+
+      function showToast(message, type = 'info') {
+        const toast = document.createElement('div');
+        toast.style.cssText = `
+          position: fixed;
+          bottom: 20px;
+          right: 20px;
+          padding: 12px 20px;
+          background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'};
+          color: white;
+          border-radius: 8px;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+          z-index: 10000;
+          animation: slideIn 0.3s ease-out;
+        `;
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+          toast.style.animation = 'slideOut 0.3s ease-out';
+          setTimeout(() => toast.remove(), 300);
+        }, 3000);
+      }
+
+      function showNotification(title, body) {
+        if ('Notification' in window && Notification.permission === 'granted') {
+          new Notification(title, {
+            body,
+            icon: '/favicon.svg',
+            badge: '/favicon.svg',
+          });
+        }
       }
 
       function setupKeyboardShortcuts() {
@@ -559,6 +641,12 @@
 
           const data = await response.json();
           thread = data.thread;
+          
+          // Determine recipient ID for WebSocket
+          if (currentUserId) {
+            recipientId = thread.customerId === currentUserId ? thread.supplierId : thread.customerId;
+          }
+          
           renderThreadHeader();
         } catch (error) {
           console.error('Error loading thread:', error);
@@ -630,6 +718,11 @@
             // Add message to UI immediately
             messages.push(data.message);
             renderMessages();
+            
+            // Send via WebSocket for real-time delivery
+            if (wsClient && recipientId) {
+              wsClient.sendMessage(threadId, recipientId, data.message);
+            }
           }
 
           // Clear input
