@@ -241,6 +241,13 @@
         </div>
       </div>
       <div class="conversation-actions">
+        <button class="btn btn-secondary btn-sm" id="exportBtn" title="Export conversation">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+        </button>
         <button class="btn btn-secondary btn-sm" id="refreshBtn" title="Refresh messages">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
@@ -291,11 +298,12 @@
       let thread = null;
       let messages = [];
       let currentUserId = null;
+      let currentUser = null;
 
       // Initialize
       document.addEventListener('DOMContentLoaded', init);
 
-      function init() {
+      async function init() {
         const urlParams = new URLSearchParams(window.location.search);
         threadId = urlParams.get('id');
 
@@ -304,12 +312,30 @@
           return;
         }
 
+        // Get current user first
+        await loadCurrentUser();
+
         setupEventHandlers();
         loadThread();
         loadMessages();
         
         // Auto-refresh messages every 10 seconds
         setInterval(loadMessages, 10000);
+      }
+
+      async function loadCurrentUser() {
+        try {
+          const response = await fetch('/api/auth/me', {
+            credentials: 'include'
+          });
+          if (response.ok) {
+            const data = await response.json();
+            currentUser = data.user;
+            currentUserId = data.user?.id;
+          }
+        } catch (error) {
+          console.error('Error loading current user:', error);
+        }
       }
 
       function setupEventHandlers() {
@@ -327,6 +353,11 @@
         // Refresh
         document.getElementById('refreshBtn')?.addEventListener('click', () => {
           loadMessages();
+        });
+
+        // Export conversation
+        document.getElementById('exportBtn')?.addEventListener('click', () => {
+          exportConversation();
         });
 
         // Auto-expand textarea
@@ -486,10 +517,11 @@
         }
 
         container.innerHTML = messages.map(message => {
-          const isSent = message.fromUserId === getUserId();
+          const isSent = message.fromUserId === currentUserId;
           const senderName = isSent ? 'You' : (thread?.supplierName || thread?.customerName || 'Unknown');
           const initial = senderName.charAt(0).toUpperCase();
           const time = formatTime(message.sentAt || message.createdAt);
+          const fullDate = formatFullTimestamp(message.sentAt || message.createdAt);
 
           return `
             <div class="message ${isSent ? 'sent' : 'received'}">
@@ -498,7 +530,7 @@
                 <div class="message-bubble">
                   <div class="message-text">${escapeHtml(message.text)}</div>
                 </div>
-                <div class="message-time">${time}</div>
+                <div class="message-time" title="${fullDate}">${time}</div>
               </div>
             </div>
           `;
@@ -508,15 +540,90 @@
         container.scrollTop = container.scrollHeight;
       }
 
-      function getUserId() {
-        // This should get the actual user ID from session/token
-        // For now, return a placeholder based on thread data
-        if (thread) {
-          // If we're the customer, return customerId, otherwise supplierId
-          // This is simplified - should use actual auth
-          return thread.customerId;
+      function formatFullTimestamp(timestamp) {
+        if (!timestamp) return '';
+        const date = new Date(timestamp);
+        return date.toLocaleString('en-GB', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit'
+        });
+      }
+
+      function exportConversation() {
+        if (!thread || messages.length === 0) {
+          alert('No messages to export');
+          return;
         }
-        return 'current-user-id';
+
+        const otherPartyName = thread.supplierName || thread.customerName || 'Unknown';
+        
+        // Prepare export data
+        const exportData = {
+          conversation: {
+            id: thread.id,
+            subject: thread.subject || 'No subject',
+            participants: {
+              customer: thread.customerName,
+              supplier: thread.supplierName
+            },
+            created: thread.createdAt,
+            lastUpdated: thread.updatedAt
+          },
+          messages: messages.map(msg => ({
+            id: msg.id,
+            from: msg.fromUserId === currentUserId ? 'You' : otherPartyName,
+            text: msg.text,
+            timestamp: msg.sentAt || msg.createdAt,
+            formattedTimestamp: formatFullTimestamp(msg.sentAt || msg.createdAt)
+          })),
+          exportedAt: new Date().toISOString(),
+          exportedBy: currentUser?.email || currentUser?.name || 'Unknown'
+        };
+
+        // Create CSV format
+        const csvLines = [
+          'Timestamp,From,Message',
+          ...messages.map(msg => {
+            const from = msg.fromUserId === currentUserId ? 'You' : otherPartyName;
+            const timestamp = formatFullTimestamp(msg.sentAt || msg.createdAt);
+            const text = (msg.text || '').replace(/"/g, '""'); // Escape quotes
+            return `"${timestamp}","${from}","${text}"`;
+          })
+        ];
+        const csv = csvLines.join('\n');
+
+        // Show export options
+        const format = prompt('Export format:\n1. JSON (full data)\n2. CSV (simple table)\n\nEnter 1 or 2:', '2');
+        
+        if (format === '1') {
+          // Export as JSON
+          const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `conversation-${thread.id}-${Date.now()}.json`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        } else if (format === '2') {
+          // Export as CSV
+          const blob = new Blob([csv], { type: 'text/csv' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `conversation-${thread.id}-${Date.now()}.csv`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        } else {
+          return; // Cancelled
+        }
       }
 
       function formatTime(timestamp) {

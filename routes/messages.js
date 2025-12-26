@@ -291,6 +291,46 @@ router.post('/threads/:threadId/messages', authRequired, async (req, res) => {
 
       threads[threadIndex] = thread;
       await dbUnified.write('threads', threads);
+
+      // Send email notification to recipient (async, non-blocking)
+      setImmediate(async () => {
+        try {
+          const users = await dbUnified.read('users');
+          const suppliers = await dbUnified.read('suppliers');
+          
+          const sender = users.find(u => u.id === userId);
+          const senderName = sender?.name || sender?.email || 'Someone';
+          
+          let recipientEmail = null;
+          let recipientName = null;
+          
+          if (userRole === 'customer') {
+            // Customer sent message to supplier
+            const supplier = suppliers.find(s => s.id === recipientId) || users.find(u => u.id === recipientId);
+            recipientEmail = supplier?.email;
+            recipientName = supplier?.name || 'Supplier';
+          } else {
+            // Supplier sent message to customer
+            const customer = users.find(u => u.id === recipientId);
+            recipientEmail = customer?.email;
+            recipientName = customer?.name || 'Customer';
+          }
+          
+          if (recipientEmail && recipientName) {
+            // Import sendMail function (this should be available in the context)
+            const postmark = require('../utils/postmark');
+            await postmark.sendMail({
+              to: recipientEmail,
+              subject: `New message from ${senderName} - EventFlow`,
+              text: `Hello ${recipientName},\n\nYou have received a new message from ${senderName}:\n\n"${text.trim().substring(0, 200)}${text.trim().length > 200 ? '...' : '"}"\n\nLog in to EventFlow to view and reply: ${process.env.BASE_URL || 'https://eventflow.com'}/messages.html\n\nBest regards,\nEventFlow Team`,
+              html: `<p>Hello ${recipientName},</p><p>You have received a new message from <strong>${senderName}</strong>:</p><blockquote style="border-left: 3px solid #667eea; padding-left: 12px; margin: 16px 0; color: #4b5563;">${text.trim().substring(0, 200)}${text.trim().length > 200 ? '...' : ''}</blockquote><p><a href="${process.env.BASE_URL || 'https://eventflow.com'}/messages.html" style="background: #667eea; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block;">View Message</a></p><p>Best regards,<br>EventFlow Team</p>`
+            });
+          }
+        } catch (emailError) {
+          console.error('Error sending message notification email:', emailError);
+          // Don't fail the request if email fails
+        }
+      });
     }
 
     res.status(201).json({ message: newMessage });
@@ -458,6 +498,31 @@ router.get('/drafts', authRequired, async (req, res) => {
   } catch (error) {
     console.error('Error fetching drafts:', error);
     res.status(500).json({ error: 'Failed to fetch drafts', details: error.message });
+  }
+});
+
+/**
+ * GET /api/messages/sent
+ * Get all sent messages for the current user
+ */
+router.get('/sent', authRequired, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    let messages = await dbUnified.read('messages');
+    messages = messages.filter(m => m.fromUserId === userId && !m.isDraft);
+
+    // Sort by sent time (most recent first)
+    messages.sort((a, b) => {
+      const aTime = new Date(a.sentAt || a.createdAt).getTime();
+      const bTime = new Date(b.sentAt || b.createdAt).getTime();
+      return bTime - aTime;
+    });
+
+    res.json({ messages });
+  } catch (error) {
+    console.error('Error fetching sent messages:', error);
+    res.status(500).json({ error: 'Failed to fetch sent messages', details: error.message });
   }
 });
 

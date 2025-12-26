@@ -224,12 +224,22 @@
         <h1>Messages</h1>
         <p style="color: #6b7280; margin-top: 4px;">Communicate with suppliers about your event</p>
       </div>
-      <button class="btn btn-primary" id="newMessageBtn">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;">
-          <path d="M12 5v14M5 12h14"/>
-        </svg>
-        New Message
-      </button>
+      <div style="display: flex; gap: 8px;">
+        <button class="btn btn-secondary" id="exportAllBtn" title="Export all conversations">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          Export
+        </button>
+        <button class="btn btn-primary" id="newMessageBtn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;">
+            <path d="M12 5v14M5 12h14"/>
+          </svg>
+          New Message
+        </button>
+      </div>
     </div>
 
     <div class="messages-tabs">
@@ -301,6 +311,10 @@
         document.getElementById('newMessageBtn')?.addEventListener('click', () => {
           // TODO: Open new message modal or navigate to compose page
           alert('New message feature coming soon!');
+        });
+        
+        document.getElementById('exportAllBtn')?.addEventListener('click', () => {
+          exportAllConversations();
         });
       }
 
@@ -381,31 +395,34 @@
           return;
         }
 
-        container.innerHTML = filteredThreads.map(thread => {
-          const unreadCount = thread.unreadCount?.[getUserId()] || 0;
-          const isUnread = unreadCount > 0;
-          const otherPartyName = thread.supplierName || thread.customerName || 'Unknown';
-          const initial = otherPartyName.charAt(0).toUpperCase();
-          const timeAgo = formatTimeAgo(thread.lastMessageAt || thread.updatedAt || thread.createdAt);
+        getUserId().then(userId => {
+          container.innerHTML = filteredThreads.map(thread => {
+            const unreadCount = thread.unreadCount?.[userId] || 0;
+            const isUnread = unreadCount > 0;
+            const otherPartyName = thread.supplierName || thread.customerName || 'Unknown';
+            const initial = otherPartyName.charAt(0).toUpperCase();
+            const timeAgo = formatTimeAgo(thread.lastMessageAt || thread.updatedAt || thread.createdAt);
+            const fullDate = formatFullDate(thread.lastMessageAt || thread.updatedAt || thread.createdAt);
 
-          return `
-            <a href="/conversation.html?id=${thread.id}" class="thread-item ${isUnread ? 'unread' : ''}">
-              <div class="thread-avatar">${initial}</div>
-              <div class="thread-content">
-                <div class="thread-header">
-                  <span class="thread-name">${escapeHtml(otherPartyName)}</span>
-                  <span class="thread-time">${timeAgo}</span>
+            return `
+              <a href="/conversation.html?id=${thread.id}" class="thread-item ${isUnread ? 'unread' : ''}">
+                <div class="thread-avatar">${initial}</div>
+                <div class="thread-content">
+                  <div class="thread-header">
+                    <span class="thread-name">${escapeHtml(otherPartyName)}</span>
+                    <span class="thread-time" title="${fullDate}">${timeAgo}</span>
+                  </div>
+                  ${thread.subject ? `<div class="thread-subject">${escapeHtml(thread.subject)}</div>` : ''}
+                  <div class="thread-preview">${escapeHtml(thread.lastMessagePreview || 'No messages yet')}</div>
+                  <div class="thread-meta">
+                    ${isUnread ? `<span class="unread-badge">${unreadCount}</span>` : ''}
+                    <span class="status-badge status-${thread.status || 'open'}">${thread.status || 'Open'}</span>
+                  </div>
                 </div>
-                ${thread.subject ? `<div class="thread-subject">${escapeHtml(thread.subject)}</div>` : ''}
-                <div class="thread-preview">${escapeHtml(thread.lastMessagePreview || 'No messages yet')}</div>
-                <div class="thread-meta">
-                  ${isUnread ? `<span class="unread-badge">${unreadCount}</span>` : ''}
-                  <span class="status-badge status-${thread.status || 'open'}">${thread.status || 'Open'}</span>
-                </div>
-              </div>
-            </a>
-          `;
-        }).join('');
+              </a>
+            `;
+          }).join('');
+        });
       }
 
       function renderDrafts() {
@@ -445,26 +462,30 @@
 
       function updateCounts() {
         // Update inbox unread count
-        const totalUnread = threads.reduce((sum, thread) => {
-          return sum + (thread.unreadCount?.[getUserId()] || 0);
-        }, 0);
+        getUserId().then(userId => {
+          if (!userId) return;
+          
+          const totalUnread = threads.reduce((sum, thread) => {
+            return sum + (thread.unreadCount?.[userId] || 0);
+          }, 0);
 
-        const inboxBadge = document.getElementById('inboxCount');
-        if (totalUnread > 0) {
-          inboxBadge.textContent = totalUnread;
-          inboxBadge.style.display = 'inline-flex';
-        } else {
-          inboxBadge.style.display = 'none';
-        }
+          const inboxBadge = document.getElementById('inboxCount');
+          if (totalUnread > 0) {
+            inboxBadge.textContent = totalUnread;
+            inboxBadge.style.display = 'inline-flex';
+          } else {
+            inboxBadge.style.display = 'none';
+          }
 
-        // Update drafts count
-        const draftsCountEl = document.getElementById('draftsCount');
-        if (drafts.length > 0) {
-          draftsCountEl.textContent = drafts.length;
-          draftsCountEl.style.display = 'inline';
-        } else {
-          draftsCountEl.style.display = 'none';
-        }
+          // Update drafts count
+          const draftsCountEl = document.getElementById('draftsCount');
+          if (drafts.length > 0) {
+            draftsCountEl.textContent = drafts.length;
+            draftsCountEl.style.display = 'inline';
+          } else {
+            draftsCountEl.style.display = 'none';
+          }
+        });
       }
 
       function showError(message) {
@@ -473,10 +494,20 @@
         errorEl.style.display = 'block';
       }
 
-      function getUserId() {
-        // This should get the actual user ID from session/token
-        // For now, return a placeholder
-        return 'current-user-id';
+      async function getUserId() {
+        // Get actual user ID from auth API
+        try {
+          const response = await fetch('/api/auth/me', {
+            credentials: 'include'
+          });
+          if (response.ok) {
+            const data = await response.json();
+            return data.user?.id || null;
+          }
+        } catch (error) {
+          console.error('Error getting user ID:', error);
+        }
+        return null;
       }
 
       function formatTimeAgo(timestamp) {
@@ -504,10 +535,94 @@
         }
       }
 
+      function formatFullDate(timestamp) {
+        if (!timestamp) return '';
+        const date = new Date(timestamp);
+        return date.toLocaleString('en-GB', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+      }
+
       function escapeHtml(str) {
         const div = document.createElement('div');
         div.textContent = str || '';
         return div.innerHTML;
+      }
+
+      async function exportAllConversations() {
+        if (threads.length === 0) {
+          alert('No conversations to export');
+          return;
+        }
+
+        const userId = await getUserId();
+        if (!userId) {
+          alert('Please log in to export conversations');
+          return;
+        }
+
+        // Prepare export data
+        const exportData = {
+          exportedAt: new Date().toISOString(),
+          totalThreads: threads.length,
+          threads: threads.map(thread => ({
+            id: thread.id,
+            subject: thread.subject || 'No subject',
+            with: thread.supplierName || thread.customerName || 'Unknown',
+            status: thread.status || 'open',
+            created: thread.createdAt,
+            lastMessage: thread.lastMessageAt,
+            lastMessagePreview: thread.lastMessagePreview,
+            unreadCount: thread.unreadCount?.[userId] || 0
+          }))
+        };
+
+        // Create CSV format
+        const csvLines = [
+          'ID,Subject,With,Status,Created,Last Message,Unread Count',
+          ...threads.map(thread => {
+            const with_ = thread.supplierName || thread.customerName || 'Unknown';
+            const subject = (thread.subject || 'No subject').replace(/"/g, '""');
+            const created = new Date(thread.createdAt).toLocaleString('en-GB');
+            const lastMsg = thread.lastMessageAt ? new Date(thread.lastMessageAt).toLocaleString('en-GB') : 'N/A';
+            const unread = thread.unreadCount?.[userId] || 0;
+            return `"${thread.id}","${subject}","${with_}","${thread.status || 'open'}","${created}","${lastMsg}",${unread}`;
+          })
+        ];
+        const csv = csvLines.join('\n');
+
+        // Show export options
+        const format = prompt('Export format:\n1. JSON (full data)\n2. CSV (simple table)\n\nEnter 1 or 2:', '2');
+        
+        if (format === '1') {
+          // Export as JSON
+          const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `all-conversations-${Date.now()}.json`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          alert('Conversations exported successfully!');
+        } else if (format === '2') {
+          // Export as CSV
+          const blob = new Blob([csv], { type: 'text/csv' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `all-conversations-${Date.now()}.csv`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          alert('Conversations exported successfully!');
+        }
       }
 
       window.editDraft = function(draftId) {
