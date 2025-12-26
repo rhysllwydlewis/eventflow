@@ -2108,9 +2108,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (page === 'admin_users') {
     initAdminUsers && initAdminUsers();
   }
-  if (page === 'verify') {
-    initVerify && initVerify();
-  }
+  // Note: page === 'verify' is now handled by verify-init.js
 
   // Global header behaviour: scroll hide/show
   // Note: burger menu is handled by auth-nav.js
