@@ -20,6 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
     .then(data => {
       const container = document.getElementById('featured-packages');
       if (!container) {
+        console.warn('Featured packages container not found');
         return;
       }
 
@@ -28,17 +29,51 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      const carousel = new Carousel('featured-packages', {
-        itemsPerView: 3,
-        itemsPerViewTablet: 2,
-        itemsPerViewMobile: 1,
-        autoScroll: true,
-        autoScrollInterval: 5000,
-      });
-      carousel.setItems(data.items);
+      // Check if Carousel class is available
+      if (typeof Carousel === 'undefined') {
+        console.error('Carousel class not loaded. Rendering fallback.');
+        // Fallback: render simple grid without carousel functionality
+        container.innerHTML = data.items
+          .map(
+            item => `
+            <div class="card" style="display: inline-block; width: calc(33.333% - 14px); margin: 7px; vertical-align: top;">
+              <a href="/package.html?slug=${encodeURIComponent(item.slug || item.id)}" style="text-decoration: none; color: inherit;">
+                <img src="${item.image || '/assets/images/placeholder-package.jpg'}" alt="${item.title || 'Package'}" style="width: 100%; height: 180px; object-fit: cover; border-radius: 8px 8px 0 0;">
+                <div style="padding: 14px;">
+                  <h3 style="margin: 0 0 8px 0; font-size: 16px;">${item.title || 'Untitled Package'}</h3>
+                  <p style="margin: 0; font-size: 14px; color: #52525b;">${(item.description || '').substring(0, 100)}${(item.description || '').length > 100 ? '...' : ''}</p>
+                  <div style="margin-top: 8px; font-size: 14px; font-weight: 600; color: #0B8073;">${item.price_display || 'Contact for pricing'}</div>
+                </div>
+              </a>
+            </div>
+          `
+          )
+          .join('');
+        return;
+      }
+
+      // Initialize carousel
+      try {
+        const carousel = new Carousel('featured-packages', {
+          itemsPerView: 3,
+          itemsPerViewTablet: 2,
+          itemsPerViewMobile: 1,
+          autoScroll: true,
+          autoScrollInterval: 5000,
+        });
+        carousel.setItems(data.items);
+      } catch (error) {
+        console.error('Failed to initialize carousel:', error);
+        // Fallback to simple list on error
+        container.innerHTML = '<p class="small">Featured packages are temporarily unavailable.</p>';
+      }
     })
-    .catch(() => {
-      /* Ignore errors */
+    .catch(error => {
+      console.error('Failed to load featured packages:', error);
+      const container = document.getElementById('featured-packages');
+      if (container) {
+        container.innerHTML = '<p class="small">Unable to load featured packages. Please try again later.</p>';
+      }
     });
 
   // Show notification bell for logged-in users
