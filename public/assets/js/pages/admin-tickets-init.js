@@ -66,7 +66,11 @@
         const subject = (ticket.subject || '').toLowerCase();
         const message = (ticket.message || '').toLowerCase();
         const userName = (ticket.userName || '').toLowerCase();
-        if (!subject.includes(searchTerm) && !message.includes(searchTerm) && !userName.includes(searchTerm)) {
+        if (
+          !subject.includes(searchTerm) &&
+          !message.includes(searchTerm) &&
+          !userName.includes(searchTerm)
+        ) {
           return false;
         }
       }
@@ -109,7 +113,8 @@
       return;
     }
 
-    let html = '<div class="table-wrapper"><table><thead><tr><th>Subject</th><th>From</th><th>Status</th><th>Priority</th><th>Created</th><th>Actions</th></tr></thead><tbody>';
+    let html =
+      '<div class="table-wrapper"><table><thead><tr><th>Subject</th><th>From</th><th>Status</th><th>Priority</th><th>Created</th><th>Actions</th></tr></thead><tbody>';
 
     filtered.forEach(ticket => {
       const createdAt = formatDate(ticket.createdAt);
@@ -168,4 +173,3 @@
   setupFilterListeners();
   loadTickets();
 })();
-

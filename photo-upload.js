@@ -174,7 +174,7 @@ async function saveToMongoDB(buffer, filename, type = 'optimized') {
   try {
     const db = await mongoDb.getDb();
     const collection = db.collection('photos');
-    
+
     const photoDoc = {
       _id: uid('photo'),
       filename,
@@ -184,7 +184,7 @@ async function saveToMongoDB(buffer, filename, type = 'optimized') {
       size: buffer.length,
       createdAt: new Date().toISOString(),
     };
-    
+
     await collection.insertOne(photoDoc);
     return photoDoc._id;
   } catch (error) {
@@ -276,7 +276,7 @@ async function deleteImage(url) {
       await collection.deleteOne({ _id: photoId });
       return;
     }
-    
+
     // Otherwise, delete from local filesystem
     const filename = path.basename(url);
     const dirs = ['original', 'thumbnails', 'optimized', 'large', 'public'];

@@ -32,12 +32,12 @@ This guide explains how to deploy and test the Google Pay subscription system fo
 
 ### Subscription Plans
 
-| Plan | Price | Billing | Trial | Features |
-|------|-------|---------|-------|----------|
-| Pro Monthly | £9.99/mo | Monthly | 14 days | Priority listing, badge, analytics, 50 bookings/mo |
-| Pro+ Monthly | £19.99/mo | Monthly | 14 days | All Pro + premium badge, unlimited bookings, priority support |
-| Pro Yearly | £99.99/yr | Yearly | 28 days | Pro features + 17% savings |
-| Pro+ Yearly | £199.99/yr | Yearly | 28 days | Pro+ features + 17% savings |
+| Plan         | Price      | Billing | Trial   | Features                                                      |
+| ------------ | ---------- | ------- | ------- | ------------------------------------------------------------- |
+| Pro Monthly  | £9.99/mo   | Monthly | 14 days | Priority listing, badge, analytics, 50 bookings/mo            |
+| Pro+ Monthly | £19.99/mo  | Monthly | 14 days | All Pro + premium badge, unlimited bookings, priority support |
+| Pro Yearly   | £99.99/yr  | Yearly  | 28 days | Pro features + 17% savings                                    |
+| Pro+ Yearly  | £199.99/yr | Yearly  | 28 days | Pro+ features + 17% savings                                   |
 
 ## Deployment Steps
 
@@ -51,6 +51,7 @@ firebase deploy --only functions
 ```
 
 This deploys the following Cloud Functions:
+
 - `onPaymentSuccess` - Processes Google Pay payments
 - `checkSubscriptionStatus` - Daily cron job to check subscription status
 - `cancelSubscription` - Handles cancellations
@@ -120,6 +121,7 @@ firebase deploy --only hosting
 ```
 
 Or if using another hosting provider, upload:
+
 - `/public/supplier/` directory
 - Updated `/public/dashboard-supplier.html`
 - Updated `/public/assets/css/styles.css`
@@ -238,6 +240,7 @@ firebase functions:log --only onPaymentSuccess
 The `checkSubscriptionStatus` function runs daily at midnight (London time).
 
 Check logs:
+
 ```bash
 firebase functions:log --only checkSubscriptionStatus
 ```
@@ -310,6 +313,7 @@ Before going live:
 ## Support
 
 For issues with:
+
 - **Google Pay**: https://developers.google.com/pay/api/web/support
 - **Firebase Functions**: https://firebase.google.com/support
 - **EventFlow**: Contact your development team

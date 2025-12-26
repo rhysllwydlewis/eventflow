@@ -293,7 +293,8 @@ async function init() {
     console.error('Error listening to tickets:', error);
     const container = document.getElementById('tickets-sup');
     if (container) {
-      container.innerHTML = '<p class="small">Unable to load tickets. Please try refreshing the page.</p>';
+      container.innerHTML =
+        '<p class="small">Unable to load tickets. Please try refreshing the page.</p>';
     }
   }
 }
