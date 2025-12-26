@@ -210,6 +210,94 @@
       color: #991b1b;
       margin-bottom: 16px;
     }
+
+    .loading-spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid #f3f4f6;
+      border-radius: 50%;
+      border-top-color: #667eea;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Mobile responsiveness */
+    @media (max-width: 768px) {
+      .conversation-container {
+        padding: 8px;
+        height: calc(100vh - 60px);
+      }
+
+      .conversation-header {
+        padding: 12px;
+        flex-wrap: wrap;
+      }
+
+      .conversation-info {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .conversation-avatar {
+        width: 32px;
+        height: 32px;
+        font-size: 14px;
+      }
+
+      .conversation-details h2 {
+        font-size: 16px;
+      }
+
+      .conversation-details p {
+        font-size: 12px;
+      }
+
+      .conversation-actions {
+        gap: 4px;
+      }
+
+      .conversation-actions .btn {
+        padding: 6px;
+      }
+
+      .messages-area {
+        padding: 12px;
+      }
+
+      .message-content {
+        max-width: 80%;
+      }
+
+      .message-bubble {
+        padding: 10px 12px;
+      }
+
+      .message-text {
+        font-size: 13px;
+      }
+
+      .composer-area {
+        padding: 12px;
+      }
+
+      .composer-input {
+        font-size: 14px;
+        padding: 10px 12px;
+      }
+
+      .composer-actions {
+        flex-direction: column;
+        width: 100%;
+      }
+
+      .composer-actions button {
+        width: 100%;
+      }
+    }
   </style>
 </head>
 <body>
@@ -241,6 +329,20 @@
         </div>
       </div>
       <div class="conversation-actions">
+        <button class="btn btn-secondary btn-sm" id="archiveBtn" title="Archive conversation">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="21 8 21 21 3 21 3 8"></polyline>
+            <rect x="1" y="3" width="22" height="5"></rect>
+            <line x1="10" y1="12" x2="14" y2="12"></line>
+          </svg>
+        </button>
+        <button class="btn btn-secondary btn-sm" id="exportBtn" title="Export conversation">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+        </button>
         <button class="btn btn-secondary btn-sm" id="refreshBtn" title="Refresh messages">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
@@ -257,14 +359,23 @@
 
     <div class="composer-area">
       <form class="composer-form" id="composerForm">
-        <textarea 
-          class="composer-input" 
-          id="messageInput" 
-          placeholder="Type your message..."
-          rows="1"
-        ></textarea>
-        <div class="composer-actions">
-          <button type="button" class="btn btn-secondary" id="saveDraftBtn" title="Save as draft">
+        <div style="display: flex; flex-direction: column; flex: 1; gap: 8px;">
+          <textarea 
+            class="composer-input" 
+            id="messageInput" 
+            placeholder="Type your message... (Ctrl+Enter to send, Ctrl+D to save draft)"
+            rows="1"
+          ></textarea>
+          <div id="attachmentPreview" style="display: none; padding: 8px; background: #f3f4f6; border-radius: 6px; font-size: 13px;"></div>
+        </div>
+        <div class="composer-actions" style="flex-direction: column; gap: 4px;">
+          <input type="file" id="fileInput" style="display: none;" multiple accept="image/*,.pdf,.doc,.docx,.txt">
+          <button type="button" class="btn btn-secondary" id="attachBtn" title="Attach file">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/>
+            </svg>
+          </button>
+          <button type="button" class="btn btn-secondary" id="saveDraftBtn" title="Save as draft (Ctrl+D)">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
               <polyline points="17 21 17 13 7 13 7 21"/>
@@ -280,9 +391,13 @@
           </button>
         </div>
       </form>
+      <div style="text-align: center; padding: 8px 0; font-size: 11px; color: #9ca3af;">
+        <span title="Keyboard shortcuts">⌨️ Ctrl+Enter to send • Ctrl+D to save draft • Esc to blur • 📎 Click attach for files</span>
+      </div>
     </div>
   </main>
 
+  <script src="/assets/js/websocket-client.js"></script>
   <script>
     (function () {
       'use strict';
@@ -291,26 +406,201 @@
       let thread = null;
       let messages = [];
       let currentUserId = null;
+      let currentUser = null;
+      let wsClient = null;
+      let recipientId = null;
 
       // Initialize
       document.addEventListener('DOMContentLoaded', init);
 
-      function init() {
+      async function init() {
         const urlParams = new URLSearchParams(window.location.search);
         threadId = urlParams.get('id');
+        const draftId = urlParams.get('draft');
 
         if (!threadId) {
           showError('Invalid conversation ID');
           return;
         }
 
+        // Get current user first
+        await loadCurrentUser();
+
+        // Initialize WebSocket for real-time updates
+        initializeWebSocket();
+
         setupEventHandlers();
-        loadThread();
-        loadMessages();
+        setupKeyboardShortcuts();
+        await loadThread();
+        await loadMessages();
         
-        // Auto-refresh messages every 10 seconds
-        setInterval(loadMessages, 10000);
+        // Load draft if specified
+        if (draftId) {
+          await loadDraft(draftId);
+        }
+        
+        // Auto-refresh messages every 30 seconds (WebSocket handles real-time)
+        setInterval(loadMessages, 30000);
       }
+
+      function initializeWebSocket() {
+        try {
+          wsClient = new WebSocketClient({
+            autoConnect: true,
+            onConnect: () => {
+              console.log('✓ Real-time messaging connected');
+              // Show connection indicator
+              showToast('✓ Connected', 'success');
+            },
+            onMessage: (data) => {
+              if (data.threadId === threadId) {
+                // New message received in this thread
+                messages.push(data.message);
+                renderMessages();
+                
+                // Show notification if not focused
+                if (document.hidden) {
+                  showNotification('New message', data.message.text.substring(0, 50));
+                }
+              }
+            },
+            onDisconnect: (reason) => {
+              console.warn('WebSocket disconnected:', reason);
+            },
+          });
+
+          // Join this thread's room for targeted updates
+          wsClient.joinRoom(`thread:${threadId}`);
+          
+          // Listen for reaction updates
+          wsClient.socket?.on('reaction:received', (data) => {
+            const msgIndex = messages.findIndex(m => m.id === data.messageId);
+            if (msgIndex !== -1) {
+              messages[msgIndex].reactions = data.reactions;
+              renderMessages();
+            }
+          });
+        } catch (error) {
+          console.error('Failed to initialize WebSocket:', error);
+          // Continue without WebSocket - polling will still work
+        }
+      }
+
+      function showToast(message, type = 'info') {
+        const toast = document.createElement('div');
+        toast.style.cssText = `
+          position: fixed;
+          bottom: 20px;
+          right: 20px;
+          padding: 12px 20px;
+          background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'};
+          color: white;
+          border-radius: 8px;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+          z-index: 10000;
+          animation: slideIn 0.3s ease-out;
+        `;
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+          toast.style.animation = 'slideOut 0.3s ease-out';
+          setTimeout(() => toast.remove(), 300);
+        }, 3000);
+      }
+
+      function showNotification(title, body) {
+        if ('Notification' in window && Notification.permission === 'granted') {
+          new Notification(title, {
+            body,
+            icon: '/favicon.svg',
+            badge: '/favicon.svg',
+          });
+        }
+      }
+
+      function setupKeyboardShortcuts() {
+        document.addEventListener('keydown', (e) => {
+          // Ctrl/Cmd + Enter to send message
+          if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+            const form = document.getElementById('composerForm');
+            if (form && document.activeElement === document.getElementById('messageInput')) {
+              e.preventDefault();
+              form.dispatchEvent(new Event('submit'));
+            }
+          }
+          
+          // Escape to close modals or blur input
+          if (e.key === 'Escape') {
+            const textarea = document.getElementById('messageInput');
+            if (textarea && document.activeElement === textarea) {
+              textarea.blur();
+            }
+          }
+          
+          // Ctrl/Cmd + D to save draft
+          if ((e.ctrlKey || e.metaKey) && e.key === 'd') {
+            const draftBtn = document.getElementById('saveDraftBtn');
+            if (draftBtn && document.activeElement === document.getElementById('messageInput')) {
+              e.preventDefault();
+              draftBtn.click();
+            }
+          }
+        });
+      }
+
+      async function loadDraft(draftId) {
+        try {
+          const response = await fetch('/api/messages/drafts', {
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (!response.ok) {
+            throw new Error('Failed to load drafts');
+          }
+
+          const data = await response.json();
+          const draft = data.drafts?.find(d => d.id === draftId);
+          
+          if (draft) {
+            const textarea = document.getElementById('messageInput');
+            if (textarea) {
+              textarea.value = draft.text;
+              textarea.style.height = 'auto';
+              textarea.style.height = textarea.scrollHeight + 'px';
+              
+              // Show a notice
+              const notice = document.createElement('div');
+              notice.style.cssText = 'background: #fffbeb; border: 1px solid #fbbf24; padding: 12px; border-radius: 8px; margin-bottom: 16px; color: #92400e;';
+              notice.textContent = '✏️ Draft loaded. Make changes and send when ready.';
+              document.querySelector('.messages-area').insertAdjacentElement('beforebegin', notice);
+              setTimeout(() => notice.remove(), 5000);
+            }
+          }
+        } catch (error) {
+          console.error('Error loading draft:', error);
+        }
+      }
+
+      async function loadCurrentUser() {
+        try {
+          const response = await fetch('/api/auth/me', {
+            credentials: 'include'
+          });
+          if (response.ok) {
+            const data = await response.json();
+            currentUser = data.user;
+            currentUserId = data.user?.id;
+          }
+        } catch (error) {
+          console.error('Error loading current user:', error);
+        }
+      }
+
+      let currentAttachments = [];
 
       function setupEventHandlers() {
         // Send message
@@ -329,6 +619,23 @@
           loadMessages();
         });
 
+        // Export conversation
+        document.getElementById('exportBtn')?.addEventListener('click', () => {
+          exportConversation();
+        });
+
+        // Archive conversation
+        document.getElementById('archiveBtn')?.addEventListener('click', async () => {
+          await archiveConversation();
+        });
+
+        // File attachment
+        document.getElementById('attachBtn')?.addEventListener('click', () => {
+          document.getElementById('fileInput').click();
+        });
+
+        document.getElementById('fileInput')?.addEventListener('change', handleFileSelect);
+
         // Auto-expand textarea
         const textarea = document.getElementById('messageInput');
         textarea?.addEventListener('input', () => {
@@ -336,6 +643,101 @@
           textarea.style.height = textarea.scrollHeight + 'px';
         });
       }
+
+      async function handleFileSelect(e) {
+        const files = Array.from(e.target.files);
+        if (files.length === 0) return;
+
+        const preview = document.getElementById('attachmentPreview');
+        preview.style.display = 'block';
+        preview.innerHTML = '<div style="display: flex; flex-wrap: wrap; gap: 8px;"></div>';
+        const container = preview.firstElementChild;
+
+        for (const file of files) {
+          // Validate file size (max 10MB)
+          if (file.size > 10 * 1024 * 1024) {
+            showToast(`File ${file.name} is too large (max 10MB)`, 'error');
+            continue;
+          }
+
+          // Read file as base64
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            const attachment = {
+              name: file.name,
+              size: file.size,
+              type: file.type,
+              data: event.target.result,
+            };
+            currentAttachments.push(attachment);
+
+            // Show preview
+            const item = document.createElement('div');
+            item.style.cssText = 'display: flex; align-items: center; gap: 6px; padding: 6px 10px; background: white; border-radius: 4px; font-size: 12px;';
+            
+            const nameSpan = document.createElement('span');
+            nameSpan.textContent = `${file.name} (${(file.size / 1024).toFixed(1)}KB)`;
+            
+            const removeBtn = document.createElement('button');
+            removeBtn.type = 'button';
+            removeBtn.textContent = '×';
+            removeBtn.style.cssText = 'background: none; border: none; cursor: pointer; color: #ef4444; padding: 2px;';
+            removeBtn.onclick = () => removeAttachment(file.name);
+            
+            item.innerHTML = `
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"/>
+                <polyline points="13 2 13 9 20 9"/>
+              </svg>
+            `;
+            item.appendChild(nameSpan);
+            item.appendChild(removeBtn);
+            container.appendChild(item);
+          };
+          reader.readAsDataURL(file);
+        }
+
+        // Clear file input
+        e.target.value = '';
+      }
+
+      window.removeAttachment = function(name) {
+        currentAttachments = currentAttachments.filter(a => a.name !== name);
+        
+        const preview = document.getElementById('attachmentPreview');
+        if (currentAttachments.length === 0) {
+          preview.style.display = 'none';
+          preview.innerHTML = '';
+        } else {
+          // Re-render attachments
+          preview.innerHTML = '<div style="display: flex; flex-wrap: wrap; gap: 8px;"></div>';
+          const container = preview.firstElementChild;
+          
+          currentAttachments.forEach(att => {
+            const item = document.createElement('div');
+            item.style.cssText = 'display: flex; align-items: center; gap: 6px; padding: 6px 10px; background: white; border-radius: 4px; font-size: 12px;';
+            
+            const nameSpan = document.createElement('span');
+            nameSpan.textContent = `${att.name} (${(att.size / 1024).toFixed(1)}KB)`;
+            
+            const removeBtn = document.createElement('button');
+            removeBtn.type = 'button';
+            removeBtn.textContent = '×';
+            removeBtn.style.cssText = 'background: none; border: none; cursor: pointer; color: #ef4444; padding: 2px;';
+            removeBtn.onclick = () => removeAttachment(att.name);
+            
+            item.innerHTML = `
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"/>
+                <polyline points="13 2 13 9 20 9"/>
+              </svg>
+            `;
+            item.appendChild(nameSpan);
+            item.appendChild(removeBtn);
+            container.appendChild(item);
+          });
+        }
+      };
 
       async function loadThread() {
         try {
@@ -352,6 +754,12 @@
 
           const data = await response.json();
           thread = data.thread;
+          
+          // Determine recipient ID for WebSocket
+          if (currentUserId) {
+            recipientId = thread.customerId === currentUserId ? thread.supplierId : thread.customerId;
+          }
+          
           renderThreadHeader();
         } catch (error) {
           console.error('Error loading thread:', error);
@@ -388,16 +796,17 @@
         const input = document.getElementById('messageInput');
         const text = input.value.trim();
 
-        if (!text) {
+        if (!text && currentAttachments.length === 0) {
           return;
         }
 
         const sendBtn = document.getElementById('sendBtn');
         const draftBtn = document.getElementById('saveDraftBtn');
+        const originalSendText = sendBtn.innerHTML;
         
         sendBtn.disabled = true;
         draftBtn.disabled = true;
-        sendBtn.textContent = isDraft ? 'Saving...' : 'Sending...';
+        sendBtn.innerHTML = `<span class="loading-spinner"></span> ${isDraft ? 'Saving...' : 'Sending...'}`;
 
         try {
           const response = await fetch(`/api/messages/threads/${threadId}/messages`, {
@@ -409,6 +818,7 @@
             body: JSON.stringify({
               text,
               isDraft,
+              attachments: currentAttachments,
             }),
           });
 
@@ -422,14 +832,21 @@
             // Add message to UI immediately
             messages.push(data.message);
             renderMessages();
+            
+            // Send via WebSocket for real-time delivery
+            if (wsClient && recipientId) {
+              wsClient.sendMessage(threadId, recipientId, data.message);
+            }
           }
 
-          // Clear input
+          // Clear input and attachments
           input.value = '';
           input.style.height = 'auto';
+          currentAttachments = [];
+          document.getElementById('attachmentPreview').style.display = 'none';
 
           if (isDraft) {
-            alert('Draft saved successfully');
+            showToast('✓ Draft saved', 'success');
           }
         } catch (error) {
           console.error('Error sending message:', error);
@@ -437,7 +854,7 @@
         } finally {
           sendBtn.disabled = false;
           draftBtn.disabled = false;
-          sendBtn.textContent = 'Send';
+          sendBtn.innerHTML = originalSendText;
         }
       }
 
@@ -486,19 +903,88 @@
         }
 
         container.innerHTML = messages.map(message => {
-          const isSent = message.fromUserId === getUserId();
+          const isSent = message.fromUserId === currentUserId;
           const senderName = isSent ? 'You' : (thread?.supplierName || thread?.customerName || 'Unknown');
           const initial = senderName.charAt(0).toUpperCase();
           const time = formatTime(message.sentAt || message.createdAt);
+          const fullDate = formatFullTimestamp(message.sentAt || message.createdAt);
+          
+          // Check if message is read by recipient
+          const isRead = message.readBy && message.readBy.length > 1; // More than just the sender
+          const readStatus = isSent ? (isRead ? ' ✓✓' : ' ✓') : '';
+          
+          // Render attachments if any
+          let attachmentsHtml = '';
+          if (message.attachments && message.attachments.length > 0) {
+            attachmentsHtml = '<div class="message-attachments" style="margin-top: 8px; display: flex; flex-direction: column; gap: 6px;">';
+            message.attachments.forEach(att => {
+              const isImage = att.type && att.type.startsWith('image/');
+              if (isImage) {
+                attachmentsHtml += `
+                  <a href="${att.data}" target="_blank" style="max-width: 300px;">
+                    <img src="${att.data}" alt="${escapeHtml(att.name)}" style="width: 100%; border-radius: 8px; cursor: pointer;">
+                  </a>
+                `;
+              } else {
+                attachmentsHtml += `
+                  <a href="${att.data}" download="${escapeHtml(att.name)}" style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: rgba(0,0,0,0.05); border-radius: 6px; text-decoration: none; color: inherit; font-size: 13px;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"/>
+                      <polyline points="13 2 13 9 20 9"/>
+                    </svg>
+                    <span>${escapeHtml(att.name)} (${(att.size / 1024).toFixed(1)}KB)</span>
+                  </a>
+                `;
+              }
+            });
+            attachmentsHtml += '</div>';
+          }
+          
+          // Render reactions if any
+          let reactionsHtml = '';
+          if (message.reactions && message.reactions.length > 0) {
+            const reactionCounts = {};
+            message.reactions.forEach(r => {
+              reactionCounts[r.emoji] = (reactionCounts[r.emoji] || 0) + 1;
+            });
+            
+            reactionsHtml = '<div class="message-reactions" style="margin-top: 6px; display: flex; flex-wrap: wrap; gap: 4px;">';
+            Object.entries(reactionCounts).forEach(([emoji, count]) => {
+              reactionsHtml += `
+                <button onclick="toggleReaction('${message.id}', '${emoji}')" style="padding: 2px 8px; background: rgba(102, 126, 234, 0.1); border: 1px solid rgba(102, 126, 234, 0.3); border-radius: 12px; cursor: pointer; font-size: 13px;">
+                  ${emoji} ${count}
+                </button>
+              `;
+            });
+            reactionsHtml += `
+              <button onclick="showReactionPicker('${message.id}')" title="Add reaction" style="padding: 2px 8px; background: rgba(0, 0, 0, 0.05); border: 1px solid rgba(0, 0, 0, 0.1); border-radius: 12px; cursor: pointer; font-size: 13px;">
+                ➕
+              </button>
+            `;
+            reactionsHtml += '</div>';
+          } else {
+            // Show add reaction button on hover
+            reactionsHtml = `
+              <div class="message-reactions" style="margin-top: 6px; display: none;">
+                <button onclick="showReactionPicker('${message.id}')" title="Add reaction" style="padding: 2px 8px; background: rgba(0, 0, 0, 0.05); border: 1px solid rgba(0, 0, 0, 0.1); border-radius: 12px; cursor: pointer; font-size: 13px;">
+                  ➕ React
+                </button>
+              </div>
+            `;
+          }
+
+          const shouldShowReactions = message.reactions && message.reactions.length > 0;
 
           return `
-            <div class="message ${isSent ? 'sent' : 'received'}">
+            <div class="message ${isSent ? 'sent' : 'received'}" data-message-id="${message.id}" data-has-reactions="${shouldShowReactions}">
               <div class="message-avatar">${initial}</div>
               <div class="message-content">
                 <div class="message-bubble">
-                  <div class="message-text">${escapeHtml(message.text)}</div>
+                  ${message.text ? `<div class="message-text">${escapeHtml(message.text)}</div>` : ''}
+                  ${attachmentsHtml}
                 </div>
-                <div class="message-time">${time}</div>
+                ${reactionsHtml}
+                <div class="message-time" title="${fullDate}">${time}${readStatus}</div>
               </div>
             </div>
           `;
@@ -506,17 +992,177 @@
 
         // Scroll to bottom
         container.scrollTop = container.scrollHeight;
+        
+        // Add event delegation for hover effects on reaction buttons
+        container.querySelectorAll('.message').forEach(messageEl => {
+          const hasReactions = messageEl.getAttribute('data-has-reactions') === 'true';
+          const reactionsEl = messageEl.querySelector('.message-reactions');
+          
+          if (reactionsEl) {
+            messageEl.addEventListener('mouseenter', () => {
+              reactionsEl.style.display = 'flex';
+            });
+            
+            messageEl.addEventListener('mouseleave', () => {
+              // Keep visible if there are reactions or if hovering over a button
+              const isHoveringButton = reactionsEl.querySelector('button:hover');
+              if (!hasReactions && !isHoveringButton) {
+                reactionsEl.style.display = 'none';
+              }
+            });
+          }
+        });
       }
 
-      function getUserId() {
-        // This should get the actual user ID from session/token
-        // For now, return a placeholder based on thread data
-        if (thread) {
-          // If we're the customer, return customerId, otherwise supplierId
-          // This is simplified - should use actual auth
-          return thread.customerId;
+      function formatFullTimestamp(timestamp) {
+        if (!timestamp) return '';
+        const date = new Date(timestamp);
+        return date.toLocaleString('en-GB', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit'
+        });
+      }
+
+      function exportConversation() {
+        if (!thread || messages.length === 0) {
+          alert('No messages to export');
+          return;
         }
-        return 'current-user-id';
+
+        const otherPartyName = thread.supplierName || thread.customerName || 'Unknown';
+        
+        // Prepare export data
+        const exportData = {
+          conversation: {
+            id: thread.id,
+            subject: thread.subject || 'No subject',
+            participants: {
+              customer: thread.customerName,
+              supplier: thread.supplierName
+            },
+            created: thread.createdAt,
+            lastUpdated: thread.updatedAt
+          },
+          messages: messages.map(msg => ({
+            id: msg.id,
+            from: msg.fromUserId === currentUserId ? 'You' : otherPartyName,
+            text: msg.text,
+            timestamp: msg.sentAt || msg.createdAt,
+            formattedTimestamp: formatFullTimestamp(msg.sentAt || msg.createdAt)
+          })),
+          exportedAt: new Date().toISOString(),
+          exportedBy: currentUser?.email || currentUser?.name || 'Unknown'
+        };
+
+        // CSV escaping function to prevent formula injection
+        function escapeCSV(value) {
+          if (value === null || value === undefined) return '';
+          const str = String(value);
+          // Prevent formula injection by prefixing dangerous characters
+          if (str.match(/^[=+\-@]/)) {
+            return `"'${str.replace(/"/g, '""')}"`;
+          }
+          return `"${str.replace(/"/g, '""')}"`;
+        }
+
+        // Create CSV format
+        const csvLines = [
+          'Timestamp,From,Message',
+          ...messages.map(msg => {
+            const from = msg.fromUserId === currentUserId ? 'You' : otherPartyName;
+            const timestamp = formatFullTimestamp(msg.sentAt || msg.createdAt);
+            const text = msg.text || '';
+            return [
+              escapeCSV(timestamp),
+              escapeCSV(from),
+              escapeCSV(text)
+            ].join(',');
+          })
+        ];
+        const csv = csvLines.join('\n');
+
+        // Show export options
+        const format = prompt('Export format:\n1. JSON (full data)\n2. CSV (simple table)\n\nEnter 1 or 2:', '2');
+        
+        if (format === '1') {
+          // Export as JSON
+          const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `conversation-${thread.id}-${Date.now()}.json`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        } else if (format === '2') {
+          // Export as CSV
+          const blob = new Blob([csv], { type: 'text/csv' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `conversation-${thread.id}-${Date.now()}.csv`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        } else {
+          return; // Cancelled
+        }
+      }
+
+      async function archiveConversation() {
+        if (!thread) {
+          alert('No conversation to archive');
+          return;
+        }
+
+        const isArchived = thread.status === 'archived';
+        const action = isArchived ? 'unarchive' : 'archive';
+        const confirmMsg = isArchived 
+          ? 'Are you sure you want to unarchive this conversation?' 
+          : 'Are you sure you want to archive this conversation?';
+
+        if (!confirm(confirmMsg)) {
+          return;
+        }
+
+        try {
+          const response = await fetch(`/api/messages/threads/${threadId}/${action}`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (!response.ok) {
+            throw new Error(`Failed to ${action} conversation`);
+          }
+
+          alert(`Conversation ${isArchived ? 'unarchived' : 'archived'} successfully!`);
+          
+          // Update thread status  
+          thread.status = isArchived ? 'open' : 'archived';
+          
+          // Update button title - after unarchiving (isArchived=true), thread is now open, so show "Archive"
+          const archiveBtn = document.getElementById('archiveBtn');
+          if (archiveBtn) {
+            archiveBtn.title = isArchived ? 'Archive conversation' : 'Unarchive conversation';
+          }
+          
+          // Optionally redirect to messages list
+          setTimeout(() => {
+            window.location.href = '/messages.html';
+          }, 1000);
+        } catch (error) {
+          console.error(`Error ${action}ing conversation:`, error);
+          alert(`Failed to ${action} conversation. Please try again.`);
+        }
       }
 
       function formatTime(timestamp) {
@@ -543,6 +1189,74 @@
         div.textContent = str || '';
         return div.innerHTML;
       }
+
+      window.showReactionPicker = function(messageId) {
+        const picker = document.createElement('div');
+        picker.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); z-index: 10000; display: flex; gap: 8px; flex-wrap: wrap; max-width: 300px;';
+        
+        const emojis = ['👍', '❤️', '😂', '😮', '😢', '🎉', '🔥', '👏'];
+        emojis.forEach(emoji => {
+          const btn = document.createElement('button');
+          btn.textContent = emoji;
+          btn.style.cssText = 'font-size: 28px; padding: 8px; background: none; border: 1px solid #e5e7eb; border-radius: 8px; cursor: pointer; transition: transform 0.2s;';
+          btn.onmouseenter = () => btn.style.transform = 'scale(1.2)';
+          btn.onmouseleave = () => btn.style.transform = 'scale(1)';
+          btn.onclick = () => {
+            toggleReaction(messageId, emoji);
+            picker.remove();
+            overlay.remove();
+          };
+          picker.appendChild(btn);
+        });
+        
+        const overlay = document.createElement('div');
+        overlay.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.3); z-index: 9999;';
+        overlay.onclick = () => {
+          overlay.remove();
+          picker.remove();
+        };
+        
+        document.body.appendChild(overlay);
+        document.body.appendChild(picker);
+      };
+
+      window.toggleReaction = async function(messageId, emoji) {
+        try {
+          const response = await fetch(`/api/messages/${messageId}/reactions`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ emoji }),
+          });
+
+          if (!response.ok) {
+            throw new Error('Failed to toggle reaction');
+          }
+
+          const data = await response.json();
+          
+          // Update message in local array
+          const msgIndex = messages.findIndex(m => m.id === messageId);
+          if (msgIndex !== -1) {
+            messages[msgIndex].reactions = data.reactions;
+            renderMessages();
+          }
+
+          // Emit WebSocket event for real-time update
+          if (wsClient && recipientId) {
+            wsClient.socket?.emit('reaction:updated', {
+              threadId,
+              messageId,
+              reactions: data.reactions,
+            });
+          }
+        } catch (error) {
+          console.error('Error toggling reaction:', error);
+          showToast('Failed to add reaction', 'error');
+        }
+      };
 
       function showError(message) {
         const errorEl = document.getElementById('errorMessage');

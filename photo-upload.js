@@ -1,6 +1,7 @@
 /**
  * Photo Upload Middleware and Utilities
- * Handles file uploads, image optimization, and local storage only
+ * Handles file uploads, image optimization, and MongoDB storage
+ * Photos are stored in MongoDB for persistence across deployments
  */
 
 'use strict';
@@ -11,6 +12,31 @@ const path = require('path');
 const fs = require('fs').promises;
 const fsSync = require('fs');
 const crypto = require('crypto');
+
+// MongoDB for photo storage
+const mongoDb = require('./db');
+const { uid } = require('./store');
+
+// Storage type based on MongoDB availability
+let STORAGE_TYPE = 'local'; // 'mongodb' or 'local'
+
+// Check if MongoDB is available
+async function checkMongoDBAvailability() {
+  try {
+    const isAvailable = await mongoDb.isMongoAvailable();
+    if (isAvailable) {
+      STORAGE_TYPE = 'mongodb';
+      console.log('✓ Photos will be stored in MongoDB (persistent across deployments)');
+    } else {
+      console.log('⚠ MongoDB not available - using local storage (photos may not persist)');
+    }
+  } catch (error) {
+    console.log('⚠ Could not check MongoDB - using local storage:', error.message);
+  }
+}
+
+// Check on module load
+checkMongoDBAvailability();
 
 // Upload directories
 const UPLOAD_DIRS = {
@@ -138,10 +164,40 @@ async function saveToLocal(buffer, filename, directory = 'original') {
 }
 
 /**
+ * Save image to MongoDB
+ * @param {Buffer} buffer - Image buffer
+ * @param {string} filename - Filename
+ * @param {string} type - Image type (original, thumbnail, optimized, large)
+ * @returns {Promise<string>} Database ID
+ */
+async function saveToMongoDB(buffer, filename, type = 'optimized') {
+  try {
+    const db = await mongoDb.getDb();
+    const collection = db.collection('photos');
+    
+    const photoDoc = {
+      _id: uid('photo'),
+      filename,
+      type,
+      data: buffer.toString('base64'),
+      mimeType: 'image/jpeg',
+      size: buffer.length,
+      createdAt: new Date().toISOString(),
+    };
+    
+    await collection.insertOne(photoDoc);
+    return photoDoc._id;
+  } catch (error) {
+    console.error('Error saving to MongoDB:', error);
+    throw error;
+  }
+}
+
+/**
  * Process and save image with multiple sizes
  * @param {Buffer} buffer - Original image buffer
  * @param {string} originalFilename - Original filename
- * @returns {Promise<Object>} URLs for all image sizes
+ * @returns {Promise<Object>} URLs/IDs for all image sizes
  */
 async function processAndSaveImage(buffer, originalFilename) {
   const filename = generateFilename(originalFilename);
@@ -163,23 +219,40 @@ async function processAndSaveImage(buffer, originalFilename) {
       processImage(buffer, IMAGE_CONFIGS.large),
     ]);
 
-    // Save to local filesystem
-    await Promise.all([
-      saveToLocal(originalProcessed, `${baseFilename}.jpg`, 'original'),
-      saveToLocal(thumbnail, `${baseFilename}-thumb.jpg`, 'thumbnails'),
-      saveToLocal(optimized, `${baseFilename}-opt.jpg`, 'optimized'),
-      saveToLocal(large, `${baseFilename}-large.jpg`, 'large'),
-    ]);
+    // Check storage type
+    if (STORAGE_TYPE === 'mongodb') {
+      // Save to MongoDB
+      const [originalId, thumbnailId, optimizedId, largeId] = await Promise.all([
+        saveToMongoDB(originalProcessed, `${baseFilename}.jpg`, 'original'),
+        saveToMongoDB(thumbnail, `${baseFilename}-thumb.jpg`, 'thumbnail'),
+        saveToMongoDB(optimized, `${baseFilename}-opt.jpg`, 'optimized'),
+        saveToMongoDB(large, `${baseFilename}-large.jpg`, 'large'),
+      ]);
 
-    // Return relative URLs (works in any environment without hardcoded BASE_URL)
-    // These are served by express.static('/uploads') middleware
-    results.original = `/uploads/original/${baseFilename}.jpg`;
-    results.thumbnail = `/uploads/thumbnails/${baseFilename}-thumb.jpg`;
-    results.optimized = `/uploads/optimized/${baseFilename}-opt.jpg`;
-    results.large = `/uploads/large/${baseFilename}-large.jpg`;
+      // Return photo IDs that will be served via API endpoint
+      results.original = `/api/photos/${originalId}`;
+      results.thumbnail = `/api/photos/${thumbnailId}`;
+      results.optimized = `/api/photos/${optimizedId}`;
+      results.large = `/api/photos/${largeId}`;
+    } else {
+      // Save to local filesystem (fallback)
+      await Promise.all([
+        saveToLocal(originalProcessed, `${baseFilename}.jpg`, 'original'),
+        saveToLocal(thumbnail, `${baseFilename}-thumb.jpg`, 'thumbnails'),
+        saveToLocal(optimized, `${baseFilename}-opt.jpg`, 'optimized'),
+        saveToLocal(large, `${baseFilename}-large.jpg`, 'large'),
+      ]);
 
-    // Also save to public folder for serving
-    await saveToLocal(optimized, `${baseFilename}-opt.jpg`, 'public');
+      // Return relative URLs (works in any environment without hardcoded BASE_URL)
+      // These are served by express.static('/uploads') middleware
+      results.original = `/uploads/original/${baseFilename}.jpg`;
+      results.thumbnail = `/uploads/thumbnails/${baseFilename}-thumb.jpg`;
+      results.optimized = `/uploads/optimized/${baseFilename}-opt.jpg`;
+      results.large = `/uploads/large/${baseFilename}-large.jpg`;
+
+      // Also save to public folder for serving
+      await saveToLocal(optimized, `${baseFilename}-opt.jpg`, 'public');
+    }
 
     return results;
   } catch (error) {
@@ -189,21 +262,35 @@ async function processAndSaveImage(buffer, originalFilename) {
 }
 
 /**
- * Delete image from storage
- * @param {string} url - Image URL to delete
+ * Delete image from storage (MongoDB or local)
+ * @param {string} url - Image URL/ID to delete
  * @returns {Promise<void>}
  */
 async function deleteImage(url) {
-  // Delete from local filesystem
-  const filename = path.basename(url);
-  const dirs = ['original', 'thumbnails', 'optimized', 'large', 'public'];
+  try {
+    // Check if it's a MongoDB photo (starts with /api/photos/)
+    if (url && url.startsWith('/api/photos/')) {
+      const photoId = url.split('/').pop();
+      const db = await mongoDb.getDb();
+      const collection = db.collection('photos');
+      await collection.deleteOne({ _id: photoId });
+      return;
+    }
+    
+    // Otherwise, delete from local filesystem
+    const filename = path.basename(url);
+    const dirs = ['original', 'thumbnails', 'optimized', 'large', 'public'];
 
-  await Promise.allSettled(
-    dirs.map(dir => {
-      const filepath = path.join(UPLOAD_DIRS[dir], filename);
-      return fs.unlink(filepath).catch(() => {});
-    })
-  );
+    await Promise.allSettled(
+      dirs.map(dir => {
+        const filepath = path.join(UPLOAD_DIRS[dir], filename);
+        return fs.unlink(filepath).catch(() => {});
+      })
+    );
+  } catch (error) {
+    console.error('Error deleting image:', error);
+    // Don't throw - deletion failures shouldn't break the app
+  }
 }
 
 /**

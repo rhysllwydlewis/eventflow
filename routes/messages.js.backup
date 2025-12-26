@@ -11,35 +11,6 @@ const { auditLog, AUDIT_ACTIONS } = require('../middleware/audit');
 const dbUnified = require('../db-unified');
 const { uid } = require('../store');
 
-function getMessageText(recipientName, senderName, text, baseUrl) {
-  const msgPreview = text.trim().substring(0, 200);
-  const ellipsis = text.trim().length > 200 ? '...' : '';
-  const url = baseUrl || 'https://eventflow.com';
-  return `Hello ${recipientName},
-
-You have received a new message from ${senderName}:
-
-"${msgPreview}${ellipsis}"
-
-Log in to EventFlow to view and reply: ${url}/messages.html
-
-Best regards,
-EventFlow Team`;
-}
-
-function getMessageHtml(recipientName, senderName, text, baseUrl) {
-  const msgPreview = text.trim().substring(0, 200);
-  const ellipsis = text.trim().length > 200 ? '...' : '';
-  const url = baseUrl || 'https://eventflow.com';
-  return [
-    `<p>Hello ${recipientName},</p>`,
-    `<p>You have received a new message from <strong>${senderName}</strong>:</p>`,
-    `<blockquote style="border-left: 3px solid #667eea; padding-left: 12px; margin: 16px 0; color: #4b5563;">${msgPreview}${ellipsis}</blockquote>`,
-    `<p><a href="${url}/messages.html" style="background: #667eea; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block;">View Message</a></p>`,
-    `<p>Best regards,<br>EventFlow Team</p>`,
-  ].join('');
-}
-
 const router = express.Router();
 
 /**
@@ -194,7 +165,7 @@ router.post('/threads', authRequired, async (req, res) => {
     auditLog({
       adminId: userId,
       adminEmail: req.user.email,
-      action: 'THREAD_CREATED',
+      action: AUDIT_ACTIONS.CREATE || 'THREAD_CREATED',
       targetType: 'thread',
       targetId: newThread.id,
       details: { supplierId, packageId },
@@ -262,10 +233,10 @@ router.post('/threads/:threadId/messages', authRequired, async (req, res) => {
     const userId = req.user.id;
     const userRole = req.user.role;
     const { threadId } = req.params;
-    const { text, isDraft, attachments } = req.body;
+    const { text, isDraft } = req.body;
 
-    if ((!text || text.trim().length === 0) && (!attachments || attachments.length === 0)) {
-      return res.status(400).json({ error: 'Message text or attachments required' });
+    if (!text || text.trim().length === 0) {
+      return res.status(400).json({ error: 'Message text is required' });
     }
 
     // Verify access to thread
@@ -294,12 +265,10 @@ router.post('/threads/:threadId/messages', authRequired, async (req, res) => {
       threadId,
       fromUserId: userId,
       fromRole: userRole,
-      text: text ? text.trim() : '',
+      text: text.trim(),
       isDraft: isDraft === true,
       sentAt: isDraft ? null : now,
       readBy: [userId], // Sender has already "read" their own message
-      attachments: Array.isArray(attachments) ? attachments : [],
-      reactions: [],
       createdAt: now,
       updatedAt: now,
     };
@@ -328,17 +297,16 @@ router.post('/threads/:threadId/messages', authRequired, async (req, res) => {
         try {
           const users = await dbUnified.read('users');
           const suppliers = await dbUnified.read('suppliers');
-
+          
           const sender = users.find(u => u.id === userId);
           const senderName = sender?.name || sender?.email || 'Someone';
-
+          
           let recipientEmail = null;
           let recipientName = null;
-
+          
           if (userRole === 'customer') {
             // Customer sent message to supplier
-            const supplier =
-              suppliers.find(s => s.id === recipientId) || users.find(u => u.id === recipientId);
+            const supplier = suppliers.find(s => s.id === recipientId) || users.find(u => u.id === recipientId);
             recipientEmail = supplier?.email;
             recipientName = supplier?.name || 'Supplier';
           } else {
@@ -347,15 +315,15 @@ router.post('/threads/:threadId/messages', authRequired, async (req, res) => {
             recipientEmail = customer?.email;
             recipientName = customer?.name || 'Customer';
           }
-
+          
           if (recipientEmail && recipientName) {
             // Import sendMail function (this should be available in the context)
             const postmark = require('../utils/postmark');
             await postmark.sendMail({
               to: recipientEmail,
               subject: `New message from ${senderName} - EventFlow`,
-              text: getMessageText(recipientName, senderName, text, process.env.BASE_URL),
-              html: getMessageHtml(recipientName, senderName, text, process.env.BASE_URL),
+              text: `Hello ${recipientName},\n\nYou have received a new message from ${senderName}:\n\n"${text.trim().substring(0, 200)}${text.trim().length > 200 ? '...' : '"}"\n\nLog in to EventFlow to view and reply: ${process.env.BASE_URL || 'https://eventflow.com'}/messages.html\n\nBest regards,\nEventFlow Team`,
+              html: `<p>Hello ${recipientName},</p><p>You have received a new message from <strong>${senderName}</strong>:</p><blockquote style="border-left: 3px solid #667eea; padding-left: 12px; margin: 16px 0; color: #4b5563;">${text.trim().substring(0, 200)}${text.trim().length > 200 ? '...' : ''}</blockquote><p><a href="${process.env.BASE_URL || 'https://eventflow.com'}/messages.html" style="background: #667eea; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block;">View Message</a></p><p>Best regards,<br>EventFlow Team</p>`
             });
           }
         } catch (emailError) {
@@ -509,49 +477,6 @@ router.post('/threads/:threadId/mark-read', authRequired, async (req, res) => {
 });
 
 /**
- * POST /api/messages/threads/:threadId/mark-unread
- * Mark a thread as unread for the current user
- */
-router.post('/threads/:threadId/mark-unread', authRequired, async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const userRole = req.user.role;
-    const { threadId } = req.params;
-
-    // Verify access to thread
-    const threads = await dbUnified.read('threads');
-    const threadIndex = threads.findIndex(t => t.id === threadId);
-
-    if (threadIndex === -1) {
-      return res.status(404).json({ error: 'Thread not found' });
-    }
-
-    const thread = threads[threadIndex];
-    const hasAccess =
-      userRole === 'admin' ||
-      (userRole === 'customer' && thread.customerId === userId) ||
-      (userRole === 'supplier' && thread.supplierId === userId);
-
-    if (!hasAccess) {
-      return res.status(403).json({ error: 'Access denied' });
-    }
-
-    // Set unread count to 1 for this user
-    if (!thread.unreadCount) {
-      thread.unreadCount = {};
-    }
-    thread.unreadCount[userId] = 1;
-    threads[threadIndex] = thread;
-    await dbUnified.write('threads', threads);
-
-    res.json({ success: true });
-  } catch (error) {
-    console.error('Error marking thread as unread:', error);
-    res.status(500).json({ error: 'Failed to mark thread as unread', details: error.message });
-  }
-});
-
-/**
  * GET /api/messages/drafts
  * Get all draft messages for the current user
  */
@@ -636,139 +561,6 @@ router.delete('/:messageId', authRequired, async (req, res) => {
   } catch (error) {
     console.error('Error deleting message:', error);
     res.status(500).json({ error: 'Failed to delete message', details: error.message });
-  }
-});
-
-/**
- * POST /api/messages/:messageId/reactions
- * Toggle a reaction on a message
- */
-router.post('/:messageId/reactions', authRequired, async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const { messageId } = req.params;
-    const { emoji } = req.body;
-
-    if (!emoji) {
-      return res.status(400).json({ error: 'Emoji is required' });
-    }
-
-    const messages = await dbUnified.read('messages');
-    const messageIndex = messages.findIndex(m => m.id === messageId);
-
-    if (messageIndex === -1) {
-      return res.status(404).json({ error: 'Message not found' });
-    }
-
-    const message = messages[messageIndex];
-
-    // Initialize reactions array if not exists
-    if (!message.reactions) {
-      message.reactions = [];
-    }
-
-    // Check if user already reacted with this emoji
-    const existingReactionIndex = message.reactions.findIndex(
-      r => r.userId === userId && r.emoji === emoji
-    );
-
-    if (existingReactionIndex !== -1) {
-      // Remove reaction
-      message.reactions.splice(existingReactionIndex, 1);
-    } else {
-      // Add reaction
-      message.reactions.push({
-        userId,
-        emoji,
-        createdAt: new Date().toISOString(),
-      });
-    }
-
-    messages[messageIndex] = message;
-    await dbUnified.write('messages', messages);
-
-    res.json({ reactions: message.reactions });
-  } catch (error) {
-    console.error('Error toggling reaction:', error);
-    res.status(500).json({ error: 'Failed to toggle reaction', details: error.message });
-  }
-});
-
-/**
- * POST /api/messages/threads/:threadId/archive
- * Archive a thread
- */
-router.post('/threads/:threadId/archive', authRequired, async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const userRole = req.user.role;
-    const { threadId } = req.params;
-
-    const threads = await dbUnified.read('threads');
-    const threadIndex = threads.findIndex(t => t.id === threadId);
-
-    if (threadIndex === -1) {
-      return res.status(404).json({ error: 'Thread not found' });
-    }
-
-    const thread = threads[threadIndex];
-    const hasAccess =
-      userRole === 'admin' ||
-      (userRole === 'customer' && thread.customerId === userId) ||
-      (userRole === 'supplier' && thread.supplierId === userId);
-
-    if (!hasAccess) {
-      return res.status(403).json({ error: 'Access denied' });
-    }
-
-    thread.status = 'archived';
-    thread.updatedAt = new Date().toISOString();
-    threads[threadIndex] = thread;
-    await dbUnified.write('threads', threads);
-
-    res.json({ success: true, thread });
-  } catch (error) {
-    console.error('Error archiving thread:', error);
-    res.status(500).json({ error: 'Failed to archive thread', details: error.message });
-  }
-});
-
-/**
- * POST /api/messages/threads/:threadId/unarchive
- * Unarchive a thread
- */
-router.post('/threads/:threadId/unarchive', authRequired, async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const userRole = req.user.role;
-    const { threadId } = req.params;
-
-    const threads = await dbUnified.read('threads');
-    const threadIndex = threads.findIndex(t => t.id === threadId);
-
-    if (threadIndex === -1) {
-      return res.status(404).json({ error: 'Thread not found' });
-    }
-
-    const thread = threads[threadIndex];
-    const hasAccess =
-      userRole === 'admin' ||
-      (userRole === 'customer' && thread.customerId === userId) ||
-      (userRole === 'supplier' && thread.supplierId === userId);
-
-    if (!hasAccess) {
-      return res.status(403).json({ error: 'Access denied' });
-    }
-
-    thread.status = 'open';
-    thread.updatedAt = new Date().toISOString();
-    threads[threadIndex] = thread;
-    await dbUnified.write('threads', threads);
-
-    res.json({ success: true, thread });
-  } catch (error) {
-    console.error('Error unarchiving thread:', error);
-    res.status(500).json({ error: 'Failed to unarchive thread', details: error.message });
   }
 });
 

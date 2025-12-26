@@ -202,6 +202,158 @@
       color: #991b1b;
       margin-bottom: 16px;
     }
+
+    /* Modal styles */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 20px;
+    }
+
+    .modal {
+      background: white;
+      border-radius: 12px;
+      max-width: 500px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    }
+
+    .modal-header {
+      padding: 20px;
+      border-bottom: 1px solid #e5e7eb;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-header h3 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: #6b7280;
+      padding: 0;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      transition: background 0.2s;
+    }
+
+    .modal-close:hover {
+      background: #f3f4f6;
+    }
+
+    .modal-body {
+      padding: 20px;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 500;
+      font-size: 14px;
+      color: #374151;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+      padding: 16px 20px;
+      border-top: 1px solid #e5e7eb;
+    }
+
+    /* Mobile responsiveness */
+    @media (max-width: 768px) {
+      .messages-container {
+        padding: 12px;
+      }
+
+      .messages-header {
+        flex-direction: column;
+        gap: 12px;
+        align-items: flex-start;
+      }
+
+      .messages-header > div:last-child {
+        width: 100%;
+      }
+
+      .messages-header button {
+        width: 100%;
+        justify-content: center;
+      }
+
+      .messages-tabs {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .messages-tab {
+        flex-shrink: 0;
+      }
+
+      .thread-avatar {
+        width: 40px;
+        height: 40px;
+        font-size: 16px;
+      }
+
+      .thread-item {
+        padding: 12px;
+      }
+
+      .thread-name {
+        font-size: 14px;
+      }
+
+      .thread-preview,
+      .thread-subject {
+        font-size: 13px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -224,12 +376,22 @@
         <h1>Messages</h1>
         <p style="color: #6b7280; margin-top: 4px;">Communicate with suppliers about your event</p>
       </div>
-      <button class="btn btn-primary" id="newMessageBtn">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;">
-          <path d="M12 5v14M5 12h14"/>
-        </svg>
-        New Message
-      </button>
+      <div style="display: flex; gap: 8px;">
+        <button class="btn btn-secondary" id="exportAllBtn" title="Export all conversations">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          Export
+        </button>
+        <button class="btn btn-primary" id="newMessageBtn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;">
+            <path d="M12 5v14M5 12h14"/>
+          </svg>
+          New Message
+        </button>
+      </div>
     </div>
 
     <div class="messages-tabs">
@@ -242,6 +404,29 @@
         Drafts
         <span id="draftsCount" style="margin-left: 6px; color: #9ca3af; display: none;">0</span>
       </button>
+    </div>
+
+    <div style="display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap;">
+      <div class="messages-search" style="flex: 1; min-width: 200px;">
+        <input 
+          type="text" 
+          id="searchInput" 
+          placeholder="Search messages..." 
+          style="width: 100%; padding: 12px 16px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px;"
+        />
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <select id="dateFilter" style="padding: 12px 16px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; background: white;">
+          <option value="all">All time</option>
+          <option value="today">Today</option>
+          <option value="week">This week</option>
+          <option value="month">This month</option>
+          <option value="custom">Custom range...</option>
+        </select>
+        <button id="clearFilters" class="btn btn-secondary" style="padding: 12px 16px; white-space: nowrap;">
+          Clear Filters
+        </button>
+      </div>
     </div>
 
     <div id="errorMessage" class="error" style="display: none;"></div>
@@ -258,6 +443,9 @@
       let currentTab = 'inbox';
       let threads = [];
       let drafts = [];
+      let sentMessages = [];
+      let searchQuery = '';
+      let dateFilter = 'all';
 
       // Initialize
       document.addEventListener('DOMContentLoaded', init);
@@ -265,7 +453,91 @@
       function init() {
         setupTabHandlers();
         setupNewMessageHandler();
+        setupSearchHandler();
+        setupDateFilterHandler();
         loadThreads();
+      }
+
+      function setupSearchHandler() {
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) {
+          searchInput.addEventListener('input', (e) => {
+            searchQuery = e.target.value.toLowerCase();
+            renderCurrentView();
+          });
+        }
+      }
+
+      function setupDateFilterHandler() {
+        const dateFilterSelect = document.getElementById('dateFilter');
+        const clearFiltersBtn = document.getElementById('clearFilters');
+        
+        if (dateFilterSelect) {
+          dateFilterSelect.addEventListener('change', (e) => {
+            dateFilter = e.target.value;
+            if (dateFilter === 'custom') {
+              // Show custom date picker (simplified)
+              const startDate = prompt('Enter start date (YYYY-MM-DD):');
+              const endDate = prompt('Enter end date (YYYY-MM-DD):');
+              if (startDate && endDate) {
+                dateFilter = { start: new Date(startDate), end: new Date(endDate) };
+              } else {
+                dateFilterSelect.value = 'all';
+                dateFilter = 'all';
+              }
+            }
+            renderCurrentView();
+          });
+        }
+        
+        if (clearFiltersBtn) {
+          clearFiltersBtn.addEventListener('click', () => {
+            searchQuery = '';
+            dateFilter = 'all';
+            document.getElementById('searchInput').value = '';
+            document.getElementById('dateFilter').value = 'all';
+            renderCurrentView();
+          });
+        }
+      }
+
+      function renderCurrentView() {
+        if (currentTab === 'drafts') {
+          renderDrafts();
+        } else if (currentTab === 'sent') {
+          renderSentMessages();
+        } else {
+          renderThreads();
+        }
+      }
+
+      function filterByDate(items, dateField = 'createdAt') {
+        if (dateFilter === 'all') {
+          return items;
+        }
+        
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        
+        return items.filter(item => {
+          const itemDate = new Date(item[dateField] || item.createdAt);
+          
+          if (dateFilter === 'today') {
+            return itemDate >= today;
+          } else if (dateFilter === 'week') {
+            const weekAgo = new Date(today);
+            weekAgo.setDate(weekAgo.getDate() - 7);
+            return itemDate >= weekAgo;
+          } else if (dateFilter === 'month') {
+            const monthAgo = new Date(today);
+            monthAgo.setMonth(monthAgo.getMonth() - 1);
+            return itemDate >= monthAgo;
+          } else if (typeof dateFilter === 'object') {
+            return itemDate >= dateFilter.start && itemDate <= dateFilter.end;
+          }
+          
+          return true;
+        });
       }
 
       function setupTabHandlers() {
@@ -292,6 +564,8 @@
         // Reload content
         if (tabName === 'drafts') {
           loadDrafts();
+        } else if (tabName === 'sent') {
+          loadSentMessages();
         } else {
           renderThreads();
         }
@@ -299,9 +573,158 @@
 
       function setupNewMessageHandler() {
         document.getElementById('newMessageBtn')?.addEventListener('click', () => {
-          // TODO: Open new message modal or navigate to compose page
-          alert('New message feature coming soon!');
+          showNewMessageModal();
         });
+        
+        document.getElementById('exportAllBtn')?.addEventListener('click', () => {
+          exportAllConversations();
+        });
+      }
+
+      async function showNewMessageModal() {
+        // Get list of suppliers
+        try {
+          const response = await fetch('/api/suppliers?approved=true', {
+            credentials: 'include'
+          });
+          
+          if (!response.ok) {
+            throw new Error('Failed to load suppliers');
+          }
+          
+          const data = await response.json();
+          const suppliers = data.suppliers || data.items || [];
+          
+          if (suppliers.length === 0) {
+            alert('No suppliers available to message. Please check back later.');
+            return;
+          }
+          
+          // Create modal
+          const modal = document.createElement('div');
+          modal.className = 'modal-overlay';
+          modal.innerHTML = `
+            <div class="modal">
+              <div class="modal-header">
+                <h3>New Message</h3>
+                <button class="modal-close" type="button" aria-label="Close">&times;</button>
+              </div>
+              <form id="newMessageForm">
+                <div class="modal-body">
+                  <div class="form-group">
+                    <label for="supplierSelect">To (Supplier) *</label>
+                    <select id="supplierSelect" name="supplier" required>
+                      <option value="">Select a supplier...</option>
+                      ${suppliers.map(s => `<option value="${escapeHtml(s.id)}">${escapeHtml(s.name)}</option>`).join('')}
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="messageSubject">Subject</label>
+                    <input type="text" id="messageSubject" name="subject" placeholder="What is this about?">
+                  </div>
+                  <div class="form-group">
+                    <label for="messageText">Message *</label>
+                    <textarea id="messageText" name="message" rows="6" placeholder="Type your message here..." required></textarea>
+                  </div>
+                </div>
+                <div class="form-actions">
+                  <button type="button" class="btn btn-secondary" id="cancelNewMessage">Cancel</button>
+                  <button type="submit" class="btn btn-primary" id="sendNewMessage">Send Message</button>
+                </div>
+              </form>
+            </div>
+          `;
+          
+          document.body.appendChild(modal);
+          
+          // Close handlers
+          const closeModal = () => {
+            modal.remove();
+          };
+          
+          modal.querySelector('.modal-close').addEventListener('click', closeModal);
+          modal.querySelector('#cancelNewMessage').addEventListener('click', closeModal);
+          modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+              closeModal();
+            }
+          });
+          
+          // Submit handler
+          modal.querySelector('#newMessageForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const supplierId = document.getElementById('supplierSelect').value;
+            const subject = document.getElementById('messageSubject').value;
+            const messageText = document.getElementById('messageText').value;
+            
+            if (!supplierId || !messageText.trim()) {
+              alert('Please select a supplier and enter a message');
+              return;
+            }
+            
+            const sendBtn = document.getElementById('sendNewMessage');
+            sendBtn.disabled = true;
+            sendBtn.textContent = 'Sending...';
+            
+            try {
+              // Create thread
+              const threadResponse = await fetch('/api/messages/threads', {
+                method: 'POST',
+                credentials: 'include',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  supplierId,
+                  subject: subject || 'New Inquiry',
+                }),
+              });
+              
+              if (!threadResponse.ok) {
+                throw new Error('Failed to create conversation');
+              }
+              
+              const threadData = await threadResponse.json();
+              const thread = threadData.thread;
+              
+              // Send message
+              const messageResponse = await fetch(`/api/messages/threads/${thread.id}/messages`, {
+                method: 'POST',
+                credentials: 'include',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  text: messageText,
+                  isDraft: false,
+                }),
+              });
+              
+              if (!messageResponse.ok) {
+                throw new Error('Failed to send message');
+              }
+              
+              closeModal();
+              
+              // Redirect to the conversation
+              window.location.href = `/conversation.html?id=${thread.id}`;
+            } catch (error) {
+              console.error('Error sending message:', error);
+              alert('Failed to send message. Please try again.');
+              sendBtn.disabled = false;
+              sendBtn.textContent = 'Send Message';
+            }
+          });
+          
+          // Focus the supplier select
+          setTimeout(() => {
+            document.getElementById('supplierSelect')?.focus();
+          }, 100);
+        } catch (error) {
+          console.error('Error loading suppliers:', error);
+          alert('Failed to load suppliers. Please try again.');
+        }
       }
 
       async function loadThreads() {
@@ -350,23 +773,52 @@
         }
       }
 
+      async function loadSentMessages() {
+        try {
+          const response = await fetch('/api/messages/sent', {
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (!response.ok) {
+            throw new Error('Failed to load sent messages');
+          }
+
+          const data = await response.json();
+          sentMessages = data.messages || [];
+          renderSentMessages();
+        } catch (error) {
+          console.error('Error loading sent messages:', error);
+          showError('Failed to load sent messages. Please try again.');
+        }
+      }
+
       function renderThreads() {
         const container = document.getElementById('threadList');
         
-        if (currentTab === 'drafts') {
+        if (currentTab === 'drafts' || currentTab === 'sent') {
           return;
         }
 
-        const filteredThreads = threads.filter(thread => {
-          if (currentTab === 'inbox') {
-            return true; // Show all threads in inbox
-          } else if (currentTab === 'sent') {
-            // In sent tab, show threads where user sent the last message
-            // This is simplified - you might want to track this differently
-            return true;
-          }
-          return false;
-        });
+        let filteredThreads = threads;
+        
+        // Apply search filter
+        if (searchQuery) {
+          filteredThreads = filteredThreads.filter(thread => {
+            const searchText = [
+              thread.supplierName,
+              thread.customerName,
+              thread.subject,
+              thread.lastMessagePreview
+            ].filter(Boolean).join(' ').toLowerCase();
+            return searchText.includes(searchQuery);
+          });
+        }
+        
+        // Apply date filter
+        filteredThreads = filterByDate(filteredThreads, 'lastMessageAt');
 
         if (filteredThreads.length === 0) {
           container.innerHTML = `
@@ -374,97 +826,226 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
               </svg>
-              <h3>No messages yet</h3>
-              <p>Start a conversation with a supplier to plan your event</p>
+              <h3>${searchQuery || dateFilter !== 'all' ? 'No matching messages' : 'No messages yet'}</h3>
+              <p>${searchQuery || dateFilter !== 'all' ? 'Try adjusting your filters' : 'Start a conversation with a supplier to plan your event'}</p>
             </div>
           `;
           return;
         }
+        }
 
-        container.innerHTML = filteredThreads.map(thread => {
-          const unreadCount = thread.unreadCount?.[getUserId()] || 0;
-          const isUnread = unreadCount > 0;
-          const otherPartyName = thread.supplierName || thread.customerName || 'Unknown';
-          const initial = otherPartyName.charAt(0).toUpperCase();
-          const timeAgo = formatTimeAgo(thread.lastMessageAt || thread.updatedAt || thread.createdAt);
+        getUserId().then(userId => {
+          container.innerHTML = filteredThreads.map(thread => {
+            const unreadCount = thread.unreadCount?.[userId] || 0;
+            const isUnread = unreadCount > 0;
+            const otherPartyName = thread.supplierName || thread.customerName || 'Unknown';
+            const initial = otherPartyName.charAt(0).toUpperCase();
+            const timeAgo = formatTimeAgo(thread.lastMessageAt || thread.updatedAt || thread.createdAt);
+            const fullDate = formatFullDate(thread.lastMessageAt || thread.updatedAt || thread.createdAt);
 
-          return `
-            <a href="/conversation.html?id=${thread.id}" class="thread-item ${isUnread ? 'unread' : ''}">
-              <div class="thread-avatar">${initial}</div>
-              <div class="thread-content">
-                <div class="thread-header">
-                  <span class="thread-name">${escapeHtml(otherPartyName)}</span>
-                  <span class="thread-time">${timeAgo}</span>
-                </div>
-                ${thread.subject ? `<div class="thread-subject">${escapeHtml(thread.subject)}</div>` : ''}
-                <div class="thread-preview">${escapeHtml(thread.lastMessagePreview || 'No messages yet')}</div>
-                <div class="thread-meta">
-                  ${isUnread ? `<span class="unread-badge">${unreadCount}</span>` : ''}
-                  <span class="status-badge status-${thread.status || 'open'}">${thread.status || 'Open'}</span>
-                </div>
+            return `
+              <div class="thread-item-wrapper" style="position: relative;">
+                <a href="/conversation.html?id=${thread.id}" class="thread-item ${isUnread ? 'unread' : ''}">
+                  <div class="thread-avatar">${initial}</div>
+                  <div class="thread-content">
+                    <div class="thread-header">
+                      <span class="thread-name">${escapeHtml(otherPartyName)}</span>
+                      <span class="thread-time" title="${fullDate}">${timeAgo}</span>
+                    </div>
+                    ${thread.subject ? `<div class="thread-subject">${escapeHtml(thread.subject)}</div>` : ''}
+                    <div class="thread-preview">${escapeHtml(thread.lastMessagePreview || 'No messages yet')}</div>
+                    <div class="thread-meta">
+                      ${isUnread ? `<span class="unread-badge">${unreadCount}</span>` : ''}
+                      <span class="status-badge status-${thread.status || 'open'}">${thread.status || 'Open'}</span>
+                    </div>
+                  </div>
+                </a>
+                ${!isUnread ? `<button class="thread-action-btn" data-thread-id="${thread.id}" data-action="mark-unread" title="Mark as unread" style="position: absolute; right: 16px; top: 16px; background: #f3f4f6; border: none; border-radius: 50%; width: 32px; height: 32px; cursor: pointer; display: none; align-items: center; justify-content: center;">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                  </svg>
+                </button>` : ''}
               </div>
-            </a>
-          `;
-        }).join('');
+            `;
+          }).join('');
+          
+          // Add hover handlers for action buttons
+          container.querySelectorAll('.thread-item-wrapper').forEach(wrapper => {
+            const actionBtn = wrapper.querySelector('.thread-action-btn');
+            if (actionBtn) {
+              wrapper.addEventListener('mouseenter', () => {
+                actionBtn.style.display = 'flex';
+              });
+              wrapper.addEventListener('mouseleave', () => {
+                actionBtn.style.display = 'none';
+              });
+              
+              actionBtn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const threadId = actionBtn.getAttribute('data-thread-id');
+                await markThreadAsUnread(threadId);
+              });
+            }
+          });
+        });
+      }
+
+      async function markThreadAsUnread(threadId) {
+        try {
+          const response = await fetch(`/api/messages/threads/${threadId}/mark-unread`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (!response.ok) {
+            throw new Error('Failed to mark as unread');
+          }
+
+          // Reload threads
+          await loadThreads();
+        } catch (error) {
+          console.error('Error marking thread as unread:', error);
+          showError('Failed to mark as unread. Please try again.');
+        }
       }
 
       function renderDrafts() {
         const container = document.getElementById('threadList');
 
-        if (drafts.length === 0) {
+        let filteredDrafts = drafts;
+        
+        // Apply search filter
+        if (searchQuery) {
+          filteredDrafts = filteredDrafts.filter(draft => {
+            const searchText = draft.text.toLowerCase();
+            return searchText.includes(searchQuery);
+          });
+        }
+        
+        // Apply date filter
+        filteredDrafts = filterByDate(filteredDrafts, 'updatedAt');
+
+        if (filteredDrafts.length === 0) {
           container.innerHTML = `
             <div class="empty-state">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
               </svg>
-              <h3>No drafts</h3>
-              <p>Your draft messages will appear here</p>
+              <h3>${searchQuery || dateFilter !== 'all' ? 'No matching drafts' : 'No drafts'}</h3>
+              <p>${searchQuery || dateFilter !== 'all' ? 'Try adjusting your filters' : 'Your draft messages will appear here'}</p>
             </div>
           `;
           return;
         }
 
-        container.innerHTML = drafts.map(draft => {
+        container.innerHTML = filteredDrafts.map(draft => {
           const timeAgo = formatTimeAgo(draft.updatedAt || draft.createdAt);
+          const fullDate = formatFullDate(draft.updatedAt || draft.createdAt);
           const preview = draft.text.substring(0, 100);
 
           return `
-            <div class="thread-item" onclick="editDraft('${draft.id}')">
+            <div class="thread-item" data-draft-id="${escapeHtml(draft.id)}" data-thread-id="${escapeHtml(draft.threadId)}">
               <div class="thread-avatar">📝</div>
               <div class="thread-content">
                 <div class="thread-header">
                   <span class="thread-name">Draft Message</span>
-                  <span class="thread-time">${timeAgo}</span>
+                  <span class="thread-time" title="${fullDate}">${timeAgo}</span>
                 </div>
                 <div class="thread-preview">${escapeHtml(preview)}${draft.text.length > 100 ? '...' : ''}</div>
               </div>
             </div>
           `;
         }).join('');
+        
+        // Add click handlers using event delegation
+        container.querySelectorAll('.thread-item[data-draft-id]').forEach(item => {
+          item.addEventListener('click', () => {
+            const draftId = item.getAttribute('data-draft-id');
+            const threadId = item.getAttribute('data-thread-id');
+            editDraft(draftId, threadId);
+          });
+        });
+      }
+
+      function renderSentMessages() {
+        const container = document.getElementById('threadList');
+
+        let filteredMessages = sentMessages;
+        
+        // Apply search filter
+        if (searchQuery) {
+          filteredMessages = filteredMessages.filter(msg => {
+            const searchText = msg.text.toLowerCase();
+            return searchText.includes(searchQuery);
+          });
+        }
+        
+        // Apply date filter
+        filteredMessages = filterByDate(filteredMessages, 'sentAt');
+
+        if (filteredMessages.length === 0) {
+          container.innerHTML = `
+            <div class="empty-state">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+              </svg>
+              <h3>${searchQuery || dateFilter !== 'all' ? 'No matching sent messages' : 'No sent messages'}</h3>
+              <p>${searchQuery || dateFilter !== 'all' ? 'Try adjusting your filters' : 'Messages you send will appear here'}</p>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = filteredMessages.map(msg => {
+          const timeAgo = formatTimeAgo(msg.sentAt || msg.createdAt);
+          const fullDate = formatFullDate(msg.sentAt || msg.createdAt);
+          const preview = msg.text.substring(0, 100);
+
+          return `
+            <a href="/conversation.html?id=${msg.threadId}" class="thread-item">
+              <div class="thread-avatar">📤</div>
+              <div class="thread-content">
+                <div class="thread-header">
+                  <span class="thread-name">Sent Message</span>
+                  <span class="thread-time" title="${fullDate}">${timeAgo}</span>
+                </div>
+                <div class="thread-preview">${escapeHtml(preview)}${msg.text.length > 100 ? '...' : ''}</div>
+              </div>
+            </a>
+          `;
+        }).join('');
       }
 
       function updateCounts() {
         // Update inbox unread count
-        const totalUnread = threads.reduce((sum, thread) => {
-          return sum + (thread.unreadCount?.[getUserId()] || 0);
-        }, 0);
+        getUserId().then(userId => {
+          if (!userId) return;
+          
+          const totalUnread = threads.reduce((sum, thread) => {
+            return sum + (thread.unreadCount?.[userId] || 0);
+          }, 0);
 
-        const inboxBadge = document.getElementById('inboxCount');
-        if (totalUnread > 0) {
-          inboxBadge.textContent = totalUnread;
-          inboxBadge.style.display = 'inline-flex';
-        } else {
-          inboxBadge.style.display = 'none';
-        }
+          const inboxBadge = document.getElementById('inboxCount');
+          if (totalUnread > 0) {
+            inboxBadge.textContent = totalUnread;
+            inboxBadge.style.display = 'inline-flex';
+          } else {
+            inboxBadge.style.display = 'none';
+          }
 
-        // Update drafts count
-        const draftsCountEl = document.getElementById('draftsCount');
-        if (drafts.length > 0) {
-          draftsCountEl.textContent = drafts.length;
-          draftsCountEl.style.display = 'inline';
-        } else {
-          draftsCountEl.style.display = 'none';
-        }
+          // Update drafts count
+          const draftsCountEl = document.getElementById('draftsCount');
+          if (drafts.length > 0) {
+            draftsCountEl.textContent = drafts.length;
+            draftsCountEl.style.display = 'inline';
+          } else {
+            draftsCountEl.style.display = 'none';
+          }
+        });
       }
 
       function showError(message) {
@@ -473,10 +1054,20 @@
         errorEl.style.display = 'block';
       }
 
-      function getUserId() {
-        // This should get the actual user ID from session/token
-        // For now, return a placeholder
-        return 'current-user-id';
+      async function getUserId() {
+        // Get actual user ID from auth API
+        try {
+          const response = await fetch('/api/auth/me', {
+            credentials: 'include'
+          });
+          if (response.ok) {
+            const data = await response.json();
+            return data.user?.id || null;
+          }
+        } catch (error) {
+          console.error('Error getting user ID:', error);
+        }
+        return null;
       }
 
       function formatTimeAgo(timestamp) {
@@ -504,15 +1095,122 @@
         }
       }
 
+      function formatFullDate(timestamp) {
+        if (!timestamp) return '';
+        const date = new Date(timestamp);
+        return date.toLocaleString('en-GB', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+      }
+
       function escapeHtml(str) {
         const div = document.createElement('div');
         div.textContent = str || '';
         return div.innerHTML;
       }
 
-      window.editDraft = function(draftId) {
-        // TODO: Open draft editor
-        alert(`Edit draft: ${draftId}`);
+      async function exportAllConversations() {
+        if (threads.length === 0) {
+          alert('No conversations to export');
+          return;
+        }
+
+        const userId = await getUserId();
+        if (!userId) {
+          alert('Please log in to export conversations');
+          return;
+        }
+
+        // Prepare export data
+        const exportData = {
+          exportedAt: new Date().toISOString(),
+          totalThreads: threads.length,
+          threads: threads.map(thread => ({
+            id: thread.id,
+            subject: thread.subject || 'No subject',
+            with: thread.supplierName || thread.customerName || 'Unknown',
+            status: thread.status || 'open',
+            created: thread.createdAt,
+            lastMessage: thread.lastMessageAt,
+            lastMessagePreview: thread.lastMessagePreview,
+            unreadCount: thread.unreadCount?.[userId] || 0
+          }))
+        };
+
+        // CSV escaping function to prevent formula injection
+        function escapeCSV(value) {
+          if (value === null || value === undefined) return '';
+          const str = String(value);
+          // Prevent formula injection by prefixing dangerous characters
+          if (str.match(/^[=+\-@]/)) {
+            return `"'${str.replace(/"/g, '""')}"`;
+          }
+          return `"${str.replace(/"/g, '""')}"`;
+        }
+
+        // Create CSV format
+        const csvLines = [
+          'ID,Subject,With,Status,Created,Last Message,Unread Count',
+          ...threads.map(thread => {
+            const with_ = thread.supplierName || thread.customerName || 'Unknown';
+            const subject = thread.subject || 'No subject';
+            const created = new Date(thread.createdAt).toLocaleString('en-GB');
+            const lastMsg = thread.lastMessageAt ? new Date(thread.lastMessageAt).toLocaleString('en-GB') : 'N/A';
+            const unread = thread.unreadCount?.[userId] || 0;
+            return [
+              escapeCSV(thread.id),
+              escapeCSV(subject),
+              escapeCSV(with_),
+              escapeCSV(thread.status || 'open'),
+              escapeCSV(created),
+              escapeCSV(lastMsg),
+              escapeCSV(unread)
+            ].join(',');
+          })
+        ];
+        const csv = csvLines.join('\n');
+
+        // Show export options
+        const format = prompt('Export format:\n1. JSON (full data)\n2. CSV (simple table)\n\nEnter 1 or 2:', '2');
+        
+        if (format === '1') {
+          // Export as JSON
+          const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `all-conversations-${Date.now()}.json`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          alert('Conversations exported successfully!');
+        } else if (format === '2') {
+          // Export as CSV
+          const blob = new Blob([csv], { type: 'text/csv' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `all-conversations-${Date.now()}.csv`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          alert('Conversations exported successfully!');
+        }
+      }
+
+      window.editDraft = function(draftId, threadId) {
+        // Navigate to the conversation with the draft
+        if (threadId) {
+          window.location.href = `/conversation.html?id=${threadId}&draft=${draftId}`;
+        } else {
+          alert('Draft details not available');
+        }
       };
     })();
   </script>
