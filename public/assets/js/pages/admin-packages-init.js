@@ -8,7 +8,7 @@
   let csrfToken = null;
 
   // Configuration
-  const PLACEHOLDER_IMAGE = '/assets/images/placeholder-package.jpg';
+  const PLACEHOLDER_IMAGE = '/assets/images/placeholders/package-event.svg';
 
   // Fetch CSRF token on page load
   fetch('/api/csrf-token', {
@@ -135,8 +135,8 @@
     packages.forEach(pkg => {
       html += '<tr>';
       html += `<td><img src="${escapeHtml(
-        pkg.image || ''
-      )}" class="package-image" alt="Package image"></td>`;
+        pkg.image || PLACEHOLDER_IMAGE
+      )}" class="package-image" alt="Package image" onerror="this.src='${PLACEHOLDER_IMAGE}'"></td>`;
       html += `<td><strong>${escapeHtml(
         pkg.title || ''
       )}</strong><br><span class="small">${escapeHtml((pkg.description || '').substring(0, 100))}${
@@ -176,7 +176,21 @@
     container.innerHTML = html;
   }
 
-  // Image Upload Functionality
+  /**
+   * Image Upload Functionality
+   *
+   * This section handles package image uploads through a drag-and-drop UI.
+   * Flow:
+   * 1. User selects/drops an image file
+   * 2. handleImageFile() validates and creates a preview
+   * 3. File is stored in currentImageFile, preview URL in currentImageUrl
+   * 4. On form submit, if currentImageFile exists:
+   *    a. For new packages: create package with placeholder, then upload image
+   *    b. For existing packages: upload image, then update package with new URL
+   * 5. Image is uploaded to /api/admin/packages/:id/image endpoint
+   * 6. Backend processes image using Sharp and saves to filesystem
+   * 7. Package document in MongoDB is updated with the image URL
+   */
   function setupImageUpload() {
     const uploadZone = document.getElementById('imageUploadZone');
     const fileInput = document.getElementById('imageFileInput');
@@ -232,6 +246,19 @@
     });
   }
 
+  /**
+   * Validate and preview selected image file
+   * @param {File} file - The selected image file
+   *
+   * Validates:
+   * - File type must be an image
+   * - File size must be under 5MB (aligns with backend 10MB limit)
+   *
+   * On success:
+   * - Sets currentImageFile for later upload
+   * - Creates and displays a preview using FileReader
+   * - Stores preview data URL in currentImageUrl
+   */
   function handleImageFile(file) {
     // Validate file size (5MB)
     if (file.size > 5 * 1024 * 1024) {
@@ -267,6 +294,18 @@
     reader.readAsDataURL(file);
   }
 
+  /**
+   * Load package data into the edit form
+   * @param {string} id - Package ID
+   *
+   * Populates form fields with package data including:
+   * - All text fields (title, description, price, etc.)
+   * - Image preview if package has an existing image
+   * - Sets currentImageUrl to existing image for preservation
+   *
+   * Note: When editing, if user doesn't upload a new image,
+   * the existing currentImageUrl will be used to preserve the image.
+   */
   window.editPackage = async function (id) {
     const pkg = allPackages.find(p => p.id === id);
     if (!pkg) {
@@ -394,6 +433,24 @@
     currentImageUrl = null;
   });
 
+  /**
+   * Package Form Submit Handler
+   *
+   * Handles both creating new packages and updating existing ones.
+   *
+   * Image Upload Strategy:
+   * - If currentImageFile exists (user selected a new image):
+   *   * For NEW packages: Create package with placeholder → Upload image → Image URL auto-saved by backend
+   *   * For EDIT: Upload image first → Get URL → Update package with new URL
+   * - If NO currentImageFile (no new image selected):
+   *   * Use currentImageUrl (preserves existing image on edit)
+   *   * Or use placeholder for new packages without images
+   *
+   * This ensures:
+   * 1. Images are properly uploaded via /api/admin/packages/:id/image
+   * 2. Package documents in MongoDB have correct image URLs
+   * 3. Existing images are preserved when editing without changing image
+   */
   // Package Form Submit
   document.getElementById('packageForm').addEventListener('submit', async e => {
     e.preventDefault();

@@ -382,7 +382,7 @@ router.post('/packages', authRequired, roleRequired('admin'), (req, res) => {
     slug,
     description: description || '',
     price_display: price_display || 'Contact for pricing',
-    image: image || '/assets/images/placeholder-package.jpg',
+    image: image || '/assets/images/placeholders/package-event.svg',
     approved: approved === true,
     featured: featured === true,
     createdAt: now,
