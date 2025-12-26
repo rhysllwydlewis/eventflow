@@ -40,6 +40,28 @@ document.addEventListener('DOMContentLoaded', () => {
           return div.innerHTML;
         };
 
+        // Validate and sanitize URLs to prevent XSS
+        const sanitizeUrl = url => {
+          if (!url) {
+            return '/assets/images/placeholder-package.jpg';
+          }
+          const urlStr = String(url);
+          // Block javascript:, data:, vbscript:, and file: URLs
+          if (/^(javascript|data|vbscript|file):/i.test(urlStr)) {
+            return '/assets/images/placeholder-package.jpg';
+          }
+          return escape(urlStr);
+        };
+
+        // Validate slug for URL safety
+        const validateSlug = (value, fallbackId) => {
+          const slugStr = String(value || '');
+          // Only allow alphanumeric, hyphens, and underscores
+          const cleaned = slugStr.replace(/[^a-zA-Z0-9_-]/g, '');
+          // Fall back to provided id if slug becomes empty after cleaning
+          return cleaned || String(fallbackId || 'unknown');
+        };
+
         container.innerHTML = data.items
           .map(item => {
             const title = escape(item.title || 'Untitled Package');
@@ -47,8 +69,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const truncDesc =
               description.length > 100 ? `${description.substring(0, 100)}...` : description;
             const price = escape(item.price_display || 'Contact for pricing');
-            const imgSrc = escape(item.image || '/assets/images/placeholder-package.jpg');
-            const slug = encodeURIComponent(item.slug || item.id);
+            const imgSrc = sanitizeUrl(item.image);
+            const slug = encodeURIComponent(validateSlug(item.slug, item.id));
 
             return `
             <div class="card featured-fallback-card">
