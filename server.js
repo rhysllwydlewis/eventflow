@@ -557,6 +557,53 @@ function passwordOk(pw = '') {
   return typeof pw === 'string' && pw.length >= 8 && /[A-Za-z]/.test(pw) && /\d/.test(pw);
 }
 
+// ---------- Middleware: User Extraction & Maintenance Mode ----------
+// Extract user from cookie for all requests (optional - doesn't block if not authenticated)
+// This must come early so user context is available for static file checks and all routes
+app.use((req, res, next) => {
+  const u = getUserFromCookie(req);
+  if (u) {
+    req.user = u;
+    req.userId = u.id;
+  }
+  next();
+});
+
+// Maintenance mode check - blocks non-admin users if enabled
+// Must come after user extraction so it can check user role
+const maintenanceMode = require('./middleware/maintenance');
+app.use(maintenanceMode);
+
+// ---------- Static File Serving ----------
+// Serve static files early in the middleware chain (before API routes)
+// This ensures files like verify.html are served before any route handlers
+// Static assets with caching strategy (fixes poor cache headers)
+app.use((req, res, next) => {
+  // Skip caching for HTML files (they might change more often)
+  if (req.path.endsWith('.html')) {
+    res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
+    return next();
+  }
+
+  // Cache versioned assets (with hash in filename) for 1 year
+  if (req.path.match(/\.[0-9a-f]{8,}\.(css|js|jpg|jpeg|png|gif|webp|svg|woff|woff2|ttf|eot)$/i)) {
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    return next();
+  }
+
+  // Cache static assets (images, fonts, CSS, JS) for 1 week
+  if (req.path.match(/\.(css|js|jpg|jpeg|png|gif|webp|svg|woff|woff2|ttf|eot|ico)$/i)) {
+    res.setHeader('Cache-Control', 'public, max-age=604800, must-revalidate');
+    return next();
+  }
+
+  // Default: no special caching
+  next();
+});
+
+app.use(express.static(path.join(__dirname, 'public')));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 // ---------- AUTH ----------
 app.post('/api/auth/register', strictAuthLimiter, csrfProtection, async (req, res) => {
   const { name, email, password, role } = req.body || {};
@@ -3800,21 +3847,6 @@ app.post('/api/photos/reorder', authRequired, csrfProtection, async (req, res) =
   }
 });
 
-// ---------- Maintenance Mode ----------
-// Extract user from cookie for all requests (optional - doesn't block if not authenticated)
-app.use((req, res, next) => {
-  const u = getUserFromCookie(req);
-  if (u) {
-    req.user = u;
-    req.userId = u.id;
-  }
-  next();
-});
-
-// Maintenance mode check - blocks non-admin users if enabled
-const maintenanceMode = require('./middleware/maintenance');
-app.use(maintenanceMode);
-
 // ---------- Auth Routes ----------
 const authRoutes = require('./routes/auth');
 app.use('/api/auth', authRoutes);
@@ -4020,7 +4052,7 @@ app.get('/api/ready', healthCheckLimiter, async (_req, res) => {
   });
 });
 
-// ---------- Static & 404 ----------
+// ---------- API Documentation & 404 Handler ----------
 // API Documentation (Swagger UI)
 app.use(
   '/api-docs',
@@ -4031,33 +4063,8 @@ app.use(
   })
 );
 
-// Static assets with caching strategy (fixes poor cache headers)
-// Cache immutable assets for 1 year, other assets for 1 hour
-app.use((req, res, next) => {
-  // Skip caching for HTML files (they might change more often)
-  if (req.path.endsWith('.html')) {
-    res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
-    return next();
-  }
-
-  // Cache versioned assets (with hash in filename) for 1 year
-  if (req.path.match(/\.[0-9a-f]{8,}\.(css|js|jpg|jpeg|png|gif|webp|svg|woff|woff2|ttf|eot)$/i)) {
-    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
-    return next();
-  }
-
-  // Cache static assets (images, fonts, CSS, JS) for 1 week
-  if (req.path.match(/\.(css|js|jpg|jpeg|png|gif|webp|svg|woff|woff2|ttf|eot|ico)$/i)) {
-    res.setHeader('Cache-Control', 'public, max-age=604800, must-revalidate');
-    return next();
-  }
-
-  // Default: no special caching
-  next();
-});
-
-app.use(express.static(path.join(__dirname, 'public')));
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// Catch-all 404 handler (must be the LAST middleware)
+// This will only be reached if no static files or routes matched
 app.use((_req, res) => res.status(404).send('Not found'));
 
 // ---------- Start ----------
