@@ -199,7 +199,7 @@ class PackageGallery {
       // Add error handling for image loading
       image.onerror = () => {
         console.warn(`Failed to load gallery image: ${image.src}`);
-        image.src = '/assets/images/placeholder-package.jpg';
+        image.src = '/assets/images/placeholders/package-event.svg';
       };
 
       mainContainer.appendChild(image);
@@ -246,7 +246,7 @@ class PackageGallery {
         // Add error handling for thumbnail loading
         thumb.onerror = () => {
           console.warn(`Failed to load thumbnail: ${thumb.src}`);
-          thumb.src = '/assets/images/placeholder-package.jpg';
+          thumb.src = '/assets/images/placeholders/package-event.svg';
         };
 
         thumb.addEventListener('click', () => this.goToImage(index));
