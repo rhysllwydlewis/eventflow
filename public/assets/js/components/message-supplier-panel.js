@@ -107,6 +107,7 @@ class MessageSupplierPanel {
         margin-bottom: 16px;
         background-color: var(--color-input-bg, #ffffff);
         color: var(--color-text-primary, #212529);
+        box-sizing: border-box;
       }
 
       .message-panel-textarea:focus {
@@ -125,6 +126,7 @@ class MessageSupplierPanel {
         display: flex;
         gap: 12px;
         align-items: center;
+        flex-wrap: wrap;
       }
 
       .message-panel-send-btn {
@@ -137,6 +139,8 @@ class MessageSupplierPanel {
         font-weight: 600;
         cursor: pointer;
         transition: background-color 0.2s ease, opacity 0.2s ease;
+        min-width: 140px;
+        white-space: nowrap;
       }
 
       .message-panel-send-btn:hover:not(:disabled) {
@@ -195,6 +199,31 @@ class MessageSupplierPanel {
         text-align: center;
         padding: 20px;
         color: var(--color-text-secondary, #6c757d);
+      }
+
+      @media (max-width: 768px) {
+        .message-supplier-panel {
+          padding: 16px;
+          margin-top: 16px;
+        }
+
+        .message-panel-title {
+          font-size: 1.1rem;
+        }
+
+        .message-panel-send-btn {
+          width: 100%;
+          min-width: auto;
+        }
+
+        .message-panel-actions {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        .message-panel-status {
+          text-align: center;
+        }
       }
     `;
     document.head.appendChild(style);
@@ -337,6 +366,7 @@ class MessageSupplierPanel {
     const statusEl = document.getElementById('message-status');
 
     if (!textarea || !sendBtn || !statusEl) {
+      console.error('Message panel elements not found');
       return;
     }
 
@@ -344,10 +374,14 @@ class MessageSupplierPanel {
     if (!message) {
       statusEl.textContent = 'Please enter a message';
       statusEl.className = 'message-panel-status error';
+      textarea.focus();
+      textarea.setAttribute('aria-invalid', 'true');
       return;
     }
 
+    textarea.removeAttribute('aria-invalid');
     sendBtn.disabled = true;
+    sendBtn.setAttribute('aria-busy', 'true');
     statusEl.textContent = 'Sending...';
     statusEl.className = 'message-panel-status';
 
@@ -401,8 +435,10 @@ class MessageSupplierPanel {
       console.error('Error sending message:', error);
       statusEl.textContent = 'Failed to send message. Please try again.';
       statusEl.className = 'message-panel-status error';
+      statusEl.setAttribute('role', 'alert');
     } finally {
       sendBtn.disabled = false;
+      sendBtn.removeAttribute('aria-busy');
     }
   }
 }

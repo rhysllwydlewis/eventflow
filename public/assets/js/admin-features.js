@@ -507,8 +507,12 @@
   // Initialize on page load
   document.addEventListener('DOMContentLoaded', () => {
     // Start dashboard updates if on admin page
-    if (window.location.pathname === '/admin.html') {
-      DashboardUpdater.start();
+    if (
+      window.location.pathname === '/admin.html' &&
+      window.DashboardUpdater &&
+      typeof window.DashboardUpdater.start === 'function'
+    ) {
+      window.DashboardUpdater.start();
     }
 
     // Show keyboard shortcut hint

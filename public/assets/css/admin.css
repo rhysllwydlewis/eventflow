@@ -168,6 +168,12 @@ td, th {
   padding: 8px;
   font-size: 14px;
   color: #1a1a1a;
+  vertical-align: middle;
+}
+
+/* Ensure action cells in tables don't clip buttons */
+td:last-child {
+  white-space: nowrap;
 }
 
 th {
@@ -186,6 +192,7 @@ button {
   border: 1px solid #2563eb;
   border-radius: 4px;
   transition: background 0.2s;
+  white-space: nowrap;
 }
 
 button:hover {
