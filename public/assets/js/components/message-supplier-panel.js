@@ -366,6 +366,7 @@ class MessageSupplierPanel {
     const statusEl = document.getElementById('message-status');
 
     if (!textarea || !sendBtn || !statusEl) {
+      console.error('Message panel elements not found');
       return;
     }
 
@@ -373,11 +374,16 @@ class MessageSupplierPanel {
     if (!message) {
       statusEl.textContent = 'Please enter a message';
       statusEl.className = 'message-panel-status error';
+      textarea.focus();
+      textarea.setAttribute('aria-invalid', 'true');
       return;
     }
 
+    textarea.removeAttribute('aria-invalid');
     sendBtn.disabled = true;
+    sendBtn.setAttribute('aria-busy', 'true');
     statusEl.textContent = 'Sending...';
+    statusEl.className = 'message-panel-status';
     statusEl.className = 'message-panel-status';
 
     try {
@@ -430,8 +436,10 @@ class MessageSupplierPanel {
       console.error('Error sending message:', error);
       statusEl.textContent = 'Failed to send message. Please try again.';
       statusEl.className = 'message-panel-status error';
+      statusEl.setAttribute('role', 'alert');
     } finally {
       sendBtn.disabled = false;
+      sendBtn.removeAttribute('aria-busy');
     }
   }
 }

@@ -53,10 +53,15 @@ class PackageGallery {
         display: none;
         animation: fadeIn 0.3s ease-in;
         background-color: #e5e7eb;
+        transition: opacity 0.3s ease-in-out;
       }
 
       .package-gallery-image.active {
         display: block;
+      }
+
+      .package-gallery-image[aria-busy="true"] {
+        opacity: 0.5;
       }
 
       .package-gallery-image:not([src]), .package-gallery-image[src=""] {
@@ -197,12 +202,24 @@ class PackageGallery {
         image.classList.add('active');
       }
       image.src = img.url || img;
-      image.alt = `Gallery image ${index + 1}`;
+      image.alt = img.alt || `Gallery image ${index + 1} of ${this.images.length}`;
+      image.loading = 'lazy'; // Enable native lazy loading
+
+      // Add loading state
+      image.addEventListener('loadstart', () => {
+        image.style.opacity = '0.5';
+      });
+
+      image.addEventListener('load', () => {
+        image.style.opacity = '1';
+        image.removeAttribute('aria-busy');
+      });
 
       // Add error handling for image loading
       image.onerror = () => {
         console.warn(`Failed to load gallery image: ${image.src}`);
         image.src = PLACEHOLDER_IMAGE;
+        image.alt = 'Image failed to load - placeholder shown';
       };
 
       mainContainer.appendChild(image);
@@ -213,11 +230,15 @@ class PackageGallery {
       const prevBtn = document.createElement('button');
       prevBtn.className = 'package-gallery-nav prev';
       prevBtn.innerHTML = '‹';
+      prevBtn.setAttribute('aria-label', 'Previous image');
+      prevBtn.setAttribute('type', 'button');
       prevBtn.addEventListener('click', () => this.navigate(-1));
 
       const nextBtn = document.createElement('button');
       nextBtn.className = 'package-gallery-nav next';
       nextBtn.innerHTML = '›';
+      nextBtn.setAttribute('aria-label', 'Next image');
+      nextBtn.setAttribute('type', 'button');
       nextBtn.addEventListener('click', () => this.navigate(1));
 
       const counter = document.createElement('div');
@@ -244,7 +265,10 @@ class PackageGallery {
           thumb.classList.add('active');
         }
         thumb.src = img.url || img;
-        thumb.alt = `Thumbnail ${index + 1}`;
+        thumb.alt = `Thumbnail ${index + 1} of ${this.images.length}`;
+        thumb.setAttribute('role', 'button');
+        thumb.setAttribute('tabindex', '0');
+        thumb.setAttribute('aria-label', `View image ${index + 1}`);
 
         // Add error handling for thumbnail loading
         thumb.onerror = () => {
@@ -253,6 +277,12 @@ class PackageGallery {
         };
 
         thumb.addEventListener('click', () => this.goToImage(index));
+        thumb.addEventListener('keydown', e => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            this.goToImage(index);
+          }
+        });
         thumbnails.appendChild(thumb);
       });
 
