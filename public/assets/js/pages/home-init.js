@@ -33,21 +33,36 @@ document.addEventListener('DOMContentLoaded', () => {
       if (typeof Carousel === 'undefined') {
         console.error('Carousel class not loaded. Rendering fallback.');
         // Fallback: render simple grid without carousel functionality
+        // Helper to safely escape HTML
+        const escape = text => {
+          const div = document.createElement('div');
+          div.textContent = text || '';
+          return div.innerHTML;
+        };
+
         container.innerHTML = data.items
-          .map(
-            item => `
-            <div class="card" style="display: inline-block; width: calc(33.333% - 14px); margin: 7px; vertical-align: top;">
-              <a href="/package.html?slug=${encodeURIComponent(item.slug || item.id)}" style="text-decoration: none; color: inherit;">
-                <img src="${item.image || '/assets/images/placeholder-package.jpg'}" alt="${item.title || 'Package'}" style="width: 100%; height: 180px; object-fit: cover; border-radius: 8px 8px 0 0;">
-                <div style="padding: 14px;">
-                  <h3 style="margin: 0 0 8px 0; font-size: 16px;">${item.title || 'Untitled Package'}</h3>
-                  <p style="margin: 0; font-size: 14px; color: #52525b;">${(item.description || '').substring(0, 100)}${(item.description || '').length > 100 ? '...' : ''}</p>
-                  <div style="margin-top: 8px; font-size: 14px; font-weight: 600; color: #0B8073;">${item.price_display || 'Contact for pricing'}</div>
+          .map(item => {
+            const title = escape(item.title || 'Untitled Package');
+            const description = escape(item.description || '');
+            const truncDesc =
+              description.length > 100 ? `${description.substring(0, 100)}...` : description;
+            const price = escape(item.price_display || 'Contact for pricing');
+            const imgSrc = escape(item.image || '/assets/images/placeholder-package.jpg');
+            const slug = encodeURIComponent(item.slug || item.id);
+
+            return `
+            <div class="card featured-fallback-card">
+              <a href="/package.html?slug=${slug}" class="featured-fallback-link">
+                <img src="${imgSrc}" alt="${title}" class="featured-fallback-img">
+                <div class="featured-fallback-content">
+                  <h3 class="featured-fallback-title">${title}</h3>
+                  <p class="featured-fallback-desc">${truncDesc}</p>
+                  <div class="featured-fallback-price">${price}</div>
                 </div>
               </a>
             </div>
-          `
-          )
+          `;
+          })
           .join('');
         return;
       }
@@ -72,7 +87,8 @@ document.addEventListener('DOMContentLoaded', () => {
       console.error('Failed to load featured packages:', error);
       const container = document.getElementById('featured-packages');
       if (container) {
-        container.innerHTML = '<p class="small">Unable to load featured packages. Please try again later.</p>';
+        container.innerHTML =
+          '<p class="small">Unable to load featured packages. Please try again later.</p>';
       }
     });
 
