@@ -1367,13 +1367,24 @@ router.post('/photos/:id/reject', authRequired, roleRequired('admin'), (req, res
 /**
  * POST /api/admin/suppliers/smart-tags
  * Generate smart tags for all suppliers based on their descriptions and categories
+ *
+ * Smart tagging logic:
+ * 1. Only processes approved suppliers
+ * 2. Combines supplier name, descriptions, category, and amenities into searchable text
+ * 3. Applies three types of tags:
+ *    - Category-based tags: Direct mapping from supplier category (e.g., "Venues" -> venue, location, space)
+ *    - Context-based tags: Keywords found in supplier text (e.g., "wedding", "luxury", "outdoor")
+ *    - Location-based tags: Extracts words from location field (min 4 characters)
+ * 4. Limits each supplier to 10 tags maximum to avoid overwhelming the system
+ * 5. Creates an audit log entry tracking how many suppliers were tagged
  */
 router.post('/suppliers/smart-tags', authRequired, roleRequired('admin'), async (req, res) => {
   try {
     const suppliers = await dbUnified.read('suppliers');
     let taggedCount = 0;
 
-    // Common wedding/event industry tags
+    // Common wedding/event industry tags mapped to supplier categories
+    // These tags are automatically applied based on the supplier's category field
     const tagMapping = {
       venues: ['venue', 'location', 'space', 'ceremony', 'reception'],
       catering: ['food', 'catering', 'menu', 'dining', 'buffet', 'meal'],
@@ -1384,7 +1395,8 @@ router.post('/suppliers/smart-tags', authRequired, roleRequired('admin'), async 
       extras: ['extras', 'accessories', 'favors', 'gifts'],
     };
 
-    // Additional context-based tags
+    // Context-based tags that are applied when keywords are found in supplier text
+    // Key = tag to add, Value = array of keywords that trigger the tag
     const contextTags = {
       wedding: ['wedding', 'bride', 'groom', 'marriage', 'nuptial'],
       outdoor: ['outdoor', 'garden', 'countryside', 'open-air'],
@@ -1397,11 +1409,14 @@ router.post('/suppliers/smart-tags', authRequired, roleRequired('admin'), async 
     };
 
     suppliers.forEach((supplier, index) => {
+      // Skip unapproved suppliers - only tag suppliers that are live on the platform
       if (!supplier.approved) {
         return;
       }
 
-      const tags = new Set();
+      const tags = new Set(); // Use Set to automatically handle duplicates
+
+      // Combine all searchable text from supplier profile
       const text = [
         supplier.name || '',
         supplier.description_short || '',
@@ -1412,20 +1427,23 @@ router.post('/suppliers/smart-tags', authRequired, roleRequired('admin'), async 
         .join(' ')
         .toLowerCase();
 
-      // Add category-based tags
+      // Step 1: Add category-based tags
+      // Normalize category name (remove spaces/special chars) to match mapping keys
       const categoryKey = (supplier.category || '').toLowerCase().replace(/[^a-z]/g, '');
       if (tagMapping[categoryKey]) {
         tagMapping[categoryKey].forEach(tag => tags.add(tag));
       }
 
-      // Add context-based tags
+      // Step 2: Add context-based tags by scanning text for keywords
       Object.entries(contextTags).forEach(([tag, keywords]) => {
+        // If ANY keyword is found in the text, add the tag
         if (keywords.some(keyword => text.includes(keyword))) {
           tags.add(tag);
         }
       });
 
-      // Add location tag if available
+      // Step 3: Add location-based tags
+      // Extract meaningful words from location (min 4 chars to avoid "UK", "NY", etc.)
       if (supplier.location) {
         const locationWords = supplier.location.toLowerCase().split(/[,\s]+/);
         locationWords.forEach(word => {
@@ -1435,16 +1453,16 @@ router.post('/suppliers/smart-tags', authRequired, roleRequired('admin'), async 
         });
       }
 
-      // Only update if we generated tags
+      // Only update supplier if we generated at least one tag
       if (tags.size > 0) {
-        suppliers[index].tags = Array.from(tags).slice(0, 10); // Limit to 10 tags
+        suppliers[index].tags = Array.from(tags).slice(0, 10); // Limit to 10 tags per supplier
         taggedCount++;
       }
     });
 
     await dbUnified.write('suppliers', suppliers);
 
-    // Create audit log
+    // Create audit log for tracking when tags were generated
     auditLog({
       adminId: req.user.id,
       adminEmail: req.user.email,
