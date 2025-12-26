@@ -507,6 +507,49 @@ router.post('/threads/:threadId/mark-read', authRequired, async (req, res) => {
 });
 
 /**
+ * POST /api/messages/threads/:threadId/mark-unread
+ * Mark a thread as unread for the current user
+ */
+router.post('/threads/:threadId/mark-unread', authRequired, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const userRole = req.user.role;
+    const { threadId } = req.params;
+
+    // Verify access to thread
+    const threads = await dbUnified.read('threads');
+    const threadIndex = threads.findIndex(t => t.id === threadId);
+
+    if (threadIndex === -1) {
+      return res.status(404).json({ error: 'Thread not found' });
+    }
+
+    const thread = threads[threadIndex];
+    const hasAccess =
+      userRole === 'admin' ||
+      (userRole === 'customer' && thread.customerId === userId) ||
+      (userRole === 'supplier' && thread.supplierId === userId);
+
+    if (!hasAccess) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    // Set unread count to 1 for this user
+    if (!thread.unreadCount) {
+      thread.unreadCount = {};
+    }
+    thread.unreadCount[userId] = 1;
+    threads[threadIndex] = thread;
+    await dbUnified.write('threads', threads);
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error marking thread as unread:', error);
+    res.status(500).json({ error: 'Failed to mark thread as unread', details: error.message });
+  }
+});
+
+/**
  * GET /api/messages/drafts
  * Get all draft messages for the current user
  */

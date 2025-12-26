@@ -203,6 +203,108 @@
       margin-bottom: 16px;
     }
 
+    /* Modal styles */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 20px;
+    }
+
+    .modal {
+      background: white;
+      border-radius: 12px;
+      max-width: 500px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    }
+
+    .modal-header {
+      padding: 20px;
+      border-bottom: 1px solid #e5e7eb;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-header h3 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: #6b7280;
+      padding: 0;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      transition: background 0.2s;
+    }
+
+    .modal-close:hover {
+      background: #f3f4f6;
+    }
+
+    .modal-body {
+      padding: 20px;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 500;
+      font-size: 14px;
+      color: #374151;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+      padding: 16px 20px;
+      border-top: 1px solid #e5e7eb;
+    }
+
     /* Mobile responsiveness */
     @media (max-width: 768px) {
       .messages-container {
@@ -389,13 +491,158 @@
 
       function setupNewMessageHandler() {
         document.getElementById('newMessageBtn')?.addEventListener('click', () => {
-          // TODO: Open new message modal or navigate to compose page
-          alert('New message feature coming soon!');
+          showNewMessageModal();
         });
         
         document.getElementById('exportAllBtn')?.addEventListener('click', () => {
           exportAllConversations();
         });
+      }
+
+      async function showNewMessageModal() {
+        // Get list of suppliers
+        try {
+          const response = await fetch('/api/suppliers?approved=true', {
+            credentials: 'include'
+          });
+          
+          if (!response.ok) {
+            throw new Error('Failed to load suppliers');
+          }
+          
+          const data = await response.json();
+          const suppliers = data.suppliers || data.items || [];
+          
+          if (suppliers.length === 0) {
+            alert('No suppliers available to message. Please check back later.');
+            return;
+          }
+          
+          // Create modal
+          const modal = document.createElement('div');
+          modal.className = 'modal-overlay';
+          modal.innerHTML = `
+            <div class="modal">
+              <div class="modal-header">
+                <h3>New Message</h3>
+                <button class="modal-close" type="button" aria-label="Close">&times;</button>
+              </div>
+              <form id="newMessageForm">
+                <div class="modal-body">
+                  <div class="form-group">
+                    <label for="supplierSelect">To (Supplier) *</label>
+                    <select id="supplierSelect" name="supplier" required>
+                      <option value="">Select a supplier...</option>
+                      ${suppliers.map(s => `<option value="${escapeHtml(s.id)}">${escapeHtml(s.name)}</option>`).join('')}
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="messageSubject">Subject</label>
+                    <input type="text" id="messageSubject" name="subject" placeholder="What is this about?">
+                  </div>
+                  <div class="form-group">
+                    <label for="messageText">Message *</label>
+                    <textarea id="messageText" name="message" rows="6" placeholder="Type your message here..." required></textarea>
+                  </div>
+                </div>
+                <div class="form-actions">
+                  <button type="button" class="btn btn-secondary" id="cancelNewMessage">Cancel</button>
+                  <button type="submit" class="btn btn-primary" id="sendNewMessage">Send Message</button>
+                </div>
+              </form>
+            </div>
+          `;
+          
+          document.body.appendChild(modal);
+          
+          // Close handlers
+          const closeModal = () => {
+            modal.remove();
+          };
+          
+          modal.querySelector('.modal-close').addEventListener('click', closeModal);
+          modal.querySelector('#cancelNewMessage').addEventListener('click', closeModal);
+          modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+              closeModal();
+            }
+          });
+          
+          // Submit handler
+          modal.querySelector('#newMessageForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const supplierId = document.getElementById('supplierSelect').value;
+            const subject = document.getElementById('messageSubject').value;
+            const messageText = document.getElementById('messageText').value;
+            
+            if (!supplierId || !messageText.trim()) {
+              alert('Please select a supplier and enter a message');
+              return;
+            }
+            
+            const sendBtn = document.getElementById('sendNewMessage');
+            sendBtn.disabled = true;
+            sendBtn.textContent = 'Sending...';
+            
+            try {
+              // Create thread
+              const threadResponse = await fetch('/api/messages/threads', {
+                method: 'POST',
+                credentials: 'include',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  supplierId,
+                  subject: subject || 'New Inquiry',
+                }),
+              });
+              
+              if (!threadResponse.ok) {
+                throw new Error('Failed to create conversation');
+              }
+              
+              const threadData = await threadResponse.json();
+              const thread = threadData.thread;
+              
+              // Send message
+              const messageResponse = await fetch(`/api/messages/threads/${thread.id}/messages`, {
+                method: 'POST',
+                credentials: 'include',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  text: messageText,
+                  isDraft: false,
+                }),
+              });
+              
+              if (!messageResponse.ok) {
+                throw new Error('Failed to send message');
+              }
+              
+              closeModal();
+              
+              // Redirect to the conversation
+              window.location.href = `/conversation.html?id=${thread.id}`;
+            } catch (error) {
+              console.error('Error sending message:', error);
+              alert('Failed to send message. Please try again.');
+              sendBtn.disabled = false;
+              sendBtn.textContent = 'Send Message';
+            }
+          });
+          
+          // Focus the supplier select
+          setTimeout(() => {
+            document.getElementById('supplierSelect')?.focus();
+          }, 100);
+        } catch (error) {
+          console.error('Error loading suppliers:', error);
+          alert('Failed to load suppliers. Please try again.');
+        }
       }
 
       async function loadThreads() {
@@ -511,24 +758,73 @@
             const fullDate = formatFullDate(thread.lastMessageAt || thread.updatedAt || thread.createdAt);
 
             return `
-              <a href="/conversation.html?id=${thread.id}" class="thread-item ${isUnread ? 'unread' : ''}">
-                <div class="thread-avatar">${initial}</div>
-                <div class="thread-content">
-                  <div class="thread-header">
-                    <span class="thread-name">${escapeHtml(otherPartyName)}</span>
-                    <span class="thread-time" title="${fullDate}">${timeAgo}</span>
+              <div class="thread-item-wrapper" style="position: relative;">
+                <a href="/conversation.html?id=${thread.id}" class="thread-item ${isUnread ? 'unread' : ''}">
+                  <div class="thread-avatar">${initial}</div>
+                  <div class="thread-content">
+                    <div class="thread-header">
+                      <span class="thread-name">${escapeHtml(otherPartyName)}</span>
+                      <span class="thread-time" title="${fullDate}">${timeAgo}</span>
+                    </div>
+                    ${thread.subject ? `<div class="thread-subject">${escapeHtml(thread.subject)}</div>` : ''}
+                    <div class="thread-preview">${escapeHtml(thread.lastMessagePreview || 'No messages yet')}</div>
+                    <div class="thread-meta">
+                      ${isUnread ? `<span class="unread-badge">${unreadCount}</span>` : ''}
+                      <span class="status-badge status-${thread.status || 'open'}">${thread.status || 'Open'}</span>
+                    </div>
                   </div>
-                  ${thread.subject ? `<div class="thread-subject">${escapeHtml(thread.subject)}</div>` : ''}
-                  <div class="thread-preview">${escapeHtml(thread.lastMessagePreview || 'No messages yet')}</div>
-                  <div class="thread-meta">
-                    ${isUnread ? `<span class="unread-badge">${unreadCount}</span>` : ''}
-                    <span class="status-badge status-${thread.status || 'open'}">${thread.status || 'Open'}</span>
-                  </div>
-                </div>
-              </a>
+                </a>
+                ${!isUnread ? `<button class="thread-action-btn" data-thread-id="${thread.id}" data-action="mark-unread" title="Mark as unread" style="position: absolute; right: 16px; top: 16px; background: #f3f4f6; border: none; border-radius: 50%; width: 32px; height: 32px; cursor: pointer; display: none; align-items: center; justify-content: center;">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                  </svg>
+                </button>` : ''}
+              </div>
             `;
           }).join('');
+          
+          // Add hover handlers for action buttons
+          container.querySelectorAll('.thread-item-wrapper').forEach(wrapper => {
+            const actionBtn = wrapper.querySelector('.thread-action-btn');
+            if (actionBtn) {
+              wrapper.addEventListener('mouseenter', () => {
+                actionBtn.style.display = 'flex';
+              });
+              wrapper.addEventListener('mouseleave', () => {
+                actionBtn.style.display = 'none';
+              });
+              
+              actionBtn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const threadId = actionBtn.getAttribute('data-thread-id');
+                await markThreadAsUnread(threadId);
+              });
+            }
+          });
         });
+      }
+
+      async function markThreadAsUnread(threadId) {
+        try {
+          const response = await fetch(`/api/messages/threads/${threadId}/mark-unread`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (!response.ok) {
+            throw new Error('Failed to mark as unread');
+          }
+
+          // Reload threads
+          await loadThreads();
+        } catch (error) {
+          console.error('Error marking thread as unread:', error);
+          showError('Failed to mark as unread. Please try again.');
+        }
       }
 
       function renderDrafts() {
