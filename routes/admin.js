@@ -607,7 +607,7 @@ router.post('/users/:id/verify', authRequired, roleRequired('admin'), (req, res)
  * POST /api/admin/users/:id/force-reset
  * Force a password reset for a user
  */
-router.post('/users/:id/force-reset', authRequired, roleRequired('admin'), (req, res) => {
+router.post('/users/:id/force-reset', authRequired, roleRequired('admin'), async (req, res) => {
   const users = read('users');
   const userIndex = users.findIndex(u => u.id === req.params.id);
 
@@ -623,6 +623,22 @@ router.post('/users/:id/force-reset', authRequired, roleRequired('admin'), (req,
   const resetToken = crypto.randomBytes(32).toString('hex');
   const resetTokenExpiresAt = new Date(Date.now() + 3600000).toISOString(); // 1 hour
 
+  // Send password reset email via Postmark BEFORE saving changes
+  try {
+    console.log(`📧 Admin ${req.user.email} initiating password reset for ${user.email}`);
+    await postmark.sendPasswordResetEmail(user, resetToken);
+    console.log(`✅ Password reset email sent to ${user.email}`);
+  } catch (emailError) {
+    console.error('❌ Failed to send password reset email:', emailError.message);
+
+    // If email fails, don't update user record
+    return res.status(500).json({
+      error: 'Failed to send password reset email',
+      details: process.env.NODE_ENV === 'development' ? emailError.message : undefined,
+    });
+  }
+
+  // Only save changes after email is successfully sent
   user.resetToken = resetToken;
   user.resetTokenExpiresAt = resetTokenExpiresAt;
   user.passwordResetRequired = true;
@@ -638,15 +654,11 @@ router.post('/users/:id/force-reset', authRequired, roleRequired('admin'), (req,
     action: AUDIT_ACTIONS.USER_PASSWORD_RESET,
     targetType: 'user',
     targetId: user.id,
-    details: { email: user.email, forced: true },
+    details: { email: user.email, forced: true, emailSent: true },
   });
 
-  // TODO: Send password reset email
-  const resetLink = `${process.env.BASE_URL || 'http://localhost:3000'}/reset-password.html?token=${resetToken}`;
-
   res.json({
-    message: 'Password reset initiated successfully',
-    resetLink, // In production, this would be emailed, not returned
+    message: 'Password reset email sent successfully',
     user: {
       id: user.id,
       email: user.email,
@@ -1540,67 +1552,48 @@ router.post('/users/:id/reset-password', authRequired, roleRequired('admin'), as
   const token = uid('reset');
   const expires = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // 1 hour
 
-  // Save reset token to user
+  // Send password reset email via Postmark BEFORE saving token
+  try {
+    console.log(`📧 Admin ${req.user.email} sending password reset to ${user.email}`);
+    await postmark.sendPasswordResetEmail(user, token);
+    console.log(`✅ Password reset email sent to ${user.email}`);
+  } catch (emailError) {
+    console.error('❌ Failed to send password reset email:', emailError.message);
+
+    // Log the failure in audit log
+    auditLog({
+      adminId: req.user.id,
+      adminEmail: req.user.email,
+      action: AUDIT_ACTIONS.USER_PASSWORD_RESET,
+      targetType: 'user',
+      targetId: user.id,
+      details: { userEmail: user.email, emailSent: false, error: emailError.message },
+    });
+
+    return res.status(500).json({
+      error: 'Failed to send password reset email',
+      details: process.env.NODE_ENV === 'development' ? emailError.message : undefined,
+    });
+  }
+
+  // Only save reset token after email is successfully sent
   users[userIndex].resetToken = token;
   users[userIndex].resetTokenExpiresAt = expires;
   write('users', users);
 
-  // Send password reset email
-  const resetLink = `${process.env.APP_BASE_URL || process.env.BASE_URL || 'http://localhost:3000'}/reset-password.html?token=${encodeURIComponent(token)}`;
+  auditLog({
+    adminId: req.user.id,
+    adminEmail: req.user.email,
+    action: AUDIT_ACTIONS.USER_PASSWORD_RESET,
+    targetType: 'user',
+    targetId: user.id,
+    details: { userEmail: user.email, emailSent: true },
+  });
 
-  try {
-    if (postmark.isPostmarkEnabled()) {
-      await postmark.sendMail({
-        to: user.email,
-        subject: 'Reset your EventFlow password',
-        template: 'password-reset',
-        templateData: {
-          name: user.name || 'there',
-          resetLink: resetLink,
-        },
-        tags: ['password-reset', 'admin-initiated', 'transactional'],
-        messageStream: 'password-reset',
-      });
-    } else {
-      // Fallback: send simple email
-      await postmark.sendMail({
-        to: user.email,
-        subject: 'Reset your EventFlow password',
-        text: `Hi ${user.name || 'there'},\n\nAn administrator has initiated a password reset for your account.\n\nClick the link below to reset your password:\n\n${resetLink}\n\nThis link expires in 1 hour.\n\nIf you didn't request this, please ignore this email.\n\nBest regards,\nThe EventFlow Team`,
-        messageStream: 'password-reset',
-      });
-    }
-
-    auditLog({
-      adminId: req.user.id,
-      adminEmail: req.user.email,
-      action: AUDIT_ACTIONS.USER_PASSWORD_RESET,
-      targetType: 'user',
-      targetId: user.id,
-      details: { userEmail: user.email, emailSent: true },
-    });
-
-    res.json({
-      success: true,
-      message: 'Password reset email sent successfully',
-    });
-  } catch (err) {
-    console.error('Failed to send password reset email:', err);
-
-    auditLog({
-      adminId: req.user.id,
-      adminEmail: req.user.email,
-      action: AUDIT_ACTIONS.USER_PASSWORD_RESET,
-      targetType: 'user',
-      targetId: user.id,
-      details: { userEmail: user.email, emailSent: false, error: err.message },
-    });
-
-    res.status(500).json({
-      error: 'Failed to send password reset email',
-      details: err.message,
-    });
-  }
+  res.json({
+    success: true,
+    message: 'Password reset email sent successfully',
+  });
 });
 
 /**

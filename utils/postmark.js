@@ -1,50 +1,35 @@
 /**
- * Postmark Email Utility
- * Provides secure, server-side email sending via Postmark
+ * Postmark Email Utility (POSTMARK ONLY)
+ * Provides secure, server-side email sending exclusively via Postmark API
  *
  * Environment Variables Required:
- * - POSTMARK_API_KEY or POSTMARK_SERVER_TOKEN: Your Postmark Server API key
- * - POSTMARK_FROM: Default sender email address (must be verified in Postmark)
- * - APP_BASE_URL: Application base URL for email links
- *
- * For production, use verified sender: admin@event-flow.co.uk
+ * - POSTMARK_API_KEY: Your Postmark Server API key
+ * - POSTMARK_FROM: Sender email address (must be verified in Postmark - use admin@event-flow.co.uk)
+ * - BASE_URL or APP_BASE_URL: Application base URL for email links
  *
  * TEMPLATE USAGE:
  * ===============
- * This utility supports TWO ways to send emails:
+ * This utility uses LOCAL HTML templates from /email-templates/ directory.
+ * No Postmark-hosted templates are required.
  *
- * 1. LOCAL TEMPLATES (HTML files in /email-templates/):
+ * Example:
  *    sendMail({
  *      to: 'user@example.com',
  *      subject: 'Password Reset',
  *      template: 'password-reset',
- *      templateData: { name: 'John', resetLink: 'https://...' }
+ *      templateData: { name: 'John', resetLink: 'https://...' },
+ *      messageStream: 'password-reset'  // Use 'password-reset' stream for resets
  *    });
  *
- * 2. POSTMARK TEMPLATES (created in Postmark dashboard):
- *    sendMail({
- *      to: 'user@example.com',
- *      templateId: 12345678,  // or 'password-reset-template' (string alias)
- *      templateModel: { name: 'John', reset_link: 'https://...' }
- *    });
+ * MESSAGE STREAMS:
+ * ================
+ * - 'outbound': Default for transactional emails (verification, notifications)
+ * - 'password-reset': For password reset emails
+ * - 'broadcasts': For marketing emails
  *
- * POSTMARK TEMPLATE SETUP:
- * ========================
- * To use Postmark templates, create them in your Postmark account:
- * 1. Go to: https://account.postmarkapp.com/servers/[YOUR-SERVER]/templates
- * 2. Create templates with TemplateAliases:
- *    - 'password-reset' - For password resets
- *    - 'email-verification' - For email verification
- *    - 'welcome-email' - For welcome messages
- * 3. Use template variables like {{name}}, {{reset_link}}, etc.
- * 4. Set the correct Message Stream for each template
- *
- * RECOMMENDED: Use Postmark templates for production as they provide:
- * - Better deliverability
- * - A/B testing capabilities
- * - Version control
- * - Preview and testing tools
- * - Analytics and tracking
+ * FALLBACK BEHAVIOR:
+ * ==================
+ * If Postmark is not configured (missing POSTMARK_API_KEY), emails are saved to /outbox folder.
  */
 
 'use strict';
@@ -57,22 +42,11 @@ const crypto = require('crypto');
 let postmarkClient = null;
 let POSTMARK_ENABLED = false;
 
-// Configuration - use the provided production token
-const POSTMARK_API_KEY = process.env.POSTMARK_API_KEY || process.env.POSTMARK_SERVER_TOKEN;
-const POSTMARK_FROM = process.env.POSTMARK_FROM || process.env.FROM_EMAIL || 'noreply@event-flow.co.uk';
+// Configuration - POSTMARK_API_KEY and POSTMARK_FROM are required
+const POSTMARK_API_KEY = process.env.POSTMARK_API_KEY;
+const POSTMARK_FROM = process.env.POSTMARK_FROM || 'noreply@localhost';
 const APP_BASE_URL = process.env.APP_BASE_URL || process.env.BASE_URL || 'http://localhost:3000';
-const UNSUBSCRIBE_SECRET =
-  process.env.UNSUBSCRIBE_SECRET || process.env.JWT_SECRET || 'default-secret-change-in-production';
-
-// Optional Postmark Template IDs (can be numeric IDs or string aliases)
-// Set these in your .env file if using Postmark templates
-const POSTMARK_TEMPLATES = {
-  passwordReset: process.env.POSTMARK_TEMPLATE_PASSWORD_RESET || null,
-  verification: process.env.POSTMARK_TEMPLATE_VERIFICATION || null,
-  welcome: process.env.POSTMARK_TEMPLATE_WELCOME || null,
-  notification: process.env.POSTMARK_TEMPLATE_NOTIFICATION || null,
-  marketing: process.env.POSTMARK_TEMPLATE_MARKETING || null,
-};
+const UNSUBSCRIBE_SECRET = process.env.UNSUBSCRIBE_SECRET || process.env.JWT_SECRET;
 
 /**
  * Initialize Postmark client
@@ -81,6 +55,7 @@ function initializePostmark() {
   if (!POSTMARK_API_KEY) {
     console.warn('⚠️  Postmark not configured: POSTMARK_API_KEY environment variable required');
     console.warn('   Emails will be saved to /outbox folder instead');
+    console.warn('   Set POSTMARK_API_KEY and POSTMARK_FROM in your .env file');
     return false;
   }
 
@@ -89,15 +64,17 @@ function initializePostmark() {
     postmarkClient = new postmark.ServerClient(POSTMARK_API_KEY);
 
     POSTMARK_ENABLED = true;
-    console.log(`✓ Postmark configured with sender: ${POSTMARK_FROM}`);
-    // Only log API key preview in development
+    console.log(`✅ Postmark configured successfully`);
+    console.log(`   From: ${POSTMARK_FROM}`);
+    console.log(`   Base URL: ${APP_BASE_URL}`);
+    // Only log API key preview in development for debugging
     if (process.env.NODE_ENV !== 'production') {
-      console.log(`  API key: ${POSTMARK_API_KEY.substring(0, 8)}...`); // Show first 8 chars only
+      console.log(`   API key: ${POSTMARK_API_KEY.substring(0, 8)}...`);
     }
     return true;
   } catch (err) {
     console.error('❌ Failed to initialize Postmark:', err.message);
-    console.log('   Run: npm install postmark');
+    console.error('   Run: npm install postmark');
     return false;
   }
 }
@@ -123,6 +100,26 @@ function generateUnsubscribeToken(email) {
 function verifyUnsubscribeToken(email, token) {
   const expectedToken = generateUnsubscribeToken(email);
   return crypto.timingSafeEqual(Buffer.from(token), Buffer.from(expectedToken));
+}
+
+/**
+ * Mask email address for logging in production
+ * @param {string} email - Email address to mask
+ * @returns {string} Masked email address
+ */
+function maskEmail(email) {
+  if (!email || typeof email !== 'string') {
+    return '***';
+  }
+  const [localPart, domain] = email.split('@');
+  if (!domain) {
+    return '***';
+  }
+
+  // Show first char of local part and domain
+  const maskedLocal =
+    localPart.length > 1 ? localPart[0] + '*'.repeat(Math.min(localPart.length - 1, 5)) : '*';
+  return `${maskedLocal}@${domain}`;
 }
 
 /**
@@ -176,25 +173,27 @@ function loadEmailTemplate(templateName, data = {}) {
 }
 
 /**
- * Send email via Postmark
+ * Send email via Postmark (local templates only)
  * @param {Object} options - Email options
  * @param {string|string[]} options.to - Recipient email address(es)
  * @param {string} options.subject - Email subject line
  * @param {string} [options.text] - Plain text email body
  * @param {string} [options.html] - HTML email body
  * @param {string} [options.template] - Template name (loads from email-templates/)
- * @param {string|number} [options.templateId] - Postmark Template ID (uses Postmark templates)
  * @param {Object} [options.templateData] - Data for template variables
- * @param {Object} [options.templateModel] - Model data for Postmark templates (alias for templateData)
  * @param {string} [options.from] - Sender email (defaults to POSTMARK_FROM)
  * @param {string|string[]} [options.tags] - Postmark tags for tracking (max 10)
- * @param {string} [options.trackOpens] - Track email opens (true/false)
- * @param {string} [options.trackLinks] - Track link clicks ('None', 'HtmlAndText', 'HtmlOnly', 'TextOnly')
+ * @param {boolean} [options.trackOpens] - Track email opens (default: true)
+ * @param {string} [options.trackLinks] - Track link clicks (default: 'HtmlAndText')
+ * @param {string} [options.messageStream] - Postmark message stream (default: 'outbound', use 'password-reset' for resets)
  * @returns {Promise<Object>} Postmark response object
+ * @throws {Error} If email sending fails or required fields are missing
  */
 async function sendMail(options) {
   if (!options || !options.to) {
-    throw new Error('Missing required email field: to');
+    const error = new Error('Missing required email field: to');
+    console.error('❌ Email send failed:', error.message);
+    throw error;
   }
 
   const {
@@ -203,80 +202,71 @@ async function sendMail(options) {
     text,
     html,
     template,
-    templateId,
     templateData = {},
-    templateModel = {},
     from = POSTMARK_FROM,
     tags,
     trackOpens = true,
     trackLinks = 'HtmlAndText',
   } = options;
 
+  // Log email attempt for debugging (mask email in production)
+  const isProduction = process.env.NODE_ENV === 'production';
+  const recipientDisplay = isProduction
+    ? maskEmail(Array.isArray(to) ? to[0] : to)
+    : Array.isArray(to)
+      ? to.join(',')
+      : to;
+
+  console.log(`📧 Attempting to send email to ${recipientDisplay}`);
+  console.log(`   Subject: ${subject || '(from template)'}`);
+  console.log(`   Template: ${template || 'none'}`);
+  console.log(`   Message Stream: ${options.messageStream || 'outbound'}`);
+
   // Check if Postmark is enabled
   if (!POSTMARK_ENABLED || !postmarkClient) {
-    console.log('[Postmark Disabled] Would send email:', {
-      to: Array.isArray(to) ? to.join(',') : to,
-      subject: subject || 'N/A',
-      from: from,
-      templateId: templateId || 'N/A',
-    });
+    console.warn('⚠️  Postmark not configured - saving email to /outbox instead');
+
+    // Load template for outbox if needed
+    let outboxHtml = html;
+    if (template && !html) {
+      outboxHtml = loadEmailTemplate(template, templateData);
+    }
 
     // Save to outbox for development/testing
     const outboxData = {
       To: Array.isArray(to) ? to.join(',') : to,
       From: from,
-      Subject: subject || 'N/A',
-      HtmlBody: html,
+      Subject: subject || '(from template)',
+      HtmlBody: outboxHtml,
       TextBody: text,
-      TemplateId: templateId,
+      Template: template,
     };
     saveEmailToOutbox(outboxData);
 
     return {
       status: 'disabled',
       message: 'Postmark not configured. Email saved to outbox.',
-      MessageID: `test-${Date.now()}`,
+      MessageID: `outbox-${Date.now()}`,
     };
   }
 
-  // If using Postmark Template ID, send with template
-  if (templateId) {
-    const emailData = {
-      From: from,
-      To: Array.isArray(to) ? to.join(',') : to,
-      TemplateId: templateId,
-      TemplateModel: { ...templateData, ...templateModel },
-      TrackOpens: trackOpens,
-      TrackLinks: trackLinks,
-      MessageStream: options.messageStream || 'outbound',
-    };
-
-    // Add tags if provided
-    if (tags) {
-      const tagArray = Array.isArray(tags) ? tags : [tags];
-      emailData.Tag = tagArray.slice(0, 10).join(',');
-    }
-
-    try {
-      const response = await postmarkClient.sendEmailWithTemplate(emailData);
-      console.log(`✓ Email sent via Postmark Template ${templateId} to ${emailData.To} (${response.MessageID})`);
-      return response;
-    } catch (err) {
-      console.error('Postmark template send error:', err.message);
-      saveEmailToOutbox(emailData);
-      throw err;
-    }
-  }
-
-  // Standard email flow (local templates or direct HTML/text)
+  // Require subject for all emails
   if (!subject) {
-    throw new Error('Missing required email field: subject (required for non-template emails)');
+    const error = new Error('Missing required email field: subject');
+    console.error('❌ Email send failed:', error.message);
+    throw error;
   }
 
   // Load local template if specified and HTML not provided
   let emailHtml = html;
   if (template && !html) {
+    console.log(`   Loading local template: ${template}.html`);
     emailHtml = loadEmailTemplate(template, templateData);
+    if (!emailHtml) {
+      const error = new Error(`Failed to load email template: ${template}`);
+      console.error('❌ Email send failed:', error.message);
+      throw error;
+    }
   }
 
   // Build email data for Postmark
@@ -305,7 +295,9 @@ async function sendMail(options) {
   } else if (text) {
     emailData.TextBody = text;
   } else {
-    throw new Error('Email must have either text, html, or template content');
+    const error = new Error('Email must have either text, html, or template content');
+    console.error('❌ Email send failed:', error.message);
+    throw error;
   }
 
   // Add tags if provided (Postmark supports up to 10 tags)
@@ -316,13 +308,22 @@ async function sendMail(options) {
 
   try {
     const response = await postmarkClient.sendEmail(emailData);
-    console.log(`✓ Email sent via Postmark to ${emailData.To} (${response.MessageID})`);
+    console.log(`✅ Email sent successfully via Postmark`);
+    console.log(`   To: ${emailData.To}`);
+    console.log(`   Subject: ${emailData.Subject}`);
+    console.log(`   MessageID: ${response.MessageID}`);
+    console.log(`   Stream: ${emailData.MessageStream}`);
     return response;
   } catch (err) {
-    console.error('Postmark send error:', err.message);
-    // Save to outbox as fallback
+    console.error('❌ Postmark send error:', err.message);
+    console.error('   To:', emailData.To);
+    console.error('   Subject:', emailData.Subject);
+
+    // Save to outbox as fallback for debugging
     saveEmailToOutbox(emailData);
-    throw err;
+
+    // Re-throw error so calling code can handle it (e.g., rollback)
+    throw new Error(`Failed to send email via Postmark: ${err.message}`);
   }
 }
 
@@ -358,9 +359,12 @@ ${emailData.HtmlBody || emailData.TextBody}
  * @param {Object} user - User object with email, name
  * @param {string} verificationToken - Verification token
  * @returns {Promise<Object>} Send result
+ * @throws {Error} If email sending fails
  */
 async function sendVerificationEmail(user, verificationToken) {
   const verificationLink = `${APP_BASE_URL}/verify.html?token=${encodeURIComponent(verificationToken)}`;
+
+  console.log(`📧 Sending verification email to ${user.email}`);
 
   return sendMail({
     to: user.email,
@@ -371,6 +375,52 @@ async function sendVerificationEmail(user, verificationToken) {
       verificationLink: verificationLink,
     },
     tags: ['verification', 'transactional'],
+    messageStream: 'outbound',
+  });
+}
+
+/**
+ * Send password reset email to user
+ * @param {Object} user - User object with email, name
+ * @param {string} resetToken - Password reset token
+ * @returns {Promise<Object>} Send result
+ * @throws {Error} If email sending fails
+ */
+async function sendPasswordResetEmail(user, resetToken) {
+  const resetLink = `${APP_BASE_URL}/reset-password.html?token=${encodeURIComponent(resetToken)}`;
+
+  console.log(`📧 Sending password reset email to ${user.email}`);
+
+  return sendMail({
+    to: user.email,
+    subject: 'Reset your EventFlow password',
+    template: 'password-reset',
+    templateData: {
+      name: user.name || 'there',
+      resetLink: resetLink,
+    },
+    tags: ['password-reset', 'transactional'],
+    messageStream: 'password-reset', // Use dedicated password-reset stream
+  });
+}
+
+/**
+ * Send welcome email to newly verified user
+ * @param {Object} user - User object with email, name
+ * @returns {Promise<Object>} Send result
+ * @throws {Error} If email sending fails
+ */
+async function sendWelcomeEmail(user) {
+  console.log(`📧 Sending welcome email to ${user.email}`);
+
+  return sendMail({
+    to: user.email,
+    subject: 'Welcome to EventFlow!',
+    template: 'welcome',
+    templateData: {
+      name: user.name || 'there',
+    },
+    tags: ['welcome', 'transactional'],
     messageStream: 'outbound',
   });
 }
@@ -476,16 +526,22 @@ function getPostmarkStatus() {
 }
 
 module.exports = {
+  // Core email functions
   sendMail,
   sendVerificationEmail,
+  sendPasswordResetEmail,
+  sendWelcomeEmail,
   sendMarketingEmail,
   sendNotificationEmail,
+
+  // Status and utility functions
   isPostmarkEnabled,
   getPostmarkStatus,
   loadEmailTemplate,
   generateUnsubscribeToken,
   verifyUnsubscribeToken,
-  // Backward compatibility aliases
+
+  // Backward compatibility aliases (deprecated - use Postmark functions directly)
   isMailgunEnabled: isPostmarkEnabled,
   getMailgunStatus: getPostmarkStatus,
 };
