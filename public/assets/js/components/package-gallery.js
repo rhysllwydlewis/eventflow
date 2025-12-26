@@ -3,6 +3,9 @@
  * Image gallery carousel for package detail pages
  */
 
+// Constants
+const PLACEHOLDER_IMAGE = '/assets/images/placeholders/package-event.svg';
+
 class PackageGallery {
   constructor(containerId, images = []) {
     this.container = document.getElementById(containerId);
@@ -199,7 +202,7 @@ class PackageGallery {
       // Add error handling for image loading
       image.onerror = () => {
         console.warn(`Failed to load gallery image: ${image.src}`);
-        image.src = '/assets/images/placeholders/package-event.svg';
+        image.src = PLACEHOLDER_IMAGE;
       };
 
       mainContainer.appendChild(image);
@@ -246,7 +249,7 @@ class PackageGallery {
         // Add error handling for thumbnail loading
         thumb.onerror = () => {
           console.warn(`Failed to load thumbnail: ${thumb.src}`);
-          thumb.src = '/assets/images/placeholders/package-event.svg';
+          thumb.src = PLACEHOLDER_IMAGE;
         };
 
         thumb.addEventListener('click', () => this.goToImage(index));
