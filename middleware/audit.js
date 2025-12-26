@@ -184,6 +184,7 @@ const AUDIT_ACTIONS = {
   USER_ROLE_CHANGED: 'user_role_changed',
   USER_DELETED: 'user_deleted',
   USER_EDITED: 'user_edited',
+  RESEND_VERIFICATION: 'resend_verification',
 
   // Supplier management
   SUPPLIER_APPROVED: 'supplier_approved',

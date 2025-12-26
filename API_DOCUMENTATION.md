@@ -94,6 +94,41 @@ GET /api/auth/me
 
 Returns current user information if authenticated.
 
+### Email Verification
+
+```http
+GET /api/auth/verify?token=verify_abc123xyz789
+```
+
+Verifies a user's email address using the token sent to their email.
+
+### Resend Verification Email
+
+```http
+POST /api/auth/resend-verification
+Content-Type: application/json
+
+{
+  "email": "john@example.com"
+}
+```
+
+**Response:**
+
+```json
+{
+  "ok": true,
+  "message": "A new verification email has been sent. Please check your inbox."
+}
+```
+
+**Notes:**
+
+- Rate limited to prevent abuse (100 requests per 15 minutes)
+- Returns generic success message to prevent email enumeration
+- Previous verification token is invalidated
+- New token expires in 24 hours
+
 ## API Endpoints
 
 ### Search & Discovery

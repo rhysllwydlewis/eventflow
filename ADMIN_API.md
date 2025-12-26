@@ -99,6 +99,57 @@ DELETE /api/admin/users/:id
 }
 ```
 
+### Resend Verification Email
+
+```http
+POST /api/admin/users/:userId/resend-verification
+```
+
+**Description:**
+Resends the verification email to an unverified user. Generates a new verification token that expires in 24 hours.
+
+**Requirements:**
+
+- Admin authentication required
+- User must not be already verified
+- Action is logged in audit trail
+
+**Response:**
+
+```json
+{
+  "ok": true,
+  "message": "Verification email sent to user@example.com"
+}
+```
+
+**Error Responses:**
+
+```json
+{
+  "error": "User not found"
+}
+```
+
+```json
+{
+  "error": "User is already verified"
+}
+```
+
+```json
+{
+  "error": "Failed to send verification email. Please try again later."
+}
+```
+
+**Audit Log:**
+
+- Action: `resend_verification`
+- Target Type: `user`
+- Target ID: `userId`
+- Details: Includes request parameters
+
 ### Grant Admin Privileges
 
 ```http
