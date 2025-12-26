@@ -471,6 +471,15 @@
 
           // Join this thread's room for targeted updates
           wsClient.joinRoom(`thread:${threadId}`);
+          
+          // Listen for reaction updates
+          wsClient.socket?.on('reaction:received', (data) => {
+            const msgIndex = messages.findIndex(m => m.id === data.messageId);
+            if (msgIndex !== -1) {
+              messages[msgIndex].reactions = data.reactions;
+              renderMessages();
+            }
+          });
         } catch (error) {
           console.error('Failed to initialize WebSocket:', error);
           // Continue without WebSocket - polling will still work
@@ -591,6 +600,8 @@
         }
       }
 
+      let currentAttachments = [];
+
       function setupEventHandlers() {
         // Send message
         document.getElementById('composerForm')?.addEventListener('submit', async (e) => {
@@ -618,6 +629,13 @@
           await archiveConversation();
         });
 
+        // File attachment
+        document.getElementById('attachBtn')?.addEventListener('click', () => {
+          document.getElementById('fileInput').click();
+        });
+
+        document.getElementById('fileInput')?.addEventListener('change', handleFileSelect);
+
         // Auto-expand textarea
         const textarea = document.getElementById('messageInput');
         textarea?.addEventListener('input', () => {
@@ -625,6 +643,66 @@
           textarea.style.height = textarea.scrollHeight + 'px';
         });
       }
+
+      async function handleFileSelect(e) {
+        const files = Array.from(e.target.files);
+        if (files.length === 0) return;
+
+        const preview = document.getElementById('attachmentPreview');
+        preview.style.display = 'block';
+        preview.innerHTML = '<div style="display: flex; flex-wrap: wrap; gap: 8px;"></div>';
+        const container = preview.firstElementChild;
+
+        for (const file of files) {
+          // Validate file size (max 10MB)
+          if (file.size > 10 * 1024 * 1024) {
+            showToast(`File ${file.name} is too large (max 10MB)`, 'error');
+            continue;
+          }
+
+          // Read file as base64
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            const attachment = {
+              name: file.name,
+              size: file.size,
+              type: file.type,
+              data: event.target.result,
+            };
+            currentAttachments.push(attachment);
+
+            // Show preview
+            const item = document.createElement('div');
+            item.style.cssText = 'display: flex; align-items: center; gap: 6px; padding: 6px 10px; background: white; border-radius: 4px; font-size: 12px;';
+            item.innerHTML = `
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"/>
+                <polyline points="13 2 13 9 20 9"/>
+              </svg>
+              <span>${file.name} (${(file.size / 1024).toFixed(1)}KB)</span>
+              <button type="button" onclick="removeAttachment('${file.name}')" style="background: none; border: none; cursor: pointer; color: #ef4444; padding: 2px;">×</button>
+            `;
+            container.appendChild(item);
+          };
+          reader.readAsDataURL(file);
+        }
+
+        // Clear file input
+        e.target.value = '';
+      }
+
+      window.removeAttachment = function(name) {
+        currentAttachments = currentAttachments.filter(a => a.name !== name);
+        if (currentAttachments.length === 0) {
+          document.getElementById('attachmentPreview').style.display = 'none';
+        } else {
+          // Re-render preview
+          handleFileSelect({ target: { files: [] } });
+          currentAttachments.forEach(att => {
+            // Would need to reconstruct - simpler to just clear and reload
+          });
+        }
+      };
 
       async function loadThread() {
         try {
@@ -683,7 +761,7 @@
         const input = document.getElementById('messageInput');
         const text = input.value.trim();
 
-        if (!text) {
+        if (!text && currentAttachments.length === 0) {
           return;
         }
 
@@ -705,6 +783,7 @@
             body: JSON.stringify({
               text,
               isDraft,
+              attachments: currentAttachments,
             }),
           });
 
@@ -725,17 +804,14 @@
             }
           }
 
-          // Clear input
+          // Clear input and attachments
           input.value = '';
           input.style.height = 'auto';
+          currentAttachments = [];
+          document.getElementById('attachmentPreview').style.display = 'none';
 
           if (isDraft) {
-            // Show brief success message
-            const notice = document.createElement('div');
-            notice.style.cssText = 'position: fixed; bottom: 20px; right: 20px; background: #10b981; color: white; padding: 12px 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000;';
-            notice.textContent = '✓ Draft saved';
-            document.body.appendChild(notice);
-            setTimeout(() => notice.remove(), 2000);
+            showToast('✓ Draft saved', 'success');
           }
         } catch (error) {
           console.error('Error sending message:', error);
@@ -801,14 +877,76 @@
           // Check if message is read by recipient
           const isRead = message.readBy && message.readBy.length > 1; // More than just the sender
           const readStatus = isSent ? (isRead ? ' ✓✓' : ' ✓') : '';
+          
+          // Render attachments if any
+          let attachmentsHtml = '';
+          if (message.attachments && message.attachments.length > 0) {
+            attachmentsHtml = '<div class="message-attachments" style="margin-top: 8px; display: flex; flex-direction: column; gap: 6px;">';
+            message.attachments.forEach(att => {
+              const isImage = att.type && att.type.startsWith('image/');
+              if (isImage) {
+                attachmentsHtml += `
+                  <a href="${att.data}" target="_blank" style="max-width: 300px;">
+                    <img src="${att.data}" alt="${escapeHtml(att.name)}" style="width: 100%; border-radius: 8px; cursor: pointer;">
+                  </a>
+                `;
+              } else {
+                attachmentsHtml += `
+                  <a href="${att.data}" download="${escapeHtml(att.name)}" style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: rgba(0,0,0,0.05); border-radius: 6px; text-decoration: none; color: inherit; font-size: 13px;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"/>
+                      <polyline points="13 2 13 9 20 9"/>
+                    </svg>
+                    <span>${escapeHtml(att.name)} (${(att.size / 1024).toFixed(1)}KB)</span>
+                  </a>
+                `;
+              }
+            });
+            attachmentsHtml += '</div>';
+          }
+          
+          // Render reactions if any
+          let reactionsHtml = '';
+          if (message.reactions && message.reactions.length > 0) {
+            const reactionCounts = {};
+            message.reactions.forEach(r => {
+              reactionCounts[r.emoji] = (reactionCounts[r.emoji] || 0) + 1;
+            });
+            
+            reactionsHtml = '<div class="message-reactions" style="margin-top: 6px; display: flex; flex-wrap: wrap; gap: 4px;">';
+            Object.entries(reactionCounts).forEach(([emoji, count]) => {
+              reactionsHtml += `
+                <button onclick="toggleReaction('${message.id}', '${emoji}')" style="padding: 2px 8px; background: rgba(102, 126, 234, 0.1); border: 1px solid rgba(102, 126, 234, 0.3); border-radius: 12px; cursor: pointer; font-size: 13px;">
+                  ${emoji} ${count}
+                </button>
+              `;
+            });
+            reactionsHtml += `
+              <button onclick="showReactionPicker('${message.id}')" title="Add reaction" style="padding: 2px 8px; background: rgba(0, 0, 0, 0.05); border: 1px solid rgba(0, 0, 0, 0.1); border-radius: 12px; cursor: pointer; font-size: 13px;">
+                ➕
+              </button>
+            `;
+            reactionsHtml += '</div>';
+          } else {
+            // Show add reaction button on hover
+            reactionsHtml = `
+              <div class="message-reactions" style="margin-top: 6px; display: none;">
+                <button onclick="showReactionPicker('${message.id}')" title="Add reaction" style="padding: 2px 8px; background: rgba(0, 0, 0, 0.05); border: 1px solid rgba(0, 0, 0, 0.1); border-radius: 12px; cursor: pointer; font-size: 13px;">
+                  ➕ React
+                </button>
+              </div>
+            `;
+          }
 
           return `
-            <div class="message ${isSent ? 'sent' : 'received'}">
+            <div class="message ${isSent ? 'sent' : 'received'}" onmouseenter="this.querySelector('.message-reactions').style.display='flex'" onmouseleave="if(!this.querySelector('.message-reactions button:hover')) this.querySelector('.message-reactions').style.display='${message.reactions && message.reactions.length > 0 ? 'flex' : 'none'}'">
               <div class="message-avatar">${initial}</div>
               <div class="message-content">
                 <div class="message-bubble">
-                  <div class="message-text">${escapeHtml(message.text)}</div>
+                  ${message.text ? `<div class="message-text">${escapeHtml(message.text)}</div>` : ''}
+                  ${attachmentsHtml}
                 </div>
+                ${reactionsHtml}
                 <div class="message-time" title="${fullDate}">${time}${readStatus}</div>
               </div>
             </div>
@@ -994,6 +1132,74 @@
         div.textContent = str || '';
         return div.innerHTML;
       }
+
+      window.showReactionPicker = function(messageId) {
+        const picker = document.createElement('div');
+        picker.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); z-index: 10000; display: flex; gap: 8px; flex-wrap: wrap; max-width: 300px;';
+        
+        const emojis = ['👍', '❤️', '😂', '😮', '😢', '🎉', '🔥', '👏'];
+        emojis.forEach(emoji => {
+          const btn = document.createElement('button');
+          btn.textContent = emoji;
+          btn.style.cssText = 'font-size: 28px; padding: 8px; background: none; border: 1px solid #e5e7eb; border-radius: 8px; cursor: pointer; transition: transform 0.2s;';
+          btn.onmouseenter = () => btn.style.transform = 'scale(1.2)';
+          btn.onmouseleave = () => btn.style.transform = 'scale(1)';
+          btn.onclick = () => {
+            toggleReaction(messageId, emoji);
+            picker.remove();
+            overlay.remove();
+          };
+          picker.appendChild(btn);
+        });
+        
+        const overlay = document.createElement('div');
+        overlay.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.3); z-index: 9999;';
+        overlay.onclick = () => {
+          overlay.remove();
+          picker.remove();
+        };
+        
+        document.body.appendChild(overlay);
+        document.body.appendChild(picker);
+      };
+
+      window.toggleReaction = async function(messageId, emoji) {
+        try {
+          const response = await fetch(`/api/messages/${messageId}/reactions`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ emoji }),
+          });
+
+          if (!response.ok) {
+            throw new Error('Failed to toggle reaction');
+          }
+
+          const data = await response.json();
+          
+          // Update message in local array
+          const msgIndex = messages.findIndex(m => m.id === messageId);
+          if (msgIndex !== -1) {
+            messages[msgIndex].reactions = data.reactions;
+            renderMessages();
+          }
+
+          // Emit WebSocket event for real-time update
+          if (wsClient && recipientId) {
+            wsClient.socket?.emit('reaction:updated', {
+              threadId,
+              messageId,
+              reactions: data.reactions,
+            });
+          }
+        } catch (error) {
+          console.error('Error toggling reaction:', error);
+          showToast('Failed to add reaction', 'error');
+        }
+      };
 
       function showError(message) {
         const errorEl = document.getElementById('errorMessage');

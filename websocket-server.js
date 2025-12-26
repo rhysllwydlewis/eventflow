@@ -89,6 +89,16 @@ class WebSocketServer {
         });
       });
 
+      // Handle reaction updates
+      socket.on('reaction:updated', data => {
+        const { threadId, messageId, reactions } = data;
+        // Broadcast to thread room
+        socket.to(`thread:${threadId}`).emit('reaction:received', {
+          messageId,
+          reactions,
+        });
+      });
+
       // Handle disconnection
       socket.on('disconnect', () => {
         if (socket.userId) {

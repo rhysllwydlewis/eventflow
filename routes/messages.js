@@ -262,10 +262,10 @@ router.post('/threads/:threadId/messages', authRequired, async (req, res) => {
     const userId = req.user.id;
     const userRole = req.user.role;
     const { threadId } = req.params;
-    const { text, isDraft } = req.body;
+    const { text, isDraft, attachments } = req.body;
 
-    if (!text || text.trim().length === 0) {
-      return res.status(400).json({ error: 'Message text is required' });
+    if ((!text || text.trim().length === 0) && (!attachments || attachments.length === 0)) {
+      return res.status(400).json({ error: 'Message text or attachments required' });
     }
 
     // Verify access to thread
@@ -294,10 +294,12 @@ router.post('/threads/:threadId/messages', authRequired, async (req, res) => {
       threadId,
       fromUserId: userId,
       fromRole: userRole,
-      text: text.trim(),
+      text: text ? text.trim() : '',
       isDraft: isDraft === true,
       sentAt: isDraft ? null : now,
       readBy: [userId], // Sender has already "read" their own message
+      attachments: attachments || [],
+      reactions: [],
       createdAt: now,
       updatedAt: now,
     };
@@ -634,6 +636,61 @@ router.delete('/:messageId', authRequired, async (req, res) => {
   } catch (error) {
     console.error('Error deleting message:', error);
     res.status(500).json({ error: 'Failed to delete message', details: error.message });
+  }
+});
+
+/**
+ * POST /api/messages/:messageId/reactions
+ * Toggle a reaction on a message
+ */
+router.post('/:messageId/reactions', authRequired, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { messageId } = req.params;
+    const { emoji } = req.body;
+
+    if (!emoji) {
+      return res.status(400).json({ error: 'Emoji is required' });
+    }
+
+    const messages = await dbUnified.read('messages');
+    const messageIndex = messages.findIndex(m => m.id === messageId);
+
+    if (messageIndex === -1) {
+      return res.status(404).json({ error: 'Message not found' });
+    }
+
+    const message = messages[messageIndex];
+
+    // Initialize reactions array if not exists
+    if (!message.reactions) {
+      message.reactions = [];
+    }
+
+    // Check if user already reacted with this emoji
+    const existingReactionIndex = message.reactions.findIndex(
+      r => r.userId === userId && r.emoji === emoji
+    );
+
+    if (existingReactionIndex !== -1) {
+      // Remove reaction
+      message.reactions.splice(existingReactionIndex, 1);
+    } else {
+      // Add reaction
+      message.reactions.push({
+        userId,
+        emoji,
+        createdAt: new Date().toISOString(),
+      });
+    }
+
+    messages[messageIndex] = message;
+    await dbUnified.write('messages', messages);
+
+    res.json({ reactions: message.reactions });
+  } catch (error) {
+    console.error('Error toggling reaction:', error);
+    res.status(500).json({ error: 'Failed to toggle reaction', details: error.message });
   }
 });
 
