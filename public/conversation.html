@@ -674,14 +674,24 @@
             // Show preview
             const item = document.createElement('div');
             item.style.cssText = 'display: flex; align-items: center; gap: 6px; padding: 6px 10px; background: white; border-radius: 4px; font-size: 12px;';
+            
+            const nameSpan = document.createElement('span');
+            nameSpan.textContent = `${file.name} (${(file.size / 1024).toFixed(1)}KB)`;
+            
+            const removeBtn = document.createElement('button');
+            removeBtn.type = 'button';
+            removeBtn.textContent = '×';
+            removeBtn.style.cssText = 'background: none; border: none; cursor: pointer; color: #ef4444; padding: 2px;';
+            removeBtn.onclick = () => removeAttachment(file.name);
+            
             item.innerHTML = `
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"/>
                 <polyline points="13 2 13 9 20 9"/>
               </svg>
-              <span>${file.name} (${(file.size / 1024).toFixed(1)}KB)</span>
-              <button type="button" onclick="removeAttachment('${file.name}')" style="background: none; border: none; cursor: pointer; color: #ef4444; padding: 2px;">×</button>
             `;
+            item.appendChild(nameSpan);
+            item.appendChild(removeBtn);
             container.appendChild(item);
           };
           reader.readAsDataURL(file);
@@ -693,13 +703,38 @@
 
       window.removeAttachment = function(name) {
         currentAttachments = currentAttachments.filter(a => a.name !== name);
+        
+        const preview = document.getElementById('attachmentPreview');
         if (currentAttachments.length === 0) {
-          document.getElementById('attachmentPreview').style.display = 'none';
+          preview.style.display = 'none';
+          preview.innerHTML = '';
         } else {
-          // Re-render preview
-          handleFileSelect({ target: { files: [] } });
+          // Re-render attachments
+          preview.innerHTML = '<div style="display: flex; flex-wrap: wrap; gap: 8px;"></div>';
+          const container = preview.firstElementChild;
+          
           currentAttachments.forEach(att => {
-            // Would need to reconstruct - simpler to just clear and reload
+            const item = document.createElement('div');
+            item.style.cssText = 'display: flex; align-items: center; gap: 6px; padding: 6px 10px; background: white; border-radius: 4px; font-size: 12px;';
+            
+            const nameSpan = document.createElement('span');
+            nameSpan.textContent = `${att.name} (${(att.size / 1024).toFixed(1)}KB)`;
+            
+            const removeBtn = document.createElement('button');
+            removeBtn.type = 'button';
+            removeBtn.textContent = '×';
+            removeBtn.style.cssText = 'background: none; border: none; cursor: pointer; color: #ef4444; padding: 2px;';
+            removeBtn.onclick = () => removeAttachment(att.name);
+            
+            item.innerHTML = `
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"/>
+                <polyline points="13 2 13 9 20 9"/>
+              </svg>
+            `;
+            item.appendChild(nameSpan);
+            item.appendChild(removeBtn);
+            container.appendChild(item);
           });
         }
       };
@@ -938,8 +973,10 @@
             `;
           }
 
+          const shouldShowReactions = message.reactions && message.reactions.length > 0;
+
           return `
-            <div class="message ${isSent ? 'sent' : 'received'}" onmouseenter="this.querySelector('.message-reactions').style.display='flex'" onmouseleave="if(!this.querySelector('.message-reactions button:hover')) this.querySelector('.message-reactions').style.display='${message.reactions && message.reactions.length > 0 ? 'flex' : 'none'}'">
+            <div class="message ${isSent ? 'sent' : 'received'}" data-message-id="${message.id}" data-has-reactions="${shouldShowReactions}">
               <div class="message-avatar">${initial}</div>
               <div class="message-content">
                 <div class="message-bubble">
@@ -955,6 +992,26 @@
 
         // Scroll to bottom
         container.scrollTop = container.scrollHeight;
+        
+        // Add event delegation for hover effects on reaction buttons
+        container.querySelectorAll('.message').forEach(messageEl => {
+          const hasReactions = messageEl.getAttribute('data-has-reactions') === 'true';
+          const reactionsEl = messageEl.querySelector('.message-reactions');
+          
+          if (reactionsEl) {
+            messageEl.addEventListener('mouseenter', () => {
+              reactionsEl.style.display = 'flex';
+            });
+            
+            messageEl.addEventListener('mouseleave', () => {
+              // Keep visible if there are reactions or if hovering over a button
+              const isHoveringButton = reactionsEl.querySelector('button:hover');
+              if (!hasReactions && !isHoveringButton) {
+                reactionsEl.style.display = 'none';
+              }
+            });
+          }
+        });
       }
 
       function formatFullTimestamp(timestamp) {

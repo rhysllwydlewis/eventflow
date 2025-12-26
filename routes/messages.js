@@ -298,7 +298,7 @@ router.post('/threads/:threadId/messages', authRequired, async (req, res) => {
       isDraft: isDraft === true,
       sentAt: isDraft ? null : now,
       readBy: [userId], // Sender has already "read" their own message
-      attachments: attachments || [],
+      attachments: Array.isArray(attachments) ? attachments : [],
       reactions: [],
       createdAt: now,
       updatedAt: now,
