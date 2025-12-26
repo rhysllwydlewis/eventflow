@@ -171,12 +171,12 @@ async function processAndSaveImage(buffer, originalFilename) {
       saveToLocal(large, `${baseFilename}-large.jpg`, 'large'),
     ]);
 
-    // Return local URLs
-    const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
-    results.original = `${baseUrl}/uploads/original/${baseFilename}.jpg`;
-    results.thumbnail = `${baseUrl}/uploads/thumbnails/${baseFilename}-thumb.jpg`;
-    results.optimized = `${baseUrl}/uploads/optimized/${baseFilename}-opt.jpg`;
-    results.large = `${baseUrl}/uploads/large/${baseFilename}-large.jpg`;
+    // Return relative URLs (works in any environment without hardcoded BASE_URL)
+    // These are served by express.static('/uploads') middleware
+    results.original = `/uploads/original/${baseFilename}.jpg`;
+    results.thumbnail = `/uploads/thumbnails/${baseFilename}-thumb.jpg`;
+    results.optimized = `/uploads/optimized/${baseFilename}-opt.jpg`;
+    results.large = `/uploads/large/${baseFilename}-large.jpg`;
 
     // Also save to public folder for serving
     await saveToLocal(optimized, `${baseFilename}-opt.jpg`, 'public');
