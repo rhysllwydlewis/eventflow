@@ -210,6 +210,80 @@
       color: #991b1b;
       margin-bottom: 16px;
     }
+
+    /* Mobile responsiveness */
+    @media (max-width: 768px) {
+      .conversation-container {
+        padding: 8px;
+        height: calc(100vh - 60px);
+      }
+
+      .conversation-header {
+        padding: 12px;
+        flex-wrap: wrap;
+      }
+
+      .conversation-info {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .conversation-avatar {
+        width: 32px;
+        height: 32px;
+        font-size: 14px;
+      }
+
+      .conversation-details h2 {
+        font-size: 16px;
+      }
+
+      .conversation-details p {
+        font-size: 12px;
+      }
+
+      .conversation-actions {
+        gap: 4px;
+      }
+
+      .conversation-actions .btn {
+        padding: 6px;
+      }
+
+      .messages-area {
+        padding: 12px;
+      }
+
+      .message-content {
+        max-width: 80%;
+      }
+
+      .message-bubble {
+        padding: 10px 12px;
+      }
+
+      .message-text {
+        font-size: 13px;
+      }
+
+      .composer-area {
+        padding: 12px;
+      }
+
+      .composer-input {
+        font-size: 14px;
+        padding: 10px 12px;
+      }
+
+      .composer-actions {
+        flex-direction: column;
+        width: 100%;
+      }
+
+      .composer-actions button {
+        width: 100%;
+      }
+    }
   </style>
 </head>
 <body>
@@ -241,6 +315,13 @@
         </div>
       </div>
       <div class="conversation-actions">
+        <button class="btn btn-secondary btn-sm" id="archiveBtn" title="Archive conversation">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="21 8 21 21 3 21 3 8"></polyline>
+            <rect x="1" y="3" width="22" height="5"></rect>
+            <line x1="10" y1="12" x2="14" y2="12"></line>
+          </svg>
+        </button>
         <button class="btn btn-secondary btn-sm" id="exportBtn" title="Export conversation">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -400,6 +481,11 @@
         // Export conversation
         document.getElementById('exportBtn')?.addEventListener('click', () => {
           exportConversation();
+        });
+
+        // Archive conversation
+        document.getElementById('archiveBtn')?.addEventListener('click', async () => {
+          await archiveConversation();
         });
 
         // Auto-expand textarea
@@ -669,6 +755,56 @@
           URL.revokeObjectURL(url);
         } else {
           return; // Cancelled
+        }
+      }
+
+      async function archiveConversation() {
+        if (!thread) {
+          alert('No conversation to archive');
+          return;
+        }
+
+        const isArchived = thread.status === 'archived';
+        const action = isArchived ? 'unarchive' : 'archive';
+        const confirmMsg = isArchived 
+          ? 'Are you sure you want to unarchive this conversation?' 
+          : 'Are you sure you want to archive this conversation?';
+
+        if (!confirm(confirmMsg)) {
+          return;
+        }
+
+        try {
+          const response = await fetch(`/api/messages/threads/${threadId}/${action}`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (!response.ok) {
+            throw new Error(`Failed to ${action} conversation`);
+          }
+
+          alert(`Conversation ${isArchived ? 'unarchived' : 'archived'} successfully!`);
+          
+          // Update thread status
+          thread.status = isArchived ? 'open' : 'archived';
+          
+          // Update button text
+          const archiveBtn = document.getElementById('archiveBtn');
+          if (archiveBtn) {
+            archiveBtn.title = isArchived ? 'Archive conversation' : 'Unarchive conversation';
+          }
+          
+          // Optionally redirect to messages list
+          setTimeout(() => {
+            window.location.href = '/messages.html';
+          }, 1000);
+        } catch (error) {
+          console.error(`Error ${action}ing conversation:`, error);
+          alert(`Failed to ${action} conversation. Please try again.`);
         }
       }
 

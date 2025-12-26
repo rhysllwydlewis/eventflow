@@ -202,6 +202,56 @@
       color: #991b1b;
       margin-bottom: 16px;
     }
+
+    /* Mobile responsiveness */
+    @media (max-width: 768px) {
+      .messages-container {
+        padding: 12px;
+      }
+
+      .messages-header {
+        flex-direction: column;
+        gap: 12px;
+        align-items: flex-start;
+      }
+
+      .messages-header > div:last-child {
+        width: 100%;
+      }
+
+      .messages-header button {
+        width: 100%;
+        justify-content: center;
+      }
+
+      .messages-tabs {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .messages-tab {
+        flex-shrink: 0;
+      }
+
+      .thread-avatar {
+        width: 40px;
+        height: 40px;
+        font-size: 16px;
+      }
+
+      .thread-item {
+        padding: 12px;
+      }
+
+      .thread-name {
+        font-size: 14px;
+      }
+
+      .thread-preview,
+      .thread-subject {
+        font-size: 13px;
+      }
+    }
   </style>
 </head>
 <body>

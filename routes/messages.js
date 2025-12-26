@@ -594,4 +594,82 @@ router.delete('/:messageId', authRequired, async (req, res) => {
   }
 });
 
+/**
+ * POST /api/messages/threads/:threadId/archive
+ * Archive a thread
+ */
+router.post('/threads/:threadId/archive', authRequired, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const userRole = req.user.role;
+    const { threadId } = req.params;
+
+    const threads = await dbUnified.read('threads');
+    const threadIndex = threads.findIndex(t => t.id === threadId);
+
+    if (threadIndex === -1) {
+      return res.status(404).json({ error: 'Thread not found' });
+    }
+
+    const thread = threads[threadIndex];
+    const hasAccess =
+      userRole === 'admin' ||
+      (userRole === 'customer' && thread.customerId === userId) ||
+      (userRole === 'supplier' && thread.supplierId === userId);
+
+    if (!hasAccess) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    thread.status = 'archived';
+    thread.updatedAt = new Date().toISOString();
+    threads[threadIndex] = thread;
+    await dbUnified.write('threads', threads);
+
+    res.json({ success: true, thread });
+  } catch (error) {
+    console.error('Error archiving thread:', error);
+    res.status(500).json({ error: 'Failed to archive thread', details: error.message });
+  }
+});
+
+/**
+ * POST /api/messages/threads/:threadId/unarchive
+ * Unarchive a thread
+ */
+router.post('/threads/:threadId/unarchive', authRequired, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const userRole = req.user.role;
+    const { threadId } = req.params;
+
+    const threads = await dbUnified.read('threads');
+    const threadIndex = threads.findIndex(t => t.id === threadId);
+
+    if (threadIndex === -1) {
+      return res.status(404).json({ error: 'Thread not found' });
+    }
+
+    const thread = threads[threadIndex];
+    const hasAccess =
+      userRole === 'admin' ||
+      (userRole === 'customer' && thread.customerId === userId) ||
+      (userRole === 'supplier' && thread.supplierId === userId);
+
+    if (!hasAccess) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    thread.status = 'open';
+    thread.updatedAt = new Date().toISOString();
+    threads[threadIndex] = thread;
+    await dbUnified.write('threads', threads);
+
+    res.json({ success: true, thread });
+  } catch (error) {
+    console.error('Error unarchiving thread:', error);
+    res.status(500).json({ error: 'Failed to unarchive thread', details: error.message });
+  }
+});
+
 module.exports = router;
