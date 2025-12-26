@@ -239,6 +239,8 @@
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .admin-user-btn:hover {
@@ -257,6 +259,15 @@
   color: white;
   font-weight: 600;
   font-size: 14px;
+  flex-shrink: 0;
+}
+
+.admin-user-btn > span {
+  flex-shrink: 0;
+}
+
+.admin-user-btn > svg {
+  flex-shrink: 0;
 }
 
 .admin-dropdown-menu {

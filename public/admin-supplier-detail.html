@@ -143,6 +143,7 @@
         </div>
         <div class="flex-gap">
           <button class="btn btn-primary" id="editSupplierBtn">Edit Details</button>
+          <button class="btn btn-info" id="verifySupplierBtn" title="Manually verify this supplier's identity">Verify Supplier</button>
           <button class="btn btn-success" id="approveBtn">Approve</button>
           <button class="btn btn-danger" id="rejectBtn">Reject</button>
         </div>
@@ -275,9 +276,19 @@
 
     document.getElementById('supplierName').textContent = supplierData.name || 'Unknown Supplier';
     
-    const statusHtml = supplierData.approved 
-      ? '<span class="badge badge-success">Approved</span>'
-      : '<span class="badge badge-warning">Pending Approval</span>';
+    let statusHtml = '';
+    if (supplierData.approved) {
+      statusHtml += '<span class="badge badge-success">Approved</span> ';
+    } else {
+      statusHtml += '<span class="badge badge-warning">Pending Approval</span> ';
+    }
+    
+    if (supplierData.verified) {
+      statusHtml += '<span class="badge badge-info">Verified</span>';
+    } else {
+      statusHtml += '<span class="badge badge-secondary">Unverified</span>';
+    }
+    
     document.getElementById('supplierStatus').innerHTML = statusHtml;
 
     const metaHtml = `
@@ -288,6 +299,11 @@
         <strong>Email:</strong> <a href="mailto:${supplierData.email}">${supplierData.email}</a>
       </div>
       <div class="supplier-meta-item">
+        <strong>Verified:</strong> ${supplierData.verified ? 
+          `<span style="color: #10b981;">Yes</span> ${supplierData.verifiedAt ? `(${new Date(supplierData.verifiedAt).toLocaleDateString()})` : ''}` : 
+          '<span style="color: #ef4444;">No</span>'}
+      </div>
+      <div class="supplier-meta-item">
         <strong>Health Score:</strong> ${supplierData.healthScore || 0}/100
       </div>
       <div class="supplier-meta-item">
@@ -295,6 +311,20 @@
       </div>
     `;
     document.getElementById('supplierMeta').innerHTML = metaHtml;
+
+    // Update verify button state
+    const verifyBtn = document.getElementById('verifySupplierBtn');
+    if (verifyBtn) {
+      if (supplierData.verified) {
+        verifyBtn.disabled = true;
+        verifyBtn.textContent = 'Already Verified';
+        verifyBtn.title = 'This supplier has already been verified';
+      } else {
+        verifyBtn.disabled = false;
+        verifyBtn.textContent = 'Verify Supplier';
+        verifyBtn.title = 'Manually verify this supplier\'s identity';
+      }
+    }
 
     // Business info
     const businessHtml = `
@@ -470,6 +500,23 @@
       loadSupplier();
     } catch (err) {
       AdminShared.showToast('Failed to reject supplier', 'error');
+    }
+  });
+
+  document.getElementById('verifySupplierBtn')?.addEventListener('click', async () => {
+    const notes = prompt('Enter verification notes (optional):');
+    if (notes === null) return; // User cancelled
+    
+    try {
+      await AdminShared.api(`/api/admin/suppliers/${supplierId}/verify`, 'POST', {
+        verified: true,
+        verificationNotes: notes || 'Manual verification by admin'
+      });
+      AdminShared.showToast('Supplier verified successfully', 'success');
+      loadSupplier();
+    } catch (err) {
+      console.error('Verify supplier error:', err);
+      AdminShared.showToast(`Failed to verify supplier: ${err.message || 'Unknown error'}`, 'error');
     }
   });
 
