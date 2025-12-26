@@ -2330,43 +2330,43 @@ document.addEventListener('DOMContentLoaded', () => {
       return headers;
     };
 
+    // Helper function to show toast notification
+    const showToast = function (message, type = 'info') {
+      const toast = document.createElement('div');
+      toast.className = 'ef-toast';
+      toast.textContent = message;
+      toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 1rem 1.5rem;
+        background: ${type === 'success' ? '#22c55e' : type === 'error' ? '#ef4444' : '#3b82f6'};
+        color: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 10000;
+        opacity: 0;
+        transform: translateX(400px);
+        transition: all 0.3s ease;
+      `;
+      document.body.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.opacity = '1';
+        toast.style.transform = 'translateX(0)';
+      }, 10);
+
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(400px)';
+        setTimeout(() => toast.remove(), 300);
+      }, 4000);
+    };
+
     if (loginForm && loginEmail && loginPassword) {
       const loginBtn = loginForm.querySelector('button[type="submit"]');
       const resendContainer = document.getElementById('resend-verification-container');
       const resendBtn = document.getElementById('resend-verification-btn');
-      
-      // Helper function to show toast notification
-      function showToast(message, type = 'info') {
-        const toast = document.createElement('div');
-        toast.className = 'ef-toast';
-        toast.textContent = message;
-        toast.style.cssText = `
-          position: fixed;
-          top: 20px;
-          right: 20px;
-          padding: 1rem 1.5rem;
-          background: ${type === 'success' ? '#22c55e' : type === 'error' ? '#ef4444' : '#3b82f6'};
-          color: white;
-          border-radius: 8px;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-          z-index: 10000;
-          opacity: 0;
-          transform: translateX(400px);
-          transition: all 0.3s ease;
-        `;
-        document.body.appendChild(toast);
-
-        setTimeout(() => {
-          toast.style.opacity = '1';
-          toast.style.transform = 'translateX(0)';
-        }, 10);
-
-        setTimeout(() => {
-          toast.style.opacity = '0';
-          toast.style.transform = 'translateX(400px)';
-          setTimeout(() => toast.remove(), 300);
-        }, 4000);
-      }
 
       // Resend verification email handler
       if (resendBtn) {
@@ -2396,12 +2396,19 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (r.ok) {
-              showToast(data.message || 'Verification email sent! Please check your inbox.', 'success');
+              showToast(
+                data.message || 'Verification email sent! Please check your inbox.',
+                'success'
+              );
               if (loginStatus) {
-                loginStatus.textContent = 'Verification email sent. Please check your inbox and verify your account.';
+                loginStatus.textContent =
+                  'Verification email sent. Please check your inbox and verify your account.';
               }
             } else {
-              showToast(data.error || 'Failed to send verification email. Please try again.', 'error');
+              showToast(
+                data.error || 'Failed to send verification email. Please try again.',
+                'error'
+              );
             }
           } catch (err) {
             console.error('Resend verification error', err);
@@ -2443,9 +2450,10 @@ document.addEventListener('DOMContentLoaded', () => {
           }
           if (!r.ok) {
             if (loginStatus) {
-              const errorMsg = data.error || 'Could not sign in. Please check your details and try again.';
+              const errorMsg =
+                data.error || 'Could not sign in. Please check your details and try again.';
               loginStatus.textContent = errorMsg;
-              
+
               // Check if login failed due to unverified email (403 status)
               if (r.status === 403 && errorMsg.toLowerCase().includes('verify')) {
                 if (resendContainer) {
