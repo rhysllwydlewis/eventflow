@@ -254,6 +254,15 @@
       </button>
     </div>
 
+    <div class="messages-search" style="margin-bottom: 16px;">
+      <input 
+        type="text" 
+        id="searchInput" 
+        placeholder="Search messages..." 
+        style="width: 100%; padding: 12px 16px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px;"
+      />
+    </div>
+
     <div id="errorMessage" class="error" style="display: none;"></div>
     
     <div id="threadList" class="thread-list">
@@ -268,6 +277,8 @@
       let currentTab = 'inbox';
       let threads = [];
       let drafts = [];
+      let sentMessages = [];
+      let searchQuery = '';
 
       // Initialize
       document.addEventListener('DOMContentLoaded', init);
@@ -275,7 +286,24 @@
       function init() {
         setupTabHandlers();
         setupNewMessageHandler();
+        setupSearchHandler();
         loadThreads();
+      }
+
+      function setupSearchHandler() {
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) {
+          searchInput.addEventListener('input', (e) => {
+            searchQuery = e.target.value.toLowerCase();
+            if (currentTab === 'drafts') {
+              renderDrafts();
+            } else if (currentTab === 'sent') {
+              renderSentMessages();
+            } else {
+              renderThreads();
+            }
+          });
+        }
       }
 
       function setupTabHandlers() {
@@ -302,6 +330,8 @@
         // Reload content
         if (tabName === 'drafts') {
           loadDrafts();
+        } else if (tabName === 'sent') {
+          loadSentMessages();
         } else {
           renderThreads();
         }
@@ -364,23 +394,49 @@
         }
       }
 
+      async function loadSentMessages() {
+        try {
+          const response = await fetch('/api/messages/sent', {
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (!response.ok) {
+            throw new Error('Failed to load sent messages');
+          }
+
+          const data = await response.json();
+          sentMessages = data.messages || [];
+          renderSentMessages();
+        } catch (error) {
+          console.error('Error loading sent messages:', error);
+          showError('Failed to load sent messages. Please try again.');
+        }
+      }
+
       function renderThreads() {
         const container = document.getElementById('threadList');
         
-        if (currentTab === 'drafts') {
+        if (currentTab === 'drafts' || currentTab === 'sent') {
           return;
         }
 
-        const filteredThreads = threads.filter(thread => {
-          if (currentTab === 'inbox') {
-            return true; // Show all threads in inbox
-          } else if (currentTab === 'sent') {
-            // In sent tab, show threads where user sent the last message
-            // This is simplified - you might want to track this differently
-            return true;
-          }
-          return false;
-        });
+        let filteredThreads = threads;
+        
+        // Apply search filter
+        if (searchQuery) {
+          filteredThreads = threads.filter(thread => {
+            const searchText = [
+              thread.supplierName,
+              thread.customerName,
+              thread.subject,
+              thread.lastMessagePreview
+            ].filter(Boolean).join(' ').toLowerCase();
+            return searchText.includes(searchQuery);
+          });
+        }
 
         if (filteredThreads.length === 0) {
           container.innerHTML = `
@@ -388,8 +444,8 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
               </svg>
-              <h3>No messages yet</h3>
-              <p>Start a conversation with a supplier to plan your event</p>
+              <h3>${searchQuery ? 'No matching messages' : 'No messages yet'}</h3>
+              <p>${searchQuery ? 'Try a different search term' : 'Start a conversation with a supplier to plan your event'}</p>
             </div>
           `;
           return;
@@ -428,34 +484,91 @@
       function renderDrafts() {
         const container = document.getElementById('threadList');
 
-        if (drafts.length === 0) {
+        let filteredDrafts = drafts;
+        
+        // Apply search filter
+        if (searchQuery) {
+          filteredDrafts = drafts.filter(draft => {
+            const searchText = draft.text.toLowerCase();
+            return searchText.includes(searchQuery);
+          });
+        }
+
+        if (filteredDrafts.length === 0) {
           container.innerHTML = `
             <div class="empty-state">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
               </svg>
-              <h3>No drafts</h3>
-              <p>Your draft messages will appear here</p>
+              <h3>${searchQuery ? 'No matching drafts' : 'No drafts'}</h3>
+              <p>${searchQuery ? 'Try a different search term' : 'Your draft messages will appear here'}</p>
             </div>
           `;
           return;
         }
 
-        container.innerHTML = drafts.map(draft => {
+        container.innerHTML = filteredDrafts.map(draft => {
           const timeAgo = formatTimeAgo(draft.updatedAt || draft.createdAt);
+          const fullDate = formatFullDate(draft.updatedAt || draft.createdAt);
           const preview = draft.text.substring(0, 100);
 
           return `
-            <div class="thread-item" onclick="editDraft('${draft.id}')">
+            <div class="thread-item" onclick="editDraft('${draft.id}', '${draft.threadId}')">
               <div class="thread-avatar">📝</div>
               <div class="thread-content">
                 <div class="thread-header">
                   <span class="thread-name">Draft Message</span>
-                  <span class="thread-time">${timeAgo}</span>
+                  <span class="thread-time" title="${fullDate}">${timeAgo}</span>
                 </div>
                 <div class="thread-preview">${escapeHtml(preview)}${draft.text.length > 100 ? '...' : ''}</div>
               </div>
             </div>
+          `;
+        }).join('');
+      }
+
+      function renderSentMessages() {
+        const container = document.getElementById('threadList');
+
+        let filteredMessages = sentMessages;
+        
+        // Apply search filter
+        if (searchQuery) {
+          filteredMessages = sentMessages.filter(msg => {
+            const searchText = msg.text.toLowerCase();
+            return searchText.includes(searchQuery);
+          });
+        }
+
+        if (filteredMessages.length === 0) {
+          container.innerHTML = `
+            <div class="empty-state">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+              </svg>
+              <h3>${searchQuery ? 'No matching sent messages' : 'No sent messages'}</h3>
+              <p>${searchQuery ? 'Try a different search term' : 'Messages you send will appear here'}</p>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = filteredMessages.map(msg => {
+          const timeAgo = formatTimeAgo(msg.sentAt || msg.createdAt);
+          const fullDate = formatFullDate(msg.sentAt || msg.createdAt);
+          const preview = msg.text.substring(0, 100);
+
+          return `
+            <a href="/conversation.html?id=${msg.threadId}" class="thread-item">
+              <div class="thread-avatar">📤</div>
+              <div class="thread-content">
+                <div class="thread-header">
+                  <span class="thread-name">Sent Message</span>
+                  <span class="thread-time" title="${fullDate}">${timeAgo}</span>
+                </div>
+                <div class="thread-preview">${escapeHtml(preview)}${msg.text.length > 100 ? '...' : ''}</div>
+              </div>
+            </a>
           `;
         }).join('');
       }
@@ -625,9 +738,13 @@
         }
       }
 
-      window.editDraft = function(draftId) {
-        // TODO: Open draft editor
-        alert(`Edit draft: ${draftId}`);
+      window.editDraft = function(draftId, threadId) {
+        // Navigate to the conversation with the draft
+        if (threadId) {
+          window.location.href = `/conversation.html?id=${threadId}&draft=${draftId}`;
+        } else {
+          alert('Draft details not available');
+        }
       };
     })();
   </script>

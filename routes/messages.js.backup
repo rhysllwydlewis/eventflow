@@ -11,35 +11,6 @@ const { auditLog, AUDIT_ACTIONS } = require('../middleware/audit');
 const dbUnified = require('../db-unified');
 const { uid } = require('../store');
 
-function getMessageText(recipientName, senderName, text, baseUrl) {
-  const msgPreview = text.trim().substring(0, 200);
-  const ellipsis = text.trim().length > 200 ? '...' : '';
-  const url = baseUrl || 'https://eventflow.com';
-  return `Hello ${recipientName},
-
-You have received a new message from ${senderName}:
-
-"${msgPreview}${ellipsis}"
-
-Log in to EventFlow to view and reply: ${url}/messages.html
-
-Best regards,
-EventFlow Team`;
-}
-
-function getMessageHtml(recipientName, senderName, text, baseUrl) {
-  const msgPreview = text.trim().substring(0, 200);
-  const ellipsis = text.trim().length > 200 ? '...' : '';
-  const url = baseUrl || 'https://eventflow.com';
-  return [
-    `<p>Hello ${recipientName},</p>`,
-    `<p>You have received a new message from <strong>${senderName}</strong>:</p>`,
-    `<blockquote style="border-left: 3px solid #667eea; padding-left: 12px; margin: 16px 0; color: #4b5563;">${msgPreview}${ellipsis}</blockquote>`,
-    `<p><a href="${url}/messages.html" style="background: #667eea; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block;">View Message</a></p>`,
-    `<p>Best regards,<br>EventFlow Team</p>`,
-  ].join('');
-}
-
 const router = express.Router();
 
 /**
@@ -326,17 +297,16 @@ router.post('/threads/:threadId/messages', authRequired, async (req, res) => {
         try {
           const users = await dbUnified.read('users');
           const suppliers = await dbUnified.read('suppliers');
-
+          
           const sender = users.find(u => u.id === userId);
           const senderName = sender?.name || sender?.email || 'Someone';
-
+          
           let recipientEmail = null;
           let recipientName = null;
-
+          
           if (userRole === 'customer') {
             // Customer sent message to supplier
-            const supplier =
-              suppliers.find(s => s.id === recipientId) || users.find(u => u.id === recipientId);
+            const supplier = suppliers.find(s => s.id === recipientId) || users.find(u => u.id === recipientId);
             recipientEmail = supplier?.email;
             recipientName = supplier?.name || 'Supplier';
           } else {
@@ -345,15 +315,15 @@ router.post('/threads/:threadId/messages', authRequired, async (req, res) => {
             recipientEmail = customer?.email;
             recipientName = customer?.name || 'Customer';
           }
-
+          
           if (recipientEmail && recipientName) {
             // Import sendMail function (this should be available in the context)
             const postmark = require('../utils/postmark');
             await postmark.sendMail({
               to: recipientEmail,
               subject: `New message from ${senderName} - EventFlow`,
-              text: getMessageText(recipientName, senderName, text, process.env.BASE_URL),
-              html: getMessageHtml(recipientName, senderName, text, process.env.BASE_URL),
+              text: `Hello ${recipientName},\n\nYou have received a new message from ${senderName}:\n\n"${text.trim().substring(0, 200)}${text.trim().length > 200 ? '...' : '"}"\n\nLog in to EventFlow to view and reply: ${process.env.BASE_URL || 'https://eventflow.com'}/messages.html\n\nBest regards,\nEventFlow Team`,
+              html: `<p>Hello ${recipientName},</p><p>You have received a new message from <strong>${senderName}</strong>:</p><blockquote style="border-left: 3px solid #667eea; padding-left: 12px; margin: 16px 0; color: #4b5563;">${text.trim().substring(0, 200)}${text.trim().length > 200 ? '...' : ''}</blockquote><p><a href="${process.env.BASE_URL || 'https://eventflow.com'}/messages.html" style="background: #667eea; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block;">View Message</a></p><p>Best regards,<br>EventFlow Team</p>`
             });
           }
         } catch (emailError) {
