@@ -68,6 +68,8 @@ Getting "502 Bad Gateway" or "connection refused" errors? This usually means Mon
 - ✅ **Reviews & Ratings System** - 5-star ratings with approval workflow
 - ✅ **Advanced Search & Discovery** - Full-text search, filters, trending, recommendations
 - ✅ **User Authentication** - JWT-based auth with role-based access (customer, supplier, admin)
+- ✅ **Email Verification** - Secure token-based email verification with 24-hour expiration
+- ✅ **Package Detail Pages** - Full-featured package view with gallery, supplier info, and messaging
 - ✅ **Supplier Profiles** - Rich profiles with galleries, packages, and services
 - ✅ **Admin Moderation** - Photo and review approval queues
 - ✅ **MongoDB Integration** - Schema validation, indexes, connection pooling
@@ -227,6 +229,8 @@ POST   /api/auth/register        - Register new user
 POST   /api/auth/login           - Login
 POST   /api/auth/logout          - Logout
 GET    /api/auth/me              - Get current user
+GET    /api/auth/verify          - Verify email with token
+POST   /api/auth/resend-verification - Resend verification email
 POST   /api/auth/forgot          - Request password reset
 ```
 
@@ -249,6 +253,14 @@ GET    /api/reviews/supplier/:id - Get supplier reviews
 GET    /api/reviews/supplier/:id/distribution - Rating distribution
 POST   /api/reviews/:id/helpful  - Mark review helpful
 DELETE /api/reviews/:id          - Delete review
+```
+
+### Packages
+
+```
+GET    /api/packages/featured    - Get featured packages
+GET    /api/packages/search      - Search packages
+GET    /api/packages/:slug       - Get package details by slug
 ```
 
 ### Photo Management
@@ -283,6 +295,98 @@ GET    /api/admin/export/all     - Export all data (JSON)
 
 See [API_DOCUMENTATION.md](API_DOCUMENTATION.md) for complete reference.  
 See [ADMIN_API.md](ADMIN_API.md) for detailed admin endpoint documentation.
+
+## 📱 User Flows & Pages
+
+### Email Verification Flow
+
+EventFlow implements a secure email verification system for new user accounts:
+
+**User Journey:**
+
+1. User registers for an account at `/auth.html`
+2. System sends verification email with a unique 24-hour token via Postmark
+3. User clicks verification link in email → redirects to `/verify.html?token=<token>`
+4. Page automatically calls `/api/auth/verify` API with the token
+5. System displays branded verification status:
+   - ✅ **Success**: "Email Verified!" with auto-redirect to appropriate dashboard
+   - ❌ **Expired**: Shows expiration message with resend form
+   - ❌ **Invalid**: Shows invalid token message with resend form
+   - ⚠️ **No Token**: Shows instructions with resend form
+6. After successful verification, user is redirected to:
+   - Admin users → `/admin.html`
+   - Supplier users → `/dashboard-supplier.html`
+   - Customer users → `/dashboard-customer.html`
+
+**Features:**
+
+- Token-based verification with 24-hour expiration for security
+- Branded UI with appropriate icons and messages for all states
+- Resend verification email functionality
+- Auto-redirect after successful verification
+- Manual navigation buttons (Go to Dashboard, Go to Home)
+- Email validation and error handling
+
+**Screenshot:**
+![Email Verification Page](https://github.com/user-attachments/assets/ca0d5df7-24cd-45f9-8c80-ed7c4f38a0c1)
+
+### Package Detail Page Flow
+
+Users can browse and view detailed information about service packages:
+
+**User Journey:**
+
+1. User discovers packages on homepage featured carousel or category pages
+2. Clicks on package card → navigates to `/package.html?slug=<package-slug>`
+3. Page loads full package details via `/api/packages/:slug` API
+4. User views comprehensive package information and supplier details
+5. User can:
+   - Browse package photo gallery
+   - Read full description and pricing
+   - View tags and categories
+   - See supplier profile information
+   - Message the supplier (requires authentication)
+   - Navigate to supplier's other packages
+
+**Package Detail Features:**
+
+- **Image Gallery**: Multiple photos with thumbnail navigation and full-screen view
+- **Package Information**:
+  - Title, description, and detailed information
+  - Pricing (or "Contact for price")
+  - Location with map icon
+  - Categories and tags
+  - Featured badge (if applicable)
+- **Supplier Card**:
+  - Supplier logo and name
+  - Business description
+  - Contact information (email, phone)
+  - Location
+  - Link to view all supplier packages
+- **Message Panel**: Auth-gated messaging system to contact supplier
+- **Breadcrumb Navigation**: Home → Category → Package
+- **Responsive Design**: Mobile-friendly layout
+
+**Linking from Homepage:**
+
+- Package cards on the homepage automatically link to detail pages
+- Implemented via `PackageList` component: `window.location.href = '/package.html?slug=${pkg.slug}'`
+- Featured packages carousel also links to detail pages
+- All package cards are clickable with hover effects
+
+**Screenshot:**
+![Package Detail Page](https://github.com/user-attachments/assets/5a312a8d-0f34-4c54-9e27-895ed06b9c91)
+
+**Technical Implementation:**
+
+- URL Pattern: `/package.html?slug=<package-slug>`
+- API Endpoint: `GET /api/packages/:slug`
+- JavaScript Handler: `/assets/js/pages/package-init.js` (inline in package.html)
+- Components Used:
+  - `PackageGallery` - Image gallery component
+  - `SupplierCard` - Supplier information display
+  - `MessageSupplierPanel` - Messaging interface
+- Authentication: Required only for messaging functionality
 
 ## 🔧 Environment Variables
 

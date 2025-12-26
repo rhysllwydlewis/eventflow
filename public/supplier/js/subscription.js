@@ -168,12 +168,12 @@ async function loadSupplierData() {
 async function initGooglePayAPI() {
   try {
     paymentsClient = await initializeGooglePay();
-    
+
     if (!paymentsClient) {
       console.warn('Google Pay not available - buttons will not render');
       return;
     }
-    
+
     const available = await isGooglePayAvailable(paymentsClient);
 
     if (!available) {
@@ -191,7 +191,9 @@ async function initGooglePayAPI() {
  */
 function renderSubscriptionPlans() {
   const container = document.getElementById('subscription-plans');
-  if (!container) return;
+  if (!container) {
+    return;
+  }
 
   container.innerHTML = '';
 
@@ -362,7 +364,9 @@ async function handleGooglePayClick(plan) {
  */
 function displayCurrentSubscription() {
   const statusContainer = document.getElementById('current-subscription-status');
-  if (!statusContainer) return;
+  if (!statusContainer) {
+    return;
+  }
 
   const subscription = currentSupplier?.subscription;
 
@@ -379,13 +383,18 @@ function displayCurrentSubscription() {
 
   const plan = PLANS[subscription.planId];
   const statusClass =
-    subscription.status === 'active' ? 'status-active' : subscription.status === 'trial' ? 'status-trial' : 'status-expired';
+    subscription.status === 'active'
+      ? 'status-active'
+      : subscription.status === 'trial'
+        ? 'status-trial'
+        : 'status-expired';
 
   let statusText = subscription.status.charAt(0).toUpperCase() + subscription.status.slice(1);
   if (subscription.status === 'trial') {
-    const daysLeft = Math.max(0, Math.ceil(
-      (subscription.trialEndDate.toDate() - new Date()) / (1000 * 60 * 60 * 24)
-    ));
+    const daysLeft = Math.max(
+      0,
+      Math.ceil((subscription.trialEndDate.toDate() - new Date()) / (1000 * 60 * 60 * 24))
+    );
     statusText = `Trial (${daysLeft} days left)`;
   }
 
@@ -393,7 +402,7 @@ function displayCurrentSubscription() {
     ? new Date(subscription.endDate.toDate()).toLocaleDateString('en-GB', {
         year: 'numeric',
         month: 'long',
-        day: 'numeric'
+        day: 'numeric',
       })
     : 'N/A';
 
@@ -401,7 +410,8 @@ function displayCurrentSubscription() {
   const daysUntilRenewal = subscription.endDate
     ? Math.ceil((subscription.endDate.toDate() - new Date()) / (1000 * 60 * 60 * 24))
     : 0;
-  const showRenewalPrompt = !subscription.autoRenew && daysUntilRenewal > 0 && daysUntilRenewal <= 14;
+  const showRenewalPrompt =
+    !subscription.autoRenew && daysUntilRenewal > 0 && daysUntilRenewal <= 14;
 
   statusContainer.innerHTML = `
     <div class="subscription-status">
@@ -411,13 +421,16 @@ function displayCurrentSubscription() {
       </div>
       <p class="${statusClass}">${statusText}</p>
       <p class="small">Plan: ${plan ? plan.name : subscription.planId}</p>
-      ${subscription.cancelledAt 
-        ? `<p class="small">Cancelled - Access until: ${endDateStr}</p>`
-        : `<p class="small">${subscription.autoRenew ? 'Renews' : 'Expires'}: ${endDateStr}</p>`
+      ${
+        subscription.cancelledAt
+          ? `<p class="small">Cancelled - Access until: ${endDateStr}</p>`
+          : `<p class="small">${subscription.autoRenew ? 'Renews' : 'Expires'}: ${endDateStr}</p>`
       }
       <p class="small">Auto-renew: ${subscription.autoRenew ? 'Yes' : 'No'}</p>
       
-      ${showRenewalPrompt ? `
+      ${
+        showRenewalPrompt
+          ? `
         <div style="background-color: #fff3cd; border-left: 4px solid #ffc107; border-radius: 4px; padding: 12px; margin: 15px 0;">
           <p style="margin: 0 0 10px; color: #856404; font-size: 14px; font-weight: 600;">
             ⚠️ Your subscription expires in ${daysUntilRenewal} days
@@ -426,18 +439,21 @@ function displayCurrentSubscription() {
             Renew now to keep your premium features without interruption.
           </p>
         </div>
-      ` : ''}
+      `
+          : ''
+      }
       
       <div class="subscription-actions">
         ${
-          (subscription.status === 'active' || subscription.status === 'trial') && !subscription.cancelledAt
+          (subscription.status === 'active' || subscription.status === 'trial') &&
+          !subscription.cancelledAt
             ? `
           <button class="btn-manage" id="cancel-subscription-btn">Cancel Subscription</button>
           <button class="btn-manage" id="change-plan-btn">Change Plan</button>
         `
             : subscription.cancelledAt
-            ? `<button class="btn-manage" id="reactivate-subscription-btn">Reactivate Subscription</button>`
-            : ''
+              ? `<button class="btn-manage" id="reactivate-subscription-btn">Reactivate Subscription</button>`
+              : ''
         }
       </div>
     </div>
@@ -455,7 +471,7 @@ function displayCurrentSubscription() {
       document.getElementById('subscription-plans').scrollIntoView({ behavior: 'smooth' });
     });
   }
-  
+
   const reactivateBtn = document.getElementById('reactivate-subscription-btn');
   if (reactivateBtn) {
     reactivateBtn.addEventListener('click', handleReactivateSubscription);
@@ -466,7 +482,11 @@ function displayCurrentSubscription() {
  * Handle subscription reactivation
  */
 async function handleReactivateSubscription() {
-  if (!confirm('Would you like to reactivate your subscription? Your premium features will continue without interruption.')) {
+  if (
+    !confirm(
+      'Would you like to reactivate your subscription? Your premium features will continue without interruption.'
+    )
+  ) {
     return;
   }
 
@@ -488,7 +508,7 @@ async function handleReactivateSubscription() {
     );
 
     showSuccess('Subscription reactivated successfully!');
-    
+
     // Reload the page to update status
     setTimeout(() => {
       window.location.reload();
@@ -509,12 +529,12 @@ async function handleCancelSubscription() {
     ? new Date(currentSupplier.subscription.endDate.toDate()).toLocaleDateString('en-GB', {
         year: 'numeric',
         month: 'long',
-        day: 'numeric'
+        day: 'numeric',
       })
     : 'the end of your billing period';
-  
+
   const confirmMessage = `Are you sure you want to cancel your subscription?\n\nYou'll lose access to premium features after ${endDate}.\n\nYou can reactivate anytime before this date.`;
-  
+
   if (!confirm(confirmMessage)) {
     return;
   }
