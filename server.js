@@ -4114,7 +4114,84 @@ app.use(
 
 // Catch-all 404 handler (must be the LAST middleware)
 // This will only be reached if no static files or routes matched
-app.use((_req, res) => res.status(404).send('Not found'));
+app.use((req, res) => {
+  const { method, url, headers } = req;
+  const isApiRequest = url.startsWith('/api');
+  const acceptsJson = headers.accept && headers.accept.includes('application/json');
+
+  // Log 404 for debugging (but not for common static assets)
+  if (!url.match(/\.(ico|png|jpg|jpeg|gif|svg|css|js|woff|woff2|ttf)$/)) {
+    console.warn(`404 Not Found: [${method}] ${url}`);
+  }
+
+  // Return JSON for API requests or if client accepts JSON
+  if (isApiRequest || acceptsJson) {
+    return res.status(404).json({
+      error: 'Not found',
+      message: `The requested resource ${url} was not found on this server`,
+      status: 404,
+    });
+  }
+
+  // Return HTML for regular page requests
+  res.status(404).send(`
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>404 - Page Not Found</title>
+      <style>
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          min-height: 100vh;
+          margin: 0;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+        }
+        .container {
+          text-align: center;
+          padding: 2rem;
+        }
+        h1 {
+          font-size: 6rem;
+          margin: 0;
+          font-weight: 700;
+        }
+        p {
+          font-size: 1.5rem;
+          margin: 1rem 0;
+        }
+        a {
+          display: inline-block;
+          margin-top: 2rem;
+          padding: 1rem 2rem;
+          background: white;
+          color: #667eea;
+          text-decoration: none;
+          border-radius: 8px;
+          font-weight: 600;
+          transition: transform 0.2s;
+        }
+        a:hover {
+          transform: translateY(-2px);
+        }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <h1>404</h1>
+        <p>Page Not Found</p>
+        <p style="font-size: 1rem; opacity: 0.9;">The page you're looking for doesn't exist.</p>
+        <a href="/">Return to Homepage</a>
+      </div>
+    </body>
+    </html>
+  `);
+});
 
 // ---------- Start ----------
 const http = require('http');

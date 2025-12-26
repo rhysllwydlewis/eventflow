@@ -51,6 +51,16 @@
           return r.json().then(data => {
             if (!r.ok) {
               const err = data && data.error ? data.error : `Request failed with ${r.status}`;
+              // Provide more specific error messages for common HTTP codes
+              if (r.status === 404) {
+                throw new Error(`Resource not found (404): ${url}`);
+              } else if (r.status === 401) {
+                throw new Error('Authentication required. Please log in again.');
+              } else if (r.status === 403) {
+                throw new Error('Access denied. Insufficient permissions.');
+              } else if (r.status === 500) {
+                throw new Error('Server error. Please try again later.');
+              }
               throw new Error(err);
             }
             return data;
@@ -59,6 +69,9 @@
           // Handle non-JSON responses (like plain text errors)
           return r.text().then(text => {
             if (!r.ok) {
+              if (r.status === 404) {
+                throw new Error(`Resource not found (404): ${url}`);
+              }
               throw new Error(text || `Request failed with ${r.status}`);
             }
             // Try to parse as JSON anyway for successful responses
@@ -71,7 +84,8 @@
         }
       })
       .catch(err => {
-        console.error('API error:', url, err);
+        // Enhanced error logging with more context
+        console.error(`API error [${opts.method || 'GET'}] ${url}:`, err.message || err);
         throw err;
       });
   }

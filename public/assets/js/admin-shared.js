@@ -87,13 +87,35 @@ const AdminShared = (function () {
     if (isJson) {
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.error || `Request failed with status ${response.status}`);
+        // Provide more specific error messages for common HTTP codes
+        let errorMessage = data.error || `Request failed with status ${response.status}`;
+        
+        if (response.status === 404) {
+          errorMessage = data.error || `Resource not found: ${url}`;
+        } else if (response.status === 401) {
+          errorMessage = 'Authentication required. Please log in again.';
+          // Optionally redirect to login after a delay
+          setTimeout(() => {
+            if (window.location.pathname !== '/auth.html') {
+              window.location.href = '/auth.html?return=' + encodeURIComponent(window.location.href);
+            }
+          }, 2000);
+        } else if (response.status === 403) {
+          errorMessage = 'Access denied. You do not have permission to perform this action.';
+        } else if (response.status === 500) {
+          errorMessage = 'Server error. Please try again later.';
+        } else if (response.status === 503) {
+          errorMessage = 'Service temporarily unavailable. The database may be connecting.';
+        }
+        
+        throw new Error(errorMessage);
       }
       return data;
     } else {
       const text = await response.text();
       if (!response.ok) {
-        throw new Error(text || `Request failed with status ${response.status}`);
+        const errorMessage = text || `Request failed with status ${response.status}`;
+        throw new Error(errorMessage);
       }
       try {
         return JSON.parse(text);
