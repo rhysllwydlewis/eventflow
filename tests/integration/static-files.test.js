@@ -16,15 +16,15 @@ describe('Static File Serving', () => {
   // which is beyond the scope of these unit tests.
 
   describe('Email Verification Page', () => {
+    const verifyHtmlPath = path.join(__dirname, '../../public/verify.html');
+
     it('should have verify.html file in public directory', () => {
-      const filePath = path.join(__dirname, '../../public/verify.html');
-      const fileExists = fs.existsSync(filePath);
+      const fileExists = fs.existsSync(verifyHtmlPath);
       expect(fileExists).toBe(true);
     });
 
     it('should have proper HTML structure in verify.html', () => {
-      const filePath = path.join(__dirname, '../../public/verify.html');
-      const content = fs.readFileSync(filePath, 'utf8');
+      const content = fs.readFileSync(verifyHtmlPath, 'utf8');
 
       // Verify basic HTML structure
       expect(content).toContain('<!DOCTYPE html>');

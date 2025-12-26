@@ -586,7 +586,12 @@ app.use((req, res, next) => {
   }
 
   // Cache versioned assets (with hash in filename) for 1 year
-  if (req.path.match(/\.[0-9a-f]{8,}\.(css|js|jpg|jpeg|png|gif|webp|svg|woff|woff2|ttf|eot)$/i)) {
+  // Matches common hash patterns: 8, 12, or 16 hex characters (webpack, vite, etc.)
+  if (
+    req.path.match(/\.[0-9a-f]{8}\.(css|js|jpg|jpeg|png|gif|webp|svg|woff|woff2|ttf|eot)$/i) ||
+    req.path.match(/\.[0-9a-f]{12}\.(css|js|jpg|jpeg|png|gif|webp|svg|woff|woff2|ttf|eot)$/i) ||
+    req.path.match(/\.[0-9a-f]{16}\.(css|js|jpg|jpeg|png|gif|webp|svg|woff|woff2|ttf|eot)$/i)
+  ) {
     res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
     return next();
   }
