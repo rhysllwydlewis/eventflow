@@ -2452,8 +2452,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
           } else {
             if (regStatus) {
-              // Store email for potential resend
-              const registeredEmail = email;
               regStatus.innerHTML =
                 'Account created. Check your email to verify your account, then you can sign in. ' +
                 '<button type="button" id="resend-verify-btn" class="link-button" style="text-decoration:underline;margin-left:4px;">Resend email</button>';
@@ -2469,7 +2467,7 @@ document.addEventListener('DOMContentLoaded', () => {
                       method: 'POST',
                       headers: getHeadersWithCsrf({ 'Content-Type': 'application/json' }),
                       credentials: 'include',
-                      body: JSON.stringify({ email: registeredEmail }),
+                      body: JSON.stringify({ email }),
                     });
                     const resendData = await resendResp.json();
                     if (resendResp.ok) {
@@ -2502,6 +2500,60 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 });
+
+// Helper function to create resend verification form
+function createResendVerificationForm(containerId, initialEmail = '') {
+  const container = document.getElementById(containerId);
+  if (!container) {
+    return null;
+  }
+
+  const formHtml =
+    '<div style="margin-top:16px;">' +
+    `<input type="email" id="resend-email-${containerId}" placeholder="Enter your email" value="${initialEmail}" style="padding:8px;border:1px solid #ccc;border-radius:4px;margin-right:8px;">` +
+    `<button type="button" id="resend-verify-btn-${containerId}" class="btn btn-primary">Send new verification email</button>` +
+    '</div>';
+
+  const existingContent = container.innerHTML;
+  container.innerHTML = existingContent + formHtml;
+
+  const resendBtn = document.getElementById(`resend-verify-btn-${containerId}`);
+  const emailInput = document.getElementById(`resend-email-${containerId}`);
+
+  if (resendBtn && emailInput) {
+    resendBtn.addEventListener('click', async () => {
+      const email = emailInput.value.trim();
+      if (!email) {
+        showNetworkError('Please enter your email address', 'error');
+        return;
+      }
+      resendBtn.disabled = true;
+      resendBtn.textContent = 'Sending...';
+      try {
+        const resendResp = await fetch('/api/auth/resend-verification', {
+          method: 'POST',
+          headers: getHeadersWithCsrf({ 'Content-Type': 'application/json' }),
+          credentials: 'include',
+          body: JSON.stringify({ email }),
+        });
+        const resendData = await resendResp.json();
+        if (resendResp.ok) {
+          showNetworkError(resendData.message || 'Verification email sent!', 'success');
+          container.innerHTML = `<p class="small">${resendData.message || 'Verification email sent! Check your inbox.'}</p>`;
+        } else {
+          showNetworkError(resendData.error || 'Failed to send email', 'error');
+        }
+      } catch (err) {
+        showNetworkError('Network error - please try again', 'error');
+      } finally {
+        resendBtn.disabled = false;
+        resendBtn.textContent = 'Send new verification email';
+      }
+    });
+  }
+
+  return { resendBtn, emailInput };
+}
 
 // Email verification page
 async function initVerify() {
