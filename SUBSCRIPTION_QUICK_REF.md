@@ -1,9 +1,11 @@
 # Subscription System Implementation - Quick Reference
 
 ## Overview
+
 Complete subscription payment system for EventFlow supplier accounts using Google Pay integration with Firebase Cloud Functions backend.
 
 ## Key Features Implemented
+
 ✅ Google Pay payment processing
 ✅ Subscription activation with email confirmation
 ✅ Trial period management (14-28 days)
@@ -17,6 +19,7 @@ Complete subscription payment system for EventFlow supplier accounts using Googl
 ## Quick Start
 
 ### Files Modified (13 total)
+
 - `functions/subscriptions.js` - Main backend logic
 - `functions/index.js` - Function exports
 - `public/dashboard-supplier.html` - Dashboard UI
@@ -26,6 +29,7 @@ Complete subscription payment system for EventFlow supplier accounts using Googl
 - 2 documentation files
 
 ### Cloud Functions
+
 1. `onPaymentSuccess` - Process payments, activate subscriptions
 2. `checkSubscriptionStatus` - Daily cron (midnight), send reminders
 3. `cancelSubscription` - Handle cancellations
@@ -33,6 +37,7 @@ Complete subscription payment system for EventFlow supplier accounts using Googl
 5. `getSubscriptionStatus` - Query subscription info
 
 ### Deployment
+
 ```bash
 cd functions
 npm install
@@ -40,6 +45,7 @@ firebase deploy --only functions
 ```
 
 ### Environment Variables
+
 ```env
 SEND_EMAILS=true
 APP_BASE_URL=https://your-domain.com
@@ -48,19 +54,24 @@ APP_BASE_URL=https://your-domain.com
 ## Important Notes
 
 ### Google Pay Limitation
+
 ⚠️ **One-time tokens only** - Cannot auto-renew without manual user action
+
 - System sends renewal reminders at 7 days
 - Users must click through to renew manually
 - For automatic renewals, integrate Stripe/Braintree
 
 ### Email System
+
 - Simple {{variable}} replacement (no template engine)
 - Conditionals handled in function code, not templates
 - Logs emails when SEND_EMAILS=false (development)
-- Requires Mailgun/SendGrid for production
+- Uses Postmark exclusively for email delivery
 
 ### PSP Configuration
+
 ⚠️ Currently using 'example' gateway (TEST mode)
+
 - Update `googlepay-config.js` for production
 - Configure actual gateway: Stripe, Braintree, or Adyen
 - Update merchant ID for production
@@ -68,6 +79,7 @@ APP_BASE_URL=https://your-domain.com
 ## Subscription Flow
 
 ### New Subscription
+
 1. User selects plan → Google Pay → Payment success
 2. Payment document created in Firestore
 3. `onPaymentSuccess` triggers → activates subscription
@@ -75,20 +87,24 @@ APP_BASE_URL=https://your-domain.com
 5. Dashboard updates with subscription status
 
 ### During Trial
+
 - Status shows "Trial (X days left)"
 - 3 days before end: trial ending reminder sent
 - Trial ends: status changes to "active"
 
 ### Before Renewal
+
 - 7 days before: renewal reminder sent
 - Auto-renew: "No action needed" message
 - Manual: "Renew Now" call-to-action
 
 ### At Expiration
+
 - Auto-renew: Expires, sends failed payment email (manual renewal required)
 - No auto-renew: Expires to free tier, no action
 
 ### Cancellation
+
 - User clicks "Cancel Subscription"
 - `autoRenew` set to false
 - `cancelledAt` timestamp set
@@ -99,6 +115,7 @@ APP_BASE_URL=https://your-domain.com
 ## Testing
 
 See `SUBSCRIPTION_TESTING.md` for complete checklist covering:
+
 - Payment flows
 - Email notifications
 - UI states
@@ -115,22 +132,26 @@ See `SUBSCRIPTION_TESTING.md` for complete checklist covering:
 ## Common Issues
 
 ### "Please log in to view subscription status"
+
 - Check Firebase Auth state
 - Verify user has supplier profile
 - Check browser console for errors
 
 ### Google Pay button not appearing
+
 - Verify Google Pay API loaded (check network tab)
 - Browser must support Google Pay
 - Using TEST mode requires compatible browsers
 
 ### Emails not sending
+
 - Check Cloud Function logs
 - Verify SEND_EMAILS=true
-- Configure email service (Mailgun/SendGrid)
+- Configure Postmark (see POSTMARK_SETUP.md)
 - Emails logged to console if not configured
 
 ### Subscription not activating
+
 - Check payment document status in Firestore
 - Verify Firebase Extension installed
 - Check `onPaymentSuccess` function logs
@@ -157,6 +178,7 @@ See `SUBSCRIPTION_TESTING.md` for complete checklist covering:
 ## Success Metrics
 
 Once deployed, monitor:
+
 - Payment success rate
 - Trial-to-paid conversion
 - Cancellation rate

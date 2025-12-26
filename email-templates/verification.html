@@ -3,8 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
+  <meta name="supported-color-schemes" content="light dark">
   <title>Verify Your Email - EventFlow</title>
   <style>
+    :root {
+      color-scheme: light dark;
+      supported-color-schemes: light dark;
+    }
     body {
       margin: 0;
       padding: 0;
@@ -64,22 +70,23 @@
       font-weight: 700;
       font-size: 16px;
       box-shadow: 0 10px 30px rgba(15, 23, 42, 0.1);
+      transition: all 0.2s ease;
     }
     .cta-button:hover {
       background: linear-gradient(180deg, #14b09e, #0d9687);
+      box-shadow: 0 12px 35px rgba(15, 23, 42, 0.15);
     }
-    .verification-code {
-      display: inline-block;
-      margin: 16px 0;
-      padding: 12px 20px;
+    .security-notice {
+      margin: 24px 0;
+      padding: 16px;
       background-color: #F2FBF9;
-      border: 1px solid #CFEDEA;
+      border-left: 4px solid #13B6A2;
       border-radius: 8px;
-      font-family: 'Courier New', monospace;
-      font-size: 18px;
-      font-weight: 700;
+    }
+    .security-notice p {
+      margin: 0;
       color: #0B8073;
-      letter-spacing: 2px;
+      font-size: 14px;
     }
     .email-footer {
       padding: 24px;
@@ -100,6 +107,57 @@
       margin: 24px 0;
       border: 0;
       border-top: 1px solid #E7EAF0;
+    }
+    .link-text {
+      font-size: 13px;
+      color: #0B8073;
+      word-break: break-all;
+      display: block;
+      padding: 12px;
+      background-color: #F2FBF9;
+      border-radius: 8px;
+      margin: 8px 0;
+    }
+    /* Dark mode support */
+    @media (prefers-color-scheme: dark) {
+      body {
+        background-color: #0B1220;
+        color: #F9FAFB;
+      }
+      .email-container {
+        background-color: #1a2332;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      }
+      .email-body h2 {
+        color: #F9FAFB;
+      }
+      .email-body p {
+        color: #B8BCC8;
+      }
+      .email-footer {
+        background-color: #0f1723;
+        border-top: 1px solid #2a3446;
+      }
+      .email-footer p {
+        color: #8896AB;
+      }
+      .email-footer a {
+        color: #16c3ad;
+      }
+      .divider {
+        border-top: 1px solid #2a3446;
+      }
+      .security-notice {
+        background-color: #1a332d;
+        border-left: 4px solid #16c3ad;
+      }
+      .security-notice p {
+        color: #9be7d9;
+      }
+      .link-text {
+        background-color: #1a332d;
+        color: #16c3ad;
+      }
     }
     @media only screen and (max-width: 600px) {
       .email-container {
@@ -126,19 +184,23 @@
       <h1>EventFlow</h1>
     </div>
     <div class="email-body">
-      <h2>Welcome to EventFlow!</h2>
+      <h2>🎉 Welcome to EventFlow!</h2>
       <p>Hi {{name}},</p>
-      <p>Thank you for joining EventFlow! We're excited to help you plan your perfect event.</p>
-      <p>To get started, please verify your email address by clicking the button below:</p>
+      <p>Thank you for joining EventFlow! We're thrilled to help you plan your perfect event.</p>
+      <p>To complete your registration and unlock all features, please verify your email address by clicking the button below:</p>
       <div style="text-align: center;">
-        <a href="{{verificationLink}}" class="cta-button">Verify Email Address</a>
+        <a href="{{verificationLink}}" class="cta-button">✓ Verify Email Address</a>
+      </div>
+      <div class="security-notice">
+        <p><strong>🔒 Quick & Secure:</strong> This verification takes just one click and helps protect your account from unauthorized access.</p>
       </div>
       <hr class="divider">
-      <p style="font-size: 14px; color: #98A2B3;">Or copy and paste this link into your browser:</p>
-      <p style="font-size: 13px; color: #0B8073; word-break: break-all;">{{verificationLink}}</p>
+      <p style="font-size: 14px; color: #98A2B3;"><strong>Having trouble with the button?</strong> Copy and paste this link into your browser:</p>
+      <div class="link-text">{{verificationLink}}</div>
       <hr class="divider">
-      <p style="font-size: 14px; color: #98A2B3;">This link will expire in 24 hours for security reasons.</p>
-      <p style="font-size: 14px; color: #98A2B3;">If you didn't create an account with EventFlow, you can safely ignore this email.</p>
+      <p style="font-size: 14px; color: #98A2B3;"><strong>⏰ Important:</strong> This verification link will expire in <strong>24 hours</strong> for security reasons.</p>
+      <p style="font-size: 14px; color: #98A2B3;">If you didn't create an account with EventFlow, you can safely ignore this email. No account will be created without verification.</p>
+      <p style="font-size: 14px; color: #98A2B3;">Need help? Our support team is here for you at <a href="{{baseUrl}}/contact.html" style="color: #0B8073;">Contact Support</a>.</p>
     </div>
     <div class="email-footer">
       <p><strong>EventFlow</strong> — Event planning made simple.</p>
