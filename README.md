@@ -110,13 +110,25 @@ Getting "502 Bad Gateway" or "connection refused" errors? This usually means Mon
 - **User Management** - Edit, delete, suspend, ban users
 - **Admin Privilege Control** - Grant/revoke admin access with owner protection
 - **Supplier Management** - Edit, approve, verify, delete suppliers
+- **Manual Verification** - Admin can manually verify user emails and supplier identities
 - **Package Management** - Edit, approve, feature, delete packages
 - **Photo Moderation** - Batch approve/reject photo uploads
 - **Review Moderation** - Approve/reject customer reviews
+- **Smart Tagging** - Automatically generate relevant tags for suppliers based on descriptions
 - **Comprehensive Audit Log** - Track all admin actions with timestamps
 - **Data Export** - CSV and JSON exports for users, marketing lists, full database
 - **Analytics Dashboard** - User signups, activity metrics, platform statistics
 - **GDPR Compliance** - User data management and privacy controls
+
+### Messaging System
+
+- **Customer-Supplier Communication** - Direct messaging between customers and suppliers
+- **Conversation Threads** - Organized message threads with read/unread status
+- **Draft Messages** - Save and edit draft messages before sending
+- **Inbox Management** - View all conversations with unread counts and last message preview
+- **Smart Thread Reuse** - Automatically reuses existing conversations with the same parties
+- **Admin Access** - Admins can view all conversations for support purposes
+- **Real-time Updates** - Auto-refresh to show new messages
 
 ## 🚀 Quick Start
 
@@ -280,11 +292,14 @@ POST   /api/photos/approve       - Approve/reject photo (admin)
 GET    /api/admin/users          - List all users
 PUT    /api/admin/users/:id      - Edit user profile
 DELETE /api/admin/users/:id      - Delete user
-POST   /api/admin/users/:id/grant-admin   - Grant admin privileges
-POST   /api/admin/users/:id/revoke-admin  - Revoke admin privileges
+POST   /api/admin/users/:id/verify           - Manually verify user email
+POST   /api/admin/users/:id/grant-admin      - Grant admin privileges
+POST   /api/admin/users/:id/revoke-admin     - Revoke admin privileges
 GET    /api/admin/suppliers      - List all suppliers
 PUT    /api/admin/suppliers/:id  - Edit supplier
 DELETE /api/admin/suppliers/:id  - Delete supplier
+POST   /api/admin/suppliers/:id/verify       - Manually verify supplier identity
+POST   /api/admin/suppliers/smart-tags       - Generate smart tags for suppliers
 GET    /api/admin/packages       - List all packages
 PUT    /api/admin/packages/:id   - Edit package
 DELETE /api/admin/packages/:id   - Delete package
@@ -293,7 +308,23 @@ GET    /api/admin/users-export   - Export users (CSV)
 GET    /api/admin/export/all     - Export all data (JSON)
 ```
 
-See [API_DOCUMENTATION.md](API_DOCUMENTATION.md) for complete reference.  
+### Messaging Endpoints
+
+```
+GET    /api/messages/threads                      - List conversation threads
+POST   /api/messages/threads                      - Create new conversation
+GET    /api/messages/threads/:id                  - Get thread details
+GET    /api/messages/threads/:id/messages         - Get messages in thread
+POST   /api/messages/threads/:id/messages         - Send message in thread
+POST   /api/messages/threads/:id/mark-read        - Mark thread as read
+GET    /api/messages/drafts                       - Get draft messages
+PUT    /api/messages/:id                          - Update draft message
+DELETE /api/messages/:id                          - Delete draft message
+```
+
+````
+
+See [API_DOCUMENTATION.md](API_DOCUMENTATION.md) for complete reference.
 See [ADMIN_API.md](ADMIN_API.md) for detailed admin endpoint documentation.
 
 ## 📱 User Flows & Pages
@@ -403,7 +434,7 @@ JWT_SECRET=your-secret-key-min-32-chars
 # Environment
 NODE_ENV=production
 BASE_URL=https://yourdomain.com
-```
+````
 
 **Recommended (Email functionality):**
 
