@@ -22,7 +22,7 @@
     "notify": true,
     "marketingOptIn": false,
     "verified": true,
-    "lastLoginAt": "2025-12-22T22:12:02.435Z"
+    "lastLoginAt": "2025-12-26T13:46:32.645Z"
   },
   {
     "id": "usr_9ydkodbh750rfb",
@@ -45,5 +45,19 @@
     "notify": true,
     "marketingOptIn": false,
     "verified": true
+  },
+  {
+    "id": "usr_test_unverified",
+    "name": "Unverified User",
+    "email": "unverified@test.com",
+    "role": "customer",
+    "passwordHash": "$2a$10$gzrdrTDCfiZj/GsH45Yr.u9d5gyxGxIxvCxfudzDzSNYRxYF4f.3G",
+    "createdAt": "2025-12-26T13:43:17.605Z",
+    "notify": true,
+    "notify_account": true,
+    "notify_marketing": false,
+    "verified": false,
+    "verificationToken": "verify_xcg1341nmxbwf3",
+    "verificationTokenExpiresAt": "2025-12-27T13:45:12.927Z"
   }
 ]
