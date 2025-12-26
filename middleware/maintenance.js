@@ -33,6 +33,11 @@ function maintenanceMode(req, res, next) {
       return next();
     }
 
+    // Allow access to verification page (users need to verify their accounts)
+    if (req.path === '/verify.html') {
+      return next();
+    }
+
     // Allow access to static assets
     if (req.path.startsWith('/assets/') || req.path.startsWith('/favicon')) {
       return next();
@@ -48,7 +53,8 @@ function maintenanceMode(req, res, next) {
       return res.status(503).json({
         error: 'Service temporarily unavailable',
         maintenance: true,
-        message: maintenance.message || "We're performing scheduled maintenance. We'll be back soon!",
+        message:
+          maintenance.message || "We're performing scheduled maintenance. We'll be back soon!",
       });
     }
 
