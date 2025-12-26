@@ -72,12 +72,10 @@ export async function initializeFeatureAccess() {
 export async function getSupplierTier(userId) {
   try {
     // Query suppliers collection for this user
-    const { collection, query, where, getDocs } = await import('../../assets/js/firebase-config.js');
-    
-    const suppliersQuery = query(
-      collection(db, 'suppliers'),
-      where('ownerUserId', '==', userId)
-    );
+    const { collection, query, where, getDocs } =
+      await import('../../assets/js/firebase-config.js');
+
+    const suppliersQuery = query(collection(db, 'suppliers'), where('ownerUserId', '==', userId));
 
     const suppliersSnapshot = await getDocs(suppliersQuery);
 
@@ -128,7 +126,9 @@ export function getFeatureLimit(featureName) {
  */
 export async function hasReachedPackageLimit(currentCount) {
   const limit = getFeatureLimit('maxPackages');
-  if (limit === -1) return false; // unlimited
+  if (limit === -1) {
+    return false;
+  } // unlimited
   return currentCount >= limit;
 }
 
@@ -137,7 +137,9 @@ export async function hasReachedPackageLimit(currentCount) {
  */
 export async function hasReachedBookingLimit(currentCount) {
   const limit = getFeatureLimit('maxBookings');
-  if (limit === -1) return false; // unlimited
+  if (limit === -1) {
+    return false;
+  } // unlimited
   return currentCount >= limit;
 }
 

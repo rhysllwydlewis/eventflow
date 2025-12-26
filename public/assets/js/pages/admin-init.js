@@ -1795,8 +1795,10 @@
     // Show/hide bulk buttons based on checkbox selection
     function updateBulkButtons(type) {
       const checkboxes = document.querySelectorAll(`.${type}-checkbox:checked`);
-      const buttons = document.querySelectorAll(`#bulkApprove${type.charAt(0).toUpperCase() + type.slice(1)}s, #bulkReject${type.charAt(0).toUpperCase() + type.slice(1)}s, #bulkDelete${type.charAt(0).toUpperCase() + type.slice(1)}s, #bulkFeature${type.charAt(0).toUpperCase() + type.slice(1)}s`);
-      
+      const buttons = document.querySelectorAll(
+        `#bulkApprove${type.charAt(0).toUpperCase() + type.slice(1)}s, #bulkReject${type.charAt(0).toUpperCase() + type.slice(1)}s, #bulkDelete${type.charAt(0).toUpperCase() + type.slice(1)}s, #bulkFeature${type.charAt(0).toUpperCase() + type.slice(1)}s`
+      );
+
       buttons.forEach(btn => {
         if (checkboxes.length > 0) {
           btn.style.display = 'inline-block';
@@ -1812,18 +1814,20 @@
     }
 
     // Select all checkboxes
-    document.getElementById('selectAllSuppliers')?.addEventListener('change', (e) => {
-      document.querySelectorAll('.supplier-checkbox').forEach(cb => cb.checked = e.target.checked);
+    document.getElementById('selectAllSuppliers')?.addEventListener('change', e => {
+      document
+        .querySelectorAll('.supplier-checkbox')
+        .forEach(cb => (cb.checked = e.target.checked));
       updateBulkButtons('supplier');
     });
 
-    document.getElementById('selectAllPackages')?.addEventListener('change', (e) => {
-      document.querySelectorAll('.package-checkbox').forEach(cb => cb.checked = e.target.checked);
+    document.getElementById('selectAllPackages')?.addEventListener('change', e => {
+      document.querySelectorAll('.package-checkbox').forEach(cb => (cb.checked = e.target.checked));
       updateBulkButtons('package');
     });
 
     // Listen for individual checkbox changes
-    document.addEventListener('change', (e) => {
+    document.addEventListener('change', e => {
       if (e.target.classList.contains('supplier-checkbox')) {
         updateBulkButtons('supplier');
       } else if (e.target.classList.contains('package-checkbox')) {
@@ -1833,11 +1837,17 @@
 
     // Bulk approve suppliers
     document.getElementById('bulkApproveSuppliers')?.addEventListener('click', async () => {
-      const selected = Array.from(document.querySelectorAll('.supplier-checkbox:checked')).map(cb => cb.dataset.id);
-      if (!selected.length) return;
-      
-      if (!confirm(`Approve ${selected.length} supplier(s)?`)) return;
-      
+      const selected = Array.from(document.querySelectorAll('.supplier-checkbox:checked')).map(
+        cb => cb.dataset.id
+      );
+      if (!selected.length) {
+        return;
+      }
+
+      if (!confirm(`Approve ${selected.length} supplier(s)?`)) {
+        return;
+      }
+
       try {
         await Promise.all(selected.map(id => api(`/api/admin/suppliers/${id}/approve`, 'POST')));
         if (typeof Toast !== 'undefined') {
@@ -1857,11 +1867,17 @@
 
     // Bulk reject suppliers
     document.getElementById('bulkRejectSuppliers')?.addEventListener('click', async () => {
-      const selected = Array.from(document.querySelectorAll('.supplier-checkbox:checked')).map(cb => cb.dataset.id);
-      if (!selected.length) return;
-      
-      if (!confirm(`Reject ${selected.length} supplier(s)?`)) return;
-      
+      const selected = Array.from(document.querySelectorAll('.supplier-checkbox:checked')).map(
+        cb => cb.dataset.id
+      );
+      if (!selected.length) {
+        return;
+      }
+
+      if (!confirm(`Reject ${selected.length} supplier(s)?`)) {
+        return;
+      }
+
       try {
         await Promise.all(selected.map(id => api(`/api/admin/suppliers/${id}/reject`, 'POST')));
         if (typeof Toast !== 'undefined') {
@@ -1881,11 +1897,17 @@
 
     // Bulk delete suppliers
     document.getElementById('bulkDeleteSuppliers')?.addEventListener('click', async () => {
-      const selected = Array.from(document.querySelectorAll('.supplier-checkbox:checked')).map(cb => cb.dataset.id);
-      if (!selected.length) return;
-      
-      if (!confirm(`DELETE ${selected.length} supplier(s)? This cannot be undone.`)) return;
-      
+      const selected = Array.from(document.querySelectorAll('.supplier-checkbox:checked')).map(
+        cb => cb.dataset.id
+      );
+      if (!selected.length) {
+        return;
+      }
+
+      if (!confirm(`DELETE ${selected.length} supplier(s)? This cannot be undone.`)) {
+        return;
+      }
+
       try {
         await Promise.all(selected.map(id => api(`/api/admin/suppliers/${id}`, 'DELETE')));
         if (typeof Toast !== 'undefined') {
@@ -1905,13 +1927,21 @@
 
     // Bulk approve packages
     document.getElementById('bulkApprovePackages')?.addEventListener('click', async () => {
-      const selected = Array.from(document.querySelectorAll('.package-checkbox:checked')).map(cb => cb.dataset.id);
-      if (!selected.length) return;
-      
-      if (!confirm(`Approve ${selected.length} package(s)?`)) return;
-      
+      const selected = Array.from(document.querySelectorAll('.package-checkbox:checked')).map(
+        cb => cb.dataset.id
+      );
+      if (!selected.length) {
+        return;
+      }
+
+      if (!confirm(`Approve ${selected.length} package(s)?`)) {
+        return;
+      }
+
       try {
-        await Promise.all(selected.map(id => api(`/api/admin/packages/${id}/approve`, 'POST', { approved: true })));
+        await Promise.all(
+          selected.map(id => api(`/api/admin/packages/${id}/approve`, 'POST', { approved: true }))
+        );
         if (typeof Toast !== 'undefined') {
           Toast.success(`Approved ${selected.length} package(s)`);
         } else {
@@ -1929,13 +1959,21 @@
 
     // Bulk feature packages
     document.getElementById('bulkFeaturePackages')?.addEventListener('click', async () => {
-      const selected = Array.from(document.querySelectorAll('.package-checkbox:checked')).map(cb => cb.dataset.id);
-      if (!selected.length) return;
-      
-      if (!confirm(`Feature ${selected.length} package(s)?`)) return;
-      
+      const selected = Array.from(document.querySelectorAll('.package-checkbox:checked')).map(
+        cb => cb.dataset.id
+      );
+      if (!selected.length) {
+        return;
+      }
+
+      if (!confirm(`Feature ${selected.length} package(s)?`)) {
+        return;
+      }
+
       try {
-        await Promise.all(selected.map(id => api(`/api/admin/packages/${id}/feature`, 'POST', { featured: true })));
+        await Promise.all(
+          selected.map(id => api(`/api/admin/packages/${id}/feature`, 'POST', { featured: true }))
+        );
         if (typeof Toast !== 'undefined') {
           Toast.success(`Featured ${selected.length} package(s)`);
         } else {
@@ -1953,11 +1991,17 @@
 
     // Bulk delete packages
     document.getElementById('bulkDeletePackages')?.addEventListener('click', async () => {
-      const selected = Array.from(document.querySelectorAll('.package-checkbox:checked')).map(cb => cb.dataset.id);
-      if (!selected.length) return;
-      
-      if (!confirm(`DELETE ${selected.length} package(s)? This cannot be undone.`)) return;
-      
+      const selected = Array.from(document.querySelectorAll('.package-checkbox:checked')).map(
+        cb => cb.dataset.id
+      );
+      if (!selected.length) {
+        return;
+      }
+
+      if (!confirm(`DELETE ${selected.length} package(s)? This cannot be undone.`)) {
+        return;
+      }
+
       try {
         await Promise.all(selected.map(id => api(`/api/admin/packages/${id}`, 'DELETE')));
         if (typeof Toast !== 'undefined') {

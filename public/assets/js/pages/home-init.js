@@ -19,7 +19,9 @@ document.addEventListener('DOMContentLoaded', () => {
     .then(res => res.json())
     .then(data => {
       const container = document.getElementById('featured-packages');
-      if (!container) return;
+      if (!container) {
+        return;
+      }
 
       if (!data.items || data.items.length === 0) {
         container.innerHTML = '<p class="small">No featured packages available yet.</p>';
