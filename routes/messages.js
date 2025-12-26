@@ -406,7 +406,7 @@ router.post('/threads/:threadId/mark-read', authRequired, async (req, res) => {
     const messages = await dbUnified.read('messages');
     let updatedCount = 0;
 
-    messages.forEach((message, index) => {
+    messages.forEach(message => {
       if (message.threadId === threadId && !message.isDraft) {
         if (!message.readBy) {
           message.readBy = [];

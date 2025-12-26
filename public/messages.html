@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Messages - EventFlow</title>
+  <link rel="stylesheet" href="/assets/css/styles.css">
+  <link rel="stylesheet" href="/assets/css/eventflow-17.0.0.css">
+  <link rel="stylesheet" href="/assets/css/utilities.css">
+  <link rel="stylesheet" href="/assets/css/components.css">
+  <link rel="stylesheet" href="/assets/css/animations.css">
+  <link rel="icon" href="/favicon.svg">
+  <style>
+    .messages-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .messages-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+
+    .messages-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 24px;
+      border-bottom: 2px solid #e5e7eb;
+    }
+
+    .messages-tab {
+      padding: 12px 24px;
+      background: transparent;
+      border: none;
+      border-bottom: 3px solid transparent;
+      color: #6b7280;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-bottom: -2px;
+    }
+
+    .messages-tab:hover {
+      color: #667eea;
+    }
+
+    .messages-tab.active {
+      color: #667eea;
+      border-bottom-color: #667eea;
+    }
+
+    .thread-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .thread-item {
+      display: flex;
+      align-items: flex-start;
+      padding: 16px;
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .thread-item:hover {
+      border-color: #667eea;
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
+      transform: translateY(-2px);
+    }
+
+    .thread-item.unread {
+      background: #f9fafb;
+      border-color: #667eea;
+    }
+
+    .thread-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 600;
+      font-size: 18px;
+      flex-shrink: 0;
+      margin-right: 16px;
+    }
+
+    .thread-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .thread-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 4px;
+    }
+
+    .thread-name {
+      font-weight: 600;
+      font-size: 16px;
+      color: #1f2937;
+    }
+
+    .thread-time {
+      font-size: 12px;
+      color: #9ca3af;
+      white-space: nowrap;
+      margin-left: 12px;
+    }
+
+    .thread-subject {
+      font-size: 14px;
+      color: #4b5563;
+      margin-bottom: 4px;
+    }
+
+    .thread-preview {
+      font-size: 14px;
+      color: #6b7280;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .thread-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .unread-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 20px;
+      height: 20px;
+      padding: 0 6px;
+      background: #667eea;
+      color: white;
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: 10px;
+    }
+
+    .status-badge {
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 500;
+    }
+
+    .status-open {
+      background: #d1fae5;
+      color: #065f46;
+    }
+
+    .status-closed {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #6b7280;
+    }
+
+    .empty-state svg {
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 16px;
+      opacity: 0.5;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #6b7280;
+    }
+
+    .error {
+      padding: 16px;
+      background: #fee2e2;
+      border: 1px solid #fecaca;
+      border-radius: 8px;
+      color: #991b1b;
+      margin-bottom: 16px;
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="/" class="logo">EventFlow</a>
+      <div class="nav-links">
+        <a href="/dashboard.html">Dashboard</a>
+        <a href="/messages.html" class="active">Messages</a>
+        <a href="/plan.html">My Plan</a>
+        <a href="/settings.html">Settings</a>
+      </div>
+      <a href="/api/auth/logout" class="btn btn-secondary">Sign Out</a>
+    </div>
+  </nav>
+
+  <main class="messages-container">
+    <div class="messages-header">
+      <div>
+        <h1>Messages</h1>
+        <p style="color: #6b7280; margin-top: 4px;">Communicate with suppliers about your event</p>
+      </div>
+      <button class="btn btn-primary" id="newMessageBtn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;">
+          <path d="M12 5v14M5 12h14"/>
+        </svg>
+        New Message
+      </button>
+    </div>
+
+    <div class="messages-tabs">
+      <button class="messages-tab active" data-tab="inbox">
+        Inbox
+        <span id="inboxCount" class="unread-badge" style="margin-left: 6px; display: none;">0</span>
+      </button>
+      <button class="messages-tab" data-tab="sent">Sent</button>
+      <button class="messages-tab" data-tab="drafts">
+        Drafts
+        <span id="draftsCount" style="margin-left: 6px; color: #9ca3af; display: none;">0</span>
+      </button>
+    </div>
+
+    <div id="errorMessage" class="error" style="display: none;"></div>
+    
+    <div id="threadList" class="thread-list">
+      <div class="loading">Loading messages...</div>
+    </div>
+  </main>
+
+  <script>
+    (function () {
+      'use strict';
+
+      let currentTab = 'inbox';
+      let threads = [];
+      let drafts = [];
+
+      // Initialize
+      document.addEventListener('DOMContentLoaded', init);
+
+      function init() {
+        setupTabHandlers();
+        setupNewMessageHandler();
+        loadThreads();
+      }
+
+      function setupTabHandlers() {
+        document.querySelectorAll('.messages-tab').forEach(tab => {
+          tab.addEventListener('click', () => {
+            const tabName = tab.dataset.tab;
+            switchTab(tabName);
+          });
+        });
+      }
+
+      function switchTab(tabName) {
+        currentTab = tabName;
+        
+        // Update tab styling
+        document.querySelectorAll('.messages-tab').forEach(tab => {
+          if (tab.dataset.tab === tabName) {
+            tab.classList.add('active');
+          } else {
+            tab.classList.remove('active');
+          }
+        });
+
+        // Reload content
+        if (tabName === 'drafts') {
+          loadDrafts();
+        } else {
+          renderThreads();
+        }
+      }
+
+      function setupNewMessageHandler() {
+        document.getElementById('newMessageBtn')?.addEventListener('click', () => {
+          // TODO: Open new message modal or navigate to compose page
+          alert('New message feature coming soon!');
+        });
+      }
+
+      async function loadThreads() {
+        try {
+          const response = await fetch('/api/messages/threads', {
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (!response.ok) {
+            throw new Error('Failed to load threads');
+          }
+
+          const data = await response.json();
+          threads = data.threads || [];
+          renderThreads();
+          updateCounts();
+        } catch (error) {
+          console.error('Error loading threads:', error);
+          showError('Failed to load messages. Please try again.');
+        }
+      }
+
+      async function loadDrafts() {
+        try {
+          const response = await fetch('/api/messages/drafts', {
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (!response.ok) {
+            throw new Error('Failed to load drafts');
+          }
+
+          const data = await response.json();
+          drafts = data.drafts || [];
+          renderDrafts();
+          updateCounts();
+        } catch (error) {
+          console.error('Error loading drafts:', error);
+          showError('Failed to load drafts. Please try again.');
+        }
+      }
+
+      function renderThreads() {
+        const container = document.getElementById('threadList');
+        
+        if (currentTab === 'drafts') {
+          return;
+        }
+
+        const filteredThreads = threads.filter(thread => {
+          if (currentTab === 'inbox') {
+            return true; // Show all threads in inbox
+          } else if (currentTab === 'sent') {
+            // In sent tab, show threads where user sent the last message
+            // This is simplified - you might want to track this differently
+            return true;
+          }
+          return false;
+        });
+
+        if (filteredThreads.length === 0) {
+          container.innerHTML = `
+            <div class="empty-state">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+              </svg>
+              <h3>No messages yet</h3>
+              <p>Start a conversation with a supplier to plan your event</p>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = filteredThreads.map(thread => {
+          const unreadCount = thread.unreadCount?.[getUserId()] || 0;
+          const isUnread = unreadCount > 0;
+          const otherPartyName = thread.supplierName || thread.customerName || 'Unknown';
+          const initial = otherPartyName.charAt(0).toUpperCase();
+          const timeAgo = formatTimeAgo(thread.lastMessageAt || thread.updatedAt || thread.createdAt);
+
+          return `
+            <a href="/conversation.html?id=${thread.id}" class="thread-item ${isUnread ? 'unread' : ''}">
+              <div class="thread-avatar">${initial}</div>
+              <div class="thread-content">
+                <div class="thread-header">
+                  <span class="thread-name">${escapeHtml(otherPartyName)}</span>
+                  <span class="thread-time">${timeAgo}</span>
+                </div>
+                ${thread.subject ? `<div class="thread-subject">${escapeHtml(thread.subject)}</div>` : ''}
+                <div class="thread-preview">${escapeHtml(thread.lastMessagePreview || 'No messages yet')}</div>
+                <div class="thread-meta">
+                  ${isUnread ? `<span class="unread-badge">${unreadCount}</span>` : ''}
+                  <span class="status-badge status-${thread.status || 'open'}">${thread.status || 'Open'}</span>
+                </div>
+              </div>
+            </a>
+          `;
+        }).join('');
+      }
+
+      function renderDrafts() {
+        const container = document.getElementById('threadList');
+
+        if (drafts.length === 0) {
+          container.innerHTML = `
+            <div class="empty-state">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+              </svg>
+              <h3>No drafts</h3>
+              <p>Your draft messages will appear here</p>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = drafts.map(draft => {
+          const timeAgo = formatTimeAgo(draft.updatedAt || draft.createdAt);
+          const preview = draft.text.substring(0, 100);
+
+          return `
+            <div class="thread-item" onclick="editDraft('${draft.id}')">
+              <div class="thread-avatar">📝</div>
+              <div class="thread-content">
+                <div class="thread-header">
+                  <span class="thread-name">Draft Message</span>
+                  <span class="thread-time">${timeAgo}</span>
+                </div>
+                <div class="thread-preview">${escapeHtml(preview)}${draft.text.length > 100 ? '...' : ''}</div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      function updateCounts() {
+        // Update inbox unread count
+        const totalUnread = threads.reduce((sum, thread) => {
+          return sum + (thread.unreadCount?.[getUserId()] || 0);
+        }, 0);
+
+        const inboxBadge = document.getElementById('inboxCount');
+        if (totalUnread > 0) {
+          inboxBadge.textContent = totalUnread;
+          inboxBadge.style.display = 'inline-flex';
+        } else {
+          inboxBadge.style.display = 'none';
+        }
+
+        // Update drafts count
+        const draftsCountEl = document.getElementById('draftsCount');
+        if (drafts.length > 0) {
+          draftsCountEl.textContent = drafts.length;
+          draftsCountEl.style.display = 'inline';
+        } else {
+          draftsCountEl.style.display = 'none';
+        }
+      }
+
+      function showError(message) {
+        const errorEl = document.getElementById('errorMessage');
+        errorEl.textContent = message;
+        errorEl.style.display = 'block';
+      }
+
+      function getUserId() {
+        // This should get the actual user ID from session/token
+        // For now, return a placeholder
+        return 'current-user-id';
+      }
+
+      function formatTimeAgo(timestamp) {
+        if (!timestamp) return '';
+        
+        const now = Date.now();
+        const time = new Date(timestamp).getTime();
+        const diff = now - time;
+        
+        const seconds = Math.floor(diff / 1000);
+        const minutes = Math.floor(seconds / 60);
+        const hours = Math.floor(minutes / 60);
+        const days = Math.floor(hours / 24);
+        
+        if (days > 7) {
+          return new Date(timestamp).toLocaleDateString();
+        } else if (days > 0) {
+          return `${days}d ago`;
+        } else if (hours > 0) {
+          return `${hours}h ago`;
+        } else if (minutes > 0) {
+          return `${minutes}m ago`;
+        } else {
+          return 'Just now';
+        }
+      }
+
+      function escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str || '';
+        return div.innerHTML;
+      }
+
+      window.editDraft = function(draftId) {
+        // TODO: Open draft editor
+        alert(`Edit draft: ${draftId}`);
+      };
+    })();
+  </script>
+</body>
+</html>
