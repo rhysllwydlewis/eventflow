@@ -44,7 +44,8 @@
     "createdAt": "2025-12-15T12:36:11.177Z",
     "notify": true,
     "marketingOptIn": false,
-    "verified": true
+    "verified": true,
+    "lastLoginAt": "2025-12-26T19:32:29.114Z"
   },
   {
     "id": "usr_test_unverified",
@@ -70,5 +71,18 @@
     "marketingOptIn": false,
     "verified": true,
     "createdAt": "2025-12-26T14:31:21.378Z"
+  },
+  {
+    "id": "usr_vdwzs83wn9oow8",
+    "name": "Test Customer",
+    "email": "testcustomer@example.com",
+    "role": "customer",
+    "passwordHash": "$2a$10$544.3CjVdxeNV6hC3kbs.OE/tT3m5EOg6ocqDXFuWHY3gFyhi.npi",
+    "notify": true,
+    "marketingOptIn": false,
+    "verified": false,
+    "verificationToken": "verify_8pze3urtn9ooys",
+    "verificationTokenExpiresAt": "2025-12-27T19:31:05.188Z",
+    "createdAt": "2025-12-26T19:31:05.188Z"
   }
 ]

@@ -43,6 +43,11 @@ class MessageSupplierPanel {
       const response = await fetch('/api/auth/me', {
         credentials: 'include',
       });
+      if (!response.ok) {
+        this.currentUser = null;
+        this.authChecked = true;
+        return;
+      }
       const data = await response.json();
       this.currentUser = data.user;
       this.authChecked = true;
