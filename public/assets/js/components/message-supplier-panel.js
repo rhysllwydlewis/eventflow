@@ -18,9 +18,48 @@ class MessageSupplierPanel {
     };
     this.authGate = window.AuthGate || new AuthGate();
     this.pendingMessage = null;
+    this.currentUser = null;
+    this.authChecked = false;
     this.injectStyles();
+    this.init();
+  }
+
+  async init() {
+    // Show loading state
+    this.renderLoading();
+
+    // Check authentication via API
+    await this.checkAuthentication();
+
+    // Render based on auth state
     this.render();
+
+    // Load any pending message
     this.loadPendingMessage();
+  }
+
+  async checkAuthentication() {
+    try {
+      const response = await fetch('/api/auth/me', {
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        this.currentUser = null;
+        this.authChecked = true;
+        return;
+      }
+      const data = await response.json();
+      this.currentUser = data.user;
+      this.authChecked = true;
+    } catch (error) {
+      console.error('Error checking authentication:', error);
+      this.currentUser = null;
+      this.authChecked = true;
+    }
+  }
+
+  isAuthenticated() {
+    return this.authChecked && this.currentUser !== null;
   }
 
   injectStyles() {
@@ -151,12 +190,34 @@ class MessageSupplierPanel {
         font-size: 0.9rem;
         color: #856404;
       }
+
+      .message-panel-loading {
+        text-align: center;
+        padding: 20px;
+        color: var(--color-text-secondary, #6c757d);
+      }
     `;
     document.head.appendChild(style);
   }
 
+  renderLoading() {
+    const panel = document.createElement('div');
+    panel.className = 'message-supplier-panel';
+    panel.innerHTML = `
+      <div class="message-panel-header">
+        <h3 class="message-panel-title">Message ${this.options.supplierName}</h3>
+        <p class="message-panel-subtitle">Get in touch to discuss this package</p>
+      </div>
+      <div class="message-panel-loading">
+        <p>Loading...</p>
+      </div>
+    `;
+    this.container.innerHTML = '';
+    this.container.appendChild(panel);
+  }
+
   loadPendingMessage() {
-    if (this.authGate.isAuthenticated()) {
+    if (this.isAuthenticated()) {
       const pending = this.authGate.getPendingAction('supplier_message');
       if (pending && pending.supplierId === this.options.supplierId) {
         this.pendingMessage = pending.message;
@@ -190,7 +251,7 @@ class MessageSupplierPanel {
     const panel = document.createElement('div');
     panel.className = 'message-supplier-panel';
 
-    if (!this.authGate.isAuthenticated()) {
+    if (!this.isAuthenticated()) {
       // Show auth prompt
       panel.innerHTML = `
         <div class="message-panel-header">
