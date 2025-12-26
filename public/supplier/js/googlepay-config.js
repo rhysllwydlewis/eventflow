@@ -33,7 +33,7 @@ function getBaseCardPaymentMethod() {
 /**
  * Get tokenization specification for Google Pay
  * Uses DIRECT tokenization for testing/demo purposes
- * 
+ *
  * IMPORTANT: For production, replace with actual PSP configuration:
  * - For Stripe: gateway: 'stripe', gatewayMerchantId: 'your_stripe_merchant_id'
  * - For Braintree: gateway: 'braintree', gatewayMerchantId: 'your_braintree_merchant_id'

@@ -3881,29 +3881,29 @@ app.use('/api/messages', messagesRoutes);
 app.get('/api/photos/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     // Check if MongoDB is available
     if (!isMongoAvailable()) {
       return res.status(503).json({ error: 'Photo storage not available' });
     }
-    
+
     const db = await mongoDb.getDb();
     const collection = db.collection('photos');
-    
+
     const photo = await collection.findOne({ _id: id });
-    
+
     if (!photo) {
       return res.status(404).json({ error: 'Photo not found' });
     }
-    
+
     // Convert base64 back to buffer
     const imageBuffer = Buffer.from(photo.data, 'base64');
-    
+
     // Set appropriate headers
     res.setHeader('Content-Type', photo.mimeType || 'image/jpeg');
     res.setHeader('Cache-Control', 'public, max-age=31536000'); // Cache for 1 year
     res.setHeader('Content-Length', imageBuffer.length);
-    
+
     // Send the image
     res.send(imageBuffer);
   } catch (error) {

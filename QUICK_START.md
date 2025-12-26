@@ -5,6 +5,7 @@
 ### Local Development Setup
 
 1. **Clone and Install**
+
    ```bash
    git clone https://github.com/rhysllwydlewis/eventflow.git
    cd eventflow
@@ -12,6 +13,7 @@
    ```
 
 2. **Environment Setup**
+
    ```bash
    cp .env.example .env
    # Edit .env with your MongoDB connection string and other settings
@@ -40,19 +42,20 @@
 
 ### Key Files to Know
 
-| File | Purpose | When to Edit |
-|------|---------|--------------|
-| `functions/subscriptions.js` | Subscription business logic | Add features, change pricing |
-| `public/supplier/js/subscription.js` | Frontend subscription UI | Change UI behavior |
-| `public/supplier/css/subscription.css` | Subscription styles | Customize appearance |
-| `public/supplier/js/googlepay-config.js` | Google Pay settings | Configure payment gateway |
-| `firestore.rules` | Database security | Add/modify data access rules |
+| File                                     | Purpose                     | When to Edit                 |
+| ---------------------------------------- | --------------------------- | ---------------------------- |
+| `functions/subscriptions.js`             | Subscription business logic | Add features, change pricing |
+| `public/supplier/js/subscription.js`     | Frontend subscription UI    | Change UI behavior           |
+| `public/supplier/css/subscription.css`   | Subscription styles         | Customize appearance         |
+| `public/supplier/js/googlepay-config.js` | Google Pay settings         | Configure payment gateway    |
+| `firestore.rules`                        | Database security           | Add/modify data access rules |
 
 ### Common Tasks
 
 #### Add a New Subscription Plan
 
 1. Edit `functions/subscriptions.js`:
+
    ```javascript
    const SUBSCRIPTION_PLANS = {
      // ... existing plans
@@ -64,15 +67,13 @@
        currency: 'GBP',
        billingCycle: 'monthly',
        trialDays: 14,
-       features: [
-         'Feature 1',
-         'Feature 2',
-       ],
+       features: ['Feature 1', 'Feature 2'],
      },
    };
    ```
 
 2. Update frontend in `public/supplier/js/subscription.js`:
+
    ```javascript
    const PLANS = {
      // Add same plan definition
@@ -84,6 +85,7 @@
 #### Change Badge Styles
 
 Edit `public/assets/css/styles.css`:
+
 ```css
 .supplier-badge.pro {
   background: linear-gradient(135deg, #your-color 0%, #your-color 100%);
@@ -94,6 +96,7 @@ Edit `public/assets/css/styles.css`:
 #### Modify Feature Limits
 
 Edit `public/supplier/js/feature-access.js`:
+
 ```javascript
 const FEATURE_TIERS = {
   pro: {
@@ -106,6 +109,7 @@ const FEATURE_TIERS = {
 #### Add Email Notifications
 
 In `functions/subscriptions.js`, find TODO comments:
+
 ```javascript
 // TODO: Send confirmation email
 // Add your email service integration here
@@ -114,6 +118,7 @@ In `functions/subscriptions.js`, find TODO comments:
 ### Debugging
 
 #### View Application Logs
+
 ```bash
 # Check server logs
 npm run dev
@@ -123,6 +128,7 @@ npm run dev
 ### Deployment
 
 #### Deploy to Railway or Similar Platform
+
 ```bash
 # Push code to GitHub
 git push origin main
@@ -144,22 +150,24 @@ SENDGRID_API_KEY=xxx  # If using SendGrid for emails
 ### Monitoring
 
 #### Check Subscription Status
+
 1. Connect to MongoDB Atlas
 2. Navigate to `suppliers` collection
 3. Check `subscription` field for any supplier
 
 #### Check Payment Records
+
 1. Navigate to `payments` collection
 2. Filter by `status: "success"`
 
 ### Troubleshooting
 
-| Issue | Solution |
-|-------|----------|
-| Google Pay button not showing | Check browser console, verify Google Pay script loaded |
-| Payment not processing | Check server logs, verify payment gateway configuration |
-| Badge not displaying | Verify supplier has `subscription.tier` field |
-| Package limit not enforced | Check `feature-access.js` imported in dashboard |
+| Issue                         | Solution                                                |
+| ----------------------------- | ------------------------------------------------------- |
+| Google Pay button not showing | Check browser console, verify Google Pay script loaded  |
+| Payment not processing        | Check server logs, verify payment gateway configuration |
+| Badge not displaying          | Verify supplier has `subscription.tier` field           |
+| Package limit not enforced    | Check `feature-access.js` imported in dashboard         |
 
 ### Useful Commands
 
@@ -206,6 +214,7 @@ node -c public/supplier/js/subscription.js
 ---
 
 **Quick Links:**
+
 - [Subscription Page](./public/supplier/subscription.html)
 - [Cloud Functions](./functions/subscriptions.js)
 - [Feature Access Control](./public/supplier/js/feature-access.js)

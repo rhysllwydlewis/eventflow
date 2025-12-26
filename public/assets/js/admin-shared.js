@@ -89,7 +89,7 @@ const AdminShared = (function () {
       if (!response.ok) {
         // Provide more specific error messages for common HTTP codes
         let errorMessage = data.error || `Request failed with status ${response.status}`;
-        
+
         if (response.status === 404) {
           errorMessage = data.error || `Resource not found: ${url}`;
         } else if (response.status === 401) {
@@ -114,7 +114,7 @@ const AdminShared = (function () {
         } else if (response.status === 503) {
           errorMessage = 'Service temporarily unavailable. The database may be connecting.';
         }
-        
+
         throw new Error(errorMessage);
       }
       return data;
@@ -237,12 +237,12 @@ const AdminShared = (function () {
       }
 
       // Toggle sidebar and save state
-      toggle.addEventListener('click', (e) => {
+      toggle.addEventListener('click', e => {
         e.stopPropagation();
         sidebar.classList.toggle('open');
         const isOpen = sidebar.classList.contains('open');
         localStorage.setItem('adminSidebarOpen', isOpen);
-        
+
         // Update ARIA attribute for accessibility
         toggle.setAttribute('aria-expanded', isOpen);
       });

@@ -25,41 +25,43 @@ async function seed(options = {}) {
       // Wait for database to be initialized
       await dbUnified.initializeDatabase();
       const dbType = dbUnified.getDatabaseType();
-      
+
       if (dbType === 'mongodb') {
         // Check if MongoDB is empty and local storage has data
         const usersInMongo = await dbUnified.read('users');
         const packagesInMongo = await dbUnified.read('packages');
         const suppliersInMongo = await dbUnified.read('suppliers');
-        
-        const mongoIsEmpty = usersInMongo.length <= 1 && // Allow owner account
-                            packagesInMongo.length === 0 && 
-                            suppliersInMongo.length === 0;
-        
+
+        const mongoIsEmpty =
+          usersInMongo.length <= 1 && // Allow owner account
+          packagesInMongo.length === 0 &&
+          suppliersInMongo.length === 0;
+
         if (mongoIsEmpty) {
           // Try to read from local storage
           const store = require('./store');
           const localPackages = store.read('packages');
           const localSuppliers = store.read('suppliers');
           const localUsers = store.read('users');
-          
-          const hasLocalData = (Array.isArray(localPackages) && localPackages.length > 0) ||
-                               (Array.isArray(localSuppliers) && localSuppliers.length > 0) ||
-                               (Array.isArray(localUsers) && localUsers.length > 1); // More than just owner
-          
+
+          const hasLocalData =
+            (Array.isArray(localPackages) && localPackages.length > 0) ||
+            (Array.isArray(localSuppliers) && localSuppliers.length > 0) ||
+            (Array.isArray(localUsers) && localUsers.length > 1); // More than just owner
+
           if (hasLocalData) {
             console.log('');
             console.log('🔄 Auto-migration: Detected local data, migrating to MongoDB...');
             const dbUtils = require('./db-utils');
             const migrationResults = await dbUtils.migrateFromJson(store);
-            
+
             console.log('✅ Auto-migration complete!');
             console.log(`   Migrated: ${migrationResults.success.join(', ')}`);
             if (migrationResults.failed.length > 0) {
               console.log(`   Failed: ${migrationResults.failed.join(', ')}`);
             }
             console.log('');
-            
+
             // Skip seeding since we just migrated real data
             return;
           }

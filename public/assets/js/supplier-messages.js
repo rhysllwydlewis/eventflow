@@ -302,7 +302,8 @@ async function init() {
     console.error('Error listening to conversations:', error);
     const container = document.getElementById('threads-sup');
     if (container) {
-      container.innerHTML = '<p class="small">Unable to load messages. Please try refreshing the page.</p>';
+      container.innerHTML =
+        '<p class="small">Unable to load messages. Please try refreshing the page.</p>';
     }
   }
 }

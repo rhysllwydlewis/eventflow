@@ -180,24 +180,30 @@ POST   /api/admin/reset-demo               # Reset demo data and re-seed
 ## Authentication
 
 All admin endpoints require:
+
 1. Valid session (authenticated user)
 2. Admin role (`role: 'admin'`)
 
 Authentication is handled by middleware:
+
 - `authRequired` - Ensures user is logged in
 - `roleRequired('admin')` - Ensures user has admin role
 
 ## Security Features
 
 ### CSRF Protection
+
 All state-changing requests (POST, PUT, DELETE) require a CSRF token:
+
 ```javascript
 // Token is automatically fetched and stored in window.__CSRF_TOKEN__
 // Admin-shared.js handles token injection in API requests
 ```
 
 ### Audit Logging
+
 Admin actions are automatically logged to the audit log:
+
 ```javascript
 auditLog({
   adminId: req.user.id,
@@ -205,11 +211,12 @@ auditLog({
   action: AUDIT_ACTIONS.USER_SUSPENDED,
   targetType: 'user',
   targetId: userId,
-  details: { reason, email }
+  details: { reason, email },
 });
 ```
 
 Available audit actions:
+
 - `USER_SUSPENDED`, `USER_UNSUSPENDED`
 - `USER_BANNED`, `USER_UNBANNED`
 - `USER_VERIFIED`
@@ -218,6 +225,7 @@ Available audit actions:
 - And more...
 
 ### Input Sanitization
+
 - All user input is sanitized using `escapeHtml()` helper
 - HTML entities are encoded to prevent XSS attacks
 - MongoDB injection protection via express-mongo-sanitize
@@ -225,6 +233,7 @@ Available audit actions:
 ## Sidebar Navigation
 
 ### Structure
+
 ```html
 <aside class="admin-sidebar" id="adminSidebar">
   <div class="admin-sidebar-header">
@@ -238,12 +247,15 @@ Available audit actions:
 ```
 
 ### Responsive Behavior
+
 - **Desktop (>1024px)**: Sidebar always visible, no toggle needed
 - **Mobile (≤1024px)**: Sidebar hidden by default, toggle button appears
 - **State Persistence**: Sidebar state saved in localStorage
 
 ### Badge System
+
 Badge counts are automatically updated every 60 seconds:
+
 - **Users**: New users in last 7 days
 - **Photos**: Pending photo approvals
 - **Tickets**: Open support tickets
@@ -251,20 +263,26 @@ Badge counts are automatically updated every 60 seconds:
 ## Common Patterns
 
 ### Data Table Rendering
+
 ```javascript
 function renderTable(items) {
   const tbody = document.querySelector('tbody');
-  tbody.innerHTML = items.map(item => `
+  tbody.innerHTML = items
+    .map(
+      item => `
     <tr>
       <td>${escapeHtml(item.name)}</td>
       <td>${escapeHtml(item.email)}</td>
       <td><span class="badge">${escapeHtml(item.status)}</span></td>
     </tr>
-  `).join('');
+  `
+    )
+    .join('');
 }
 ```
 
 ### API Calls with Error Handling
+
 ```javascript
 try {
   const data = await AdminShared.api('/api/admin/users', 'GET');
@@ -276,6 +294,7 @@ try {
 ```
 
 ### Toast Notifications
+
 ```javascript
 AdminShared.showToast('Operation successful!', 'success');
 AdminShared.showToast('Something went wrong', 'error');
@@ -286,61 +305,63 @@ AdminShared.showToast('Are you sure?', 'warning');
 ## Adding New Admin Pages
 
 ### 1. Create HTML File
+
 ```html
 <!DOCTYPE html>
 <html lang="en-GB">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Page Title — EventFlow Admin</title>
-  
-  <!-- Required stylesheets -->
-  <link rel="stylesheet" href="/assets/css/styles.css">
-  <link rel="stylesheet" href="/assets/css/eventflow-17.0.0.css">
-  <link rel="stylesheet" href="/assets/css/utilities.css">
-  <link rel="stylesheet" href="/assets/css/components.css">
-  <link rel="stylesheet" href="/assets/css/animations.css">
-  <link rel="stylesheet" href="/assets/css/admin.css">
-  <link rel="stylesheet" href="/assets/css/admin-enhanced.css">
-  <link rel="icon" href="/favicon.svg">
-</head>
-<body>
-  <!-- Include standard sidebar -->
-  <aside class="admin-sidebar" id="adminSidebar">
-    <!-- Copy sidebar structure from admin.html -->
-  </aside>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Page Title — EventFlow Admin</title>
 
-  <main class="section">
-    <!-- Dashboard Header -->
-    <div class="dashboard-header">
-      <div class="header-content">
-        <div>
-          <h1 class="dashboard-title">Page Title</h1>
-          <p class="dashboard-subtitle">Page description</p>
-        </div>
-        <div class="header-actions">
-          <!-- Action buttons -->
+    <!-- Required stylesheets -->
+    <link rel="stylesheet" href="/assets/css/styles.css" />
+    <link rel="stylesheet" href="/assets/css/eventflow-17.0.0.css" />
+    <link rel="stylesheet" href="/assets/css/utilities.css" />
+    <link rel="stylesheet" href="/assets/css/components.css" />
+    <link rel="stylesheet" href="/assets/css/animations.css" />
+    <link rel="stylesheet" href="/assets/css/admin.css" />
+    <link rel="stylesheet" href="/assets/css/admin-enhanced.css" />
+    <link rel="icon" href="/favicon.svg" />
+  </head>
+  <body>
+    <!-- Include standard sidebar -->
+    <aside class="admin-sidebar" id="adminSidebar">
+      <!-- Copy sidebar structure from admin.html -->
+    </aside>
+
+    <main class="section">
+      <!-- Dashboard Header -->
+      <div class="dashboard-header">
+        <div class="header-content">
+          <div>
+            <h1 class="dashboard-title">Page Title</h1>
+            <p class="dashboard-subtitle">Page description</p>
+          </div>
+          <div class="header-actions">
+            <!-- Action buttons -->
+          </div>
         </div>
       </div>
-    </div>
 
-    <!-- Page Content -->
-    <div class="container">
-      <!-- Your content here -->
-    </div>
-  </main>
+      <!-- Page Content -->
+      <div class="container">
+        <!-- Your content here -->
+      </div>
+    </main>
 
-  <!-- Required scripts -->
-  <script src="/assets/js/admin-shared.js"></script>
-  <script src="/assets/js/pages/your-page-init.js"></script>
-</body>
+    <!-- Required scripts -->
+    <script src="/assets/js/admin-shared.js"></script>
+    <script src="/assets/js/pages/your-page-init.js"></script>
+  </body>
 </html>
 ```
 
 ### 2. Create Initialization Script
+
 ```javascript
 // /assets/js/pages/your-page-init.js
-(function() {
+(function () {
   'use strict';
 
   async function init() {
@@ -376,7 +397,9 @@ AdminShared.showToast('Are you sure?', 'warning');
 ```
 
 ### 3. Add Sidebar Link
+
 Update the sidebar in all admin pages:
+
 ```html
 <a href="/admin-your-page.html" class="admin-nav-link">
   <span class="nav-icon">★</span>
@@ -386,6 +409,7 @@ Update the sidebar in all admin pages:
 ```
 
 ### 4. Add API Endpoint (if needed)
+
 ```javascript
 // /routes/admin.js
 router.get('/your-endpoint', authRequired, roleRequired('admin'), (req, res) => {
@@ -397,26 +421,31 @@ router.get('/your-endpoint', authRequired, roleRequired('admin'), (req, res) => 
 ## Troubleshooting
 
 ### Sidebar Not Appearing
+
 - Check that all required CSS files are loaded
 - Verify sidebar HTML structure matches template
 - Ensure `admin-shared.js` is loaded before page-specific scripts
 
 ### Badge Counts Not Updating
+
 - Verify `/api/admin/badge-counts` endpoint is accessible
 - Check browser console for API errors
 - Ensure user has admin role
 
 ### API Calls Failing
+
 - Check browser console for CSRF token errors
 - Verify user is authenticated and has admin role
 - Confirm endpoint exists in `/routes/admin.js`
 
 ### Inline Styles Breaking CSP
+
 - Move all `<style>` blocks to CSS files
 - Use classes from `admin.css` or `admin-enhanced.css`
 - Never use inline `style=""` attributes
 
 ### Mobile Sidebar Not Toggling
+
 - Ensure `sidebarToggle` button has correct ID
 - Verify JavaScript is not throwing errors
 - Check that `admin-shared.js` is loaded
@@ -424,6 +453,7 @@ router.get('/your-endpoint', authRequired, roleRequired('admin'), (req, res) => 
 ## Best Practices
 
 ### 1. Always Use HTML Escaping
+
 ```javascript
 // ✅ Good
 td.innerHTML = AdminShared.escapeHtml(user.name);
@@ -433,6 +463,7 @@ td.innerHTML = user.name;
 ```
 
 ### 2. Handle Errors Gracefully
+
 ```javascript
 try {
   await AdminShared.api('/api/admin/users', 'DELETE', { id });
@@ -444,6 +475,7 @@ try {
 ```
 
 ### 3. Confirm Destructive Actions
+
 ```javascript
 if (!AdminShared.confirm('Are you sure you want to delete this user?')) {
   return;
@@ -452,6 +484,7 @@ if (!AdminShared.confirm('Are you sure you want to delete this user?')) {
 ```
 
 ### 4. Provide Loading States
+
 ```javascript
 button.disabled = true;
 button.textContent = 'Loading...';
@@ -464,6 +497,7 @@ try {
 ```
 
 ### 5. Use Semantic HTML
+
 ```html
 <!-- ✅ Good -->
 <button class="btn btn-primary">Submit</button>
@@ -475,7 +509,9 @@ try {
 ## Performance Considerations
 
 ### 1. Pagination
+
 For large data sets, implement pagination:
+
 ```javascript
 const PER_PAGE = 50;
 let currentPage = 1;
@@ -489,9 +525,10 @@ function renderPage(page) {
 ```
 
 ### 2. Debounce Search
+
 ```javascript
 let searchTimeout;
-searchInput.addEventListener('input', (e) => {
+searchInput.addEventListener('input', e => {
   clearTimeout(searchTimeout);
   searchTimeout = setTimeout(() => {
     performSearch(e.target.value);
@@ -500,21 +537,25 @@ searchInput.addEventListener('input', (e) => {
 ```
 
 ### 3. Lazy Load Images
+
 ```html
-<img src="..." loading="lazy" alt="...">
+<img src="..." loading="lazy" alt="..." />
 ```
 
 ## Accessibility
 
 ### 1. ARIA Labels
+
 ```html
 <button aria-label="Toggle sidebar" aria-expanded="false">☰</button>
 ```
 
 ### 2. Keyboard Navigation
+
 All interactive elements should be keyboard accessible:
+
 ```javascript
-button.addEventListener('keydown', (e) => {
+button.addEventListener('keydown', e => {
   if (e.key === 'Enter' || e.key === ' ') {
     e.preventDefault();
     performAction();
@@ -523,6 +564,7 @@ button.addEventListener('keydown', (e) => {
 ```
 
 ### 3. Focus Management
+
 ```javascript
 // Return focus after modal close
 modal.addEventListener('close', () => {
@@ -533,6 +575,7 @@ modal.addEventListener('close', () => {
 ## Testing Checklist
 
 Before deploying admin changes:
+
 - [ ] Test on Chrome, Firefox, Safari, and Edge
 - [ ] Test responsive design at 320px, 768px, 1024px, and 1920px
 - [ ] Verify all buttons and links work
@@ -547,6 +590,7 @@ Before deploying admin changes:
 ## Support
 
 For questions or issues:
+
 - Check console for errors
 - Review audit logs for admin actions
 - Consult API documentation in `/routes/admin.js`

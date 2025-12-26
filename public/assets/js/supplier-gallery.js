@@ -268,7 +268,7 @@ class SupplierGalleryManager {
       const results = await supplierPhotoUpload.uploadMultiplePhotos(
         this.pendingUploads,
         supplierId,
-        (current, total, photoData, error) => {
+        (current, total, photoData, _error) => {
           if (statusEl) {
             statusEl.textContent = `Uploading photo ${current} of ${total}...`;
           }

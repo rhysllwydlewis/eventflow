@@ -40,10 +40,7 @@ function setupFirebaseConversation(originalButton) {
     return params.get('id');
   };
 
-  // Store original click handler
-  const originalListeners = originalButton._listeners || [];
-
-  // Remove all existing listeners
+  // Clone button to remove all existing event listeners
   const newButton = originalButton.cloneNode(true);
   originalButton.parentNode.replaceChild(newButton, originalButton);
 

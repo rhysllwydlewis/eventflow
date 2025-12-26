@@ -87,7 +87,7 @@ async function read(collectionName) {
   try {
     if (dbType === 'mongodb') {
       const collection = mongodb.collection(collectionName);
-      
+
       // Special handling for settings collection (stored as single object)
       if (collectionName === 'settings') {
         const doc = await collection.findOne({ id: 'system' });
@@ -98,7 +98,7 @@ async function read(collectionName) {
         }
         return {};
       }
-      
+
       // Standard handling for array-based collections
       return await collection.find({}).toArray();
     } else {
@@ -128,7 +128,7 @@ async function write(collectionName, data) {
   try {
     if (dbType === 'mongodb') {
       const collection = mongodb.collection(collectionName);
-      
+
       // Special handling for settings collection (stored as single object)
       if (collectionName === 'settings') {
         await collection.deleteMany({});
@@ -138,7 +138,7 @@ async function write(collectionName, data) {
         }
         return true;
       }
-      
+
       // Standard handling for array-based collections
       await collection.deleteMany({});
       if (Array.isArray(data) && data.length > 0) {
