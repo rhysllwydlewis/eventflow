@@ -37,13 +37,16 @@ class PackageGallery {
         height: 500px;
         border-radius: 12px;
         overflow: hidden;
-        background-color: #000;
+        background-color: #f8f9fa;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
 
       .package-gallery-image {
         width: 100%;
         height: 100%;
-        object-fit: contain;
+        object-fit: cover;
         display: none;
         animation: fadeIn 0.3s ease-in;
       }
@@ -187,6 +190,13 @@ class PackageGallery {
       }
       image.src = img.url || img;
       image.alt = `Gallery image ${index + 1}`;
+
+      // Add error handling for image loading
+      image.onerror = () => {
+        console.warn(`Failed to load gallery image: ${image.src}`);
+        image.src = '/assets/images/placeholder-package.jpg';
+      };
+
       mainContainer.appendChild(image);
     });
 
@@ -227,6 +237,13 @@ class PackageGallery {
         }
         thumb.src = img.url || img;
         thumb.alt = `Thumbnail ${index + 1}`;
+
+        // Add error handling for thumbnail loading
+        thumb.onerror = () => {
+          console.warn(`Failed to load thumbnail: ${thumb.src}`);
+          thumb.src = '/assets/images/placeholder-package.jpg';
+        };
+
         thumb.addEventListener('click', () => this.goToImage(index));
         thumbnails.appendChild(thumb);
       });
