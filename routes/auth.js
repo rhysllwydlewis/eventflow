@@ -427,5 +427,75 @@ router.get('/unsubscribe', (req, res) => {
   });
 });
 
+/**
+ * POST /api/auth/resend-verification
+ * Resend verification email to user
+ * Can be called by the user themselves or by an admin
+ */
+router.post('/resend-verification', authLimiter, async (req, res) => {
+  const { email } = req.body || {};
+
+  if (!email) {
+    return res.status(400).json({ error: 'Missing email address' });
+  }
+
+  if (!validator.isEmail(String(email))) {
+    return res.status(400).json({ error: 'Invalid email address' });
+  }
+
+  // Look up user by email (case-insensitive)
+  const users = read('users');
+  const idx = users.findIndex(u => (u.email || '').toLowerCase() === String(email).toLowerCase());
+
+  if (idx === -1) {
+    // Don't reveal if email exists - return success anyway for security
+    return res.json({
+      ok: true,
+      message:
+        'If this email is registered and unverified, a new verification email has been sent.',
+    });
+  }
+
+  const user = users[idx];
+
+  // Check if user is already verified
+  if (user.verified === true) {
+    return res.json({
+      ok: true,
+      message: 'This email address is already verified.',
+    });
+  }
+
+  // Generate new verification token with 24-hour expiration
+  const verificationToken = uid('verify');
+  const tokenExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // 24 hours
+
+  // Send verification email via Postmark BEFORE saving token
+  try {
+    console.log(`📧 Resending verification email to ${user.email}`);
+    await postmark.sendVerificationEmail(user, verificationToken);
+    console.log(`✅ Verification email resent successfully to ${user.email}`);
+  } catch (emailError) {
+    console.error('❌ Failed to resend verification email:', emailError.message);
+
+    // Return generic success to prevent email enumeration
+    return res.json({
+      ok: true,
+      message:
+        'If this email is registered and unverified, a new verification email has been sent.',
+    });
+  }
+
+  // Only update token after email is successfully sent
+  users[idx].verificationToken = verificationToken;
+  users[idx].verificationTokenExpiresAt = tokenExpiresAt;
+  write('users', users);
+
+  res.json({
+    ok: true,
+    message: 'A new verification email has been sent. Please check your inbox.',
+  });
+});
+
 module.exports = router;
 module.exports.setSendMailFunction = setSendMailFunction;

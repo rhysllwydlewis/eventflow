@@ -2383,6 +2383,65 @@ router.get('/payments', authRequired, roleRequired('admin'), (_req, res) => {
   res.json({ items: payments });
 });
 
+/**
+ * POST /api/admin/users/:userId/resend-verification
+ * Admin: Resend verification email to a specific user
+ */
+router.post(
+  '/users/:userId/resend-verification',
+  authRequired,
+  roleRequired('admin'),
+  auditLog(AUDIT_ACTIONS.RESEND_VERIFICATION),
+  async (req, res) => {
+    const { userId } = req.params;
+
+    if (!userId) {
+      return res.status(400).json({ error: 'Missing user ID' });
+    }
+
+    const users = read('users');
+    const idx = users.findIndex(u => u.id === userId);
+
+    if (idx === -1) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const user = users[idx];
+
+    // Check if user is already verified
+    if (user.verified === true) {
+      return res.status(400).json({ error: 'User is already verified' });
+    }
+
+    // Generate new verification token with 24-hour expiration
+    const verificationToken = uid('verify');
+    const tokenExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+
+    // Send verification email via Postmark BEFORE saving token
+    try {
+      console.log(`📧 Admin ${req.user.email} resending verification email to ${user.email}`);
+      await postmark.sendVerificationEmail(user, verificationToken);
+      console.log(`✅ Verification email resent successfully to ${user.email}`);
+    } catch (emailError) {
+      console.error('❌ Failed to resend verification email:', emailError.message);
+      return res.status(500).json({
+        error: 'Failed to send verification email. Please try again later.',
+        details: process.env.NODE_ENV === 'development' ? emailError.message : undefined,
+      });
+    }
+
+    // Only update token after email is successfully sent
+    users[idx].verificationToken = verificationToken;
+    users[idx].verificationTokenExpiresAt = tokenExpiresAt;
+    write('users', users);
+
+    res.json({
+      ok: true,
+      message: `Verification email sent to ${user.email}`,
+    });
+  }
+);
+
 // ---------- Audit Logs ----------
 
 /**
