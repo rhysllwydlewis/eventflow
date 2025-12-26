@@ -40,10 +40,14 @@ jest.mock('../../db-unified', () => ({
   },
 }));
 
-// Mock mailgun
-jest.mock('../../utils/mailgun', () => ({
-  isMailgunEnabled: jest.fn(() => false),
-  getMailgunStatus: jest.fn(() => ({ domain: 'test.example.com' })),
+// Mock postmark
+jest.mock('../../utils/postmark', () => ({
+  isPostmarkEnabled: jest.fn(() => false),
+  getPostmarkStatus: jest.fn(() => ({
+    enabled: false,
+    from: 'admin@event-flow.co.uk',
+    appBaseUrl: 'http://localhost:3000',
+  })),
 }));
 
 describe('Health and Readiness Endpoints', () => {

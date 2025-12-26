@@ -540,8 +540,4 @@ module.exports = {
   loadEmailTemplate,
   generateUnsubscribeToken,
   verifyUnsubscribeToken,
-
-  // Backward compatibility aliases (deprecated - use Postmark functions directly)
-  isMailgunEnabled: isPostmarkEnabled,
-  getMailgunStatus: getPostmarkStatus,
 };

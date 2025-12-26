@@ -4287,7 +4287,7 @@ async function startServer() {
           console.log('   ✅ Postmark ready to send emails');
         } else {
           console.warn('   ⚠️  Email enabled but Postmark not configured');
-          console.warn('   Set MAILGUN_API_KEY and MAILGUN_DOMAIN in your .env file');
+          console.warn('   Set POSTMARK_API_KEY and POSTMARK_FROM in your .env file');
           console.warn('   Emails will be saved to /outbox folder instead');
         }
       } else {

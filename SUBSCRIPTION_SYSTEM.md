@@ -139,13 +139,13 @@ Runs at midnight (Europe/London) via Cloud Scheduler:
 
 ### Email Notifications
 
-| Event | Timing | Template |
-|-------|--------|----------|
-| Subscription activated | Immediate | subscription-activated |
-| Trial ending | 3 days before | subscription-trial-ending |
-| Renewal reminder | 7 days before | subscription-renewal-reminder |
-| Payment failed | Immediate | subscription-payment-failed |
-| Cancellation | Immediate | subscription-cancelled |
+| Event                  | Timing        | Template                      |
+| ---------------------- | ------------- | ----------------------------- |
+| Subscription activated | Immediate     | subscription-activated        |
+| Trial ending           | 3 days before | subscription-trial-ending     |
+| Renewal reminder       | 7 days before | subscription-renewal-reminder |
+| Payment failed         | Immediate     | subscription-payment-failed   |
+| Cancellation           | Immediate     | subscription-cancelled        |
 
 ## Cloud Functions
 
@@ -154,6 +154,7 @@ Runs at midnight (Europe/London) via Cloud Scheduler:
 **Trigger**: Firestore document update on `payments/{paymentId}`
 
 **Actions**:
+
 1. Validate payment status
 2. Calculate dates (trial, renewal)
 3. Update supplier document with subscription
@@ -165,6 +166,7 @@ Runs at midnight (Europe/London) via Cloud Scheduler:
 **Trigger**: Scheduled (daily at midnight)
 
 **Actions**:
+
 1. Query active/trial subscriptions
 2. Check expiration dates
 3. Update statuses
@@ -175,6 +177,7 @@ Runs at midnight (Europe/London) via Cloud Scheduler:
 **Trigger**: HTTPS callable function
 
 **Actions**:
+
 1. Verify user authentication
 2. Verify user owns supplier
 3. Disable auto-renewal
@@ -186,6 +189,7 @@ Runs at midnight (Europe/London) via Cloud Scheduler:
 **Trigger**: HTTPS callable function
 
 **Actions**:
+
 1. Verify user authentication
 2. Calculate pro-rated amount
 3. Update subscription plan
@@ -200,10 +204,9 @@ Runs at midnight (Europe/London) via Cloud Scheduler:
 SEND_EMAILS=true
 APP_BASE_URL=https://eventflow-ffb12.web.app
 
-# Email Service (if using Mailgun/SendGrid)
-MAILGUN_API_KEY=your_key
-MAILGUN_DOMAIN=your_domain
-SENDGRID_API_KEY=your_key
+# Email Service (Postmark)
+POSTMARK_API_KEY=your_postmark_server_token
+POSTMARK_FROM=admin@event-flow.co.uk
 ```
 
 ### Google Pay Configuration
@@ -276,6 +279,7 @@ gatewayMerchantId: 'your_braintree_merchant_id'
 ### Test Accounts
 
 Use Google Pay TEST mode with test cards:
+
 - Test Card: 4111 1111 1111 1111
 - Any future expiry date
 - Any 3-digit CVV
@@ -293,27 +297,32 @@ Use Google Pay TEST mode with test cards:
 ### Common Issues
 
 **"Please log in to view subscription status"**
+
 - User not authenticated - check Firebase Auth state
 - Check browser console for errors
 
 **Google Pay button not appearing**
+
 - Google Pay API not loaded - check network tab
 - Browser doesn't support Google Pay
 - TEST mode requires specific browsers
 
 **Subscription not activating after payment**
+
 - Check Cloud Function logs
 - Verify Firebase Extension is installed
 - Check payment document in Firestore
 
 **Emails not sending**
+
 - Set `SEND_EMAILS=true` environment variable
-- Configure email service (Mailgun/SendGrid)
+- Configure Postmark (see POSTMARK_SETUP.md)
 - Check function logs for email errors
 
 ### Debug Mode
 
 Enable detailed logging:
+
 ```javascript
 console.log('Subscription status:', subscription);
 console.log('Payment data:', paymentData);

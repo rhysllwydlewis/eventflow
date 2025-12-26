@@ -6,11 +6,12 @@
 - [ ] Configure environment variables in Firebase Functions
 - [ ] Deploy Firebase Functions: `firebase deploy --only functions`
 - [ ] Verify Cloud Scheduler is enabled for `checkSubscriptionStatus`
-- [ ] (Optional) Configure email service (Mailgun/SendGrid)
+- [ ] Configure Postmark email service (see POSTMARK_SETUP.md)
 
 ## Payment Flow Testing
 
 ### Initial Payment
+
 - [ ] Navigate to `/supplier/subscription.html` while logged in
 - [ ] Verify Google Pay button appears on plan cards
 - [ ] Click Google Pay button and complete test payment
@@ -22,6 +23,7 @@
 - [ ] Verify confirmation email logged (or sent if email configured)
 
 ### Subscription Activation
+
 - [ ] Check Firestore `suppliers` collection for updated subscription field
 - [ ] Verify subscription has correct tier, status, dates
 - [ ] Verify `pro: true` field is set
@@ -32,12 +34,14 @@
 ## Dashboard Display Testing
 
 ### Authentication States
+
 - [ ] Test dashboard while logged out - should show "Please log in"
 - [ ] Test dashboard with no supplier profile - should show "Create profile"
 - [ ] Test dashboard with free plan - should show upgrade prompt
 - [ ] Test dashboard with active subscription - should show plan details
 
 ### Subscription Information
+
 - [ ] Verify tier name displays correctly (Pro vs Pro+)
 - [ ] Verify status displays (Trial/Active/Expired)
 - [ ] Verify trial countdown shows days remaining
@@ -48,6 +52,7 @@
 ## Trial Period Testing
 
 ### During Trial
+
 - [ ] Create new subscription with trial period
 - [ ] Verify status shows "Trial"
 - [ ] Verify days remaining counts down
@@ -55,6 +60,7 @@
 - [ ] Verify access to premium features
 
 ### Trial Ending (requires time manipulation or Cloud Function trigger)
+
 - [ ] Trigger `checkSubscriptionStatus` function manually
 - [ ] Verify trial ending reminder sent at 3 days before
 - [ ] Check email logs for trial ending notification
@@ -63,6 +69,7 @@
 ## Renewal System Testing
 
 ### Renewal Reminders
+
 - [ ] Set subscription end date to 7 days in future
 - [ ] Trigger `checkSubscriptionStatus` function
 - [ ] Verify renewal reminder email logged/sent
@@ -70,6 +77,7 @@
 - [ ] Verify different messages for auto-renew vs manual
 
 ### Auto-Renew Expiration
+
 - [ ] Set subscription end date to past with `autoRenew: true`
 - [ ] Trigger `checkSubscriptionStatus` function
 - [ ] Verify subscription status changes to "expired"
@@ -78,6 +86,7 @@
 - [ ] Verify failed payment email logged/sent
 
 ### Manual Renewal (No Auto-Renew)
+
 - [ ] Set subscription `autoRenew: false`
 - [ ] Set end date within 14 days
 - [ ] Reload subscription page
@@ -88,6 +97,7 @@
 ## Cancellation Testing
 
 ### Cancel Subscription
+
 - [ ] Go to subscription management page
 - [ ] Click "Cancel Subscription" button
 - [ ] Verify confirmation dialog appears with end date
@@ -96,6 +106,7 @@
 - [ ] Verify page reloads after 2 seconds
 
 ### Post-Cancellation State
+
 - [ ] Check Firestore - verify `autoRenew: false`
 - [ ] Check Firestore - verify `cancelledAt` timestamp set
 - [ ] Verify cancellation email logged/sent
@@ -104,6 +115,7 @@
 - [ ] Verify "Reactivate Subscription" button appears
 
 ### Reactivation
+
 - [ ] Click "Reactivate Subscription" button
 - [ ] Verify confirmation dialog
 - [ ] Confirm reactivation
@@ -115,6 +127,7 @@
 ## Email Notification Testing
 
 ### Payment Confirmation
+
 - [ ] Complete payment successfully
 - [ ] Check Cloud Function logs for email send
 - [ ] Verify email contains plan name, price, trial info
@@ -123,30 +136,35 @@
 - [ ] Verify links work (dashboard, manage subscription)
 
 ### Trial Ending
+
 - [ ] Trigger 3 days before trial end
 - [ ] Verify email sent with correct days remaining
 - [ ] Verify email explains billing will start
 - [ ] Verify manage subscription link works
 
 ### Renewal Reminder (Auto-Renew)
+
 - [ ] Trigger 7 days before renewal
 - [ ] Verify email states auto-renewal
 - [ ] Verify email shows renewal date and amount
 - [ ] Verify "no action needed" message present
 
 ### Renewal Reminder (Manual)
+
 - [ ] Trigger 7 days before expiry with autoRenew: false
 - [ ] Verify email urges manual renewal
 - [ ] Verify "Renew Now" CTA button present
 - [ ] Verify link goes to subscription page
 
 ### Payment Failed
+
 - [ ] Trigger payment failure scenario
 - [ ] Verify email explains payment failed
 - [ ] Verify grace period end date shown
 - [ ] Verify "Update Payment Method" CTA present
 
 ### Cancellation Confirmation
+
 - [ ] Cancel subscription
 - [ ] Verify cancellation email sent
 - [ ] Verify email shows access end date
@@ -156,23 +174,27 @@
 ## Edge Cases & Error Handling
 
 ### Multiple Suppliers
+
 - [ ] User with multiple supplier profiles
 - [ ] Verify subscription status shows for first supplier
 - [ ] Verify correct supplier data used
 
 ### Expired Subscriptions
+
 - [ ] Subscription past end date with autoRenew: false
 - [ ] Verify status shows "Expired"
 - [ ] Verify tier changes to "free"
 - [ ] Verify dashboard shows upgrade prompt
 
 ### Invalid States
+
 - [ ] Subscription without end date
 - [ ] Subscription without plan ID
 - [ ] Subscription with unknown plan ID
 - [ ] Verify graceful error handling
 
 ### API Errors
+
 - [ ] Simulate Firestore read/write errors
 - [ ] Verify error messages displayed to user
 - [ ] Verify errors logged to Cloud Functions
@@ -181,6 +203,7 @@
 ## Cloud Functions Testing
 
 ### onPaymentSuccess
+
 - [ ] Manually create payment document in Firestore
 - [ ] Update with `status: 'success'`
 - [ ] Verify function triggers and processes
@@ -188,6 +211,7 @@
 - [ ] Verify supplier subscription created
 
 ### checkSubscriptionStatus
+
 - [ ] Manually trigger via Cloud Scheduler
 - [ ] Or trigger via Firebase console
 - [ ] Verify batch processing of multiple suppliers
@@ -195,12 +219,14 @@
 - [ ] Verify correct status updates
 
 ### cancelSubscription
+
 - [ ] Call via Firebase SDK or REST API
 - [ ] Verify authentication required
 - [ ] Verify ownership validation
 - [ ] Verify subscription updated correctly
 
 ### getSubscriptionStatus
+
 - [ ] Call with valid supplier ID
 - [ ] Verify returns correct subscription data
 - [ ] Verify days remaining calculated correctly
@@ -209,6 +235,7 @@
 ## UI/UX Testing
 
 ### Subscription Page
+
 - [ ] Test on desktop browser
 - [ ] Test on mobile browser
 - [ ] Verify plan cards display correctly
@@ -218,6 +245,7 @@
 - [ ] Test responsive design at various widths
 
 ### Dashboard
+
 - [ ] Test subscription card layout
 - [ ] Verify pro ribbon displays correctly
 - [ ] Test with different subscription states
@@ -225,11 +253,13 @@
 - [ ] Test button interactions
 
 ### Loading States
+
 - [ ] Verify loading spinner appears during payment
 - [ ] Verify loading overlay during cancellation
 - [ ] Verify loading during reactivation
 
 ### Notifications
+
 - [ ] Verify success notifications appear
 - [ ] Verify error notifications appear
 - [ ] Verify notifications auto-dismiss after 5s
