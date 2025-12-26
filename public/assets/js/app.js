@@ -216,31 +216,7 @@ function supplierCard(s, user) {
     </div></div>`;
 }
 
-async function initHome() {
-  const wrap = document.getElementById('featured-packages');
-  if (!wrap) {
-    return;
-  }
-  const r = await fetch('/api/packages/featured', {
-    credentials: 'include',
-  });
-  const d = await r.json();
-  const items = d.items || [];
-  wrap.innerHTML = items.length
-    ? items
-        .map(
-          p => `<div class="card pack">
-    <img src="${p.image}" alt="${p.title} image">
-    <div class="pack-info">
-      <h3>${p.title}</h3>
-      <div class="small"><span class="badge">${p.price}</span></div>
-      <p class="small">Supplier: <a href="/supplier.html?id=${encodeURIComponent(p.supplierId)}">${p.supplierId.slice(0, 8)}</a></p>
-    </div>
-  </div>`
-        )
-        .join('')
-    : `<div class="card"><p class="small">No featured packages yet.</p></div>`;
-}
+// initHome() removed - now handled by home-init.js to avoid conflicts
 
 async function initResults() {
   const user = await me();
@@ -2084,9 +2060,8 @@ document.addEventListener('DOMContentLoaded', () => {
   })();
 
   // Per-page setup
-  if (page === 'home') {
-    initHome && initHome();
-  }
+  // Note: homepage initialization is handled by home-init.js
+  // (removed initHome() from app.js to avoid conflicts)
   if (page === 'results') {
     initResults && initResults();
   }

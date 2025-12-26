@@ -20,6 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
     .then(data => {
       const container = document.getElementById('featured-packages');
       if (!container) {
+        console.warn('Featured packages container not found');
         return;
       }
 
@@ -28,17 +29,89 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      const carousel = new Carousel('featured-packages', {
-        itemsPerView: 3,
-        itemsPerViewTablet: 2,
-        itemsPerViewMobile: 1,
-        autoScroll: true,
-        autoScrollInterval: 5000,
-      });
-      carousel.setItems(data.items);
+      // Check if Carousel class is available
+      if (typeof Carousel === 'undefined') {
+        console.error('Carousel class not loaded. Rendering fallback.');
+        // Fallback: render simple grid without carousel functionality
+        // Helper to safely escape HTML
+        const escape = text => {
+          const div = document.createElement('div');
+          div.textContent = text || '';
+          return div.innerHTML;
+        };
+
+        // Validate and sanitize URLs to prevent XSS
+        const sanitizeUrl = url => {
+          if (!url) {
+            return '/assets/images/placeholder-package.jpg';
+          }
+          const urlStr = String(url);
+          // Block javascript:, data:, vbscript:, and file: URLs
+          if (/^(javascript|data|vbscript|file):/i.test(urlStr)) {
+            return '/assets/images/placeholder-package.jpg';
+          }
+          return escape(urlStr);
+        };
+
+        // Validate slug for URL safety
+        const validateSlug = (value, fallbackId) => {
+          const slugStr = String(value || '');
+          // Only allow alphanumeric, hyphens, and underscores
+          const cleaned = slugStr.replace(/[^a-zA-Z0-9_-]/g, '');
+          // Fall back to provided id if slug becomes empty after cleaning
+          return cleaned || String(fallbackId || 'unknown');
+        };
+
+        container.innerHTML = data.items
+          .map(item => {
+            const title = escape(item.title || 'Untitled Package');
+            const description = escape(item.description || '');
+            const truncDesc =
+              description.length > 100 ? `${description.substring(0, 100)}...` : description;
+            const price = escape(item.price_display || 'Contact for pricing');
+            const imgSrc = sanitizeUrl(item.image);
+            const slug = encodeURIComponent(validateSlug(item.slug, item.id));
+
+            return `
+            <div class="card featured-fallback-card">
+              <a href="/package.html?slug=${slug}" class="featured-fallback-link">
+                <img src="${imgSrc}" alt="${title}" class="featured-fallback-img">
+                <div class="featured-fallback-content">
+                  <h3 class="featured-fallback-title">${title}</h3>
+                  <p class="featured-fallback-desc">${truncDesc}</p>
+                  <div class="featured-fallback-price">${price}</div>
+                </div>
+              </a>
+            </div>
+          `;
+          })
+          .join('');
+        return;
+      }
+
+      // Initialize carousel
+      try {
+        const carousel = new Carousel('featured-packages', {
+          itemsPerView: 3,
+          itemsPerViewTablet: 2,
+          itemsPerViewMobile: 1,
+          autoScroll: true,
+          autoScrollInterval: 5000,
+        });
+        carousel.setItems(data.items);
+      } catch (error) {
+        console.error('Failed to initialize carousel:', error);
+        // Fallback to simple list on error
+        container.innerHTML = '<p class="small">Featured packages are temporarily unavailable.</p>';
+      }
     })
-    .catch(() => {
-      /* Ignore errors */
+    .catch(error => {
+      console.error('Failed to load featured packages:', error);
+      const container = document.getElementById('featured-packages');
+      if (container) {
+        container.innerHTML =
+          '<p class="small">Unable to load featured packages. Please try again later.</p>';
+      }
     });
 
   // Show notification bell for logged-in users
