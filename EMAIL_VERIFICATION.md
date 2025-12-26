@@ -90,6 +90,61 @@ If verified: Allow login
 If not verified: Return 403 with helpful message
 ```
 
+### 4. Resend Verification Email
+
+Users can request a new verification email if the original email was not received or has expired.
+
+#### User-Initiated Resend
+
+```
+User navigates to /verify.html (without token)
+OR clicks "Resend email" after registration
+  ↓
+Enter email address
+  ↓
+POST /api/auth/resend-verification { email }
+  ↓
+Backend:
+  - Find user by email (case-insensitive)
+  - Check if user is already verified
+  - Generate new verification token (24-hour expiry)
+  - Send new verification email via Postmark
+  - Update user record with new token
+  ↓
+Return success (without revealing if email exists)
+```
+
+#### Admin-Initiated Resend
+
+```
+Admin views unverified user in /admin-users.html
+  ↓
+Click "Resend Verification" button
+  ↓
+Confirm action
+  ↓
+POST /api/admin/users/:userId/resend-verification
+  ↓
+Backend:
+  - Verify admin permissions
+  - Find user by ID
+  - Check if user is already verified
+  - Generate new verification token (24-hour expiry)
+  - Send new verification email via Postmark
+  - Update user record with new token
+  - Log action in audit trail
+  ↓
+Show toast notification with result
+```
+
+**Key Features:**
+
+- ✅ Rate limited to prevent abuse
+- ✅ Previous token is invalidated when new one is generated
+- ✅ Generic success message prevents email enumeration
+- ✅ Admin actions are logged in audit trail
+- ✅ Clear UI feedback with toast notifications
+
 ## Email Templates
 
 ### Location

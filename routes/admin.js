@@ -8,7 +8,7 @@
 const express = require('express');
 const { read, write, uid } = require('../store');
 const { authRequired, roleRequired } = require('../middleware/auth');
-const { auditLog, AUDIT_ACTIONS } = require('../middleware/audit');
+const { auditLog, auditMiddleware, AUDIT_ACTIONS } = require('../middleware/audit');
 const postmark = require('../utils/postmark');
 const dbUnified = require('../db-unified');
 
@@ -2391,7 +2391,10 @@ router.post(
   '/users/:userId/resend-verification',
   authRequired,
   roleRequired('admin'),
-  auditLog(AUDIT_ACTIONS.RESEND_VERIFICATION),
+  auditMiddleware(AUDIT_ACTIONS.RESEND_VERIFICATION, req => ({
+    targetType: 'user',
+    targetId: req.params.userId,
+  })),
   async (req, res) => {
     const { userId } = req.params;
 

@@ -67,6 +67,24 @@ The owner account (`admin@event-flow.co.uk`) has special protections:
   - Owner account
 - Action is logged in audit trail
 
+**Resend Verification Email**
+
+- Available for unverified users only
+- Click "Resend Verification" button in the Actions column
+- Confirmation dialog appears before sending
+- Generates new verification token (24-hour expiry)
+- Previous token is invalidated
+- User receives email with new verification link
+- Action is logged in audit trail
+- Toast notification shows success/failure
+
+**When to Use:**
+
+- User reports not receiving verification email
+- Verification link has expired
+- User accidentally deleted verification email
+- Email was sent to wrong address (must first edit user's email)
+
 ### 2. Supplier Management
 
 #### Viewing Suppliers
@@ -269,6 +287,7 @@ All admin endpoints require authentication and admin role.
 - `POST /api/admin/users/:id/suspend` - Suspend user
 - `POST /api/admin/users/:id/ban` - Ban user
 - `POST /api/admin/users/:id/verify` - Verify user email
+- `POST /api/admin/users/:userId/resend-verification` - Resend verification email
 
 ### Supplier Management
 

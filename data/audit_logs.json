@@ -29,5 +29,13 @@
     "userAgent": null,
     "timestamp": "2025-12-23T11:22:21.195Z",
     "createdAt": "2025-12-23T11:22:21.195Z"
+  },
+  {
+    "id": "audit_4ilrci0mmw8cnp",
+    "details": {},
+    "ipAddress": null,
+    "userAgent": null,
+    "timestamp": "2025-12-26T13:14:27.732Z",
+    "createdAt": "2025-12-26T13:14:27.732Z"
   }
 ]
