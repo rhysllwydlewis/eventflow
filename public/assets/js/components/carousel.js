@@ -406,9 +406,15 @@ class Carousel {
     let didDrag = false;
     let startX = 0;
     let startScrollLeft = 0;
+    let pointerId = null;
     const DRAG_THRESHOLD_PX = 10; // Increased threshold for better click detection
 
     const onPointerDown = e => {
+      // Don't interfere with clicks on links
+      if (e.target.closest('a')) {
+        return;
+      }
+
       if (e.pointerType === 'mouse' && e.button !== 0) {
         return;
       }
@@ -417,10 +423,9 @@ class Carousel {
       didDrag = false;
       startX = e.clientX;
       startScrollLeft = this.carouselContainer.scrollLeft;
+      pointerId = e.pointerId;
 
-      // Don't add dragging class immediately - wait for actual drag
-      this.carouselContainer.setPointerCapture?.(e.pointerId);
-
+      // Don't capture pointer yet - wait until we're actually dragging
       this._stopAutoScroll();
     };
 
@@ -432,6 +437,8 @@ class Carousel {
 
       if (!didDrag && Math.abs(dx) > DRAG_THRESHOLD_PX) {
         didDrag = true;
+        // NOW capture the pointer since we're actually dragging
+        this.carouselContainer.setPointerCapture?.(pointerId);
         // Only add dragging class and prevent selection when actually dragging
         this.carouselContainer.classList.add('is-dragging');
         document.body.style.userSelect = 'none';
@@ -448,8 +455,14 @@ class Carousel {
       }
       isPointerDown = false;
       this.carouselContainer.classList.remove('is-dragging');
-      this.carouselContainer.releasePointerCapture?.(e.pointerId);
+
+      // Only release if we actually captured it
+      if (didDrag && pointerId !== null) {
+        this.carouselContainer.releasePointerCapture?.(pointerId);
+      }
+
       document.body.style.userSelect = '';
+      pointerId = null;
 
       // Only prevent clicks if user actually dragged (moved more than threshold)
       if (didDrag) {
