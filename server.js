@@ -1591,18 +1591,21 @@ function isFeaturedPackage(pkg) {
 app.get('/api/packages/featured', async (_req, res) => {
   const packages = await dbUnified.read('packages');
   const suppliers = await dbUnified.read('suppliers');
-  
+
+  // Create a suppliers lookup map for O(1) access
+  const suppliersMap = new Map(suppliers.map(s => [s.id, s]));
+
   const items = packages
     .filter(p => p.approved && isFeaturedPackage(p))
     .slice(0, 6)
     .map(pkg => {
-      const supplier = suppliers.find(s => s.id === pkg.supplierId);
+      const supplier = suppliersMap.get(pkg.supplierId);
       return {
         ...pkg,
         supplier_name: supplier ? supplier.name : null,
       };
     });
-  
+
   res.json({ items });
 });
 

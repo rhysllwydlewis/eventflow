@@ -63,13 +63,13 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         // Format price with £ symbol if it's a number
-        const formatPrice = (priceDisplay) => {
+        const formatPrice = priceDisplay => {
           if (!priceDisplay) {
             return 'Contact for pricing';
           }
           const priceStr = String(priceDisplay);
-          // If it's a plain number, format as £X
-          if (/^\d+$/.test(priceStr)) {
+          // If it's a plain number (integer or decimal), format as £X
+          if (/^\d+(\.\d+)?$/.test(priceStr)) {
             return `£${priceStr}`;
           }
           // Otherwise return as-is
