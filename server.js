@@ -1589,9 +1589,20 @@ function isFeaturedPackage(pkg) {
 }
 
 app.get('/api/packages/featured', async (_req, res) => {
-  const items = (await dbUnified.read('packages'))
+  const packages = await dbUnified.read('packages');
+  const suppliers = await dbUnified.read('suppliers');
+  
+  const items = packages
     .filter(p => p.approved && isFeaturedPackage(p))
-    .slice(0, 6);
+    .slice(0, 6)
+    .map(pkg => {
+      const supplier = suppliers.find(s => s.id === pkg.supplierId);
+      return {
+        ...pkg,
+        supplier_name: supplier ? supplier.name : null,
+      };
+    });
+  
   res.json({ items });
 });
 
