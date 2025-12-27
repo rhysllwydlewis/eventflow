@@ -322,6 +322,15 @@ router.post('/logout', authLimiter, (_req, res) => {
 });
 
 /**
+ * GET /api/auth/logout
+ * Log out current user and redirect to home page
+ */
+router.get('/logout', authLimiter, (_req, res) => {
+  clearAuthCookie(res);
+  res.redirect('/');
+});
+
+/**
  * GET /api/auth/me
  * Get current authenticated user
  */

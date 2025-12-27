@@ -137,10 +137,17 @@ class Carousel {
       }
 
       .featured-package-card h3 {
-        margin: 0 0 8px 0;
+        margin: 0 0 4px 0;
         font-size: 16px;
         font-weight: 600;
         color: #0a0a0a;
+      }
+
+      .featured-package-card .package-supplier {
+        margin: 0 0 8px 0;
+        font-size: 13px;
+        color: #71717a;
+        font-weight: 500;
       }
 
       .featured-package-card .package-description {
@@ -310,7 +317,22 @@ class Carousel {
       return cleaned || String(fallbackId || 'unknown');
     };
 
+    // Format price with £ symbol if it's a number
+    const formatPrice = priceDisplay => {
+      if (!priceDisplay) {
+        return 'Contact for pricing';
+      }
+      const priceStr = String(priceDisplay);
+      // If it's a plain number (integer or decimal), format as £X
+      if (/^\d+(\.\d+)?$/.test(priceStr)) {
+        return `£${priceStr}`;
+      }
+      // Otherwise return as-is
+      return priceStr;
+    };
+
     const title = escapeHtml(item.title || 'Untitled Package');
+    const supplierName = escapeHtml(item.supplier_name || '');
     // Truncate description BEFORE escaping to avoid counting HTML entities
     const rawDesc = item.description || '';
     const truncatedRawDesc =
@@ -318,7 +340,7 @@ class Carousel {
         ? `${rawDesc.substring(0, DESCRIPTION_MAX_LENGTH)}...`
         : rawDesc;
     const description = escapeHtml(truncatedRawDesc);
-    const price = escapeHtml(item.price_display || 'Contact for pricing');
+    const price = escapeHtml(formatPrice(item.price_display || item.price));
     const image = sanitizeUrl(item.image);
     const slug = validateSlug(item.slug, item.id);
 
@@ -328,6 +350,7 @@ class Carousel {
           <img src="${image}" alt="${title}" loading="lazy">
           <div class="package-info">
             <h3>${title}</h3>
+            ${supplierName ? `<p class="package-supplier">${supplierName}</p>` : ''}
             <p class="package-description">${description}</p>
             <div class="package-price">${price}</div>
           </div>

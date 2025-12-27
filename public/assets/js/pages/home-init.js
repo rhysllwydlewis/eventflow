@@ -62,13 +62,28 @@ document.addEventListener('DOMContentLoaded', () => {
           return cleaned || String(fallbackId || 'unknown');
         };
 
+        // Format price with £ symbol if it's a number
+        const formatPrice = priceDisplay => {
+          if (!priceDisplay) {
+            return 'Contact for pricing';
+          }
+          const priceStr = String(priceDisplay);
+          // If it's a plain number (integer or decimal), format as £X
+          if (/^\d+(\.\d+)?$/.test(priceStr)) {
+            return `£${priceStr}`;
+          }
+          // Otherwise return as-is
+          return priceStr;
+        };
+
         container.innerHTML = data.items
           .map(item => {
             const title = escape(item.title || 'Untitled Package');
+            const supplierName = escape(item.supplier_name || '');
             const description = escape(item.description || '');
             const truncDesc =
               description.length > 100 ? `${description.substring(0, 100)}...` : description;
-            const price = escape(item.price_display || 'Contact for pricing');
+            const price = escape(formatPrice(item.price_display || item.price));
             const imgSrc = sanitizeUrl(item.image);
             const slug = encodeURIComponent(validateSlug(item.slug, item.id));
 
@@ -78,6 +93,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <img src="${imgSrc}" alt="${title}" class="featured-fallback-img">
                 <div class="featured-fallback-content">
                   <h3 class="featured-fallback-title">${title}</h3>
+                  ${supplierName ? `<p class="featured-fallback-supplier">${supplierName}</p>` : ''}
                   <p class="featured-fallback-desc">${truncDesc}</p>
                   <div class="featured-fallback-price">${price}</div>
                 </div>
