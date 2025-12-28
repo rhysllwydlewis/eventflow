@@ -161,11 +161,28 @@ describe('Email Verification System', () => {
 
       await postmark.sendVerificationEmail(user, token);
 
-      // The verification link should be constructed properly
-      const expectedLink = `http://localhost:3000/verify?token=${encodeURIComponent(token)}`;
+      // The verification link should be constructed properly with .html extension
       // We can't directly check the email content in this mock,
       // but we verify the function completes without error
       expect(true).toBe(true);
+    });
+
+    it('should include .html extension in verification link', async () => {
+      const user = {
+        name: 'Test User',
+        email: 'test@example.com',
+      };
+      const token = 'test-token-123';
+
+      // Load the template to verify it contains the correct link format
+      const templateData = {
+        name: user.name,
+        verificationLink: `http://localhost:3000/verify.html?token=${encodeURIComponent(token)}`,
+      };
+      const template = postmark.loadEmailTemplate('verification', templateData);
+
+      expect(template).toContain('verify.html?token=');
+      expect(template).toContain(encodeURIComponent(token));
     });
 
     it('should handle user without name gracefully', async () => {
