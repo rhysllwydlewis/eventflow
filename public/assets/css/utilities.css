@@ -215,6 +215,85 @@
 .select-text { user-select: text; }
 .select-all { user-select: all; }
 
+/* Form Validation States */
+.form-field-error {
+  border-color: #dc2626 !important;
+  background-color: #fef2f2;
+}
+
+.form-field-success {
+  border-color: #16a34a !important;
+  background-color: #f0fdf4;
+}
+
+[data-theme="dark"] .form-field-error {
+  border-color: #ef4444 !important;
+  background-color: rgba(220, 38, 38, 0.1);
+}
+
+[data-theme="dark"] .form-field-success {
+  border-color: #22c55e !important;
+  background-color: rgba(34, 197, 94, 0.1);
+}
+
+.form-error-message {
+  display: none;
+  color: #dc2626;
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+  font-weight: 500;
+}
+
+[data-theme="dark"] .form-error-message {
+  color: #fca5a5;
+}
+
+/* Focus States for Accessibility */
+input:focus,
+select:focus,
+textarea:focus,
+button:focus {
+  outline: 2px solid var(--ink, #0B8073);
+  outline-offset: 2px;
+}
+
+/* Touch-Friendly Button Sizes (min 44x44px for WCAG) */
+.cta,
+.nav-toggle,
+.icon-button,
+button[type="submit"],
+button[type="button"] {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Loading Button State */
+.btn-loading {
+  position: relative;
+  color: transparent !important;
+  pointer-events: none;
+  cursor: not-allowed;
+}
+
+.btn-loading::after {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  top: 50%;
+  left: 50%;
+  margin-left: -10px;
+  margin-top: -10px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: btn-spin 0.6s linear infinite;
+}
+
+@keyframes btn-spin {
+  to { transform: rotate(360deg); }
+}
+
 /* Responsive Helpers */
 @media (max-width: 640px) {
   .sm\:hidden { display: none; }

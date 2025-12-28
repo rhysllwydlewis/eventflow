@@ -271,6 +271,10 @@ app.use(
       includeSubDomains: true,
       preload: true,
     },
+    xFrameOptions: { action: 'deny' },
+    xContentTypeOptions: 'nosniff',
+    xDnsPrefetchControl: { allow: false },
+    referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
   })
 );
 
