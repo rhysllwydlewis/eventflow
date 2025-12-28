@@ -221,7 +221,12 @@ router.post('/forgot', authLimiter, async (req, res) => {
  */
 router.get('/verify', async (req, res) => {
   const { token } = req.query || {};
+  console.log(
+    `📧 Verification request received with token: ${token ? `${token.substring(0, 10)}...` : 'NONE'}`
+  );
+
   if (!token) {
+    console.error('❌ Verification failed: Missing token');
     return res.status(400).json({ error: 'Missing token' });
   }
 
@@ -229,15 +234,18 @@ router.get('/verify', async (req, res) => {
   const idx = users.findIndex(u => u.verificationToken === token);
 
   if (idx === -1) {
+    console.error(`❌ Verification failed: Invalid token - ${token.substring(0, 10)}...`);
     return res.status(400).json({ error: 'Invalid or expired token' });
   }
 
   const user = users[idx];
+  console.log(`📧 Found user for verification: ${user.email}`);
 
   // Check if token has expired
   if (user.verificationTokenExpiresAt) {
     const expiresAt = new Date(user.verificationTokenExpiresAt);
     if (expiresAt < new Date()) {
+      console.error(`❌ Verification failed: Token expired for ${user.email}`);
       return res
         .status(400)
         .json({ error: 'Verification token has expired. Please request a new one.' });
@@ -249,6 +257,7 @@ router.get('/verify', async (req, res) => {
   delete users[idx].verificationToken;
   delete users[idx].verificationTokenExpiresAt;
   write('users', users);
+  console.log(`✅ User verified successfully: ${user.email}`);
 
   // Send welcome email after successful verification (non-blocking)
   (async () => {
@@ -482,6 +491,7 @@ router.post('/resend-verification', authLimiter, async (req, res) => {
   // Send verification email via Postmark BEFORE saving token
   try {
     console.log(`📧 Resending verification email to ${user.email}`);
+    console.log(`📧 Token: ${verificationToken.substring(0, 10)}...`);
     await postmark.sendVerificationEmail(user, verificationToken);
     console.log(`✅ Verification email resent successfully to ${user.email}`);
   } catch (emailError) {

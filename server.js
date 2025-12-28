@@ -659,7 +659,8 @@ app.post('/api/auth/register', strictAuthLimiter, csrfProtection, async (req, re
   // Send verification email (dev mode writes .eml files to /outbox)
   try {
     const baseUrl = process.env.BASE_URL || `http://localhost:${PORT}`;
-    const verificationLink = `${baseUrl}/verify?token=${encodeURIComponent(user.verificationToken)}`;
+    const verificationLink = `${baseUrl}/verify.html?token=${encodeURIComponent(user.verificationToken)}`;
+    console.log(`📧 Generating verification link: ${verificationLink}`);
     await sendMail({
       to: user.email,
       subject: 'Confirm your EventFlow account',
@@ -670,8 +671,9 @@ app.post('/api/auth/register', strictAuthLimiter, csrfProtection, async (req, re
         email: user.email,
       },
     });
+    console.log(`✅ Verification email sent successfully to ${user.email}`);
   } catch (e) {
-    console.error('Failed to send verification email', e);
+    console.error('❌ Failed to send verification email', e);
 
     // Rollback user creation
     const allUsers = await dbUnified.read('users');
@@ -783,33 +785,46 @@ app.post('/api/auth/forgot', passwordResetLimiter, csrfProtection, async (req, r
 
 app.get('/api/auth/verify', async (req, res) => {
   const { token } = req.query || {};
+  console.log(
+    `📧 Verification request received with token: ${token ? `${token.substring(0, 10)}...` : 'NONE'}`
+  );
+
   if (!token) {
+    console.error('❌ Verification failed: Missing token');
     return res.status(400).json({ error: 'Missing token' });
   }
+
   const users = await dbUnified.read('users');
   const idx = users.findIndex(u => u.verificationToken === token);
+
   if (idx === -1) {
+    console.error(`❌ Verification failed: Invalid token - ${token.substring(0, 10)}...`);
     return res.status(400).json({ error: 'Invalid or expired token' });
   }
+
+  const user = users[idx];
+  console.log(`📧 Found user for verification: ${user.email}`);
 
   // Check if token has expired
   if (
     users[idx].verificationTokenExpiresAt &&
     new Date(users[idx].verificationTokenExpiresAt) < new Date()
   ) {
+    console.error(`❌ Verification failed: Token expired for ${user.email}`);
     return res.status(400).json({
       error: 'Verification link has expired. Please request a new one.',
       expired: true,
     });
   }
 
+  // Mark user as verified
   users[idx].verified = true;
   delete users[idx].verificationToken;
   delete users[idx].verificationTokenExpiresAt;
   await dbUnified.write('users', users);
+  console.log(`✅ User verified successfully: ${user.email}`);
 
-  // Send welcome email after successful verification
-  const user = users[idx];
+  // Send welcome email after successful verification (non-blocking)
   sendMail({
     to: user.email,
     subject: 'Welcome to EventFlow!',
@@ -820,10 +835,10 @@ app.get('/api/auth/verify', async (req, res) => {
       role: user.role,
     },
   }).catch(e => {
-    console.error('Failed to send welcome email', e);
+    console.error('❌ Failed to send welcome email', e);
   });
 
-  res.json({ ok: true });
+  res.json({ ok: true, message: 'Email verified successfully' });
 });
 
 app.post('/api/auth/resend-verification', authLimiter, csrfProtection, async (req, res) => {
@@ -853,7 +868,8 @@ app.post('/api/auth/resend-verification', authLimiter, csrfProtection, async (re
 
   try {
     const baseUrl = process.env.BASE_URL || `http://localhost:${PORT}`;
-    const verificationLink = `${baseUrl}/verify?token=${encodeURIComponent(newToken)}`;
+    const verificationLink = `${baseUrl}/verify.html?token=${encodeURIComponent(newToken)}`;
+    console.log(`📧 Resending verification link: ${verificationLink}`);
 
     await sendMail({
       to: user.email,
@@ -866,9 +882,10 @@ app.post('/api/auth/resend-verification', authLimiter, csrfProtection, async (re
       },
     });
 
+    console.log(`✅ Verification email resent successfully to ${user.email}`);
     res.json({ ok: true });
   } catch (e) {
-    console.error('Failed to resend verification email', e);
+    console.error('❌ Failed to resend verification email', e);
     return res.status(500).json({
       error: 'Failed to send verification email. Please try again later.',
     });
