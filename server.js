@@ -802,20 +802,21 @@ app.get('/api/auth/verify', async (req, res) => {
     return res.status(400).json({ error: 'Invalid or expired token' });
   }
 
-  const user = users[idx];
-  console.log(`📧 Found user for verification: ${user.email}`);
-
   // Check if token has expired
   if (
     users[idx].verificationTokenExpiresAt &&
     new Date(users[idx].verificationTokenExpiresAt) < new Date()
   ) {
+    const user = users[idx];
     console.error(`❌ Verification failed: Token expired for ${user.email}`);
     return res.status(400).json({
       error: 'Verification link has expired. Please request a new one.',
       expired: true,
     });
   }
+
+  const user = users[idx];
+  console.log(`📧 Found user for verification: ${user.email}`);
 
   // Mark user as verified
   users[idx].verified = true;

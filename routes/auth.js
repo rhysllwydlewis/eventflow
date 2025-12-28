@@ -491,7 +491,6 @@ router.post('/resend-verification', authLimiter, async (req, res) => {
   // Send verification email via Postmark BEFORE saving token
   try {
     console.log(`📧 Resending verification email to ${user.email}`);
-    console.log(`📧 Token: ${verificationToken.substring(0, 10)}...`);
     await postmark.sendVerificationEmail(user, verificationToken);
     console.log(`✅ Verification email resent successfully to ${user.email}`);
   } catch (emailError) {

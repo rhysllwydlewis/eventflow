@@ -210,7 +210,6 @@
     console.log(`📧 Attempting verification with token: ${token.substring(0, 10)}...`);
     try {
       const response = await fetch(`/api/auth/verify?token=${encodeURIComponent(token)}`, {
-        method: 'GET',
         credentials: 'include',
         headers: {
           Accept: 'application/json',
