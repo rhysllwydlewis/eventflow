@@ -11,6 +11,12 @@
   <link rel='stylesheet' href='/assets/css/animations.css'>
   <link rel='icon' href='/favicon.svg'>
   <style>
+    .legal-grid {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 32px;
+      align-items: start;
+    }
     .legal-toc {
       background: linear-gradient(135deg, #F9FAFB 0%, #F3F4F6 100%);
       border: 1px solid #E7EAF0;
@@ -75,9 +81,81 @@
       font-weight: 600;
       margin-bottom: 16px;
     }
+    /* Mobile Optimization */
     @media (max-width: 768px) {
+      .legal-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+      main.section .container {
+        padding-left: 16px;
+        padding-right: 16px;
+      }
+      h1 {
+        font-size: 1.75rem;
+      }
       .legal-toc {
         position: static;
+        padding: 16px;
+        margin-bottom: 24px;
+      }
+      .legal-toc h2 {
+        font-size: 1.1rem;
+      }
+      .legal-toc li {
+        margin: 4px 0;
+      }
+      .legal-toc a {
+        padding: 6px 10px;
+        font-size: 0.9rem;
+      }
+      .legal-toc-icon {
+        margin-right: 8px;
+        font-size: 1.1rem;
+      }
+      .legal-section {
+        padding: 20px;
+        margin-bottom: 16px;
+        border-radius: 8px;
+      }
+      .legal-section h2 {
+        font-size: 1.3rem;
+        padding-bottom: 8px;
+      }
+      .legal-section h3 {
+        font-size: 1.1rem;
+      }
+      .legal-section p,
+      .legal-section li {
+        font-size: 0.95rem;
+        line-height: 1.6;
+      }
+      .card {
+        padding: 16px !important;
+      }
+      .last-updated {
+        font-size: 0.8rem;
+        padding: 3px 10px;
+      }
+    }
+    
+    @media (max-width: 480px) {
+      .legal-section {
+        padding: 16px;
+        scroll-margin-top: 80px;
+      }
+      .legal-section h2 {
+        font-size: 1.2rem;
+      }
+      .legal-toc a {
+        font-size: 0.85rem;
+      }
+      h1 {
+        font-size: 1.5rem;
+      }
+      main.section .container {
+        padding-left: 12px;
+        padding-right: 12px;
       }
     }
   </style>
@@ -125,10 +203,10 @@
     <h1>Legal Hub</h1>
     <p style="font-size: 1.1rem; color: #667085; margin-bottom: 32px;">All EventFlow legal documents, policies, and guidelines in one place. Navigate using the menu below.</p>
 
-    <div style="display: grid; grid-template-columns: 280px 1fr; gap: 32px; align-items: start;">
+    <div class="legal-grid">
       
       <!-- Table of Contents -->
-      <aside class="legal-toc">
+      <aside class="legal-toc" style="grid-column: 1;">
         <h2>📑 Quick Navigation</h2>
         <ul>
           <li><a href="#overview"><span class="legal-toc-icon">📋</span> Overview</a></li>
@@ -569,113 +647,3 @@
 </body>
 </html>
 
-    <div class="legal-hub-grid">
-      <a href="/terms.html" class="legal-card">
-        <div class="legal-card-icon">📋</div>
-        <h3>Terms of Use</h3>
-        <p>Our comprehensive terms and conditions governing your use of EventFlow services, including user responsibilities and platform rules.</p>
-      </a>
-
-      <a href="/privacy.html" class="legal-card">
-        <div class="legal-card-icon">🔒</div>
-        <h3>Privacy Notice</h3>
-        <p>Learn how we collect, use, store, and protect your personal information in accordance with UK GDPR and data protection laws.</p>
-      </a>
-
-      <a href="/cookies.html" class="legal-card">
-        <div class="legal-card-icon">🍪</div>
-        <h3>Cookie Policy</h3>
-        <p>Information about how we use cookies and similar technologies on our website, and how you can manage your preferences.</p>
-      </a>
-
-      <a href="/gdpr.html" class="legal-card">
-        <div class="legal-card-icon">🛡️</div>
-        <h3>GDPR Compliance</h3>
-        <p>Our commitment to data protection and your rights under the UK General Data Protection Regulation.</p>
-      </a>
-
-      <a href="/supplier-terms.html" class="legal-card">
-        <div class="legal-card-icon">🤝</div>
-        <h3>Supplier Terms</h3>
-        <p>Specific terms and conditions for suppliers and vendors using EventFlow to list their services and connect with customers.</p>
-      </a>
-
-      <a href="/acceptable-use.html" class="legal-card">
-        <div class="legal-card-icon">✓</div>
-        <h3>Acceptable Use Policy</h3>
-        <p>Guidelines for appropriate and prohibited behaviour on our platform to maintain a safe and respectful community.</p>
-      </a>
-
-      <a href="/copyright.html" class="legal-card">
-        <div class="legal-card-icon">©</div>
-        <h3>Copyright & IP Policy</h3>
-        <p>Information about intellectual property rights, how to report copyright infringement, and our DMCA procedures.</p>
-      </a>
-
-      <a href="/refunds.html" class="legal-card">
-        <div class="legal-card-icon">💷</div>
-        <h3>Refund Policy</h3>
-        <p>Our policies regarding cancellations, refunds, and billing for paid subscriptions and services.</p>
-      </a>
-
-      <a href="/community-guidelines.html" class="legal-card">
-        <div class="legal-card-icon">👥</div>
-        <h3>Community Guidelines</h3>
-        <p>Standards for respectful interaction, content moderation, and maintaining a positive community environment.</p>
-      </a>
-
-      <a href="/accessibility.html" class="legal-card">
-        <div class="legal-card-icon">♿</div>
-        <h3>Accessibility Statement</h3>
-        <p>Our commitment to making EventFlow accessible to all users, including those with disabilities.</p>
-      </a>
-
-      <a href="/data-rights.html" class="legal-card">
-        <div class="legal-card-icon">📄</div>
-        <h3>Data Subject Rights</h3>
-        <p>Exercise your rights to access, modify, delete, or export your personal data in accordance with data protection laws.</p>
-      </a>
-
-      <a href="/security.html" class="legal-card">
-        <div class="legal-card-icon">🔐</div>
-        <h3>Security Policy</h3>
-        <p>Information about how we protect your data and our platform security practices and incident response procedures.</p>
-      </a>
-    </div>
-
-    <div class="card" style="margin-top: 48px; max-width: 800px; margin-left: auto; margin-right: auto;">
-      <h2 class="h4">Need Help?</h2>
-      <p>If you have questions about any of our legal documents or policies, we're here to help:</p>
-      <ul>
-        <li><strong>General Inquiries:</strong> <a href="mailto:support@event-flow.co.uk">support@event-flow.co.uk</a></li>
-        <li><strong>Privacy &amp; Data Protection:</strong> <a href="mailto:admin@event-flow.co.uk">admin@event-flow.co.uk</a></li>
-        <li><strong>Legal Matters:</strong> <a href="mailto:admin@event-flow.co.uk">admin@event-flow.co.uk</a></li>
-        <li><strong>Report Abuse:</strong> <a href="mailto:abuse@event-flow.co.uk">abuse@event-flow.co.uk</a></li>
-      </ul>
-      <p style="margin-top: 16px;"><a href="/contact.html" class="cta">Contact Us</a></p>
-    </div>
-
-    <div class="card" style="margin-top: 24px; background: #F9FAFB; max-width: 800px; margin-left: auto; margin-right: auto;">
-      <h3 class="h5">Important Notice</h3>
-      <p class="small">These legal documents are regularly updated to reflect changes in our services and applicable laws. We recommend reviewing them periodically. When significant changes are made, we will notify users via email or through a prominent notice on our platform.</p>
-      <p class="small" style="margin-top: 12px;"><strong>Effective Date:</strong> These documents are effective as of the date indicated at the top of each page.</p>
-    </div>
-  </div>
-</main>
-
-<footer class="footer" role="contentinfo">
-  <div class="container" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
-    <div><strong>EventFlow</strong><br><span class="small">Event planning made simple.</span></div>
-    <div class="version">Version: v17.0.0</div>
-    <div class="small">
-      <a href="/credits.html">Credits</a> ·
-      <a href="/contact.html">Contact</a> ·
-      <a href="/legal.html">Legal Hub</a>
-    </div>
-  </div>
-</footer>
-
-<script src="/assets/js/components/footer-nav.js" defer></script>
-<script src="/assets/js/cookie-consent.js" defer></script>
-</body>
-</html>
