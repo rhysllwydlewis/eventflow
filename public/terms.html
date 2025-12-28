@@ -2,13 +2,15 @@
 <html lang='en-GB'>
 <head>
   <meta charset='utf-8'>
-  <meta name='viewport' content='width=device-width,initial-scale=1'>
+  <meta name='viewport' content='width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes'>
+  <meta name='theme-color' content='#0B8073'>
   <title>Terms of Use — EventFlow</title>
   <link rel='stylesheet' href='/assets/css/styles.css'>
   <link rel='stylesheet' href='/assets/css/eventflow-17.0.0.css'>
   <link rel='stylesheet' href='/assets/css/utilities.css'>
   <link rel='stylesheet' href='/assets/css/components.css'>
   <link rel='stylesheet' href='/assets/css/animations.css'>
+  <link rel='stylesheet' href='/assets/css/mobile-optimizations.css'>
   <link rel='icon' href='/favicon.svg'>
 </head>
 <body>
@@ -22,6 +24,7 @@
       <nav class="nav nav-inline" aria-label="Quick navigation">
         <a href="/start.html" class="nav-link nav-main">Plan</a>
         <a href="/suppliers.html" class="nav-link nav-main">Suppliers</a>
+        <a href="/blog.html" class="nav-link nav-main">Blog</a>
         <a href="/auth.html" class="nav-link nav-main nav-main-login">Log in</a>
       </nav>
       <button id="notification-bell" class="icon-button" type="button" aria-label="Notifications" style="display:none;">
@@ -39,14 +42,20 @@
     <a href="/start.html">Plan an Event</a>
     <a href="/suppliers.html">Suppliers</a>
     <a href="/plan.html">My Plan</a>
+    <a href="/blog.html">Blog</a>
     <a href="/for-suppliers.html">For Suppliers</a>
     <a href="/faq.html">FAQ</a>
+    <a href="/settings.html">Settings</a>
     <a href="/auth.html" id="nav-auth">Log in</a>
     <a href="#" id="nav-dashboard" style="display:none">Dashboard</a>
     <a href="#" id="nav-signout" style="display:none">Sign out</a>
   </nav>
 </header>
 <script src="/assets/js/auth-nav.js" defer></script>
+<script src="/assets/js/components.js" defer></script>
+<script src="/assets/js/animations.js" defer></script>
+<script src="/assets/js/notifications.js" defer></script>
+<script src="/assets/js/search.js" defer></script>
 <script src="/assets/js/websocket-client.js" defer></script>
 
 <main class='section'>
