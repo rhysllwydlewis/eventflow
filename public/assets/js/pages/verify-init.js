@@ -183,8 +183,12 @@
     const params = new URLSearchParams(window.location.search);
     const token = params.get('token');
 
+    console.log('🔍 Verification page loaded');
+    console.log('📧 Token present:', token ? 'Yes' : 'No');
+
     // Handle missing token
     if (!token) {
+      console.warn('⚠️ No verification token found in URL');
       if (headingEl) {
         headingEl.textContent = 'No Verification Token';
       }
@@ -203,15 +207,24 @@
     }
 
     // Perform verification
+    console.log(`📧 Attempting verification with token: ${token.substring(0, 10)}...`);
     try {
       const response = await fetch(`/api/auth/verify?token=${encodeURIComponent(token)}`, {
         credentials: 'include',
+        headers: {
+          Accept: 'application/json',
+        },
       });
 
+      console.log(`📧 Verification response status: ${response.status}`);
+
       const data = await response.json().catch(() => ({}));
+      console.log('📧 Verification response data:', data);
 
       if (!response.ok) {
         // Handle verification failure
+        console.error(`❌ Verification failed: ${data.error || 'Unknown error'}`);
+
         if (headingEl) {
           headingEl.textContent = 'Verification Failed';
         }
@@ -252,6 +265,8 @@
         }
       } else {
         // Handle verification success
+        console.log('✅ Verification successful!');
+
         if (headingEl) {
           headingEl.textContent = 'Email Verified!';
         }
@@ -271,6 +286,7 @@
         let redirectUrl = '/auth.html'; // Default fallback
 
         if (user) {
+          console.log(`📧 Current user role: ${user.role}`);
           if (user.role === 'admin') {
             redirectUrl = '/admin.html';
           } else if (user.role === 'supplier') {
@@ -278,7 +294,11 @@
           } else {
             redirectUrl = '/dashboard-customer.html';
           }
+        } else {
+          console.log('📧 No user session found, redirecting to auth');
         }
+
+        console.log(`📧 Redirecting to: ${redirectUrl}`);
 
         // Show manual navigation buttons
         if (actionsEl) {
@@ -299,7 +319,7 @@
         }
       }
     } catch (err) {
-      console.error('Verification error:', err);
+      console.error('❌ Verification error:', err);
 
       if (headingEl) {
         headingEl.textContent = 'Connection Error';

@@ -106,5 +106,16 @@
     "marketingOptIn": false,
     "verified": true,
     "createdAt": "2025-12-28T14:25:06.154Z"
+  },
+  {
+    "id": "usr_ywkjdx3ipvi0rs",
+    "name": "Verification Test User",
+    "email": "verify-test-1766935037@example.com",
+    "role": "customer",
+    "passwordHash": "$2a$10$n5o.R.8W5NbYt2Q8ub9S0OL3wmWpgSYXLg6bkZeDfqTVJKPXnU/lK",
+    "notify": true,
+    "marketingOptIn": false,
+    "verified": true,
+    "createdAt": "2025-12-28T15:17:17.890Z"
   }
 ]
