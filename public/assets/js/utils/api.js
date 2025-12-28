@@ -1,15 +1,22 @@
 /**
  * API Utility Functions
- * Centralized API calls with error handling
+ * Centralized API calls with error handling, retry logic, and timeout
  */
 
 class API {
-  constructor(baseURL = '') {
+  constructor(baseURL = '', options = {}) {
     this.baseURL = baseURL;
+    this.options = {
+      timeout: 30000, // 30 seconds default
+      retryAttempts: 2,
+      retryDelay: 1000,
+      retryStatusCodes: [408, 429, 500, 502, 503, 504],
+      ...options,
+    };
   }
 
   /**
-   * Make a fetch request with error handling
+   * Make a fetch request with error handling, retry logic, and timeout
    * @param {string} endpoint - API endpoint
    * @param {Object} options - Fetch options
    * @returns {Promise<Object>} - Response data
@@ -31,24 +38,80 @@ class API {
       config.headers = { ...defaultOptions.headers, ...options.headers };
     }
 
-    try {
-      const response = await fetch(url, config);
+    // Retry logic
+    let lastError;
+    for (let attempt = 0; attempt <= this.options.retryAttempts; attempt++) {
+      try {
+        // Create abort controller for timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), this.options.timeout);
 
-      // Check if response is ok
-      if (!response.ok) {
-        const error = await response.json().catch(() => ({
-          error: `HTTP ${response.status}: ${response.statusText}`,
-        }));
-        throw new Error(error.error || error.message || 'Request failed');
+        config.signal = controller.signal;
+
+        const response = await fetch(url, config);
+        clearTimeout(timeoutId);
+
+        // Check if response is ok
+        if (!response.ok) {
+          // Check if we should retry
+          if (
+            attempt < this.options.retryAttempts &&
+            this.options.retryStatusCodes.includes(response.status)
+          ) {
+            await this.delay(this.options.retryDelay * (attempt + 1));
+            continue;
+          }
+
+          const error = await response.json().catch(() => ({
+            error: `HTTP ${response.status}: ${response.statusText}`,
+          }));
+          throw new Error(error.error || error.message || 'Request failed');
+        }
+
+        // Parse JSON response
+        const data = await response.json();
+        return data;
+      } catch (error) {
+        lastError = error;
+
+        // Handle timeout
+        if (error.name === 'AbortError') {
+          console.error('Request timeout:', url);
+          if (attempt < this.options.retryAttempts) {
+            await this.delay(this.options.retryDelay * (attempt + 1));
+            continue;
+          }
+          throw new Error('Request timeout. Please try again.');
+        }
+
+        // Handle network errors
+        if (error.message === 'Failed to fetch' || error.message.includes('NetworkError')) {
+          console.error('Network error:', url);
+          if (attempt < this.options.retryAttempts) {
+            await this.delay(this.options.retryDelay * (attempt + 1));
+            continue;
+          }
+          throw new Error('Network error. Please check your connection and try again.');
+        }
+
+        // If not retryable, throw immediately
+        if (attempt >= this.options.retryAttempts) {
+          console.error('API request failed:', error);
+          throw error;
+        }
       }
-
-      // Parse JSON response
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error('API request failed:', error);
-      throw error;
     }
+
+    throw lastError;
+  }
+
+  /**
+   * Delay helper for retry logic
+   * @param {number} ms - Milliseconds to delay
+   * @returns {Promise<void>}
+   */
+  delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
   }
 
   /**
