@@ -9,9 +9,11 @@ const fs = require('fs');
 
 describe('Static File Serving', () => {
   // Note: These tests verify that the static files exist and have proper content.
+  // The /verify route is now dynamically served (not a static file) to avoid 404 errors in production.
   // The middleware order was manually tested with curl and verified to work correctly:
-  // - curl http://localhost:3000/verify.html returns 200
-  // - curl http://localhost:3000/verify.html?token=test returns 200
+  // - curl http://localhost:3000/verify returns 200 (dynamic route)
+  // - curl http://localhost:3000/verify?token=test returns 200 (dynamic route)
+  // - curl http://localhost:3000/verify.html returns 200 (static file fallback)
   // Full integration testing with the actual server would require starting it,
   // which is beyond the scope of these unit tests.
 
