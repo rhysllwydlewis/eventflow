@@ -99,6 +99,15 @@ const { csrfProtection, getToken } = require('./middleware/csrf');
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./swagger');
 
+// Sentry integration for error tracking
+const sentry = require('./utils/sentry');
+
+// Cache management
+const cache = require('./cache');
+
+// Sitemap generator
+const { generateSitemap, generateRobotsTxt } = require('./sitemap');
+
 // Constants for user management
 const VALID_USER_ROLES = ['customer', 'supplier', 'admin'];
 const MAX_NAME_LENGTH = 80;
@@ -130,6 +139,9 @@ const app = express();
 const PDFDocument = require('pdfkit');
 const PORT = Number(process.env.PORT || 3000);
 const JWT_SECRET = String(process.env.JWT_SECRET || 'change_me');
+
+// Initialize Sentry for error tracking and performance monitoring
+sentry.initSentry(app);
 
 // Validate JWT_SECRET for security
 const knownPlaceholders = [
@@ -318,6 +330,19 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+
+// Sentry request and tracing handlers (must be first)
+app.use(sentry.getRequestHandler());
+app.use(sentry.getTracingHandler());
+
+// API versioning middleware
+const { apiVersionMiddleware } = require('./middleware/api-versioning');
+app.use(apiVersionMiddleware);
+
+// Pagination middleware for all API routes
+const { paginationMiddleware, validatePagination } = require('./middleware/pagination');
+app.use('/api', validatePagination);
+app.use('/api', paginationMiddleware);
 
 // Compression middleware
 const configureCompression = require('./middleware/compression');
@@ -620,6 +645,34 @@ app.get('/verify', authLimiter, (req, res) => {
   // Serve the verification HTML page
   // The page will extract the token from the query string and call /api/auth/verify
   res.sendFile(path.join(__dirname, 'public', 'verify.html'));
+});
+
+// Sitemap.xml - Dynamic sitemap generation
+app.get('/sitemap.xml', async (req, res) => {
+  try {
+    const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+    const sitemap = await generateSitemap(baseUrl);
+    res.header('Content-Type', 'application/xml');
+    res.send(sitemap);
+  } catch (error) {
+    console.error('Error generating sitemap:', error);
+    sentry.captureException(error);
+    res.status(500).send('Error generating sitemap');
+  }
+});
+
+// Robots.txt - Dynamic robots.txt generation
+app.get('/robots.txt', (req, res) => {
+  try {
+    const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+    const robotsTxt = generateRobotsTxt(baseUrl);
+    res.header('Content-Type', 'text/plain');
+    res.send(robotsTxt);
+  } catch (error) {
+    console.error('Error generating robots.txt:', error);
+    sentry.captureException(error);
+    res.status(500).send('Error generating robots.txt');
+  }
 });
 
 app.use(express.static(path.join(__dirname, 'public')));
@@ -4148,6 +4201,58 @@ app.get('/api/ready', healthCheckLimiter, async (_req, res) => {
   });
 });
 
+// Cache statistics endpoint (admin only)
+app.get('/api/admin/cache/stats', authRequired, roleRequired('admin'), async (_req, res) => {
+  try {
+    const cacheStats = cache.getStats();
+    res.json({
+      cache: cacheStats,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error('Error getting cache stats:', error);
+    sentry.captureException(error);
+    res.status(500).json({ error: 'Failed to get cache statistics' });
+  }
+});
+
+// Query performance metrics endpoint (admin only)
+app.get('/api/admin/database/metrics', authRequired, roleRequired('admin'), async (_req, res) => {
+  try {
+    const queryMetrics = dbUnified.getQueryMetrics ? dbUnified.getQueryMetrics() : {};
+    res.json({
+      metrics: queryMetrics,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error('Error getting query metrics:', error);
+    sentry.captureException(error);
+    res.status(500).json({ error: 'Failed to get database metrics' });
+  }
+});
+
+// Cache clear endpoint (admin only)
+app.post(
+  '/api/admin/cache/clear',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (_req, res) => {
+    try {
+      await cache.clear();
+      res.json({
+        success: true,
+        message: 'Cache cleared successfully',
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      console.error('Error clearing cache:', error);
+      sentry.captureException(error);
+      res.status(500).json({ error: 'Failed to clear cache' });
+    }
+  }
+);
+
 // ---------- API Documentation & 404 Handler ----------
 // API Documentation (Swagger UI)
 app.use(
@@ -4158,6 +4263,32 @@ app.use(
     customSiteTitle: 'EventFlow API Documentation',
   })
 );
+
+// Sentry error handler (must be before other error handlers)
+app.use(sentry.getErrorHandler());
+
+// Custom error handler
+app.use((err, req, res, next) => {
+  console.error('Error:', err);
+
+  // Send error to Sentry
+  sentry.captureException(err, {
+    tags: {
+      path: req.path,
+      method: req.method,
+    },
+    extra: {
+      query: req.query,
+      body: req.body,
+    },
+  });
+
+  // Send response
+  res.status(err.status || 500).json({
+    error: err.message || 'Internal server error',
+    status: err.status || 500,
+  });
+});
 
 // Catch-all 404 handler (must be the LAST middleware)
 // This will only be reached if no static files or routes matched
@@ -4513,5 +4644,36 @@ async function startServer() {
 // Start the server with proper initialization
 startServer().catch(error => {
   console.error('Fatal error during startup:', error);
+  sentry.captureException(error);
   process.exit(1);
+});
+
+// Global error handlers
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  sentry.captureException(reason);
+});
+
+process.on('uncaughtException', error => {
+  console.error('Uncaught Exception:', error);
+  sentry.captureException(error);
+  // Give Sentry time to send the error before exiting
+  setTimeout(() => {
+    process.exit(1);
+  }, 1000);
+});
+
+// Graceful shutdown
+process.on('SIGTERM', async () => {
+  console.log('SIGTERM signal received: closing HTTP server');
+  await sentry.flush(2000);
+  await cache.close();
+  process.exit(0);
+});
+
+process.on('SIGINT', async () => {
+  console.log('SIGINT signal received: closing HTTP server');
+  await sentry.flush(2000);
+  await cache.close();
+  process.exit(0);
 });
