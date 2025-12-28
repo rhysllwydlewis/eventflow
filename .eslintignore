@@ -9,3 +9,6 @@ public/uploads
 *.min.js
 .env
 .env.*
+e2e
+playwright-report
+test-results
