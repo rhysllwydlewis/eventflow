@@ -16,6 +16,16 @@ let mongodb = null;
 let initializationState = 'not_started'; // 'not_started', 'in_progress', 'completed', 'failed'
 let initializationError = null;
 
+// Query performance monitoring
+let queryMetrics = {
+  totalQueries: 0,
+  slowQueries: 0,
+  avgQueryTime: 0,
+  queryTimes: [],
+};
+
+const SLOW_QUERY_THRESHOLD = 1000; // 1 second
+
 /**
  * Timeout wrapper for database operations
  * Prevents hanging during initialization
@@ -371,6 +381,154 @@ function getDatabaseStatus() {
   };
 }
 
+/**
+ * Track query performance
+ * @param {string} operation - Operation name
+ * @param {number} duration - Duration in milliseconds
+ */
+function trackQueryPerformance(operation, duration) {
+  queryMetrics.totalQueries++;
+  queryMetrics.queryTimes.push(duration);
+
+  // Keep only last 1000 query times
+  if (queryMetrics.queryTimes.length > 1000) {
+    queryMetrics.queryTimes.shift();
+  }
+
+  // Calculate average
+  const sum = queryMetrics.queryTimes.reduce((a, b) => a + b, 0);
+  queryMetrics.avgQueryTime = sum / queryMetrics.queryTimes.length;
+
+  // Track slow queries
+  if (duration > SLOW_QUERY_THRESHOLD) {
+    queryMetrics.slowQueries++;
+    console.warn(`⚠️  Slow query detected: ${operation} took ${duration}ms`);
+  }
+}
+
+/**
+ * Get query performance metrics
+ * @returns {Object} Performance metrics
+ */
+function getQueryMetrics() {
+  return {
+    ...queryMetrics,
+    slowQueryPercentage:
+      queryMetrics.totalQueries > 0
+        ? ((queryMetrics.slowQueries / queryMetrics.totalQueries) * 100).toFixed(2)
+        : 0,
+  };
+}
+
+/**
+ * Reset query metrics
+ */
+function resetQueryMetrics() {
+  queryMetrics = {
+    totalQueries: 0,
+    slowQueries: 0,
+    avgQueryTime: 0,
+    queryTimes: [],
+  };
+}
+
+/**
+ * Wrapper for MongoDB operations with performance tracking
+ * @param {string} operation - Operation name
+ * @param {Function} fn - Function to execute
+ * @returns {Promise} Result of operation
+ */
+async function withPerformanceTracking(operation, fn) {
+  const startTime = Date.now();
+  try {
+    const result = await fn();
+    const duration = Date.now() - startTime;
+    trackQueryPerformance(operation, duration);
+    return result;
+  } catch (error) {
+    const duration = Date.now() - startTime;
+    trackQueryPerformance(operation, duration);
+    throw error;
+  }
+}
+
+/**
+ * Data validation schemas for collections
+ */
+const validationSchemas = {
+  users: {
+    email: { type: 'string', required: true },
+    role: { type: 'string', enum: ['customer', 'supplier', 'admin'], required: true },
+    createdAt: { type: 'date', required: true },
+  },
+  suppliers: {
+    userId: { type: 'string', required: true },
+    category: { type: 'string', required: true },
+    approved: { type: 'boolean', required: true },
+  },
+  packages: {
+    supplierId: { type: 'string', required: true },
+    name: { type: 'string', required: true },
+    price: { type: 'number', required: true },
+  },
+  messages: {
+    userId: { type: 'string', required: true },
+    threadId: { type: 'string', required: true },
+    content: { type: 'string', required: true },
+    createdAt: { type: 'date', required: true },
+  },
+};
+
+/**
+ * Validate document against schema
+ * @param {string} collectionName - Collection name
+ * @param {Object} document - Document to validate
+ * @returns {Object} Validation result with isValid and errors
+ */
+function validateDocument(collectionName, document) {
+  const schema = validationSchemas[collectionName];
+  if (!schema) {
+    return { isValid: true, errors: [] };
+  }
+
+  const errors = [];
+
+  for (const [field, rules] of Object.entries(schema)) {
+    const value = document[field];
+
+    // Check required fields
+    if (rules.required && (value === undefined || value === null)) {
+      errors.push(`Field '${field}' is required`);
+      continue;
+    }
+
+    // Skip if value is not present and not required
+    if (value === undefined || value === null) {
+      continue;
+    }
+
+    // Check type
+    if (rules.type) {
+      const actualType = rules.type === 'date' ? 'object' : typeof value;
+      if (rules.type === 'date' && !(value instanceof Date)) {
+        errors.push(`Field '${field}' must be a Date`);
+      } else if (rules.type !== 'date' && actualType !== rules.type) {
+        errors.push(`Field '${field}' must be of type ${rules.type}`);
+      }
+    }
+
+    // Check enum
+    if (rules.enum && !rules.enum.includes(value)) {
+      errors.push(`Field '${field}' must be one of: ${rules.enum.join(', ')}`);
+    }
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+  };
+}
+
 module.exports = {
   initializeDatabase,
   read,
@@ -382,4 +540,8 @@ module.exports = {
   uid,
   getDatabaseType,
   getDatabaseStatus,
+  getQueryMetrics,
+  resetQueryMetrics,
+  validateDocument,
+  withPerformanceTracking,
 };
