@@ -2338,6 +2338,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (loginForm && loginEmail && loginPassword) {
       const loginBtn = loginForm.querySelector('button[type="submit"]');
+      const loginErrorEl = document.getElementById('login-error');
       const resendContainer = document.getElementById('resend-verification-container');
       const resendBtn = document.getElementById('resend-verification-btn');
 
@@ -2402,16 +2403,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (resendContainer) {
           resendContainer.style.display = 'none';
         }
-        
+
         // Validate required fields
         const email = loginEmail.value.trim();
         const password = loginPassword.value;
 
         if (!email || !password) {
-          const errorEl = document.getElementById('login-error');
-          if (errorEl) {
-            errorEl.textContent = 'Please enter both email and password';
-            errorEl.style.display = 'block';
+          if (loginErrorEl) {
+            loginErrorEl.textContent = 'Please enter both email and password';
+            loginErrorEl.style.display = 'block';
           }
           if (loginStatus) {
             loginStatus.textContent = '';
@@ -2420,12 +2420,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Clear any previous errors
-        const errorEl = document.getElementById('login-error');
-        if (errorEl) {
-          errorEl.style.display = 'none';
-          errorEl.textContent = '';
+        if (loginErrorEl) {
+          loginErrorEl.style.display = 'none';
+          loginErrorEl.textContent = '';
         }
-        
+
         if (loginBtn) {
           loginBtn.disabled = true;
           loginBtn.textContent = 'Signing in…';
@@ -2446,13 +2445,12 @@ document.addEventListener('DOMContentLoaded', () => {
           if (!r.ok) {
             const errorMsg =
               data.error || 'Could not sign in. Please check your details and try again.';
-            
-            const errorEl = document.getElementById('login-error');
-            if (errorEl) {
-              errorEl.textContent = errorMsg;
-              errorEl.style.display = 'block';
+
+            if (loginErrorEl) {
+              loginErrorEl.textContent = errorMsg;
+              loginErrorEl.style.display = 'block';
             }
-            
+
             if (loginStatus) {
               loginStatus.textContent = errorMsg;
 
@@ -2482,10 +2480,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
           }
         } catch (err) {
-          const errorEl = document.getElementById('login-error');
-          if (errorEl) {
-            errorEl.textContent = 'Network error – please try again.';
-            errorEl.style.display = 'block';
+          if (loginErrorEl) {
+            loginErrorEl.textContent = 'Network error – please try again.';
+            loginErrorEl.style.display = 'block';
           }
           if (loginStatus) {
             loginStatus.textContent = 'Network error – please try again.';
@@ -2494,7 +2491,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } finally {
           if (loginBtn) {
             loginBtn.disabled = false;
-            loginBtn.textContent = 'Sign in';
+            loginBtn.textContent = 'Log in';
           }
         }
       });
