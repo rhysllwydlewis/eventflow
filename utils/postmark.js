@@ -362,7 +362,7 @@ ${emailData.HtmlBody || emailData.TextBody}
  * @throws {Error} If email sending fails
  */
 async function sendVerificationEmail(user, verificationToken) {
-  const verificationLink = `${APP_BASE_URL}/verify?token=${encodeURIComponent(verificationToken)}`;
+  const verificationLink = `${APP_BASE_URL}/verify.html?token=${encodeURIComponent(verificationToken)}`;
 
   console.log(`📧 Sending verification email to ${user.email}`);
 
