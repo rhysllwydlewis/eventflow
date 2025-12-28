@@ -2402,13 +2402,35 @@ document.addEventListener('DOMContentLoaded', () => {
         if (resendContainer) {
           resendContainer.style.display = 'none';
         }
+        
+        // Validate required fields
+        const email = loginEmail.value.trim();
+        const password = loginPassword.value;
+
+        if (!email || !password) {
+          const errorEl = document.getElementById('login-error');
+          if (errorEl) {
+            errorEl.textContent = 'Please enter both email and password';
+            errorEl.style.display = 'block';
+          }
+          if (loginStatus) {
+            loginStatus.textContent = '';
+          }
+          return;
+        }
+
+        // Clear any previous errors
+        const errorEl = document.getElementById('login-error');
+        if (errorEl) {
+          errorEl.style.display = 'none';
+          errorEl.textContent = '';
+        }
+        
         if (loginBtn) {
           loginBtn.disabled = true;
           loginBtn.textContent = 'Signing in…';
         }
         try {
-          const email = loginEmail.value.trim();
-          const password = loginPassword.value;
           const r = await fetch('/api/auth/login', {
             method: 'POST',
             headers: getHeadersWithCsrf({ 'Content-Type': 'application/json' }),
@@ -2422,9 +2444,16 @@ document.addEventListener('DOMContentLoaded', () => {
             /* Ignore JSON parse errors */
           }
           if (!r.ok) {
+            const errorMsg =
+              data.error || 'Could not sign in. Please check your details and try again.';
+            
+            const errorEl = document.getElementById('login-error');
+            if (errorEl) {
+              errorEl.textContent = errorMsg;
+              errorEl.style.display = 'block';
+            }
+            
             if (loginStatus) {
-              const errorMsg =
-                data.error || 'Could not sign in. Please check your details and try again.';
               loginStatus.textContent = errorMsg;
 
               // Check if login failed due to unverified email (403 status)
@@ -2453,6 +2482,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
           }
         } catch (err) {
+          const errorEl = document.getElementById('login-error');
+          if (errorEl) {
+            errorEl.textContent = 'Network error – please try again.';
+            errorEl.style.display = 'block';
+          }
           if (loginStatus) {
             loginStatus.textContent = 'Network error – please try again.';
           }
