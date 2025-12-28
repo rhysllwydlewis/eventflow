@@ -70,7 +70,7 @@
         <div class="form-row"><label for="login-password">Password</label><input id="login-password" name="password" type="password" required placeholder="Your password" aria-required="true"></div>
         <div class="form-row">
           <label></label>
-          <div id="login-error" class="error" role="alert" style="display: none; color: #b00020; font-size: 0.875rem;"></div>
+          <div id="login-error" class="error" style="display: none; color: #b00020; font-size: 0.875rem;" aria-live="polite"></div>
         </div>
         <div class="form-row">
           <label></label>
@@ -92,7 +92,7 @@
         <div class="form-row">
           <label for="reg-email">Email</label>
           <input id="reg-email" name="email" type="email" required aria-required="true" aria-describedby="email-validation-msg">
-          <span class="small" id="email-validation-msg" style="display:none;color:#b00020" role="alert"></span>
+          <span class="small" id="email-validation-msg" style="display:none;color:#b00020" aria-live="polite"></span>
         </div>
         <div class="form-row">
           <label for="reg-password">Password</label>

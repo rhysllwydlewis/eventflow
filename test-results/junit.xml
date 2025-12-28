@@ -1,0 +1,153 @@
+<testsuites id="" name="" tests="7" failures="1" skipped="0" errors="0" time="10.914987000000002">
+<testsuite name="auth.spec.js" timestamp="2025-12-28T23:38:10.141Z" hostname="chromium" tests="7" failures="1" skipped="0" time="6.891" errors="0">
+<testcase name="Authentication Flow › should display login page" classname="auth.spec.js" time="1.777">
+<failure message="auth.spec.js:8:7 should display login page" type="FAILURE">
+<![CDATA[  [chromium] › auth.spec.js:8:7 › Authentication Flow › should display login page ──────────────────
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: locator('form')
+    Expected: visible
+    Error: strict mode violation: locator('form') resolved to 2 elements:
+        1) <form action="#" class="card" novalidate="" id="login-form">…</form> aka getByText('Email PasswordShow Remember')
+        2) <form action="#" class="card" novalidate="" id="register-form">…</form> aka getByText('Name Email Password Show I am')
+
+    Call log:
+      - Expect "toBeVisible" with timeout 5000ms
+      - waiting for locator('form')
+
+
+       9 |     await page.goto('/auth.html');
+      10 |     await expect(page).toHaveTitle(/EventFlow/i);
+    > 11 |     await expect(page.locator('form')).toBeVisible();
+         |                                        ^
+      12 |   });
+      13 |
+      14 |   test('should show validation errors for empty login', async ({ page }) => {
+        at /home/runner/work/eventflow/eventflow/e2e/auth.spec.js:11:40
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../test-results/auth-Authentication-Flow-should-display-login-page-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../test-results/auth-Authentication-Flow-should-display-login-page-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../test-results/auth-Authentication-Flow-should-display-login-page-chromium/error-context.md
+
+    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: locator('form')
+    Expected: visible
+    Error: strict mode violation: locator('form') resolved to 2 elements:
+        1) <form action="#" class="card" novalidate="" id="login-form">…</form> aka getByText('Email PasswordShow Remember')
+        2) <form action="#" class="card" novalidate="" id="register-form">…</form> aka getByText('Name Email Password Show I am')
+
+    Call log:
+      - Expect "toBeVisible" with timeout 5000ms
+      - waiting for locator('form')
+
+
+       9 |     await page.goto('/auth.html');
+      10 |     await expect(page).toHaveTitle(/EventFlow/i);
+    > 11 |     await expect(page.locator('form')).toBeVisible();
+         |                                        ^
+      12 |   });
+      13 |
+      14 |   test('should show validation errors for empty login', async ({ page }) => {
+        at /home/runner/work/eventflow/eventflow/e2e/auth.spec.js:11:40
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../test-results/auth-Authentication-Flow-should-display-login-page-chromium-retry1/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../test-results/auth-Authentication-Flow-should-display-login-page-chromium-retry1/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../test-results/auth-Authentication-Flow-should-display-login-page-chromium-retry1/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../test-results/auth-Authentication-Flow-should-display-login-page-chromium-retry1/trace.zip
+    Usage:
+
+        npx playwright show-trace ../test-results/auth-Authentication-Flow-should-display-login-page-chromium-retry1/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Retry #2 ───────────────────────────────────────────────────────────────────────────────────────
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: locator('form')
+    Expected: visible
+    Error: strict mode violation: locator('form') resolved to 2 elements:
+        1) <form action="#" class="card" novalidate="" id="login-form">…</form> aka getByText('Email PasswordShow Remember')
+        2) <form action="#" class="card" novalidate="" id="register-form">…</form> aka getByText('Name Email Password Show I am')
+
+    Call log:
+      - Expect "toBeVisible" with timeout 5000ms
+      - waiting for locator('form')
+
+
+       9 |     await page.goto('/auth.html');
+      10 |     await expect(page).toHaveTitle(/EventFlow/i);
+    > 11 |     await expect(page.locator('form')).toBeVisible();
+         |                                        ^
+      12 |   });
+      13 |
+      14 |   test('should show validation errors for empty login', async ({ page }) => {
+        at /home/runner/work/eventflow/eventflow/e2e/auth.spec.js:11:40
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../test-results/auth-Authentication-Flow-should-display-login-page-chromium-retry2/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../test-results/auth-Authentication-Flow-should-display-login-page-chromium-retry2/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../test-results/auth-Authentication-Flow-should-display-login-page-chromium-retry2/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|auth-Authentication-Flow-should-display-login-page-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|auth-Authentication-Flow-should-display-login-page-chromium/video.webm]]
+
+[[ATTACHMENT|auth-Authentication-Flow-should-display-login-page-chromium/error-context.md]]
+
+[[ATTACHMENT|auth-Authentication-Flow-should-display-login-page-chromium-retry1/test-failed-1.png]]
+
+[[ATTACHMENT|auth-Authentication-Flow-should-display-login-page-chromium-retry1/video.webm]]
+
+[[ATTACHMENT|auth-Authentication-Flow-should-display-login-page-chromium-retry1/error-context.md]]
+
+[[ATTACHMENT|auth-Authentication-Flow-should-display-login-page-chromium-retry1/trace.zip]]
+
+[[ATTACHMENT|auth-Authentication-Flow-should-display-login-page-chromium-retry2/test-failed-1.png]]
+
+[[ATTACHMENT|auth-Authentication-Flow-should-display-login-page-chromium-retry2/video.webm]]
+
+[[ATTACHMENT|auth-Authentication-Flow-should-display-login-page-chromium-retry2/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Authentication Flow › should show validation errors for empty login" classname="auth.spec.js" time="0.577">
+</testcase>
+<testcase name="Authentication Flow › should navigate to registration" classname="auth.spec.js" time="0.485">
+</testcase>
+<testcase name="Authentication Flow › should show password visibility toggle" classname="auth.spec.js" time="0.478">
+</testcase>
+<testcase name="Authentication Flow › should handle login with invalid credentials" classname="auth.spec.js" time="2.572">
+</testcase>
+<testcase name="Authentication Flow › should have CSRF protection" classname="auth.spec.js" time="0.491">
+</testcase>
+<testcase name="Authentication Flow › should be responsive on mobile" classname="auth.spec.js" time="0.511">
+</testcase>
+</testsuite>
+</testsuites>
