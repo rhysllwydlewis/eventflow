@@ -611,7 +611,8 @@ app.use((req, res, next) => {
 // This ensures /verify is handled by the backend route, not static file serving
 // Fixes 404 errors in production where static files may not deploy correctly
 // Each user receives a unique verification token in their email (e.g., verify_abc123)
-app.get('/verify', (req, res) => {
+// Rate limiting applied to prevent abuse
+app.get('/verify', authLimiter, (req, res) => {
   // Serve the verification HTML page
   // The page will extract the token from the query string and call /api/auth/verify
   res.sendFile(path.join(__dirname, 'public', 'verify.html'));
