@@ -2017,7 +2017,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ? 'admin'
         : location.pathname.endsWith('auth.html')
           ? 'auth'
-          : location.pathname.endsWith('verify.html')
+          : location.pathname.endsWith('verify.html') || location.pathname === '/verify'
             ? 'verify'
             : location.pathname.endsWith('dashboard-customer.html')
               ? 'dash_customer'

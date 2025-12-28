@@ -34,7 +34,7 @@ function maintenanceMode(req, res, next) {
     }
 
     // Allow access to verification page (users need to verify their accounts)
-    if (req.path === '/verify.html') {
+    if (req.path === '/verify.html' || req.path === '/verify') {
       return next();
     }
 

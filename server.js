@@ -607,6 +607,17 @@ app.use((req, res, next) => {
   next();
 });
 
+// Dynamic verification route - CRITICAL: Must be before express.static()
+// This ensures /verify is handled by the backend route, not static file serving
+// Fixes 404 errors in production where static files may not deploy correctly
+// Each user receives a unique verification token in their email (e.g., verify_abc123)
+// Rate limiting applied to prevent abuse
+app.get('/verify', authLimiter, (req, res) => {
+  // Serve the verification HTML page
+  // The page will extract the token from the query string and call /api/auth/verify
+  res.sendFile(path.join(__dirname, 'public', 'verify.html'));
+});
+
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
@@ -648,7 +659,7 @@ app.post('/api/auth/register', strictAuthLimiter, csrfProtection, async (req, re
   // Send verification email (dev mode writes .eml files to /outbox)
   try {
     const baseUrl = process.env.BASE_URL || `http://localhost:${PORT}`;
-    const verificationLink = `${baseUrl}/verify.html?token=${encodeURIComponent(user.verificationToken)}`;
+    const verificationLink = `${baseUrl}/verify?token=${encodeURIComponent(user.verificationToken)}`;
     await sendMail({
       to: user.email,
       subject: 'Confirm your EventFlow account',
@@ -842,7 +853,7 @@ app.post('/api/auth/resend-verification', authLimiter, csrfProtection, async (re
 
   try {
     const baseUrl = process.env.BASE_URL || `http://localhost:${PORT}`;
-    const verificationLink = `${baseUrl}/verify.html?token=${encodeURIComponent(newToken)}`;
+    const verificationLink = `${baseUrl}/verify?token=${encodeURIComponent(newToken)}`;
 
     await sendMail({
       to: user.email,

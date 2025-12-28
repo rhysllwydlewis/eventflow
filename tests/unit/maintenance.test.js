@@ -39,6 +39,18 @@ describe('Maintenance Mode Middleware', () => {
     expect(next).toHaveBeenCalled();
   });
 
+  it('should allow access to /verify during maintenance mode', () => {
+    read.mockReturnValue({ maintenance: { enabled: true } });
+
+    const req = { path: '/verify' };
+    const res = {};
+    const next = jest.fn();
+
+    maintenanceMode(req, res, next);
+
+    expect(next).toHaveBeenCalled();
+  });
+
   it('should allow access to /maintenance.html during maintenance mode', () => {
     read.mockReturnValue({ maintenance: { enabled: true } });
 

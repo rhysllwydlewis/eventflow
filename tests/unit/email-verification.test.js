@@ -162,7 +162,7 @@ describe('Email Verification System', () => {
       await postmark.sendVerificationEmail(user, token);
 
       // The verification link should be constructed properly
-      const expectedLink = `http://localhost:3000/verify.html?token=${encodeURIComponent(token)}`;
+      const expectedLink = `http://localhost:3000/verify?token=${encodeURIComponent(token)}`;
       // We can't directly check the email content in this mock,
       // but we verify the function completes without error
       expect(true).toBe(true);
