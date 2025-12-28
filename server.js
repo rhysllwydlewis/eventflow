@@ -607,9 +607,11 @@ app.use((req, res, next) => {
   next();
 });
 
-// Dynamic verification route - must be before static files
-// This serves the verification page dynamically to avoid 404 errors in production
-app.get('/verify', async (req, res) => {
+// Dynamic verification route - CRITICAL: Must be before express.static()
+// This ensures /verify is handled by the backend route, not static file serving
+// Fixes 404 errors in production where static files may not deploy correctly
+// Each user receives a unique verification token in their email (e.g., verify_abc123)
+app.get('/verify', (req, res) => {
   // Serve the verification HTML page
   // The page will extract the token from the query string and call /api/auth/verify
   res.sendFile(path.join(__dirname, 'public', 'verify.html'));
