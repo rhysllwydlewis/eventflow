@@ -267,7 +267,7 @@ class FormValidator {
 
   getFieldLabel(field) {
     const label = this.form.querySelector(`label[for="${field.id}"]`);
-    return label ? label.textContent.replace('*', '').trim() : field.name;
+    return label ? label.textContent.replace(/\*/g, '').trim() : field.name;
   }
 
   getFormData() {
