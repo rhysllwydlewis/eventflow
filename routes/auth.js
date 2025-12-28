@@ -20,6 +20,8 @@ const {
 const { passwordOk } = require('../middleware/validation');
 const { authLimiter } = require('../middleware/rateLimit');
 const postmark = require('../utils/postmark');
+const tokenUtils = require('../utils/token');
+const { validateToken } = require('../middleware/token');
 
 const router = express.Router();
 
@@ -75,10 +77,7 @@ router.post('/register', authLimiter, async (req, res) => {
     return res.status(409).json({ error: 'Email already registered' });
   }
 
-  // Generate verification token with 24-hour expiration
-  const verificationToken = uid('verify');
-  const tokenExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // 24 hours
-
+  // Create user object first (needed for JWT token generation)
   const user = {
     id: uid('usr'),
     name: String(name).trim().slice(0, 80),
@@ -90,10 +89,17 @@ router.post('/register', authLimiter, async (req, res) => {
     notify_marketing: !!(req.body && req.body.marketingOptIn), // Marketing emails opt-in
     marketingOptIn: !!(req.body && req.body.marketingOptIn), // Deprecated, kept for backward compatibility
     verified: false,
-    verificationToken: verificationToken,
-    verificationTokenExpiresAt: tokenExpiresAt,
     createdAt: new Date().toISOString(),
   };
+
+  // Generate JWT verification token
+  const verificationToken = tokenUtils.generateVerificationToken(user, {
+    expiresInHours: 24,
+  });
+
+  // Store token info for legacy compatibility
+  user.verificationToken = verificationToken;
+  user.verificationTokenExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
 
   // Send verification email via Postmark BEFORE saving user
   // This ensures we only create accounts when email can be sent
@@ -217,7 +223,8 @@ router.post('/forgot', authLimiter, async (req, res) => {
 
 /**
  * GET /api/auth/verify
- * Verify email address with token
+ * Verify email address with token (supports both JWT and legacy tokens)
+ * This endpoint maintains backward compatibility
  */
 router.get('/verify', async (req, res) => {
   const { token } = req.query || {};
@@ -230,6 +237,78 @@ router.get('/verify', async (req, res) => {
     return res.status(400).json({ error: 'Missing token' });
   }
 
+  // Check if it's a JWT token
+  const isJWT = tokenUtils.isJWTToken(token);
+  console.log(`   Token type: ${isJWT ? 'JWT' : 'Legacy'}`);
+
+  if (isJWT) {
+    // Validate JWT token
+    const validation = tokenUtils.validateVerificationToken(token, {
+      allowGracePeriod: true,
+      expectedType: tokenUtils.TOKEN_TYPES.EMAIL_VERIFICATION,
+    });
+
+    if (!validation.valid) {
+      console.error(`❌ JWT validation failed: ${validation.error}`);
+      return res.status(400).json({
+        error: validation.message,
+        code: validation.error,
+        canResend: validation.canResend,
+      });
+    }
+
+    // Find user by email from JWT
+    const users = read('users');
+    const idx = users.findIndex(u => u.email.toLowerCase() === validation.email.toLowerCase());
+
+    if (idx === -1) {
+      console.error(`❌ User not found for email: ${validation.email}`);
+      return res.status(400).json({ error: 'Invalid verification token - user not found' });
+    }
+
+    const user = users[idx];
+
+    // Check if already verified
+    if (user.verified === true) {
+      console.log(`ℹ️ User already verified: ${user.email}`);
+      return res.json({
+        ok: true,
+        message: 'Email already verified',
+        alreadyVerified: true,
+      });
+    }
+
+    // Mark user as verified and clear token
+    users[idx].verified = true;
+    delete users[idx].verificationToken;
+    delete users[idx].verificationTokenExpiresAt;
+    write('users', users);
+    console.log(`✅ User verified successfully via JWT: ${user.email}`);
+
+    // Send welcome email (non-blocking)
+    (async () => {
+      try {
+        console.log(`📧 Sending welcome email to newly verified user: ${user.email}`);
+        await postmark.sendWelcomeEmail(user);
+        console.log(`✅ Welcome email sent to ${user.email}`);
+      } catch (emailError) {
+        console.error('❌ Failed to send welcome email:', emailError.message);
+      }
+    })();
+
+    return res.json({
+      ok: true,
+      message: 'Email verified successfully',
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+      },
+    });
+  }
+
+  // Handle legacy tokens
+  console.log('⚠️ Processing legacy verification token');
   const users = read('users');
   const idx = users.findIndex(u => u.verificationToken === token);
 
@@ -272,6 +351,148 @@ router.get('/verify', async (req, res) => {
   })();
 
   res.json({ ok: true, message: 'Email verified successfully' });
+});
+
+/**
+ * POST /api/auth/verify-email
+ * New unified verification endpoint with enhanced error handling
+ * Supports both query params and body, with comprehensive logging
+ */
+router.post('/verify-email', authLimiter, validateToken({ required: true }), async (req, res) => {
+  console.log('📧 POST /api/auth/verify-email called');
+  console.log(`   Token validation:`, req.tokenValidation);
+
+  const validation = req.tokenValidation;
+
+  // Handle JWT tokens
+  if (validation.isJWT && validation.valid) {
+    const users = read('users');
+    const idx = users.findIndex(u => u.email.toLowerCase() === validation.email.toLowerCase());
+
+    if (idx === -1) {
+      console.error(`❌ User not found for email: ${validation.email}`);
+      return res.status(400).json({
+        ok: false,
+        error: 'Invalid verification token - user not found',
+        code: 'USER_NOT_FOUND',
+      });
+    }
+
+    const user = users[idx];
+
+    // Check if already verified
+    if (user.verified === true) {
+      console.log(`ℹ️ User already verified: ${user.email}`);
+      return res.json({
+        ok: true,
+        message: 'Your email address is already verified',
+        alreadyVerified: true,
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+        },
+      });
+    }
+
+    // Mark user as verified
+    users[idx].verified = true;
+    delete users[idx].verificationToken;
+    delete users[idx].verificationTokenExpiresAt;
+    write('users', users);
+
+    console.log(`✅ User verified successfully via POST: ${user.email}`);
+
+    // Send welcome email (non-blocking)
+    (async () => {
+      try {
+        await postmark.sendWelcomeEmail(user);
+        console.log(`✅ Welcome email sent to ${user.email}`);
+      } catch (emailError) {
+        console.error('❌ Failed to send welcome email:', emailError.message);
+      }
+    })();
+
+    return res.json({
+      ok: true,
+      message: 'Your email has been verified successfully! You can now log in.',
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+      },
+      withinGracePeriod: validation.withinGracePeriod,
+    });
+  }
+
+  // Handle legacy tokens
+  if (!validation.isJWT && validation.legacyToken) {
+    console.log('⚠️ Processing legacy token via POST endpoint');
+
+    const users = read('users');
+    const idx = users.findIndex(u => u.verificationToken === validation.legacyToken);
+
+    if (idx === -1) {
+      return res.status(400).json({
+        ok: false,
+        error: 'Invalid or expired verification token',
+        code: 'INVALID_TOKEN',
+        canResend: true,
+      });
+    }
+
+    const user = users[idx];
+
+    // Check expiration
+    if (user.verificationTokenExpiresAt) {
+      const expiresAt = new Date(user.verificationTokenExpiresAt);
+      if (expiresAt < new Date()) {
+        return res.status(400).json({
+          ok: false,
+          error: 'Verification token has expired. Please request a new one.',
+          code: 'TOKEN_EXPIRED',
+          canResend: true,
+        });
+      }
+    }
+
+    // Verify user
+    users[idx].verified = true;
+    delete users[idx].verificationToken;
+    delete users[idx].verificationTokenExpiresAt;
+    write('users', users);
+
+    console.log(`✅ User verified via legacy token: ${user.email}`);
+
+    // Send welcome email (non-blocking)
+    (async () => {
+      try {
+        await postmark.sendWelcomeEmail(user);
+      } catch (err) {
+        console.error('Failed to send welcome email:', err.message);
+      }
+    })();
+
+    return res.json({
+      ok: true,
+      message: 'Your email has been verified successfully! You can now log in.',
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+      },
+    });
+  }
+
+  // Should never reach here due to middleware
+  return res.status(400).json({
+    ok: false,
+    error: 'Invalid token validation state',
+    code: 'VALIDATION_ERROR',
+  });
 });
 
 /**
@@ -484,8 +705,12 @@ router.post('/resend-verification', authLimiter, async (req, res) => {
     });
   }
 
-  // Generate new verification token with 24-hour expiration
-  const verificationToken = uid('verify');
+  // Generate new JWT verification token
+  const verificationToken = tokenUtils.generateVerificationToken(user, {
+    expiresInHours: 24,
+  });
+
+  // Store token info
   const tokenExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // 24 hours
 
   // Send verification email via Postmark BEFORE saving token
