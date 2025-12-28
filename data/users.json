@@ -84,5 +84,27 @@
     "verificationToken": "verify_8pze3urtn9ooys",
     "verificationTokenExpiresAt": "2025-12-27T19:31:05.188Z",
     "createdAt": "2025-12-26T19:31:05.188Z"
+  },
+  {
+    "id": "usr_mzpcewe3ptmhli",
+    "name": "Test User X",
+    "email": "userx@example.com",
+    "role": "customer",
+    "passwordHash": "$2a$10$lSG0s6B9KQnvrw17TKEeyegCngNmiMApvlUT6uAI8T5tDV23dqWPC",
+    "notify": true,
+    "marketingOptIn": false,
+    "verified": true,
+    "createdAt": "2025-12-28T14:24:47.090Z"
+  },
+  {
+    "id": "usr_iygc7xlaptmwbd",
+    "name": "Test User Y",
+    "email": "usery@example.com",
+    "role": "customer",
+    "passwordHash": "$2a$10$thFMfc06Njeqy6ZHUJsq..WXS4l.B48sZR9KZK.HHEvn5uPaJaafS",
+    "notify": true,
+    "marketingOptIn": false,
+    "verified": true,
+    "createdAt": "2025-12-28T14:25:06.154Z"
   }
 ]
