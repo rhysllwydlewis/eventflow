@@ -115,9 +115,65 @@
         </div>
       </form>
     </section>
+    <!-- Load utilities -->
+    <script src="/assets/js/utils/form-validator.js"></script>
+    <script src="/assets/js/components/ErrorBoundary.js"></script>
+    <script src="/assets/js/utils/keyboard-nav.js"></script>
+    
     <script src="/assets/js/pages/auth-init.js"></script>
     <script src="/assets/js/app.js"></script>
     <script>window.__EF_PAGE__='auth'</script>
+    
+    <!-- Initialize form validation -->
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        // Initialize error boundary
+        window.errorBoundary = new ErrorBoundary({
+          onError: function(errorInfo) {
+            console.error('Error caught:', errorInfo);
+          }
+        });
+        
+        // Initialize form validation for login form
+        const loginForm = document.querySelector('#login-form');
+        if (loginForm) {
+          const loginValidator = new FormValidator(loginForm, {
+            validateOnBlur: true,
+            validateOnInput: false
+          });
+          
+          // Listen for valid submissions
+          loginForm.addEventListener('validsubmit', function(e) {
+            const formData = e.detail;
+            console.log('Login form validated:', formData);
+            // The existing auth-init.js will handle the actual submission
+          });
+        }
+        
+        // Initialize form validation for registration form
+        const registerForm = document.querySelector('#register-form');
+        if (registerForm) {
+          const registerValidator = new FormValidator(registerForm, {
+            validateOnBlur: true,
+            validateOnInput: false
+          });
+          
+          // Add custom password strength validation
+          registerValidator.addValidator('reg-password', {
+            required: true,
+            password: true,
+            minLength: 8
+          });
+          
+          // Listen for valid submissions
+          registerForm.addEventListener('validsubmit', function(e) {
+            const formData = e.detail;
+            console.log('Register form validated:', formData);
+            // The existing auth-init.js will handle the actual submission
+          });
+        }
+      });
+    </script>
   </div>
 </main>
 

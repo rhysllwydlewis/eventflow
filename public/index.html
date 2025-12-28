@@ -221,6 +221,13 @@
   </div>
 </footer>
 
+<!-- Load core utilities -->
+<script src="/assets/js/components/ErrorBoundary.js"></script>
+<script src="/assets/js/utils/keyboard-nav.js"></script>
+<script src="/assets/js/utils/image-optimizer.js"></script>
+<script src="/assets/js/utils/performance-monitor.js"></script>
+<script src="/assets/js/utils/seo-helper.js"></script>
+
 <script src="/assets/js/app.js" defer></script>
 <script src="/assets/js/websocket-client.js" defer></script>
 <script src="/assets/js/components/category-grid.js" defer></script>
@@ -231,6 +238,25 @@
 <script src="/assets/js/components/footer-nav.js" defer></script>
 <script src="/assets/js/cookie-consent.js" defer></script>
 <script>
+  // Initialize core utilities
+  document.addEventListener('DOMContentLoaded', function() {
+    // Initialize error boundary
+    window.errorBoundary = new ErrorBoundary({
+      showErrorDetails: window.location.hostname === 'localhost'
+    });
+    
+    // Update SEO for homepage
+    if (window.seoHelper) {
+      window.seoHelper.setAll({
+        title: 'EventFlow — Plan your event the simple way',
+        description: 'Find suppliers, build your plan and keep everything in one place — beautifully simple on mobile and desktop.',
+        keywords: ['event planning', 'wedding planning', 'suppliers', 'venues', 'catering'],
+        canonical: '/',
+        type: 'website'
+      });
+    }
+  });
+  
   // Fix CSP violation - move inline onclick to event listener
   document.getElementById('start-planning-btn')?.addEventListener('click', () => {
     window.location.href = '/start.html';
