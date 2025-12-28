@@ -60,6 +60,10 @@ async function initializeDatabase() {
       initializationState = 'completed';
       initializationError = null;
       console.log('✅ Using MongoDB for data storage (PRIMARY)');
+
+      // Create indexes for better performance
+      await createIndexes();
+
       return dbType;
     }
   } catch (error) {
@@ -74,6 +78,61 @@ async function initializeDatabase() {
   console.log('⚠️  Using local file storage (not suitable for production)');
   console.log('   Set MONGODB_URI for cloud database storage');
   return dbType;
+}
+
+/**
+ * Create database indexes for better query performance
+ * Only runs if MongoDB is available
+ */
+async function createIndexes() {
+  if (dbType !== 'mongodb' || !mongodb) {
+    return;
+  }
+
+  try {
+    console.log('📊 Creating database indexes...');
+
+    // Users collection indexes
+    const usersCollection = mongodb.collection('users');
+    await usersCollection.createIndex({ email: 1 }, { unique: true });
+    await usersCollection.createIndex({ role: 1 });
+    await usersCollection.createIndex({ createdAt: -1 });
+
+    // Suppliers collection indexes
+    const suppliersCollection = mongodb.collection('suppliers');
+    await suppliersCollection.createIndex({ category: 1 });
+    await suppliersCollection.createIndex({ userId: 1 });
+    await suppliersCollection.createIndex({ featured: 1 });
+    await suppliersCollection.createIndex({ approved: 1 });
+
+    // Packages collection indexes
+    const packagesCollection = mongodb.collection('packages');
+    await packagesCollection.createIndex({ supplierId: 1 });
+    await packagesCollection.createIndex({ category: 1 });
+    await packagesCollection.createIndex({ price: 1 });
+
+    // Messages collection indexes (compound index for better query performance)
+    const messagesCollection = mongodb.collection('messages');
+    await messagesCollection.createIndex({ userId: 1, createdAt: -1 });
+    await messagesCollection.createIndex({ supplierId: 1, createdAt: -1 });
+    await messagesCollection.createIndex({ threadId: 1 });
+
+    // Plans collection indexes
+    const plansCollection = mongodb.collection('plans');
+    await plansCollection.createIndex({ userId: 1 });
+    await plansCollection.createIndex({ eventDate: 1 });
+
+    // Reviews collection indexes
+    const reviewsCollection = mongodb.collection('reviews');
+    await reviewsCollection.createIndex({ supplierId: 1 });
+    await reviewsCollection.createIndex({ userId: 1 });
+    await reviewsCollection.createIndex({ rating: -1 });
+
+    console.log('✅ Database indexes created successfully');
+  } catch (error) {
+    // Log but don't fail - indexes may already exist
+    console.log('ℹ️  Database indexes:', error.message);
+  }
 }
 
 /**

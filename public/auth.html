@@ -2,13 +2,15 @@
 <html lang="en-GB">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes">
+  <meta name="theme-color" content="#0B8073">
   <title>Sign in / Create account — EventFlow</title>
   <link rel="stylesheet" href="/assets/css/styles.css">
   <link rel="stylesheet" href="/assets/css/eventflow-17.0.0.css">
   <link rel="stylesheet" href="/assets/css/utilities.css">
   <link rel="stylesheet" href="/assets/css/components.css">
   <link rel="stylesheet" href="/assets/css/animations.css">
+  <link rel="stylesheet" href="/assets/css/mobile-optimizations.css">
   <link rel="icon" href="/favicon.svg">
 </head>
 <body>
@@ -58,13 +60,13 @@
     </div>
     <section id="panel-signin" style="margin-top:12px">
       <form id="login-form" class="card" action="#">
-        <div class="form-row"><label for="login-email">Email</label><input id="login-email" type="email" required placeholder="you@example.com" aria-required="true"></div>
-        <div class="form-row"><label for="login-password">Password</label><input id="login-password" type="password" required placeholder="Your password" aria-required="true"></div>
+        <div class="form-row"><label for="login-email">Email</label><input id="login-email" name="email" type="email" required placeholder="you@example.com" aria-required="true"></div>
+        <div class="form-row"><label for="login-password">Password</label><input id="login-password" name="password" type="password" required placeholder="Your password" aria-required="true"></div>
         <div class="form-row">
           <label></label>
           <label class="small checkbox-label-right">
             Remember me
-            <input type="checkbox" id="login-remember">
+            <input type="checkbox" id="login-remember" name="remember">
           </label>
         </div>
         <div class="form-actions"><button class="cta" type="submit">Log in</button><span class="small" id="login-status" role="status" aria-live="polite"></span></div>
@@ -76,15 +78,15 @@
     </section>
     <section id="panel-create" hidden style="margin-top:12px">
       <form id="register-form" class="card" action="#">
-        <div class="form-row"><label for="reg-name">Name</label><input id="reg-name" required aria-required="true"></div>
+        <div class="form-row"><label for="reg-name">Name</label><input id="reg-name" name="name" required aria-required="true"></div>
         <div class="form-row">
           <label for="reg-email">Email</label>
-          <input id="reg-email" type="email" required aria-required="true" aria-describedby="email-validation-msg">
+          <input id="reg-email" name="email" type="email" required aria-required="true" aria-describedby="email-validation-msg">
           <span class="small" id="email-validation-msg" style="display:none;color:#b00020" role="alert"></span>
         </div>
         <div class="form-row">
           <label for="reg-password">Password</label>
-          <input id="reg-password" type="password" required placeholder="Min 8 chars incl. a letter and a number" aria-required="true" aria-describedby="password-strength-msg">
+          <input id="reg-password" name="password" type="password" required placeholder="Min 8 chars incl. a letter and a number" aria-required="true" aria-describedby="password-strength-msg">
           <span class="small" id="password-strength-msg" style="margin-top:4px;display:block" role="status"></span>
         </div>
         <div class="form-row">
@@ -99,14 +101,14 @@
           <label></label>
           <label class="small checkbox-label-right">
             Send me the occasional EventFlow update and planning tips.
-            <input type="checkbox" id="reg-marketing">
+            <input type="checkbox" id="reg-marketing" name="marketing">
           </label>
         </div>
         <div class="form-row">
           <label></label>
           <label class="small checkbox-label-right">
             I agree to the <a href="/terms.html" target="_blank">Terms</a> and <a href="/privacy.html" target="_blank">Privacy Policy</a>. *
-            <input type="checkbox" id="reg-terms" required aria-required="true">
+            <input type="checkbox" id="reg-terms" name="terms" required aria-required="true">
           </label>
         </div>
         <div class="form-actions">
@@ -115,9 +117,66 @@
         </div>
       </form>
     </section>
-    <script src="/assets/js/pages/auth-init.js"></script>
-    <script src="/assets/js/app.js"></script>
+    <!-- Load utilities -->
+    <script src="/assets/js/utils/form-validator.js" defer></script>
+    <script src="/assets/js/components/ErrorBoundary.js" defer></script>
+    <script src="/assets/js/utils/keyboard-nav.js" defer></script>
+    <script src="/assets/js/utils/mobile-enhancements.js" defer></script>
+    
+    <script src="/assets/js/pages/auth-init.js" defer></script>
+    <script src="/assets/js/app.js" defer></script>
     <script>window.__EF_PAGE__='auth'</script>
+    
+    <!-- Initialize form validation -->
+    <script defer>
+      document.addEventListener('DOMContentLoaded', function() {
+        // Initialize error boundary
+        window.errorBoundary = new ErrorBoundary({
+          onError: function(errorInfo) {
+            console.error('Error caught:', errorInfo);
+          }
+        });
+        
+        // Initialize form validation for login form
+        const loginForm = document.querySelector('#login-form');
+        if (loginForm) {
+          const loginValidator = new FormValidator(loginForm, {
+            validateOnBlur: true,
+            validateOnInput: false
+          });
+          
+          // Listen for valid submissions
+          loginForm.addEventListener('validsubmit', function(e) {
+            const formData = e.detail;
+            console.log('Login form validated:', formData);
+            // The existing auth-init.js will handle the actual submission
+          });
+        }
+        
+        // Initialize form validation for registration form
+        const registerForm = document.querySelector('#register-form');
+        if (registerForm) {
+          const registerValidator = new FormValidator(registerForm, {
+            validateOnBlur: true,
+            validateOnInput: false
+          });
+          
+          // Add custom password strength validation
+          registerValidator.addValidator('reg-password', {
+            required: true,
+            password: true,
+            minLength: 8
+          });
+          
+          // Listen for valid submissions
+          registerForm.addEventListener('validsubmit', function(e) {
+            const formData = e.detail;
+            console.log('Register form validated:', formData);
+            // The existing auth-init.js will handle the actual submission
+          });
+        }
+      });
+    </script>
   </div>
 </main>
 
