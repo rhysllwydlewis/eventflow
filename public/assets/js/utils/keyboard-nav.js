@@ -259,12 +259,29 @@ class KeyboardNavigationHelper {
   }
 
   /**
-   * Normalize key combination
+   * Normalize key combination (sort modifiers in consistent order)
    * @param {string} key - Key combination
    * @returns {string} - Normalized key
    */
   normalizeKey(key) {
-    return key.toLowerCase().split('+').sort().join('+');
+    const parts = key.toLowerCase().split('+');
+    const modifiers = ['ctrl', 'alt', 'shift', 'meta'];
+    const sorted = [];
+    const nonModifiers = [];
+
+    parts.forEach(part => {
+      if (modifiers.includes(part)) {
+        sorted.push(part);
+      } else {
+        nonModifiers.push(part);
+      }
+    });
+
+    // Sort modifiers in standard order
+    sorted.sort((a, b) => modifiers.indexOf(a) - modifiers.indexOf(b));
+
+    // Append non-modifier keys
+    return [...sorted, ...nonModifiers].join('+');
   }
 
   /**

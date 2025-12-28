@@ -145,7 +145,11 @@ class FormValidator {
     const rules = {
       required: field.hasAttribute('required') || field.getAttribute('aria-required') === 'true',
       email: field.type === 'email',
-      password: field.type === 'password' && field.id.includes('password'),
+      password:
+        field.type === 'password' &&
+        (field.hasAttribute('data-password-strength') ||
+          field.id.includes('password') ||
+          field.name.includes('password')),
       minLength: field.minLength > 0 ? field.minLength : null,
       maxLength: field.maxLength > 0 ? field.maxLength : null,
     };

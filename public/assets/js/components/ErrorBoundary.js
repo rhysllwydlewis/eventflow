@@ -243,11 +243,32 @@ class ErrorBoundary {
   }
 
   isProduction() {
-    return (
-      window.location.hostname !== 'localhost' &&
-      window.location.hostname !== '127.0.0.1' &&
-      !window.location.hostname.includes('192.168.')
-    );
+    // Check for explicit environment variable first
+    if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV) {
+      return process.env.NODE_ENV === 'production';
+    }
+
+    // Check hostname for development patterns
+    const hostname = window.location.hostname;
+    const devPatterns = [
+      'localhost',
+      '127.0.0.1',
+      '0.0.0.0',
+      /^192\.168\./,
+      /^10\./,
+      /^172\.(1[6-9]|2[0-9]|3[0-1])\./,
+      /\.local$/,
+      /\.test$/,
+      /^dev\./,
+      /^staging\./,
+    ];
+
+    return !devPatterns.some(pattern => {
+      if (typeof pattern === 'string') {
+        return hostname === pattern;
+      }
+      return pattern.test(hostname);
+    });
   }
 
   getErrors() {

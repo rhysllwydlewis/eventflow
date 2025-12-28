@@ -166,7 +166,7 @@ class SEOHelper {
   }
 
   /**
-   * Get full URL from relative path
+   * Get full URL from relative path (with validation)
    * @param {string} path - Relative or absolute path
    * @returns {string} - Full URL
    */
@@ -175,9 +175,26 @@ class SEOHelper {
       return path;
     }
 
+    // Prevent protocol-relative URLs (open redirect vulnerability)
+    if (path.startsWith('//')) {
+      throw new Error('Protocol-relative URLs are not allowed');
+    }
+
     const baseUrl = window.location.origin;
     const cleanPath = path.startsWith('/') ? path : `/${path}`;
-    return `${baseUrl}${cleanPath}`;
+
+    // Use URL constructor for safe URL building
+    try {
+      const url = new URL(cleanPath, baseUrl);
+      // Ensure the URL is on the same origin
+      if (url.origin !== baseUrl) {
+        throw new Error('URLs must be on the same origin');
+      }
+      return url.href;
+    } catch (error) {
+      console.error('Invalid URL:', path, error);
+      return `${baseUrl}${cleanPath}`;
+    }
   }
 
   /**

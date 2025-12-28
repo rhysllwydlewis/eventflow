@@ -78,7 +78,8 @@ class API {
         if (error.name === 'AbortError') {
           console.error('Request timeout:', url);
           if (attempt < this.options.retryAttempts) {
-            await this.delay(this.options.retryDelay * (attempt + 1));
+            // Exponential backoff: 1s, 2s, 4s
+            await this.delay(this.options.retryDelay * Math.pow(2, attempt));
             continue;
           }
           throw new Error('Request timeout. Please try again.');
@@ -88,7 +89,8 @@ class API {
         if (error.message === 'Failed to fetch' || error.message.includes('NetworkError')) {
           console.error('Network error:', url);
           if (attempt < this.options.retryAttempts) {
-            await this.delay(this.options.retryDelay * (attempt + 1));
+            // Exponential backoff: 1s, 2s, 4s
+            await this.delay(this.options.retryDelay * Math.pow(2, attempt));
             continue;
           }
           throw new Error('Network error. Please check your connection and try again.');

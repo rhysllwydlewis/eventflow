@@ -161,6 +161,8 @@ class ImageOptimizer {
     const srcset = img.dataset.srcset;
 
     if (!src) {
+      // Remove placeholder if no source
+      img.classList.remove(this.options.placeholderClass, 'img-loading');
       return;
     }
 
