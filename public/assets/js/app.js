@@ -2338,6 +2338,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (loginForm && loginEmail && loginPassword) {
       const loginBtn = loginForm.querySelector('button[type="submit"]');
+      const loginErrorEl = document.getElementById('login-error');
       const resendContainer = document.getElementById('resend-verification-container');
       const resendBtn = document.getElementById('resend-verification-btn');
 
@@ -2402,13 +2403,33 @@ document.addEventListener('DOMContentLoaded', () => {
         if (resendContainer) {
           resendContainer.style.display = 'none';
         }
+
+        // Validate required fields
+        const email = loginEmail.value.trim();
+        const password = loginPassword.value;
+
+        if (!email || !password) {
+          if (loginErrorEl) {
+            loginErrorEl.textContent = 'Please enter both email and password';
+            loginErrorEl.style.display = 'block';
+          }
+          if (loginStatus) {
+            loginStatus.textContent = '';
+          }
+          return;
+        }
+
+        // Clear any previous errors
+        if (loginErrorEl) {
+          loginErrorEl.style.display = 'none';
+          loginErrorEl.textContent = '';
+        }
+
         if (loginBtn) {
           loginBtn.disabled = true;
           loginBtn.textContent = 'Signing in…';
         }
         try {
-          const email = loginEmail.value.trim();
-          const password = loginPassword.value;
           const r = await fetch('/api/auth/login', {
             method: 'POST',
             headers: getHeadersWithCsrf({ 'Content-Type': 'application/json' }),
@@ -2422,9 +2443,15 @@ document.addEventListener('DOMContentLoaded', () => {
             /* Ignore JSON parse errors */
           }
           if (!r.ok) {
+            const errorMsg =
+              data.error || 'Could not sign in. Please check your details and try again.';
+
+            if (loginErrorEl) {
+              loginErrorEl.textContent = errorMsg;
+              loginErrorEl.style.display = 'block';
+            }
+
             if (loginStatus) {
-              const errorMsg =
-                data.error || 'Could not sign in. Please check your details and try again.';
               loginStatus.textContent = errorMsg;
 
               // Check if login failed due to unverified email (403 status)
@@ -2453,6 +2480,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
           }
         } catch (err) {
+          if (loginErrorEl) {
+            loginErrorEl.textContent = 'Network error – please try again.';
+            loginErrorEl.style.display = 'block';
+          }
           if (loginStatus) {
             loginStatus.textContent = 'Network error – please try again.';
           }
@@ -2460,7 +2491,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } finally {
           if (loginBtn) {
             loginBtn.disabled = false;
-            loginBtn.textContent = 'Sign in';
+            loginBtn.textContent = 'Log in';
           }
         }
       });
