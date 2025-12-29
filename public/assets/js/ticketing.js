@@ -239,6 +239,7 @@ class TicketingSystem {
         },
         error => {
           console.error('Error listening to user tickets:', error);
+          // Still call callback with empty array but log the error
           callback([]);
         }
       );
@@ -247,6 +248,10 @@ class TicketingSystem {
       return unsubscribe;
     } catch (error) {
       console.error('Error setting up ticket listener:', error);
+      // Show user-friendly message
+      if (typeof Toast !== 'undefined') {
+        Toast.error('Unable to load tickets. Please refresh the page.');
+      }
       callback([]);
       return () => {};
     }
@@ -262,11 +267,17 @@ class TicketingSystem {
         const data = await response.json();
         callback(data.tickets || []);
       } else {
-        console.error('Failed to fetch tickets');
+        console.error('Failed to fetch tickets:', response.status, response.statusText);
+        if (typeof Toast !== 'undefined') {
+          Toast.error('Unable to load tickets. Please try again later.');
+        }
         callback([]);
       }
     } catch (error) {
       console.error('Error fetching tickets via API:', error);
+      if (typeof Toast !== 'undefined') {
+        Toast.error('Network error loading tickets. Please check your connection.');
+      }
       callback([]);
     }
   }

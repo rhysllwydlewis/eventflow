@@ -61,7 +61,8 @@ class MessagingSystem {
       return this.sendMessageViaAPI(conversationId, messageData);
     }
 
-    throw new Error('Firebase not configured');
+    // TODO: Firebase implementation when available
+    return this.sendMessageViaAPI(conversationId, messageData);
   }
 
   /**

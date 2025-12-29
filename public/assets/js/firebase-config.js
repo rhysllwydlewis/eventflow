@@ -6,12 +6,14 @@
 // Check if Firebase is available
 let db = null;
 let isFirebaseAvailable = false;
+let firestoreInstance = null;
 
 // Try to initialize Firebase if config exists
 try {
   if (typeof firebase !== 'undefined' && window.__FIREBASE_CONFIG__) {
     firebase.initializeApp(window.__FIREBASE_CONFIG__);
-    db = firebase.firestore();
+    firestoreInstance = firebase.firestore();
+    db = firestoreInstance;
     isFirebaseAvailable = true;
   }
 } catch (err) {
@@ -19,8 +21,10 @@ try {
 }
 
 // Provide stub implementations if Firebase is not available
-const collection = isFirebaseAvailable ? firebase.firestore().collection : () => null;
-const doc = isFirebaseAvailable ? firebase.firestore().doc : () => null;
+const collection = isFirebaseAvailable
+  ? (...args) => firestoreInstance.collection(...args)
+  : () => null;
+const doc = isFirebaseAvailable ? (...args) => firestoreInstance.doc(...args) : () => null;
 const addDoc = isFirebaseAvailable
   ? (col, data) => col.add(data)
   : () => Promise.reject(new Error('Firebase not configured'));
@@ -33,9 +37,9 @@ const getDocs = isFirebaseAvailable
 const updateDoc = isFirebaseAvailable
   ? (ref, data) => ref.update(data)
   : () => Promise.reject(new Error('Firebase not configured'));
-const query = isFirebaseAvailable ? firebase.firestore().query : () => null;
-const where = isFirebaseAvailable ? firebase.firestore().where : () => null;
-const orderBy = isFirebaseAvailable ? firebase.firestore().orderBy : () => null;
+const query = isFirebaseAvailable ? (...args) => firestoreInstance.query(...args) : () => null;
+const where = isFirebaseAvailable ? (...args) => firestoreInstance.where(...args) : () => null;
+const orderBy = isFirebaseAvailable ? (...args) => firestoreInstance.orderBy(...args) : () => null;
 const onSnapshot = isFirebaseAvailable
   ? (ref, callback) => ref.onSnapshot(callback)
   : () => () => {};
