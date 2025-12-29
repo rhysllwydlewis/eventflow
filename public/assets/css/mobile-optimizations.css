@@ -97,7 +97,8 @@
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   }
   
-  .nav-menu.is-open {
+  .nav-menu.is-open,
+  .nav-menu.nav-menu--open {
     display: flex;
   }
   

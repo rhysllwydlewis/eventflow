@@ -81,7 +81,7 @@
 
       const closeNav = () => {
         body.classList.remove('nav-open');
-        navMenu.classList.remove('nav-menu--open');
+        navMenu.classList.remove('nav-menu--open', 'is-open');
         burger.setAttribute('aria-expanded', 'false');
         // Restore background scrolling
         body.style.overflow = '';
@@ -89,7 +89,7 @@
 
       const openNav = () => {
         body.classList.add('nav-open');
-        navMenu.classList.add('nav-menu--open');
+        navMenu.classList.add('nav-menu--open', 'is-open');
         burger.setAttribute('aria-expanded', 'true');
         // Prevent background scrolling when menu is open
         body.style.overflow = 'hidden';
