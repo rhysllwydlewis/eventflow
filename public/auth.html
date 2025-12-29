@@ -172,11 +172,8 @@
                 loginErrorEl.textContent = errorMessages || 'Please fix the errors above';
                 loginErrorEl.style.display = 'block';
               }
-            } else if (loginErrorEl) {
-              // Clear error on successful validation
-              loginErrorEl.style.display = 'none';
-              loginErrorEl.textContent = '';
             }
+            // Don't clear the error here - let app.js manage #login-error for API responses
             return result;
           };
           
