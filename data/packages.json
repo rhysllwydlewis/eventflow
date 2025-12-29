@@ -103,5 +103,500 @@
     "updatedAt": "2025-12-23T11:22:21.194Z",
     "createdBy": "usr_rmn81e0h750rah",
     "versionHistory": []
+  },
+  {
+    "id": "pkg_ejv21ezgr3dwsm",
+    "supplierId": "sup_rmmwwmcgr3dwsm",
+    "title": "Full Day Wedding Package",
+    "slug": "the-grand-manor-estate-full-day-wedding-package",
+    "description": "Complete venue hire from 10am-midnight including ceremony space, reception area, and exclusive use of grounds",
+    "price": "£4,500",
+    "location": "London",
+    "categories": [
+      "venues"
+    ],
+    "approved": true,
+    "featured": true,
+    "isFeatured": true
+  },
+  {
+    "id": "pkg_s8nx9qptr3dwsm",
+    "supplierId": "sup_rmmwwmcgr3dwsm",
+    "title": "Evening Reception Package",
+    "slug": "the-grand-manor-estate-evening-reception-package",
+    "description": "Evening venue hire from 6pm-midnight, perfect for those having ceremony elsewhere",
+    "price": "£2,200",
+    "location": "London",
+    "categories": [
+      "venues"
+    ],
+    "approved": true,
+    "featured": false,
+    "isFeatured": false
+  },
+  {
+    "id": "pkg_td66lh5gr3dwsn",
+    "supplierId": "sup_lc8na691r3dwsn",
+    "title": "Full Day Wedding Package",
+    "slug": "riverside-pavilion-full-day-wedding-package",
+    "description": "Complete venue hire from 10am-midnight including ceremony space, reception area, and exclusive use of grounds",
+    "price": "£4,500",
+    "location": "Manchester",
+    "categories": [
+      "venues"
+    ],
+    "approved": true,
+    "featured": true,
+    "isFeatured": true
+  },
+  {
+    "id": "pkg_zgc6e8m6r3dwsn",
+    "supplierId": "sup_lc8na691r3dwsn",
+    "title": "Evening Reception Package",
+    "slug": "riverside-pavilion-evening-reception-package",
+    "description": "Evening venue hire from 6pm-midnight, perfect for those having ceremony elsewhere",
+    "price": "£2,200",
+    "location": "Manchester",
+    "categories": [
+      "venues"
+    ],
+    "approved": true,
+    "featured": false,
+    "isFeatured": false
+  },
+  {
+    "id": "pkg_65kqy2qwr3dwsn",
+    "supplierId": "sup_am7rhu8yr3dwsn",
+    "title": "Full Day Wedding Package",
+    "slug": "the-castle-keep-full-day-wedding-package",
+    "description": "Complete venue hire from 10am-midnight including ceremony space, reception area, and exclusive use of grounds",
+    "price": "£4,500",
+    "location": "Edinburgh",
+    "categories": [
+      "venues"
+    ],
+    "approved": true,
+    "featured": true,
+    "isFeatured": true
+  },
+  {
+    "id": "pkg_5vr4duorr3dwsn",
+    "supplierId": "sup_am7rhu8yr3dwsn",
+    "title": "Evening Reception Package",
+    "slug": "the-castle-keep-evening-reception-package",
+    "description": "Evening venue hire from 6pm-midnight, perfect for those having ceremony elsewhere",
+    "price": "£2,200",
+    "location": "Edinburgh",
+    "categories": [
+      "venues"
+    ],
+    "approved": true,
+    "featured": false,
+    "isFeatured": false
+  },
+  {
+    "id": "pkg_09vmu4uwr3dwsn",
+    "supplierId": "sup_i7aprauur3dwsn",
+    "title": "Full Day Wedding Package",
+    "slug": "botanical-glasshouse-full-day-wedding-package",
+    "description": "Complete venue hire from 10am-midnight including ceremony space, reception area, and exclusive use of grounds",
+    "price": "£4,500",
+    "location": "Birmingham",
+    "categories": [
+      "venues"
+    ],
+    "approved": true,
+    "featured": true,
+    "isFeatured": true
+  },
+  {
+    "id": "pkg_65kb3sdvr3dwsn",
+    "supplierId": "sup_i7aprauur3dwsn",
+    "title": "Evening Reception Package",
+    "slug": "botanical-glasshouse-evening-reception-package",
+    "description": "Evening venue hire from 6pm-midnight, perfect for those having ceremony elsewhere",
+    "price": "£2,200",
+    "location": "Birmingham",
+    "categories": [
+      "venues"
+    ],
+    "approved": true,
+    "featured": false,
+    "isFeatured": false
+  },
+  {
+    "id": "pkg_z6r9kbrpr3dwsn",
+    "supplierId": "sup_mhdgpsdcr3dwsn",
+    "title": "Full Day Coverage",
+    "slug": "emma-clarke-photography-full-day-coverage",
+    "description": "10 hours coverage, online gallery, print rights, and engagement shoot included",
+    "price": "£2,200",
+    "location": "London",
+    "categories": [
+      "photography"
+    ],
+    "approved": true,
+    "featured": true,
+    "isFeatured": true
+  },
+  {
+    "id": "pkg_wqape2vdr3dwsn",
+    "supplierId": "sup_mhdgpsdcr3dwsn",
+    "title": "Half Day Package",
+    "slug": "emma-clarke-photography-half-day-package",
+    "description": "6 hours coverage from preparations to first dance, online gallery included",
+    "price": "£1,400",
+    "location": "London",
+    "categories": [
+      "photography"
+    ],
+    "approved": true,
+    "featured": false,
+    "isFeatured": false
+  },
+  {
+    "id": "pkg_t1o5lsy8r3dwsn",
+    "supplierId": "sup_xfxrd331r3dwsn",
+    "title": "Full Day Coverage",
+    "slug": "james-wilson-photography-full-day-coverage",
+    "description": "10 hours coverage, online gallery, print rights, and engagement shoot included",
+    "price": "£2,200",
+    "location": "Manchester",
+    "categories": [
+      "photography"
+    ],
+    "approved": true,
+    "featured": true,
+    "isFeatured": true
+  },
+  {
+    "id": "pkg_87cwwju8r3dwsn",
+    "supplierId": "sup_xfxrd331r3dwsn",
+    "title": "Half Day Package",
+    "slug": "james-wilson-photography-half-day-package",
+    "description": "6 hours coverage from preparations to first dance, online gallery included",
+    "price": "£1,400",
+    "location": "Manchester",
+    "categories": [
+      "photography"
+    ],
+    "approved": true,
+    "featured": false,
+    "isFeatured": false
+  },
+  {
+    "id": "pkg_pvfqu8qwr3dwsn",
+    "supplierId": "sup_kd7znzr2r3dwsn",
+    "title": "Full Day Coverage",
+    "slug": "sarah-mitchell-photo-film-full-day-coverage",
+    "description": "10 hours coverage, online gallery, print rights, and engagement shoot included",
+    "price": "£2,200",
+    "location": "Bristol",
+    "categories": [
+      "photography"
+    ],
+    "approved": true,
+    "featured": true,
+    "isFeatured": true
+  },
+  {
+    "id": "pkg_qq1z38ojr3dwsn",
+    "supplierId": "sup_kd7znzr2r3dwsn",
+    "title": "Half Day Package",
+    "slug": "sarah-mitchell-photo-film-half-day-package",
+    "description": "6 hours coverage from preparations to first dance, online gallery included",
+    "price": "£1,400",
+    "location": "Bristol",
+    "categories": [
+      "photography"
+    ],
+    "approved": true,
+    "featured": false,
+    "isFeatured": false
+  },
+  {
+    "id": "pkg_i8s657lmr3dwsn",
+    "supplierId": "sup_v9w30vccr3dwsn",
+    "title": "Three Course Wedding Breakfast",
+    "slug": "the-artisan-kitchen-three-course-wedding-breakfast",
+    "description": "Canapés on arrival, three course meal, wine service, and evening buffet",
+    "price": "£75 per head",
+    "location": "London",
+    "categories": [
+      "catering"
+    ],
+    "approved": true,
+    "featured": true,
+    "isFeatured": true
+  },
+  {
+    "id": "pkg_7kx3bxfwr3dwsn",
+    "supplierId": "sup_v9w30vccr3dwsn",
+    "title": "Cocktail Reception",
+    "slug": "the-artisan-kitchen-cocktail-reception",
+    "description": "Selection of canapés and drinks for 2 hours",
+    "price": "£35 per head",
+    "location": "London",
+    "categories": [
+      "catering"
+    ],
+    "approved": true,
+    "featured": false,
+    "isFeatured": false
+  },
+  {
+    "id": "pkg_g2pu1fz7r3dwsn",
+    "supplierId": "sup_fi09jltkr3dwsn",
+    "title": "Three Course Wedding Breakfast",
+    "slug": "spice-route-catering-three-course-wedding-breakfast",
+    "description": "Canapés on arrival, three course meal, wine service, and evening buffet",
+    "price": "£75 per head",
+    "location": "Birmingham",
+    "categories": [
+      "catering"
+    ],
+    "approved": true,
+    "featured": true,
+    "isFeatured": true
+  },
+  {
+    "id": "pkg_jwp4fmxvr3dwsn",
+    "supplierId": "sup_fi09jltkr3dwsn",
+    "title": "Cocktail Reception",
+    "slug": "spice-route-catering-cocktail-reception",
+    "description": "Selection of canapés and drinks for 2 hours",
+    "price": "£35 per head",
+    "location": "Birmingham",
+    "categories": [
+      "catering"
+    ],
+    "approved": true,
+    "featured": false,
+    "isFeatured": false
+  },
+  {
+    "id": "pkg_99eu9nl0r3dwsn",
+    "supplierId": "sup_h8fqy1t6r3dwsn",
+    "title": "Three Course Wedding Breakfast",
+    "slug": "coastal-seafood-co--three-course-wedding-breakfast",
+    "description": "Canapés on arrival, three course meal, wine service, and evening buffet",
+    "price": "£75 per head",
+    "location": "Brighton",
+    "categories": [
+      "catering"
+    ],
+    "approved": true,
+    "featured": true,
+    "isFeatured": true
+  },
+  {
+    "id": "pkg_e4tfbyfor3dwsn",
+    "supplierId": "sup_h8fqy1t6r3dwsn",
+    "title": "Cocktail Reception",
+    "slug": "coastal-seafood-co--cocktail-reception",
+    "description": "Selection of canapés and drinks for 2 hours",
+    "price": "£35 per head",
+    "location": "Brighton",
+    "categories": [
+      "catering"
+    ],
+    "approved": true,
+    "featured": false,
+    "isFeatured": false
+  },
+  {
+    "id": "pkg_zaaqme0hr3dwsn",
+    "supplierId": "sup_jdekc3wyr3dwsn",
+    "title": "Full Evening Performance",
+    "slug": "the-groove-collective-full-evening-performance",
+    "description": "2 x 60 minute sets, PA system, lighting, and DJ service between sets",
+    "price": "£2,500",
+    "location": "Manchester",
+    "categories": [
+      "entertainment"
+    ],
+    "approved": true,
+    "featured": true,
+    "isFeatured": true
+  },
+  {
+    "id": "pkg_dbbb4z0vr3dwsn",
+    "supplierId": "sup_ycb4iefzr3dwsn",
+    "title": "Full Evening Performance",
+    "slug": "dj-marcus-cole-full-evening-performance",
+    "description": "2 x 60 minute sets, PA system, lighting, and DJ service between sets",
+    "price": "£2,500",
+    "location": "London",
+    "categories": [
+      "entertainment"
+    ],
+    "approved": true,
+    "featured": true,
+    "isFeatured": true
+  },
+  {
+    "id": "pkg_a7lxe89er3dwsn",
+    "supplierId": "sup_hkgu2o68r3dwsn",
+    "title": "Full Evening Performance",
+    "slug": "string-quartet-elegance-full-evening-performance",
+    "description": "2 x 60 minute sets, PA system, lighting, and DJ service between sets",
+    "price": "£2,500",
+    "location": "Edinburgh",
+    "categories": [
+      "entertainment"
+    ],
+    "approved": true,
+    "featured": true,
+    "isFeatured": true
+  },
+  {
+    "id": "pkg_v8zv1fter3dwsn",
+    "supplierId": "sup_7git9mzar3dwsn",
+    "title": "Complete Floral Package",
+    "slug": "bloom-co-floristry-complete-floral-package",
+    "description": "Bridal bouquet, bridesmaid bouquets, buttonholes, ceremony arrangements, and table centerpieces",
+    "price": "£1,800",
+    "location": "Cardiff",
+    "categories": [
+      "decor-styling"
+    ],
+    "approved": true,
+    "featured": true,
+    "isFeatured": true
+  },
+  {
+    "id": "pkg_v5nvfjmjr3dwsn",
+    "supplierId": "sup_2w4pwdtmr3dwsn",
+    "title": "Complete Floral Package",
+    "slug": "luna-event-styling-complete-floral-package",
+    "description": "Bridal bouquet, bridesmaid bouquets, buttonholes, ceremony arrangements, and table centerpieces",
+    "price": "£1,800",
+    "location": "London",
+    "categories": [
+      "decor-styling"
+    ],
+    "approved": true,
+    "featured": true,
+    "isFeatured": true
+  },
+  {
+    "id": "pkg_lfgf30kfr3dwsn",
+    "supplierId": "sup_33wwhdrcr3dwsn",
+    "title": "Full Wedding Planning",
+    "slug": "perfect-day-planning-full-wedding-planning",
+    "description": "Complete planning service from 12 months out, including vendor management and day-of coordination",
+    "price": "£4,500",
+    "location": "London",
+    "categories": [
+      "event-planning"
+    ],
+    "approved": true,
+    "featured": true,
+    "isFeatured": true
+  },
+  {
+    "id": "pkg_pca8wy1qr3dwsn",
+    "supplierId": "sup_33wwhdrcr3dwsn",
+    "title": "Day-of Coordination",
+    "slug": "perfect-day-planning-day-of-coordination",
+    "description": "Professional coordination on your wedding day to ensure everything runs smoothly",
+    "price": "£750",
+    "location": "London",
+    "categories": [
+      "event-planning"
+    ],
+    "approved": true,
+    "featured": false,
+    "isFeatured": false
+  },
+  {
+    "id": "pkg_d2twfb2pr3dwsn",
+    "supplierId": "sup_1ibqnaywr3dwsn",
+    "title": "Full Wedding Planning",
+    "slug": "northern-events-ltd-full-wedding-planning",
+    "description": "Complete planning service from 12 months out, including vendor management and day-of coordination",
+    "price": "£4,500",
+    "location": "Leeds",
+    "categories": [
+      "event-planning"
+    ],
+    "approved": true,
+    "featured": true,
+    "isFeatured": true
+  },
+  {
+    "id": "pkg_qf0eeke8r3dwsn",
+    "supplierId": "sup_1ibqnaywr3dwsn",
+    "title": "Day-of Coordination",
+    "slug": "northern-events-ltd-day-of-coordination",
+    "description": "Professional coordination on your wedding day to ensure everything runs smoothly",
+    "price": "£750",
+    "location": "Leeds",
+    "categories": [
+      "event-planning"
+    ],
+    "approved": true,
+    "featured": false,
+    "isFeatured": false
+  },
+  {
+    "id": "pkg_bkhscr0mr3dwsn",
+    "supplierId": "sup_kbti11s5r3dwsn",
+    "title": "Full Day Wedding Package",
+    "slug": "the-clocktower-full-day-wedding-package",
+    "description": "Complete venue hire from 10am-midnight including ceremony space, reception area, and exclusive use of grounds",
+    "price": "£4,500",
+    "location": "Liverpool",
+    "categories": [
+      "venues"
+    ],
+    "approved": true,
+    "featured": true,
+    "isFeatured": true
+  },
+  {
+    "id": "pkg_nmvmy0o3r3dwsn",
+    "supplierId": "sup_kbti11s5r3dwsn",
+    "title": "Evening Reception Package",
+    "slug": "the-clocktower-evening-reception-package",
+    "description": "Evening venue hire from 6pm-midnight, perfect for those having ceremony elsewhere",
+    "price": "£2,200",
+    "location": "Liverpool",
+    "categories": [
+      "venues"
+    ],
+    "approved": true,
+    "featured": false,
+    "isFeatured": false
+  },
+  {
+    "id": "pkg_ur6rs22zr3dwsn",
+    "supplierId": "sup_9f3umhhgr3dwsn",
+    "title": "Full Day Coverage",
+    "slug": "highland-lens-photography-full-day-coverage",
+    "description": "10 hours coverage, online gallery, print rights, and engagement shoot included",
+    "price": "£2,200",
+    "location": "Glasgow",
+    "categories": [
+      "photography"
+    ],
+    "approved": true,
+    "featured": true,
+    "isFeatured": true
+  },
+  {
+    "id": "pkg_l4uy6xpnr3dwsn",
+    "supplierId": "sup_9f3umhhgr3dwsn",
+    "title": "Half Day Package",
+    "slug": "highland-lens-photography-half-day-package",
+    "description": "6 hours coverage from preparations to first dance, online gallery included",
+    "price": "£1,400",
+    "location": "Glasgow",
+    "categories": [
+      "photography"
+    ],
+    "approved": true,
+    "featured": false,
+    "isFeatured": false
   }
 ]

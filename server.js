@@ -2114,7 +2114,21 @@ app.post(
 
 // ---------- Threads & Messages ----------
 app.post('/api/threads/start', writeLimiter, authRequired, csrfProtection, async (req, res) => {
-  const { supplierId, packageId, message, eventType, eventDate, location, guests } = req.body || {};
+  const {
+    supplierId,
+    packageId,
+    message,
+    eventType,
+    eventDate,
+    location,
+    guests,
+    budget,
+    postcode,
+    phone,
+    timeOnPage,
+    referrer,
+    deviceType,
+  } = req.body || {};
   if (!supplierId) {
     return res.status(400).json({ error: 'Missing supplierId' });
   }
@@ -2122,6 +2136,22 @@ app.post('/api/threads/start', writeLimiter, authRequired, csrfProtection, async
   if (!supplier) {
     return res.status(404).json({ error: 'Supplier not found' });
   }
+
+  // Calculate lead score
+  const { calculateLeadScore } = require('./utils/leadScoring');
+  const leadScoreResult = calculateLeadScore({
+    eventDate,
+    email: req.user.email,
+    phone,
+    budget,
+    guestCount: guests,
+    postcode,
+    message,
+    timeOnPage,
+    referrer,
+    deviceType,
+    captchaPassed: true, // Assuming CAPTCHA will be added later
+  });
 
   const threads = await dbUnified.read('threads');
   let thread = threads.find(t => t.supplierId === supplierId && t.customerId === req.user.id);
@@ -2138,6 +2168,23 @@ app.post('/api/threads/start', writeLimiter, authRequired, csrfProtection, async
       eventDate: eventDate || null,
       eventLocation: location || null,
       guests: guests || null,
+      budget: budget || null,
+      postcode: postcode || null,
+      // Lead scoring fields
+      leadScore: leadScoreResult.rating,
+      leadScoreRaw: leadScoreResult.score,
+      leadScoreFlags: leadScoreResult.flags,
+      validationFlags: {
+        captchaPassed: true,
+        emailVerified: req.user.verified || false,
+        phoneFormat: leadScoreResult.breakdown.contactScore > 0,
+        suspiciousActivity: leadScoreResult.flags.includes('repeat-enquirer'),
+      },
+      metadata: {
+        timeOnPage: timeOnPage || null,
+        referrer: referrer || null,
+        deviceType: deviceType || null,
+      },
     };
     threads.push(thread);
     await dbUnified.write('threads', threads);
