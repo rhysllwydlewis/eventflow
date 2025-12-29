@@ -1,16 +1,17 @@
 /**
- * Supplier Messaging Interface
- * Handles displaying conversations for suppliers
+ * Customer Messaging Interface
+ * Handles displaying conversations for customers
  */
 
 import messagingSystem from './messaging.js';
 import { getListItemSkeletons, showEmptyState, showErrorState } from './utils/skeleton-loader.js';
-import { getLeadQualityBadge } from './utils/lead-quality-helper.js';
 
 // Get current user
 async function getCurrentUser() {
   try {
-    const response = await fetch('/api/auth/me');
+    const response = await fetch('/api/auth/me', {
+      credentials: 'include',
+    });
     if (!response.ok) {
       return null;
     }
@@ -19,21 +20,6 @@ async function getCurrentUser() {
   } catch (error) {
     console.error('Error getting current user:', error);
     return null;
-  }
-}
-
-// Get user's suppliers
-async function getUserSuppliers(userId) {
-  try {
-    const response = await fetch('/api/me/suppliers');
-    if (!response.ok) {
-      return [];
-    }
-    const data = await response.json();
-    return data.items || [];
-  } catch (error) {
-    console.error('Error getting user suppliers:', error);
-    return [];
   }
 }
 
@@ -46,25 +32,18 @@ function escapeHtml(text) {
 
 // Render conversations
 function renderConversations(conversations) {
-  const container = document.getElementById('threads-sup');
+  const container = document.getElementById('threads-cust');
   if (!container) {
     return;
-  }
-
-  // Ensure badges CSS is loaded
-  if (!document.getElementById('badges-css')) {
-    const link = document.createElement('link');
-    link.id = 'badges-css';
-    link.rel = 'stylesheet';
-    link.href = '/assets/css/badges.css';
-    document.head.appendChild(link);
   }
 
   if (!conversations || conversations.length === 0) {
     showEmptyState(container, {
       icon: '💬',
       title: 'No messages yet',
-      description: 'Conversations will appear here when customers contact you.',
+      description: 'Start a conversation by contacting a supplier.',
+      actionText: 'Browse Suppliers',
+      actionHref: '/suppliers.html',
     });
     return;
   }
@@ -72,25 +51,23 @@ function renderConversations(conversations) {
   let html = '<div class="thread-list">';
 
   conversations.forEach(conversation => {
-    const customerName = conversation.customerName || 'Customer';
+    const supplierName = conversation.supplierName || 'Supplier';
     const lastMessage = conversation.lastMessage || 'No messages yet';
     const lastMessageTime = conversation.lastMessageTime
       ? messagingSystem.formatTimestamp(conversation.lastMessageTime)
       : '';
-    // Use the professional lead quality badge helper
-    const leadQualityBadge =
-      conversation.leadScore || conversation.leadScoreRaw
-        ? getLeadQualityBadge(conversation.leadScore, conversation.leadScoreRaw)
-        : '';
+    const unreadCount = conversation.unreadCount || 0;
+    const unreadBadge =
+      unreadCount > 0 ? `<span class="badge badge-info">${unreadCount} unread</span>` : '';
 
     html += `
       <div class="thread-item" style="border:1px solid #e4e4e7;padding:1rem;margin-bottom:0.5rem;border-radius:4px;cursor:pointer;transition:background 0.2s;" data-conversation-id="${conversation.id}">
         <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:0.5rem;">
-          <div style="display: flex; align-items: center; gap: 0.5rem;">
-            <strong>${escapeHtml(customerName)}</strong>
-            ${leadQualityBadge}
+          <strong>${escapeHtml(supplierName)}</strong>
+          <div style="display:flex;gap:0.5rem;align-items:center;">
+            ${unreadBadge}
+            <span class="small" style="color:#9ca3af;">${lastMessageTime}</span>
           </div>
-          <span class="small" style="color:#9ca3af;">${lastMessageTime}</span>
         </div>
         <p class="small" style="margin:0;color:#6b7280;">${escapeHtml(lastMessage.substring(0, 80))}${lastMessage.length > 80 ? '...' : ''}</p>
       </div>
@@ -175,13 +152,12 @@ function openConversation(conversationId) {
 
     messages.forEach(message => {
       const timestamp = messagingSystem.formatFullTimestamp(message.timestamp);
-      const isFromSupplier = message.senderType === 'supplier';
-      const alignment = isFromSupplier ? 'right' : 'left';
-      const bgColor = isFromSupplier ? '#3b82f6' : '#e4e4e7';
-      const textColor = isFromSupplier ? '#fff' : '#1a1a1a';
+      const isFromCustomer = message.senderType === 'customer';
+      const bgColor = isFromCustomer ? '#3b82f6' : '#e4e4e7';
+      const textColor = isFromCustomer ? '#fff' : '#1a1a1a';
 
       html += `
-        <div style="display:flex;justify-content:${isFromSupplier ? 'flex-end' : 'flex-start'};margin-bottom:1rem;">
+        <div style="display:flex;justify-content:${isFromCustomer ? 'flex-end' : 'flex-start'};margin-bottom:1rem;">
           <div style="max-width:70%;padding:0.75rem;background:${bgColor};color:${textColor};border-radius:8px;">
             <div style="font-weight:600;margin-bottom:0.25rem;font-size:12px;opacity:0.9;">${escapeHtml(message.senderName || 'Unknown')}</div>
             <p style="margin:0;word-wrap:break-word;">${escapeHtml(message.message)}</p>
@@ -239,7 +215,7 @@ function openConversation(conversationId) {
 
       await messagingSystem.sendMessage(conversationId, {
         senderId: currentUser.id,
-        senderType: 'supplier',
+        senderType: 'customer',
         senderName: currentUser.name || currentUser.email,
         message: messageText,
       });
@@ -262,7 +238,7 @@ function openConversation(conversationId) {
 
 // Initialize
 async function init() {
-  const container = document.getElementById('threads-sup');
+  const container = document.getElementById('threads-cust');
   if (!container) {
     return;
   }
@@ -275,73 +251,36 @@ async function init() {
     showEmptyState(container, {
       icon: '🔒',
       title: 'Sign in to view messages',
-      description: 'Log in to see your customer conversations.',
+      description: 'Log in to see your conversations with suppliers.',
       actionText: 'Sign In',
       actionHref: '/auth.html',
     });
     return;
   }
 
-  // Get user's suppliers
-  const suppliers = await getUserSuppliers(user.id);
-
-  if (!suppliers || suppliers.length === 0) {
-    showEmptyState(container, {
-      icon: '🏢',
-      title: 'No supplier profile yet',
-      description: 'Create a supplier profile to receive messages from customers.',
-    });
-    return;
-  }
-
-  // Listen to conversations for all supplier IDs
-  const allConversations = [];
-  let loadedCount = 0;
-
+  // Listen to conversations for the customer
   try {
-    suppliers.forEach(supplier => {
-      messagingSystem.listenToUserConversations(supplier.id, 'supplier', conversations => {
-        // Merge conversations
-        conversations.forEach(conv => {
-          const existingIndex = allConversations.findIndex(c => c.id === conv.id);
-          if (existingIndex >= 0) {
-            allConversations[existingIndex] = conv;
-          } else {
-            allConversations.push(conv);
-          }
-        });
+    messagingSystem.listenToUserConversations(user.id, 'customer', conversations => {
+      renderConversations(conversations);
+    });
 
-        loadedCount++;
-
-        // Render when all suppliers loaded
-        if (loadedCount >= suppliers.length) {
-          // Sort by last message time
-          allConversations.sort((a, b) => {
-            const timeA = a.lastMessageTime?.seconds || 0;
-            const timeB = b.lastMessageTime?.seconds || 0;
-            return timeB - timeA;
-          });
-
-          renderConversations(allConversations);
-        }
-      });
-
-      // Listen to unread count for this supplier
-      messagingSystem.listenToUnreadCount(supplier.id, 'supplier', unreadCount => {
+    // Listen to unread count with error handling
+    try {
+      messagingSystem.listenToUnreadCount(user.id, 'customer', unreadCount => {
         updateUnreadBadge(unreadCount);
       });
-    });
+    } catch (unreadError) {
+      console.error('Error setting up unread count listener:', unreadError);
+      // Non-critical - badge won't update but messages still work
+    }
   } catch (error) {
     console.error('Error listening to conversations:', error);
-    const container = document.getElementById('threads-sup');
-    if (container) {
-      showErrorState(container, {
-        title: 'Unable to load messages',
-        description: 'Please try refreshing the page.',
-        actionText: 'Refresh',
-        onAction: () => window.location.reload(),
-      });
-    }
+    showErrorState(container, {
+      title: 'Unable to load messages',
+      description: 'Please try refreshing the page.',
+      actionText: 'Refresh',
+      onAction: () => window.location.reload(),
+    });
   }
 }
 

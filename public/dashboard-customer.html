@@ -40,8 +40,33 @@
 <script src="/assets/js/websocket-client.js" defer></script>
 <main class='section'><div class='container'>
 <h1>Your dashboard</h1>
+
+<!-- Welcome Section -->
+<div class="card" style="background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);color:white;margin-bottom:1rem;">
+  <h2 style="margin:0 0 0.5rem 0;color:white;">Welcome to EventFlow!</h2>
+  <p class="small" style="color:rgba(255,255,255,0.9);margin:0;">Plan your perfect event with our curated suppliers.</p>
+</div>
+
 <div class="cards">
-  <div class="card"><h3>Your plan</h3><p class="small">Review and manage your suppliers.</p><button class="cta" id="openPlanBtn">Open My Plan</button></div>
+  <!-- Your Plan Card -->
+  <div class="card">
+    <h3>Your plan</h3>
+    <p class="small">Review and manage your suppliers.</p>
+    <button class="cta" id="openPlanBtn">Open My Plan</button>
+  </div>
+  
+  <!-- Quick Actions Card -->
+  <div class="card">
+    <h3>Quick Actions</h3>
+    <p class="small">Common tasks to help plan your event.</p>
+    <div style="display:flex;flex-direction:column;gap:0.5rem;margin-top:1rem;">
+      <a href="/suppliers.html" class="btn btn-secondary" style="text-decoration:none;">Browse Suppliers</a>
+      <a href="/start.html" class="btn btn-secondary" style="text-decoration:none;">Start Planning</a>
+      <a href="/budget.html" class="btn btn-secondary" style="text-decoration:none;">Budget Calculator</a>
+    </div>
+  </div>
+  
+  <!-- Support Tickets Card -->
   <div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
       <h3 style="margin:0;">Support Tickets</h3>
@@ -49,10 +74,20 @@
     </div>
     <div id="tickets-cust" class="section"><p class="small">Loading…</p></div>
   </div>
-  <div class="card"><h3>Conversations</h3><div id="threads-cust" class="section"><p class="small">Loading…</p></div></div>
+  
+  <!-- Conversations Card -->
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+      <h3 style="margin:0;">Conversations</h3>
+      <span id="unreadMessageBadge" class="badge badge-info" style="display:none;font-size:14px;">0 unread</span>
+    </div>
+    <div id="threads-cust" class="section"><p class="small">Loading…</p></div>
+  </div>
 </div>
+
 <script src="/assets/js/app.js"></script>
 <script type="module" src="/assets/js/customer-tickets.js"></script>
+<script type="module" src="/assets/js/customer-messages.js"></script>
 <script>
 window.__EF_PAGE__='dash_customer';
 // Setup Open My Plan button

@@ -4,6 +4,7 @@
  */
 
 import ticketingSystem from './ticketing.js';
+import { getListItemSkeletons, showEmptyState, showErrorState } from './utils/skeleton-loader.js';
 
 // Get current user
 async function getCurrentUser() {
@@ -28,8 +29,11 @@ function renderTickets(tickets) {
   }
 
   if (!tickets || tickets.length === 0) {
-    container.innerHTML =
-      '<p class="small">No support tickets yet. Create one if you need help!</p>';
+    showEmptyState(container, {
+      icon: '🎫',
+      title: 'No support tickets yet',
+      description: 'Create one if you need help!',
+    });
     return;
   }
 
@@ -271,12 +275,23 @@ function viewTicket(ticketId) {
 
 // Initialize
 async function init() {
+  const container = document.getElementById('tickets-cust');
+  if (!container) {
+    return;
+  }
+
+  // Show skeleton loader
+  container.innerHTML = getListItemSkeletons(2);
+
   const user = await getCurrentUser();
   if (!user) {
-    const container = document.getElementById('tickets-cust');
-    if (container) {
-      container.innerHTML = '<p class="small">Sign in to view your support tickets.</p>';
-    }
+    showEmptyState(container, {
+      icon: '🔒',
+      title: 'Sign in to view tickets',
+      description: 'Log in to see your support tickets.',
+      actionText: 'Sign In',
+      actionHref: '/auth.html',
+    });
     return;
   }
 
@@ -287,7 +302,17 @@ async function init() {
   }
 
   // Listen to user's tickets with real-time updates
-  ticketingSystem.listenToUserTickets(user.id, 'customer', renderTickets);
+  try {
+    ticketingSystem.listenToUserTickets(user.id, 'customer', renderTickets);
+  } catch (error) {
+    console.error('Error loading tickets:', error);
+    showErrorState(container, {
+      title: 'Unable to load tickets',
+      description: 'Please try refreshing the page.',
+      actionText: 'Refresh',
+      onAction: () => window.location.reload(),
+    });
+  }
 }
 
 // Run on load

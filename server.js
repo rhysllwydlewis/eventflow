@@ -97,6 +97,63 @@ const { calculateLeadScore } = require('./utils/leadScoring');
 
 // HTTP client for external API calls
 
+/**
+ * Verify hCaptcha token
+ * @param {string} token - hCaptcha token
+ * @returns {Promise<{success: boolean, error?: string, errors?: string[]}>}
+ */
+async function verifyHCaptcha(token) {
+  if (!token) {
+    return { success: false, error: 'No captcha token provided' };
+  }
+
+  if (!process.env.HCAPTCHA_SECRET) {
+    if (process.env.NODE_ENV === 'production') {
+      return { success: false, error: 'CAPTCHA verification not configured' };
+    }
+    console.warn(
+      'hCaptcha verification skipped - HCAPTCHA_SECRET not configured (development only)'
+    );
+    return { success: true, warning: 'Captcha verification disabled in development' };
+  }
+
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+    const verifyResponse = await fetch('https://hcaptcha.com/siteverify', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        secret: process.env.HCAPTCHA_SECRET,
+        response: token,
+      }),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+    const data = await verifyResponse.json();
+
+    if (data.success) {
+      return { success: true };
+    } else {
+      return {
+        success: false,
+        error: 'Captcha verification failed',
+        errors: data['error-codes'],
+      };
+    }
+  } catch (error) {
+    if (error.name === 'AbortError') {
+      console.error('hCaptcha verification timeout');
+      return { success: false, error: 'Captcha verification timeout' };
+    }
+    console.error('Error verifying captcha:', error);
+    return { success: false, error: 'Captcha verification error' };
+  }
+}
 
 // CSRF protection middleware
 const { csrfProtection, getToken } = require('./middleware/csrf');
@@ -246,6 +303,7 @@ app.use(
           "'unsafe-eval'",
           "'unsafe-inline'",
           'https://cdn.jsdelivr.net',
+          'https://cdn.socket.io',
           'https://cdn.tidycal.net',
           'https://estatic.com',
           'https://*.estatic.com',
@@ -255,6 +313,8 @@ app.use(
           'https://*.gstatic.com',
           'https://googletagmanager.com',
           'https://*.googletagmanager.com',
+          'https://hcaptcha.com',
+          'https://*.hcaptcha.com',
         ],
         styleSrc: [
           "'self'",
@@ -267,11 +327,15 @@ app.use(
         connectSrc: [
           "'self'",
           'https:',
+          'wss:',
+          'ws:',
           'https://googletagmanager.com',
           'https://*.googletagmanager.com',
           'https://*.google-analytics.com',
           'https://*.analytics.google.com',
           'https://*.tidycal.net',
+          'https://hcaptcha.com',
+          'https://*.hcaptcha.com',
         ],
         frameSrc: [
           "'self'",
@@ -279,6 +343,8 @@ app.use(
           'https://maps.google.com',
           'https://tidycal.com',
           'https://*.tidycal.com',
+          'https://hcaptcha.com',
+          'https://*.hcaptcha.com',
         ],
         objectSrc: ["'none'"],
         upgradeInsecureRequests: [],
@@ -2118,59 +2184,17 @@ app.post(
   }
 );
 // ---------- CAPTCHA Verification ----------
-app.post("/api/verify-captcha", writeLimiter, async (req, res) => {
+app.post('/api/verify-captcha', writeLimiter, async (req, res) => {
   const { token } = req.body || {};
-  
-  if (!token) {
-    return res.status(400).json({ success: false, error: "No captcha token provided" });
-  }
-  
-  // If HCAPTCHA_SECRET is not configured, only allow in development
-  if (!process.env.HCAPTCHA_SECRET) {
-    if (process.env.NODE_ENV === 'production') {
-      return res.status(500).json({
-        success: false,
-        error: "CAPTCHA verification not configured",
-      });
-    }
-    console.warn("hCaptcha verification skipped - HCAPTCHA_SECRET not configured (development only)");
-    return res.json({ success: true, warning: "Captcha verification disabled in development" });
-  }
-  
-  try {
-    
-    const verifyResponse = await axios.post(
-      "https://hcaptcha.com/siteverify",
-      new URLSearchParams({
-        secret: process.env.HCAPTCHA_SECRET,
-        response: token,
-      }),
-      {
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-      }
-    );
-    
-    if (verifyResponse.data.success) {
-      return res.json({ success: true });
-    } else {
-      return res.status(400).json({
-        success: false,
-        error: "Captcha verification failed",
-        errors: verifyResponse.data["error-codes"],
-      });
-    }
-  } catch (error) {
-    console.error("Error verifying captcha:", error);
-    return res.status(500).json({
-      success: false,
-      error: "Captcha verification error",
-    });
+  const result = await verifyHCaptcha(token);
+
+  if (result.success) {
+    return res.json(result);
+  } else {
+    const statusCode = result.error === 'CAPTCHA verification not configured' ? 500 : 400;
+    return res.status(statusCode).json(result);
   }
 });
-
-
 
 // ---------- Threads & Messages ----------
 app.post('/api/threads/start', writeLimiter, authRequired, csrfProtection, async (req, res) => {
@@ -2201,32 +2225,18 @@ app.post('/api/threads/start', writeLimiter, authRequired, csrfProtection, async
   // Verify CAPTCHA if token provided (optional in development)
   let captchaPassed = true;
   if (captchaToken) {
-    try {
-      if (process.env.HCAPTCHA_SECRET) {
-        
-        const verifyResponse = await axios.post(
-          'https://hcaptcha.com/siteverify',
-          new URLSearchParams({
-            secret: process.env.HCAPTCHA_SECRET,
-            response: captchaToken,
-          }),
-          {
-            headers: {
-              'Content-Type': 'application/x-www-form-urlencoded',
-            },
-          }
-        );
-        captchaPassed = verifyResponse.data.success;
-        if (!captchaPassed) {
-          return res.status(400).json({ error: 'CAPTCHA verification failed' });
-        }
-      }
-    } catch (error) {
-      console.error('Error verifying CAPTCHA:', error);
+    const result = await verifyHCaptcha(captchaToken);
+    captchaPassed = result.success;
+    if (!captchaPassed) {
       // Don't block on CAPTCHA error in development
-      if (process.env.NODE_ENV === 'production') {
-        return res.status(500).json({ error: 'CAPTCHA verification error' });
+      if (
+        process.env.NODE_ENV === 'production' ||
+        result.error !== 'CAPTCHA verification not configured'
+      ) {
+        return res.status(400).json({ error: result.error || 'CAPTCHA verification failed' });
       }
+      // In development without CAPTCHA configured, allow through
+      captchaPassed = true;
     }
   }
 
