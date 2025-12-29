@@ -49,10 +49,31 @@ function renderConversations(conversations) {
     return;
   }
 
+  // Ensure badges CSS is loaded
+  if (!document.getElementById('badges-css')) {
+    const link = document.createElement('link');
+    link.id = 'badges-css';
+    link.rel = 'stylesheet';
+    link.href = '/assets/css/badges.css';
+    document.head.appendChild(link);
+  }
+
   if (!conversations || conversations.length === 0) {
     container.innerHTML =
       '<p class="small">No messages yet. Conversations will appear here when customers contact you.</p>';
     return;
+  }
+
+  // Helper function to get lead quality badge HTML
+  function getLeadQualityBadge(thread) {
+    if (!thread.leadScore) {
+      return '';
+    }
+    const score = thread.leadScoreRaw || null;
+    const rating = thread.leadScore;
+    const badgeClass = `lead-badge lead-badge-${rating.toLowerCase()}`;
+
+    return `<span class="${badgeClass}" style="font-size: 0.75rem; margin-left: 0.5rem;">${rating}</span>`;
   }
 
   let html = '<div class="thread-list">';
@@ -63,11 +84,15 @@ function renderConversations(conversations) {
     const lastMessageTime = conversation.lastMessageTime
       ? messagingSystem.formatTimestamp(conversation.lastMessageTime)
       : '';
+    const leadQualityBadge = getLeadQualityBadge(conversation);
 
     html += `
       <div class="thread-item" style="border:1px solid #e4e4e7;padding:1rem;margin-bottom:0.5rem;border-radius:4px;cursor:pointer;transition:background 0.2s;" data-conversation-id="${conversation.id}">
         <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:0.5rem;">
-          <strong>${escapeHtml(customerName)}</strong>
+          <div style="display: flex; align-items: center;">
+            <strong>${escapeHtml(customerName)}</strong>
+            ${leadQualityBadge}
+          </div>
           <span class="small" style="color:#9ca3af;">${lastMessageTime}</span>
         </div>
         <p class="small" style="margin:0;color:#6b7280;">${escapeHtml(lastMessage.substring(0, 80))}${lastMessage.length > 80 ? '...' : ''}</p>
