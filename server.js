@@ -1679,7 +1679,50 @@ app.put(
   async (req, res) => {
     try {
       const { id } = req.params;
-      const updates = req.body;
+      const {
+        name,
+        type,
+        description,
+        icon,
+        color,
+        autoAssign,
+        autoAssignCriteria,
+        displayOrder,
+        active,
+      } = req.body;
+
+      // Validate allowed fields
+      const allowedUpdates = {
+        name,
+        type,
+        description,
+        icon,
+        color,
+        autoAssign,
+        autoAssignCriteria,
+        displayOrder,
+        active,
+      };
+      const updates = {};
+
+      // Only include defined fields
+      Object.keys(allowedUpdates).forEach(key => {
+        if (allowedUpdates[key] !== undefined) {
+          updates[key] = allowedUpdates[key];
+        }
+      });
+
+      // Validate required fields if provided
+      if (updates.name !== undefined && (!updates.name || typeof updates.name !== 'string')) {
+        return res.status(400).json({ error: 'Invalid name field' });
+      }
+
+      if (updates.type !== undefined) {
+        const validTypes = ['founder', 'pro', 'pro-plus', 'verified', 'featured', 'custom'];
+        if (!validTypes.includes(updates.type)) {
+          return res.status(400).json({ error: 'Invalid badge type' });
+        }
+      }
 
       const badges = await dbUnified.read('badges');
       const badgeIndex = badges.findIndex(b => b.id === id);
@@ -2059,12 +2102,18 @@ app.get('/api/packages/spotlight', async (_req, res) => {
     now.getUTCHours();
 
   // Shuffle packages using the hour seed for deterministic randomness
+  // Using a Linear Congruential Generator (LCG) for seeded random number generation
+  // Constants from Numerical Recipes (widely used and tested LCG parameters)
+  const LCG_MULTIPLIER = 9301;
+  const LCG_INCREMENT = 49297;
+  const LCG_MODULUS = 233280;
+
   const shuffled = [...approvedPackages];
   let seed = hourSeed;
   for (let i = shuffled.length - 1; i > 0; i--) {
-    // Simple seeded random number generator
-    seed = (seed * 9301 + 49297) % 233280;
-    const j = Math.floor((seed / 233280) * (i + 1));
+    // Generate next pseudo-random number using LCG formula
+    seed = (seed * LCG_MULTIPLIER + LCG_INCREMENT) % LCG_MODULUS;
+    const j = Math.floor((seed / LCG_MODULUS) * (i + 1));
     [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
 

@@ -997,8 +997,16 @@ router.post('/:conversationId/read', authRequired, async (req, res) => {
     const messages = await dbUnified.read('messages');
     let updated = false;
     messages.forEach(m => {
-      if (m.threadId === conversationId && !m.readBy.includes(userId)) {
+      if (
+        m.threadId === conversationId &&
+        m.readBy &&
+        Array.isArray(m.readBy) &&
+        !m.readBy.includes(userId)
+      ) {
         m.readBy.push(userId);
+        updated = true;
+      } else if (m.threadId === conversationId && !m.readBy) {
+        m.readBy = [userId];
         updated = true;
       }
     });
