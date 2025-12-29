@@ -14,6 +14,14 @@
 
 const validator = require('validator');
 
+// Constants
+const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Spam keywords that indicate low-quality leads
+ */
+const SPAM_KEYWORDS = ['click here', 'buy now', 'limited time', 'act now', 'free money'];
+
 /**
  * List of common disposable email providers
  * These are frequently used by bots or low-quality leads
@@ -96,8 +104,7 @@ function isBusinessEmail(email) {
  * @returns {number} Days between dates
  */
 function daysBetween(date1, date2) {
-  const oneDay = 24 * 60 * 60 * 1000;
-  return Math.round(Math.abs((date1.getTime() - date2.getTime()) / oneDay));
+  return Math.round(Math.abs((date1.getTime() - date2.getTime()) / ONE_DAY_MS));
 }
 
 /**
@@ -247,8 +254,7 @@ function calculateLeadScore(enquiry) {
     }
 
     // Check for spam indicators
-    const spamKeywords = ['click here', 'buy now', 'limited time', 'act now', 'free money'];
-    const hasSpamKeywords = spamKeywords.some(keyword =>
+    const hasSpamKeywords = SPAM_KEYWORDS.some(keyword =>
       enquiry.message.toLowerCase().includes(keyword)
     );
 

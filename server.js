@@ -92,6 +92,9 @@ const reviewsSystem = require('./reviews');
 // Search and discovery system
 const searchSystem = require('./search');
 
+// Lead scoring utilities
+const { calculateLeadScore } = require('./utils/leadScoring');
+
 // CSRF protection middleware
 const { csrfProtection, getToken } = require('./middleware/csrf');
 
@@ -2138,7 +2141,6 @@ app.post('/api/threads/start', writeLimiter, authRequired, csrfProtection, async
   }
 
   // Calculate lead score
-  const { calculateLeadScore } = require('./utils/leadScoring');
   const leadScoreResult = calculateLeadScore({
     eventDate,
     email: req.user.email,
