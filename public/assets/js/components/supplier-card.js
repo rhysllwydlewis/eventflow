@@ -141,7 +141,53 @@ class SupplierCard {
     document.head.appendChild(style);
   }
 
+  renderBadges() {
+    const badges = [];
+
+    // Founding supplier badge
+    if (this.supplier.isFounding) {
+      badges.push('<span class="badge badge-founding">Founding Supplier</span>');
+    }
+
+    // Pro/Featured tier badges
+    if (this.supplier.subscription) {
+      if (this.supplier.subscription.tier === 'featured') {
+        badges.push('<span class="badge badge-featured">Featured</span>');
+      } else if (this.supplier.subscription.tier === 'pro') {
+        badges.push('<span class="badge badge-pro">Pro</span>');
+      }
+    } else if (this.supplier.isPro) {
+      badges.push('<span class="badge badge-pro">Pro</span>');
+    }
+
+    // Verification badges
+    if (this.supplier.verifications) {
+      if (this.supplier.verifications.email && this.supplier.verifications.email.verified) {
+        badges.push('<span class="badge badge-email-verified">Email Verified</span>');
+      }
+      if (this.supplier.verifications.phone && this.supplier.verifications.phone.verified) {
+        badges.push('<span class="badge badge-phone-verified">Phone Verified</span>');
+      }
+      if (this.supplier.verifications.business && this.supplier.verifications.business.verified) {
+        badges.push('<span class="badge badge-business-verified">Business Verified</span>');
+      }
+    }
+
+    return badges.length > 0
+      ? `<div class="supplier-badges">${badges.join('')}</div>`
+      : '';
+  }
+
   render() {
+    // Ensure badges CSS is loaded
+    if (!document.getElementById('badges-css')) {
+      const link = document.createElement('link');
+      link.id = 'badges-css';
+      link.rel = 'stylesheet';
+      link.href = '/assets/css/badges.css';
+      document.head.appendChild(link);
+    }
+
     const card = document.createElement('div');
     card.className = 'supplier-card';
 
@@ -150,12 +196,15 @@ class SupplierCard {
       ? `<img class="supplier-card-logo" src="${this.supplier.logo}" alt="${this.supplier.name} logo">`
       : `<div class="supplier-card-logo" style="background-color: var(--accent, #13B6A2); display: flex; align-items: center; justify-content: center; color: white; font-size: 2rem; font-weight: 600;">${this.supplier.name ? this.supplier.name.charAt(0) : 'S'}</div>`;
 
+    const badgesHtml = this.renderBadges();
+
     card.innerHTML = `
       <div class="supplier-card-header">
         ${logoHtml}
         <div class="supplier-card-info">
           <h2 class="supplier-card-name">${this.supplier.name || 'Supplier'}</h2>
           <p class="supplier-card-blurb">${this.supplier.blurb || this.supplier.description_short || ''}</p>
+          ${badgesHtml}
         </div>
       </div>
 

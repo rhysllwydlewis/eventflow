@@ -92,6 +92,12 @@ const reviewsSystem = require('./reviews');
 // Search and discovery system
 const searchSystem = require('./search');
 
+// Lead scoring utilities
+const { calculateLeadScore } = require('./utils/leadScoring');
+
+// HTTP client for external API calls
+
+
 // CSRF protection middleware
 const { csrfProtection, getToken } = require('./middleware/csrf');
 
@@ -2111,10 +2117,79 @@ app.post(
     res.json({ ok: true, package: pkg });
   }
 );
+// ---------- CAPTCHA Verification ----------
+app.post("/api/verify-captcha", writeLimiter, async (req, res) => {
+  const { token } = req.body || {};
+  
+  if (!token) {
+    return res.status(400).json({ success: false, error: "No captcha token provided" });
+  }
+  
+  // If HCAPTCHA_SECRET is not configured, only allow in development
+  if (!process.env.HCAPTCHA_SECRET) {
+    if (process.env.NODE_ENV === 'production') {
+      return res.status(500).json({
+        success: false,
+        error: "CAPTCHA verification not configured",
+      });
+    }
+    console.warn("hCaptcha verification skipped - HCAPTCHA_SECRET not configured (development only)");
+    return res.json({ success: true, warning: "Captcha verification disabled in development" });
+  }
+  
+  try {
+    
+    const verifyResponse = await axios.post(
+      "https://hcaptcha.com/siteverify",
+      new URLSearchParams({
+        secret: process.env.HCAPTCHA_SECRET,
+        response: token,
+      }),
+      {
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+      }
+    );
+    
+    if (verifyResponse.data.success) {
+      return res.json({ success: true });
+    } else {
+      return res.status(400).json({
+        success: false,
+        error: "Captcha verification failed",
+        errors: verifyResponse.data["error-codes"],
+      });
+    }
+  } catch (error) {
+    console.error("Error verifying captcha:", error);
+    return res.status(500).json({
+      success: false,
+      error: "Captcha verification error",
+    });
+  }
+});
+
+
 
 // ---------- Threads & Messages ----------
 app.post('/api/threads/start', writeLimiter, authRequired, csrfProtection, async (req, res) => {
-  const { supplierId, packageId, message, eventType, eventDate, location, guests } = req.body || {};
+  const {
+    supplierId,
+    packageId,
+    message,
+    eventType,
+    eventDate,
+    location,
+    guests,
+    budget,
+    postcode,
+    phone,
+    timeOnPage,
+    referrer,
+    deviceType,
+    captchaToken,
+  } = req.body || {};
   if (!supplierId) {
     return res.status(400).json({ error: 'Missing supplierId' });
   }
@@ -2122,6 +2197,53 @@ app.post('/api/threads/start', writeLimiter, authRequired, csrfProtection, async
   if (!supplier) {
     return res.status(404).json({ error: 'Supplier not found' });
   }
+
+  // Verify CAPTCHA if token provided (optional in development)
+  let captchaPassed = true;
+  if (captchaToken) {
+    try {
+      if (process.env.HCAPTCHA_SECRET) {
+        
+        const verifyResponse = await axios.post(
+          'https://hcaptcha.com/siteverify',
+          new URLSearchParams({
+            secret: process.env.HCAPTCHA_SECRET,
+            response: captchaToken,
+          }),
+          {
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+            },
+          }
+        );
+        captchaPassed = verifyResponse.data.success;
+        if (!captchaPassed) {
+          return res.status(400).json({ error: 'CAPTCHA verification failed' });
+        }
+      }
+    } catch (error) {
+      console.error('Error verifying CAPTCHA:', error);
+      // Don't block on CAPTCHA error in development
+      if (process.env.NODE_ENV === 'production') {
+        return res.status(500).json({ error: 'CAPTCHA verification error' });
+      }
+    }
+  }
+
+  // Calculate lead score
+  const leadScoreResult = calculateLeadScore({
+    eventDate,
+    email: req.user.email,
+    phone,
+    budget,
+    guestCount: guests,
+    postcode,
+    message,
+    timeOnPage,
+    referrer,
+    deviceType,
+    captchaPassed,
+  });
 
   const threads = await dbUnified.read('threads');
   let thread = threads.find(t => t.supplierId === supplierId && t.customerId === req.user.id);
@@ -2138,6 +2260,23 @@ app.post('/api/threads/start', writeLimiter, authRequired, csrfProtection, async
       eventDate: eventDate || null,
       eventLocation: location || null,
       guests: guests || null,
+      budget: budget || null,
+      postcode: postcode || null,
+      // Lead scoring fields
+      leadScore: leadScoreResult.rating,
+      leadScoreRaw: leadScoreResult.score,
+      leadScoreFlags: leadScoreResult.flags,
+      validationFlags: {
+        captchaPassed: true,
+        emailVerified: req.user.verified || false,
+        phoneFormat: leadScoreResult.breakdown.contactScore > 0,
+        suspiciousActivity: leadScoreResult.flags.includes('repeat-enquirer'),
+      },
+      metadata: {
+        timeOnPage: timeOnPage || null,
+        referrer: referrer || null,
+        deviceType: deviceType || null,
+      },
     };
     threads.push(thread);
     await dbUnified.write('threads', threads);
