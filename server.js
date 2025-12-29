@@ -2114,6 +2114,54 @@ app.post(
     res.json({ ok: true, package: pkg });
   }
 );
+// ---------- CAPTCHA Verification ----------
+app.post("/api/verify-captcha", writeLimiter, async (req, res) => {
+  const { token } = req.body || {};
+  
+  if (!token) {
+    return res.status(400).json({ success: false, error: "No captcha token provided" });
+  }
+  
+  // If HCAPTCHA_SECRET is not configured, allow in development
+  if (!process.env.HCAPTCHA_SECRET) {
+    console.warn("hCaptcha verification skipped - HCAPTCHA_SECRET not configured");
+    return res.json({ success: true, warning: "Captcha verification disabled in development" });
+  }
+  
+  try {
+    const axios = require("axios");
+    const verifyResponse = await axios.post(
+      "https://hcaptcha.com/siteverify",
+      new URLSearchParams({
+        secret: process.env.HCAPTCHA_SECRET,
+        response: token,
+      }),
+      {
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+      }
+    );
+    
+    if (verifyResponse.data.success) {
+      return res.json({ success: true });
+    } else {
+      return res.status(400).json({
+        success: false,
+        error: "Captcha verification failed",
+        errors: verifyResponse.data["error-codes"],
+      });
+    }
+  } catch (error) {
+    console.error("Error verifying captcha:", error);
+    return res.status(500).json({
+      success: false,
+      error: "Captcha verification error",
+    });
+  }
+});
+
+
 
 // ---------- Threads & Messages ----------
 app.post('/api/threads/start', writeLimiter, authRequired, csrfProtection, async (req, res) => {
@@ -2131,6 +2179,7 @@ app.post('/api/threads/start', writeLimiter, authRequired, csrfProtection, async
     timeOnPage,
     referrer,
     deviceType,
+    captchaToken,
   } = req.body || {};
   if (!supplierId) {
     return res.status(400).json({ error: 'Missing supplierId' });
@@ -2138,6 +2187,38 @@ app.post('/api/threads/start', writeLimiter, authRequired, csrfProtection, async
   const supplier = (await dbUnified.read('suppliers')).find(s => s.id === supplierId && s.approved);
   if (!supplier) {
     return res.status(404).json({ error: 'Supplier not found' });
+  }
+
+  // Verify CAPTCHA if token provided (optional in development)
+  let captchaPassed = true;
+  if (captchaToken) {
+    try {
+      if (process.env.HCAPTCHA_SECRET) {
+        const axios = require('axios');
+        const verifyResponse = await axios.post(
+          'https://hcaptcha.com/siteverify',
+          new URLSearchParams({
+            secret: process.env.HCAPTCHA_SECRET,
+            response: captchaToken,
+          }),
+          {
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+            },
+          }
+        );
+        captchaPassed = verifyResponse.data.success;
+        if (!captchaPassed) {
+          return res.status(400).json({ error: 'CAPTCHA verification failed' });
+        }
+      }
+    } catch (error) {
+      console.error('Error verifying CAPTCHA:', error);
+      // Don't block on CAPTCHA error in development
+      if (process.env.NODE_ENV === 'production') {
+        return res.status(500).json({ error: 'CAPTCHA verification error' });
+      }
+    }
   }
 
   // Calculate lead score
@@ -2152,7 +2233,7 @@ app.post('/api/threads/start', writeLimiter, authRequired, csrfProtection, async
     timeOnPage,
     referrer,
     deviceType,
-    captchaPassed: true, // Assuming CAPTCHA will be added later
+    captchaPassed,
   });
 
   const threads = await dbUnified.read('threads');
