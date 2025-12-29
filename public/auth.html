@@ -70,7 +70,7 @@
         <div class="form-row"><label for="login-password">Password</label><input id="login-password" name="password" type="password" required placeholder="Your password" aria-required="true" autocomplete="current-password"></div>
         <div class="form-row">
           <label></label>
-          <div id="login-error" class="error" style="display: none; color: #b00020; font-size: 0.875rem;" aria-live="polite"></div>
+          <div id="login-error" class="error" style="display: none; visibility: hidden; color: #b00020; font-size: 0.875rem;" aria-live="polite" aria-hidden="true"></div>
         </div>
         <div class="form-row">
           <label></label>
@@ -171,7 +171,15 @@
                 const errorMessages = errors.map(([field, msg]) => msg).join(', ');
                 loginErrorEl.textContent = errorMessages || 'Please fix the errors above';
                 loginErrorEl.style.display = 'block';
+                loginErrorEl.style.visibility = 'visible';
+                loginErrorEl.setAttribute('aria-hidden', 'false');
               }
+            } else if (result && loginErrorEl) {
+              // Clear errors when validation passes
+              loginErrorEl.textContent = '';
+              loginErrorEl.style.display = 'none';
+              loginErrorEl.style.visibility = 'hidden';
+              loginErrorEl.setAttribute('aria-hidden', 'true');
             }
             // Don't clear the error here - let app.js manage #login-error for API responses
             return result;
