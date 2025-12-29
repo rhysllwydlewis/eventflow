@@ -71,14 +71,16 @@ export async function renderHCaptcha(container, options = {}) {
 
   // Check if sitekey is configured
   if (!sitekey) {
-    console.warn('hCaptcha sitekey not configured. Using test key for development.');
-    // For development/testing, you can use a test key
-    // In production, this should come from environment config
+    // In production, sitekey must be provided
+    if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'production') {
+      throw new Error('hCaptcha sitekey not configured for production');
+    }
+    console.warn('hCaptcha sitekey not configured. Using test key for development only.');
   }
 
   // Render widget
   const widgetId = window.hcaptcha.render(element, {
-    sitekey: sitekey || '10000000-ffff-ffff-ffff-000000000001', // Test key for development
+    sitekey: sitekey || '10000000-ffff-ffff-ffff-000000000001', // Test key for development only
     theme,
     size,
     callback,
@@ -244,8 +246,9 @@ export function getHCaptchaConfig() {
   }
 
   // Development fallback
+  console.warn('hCaptcha sitekey not configured. CAPTCHA disabled for development.');
   return {
-    sitekey: '10000000-ffff-ffff-ffff-000000000001', // Test key
+    sitekey: '', // Empty in development if not configured
   };
 }
 

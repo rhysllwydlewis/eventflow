@@ -95,6 +95,9 @@ const searchSystem = require('./search');
 // Lead scoring utilities
 const { calculateLeadScore } = require('./utils/leadScoring');
 
+// HTTP client for external API calls
+
+
 // CSRF protection middleware
 const { csrfProtection, getToken } = require('./middleware/csrf');
 
@@ -2122,14 +2125,20 @@ app.post("/api/verify-captcha", writeLimiter, async (req, res) => {
     return res.status(400).json({ success: false, error: "No captcha token provided" });
   }
   
-  // If HCAPTCHA_SECRET is not configured, allow in development
+  // If HCAPTCHA_SECRET is not configured, only allow in development
   if (!process.env.HCAPTCHA_SECRET) {
-    console.warn("hCaptcha verification skipped - HCAPTCHA_SECRET not configured");
+    if (process.env.NODE_ENV === 'production') {
+      return res.status(500).json({
+        success: false,
+        error: "CAPTCHA verification not configured",
+      });
+    }
+    console.warn("hCaptcha verification skipped - HCAPTCHA_SECRET not configured (development only)");
     return res.json({ success: true, warning: "Captcha verification disabled in development" });
   }
   
   try {
-    const axios = require("axios");
+    
     const verifyResponse = await axios.post(
       "https://hcaptcha.com/siteverify",
       new URLSearchParams({
@@ -2194,7 +2203,7 @@ app.post('/api/threads/start', writeLimiter, authRequired, csrfProtection, async
   if (captchaToken) {
     try {
       if (process.env.HCAPTCHA_SECRET) {
-        const axios = require('axios');
+        
         const verifyResponse = await axios.post(
           'https://hcaptcha.com/siteverify',
           new URLSearchParams({
