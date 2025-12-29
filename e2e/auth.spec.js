@@ -14,11 +14,17 @@ test.describe('Authentication Flow', () => {
   test('should show validation errors for empty login', async ({ page }) => {
     await page.goto('/auth.html');
 
+    // Wait for page to be fully loaded
+    await page.waitForLoadState('networkidle');
+
     // Try to submit empty form
     await page.click('button[type="submit"]');
 
+    // Wait a moment for validation to process
+    await page.waitForTimeout(500);
+
     // Should show validation errors
-    await expect(page.locator('.error, .alert-danger')).toBeVisible();
+    await expect(page.locator('.error, .alert-danger')).toBeVisible({ timeout: 10000 });
   });
 
   test('should navigate to registration', async ({ page }) => {
@@ -54,6 +60,9 @@ test.describe('Authentication Flow', () => {
   test('should handle login with invalid credentials', async ({ page }) => {
     await page.goto('/auth.html');
 
+    // Wait for page to be fully loaded
+    await page.waitForLoadState('networkidle');
+
     // Fill in invalid credentials
     await page.fill('input[type="email"], input[name="email"]', 'invalid@test.com');
     await page.fill('input[type="password"], input[name="password"]', 'wrongpassword');
@@ -62,13 +71,11 @@ test.describe('Authentication Flow', () => {
     await page.click('button[type="submit"]');
 
     // Wait for response
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(3000);
 
-    // Should show error message
+    // Should show error message (either from validation or from API response)
     const errorMessage = page.locator('.error, .alert-danger, [role="alert"]');
-    if ((await errorMessage.count()) > 0) {
-      await expect(errorMessage).toBeVisible();
-    }
+    await expect(errorMessage.first()).toBeVisible({ timeout: 5000 });
   });
 
   test('should have CSRF protection', async ({ page }) => {
@@ -84,6 +91,9 @@ test.describe('Authentication Flow', () => {
   test('should be responsive on mobile', async ({ page, isMobile }) => {
     if (isMobile) {
       await page.goto('/auth.html');
+
+      // Wait for page to be fully loaded
+      await page.waitForLoadState('networkidle');
 
       // Check viewport
       const viewport = page.viewportSize();
