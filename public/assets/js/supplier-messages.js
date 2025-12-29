@@ -5,6 +5,7 @@
 
 import messagingSystem from './messaging.js';
 import { getListItemSkeletons, showEmptyState, showErrorState } from './utils/skeleton-loader.js';
+import { getLeadQualityBadge } from './utils/lead-quality-helper.js';
 
 // Get current user
 async function getCurrentUser() {
@@ -68,18 +69,6 @@ function renderConversations(conversations) {
     return;
   }
 
-  // Helper function to get lead quality badge HTML
-  function getLeadQualityBadge(thread) {
-    if (!thread.leadScore) {
-      return '';
-    }
-    const score = thread.leadScoreRaw || null;
-    const rating = thread.leadScore;
-    const badgeClass = `lead-badge lead-badge-${rating.toLowerCase()}`;
-
-    return `<span class="${badgeClass}" style="font-size: 0.75rem; margin-left: 0.5rem;">${rating}</span>`;
-  }
-
   let html = '<div class="thread-list">';
 
   conversations.forEach(conversation => {
@@ -88,12 +77,16 @@ function renderConversations(conversations) {
     const lastMessageTime = conversation.lastMessageTime
       ? messagingSystem.formatTimestamp(conversation.lastMessageTime)
       : '';
-    const leadQualityBadge = getLeadQualityBadge(conversation);
+    // Use the professional lead quality badge helper
+    const leadQualityBadge =
+      conversation.leadScore || conversation.leadScoreRaw
+        ? getLeadQualityBadge(conversation.leadScore, conversation.leadScoreRaw)
+        : '';
 
     html += `
       <div class="thread-item" style="border:1px solid #e4e4e7;padding:1rem;margin-bottom:0.5rem;border-radius:4px;cursor:pointer;transition:background 0.2s;" data-conversation-id="${conversation.id}">
         <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:0.5rem;">
-          <div style="display: flex; align-items: center;">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
             <strong>${escapeHtml(customerName)}</strong>
             ${leadQualityBadge}
           </div>
