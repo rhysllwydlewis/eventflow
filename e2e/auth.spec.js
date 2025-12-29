@@ -92,6 +92,9 @@ test.describe('Authentication Flow', () => {
     if (isMobile) {
       await page.goto('/auth.html');
 
+      // Wait for page to be fully loaded
+      await page.waitForLoadState('networkidle');
+
       // Check viewport
       const viewport = page.viewportSize();
       expect(viewport?.width).toBeLessThan(768);
