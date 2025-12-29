@@ -440,6 +440,7 @@ async function seed(options = {}) {
     'audit_logs',
     'search_history',
     'photos',
+    'badges',
   ]) {
     const items = await dbUnified.read(name);
     if (!Array.isArray(items) || items.length === 0) {
@@ -447,7 +448,104 @@ async function seed(options = {}) {
     }
   }
 
+  // Seed default badges
+  await seedBadges();
+
   console.log('Seed complete');
+}
+
+/**
+ * Seed default badges
+ */
+async function seedBadges() {
+  const existingBadges = await dbUnified.read('badges');
+
+  if (existingBadges.length > 0) {
+    console.log('Badges already exist, skipping badge seeding');
+    return;
+  }
+
+  const now = new Date().toISOString();
+  const defaultBadges = [
+    {
+      id: uid('bdg'),
+      name: 'Founder',
+      slug: 'founder',
+      type: 'founder',
+      description: 'Founding member of EventFlow',
+      icon: '🌟',
+      color: '#FFD700',
+      autoAssign: false,
+      autoAssignCriteria: null,
+      displayOrder: 1,
+      active: true,
+      createdAt: now,
+      updatedAt: now,
+    },
+    {
+      id: uid('bdg'),
+      name: 'Pro',
+      slug: 'pro',
+      type: 'pro',
+      description: 'Professional tier member',
+      icon: '💎',
+      color: '#667eea',
+      autoAssign: true,
+      autoAssignCriteria: { isPro: true },
+      displayOrder: 2,
+      active: true,
+      createdAt: now,
+      updatedAt: now,
+    },
+    {
+      id: uid('bdg'),
+      name: 'Pro Plus',
+      slug: 'pro-plus',
+      type: 'pro-plus',
+      description: 'Premium tier member',
+      icon: '👑',
+      color: '#764ba2',
+      autoAssign: false,
+      autoAssignCriteria: null,
+      displayOrder: 3,
+      active: true,
+      createdAt: now,
+      updatedAt: now,
+    },
+    {
+      id: uid('bdg'),
+      name: 'Verified',
+      slug: 'verified',
+      type: 'verified',
+      description: 'Verified supplier',
+      icon: '✓',
+      color: '#13B6A2',
+      autoAssign: false,
+      autoAssignCriteria: null,
+      displayOrder: 4,
+      active: true,
+      createdAt: now,
+      updatedAt: now,
+    },
+    {
+      id: uid('bdg'),
+      name: 'Featured',
+      slug: 'featured',
+      type: 'featured',
+      description: 'Featured on EventFlow',
+      icon: '⭐',
+      color: '#F59E0B',
+      autoAssign: false,
+      autoAssignCriteria: null,
+      displayOrder: 5,
+      active: true,
+      createdAt: now,
+      updatedAt: now,
+    },
+  ];
+
+  await dbUnified.write('badges', defaultBadges);
+  console.log(`Seeded ${defaultBadges.length} default badges`);
 }
 
 module.exports = { seed };
