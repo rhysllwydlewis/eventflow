@@ -1767,6 +1767,47 @@ app.get('/api/packages/featured', async (_req, res) => {
   res.json({ items });
 });
 
+// Spotlight packages - randomly selected packages that rotate hourly
+app.get('/api/packages/spotlight', async (_req, res) => {
+  const packages = await dbUnified.read('packages');
+  const suppliers = await dbUnified.read('suppliers');
+
+  // Create a suppliers lookup map for O(1) access
+  const suppliersMap = new Map(suppliers.map(s => [s.id, s]));
+
+  // Get all approved packages
+  const approvedPackages = packages.filter(p => p.approved);
+
+  // Use current hour as seed for consistent selection within the hour
+  const now = new Date();
+  const hourSeed =
+    now.getUTCFullYear() * 10000 +
+    (now.getUTCMonth() + 1) * 100 +
+    now.getUTCDate() * 24 +
+    now.getUTCHours();
+
+  // Shuffle packages using the hour seed for deterministic randomness
+  const shuffled = [...approvedPackages];
+  let seed = hourSeed;
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    // Simple seeded random number generator
+    seed = (seed * 9301 + 49297) % 233280;
+    const j = Math.floor((seed / 233280) * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+
+  // Select up to 6 spotlight packages
+  const items = shuffled.slice(0, 6).map(pkg => {
+    const supplier = suppliersMap.get(pkg.supplierId);
+    return {
+      ...pkg,
+      supplier_name: supplier ? supplier.name : null,
+    };
+  });
+
+  res.json({ items });
+});
+
 app.get('/api/packages/search', async (req, res) => {
   const q = String(req.query.q || '').toLowerCase();
   const items = (await dbUnified.read('packages')).filter(

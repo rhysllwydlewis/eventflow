@@ -29,6 +29,7 @@
   <link rel="icon" href="/favicon.svg">
 </head>
 <body>
+<a href="#main-content" class="skip-to-content">Skip to main content</a>
 <header class="header" role="banner">
   <div class="container header-inner">
     <a class="brand" href="/" aria-label="EventFlow home">
@@ -75,7 +76,7 @@
 <script src="/assets/js/search.js" defer></script>
 <script src="/assets/js/websocket-client.js" defer></script>
 
-<main>
+<main id="main-content">
   <section class="hero">
     <div class="container hero-grid">
       <div>
@@ -155,6 +156,20 @@
         Featured packages
       </div>
       <div id="featured-packages" class="featured-carousel">
+        <div class="card"><p class="small">Loading…</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="small" style="text-transform:uppercase;letter-spacing:.2em;color:#7E8794">
+        Spotlight packages
+      </div>
+      <p class="small" style="margin-top: 8px; margin-bottom: 16px; color: var(--color-text-secondary, #6c757d);">
+        Discover something new — our spotlight changes every hour
+      </p>
+      <div id="spotlight-packages" class="featured-carousel">
         <div class="card"><p class="small">Loading…</p></div>
       </div>
     </div>
