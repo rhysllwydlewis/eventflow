@@ -1,7 +1,7 @@
 /**
  * Ticketing System for EventFlow
  * Handles ticket creation, viewing, and responses
- * Uses Firebase Firestore for real-time updates
+ * Uses Firebase Firestore for real-time updates or falls back to MongoDB API
  */
 
 import {
@@ -19,11 +19,13 @@ import {
   serverTimestamp,
   Timestamp,
   arrayUnion,
+  isFirebaseAvailable,
 } from './firebase-config.js';
 
 class TicketingSystem {
   constructor() {
     this.unsubscribers = [];
+    this.useFirebase = isFirebaseAvailable;
   }
 
   /**
@@ -32,6 +34,11 @@ class TicketingSystem {
    * @returns {Promise<string>} Ticket ID
    */
   async createTicket(ticketData) {
+    if (!this.useFirebase) {
+      // Fallback to MongoDB API
+      return this.createTicketViaAPI(ticketData);
+    }
+
     try {
       const ticket = {
         senderId: ticketData.senderId,
@@ -52,6 +59,30 @@ class TicketingSystem {
       return docRef.id;
     } catch (error) {
       console.error('Error creating ticket:', error);
+      throw error;
+    }
+  }
+
+  async createTicketViaAPI(ticketData) {
+    try {
+      const response = await fetch('/api/tickets', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': window.__CSRF_TOKEN__ || '',
+        },
+        credentials: 'include',
+        body: JSON.stringify(ticketData),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create ticket');
+      }
+
+      const data = await response.json();
+      return data.ticketId;
+    } catch (error) {
+      console.error('Error creating ticket via API:', error);
       throw error;
     }
   }
@@ -183,6 +214,12 @@ class TicketingSystem {
    * @param {Function} callback - Callback function
    */
   listenToUserTickets(userId, userType, callback) {
+    if (!this.useFirebase) {
+      // Fallback: Fetch tickets once via API
+      this.fetchUserTicketsViaAPI(userId, userType, callback);
+      return () => {}; // No-op unsubscribe
+    }
+
     try {
       const q = query(
         collection(db, 'tickets'),
@@ -202,6 +239,7 @@ class TicketingSystem {
         },
         error => {
           console.error('Error listening to user tickets:', error);
+          callback([]);
         }
       );
 
@@ -209,7 +247,27 @@ class TicketingSystem {
       return unsubscribe;
     } catch (error) {
       console.error('Error setting up ticket listener:', error);
-      throw error;
+      callback([]);
+      return () => {};
+    }
+  }
+
+  async fetchUserTicketsViaAPI(userId, userType, callback) {
+    try {
+      const response = await fetch(`/api/tickets?userId=${userId}&userType=${userType}`, {
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        callback(data.tickets || []);
+      } else {
+        console.error('Failed to fetch tickets');
+        callback([]);
+      }
+    } catch (error) {
+      console.error('Error fetching tickets via API:', error);
+      callback([]);
     }
   }
 
@@ -249,6 +307,12 @@ class TicketingSystem {
    * @param {Function} callback - Callback function
    */
   listenToTicket(ticketId, callback) {
+    if (!this.useFirebase) {
+      // Fallback: Fetch ticket once via API
+      this.fetchTicketViaAPI(ticketId, callback);
+      return () => {}; // No-op unsubscribe
+    }
+
     try {
       const docRef = doc(db, 'tickets', ticketId);
 
@@ -263,6 +327,7 @@ class TicketingSystem {
         },
         error => {
           console.error('Error listening to ticket:', error);
+          callback(null);
         }
       );
 
@@ -270,7 +335,27 @@ class TicketingSystem {
       return unsubscribe;
     } catch (error) {
       console.error('Error setting up ticket listener:', error);
-      throw error;
+      callback(null);
+      return () => {};
+    }
+  }
+
+  async fetchTicketViaAPI(ticketId, callback) {
+    try {
+      const response = await fetch(`/api/tickets/${ticketId}`, {
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        callback(data.ticket || null);
+      } else {
+        console.error('Failed to fetch ticket');
+        callback(null);
+      }
+    } catch (error) {
+      console.error('Error fetching ticket via API:', error);
+      callback(null);
     }
   }
 
