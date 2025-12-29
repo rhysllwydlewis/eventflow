@@ -206,12 +206,26 @@ function supplierCard(s, user) {
     proBadge = '<span class="pro-badge"><span>Pro supplier</span></span>';
   }
 
+  // Add founding supplier badge
+  let foundingBadge = '';
+  if (s.isFounding || (s.badges && s.badges.includes('founding'))) {
+    const foundingYear = s.foundingYear || '2024';
+    foundingBadge = `<span class="badge badge-founding" style="background:#8B5CF6;color:white;font-weight:600;" title="Founding Supplier since ${foundingYear}">⭐ Founding Supplier</span>`;
+  }
+
+  // Add verification badges
+  let verificationBadges = '';
+  if (s.verified || (s.badges && s.badges.includes('verified'))) {
+    verificationBadges +=
+      '<span class="badge badge-verified" style="background:#10B981;color:white;" title="Verified Business">✓ Verified</span>';
+  }
+
   return `<div class="card supplier-card">
     <img src="${escapeHtml(img)}" alt="${escapeHtml(s.name)} image"><div>
       <h3>${escapeHtml(s.name)} ${proBadge}</h3>
       <div class="small">${escapeHtml(s.location || '')} · <span class="badge">${escapeHtml(s.category)}</span> ${s.price_display ? `· ${escapeHtml(s.price_display)}` : ''}</div>
       <p class="small">${escapeHtml(s.description_short || '')}</p>
-      <div class="small" style="margin-top:4px">${tags.join(' ')}</div>
+      <div class="small" style="margin-top:4px;display:flex;flex-wrap:wrap;gap:4px;">${foundingBadge}${verificationBadges}${tags.join(' ')}</div>
       <div class="form-actions">${addBtn}<a class="cta secondary" href="/supplier.html?id=${encodeURIComponent(s.id)}">View details</a></div>
     </div></div>`;
 }
