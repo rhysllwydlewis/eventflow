@@ -302,7 +302,7 @@ class PackageList {
       if (e.target.closest('.package-card-supplier-link')) {
         return;
       }
-      // Use the original slug for navigation (not escaped), but validate it
+      // Properly encode slug for URL to prevent XSS
       const safeSlug = encodeURIComponent(pkg.slug || '');
       window.location.href = `/package.html?slug=${safeSlug}`;
     });
@@ -310,7 +310,7 @@ class PackageList {
     card.addEventListener('keydown', e => {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
-        // Use the original slug for navigation (not escaped), but validate it
+        // Properly encode slug for URL to prevent XSS
         const safeSlug = encodeURIComponent(pkg.slug || '');
         window.location.href = `/package.html?slug=${safeSlug}`;
       }
@@ -351,7 +351,7 @@ class PackageList {
       if (supplierId) {
         supplierHtml = `
           <div class="package-card-supplier">
-            <a href="/supplier.html?id=${supplierId}" class="package-card-supplier-link" onclick="event.stopPropagation()">
+            <a href="/supplier.html?id=${supplierId}" class="package-card-supplier-link" data-supplier-link>
               <img src="${supplierAvatar}" alt="${supplierName}" class="package-card-supplier-avatar" loading="lazy">
               <span class="package-card-supplier-name">${supplierName}</span>
             </a>
@@ -382,6 +382,14 @@ class PackageList {
         </div>
       </div>
     `;
+
+    // Add event listener to supplier link to stop propagation
+    const supplierLink = card.querySelector('[data-supplier-link]');
+    if (supplierLink) {
+      supplierLink.addEventListener('click', e => {
+        e.stopPropagation();
+      });
+    }
 
     return card;
   }
