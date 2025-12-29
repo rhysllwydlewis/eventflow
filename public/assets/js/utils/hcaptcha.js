@@ -62,8 +62,7 @@ export async function renderHCaptcha(container, options = {}) {
   await loadHCaptchaScript();
 
   // Get container element
-  const element =
-    typeof container === 'string' ? document.querySelector(container) : container;
+  const element = typeof container === 'string' ? document.querySelector(container) : container;
 
   if (!element) {
     throw new Error('hCaptcha container not found');
@@ -186,13 +185,19 @@ export async function addHCaptchaToForm(form, options = {}) {
   const widgetId = await renderHCaptcha(container, {
     ...options,
     callback: token => {
-      if (onSuccess) onSuccess(token);
+      if (onSuccess) {
+        onSuccess(token);
+      }
     },
     expiredCallback: () => {
-      if (onExpired) onExpired();
+      if (onExpired) {
+        onExpired();
+      }
     },
     errorCallback: error => {
-      if (onError) onError(error);
+      if (onError) {
+        onError(error);
+      }
     },
   });
 
