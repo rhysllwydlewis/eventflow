@@ -155,6 +155,31 @@
             validateOnInput: false
           });
           
+          // Store reference to validator for other scripts
+          loginForm._validator = loginValidator;
+          
+          // Override the handleSubmit to also show #login-error
+          const originalHandleSubmit = loginValidator.handleSubmit.bind(loginValidator);
+          loginValidator.handleSubmit = function(e) {
+            const result = originalHandleSubmit(e);
+            const loginErrorEl = document.getElementById('login-error');
+            
+            // Show #login-error if validation failed
+            if (!result && loginErrorEl) {
+              const errors = loginValidator.getErrors();
+              if (errors.length > 0) {
+                const errorMessages = errors.map(([field, msg]) => msg).join(', ');
+                loginErrorEl.textContent = errorMessages || 'Please fix the errors above';
+                loginErrorEl.style.display = 'block';
+              }
+            } else if (loginErrorEl) {
+              // Clear error on successful validation
+              loginErrorEl.style.display = 'none';
+              loginErrorEl.textContent = '';
+            }
+            return result;
+          };
+          
           // Listen for valid submissions
           loginForm.addEventListener('validsubmit', function(e) {
             const formData = e.detail;
