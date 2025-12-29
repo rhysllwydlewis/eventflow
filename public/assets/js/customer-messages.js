@@ -264,10 +264,15 @@ async function init() {
       renderConversations(conversations);
     });
 
-    // Listen to unread count
-    messagingSystem.listenToUnreadCount(user.id, 'customer', unreadCount => {
-      updateUnreadBadge(unreadCount);
-    });
+    // Listen to unread count with error handling
+    try {
+      messagingSystem.listenToUnreadCount(user.id, 'customer', unreadCount => {
+        updateUnreadBadge(unreadCount);
+      });
+    } catch (unreadError) {
+      console.error('Error setting up unread count listener:', unreadError);
+      // Non-critical - badge won't update but messages still work
+    }
   } catch (error) {
     console.error('Error listening to conversations:', error);
     showErrorState(container, {
