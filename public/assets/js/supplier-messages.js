@@ -4,6 +4,7 @@
  */
 
 import messagingSystem from './messaging.js';
+import { getListItemSkeletons, showEmptyState, showErrorState } from './utils/skeleton-loader.js';
 
 // Get current user
 async function getCurrentUser() {
@@ -59,8 +60,11 @@ function renderConversations(conversations) {
   }
 
   if (!conversations || conversations.length === 0) {
-    container.innerHTML =
-      '<p class="small">No messages yet. Conversations will appear here when customers contact you.</p>';
+    showEmptyState(container, {
+      icon: '💬',
+      title: 'No messages yet',
+      description: 'Conversations will appear here when customers contact you.',
+    });
     return;
   }
 
@@ -265,12 +269,23 @@ function openConversation(conversationId) {
 
 // Initialize
 async function init() {
+  const container = document.getElementById('threads-sup');
+  if (!container) {
+    return;
+  }
+
+  // Show skeleton loader
+  container.innerHTML = getListItemSkeletons(3);
+
   const user = await getCurrentUser();
   if (!user) {
-    const container = document.getElementById('threads-sup');
-    if (container) {
-      container.innerHTML = '<p class="small">Sign in to view your messages.</p>';
-    }
+    showEmptyState(container, {
+      icon: '🔒',
+      title: 'Sign in to view messages',
+      description: 'Log in to see your customer conversations.',
+      actionText: 'Sign In',
+      actionHref: '/auth.html',
+    });
     return;
   }
 
@@ -278,11 +293,11 @@ async function init() {
   const suppliers = await getUserSuppliers(user.id);
 
   if (!suppliers || suppliers.length === 0) {
-    const container = document.getElementById('threads-sup');
-    if (container) {
-      container.innerHTML =
-        '<p class="small">Create a supplier profile to receive messages from customers.</p>';
-    }
+    showEmptyState(container, {
+      icon: '🏢',
+      title: 'No supplier profile yet',
+      description: 'Create a supplier profile to receive messages from customers.',
+    });
     return;
   }
 
@@ -327,8 +342,12 @@ async function init() {
     console.error('Error listening to conversations:', error);
     const container = document.getElementById('threads-sup');
     if (container) {
-      container.innerHTML =
-        '<p class="small">Unable to load messages. Please try refreshing the page.</p>';
+      showErrorState(container, {
+        title: 'Unable to load messages',
+        description: 'Please try refreshing the page.',
+        actionText: 'Refresh',
+        onAction: () => window.location.reload(),
+      });
     }
   }
 }

@@ -4,6 +4,7 @@
  */
 
 import messagingSystem from './messaging.js';
+import { getListItemSkeletons, showEmptyState, showErrorState } from './utils/skeleton-loader.js';
 
 // Get current user
 async function getCurrentUser() {
@@ -37,8 +38,13 @@ function renderConversations(conversations) {
   }
 
   if (!conversations || conversations.length === 0) {
-    container.innerHTML =
-      '<p class="small">No messages yet. Start a conversation by contacting a supplier.</p>';
+    showEmptyState(container, {
+      icon: '💬',
+      title: 'No messages yet',
+      description: 'Start a conversation by contacting a supplier.',
+      actionText: 'Browse Suppliers',
+      actionHref: '/suppliers.html',
+    });
     return;
   }
 
@@ -232,12 +238,23 @@ function openConversation(conversationId) {
 
 // Initialize
 async function init() {
+  const container = document.getElementById('threads-cust');
+  if (!container) {
+    return;
+  }
+
+  // Show skeleton loader
+  container.innerHTML = getListItemSkeletons(3);
+
   const user = await getCurrentUser();
   if (!user) {
-    const container = document.getElementById('threads-cust');
-    if (container) {
-      container.innerHTML = '<p class="small">Sign in to view your messages.</p>';
-    }
+    showEmptyState(container, {
+      icon: '🔒',
+      title: 'Sign in to view messages',
+      description: 'Log in to see your conversations with suppliers.',
+      actionText: 'Sign In',
+      actionHref: '/auth.html',
+    });
     return;
   }
 
@@ -253,11 +270,12 @@ async function init() {
     });
   } catch (error) {
     console.error('Error listening to conversations:', error);
-    const container = document.getElementById('threads-cust');
-    if (container) {
-      container.innerHTML =
-        '<p class="small">Unable to load messages. Please try refreshing the page.</p>';
-    }
+    showErrorState(container, {
+      title: 'Unable to load messages',
+      description: 'Please try refreshing the page.',
+      actionText: 'Refresh',
+      onAction: () => window.location.reload(),
+    });
   }
 }
 
