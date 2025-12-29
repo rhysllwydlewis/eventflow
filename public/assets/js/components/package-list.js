@@ -302,13 +302,17 @@ class PackageList {
       if (e.target.closest('.package-card-supplier-link')) {
         return;
       }
-      window.location.href = `/package.html?slug=${pkg.slug}`;
+      // Use the original slug for navigation (not escaped), but validate it
+      const safeSlug = encodeURIComponent(pkg.slug || '');
+      window.location.href = `/package.html?slug=${safeSlug}`;
     });
 
     card.addEventListener('keydown', e => {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
-        window.location.href = `/package.html?slug=${pkg.slug}`;
+        // Use the original slug for navigation (not escaped), but validate it
+        const safeSlug = encodeURIComponent(pkg.slug || '');
+        window.location.href = `/package.html?slug=${safeSlug}`;
       }
     });
 
@@ -316,8 +320,6 @@ class PackageList {
     const featuredBadge = isFeatured
       ? '<div class="package-card-featured-badge">Featured</div>'
       : '';
-
-    const imageUrl = pkg.image || '/assets/images/placeholders/package-event.svg';
 
     // Escape HTML to prevent XSS
     const escapeHtml = str => {
@@ -329,6 +331,8 @@ class PackageList {
       return div.innerHTML;
     };
 
+    const imageUrl = escapeHtml(pkg.image || '/assets/images/placeholders/package-event.svg');
+    const slug = escapeHtml(String(pkg.slug || ''));
     const title = escapeHtml(pkg.title);
     const description = escapeHtml(pkg.description || '');
     const price = escapeHtml(pkg.price || 'Contact for price');
@@ -338,9 +342,11 @@ class PackageList {
     let supplierHtml = '';
     if (this.options.showSupplierInfo && pkg.supplier) {
       const supplierName = escapeHtml(pkg.supplier.name || pkg.supplierName || 'Unknown Supplier');
-      const supplierId = pkg.supplier.id || pkg.supplierId;
-      const supplierAvatar =
-        pkg.supplier.avatar || pkg.supplierAvatar || '/assets/images/placeholders/avatar.svg';
+      const rawSupplierId = pkg.supplier.id || pkg.supplierId;
+      const supplierId = rawSupplierId ? encodeURIComponent(String(rawSupplierId)) : '';
+      const supplierAvatar = escapeHtml(
+        pkg.supplier.avatar || pkg.supplierAvatar || '/assets/images/placeholders/avatar.svg'
+      );
 
       if (supplierId) {
         supplierHtml = `
