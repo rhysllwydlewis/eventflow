@@ -49,6 +49,11 @@ const userSchema = {
         isPro: { bsonType: 'bool', description: 'Pro subscription status' },
         createdAt: { bsonType: 'string', description: 'Account creation timestamp' },
         lastLoginAt: { bsonType: 'string', description: 'Last login timestamp' },
+        badges: {
+          bsonType: 'array',
+          items: { bsonType: 'string' },
+          description: 'Badge IDs awarded to this user',
+        },
       },
     },
   },
@@ -107,6 +112,11 @@ const supplierSchema = {
         },
         aiScore: { bsonType: 'number', description: 'AI quality score' },
         aiUpdatedAt: { bsonType: 'string', description: 'Last AI update timestamp' },
+        badges: {
+          bsonType: 'array',
+          items: { bsonType: 'string' },
+          description: 'Badge IDs awarded to this supplier',
+        },
       },
     },
   },
@@ -313,6 +323,40 @@ const eventSchema = {
 };
 
 /**
+ * Badge Schema
+ * Stores badges that can be awarded to users and suppliers
+ */
+const badgeSchema = {
+  validator: {
+    $jsonSchema: {
+      bsonType: 'object',
+      required: ['id', 'name', 'type'],
+      properties: {
+        id: { bsonType: 'string', description: 'Unique badge identifier' },
+        name: { bsonType: 'string', description: 'Badge name' },
+        slug: { bsonType: 'string', description: 'URL-friendly badge slug' },
+        type: {
+          enum: ['founder', 'pro', 'pro-plus', 'verified', 'featured', 'custom'],
+          description: 'Badge type',
+        },
+        description: { bsonType: 'string', description: 'Badge description' },
+        icon: { bsonType: 'string', description: 'Badge icon/emoji' },
+        color: { bsonType: 'string', description: 'Badge color (hex code)' },
+        autoAssign: { bsonType: 'bool', description: 'Whether badge is auto-assigned' },
+        autoAssignCriteria: {
+          bsonType: 'object',
+          description: 'Criteria for auto-assignment',
+        },
+        displayOrder: { bsonType: 'int', description: 'Display order priority' },
+        active: { bsonType: 'bool', description: 'Whether badge is active' },
+        createdAt: { bsonType: 'string', description: 'Creation timestamp' },
+        updatedAt: { bsonType: 'string', description: 'Last update timestamp' },
+      },
+    },
+  },
+};
+
+/**
  * Initialize collections with schemas and indexes
  * @param {Object} db - MongoDB database instance
  */
@@ -327,6 +371,7 @@ async function initializeCollections(db) {
     messages: messageSchema,
     threads: threadSchema,
     events: eventSchema,
+    badges: badgeSchema,
   };
 
   for (const [name, schema] of Object.entries(collections)) {
@@ -414,6 +459,12 @@ async function createIndexes(db) {
     // Event indexes
     await db.collection('events').createIndex({ id: 1 }, { unique: true });
     await db.collection('events').createIndex({ userId: 1 });
+
+    // Badge indexes
+    await db.collection('badges').createIndex({ id: 1 }, { unique: true });
+    await db.collection('badges').createIndex({ slug: 1 }, { unique: true, sparse: true });
+    await db.collection('badges').createIndex({ type: 1 });
+    await db.collection('badges').createIndex({ active: 1 });
 
     console.log('Database indexes created successfully');
   } catch (error) {

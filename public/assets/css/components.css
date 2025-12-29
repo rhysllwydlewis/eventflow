@@ -1,5 +1,26 @@
 /* EventFlow Components CSS - Reusable UI components */
 
+/* Skip to content link - accessibility */
+.skip-to-content {
+  position: absolute;
+  left: -9999px;
+  z-index: 999;
+  padding: 1em;
+  background-color: var(--accent, #13B6A2);
+  color: white;
+  text-decoration: none;
+  font-weight: 600;
+  border-radius: 4px;
+}
+
+.skip-to-content:focus {
+  left: 50%;
+  top: 1em;
+  transform: translateX(-50%);
+  outline: 3px solid var(--ink, #0B8073);
+  outline-offset: 2px;
+}
+
 /* Modal/Dialog Component */
 .modal-overlay {
   position: fixed;

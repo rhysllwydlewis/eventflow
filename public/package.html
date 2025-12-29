@@ -15,6 +15,7 @@
   <link rel="icon" href="/favicon.svg">
 </head>
 <body>
+<a href="#main-content" class="skip-to-content">Skip to main content</a>
 <header class="header" role="banner">
   <div class="container header-inner">
     <a class="brand" href="/" aria-label="EventFlow home">
@@ -59,7 +60,7 @@
 <script src="/assets/js/search.js" defer></script>
 <script src="/assets/js/websocket-client.js" defer></script>
 
-<main>
+<main id="main-content">
   <section class="section">
     <div class="container">
       <div id="package-breadcrumb" style="margin-bottom: 16px; font-size: 0.9rem; color: var(--color-text-secondary, #6c757d);">
@@ -213,7 +214,11 @@
         }
 
         // Display price and location
-        document.getElementById('package-price').textContent = pkg.price || 'Contact for price';
+        const priceDisplay = pkg.price_display || pkg.price;
+        const formattedPrice = priceDisplay ? 
+          (/^\d+(\.\d+)?$/.test(String(priceDisplay)) ? `£${priceDisplay}` : priceDisplay) :
+          'Contact for price';
+        document.getElementById('package-price').textContent = formattedPrice;
         if (pkg.location) {
           document.getElementById('package-location').innerHTML = `📍 ${pkg.location}`;
         }

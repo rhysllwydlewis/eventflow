@@ -772,4 +772,277 @@ router.post('/threads/:threadId/unarchive', authRequired, async (req, res) => {
   }
 });
 
+// ========== API Aliases for Compatibility ==========
+// These endpoints provide alternative paths for the same functionality
+// to maintain compatibility with existing frontend code
+
+/**
+ * GET /api/messages/conversations
+ * Alias for /api/messages/threads - List all conversations for the current user
+ */
+router.get('/conversations', authRequired, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const userRole = req.user.role;
+    const { status, unreadOnly } = req.query;
+
+    let threads = await dbUnified.read('threads');
+
+    // Filter threads based on user role
+    if (userRole === 'customer') {
+      threads = threads.filter(t => t.customerId === userId);
+    } else if (userRole === 'supplier') {
+      threads = threads.filter(t => t.supplierId === userId);
+    } else if (userRole === 'admin') {
+      // Admins can see all threads
+    } else {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    // Filter by status if provided
+    if (status) {
+      threads = threads.filter(t => (t.status || 'open') === status);
+    }
+
+    // Filter unread only if requested
+    if (unreadOnly === 'true') {
+      threads = threads.filter(t => {
+        const unread = t.unreadCount || {};
+        return (unread[userId] || 0) > 0;
+      });
+    }
+
+    // Sort by last activity (most recent first)
+    threads.sort((a, b) => {
+      const aTime = new Date(a.lastMessageAt || a.updatedAt || a.createdAt).getTime();
+      const bTime = new Date(b.lastMessageAt || b.updatedAt || b.createdAt).getTime();
+      return bTime - aTime;
+    });
+
+    // Transform to conversation format expected by frontend
+    const conversations = threads.map(t => ({
+      id: t.id,
+      supplierName: t.supplierName,
+      customerName: t.customerName,
+      lastMessage: t.lastMessagePreview || '',
+      lastMessageTime: t.lastMessageAt || t.updatedAt || t.createdAt,
+      unreadCount: (t.unreadCount && t.unreadCount[userId]) || 0,
+      status: t.status || 'open',
+    }));
+
+    res.json({ conversations });
+  } catch (error) {
+    console.error('Error fetching conversations:', error);
+    res.status(500).json({ error: 'Failed to fetch conversations', details: error.message });
+  }
+});
+
+/**
+ * GET /api/messages/:conversationId
+ * Alias for /api/messages/threads/:threadId/messages - Get messages in a conversation
+ */
+router.get('/:conversationId', authRequired, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const userRole = req.user.role;
+    const { conversationId } = req.params;
+
+    // Verify access to thread
+    const threads = await dbUnified.read('threads');
+    const thread = threads.find(t => t.id === conversationId);
+
+    if (!thread) {
+      return res.status(404).json({ error: 'Conversation not found' });
+    }
+
+    const hasAccess =
+      userRole === 'admin' ||
+      (userRole === 'customer' && thread.customerId === userId) ||
+      (userRole === 'supplier' && thread.supplierId === userId);
+
+    if (!hasAccess) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    // Get messages
+    let messages = await dbUnified.read('messages');
+    messages = messages.filter(m => m.threadId === conversationId && !m.isDraft);
+
+    // Sort by creation time (oldest first)
+    messages.sort((a, b) => {
+      const aTime = new Date(a.createdAt).getTime();
+      const bTime = new Date(b.createdAt).getTime();
+      return aTime - bTime;
+    });
+
+    res.json({ messages });
+  } catch (error) {
+    console.error('Error fetching messages:', error);
+    res.status(500).json({ error: 'Failed to fetch messages', details: error.message });
+  }
+});
+
+/**
+ * POST /api/messages/:conversationId
+ * Send a message in a conversation
+ */
+router.post('/:conversationId', authRequired, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const userRole = req.user.role;
+    const { conversationId } = req.params;
+    const { message, senderId, senderType, senderName } = req.body;
+
+    if (!message || message.trim().length === 0) {
+      return res.status(400).json({ error: 'Message text required' });
+    }
+
+    // Verify access to thread
+    const threads = await dbUnified.read('threads');
+    const threadIndex = threads.findIndex(t => t.id === conversationId);
+
+    if (threadIndex === -1) {
+      return res.status(404).json({ error: 'Conversation not found' });
+    }
+
+    const thread = threads[threadIndex];
+    const hasAccess =
+      userRole === 'admin' ||
+      (userRole === 'customer' && thread.customerId === userId) ||
+      (userRole === 'supplier' && thread.supplierId === userId);
+
+    if (!hasAccess) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const now = new Date().toISOString();
+    const messages = await dbUnified.read('messages');
+
+    const newMessage = {
+      id: uid(),
+      threadId: conversationId,
+      fromUserId: userId,
+      fromRole: userRole,
+      text: message.trim(),
+      isDraft: false,
+      sentAt: now,
+      readBy: [userId], // Sender has already "read" their own message
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    messages.push(newMessage);
+    await dbUnified.write('messages', messages);
+
+    // Update thread
+    thread.lastMessageAt = now;
+    thread.lastMessagePreview = message.trim().substring(0, 100);
+    thread.updatedAt = now;
+
+    // Update unread count for recipient
+    if (!thread.unreadCount) {
+      thread.unreadCount = {};
+    }
+    const recipientId = userRole === 'customer' ? thread.supplierId : thread.customerId;
+    thread.unreadCount[recipientId] = (thread.unreadCount[recipientId] || 0) + 1;
+
+    threads[threadIndex] = thread;
+    await dbUnified.write('threads', threads);
+
+    // Audit log
+    auditLog({
+      adminId: userId,
+      adminEmail: req.user.email,
+      action: 'MESSAGE_SENT',
+      targetType: 'message',
+      targetId: newMessage.id,
+      details: { threadId: conversationId },
+    });
+
+    res.status(201).json({ messageId: newMessage.id, message: newMessage });
+  } catch (error) {
+    console.error('Error sending message:', error);
+    res.status(500).json({ error: 'Failed to send message', details: error.message });
+  }
+});
+
+/**
+ * POST /api/messages/:conversationId/read
+ * Mark messages in a conversation as read
+ */
+router.post('/:conversationId/read', authRequired, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { conversationId } = req.params;
+
+    const threads = await dbUnified.read('threads');
+    const threadIndex = threads.findIndex(t => t.id === conversationId);
+
+    if (threadIndex === -1) {
+      return res.status(404).json({ error: 'Conversation not found' });
+    }
+
+    const thread = threads[threadIndex];
+
+    // Reset unread count for this user
+    if (!thread.unreadCount) {
+      thread.unreadCount = {};
+    }
+    thread.unreadCount[userId] = 0;
+
+    threads[threadIndex] = thread;
+    await dbUnified.write('threads', threads);
+
+    // Also update readBy array for all messages in this thread
+    const messages = await dbUnified.read('messages');
+    let updated = false;
+    messages.forEach(m => {
+      if (
+        m.threadId === conversationId &&
+        m.readBy &&
+        Array.isArray(m.readBy) &&
+        !m.readBy.includes(userId)
+      ) {
+        m.readBy.push(userId);
+        updated = true;
+      } else if (m.threadId === conversationId && !m.readBy) {
+        m.readBy = [userId];
+        updated = true;
+      }
+    });
+
+    if (updated) {
+      await dbUnified.write('messages', messages);
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error marking messages as read:', error);
+    res.status(500).json({ error: 'Failed to mark messages as read', details: error.message });
+  }
+});
+
+/**
+ * GET /api/messages/unread
+ * Get unread message count for a user
+ */
+router.get('/unread', authRequired, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const threads = await dbUnified.read('threads');
+
+    let totalUnread = 0;
+    threads.forEach(t => {
+      if (t.unreadCount && t.unreadCount[userId]) {
+        totalUnread += t.unreadCount[userId];
+      }
+    });
+
+    res.json({ count: totalUnread });
+  } catch (error) {
+    console.error('Error fetching unread count:', error);
+    res.status(500).json({ error: 'Failed to fetch unread count', details: error.message });
+  }
+});
+
 module.exports = router;

@@ -1603,6 +1603,321 @@ app.post(
   }
 );
 
+// ---------- Badge Management ----------
+
+/**
+ * GET /api/admin/badges
+ * Get all badges
+ */
+app.get('/api/admin/badges', authRequired, roleRequired('admin'), async (req, res) => {
+  try {
+    const badges = await dbUnified.read('badges');
+    res.json({ badges });
+  } catch (error) {
+    console.error('Error fetching badges:', error);
+    res.status(500).json({ error: 'Failed to fetch badges' });
+  }
+});
+
+/**
+ * POST /api/admin/badges
+ * Create a new badge
+ */
+app.post(
+  '/api/admin/badges',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    try {
+      const { name, type, description, icon, color, autoAssign, autoAssignCriteria } = req.body;
+
+      if (!name || !type) {
+        return res.status(400).json({ error: 'Name and type are required' });
+      }
+
+      const now = new Date().toISOString();
+      const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+
+      const newBadge = {
+        id: uid('bdg'),
+        name,
+        slug,
+        type,
+        description: description || '',
+        icon: icon || '🏅',
+        color: color || '#13B6A2',
+        autoAssign: autoAssign || false,
+        autoAssignCriteria: autoAssignCriteria || null,
+        displayOrder: 100,
+        active: true,
+        createdAt: now,
+        updatedAt: now,
+      };
+
+      const badges = await dbUnified.read('badges');
+      badges.push(newBadge);
+      await dbUnified.write('badges', badges);
+
+      res.status(201).json({ badge: newBadge });
+    } catch (error) {
+      console.error('Error creating badge:', error);
+      res.status(500).json({ error: 'Failed to create badge' });
+    }
+  }
+);
+
+/**
+ * PUT /api/admin/badges/:id
+ * Update a badge
+ */
+app.put(
+  '/api/admin/badges/:id',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      const {
+        name,
+        type,
+        description,
+        icon,
+        color,
+        autoAssign,
+        autoAssignCriteria,
+        displayOrder,
+        active,
+      } = req.body;
+
+      // Validate allowed fields
+      const allowedUpdates = {
+        name,
+        type,
+        description,
+        icon,
+        color,
+        autoAssign,
+        autoAssignCriteria,
+        displayOrder,
+        active,
+      };
+      const updates = {};
+
+      // Only include defined fields
+      Object.keys(allowedUpdates).forEach(key => {
+        if (allowedUpdates[key] !== undefined) {
+          updates[key] = allowedUpdates[key];
+        }
+      });
+
+      // Validate required fields if provided
+      if (updates.name !== undefined && (!updates.name || typeof updates.name !== 'string')) {
+        return res.status(400).json({ error: 'Invalid name field' });
+      }
+
+      if (updates.type !== undefined) {
+        const validTypes = ['founder', 'pro', 'pro-plus', 'verified', 'featured', 'custom'];
+        if (!validTypes.includes(updates.type)) {
+          return res.status(400).json({ error: 'Invalid badge type' });
+        }
+      }
+
+      const badges = await dbUnified.read('badges');
+      const badgeIndex = badges.findIndex(b => b.id === id);
+
+      if (badgeIndex === -1) {
+        return res.status(404).json({ error: 'Badge not found' });
+      }
+
+      badges[badgeIndex] = {
+        ...badges[badgeIndex],
+        ...updates,
+        id, // Preserve ID
+        updatedAt: new Date().toISOString(),
+      };
+
+      await dbUnified.write('badges', badges);
+      res.json({ badge: badges[badgeIndex] });
+    } catch (error) {
+      console.error('Error updating badge:', error);
+      res.status(500).json({ error: 'Failed to update badge' });
+    }
+  }
+);
+
+/**
+ * DELETE /api/admin/badges/:id
+ * Delete a badge
+ */
+app.delete(
+  '/api/admin/badges/:id',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      const badges = await dbUnified.read('badges');
+      const filtered = badges.filter(b => b.id !== id);
+
+      if (filtered.length === badges.length) {
+        return res.status(404).json({ error: 'Badge not found' });
+      }
+
+      await dbUnified.write('badges', filtered);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error deleting badge:', error);
+      res.status(500).json({ error: 'Failed to delete badge' });
+    }
+  }
+);
+
+/**
+ * POST /api/admin/suppliers/:supplierId/badges/:badgeId
+ * Award a badge to a supplier
+ */
+app.post(
+  '/api/admin/suppliers/:supplierId/badges/:badgeId',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    try {
+      const { supplierId, badgeId } = req.params;
+
+      const suppliers = await dbUnified.read('suppliers');
+      const supplierIndex = suppliers.findIndex(s => s.id === supplierId);
+
+      if (supplierIndex === -1) {
+        return res.status(404).json({ error: 'Supplier not found' });
+      }
+
+      if (!suppliers[supplierIndex].badges) {
+        suppliers[supplierIndex].badges = [];
+      }
+
+      if (!suppliers[supplierIndex].badges.includes(badgeId)) {
+        suppliers[supplierIndex].badges.push(badgeId);
+        await dbUnified.write('suppliers', suppliers);
+      }
+
+      res.json({ success: true, supplier: suppliers[supplierIndex] });
+    } catch (error) {
+      console.error('Error awarding badge:', error);
+      res.status(500).json({ error: 'Failed to award badge' });
+    }
+  }
+);
+
+/**
+ * DELETE /api/admin/suppliers/:supplierId/badges/:badgeId
+ * Remove a badge from a supplier
+ */
+app.delete(
+  '/api/admin/suppliers/:supplierId/badges/:badgeId',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    try {
+      const { supplierId, badgeId } = req.params;
+
+      const suppliers = await dbUnified.read('suppliers');
+      const supplierIndex = suppliers.findIndex(s => s.id === supplierId);
+
+      if (supplierIndex === -1) {
+        return res.status(404).json({ error: 'Supplier not found' });
+      }
+
+      if (suppliers[supplierIndex].badges) {
+        suppliers[supplierIndex].badges = suppliers[supplierIndex].badges.filter(
+          b => b !== badgeId
+        );
+        await dbUnified.write('suppliers', suppliers);
+      }
+
+      res.json({ success: true, supplier: suppliers[supplierIndex] });
+    } catch (error) {
+      console.error('Error removing badge:', error);
+      res.status(500).json({ error: 'Failed to remove badge' });
+    }
+  }
+);
+
+/**
+ * POST /api/admin/users/:userId/badges/:badgeId
+ * Award a badge to a user
+ */
+app.post(
+  '/api/admin/users/:userId/badges/:badgeId',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    try {
+      const { userId, badgeId } = req.params;
+
+      const users = await dbUnified.read('users');
+      const userIndex = users.findIndex(u => u.id === userId);
+
+      if (userIndex === -1) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      if (!users[userIndex].badges) {
+        users[userIndex].badges = [];
+      }
+
+      if (!users[userIndex].badges.includes(badgeId)) {
+        users[userIndex].badges.push(badgeId);
+        await dbUnified.write('users', users);
+      }
+
+      res.json({ success: true, user: users[userIndex] });
+    } catch (error) {
+      console.error('Error awarding badge:', error);
+      res.status(500).json({ error: 'Failed to award badge' });
+    }
+  }
+);
+
+/**
+ * DELETE /api/admin/users/:userId/badges/:badgeId
+ * Remove a badge from a user
+ */
+app.delete(
+  '/api/admin/users/:userId/badges/:badgeId',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    try {
+      const { userId, badgeId } = req.params;
+
+      const users = await dbUnified.read('users');
+      const userIndex = users.findIndex(u => u.id === userId);
+
+      if (userIndex === -1) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      if (users[userIndex].badges) {
+        users[userIndex].badges = users[userIndex].badges.filter(b => b !== badgeId);
+        await dbUnified.write('users', users);
+      }
+
+      res.json({ success: true, user: users[userIndex] });
+    } catch (error) {
+      console.error('Error removing badge:', error);
+      res.status(500).json({ error: 'Failed to remove badge' });
+    }
+  }
+);
+
 // ---------- Photo Moderation ----------
 
 /**
@@ -1763,6 +2078,53 @@ app.get('/api/packages/featured', async (_req, res) => {
         supplier_name: supplier ? supplier.name : null,
       };
     });
+
+  res.json({ items });
+});
+
+// Spotlight packages - randomly selected packages that rotate hourly
+app.get('/api/packages/spotlight', async (_req, res) => {
+  const packages = await dbUnified.read('packages');
+  const suppliers = await dbUnified.read('suppliers');
+
+  // Create a suppliers lookup map for O(1) access
+  const suppliersMap = new Map(suppliers.map(s => [s.id, s]));
+
+  // Get all approved packages
+  const approvedPackages = packages.filter(p => p.approved);
+
+  // Use current hour as seed for consistent selection within the hour
+  const now = new Date();
+  const hourSeed =
+    now.getUTCFullYear() * 10000 +
+    (now.getUTCMonth() + 1) * 100 +
+    now.getUTCDate() * 24 +
+    now.getUTCHours();
+
+  // Shuffle packages using the hour seed for deterministic randomness
+  // Using a Linear Congruential Generator (LCG) for seeded random number generation
+  // Constants from Numerical Recipes (widely used and tested LCG parameters)
+  const LCG_MULTIPLIER = 9301;
+  const LCG_INCREMENT = 49297;
+  const LCG_MODULUS = 233280;
+
+  const shuffled = [...approvedPackages];
+  let seed = hourSeed;
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    // Generate next pseudo-random number using LCG formula
+    seed = (seed * LCG_MULTIPLIER + LCG_INCREMENT) % LCG_MODULUS;
+    const j = Math.floor((seed / LCG_MODULUS) * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+
+  // Select up to 6 spotlight packages
+  const items = shuffled.slice(0, 6).map(pkg => {
+    const supplier = suppliersMap.get(pkg.supplierId);
+    return {
+      ...pkg,
+      supplier_name: supplier ? supplier.name : null,
+    };
+  });
 
   res.json({ items });
 });

@@ -130,6 +130,123 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
+  // Load spotlight packages (same logic as featured but different endpoint)
+  fetch('/api/packages/spotlight')
+    .then(res => res.json())
+    .then(data => {
+      const container = document.getElementById('spotlight-packages');
+      if (!container) {
+        console.warn('Spotlight packages container not found');
+        return;
+      }
+
+      if (!data.items || data.items.length === 0) {
+        container.innerHTML = '<p class="small">No spotlight packages available yet.</p>';
+        return;
+      }
+
+      // Check if Carousel class is available
+      if (typeof Carousel === 'undefined') {
+        console.error('Carousel class not loaded. Rendering fallback.');
+        // Fallback: render simple grid without carousel functionality
+        // Helper to safely escape HTML
+        const escape = text => {
+          const div = document.createElement('div');
+          div.textContent = text || '';
+          return div.innerHTML;
+        };
+
+        // Validate and sanitize URLs to prevent XSS
+        const sanitizeUrl = url => {
+          if (!url) {
+            return '/assets/images/placeholder-package.jpg';
+          }
+          const urlStr = String(url);
+          // Block javascript:, data:, vbscript:, and file: URLs
+          if (/^(javascript|data|vbscript|file):/i.test(urlStr)) {
+            return '/assets/images/placeholder-package.jpg';
+          }
+          return escape(urlStr);
+        };
+
+        // Validate slug for URL safety
+        const validateSlug = (value, fallbackId) => {
+          const slugStr = String(value || '');
+          // Only allow alphanumeric, hyphens, and underscores
+          const cleaned = slugStr.replace(/[^a-zA-Z0-9_-]/g, '');
+          // Fall back to provided id if slug becomes empty after cleaning
+          return cleaned || String(fallbackId || 'unknown');
+        };
+
+        // Format price with £ symbol if it's a number
+        const formatPrice = priceDisplay => {
+          if (!priceDisplay) {
+            return 'Contact for pricing';
+          }
+          const priceStr = String(priceDisplay);
+          // If it's a plain number (integer or decimal), format as £X
+          if (/^\d+(\.\d+)?$/.test(priceStr)) {
+            return `£${priceStr}`;
+          }
+          // Otherwise return as-is
+          return priceStr;
+        };
+
+        container.innerHTML = data.items
+          .map(item => {
+            const title = escape(item.title || 'Untitled Package');
+            const supplierName = escape(item.supplier_name || '');
+            const description = escape(item.description || '');
+            const truncDesc =
+              description.length > 100 ? `${description.substring(0, 100)}...` : description;
+            const price = escape(formatPrice(item.price_display || item.price));
+            const imgSrc = sanitizeUrl(item.image);
+            const slug = encodeURIComponent(validateSlug(item.slug, item.id));
+
+            return `
+            <div class="card featured-fallback-card">
+              <a href="/package.html?slug=${slug}" class="featured-fallback-link">
+                <img src="${imgSrc}" alt="${title}" class="featured-fallback-img">
+                <div class="featured-fallback-content">
+                  <h3 class="featured-fallback-title">${title}</h3>
+                  ${supplierName ? `<p class="featured-fallback-supplier">${supplierName}</p>` : ''}
+                  <p class="featured-fallback-desc">${truncDesc}</p>
+                  <div class="featured-fallback-price">${price}</div>
+                </div>
+              </a>
+            </div>
+          `;
+          })
+          .join('');
+        return;
+      }
+
+      // Initialize carousel
+      try {
+        const carousel = new Carousel('spotlight-packages', {
+          itemsPerView: 3,
+          itemsPerViewTablet: 2,
+          itemsPerViewMobile: 1,
+          autoScroll: true,
+          autoScrollInterval: 5000,
+        });
+        carousel.setItems(data.items);
+      } catch (error) {
+        console.error('Failed to initialize spotlight carousel:', error);
+        // Fallback to simple list on error
+        container.innerHTML =
+          '<p class="small">Spotlight packages are temporarily unavailable.</p>';
+      }
+    })
+    .catch(error => {
+      console.error('Failed to load spotlight packages:', error);
+      const container = document.getElementById('spotlight-packages');
+      if (container) {
+        container.innerHTML =
+          '<p class="small">Unable to load spotlight packages. Please try again later.</p>';
+      }
+    });
+
   // Show notification bell for logged-in users
   const user = localStorage.getItem('user');
   if (user) {
