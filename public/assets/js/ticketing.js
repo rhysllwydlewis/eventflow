@@ -22,6 +22,17 @@ import {
   isFirebaseAvailable,
 } from './firebase-config.js';
 
+/**
+ * Show a toast notification if Toast library is available
+ * @param {string} type - 'success' | 'error' | 'warning' | 'info'
+ * @param {string} message - Message to display
+ */
+function showToastIfAvailable(type, message) {
+  if (typeof Toast !== 'undefined' && Toast[type]) {
+    Toast[type](message);
+  }
+}
+
 class TicketingSystem {
   constructor() {
     this.unsubscribers = [];
@@ -249,9 +260,7 @@ class TicketingSystem {
     } catch (error) {
       console.error('Error setting up ticket listener:', error);
       // Show user-friendly message
-      if (typeof Toast !== 'undefined') {
-        Toast.error('Unable to load tickets. Please refresh the page.');
-      }
+      showToastIfAvailable('error', 'Unable to load tickets. Please refresh the page.');
       callback([]);
       return () => {};
     }
@@ -268,16 +277,12 @@ class TicketingSystem {
         callback(data.tickets || []);
       } else {
         console.error('Failed to fetch tickets:', response.status, response.statusText);
-        if (typeof Toast !== 'undefined') {
-          Toast.error('Unable to load tickets. Please try again later.');
-        }
+        showToastIfAvailable('error', 'Unable to load tickets. Please try again later.');
         callback([]);
       }
     } catch (error) {
       console.error('Error fetching tickets via API:', error);
-      if (typeof Toast !== 'undefined') {
-        Toast.error('Network error loading tickets. Please check your connection.');
-      }
+      showToastIfAvailable('error', 'Network error loading tickets. Please check your connection.');
       callback([]);
     }
   }
