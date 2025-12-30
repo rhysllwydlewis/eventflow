@@ -832,3 +832,27 @@ html[data-theme="dark"] .thread-item {
 .h-100 {
   height: 100%;
 }
+
+/* ============================================
+   ADMIN PANEL CENTERING FIX
+   ============================================ */
+
+/* Ensure admin content is properly centered with no left offset */
+body.has-admin-navbar {
+  margin-left: 0 !important;
+  padding-left: 0 !important;
+}
+
+.admin-main-content {
+  margin-left: auto !important;
+  margin-right: auto !important;
+  padding-left: 24px !important;
+  padding-right: 24px !important;
+}
+
+/* Remove any potential sidebar spacing */
+.admin-sidebar,
+.sidebar-spacer {
+  display: none !important;
+}
+
