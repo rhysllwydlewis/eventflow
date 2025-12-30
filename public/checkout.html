@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Checkout — EventFlow</title>
+    <meta name="description" content="Complete your payment securely with EventFlow" />
+    
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="/assets/css/styles.css" />
+    <link rel="stylesheet" href="/assets/css/components.css" />
+    <link rel="icon" href="/favicon.svg" />
+    
+    <style>
+      .checkout-container {
+        max-width: 800px;
+        margin: 3rem auto;
+        padding: 0 1rem;
+      }
+      
+      .checkout-header {
+        text-align: center;
+        margin-bottom: 3rem;
+      }
+      
+      .checkout-header h1 {
+        font-size: 2.5rem;
+        margin-bottom: 0.5rem;
+      }
+      
+      .checkout-header p {
+        color: #666;
+        font-size: 1.1rem;
+      }
+      
+      .pricing-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 2rem;
+        margin-bottom: 3rem;
+      }
+      
+      .pricing-card {
+        background: white;
+        border: 2px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 2rem;
+        text-align: center;
+        transition: all 0.3s ease;
+      }
+      
+      .pricing-card:hover {
+        border-color: #4f46e5;
+        box-shadow: 0 8px 24px rgba(79, 70, 229, 0.1);
+        transform: translateY(-4px);
+      }
+      
+      .pricing-card.featured {
+        border-color: #4f46e5;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+      }
+      
+      .pricing-card.featured h3,
+      .pricing-card.featured .price,
+      .pricing-card.featured .features {
+        color: white;
+      }
+      
+      .pricing-card h3 {
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
+      }
+      
+      .pricing-card .price {
+        font-size: 2.5rem;
+        font-weight: bold;
+        margin: 1rem 0;
+      }
+      
+      .pricing-card .price small {
+        font-size: 1rem;
+        opacity: 0.7;
+      }
+      
+      .pricing-card .features {
+        list-style: none;
+        padding: 0;
+        margin: 1.5rem 0;
+        text-align: left;
+      }
+      
+      .pricing-card .features li {
+        padding: 0.5rem 0;
+        position: relative;
+        padding-left: 1.5rem;
+      }
+      
+      .pricing-card .features li::before {
+        content: "✓";
+        position: absolute;
+        left: 0;
+        color: #10b981;
+        font-weight: bold;
+      }
+      
+      .pricing-card.featured .features li::before {
+        color: white;
+      }
+      
+      .btn-checkout {
+        display: inline-block;
+        padding: 0.75rem 2rem;
+        background: #4f46e5;
+        color: white;
+        text-decoration: none;
+        border-radius: 8px;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        width: 100%;
+        font-size: 1rem;
+      }
+      
+      .btn-checkout:hover {
+        background: #4338ca;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+      }
+      
+      .btn-checkout:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      
+      .pricing-card.featured .btn-checkout {
+        background: white;
+        color: #4f46e5;
+      }
+      
+      .pricing-card.featured .btn-checkout:hover {
+        background: #f3f4f6;
+      }
+      
+      .security-notice {
+        text-align: center;
+        padding: 2rem;
+        background: #f9fafb;
+        border-radius: 8px;
+        margin-top: 3rem;
+      }
+      
+      .security-notice p {
+        color: #666;
+        margin: 0.5rem 0;
+      }
+      
+      .security-notice .icons {
+        font-size: 2rem;
+        margin-top: 1rem;
+      }
+      
+      .error-message {
+        background: #fee;
+        color: #c00;
+        padding: 1rem;
+        border-radius: 8px;
+        margin-bottom: 2rem;
+        text-align: center;
+      }
+      
+      .loading {
+        text-align: center;
+        padding: 3rem;
+      }
+      
+      .spinner {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #4f46e5;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto;
+      }
+      
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Header -->
+    <header class="header" role="banner">
+      <div class="container header-inner">
+        <a class="brand" href="/" aria-label="EventFlow home">
+          <span class="logo" aria-hidden="true"></span>
+          <span class="brand-text">EventFlow</span>
+        </a>
+        <div class="header-actions">
+          <nav class="nav nav-inline" aria-label="Quick navigation">
+            <a href="/start.html" class="nav-link nav-main">Plan an Event</a>
+            <a href="/suppliers.html" class="nav-link nav-main">Suppliers</a>
+            <a href="/pricing.html" class="nav-link nav-main">Pricing</a>
+            <a href="/blog.html" class="nav-link nav-main">Blog</a>
+            <a href="/auth.html" class="nav-link nav-main nav-main-login">Log in</a>
+          </nav>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="section">
+      <div class="checkout-container">
+        <div class="checkout-header">
+          <h1>Choose Your Plan</h1>
+          <p>Select a plan and complete your payment securely with Stripe</p>
+        </div>
+
+        <div id="error-container"></div>
+        <div id="checkout-content" class="loading">
+          <div class="spinner"></div>
+          <p>Loading checkout options...</p>
+        </div>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="container">
+        <p>&copy; 2024 EventFlow. All rights reserved.</p>
+        <p>
+          <a href="/privacy.html">Privacy Policy</a> |
+          <a href="/terms.html">Terms of Service</a>
+        </p>
+      </div>
+    </footer>
+
+    <script>
+      // Pricing plans configuration
+      const PLANS = {
+        monthly: {
+          name: 'Pro Monthly',
+          price: 9.99,
+          priceDisplay: '£9.99',
+          interval: 'month',
+          features: [
+            'Priority listing in search results',
+            'Featured badge on your profile',
+            'Advanced analytics dashboard',
+            'Up to 50 bookings per month',
+            'Email support',
+          ],
+        },
+        yearly: {
+          name: 'Pro Yearly',
+          price: 99.99,
+          priceDisplay: '£99.99',
+          interval: 'year',
+          features: [
+            'All monthly features',
+            '17% savings (2 months free)',
+            'Priority support',
+            'Early access to new features',
+            'Annual review with account manager',
+          ],
+          featured: true,
+        },
+      };
+
+      // Check authentication
+      async function checkAuth() {
+        try {
+          const response = await fetch('/api/auth/me', {
+            credentials: 'include',
+          });
+          
+          if (!response.ok) {
+            window.location.href = '/auth.html?redirect=' + encodeURIComponent(window.location.pathname);
+            return false;
+          }
+          
+          return true;
+        } catch (error) {
+          console.error('Auth check failed:', error);
+          showError('Failed to verify authentication');
+          return false;
+        }
+      }
+
+      // Display error message
+      function showError(message) {
+        const errorContainer = document.getElementById('error-container');
+        errorContainer.innerHTML = `
+          <div class="error-message">
+            <strong>Error:</strong> ${message}
+          </div>
+        `;
+      }
+
+      // Render pricing cards
+      function renderPricingCards() {
+        const content = document.getElementById('checkout-content');
+        content.className = '';
+        content.innerHTML = `
+          <div class="pricing-cards">
+            ${Object.entries(PLANS).map(([key, plan]) => `
+              <div class="pricing-card ${plan.featured ? 'featured' : ''}">
+                ${plan.featured ? '<div style="background: rgba(255,255,255,0.2); padding: 0.5rem; border-radius: 4px; margin-bottom: 1rem; font-weight: bold;">BEST VALUE</div>' : ''}
+                <h3>${plan.name}</h3>
+                <div class="price">
+                  ${plan.priceDisplay}
+                  <small>/${plan.interval}</small>
+                </div>
+                <ul class="features">
+                  ${plan.features.map(feature => `<li>${feature}</li>`).join('')}
+                </ul>
+                <button 
+                  class="btn-checkout" 
+                  data-plan="${key}"
+                  onclick="handleCheckout('${key}')">
+                  Choose ${plan.name}
+                </button>
+              </div>
+            `).join('')}
+          </div>
+          
+          <div class="security-notice">
+            <h3>🔒 Secure Payment Processing</h3>
+            <p>All payments are processed securely through Stripe.</p>
+            <p>Your payment information is encrypted and never stored on our servers.</p>
+            <div class="icons">
+              🔐 💳 ✓
+            </div>
+          </div>
+        `;
+      }
+
+      // Handle checkout
+      async function handleCheckout(planKey) {
+        const plan = PLANS[planKey];
+        const button = document.querySelector(`button[data-plan="${planKey}"]`);
+        
+        if (!button) return;
+        
+        // Disable button and show loading
+        button.disabled = true;
+        button.textContent = 'Processing...';
+
+        try {
+          // Note: In production, you would use Stripe Price IDs from your Stripe dashboard
+          // For now, we'll create a one-time payment
+          const amount = Math.round(plan.price * 100); // Convert to pence/cents
+
+          const response = await fetch('/api/payments/create-checkout-session', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+              type: 'one_time',
+              amount: amount,
+              currency: 'gbp',
+              planName: plan.name,
+            }),
+          });
+
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(data.error || 'Failed to create checkout session');
+          }
+
+          // Redirect to Stripe checkout
+          if (data.url) {
+            window.location.href = data.url;
+          } else {
+            throw new Error('No checkout URL returned');
+          }
+        } catch (error) {
+          console.error('Checkout error:', error);
+          showError(error.message);
+          button.disabled = false;
+          button.textContent = `Choose ${plan.name}`;
+        }
+      }
+
+      // Initialize page
+      async function init() {
+        const isAuthenticated = await checkAuth();
+        if (isAuthenticated) {
+          renderPricingCards();
+        }
+      }
+
+      // Run on page load
+      init();
+    </script>
+  </body>
+</html>

@@ -361,6 +361,70 @@ const badgeSchema = {
 };
 
 /**
+ * Payment Schema
+ * Stores payment and subscription records from Stripe
+ */
+const paymentSchema = {
+  validator: {
+    $jsonSchema: {
+      bsonType: 'object',
+      required: ['id', 'userId', 'amount', 'currency', 'status'],
+      properties: {
+        id: { bsonType: 'string', description: 'Unique payment identifier' },
+        stripePaymentId: { bsonType: 'string', description: 'Stripe payment intent ID' },
+        stripeCustomerId: { bsonType: 'string', description: 'Stripe customer ID' },
+        stripeSubscriptionId: {
+          bsonType: 'string',
+          description: 'Stripe subscription ID (if applicable)',
+        },
+        userId: { bsonType: 'string', description: 'User ID who made the payment' },
+        amount: { bsonType: 'number', description: 'Payment amount' },
+        currency: { bsonType: 'string', description: 'Payment currency (e.g., GBP, USD)' },
+        status: {
+          enum: ['pending', 'succeeded', 'failed', 'cancelled', 'refunded'],
+          description: 'Payment status',
+        },
+        type: {
+          enum: ['one_time', 'subscription'],
+          description: 'Payment type',
+        },
+        subscriptionDetails: {
+          bsonType: 'object',
+          description: 'Subscription information if type is subscription',
+          properties: {
+            planId: { bsonType: 'string', description: 'Subscription plan ID' },
+            planName: { bsonType: 'string', description: 'Subscription plan name' },
+            interval: {
+              enum: ['month', 'year'],
+              description: 'Billing interval',
+            },
+            currentPeriodStart: {
+              bsonType: 'string',
+              description: 'Current billing period start date',
+            },
+            currentPeriodEnd: {
+              bsonType: 'string',
+              description: 'Current billing period end date',
+            },
+            cancelAtPeriodEnd: {
+              bsonType: 'bool',
+              description: 'Whether subscription will cancel at period end',
+            },
+            canceledAt: { bsonType: 'string', description: 'When subscription was canceled' },
+          },
+        },
+        metadata: {
+          bsonType: 'object',
+          description: 'Additional metadata from Stripe',
+        },
+        createdAt: { bsonType: 'string', description: 'Payment creation timestamp' },
+        updatedAt: { bsonType: 'string', description: 'Last update timestamp' },
+      },
+    },
+  },
+};
+
+/**
  * Initialize collections with schemas and indexes
  * @param {Object} db - MongoDB database instance
  */
@@ -376,6 +440,7 @@ async function initializeCollections(db) {
     threads: threadSchema,
     events: eventSchema,
     badges: badgeSchema,
+    payments: paymentSchema,
   };
 
   for (const [name, schema] of Object.entries(collections)) {
@@ -469,6 +534,15 @@ async function createIndexes(db) {
     await db.collection('badges').createIndex({ slug: 1 }, { unique: true, sparse: true });
     await db.collection('badges').createIndex({ type: 1 });
     await db.collection('badges').createIndex({ active: 1 });
+
+    // Payment indexes
+    await db.collection('payments').createIndex({ id: 1 }, { unique: true });
+    await db.collection('payments').createIndex({ userId: 1 });
+    await db.collection('payments').createIndex({ stripePaymentId: 1 }, { sparse: true });
+    await db.collection('payments').createIndex({ stripeCustomerId: 1 }, { sparse: true });
+    await db.collection('payments').createIndex({ stripeSubscriptionId: 1 }, { sparse: true });
+    await db.collection('payments').createIndex({ status: 1 });
+    await db.collection('payments').createIndex({ createdAt: 1 });
 
     console.log('Database indexes created successfully');
   } catch (error) {
