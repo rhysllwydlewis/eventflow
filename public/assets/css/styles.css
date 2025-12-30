@@ -675,7 +675,7 @@ body.nav-open .nav-menu{
 
 @media (max-width:720px){
   .nav-inline{
-    display:flex;
+    display:none;
   }
   .nav-menu{
     display:flex;
