@@ -55,31 +55,32 @@ let currentSubscription = null;
  */
 async function initSubscriptionPage() {
   try {
-    console.log('Initializing subscription page...');
+    console.log('[Subscription] Initializing subscription page...');
 
     // Check authentication with retry logic
     let user = await checkAuth();
 
     // Retry once if auth check fails (handles race conditions)
     if (!user) {
-      console.log('First auth check failed, retrying...');
+      console.log('[Subscription] First auth check failed, retrying...');
       await new Promise(resolve => setTimeout(resolve, 500));
       user = await checkAuth();
     }
 
     if (!user) {
-      console.error('Authentication required - redirecting to login');
+      console.error('[Subscription] Authentication required - redirecting to login');
       // Preserve the current URL to return after login
       const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
       window.location.href = `/auth.html?redirect=${returnUrl}`;
       return;
     }
 
-    console.log('User authenticated:', user.email, 'Role:', user.role);
+    console.log('[Subscription] User authenticated:', user.email, 'Role:', user.role);
     currentUser = user;
 
     // Verify user is a supplier
     if (user.role !== 'supplier') {
+      console.error('[Subscription] User is not a supplier, role:', user.role);
       showError(
         'This page is only available to suppliers. Please register as a supplier to access subscription plans.'
       );
@@ -87,15 +88,20 @@ async function initSubscriptionPage() {
     }
 
     // Load current subscription status
+    console.log('[Subscription] Loading subscription status...');
     await loadSubscriptionStatus();
 
     // Render subscription plans
+    console.log('[Subscription] Rendering subscription plans...');
     renderSubscriptionPlans();
 
     // Set up manage billing button
     setupBillingPortal();
+    
+    console.log('[Subscription] Initialization complete');
   } catch (error) {
-    console.error('Error initializing subscription page:', error);
+    console.error('[Subscription] Error initializing subscription page:', error);
+    console.error('[Subscription] Error stack:', error.stack);
     showError(
       'Failed to load subscription information. Please refresh the page or contact support.'
     );
@@ -279,22 +285,32 @@ function renderSubscriptionPlans() {
  * Handle subscription button click
  */
 async function handleSubscribe(planId) {
+  console.log('[Subscription] handleSubscribe called with planId:', planId);
+  
   const plan = PLANS[planId];
   if (!plan) {
+    console.error('[Subscription] Invalid plan ID:', planId);
     showError('Invalid plan selected');
     return;
   }
+
+  console.log('[Subscription] Plan selected:', plan.name, 'Price:', plan.price);
 
   const button = document.querySelector(`button[data-plan-id="${planId}"]`);
   if (button) {
     button.disabled = true;
     button.textContent = 'Processing...';
+    console.log('[Subscription] Button found and disabled');
+  } else {
+    console.warn('[Subscription] Button not found for plan:', planId);
   }
 
   try {
     // For now, use one-time payment
     // In production, you'd create a Stripe Price ID for each plan
     const amount = Math.round(plan.price * 100); // Convert to pence
+    
+    console.log('[Subscription] Creating checkout session with amount:', amount);
 
     const response = await fetch('/api/payments/create-checkout-session', {
       method: 'POST',
@@ -310,25 +326,36 @@ async function handleSubscribe(planId) {
       }),
     });
 
+    console.log('[Subscription] API response status:', response.status);
+
     const data = await response.json();
+    console.log('[Subscription] API response data:', data);
 
     if (!response.ok) {
-      throw new Error(data.error || 'Failed to create checkout session');
+      const errorMessage = data.error || data.message || 'Failed to create checkout session';
+      console.error('[Subscription] API error:', errorMessage, 'Full response:', data);
+      throw new Error(errorMessage);
     }
 
     // Redirect to Stripe checkout
     if (data.url) {
+      console.log('[Subscription] Redirecting to Stripe checkout:', data.url);
       window.location.href = data.url;
     } else {
-      throw new Error('No checkout URL returned');
+      console.error('[Subscription] No checkout URL in response:', data);
+      throw new Error('No checkout URL returned. Please contact support.');
     }
   } catch (error) {
-    console.error('Subscription error:', error);
-    showError(error.message || 'Failed to start subscription. Please try again.');
+    console.error('[Subscription] Error occurred:', error);
+    console.error('[Subscription] Error stack:', error.stack);
+    
+    const errorMessage = error.message || 'Failed to start subscription. Please try again.';
+    showError(errorMessage);
 
     if (button) {
       button.disabled = false;
       button.textContent = currentSubscription ? 'Switch Plan' : 'Start Free Trial';
+      console.log('[Subscription] Button re-enabled');
     }
   }
 }
@@ -348,6 +375,8 @@ function setupBillingPortal() {
  */
 async function openBillingPortal(event) {
   try {
+    console.log('[Subscription] Opening billing portal...');
+    
     const button = event.target;
     button.disabled = true;
     button.textContent = 'Loading...';
@@ -363,26 +392,37 @@ async function openBillingPortal(event) {
       }),
     });
 
+    console.log('[Subscription] Portal API response status:', response.status);
+
     const data = await response.json();
+    console.log('[Subscription] Portal API response data:', data);
 
     if (!response.ok) {
-      throw new Error(data.error || 'Failed to open billing portal');
+      const errorMessage = data.error || data.message || 'Failed to open billing portal';
+      console.error('[Subscription] Portal API error:', errorMessage);
+      throw new Error(errorMessage);
     }
 
     // Redirect to Stripe billing portal
     if (data.url) {
+      console.log('[Subscription] Redirecting to billing portal:', data.url);
       window.location.href = data.url;
     } else {
-      throw new Error('No portal URL returned');
+      console.error('[Subscription] No portal URL in response:', data);
+      throw new Error('No portal URL returned. Please contact support.');
     }
   } catch (error) {
-    console.error('Billing portal error:', error);
-    showError(error.message || 'Failed to open billing portal. Please try again.');
+    console.error('[Subscription] Billing portal error:', error);
+    console.error('[Subscription] Error stack:', error.stack);
+    
+    const errorMessage = error.message || 'Failed to open billing portal. Please try again.';
+    showError(errorMessage);
 
     if (event && event.target) {
       const button = event.target;
       button.disabled = false;
       button.textContent = 'Manage Billing';
+      console.log('[Subscription] Button re-enabled');
     }
   }
 }
@@ -391,21 +431,28 @@ async function openBillingPortal(event) {
  * Show error message
  */
 function showError(message) {
+  console.error('[Subscription] Showing error:', message);
+  
   const errorContainer = document.getElementById('error-message');
   if (errorContainer) {
     errorContainer.innerHTML = `
-      <div class="alert alert-error">
-        <strong>Error:</strong> ${message}
+      <div class="alert alert-error" style="background: #fee2e2; border: 1px solid #ef4444; color: #991b1b; padding: 1rem; border-radius: 8px; margin: 1rem 0;">
+        <strong>⚠️ Error:</strong> ${message}
       </div>
     `;
     errorContainer.style.display = 'block';
 
-    // Auto-hide after 5 seconds
+    // Scroll to error message
+    errorContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+    // Auto-hide after 10 seconds (increased from 5)
     setTimeout(() => {
       errorContainer.style.display = 'none';
-    }, 5000);
+    }, 10000);
   } else {
-    alert(message);
+    // Fallback to alert if container not found
+    console.warn('[Subscription] Error container not found, using alert');
+    alert(`Error: ${message}`);
   }
 }
 

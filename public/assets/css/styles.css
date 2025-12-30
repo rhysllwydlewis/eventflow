@@ -481,6 +481,7 @@ html[data-theme="dark"] .timeline-step::before{
   display:flex;
   align-items:center;
   gap:6px;
+  flex-wrap:nowrap;
 }
 .nav-inline .nav-main{
   font-size:.85rem;
@@ -490,6 +491,7 @@ html[data-theme="dark"] .timeline-step::before{
   background:rgba(255,255,255,.6);
   backdrop-filter:blur(8px);
   transition:background 140ms ease-out, transform 120ms ease-out, box-shadow 160ms ease-out;
+  white-space:nowrap;
 }
 .nav-inline .nav-main:hover{
   transform:translateY(-1px);
