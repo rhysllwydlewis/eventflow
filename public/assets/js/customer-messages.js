@@ -143,7 +143,6 @@ function openConversation(conversationId) {
     messages.forEach(message => {
       const timestamp = messagingSystem.formatFullTimestamp(message.timestamp);
       const isFromCustomer = message.senderType === 'customer';
-      const alignment = isFromCustomer ? 'right' : 'left';
       const bgColor = isFromCustomer ? '#3b82f6' : '#e4e4e7';
       const textColor = isFromCustomer ? '#fff' : '#1a1a1a';
 
