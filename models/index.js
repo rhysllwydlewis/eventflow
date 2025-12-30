@@ -138,6 +138,10 @@ const packageSchema = {
         slug: { bsonType: 'string', description: 'URL-friendly package slug' },
         description: { bsonType: 'string', description: 'Package description' },
         price: { bsonType: 'string', description: 'Package price' },
+        price_display: {
+          bsonType: 'string',
+          description: 'Display price (e.g., "From £500" or "Contact for pricing")',
+        },
         location: { bsonType: 'string', description: 'Package location' },
         image: { bsonType: 'string', description: 'Main package image URL' },
         gallery: {

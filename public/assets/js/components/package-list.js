@@ -335,7 +335,9 @@ class PackageList {
     const slug = escapeHtml(String(pkg.slug || ''));
     const title = escapeHtml(pkg.title);
     const description = escapeHtml(pkg.description || '');
-    const price = escapeHtml(pkg.price || 'Contact for price');
+    // Use price_display as primary source, fallback to price for consistency across all views
+    const priceValue = pkg.price_display || pkg.price || 'Contact for price';
+    const price = escapeHtml(priceValue);
     const location = pkg.location ? escapeHtml(pkg.location) : '';
 
     // Build supplier info section if available
