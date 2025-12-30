@@ -239,32 +239,39 @@
     </footer>
 
     <script>
-      // Pricing plans configuration
+      // Pricing plans configuration - aligned with SUBSCRIPTION-TIERS.md
       const PLANS = {
-        monthly: {
+        pro_monthly: {
           name: 'Pro Monthly',
-          price: 9.99,
-          priceDisplay: '£9.99',
+          price: 49.0,
+          priceDisplay: '£49',
           interval: 'month',
+          introductoryPrice: 49.0,
+          regularPrice: 99.0,
+          introductoryMonths: 3,
           features: [
+            'Lead quality scoring (High/Medium/Low)',
             'Priority listing in search results',
-            'Featured badge on your profile',
-            'Advanced analytics dashboard',
-            'Up to 50 bookings per month',
-            'Email support',
+            'Unlimited photos',
+            'Email & phone verification badges',
+            'Profile analytics dashboard',
+            'Priority support (24-hour response)',
           ],
         },
-        yearly: {
-          name: 'Pro Yearly',
-          price: 99.99,
-          priceDisplay: '£99.99',
-          interval: 'year',
+        featured_monthly: {
+          name: 'Featured Monthly',
+          price: 199.0,
+          priceDisplay: '£199',
+          interval: 'month',
           features: [
-            'All monthly features',
-            '17% savings (2 months free)',
-            'Priority support',
-            'Early access to new features',
-            'Annual review with account manager',
+            'All Pro features included',
+            'Homepage featured carousel',
+            'Top 3 positions in category pages',
+            'Business verification badge',
+            'Dedicated onboarding call',
+            'Monthly performance review',
+            'Export analytics to CSV',
+            'VIP support (4-hour response)',
           ],
           featured: true,
         },
@@ -308,12 +315,17 @@
           <div class="pricing-cards">
             ${Object.entries(PLANS).map(([key, plan]) => `
               <div class="pricing-card ${plan.featured ? 'featured' : ''}">
-                ${plan.featured ? '<div style="background: rgba(255,255,255,0.2); padding: 0.5rem; border-radius: 4px; margin-bottom: 1rem; font-weight: bold;">BEST VALUE</div>' : ''}
+                ${plan.featured ? '<div style="background: rgba(255,255,255,0.2); padding: 0.5rem; border-radius: 4px; margin-bottom: 1rem; font-weight: bold;">PREMIUM</div>' : ''}
                 <h3>${plan.name}</h3>
                 <div class="price">
                   ${plan.priceDisplay}
                   <small>/${plan.interval}</small>
                 </div>
+                ${plan.introductoryPrice && plan.regularPrice && plan.introductoryMonths ? `
+                  <div style="font-size: 0.875rem; color: #666; margin: 0.5rem 0;">
+                    First ${plan.introductoryMonths} months, then £${plan.regularPrice}/${plan.interval}
+                  </div>
+                ` : ''}
                 <ul class="features">
                   ${plan.features.map(feature => `<li>${feature}</li>`).join('')}
                 </ul>

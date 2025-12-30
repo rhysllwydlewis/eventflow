@@ -4,73 +4,45 @@
  * Replaces Google Pay/Firebase with Stripe implementation
  */
 
-// Subscription plans
+// Subscription plans - aligned with SUBSCRIPTION-TIERS.md
 const PLANS = {
   pro_monthly: {
     id: 'pro_monthly',
     name: 'Pro Monthly',
     tier: 'pro',
-    price: 39.0,
+    price: 49.0,
     billingCycle: 'monthly',
     trialDays: 14,
-    introductoryPrice: 39.0,
-    regularPrice: 59.0,
+    introductoryPrice: 49.0,
+    regularPrice: 99.0,
     introductoryMonths: 3,
     features: [
       'Pro supplier badge on profile',
+      'Lead quality scoring (High/Medium/Low)',
       'Priority listing in search results',
-      'Up to 50 event bookings per month',
-      'Email support',
+      'Unlimited photos',
+      'Email & phone verification badges',
+      'Profile analytics dashboard',
+      'Priority support (24-hour response)',
     ],
   },
-  pro_plus_monthly: {
-    id: 'pro_plus_monthly',
-    name: 'Pro+ Monthly',
-    tier: 'pro_plus',
+  featured_monthly: {
+    id: 'featured_monthly',
+    name: 'Featured Monthly',
+    tier: 'featured',
     price: 199.0,
     billingCycle: 'monthly',
     trialDays: 14,
     features: [
-      'Premium Pro+ badge on profile',
+      'Featured badge on profile',
       'All Pro features included',
-      'Unlimited event bookings',
-      'Advanced analytics dashboard',
-      'Priority phone support',
-      'Custom branding options',
-      'Featured in homepage carousel',
-    ],
-  },
-  pro_yearly: {
-    id: 'pro_yearly',
-    name: 'Pro Yearly',
-    tier: 'pro',
-    price: 468.0,
-    billingCycle: 'yearly',
-    trialDays: 28,
-    features: [
-      'Pro supplier badge on profile',
-      'Priority listing in search results',
-      'Up to 50 event bookings per month',
-      'Email support',
-      'Save £240 vs monthly billing',
-    ],
-  },
-  pro_plus_yearly: {
-    id: 'pro_plus_yearly',
-    name: 'Pro+ Yearly',
-    tier: 'pro_plus',
-    price: 2388.0,
-    billingCycle: 'yearly',
-    trialDays: 28,
-    features: [
-      'Premium Pro+ badge on profile',
-      'All Pro features included',
-      'Unlimited event bookings',
-      'Advanced analytics dashboard',
-      'Priority phone support',
-      'Custom branding options',
-      'Featured in homepage carousel',
-      'Save £1000 vs monthly billing',
+      'Homepage featured carousel placement',
+      'Top 3 positions in category pages',
+      'Business verification badge',
+      'Dedicated onboarding call',
+      'Monthly performance review',
+      'Export analytics to CSV',
+      'VIP support (4-hour response)',
     ],
   },
 };
@@ -223,21 +195,20 @@ function renderSubscriptionPlans() {
     .map(plan => {
       const isCurrentPlan =
         currentSubscription && currentSubscription.subscriptionDetails?.planId?.includes(plan.id);
-      const monthlyEquiv =
-        plan.billingCycle === 'yearly' ? (plan.price / 12).toFixed(2) : plan.price.toFixed(2);
+      const isFeatured = plan.tier === 'featured';
 
       return `
-      <div class="pricing-card ${plan.tier === 'pro_plus' ? 'featured' : ''}">
-        ${plan.tier === 'pro_plus' ? '<div class="popular-badge">MOST POPULAR</div>' : ''}
+      <div class="pricing-card ${isFeatured ? 'featured' : ''}">
+        ${isFeatured ? '<div class="popular-badge">PREMIUM</div>' : ''}
         <h3>${plan.name}</h3>
         <div class="price">
           £${plan.price.toFixed(2)}
-          <span class="period">/${plan.billingCycle === 'monthly' ? 'month' : 'year'}</span>
+          <span class="period">/month</span>
         </div>
         ${
-          plan.billingCycle === 'yearly'
+          plan.introductoryPrice && plan.regularPrice && plan.introductoryMonths
             ? `
-          <div class="price-note">£${monthlyEquiv}/month billed annually</div>
+          <div class="price-note">First ${plan.introductoryMonths} months, then £${plan.regularPrice}/month</div>
         `
             : ''
         }
