@@ -20,8 +20,8 @@ test.describe('Authentication Flow', () => {
     // Try to submit empty form
     await page.click('button[type="submit"]');
 
-    // Wait a moment for validation to process
-    await page.waitForTimeout(500);
+    // Wait for validation to process (webkit/Safari needs more time)
+    await page.waitForTimeout(1000);
 
     // Should show validation errors
     await expect(page.locator('.error, .alert-danger')).toBeVisible({ timeout: 10000 });
@@ -70,12 +70,12 @@ test.describe('Authentication Flow', () => {
     // Submit form
     await page.click('button[type="submit"]');
 
-    // Wait for response
-    await page.waitForTimeout(3000);
+    // Wait for response (webkit/Safari needs more time)
+    await page.waitForTimeout(4000);
 
     // Should show error message (either from validation or from API response)
     const errorMessage = page.locator('.error, .alert-danger, [role="alert"]');
-    await expect(errorMessage.first()).toBeVisible({ timeout: 5000 });
+    await expect(errorMessage.first()).toBeVisible({ timeout: 10000 });
   });
 
   test('should have CSRF protection', async ({ page }) => {
