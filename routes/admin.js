@@ -715,6 +715,133 @@ router.post('/suppliers/:id/verify', authRequired, roleRequired('admin'), (req, 
 });
 
 /**
+ * POST /api/admin/suppliers/:id/subscription
+ * Grant or update a supplier's subscription
+ * Body: { tier: 'pro' | 'pro_plus', days: number, endDate: string }
+ */
+router.post('/suppliers/:id/subscription', authRequired, roleRequired('admin'), (req, res) => {
+  const { tier, days, endDate } = req.body;
+  const suppliers = read('suppliers');
+  const supplierIndex = suppliers.findIndex(s => s.id === req.params.id);
+
+  if (supplierIndex < 0) {
+    return res.status(404).json({ error: 'Supplier not found' });
+  }
+
+  if (!tier || !['pro', 'pro_plus'].includes(tier)) {
+    return res.status(400).json({ error: 'Invalid tier. Must be "pro" or "pro_plus"' });
+  }
+
+  if (!days || days <= 0) {
+    return res.status(400).json({ error: 'Invalid duration. Must be positive number of days' });
+  }
+
+  const supplier = suppliers[supplierIndex];
+  const now = new Date().toISOString();
+  const expiryDate = endDate || new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
+
+  // Update subscription
+  supplier.subscription = {
+    tier: tier,
+    status: 'active',
+    startDate: now,
+    endDate: expiryDate,
+    grantedBy: req.user.id,
+    grantedAt: now,
+    autoRenew: false,
+  };
+  supplier.updatedAt = now;
+
+  // Backward compatibility
+  supplier.isPro = true;
+  supplier.proPlan = tier === 'pro_plus' ? 'Pro+' : 'Pro';
+  supplier.proPlanExpiry = expiryDate;
+
+  suppliers[supplierIndex] = supplier;
+  write('suppliers', suppliers);
+
+  // Create audit log
+  auditLog({
+    adminId: req.user.id,
+    adminEmail: req.user.email,
+    action: AUDIT_ACTIONS.SUPPLIER_UPDATED,
+    targetType: 'supplier',
+    targetId: supplier.id,
+    details: {
+      name: supplier.name,
+      action: 'subscription_granted',
+      tier: tier,
+      days: days,
+      expiryDate: expiryDate,
+    },
+  });
+
+  res.json({
+    message: `${tier === 'pro_plus' ? 'Pro+' : 'Pro'} subscription granted successfully`,
+    supplier: {
+      id: supplier.id,
+      name: supplier.name,
+      subscription: supplier.subscription,
+    },
+  });
+});
+
+/**
+ * DELETE /api/admin/suppliers/:id/subscription
+ * Remove a supplier's subscription
+ */
+router.delete('/suppliers/:id/subscription', authRequired, roleRequired('admin'), (req, res) => {
+  const suppliers = read('suppliers');
+  const supplierIndex = suppliers.findIndex(s => s.id === req.params.id);
+
+  if (supplierIndex < 0) {
+    return res.status(404).json({ error: 'Supplier not found' });
+  }
+
+  const supplier = suppliers[supplierIndex];
+  const now = new Date().toISOString();
+
+  // Remove subscription
+  supplier.subscription = {
+    tier: 'free',
+    status: 'cancelled',
+    cancelledAt: now,
+    cancelledBy: req.user.id,
+  };
+  supplier.updatedAt = now;
+
+  // Backward compatibility
+  supplier.isPro = false;
+  supplier.proPlan = null;
+  supplier.proPlanExpiry = null;
+
+  suppliers[supplierIndex] = supplier;
+  write('suppliers', suppliers);
+
+  // Create audit log
+  auditLog({
+    adminId: req.user.id,
+    adminEmail: req.user.email,
+    action: AUDIT_ACTIONS.SUPPLIER_UPDATED,
+    targetType: 'supplier',
+    targetId: supplier.id,
+    details: {
+      name: supplier.name,
+      action: 'subscription_removed',
+    },
+  });
+
+  res.json({
+    message: 'Subscription removed successfully',
+    supplier: {
+      id: supplier.id,
+      name: supplier.name,
+      subscription: supplier.subscription,
+    },
+  });
+});
+
+/**
  * GET /api/admin/suppliers/pending-verification
  * Get suppliers awaiting verification
  */

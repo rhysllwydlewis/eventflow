@@ -41,7 +41,6 @@ const PLANS = {
       'Priority listing in search results',
       'Up to 50 event bookings per month',
       'Email support',
-      '£39/month for first 3 months, then £59/month',
     ],
   },
   pro_plus_monthly: {
@@ -51,6 +50,9 @@ const PLANS = {
     price: 199.0,
     billingCycle: 'monthly',
     trialDays: 14,
+    introductoryPrice: null,
+    regularPrice: null,
+    introductoryMonths: null,
     features: [
       'Premium Pro+ badge on profile',
       'All Pro features included',
@@ -68,6 +70,9 @@ const PLANS = {
     price: 468.0,
     billingCycle: 'yearly',
     trialDays: 28,
+    introductoryPrice: null,
+    regularPrice: null,
+    introductoryMonths: null,
     features: [
       'Pro supplier badge on profile',
       'Priority listing in search results',
@@ -83,6 +88,9 @@ const PLANS = {
     price: 2388.0,
     billingCycle: 'yearly',
     trialDays: 28,
+    introductoryPrice: null,
+    regularPrice: null,
+    introductoryMonths: null,
     features: [
       'Premium Pro+ badge on profile',
       'All Pro features included',
@@ -264,16 +272,20 @@ function createPlanCard(plan) {
 
   // Show introductory pricing for Pro plan
   let priceHtml = '';
-  if (plan.introductoryPrice && plan.regularPrice) {
+  if (plan.introductoryPrice && plan.regularPrice && plan.introductoryMonths) {
     priceHtml = `
       <div class="plan-price">
         <span class="price">£${plan.introductoryPrice.toFixed(2)}</span>
         <span class="period">/${plan.billingCycle}</span>
       </div>
-      <p class="small" style="margin-top: 0.5rem; color: #666;">
+      <p class="plan-pricing-note">
         £${plan.regularPrice.toFixed(2)}/${plan.billingCycle} after ${plan.introductoryMonths} months
       </p>
     `;
+
+    // Add introductory pricing info to features dynamically
+    const pricingFeature = `£${plan.introductoryPrice.toFixed(2)}/${plan.billingCycle} for first ${plan.introductoryMonths} months, then £${plan.regularPrice.toFixed(2)}/${plan.billingCycle}`;
+    plan.features = [...plan.features, pricingFeature];
   } else {
     priceHtml = `
       <div class="plan-price">
