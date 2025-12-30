@@ -42,46 +42,46 @@
 <h1>Your dashboard</h1>
 
 <!-- Welcome Section -->
-<div class="card" style="background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);color:white;margin-bottom:1rem;">
-  <h2 style="margin:0 0 0.5rem 0;color:white;">Welcome to EventFlow!</h2>
-  <p class="small" style="color:rgba(255,255,255,0.9);margin:0;">Plan your perfect event with our curated suppliers.</p>
+<div class="card" style="background:linear-gradient(135deg, #0B8073 0%, #13B6A2 100%);color:white;margin-bottom:1.5rem;padding:2rem;">
+  <h2 style="margin:0 0 0.75rem 0;color:white;font-size:1.75rem;">Welcome to EventFlow!</h2>
+  <p class="small" style="color:rgba(255,255,255,0.95);margin:0;font-size:1rem;">Plan your perfect event with our curated suppliers.</p>
 </div>
 
 <div class="cards">
   <!-- Your Plan Card -->
   <div class="card">
-    <h3>Your plan</h3>
-    <p class="small">Review and manage your suppliers.</p>
-    <button class="cta" id="openPlanBtn">Open My Plan</button>
+    <h3 style="margin:0 0 0.5rem 0;font-size:1.25rem;color:#0B1220;">Your plan</h3>
+    <p class="small" style="color:#667085;margin:0 0 1rem 0;">Review and manage your suppliers.</p>
+    <button class="cta" id="openPlanBtn" style="width:100%;">Open My Plan</button>
   </div>
   
   <!-- Quick Actions Card -->
   <div class="card">
-    <h3>Quick Actions</h3>
-    <p class="small">Common tasks to help plan your event.</p>
-    <div style="display:flex;flex-direction:column;gap:0.5rem;margin-top:1rem;">
-      <a href="/suppliers.html" class="btn btn-secondary" style="text-decoration:none;">Browse Suppliers</a>
-      <a href="/start.html" class="btn btn-secondary" style="text-decoration:none;">Start Planning</a>
-      <a href="/budget.html" class="btn btn-secondary" style="text-decoration:none;">Budget Calculator</a>
+    <h3 style="margin:0 0 0.5rem 0;font-size:1.25rem;color:#0B1220;">Quick Actions</h3>
+    <p class="small" style="color:#667085;margin:0 0 1rem 0;">Common tasks to help plan your event.</p>
+    <div style="display:flex;flex-direction:column;gap:0.75rem;">
+      <a href="/suppliers.html" class="cta secondary" style="text-decoration:none;width:100%;text-align:center;">Browse Suppliers</a>
+      <a href="/start.html" class="cta secondary" style="text-decoration:none;width:100%;text-align:center;">Start Planning</a>
+      <a href="/budget.html" class="cta secondary" style="text-decoration:none;width:100%;text-align:center;">Budget Calculator</a>
     </div>
   </div>
   
   <!-- Support Tickets Card -->
   <div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
-      <h3 style="margin:0;">Support Tickets</h3>
-      <button class="cta" id="createTicketBtn" style="padding:0.5rem 1rem;font-size:14px;">Create Ticket</button>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;gap:0.75rem;">
+      <h3 style="margin:0;font-size:1.25rem;color:#0B1220;">Support Tickets</h3>
+      <button class="cta" id="createTicketBtn" style="padding:0.5rem 1rem;font-size:0.9rem;min-width:auto;white-space:nowrap;">Create Ticket</button>
     </div>
-    <div id="tickets-cust" class="section"><p class="small">Loading…</p></div>
+    <div id="tickets-cust" class="section"><p class="small" style="color:#667085;">Loading…</p></div>
   </div>
   
   <!-- Conversations Card -->
   <div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
-      <h3 style="margin:0;">Conversations</h3>
-      <span id="unreadMessageBadge" class="badge badge-info" style="display:none;font-size:14px;">0 unread</span>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;gap:0.75rem;flex-wrap:wrap;">
+      <h3 style="margin:0;font-size:1.25rem;color:#0B1220;">Conversations</h3>
+      <span id="unreadMessageBadge" class="badge badge-info" style="display:none;font-size:0.85rem;background:#DBEAFE;color:#1E40AF;padding:6px 12px;border-radius:12px;">0 unread</span>
     </div>
-    <div id="threads-cust" class="section"><p class="small">Loading…</p></div>
+    <div id="threads-cust" class="section"><p class="small" style="color:#667085;">Loading…</p></div>
   </div>
 </div>
 
@@ -96,11 +96,11 @@ document.getElementById('openPlanBtn')?.addEventListener('click', () => {
 });
 </script>
 </div></main>
-<footer class="footer" role="contentinfo">
-  <div class="container" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
-    <div><strong>EventFlow</strong><br><span class="small">Event planning made simple.</span></div>
-    <div class="version">Version: v17.0.0</div>
-    <div class="small"><a href="/blog.html">Blog</a> ·
+<footer class="footer" role="contentinfo" style="padding:1.25rem 0;margin-top:3rem;">
+  <div class="container" style="display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;">
+    <div style="font-size:0.9rem;"><strong>EventFlow</strong><br><span class="small" style="font-size:0.85rem;">Event planning made simple.</span></div>
+    <div class="version" style="font-size:0.8rem;">Version: v17.0.0</div>
+    <div class="small" style="font-size:0.85rem;"><a href="/blog.html">Blog</a> ·
       <a href="/credits.html">Credits</a> · <a href="/contact.html">Contact</a> · <a href="/legal.html">Legal Hub</a></div>
   </div>
 </footer>

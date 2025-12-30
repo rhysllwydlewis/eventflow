@@ -27,94 +27,119 @@ class SupplierCard {
         background-color: var(--color-card-bg, #ffffff);
         border: 1px solid var(--color-border, #dee2e6);
         border-radius: 12px;
-        padding: 24px;
+        padding: 32px;
         margin-top: 24px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
       }
 
       .supplier-card-header {
         display: flex;
-        align-items: center;
-        gap: 16px;
-        margin-bottom: 16px;
+        align-items: flex-start;
+        gap: 24px;
+        margin-bottom: 24px;
       }
 
       .supplier-card-logo {
-        width: 80px;
-        height: 80px;
+        width: 100px;
+        height: 100px;
         border-radius: 50%;
         object-fit: cover;
         border: 2px solid var(--color-border, #dee2e6);
+        flex-shrink: 0;
+        background-color: var(--color-bg-secondary, #f8f9fa);
       }
 
       .supplier-card-info {
         flex: 1;
+        min-width: 0;
       }
 
       .supplier-card-name {
-        font-size: 1.5rem;
-        font-weight: 600;
-        margin: 0 0 4px 0;
+        font-size: 1.75rem;
+        font-weight: 700;
+        margin: 0 0 8px 0;
         color: var(--color-text-primary, #212529);
+        line-height: 1.3;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
       }
 
       .supplier-card-blurb {
-        font-size: 0.95rem;
+        font-size: 1rem;
         color: var(--color-text-secondary, #6c757d);
-        margin: 0;
+        margin: 0 0 12px 0;
+        line-height: 1.5;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
       }
 
       .supplier-card-description {
         font-size: 0.95rem;
         color: var(--color-text-primary, #212529);
-        line-height: 1.6;
-        margin-bottom: 16px;
+        line-height: 1.7;
+        margin-bottom: 20px;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
       }
 
       .supplier-card-meta {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 12px;
-        margin-top: 16px;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 16px;
+        margin-top: 20px;
+        padding: 20px 0;
+        border-top: 1px solid var(--color-border, #dee2e6);
+        border-bottom: 1px solid var(--color-border, #dee2e6);
       }
 
       .supplier-card-meta-item {
         display: flex;
         align-items: center;
-        gap: 8px;
-        font-size: 0.9rem;
+        gap: 10px;
+        font-size: 0.95rem;
         color: var(--color-text-secondary, #6c757d);
+        word-wrap: break-word;
+        overflow-wrap: break-word;
       }
 
       .supplier-card-meta-icon {
-        font-size: 1.2rem;
+        font-size: 1.3rem;
+        flex-shrink: 0;
       }
 
       .supplier-card-actions {
-        margin-top: 20px;
-        padding-top: 20px;
-        border-top: 1px solid var(--color-border, #dee2e6);
+        margin-top: 24px;
         display: flex;
         gap: 12px;
         flex-wrap: wrap;
+        align-items: center;
       }
 
       .supplier-card-btn {
-        padding: 10px 20px;
+        padding: 12px 24px;
         border-radius: 8px;
-        font-size: 0.95rem;
+        font-size: 1rem;
         font-weight: 600;
         cursor: pointer;
         border: none;
-        transition: background-color 0.2s ease;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        white-space: nowrap;
       }
 
       .supplier-card-btn.primary {
         background-color: var(--accent, #13B6A2);
         color: white;
+        box-shadow: 0 2px 4px rgba(19, 182, 162, 0.2);
       }
 
       .supplier-card-btn.primary:hover {
         background-color: var(--ink, #0B8073);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(19, 182, 162, 0.3);
       }
 
       .supplier-card-btn.secondary {
@@ -125,16 +150,55 @@ class SupplierCard {
 
       .supplier-card-btn.secondary:hover {
         background-color: #e2e6ea;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      /* Desktop-specific improvements */
+      @media (min-width: 769px) {
+        .supplier-card {
+          padding: 40px;
+        }
+
+        .supplier-card-header {
+          gap: 32px;
+        }
+
+        .supplier-card-logo {
+          width: 120px;
+          height: 120px;
+        }
       }
 
       @media (max-width: 768px) {
+        .supplier-card {
+          padding: 20px;
+        }
+
         .supplier-card-header {
           flex-direction: column;
+          align-items: center;
           text-align: center;
+          gap: 16px;
+        }
+
+        .supplier-card-logo {
+          width: 90px;
+          height: 90px;
         }
 
         .supplier-card-meta {
           grid-template-columns: 1fr;
+          gap: 12px;
+        }
+
+        .supplier-card-actions {
+          flex-direction: column;
+          width: 100%;
+        }
+
+        .supplier-card-btn {
+          width: 100%;
         }
       }
     `;
@@ -220,6 +284,7 @@ class SupplierCard {
       </div>
 
       <div class="supplier-card-actions">
+        ${this.supplier.id ? `<button class="supplier-card-btn primary" onclick="window.location.href='/supplier.html?id=${this.supplier.id}'">View Profile</button>` : ''}
         ${this.supplier.id ? `<button class="supplier-card-btn secondary" onclick="window.location.href='/supplier.html?id=${this.supplier.id}'">View All Packages</button>` : ''}
       </div>
     `;
