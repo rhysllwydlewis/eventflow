@@ -4484,6 +4484,10 @@ app.use('/api', reportsRoutes);
 const messagesRoutes = require('./routes/messages');
 app.use('/api/messages', messagesRoutes);
 
+// ---------- Tickets Routes ----------
+const ticketsRoutes = require('./routes/tickets');
+app.use('/api/tickets', ticketsRoutes);
+
 // ---------- Pexels Stock Photos Routes ----------
 const pexelsRoutes = require('./routes/pexels');
 app.use('/api/pexels', pexelsRoutes);

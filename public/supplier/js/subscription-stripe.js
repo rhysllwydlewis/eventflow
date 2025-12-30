@@ -8,7 +8,7 @@
 const PLANS = {
   pro_monthly: {
     id: 'pro_monthly',
-    name: 'Pro Monthly',
+    name: 'Professional',
     tier: 'pro',
     price: 39.0,
     billingCycle: 'monthly',
@@ -28,16 +28,16 @@ const PLANS = {
   },
   pro_plus_monthly: {
     id: 'pro_plus_monthly',
-    name: 'Pro Plus Monthly',
+    name: 'Professional Plus',
     tier: 'pro_plus',
     price: 159.0,
     billingCycle: 'monthly',
     trialDays: 14,
     features: [
-      'Pro Plus badge on profile',
+      'Professional Plus badge on profile',
       'All Pro features included',
-      'Homepage featured carousel placement',
-      'Top 3 positions in category pages',
+      'Homepage featured placement',
+      'Top of category pages',
       'Business verification badge',
       'Dedicated onboarding call',
       'Monthly performance review',
@@ -55,14 +55,36 @@ let currentSubscription = null;
  */
 async function initSubscriptionPage() {
   try {
-    // Check authentication
-    const user = await checkAuth();
+    console.log('Initializing subscription page...');
+
+    // Check authentication with retry logic
+    let user = await checkAuth();
+
+    // Retry once if auth check fails (handles race conditions)
     if (!user) {
-      window.location.href = `/auth.html?redirect=${encodeURIComponent(window.location.pathname)}`;
+      console.log('First auth check failed, retrying...');
+      await new Promise(resolve => setTimeout(resolve, 500));
+      user = await checkAuth();
+    }
+
+    if (!user) {
+      console.error('Authentication required - redirecting to login');
+      // Preserve the current URL to return after login
+      const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
+      window.location.href = `/auth.html?redirect=${returnUrl}`;
       return;
     }
 
+    console.log('User authenticated:', user.email, 'Role:', user.role);
     currentUser = user;
+
+    // Verify user is a supplier
+    if (user.role !== 'supplier') {
+      showError(
+        'This page is only available to suppliers. Please register as a supplier to access subscription plans.'
+      );
+      return;
+    }
 
     // Load current subscription status
     await loadSubscriptionStatus();
@@ -74,7 +96,9 @@ async function initSubscriptionPage() {
     setupBillingPortal();
   } catch (error) {
     console.error('Error initializing subscription page:', error);
-    showError('Failed to load subscription information');
+    showError(
+      'Failed to load subscription information. Please refresh the page or contact support.'
+    );
   }
 }
 
@@ -88,10 +112,18 @@ async function checkAuth() {
     });
 
     if (!response.ok) {
+      console.error('Auth check failed with status:', response.status);
       return null;
     }
 
     const data = await response.json();
+
+    // Verify user has supplier role
+    if (!data.user) {
+      console.error('No user data in response');
+      return null;
+    }
+
     return data.user;
   } catch (error) {
     console.error('Auth check failed:', error);

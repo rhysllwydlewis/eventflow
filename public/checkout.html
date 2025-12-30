@@ -241,8 +241,22 @@
     <script>
       // Pricing plans configuration - aligned with updated pricing
       const PLANS = {
-        pro_monthly: {
-          name: 'Pro Monthly',
+        starter: {
+          name: 'Starter',
+          price: 0.0,
+          priceDisplay: '£0',
+          interval: 'month',
+          features: [
+            'Basic supplier profile',
+            'Up to 5 photos',
+            'Receive enquiries',
+            'Standard listing in search',
+            'Email support',
+          ],
+          isFree: true,
+        },
+        pro: {
+          name: 'Professional',
           price: 39.0,
           priceDisplay: '£39',
           interval: 'month',
@@ -250,28 +264,30 @@
           regularPrice: 69.0,
           introductoryMonths: 3,
           features: [
+            'Everything in Free',
+            'Unlimited photos',
             'Lead quality scoring (High/Medium/Low)',
             'Priority listing in search results',
-            'Unlimited photos',
             'Email & phone verification badges',
+            'Response time tracking',
             'Profile analytics dashboard',
-            'Priority support (24-hour response)',
+            'Priority support',
           ],
         },
-        pro_plus_monthly: {
-          name: 'Pro Plus Monthly',
+        pro_plus: {
+          name: 'Professional Plus',
           price: 159.0,
           priceDisplay: '£159',
           interval: 'month',
           features: [
-            'All Pro features included',
-            'Homepage featured carousel',
-            'Top 3 positions in category pages',
+            'Everything in Pro',
+            'Homepage featured placement',
+            'Top of category pages',
             'Business verification badge',
             'Dedicated onboarding call',
             'Monthly performance review',
             'Export analytics to CSV',
-            'VIP support (4-hour response)',
+            'VIP support',
           ],
           featured: true,
         },
@@ -285,7 +301,17 @@
           });
           
           if (!response.ok) {
-            window.location.href = '/auth.html?redirect=' + encodeURIComponent(window.location.pathname);
+            // For free plan, allow unauthenticated users to proceed to signup
+            const urlParams = new URLSearchParams(window.location.search);
+            const plan = urlParams.get('plan');
+            
+            if (plan === 'starter') {
+              // Show signup option for free plan
+              return 'unauthenticated_free';
+            }
+            
+            // For paid plans, redirect to auth with return URL
+            window.location.href = '/auth.html?redirect=' + encodeURIComponent(window.location.pathname + window.location.search);
             return false;
           }
           
@@ -310,12 +336,21 @@
       // Render pricing cards
       function renderPricingCards() {
         const content = document.getElementById('checkout-content');
+        const urlParams = new URLSearchParams(window.location.search);
+        const selectedPlan = urlParams.get('plan');
+        
+        // Filter plans if a specific plan is requested
+        const plansToShow = selectedPlan && PLANS[selectedPlan] 
+          ? { [selectedPlan]: PLANS[selectedPlan] }
+          : PLANS;
+        
         content.className = '';
         content.innerHTML = `
           <div class="pricing-cards">
-            ${Object.entries(PLANS).map(([key, plan]) => `
+            ${Object.entries(plansToShow).map(([key, plan]) => `
               <div class="pricing-card ${plan.featured ? 'featured' : ''}">
-                ${plan.featured ? '<div style="background: rgba(255,255,255,0.2); padding: 0.5rem; border-radius: 4px; margin-bottom: 1rem; font-weight: bold;">PREMIUM</div>' : ''}
+                ${plan.featured ? '<div style="background: rgba(255,255,255,0.2); padding: 0.5rem; border-radius: 4px; margin-bottom: 1rem; font-weight: bold;">MOST POPULAR</div>' : ''}
+                ${plan.isFree ? '<div style="background: #10b981; color: white; padding: 0.5rem; border-radius: 4px; margin-bottom: 1rem; font-weight: bold;">FREE FOREVER</div>' : ''}
                 <h3>${plan.name}</h3>
                 <div class="price">
                   ${plan.priceDisplay}
@@ -333,12 +368,13 @@
                   class="btn-checkout" 
                   data-plan="${key}"
                   onclick="handleCheckout('${key}')">
-                  Choose ${plan.name}
+                  ${plan.isFree ? 'Get Started Free' : `Choose ${plan.name}`}
                 </button>
               </div>
             `).join('')}
           </div>
           
+          ${!selectedPlan ? `
           <div class="security-notice">
             <h3>🔒 Secure Payment Processing</h3>
             <p>All payments are processed securely through Stripe.</p>
@@ -347,6 +383,7 @@
               🔐 💳 ✓
             </div>
           </div>
+          ` : ''}
         `;
       }
 
@@ -362,8 +399,13 @@
         button.textContent = 'Processing...';
 
         try {
-          // Note: In production, you would use Stripe Price IDs from your Stripe dashboard
-          // For now, we'll create a one-time payment
+          // Handle free plan - just redirect to sign up or dashboard
+          if (plan.isFree) {
+            window.location.href = '/auth.html?plan=starter';
+            return;
+          }
+
+          // For paid plans, create Stripe checkout session
           const amount = Math.round(plan.price * 100); // Convert to pence/cents
 
           const response = await fetch('/api/payments/create-checkout-session', {
@@ -402,8 +444,8 @@
 
       // Initialize page
       async function init() {
-        const isAuthenticated = await checkAuth();
-        if (isAuthenticated) {
+        const authStatus = await checkAuth();
+        if (authStatus === true || authStatus === 'unauthenticated_free') {
           renderPricingCards();
         }
       }
