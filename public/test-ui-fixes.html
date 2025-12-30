@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes">
+  <meta name="theme-color" content="#0B8073">
+  <title>UI/UX Fixes Test Page — EventFlow</title>
+  <link rel="stylesheet" href="/assets/css/styles.css">
+  <link rel="stylesheet" href="/assets/css/eventflow-17.0.0.css">
+  <link rel="stylesheet" href="/assets/css/utilities.css">
+  <link rel="stylesheet" href="/assets/css/components.css">
+  <link rel="stylesheet" href="/assets/css/animations.css">
+  <link rel="stylesheet" href="/assets/css/mobile-optimizations.css">
+  <link rel="stylesheet" href="/assets/css/ui-ux-fixes.css">
+</head>
+<body>
+<header class="header" role="banner">
+  <div class="container header-inner">
+    <a class="brand" href="/" aria-label="EventFlow home">
+      <span class="logo" aria-hidden="true"></span>
+      <span class="brand-text">EventFlow</span>
+    </a>
+    <div class="header-actions">
+      <nav class="nav nav-inline" aria-label="Quick navigation">
+        <a href="/start.html" class="nav-link nav-main">Plan</a>
+        <a href="/suppliers.html" class="nav-link nav-main">Suppliers</a>
+        <a href="/blog.html" class="nav-link nav-main">Blog</a>
+        <a href="/auth.html" class="nav-link nav-main nav-main-login">Log in</a>
+      </nav>
+      <button id="burger" class="nav-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false">
+        <span class="nav-toggle-bar"></span>
+        <span class="nav-toggle-bar"></span>
+        <span class="nav-toggle-bar"></span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main class="section">
+  <div class="container">
+    <h1>UI/UX Fixes Test Page</h1>
+    <p class="lead">This page tests all the critical UI/UX fixes for overlapping, responsive design, and layout issues.</p>
+
+    <!-- Test 1: Button Fixes -->
+    <section class="card" style="margin-top: 24px;">
+      <h2>Button Fixes Test</h2>
+      <p class="small">Testing button alignment, sizing, and text centering</p>
+      
+      <div class="form-actions">
+        <button class="cta">Primary Button</button>
+        <button class="cta secondary">Secondary Button</button>
+        <button class="cta ghost">Ghost Button</button>
+      </div>
+      
+      <div style="margin-top: 16px;">
+        <p class="small">Long text button test:</p>
+        <button class="cta">This is a very long button with lots of text</button>
+      </div>
+    </section>
+
+    <!-- Test 2: Package Cards -->
+    <section style="margin-top: 24px;">
+      <h2>Package Cards Test</h2>
+      <p class="small">Testing package card layout and text overflow</p>
+      
+      <div class="cards">
+        <div class="card pack">
+          <img src="https://images.unsplash.com/photo-1519167758481-83f29da8c86c?w=400" alt="Wedding venue">
+          <div class="pack-info">
+            <h3>Beautiful Wedding Venue with Very Long Name That Should Wrap Properly</h3>
+            <p class="small">This is a test description with enough text to see if it wraps properly and doesn't overflow the card boundaries.</p>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+              <span style="font-weight: 600; color: var(--accent);">From £2,500</span>
+              <span class="small">📍 London</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card pack">
+          <img src="https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=400" alt="Catering">
+          <div class="pack-info">
+            <h3>Premium Catering Service</h3>
+            <p class="small">Delicious food for your special day.</p>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+              <span style="font-weight: 600; color: var(--accent);">From £50/head</span>
+              <span class="small">📍 UK Wide</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card pack">
+          <img src="https://images.unsplash.com/photo-1606800052052-a08af7148866?w=400" alt="Photography">
+          <div class="pack-info">
+            <h3>Professional Photography</h3>
+            <p class="small">Capture every moment beautifully with our experienced photographers who specialize in events.</p>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+              <span style="font-weight: 600; color: var(--accent);">From £1,200</span>
+              <span class="small">📍 South East</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Test 3: Form Fixes -->
+    <section class="card" style="margin-top: 24px;">
+      <h2>Form Elements Test</h2>
+      <p class="small">Testing form input sizing, label alignment, and error display</p>
+      
+      <form action="#" onsubmit="return false;">
+        <div class="form-row" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+          <div>
+            <label for="test-name">Name</label>
+            <input type="text" id="test-name" placeholder="Your name">
+          </div>
+          <div>
+            <label for="test-email">Email</label>
+            <input type="email" id="test-email" placeholder="your@email.com">
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <label for="test-category">Category</label>
+          <select id="test-category">
+            <option value="">Choose a category...</option>
+            <option>Venues</option>
+            <option>Catering</option>
+            <option>Photography</option>
+          </select>
+        </div>
+        
+        <div class="form-row">
+          <label for="test-message">Message</label>
+          <textarea id="test-message" rows="4" placeholder="Tell us about your event..."></textarea>
+        </div>
+        
+        <div class="form-row error">
+          <label for="test-error">Error State Example</label>
+          <input type="text" id="test-error" value="Invalid input">
+          <span class="error-message">This field has an error</span>
+        </div>
+        
+        <div class="form-actions">
+          <button type="submit" class="cta">Submit Form</button>
+          <button type="button" class="cta secondary">Cancel</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- Test 4: Dashboard Layout -->
+    <section style="margin-top: 24px;">
+      <h2>Dashboard Layout Test</h2>
+      <p class="small">Testing dashboard grid and card layout</p>
+      
+      <div class="dashboard-grid">
+        <div class="card">
+          <h3>Your Plan</h3>
+          <p class="small">Review and manage your suppliers.</p>
+          <button class="cta">Open My Plan</button>
+        </div>
+        
+        <div class="card">
+          <h3>Quick Actions</h3>
+          <p class="small">Common tasks to help plan your event.</p>
+          <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 12px;">
+            <button class="cta secondary">Browse Suppliers</button>
+            <button class="cta secondary">Start Planning</button>
+            <button class="cta secondary">Budget Calculator</button>
+          </div>
+        </div>
+        
+        <div class="card">
+          <h3>Support Tickets</h3>
+          <p class="small">View and manage your support requests.</p>
+          <div style="margin-top: 12px;">
+            <div class="ticket-item">
+              <strong>Ticket #1234</strong>
+              <p class="small" style="margin: 4px 0 0 0;">Question about venue booking</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Test 5: Table Overflow -->
+    <section class="card" style="margin-top: 24px;">
+      <h2>Table Overflow Test</h2>
+      <p class="small">Testing table responsive wrapping and overflow</p>
+      
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Supplier Name</th>
+              <th>Category</th>
+              <th>Price</th>
+              <th>Location</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Beautiful Wedding Venue</td>
+              <td>Venues</td>
+              <td>£2,500</td>
+              <td>London</td>
+              <td>Available</td>
+              <td><button class="cta secondary" style="min-width: auto; padding: 8px 12px;">View</button></td>
+            </tr>
+            <tr>
+              <td>Premium Catering Service</td>
+              <td>Catering</td>
+              <td>£50/head</td>
+              <td>UK Wide</td>
+              <td>Available</td>
+              <td><button class="cta secondary" style="min-width: auto; padding: 8px 12px;">View</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Test 6: Text Overflow Prevention -->
+    <section class="card" style="margin-top: 24px;">
+      <h2>Text Overflow Prevention Test</h2>
+      <p class="small">Testing that long text wraps properly without overflowing</p>
+      
+      <div style="border: 1px solid var(--border); padding: 16px; border-radius: 8px; margin-top: 12px;">
+        <h3>ThisIsAVeryLongWordWithoutAnySpacesThatShouldBreakProperlyUsingWordWrapAndOverflowWrap</h3>
+        <p>This is a paragraph with a very long URL that should break properly: https://example.com/very/long/url/path/that/goes/on/and/on/and/should/break/correctly</p>
+      </div>
+    </section>
+
+    <!-- Test 7: Responsive Breakpoints Info -->
+    <section class="card" style="margin-top: 24px; margin-bottom: 24px;">
+      <h2>Responsive Breakpoints Info</h2>
+      <p class="small">The following breakpoints are implemented:</p>
+      <ul>
+        <li><strong>320px:</strong> Very small mobile (extra compact)</li>
+        <li><strong>480px:</strong> Small mobile (compact layout)</li>
+        <li><strong>768px:</strong> Tablet (medium layout)</li>
+        <li><strong>1024px:</strong> Desktop (standard layout)</li>
+        <li><strong>1440px:</strong> Large desktop (wide layout)</li>
+      </ul>
+      <p class="small" style="margin-top: 12px;">
+        <strong>Instructions:</strong> Resize your browser window to test different breakpoints. 
+        All buttons, cards, and form elements should adapt properly without overlapping or clipping text.
+      </p>
+    </section>
+  </div>
+</main>
+
+<footer class="footer" role="contentinfo">
+  <div class="container">
+    <p class="small">EventFlow UI/UX Fixes Test Page - All fixes have been applied</p>
+  </div>
+</footer>
+
+<script src="/assets/js/auth-nav.js" defer></script>
+</body>
+</html>
