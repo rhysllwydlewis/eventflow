@@ -59,7 +59,7 @@ class Modal {
 
   render() {
     const overlayDiv = document.createElement('div');
-    overlayDiv.className = 'modal-overlay';
+    overlayDiv.className = 'modal-overlay active';
     overlayDiv.setAttribute('role', 'dialog');
     overlayDiv.setAttribute('aria-modal', 'true');
 
