@@ -1,0 +1,695 @@
+/**
+ * EventFlow UI/UX Fixes
+ * Addresses critical layout, spacing, and responsive issues
+ * Version: 1.0.0
+ */
+
+/* ============================================
+   GLOBAL LAYOUT FIXES
+   ============================================ */
+
+/* Ensure consistent box-sizing */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* Fix overflow issues globally */
+html {
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+}
+
+body {
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+/* Improved typography scaling */
+html {
+  font-size: 16px;
+}
+
+@media (max-width: 320px) {
+  html {
+    font-size: 14px;
+  }
+}
+
+@media (min-width: 1440px) {
+  html {
+    font-size: 17px;
+  }
+}
+
+/* ============================================
+   BUTTON FIXES
+   ============================================ */
+
+/* Fix button text centering and sizing */
+.cta,
+button.cta,
+a.cta {
+  min-width: 100px;
+  min-height: 44px;
+  padding: 12px 20px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn,
+button.btn,
+a.btn {
+  min-height: 44px;
+  padding: 10px 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 8px;
+}
+
+/* Secondary buttons */
+.btn-secondary,
+.cta.secondary {
+  min-width: 100px;
+}
+
+/* Fix button groups */
+.form-actions,
+.button-group {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 480px) {
+  .cta,
+  .btn {
+    min-width: 120px;
+    padding: 12px 16px;
+    font-size: 0.95rem;
+  }
+  
+  .form-actions,
+  .button-group {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .form-actions .cta,
+  .form-actions .btn,
+  .button-group .cta,
+  .button-group .btn {
+    width: 100%;
+  }
+}
+
+/* ============================================
+   CARD FIXES
+   ============================================ */
+
+/* Fix card layout and prevent overlapping */
+.card {
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: 1px solid var(--border, #E7EAF0);
+  border-radius: var(--radius, 14px);
+  padding: clamp(16px, 3vw, 24px);
+  box-shadow: var(--shadow, 0 10px 30px rgba(15, 23, 42, 0.06));
+  gap: 12px;
+  overflow: hidden;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.card h1,
+.card h2,
+.card h3,
+.card h4 {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+.card p,
+.card .small {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* Cards grid */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: clamp(16px, 3vw, 24px);
+  margin-top: 24px;
+}
+
+@media (max-width: 768px) {
+  .cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .card {
+    padding: 16px;
+    gap: 10px;
+  }
+}
+
+/* Package cards specific */
+.pack {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0 !important;
+  gap: 0;
+}
+
+.pack img {
+  width: 100%;
+  height: clamp(180px, 40vw, 220px);
+  object-fit: cover;
+  border-radius: 0;
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.pack-info {
+  padding: clamp(16px, 3vw, 20px);
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.pack-info h3 {
+  margin: 0 0 8px 0;
+  font-size: clamp(1.1rem, 4vw, 1.25rem);
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.pack-info .small,
+.pack-info p {
+  margin: 0;
+  line-height: 1.6;
+  word-wrap: break-word;
+}
+
+/* ============================================
+   FORM FIXES
+   ============================================ */
+
+/* Fix form input sizing and alignment */
+input,
+select,
+textarea {
+  width: 100%;
+  min-height: 44px;
+  padding: 12px 14px;
+  border: 1px solid var(--border, #E7EAF0);
+  border-radius: 12px;
+  background: #fff;
+  font: inherit;
+  font-size: 1rem;
+  line-height: 1.5;
+  box-sizing: border-box;
+}
+
+textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+label {
+  display: block;
+  margin: 12px 0 6px;
+  font-weight: 600;
+  color: #1F2937;
+  font-size: 0.95rem;
+}
+
+/* Form row layout */
+.form-row {
+  position: relative;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 1fr;
+  margin-bottom: 12px;
+}
+
+.form-row > div {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Error display */
+.error-message,
+.form-error {
+  color: #dc2626;
+  font-size: 0.875rem;
+  margin-top: 4px;
+  display: block;
+}
+
+.error input,
+.error select,
+.error textarea {
+  border-color: #dc2626;
+  background-color: #fef2f2;
+}
+
+/* Success state */
+.success-message {
+  color: #059669;
+  font-size: 0.875rem;
+  margin-top: 4px;
+  display: block;
+}
+
+@media (max-width: 768px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px; /* Prevent zoom on iOS */
+  }
+}
+
+@media (max-width: 480px) {
+  .form-row {
+    grid-template-columns: 1fr !important;
+  }
+  
+  label {
+    margin: 10px 0 6px;
+  }
+}
+
+/* ============================================
+   TABLE FIXES
+   ============================================ */
+
+/* Fix table overflow and responsive wrapping */
+.table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 16px 0;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  border-spacing: 0;
+  min-width: 600px;
+}
+
+th,
+td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border, #E7EAF0);
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+th {
+  font-weight: 600;
+  background: #F9FAFB;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+@media (max-width: 768px) {
+  table {
+    min-width: 100%;
+    font-size: 0.9rem;
+  }
+  
+  th,
+  td {
+    padding: 8px;
+  }
+}
+
+/* ============================================
+   DASHBOARD-SPECIFIC FIXES
+   ============================================ */
+
+/* Dashboard layout */
+.dashboard-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-height: calc(100vh - 200px);
+}
+
+/* Sidebar */
+.dashboard-sidebar {
+  width: 100%;
+  background: #F9FAFB;
+  border: 1px solid var(--border, #E7EAF0);
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Content area */
+.dashboard-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Dashboard cards in grid */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: clamp(16px, 3vw, 24px);
+}
+
+@media (min-width: 1024px) {
+  .dashboard-container {
+    flex-direction: row;
+  }
+  
+  .dashboard-sidebar {
+    width: 280px;
+    flex-shrink: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ============================================
+   SUPPLIER DASHBOARD FIXES
+   ============================================ */
+
+/* Supplier list items */
+#my-suppliers .supplier-card,
+.supplier-item {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--border, #E7EAF0);
+  border-radius: 12px;
+  margin-bottom: 12px;
+  background: #fff;
+}
+
+@media (min-width: 640px) {
+  #my-suppliers .supplier-card,
+  .supplier-item {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+}
+
+/* ============================================
+   CUSTOMER DASHBOARD FIXES
+   ============================================ */
+
+/* Support tickets section */
+#tickets-cust,
+.tickets-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ticket-item {
+  padding: 12px;
+  border: 1px solid var(--border, #E7EAF0);
+  border-radius: 10px;
+  background: #F9FAFB;
+}
+
+/* Conversations/threads */
+#threads-cust,
+.threads-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.thread-item {
+  padding: 12px;
+  border: 1px solid var(--border, #E7EAF0);
+  border-radius: 10px;
+  background: #F9FAFB;
+}
+
+/* Message panels */
+.message-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+/* ============================================
+   RESPONSIVE BREAKPOINTS
+   ============================================ */
+
+/* 320px - Very small mobile */
+@media (max-width: 320px) {
+  .container {
+    width: 96%;
+  }
+  
+  .section {
+    padding: 16px 0;
+  }
+  
+  h1 {
+    font-size: 1.5rem;
+  }
+  
+  h2 {
+    font-size: 1.3rem;
+  }
+  
+  h3 {
+    font-size: 1.1rem;
+  }
+}
+
+/* 480px - Small mobile */
+@media (max-width: 480px) {
+  .header-inner {
+    padding: 12px 0;
+  }
+  
+  .section {
+    padding: 20px 0;
+  }
+  
+  /* Hide certain elements on very small screens */
+  .hide-on-mobile {
+    display: none !important;
+  }
+}
+
+/* 768px - Tablet */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .container {
+    width: 92%;
+  }
+  
+  .cards {
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  }
+}
+
+/* 1024px - Desktop */
+@media (min-width: 1024px) {
+  .container {
+    width: min(var(--max, 1400px), 90%);
+  }
+  
+  .cards {
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  }
+}
+
+/* 1440px - Large desktop */
+@media (min-width: 1440px) {
+  .container {
+    width: min(var(--max, 1400px), 86%);
+  }
+  
+  .cards {
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  }
+}
+
+/* ============================================
+   TEXT OVERFLOW PREVENTION
+   ============================================ */
+
+/* Prevent text overflow globally */
+h1, h2, h3, h4, h5, h6,
+p, span, div, a, label {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+/* Prevent long URLs from breaking layout */
+a[href] {
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+/* Fix pre and code blocks */
+pre,
+code {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* ============================================
+   ACCESSIBILITY FIXES
+   ============================================ */
+
+/* Ensure touch targets meet WCAG 2.1 AA (44x44px minimum) */
+@media (pointer: coarse) {
+  a,
+  button,
+  input[type="submit"],
+  input[type="button"],
+  .clickable {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Focus visible styles */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--ink, #0B8073);
+  outline-offset: 2px;
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ============================================
+   DARK MODE COMPATIBILITY
+   ============================================ */
+
+html[data-theme="dark"] .card {
+  background: #020617;
+  border-color: #1F2937;
+}
+
+html[data-theme="dark"] input,
+html[data-theme="dark"] select,
+html[data-theme="dark"] textarea {
+  background: #0f172a;
+  border-color: #1F2937;
+  color: #E5E7EB;
+}
+
+html[data-theme="dark"] .supplier-card,
+html[data-theme="dark"] .supplier-item,
+html[data-theme="dark"] .ticket-item,
+html[data-theme="dark"] .thread-item {
+  background: #0f172a;
+  border-color: #1F2937;
+}
+
+/* ============================================
+   UTILITY CLASSES
+   ============================================ */
+
+.text-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.text-wrap {
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.overflow-auto {
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.overflow-hidden {
+  overflow: hidden;
+}
+
+.d-flex {
+  display: flex;
+}
+
+.flex-column {
+  flex-direction: column;
+}
+
+.flex-wrap {
+  flex-wrap: wrap;
+}
+
+.gap-sm {
+  gap: 8px;
+}
+
+.gap-md {
+  gap: 16px;
+}
+
+.gap-lg {
+  gap: 24px;
+}
+
+.w-100 {
+  width: 100%;
+}
+
+.h-100 {
+  height: 100%;
+}
