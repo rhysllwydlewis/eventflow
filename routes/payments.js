@@ -52,19 +52,55 @@ function ensureStripeEnabled(req, res, next) {
 }
 
 /**
- * POST /api/payments/create-checkout-session
- * Create a Stripe checkout session for one-time payment or subscription
- *
- * Body:
- * {
- *   type: 'one_time' | 'subscription',
- *   amount?: number (for one_time, in smallest currency unit),
- *   currency?: string (default: 'gbp'),
- *   priceId?: string (for subscription),
- *   planName?: string (optional, for metadata),
- *   successUrl?: string (optional),
- *   cancelUrl?: string (optional)
- * }
+ * @swagger
+ * /api/payments/create-checkout-session:
+ *   post:
+ *     summary: Create a Stripe checkout session
+ *     description: Create a checkout session for one-time payments or subscriptions
+ *     tags: [Payments]
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - type
+ *             properties:
+ *               type:
+ *                 type: string
+ *                 enum: [one_time, subscription]
+ *                 description: Payment type
+ *               amount:
+ *                 type: number
+ *                 description: Amount in smallest currency unit (required for one_time)
+ *               currency:
+ *                 type: string
+ *                 default: gbp
+ *                 description: Payment currency
+ *               priceId:
+ *                 type: string
+ *                 description: Stripe price ID (required for subscription)
+ *               planName:
+ *                 type: string
+ *                 description: Plan name for metadata
+ *               successUrl:
+ *                 type: string
+ *                 description: Custom success redirect URL
+ *               cancelUrl:
+ *                 type: string
+ *                 description: Custom cancel redirect URL
+ *     responses:
+ *       200:
+ *         description: Checkout session created successfully
+ *       400:
+ *         description: Invalid request parameters
+ *       401:
+ *         description: Unauthorized
+ *       503:
+ *         description: Stripe not configured
  */
 router.post(
   '/create-checkout-session',
@@ -192,13 +228,30 @@ router.post(
 );
 
 /**
- * POST /api/payments/create-portal-session
- * Create a Stripe billing portal session for managing subscriptions
- *
- * Body:
- * {
- *   returnUrl?: string (optional, defaults to dashboard)
- * }
+ * @swagger
+ * /api/payments/create-portal-session:
+ *   post:
+ *     summary: Create a billing portal session
+ *     description: Create a Stripe billing portal session for managing subscriptions
+ *     tags: [Payments]
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               returnUrl:
+ *                 type: string
+ *                 description: URL to return to after managing billing
+ *     responses:
+ *       200:
+ *         description: Portal session created successfully
+ *       404:
+ *         description: No payment history found
+ *       503:
+ *         description: Stripe not configured
  */
 router.post(
   '/create-portal-session',
@@ -242,16 +295,25 @@ router.post(
 );
 
 /**
- * POST /api/payments/webhook
- * Stripe webhook handler for payment and subscription events
- *
- * Handles:
- * - checkout.session.completed
- * - customer.subscription.created
- * - customer.subscription.updated
- * - customer.subscription.deleted
- * - payment_intent.succeeded
- * - payment_intent.payment_failed
+ * @swagger
+ * /api/payments/webhook:
+ *   post:
+ *     summary: Stripe webhook endpoint
+ *     description: Handle Stripe webhook events for payments and subscriptions
+ *     tags: [Payments]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *     responses:
+ *       200:
+ *         description: Webhook processed successfully
+ *       400:
+ *         description: Invalid signature or missing signature
+ *       503:
+ *         description: Stripe not configured
  */
 router.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
   if (!STRIPE_ENABLED || !stripe) {
@@ -569,8 +631,19 @@ async function handlePaymentFailed(paymentIntent) {
 }
 
 /**
- * GET /api/payments
- * Get user's payment history
+ * @swagger
+ * /api/payments:
+ *   get:
+ *     summary: Get user's payment history
+ *     description: Retrieve all payments for the authenticated user
+ *     tags: [Payments]
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Payment history retrieved successfully
+ *       401:
+ *         description: Unauthorized
  */
 router.get('/', authRequired, async (req, res) => {
   try {
@@ -594,8 +667,28 @@ router.get('/', authRequired, async (req, res) => {
 });
 
 /**
- * GET /api/payments/:id
- * Get specific payment details
+ * @swagger
+ * /api/payments/{id}:
+ *   get:
+ *     summary: Get specific payment details
+ *     description: Retrieve details for a specific payment
+ *     tags: [Payments]
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Payment ID
+ *     responses:
+ *       200:
+ *         description: Payment details retrieved successfully
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Payment not found
  */
 router.get('/:id', authRequired, async (req, res) => {
   try {
