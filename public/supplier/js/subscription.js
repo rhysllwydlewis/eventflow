@@ -272,6 +272,8 @@ function createPlanCard(plan) {
 
   // Show introductory pricing for Pro plan
   let priceHtml = '';
+  const featuresArray = [...plan.features]; // Create a copy to avoid mutation
+
   if (plan.introductoryPrice && plan.regularPrice && plan.introductoryMonths) {
     priceHtml = `
       <div class="plan-price">
@@ -285,7 +287,7 @@ function createPlanCard(plan) {
 
     // Add introductory pricing info to features dynamically
     const pricingFeature = `£${plan.introductoryPrice.toFixed(2)}/${plan.billingCycle} for first ${plan.introductoryMonths} months, then £${plan.regularPrice.toFixed(2)}/${plan.billingCycle}`;
-    plan.features = [...plan.features, pricingFeature];
+    featuresArray.push(pricingFeature);
   } else {
     priceHtml = `
       <div class="plan-price">
@@ -305,7 +307,7 @@ function createPlanCard(plan) {
     </div>
     <div class="plan-features">
       <ul>
-        ${plan.features.map(feature => `<li>${feature}</li>`).join('')}
+        ${featuresArray.map(feature => `<li>${feature}</li>`).join('')}
       </ul>
     </div>
     <div class="plan-action">

@@ -562,13 +562,9 @@
       }
       
       try {
-        const endDate = new Date();
-        endDate.setDate(endDate.getDate() + days);
-        
         await AdminShared.api(`/api/admin/suppliers/${supplierId}/subscription`, 'POST', {
           tier: tier,
-          days: days,
-          endDate: endDate.toISOString()
+          days: days
         });
         
         AdminShared.showToast(`${tierName} subscription granted for ${days} days`, 'success');

@@ -717,10 +717,10 @@ router.post('/suppliers/:id/verify', authRequired, roleRequired('admin'), (req, 
 /**
  * POST /api/admin/suppliers/:id/subscription
  * Grant or update a supplier's subscription
- * Body: { tier: 'pro' | 'pro_plus', days: number, endDate: string }
+ * Body: { tier: 'pro' | 'pro_plus', days: number }
  */
 router.post('/suppliers/:id/subscription', authRequired, roleRequired('admin'), (req, res) => {
-  const { tier, days, endDate } = req.body;
+  const { tier, days } = req.body;
   const suppliers = read('suppliers');
   const supplierIndex = suppliers.findIndex(s => s.id === req.params.id);
 
@@ -738,7 +738,7 @@ router.post('/suppliers/:id/subscription', authRequired, roleRequired('admin'), 
 
   const supplier = suppliers[supplierIndex];
   const now = new Date().toISOString();
-  const expiryDate = endDate || new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
+  const expiryDate = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
 
   // Update subscription
   supplier.subscription = {
@@ -760,16 +760,15 @@ router.post('/suppliers/:id/subscription', authRequired, roleRequired('admin'), 
   suppliers[supplierIndex] = supplier;
   write('suppliers', suppliers);
 
-  // Create audit log
+  // Create audit log with specific action
   auditLog({
     adminId: req.user.id,
     adminEmail: req.user.email,
-    action: AUDIT_ACTIONS.SUPPLIER_UPDATED,
+    action: 'subscription_granted',
     targetType: 'supplier',
     targetId: supplier.id,
     details: {
       name: supplier.name,
-      action: 'subscription_granted',
       tier: tier,
       days: days,
       expiryDate: expiryDate,
@@ -818,16 +817,15 @@ router.delete('/suppliers/:id/subscription', authRequired, roleRequired('admin')
   suppliers[supplierIndex] = supplier;
   write('suppliers', suppliers);
 
-  // Create audit log
+  // Create audit log with specific action
   auditLog({
     adminId: req.user.id,
     adminEmail: req.user.email,
-    action: AUDIT_ACTIONS.SUPPLIER_UPDATED,
+    action: 'subscription_removed',
     targetType: 'supplier',
     targetId: supplier.id,
     details: {
       name: supplier.name,
-      action: 'subscription_removed',
     },
   });
 
