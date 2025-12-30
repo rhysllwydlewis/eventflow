@@ -450,6 +450,9 @@ async function handleSubscriptionCreated(subscription) {
 
   const userId = payments[0].userId;
 
+  // Get price details from subscription items
+  const priceData = subscription.items.data[0].price;
+
   // Create subscription payment record
   const paymentId = uid();
   const paymentRecord = {
@@ -458,14 +461,14 @@ async function handleSubscriptionCreated(subscription) {
     stripeCustomerId: customerId,
     stripeSubscriptionId: subscription.id,
     userId: userId,
-    amount: subscription.plan.amount / 100,
-    currency: subscription.plan.currency,
+    amount: priceData.unit_amount / 100,
+    currency: priceData.currency,
     status: subscription.status === 'active' ? 'succeeded' : 'pending',
     type: 'subscription',
     subscriptionDetails: {
-      planId: subscription.plan.id,
-      planName: subscription.plan.nickname || subscription.plan.product,
-      interval: subscription.plan.interval,
+      planId: priceData.id,
+      planName: priceData.nickname || priceData.product,
+      interval: priceData.recurring.interval,
       currentPeriodStart: new Date(subscription.current_period_start * 1000).toISOString(),
       currentPeriodEnd: new Date(subscription.current_period_end * 1000).toISOString(),
       cancelAtPeriodEnd: subscription.cancel_at_period_end,
@@ -508,13 +511,16 @@ async function handleSubscriptionUpdated(subscription) {
   const payment = payments[payments.length - 1]; // Get most recent
   const userId = payment.userId;
 
+  // Get price details from subscription items
+  const priceData = subscription.items.data[0].price;
+
   // Update subscription details
   const updates = {
     status: subscription.status === 'active' ? 'succeeded' : subscription.status,
     subscriptionDetails: {
-      planId: subscription.plan.id,
-      planName: subscription.plan.nickname || subscription.plan.product,
-      interval: subscription.plan.interval,
+      planId: priceData.id,
+      planName: priceData.nickname || priceData.product,
+      interval: priceData.recurring.interval,
       currentPeriodStart: new Date(subscription.current_period_start * 1000).toISOString(),
       currentPeriodEnd: new Date(subscription.current_period_end * 1000).toISOString(),
       cancelAtPeriodEnd: subscription.cancel_at_period_end,

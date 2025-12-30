@@ -314,7 +314,7 @@ function setupBillingPortal() {
 /**
  * Open Stripe billing portal
  */
-async function openBillingPortal() {
+async function openBillingPortal(event) {
   try {
     const button = event.target;
     button.disabled = true;
@@ -347,8 +347,8 @@ async function openBillingPortal() {
     console.error('Billing portal error:', error);
     showError(error.message || 'Failed to open billing portal. Please try again.');
 
-    const button = event.target;
-    if (button) {
+    if (event && event.target) {
+      const button = event.target;
       button.disabled = false;
       button.textContent = 'Manage Billing';
     }
