@@ -70,12 +70,10 @@
         <div class="form-row"><label for="login-email">Email</label><input id="login-email" name="email" type="email" required placeholder="you@example.com" aria-required="true" autocomplete="email"></div>
         <div class="form-row"><label for="login-password">Password</label><input id="login-password" name="password" type="password" required placeholder="Your password" aria-required="true" autocomplete="current-password"></div>
         <div class="form-row">
-          <label></label>
           <div id="login-error" class="error" style="display: none; visibility: hidden; color: #b00020; font-size: 0.875rem;" aria-live="polite" aria-hidden="true"></div>
         </div>
         <div class="form-row">
-          <label></label>
-          <label class="small checkbox-label-right">
+          <label class="small checkbox-label-right" for="login-remember">
             Remember me
             <input type="checkbox" id="login-remember" name="remember">
           </label>
@@ -101,7 +99,7 @@
           <span class="small" id="password-strength-msg" style="margin-top:4px;display:block" role="status"></span>
         </div>
         <div class="form-row">
-          <label>I am a…</label>
+          <label for="reg-role">I am a…</label>
           <div class="role-toggle" role="radiogroup" aria-label="Account type">
             <button type="button" class="role-pill is-active" data-role="customer">Customer</button>
             <button type="button" class="role-pill" data-role="supplier">Supplier</button>
@@ -109,15 +107,13 @@
           <input type="hidden" id="reg-role" name="role" value="customer">
         </div>
         <div class="form-row">
-          <label></label>
-          <label class="small checkbox-label-right">
+          <label class="small checkbox-label-right" for="reg-marketing">
             Send me the occasional EventFlow update and planning tips.
             <input type="checkbox" id="reg-marketing" name="marketing">
           </label>
         </div>
         <div class="form-row">
-          <label></label>
-          <label class="small checkbox-label-right">
+          <label class="small checkbox-label-right" for="reg-terms">
             I agree to the <a href="/terms.html" target="_blank">Terms</a> and <a href="/privacy.html" target="_blank">Privacy Policy</a>. *
             <input type="checkbox" id="reg-terms" name="terms" required aria-required="true">
           </label>

@@ -30,28 +30,32 @@ const PLANS = {
     id: 'pro_monthly',
     name: 'Pro Monthly',
     tier: 'pro',
-    price: 9.99,
+    price: 39.0,
     billingCycle: 'monthly',
     trialDays: 14,
+    introductoryPrice: 39.0,
+    regularPrice: 59.0,
+    introductoryMonths: 3,
     features: [
+      'Pro supplier badge on profile',
       'Priority listing in search results',
-      'Featured supplier badge on profile',
-      'Advanced analytics dashboard',
       'Up to 50 event bookings per month',
       'Email support',
+      '£39/month for first 3 months, then £59/month',
     ],
   },
   pro_plus_monthly: {
     id: 'pro_plus_monthly',
     name: 'Pro+ Monthly',
     tier: 'pro_plus',
-    price: 19.99,
+    price: 199.0,
     billingCycle: 'monthly',
     trialDays: 14,
     features: [
-      'All Pro features',
-      'Premium badge on profile',
+      'Premium Pro+ badge on profile',
+      'All Pro features included',
       'Unlimited event bookings',
+      'Advanced analytics dashboard',
       'Priority phone support',
       'Custom branding options',
       'Featured in homepage carousel',
@@ -61,33 +65,33 @@ const PLANS = {
     id: 'pro_yearly',
     name: 'Pro Yearly',
     tier: 'pro',
-    price: 99.99,
+    price: 468.0,
     billingCycle: 'yearly',
     trialDays: 28,
     features: [
+      'Pro supplier badge on profile',
       'Priority listing in search results',
-      'Featured supplier badge on profile',
-      'Advanced analytics dashboard',
       'Up to 50 event bookings per month',
       'Email support',
-      'Save 17% vs monthly',
+      'Save vs monthly billing',
     ],
   },
   pro_plus_yearly: {
     id: 'pro_plus_yearly',
     name: 'Pro+ Yearly',
     tier: 'pro_plus',
-    price: 199.99,
+    price: 2388.0,
     billingCycle: 'yearly',
     trialDays: 28,
     features: [
-      'All Pro features',
-      'Premium badge on profile',
+      'Premium Pro+ badge on profile',
+      'All Pro features included',
       'Unlimited event bookings',
+      'Advanced analytics dashboard',
       'Priority phone support',
       'Custom branding options',
       'Featured in homepage carousel',
-      'Save 17% vs monthly',
+      'Save vs monthly billing',
     ],
   },
 };
@@ -252,22 +256,38 @@ function createPlanCard(plan) {
   const card = document.createElement('div');
   card.className = 'subscription-card';
 
-  if (plan.tier === 'pro_plus') {
-    card.classList.add('featured');
-  }
+  // Pro Plus is NOT featured/promoted per requirements
+  // Removed featured class for pro_plus
 
   const currentTier = currentSupplier?.subscription?.tier || 'free';
   const isCurrentPlan = currentSupplier?.subscription?.planId === plan.id;
 
+  // Show introductory pricing for Pro plan
+  let priceHtml = '';
+  if (plan.introductoryPrice && plan.regularPrice) {
+    priceHtml = `
+      <div class="plan-price">
+        <span class="price">£${plan.introductoryPrice.toFixed(2)}</span>
+        <span class="period">/${plan.billingCycle}</span>
+      </div>
+      <p class="small" style="margin-top: 0.5rem; color: #666;">
+        £${plan.regularPrice.toFixed(2)}/${plan.billingCycle} after ${plan.introductoryMonths} months
+      </p>
+    `;
+  } else {
+    priceHtml = `
+      <div class="plan-price">
+        <span class="price">£${plan.price.toFixed(2)}</span>
+        <span class="period">/${plan.billingCycle}</span>
+      </div>
+    `;
+  }
+
   card.innerHTML = `
     <div class="plan-header">
       <h3>${plan.name}</h3>
-      ${plan.tier === 'pro_plus' ? '<span class="badge-recommended">Most Popular</span>' : ''}
     </div>
-    <div class="plan-price">
-      <span class="price">£${plan.price.toFixed(2)}</span>
-      <span class="period">/${plan.billingCycle}</span>
-    </div>
+    ${priceHtml}
     <div class="plan-trial">
       <span class="trial-badge">${plan.trialDays}-day free trial</span>
     </div>
