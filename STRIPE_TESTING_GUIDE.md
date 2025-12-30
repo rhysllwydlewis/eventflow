@@ -20,7 +20,8 @@ Add these to your `.env` file:
 # Stripe Secret Key (from Stripe Dashboard > Developers > API Keys)
 STRIPE_SECRET_KEY=sk_test_...
 
-# Stripe Publishable Key (for frontend)
+# Stripe Publishable Key (for frontend - currently not used in server-side implementation)
+# For Railway deployment, use NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
 STRIPE_PUBLISHABLE_KEY=pk_test_...
 
 # Webhook Secret (get from Stripe CLI or Dashboard > Webhooks)
@@ -30,6 +31,8 @@ STRIPE_WEBHOOK_SECRET=whsec_...
 STRIPE_SUCCESS_URL=http://localhost:3000/payment-success.html
 STRIPE_CANCEL_URL=http://localhost:3000/payment-cancel.html
 ```
+
+> **Railway Deployment Note**: If deploying to Railway, use `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` instead of `STRIPE_PUBLISHABLE_KEY` for the publishable key, as Railway follows Next.js naming conventions.
 
 ### Getting Test API Keys
 
@@ -321,6 +324,29 @@ Before deploying to production:
 - [ ] Test with real payment methods
 - [ ] Monitor webhook event processing
 - [ ] Set up error alerting for failed payments
+
+### Railway-Specific Configuration
+
+If deploying to Railway:
+
+1. **Environment Variable Names**:
+   - Use `STRIPE_SECRET_KEY` (standard name works)
+   - Use `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` instead of `STRIPE_PUBLISHABLE_KEY`
+   - Railway follows Next.js conventions for client-side variables
+
+2. **Setting Variables in Railway**:
+   ```bash
+   # In Railway dashboard > Variables tab, add:
+   STRIPE_SECRET_KEY=sk_live_...
+   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_live_...
+   STRIPE_WEBHOOK_SECRET=whsec_...
+   STRIPE_SUCCESS_URL=https://your-domain.railway.app/payment-success.html
+   STRIPE_CANCEL_URL=https://your-domain.railway.app/payment-cancel.html
+   ```
+
+3. **Webhook URL**:
+   - Set webhook URL in Stripe Dashboard to: `https://your-domain.railway.app/api/payments/webhook`
+   - Copy the webhook signing secret to Railway's `STRIPE_WEBHOOK_SECRET` variable
 
 ## API Documentation
 
