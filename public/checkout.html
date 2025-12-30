@@ -301,7 +301,17 @@
           });
           
           if (!response.ok) {
-            window.location.href = '/auth.html?redirect=' + encodeURIComponent(window.location.pathname);
+            // For free plan, allow unauthenticated users to proceed to signup
+            const urlParams = new URLSearchParams(window.location.search);
+            const plan = urlParams.get('plan');
+            
+            if (plan === 'starter') {
+              // Show signup option for free plan
+              return 'unauthenticated_free';
+            }
+            
+            // For paid plans, redirect to auth with return URL
+            window.location.href = '/auth.html?redirect=' + encodeURIComponent(window.location.pathname + window.location.search);
             return false;
           }
           
@@ -434,8 +444,8 @@
 
       // Initialize page
       async function init() {
-        const isAuthenticated = await checkAuth();
-        if (isAuthenticated) {
+        const authStatus = await checkAuth();
+        if (authStatus === true || authStatus === 'unauthenticated_free') {
           renderPricingCards();
         }
       }

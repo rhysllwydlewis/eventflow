@@ -90,10 +90,42 @@
 <script type="module" src="/assets/js/customer-messages.js?v=17.0.0"></script>
 <script>
 window.__EF_PAGE__='dash_customer';
-// Setup Open My Plan button
-document.getElementById('openPlanBtn')?.addEventListener('click', () => {
-  window.location.href = '/plan.html';
-});
+
+// Check authentication on page load
+async function checkAuth() {
+  try {
+    const response = await fetch('/api/auth/me', { credentials: 'include' });
+    return response.ok;
+  } catch (error) {
+    console.error('Auth check failed:', error);
+    return false;
+  }
+}
+
+// Setup navigation with auth check
+async function initDashboard() {
+  const isAuthenticated = await checkAuth();
+  
+  if (!isAuthenticated) {
+    // Redirect to login if not authenticated
+    window.location.href = '/auth.html?redirect=' + encodeURIComponent(window.location.pathname);
+    return;
+  }
+
+  // Setup Open My Plan button with auth-aware navigation
+  document.getElementById('openPlanBtn')?.addEventListener('click', async (e) => {
+    e.preventDefault();
+    const authenticated = await checkAuth();
+    if (authenticated) {
+      window.location.href = '/plan.html';
+    } else {
+      window.location.href = '/auth.html?redirect=/plan.html';
+    }
+  });
+}
+
+// Initialize dashboard
+initDashboard();
 </script>
 </div></main>
 <footer class="footer" role="contentinfo" style="padding:1.25rem 0;margin-top:3rem;">
