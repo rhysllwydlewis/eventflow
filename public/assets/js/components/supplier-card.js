@@ -24,117 +24,201 @@ class SupplierCard {
     style.id = 'supplier-card-styles';
     style.textContent = `
       .supplier-card {
-        background-color: var(--color-card-bg, #ffffff);
-        border: 1px solid var(--color-border, #dee2e6);
-        border-radius: 12px;
-        padding: 24px;
-        margin-top: 24px;
+        background-color: var(--color-card-bg, #ffffff) !important;
+        border: 1px solid var(--color-border, #dee2e6) !important;
+        border-radius: 12px !important;
+        padding: 32px !important;
+        margin-top: 24px !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05) !important;
+        display: block !important;
+        grid-template-columns: unset !important;
       }
 
       .supplier-card-header {
-        display: flex;
-        align-items: center;
-        gap: 16px;
-        margin-bottom: 16px;
+        display: flex !important;
+        align-items: flex-start !important;
+        gap: 24px !important;
+        margin-bottom: 24px !important;
+        width: 100% !important;
       }
 
       .supplier-card-logo {
-        width: 80px;
-        height: 80px;
-        border-radius: 50%;
-        object-fit: cover;
-        border: 2px solid var(--color-border, #dee2e6);
+        width: 100px !important;
+        height: 100px !important;
+        border-radius: 50% !important;
+        object-fit: cover !important;
+        border: 2px solid var(--color-border, #dee2e6) !important;
+        flex-shrink: 0 !important;
+        background-color: var(--color-bg-secondary, #f8f9fa) !important;
       }
 
       .supplier-card-info {
-        flex: 1;
+        flex: 1 !important;
+        min-width: 0 !important;
+        width: 100% !important;
+        display: block !important;
       }
 
       .supplier-card-name {
-        font-size: 1.5rem;
-        font-weight: 600;
-        margin: 0 0 4px 0;
-        color: var(--color-text-primary, #212529);
+        font-size: 1.75rem !important;
+        font-weight: 700 !important;
+        margin: 0 0 8px 0 !important;
+        color: var(--color-text-primary, #212529) !important;
+        line-height: 1.3 !important;
+        word-wrap: break-word !important;
+        overflow-wrap: break-word !important;
+        white-space: normal !important;
+        display: block !important;
+        width: 100% !important;
       }
 
       .supplier-card-blurb {
-        font-size: 0.95rem;
-        color: var(--color-text-secondary, #6c757d);
-        margin: 0;
+        font-size: 1rem !important;
+        color: var(--color-text-secondary, #6c757d) !important;
+        margin: 0 0 12px 0 !important;
+        line-height: 1.5 !important;
+        word-wrap: break-word !important;
+        overflow-wrap: break-word !important;
+        white-space: normal !important;
+        display: block !important;
+        width: 100% !important;
+      }
+
+      .supplier-badges {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 0.5rem !important;
+        margin-top: 0.5rem !important;
+        width: 100% !important;
       }
 
       .supplier-card-description {
-        font-size: 0.95rem;
-        color: var(--color-text-primary, #212529);
-        line-height: 1.6;
-        margin-bottom: 16px;
+        font-size: 0.95rem !important;
+        color: var(--color-text-primary, #212529) !important;
+        line-height: 1.7 !important;
+        margin-bottom: 20px !important;
+        word-wrap: break-word !important;
+        overflow-wrap: break-word !important;
+        display: block !important;
       }
 
       .supplier-card-meta {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 12px;
-        margin-top: 16px;
+        display: grid !important;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)) !important;
+        gap: 16px !important;
+        margin-top: 20px !important;
+        padding: 20px 0 !important;
+        border-top: 1px solid var(--color-border, #dee2e6) !important;
+        border-bottom: 1px solid var(--color-border, #dee2e6) !important;
       }
 
       .supplier-card-meta-item {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 0.9rem;
-        color: var(--color-text-secondary, #6c757d);
+        display: flex !important;
+        align-items: center !important;
+        gap: 10px !important;
+        font-size: 0.95rem !important;
+        color: var(--color-text-secondary, #6c757d) !important;
+        word-wrap: break-word !important;
+        overflow-wrap: break-word !important;
       }
 
       .supplier-card-meta-icon {
-        font-size: 1.2rem;
+        font-size: 1.3rem !important;
+        flex-shrink: 0 !important;
       }
 
       .supplier-card-actions {
-        margin-top: 20px;
-        padding-top: 20px;
-        border-top: 1px solid var(--color-border, #dee2e6);
-        display: flex;
-        gap: 12px;
-        flex-wrap: wrap;
+        margin-top: 24px !important;
+        display: flex !important;
+        gap: 12px !important;
+        flex-wrap: wrap !important;
+        align-items: center !important;
       }
 
       .supplier-card-btn {
-        padding: 10px 20px;
-        border-radius: 8px;
-        font-size: 0.95rem;
-        font-weight: 600;
-        cursor: pointer;
-        border: none;
-        transition: background-color 0.2s ease;
+        padding: 12px 24px !important;
+        border-radius: 8px !important;
+        font-size: 1rem !important;
+        font-weight: 600 !important;
+        cursor: pointer !important;
+        border: none !important;
+        transition: all 0.2s ease !important;
+        text-decoration: none !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        white-space: nowrap !important;
       }
 
       .supplier-card-btn.primary {
-        background-color: var(--accent, #13B6A2);
-        color: white;
+        background-color: var(--accent, #13B6A2) !important;
+        color: white !important;
+        box-shadow: 0 2px 4px rgba(19, 182, 162, 0.2) !important;
       }
 
       .supplier-card-btn.primary:hover {
-        background-color: var(--ink, #0B8073);
+        background-color: var(--ink, #0B8073) !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 4px 8px rgba(19, 182, 162, 0.3) !important;
       }
 
       .supplier-card-btn.secondary {
-        background-color: var(--color-bg-secondary, #f8f9fa);
-        color: var(--color-text-primary, #212529);
-        border: 1px solid var(--color-border, #dee2e6);
+        background-color: var(--color-bg-secondary, #f8f9fa) !important;
+        color: var(--color-text-primary, #212529) !important;
+        border: 1px solid var(--color-border, #dee2e6) !important;
       }
 
       .supplier-card-btn.secondary:hover {
-        background-color: #e2e6ea;
+        background-color: #e2e6ea !important;
+        transform: translateY(-1px) !important;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+      }
+
+      /* Desktop-specific improvements */
+      @media (min-width: 769px) {
+        .supplier-card {
+          padding: 40px !important;
+        }
+
+        .supplier-card-header {
+          gap: 32px !important;
+        }
+
+        .supplier-card-logo {
+          width: 120px !important;
+          height: 120px !important;
+        }
       }
 
       @media (max-width: 768px) {
+        .supplier-card {
+          padding: 20px !important;
+        }
+
         .supplier-card-header {
-          flex-direction: column;
-          text-align: center;
+          flex-direction: column !important;
+          align-items: center !important;
+          text-align: center !important;
+          gap: 16px !important;
+        }
+
+        .supplier-card-logo {
+          width: 90px !important;
+          height: 90px !important;
         }
 
         .supplier-card-meta {
-          grid-template-columns: 1fr;
+          grid-template-columns: 1fr !important;
+          gap: 12px !important;
+        }
+
+        .supplier-card-actions {
+          flex-direction: column !important;
+          width: 100% !important;
+        }
+
+        .supplier-card-btn {
+          width: 100% !important;
         }
       }
     `;
@@ -173,9 +257,7 @@ class SupplierCard {
       }
     }
 
-    return badges.length > 0
-      ? `<div class="supplier-badges">${badges.join('')}</div>`
-      : '';
+    return badges.length > 0 ? `<div class="supplier-badges">${badges.join('')}</div>` : '';
   }
 
   render() {
@@ -220,7 +302,8 @@ class SupplierCard {
       </div>
 
       <div class="supplier-card-actions">
-        ${this.supplier.id ? `<button class="supplier-card-btn secondary" onclick="window.location.href='/supplier.html?id=${this.supplier.id}'">View All Packages</button>` : ''}
+        ${this.supplier.id ? `<button class="supplier-card-btn primary" onclick="window.location.href='/supplier.html?id=${this.supplier.id}'">View Profile</button>` : ''}
+        ${this.supplier.id ? `<button class="supplier-card-btn secondary" onclick="window.location.href='/supplier.html?id=${this.supplier.id}#packages'">View All Packages</button>` : ''}
       </div>
     `;
 

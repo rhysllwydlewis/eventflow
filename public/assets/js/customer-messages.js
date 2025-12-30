@@ -48,7 +48,7 @@ function renderConversations(conversations) {
     return;
   }
 
-  let html = '<div class="thread-list">';
+  let html = '<div class="thread-list" style="display:flex;flex-direction:column;gap:0.75rem;">';
 
   conversations.forEach(conversation => {
     const supplierName = conversation.supplierName || 'Supplier';
@@ -58,18 +58,20 @@ function renderConversations(conversations) {
       : '';
     const unreadCount = conversation.unreadCount || 0;
     const unreadBadge =
-      unreadCount > 0 ? `<span class="badge badge-info">${unreadCount} unread</span>` : '';
+      unreadCount > 0
+        ? `<span class="badge badge-info" style="background:#DBEAFE;color:#1E40AF;padding:4px 10px;border-radius:12px;font-size:0.8rem;font-weight:600;">${unreadCount} unread</span>`
+        : '';
 
     html += `
-      <div class="thread-item" style="border:1px solid #e4e4e7;padding:1rem;margin-bottom:0.5rem;border-radius:4px;cursor:pointer;transition:background 0.2s;" data-conversation-id="${conversation.id}">
-        <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:0.5rem;">
-          <strong>${escapeHtml(supplierName)}</strong>
-          <div style="display:flex;gap:0.5rem;align-items:center;">
+      <div class="thread-item" style="border:1px solid #E7EAF0;padding:1.25rem;border-radius:12px;cursor:pointer;transition:all 0.2s;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.05);" data-conversation-id="${conversation.id}">
+        <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:0.75rem;gap:1rem;">
+          <strong style="font-size:1.05rem;color:#0B1220;flex:1;">${escapeHtml(supplierName)}</strong>
+          <div style="display:flex;gap:0.75rem;align-items:center;flex-shrink:0;">
             ${unreadBadge}
-            <span class="small" style="color:#9ca3af;">${lastMessageTime}</span>
+            <span class="small" style="color:#9ca3af;font-size:0.85rem;white-space:nowrap;">${lastMessageTime}</span>
           </div>
         </div>
-        <p class="small" style="margin:0;color:#6b7280;">${escapeHtml(lastMessage.substring(0, 80))}${lastMessage.length > 80 ? '...' : ''}</p>
+        <p class="small" style="margin:0;color:#6b7280;line-height:1.5;font-size:0.9rem;">${escapeHtml(lastMessage.substring(0, 100))}${lastMessage.length > 100 ? '...' : ''}</p>
       </div>
     `;
   });
@@ -86,10 +88,14 @@ function renderConversations(conversations) {
 
     // Hover effect
     item.addEventListener('mouseenter', function () {
-      this.style.background = '#fafafa';
+      this.style.background = '#F9FAFB';
+      this.style.transform = 'translateY(-2px)';
+      this.style.boxShadow = '0 4px 8px rgba(0,0,0,0.1)';
     });
     item.addEventListener('mouseleave', function () {
-      this.style.background = '';
+      this.style.background = '#fff';
+      this.style.transform = 'translateY(0)';
+      this.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)';
     });
   });
 }
@@ -97,20 +103,21 @@ function renderConversations(conversations) {
 // Open conversation modal
 function openConversation(conversationId) {
   const modal = document.createElement('div');
-  modal.className = 'modal-overlay';
+  modal.className = 'modal-overlay active';
+  modal.style.display = 'flex';
   modal.innerHTML = `
-    <div class="modal" style="max-width:600px;height:80vh;display:flex;flex-direction:column;">
-      <div class="modal-header">
-        <h3>Conversation</h3>
-        <button class="modal-close" type="button" aria-label="Close">&times;</button>
+    <div class="modal" style="max-width:600px;height:80vh;display:flex;flex-direction:column;background:#fff;color:#0B1220;">
+      <div class="modal-header" style="background:#fff;color:#0B1220;border-bottom:1px solid #E7EAF0;">
+        <h3 class="modal-title" style="color:#0B1220;">Conversation</h3>
+        <button class="modal-close" type="button" aria-label="Close" style="color:#667085;">&times;</button>
       </div>
-      <div class="modal-body" style="flex:1;overflow-y:auto;padding:1rem;">
-        <div id="conversationMessages"><p class="small">Loading...</p></div>
+      <div class="modal-body" style="flex:1;overflow-y:auto;padding:1.5rem;background:#fff;">
+        <div id="conversationMessages"><p class="small" style="color:#667085;">Loading...</p></div>
       </div>
-      <div class="modal-footer" style="padding:1rem;border-top:1px solid #e4e4e7;">
-        <form id="sendMessageForm" style="display:flex;gap:0.5rem;">
-          <textarea id="messageInput" placeholder="Type your message..." rows="2" style="flex:1;padding:0.5rem;border:1px solid #d4d4d8;border-radius:4px;resize:none;" required></textarea>
-          <button type="submit" class="btn btn-primary" style="align-self:flex-end;">Send</button>
+      <div class="modal-footer" style="padding:1.5rem;border-top:1px solid #E7EAF0;background:#fff;">
+        <form id="sendMessageForm" style="display:flex;gap:0.75rem;width:100%;">
+          <textarea id="messageInput" placeholder="Type your message..." rows="2" style="flex:1;padding:0.75rem;border:1px solid #E7EAF0;border-radius:8px;resize:none;font-family:inherit;font-size:0.95rem;background:#fff;color:#0B1220;" required></textarea>
+          <button type="submit" class="cta" style="align-self:flex-end;white-space:nowrap;">Send</button>
         </form>
       </div>
     </div>
@@ -144,24 +151,26 @@ function openConversation(conversationId) {
     }
 
     if (!messages || messages.length === 0) {
-      container.innerHTML = '<p class="small">No messages yet. Start the conversation!</p>';
+      container.innerHTML =
+        '<p class="small" style="color:#667085;">No messages yet. Start the conversation!</p>';
       return;
     }
 
-    let html = '<div class="messages-list">';
+    let html =
+      '<div class="messages-list" style="display:flex;flex-direction:column;gap:0.75rem;">';
 
     messages.forEach(message => {
       const timestamp = messagingSystem.formatFullTimestamp(message.timestamp);
       const isFromCustomer = message.senderType === 'customer';
-      const bgColor = isFromCustomer ? '#3b82f6' : '#e4e4e7';
-      const textColor = isFromCustomer ? '#fff' : '#1a1a1a';
+      const bgColor = isFromCustomer ? '#0B8073' : '#F3F4F6';
+      const textColor = isFromCustomer ? '#fff' : '#1F2937';
 
       html += `
-        <div style="display:flex;justify-content:${isFromCustomer ? 'flex-end' : 'flex-start'};margin-bottom:1rem;">
-          <div style="max-width:70%;padding:0.75rem;background:${bgColor};color:${textColor};border-radius:8px;">
-            <div style="font-weight:600;margin-bottom:0.25rem;font-size:12px;opacity:0.9;">${escapeHtml(message.senderName || 'Unknown')}</div>
-            <p style="margin:0;word-wrap:break-word;">${escapeHtml(message.message)}</p>
-            <div style="margin-top:0.25rem;font-size:11px;opacity:0.8;">${timestamp}</div>
+        <div style="display:flex;justify-content:${isFromCustomer ? 'flex-end' : 'flex-start'};margin-bottom:0.5rem;">
+          <div style="max-width:75%;padding:0.875rem 1rem;background:${bgColor};color:${textColor};border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,0.1);">
+            <div style="font-weight:600;margin-bottom:0.375rem;font-size:0.8rem;opacity:0.9;">${escapeHtml(message.senderName || 'Unknown')}</div>
+            <p style="margin:0;word-wrap:break-word;line-height:1.5;">${escapeHtml(message.message)}</p>
+            <div style="margin-top:0.375rem;font-size:0.75rem;opacity:0.8;">${timestamp}</div>
           </div>
         </div>
       `;
