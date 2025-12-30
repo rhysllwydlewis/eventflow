@@ -242,7 +242,7 @@ class TimelineBuilder {
   showEventModal(event = null) {
     const isEdit = !!event;
     const modal = document.createElement('div');
-    modal.className = 'modal-overlay';
+    modal.className = 'modal-overlay active';
     modal.innerHTML = `
       <div class="modal-content">
         <div class="modal-header">

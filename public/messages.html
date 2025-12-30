@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="/assets/css/utilities.css">
   <link rel="stylesheet" href="/assets/css/components.css">
   <link rel="stylesheet" href="/assets/css/animations.css">
+  <link rel="stylesheet" href="/assets/css/mobile-optimizations.css">
   <link rel="icon" href="/favicon.svg">
   <style>
     .messages-container {
@@ -358,18 +359,43 @@
   <link rel="stylesheet" href="/assets/css/ui-ux-fixes.css">
 </head>
 <body>
-  <nav class="navbar">
-    <div class="nav-container">
-      <a href="/" class="logo">EventFlow</a>
-      <div class="nav-links">
-        <a href="/dashboard.html">Dashboard</a>
-        <a href="/messages.html" class="active">Messages</a>
-        <a href="/plan.html">My Plan</a>
-        <a href="/settings.html">Settings</a>
-      </div>
-      <a href="/api/auth/logout" class="btn btn-secondary">Sign Out</a>
+<header class="header" role="banner">
+  <div class="container header-inner">
+    <a class="brand" href="/" aria-label="EventFlow home">
+      <span class="logo" aria-hidden="true"></span>
+      <span class="brand-text">EventFlow</span>
+    </a>
+    <div class="header-actions">
+      <nav class="nav nav-inline" aria-label="Quick navigation">
+        <a href="/start.html" class="nav-link nav-main">Plan</a>
+        <a href="/suppliers.html" class="nav-link nav-main">Suppliers</a>
+        <a href="/blog.html" class="nav-link nav-main">Blog</a>
+        <a href="/messages.html" class="nav-link nav-main">Messages</a>
+        <a href="/dashboard.html" class="nav-link nav-main">Dashboard</a>
+      </nav>
+      <button id="notification-bell" class="icon-button" type="button" aria-label="Notifications" style="display:none;">
+        <span class="notification-icon">🔔</span>
+        <span class="notification-badge" style="display:none;">0</span>
+      </button>
+      <button id="burger" class="nav-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false">
+        <span class="nav-toggle-bar"></span>
+        <span class="nav-toggle-bar"></span>
+        <span class="nav-toggle-bar"></span>
+      </button>
     </div>
+  </div>
+  <nav class="nav nav-menu" aria-label="Primary navigation">
+    <a href="/start.html">Plan an Event</a>
+    <a href="/suppliers.html">Suppliers</a>
+    <a href="/plan.html">My Plan</a>
+    <a href="/blog.html">Blog</a>
+    <a href="/messages.html">Messages</a>
+    <a href="/dashboard.html">Dashboard</a>
+    <a href="/settings.html">Settings</a>
   </nav>
+</header>
+<script src="/assets/js/auth-nav.js" defer></script>
+<script src="/assets/js/components.js" defer></script>
 
   <main class="messages-container">
     <div class="messages-header">

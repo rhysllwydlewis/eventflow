@@ -38,7 +38,7 @@ class GlobalSearch {
 
   createModal() {
     const overlay = document.createElement('div');
-    overlay.className = 'modal-overlay';
+    overlay.className = 'modal-overlay active';
     overlay.id = 'search-modal';
     overlay.style.cssText = `
       opacity: 0;

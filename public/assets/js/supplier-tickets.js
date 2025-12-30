@@ -80,7 +80,7 @@ function renderTickets(tickets) {
 // Create ticket modal
 function showCreateTicketModal() {
   const modal = document.createElement('div');
-  modal.className = 'modal-overlay';
+  modal.className = 'modal-overlay active';
   modal.innerHTML = `
     <div class="modal" style="max-width:500px;">
       <div class="modal-header">
@@ -182,7 +182,7 @@ function showCreateTicketModal() {
 // View ticket modal
 function viewTicket(ticketId) {
   const modal = document.createElement('div');
-  modal.className = 'modal-overlay';
+  modal.className = 'modal-overlay active';
   modal.innerHTML = `
     <div class="modal" style="max-width:600px;">
       <div class="modal-header">

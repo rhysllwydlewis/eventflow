@@ -120,7 +120,7 @@ function renderConversations(conversations) {
 // Open conversation modal
 function openConversation(conversationId) {
   const modal = document.createElement('div');
-  modal.className = 'modal-overlay';
+  modal.className = 'modal-overlay active';
   modal.innerHTML = `
     <div class="modal" style="max-width:600px;height:80vh;display:flex;flex-direction:column;">
       <div class="modal-header">
