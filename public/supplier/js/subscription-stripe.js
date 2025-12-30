@@ -50,6 +50,9 @@ const PLANS = {
 let currentUser = null;
 let currentSubscription = null;
 
+// Constants
+const ERROR_DISPLAY_TIMEOUT_MS = 10000; // 10 seconds
+
 /**
  * Initialize subscription page
  */
@@ -97,7 +100,7 @@ async function initSubscriptionPage() {
 
     // Set up manage billing button
     setupBillingPortal();
-    
+
     console.log('[Subscription] Initialization complete');
   } catch (error) {
     console.error('[Subscription] Error initializing subscription page:', error);
@@ -286,7 +289,7 @@ function renderSubscriptionPlans() {
  */
 async function handleSubscribe(planId) {
   console.log('[Subscription] handleSubscribe called with planId:', planId);
-  
+
   const plan = PLANS[planId];
   if (!plan) {
     console.error('[Subscription] Invalid plan ID:', planId);
@@ -309,7 +312,7 @@ async function handleSubscribe(planId) {
     // For now, use one-time payment
     // In production, you'd create a Stripe Price ID for each plan
     const amount = Math.round(plan.price * 100); // Convert to pence
-    
+
     console.log('[Subscription] Creating checkout session with amount:', amount);
 
     const response = await fetch('/api/payments/create-checkout-session', {
@@ -348,7 +351,7 @@ async function handleSubscribe(planId) {
   } catch (error) {
     console.error('[Subscription] Error occurred:', error);
     console.error('[Subscription] Error stack:', error.stack);
-    
+
     const errorMessage = error.message || 'Failed to start subscription. Please try again.';
     showError(errorMessage);
 
@@ -376,7 +379,7 @@ function setupBillingPortal() {
 async function openBillingPortal(event) {
   try {
     console.log('[Subscription] Opening billing portal...');
-    
+
     const button = event.target;
     button.disabled = true;
     button.textContent = 'Loading...';
@@ -414,7 +417,7 @@ async function openBillingPortal(event) {
   } catch (error) {
     console.error('[Subscription] Billing portal error:', error);
     console.error('[Subscription] Error stack:', error.stack);
-    
+
     const errorMessage = error.message || 'Failed to open billing portal. Please try again.';
     showError(errorMessage);
 
@@ -432,11 +435,11 @@ async function openBillingPortal(event) {
  */
 function showError(message) {
   console.error('[Subscription] Showing error:', message);
-  
+
   const errorContainer = document.getElementById('error-message');
   if (errorContainer) {
     errorContainer.innerHTML = `
-      <div class="alert alert-error" style="background: #fee2e2; border: 1px solid #ef4444; color: #991b1b; padding: 1rem; border-radius: 8px; margin: 1rem 0;">
+      <div class="alert alert-error alert-error-styled">
         <strong>⚠️ Error:</strong> ${message}
       </div>
     `;
@@ -445,10 +448,10 @@ function showError(message) {
     // Scroll to error message
     errorContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
-    // Auto-hide after 10 seconds (increased from 5)
+    // Auto-hide after configured timeout
     setTimeout(() => {
       errorContainer.style.display = 'none';
-    }, 10000);
+    }, ERROR_DISPLAY_TIMEOUT_MS);
   } else {
     // Fallback to alert if container not found
     console.warn('[Subscription] Error container not found, using alert');

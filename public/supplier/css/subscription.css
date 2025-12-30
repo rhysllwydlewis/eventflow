@@ -452,6 +452,16 @@
   background: var(--color-info, #17a2b8);
 }
 
+/* Alert Error Styled */
+.alert-error-styled {
+  background: #fee2e2;
+  border: 1px solid #ef4444;
+  color: #991b1b;
+  padding: 1rem;
+  border-radius: 8px;
+  margin: 1rem 0;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .subscription-header h1 {
