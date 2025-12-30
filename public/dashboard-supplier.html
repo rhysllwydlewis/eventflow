@@ -221,19 +221,56 @@
     if (!container) return;
     
     try {
-      // TODO: Create API endpoint to get current user's supplier subscription
-      // For now, show a simple message
-      container.innerHTML = `
-        <p class="small"><strong>Subscription Management</strong></p>
-        <p class="small">Contact support to manage your subscription.</p>
-      `;
+      // Load subscription status from payments API
+      const response = await fetch('/api/payments', {
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        
+        // Find active subscription
+        const activeSubscription = data.payments.find(
+          p => p.type === 'subscription' && 
+               p.status === 'succeeded' &&
+               p.subscriptionDetails &&
+               !p.subscriptionDetails.cancelAtPeriodEnd
+        );
+        
+        if (activeSubscription) {
+          const details = activeSubscription.subscriptionDetails;
+          const endDate = new Date(details.currentPeriodEnd);
+          
+          container.innerHTML = `
+            <p class="small"><strong>Active Plan:</strong> ${details.planName || 'Pro Plan'}</p>
+            <p class="small"><strong>Renews:</strong> ${endDate.toLocaleDateString('en-GB')}</p>
+            <p class="small"><strong>Status:</strong> <span style="color: #10b981;">✓ Active</span></p>
+            <a href="/supplier/subscription.html" class="btn btn-secondary" style="margin-top: 0.5rem;">Manage Subscription</a>
+          `;
+        } else {
+          container.innerHTML = `
+            <p class="small">You're currently on the <strong>Free Plan</strong></p>
+            <p class="small">Upgrade to unlock premium features and boost your visibility!</p>
+            <a href="/supplier/subscription.html" class="btn btn-primary" style="margin-top: 0.5rem;">Upgrade to Pro</a>
+          `;
+        }
+      } else {
+        // API error - show basic message
+        container.innerHTML = `
+          <p class="small">Manage your subscription and unlock premium features.</p>
+          <a href="/supplier/subscription.html" class="btn btn-secondary" style="margin-top: 0.5rem;">View Plans</a>
+        `;
+      }
       
       // Update package limit display
       await updatePackageLimitDisplay();
       
     } catch (error) {
       console.error('Error loading subscription status:', error);
-      container.innerHTML = '<p class="small">Unable to load subscription status.</p>';
+      container.innerHTML = `
+        <p class="small">Unable to load subscription status.</p>
+        <a href="/supplier/subscription.html" class="btn btn-secondary" style="margin-top: 0.5rem;">View Subscription</a>
+      `;
     }
   }
   
