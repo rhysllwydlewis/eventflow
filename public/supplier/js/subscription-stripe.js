@@ -279,11 +279,16 @@ function renderSubscriptionPlans() {
  * Handle subscription button click
  */
 async function handleSubscribe(planId) {
+  console.log('handleSubscribe called with planId:', planId);
+
   const plan = PLANS[planId];
   if (!plan) {
+    console.error('Invalid plan ID:', planId);
     showError('Invalid plan selected');
     return;
   }
+
+  console.log('Plan found:', plan.name);
 
   const button = document.querySelector(`button[data-plan-id="${planId}"]`);
   if (button) {
@@ -295,6 +300,8 @@ async function handleSubscribe(planId) {
     // For now, use one-time payment
     // In production, you'd create a Stripe Price ID for each plan
     const amount = Math.round(plan.price * 100); // Convert to pence
+
+    console.log('Creating checkout session with amount:', amount);
 
     const response = await fetch('/api/payments/create-checkout-session', {
       method: 'POST',
@@ -310,7 +317,10 @@ async function handleSubscribe(planId) {
       }),
     });
 
+    console.log('API response status:', response.status);
+
     const data = await response.json();
+    console.log('API response data:', data);
 
     if (!response.ok) {
       throw new Error(data.error || 'Failed to create checkout session');
@@ -318,6 +328,7 @@ async function handleSubscribe(planId) {
 
     // Redirect to Stripe checkout
     if (data.url) {
+      console.log('Redirecting to Stripe checkout:', data.url);
       window.location.href = data.url;
     } else {
       throw new Error('No checkout URL returned');

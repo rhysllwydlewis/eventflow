@@ -657,6 +657,7 @@ body.nav-open .nav-menu{
 .nav-menu a{
   padding:8px 12px;
   width:100%;
+  white-space:nowrap;
 }
 
 /* Responsive behaviour */
@@ -710,6 +711,7 @@ body.nav-open .nav-menu{
     width:100%;
     border-radius:10px;
     transition:background 140ms ease-out, transform 100ms ease-out;
+    white-space:nowrap;
   }
   .nav-menu a:hover{
     background:rgba(11,128,115,.08);
