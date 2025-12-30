@@ -638,6 +638,79 @@ html[data-theme="dark"] .thread-item {
 }
 
 /* ============================================
+   MODAL FIXES - LIGHT THEME
+   ============================================ */
+
+/* Ensure modals use light theme consistently */
+.modal-overlay {
+  background: rgba(255, 255, 255, 0.75) !important;
+}
+
+.modal {
+  background: #fff !important;
+  color: #0B1220 !important;
+  border: 1px solid #E7EAF0;
+}
+
+.modal-header {
+  background: #fff;
+  color: #0B1220;
+  border-bottom: 1px solid #E7EAF0;
+}
+
+.modal-body {
+  background: #fff;
+  color: #0B1220;
+}
+
+.modal-footer {
+  background: #fff;
+  border-top: 1px solid #E7EAF0;
+}
+
+/* Ensure message bubbles in modals use proper styling */
+.messages-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* ============================================
+   FOOTER FIXES - COMPACT SIZE
+   ============================================ */
+
+/* Make footer more compact on all pages */
+.footer {
+  padding: 1.25rem 0 !important;
+  margin-top: 2rem !important;
+}
+
+.footer .container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.footer .small,
+.footer .version {
+  font-size: 0.85rem;
+}
+
+@media (max-width: 768px) {
+  .footer {
+    padding: 1rem 0 !important;
+  }
+  
+  .footer .container {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+}
+
+/* ============================================
    UTILITY CLASSES
    ============================================ */
 
