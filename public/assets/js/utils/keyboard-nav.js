@@ -7,7 +7,7 @@ class KeyboardNavigationHelper {
   constructor(options = {}) {
     this.options = {
       enableFocusTrap: true,
-      enableSkipLinks: true,
+      enableSkipLinks: false, // Disabled - skip links removed per user request
       enableShortcuts: true,
       focusRingClass: 'focus-visible',
       ...options,

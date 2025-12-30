@@ -2426,6 +2426,8 @@ document.addEventListener('DOMContentLoaded', () => {
           if (loginErrorEl) {
             loginErrorEl.textContent = 'Please enter both email and password';
             loginErrorEl.style.display = 'block';
+            loginErrorEl.style.visibility = 'visible';
+            loginErrorEl.setAttribute('aria-hidden', 'false');
           }
           if (loginStatus) {
             loginStatus.textContent = '';
@@ -2436,6 +2438,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // Clear any previous errors
         if (loginErrorEl) {
           loginErrorEl.style.display = 'none';
+          loginErrorEl.style.visibility = 'hidden';
+          loginErrorEl.setAttribute('aria-hidden', 'true');
           loginErrorEl.textContent = '';
         }
 
@@ -2463,6 +2467,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (loginErrorEl) {
               loginErrorEl.textContent = errorMsg;
               loginErrorEl.style.display = 'block';
+              loginErrorEl.style.visibility = 'visible';
+              loginErrorEl.setAttribute('aria-hidden', 'false');
             }
 
             if (loginStatus) {
@@ -2497,6 +2503,8 @@ document.addEventListener('DOMContentLoaded', () => {
           if (loginErrorEl) {
             loginErrorEl.textContent = 'Network error – please try again.';
             loginErrorEl.style.display = 'block';
+            loginErrorEl.style.visibility = 'visible';
+            loginErrorEl.setAttribute('aria-hidden', 'false');
           }
           if (loginStatus) {
             loginStatus.textContent = 'Network error – please try again.';
