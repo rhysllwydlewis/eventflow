@@ -58,7 +58,9 @@ function renderConversations(conversations) {
       : '';
     const unreadCount = conversation.unreadCount || 0;
     const unreadBadge =
-      unreadCount > 0 ? `<span class="badge badge-info" style="background:#DBEAFE;color:#1E40AF;padding:4px 10px;border-radius:12px;font-size:0.8rem;font-weight:600;">${unreadCount} unread</span>` : '';
+      unreadCount > 0
+        ? `<span class="badge badge-info" style="background:#DBEAFE;color:#1E40AF;padding:4px 10px;border-radius:12px;font-size:0.8rem;font-weight:600;">${unreadCount} unread</span>`
+        : '';
 
     html += `
       <div class="thread-item" style="border:1px solid #E7EAF0;padding:1.25rem;border-radius:12px;cursor:pointer;transition:all 0.2s;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.05);" data-conversation-id="${conversation.id}">
@@ -101,8 +103,8 @@ function renderConversations(conversations) {
 // Open conversation modal
 function openConversation(conversationId) {
   const modal = document.createElement('div');
-  modal.className = 'modal-overlay';
-  modal.style.cssText = 'display: flex; opacity: 1; visibility: visible;';
+  modal.className = 'modal-overlay active';
+  modal.style.display = 'flex';
   modal.innerHTML = `
     <div class="modal" style="max-width:600px;height:80vh;display:flex;flex-direction:column;background:#fff;color:#0B1220;">
       <div class="modal-header" style="background:#fff;color:#0B1220;border-bottom:1px solid #E7EAF0;">
@@ -149,11 +151,13 @@ function openConversation(conversationId) {
     }
 
     if (!messages || messages.length === 0) {
-      container.innerHTML = '<p class="small" style="color:#667085;">No messages yet. Start the conversation!</p>';
+      container.innerHTML =
+        '<p class="small" style="color:#667085;">No messages yet. Start the conversation!</p>';
       return;
     }
 
-    let html = '<div class="messages-list" style="display:flex;flex-direction:column;gap:0.75rem;">';
+    let html =
+      '<div class="messages-list" style="display:flex;flex-direction:column;gap:0.75rem;">';
 
     messages.forEach(message => {
       const timestamp = messagingSystem.formatFullTimestamp(message.timestamp);

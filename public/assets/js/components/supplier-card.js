@@ -237,9 +237,7 @@ class SupplierCard {
       }
     }
 
-    return badges.length > 0
-      ? `<div class="supplier-badges">${badges.join('')}</div>`
-      : '';
+    return badges.length > 0 ? `<div class="supplier-badges">${badges.join('')}</div>` : '';
   }
 
   render() {
@@ -285,7 +283,7 @@ class SupplierCard {
 
       <div class="supplier-card-actions">
         ${this.supplier.id ? `<button class="supplier-card-btn primary" onclick="window.location.href='/supplier.html?id=${this.supplier.id}'">View Profile</button>` : ''}
-        ${this.supplier.id ? `<button class="supplier-card-btn secondary" onclick="window.location.href='/supplier.html?id=${this.supplier.id}'">View All Packages</button>` : ''}
+        ${this.supplier.id ? `<button class="supplier-card-btn secondary" onclick="window.location.href='/supplier.html?id=${this.supplier.id}#packages'">View All Packages</button>` : ''}
       </div>
     `;
 
