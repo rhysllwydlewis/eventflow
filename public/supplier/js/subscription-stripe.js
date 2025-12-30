@@ -448,7 +448,7 @@ function showError(message) {
   const errorContainer = document.getElementById('error-message');
   if (errorContainer) {
     errorContainer.innerHTML = `
-      <div class="alert alert-error-styled">
+      <div class="alert alert-error alert-error-styled">
         <strong>Error:</strong> ${message}
       </div>
     `;

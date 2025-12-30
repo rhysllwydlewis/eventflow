@@ -665,15 +665,8 @@
   color: #0c5460;
 }
 
-/* Alert Error Styled - Extracted from inline styles */
+/* Alert Error Styled - Extends alert-error with additional styling */
 .alert-error-styled {
-  background: #fee;
-  border-left: 4px solid #dc3545;
-  color: #721c24;
-  padding: 1rem 1.5rem;
-  border-radius: 8px;
-  margin-bottom: 1.5rem;
-  font-weight: 500;
   box-shadow: 0 2px 8px rgba(220, 53, 69, 0.15);
 }
 
