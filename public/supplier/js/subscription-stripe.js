@@ -4,17 +4,17 @@
  * Replaces Google Pay/Firebase with Stripe implementation
  */
 
-// Subscription plans - aligned with SUBSCRIPTION-TIERS.md
+// Subscription plans - aligned with updated pricing
 const PLANS = {
   pro_monthly: {
     id: 'pro_monthly',
     name: 'Pro Monthly',
     tier: 'pro',
-    price: 49.0,
+    price: 39.0,
     billingCycle: 'monthly',
     trialDays: 14,
-    introductoryPrice: 49.0,
-    regularPrice: 99.0,
+    introductoryPrice: 39.0,
+    regularPrice: 69.0,
     introductoryMonths: 3,
     features: [
       'Pro supplier badge on profile',
@@ -26,15 +26,15 @@ const PLANS = {
       'Priority support (24-hour response)',
     ],
   },
-  featured_monthly: {
-    id: 'featured_monthly',
-    name: 'Featured Monthly',
-    tier: 'featured',
-    price: 199.0,
+  pro_plus_monthly: {
+    id: 'pro_plus_monthly',
+    name: 'Pro Plus Monthly',
+    tier: 'pro_plus',
+    price: 159.0,
     billingCycle: 'monthly',
     trialDays: 14,
     features: [
-      'Featured badge on profile',
+      'Pro Plus badge on profile',
       'All Pro features included',
       'Homepage featured carousel placement',
       'Top 3 positions in category pages',
@@ -195,7 +195,7 @@ function renderSubscriptionPlans() {
     .map(plan => {
       const isCurrentPlan =
         currentSubscription && currentSubscription.subscriptionDetails?.planId?.includes(plan.id);
-      const isFeatured = plan.tier === 'featured';
+      const isFeatured = plan.tier === 'pro_plus';
 
       return `
       <div class="pricing-card ${isFeatured ? 'featured' : ''}">
