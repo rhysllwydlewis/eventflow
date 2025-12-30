@@ -4,6 +4,9 @@
  * Replaces Google Pay/Firebase with Stripe implementation
  */
 
+// Error display timeout constant (10 seconds)
+const ERROR_DISPLAY_TIMEOUT = 10000;
+
 // Subscription plans - aligned with updated pricing
 const PLANS = {
   pro_monthly: {
@@ -55,31 +58,32 @@ let currentSubscription = null;
  */
 async function initSubscriptionPage() {
   try {
-    console.log('Initializing subscription page...');
+    console.log('[Subscription] Initializing subscription page...');
 
     // Check authentication with retry logic
     let user = await checkAuth();
 
     // Retry once if auth check fails (handles race conditions)
     if (!user) {
-      console.log('First auth check failed, retrying...');
+      console.log('[Subscription] First auth check failed, retrying...');
       await new Promise(resolve => setTimeout(resolve, 500));
       user = await checkAuth();
     }
 
     if (!user) {
-      console.error('Authentication required - redirecting to login');
+      console.error('[Subscription] Authentication required - redirecting to login');
       // Preserve the current URL to return after login
       const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
       window.location.href = `/auth.html?redirect=${returnUrl}`;
       return;
     }
 
-    console.log('User authenticated:', user.email, 'Role:', user.role);
+    console.log('[Subscription] User authenticated:', user.email, 'Role:', user.role);
     currentUser = user;
 
     // Verify user is a supplier
     if (user.role !== 'supplier') {
+      console.error('[Subscription] User role is not supplier:', user.role);
       showError(
         'This page is only available to suppliers. Please register as a supplier to access subscription plans.'
       );
@@ -87,15 +91,21 @@ async function initSubscriptionPage() {
     }
 
     // Load current subscription status
+    console.log('[Subscription] Loading subscription status...');
     await loadSubscriptionStatus();
 
     // Render subscription plans
+    console.log('[Subscription] Rendering subscription plans...');
     renderSubscriptionPlans();
 
     // Set up manage billing button
+    console.log('[Subscription] Setting up billing portal...');
     setupBillingPortal();
+    
+    console.log('[Subscription] Initialization complete');
   } catch (error) {
-    console.error('Error initializing subscription page:', error);
+    console.error('[Subscription] Error initializing subscription page:', error);
+    console.error('[Subscription] Error stack:', error.stack);
     showError(
       'Failed to load subscription information. Please refresh the page or contact support.'
     );
@@ -107,26 +117,31 @@ async function initSubscriptionPage() {
  */
 async function checkAuth() {
   try {
+    console.log('[Subscription] Checking authentication...');
     const response = await fetch('/api/auth/me', {
       credentials: 'include',
     });
 
+    console.log('[Subscription] Auth check response status:', response.status);
+
     if (!response.ok) {
-      console.error('Auth check failed with status:', response.status);
+      console.error('[Subscription] Auth check failed with status:', response.status);
       return null;
     }
 
     const data = await response.json();
+    console.log('[Subscription] Auth check successful, user:', data.user?.email);
 
     // Verify user has supplier role
     if (!data.user) {
-      console.error('No user data in response');
+      console.error('[Subscription] No user data in response');
       return null;
     }
 
     return data.user;
   } catch (error) {
-    console.error('Auth check failed:', error);
+    console.error('[Subscription] Auth check failed:', error);
+    console.error('[Subscription] Error stack:', error.stack);
     return null;
   }
 }
@@ -136,15 +151,20 @@ async function checkAuth() {
  */
 async function loadSubscriptionStatus() {
   try {
+    console.log('[Subscription] Fetching subscription status from API...');
     const response = await fetch('/api/payments', {
       credentials: 'include',
     });
 
+    console.log('[Subscription] Subscription status response:', response.status);
+
     if (!response.ok) {
+      console.error('[Subscription] Failed to load subscription status:', response.status);
       throw new Error('Failed to load subscription status');
     }
 
     const data = await response.json();
+    console.log('[Subscription] Payments data received:', data.payments?.length, 'payments');
 
     // Find active subscription
     const activeSubscription = data.payments.find(
@@ -155,10 +175,17 @@ async function loadSubscriptionStatus() {
         !p.subscriptionDetails.cancelAtPeriodEnd
     );
 
+    if (activeSubscription) {
+      console.log('[Subscription] Active subscription found:', activeSubscription.subscriptionDetails?.planId);
+    } else {
+      console.log('[Subscription] No active subscription found');
+    }
+
     currentSubscription = activeSubscription;
     displaySubscriptionStatus(activeSubscription);
   } catch (error) {
-    console.error('Error loading subscription:', error);
+    console.error('[Subscription] Error loading subscription:', error);
+    console.error('[Subscription] Error stack:', error.stack);
     // Don't show error - user might not have subscription yet
   }
 }
@@ -279,11 +306,16 @@ function renderSubscriptionPlans() {
  * Handle subscription button click
  */
 async function handleSubscribe(planId) {
+  console.log('[Subscription] Handle subscribe clicked for plan:', planId);
+  
   const plan = PLANS[planId];
   if (!plan) {
+    console.error('[Subscription] Invalid plan selected:', planId);
     showError('Invalid plan selected');
     return;
   }
+
+  console.log('[Subscription] Selected plan:', plan.name, 'Price:', plan.price);
 
   const button = document.querySelector(`button[data-plan-id="${planId}"]`);
   if (button) {
@@ -295,6 +327,8 @@ async function handleSubscribe(planId) {
     // For now, use one-time payment
     // In production, you'd create a Stripe Price ID for each plan
     const amount = Math.round(plan.price * 100); // Convert to pence
+    
+    console.log('[Subscription] Creating checkout session with amount:', amount, 'pence');
 
     const response = await fetch('/api/payments/create-checkout-session', {
       method: 'POST',
@@ -310,20 +344,28 @@ async function handleSubscribe(planId) {
       }),
     });
 
+    console.log('[Subscription] Checkout session response status:', response.status);
+
     const data = await response.json();
+    console.log('[Subscription] Checkout session response data:', data);
 
     if (!response.ok) {
+      console.error('[Subscription] API error:', data.error || 'Unknown error');
+      console.error('[Subscription] Full response:', data);
       throw new Error(data.error || 'Failed to create checkout session');
     }
 
     // Redirect to Stripe checkout
     if (data.url) {
+      console.log('[Subscription] Redirecting to Stripe checkout:', data.url);
       window.location.href = data.url;
     } else {
+      console.error('[Subscription] No checkout URL in response');
       throw new Error('No checkout URL returned');
     }
   } catch (error) {
-    console.error('Subscription error:', error);
+    console.error('[Subscription] Subscription error:', error);
+    console.error('[Subscription] Error stack:', error.stack);
     showError(error.message || 'Failed to start subscription. Please try again.');
 
     if (button) {
@@ -348,6 +390,8 @@ function setupBillingPortal() {
  */
 async function openBillingPortal(event) {
   try {
+    console.log('[Subscription] Opening billing portal...');
+    
     const button = event.target;
     button.disabled = true;
     button.textContent = 'Loading...';
@@ -363,20 +407,28 @@ async function openBillingPortal(event) {
       }),
     });
 
+    console.log('[Subscription] Portal session response status:', response.status);
+
     const data = await response.json();
+    console.log('[Subscription] Portal session response data:', data);
 
     if (!response.ok) {
+      console.error('[Subscription] API error:', data.error || 'Unknown error');
+      console.error('[Subscription] Full response:', data);
       throw new Error(data.error || 'Failed to open billing portal');
     }
 
     // Redirect to Stripe billing portal
     if (data.url) {
+      console.log('[Subscription] Redirecting to billing portal:', data.url);
       window.location.href = data.url;
     } else {
+      console.error('[Subscription] No portal URL in response');
       throw new Error('No portal URL returned');
     }
   } catch (error) {
-    console.error('Billing portal error:', error);
+    console.error('[Subscription] Billing portal error:', error);
+    console.error('[Subscription] Error stack:', error.stack);
     showError(error.message || 'Failed to open billing portal. Please try again.');
 
     if (event && event.target) {
@@ -391,19 +443,24 @@ async function openBillingPortal(event) {
  * Show error message
  */
 function showError(message) {
+  console.log('[Subscription] Showing error:', message);
+  
   const errorContainer = document.getElementById('error-message');
   if (errorContainer) {
     errorContainer.innerHTML = `
-      <div class="alert alert-error">
+      <div class="alert alert-error-styled">
         <strong>Error:</strong> ${message}
       </div>
     `;
     errorContainer.style.display = 'block';
+    
+    // Auto-scroll to error message
+    errorContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-    // Auto-hide after 5 seconds
+    // Auto-hide after ERROR_DISPLAY_TIMEOUT (10 seconds)
     setTimeout(() => {
       errorContainer.style.display = 'none';
-    }, 5000);
+    }, ERROR_DISPLAY_TIMEOUT);
   } else {
     alert(message);
   }
@@ -413,6 +470,8 @@ function showError(message) {
  * Show success message
  */
 function showSuccess(message) {
+  console.log('[Subscription] Showing success:', message);
+  
   const successContainer = document.getElementById('success-message');
   if (successContainer) {
     successContainer.innerHTML = `
@@ -421,11 +480,14 @@ function showSuccess(message) {
       </div>
     `;
     successContainer.style.display = 'block';
+    
+    // Auto-scroll to success message
+    successContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-    // Auto-hide after 5 seconds
+    // Auto-hide after ERROR_DISPLAY_TIMEOUT (10 seconds)
     setTimeout(() => {
       successContainer.style.display = 'none';
-    }, 5000);
+    }, ERROR_DISPLAY_TIMEOUT);
   }
 }
 
