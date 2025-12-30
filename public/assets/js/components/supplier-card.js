@@ -37,6 +37,7 @@ class SupplierCard {
         align-items: flex-start;
         gap: 24px;
         margin-bottom: 24px;
+        width: 100%;
       }
 
       .supplier-card-logo {
@@ -52,6 +53,8 @@ class SupplierCard {
       .supplier-card-info {
         flex: 1;
         min-width: 0;
+        width: 100%;
+        display: block;
       }
 
       .supplier-card-name {
@@ -62,6 +65,9 @@ class SupplierCard {
         line-height: 1.3;
         word-wrap: break-word;
         overflow-wrap: break-word;
+        white-space: normal;
+        display: block;
+        width: 100%;
       }
 
       .supplier-card-blurb {
@@ -71,6 +77,17 @@ class SupplierCard {
         line-height: 1.5;
         word-wrap: break-word;
         overflow-wrap: break-word;
+        white-space: normal;
+        display: block;
+        width: 100%;
+      }
+
+      .supplier-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-top: 0.5rem;
+        width: 100%;
       }
 
       .supplier-card-description {
