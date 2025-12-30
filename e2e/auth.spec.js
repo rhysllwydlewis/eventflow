@@ -8,7 +8,7 @@ test.describe('Authentication Flow', () => {
   test('should display login page', async ({ page }) => {
     await page.goto('/auth.html');
     await expect(page).toHaveTitle(/EventFlow/i);
-    await expect(page.locator('form')).toBeVisible();
+    await expect(page.locator('#login-form')).toBeVisible();
   });
 
   test('should show validation errors for empty login', async ({ page }) => {
