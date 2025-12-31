@@ -163,7 +163,7 @@
             </ul>
             <button 
               class="btn-checkout" 
-              data-plan="${key}">
+              data-plan="${escapeHtml(key)}">
               ${plan.isFree ? 'Get Started Free' : `Choose ${escapeHtml(plan.name)}`}
             </button>
           </div>

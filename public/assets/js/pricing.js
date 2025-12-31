@@ -38,7 +38,7 @@
       return !!user.isPro;
     }
     const expiryTime = Date.parse(user.proExpiresAt);
-    if (!expiryTime || isNaN(expiryTime)) {
+    if (isNaN(expiryTime)) {
       return !!user.isPro;
     }
     return expiryTime > Date.now();
