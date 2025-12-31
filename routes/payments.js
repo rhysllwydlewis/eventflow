@@ -720,4 +720,44 @@ router.get('/:id', authRequired, async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/payments/config:
+ *   get:
+ *     summary: Get Stripe configuration
+ *     description: Returns Stripe publishable key for frontend integration
+ *     tags: [Payments]
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Configuration retrieved successfully
+ *       401:
+ *         description: Unauthorized
+ *       503:
+ *         description: Stripe not configured
+ */
+router.get('/config', authRequired, (req, res) => {
+  if (!STRIPE_ENABLED || !stripe) {
+    return res.status(503).json({
+      error: 'Payment processing is not available',
+      message: 'Stripe is not configured. Please contact support.',
+    });
+  }
+
+  const publishableKey =
+    process.env.STRIPE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+
+  if (!publishableKey) {
+    return res.status(503).json({
+      error: 'Stripe configuration incomplete',
+      message: 'Stripe publishable key is not configured.',
+    });
+  }
+
+  res.json({
+    publishableKey: publishableKey,
+  });
+});
+
 module.exports = router;
