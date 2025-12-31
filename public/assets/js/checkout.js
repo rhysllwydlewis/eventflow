@@ -79,8 +79,14 @@
       });
 
       if (!response.ok) {
-        const data = await response.json();
-        console.error('Failed to get Stripe config:', data);
+        // Check if response is JSON
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          const data = await response.json();
+          console.error('Failed to get Stripe config:', data);
+        } else {
+          console.error('Failed to get Stripe config: Non-JSON response');
+        }
         // Don't show error for free plans
         return false;
       }
@@ -315,8 +321,10 @@
 
   // Initialize page
   async function init() {
-    // Initialize Stripe first (non-blocking for free plans)
-    await initializeStripe();
+    // Initialize Stripe in background (non-blocking for free plan users)
+    initializeStripe().catch(err => {
+      console.error('Stripe initialization failed:', err);
+    });
 
     // Then check auth and render cards
     const authStatus = await checkAuth();
