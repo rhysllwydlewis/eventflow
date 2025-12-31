@@ -265,6 +265,38 @@ async function findOne(collectionName, filter) {
 }
 
 /**
+ * Find multiple documents by filter
+ * @param {string} collectionName - Name of the collection
+ * @param {Object|Function} filter - Filter object or function
+ * @returns {Promise<Array>} Array of found documents
+ */
+async function find(collectionName, filter) {
+  await initializeDatabase();
+
+  try {
+    if (dbType === 'mongodb') {
+      if (typeof filter === 'function') {
+        const all = await read(collectionName);
+        return all.filter(filter);
+      }
+      const collection = mongodb.collection(collectionName);
+      return await collection.find(filter).toArray();
+    } else {
+      const all = store.read(collectionName);
+      if (typeof filter === 'function') {
+        return all.filter(filter);
+      }
+      return all.filter(item => {
+        return Object.keys(filter).every(key => item[key] === filter[key]);
+      });
+    }
+  } catch (error) {
+    console.error(`Error finding in ${collectionName}:`, error.message);
+    return [];
+  }
+}
+
+/**
  * Update a single document
  * @param {string} collectionName - Name of the collection
  * @param {string} id - Document ID
@@ -533,6 +565,7 @@ module.exports = {
   initializeDatabase,
   read,
   write,
+  find,
   findOne,
   updateOne,
   insertOne,
