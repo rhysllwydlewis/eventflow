@@ -29,31 +29,43 @@
     }
   }
 
+  // Check if user's Pro plan is active (copied from server.js logic)
+  function isProActive(user) {
+    if (!user || !user.isPro) {
+      return false;
+    }
+    if (!user.proExpiresAt) {
+      return !!user.isPro;
+    }
+    const expiryTime = Date.parse(user.proExpiresAt);
+    if (!expiryTime || isNaN(expiryTime)) {
+      return !!user.isPro;
+    }
+    return expiryTime > Date.now();
+  }
+
   // Update buttons for authenticated users
   function updateButtonsForAuthenticatedUser(user) {
-    // Check if user has the free plan (no subscription or isPro is false)
-    const hasFreeP = !user.isPro || user.isPro === false;
+    // Check if user has Pro plan active
+    const hasActivePro = isProActive(user);
 
     // Update free plan button
     const freeButtons = document.querySelectorAll('a[href="/checkout.html?plan=starter"]');
     freeButtons.forEach(button => {
-      if (hasFreeP) {
-        // User has free plan
+      if (!hasActivePro) {
+        // User is on free plan (not Pro or Pro has expired)
         button.textContent = 'Current Plan';
         button.classList.remove('secondary');
-        button.classList.add('disabled');
         button.style.opacity = '0.6';
-        button.style.cursor = 'not-allowed';
+        button.style.cursor = 'default';
         button.style.pointerEvents = 'none';
+        button.setAttribute('aria-disabled', 'true');
       }
     });
 
-    // Check if user is a supplier and has Pro/Pro Plus
-    if (user.role === 'supplier' && user.isPro) {
-      // Could also check subscription details to determine exact plan
-      // For now, just indicate they have a pro plan
-      // You could add more specific checks here if you store plan details
-    }
+    // If user has active Pro, you could also update those buttons to show "Current Plan"
+    // This would require knowing which specific pro plan they have
+    // For now, we'll just handle the free plan case
   }
 
   // Initialize

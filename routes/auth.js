@@ -577,6 +577,8 @@ router.get('/me', (req, res) => {
           name: u.name,
           email: u.email,
           role: u.role,
+          isPro: u.isPro || false,
+          proExpiresAt: u.proExpiresAt || null,
           notify: u.notify !== false,
           notify_account: u.notify_account !== false,
           notify_marketing: u.notify_marketing === true,
