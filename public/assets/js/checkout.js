@@ -78,9 +78,9 @@
         }
 
         // For paid plans, redirect to auth with return URL
-        window.location.href =
-          '/auth.html?redirect=' +
-          encodeURIComponent(window.location.pathname + window.location.search);
+        window.location.href = `/auth.html?redirect=${encodeURIComponent(
+          `${window.location.pathname}${window.location.search}`
+        )}`;
         return false;
       }
 
@@ -95,7 +95,9 @@
   // Display error message
   function showError(message) {
     const errorContainer = document.getElementById('error-container');
-    if (!errorContainer) return;
+    if (!errorContainer) {
+      return;
+    }
 
     errorContainer.innerHTML = `
       <div class="error-message">
@@ -114,7 +116,9 @@
   // Render pricing cards
   function renderPricingCards() {
     const content = document.getElementById('checkout-content');
-    if (!content) return;
+    if (!content) {
+      return;
+    }
 
     const urlParams = new URLSearchParams(window.location.search);
     const selectedPlan = urlParams.get('plan');
@@ -199,7 +203,9 @@
     const plan = PLANS[planKey];
     const button = document.querySelector(`button[data-plan="${planKey}"]`);
 
-    if (!button) return;
+    if (!button) {
+      return;
+    }
 
     // Disable button and show loading
     button.disabled = true;
