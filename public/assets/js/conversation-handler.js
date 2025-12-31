@@ -863,12 +863,10 @@
     }
   }
 
-  // Expose for cleanup if needed
-  window.conversationHandler = {
-    cleanup: () => {
-      if (wsClient) {
-        wsClient.disconnect();
-      }
-    },
-  };
+  // Cleanup on page unload
+  window.addEventListener('beforeunload', () => {
+    if (wsClient) {
+      wsClient.disconnect();
+    }
+  });
 })();
