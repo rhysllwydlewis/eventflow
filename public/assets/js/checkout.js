@@ -6,6 +6,9 @@
 (function () {
   'use strict';
 
+  // Stripe instance (will be initialized after loading config)
+  let stripe = null;
+
   // Pricing plans configuration - aligned with updated pricing
   const PLANS = {
     starter: {
@@ -59,6 +62,44 @@
       featured: true,
     },
   };
+
+  // Initialize Stripe with publishable key
+  async function initializeStripe() {
+    try {
+      // Check if Stripe.js is loaded
+      if (typeof Stripe === 'undefined') {
+        console.error('Stripe.js not loaded');
+        showError('Payment system not available. Please refresh the page.');
+        return false;
+      }
+
+      // Get Stripe publishable key from backend
+      const response = await fetch('/api/payments/config', {
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        console.error('Failed to get Stripe config:', data);
+        // Don't show error for free plans
+        return false;
+      }
+
+      const config = await response.json();
+      if (!config.publishableKey) {
+        console.error('No Stripe publishable key received');
+        return false;
+      }
+
+      // Initialize Stripe
+      stripe = Stripe(config.publishableKey);
+      console.log('✅ Stripe.js initialized');
+      return true;
+    } catch (error) {
+      console.error('Failed to initialize Stripe:', error);
+      return false;
+    }
+  }
 
   // Check authentication
   async function checkAuth() {
@@ -218,7 +259,15 @@
         return;
       }
 
-      // For paid plans, create Stripe checkout session
+      // For paid plans, ensure Stripe is initialized
+      if (!stripe) {
+        const initialized = await initializeStripe();
+        if (!initialized) {
+          throw new Error('Payment system unavailable. Please try again later.');
+        }
+      }
+
+      // Create Stripe checkout session
       const amount = Math.round(plan.price * 100); // Convert to pence/cents
 
       const response = await fetch('/api/payments/create-checkout-session', {
@@ -241,11 +290,20 @@
         throw new Error(data.error || 'Failed to create checkout session');
       }
 
-      // Redirect to Stripe checkout
-      if (data.url) {
+      // Use Stripe.js to redirect to checkout (recommended by Stripe)
+      if (data.sessionId) {
+        const result = await stripe.redirectToCheckout({
+          sessionId: data.sessionId,
+        });
+
+        if (result.error) {
+          throw new Error(result.error.message);
+        }
+      } else if (data.url) {
+        // Fallback to direct URL redirect
         window.location.href = data.url;
       } else {
-        throw new Error('No checkout URL returned');
+        throw new Error('No checkout session returned');
       }
     } catch (error) {
       console.error('Checkout error:', error);
@@ -257,6 +315,10 @@
 
   // Initialize page
   async function init() {
+    // Initialize Stripe first (non-blocking for free plans)
+    await initializeStripe();
+
+    // Then check auth and render cards
     const authStatus = await checkAuth();
     if (authStatus === true || authStatus === 'unauthenticated_free') {
       renderPricingCards();

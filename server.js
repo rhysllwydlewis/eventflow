@@ -315,6 +315,7 @@ app.use(
           'https://*.googletagmanager.com',
           'https://hcaptcha.com',
           'https://*.hcaptcha.com',
+          'https://js.stripe.com',
         ],
         styleSrc: [
           "'self'",
@@ -336,6 +337,7 @@ app.use(
           'https://*.tidycal.net',
           'https://hcaptcha.com',
           'https://*.hcaptcha.com',
+          'https://api.stripe.com',
         ],
         frameSrc: [
           "'self'",
@@ -345,6 +347,8 @@ app.use(
           'https://*.tidycal.com',
           'https://hcaptcha.com',
           'https://*.hcaptcha.com',
+          'https://js.stripe.com',
+          'https://hooks.stripe.com',
         ],
         objectSrc: ["'none'"],
         upgradeInsecureRequests: [],
