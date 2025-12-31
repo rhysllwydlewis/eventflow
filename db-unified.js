@@ -269,6 +269,10 @@ async function findOne(collectionName, filter) {
  * @param {string} collectionName - Name of the collection
  * @param {Object|Function} filter - Filter object or function
  * @returns {Promise<Array>} Array of found documents
+ *
+ * @note When using function filters with MongoDB, all documents are loaded into memory
+ * before filtering. For large collections, prefer using object filters which are executed
+ * on the database server for better performance and memory efficiency.
  */
 async function find(collectionName, filter) {
   await initializeDatabase();

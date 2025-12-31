@@ -112,7 +112,10 @@ router.post(
       // Check database connectivity first
       const dbStatus = dbUnified.getDatabaseStatus();
       if (!dbStatus.connected) {
-        console.error('Database not connected for checkout session creation:', dbStatus);
+        console.error(
+          'Database not connected for checkout session creation. State:',
+          dbStatus.state
+        );
         return res.status(500).json({
           error: 'Payment system temporarily unavailable',
           message: 'Database connection error. Please try again in a few moments.',
@@ -234,7 +237,12 @@ router.post(
       let errorMessage = error.message;
       let statusCode = 500;
 
-      if (error.message && error.message.includes('database')) {
+      // Check for specific database errors
+      if (
+        error.code === 'ECONNREFUSED' ||
+        error.name === 'MongoNetworkError' ||
+        error.name === 'MongoTimeoutError'
+      ) {
         errorMessage = 'Database error. Please try again.';
       } else if (error.type === 'StripeConnectionError') {
         errorMessage = 'Unable to connect to payment processor. Please try again.';
@@ -766,7 +774,7 @@ router.get('/config', authRequired, async (req, res) => {
     // Check database connectivity first
     const dbStatus = dbUnified.getDatabaseStatus();
     if (!dbStatus.connected) {
-      console.error('Database not connected for payment config endpoint:', dbStatus);
+      console.error('Database not connected for payment config endpoint. State:', dbStatus.state);
       return res.status(500).json({
         error: 'Payment system temporarily unavailable',
         message: 'Database connection error. Please try again in a few moments.',
