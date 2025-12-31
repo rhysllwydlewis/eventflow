@@ -84,16 +84,26 @@
         if (contentType && contentType.includes('application/json')) {
           const data = await response.json();
           console.error('Failed to get Stripe config:', data);
+
+          // Show user-friendly error message
+          if (response.status === 500) {
+            showError('Payment system temporarily unavailable. Please try again in a few moments.');
+          } else if (response.status === 503) {
+            showError('Payment processing is not currently available. Please contact support.');
+          } else {
+            showError(data.message || 'Failed to initialize payment system.');
+          }
         } else {
           console.error('Failed to get Stripe config: Non-JSON response');
+          showError('Payment system error. Please try again later.');
         }
-        // Don't show error for free plans
         return false;
       }
 
       const config = await response.json();
       if (!config.publishableKey) {
         console.error('No Stripe publishable key received');
+        showError('Payment configuration error. Please contact support.');
         return false;
       }
 
@@ -103,6 +113,7 @@
       return true;
     } catch (error) {
       console.error('Failed to initialize Stripe:', error);
+      showError('Unable to connect to payment system. Please check your connection and try again.');
       return false;
     }
   }
@@ -293,7 +304,14 @@
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to create checkout session');
+        // Provide user-friendly error messages
+        let errorMsg = data.message || data.error || 'Failed to create checkout session';
+        if (response.status === 500) {
+          errorMsg = data.message || 'Payment system temporarily unavailable. Please try again.';
+        } else if (response.status === 503) {
+          errorMsg = 'Payment processing is not currently available. Please contact support.';
+        }
+        throw new Error(errorMsg);
       }
 
       // Use Stripe.js to redirect to checkout (recommended by Stripe)

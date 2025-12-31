@@ -109,6 +109,19 @@ router.post(
   ensureStripeEnabled,
   async (req, res) => {
     try {
+      // Check database connectivity first
+      const dbStatus = dbUnified.getDatabaseStatus();
+      if (!dbStatus.connected) {
+        console.error(
+          'Database not connected for checkout session creation. State:',
+          dbStatus.state
+        );
+        return res.status(500).json({
+          error: 'Payment system temporarily unavailable',
+          message: 'Database connection error. Please try again in a few moments.',
+        });
+      }
+
       const { type, amount, currency = 'gbp', priceId, planName, successUrl, cancelUrl } = req.body;
       const user = req.user;
 
@@ -210,7 +223,7 @@ router.post(
         updatedAt: new Date().toISOString(),
       };
 
-      await dbUnified.create('payments', paymentRecord);
+      await dbUnified.insertOne('payments', paymentRecord);
 
       res.json({
         success: true,
@@ -219,9 +232,28 @@ router.post(
       });
     } catch (error) {
       console.error('Error creating checkout session:', error);
-      res.status(500).json({
+
+      // Provide more specific error messages
+      let errorMessage = error.message;
+      let statusCode = 500;
+
+      // Check for specific database errors
+      if (
+        error.code === 'ECONNREFUSED' ||
+        error.name === 'MongoNetworkError' ||
+        error.name === 'MongoTimeoutError'
+      ) {
+        errorMessage = 'Database error. Please try again.';
+      } else if (error.type === 'StripeConnectionError') {
+        errorMessage = 'Unable to connect to payment processor. Please try again.';
+      } else if (error.type === 'StripeInvalidRequestError') {
+        errorMessage = 'Invalid payment request. Please contact support.';
+        statusCode = 400;
+      }
+
+      res.status(statusCode).json({
         error: 'Failed to create checkout session',
-        message: error.message,
+        message: errorMessage,
       });
     }
   }
@@ -427,7 +459,7 @@ async function handleCheckoutCompleted(session) {
     updates.stripeSubscriptionId = session.subscription;
   }
 
-  await dbUnified.update('payments', payment.id, updates);
+  await dbUnified.updateOne('payments', payment.id, updates);
 
   console.log(`Payment ${payment.id} marked as succeeded`);
 }
@@ -478,13 +510,13 @@ async function handleSubscriptionCreated(subscription) {
     updatedAt: new Date().toISOString(),
   };
 
-  await dbUnified.create('payments', paymentRecord);
+  await dbUnified.insertOne('payments', paymentRecord);
 
   // Update user's Pro status if applicable
   if (subscription.status === 'active') {
     const users = await dbUnified.find('users', { id: userId });
     if (users.length > 0) {
-      await dbUnified.update('users', userId, {
+      await dbUnified.updateOne('users', userId, {
         isPro: true,
         proExpiresAt: new Date(subscription.current_period_end * 1000).toISOString(),
       });
@@ -531,7 +563,7 @@ async function handleSubscriptionUpdated(subscription) {
     updatedAt: new Date().toISOString(),
   };
 
-  await dbUnified.update('payments', payment.id, updates);
+  await dbUnified.updateOne('payments', payment.id, updates);
 
   // Update user's Pro status
   const users = await dbUnified.find('users', { id: userId });
@@ -540,7 +572,7 @@ async function handleSubscriptionUpdated(subscription) {
       isPro: subscription.status === 'active',
       proExpiresAt: new Date(subscription.current_period_end * 1000).toISOString(),
     };
-    await dbUnified.update('users', userId, userUpdates);
+    await dbUnified.updateOne('users', userId, userUpdates);
   }
 
   console.log(`Subscription ${subscription.id} updated`);
@@ -564,7 +596,7 @@ async function handleSubscriptionDeleted(subscription) {
   const userId = payment.userId;
 
   // Mark subscription as cancelled
-  await dbUnified.update('payments', payment.id, {
+  await dbUnified.updateOne('payments', payment.id, {
     status: 'cancelled',
     subscriptionDetails: {
       ...payment.subscriptionDetails,
@@ -576,7 +608,7 @@ async function handleSubscriptionDeleted(subscription) {
   // Update user's Pro status to expired
   const users = await dbUnified.find('users', { id: userId });
   if (users.length > 0) {
-    await dbUnified.update('users', userId, {
+    await dbUnified.updateOne('users', userId, {
       isPro: false,
     });
   }
@@ -599,7 +631,7 @@ async function handlePaymentSucceeded(paymentIntent) {
 
   const payment = payments[0];
 
-  await dbUnified.update('payments', payment.id, {
+  await dbUnified.updateOne('payments', payment.id, {
     status: 'succeeded',
     amount: paymentIntent.amount / 100,
     currency: paymentIntent.currency,
@@ -624,7 +656,7 @@ async function handlePaymentFailed(paymentIntent) {
 
   const payment = payments[0];
 
-  await dbUnified.update('payments', payment.id, {
+  await dbUnified.updateOne('payments', payment.id, {
     status: 'failed',
     metadata: {
       ...payment.metadata,
@@ -737,27 +769,48 @@ router.get('/:id', authRequired, async (req, res) => {
  *       503:
  *         description: Stripe not configured
  */
-router.get('/config', authRequired, (req, res) => {
-  if (!STRIPE_ENABLED || !stripe) {
-    return res.status(503).json({
-      error: 'Payment processing is not available',
-      message: 'Stripe is not configured. Please contact support.',
+router.get('/config', authRequired, async (req, res) => {
+  try {
+    // Check database connectivity first
+    const dbStatus = dbUnified.getDatabaseStatus();
+    if (!dbStatus.connected) {
+      console.error('Database not connected for payment config endpoint. State:', dbStatus.state);
+      return res.status(500).json({
+        error: 'Payment system temporarily unavailable',
+        message: 'Database connection error. Please try again in a few moments.',
+        details:
+          'The payment system requires database connectivity. Please contact support if this persists.',
+      });
+    }
+
+    if (!STRIPE_ENABLED || !stripe) {
+      return res.status(503).json({
+        error: 'Payment processing is not available',
+        message: 'Stripe is not configured. Please contact support.',
+      });
+    }
+
+    const publishableKey =
+      process.env.STRIPE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+
+    if (!publishableKey) {
+      console.error('Stripe publishable key not configured');
+      return res.status(503).json({
+        error: 'Stripe configuration incomplete',
+        message: 'Stripe publishable key is not configured.',
+      });
+    }
+
+    res.json({
+      publishableKey: publishableKey,
+    });
+  } catch (error) {
+    console.error('Error getting payment config:', error);
+    res.status(500).json({
+      error: 'Failed to retrieve payment configuration',
+      message: error.message || 'An unexpected error occurred',
     });
   }
-
-  const publishableKey =
-    process.env.STRIPE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
-
-  if (!publishableKey) {
-    return res.status(503).json({
-      error: 'Stripe configuration incomplete',
-      message: 'Stripe publishable key is not configured.',
-    });
-  }
-
-  res.json({
-    publishableKey: publishableKey,
-  });
 });
 
 module.exports = router;
