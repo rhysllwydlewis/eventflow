@@ -670,6 +670,67 @@ async function handlePaymentFailed(paymentIntent) {
 
 /**
  * @swagger
+ * /api/payments/config:
+ *   get:
+ *     summary: Get Stripe configuration
+ *     description: Returns Stripe publishable key for frontend integration
+ *     tags: [Payments]
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Configuration retrieved successfully
+ *       401:
+ *         description: Unauthorized
+ *       503:
+ *         description: Stripe not configured
+ */
+router.get('/config', authRequired, async (req, res) => {
+  try {
+    // Check database connectivity first
+    const dbStatus = dbUnified.getDatabaseStatus();
+    if (!dbStatus.connected) {
+      console.error('Database not connected for payment config endpoint. State:', dbStatus.state);
+      return res.status(500).json({
+        error: 'Payment system temporarily unavailable',
+        message: 'Database connection error. Please try again in a few moments.',
+        details:
+          'The payment system requires database connectivity. Please contact support if this persists.',
+      });
+    }
+
+    if (!STRIPE_ENABLED || !stripe) {
+      return res.status(503).json({
+        error: 'Payment processing is not available',
+        message: 'Stripe is not configured. Please contact support.',
+      });
+    }
+
+    const publishableKey =
+      process.env.STRIPE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+
+    if (!publishableKey) {
+      console.error('Stripe publishable key not configured');
+      return res.status(503).json({
+        error: 'Stripe configuration incomplete',
+        message: 'Stripe publishable key is not configured.',
+      });
+    }
+
+    res.json({
+      publishableKey: publishableKey,
+    });
+  } catch (error) {
+    console.error('Error getting payment config:', error);
+    res.status(500).json({
+      error: 'Failed to retrieve payment configuration',
+      message: error.message || 'An unexpected error occurred',
+    });
+  }
+});
+
+/**
+ * @swagger
  * /api/payments:
  *   get:
  *     summary: Get user's payment history
@@ -748,67 +809,6 @@ router.get('/:id', authRequired, async (req, res) => {
     res.status(500).json({
       error: 'Failed to fetch payment',
       message: error.message,
-    });
-  }
-});
-
-/**
- * @swagger
- * /api/payments/config:
- *   get:
- *     summary: Get Stripe configuration
- *     description: Returns Stripe publishable key for frontend integration
- *     tags: [Payments]
- *     security:
- *       - cookieAuth: []
- *     responses:
- *       200:
- *         description: Configuration retrieved successfully
- *       401:
- *         description: Unauthorized
- *       503:
- *         description: Stripe not configured
- */
-router.get('/config', authRequired, async (req, res) => {
-  try {
-    // Check database connectivity first
-    const dbStatus = dbUnified.getDatabaseStatus();
-    if (!dbStatus.connected) {
-      console.error('Database not connected for payment config endpoint. State:', dbStatus.state);
-      return res.status(500).json({
-        error: 'Payment system temporarily unavailable',
-        message: 'Database connection error. Please try again in a few moments.',
-        details:
-          'The payment system requires database connectivity. Please contact support if this persists.',
-      });
-    }
-
-    if (!STRIPE_ENABLED || !stripe) {
-      return res.status(503).json({
-        error: 'Payment processing is not available',
-        message: 'Stripe is not configured. Please contact support.',
-      });
-    }
-
-    const publishableKey =
-      process.env.STRIPE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
-
-    if (!publishableKey) {
-      console.error('Stripe publishable key not configured');
-      return res.status(503).json({
-        error: 'Stripe configuration incomplete',
-        message: 'Stripe publishable key is not configured.',
-      });
-    }
-
-    res.json({
-      publishableKey: publishableKey,
-    });
-  } catch (error) {
-    console.error('Error getting payment config:', error);
-    res.status(500).json({
-      error: 'Failed to retrieve payment configuration',
-      message: error.message || 'An unexpected error occurred',
     });
   }
 });

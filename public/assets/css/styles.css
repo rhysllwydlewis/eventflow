@@ -595,7 +595,7 @@ html[data-theme="dark"] .theme-icon::after{
   border-radius:999px;
   border:1px solid rgba(15,23,42,.16);
   background:rgba(255,255,255,.9);
-  display:inline-flex;
+  display:none;
   align-items:center;
   justify-content:center;
   gap:3px;
@@ -673,6 +673,14 @@ body.nav-open .nav-menu{
   .logo{
     width:28px;
     height:28px;
+  }
+  /* Hide inline nav on tablets and smaller to prevent wrapping */
+  .nav-inline{
+    display:none;
+  }
+  /* Show burger menu on tablets and smaller */
+  .nav-toggle{
+    display:inline-flex;
   }
 }
 
