@@ -201,15 +201,39 @@
         </a>
         <div class="header-actions">
           <nav class="nav nav-inline" aria-label="Quick navigation">
-            <a href="/start.html" class="nav-link nav-main">Plan an Event</a>
+            <a href="/start.html" class="nav-link nav-main">Plan</a>
             <a href="/suppliers.html" class="nav-link nav-main">Suppliers</a>
             <a href="/pricing.html" class="nav-link nav-main">Pricing</a>
             <a href="/blog.html" class="nav-link nav-main">Blog</a>
             <a href="/auth.html" class="nav-link nav-main nav-main-login">Log in</a>
           </nav>
+          <button id="notification-bell" class="icon-button" type="button" aria-label="Notifications" style="display:none;">
+            <span class="notification-icon">🔔</span>
+            <span class="notification-badge" style="display:none;">0</span>
+          </button>
+          <button id="burger" class="nav-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false">
+            <span class="nav-toggle-bar"></span>
+            <span class="nav-toggle-bar"></span>
+            <span class="nav-toggle-bar"></span>
+          </button>
         </div>
       </div>
+      <nav class="nav nav-menu" aria-label="Primary navigation">
+        <a href="/start.html">Plan an Event</a>
+        <a href="/suppliers.html">Suppliers</a>
+        <a href="/pricing.html">Pricing</a>
+        <a href="/for-suppliers.html">For Suppliers</a>
+        <a href="/blog.html">Blog</a>
+        <a href="/faq.html">FAQ</a>
+        <a href="/settings.html">Settings</a>
+        <a href="/auth.html" id="nav-auth">Log in</a>
+        <a href="#" id="nav-dashboard" style="display:none">Dashboard</a>
+        <a href="#" id="nav-signout" style="display:none">Sign out</a>
+      </nav>
     </header>
+
+    <script src="/assets/js/auth-nav.js" defer></script>
+    <script src="/assets/js/components.js" defer></script>
 
     <!-- Main Content -->
     <main class="section">
