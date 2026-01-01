@@ -11,6 +11,7 @@ const cloudinary = require('cloudinary').v2;
 const { read, write, uid } = require('../store');
 const { authRequired, roleRequired } = require('../middleware/auth');
 const { auditLog, auditMiddleware, AUDIT_ACTIONS } = require('../middleware/audit');
+const { csrfProtection } = require('../middleware/csrf');
 const postmark = require('../utils/postmark');
 const dbUnified = require('../db-unified');
 
@@ -23,9 +24,17 @@ let STRIPE_ENABLED = false;
 try {
   const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
   if (stripeSecretKey) {
-    const stripeLib = require('stripe');
-    stripe = stripeLib(stripeSecretKey);
-    STRIPE_ENABLED = true;
+    // Try to load Stripe module - it might not be installed
+    try {
+      const stripeLib = require('stripe');
+      stripe = stripeLib(stripeSecretKey);
+      STRIPE_ENABLED = true;
+      console.log('Stripe initialized successfully for admin routes');
+    } catch (requireErr) {
+      console.warn('Stripe package not available:', requireErr.message);
+    }
+  } else {
+    console.log('Stripe secret key not configured, Stripe features will be disabled');
   }
 } catch (err) {
   console.error('Failed to initialize Stripe in admin routes:', err.message);
@@ -2788,6 +2797,7 @@ router.post(
   '/homepage/hero-images/:category',
   authRequired,
   roleRequired('admin'),
+  csrfProtection,
   upload.single('image'),
   async (req, res) => {
     try {
@@ -2867,6 +2877,7 @@ router.delete(
   '/homepage/hero-images/:category',
   authRequired,
   roleRequired('admin'),
+  csrfProtection,
   async (req, res) => {
     try {
       const { category } = req.params;
