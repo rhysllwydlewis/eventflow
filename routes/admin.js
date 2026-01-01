@@ -29,12 +29,12 @@ try {
       const stripeLib = require('stripe');
       stripe = stripeLib(stripeSecretKey);
       STRIPE_ENABLED = true;
-      console.log('Stripe initialized successfully for admin routes');
+      console.info('Stripe initialized successfully for admin routes');
     } catch (requireErr) {
       console.warn('Stripe package not available:', requireErr.message);
     }
   } else {
-    console.log('Stripe secret key not configured, Stripe features will be disabled');
+    console.info('Stripe secret key not configured, Stripe features will be disabled');
   }
 } catch (err) {
   console.error('Failed to initialize Stripe in admin routes:', err.message);

@@ -402,12 +402,16 @@ async function loadHeroCollageImages() {
 
       try {
         // Add cache busting to force fresh load of custom images
-        const cacheBustedUrl =
-          isCustomImage && imageUrl.includes('?')
+        let cacheBustedUrl;
+        if (isCustomImage) {
+          // For custom images, add cache busting timestamp
+          cacheBustedUrl = imageUrl.includes('?')
             ? `${imageUrl}&t=${cacheBustTimestamp}`
-            : isCustomImage
-              ? `${imageUrl}?t=${cacheBustTimestamp}`
-              : imageUrl;
+            : `${imageUrl}?t=${cacheBustTimestamp}`;
+        } else {
+          // For default images, use URL as-is
+          cacheBustedUrl = imageUrl;
+        }
 
         // Update the image source
         imgElement.src = cacheBustedUrl;
