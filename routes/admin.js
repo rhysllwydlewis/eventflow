@@ -16,6 +16,21 @@ const dbUnified = require('../db-unified');
 
 const router = express.Router();
 
+// Initialize Stripe if available
+let stripe = null;
+let STRIPE_ENABLED = false;
+
+try {
+  const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+  if (stripeSecretKey) {
+    const stripeLib = require('stripe');
+    stripe = stripeLib(stripeSecretKey);
+    STRIPE_ENABLED = true;
+  }
+} catch (err) {
+  console.error('Failed to initialize Stripe in admin routes:', err.message);
+}
+
 // Configure multer for memory storage (used for hero image uploads to Cloudinary)
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -2541,6 +2556,89 @@ router.get('/payments', authRequired, roleRequired('admin'), (_req, res) => {
     return dateB - dateA;
   });
   res.json({ items: payments });
+});
+
+/**
+ * GET /api/admin/stripe-analytics
+ * Get live Stripe analytics data for admin dashboard
+ */
+router.get('/stripe-analytics', authRequired, roleRequired('admin'), async (_req, res) => {
+  if (!STRIPE_ENABLED || !stripe) {
+    return res.json({
+      error: 'Stripe not configured',
+      available: false,
+      message:
+        'Stripe analytics are not available. Using local payment data instead.',
+    });
+  }
+
+  try {
+    const now = Math.floor(Date.now() / 1000);
+    const thirtyDaysAgo = now - 30 * 24 * 60 * 60;
+
+    // Fetch data from Stripe
+    const [charges, subscriptions, customers, balance] = await Promise.all([
+      stripe.charges.list({
+        limit: 100,
+        created: { gte: thirtyDaysAgo },
+      }),
+      stripe.subscriptions.list({
+        limit: 100,
+        status: 'active',
+      }),
+      stripe.customers.list({
+        limit: 100,
+        created: { gte: thirtyDaysAgo },
+      }),
+      stripe.balance.retrieve(),
+    ]);
+
+    // Calculate analytics
+    const totalRevenue = charges.data.reduce((sum, charge) => {
+      return sum + (charge.amount_captured || 0);
+    }, 0);
+
+    const monthRevenue = charges.data
+      .filter(charge => charge.created >= thirtyDaysAgo)
+      .reduce((sum, charge) => {
+        return sum + (charge.amount_captured || 0);
+      }, 0);
+
+    const analytics = {
+      available: true,
+      totalRevenue: totalRevenue / 100, // Convert from pence to pounds
+      monthRevenue: monthRevenue / 100,
+      activeSubscriptions: subscriptions.data.length,
+      totalCharges: charges.data.length,
+      newCustomers: customers.data.length,
+      availableBalance: balance.available[0]?.amount / 100 || 0,
+      pendingBalance: balance.pending[0]?.amount / 100 || 0,
+      currency: balance.available[0]?.currency || 'gbp',
+      recentCharges: charges.data.slice(0, 10).map(charge => ({
+        id: charge.id,
+        amount: charge.amount / 100,
+        currency: charge.currency,
+        status: charge.status,
+        created: charge.created,
+        description: charge.description,
+        customer: charge.customer,
+      })),
+      subscriptionBreakdown: {
+        active: subscriptions.data.filter(s => s.status === 'active').length,
+        trialing: subscriptions.data.filter(s => s.status === 'trialing').length,
+        past_due: subscriptions.data.filter(s => s.status === 'past_due').length,
+      },
+    };
+
+    res.json(analytics);
+  } catch (error) {
+    console.error('Error fetching Stripe analytics:', error);
+    res.status(500).json({
+      error: 'Failed to fetch Stripe analytics',
+      available: false,
+      message: error.message,
+    });
+  }
 });
 
 /**

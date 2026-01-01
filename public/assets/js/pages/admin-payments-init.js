@@ -1,7 +1,7 @@
 /**
  * Admin Payment Analytics Initialization
  * Displays payment analytics and transaction history for administrators
- * Uses MongoDB API instead of Firebase
+ * Uses MongoDB API and integrates with live Stripe analytics
  */
 
 let revenueChart = null;
@@ -13,6 +13,19 @@ const currentFilters = {
   plan: 'all',
   days: 'all',
 };
+
+/**
+ * Load live Stripe analytics data
+ */
+async function loadStripeAnalytics() {
+  try {
+    const response = await AdminShared.api('/api/admin/stripe-analytics');
+    return response;
+  } catch (error) {
+    console.error('Error loading Stripe analytics:', error);
+    return { available: false };
+  }
+}
 
 /**
  * Load payment data from MongoDB API
@@ -140,23 +153,38 @@ function calculateStats(payments) {
 /**
  * Render statistics cards
  */
-function renderStats(stats) {
+function renderStats(stats, stripeAnalytics) {
   const totalRevenueEl = document.getElementById('totalRevenue');
   const activeSubscriptionsEl = document.getElementById('activeSubscriptions');
   const totalTransactionsEl = document.getElementById('totalTransactions');
   const monthRevenueEl = document.getElementById('monthRevenue');
 
+  // Use Stripe data if available, otherwise use local data
+  const useStripe = stripeAnalytics && stripeAnalytics.available;
+
   if (totalRevenueEl) {
-    totalRevenueEl.textContent = `£${stats.totalRevenue.toFixed(2)}`;
+    const revenue = useStripe ? stripeAnalytics.totalRevenue : stats.totalRevenue;
+    totalRevenueEl.textContent = `£${revenue.toFixed(2)}`;
+    totalRevenueEl.title = useStripe ? 'Live Stripe data' : 'Local payment data';
   }
   if (activeSubscriptionsEl) {
-    activeSubscriptionsEl.textContent = stats.activeSubscriptions;
+    const subs = useStripe
+      ? stripeAnalytics.activeSubscriptions
+      : stats.activeSubscriptions;
+    activeSubscriptionsEl.textContent = subs;
+    activeSubscriptionsEl.title = useStripe ? 'Live Stripe data' : 'Local payment data';
   }
   if (totalTransactionsEl) {
-    totalTransactionsEl.textContent = stats.totalTransactions;
+    const transactions = useStripe
+      ? stripeAnalytics.totalCharges
+      : stats.totalTransactions;
+    totalTransactionsEl.textContent = transactions;
+    totalTransactionsEl.title = useStripe ? 'Live Stripe data' : 'Local payment data';
   }
   if (monthRevenueEl) {
-    monthRevenueEl.textContent = `£${stats.monthRevenue.toFixed(2)}`;
+    const monthRev = useStripe ? stripeAnalytics.monthRevenue : stats.monthRevenue;
+    monthRevenueEl.textContent = `£${monthRev.toFixed(2)}`;
+    monthRevenueEl.title = useStripe ? 'Live Stripe data (last 30 days)' : 'This month';
   }
 
   // Update change indicators
@@ -166,16 +194,25 @@ function renderStats(stats) {
   const monthChangeEl = document.getElementById('monthChange');
 
   if (revenueChangeEl) {
-    revenueChangeEl.textContent = 'All time total';
+    revenueChangeEl.textContent = useStripe
+      ? '💳 Live from Stripe'
+      : 'All time total (local data)';
+    revenueChangeEl.style.color = useStripe ? '#10b981' : '#6b7280';
   }
   if (subscriptionChangeEl) {
-    subscriptionChangeEl.textContent = 'Currently active';
+    subscriptionChangeEl.textContent = useStripe
+      ? '💳 Live from Stripe'
+      : 'Currently active';
+    subscriptionChangeEl.style.color = useStripe ? '#10b981' : '#6b7280';
   }
   if (transactionChangeEl) {
-    transactionChangeEl.textContent = 'All transactions';
+    transactionChangeEl.textContent = useStripe
+      ? '💳 Live from Stripe'
+      : 'All transactions';
+    transactionChangeEl.style.color = useStripe ? '#10b981' : '#6b7280';
   }
   if (monthChangeEl) {
-    monthChangeEl.textContent = 'This month';
+    monthChangeEl.textContent = useStripe ? 'Last 30 days' : 'This month';
   }
 }
 
@@ -377,7 +414,26 @@ function renderPaymentsTable(payments, suppliers) {
  */
 async function init() {
   // Load data
-  const [payments, suppliers] = await Promise.all([loadPayments(), loadSuppliers()]);
+  const [payments, suppliers, stripeAnalytics] = await Promise.all([
+    loadPayments(),
+    loadSuppliers(),
+    loadStripeAnalytics(),
+  ]);
+
+  // Update Stripe status indicator
+  const stripeStatusEl = document.getElementById('stripeStatus');
+  if (stripeStatusEl) {
+    if (stripeAnalytics && stripeAnalytics.available) {
+      stripeStatusEl.textContent = '✓ Connected';
+      stripeStatusEl.style.background = '#dcfce7';
+      stripeStatusEl.style.color = '#166534';
+      AdminShared.showToast('💳 Live Stripe analytics loaded', 'success');
+    } else {
+      stripeStatusEl.textContent = '○ Not Configured';
+      stripeStatusEl.style.background = '#fef3c7';
+      stripeStatusEl.style.color = '#92400e';
+    }
+  }
 
   // Filter payments
   const filteredPayments = filterPayments(payments);
@@ -386,19 +442,19 @@ async function init() {
   const stats = calculateStats(filteredPayments);
 
   // Render everything
-  renderStats(stats);
+  renderStats(stats, stripeAnalytics);
   renderRevenueChart(stats);
   renderPlansChart(stats);
   renderPaymentsTable(filteredPayments, suppliers);
 
   // Set up event listeners
-  setupEventListeners(payments, suppliers);
+  setupEventListeners(payments, suppliers, stripeAnalytics);
 }
 
 /**
  * Setup event listeners
  */
-function setupEventListeners(payments, suppliers) {
+function setupEventListeners(payments, suppliers, stripeAnalytics) {
   // Filter listeners
   const statusFilter = document.getElementById('statusFilter');
   const planFilter = document.getElementById('planFilter');
@@ -407,28 +463,32 @@ function setupEventListeners(payments, suppliers) {
   if (statusFilter) {
     statusFilter.addEventListener('change', e => {
       currentFilters.status = e.target.value;
-      refreshData(payments, suppliers);
+      refreshData(payments, suppliers, stripeAnalytics);
     });
   }
 
   if (planFilter) {
     planFilter.addEventListener('change', e => {
       currentFilters.plan = e.target.value;
-      refreshData(payments, suppliers);
+      refreshData(payments, suppliers, stripeAnalytics);
     });
   }
 
   if (dateFilter) {
     dateFilter.addEventListener('change', e => {
       currentFilters.days = e.target.value;
-      refreshData(payments, suppliers);
+      refreshData(payments, suppliers, stripeAnalytics);
     });
   }
 
   // Make refresh function available globally for navbar refresh button
   window.refreshDashboardData = async () => {
-    const [newPayments, newSuppliers] = await Promise.all([loadPayments(), loadSuppliers()]);
-    refreshData(newPayments, newSuppliers);
+    const [newPayments, newSuppliers, newStripeAnalytics] = await Promise.all([
+      loadPayments(),
+      loadSuppliers(),
+      loadStripeAnalytics(),
+    ]);
+    refreshData(newPayments, newSuppliers, newStripeAnalytics);
     AdminShared.showToast('Payment data refreshed', 'success');
   };
 }
@@ -436,11 +496,11 @@ function setupEventListeners(payments, suppliers) {
 /**
  * Refresh data with current filters
  */
-function refreshData(payments, suppliers) {
+function refreshData(payments, suppliers, stripeAnalytics) {
   const filteredPayments = filterPayments(payments);
   const stats = calculateStats(filteredPayments);
 
-  renderStats(stats);
+  renderStats(stats, stripeAnalytics);
   renderRevenueChart(stats);
   renderPlansChart(stats);
   renderPaymentsTable(filteredPayments, suppliers);

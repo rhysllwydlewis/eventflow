@@ -140,12 +140,14 @@
       </div>
 
       <div class="note-box">
-        <h4>⚠️ Note on Google Pay Analytics Limitations</h4>
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+          <h4>💳 Stripe Analytics Integration</h4>
+          <span id="stripeStatus" style="padding: 4px 12px; border-radius: 999px; font-size: 12px; font-weight: 600;"></span>
+        </div>
         <p>
-          Due to Google Pay's privacy and security requirements, detailed transaction analytics are limited.
-          We capture basic payment metadata (amount, plan, timestamp) but cannot access full payment details
-          or customer financial information. This dashboard shows aggregated data based on our subscription
-          records and Firebase payment logs.
+          This dashboard integrates with live Stripe analytics when available. Revenue, subscriptions, and transaction
+          data are fetched directly from your Stripe account for real-time insights. When Stripe is not configured,
+          the dashboard shows data from local payment records.
         </p>
       </div>
 
