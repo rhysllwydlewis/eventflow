@@ -6,6 +6,7 @@
   let currentImageFile = null;
   let currentImageUrl = null;
   let csrfToken = null;
+  let currentFilter = 'all'; // Track current filter state
 
   // Configuration
   const PLACEHOLDER_IMAGE = '/assets/images/placeholders/package-event.svg';
@@ -73,22 +74,42 @@
     return div.innerHTML;
   }
 
-  function generateId(prefix) {
-    return `${prefix}_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
-  }
-
   async function loadPackages() {
     try {
       // Load from MongoDB API
       const data = await api('/api/admin/packages');
       allPackages = data.items || [];
-      renderPackages(allPackages);
+      applyFiltersAndRender();
     } catch (err) {
       console.error('Failed to load packages:', err);
       if (typeof Toast !== 'undefined') {
         Toast.error(`Failed to load packages: ${err.message}`);
       }
     }
+  }
+
+  function applyFiltersAndRender() {
+    let filtered = allPackages;
+
+    // Apply test data filter
+    if (currentFilter === 'test') {
+      filtered = filtered.filter(pkg => pkg.isTest === true);
+    } else if (currentFilter === 'real') {
+      filtered = filtered.filter(pkg => !pkg.isTest);
+    }
+
+    // Apply search filter if present
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput && searchInput.value.trim()) {
+      const query = searchInput.value.toLowerCase();
+      filtered = filtered.filter(
+        pkg =>
+          (pkg.title && pkg.title.toLowerCase().includes(query)) ||
+          (pkg.description && pkg.description.toLowerCase().includes(query))
+      );
+    }
+
+    renderPackages(filtered);
   }
 
   async function loadSuppliers() {
@@ -148,7 +169,10 @@
         pkg.approved ? 'Approved' : 'Pending'
       }</span> `;
       if (pkg.featured) {
-        html += '<span class="badge badge-yes">Featured</span>';
+        html += '<span class="badge badge-yes">Featured</span> ';
+      }
+      if (pkg.isTest) {
+        html += '<span class="badge badge-test-data">Test data</span>';
       }
       html += '</td>';
       html += '<td>';
@@ -571,21 +595,22 @@
   });
 
   // Search functionality
-  document.getElementById('searchInput').addEventListener('input', e => {
-    const query = e.target.value.toLowerCase();
-    if (!query) {
-      renderPackages(allPackages);
-      return;
-    }
+  document.getElementById('searchInput').addEventListener('input', () => {
+    applyFiltersAndRender();
+  });
 
-    const filtered = allPackages.filter(pkg => {
-      return (
-        (pkg.title || '').toLowerCase().includes(query) ||
-        (pkg.description || '').toLowerCase().includes(query) ||
-        (pkg.price_display || '').toLowerCase().includes(query)
-      );
+  // Test data filter functionality
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      const filterValue = e.target.getAttribute('data-filter');
+      currentFilter = filterValue;
+
+      // Update button styles
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      e.target.classList.add('active');
+
+      applyFiltersAndRender();
     });
-    renderPackages(filtered);
   });
 
   // Initialize

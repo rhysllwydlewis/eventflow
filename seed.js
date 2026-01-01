@@ -1,6 +1,33 @@
 const bcrypt = require('bcryptjs');
 const dbUnified = require('./db-unified');
 const { uid } = require('./store');
+const { getPexelsService } = require('./utils/pexels-service');
+
+/**
+ * Helper function to get a photo from Pexels API
+ * @param {string} query - Search query for Pexels
+ * @param {string} size - Size variant to return (e.g., 'medium', 'large', 'small')
+ * @param {string} fallback - Fallback URL if Pexels is not available
+ * @returns {Promise<string>} Photo URL or fallback
+ */
+async function getPexelsPhoto(query, size = 'medium', fallback = '') {
+  const pexels = getPexelsService();
+
+  if (!pexels.isConfigured()) {
+    return fallback;
+  }
+
+  try {
+    const result = await pexels.searchPhotos(query, 1, 1);
+    if (result.photos && result.photos.length > 0) {
+      return result.photos[0].src[size] || fallback;
+    }
+    return fallback;
+  } catch (error) {
+    console.warn(`Failed to fetch Pexels photo for "${query}":`, error.message);
+    return fallback;
+  }
+}
 
 // Seed the database with default records.
 // MongoDB-first: Data goes to MongoDB when available, local storage as fallback.
@@ -273,70 +300,118 @@ async function seed(options = {}) {
     if (skipIfExists && existingSuppliers.length > 0) {
       console.log('Suppliers already exist, skipping supplier seed');
     } else if (!Array.isArray(existingSuppliers) || existingSuppliers.length === 0) {
+      // Generate seed batch identifier for this seeding run (shared with packages)
+      const seedBatch = `seed_${Date.now()}`;
+      const now = new Date().toISOString();
+
+      // Store batch ID for use in package seeding
+      global.__SEED_BATCH__ = seedBatch;
+
+      // Fetch Pexels photos if API key is available
+      const barnLogo = await getPexelsPhoto(
+        'barn logo wooden',
+        'small',
+        '/assets/images/placeholders/supplier-venue.svg'
+      );
+      const barnPhoto = await getPexelsPhoto(
+        'rustic wedding barn venue',
+        'large',
+        '/assets/images/placeholders/package-event.svg'
+      );
+      const cateringLogo = await getPexelsPhoto(
+        'catering food logo',
+        'small',
+        '/assets/images/placeholders/supplier-catering.svg'
+      );
+      const cateringPhoto = await getPexelsPhoto(
+        'wedding catering buffet food',
+        'large',
+        '/assets/images/placeholders/package-event.svg'
+      );
+      const photoLogo = await getPexelsPhoto(
+        'camera photography logo',
+        'small',
+        '/assets/images/placeholders/supplier-photography.svg'
+      );
+      const photoPhoto = await getPexelsPhoto(
+        'wedding photography camera',
+        'large',
+        '/assets/images/placeholders/package-event.svg'
+      );
+
       const defaults = [
         {
           id: 'sup_xmkgxc6kd04f',
           ownerUserId: null,
           name: 'The Willow Barn Venue',
-          logo: 'https://source.unsplash.com/100x100/?logo,barn',
+          logo: barnLogo,
           blurb: 'Your perfect rustic wedding venue',
           category: 'Venues',
           location: 'Monmouthshire, South Wales',
-          price_display: 'From \u00a31,500',
+          price_display: 'From £1,500',
           website: '',
           email: 'willowbarn@example.com',
           phone: '01234 567890',
           license: '',
           amenities: ['Parking', 'Garden'],
           maxGuests: 120,
-          photos: ['https://source.unsplash.com/featured/800x600/?wedding,barn'],
+          photos: [barnPhoto],
           description_short: 'Rustic countryside venue.',
           description_long: 'Converted barn with indoor/outdoor spaces.',
           approved: true,
+          isTest: true,
+          seedBatch,
+          createdAt: now,
         },
         {
           id: 'sup_suj0sb6kd04f',
           ownerUserId: null,
           name: 'Green Oak Catering',
-          logo: 'https://source.unsplash.com/100x100/?logo,food',
+          logo: cateringLogo,
           blurb: 'Seasonal menus with local produce',
           category: 'Catering',
           location: 'Cardiff & South Wales',
-          price_display: '\u00a3\u00a3',
+          price_display: '££',
           website: '',
           email: 'greenoakcatering@example.com',
           phone: '01234 567891',
           license: '',
           amenities: ['Vegan options', 'Serving staff'],
           maxGuests: 500,
-          photos: ['https://source.unsplash.com/featured/800x600/?catering,food'],
+          photos: [cateringPhoto],
           description_short: 'Seasonal menus with local produce.',
           description_long: 'Buffets and formal dining. Vegan options.',
           approved: true,
+          isTest: true,
+          seedBatch,
+          createdAt: now,
         },
         {
           id: 'sup_5n2run6kd04f',
           ownerUserId: null,
           name: 'Snapshot Photography',
-          logo: 'https://source.unsplash.com/100x100/?logo,camera',
+          logo: photoLogo,
           blurb: 'Capturing your special moments',
           category: 'Photography',
           location: 'Bristol & South West',
-          price_display: 'From \u00a3800',
+          price_display: 'From £800',
           website: '',
           email: 'snapshotphoto@example.com',
           phone: '01234 567892',
           license: '',
           amenities: ['Online gallery'],
           maxGuests: 0,
-          photos: ['https://source.unsplash.com/featured/800x600/?wedding,photography'],
+          photos: [photoPhoto],
           description_short: 'Relaxed documentary style.',
           description_long: 'Full-day or hourly packages.',
           approved: true,
+          isTest: true,
+          seedBatch,
+          createdAt: now,
         },
       ];
       await dbUnified.write('suppliers', defaults);
-      console.log('Created demo suppliers');
+      console.log('Created demo suppliers with test data flags');
     }
   }
 
@@ -346,25 +421,51 @@ async function seed(options = {}) {
     if (skipIfExists && existingPackages.length > 0) {
       console.log('Packages already exist, skipping package seed');
     } else if (!Array.isArray(existingPackages) || existingPackages.length === 0) {
+      // Use same seed batch from suppliers if available, or generate new one
+      const seedBatch = global.__SEED_BATCH__ || `seed_${Date.now()}`;
+      const now = new Date().toISOString();
+
+      // Fetch Pexels photos if API key is available
+      const barnVenueImg = await getPexelsPhoto(
+        'rustic barn wedding venue interior',
+        'large',
+        '/assets/images/placeholders/package-event.svg'
+      );
+      const barnInteriorImg = await getPexelsPhoto(
+        'barn interior wedding setup',
+        'large',
+        '/assets/images/placeholders/package-event.svg'
+      );
+      const cateringImg = await getPexelsPhoto(
+        'wedding banquet catering food',
+        'large',
+        '/assets/images/placeholders/package-event.svg'
+      );
+      const photographyImg = await getPexelsPhoto(
+        'professional camera wedding photography',
+        'large',
+        '/assets/images/placeholders/package-event.svg'
+      );
+
       const defaults = [
         {
           id: 'pkg_pk1uq76kd04h',
           supplierId: 'sup_xmkgxc6kd04f',
           slug: 'barn-exclusive',
           title: 'Barn Exclusive',
-          price: '\u00a33,500',
+          price: '£3,500',
           location: 'Monmouthshire, South Wales',
           description:
             'Full-day venue hire, ceremony & reception areas. Includes indoor and outdoor spaces, tables and chairs, parking for 50 cars.',
-          image: 'https://source.unsplash.com/featured/800x600/?rustic,venue',
+          image: barnVenueImg,
           gallery: [
             {
-              url: 'https://source.unsplash.com/featured/800x600/?rustic,venue',
+              url: barnVenueImg,
               approved: true,
               uploadedAt: Date.now(),
             },
             {
-              url: 'https://source.unsplash.com/featured/800x600/?barn,interior',
+              url: barnInteriorImg,
               approved: true,
               uploadedAt: Date.now(),
             },
@@ -374,20 +475,23 @@ async function seed(options = {}) {
           approved: true,
           featured: true,
           isFeatured: true,
+          isTest: true,
+          seedBatch,
+          createdAt: now,
         },
         {
           id: 'pkg_3e3fdh6kd04h',
           supplierId: 'sup_suj0sb6kd04f',
           slug: 'seasonal-feast',
           title: 'Seasonal Feast',
-          price: '\u00a345 pp',
+          price: '£45 pp',
           location: 'Cardiff & South Wales',
           description:
             'Three-course seasonal menu with staff & setup. Includes locally sourced ingredients, vegan options available.',
-          image: 'https://source.unsplash.com/featured/800x600/?banquet,catering',
+          image: cateringImg,
           gallery: [
             {
-              url: 'https://source.unsplash.com/featured/800x600/?banquet,catering',
+              url: cateringImg,
               approved: true,
               uploadedAt: Date.now(),
             },
@@ -397,20 +501,23 @@ async function seed(options = {}) {
           approved: true,
           featured: false,
           isFeatured: false,
+          isTest: true,
+          seedBatch,
+          createdAt: now,
         },
         {
           id: 'pkg_8b6fmw6kd04h',
           supplierId: 'sup_5n2run6kd04f',
           slug: 'full-day-capture',
           title: 'Full Day Capture',
-          price: '\u00a31,200',
+          price: '£1,200',
           location: 'Bristol & South West',
           description:
             'Prep through first dance, private gallery. Includes all edited photos, online gallery access, and print rights.',
-          image: 'https://source.unsplash.com/featured/800x600/?camera,photography',
+          image: photographyImg,
           gallery: [
             {
-              url: 'https://source.unsplash.com/featured/800x600/?camera,photography',
+              url: photographyImg,
               approved: true,
               uploadedAt: Date.now(),
             },
@@ -420,10 +527,13 @@ async function seed(options = {}) {
           approved: true,
           featured: true,
           isFeatured: true,
+          isTest: true,
+          seedBatch,
+          createdAt: now,
         },
       ];
       await dbUnified.write('packages', defaults);
-      console.log('Created demo packages');
+      console.log('Created demo packages with test data flags');
     }
   }
 

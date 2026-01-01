@@ -78,6 +78,13 @@ class PackageList {
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
       }
 
+      .package-card-badge-test {
+        background: #fef3c7 !important;
+        color: #92400e !important;
+        border: 1px solid #f59e0b !important;
+        top: clamp(48px, 10vw, 52px) !important;
+      }
+
       .package-card-image {
         width: 100%;
         height: clamp(180px, 40vw, 220px);
@@ -343,9 +350,21 @@ class PackageList {
     });
 
     const isFeatured = pkg.featured || pkg.isFeatured || false;
-    const featuredBadge = isFeatured
-      ? '<div class="package-card-featured-badge">Featured</div>'
-      : '';
+    const isTest = pkg.isTest || false;
+
+    // Build badges with specific classes for styling
+    const badges = [];
+    if (isFeatured) {
+      badges.push(
+        '<div class="package-card-featured-badge package-card-badge-featured">Featured</div>'
+      );
+    }
+    if (isTest) {
+      badges.push(
+        '<div class="package-card-featured-badge package-card-badge-test">🧪 Test data</div>'
+      );
+    }
+    const badgesHtml = badges.join('');
 
     // Escape HTML to prevent XSS
     const escapeHtml = str => {
@@ -404,7 +423,7 @@ class PackageList {
     }
 
     card.innerHTML = `
-      ${featuredBadge}
+      ${badgesHtml}
       <img class="package-card-image" src="${imageUrl}" alt="${title}" loading="lazy">
       <div class="package-card-content">
         <h3 class="package-card-title">${title}</h3>

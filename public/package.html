@@ -94,8 +94,13 @@
                 <div id="package-location" style="font-size: 1rem; color: var(--color-text-secondary, #6c757d);"></div>
               </div>
             </div>
-            <div id="package-featured-badge" style="display: none; background-color: var(--accent, #13B6A2); color: white; padding: 8px 16px; border-radius: 20px; font-weight: 600;">
-              Featured
+            <div style="display: flex; flex-direction: column; gap: 8px; align-items: flex-end;">
+              <div id="package-featured-badge" style="display: none; background-color: var(--accent, #13B6A2); color: white; padding: 8px 16px; border-radius: 20px; font-weight: 600;">
+                Featured
+              </div>
+              <div id="package-test-badge" style="display: none; background: #fef3c7; color: #92400e; border: 1px solid #f59e0b; padding: 8px 16px; border-radius: 20px; font-weight: 600;">
+                🧪 Test data
+              </div>
             </div>
           </div>
         </div>
@@ -194,6 +199,10 @@
 
         if (pkg.featured || pkg.isFeatured) {
           document.getElementById('package-featured-badge').style.display = 'block';
+        }
+
+        if (pkg.isTest) {
+          document.getElementById('package-test-badge').style.display = 'block';
         }
 
         // Display categories
