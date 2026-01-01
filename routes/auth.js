@@ -60,9 +60,17 @@ function updateLastLogin(userId) {
  * Register a new user account
  */
 router.post('/register', authLimiter, async (req, res) => {
-  const { name, email, password, role } = req.body || {};
-  if (!name || !email || !password) {
-    return res.status(400).json({ error: 'Missing fields' });
+  const { firstName, lastName, name, email, password, role } = req.body || {};
+  
+  // Support both new (firstName/lastName) and legacy (name) formats
+  const userFirstName = firstName || '';
+  const userLastName = lastName || '';
+  const userFullName = firstName && lastName 
+    ? `${firstName.trim()} ${lastName.trim()}`.trim() 
+    : (name || '').trim();
+  
+  if (!userFullName || !email || !password) {
+    return res.status(400).json({ error: 'Missing required fields (name or firstName/lastName, email, and password required)' });
   }
   if (!validator.isEmail(String(email))) {
     return res.status(400).json({ error: 'Invalid email' });
@@ -80,7 +88,9 @@ router.post('/register', authLimiter, async (req, res) => {
   // Create user object first (needed for JWT token generation)
   const user = {
     id: uid('usr'),
-    name: String(name).trim().slice(0, 80),
+    name: String(userFullName).slice(0, 80),
+    firstName: String(userFirstName).trim().slice(0, 40),
+    lastName: String(userLastName).trim().slice(0, 40),
     email: String(email).toLowerCase(),
     role: roleFinal,
     passwordHash: bcrypt.hashSync(password, 10),
