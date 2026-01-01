@@ -4500,6 +4500,10 @@ app.use('/api/pexels', pexelsRoutes);
 const paymentRoutes = require('./routes/payments');
 app.use('/api/payments', paymentRoutes);
 
+// ---------- Profile Routes ----------
+const profileRoutes = require('./routes/profile');
+app.use('/api/profile', profileRoutes);
+
 // ---------- Photo Serving from MongoDB ----------
 /**
  * GET /api/photos/:id

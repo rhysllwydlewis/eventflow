@@ -60,7 +60,10 @@ function updateLastLogin(userId) {
  * Register a new user account
  */
 router.post('/register', authLimiter, async (req, res) => {
-  const { firstName, lastName, name, email, password, role } = req.body || {};
+  const { 
+    firstName, lastName, name, email, password, role,
+    location, postcode, company, jobTitle, website, socials 
+  } = req.body || {};
   
   // Support both new (firstName/lastName) and legacy (name) formats
   const userFirstName = firstName || '';
@@ -69,8 +72,12 @@ router.post('/register', authLimiter, async (req, res) => {
     ? `${firstName.trim()} ${lastName.trim()}`.trim() 
     : (name || '').trim();
   
+  // Required fields validation
   if (!userFullName || !email || !password) {
     return res.status(400).json({ error: 'Missing required fields (name or firstName/lastName, email, and password required)' });
+  }
+  if (!firstName || !lastName) {
+    return res.status(400).json({ error: 'First name and last name are required' });
   }
   if (!validator.isEmail(String(email))) {
     return res.status(400).json({ error: 'Invalid email' });
@@ -78,11 +85,53 @@ router.post('/register', authLimiter, async (req, res) => {
   if (!passwordOk(password)) {
     return res.status(400).json({ error: 'Weak password' });
   }
+  
   const roleFinal = role === 'supplier' || role === 'customer' ? role : 'customer';
+  
+  // Role-specific required field validation
+  if (!location) {
+    return res.status(400).json({ error: 'Location is required' });
+  }
+  if (roleFinal === 'supplier' && !company) {
+    return res.status(400).json({ error: 'Company name is required for suppliers' });
+  }
 
   const users = read('users');
   if (users.find(u => u.email.toLowerCase() === String(email).toLowerCase())) {
     return res.status(409).json({ error: 'Email already registered' });
+  }
+
+  // Sanitize and validate optional URLs
+  const sanitizeUrl = (url) => {
+    if (!url) return undefined;
+    const trimmed = String(url).trim();
+    if (!trimmed) return undefined;
+    // Basic URL validation
+    if (!validator.isURL(trimmed, { require_protocol: false })) {
+      return undefined;
+    }
+    return trimmed;
+  };
+
+  // Parse socials object
+  const socialsParsed = socials ? {
+    instagram: sanitizeUrl(socials.instagram),
+    facebook: sanitizeUrl(socials.facebook),
+    twitter: sanitizeUrl(socials.twitter),
+    linkedin: sanitizeUrl(socials.linkedin),
+  } : {};
+
+  // Determine founder badge eligibility
+  const founderLaunchTs = process.env.FOUNDER_LAUNCH_TS || '2026-01-01T00:00:00Z';
+  const founderLaunchDate = new Date(founderLaunchTs);
+  const founderEndDate = new Date(founderLaunchDate);
+  founderEndDate.setMonth(founderEndDate.getMonth() + 6); // 6 months from launch
+  
+  const now = new Date();
+  const badges = [];
+  if (now <= founderEndDate) {
+    badges.push('founder');
+    console.log(`🏆 Founder badge awarded to ${email} (registered within 6 months of launch)`);
   }
 
   // Create user object first (needed for JWT token generation)
@@ -94,6 +143,13 @@ router.post('/register', authLimiter, async (req, res) => {
     email: String(email).toLowerCase(),
     role: roleFinal,
     passwordHash: bcrypt.hashSync(password, 10),
+    location: String(location).trim().slice(0, 100),
+    postcode: postcode ? String(postcode).trim().slice(0, 10) : undefined,
+    company: company ? String(company).trim().slice(0, 100) : undefined,
+    jobTitle: jobTitle ? String(jobTitle).trim().slice(0, 100) : undefined,
+    website: sanitizeUrl(website),
+    socials: socialsParsed,
+    badges,
     notify: true, // Deprecated, kept for backward compatibility
     notify_account: true, // Transactional emails enabled by default
     notify_marketing: !!(req.body && req.body.marketingOptIn), // Marketing emails opt-in
@@ -585,8 +641,18 @@ router.get('/me', (req, res) => {
       ? {
           id: u.id,
           name: u.name,
+          firstName: u.firstName,
+          lastName: u.lastName,
           email: u.email,
           role: u.role,
+          location: u.location,
+          postcode: u.postcode,
+          company: u.company,
+          jobTitle: u.jobTitle,
+          website: u.website,
+          socials: u.socials || {},
+          avatarUrl: u.avatarUrl,
+          badges: u.badges || [],
           isPro: u.isPro || false,
           proExpiresAt: u.proExpiresAt || null,
           notify: u.notify !== false,

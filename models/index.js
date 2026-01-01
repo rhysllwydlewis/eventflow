@@ -19,9 +19,27 @@ const userSchema = {
       properties: {
         id: { bsonType: 'string', description: 'Unique user identifier' },
         name: { bsonType: 'string', description: 'User full name' },
+        firstName: { bsonType: 'string', description: 'User first name' },
+        lastName: { bsonType: 'string', description: 'User last name' },
         email: { bsonType: 'string', description: 'User email address' },
         role: { enum: ['customer', 'supplier', 'admin'], description: 'User role' },
         passwordHash: { bsonType: 'string', description: 'Hashed password' },
+        location: { bsonType: 'string', description: 'User location (UK county)' },
+        postcode: { bsonType: 'string', description: 'User postcode (optional)' },
+        company: { bsonType: 'string', description: 'Company name (required for suppliers)' },
+        jobTitle: { bsonType: 'string', description: 'Job title (optional for suppliers)' },
+        website: { bsonType: 'string', description: 'Website URL (optional for suppliers)' },
+        socials: {
+          bsonType: 'object',
+          description: 'Social media URLs (optional)',
+          properties: {
+            instagram: { bsonType: 'string' },
+            facebook: { bsonType: 'string' },
+            twitter: { bsonType: 'string' },
+            linkedin: { bsonType: 'string' },
+          },
+        },
+        avatarUrl: { bsonType: 'string', description: 'User avatar/profile picture URL' },
         notify: {
           bsonType: 'bool',
           description: 'Email notification preference (deprecated, use notify_account)',
