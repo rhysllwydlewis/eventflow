@@ -191,17 +191,23 @@ button {
   color: #fff;
   border: 1px solid #2563eb;
   border-radius: 4px;
-  transition: background 0.2s;
+  transition: all 0.2s ease;
   white-space: nowrap;
 }
 
 button:hover {
   background: #2563eb;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
 }
 
 button:focus {
   outline: 2px solid #60a5fa;
   outline-offset: 2px;
+}
+
+button:active {
+  transform: translateY(0);
 }
 
 .controls {
@@ -220,12 +226,14 @@ input[type="text"] {
   background: #fff;
   color: #1a1a1a;
   min-width: 220px;
+  transition: all 0.2s ease;
 }
 
 input[type="text"]:focus {
   outline: 2px solid #3b82f6;
   outline-offset: 0;
   border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 select {
@@ -234,12 +242,14 @@ select {
   border: 1px solid #d4d4d8;
   background: #fff;
   color: #1a1a1a;
+  transition: all 0.2s ease;
 }
 
 select:focus {
   outline: 2px solid #3b82f6;
   outline-offset: 0;
   border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 .badge {
@@ -264,7 +274,7 @@ select:focus {
 
 .small {
   font-size: 12px;
-  color: #52525b;
+  color: #3f3f46;
 }
 
 .card {
@@ -273,6 +283,11 @@ select:focus {
   border-radius: 6px;
   border: 1px solid #e4e4e7;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+}
+
+.card:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 /* Additional Badge Styles */
@@ -395,4 +410,70 @@ select:focus {
 .admin-toolbar input[type="text"],
 .admin-toolbar select {
   flex: 0 1 auto;
+}
+
+/* Loading spinner animation */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(59, 130, 246, 0.2);
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.spinner-large {
+  width: 40px;
+  height: 40px;
+  border-width: 4px;
+}
+
+/* Fade in animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease;
+}
+
+/* Accessibility improvements */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Focus visible for keyboard navigation */
+*:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
 }

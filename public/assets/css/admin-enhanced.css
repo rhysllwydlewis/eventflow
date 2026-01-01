@@ -185,12 +185,12 @@ main.section {
 }
 
 .btn-icon {
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border-radius: 10px;
   border: 1px solid #e5e7eb;
   background: white;
-  color: #6b7280;
+  color: #4b5563;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -198,10 +198,17 @@ main.section {
   transition: all 0.2s;
 }
 
+.btn-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
 .btn-icon:hover {
-  background: #f9fafb;
-  border-color: #d1d5db;
-  transform: translateY(-1px);
+  background: #f3f4f6;
+  border-color: #667eea;
+  color: #667eea;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
 }
 
 .btn-secondary {
@@ -1324,4 +1331,29 @@ tbody tr:hover {
 /* Rating stars */
 .stars-gold {
   color: #f59e0b;
+}
+
+/* Note box / Info box */
+.note-box {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border: 1px solid #bae6fd;
+  border-left: 4px solid #0ea5e9;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 8px rgba(14, 165, 233, 0.1);
+}
+
+.note-box h4 {
+  margin: 0 0 8px 0;
+  color: #0c4a6e;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.note-box p {
+  margin: 0;
+  color: #164e63;
+  font-size: 14px;
+  line-height: 1.6;
 }

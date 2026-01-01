@@ -192,15 +192,15 @@
 
 /* Refresh Button */
 .navbar-icon-btn {
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
   border: 1px solid #e5e7eb;
   border-radius: 10px;
   background: white;
-  color: #6b7280;
+  color: #4b5563;
   cursor: pointer;
   transition: all 0.2s, transform 0.6s ease;
 }
@@ -208,17 +208,20 @@
 .navbar-icon-btn svg {
   stroke: currentColor;
   fill: none;
+  width: 24px;
+  height: 24px;
 }
 
 .navbar-icon-btn:hover {
-  background: #f9fafb;
-  border-color: #d1d5db;
-  color: #374151;
-  transform: scale(1.05);
+  background: #f3f4f6;
+  border-color: #667eea;
+  color: #667eea;
+  transform: scale(1.08);
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
 }
 
 .navbar-icon-btn:active {
-  transform: scale(0.98);
+  transform: scale(0.98) rotate(180deg);
 }
 
 /* User Dropdown */

@@ -56,13 +56,15 @@
         heroImages = await response.json();
         renderHeroImages();
       } else {
+        // Show error message with retry button
         heroImageListElement.innerHTML =
-          '<div class="card"><p class="small">Failed to load hero collage images. Please try again.</p></div>';
+          '<div class="card error-card"><p class="error-message-text">❌ Failed to load hero collage images.</p><button onclick="location.reload()" class="btn btn-secondary">Retry</button></div>';
       }
     } catch (err) {
       console.error('Error loading hero images:', err);
+      // Show error message with retry button
       heroImageListElement.innerHTML =
-        '<div class="card"><p class="small">Failed to load hero collage images. Please try again.</p></div>';
+        '<div class="card error-card"><p class="error-message-text">❌ Failed to load hero collage images. Please check your connection and try again.</p><button onclick="location.reload()" class="btn btn-secondary">Retry</button></div>';
     }
   }
 
@@ -93,8 +95,8 @@
             </div>
             <input type="file" id="hero-file-${escapeHtml(category)}" accept="image/*" data-hero-category="${escapeHtml(category)}">
             ${!isDefault ? `<button class="remove-btn" data-hero-category="${escapeHtml(category)}">Reset to Default</button>` : '<p class="small" style="margin: 8px 0; color: #6c757d;">Using default image</p>'}
-            <div class="success-message" id="hero-success-${escapeHtml(category)}">Image updated successfully!</div>
-            <div class="error-message" id="hero-error-${escapeHtml(category)}">Failed to update image.</div>
+            <div class="success-message" id="hero-success-${escapeHtml(category)}" style="display: none;">Image updated successfully!</div>
+            <div class="error-message" id="hero-error-${escapeHtml(category)}" style="display: none;">Failed to update image.</div>
           </div>
         </div>
       `;
@@ -308,8 +310,8 @@
             </div>
             <input type="file" id="file-${escapeHtml(category.id)}" accept="image/*" data-category-id="${escapeHtml(category.id)}">
             ${hasImage ? `<button class="remove-btn" data-category-id="${escapeHtml(category.id)}">Remove Image</button>` : ''}
-            <div class="success-message" id="success-${escapeHtml(category.id)}">Image updated successfully!</div>
-            <div class="error-message" id="error-${escapeHtml(category.id)}">Failed to update image.</div>
+            <div class="success-message" id="success-${escapeHtml(category.id)}" style="display: none;">Image updated successfully!</div>
+            <div class="error-message" id="error-${escapeHtml(category.id)}" style="display: none;">Failed to update image.</div>
           </div>
         </div>
       `;
