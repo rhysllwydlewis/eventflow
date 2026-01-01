@@ -608,10 +608,10 @@
       const tier = tierSel.value;
       const days = parseInt(durationSel.value, 10);
       const tierName = tier === 'pro_plus' ? 'Pro+' : 'Pro';
-      
+
       api(`/api/admin/suppliers/${id}/subscription`, 'POST', {
-        tier: tier,
-        days: days,
+        tier,
+        days,
       })
         .then(() => {
           if (typeof Toast !== 'undefined') {
@@ -633,7 +633,8 @@
       if (typeof Modal !== 'undefined') {
         const modal = new Modal({
           title: 'Remove Subscription',
-          content: '<p>Remove subscription for this supplier? They will lose Pro/Pro+ features immediately.</p>',
+          content:
+            '<p>Remove subscription for this supplier? They will lose Pro/Pro+ features immediately.</p>',
           confirmText: 'Remove',
           cancelText: 'Keep',
           onConfirm: function () {
@@ -658,7 +659,11 @@
         });
         modal.show();
       } else {
-        if (!confirm('Remove subscription for this supplier? They will lose Pro/Pro+ features immediately.')) {
+        if (
+          !confirm(
+            'Remove subscription for this supplier? They will lose Pro/Pro+ features immediately.'
+          )
+        ) {
           return;
         }
         api(`/api/admin/suppliers/${id}/subscription`, 'DELETE')
