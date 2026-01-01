@@ -50,6 +50,29 @@ if (INTRO_PRICING_ENABLED) {
 }
 
 /**
+ * Helper: Determine subscription tier from plan name
+ * @param {string} planName - The plan name from Stripe metadata or price nickname
+ * @returns {string} - 'pro', 'pro_plus', or 'free'
+ */
+function getSubscriptionTier(planName) {
+  if (!planName) return 'free';
+  
+  const lowerName = planName.toLowerCase();
+  
+  // Check for Professional Plus (must come before Professional check)
+  if (lowerName.includes('professional plus') || lowerName.includes('pro plus') || lowerName.includes('pro+')) {
+    return 'pro_plus';
+  }
+  
+  // Check for Professional/Pro
+  if (lowerName.includes('professional') || lowerName.includes('pro')) {
+    return 'pro';
+  }
+  
+  return 'free';
+}
+
+/**
  * Helper: Check if Stripe is enabled
  */
 function ensureStripeEnabled(req, res, next) {
@@ -551,14 +574,18 @@ async function handleSubscriptionCreated(subscription) {
 
   await dbUnified.insertOne('payments', paymentRecord);
 
-  // Update user's Pro status if applicable
+  // Update user's Pro status and subscription tier if applicable
   if (subscription.status === 'active') {
     const users = await dbUnified.find('users', { id: userId });
     if (users.length > 0) {
-      await dbUnified.updateOne('users', userId, {
-        isPro: true,
+      const tier = getSubscriptionTier(paymentRecord.subscriptionDetails.planName);
+      const userUpdates = {
+        isPro: tier === 'pro' || tier === 'pro_plus',
         proExpiresAt: new Date(subscription.current_period_end * 1000).toISOString(),
-      });
+        subscriptionTier: tier,
+      };
+      await dbUnified.updateOne('users', userId, userUpdates);
+      console.log(`User ${userId} subscription tier set to: ${tier}`);
     }
   }
 
@@ -604,14 +631,20 @@ async function handleSubscriptionUpdated(subscription) {
 
   await dbUnified.updateOne('payments', payment.id, updates);
 
-  // Update user's Pro status
+  // Update user's Pro status and subscription tier
   const users = await dbUnified.find('users', { id: userId });
   if (users.length > 0) {
+    const planName = updates.subscriptionDetails.planName;
+    const tier = getSubscriptionTier(planName);
+    const isActive = subscription.status === 'active';
+    
     const userUpdates = {
-      isPro: subscription.status === 'active',
+      isPro: isActive && (tier === 'pro' || tier === 'pro_plus'),
       proExpiresAt: new Date(subscription.current_period_end * 1000).toISOString(),
+      subscriptionTier: isActive ? tier : 'free',
     };
     await dbUnified.updateOne('users', userId, userUpdates);
+    console.log(`User ${userId} subscription updated - tier: ${userUpdates.subscriptionTier}, active: ${isActive}`);
   }
 
   console.log(`Subscription ${subscription.id} updated`);
@@ -644,12 +677,14 @@ async function handleSubscriptionDeleted(subscription) {
     updatedAt: new Date().toISOString(),
   });
 
-  // Update user's Pro status to expired
+  // Update user's Pro status to expired and remove subscription tier
   const users = await dbUnified.find('users', { id: userId });
   if (users.length > 0) {
     await dbUnified.updateOne('users', userId, {
       isPro: false,
+      subscriptionTier: 'free',
     });
+    console.log(`User ${userId} subscription deleted - tier reset to free`);
   }
 
   console.log(`Subscription ${subscription.id} deleted for user ${userId}`);

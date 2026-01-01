@@ -233,15 +233,16 @@ class SupplierCard {
       badges.push('<span class="badge badge-founding">Founding Supplier</span>');
     }
 
-    // Pro/Featured tier badges
-    if (this.supplier.subscription) {
-      if (this.supplier.subscription.tier === 'featured') {
-        badges.push('<span class="badge badge-featured">Featured</span>');
-      } else if (this.supplier.subscription.tier === 'pro') {
-        badges.push('<span class="badge badge-pro">Pro</span>');
-      }
-    } else if (this.supplier.isPro) {
-      badges.push('<span class="badge badge-pro">Pro</span>');
+    // Pro/Pro Plus/Featured tier badges
+    // Check subscriptionTier field first (new), then fall back to subscription.tier or isPro
+    const tier = this.supplier.subscriptionTier || this.supplier.subscription?.tier || (this.supplier.isPro ? 'pro' : null);
+    
+    if (tier === 'featured') {
+      badges.push('<span class="badge badge-featured">Featured</span>');
+    } else if (tier === 'pro_plus') {
+      badges.push('<span class="badge badge-pro-plus">Professional Plus</span>');
+    } else if (tier === 'pro') {
+      badges.push('<span class="badge badge-pro">Professional</span>');
     }
 
     // Verification badges
