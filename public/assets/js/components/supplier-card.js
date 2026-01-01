@@ -235,8 +235,11 @@ class SupplierCard {
 
     // Pro/Pro Plus/Featured tier badges
     // Check subscriptionTier field first (new), then fall back to subscription.tier or isPro
-    const tier = this.supplier.subscriptionTier || this.supplier.subscription?.tier || (this.supplier.isPro ? 'pro' : null);
-    
+    const tier =
+      this.supplier.subscriptionTier ||
+      this.supplier.subscription?.tier ||
+      (this.supplier.isPro ? 'pro' : null);
+
     if (tier === 'featured') {
       badges.push('<span class="badge badge-featured">Featured</span>');
     } else if (tier === 'pro_plus') {

@@ -162,7 +162,7 @@ describe('Payment Routes', () => {
       expect(validSignature).toContain('v1=');
 
       invalidSignatures.forEach(sig => {
-        const isValid = sig && sig.includes('t=') && sig.includes('v1=');
+        const isValid = !!(sig && sig.includes('t=') && sig.includes('v1='));
         expect(isValid).toBe(false);
       });
     });

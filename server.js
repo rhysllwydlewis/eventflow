@@ -779,11 +779,9 @@ app.post('/api/auth/register', strictAuthLimiter, csrfProtection, async (req, re
 
   // Required fields validation
   if (!userFullName || !email || !password) {
-    return res
-      .status(400)
-      .json({
-        error: 'Missing required fields (name or firstName/lastName, email, and password required)',
-      });
+    return res.status(400).json({
+      error: 'Missing required fields (name or firstName/lastName, email, and password required)',
+    });
   }
   if (!firstName || !lastName) {
     return res.status(400).json({ error: 'First name and last name are required' });

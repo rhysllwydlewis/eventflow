@@ -4,9 +4,15 @@
 
 // Helper function used across multiple tests
 function getSubscriptionTier(planName) {
-  if (!planName) return 'free';
+  if (!planName) {
+    return 'free';
+  }
   const lowerName = planName.toLowerCase();
-  if (lowerName.includes('professional plus') || lowerName.includes('pro plus') || lowerName.includes('pro+')) {
+  if (
+    lowerName.includes('professional plus') ||
+    lowerName.includes('pro plus') ||
+    lowerName.includes('pro+')
+  ) {
     return 'pro_plus';
   }
   if (lowerName.includes('professional') || lowerName.includes('pro')) {
@@ -53,30 +59,27 @@ describe('Introductory Pricing', () => {
       ];
 
       planNames.forEach(name => {
-        const isPro = name.toLowerCase().includes('professional') || 
-                      name.toLowerCase().includes('pro');
-        const isProPlus = name.toLowerCase().includes('professional plus') || 
-                         name.toLowerCase().includes('pro plus');
-        
+        const isPro =
+          name.toLowerCase().includes('professional') || name.toLowerCase().includes('pro');
+        const isProPlus =
+          name.toLowerCase().includes('professional plus') ||
+          name.toLowerCase().includes('pro plus');
+
         expect(isPro).toBe(true);
         expect(isProPlus).toBe(false);
       });
     });
 
     it('should not detect Professional Plus as Professional', () => {
-      const planNames = [
-        'Professional Plus',
-        'professional plus',
-        'Pro Plus',
-        'pro+',
-      ];
+      const planNames = ['Professional Plus', 'professional plus', 'Pro Plus', 'pro+'];
 
       planNames.forEach(name => {
         const lowerName = name.toLowerCase();
-        const isProPlus = lowerName.includes('professional plus') || 
-                         lowerName.includes('pro plus') || 
-                         lowerName.includes('pro+');
-        
+        const isProPlus =
+          lowerName.includes('professional plus') ||
+          lowerName.includes('pro plus') ||
+          lowerName.includes('pro+');
+
         expect(isProPlus).toBe(true);
       });
     });
@@ -85,8 +88,8 @@ describe('Introductory Pricing', () => {
       const planNames = ['Basic', 'Free', 'Enterprise', 'Premium'];
 
       planNames.forEach(name => {
-        const isPro = name.toLowerCase().includes('professional') || 
-                      name.toLowerCase().includes('pro');
+        const isPro =
+          name.toLowerCase().includes('professional') || name.toLowerCase().includes('pro');
         expect(isPro).toBe(false);
       });
     });
@@ -97,10 +100,8 @@ describe('Introductory Pricing', () => {
       const introPricingEnabled = true;
       const isProfessionalPlan = true;
       const type = 'subscription';
-      
-      const useIntroPricing = introPricingEnabled && 
-                             type === 'subscription' && 
-                             isProfessionalPlan;
+
+      const useIntroPricing = introPricingEnabled && type === 'subscription' && isProfessionalPlan;
 
       expect(useIntroPricing).toBe(true);
     });
@@ -109,10 +110,8 @@ describe('Introductory Pricing', () => {
       const introPricingEnabled = true;
       const isProfessionalPlan = true;
       const type = 'one_time';
-      
-      const useIntroPricing = introPricingEnabled && 
-                             type === 'subscription' && 
-                             isProfessionalPlan;
+
+      const useIntroPricing = introPricingEnabled && type === 'subscription' && isProfessionalPlan;
 
       expect(useIntroPricing).toBe(false);
     });
@@ -121,10 +120,8 @@ describe('Introductory Pricing', () => {
       const introPricingEnabled = false;
       const isProfessionalPlan = true;
       const type = 'subscription';
-      
-      const useIntroPricing = introPricingEnabled && 
-                             type === 'subscription' && 
-                             isProfessionalPlan;
+
+      const useIntroPricing = introPricingEnabled && type === 'subscription' && isProfessionalPlan;
 
       expect(useIntroPricing).toBe(false);
     });
@@ -218,14 +215,16 @@ describe('Subscription Badges', () => {
 
     it('should not show badge for free tier', () => {
       const user = { subscriptionTier: 'free' };
-      const shouldShowBadge = user.subscriptionTier === 'pro' || user.subscriptionTier === 'pro_plus';
+      const shouldShowBadge =
+        user.subscriptionTier === 'pro' || user.subscriptionTier === 'pro_plus';
 
       expect(shouldShowBadge).toBe(false);
     });
 
     it('should not show badge when tier is null', () => {
       const user = {};
-      const shouldShowBadge = user.subscriptionTier === 'pro' || user.subscriptionTier === 'pro_plus';
+      const shouldShowBadge =
+        user.subscriptionTier === 'pro' || user.subscriptionTier === 'pro_plus';
 
       expect(shouldShowBadge).toBe(false);
     });
@@ -302,7 +301,7 @@ describe('Webhook Handlers', () => {
     it('should set subscription tier on user record', () => {
       const planName = 'Professional Monthly';
       const subscriptionStatus = 'active';
-      
+
       const tier = getSubscriptionTier(planName);
       const userUpdates = {
         isPro: tier === 'pro' || tier === 'pro_plus',
@@ -319,7 +318,7 @@ describe('Webhook Handlers', () => {
       const oldPlanName = 'Professional';
       const newPlanName = 'Professional Plus';
       const subscriptionStatus = 'active';
-      
+
       const newTier = getSubscriptionTier(newPlanName);
       const isActive = subscriptionStatus === 'active';
 
@@ -335,7 +334,7 @@ describe('Webhook Handlers', () => {
     it('should set tier to free when subscription becomes inactive', () => {
       const planName = 'Professional';
       const subscriptionStatus = 'past_due';
-      
+
       const isActive = subscriptionStatus === 'active';
       const tier = isActive ? 'pro' : 'free';
 

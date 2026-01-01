@@ -135,8 +135,7 @@ export function getStatCardSkeletons(count = 4) {
  * @param {string} skeletonHtml - Skeleton HTML to show
  */
 export function showSkeleton(container, skeletonHtml) {
-  const element =
-    typeof container === 'string' ? document.querySelector(container) : container;
+  const element = typeof container === 'string' ? document.querySelector(container) : container;
   if (element) {
     element.innerHTML = skeletonHtml;
   }
@@ -148,8 +147,7 @@ export function showSkeleton(container, skeletonHtml) {
  * @param {string} message - Loading message (optional)
  */
 export function showLoadingSpinner(container, message = 'Loading...') {
-  const element =
-    typeof container === 'string' ? document.querySelector(container) : container;
+  const element = typeof container === 'string' ? document.querySelector(container) : container;
   if (element) {
     element.innerHTML = `
       <div class="loading-container">
@@ -174,8 +172,7 @@ export function showEmptyState(container, options = {}) {
     actionHref = '',
   } = options;
 
-  const element =
-    typeof container === 'string' ? document.querySelector(container) : container;
+  const element = typeof container === 'string' ? document.querySelector(container) : container;
   if (element) {
     const actionHtml = actionText
       ? `<a href="${actionHref}" class="empty-state-action">${actionText}</a>`
@@ -206,8 +203,7 @@ export function showErrorState(container, options = {}) {
     onAction = null,
   } = options;
 
-  const element =
-    typeof container === 'string' ? document.querySelector(container) : container;
+  const element = typeof container === 'string' ? document.querySelector(container) : container;
   if (element) {
     element.innerHTML = `
       <div class="error-state">

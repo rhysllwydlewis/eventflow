@@ -106,7 +106,7 @@ async function initSubscriptionPage() {
     // Set up manage billing button
     console.log('[Subscription] Setting up billing portal...');
     setupBillingPortal();
-    
+
     console.log('[Subscription] Initialization complete');
   } catch (error) {
     console.error('[Subscription] Error initializing subscription page:', error);
@@ -181,7 +181,10 @@ async function loadSubscriptionStatus() {
     );
 
     if (activeSubscription) {
-      console.log('[Subscription] Active subscription found:', activeSubscription.subscriptionDetails?.planId);
+      console.log(
+        '[Subscription] Active subscription found:',
+        activeSubscription.subscriptionDetails?.planId
+      );
     } else {
       console.log('[Subscription] No active subscription found');
     }
@@ -213,8 +216,11 @@ async function loadStripeConfig() {
     }
 
     const data = await response.json();
-    console.log('[Subscription] Stripe config loaded, intro pricing enabled:', data.introPricingEnabled);
-    
+    console.log(
+      '[Subscription] Stripe config loaded, intro pricing enabled:',
+      data.introPricingEnabled
+    );
+
     stripeConfig = data;
   } catch (error) {
     console.error('[Subscription] Error loading Stripe config:', error);
@@ -339,7 +345,7 @@ function renderSubscriptionPlans() {
  */
 async function handleSubscribe(planId) {
   console.log('[Subscription] Handle subscribe clicked for plan:', planId);
-  
+
   const plan = PLANS[planId];
   if (!plan) {
     console.error('[Subscription] Invalid plan selected:', planId);
@@ -357,15 +363,15 @@ async function handleSubscribe(planId) {
 
   try {
     // Check if this is the Professional plan and intro pricing is enabled
-    const isProfessionalPlan = (plan.name.toLowerCase().includes('professional') || 
-                                plan.name.toLowerCase().includes('pro')) && 
-                                !plan.name.toLowerCase().includes('plus');
-    const useIntroPricing = stripeConfig?.introPricingEnabled && 
-                           stripeConfig?.proPriceId && 
-                           isProfessionalPlan;
-    
+    const isProfessionalPlan =
+      (plan.name.toLowerCase().includes('professional') ||
+        plan.name.toLowerCase().includes('pro')) &&
+      !plan.name.toLowerCase().includes('plus');
+    const useIntroPricing =
+      stripeConfig?.introPricingEnabled && stripeConfig?.proPriceId && isProfessionalPlan;
+
     let requestBody;
-    
+
     if (useIntroPricing) {
       // Use subscription with intro pricing
       console.log('[Subscription] Using subscription mode with intro pricing');
@@ -385,7 +391,7 @@ async function handleSubscribe(planId) {
         planName: plan.name,
       };
     }
-    
+
     console.log('[Subscription] Creating checkout session with:', requestBody);
 
     const response = await fetch('/api/payments/create-checkout-session', {
@@ -444,7 +450,7 @@ function setupBillingPortal() {
 async function openBillingPortal(event) {
   try {
     console.log('[Subscription] Opening billing portal...');
-    
+
     const button = event.target;
     button.disabled = true;
     button.textContent = 'Loading...';
@@ -497,7 +503,7 @@ async function openBillingPortal(event) {
  */
 function showError(message) {
   console.log('[Subscription] Showing error:', message);
-  
+
   const errorContainer = document.getElementById('error-message');
   if (errorContainer) {
     errorContainer.innerHTML = `
@@ -506,7 +512,7 @@ function showError(message) {
       </div>
     `;
     errorContainer.style.display = 'block';
-    
+
     // Auto-scroll to error message
     errorContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
@@ -524,7 +530,7 @@ function showError(message) {
  */
 function showSuccess(message) {
   console.log('[Subscription] Showing success:', message);
-  
+
   const successContainer = document.getElementById('success-message');
   if (successContainer) {
     successContainer.innerHTML = `
@@ -533,7 +539,7 @@ function showSuccess(message) {
       </div>
     `;
     successContainer.style.display = 'block';
-    
+
     // Auto-scroll to success message
     successContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
 

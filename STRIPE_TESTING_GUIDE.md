@@ -335,6 +335,7 @@ If deploying to Railway:
    - Railway follows Next.js conventions for client-side variables
 
 2. **Setting Variables in Railway**:
+
    ```bash
    # In Railway dashboard > Variables tab, add:
    STRIPE_SECRET_KEY=sk_live_...
