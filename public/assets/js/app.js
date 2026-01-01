@@ -397,7 +397,7 @@ async function initSupplier() {
     (pkgs.items || [])
       .map(
         p => `
-    <div class="card pack">
+    <div class="card pack" data-package-slug="${escapeHtml(p.slug || '')}" style="cursor: pointer;">
       <img src="${escapeHtml(p.image)}" alt="${escapeHtml(p.title)} image">
       <div>
         <h3>${escapeHtml(p.title)}</h3>
@@ -590,6 +590,26 @@ async function initSupplier() {
       });
     });
   }
+
+  // Add click handlers to package cards
+  const packageCards = document.querySelectorAll('.card.pack[data-package-slug]');
+  packageCards.forEach(card => {
+    const slug = card.dataset.packageSlug;
+    if (slug) {
+      card.addEventListener('click', () => {
+        window.location.href = `/package.html?slug=${encodeURIComponent(slug)}`;
+      });
+      // Make keyboard accessible
+      card.setAttribute('tabindex', '0');
+      card.setAttribute('role', 'button');
+      card.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          window.location.href = `/package.html?slug=${encodeURIComponent(slug)}`;
+        }
+      });
+    }
+  });
 }
 
 async function initPlan() {
