@@ -78,6 +78,10 @@ class PackageList {
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
       }
 
+      .package-card-featured-badge:nth-child(2) {
+        top: clamp(48px, 10vw, 52px);
+      }
+
       .package-card-image {
         width: 100%;
         height: clamp(180px, 40vw, 220px);
@@ -343,9 +347,19 @@ class PackageList {
     });
 
     const isFeatured = pkg.featured || pkg.isFeatured || false;
-    const featuredBadge = isFeatured
-      ? '<div class="package-card-featured-badge">Featured</div>'
-      : '';
+    const isTest = pkg.isTest || false;
+
+    // Build badges
+    const badges = [];
+    if (isFeatured) {
+      badges.push('<div class="package-card-featured-badge">Featured</div>');
+    }
+    if (isTest) {
+      badges.push(
+        '<div class="package-card-featured-badge" style="background: #fef3c7; color: #92400e; border: 1px solid #f59e0b;">🧪 Test data</div>'
+      );
+    }
+    const badgesHtml = badges.join('');
 
     // Escape HTML to prevent XSS
     const escapeHtml = str => {
@@ -404,7 +418,7 @@ class PackageList {
     }
 
     card.innerHTML = `
-      ${featuredBadge}
+      ${badgesHtml}
       <img class="package-card-image" src="${imageUrl}" alt="${title}" loading="lazy">
       <div class="package-card-content">
         <h3 class="package-card-title">${title}</h3>
