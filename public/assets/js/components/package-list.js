@@ -290,6 +290,32 @@ class PackageList {
     this.container.appendChild(grid);
   }
 
+  /**
+   * Sanitize image URL to replace blocked sources with placeholder
+   */
+  sanitizeImageUrl(url) {
+    if (!url || typeof url !== 'string') {
+      return '/assets/images/placeholders/package-event.svg';
+    }
+
+    // Check if URL is from a blocked or problematic source
+    const blockedDomains = ['source.unsplash.com', 'unsplash.com'];
+    try {
+      const urlObj = new URL(url);
+      if (blockedDomains.some(domain => urlObj.hostname.includes(domain))) {
+        return '/assets/images/placeholders/package-event.svg';
+      }
+    } catch (e) {
+      // Invalid URL or relative path - if it starts with /, keep it
+      if (url.startsWith('/')) {
+        return url;
+      }
+      return '/assets/images/placeholders/package-event.svg';
+    }
+
+    return url;
+  }
+
   createPackageCard(pkg) {
     const card = document.createElement('div');
     card.className = 'package-card';
@@ -331,7 +357,10 @@ class PackageList {
       return div.innerHTML;
     };
 
-    const imageUrl = escapeHtml(pkg.image || '/assets/images/placeholders/package-event.svg');
+    // Sanitize image URL before escaping HTML
+    const rawImageUrl = pkg.image || '/assets/images/placeholders/package-event.svg';
+    const sanitizedImageUrl = this.sanitizeImageUrl(rawImageUrl);
+    const imageUrl = escapeHtml(sanitizedImageUrl);
     const slug = escapeHtml(String(pkg.slug || ''));
     const title = escapeHtml(pkg.title);
     const description = escapeHtml(pkg.description || '');
@@ -346,9 +375,12 @@ class PackageList {
       const supplierName = escapeHtml(pkg.supplier.name || pkg.supplierName || 'Unknown Supplier');
       const rawSupplierId = pkg.supplier.id || pkg.supplierId;
       const supplierId = rawSupplierId ? encodeURIComponent(String(rawSupplierId)) : '';
-      const supplierAvatar = escapeHtml(
-        pkg.supplier.avatar || pkg.supplierAvatar || '/assets/images/placeholders/avatar.svg'
-      );
+
+      // Sanitize supplier avatar URL
+      const rawSupplierAvatar =
+        pkg.supplier.avatar || pkg.supplierAvatar || '/assets/images/placeholders/avatar.svg';
+      const sanitizedSupplierAvatar = this.sanitizeImageUrl(rawSupplierAvatar);
+      const supplierAvatar = escapeHtml(sanitizedSupplierAvatar);
 
       if (supplierId) {
         supplierHtml = `

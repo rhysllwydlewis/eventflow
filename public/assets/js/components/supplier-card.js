@@ -264,6 +264,32 @@ class SupplierCard {
     return badges.length > 0 ? `<div class="supplier-badges">${badges.join('')}</div>` : '';
   }
 
+  /**
+   * Sanitize image URL to replace blocked sources with fallback
+   */
+  sanitizeImageUrl(url) {
+    if (!url || typeof url !== 'string') {
+      return null;
+    }
+
+    // Check if URL is from a blocked or problematic source
+    const blockedDomains = ['source.unsplash.com', 'unsplash.com'];
+    try {
+      const urlObj = new URL(url);
+      if (blockedDomains.some(domain => urlObj.hostname.includes(domain))) {
+        return null; // Return null to trigger fallback rendering
+      }
+    } catch (e) {
+      // Invalid URL - if it starts with /, keep it
+      if (url.startsWith('/')) {
+        return url;
+      }
+      return null;
+    }
+
+    return url;
+  }
+
   render() {
     // Ensure badges CSS is loaded
     if (!document.getElementById('badges-css')) {
@@ -277,9 +303,13 @@ class SupplierCard {
     const card = document.createElement('div');
     card.className = 'supplier-card';
 
-    const hasLogo = this.supplier.logo && this.supplier.logo.trim() !== '';
+    // Sanitize logo URL
+    const rawLogo = this.supplier.logo;
+    const sanitizedLogo = rawLogo ? this.sanitizeImageUrl(rawLogo) : null;
+    const hasLogo = sanitizedLogo && sanitizedLogo.trim() !== '';
+
     const logoHtml = hasLogo
-      ? `<img class="supplier-card-logo" src="${this.supplier.logo}" alt="${this.supplier.name} logo">`
+      ? `<img class="supplier-card-logo" src="${sanitizedLogo}" alt="${this.supplier.name} logo">`
       : `<div class="supplier-card-logo" style="background-color: var(--accent, #13B6A2); display: flex; align-items: center; justify-content: center; color: white; font-size: 2rem; font-weight: 600;">${this.supplier.name ? this.supplier.name.charAt(0) : 'S'}</div>`;
 
     const badgesHtml = this.renderBadges();
@@ -306,13 +336,28 @@ class SupplierCard {
       </div>
 
       <div class="supplier-card-actions">
-        ${this.supplier.id ? `<button class="supplier-card-btn primary" onclick="window.location.href='/supplier.html?id=${this.supplier.id}'">View Profile</button>` : ''}
-        ${this.supplier.id ? `<button class="supplier-card-btn secondary" onclick="window.location.href='/supplier.html?id=${this.supplier.id}#packages'">View All Packages</button>` : ''}
+        ${this.supplier.id ? `<button class="supplier-card-btn primary" data-supplier-id="${this.supplier.id}" data-action="view-profile">View Profile</button>` : ''}
+        ${this.supplier.id ? `<button class="supplier-card-btn secondary" data-supplier-id="${this.supplier.id}" data-action="view-packages">View All Packages</button>` : ''}
       </div>
     `;
 
     this.container.innerHTML = '';
     this.container.appendChild(card);
+
+    // Add CSP-safe event listeners for buttons
+    const viewProfileBtn = card.querySelector('[data-action="view-profile"]');
+    if (viewProfileBtn) {
+      viewProfileBtn.addEventListener('click', () => {
+        window.location.href = `/supplier.html?id=${this.supplier.id}`;
+      });
+    }
+
+    const viewPackagesBtn = card.querySelector('[data-action="view-packages"]');
+    if (viewPackagesBtn) {
+      viewPackagesBtn.addEventListener('click', () => {
+        window.location.href = `/supplier.html?id=${this.supplier.id}#packages`;
+      });
+    }
   }
 }
 
