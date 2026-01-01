@@ -133,7 +133,7 @@
 <main class="section admin-main-content">
   <div class="admin-page-header">
     <h1>🎨 Homepage Management</h1>
-    <p class="small">Manage category hero images displayed on the homepage. Upload high-quality images to create an engaging first impression.</p>
+    <p class="small">Manage all homepage images: hero collage and category hero images. Upload high-quality images to create an engaging first impression.</p>
   </div>
   
   <div class="controls">
@@ -155,8 +155,30 @@
     </div>
   </div>
 
-  <div id="categoryList" class="category-list">
-    <div class="card"><p>Loading categories...</p></div>
+  <!-- Hero Collage Section -->
+  <div style="margin-bottom: 48px;">
+    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+      <h2 style="margin: 0; font-size: 1.5rem; font-weight: 600;">🖼️ Hero Collage</h2>
+      <span class="badge" style="background: #e0f2fe; color: #0369a1; padding: 4px 12px; border-radius: 12px; font-size: 0.75rem; font-weight: 600;">Homepage Top Section</span>
+    </div>
+    <p class="small" style="margin-bottom: 16px; color: #6c757d;">Manage the hero collage images displayed prominently at the top of the homepage. These create the first impression for visitors.</p>
+    
+    <div id="heroImageList" class="category-list">
+      <div class="card"><p>Loading hero collage images...</p></div>
+    </div>
+  </div>
+
+  <!-- Category Hero Images Section -->
+  <div>
+    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+      <h2 style="margin: 0; font-size: 1.5rem; font-weight: 600;">📂 Category Hero Images</h2>
+      <span class="badge" style="background: #fef3c7; color: #92400e; padding: 4px 12px; border-radius: 12px; font-size: 0.75rem; font-weight: 600;">Category Detail Pages</span>
+    </div>
+    <p class="small" style="margin-bottom: 16px; color: #6c757d;">Manage hero images for individual category pages (e.g., Venues, Catering). These appear when viewing specific category detail pages.</p>
+    
+    <div id="categoryList" class="category-list">
+      <div class="card"><p>Loading categories...</p></div>
+    </div>
   </div>
 </main>
 

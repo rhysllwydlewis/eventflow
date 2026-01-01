@@ -81,6 +81,20 @@ function escapeHtml(unsafe) {
   return div.innerHTML;
 }
 
+// Generate gradient based on supplier name for consistent avatar colors
+function generateSupplierGradient(name) {
+  const colors = [
+    ['#13B6A2', '#0B8073'],
+    ['#8B5CF6', '#6D28D9'],
+    ['#F59E0B', '#D97706'],
+    ['#10B981', '#059669'],
+    ['#3B82F6', '#2563EB'],
+    ['#EC4899', '#DB2777'],
+  ];
+  const index = name ? name.charCodeAt(0) % colors.length : 0;
+  return `linear-gradient(135deg, ${colors[index][0]} 0%, ${colors[index][1]} 100%)`;
+}
+
 // Global network error handler & fetch wrapper (v5.3)
 (function () {
   let efErrorBanner = null;
@@ -170,7 +184,6 @@ async function listSuppliers(params = {}) {
 }
 
 function supplierCard(s, user) {
-  const img = (s.photos && s.photos[0]) || '/assets/images/collage-venue.svg';
   const showAddAccount = !!user && user.role === 'customer';
   const alreadyLocal = lsGet().includes(s.id);
   const addBtn = showAddAccount
@@ -192,42 +205,69 @@ function supplierCard(s, user) {
     tags.unshift('<span class="badge">Featured</span>');
   }
 
-  // Enhanced badge rendering for Pro and Pro+ tiers
-  let proBadge = '';
-  // Check subscriptionTier field first (new), then fall back to subscription.tier or isPro
+  // Build supplier badges array for consistent display
+  const supplierBadges = [];
+
+  // Test data badge (show first for visibility)
+  if (s.isTest) {
+    supplierBadges.push('<span class="badge badge-test-data">Test data</span>');
+  }
+
+  // Founding supplier badge
+  if (s.isFounding || (s.badges && s.badges.includes('founding'))) {
+    supplierBadges.push('<span class="badge badge-founding">Founding Supplier</span>');
+  }
+
+  // Pro/Pro Plus/Featured tier badges
   const tier =
     s.subscriptionTier ||
     (s.subscription && s.subscription.tier) ||
     (s.isPro || s.pro ? 'pro' : null);
 
-  if (tier === 'pro_plus') {
-    proBadge = '<span class="badge badge-pro-plus">Professional Plus</span>';
+  if (tier === 'featured') {
+    supplierBadges.push('<span class="badge badge-featured">Featured</span>');
+  } else if (tier === 'pro_plus') {
+    supplierBadges.push('<span class="badge badge-pro-plus">Professional Plus</span>');
   } else if (tier === 'pro') {
-    proBadge = '<span class="badge badge-pro">Professional</span>';
+    supplierBadges.push('<span class="badge badge-pro">Professional</span>');
   }
 
-  // Add founding supplier badge
-  let foundingBadge = '';
-  if (s.isFounding || (s.badges && s.badges.includes('founding'))) {
-    const foundingYear = s.foundingYear || '2024';
-    foundingBadge = `<span class="badge badge-founding" style="background:#8B5CF6;color:white;font-weight:600;" title="Founding Supplier since ${foundingYear}">⭐ Founding Supplier</span>`;
+  // Verification badges
+  if (s.verifications) {
+    if (s.verifications.email && s.verifications.email.verified) {
+      supplierBadges.push('<span class="badge badge-email-verified">Email Verified</span>');
+    }
+    if (s.verifications.phone && s.verifications.phone.verified) {
+      supplierBadges.push('<span class="badge badge-phone-verified">Phone Verified</span>');
+    }
+    if (s.verifications.business && s.verifications.business.verified) {
+      supplierBadges.push('<span class="badge badge-business-verified">Business Verified</span>');
+    }
+  } else if (s.verified || (s.badges && s.badges.includes('verified'))) {
+    // Fallback for legacy verified field
+    supplierBadges.push('<span class="badge badge-email-verified">Verified</span>');
   }
 
-  // Add verification badges
-  let verificationBadges = '';
-  if (s.verified || (s.badges && s.badges.includes('verified'))) {
-    verificationBadges +=
-      '<span class="badge badge-verified" style="background:#10B981;color:white;" title="Verified Business">✓ Verified</span>';
-  }
+  // Supplier avatar with fallback
+  const supplierInitial = s.name ? s.name.charAt(0).toUpperCase() : 'S';
+  const avatarHtml = s.logo
+    ? `<img src="${escapeHtml(s.logo)}" alt="${escapeHtml(s.name)} logo" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; margin-right: 16px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+       <div style="display: none; width: 60px; height: 60px; border-radius: 50%; background: ${generateSupplierGradient(s.name)}; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 1.5rem; margin-right: 16px; flex-shrink: 0;">${supplierInitial}</div>`
+    : `<div style="width: 60px; height: 60px; border-radius: 50%; background: ${generateSupplierGradient(s.name)}; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 1.5rem; margin-right: 16px; flex-shrink: 0;">${supplierInitial}</div>`;
 
-  return `<div class="card supplier-card">
-    <img src="${escapeHtml(img)}" alt="${escapeHtml(s.name)} image"><div>
-      <h3>${escapeHtml(s.name)} ${proBadge}</h3>
-      <div class="small">${escapeHtml(s.location || '')} · <span class="badge">${escapeHtml(s.category)}</span> ${s.price_display ? `· ${escapeHtml(s.price_display)}` : ''}</div>
-      <p class="small">${escapeHtml(s.description_short || '')}</p>
-      <div class="small" style="margin-top:4px;display:flex;flex-wrap:wrap;gap:4px;">${foundingBadge}${verificationBadges}${tags.join(' ')}</div>
+  return `<div class="card supplier-card" style="display: flex; gap: 16px; align-items: start;">
+    ${avatarHtml}
+    <div style="flex: 1; min-width: 0;">
+      <h3 style="margin: 0 0 8px 0;">
+        <a href="/supplier.html?id=${encodeURIComponent(s.id)}" style="text-decoration: none; color: inherit;">${escapeHtml(s.name)}</a>
+      </h3>
+      <div class="small" style="margin-bottom: 8px;">${escapeHtml(s.location || '')} · <span class="badge">${escapeHtml(s.category)}</span> ${s.price_display ? `· ${escapeHtml(s.price_display)}` : ''}</div>
+      <p class="small" style="margin-bottom: 8px;">${escapeHtml(s.description_short || '')}</p>
+      <div class="supplier-badges" style="margin: 8px 0;">${supplierBadges.join('')}</div>
+      <div class="small" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px;">${tags.join(' ')}</div>
       <div class="form-actions">${addBtn}<a class="cta secondary" href="/supplier.html?id=${encodeURIComponent(s.id)}">View details</a></div>
-    </div></div>`;
+    </div>
+  </div>`;
 }
 
 // initHome() removed - now handled by home-init.js to avoid conflicts

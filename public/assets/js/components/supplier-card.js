@@ -12,7 +12,8 @@ class SupplierCard {
     }
     this.supplier = supplier;
     this.injectStyles();
-    this.render();
+    // Render is now async, so we call it without awaiting in constructor
+    this.render().catch(err => console.error('SupplierCard render error:', err));
   }
 
   injectStyles() {
@@ -301,7 +302,46 @@ class SupplierCard {
     return url;
   }
 
-  render() {
+  /**
+   * Generate gradient based on supplier name for consistent avatar colors
+   */
+  static generateGradient(name) {
+    const colors = [
+      ['#13B6A2', '#0B8073'],
+      ['#8B5CF6', '#6D28D9'],
+      ['#F59E0B', '#D97706'],
+      ['#10B981', '#059669'],
+      ['#3B82F6', '#2563EB'],
+      ['#EC4899', '#DB2777'],
+    ];
+    const index = name ? name.charCodeAt(0) % colors.length : 0;
+    return `linear-gradient(135deg, ${colors[index][0]} 0%, ${colors[index][1]} 100%)`;
+  }
+
+  /**
+   * Get fallback image for test suppliers using Pexels
+   */
+  async getTestSupplierFallback(category) {
+    // Only fetch Pexels for test suppliers
+    if (!this.supplier.isTest) {
+      return null;
+    }
+
+    // Check if pexelsClient is available
+    if (typeof window.pexelsClient === 'undefined') {
+      return null;
+    }
+
+    try {
+      const photoUrl = await window.pexelsClient.getPhotoForCategory(category, 'small');
+      return photoUrl;
+    } catch (error) {
+      console.warn('Failed to get Pexels fallback:', error);
+      return null;
+    }
+  }
+
+  async render() {
     // Ensure badges CSS is loaded
     if (!document.getElementById('badges-css')) {
       const link = document.createElement('link');
@@ -315,13 +355,19 @@ class SupplierCard {
     card.className = 'supplier-card';
 
     // Sanitize logo URL
-    const rawLogo = this.supplier.logo;
+    let rawLogo = this.supplier.logo;
+
+    // For test suppliers without a logo, try to get Pexels photo
+    if (!rawLogo && this.supplier.isTest && this.supplier.category) {
+      rawLogo = await this.getTestSupplierFallback(this.supplier.category);
+    }
+
     const sanitizedLogo = rawLogo ? this.sanitizeImageUrl(rawLogo) : null;
     const hasLogo = sanitizedLogo && sanitizedLogo.trim() !== '';
 
     const logoHtml = hasLogo
       ? `<img class="supplier-card-logo" src="${sanitizedLogo}" alt="${this.supplier.name} logo">`
-      : `<div class="supplier-card-logo" style="background-color: var(--accent, #13B6A2); display: flex; align-items: center; justify-content: center; color: white; font-size: 2rem; font-weight: 600;">${this.supplier.name ? this.supplier.name.charAt(0) : 'S'}</div>`;
+      : `<div class="supplier-card-logo" style="background: ${SupplierCard.generateGradient(this.supplier.name)}; display: flex; align-items: center; justify-content: center; color: white; font-size: 2rem; font-weight: 600;">${this.supplier.name ? this.supplier.name.charAt(0).toUpperCase() : 'S'}</div>`;
 
     const badgesHtml = this.renderBadges();
 
@@ -348,7 +394,6 @@ class SupplierCard {
 
       <div class="supplier-card-actions">
         ${this.supplier.id ? `<a href="/supplier.html?id=${this.supplier.id}" class="supplier-card-btn primary" data-supplier-id="${this.supplier.id}" data-action="view-profile">View Profile</a>` : ''}
-        ${this.supplier.id ? `<a href="/supplier.html?id=${this.supplier.id}#packages" class="supplier-card-btn secondary" data-supplier-id="${this.supplier.id}" data-action="view-packages">View All Packages</a>` : ''}
       </div>
     `;
 
