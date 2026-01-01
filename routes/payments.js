@@ -175,10 +175,7 @@ router.post(
       }
 
       // Check for Professional plan with intro pricing
-      const isProfessionalPlan = planName && (
-        planName.toLowerCase().includes('professional') || 
-        planName.toLowerCase().includes('pro')
-      ) && !planName.toLowerCase().includes('plus');
+      const isProfessionalPlan = planName && getSubscriptionTier(planName) === 'pro';
       
       const useIntroPricing = INTRO_PRICING_ENABLED && 
                              type === 'subscription' && 

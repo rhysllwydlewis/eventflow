@@ -2,6 +2,19 @@
  * Unit tests for introductory pricing and subscription badges
  */
 
+// Helper function used across multiple tests
+function getSubscriptionTier(planName) {
+  if (!planName) return 'free';
+  const lowerName = planName.toLowerCase();
+  if (lowerName.includes('professional plus') || lowerName.includes('pro plus') || lowerName.includes('pro+')) {
+    return 'pro_plus';
+  }
+  if (lowerName.includes('professional') || lowerName.includes('pro')) {
+    return 'pro';
+  }
+  return 'free';
+}
+
 describe('Introductory Pricing', () => {
   describe('Environment Configuration', () => {
     it('should enable intro pricing when both env vars are set', () => {
@@ -165,54 +178,18 @@ describe('Introductory Pricing', () => {
 describe('Subscription Badges', () => {
   describe('Tier Detection', () => {
     it('should detect pro tier from plan name', () => {
-      function getSubscriptionTier(planName) {
-        if (!planName) return 'free';
-        const lowerName = planName.toLowerCase();
-        if (lowerName.includes('professional plus') || lowerName.includes('pro plus') || lowerName.includes('pro+')) {
-          return 'pro_plus';
-        }
-        if (lowerName.includes('professional') || lowerName.includes('pro')) {
-          return 'pro';
-        }
-        return 'free';
-      }
-
       expect(getSubscriptionTier('Professional')).toBe('pro');
       expect(getSubscriptionTier('Pro Monthly')).toBe('pro');
       expect(getSubscriptionTier('professional')).toBe('pro');
     });
 
     it('should detect pro_plus tier before pro tier', () => {
-      function getSubscriptionTier(planName) {
-        if (!planName) return 'free';
-        const lowerName = planName.toLowerCase();
-        if (lowerName.includes('professional plus') || lowerName.includes('pro plus') || lowerName.includes('pro+')) {
-          return 'pro_plus';
-        }
-        if (lowerName.includes('professional') || lowerName.includes('pro')) {
-          return 'pro';
-        }
-        return 'free';
-      }
-
       expect(getSubscriptionTier('Professional Plus')).toBe('pro_plus');
       expect(getSubscriptionTier('Pro Plus')).toBe('pro_plus');
       expect(getSubscriptionTier('pro+')).toBe('pro_plus');
     });
 
     it('should return free for unknown plans', () => {
-      function getSubscriptionTier(planName) {
-        if (!planName) return 'free';
-        const lowerName = planName.toLowerCase();
-        if (lowerName.includes('professional plus') || lowerName.includes('pro plus') || lowerName.includes('pro+')) {
-          return 'pro_plus';
-        }
-        if (lowerName.includes('professional') || lowerName.includes('pro')) {
-          return 'pro';
-        }
-        return 'free';
-      }
-
       expect(getSubscriptionTier('')).toBe('free');
       expect(getSubscriptionTier(null)).toBe('free');
       expect(getSubscriptionTier('Basic')).toBe('free');
@@ -326,18 +303,6 @@ describe('Webhook Handlers', () => {
       const planName = 'Professional Monthly';
       const subscriptionStatus = 'active';
       
-      function getSubscriptionTier(planName) {
-        if (!planName) return 'free';
-        const lowerName = planName.toLowerCase();
-        if (lowerName.includes('professional plus') || lowerName.includes('pro plus') || lowerName.includes('pro+')) {
-          return 'pro_plus';
-        }
-        if (lowerName.includes('professional') || lowerName.includes('pro')) {
-          return 'pro';
-        }
-        return 'free';
-      }
-
       const tier = getSubscriptionTier(planName);
       const userUpdates = {
         isPro: tier === 'pro' || tier === 'pro_plus',
@@ -355,18 +320,6 @@ describe('Webhook Handlers', () => {
       const newPlanName = 'Professional Plus';
       const subscriptionStatus = 'active';
       
-      function getSubscriptionTier(planName) {
-        if (!planName) return 'free';
-        const lowerName = planName.toLowerCase();
-        if (lowerName.includes('professional plus') || lowerName.includes('pro plus') || lowerName.includes('pro+')) {
-          return 'pro_plus';
-        }
-        if (lowerName.includes('professional') || lowerName.includes('pro')) {
-          return 'pro';
-        }
-        return 'free';
-      }
-
       const newTier = getSubscriptionTier(newPlanName);
       const isActive = subscriptionStatus === 'active';
 

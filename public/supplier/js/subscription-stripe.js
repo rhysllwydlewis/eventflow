@@ -357,7 +357,8 @@ async function handleSubscribe(planId) {
 
   try {
     // Check if this is the Professional plan and intro pricing is enabled
-    const isProfessionalPlan = plan.name.toLowerCase().includes('professional') && 
+    const isProfessionalPlan = (plan.name.toLowerCase().includes('professional') || 
+                                plan.name.toLowerCase().includes('pro')) && 
                                 !plan.name.toLowerCase().includes('plus');
     const useIntroPricing = stripeConfig?.introPricingEnabled && 
                            stripeConfig?.proPriceId && 
