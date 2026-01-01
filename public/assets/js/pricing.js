@@ -21,11 +21,14 @@
           // User is logged in, update buttons based on their current plan
           updateButtonsForAuthenticatedUser(user);
         }
+      } else {
+        // User is not authenticated, update buttons to redirect to auth
+        updateButtonsForUnauthenticatedUser();
       }
-      // If not logged in, buttons remain as default
     } catch (error) {
       console.error('Error checking authentication:', error);
       // Fail silently - buttons will show default state
+      updateButtonsForUnauthenticatedUser();
     }
   }
 
@@ -66,6 +69,27 @@
     // If user has active Pro, you could also update those buttons to show "Current Plan"
     // This would require knowing which specific pro plan they have
     // For now, we'll just handle the free plan case
+  }
+
+  // Update buttons for unauthenticated users to redirect to auth
+  function updateButtonsForUnauthenticatedUser() {
+    // Find all pricing CTAs and update them to redirect to auth with plan parameter
+    const allPricingButtons = document.querySelectorAll('a[href*="/checkout.html?plan="]');
+    allPricingButtons.forEach(button => {
+      const originalHref = button.getAttribute('href');
+      if (originalHref) {
+        const url = new URL(originalHref, window.location.origin);
+        const plan = url.searchParams.get('plan');
+        
+        if (plan) {
+          // Redirect to auth with plan and redirect parameters
+          const authUrl = new URL('/auth.html', window.location.origin);
+          authUrl.searchParams.set('redirect', originalHref);
+          authUrl.searchParams.set('plan', plan);
+          button.setAttribute('href', authUrl.toString());
+        }
+      }
+    });
   }
 
   // Initialize
