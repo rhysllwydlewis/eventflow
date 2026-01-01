@@ -319,9 +319,23 @@ class SupplierCard {
     const sanitizedLogo = rawLogo ? this.sanitizeImageUrl(rawLogo) : null;
     const hasLogo = sanitizedLogo && sanitizedLogo.trim() !== '';
 
+    // Generate better fallback with gradient based on supplier name
+    const generateGradient = name => {
+      const colors = [
+        ['#13B6A2', '#0B8073'],
+        ['#8B5CF6', '#6D28D9'],
+        ['#F59E0B', '#D97706'],
+        ['#10B981', '#059669'],
+        ['#3B82F6', '#2563EB'],
+        ['#EC4899', '#DB2777'],
+      ];
+      const index = name ? name.charCodeAt(0) % colors.length : 0;
+      return `linear-gradient(135deg, ${colors[index][0]} 0%, ${colors[index][1]} 100%)`;
+    };
+
     const logoHtml = hasLogo
       ? `<img class="supplier-card-logo" src="${sanitizedLogo}" alt="${this.supplier.name} logo">`
-      : `<div class="supplier-card-logo" style="background-color: var(--accent, #13B6A2); display: flex; align-items: center; justify-content: center; color: white; font-size: 2rem; font-weight: 600;">${this.supplier.name ? this.supplier.name.charAt(0) : 'S'}</div>`;
+      : `<div class="supplier-card-logo" style="background: ${generateGradient(this.supplier.name)}; display: flex; align-items: center; justify-content: center; color: white; font-size: 2rem; font-weight: 600;">${this.supplier.name ? this.supplier.name.charAt(0).toUpperCase() : 'S'}</div>`;
 
     const badgesHtml = this.renderBadges();
 
@@ -348,7 +362,6 @@ class SupplierCard {
 
       <div class="supplier-card-actions">
         ${this.supplier.id ? `<a href="/supplier.html?id=${this.supplier.id}" class="supplier-card-btn primary" data-supplier-id="${this.supplier.id}" data-action="view-profile">View Profile</a>` : ''}
-        ${this.supplier.id ? `<a href="/supplier.html?id=${this.supplier.id}#packages" class="supplier-card-btn secondary" data-supplier-id="${this.supplier.id}" data-action="view-packages">View All Packages</a>` : ''}
       </div>
     `;
 

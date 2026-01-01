@@ -25,6 +25,15 @@ class PackageList {
       return;
     }
 
+    // Ensure badges CSS is loaded
+    if (!document.getElementById('badges-css')) {
+      const link = document.createElement('link');
+      link.id = 'badges-css';
+      link.rel = 'stylesheet';
+      link.href = '/assets/css/badges.css';
+      document.head.appendChild(link);
+    }
+
     const style = document.createElement('style');
     style.id = 'package-list-styles';
     style.textContent = `
@@ -397,16 +406,81 @@ class PackageList {
 
       // Sanitize supplier avatar URL
       const rawSupplierAvatar =
-        pkg.supplier.avatar || pkg.supplierAvatar || '/assets/images/placeholders/avatar.svg';
+        pkg.supplier.avatar ||
+        pkg.supplier.logo ||
+        pkg.supplierAvatar ||
+        '/assets/images/placeholders/avatar.svg';
       const sanitizedSupplierAvatar = this.sanitizeImageUrl(rawSupplierAvatar);
       const supplierAvatar = escapeHtml(sanitizedSupplierAvatar);
+
+      // Build supplier badges (using same logic as SupplierCard component)
+      const supplierBadges = [];
+      const supplier = pkg.supplier;
+
+      // Test data badge
+      if (supplier.isTest) {
+        supplierBadges.push(
+          '<span class="badge badge-test-data" style="font-size: 0.65rem; padding: 2px 6px;">Test data</span>'
+        );
+      }
+
+      // Founding supplier badge
+      if (supplier.isFounding) {
+        supplierBadges.push(
+          '<span class="badge badge-founding" style="font-size: 0.65rem; padding: 2px 6px;">Founding</span>'
+        );
+      }
+
+      // Pro/Pro Plus/Featured tier badges
+      const tier =
+        supplier.subscriptionTier || supplier.subscription?.tier || (supplier.isPro ? 'pro' : null);
+
+      if (tier === 'featured') {
+        supplierBadges.push(
+          '<span class="badge badge-featured" style="font-size: 0.65rem; padding: 2px 6px;">Featured</span>'
+        );
+      } else if (tier === 'pro_plus') {
+        supplierBadges.push(
+          '<span class="badge badge-pro-plus" style="font-size: 0.65rem; padding: 2px 6px;">Pro+</span>'
+        );
+      } else if (tier === 'pro') {
+        supplierBadges.push(
+          '<span class="badge badge-pro" style="font-size: 0.65rem; padding: 2px 6px;">Pro</span>'
+        );
+      }
+
+      // Verification badges
+      if (supplier.verifications?.email?.verified) {
+        supplierBadges.push(
+          '<span class="badge badge-email-verified" style="font-size: 0.65rem; padding: 2px 6px;">✓ Email</span>'
+        );
+      }
+      if (supplier.verifications?.phone?.verified) {
+        supplierBadges.push(
+          '<span class="badge badge-phone-verified" style="font-size: 0.65rem; padding: 2px 6px;">✓ Phone</span>'
+        );
+      }
+      if (supplier.verifications?.business?.verified) {
+        supplierBadges.push(
+          '<span class="badge badge-business-verified" style="font-size: 0.65rem; padding: 2px 6px;">✓ Business</span>'
+        );
+      }
+
+      const supplierBadgesHtml =
+        supplierBadges.length > 0
+          ? `<div style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px;">${supplierBadges.join('')}</div>`
+          : '';
 
       if (supplierId) {
         supplierHtml = `
           <div class="package-card-supplier">
             <a href="/supplier.html?id=${supplierId}" class="package-card-supplier-link" data-supplier-link>
-              <img src="${supplierAvatar}" alt="${supplierName}" class="package-card-supplier-avatar" loading="lazy">
-              <span class="package-card-supplier-name">${supplierName}</span>
+              <img src="${supplierAvatar}" alt="${supplierName}" class="package-card-supplier-avatar" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+              <div style="display: none; width: clamp(32px, 8vw, 40px); height: clamp(32px, 8vw, 40px); border-radius: 50%; background: linear-gradient(135deg, #13B6A2 0%, #0B8073 100%); align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 1rem;">${supplierName.charAt(0).toUpperCase()}</div>
+              <div style="flex: 1;">
+                <span class="package-card-supplier-name">${supplierName}</span>
+                ${supplierBadgesHtml}
+              </div>
             </a>
           </div>
         `;
@@ -414,8 +488,12 @@ class PackageList {
         supplierHtml = `
           <div class="package-card-supplier">
             <div class="package-card-supplier-link">
-              <img src="${supplierAvatar}" alt="${supplierName}" class="package-card-supplier-avatar" loading="lazy">
-              <span class="package-card-supplier-name">${supplierName}</span>
+              <img src="${supplierAvatar}" alt="${supplierName}" class="package-card-supplier-avatar" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+              <div style="display: none; width: clamp(32px, 8vw, 40px); height: clamp(32px, 8vw, 40px); border-radius: 50%; background: linear-gradient(135deg, #13B6A2 0%, #0B8073 100%); align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 1rem;">${supplierName.charAt(0).toUpperCase()}</div>
+              <div style="flex: 1;">
+                <span class="package-card-supplier-name">${supplierName}</span>
+                ${supplierBadgesHtml}
+              </div>
             </div>
           </div>
         `;
