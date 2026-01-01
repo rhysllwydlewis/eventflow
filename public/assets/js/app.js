@@ -81,6 +81,20 @@ function escapeHtml(unsafe) {
   return div.innerHTML;
 }
 
+// Generate gradient based on supplier name for consistent avatar colors
+function generateSupplierGradient(name) {
+  const colors = [
+    ['#13B6A2', '#0B8073'],
+    ['#8B5CF6', '#6D28D9'],
+    ['#F59E0B', '#D97706'],
+    ['#10B981', '#059669'],
+    ['#3B82F6', '#2563EB'],
+    ['#EC4899', '#DB2777'],
+  ];
+  const index = name ? name.charCodeAt(0) % colors.length : 0;
+  return `linear-gradient(135deg, ${colors[index][0]} 0%, ${colors[index][1]} 100%)`;
+}
+
 // Global network error handler & fetch wrapper (v5.3)
 (function () {
   let efErrorBanner = null;
@@ -238,8 +252,8 @@ function supplierCard(s, user) {
   const supplierInitial = s.name ? s.name.charAt(0).toUpperCase() : 'S';
   const avatarHtml = s.logo
     ? `<img src="${escapeHtml(s.logo)}" alt="${escapeHtml(s.name)} logo" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; margin-right: 16px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-       <div style="display: none; width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #13B6A2 0%, #0B8073 100%); align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 1.5rem; margin-right: 16px; flex-shrink: 0;">${supplierInitial}</div>`
-    : `<div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #13B6A2 0%, #0B8073 100%); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 1.5rem; margin-right: 16px; flex-shrink: 0;">${supplierInitial}</div>`;
+       <div style="display: none; width: 60px; height: 60px; border-radius: 50%; background: ${generateSupplierGradient(s.name)}; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 1.5rem; margin-right: 16px; flex-shrink: 0;">${supplierInitial}</div>`
+    : `<div style="width: 60px; height: 60px; border-radius: 50%; background: ${generateSupplierGradient(s.name)}; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 1.5rem; margin-right: 16px; flex-shrink: 0;">${supplierInitial}</div>`;
 
   return `<div class="card supplier-card" style="display: flex; gap: 16px; align-items: start;">
     ${avatarHtml}

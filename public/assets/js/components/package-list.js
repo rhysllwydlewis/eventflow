@@ -307,6 +307,22 @@ class PackageList {
   }
 
   /**
+   * Generate gradient based on supplier name for consistent avatar colors
+   */
+  static generateGradient(name) {
+    const colors = [
+      ['#13B6A2', '#0B8073'],
+      ['#8B5CF6', '#6D28D9'],
+      ['#F59E0B', '#D97706'],
+      ['#10B981', '#059669'],
+      ['#3B82F6', '#2563EB'],
+      ['#EC4899', '#DB2777'],
+    ];
+    const index = name ? name.charCodeAt(0) % colors.length : 0;
+    return `linear-gradient(135deg, ${colors[index][0]} 0%, ${colors[index][1]} 100%)`;
+  }
+
+  /**
    * Sanitize image URL to replace blocked sources with placeholder
    */
   sanitizeImageUrl(url) {
@@ -476,7 +492,7 @@ class PackageList {
           <div class="package-card-supplier">
             <a href="/supplier.html?id=${supplierId}" class="package-card-supplier-link" data-supplier-link>
               <img src="${supplierAvatar}" alt="${supplierName}" class="package-card-supplier-avatar" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-              <div style="display: none; width: clamp(32px, 8vw, 40px); height: clamp(32px, 8vw, 40px); border-radius: 50%; background: linear-gradient(135deg, #13B6A2 0%, #0B8073 100%); align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 1rem;">${supplierName.charAt(0).toUpperCase()}</div>
+              <div style="display: none; width: clamp(32px, 8vw, 40px); height: clamp(32px, 8vw, 40px); border-radius: 50%; background: ${PackageList.generateGradient(pkg.supplier.name || supplierName)}; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 1rem;">${supplierName.charAt(0).toUpperCase()}</div>
               <div style="flex: 1;">
                 <span class="package-card-supplier-name">${supplierName}</span>
                 ${supplierBadgesHtml}
@@ -489,7 +505,7 @@ class PackageList {
           <div class="package-card-supplier">
             <div class="package-card-supplier-link">
               <img src="${supplierAvatar}" alt="${supplierName}" class="package-card-supplier-avatar" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-              <div style="display: none; width: clamp(32px, 8vw, 40px); height: clamp(32px, 8vw, 40px); border-radius: 50%; background: linear-gradient(135deg, #13B6A2 0%, #0B8073 100%); align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 1rem;">${supplierName.charAt(0).toUpperCase()}</div>
+              <div style="display: none; width: clamp(32px, 8vw, 40px); height: clamp(32px, 8vw, 40px); border-radius: 50%; background: ${PackageList.generateGradient(pkg.supplier.name || supplierName)}; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 1rem;">${supplierName.charAt(0).toUpperCase()}</div>
               <div style="flex: 1;">
                 <span class="package-card-supplier-name">${supplierName}</span>
                 ${supplierBadgesHtml}
