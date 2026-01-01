@@ -194,16 +194,13 @@ function supplierCard(s, user) {
 
   // Enhanced badge rendering for Pro and Pro+ tiers
   let proBadge = '';
-  if (s.subscription && s.subscription.tier) {
-    const tier = s.subscription.tier;
-    if (tier === 'pro') {
-      proBadge = '<span class="supplier-badge pro">Pro</span>';
-    } else if (tier === 'pro_plus') {
-      proBadge = '<span class="supplier-badge pro_plus">Pro+</span>';
-    }
-  } else if (s.isPro || s.pro) {
-    // Legacy support
-    proBadge = '<span class="pro-badge"><span>Pro supplier</span></span>';
+  // Check subscriptionTier field first (new), then fall back to subscription.tier or isPro
+  const tier = s.subscriptionTier || (s.subscription && s.subscription.tier) || (s.isPro || s.pro ? 'pro' : null);
+  
+  if (tier === 'pro_plus') {
+    proBadge = '<span class="badge badge-pro-plus">Professional Plus</span>';
+  } else if (tier === 'pro') {
+    proBadge = '<span class="badge badge-pro">Professional</span>';
   }
 
   // Add founding supplier badge
@@ -410,16 +407,13 @@ async function initSupplier() {
 
   // Enhanced badge rendering for Pro and Pro+ tiers
   let proBadge = '';
-  if (s.subscription && s.subscription.tier) {
-    const tier = s.subscription.tier;
-    if (tier === 'pro') {
-      proBadge = '<span class="supplier-badge pro">Pro</span>';
-    } else if (tier === 'pro_plus') {
-      proBadge = '<span class="supplier-badge pro_plus">Pro+</span>';
-    }
-  } else if (s.isPro || s.pro) {
-    // Legacy support
-    proBadge = '<span class="pro-badge"><span>Pro supplier</span></span>';
+  // Check subscriptionTier field first (new), then fall back to subscription.tier or isPro
+  const tier = s.subscriptionTier || (s.subscription && s.subscription.tier) || (s.isPro || s.pro ? 'pro' : null);
+  
+  if (tier === 'pro_plus') {
+    proBadge = '<span class="badge badge-pro-plus">Professional Plus</span>';
+  } else if (tier === 'pro') {
+    proBadge = '<span class="badge badge-pro">Professional</span>';
   }
 
   document.getElementById('supplier-container').innerHTML = `
@@ -1557,16 +1551,13 @@ async function initDashSupplier() {
       .map(s => {
         // Enhanced badge rendering for Pro and Pro+ tiers
         let proBadge = '';
-        if (s.subscription && s.subscription.tier) {
-          const tier = s.subscription.tier;
-          if (tier === 'pro') {
-            proBadge = '<span class="supplier-badge pro">Pro</span>';
-          } else if (tier === 'pro_plus') {
-            proBadge = '<span class="supplier-badge pro_plus">Pro+</span>';
-          }
-        } else if (s.isPro || s.pro) {
-          // Legacy support
-          proBadge = '<span class="pro-badge"><span>Pro supplier</span></span>';
+        // Check subscriptionTier field first (new), then fall back to subscription.tier or isPro
+        const tier = s.subscriptionTier || (s.subscription && s.subscription.tier) || (s.isPro || s.pro ? 'pro' : null);
+        
+        if (tier === 'pro_plus') {
+          proBadge = '<span class="badge badge-pro-plus">Professional Plus</span>';
+        } else if (tier === 'pro') {
+          proBadge = '<span class="badge badge-pro">Professional</span>';
         }
 
         return `<div class="supplier-card card" style="margin-bottom:10px">
@@ -2143,7 +2134,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const regForm = document.getElementById('register-form');
     const regStatus = document.getElementById('reg-status');
-    const regName = document.getElementById('reg-name');
+    const regFirstName = document.getElementById('reg-firstname');
+    const regLastName = document.getElementById('reg-lastname');
     const regEmail = document.getElementById('reg-email');
     const regPassword = document.getElementById('reg-password');
     const forgotLink = document.getElementById('forgot-password-link');
@@ -2542,18 +2534,20 @@ document.addEventListener('DOMContentLoaded', () => {
           regBtn.textContent = 'Creating…';
         }
         try {
-          const name = regName ? regName.value.trim() : '';
+          const firstName = regFirstName ? regFirstName.value.trim() : '';
+          const lastName = regLastName ? regLastName.value.trim() : '';
           const email = regEmail.value.trim();
           const password = regPassword.value;
           const roleHidden = document.getElementById('reg-role');
           const role = roleHidden && roleHidden.value ? roleHidden.value : 'customer';
           const marketingEl = document.getElementById('reg-marketing');
           const marketingOptIn = !!(marketingEl && marketingEl.checked);
+          
           const r = await fetch('/api/auth/register', {
             method: 'POST',
             headers: getHeadersWithCsrf({ 'Content-Type': 'application/json' }),
             credentials: 'include',
-            body: JSON.stringify({ name, email, password, role, marketingOptIn }),
+            body: JSON.stringify({ firstName, lastName, email, password, role, marketingOptIn }),
           });
           let data = {};
           try {

@@ -197,6 +197,8 @@ See [DOCKER_GUIDE.md](DOCKER_GUIDE.md) for details.
 - **[Deployment Guide](DEPLOYMENT_GUIDE.md)** - Production deployment instructions
 - **[MongoDB Setup (Technical)](.github/docs/MONGODB_SETUP.md)** - Database configuration guide
 - **[Docker Guide](DOCKER_GUIDE.md)** - Docker Compose usage
+- **[Stripe Introductory Pricing Setup](STRIPE_INTRO_PRICING_SETUP.md)** - Configure intro pricing for Professional plan
+- **[Stripe Integration Guide](STRIPE_INTEGRATION_GUIDE.md)** - General Stripe setup
 - **[Interactive API Docs](http://localhost:3000/api-docs)** - Swagger UI (when running)
 
 ## 🛠️ Tech Stack
