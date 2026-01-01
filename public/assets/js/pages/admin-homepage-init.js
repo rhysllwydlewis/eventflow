@@ -58,13 +58,13 @@
       } else {
         // Show error message with retry button
         heroImageListElement.innerHTML =
-          '<div class="card" style="background: #fef2f2; border-color: #fecaca; padding: 20px; text-align: center;"><p style="color: #dc2626; margin-bottom: 12px;">❌ Failed to load hero collage images.</p><button onclick="location.reload()" class="btn btn-secondary">Retry</button></div>';
+          '<div class="card error-card"><p class="error-message-text">❌ Failed to load hero collage images.</p><button onclick="location.reload()" class="btn btn-secondary">Retry</button></div>';
       }
     } catch (err) {
       console.error('Error loading hero images:', err);
       // Show error message with retry button
       heroImageListElement.innerHTML =
-        '<div class="card" style="background: #fef2f2; border-color: #fecaca; padding: 20px; text-align: center;"><p style="color: #dc2626; margin-bottom: 12px;">❌ Failed to load hero collage images. Please check your connection and try again.</p><button onclick="location.reload()" class="btn btn-secondary">Retry</button></div>';
+        '<div class="card error-card"><p class="error-message-text">❌ Failed to load hero collage images. Please check your connection and try again.</p><button onclick="location.reload()" class="btn btn-secondary">Retry</button></div>';
     }
   }
 

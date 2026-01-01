@@ -168,16 +168,12 @@ function renderStats(stats, stripeAnalytics) {
     totalRevenueEl.title = useStripe ? 'Live Stripe data' : 'Local payment data';
   }
   if (activeSubscriptionsEl) {
-    const subs = useStripe
-      ? stripeAnalytics.activeSubscriptions
-      : stats.activeSubscriptions;
+    const subs = useStripe ? stripeAnalytics.activeSubscriptions : stats.activeSubscriptions;
     activeSubscriptionsEl.textContent = subs;
     activeSubscriptionsEl.title = useStripe ? 'Live Stripe data' : 'Local payment data';
   }
   if (totalTransactionsEl) {
-    const transactions = useStripe
-      ? stripeAnalytics.totalCharges
-      : stats.totalTransactions;
+    const transactions = useStripe ? stripeAnalytics.totalCharges : stats.totalTransactions;
     totalTransactionsEl.textContent = transactions;
     totalTransactionsEl.title = useStripe ? 'Live Stripe data' : 'Local payment data';
   }
@@ -194,22 +190,19 @@ function renderStats(stats, stripeAnalytics) {
   const monthChangeEl = document.getElementById('monthChange');
 
   if (revenueChangeEl) {
-    revenueChangeEl.textContent = useStripe
-      ? '💳 Live from Stripe'
-      : 'All time total (local data)';
+    revenueChangeEl.textContent = useStripe ? 'Live from Stripe' : 'All time total (local data)';
     revenueChangeEl.style.color = useStripe ? '#10b981' : '#6b7280';
+    revenueChangeEl.style.fontWeight = useStripe ? '600' : '400';
   }
   if (subscriptionChangeEl) {
-    subscriptionChangeEl.textContent = useStripe
-      ? '💳 Live from Stripe'
-      : 'Currently active';
+    subscriptionChangeEl.textContent = useStripe ? 'Live from Stripe' : 'Currently active';
     subscriptionChangeEl.style.color = useStripe ? '#10b981' : '#6b7280';
+    subscriptionChangeEl.style.fontWeight = useStripe ? '600' : '400';
   }
   if (transactionChangeEl) {
-    transactionChangeEl.textContent = useStripe
-      ? '💳 Live from Stripe'
-      : 'All transactions';
+    transactionChangeEl.textContent = useStripe ? 'Live from Stripe' : 'All transactions';
     transactionChangeEl.style.color = useStripe ? '#10b981' : '#6b7280';
+    transactionChangeEl.style.fontWeight = useStripe ? '600' : '400';
   }
   if (monthChangeEl) {
     monthChangeEl.textContent = useStripe ? 'Last 30 days' : 'This month';
@@ -427,7 +420,7 @@ async function init() {
       stripeStatusEl.textContent = '✓ Connected';
       stripeStatusEl.style.background = '#dcfce7';
       stripeStatusEl.style.color = '#166534';
-      AdminShared.showToast('💳 Live Stripe analytics loaded', 'success');
+      AdminShared.showToast('Live Stripe analytics loaded', 'success');
     } else {
       stripeStatusEl.textContent = '○ Not Configured';
       stripeStatusEl.style.background = '#fef3c7';

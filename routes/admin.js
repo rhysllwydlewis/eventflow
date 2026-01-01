@@ -2567,8 +2567,7 @@ router.get('/stripe-analytics', authRequired, roleRequired('admin'), async (_req
     return res.json({
       error: 'Stripe not configured',
       available: false,
-      message:
-        'Stripe analytics are not available. Using local payment data instead.',
+      message: 'Stripe analytics are not available. Using local payment data instead.',
     });
   }
 
@@ -2611,9 +2610,12 @@ router.get('/stripe-analytics', authRequired, roleRequired('admin'), async (_req
       activeSubscriptions: subscriptions.data.length,
       totalCharges: charges.data.length,
       newCustomers: customers.data.length,
-      availableBalance: balance.available[0]?.amount / 100 || 0,
-      pendingBalance: balance.pending[0]?.amount / 100 || 0,
-      currency: balance.available[0]?.currency || 'gbp',
+      availableBalance:
+        balance.available && balance.available.length > 0 ? balance.available[0].amount / 100 : 0,
+      pendingBalance:
+        balance.pending && balance.pending.length > 0 ? balance.pending[0].amount / 100 : 0,
+      currency:
+        balance.available && balance.available.length > 0 ? balance.available[0].currency : 'gbp',
       recentCharges: charges.data.slice(0, 10).map(charge => ({
         id: charge.id,
         amount: charge.amount / 100,
