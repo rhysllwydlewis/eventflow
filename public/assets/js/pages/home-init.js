@@ -317,34 +317,31 @@ document.addEventListener('DOMContentLoaded', () => {
  */
 async function loadHeroCollageImages() {
   try {
-    const response = await fetch('/api/categories');
+    const response = await fetch('/api/admin/homepage/hero-images');
     if (!response.ok) {
-      console.warn('Failed to load categories for hero collage');
+      console.warn('Failed to load hero collage images from settings, using defaults');
       return;
     }
 
-    const data = await response.json();
-    const categories = data.items || [];
+    const heroImages = await response.json();
 
-    // Map category names to their collage frame elements
+    // Map category keys to their collage frame elements
     const categoryMapping = {
-      Venues: 0,
-      Catering: 1,
-      Entertainment: 2,
-      Photography: 3,
+      venues: 0,
+      catering: 1,
+      entertainment: 2,
+      photography: 3,
     };
 
     // Get all collage frames
     const collageFrames = document.querySelectorAll('.collage .frame');
 
-    categories.forEach(category => {
-      // Check if this category has a hero image and matches our collage
-      if (
-        category.heroImage &&
-        category.heroImage.trim() !== '' &&
-        categoryMapping.hasOwnProperty(category.name)
-      ) {
-        const frameIndex = categoryMapping[category.name];
+    Object.keys(categoryMapping).forEach(category => {
+      const imageUrl = heroImages[category];
+
+      // Only update if we have a custom uploaded image (not default)
+      if (imageUrl && !imageUrl.includes('/assets/images/collage-')) {
+        const frameIndex = categoryMapping[category];
         const frame = collageFrames[frameIndex];
 
         if (frame) {
@@ -354,8 +351,8 @@ async function loadHeroCollageImages() {
 
           if (imgElement && pictureElement) {
             // Update the image source to use admin-uploaded photo
-            imgElement.src = category.heroImage;
-            imgElement.alt = `${category.name} - custom uploaded image`;
+            imgElement.src = imageUrl;
+            imgElement.alt = `${category.charAt(0).toUpperCase() + category.slice(1)} - custom uploaded hero image`;
 
             // Remove the <source> element since we're using a single uploaded image
             const sourceElement = pictureElement.querySelector('source');
@@ -363,7 +360,7 @@ async function loadHeroCollageImages() {
               sourceElement.remove();
             }
 
-            console.log(`Updated hero collage image for ${category.name}`);
+            console.log(`Updated hero collage image for ${category}`);
           }
         }
       }

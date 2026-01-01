@@ -6,6 +6,7 @@
 'use strict';
 
 const express = require('express');
+const multer = require('multer');
 const { read, write, uid } = require('../store');
 const { authRequired, roleRequired } = require('../middleware/auth');
 const { auditLog, auditMiddleware, AUDIT_ACTIONS } = require('../middleware/audit');
@@ -13,6 +14,21 @@ const postmark = require('../utils/postmark');
 const dbUnified = require('../db-unified');
 
 const router = express.Router();
+
+// Configure multer for memory storage (used for hero image uploads to Cloudinary)
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit
+  },
+  fileFilter: function (req, file, cb) {
+    if (!file.mimetype.startsWith('image/')) {
+      cb(new Error('Only image files are allowed'));
+      return;
+    }
+    cb(null, true);
+  },
+});
 
 // This will be set by the main server.js when mounting these routes
 let supplierIsProActiveFn = null;
@@ -2622,6 +2638,162 @@ router.get('/audit', authRequired, roleRequired('admin'), (req, res) => {
 
   res.json({ items: logs });
 });
+
+/**
+ * GET /api/admin/homepage/hero-images
+ * Get homepage hero collage images
+ */
+router.get('/homepage/hero-images', authRequired, roleRequired('admin'), async (req, res) => {
+  try {
+    const settings = (await dbUnified.read('settings')) || {};
+    const heroImages = settings.heroImages || {
+      venues: '/assets/images/collage-venue.jpg',
+      catering: '/assets/images/collage-catering.jpg',
+      entertainment: '/assets/images/collage-entertainment.jpg',
+      photography: '/assets/images/collage-photography.jpg',
+    };
+    res.json(heroImages);
+  } catch (error) {
+    console.error('Error reading hero images:', error);
+    res.status(500).json({ error: 'Failed to read hero images' });
+  }
+});
+
+/**
+ * POST /api/admin/homepage/hero-images/:category
+ * Upload hero collage image for a specific category
+ */
+router.post(
+  '/homepage/hero-images/:category',
+  authRequired,
+  roleRequired('admin'),
+  upload.single('image'),
+  async (req, res) => {
+    try {
+      const { category } = req.params;
+      const validCategories = ['venues', 'catering', 'entertainment', 'photography'];
+
+      if (!validCategories.includes(category)) {
+        return res.status(400).json({ error: 'Invalid category' });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({ error: 'No image file provided' });
+      }
+
+      // Upload to Cloudinary
+      const cloudinary = require('cloudinary').v2;
+      const result = await new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+          {
+            folder: 'eventflow/homepage-hero',
+            public_id: `hero-${category}-${Date.now()}`,
+            transformation: [{ width: 800, height: 600, crop: 'fill', quality: 'auto' }],
+          },
+          (error, result) => {
+            if (error) {
+              reject(error);
+            } else {
+              resolve(result);
+            }
+          }
+        );
+        uploadStream.end(req.file.buffer);
+      });
+
+      // Update settings
+      const settings = (await dbUnified.read('settings')) || {};
+      if (!settings.heroImages) {
+        settings.heroImages = {
+          venues: '/assets/images/collage-venue.jpg',
+          catering: '/assets/images/collage-catering.jpg',
+          entertainment: '/assets/images/collage-entertainment.jpg',
+          photography: '/assets/images/collage-photography.jpg',
+        };
+      }
+
+      settings.heroImages[category] = result.secure_url;
+      settings.heroImages.updatedAt = new Date().toISOString();
+      settings.heroImages.updatedBy = req.user.email;
+
+      await dbUnified.write('settings', settings);
+
+      auditLog({
+        adminId: req.user.id,
+        adminEmail: req.user.email,
+        action: 'HERO_IMAGE_UPDATED',
+        targetType: 'homepage',
+        targetId: category,
+        details: { category, imageUrl: result.secure_url },
+      });
+
+      res.json({
+        success: true,
+        category,
+        imageUrl: result.secure_url,
+      });
+    } catch (error) {
+      console.error('Error uploading hero image:', error);
+      res.status(500).json({ error: 'Failed to upload hero image' });
+    }
+  }
+);
+
+/**
+ * DELETE /api/admin/homepage/hero-images/:category
+ * Remove hero collage image for a specific category (revert to default)
+ */
+router.delete(
+  '/homepage/hero-images/:category',
+  authRequired,
+  roleRequired('admin'),
+  async (req, res) => {
+    try {
+      const { category } = req.params;
+      const validCategories = ['venues', 'catering', 'entertainment', 'photography'];
+
+      if (!validCategories.includes(category)) {
+        return res.status(400).json({ error: 'Invalid category' });
+      }
+
+      const defaultImages = {
+        venues: '/assets/images/collage-venue.jpg',
+        catering: '/assets/images/collage-catering.jpg',
+        entertainment: '/assets/images/collage-entertainment.jpg',
+        photography: '/assets/images/collage-photography.jpg',
+      };
+
+      const settings = (await dbUnified.read('settings')) || {};
+      if (!settings.heroImages) {
+        settings.heroImages = { ...defaultImages };
+      }
+
+      settings.heroImages[category] = defaultImages[category];
+      settings.heroImages.updatedAt = new Date().toISOString();
+      settings.heroImages.updatedBy = req.user.email;
+
+      await dbUnified.write('settings', settings);
+
+      auditLog({
+        adminId: req.user.id,
+        adminEmail: req.user.email,
+        action: 'HERO_IMAGE_REMOVED',
+        targetType: 'homepage',
+        targetId: category,
+        details: { category },
+      });
+
+      res.json({
+        success: true,
+        category,
+        imageUrl: defaultImages[category],
+      });
+    } catch (error) {
+      console.error('Error removing hero image:', error);
+      res.status(500).json({ error: 'Failed to remove hero image' });
+    }
+  }
+);
 
 module.exports = router;
 module.exports.setHelperFunctions = setHelperFunctions;

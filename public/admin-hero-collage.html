@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Homepage Hero Collage — EventFlow Admin</title>
+  <link rel="stylesheet" href="/assets/css/styles.css">
+  <link rel="stylesheet" href="/assets/css/eventflow-17.0.0.css">
+  <link rel="stylesheet" href="/assets/css/admin.css">
+  <link rel="stylesheet" href="/assets/css/admin-enhanced.css">
+  <link rel="stylesheet" href="/assets/css/admin-navbar.css">
+  <link rel="stylesheet" href="/assets/css/admin-cards.css">
+  <link rel="stylesheet" href="/assets/css/admin-homepage-enhanced.css">
+  <link rel="stylesheet" href="/assets/css/utilities.css">
+  <link rel="stylesheet" href="/assets/css/components.css">
+  <link rel="icon" href="/favicon.svg">
+<script src="/assets/js/admin-navbar.js" defer></script>
+  <link rel="stylesheet" href="/assets/css/ui-ux-fixes.css">
+</head>
+<body class="has-admin-navbar">
+<!-- Modern Top Navbar -->
+<nav class="admin-top-navbar">
+  <div class="admin-navbar-content">
+    <!-- Brand -->
+    <div class="admin-navbar-brand">
+      <a href="/admin.html" class="admin-navbar-logo">EventFlow</a>
+      <span class="admin-navbar-title">Admin Panel</span>
+    </div>
+
+    <!-- Mobile Hamburger -->
+    <button class="admin-hamburger" id="adminHamburger" aria-label="Toggle menu">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+
+    <!-- Navigation Links -->
+    <div class="admin-navbar-nav" id="adminNavbarNav">
+      <a href="/admin.html" class="admin-nav-btn">
+        <span class="nav-icon">📊</span>
+        <span class="nav-label">Dashboard</span>
+      </a>
+      <a href="/admin-users.html" class="admin-nav-btn">
+        <span class="nav-icon">👥</span>
+        <span class="nav-label">Users</span>
+      </a>
+      <a href="/admin-packages.html" class="admin-nav-btn">
+        <span class="nav-icon">📦</span>
+        <span class="nav-label">Packages</span>
+      </a>
+      <a href="/admin-photos.html" class="admin-nav-btn">
+        <span class="nav-icon">📸</span>
+        <span class="nav-label">Photos</span>
+      </a>
+      <a href="/admin-tickets.html" class="admin-nav-btn">
+        <span class="nav-icon">🎫</span>
+        <span class="nav-label">Tickets</span>
+      </a>
+      <a href="/admin-reports.html" class="admin-nav-btn">
+        <span class="nav-icon">📈</span>
+        <span class="nav-label">Reports</span>
+      </a>
+      <a href="/admin-settings.html" class="admin-nav-btn">
+        <span class="nav-icon">⚙️</span>
+        <span class="nav-label">Settings</span>
+      </a>
+      <a href="/admin-content.html" class="admin-nav-btn active">
+        <span class="nav-icon">📝</span>
+        <span class="nav-label">Content</span>
+      </a>
+      <a href="#" id="admin-signout" class="admin-nav-btn admin-nav-btn-logout">
+        <span class="nav-icon">🚪</span>
+        <span class="nav-label">Logout</span>
+      </a>
+    </div>
+  </div>
+</nav>
+
+
+<main class="section admin-main-content">
+  <div class="admin-page-header">
+    <h1>🖼️ Homepage Hero Collage</h1>
+    <p class="small">Manage the hero collage images displayed at the top of the homepage. These appear above the category grid and create the first impression for visitors.</p>
+  </div>
+  
+  <div class="controls">
+    <div class="controls-left">
+      <button id="backToDashboard" class="btn btn-secondary">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+        Back to Dashboard
+      </button>
+      <button id="refreshBtn" class="btn btn-secondary" title="Refresh data">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M23 4v6h-6"></path>
+          <path d="M1 20v-6h6"></path>
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+        </svg>
+        Refresh
+      </button>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom: 24px; padding: 16px; background: #fff3cd; border-color: #ffc107;">
+    <p style="margin: 0; color: #856404;"><strong>ℹ️ Note:</strong> These are the hero collage images shown prominently on the homepage. They are separate from the category hero images used on category pages.</p>
+  </div>
+
+  <div id="heroImageList" class="category-list">
+    <div class="card"><p>Loading hero images...</p></div>
+  </div>
+</main>
+
+<footer class="footer" role="contentinfo">
+  <div class="container flex-between">
+    <div><strong>EventFlow</strong><br><span class="small">Event planning made simple.</span></div>
+    <div class="version">Version: v17.0.0</div>
+    <div class="small">
+      <a href="/contact.html">Contact</a> · 
+      <a href="/legal.html">Legal Hub</a>
+    </div>
+  </div>
+</footer>
+
+<script src="/assets/js/app.js"></script>
+<script src="/assets/js/admin-shared.js"></script>
+<script>
+(async function () {
+  // Check admin authentication
+  try {
+    const response = await fetch('/api/auth/me', {
+      credentials: 'include',
+    });
+    const data = await response.json();
+    const user = data.user;
+    if (!user || user.role !== 'admin') {
+      window.location.href = '/auth.html';
+      return;
+    }
+  } catch (err) {
+    window.location.href = '/auth.html';
+    return;
+  }
+
+  let heroImages = {};
+  const heroImageListElement = document.getElementById('heroImageList');
+
+  // Category display information
+  const categoryInfo = {
+    venues: { name: 'Venues', icon: '🏛️', description: 'Event venues and locations' },
+    catering: { name: 'Catering', icon: '🍽️', description: 'Food and beverage services' },
+    entertainment: { name: 'Entertainment', icon: '🎵', description: 'Music and entertainment' },
+    photography: { name: 'Photography', icon: '📸', description: 'Photography services' },
+  };
+
+  // HTML sanitization helper
+  function escapeHtml(unsafe) {
+    if (!unsafe) {
+      return '';
+    }
+    return String(unsafe)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  async function loadHeroImages() {
+    try {
+      const response = await fetch('/api/admin/homepage/hero-images', {
+        credentials: 'include',
+      });
+      if (response.ok) {
+        heroImages = await response.json();
+        renderHeroImages();
+      } else {
+        heroImageListElement.innerHTML =
+          '<div class="card"><p class="small">Failed to load hero images. Please try again.</p></div>';
+      }
+    } catch (err) {
+      console.error('Error loading hero images:', err);
+      heroImageListElement.innerHTML =
+        '<div class="card"><p class="small">Failed to load hero images. Please try again.</p></div>';
+    }
+  }
+
+  function renderHeroImages() {
+    const categories = Object.keys(categoryInfo);
+
+    heroImageListElement.innerHTML = categories
+      .map(category => {
+        const info = categoryInfo[category];
+        const imageUrl = heroImages[category] || `/assets/images/collage-${category}.jpg`;
+        const isDefault = imageUrl.includes('/assets/images/collage-');
+
+        return `
+        <div class="category-card" data-category-id="${escapeHtml(category)}">
+          <div class="category-card-header">
+            <h3 class="category-card-title">
+              <span>${escapeHtml(info.icon)}</span>
+              <span>${escapeHtml(info.name)}</span>
+            </h3>
+            <p class="small" style="margin: 4px 0 0 0; color: #6c757d;">${escapeHtml(info.description)}</p>
+          </div>
+          <div class="category-card-body">
+            <img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(info.name)} hero image" class="category-preview" id="preview-${escapeHtml(category)}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+            <div class="category-placeholder" id="placeholder-${escapeHtml(category)}" style="display: none;">${escapeHtml(info.icon)} ${escapeHtml(info.name)}<br><span class="small">Image failed to load</span></div>
+            <div class="upload-area" id="drop-${escapeHtml(category)}">
+              <div>📤 Click to upload or drag & drop</div>
+              <div class="small">PNG, JPG, WebP (max 5MB, recommended 800x600px)</div>
+            </div>
+            <input type="file" id="file-${escapeHtml(category)}" accept="image/*" data-category-id="${escapeHtml(category)}">
+            ${!isDefault ? `<button class="remove-btn" data-category-id="${escapeHtml(category)}">Reset to Default</button>` : '<p class="small" style="margin: 8px 0; color: #6c757d;">Using default image</p>'}
+            <div class="success-message" id="success-${escapeHtml(category)}">Image updated successfully!</div>
+            <div class="error-message" id="error-${escapeHtml(category)}">Failed to update image.</div>
+          </div>
+        </div>
+      `;
+      })
+      .join('');
+
+    // Attach event listeners after rendering
+    categories.forEach(category => {
+      const fileInput = document.getElementById(`file-${category}`);
+      const dropArea = document.getElementById(`drop-${category}`);
+      const removeBtn = document.querySelector(`.remove-btn[data-category-id="${category}"]`);
+
+      if (fileInput) {
+        fileInput.addEventListener('change', e => handleFileSelect(e, category));
+      }
+
+      if (dropArea) {
+        dropArea.addEventListener('click', () => {
+          if (fileInput) {
+            fileInput.click();
+          }
+        });
+        dropArea.addEventListener('dragover', handleDragOver);
+        dropArea.addEventListener('dragleave', handleDragLeave);
+        dropArea.addEventListener('drop', e => handleDrop(e, category));
+      }
+
+      if (removeBtn) {
+        removeBtn.addEventListener('click', () => removeImage(category));
+      }
+    });
+  }
+
+  function handleDragOver(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    e.currentTarget.classList.add('drag-over');
+  }
+
+  function handleDragLeave(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    e.currentTarget.classList.remove('drag-over');
+  }
+
+  function handleDrop(e, category) {
+    e.preventDefault();
+    e.stopPropagation();
+    e.currentTarget.classList.remove('drag-over');
+
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      uploadImage(category, files[0]);
+    }
+  }
+
+  function handleFileSelect(e, category) {
+    const files = e.target.files;
+    if (files.length > 0) {
+      uploadImage(category, files[0]);
+    }
+  }
+
+  async function uploadImage(category, file) {
+    // Validate file
+    if (!file.type.startsWith('image/')) {
+      showError(category, 'Please select an image file.');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      showError(category, 'File size must be less than 5MB.');
+      return;
+    }
+
+    // Create FormData
+    const formData = new FormData();
+    formData.append('image', file);
+
+    try {
+      // Get CSRF token
+      const csrfResponse = await fetch('/api/csrf-token', {
+        credentials: 'include',
+      });
+      const csrfData = await csrfResponse.json();
+      const csrfToken = csrfData.csrfToken;
+
+      const response = await fetch(`/api/admin/homepage/hero-images/${category}`, {
+        method: 'POST',
+        headers: {
+          'X-CSRF-Token': csrfToken,
+        },
+        credentials: 'include',
+        body: formData,
+      });
+
+      if (response.ok) {
+        showSuccess(category);
+        await loadHeroImages();
+      } else {
+        const errorData = await response.json();
+        showError(category, errorData.error || 'Failed to upload image.');
+      }
+    } catch (err) {
+      console.error('Error uploading image:', err);
+      showError(category, 'Failed to upload image.');
+    }
+  }
+
+  async function removeImage(category) {
+    if (!confirm('Reset to default image? Your custom image will be removed.')) {
+      return;
+    }
+
+    try {
+      // Get CSRF token
+      const csrfResponse = await fetch('/api/csrf-token', {
+        credentials: 'include',
+      });
+      const csrfData = await csrfResponse.json();
+      const csrfToken = csrfData.csrfToken;
+
+      const response = await fetch(`/api/admin/homepage/hero-images/${category}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': csrfToken,
+        },
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        showSuccess(category);
+        await loadHeroImages();
+      } else {
+        const errorData = await response.json();
+        showError(category, errorData.error || 'Failed to reset image.');
+      }
+    } catch (err) {
+      console.error('Error resetting image:', err);
+      showError(category, 'Failed to reset image.');
+    }
+  }
+
+  function showSuccess(category) {
+    const successEl = document.getElementById(`success-${category}`);
+    const errorEl = document.getElementById(`error-${category}`);
+    if (errorEl) {
+      errorEl.style.display = 'none';
+    }
+    if (successEl) {
+      successEl.style.display = 'block';
+      setTimeout(() => {
+        successEl.style.display = 'none';
+      }, 3000);
+    }
+  }
+
+  function showError(category, message) {
+    const successEl = document.getElementById(`success-${category}`);
+    const errorEl = document.getElementById(`error-${category}`);
+    if (successEl) {
+      successEl.style.display = 'none';
+    }
+    if (errorEl) {
+      errorEl.textContent = message;
+      errorEl.style.display = 'block';
+      setTimeout(() => {
+        errorEl.style.display = 'none';
+      }, 5000);
+    }
+  }
+
+  // Load hero images on page load
+  await loadHeroImages();
+
+  // Event listeners
+  document.getElementById('refreshBtn').addEventListener('click', loadHeroImages);
+
+  document.getElementById('backToDashboard').addEventListener('click', () => {
+    location.href = '/admin.html';
+  });
+})();
+</script>
+<script src="/assets/js/components/footer-nav.js" defer></script>
+</body>
+</html>
