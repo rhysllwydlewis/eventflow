@@ -317,6 +317,7 @@ app.use(
           'https://*.hcaptcha.com',
           'https://js.stripe.com',
         ],
+        scriptSrcAttr: ["'unsafe-inline'"], // Allow inline event handlers (onclick, onerror, etc.)
         styleSrc: [
           "'self'",
           "'unsafe-inline'",
@@ -324,7 +325,16 @@ app.use(
           'https://fonts.googleapis.com',
         ],
         fontSrc: ["'self'", 'https://fonts.gstatic.com'],
-        imgSrc: ["'self'", 'data:', 'https:', 'blob:'],
+        imgSrc: [
+          "'self'",
+          'data:',
+          'https:', // Allows all HTTPS images
+          'blob:',
+          // Explicitly list Pexels domains for documentation and clarity
+          // even though 'https:' already allows them
+          'https://images.pexels.com',
+          'https://*.pexels.com',
+        ],
         connectSrc: [
           "'self'",
           'https:',
@@ -2530,9 +2540,7 @@ app.post(
       maxGuests: parseInt(b.maxGuests || 0, 10),
       description_short: String(b.description_short || '').slice(0, 220),
       description_long: String(b.description_long || '').slice(0, 2000),
-      photos: photos.length
-        ? photos
-        : [`https://source.unsplash.com/featured/800x600/?event,${encodeURIComponent(b.category)}`],
+      photos: photos.length ? photos : [],
       email: ((await dbUnified.read('users')).find(u => u.id === req.user.id) || {}).email || '',
       approved: false,
     };
@@ -2642,7 +2650,7 @@ app.post(
       title: String(title).slice(0, 120),
       description: String(description || '').slice(0, 1500),
       price: String(price || '').slice(0, 60),
-      image: image || 'https://source.unsplash.com/featured/800x600/?package,event',
+      image: image || '',
       approved: false,
       featured: false,
     };
