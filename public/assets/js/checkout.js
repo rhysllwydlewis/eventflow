@@ -125,8 +125,10 @@
         credentials: 'include',
       });
 
-      if (!response.ok) {
-        // For free plan, allow unauthenticated users to proceed to signup
+      const data = await response.json();
+
+      if (!response.ok || !data.user) {
+        // User not authenticated
         const urlParams = new URLSearchParams(window.location.search);
         const plan = urlParams.get('plan');
 

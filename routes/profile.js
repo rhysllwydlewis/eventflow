@@ -12,7 +12,7 @@ const fs = require('fs');
 const validator = require('validator');
 const sharp = require('sharp');
 
-const { read, write } = require('../store');
+const dbUnified = require('../db-unified');
 const { authRequired } = require('../middleware/auth');
 
 const router = express.Router();
@@ -59,11 +59,7 @@ const upload = multer({
     if (AVATAR_ALLOWED_TYPES.includes(ext) || AVATAR_ALLOWED_TYPES.includes(mimeSubtype)) {
       cb(null, true);
     } else {
-      cb(
-        new Error(
-          `Invalid file type. Allowed types: ${AVATAR_ALLOWED_TYPES.join(', ')}`
-        )
-      );
+      cb(new Error(`Invalid file type. Allowed types: ${AVATAR_ALLOWED_TYPES.join(', ')}`));
     }
   },
 });
@@ -72,8 +68,12 @@ const upload = multer({
  * GET /api/profile
  * Get current user's profile
  */
-router.get('/', authRequired, (req, res) => {
-  const users = read('users');
+router.get('/', authRequired, async (req, res) => {
+  if (!req.user || !req.user.id) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+
+  const users = await dbUnified.read('users');
   const user = users.find(u => u.id === req.user.id);
 
   if (!user) {
@@ -105,19 +105,15 @@ router.get('/', authRequired, (req, res) => {
  * PUT /api/profile
  * Update current user's profile
  */
-router.put('/', authRequired, (req, res) => {
-  const {
-    firstName,
-    lastName,
-    location,
-    postcode,
-    company,
-    jobTitle,
-    website,
-    socials,
-  } = req.body || {};
+router.put('/', authRequired, async (req, res) => {
+  if (!req.user || !req.user.id) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
 
-  const users = read('users');
+  const { firstName, lastName, location, postcode, company, jobTitle, website, socials } =
+    req.body || {};
+
+  const users = await dbUnified.read('users');
   const idx = users.findIndex(u => u.id === req.user.id);
 
   if (idx === -1) {
@@ -176,9 +172,13 @@ router.put('/', authRequired, (req, res) => {
 
   // Sanitize and validate URLs
   const sanitizeUrl = url => {
-    if (!url) return undefined;
+    if (!url) {
+      return undefined;
+    }
     const trimmed = String(url).trim();
-    if (!trimmed) return undefined;
+    if (!trimmed) {
+      return undefined;
+    }
     if (!validator.isURL(trimmed, { require_protocol: false })) {
       throw new Error('Invalid URL format');
     }
@@ -207,7 +207,7 @@ router.put('/', authRequired, (req, res) => {
   }
 
   user.updatedAt = new Date().toISOString();
-  write('users', users);
+  await dbUnified.write('users', users);
 
   res.json({
     ok: true,
@@ -235,6 +235,10 @@ router.put('/', authRequired, (req, res) => {
  * Upload or replace user avatar
  */
 router.post('/avatar', authRequired, (req, res) => {
+  if (!req.user || !req.user.id) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+
   upload.single('avatar')(req, res, async err => {
     if (err) {
       if (err instanceof multer.MulterError) {
@@ -269,7 +273,7 @@ router.post('/avatar', authRequired, (req, res) => {
       fs.unlinkSync(req.file.path);
 
       // Update user avatar URL
-      const users = read('users');
+      const users = await dbUnified.read('users');
       const idx = users.findIndex(u => u.id === req.user.id);
 
       if (idx === -1) {
@@ -280,11 +284,7 @@ router.post('/avatar', authRequired, (req, res) => {
 
       // Delete old avatar if exists
       if (users[idx].avatarUrl) {
-        const oldAvatarPath = path.join(
-          __dirname,
-          '..',
-          users[idx].avatarUrl.replace(/^\//, '')
-        );
+        const oldAvatarPath = path.join(__dirname, '..', users[idx].avatarUrl.replace(/^\//, ''));
         if (fs.existsSync(oldAvatarPath)) {
           try {
             fs.unlinkSync(oldAvatarPath);
@@ -297,7 +297,7 @@ router.post('/avatar', authRequired, (req, res) => {
       // Store relative URL path
       users[idx].avatarUrl = `/${AVATAR_STORAGE_PATH}/${processedFilename}`;
       users[idx].updatedAt = new Date().toISOString();
-      write('users', users);
+      await dbUnified.write('users', users);
 
       res.json({
         ok: true,
@@ -318,8 +318,12 @@ router.post('/avatar', authRequired, (req, res) => {
  * DELETE /api/profile/avatar
  * Delete user avatar
  */
-router.delete('/avatar', authRequired, (req, res) => {
-  const users = read('users');
+router.delete('/avatar', authRequired, async (req, res) => {
+  if (!req.user || !req.user.id) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+
+  const users = await dbUnified.read('users');
   const idx = users.findIndex(u => u.id === req.user.id);
 
   if (idx === -1) {
@@ -341,9 +345,9 @@ router.delete('/avatar', authRequired, (req, res) => {
   }
 
   // Remove avatar URL from user
-  users[idx].avatarUrl = undefined;
+  delete users[idx].avatarUrl;
   users[idx].updatedAt = new Date().toISOString();
-  write('users', users);
+  await dbUnified.write('users', users);
 
   res.json({ ok: true });
 });
