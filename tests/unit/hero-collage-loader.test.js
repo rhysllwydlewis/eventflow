@@ -79,6 +79,9 @@ describe('Hero Collage Image Loader', () => {
           return;
         }
 
+        // Generate a single timestamp for cache busting all images in this execution
+        const cacheBustTimestamp = Date.now();
+
         // Map category keys to their collage frame elements
         const categoryMapping = {
           venues: 0,
@@ -130,10 +133,10 @@ describe('Hero Collage Image Loader', () => {
           }
 
           try {
-            // Add cache busting to force fresh load of images
+            // Add cache busting to force fresh load of images using consistent timestamp
             const cacheBustedUrl = imageUrl.includes('?')
-              ? `${imageUrl}&t=${Date.now()}`
-              : `${imageUrl}?t=${Date.now()}`;
+              ? `${imageUrl}&t=${cacheBustTimestamp}`
+              : `${imageUrl}?t=${cacheBustTimestamp}`;
 
             // Update the image source - works for both default and custom images
             imgElement.src = cacheBustedUrl;
