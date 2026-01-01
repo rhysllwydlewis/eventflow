@@ -7,6 +7,7 @@
 
 const express = require('express');
 const multer = require('multer');
+const cloudinary = require('cloudinary').v2;
 const { read, write, uid } = require('../store');
 const { authRequired, roleRequired } = require('../middleware/auth');
 const { auditLog, auditMiddleware, AUDIT_ACTIONS } = require('../middleware/audit');
@@ -2641,9 +2642,29 @@ router.get('/audit', authRequired, roleRequired('admin'), (req, res) => {
 
 /**
  * GET /api/admin/homepage/hero-images
- * Get homepage hero collage images
+ * Get homepage hero collage images (Admin only)
  */
 router.get('/homepage/hero-images', authRequired, roleRequired('admin'), async (req, res) => {
+  try {
+    const settings = (await dbUnified.read('settings')) || {};
+    const heroImages = settings.heroImages || {
+      venues: '/assets/images/collage-venue.jpg',
+      catering: '/assets/images/collage-catering.jpg',
+      entertainment: '/assets/images/collage-entertainment.jpg',
+      photography: '/assets/images/collage-photography.jpg',
+    };
+    res.json(heroImages);
+  } catch (error) {
+    console.error('Error reading hero images:', error);
+    res.status(500).json({ error: 'Failed to read hero images' });
+  }
+});
+
+/**
+ * GET /api/homepage/hero-images (Public)
+ * Get homepage hero collage images for public display
+ */
+router.get('/homepage/hero-images-public', async (req, res) => {
   try {
     const settings = (await dbUnified.read('settings')) || {};
     const heroImages = settings.heroImages || {
@@ -2682,7 +2703,6 @@ router.post(
       }
 
       // Upload to Cloudinary
-      const cloudinary = require('cloudinary').v2;
       const result = await new Promise((resolve, reject) => {
         const uploadStream = cloudinary.uploader.upload_stream(
           {

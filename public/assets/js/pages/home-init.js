@@ -317,7 +317,7 @@ document.addEventListener('DOMContentLoaded', () => {
  */
 async function loadHeroCollageImages() {
   try {
-    const response = await fetch('/api/admin/homepage/hero-images');
+    const response = await fetch('/api/admin/homepage/hero-images-public');
     if (!response.ok) {
       console.warn('Failed to load hero collage images from settings, using defaults');
       return;
