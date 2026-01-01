@@ -1,0 +1,25 @@
+# EventFlow robots.txt
+# Allow all search engines to crawl the site
+
+User-agent: *
+Allow: /
+
+# Prioritize important pages
+Allow: /index.html
+Allow: /blog.html
+Allow: /articles/
+Allow: /suppliers.html
+Allow: /pricing.html
+Allow: /start.html
+
+# Prevent crawling of admin and auth pages
+Disallow: /admin*.html
+Disallow: /auth.html
+Disallow: /settings.html
+Disallow: /dashboard*.html
+Disallow: /api/
+Disallow: /uploads/
+Disallow: /*.json$
+
+# Sitemap location
+Sitemap: https://event-flow.co.uk/sitemap.xml
