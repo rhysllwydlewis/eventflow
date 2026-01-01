@@ -14,6 +14,9 @@ document.addEventListener('DOMContentLoaded', () => {
     categoryGrid.loadCategories();
   }
 
+  // Load and update hero collage images from admin-uploaded category photos
+  loadHeroCollageImages();
+
   // Load featured packages
   fetch('/api/packages/featured')
     .then(res => res.json())
@@ -307,3 +310,66 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 });
+
+/**
+ * Load hero collage images from category heroImages
+ * Allows admin to override default images with custom uploads
+ */
+async function loadHeroCollageImages() {
+  try {
+    const response = await fetch('/api/categories');
+    if (!response.ok) {
+      console.warn('Failed to load categories for hero collage');
+      return;
+    }
+
+    const data = await response.json();
+    const categories = data.items || [];
+
+    // Map category names to their collage frame elements
+    const categoryMapping = {
+      Venues: 0,
+      Catering: 1,
+      Entertainment: 2,
+      Photography: 3,
+    };
+
+    // Get all collage frames
+    const collageFrames = document.querySelectorAll('.collage .frame');
+
+    categories.forEach(category => {
+      // Check if this category has a hero image and matches our collage
+      if (
+        category.heroImage &&
+        category.heroImage.trim() !== '' &&
+        categoryMapping.hasOwnProperty(category.name)
+      ) {
+        const frameIndex = categoryMapping[category.name];
+        const frame = collageFrames[frameIndex];
+
+        if (frame) {
+          // Find the img element within this frame
+          const imgElement = frame.querySelector('img');
+          const pictureElement = frame.querySelector('picture');
+
+          if (imgElement && pictureElement) {
+            // Update the image source to use admin-uploaded photo
+            imgElement.src = category.heroImage;
+            imgElement.alt = `${category.name} - custom uploaded image`;
+
+            // Remove the <source> element since we're using a single uploaded image
+            const sourceElement = pictureElement.querySelector('source');
+            if (sourceElement) {
+              sourceElement.remove();
+            }
+
+            console.log(`Updated hero collage image for ${category.name}`);
+          }
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Error loading hero collage images:', error);
+    // Silently fail - default images will remain
+  }
+}

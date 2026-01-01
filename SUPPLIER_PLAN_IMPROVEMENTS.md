@@ -264,7 +264,56 @@ This ensures proper rendering in both light and dark themes.
 
 ## Future Enhancements
 
-1. Consider integrating Pexels API for dynamic supplier avatars based on category
+1. ~~Consider integrating Pexels API for dynamic supplier avatars based on category~~ ✅ **IMPLEMENTED** - Pexels client-side service now fetches photos for test supplier avatars
 2. Add tooltip explanations for badges on hover
 3. Implement badge animations when new badges are earned
 4. Add badge filters in supplier search
+
+## Pexels Integration for Test Suppliers
+
+### Overview
+
+A client-side Pexels service has been created to dynamically fetch professional photos for test supplier avatars when they don't have uploaded logos. This ensures test data looks polished and realistic.
+
+### Implementation Details
+
+**File:** `public/assets/js/utils/pexels-client.js`
+
+The `PexelsClient` class provides:
+
+- Photo search via backend proxy (`/api/pexels/search`)
+- Category-based photo fetching for supplier avatars
+- In-memory caching to minimize API calls
+- Curated photos access
+
+**Integration Points:**
+
+- `supplier-card.js` - Automatically fetches Pexels photos for test suppliers without logos
+- Loaded on: index.html, plan.html, package.html, suppliers.html
+
+### Category Mappings
+
+- **Venues** → "elegant venue hall interior"
+- **Catering** → "elegant catering food buffet"
+- **Photography** → "professional camera photography equipment"
+- **Entertainment** → "live music band performance"
+- **Flowers & décor** → "wedding flowers decoration arrangement"
+- **Transport** → "luxury wedding car vehicle"
+- **Extras & add-ons** → "event decoration details elegant"
+
+### Usage Example
+
+```javascript
+// Automatic usage in SupplierCard component
+if (!logo && supplier.isTest && supplier.category) {
+  logo = await this.getTestSupplierFallback(supplier.category);
+}
+```
+
+### Important Notes
+
+- ✅ Pexels is used ONLY for test supplier avatars/logos
+- ❌ Pexels is NOT used for packages (suppliers upload their own package photos)
+- ✅ Backend seed.js already uses Pexels for seeding test data
+- ✅ Client-side now complements this for dynamic fallback
+- ✅ Graceful fallback to gradient avatars if Pexels fails or isn't configured
