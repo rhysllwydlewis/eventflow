@@ -327,8 +327,10 @@ app.use(
         imgSrc: [
           "'self'",
           'data:',
-          'https:',
+          'https:', // Allows all HTTPS images
           'blob:',
+          // Explicitly list Pexels domains for documentation and clarity
+          // even though 'https:' already allows them
           'https://images.pexels.com',
           'https://*.pexels.com',
         ],

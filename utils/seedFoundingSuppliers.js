@@ -30,8 +30,8 @@ const UK_LOCATIONS = [
 ];
 
 // Founding supplier data template
-// Note: Photos arrays are empty - real suppliers will upload their own photos
-// or images can be fetched from Pexels API if PEXELS_API_KEY is configured
+// Note: Photos arrays are intentionally empty - real suppliers upload their own photos
+// For demo suppliers with Pexels integration, see seed.js which uses getPexelsPhoto()
 const SUPPLIER_DATA = {
   Venues: [
     {
