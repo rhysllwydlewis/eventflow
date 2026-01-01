@@ -317,6 +317,7 @@ app.use(
           'https://*.hcaptcha.com',
           'https://js.stripe.com',
         ],
+        scriptSrcAttr: ["'unsafe-inline'"], // Allow inline event handlers (onclick, onerror, etc.)
         styleSrc: [
           "'self'",
           "'unsafe-inline'",
