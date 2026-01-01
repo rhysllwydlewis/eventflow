@@ -325,6 +325,15 @@ async function loadHeroCollageImages() {
 
     const heroImages = await response.json();
 
+    // Validate API response
+    if (!heroImages || typeof heroImages !== 'object') {
+      console.error('Invalid hero images data received from API');
+      return;
+    }
+
+    // Generate a single timestamp for cache busting all images in this execution
+    const cacheBustTimestamp = Date.now();
+
     // Map category keys to their collage frame elements
     const categoryMapping = {
       venues: 0,
@@ -336,37 +345,77 @@ async function loadHeroCollageImages() {
     // Get all collage frames
     const collageFrames = document.querySelectorAll('.collage .frame');
 
+    // Validate DOM elements exist
+    if (!collageFrames || collageFrames.length === 0) {
+      console.warn('No collage frames found in DOM');
+      return;
+    }
+
     Object.keys(categoryMapping).forEach(category => {
       const imageUrl = heroImages[category];
 
-      // Only update if we have a custom uploaded image (not default)
-      if (imageUrl && !imageUrl.includes('/assets/images/collage-')) {
-        const frameIndex = categoryMapping[category];
-        const frame = collageFrames[frameIndex];
+      // Validate URL exists and is a non-empty string
+      if (!imageUrl || typeof imageUrl !== 'string' || imageUrl.trim() === '') {
+        console.warn(`No valid image URL for category: ${category}`);
+        return;
+      }
 
-        if (frame) {
-          // Find the img element within this frame
-          const imgElement = frame.querySelector('img');
-          const pictureElement = frame.querySelector('picture');
+      const frameIndex = categoryMapping[category];
+      const frame = collageFrames[frameIndex];
 
-          if (imgElement && pictureElement) {
-            // Update the image source to use admin-uploaded photo
-            imgElement.src = imageUrl;
-            imgElement.alt = `${category.charAt(0).toUpperCase() + category.slice(1)} - custom uploaded hero image`;
+      // Ensure frame element exists
+      if (!frame) {
+        console.warn(`Frame not found for category: ${category} at index ${frameIndex}`);
+        return;
+      }
 
-            // Remove the <source> element since we're using a single uploaded image
-            const sourceElement = pictureElement.querySelector('source');
-            if (sourceElement) {
-              sourceElement.remove();
-            }
+      // Find the img element within this frame
+      const imgElement = frame.querySelector('img');
+      const pictureElement = frame.querySelector('picture');
 
-            console.log(`Updated hero collage image for ${category}`);
-          }
+      // Ensure both elements exist before attempting update
+      if (!imgElement) {
+        console.warn(`Image element not found for category: ${category}`);
+        return;
+      }
+
+      if (!pictureElement) {
+        console.warn(`Picture element not found for category: ${category}`);
+        return;
+      }
+
+      // Check if this is a custom uploaded image (not default)
+      const isCustomImage = !imageUrl.includes('/assets/images/collage-');
+
+      // Only update DOM for custom images - default images are already in HTML
+      if (!isCustomImage) {
+        console.log(`Using default image for ${category}, no DOM update needed`);
+        return;
+      }
+
+      try {
+        // Add cache busting to force fresh load of custom images
+        const cacheBustedUrl = imageUrl.includes('?')
+          ? `${imageUrl}&t=${cacheBustTimestamp}`
+          : `${imageUrl}?t=${cacheBustTimestamp}`;
+
+        // Update the image source with custom uploaded image
+        imgElement.src = cacheBustedUrl;
+        imgElement.alt = `${category.charAt(0).toUpperCase() + category.slice(1)} - custom uploaded hero image`;
+
+        // Remove the <source> element since we're using a single uploaded image
+        const sourceElement = pictureElement.querySelector('source');
+        if (sourceElement) {
+          sourceElement.remove();
         }
+
+        console.log(`Updated hero collage image for ${category} with custom upload: ${imageUrl}`);
+      } catch (updateError) {
+        console.error(`Failed to update image for category ${category}:`, updateError);
       }
     });
   } catch (error) {
     console.error('Error loading hero collage images:', error);
-    // Silently fail - default images will remain
+    // Default images will remain if there's an error
   }
 }
