@@ -247,7 +247,7 @@ describe('Hero Collage Image Loader', () => {
         'Using default image for photography, no DOM update needed'
       );
 
-      // Verify all 4 images were updated
+      // Verify all 4 default images were skipped (no updates needed)
       expect(mockConsole.log).toHaveBeenCalledTimes(4);
     });
 
