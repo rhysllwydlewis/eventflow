@@ -202,7 +202,21 @@
 
     items.forEach(s => {
       let plan;
-      if (s.isPro) {
+      // Check new subscription format first, then fall back to legacy isPro
+      if (s.subscription && s.subscription.tier && s.subscription.tier !== 'free') {
+        const tierName = s.subscription.tier === 'pro_plus' ? 'Pro+' : 'Pro';
+        if (s.subscription.endDate) {
+          try {
+            const d = new Date(s.subscription.endDate);
+            plan = `${tierName} until ${d.toLocaleDateString()}`;
+          } catch (_e) {
+            plan = `${tierName} (active)`;
+          }
+        } else {
+          plan = `${tierName} (active)`;
+        }
+      } else if (s.isPro) {
+        // Legacy format for backwards compatibility
         if (s.proExpiresAt) {
           try {
             const d = new Date(s.proExpiresAt);
@@ -219,7 +233,8 @@
       const score = typeof s.healthScore === 'number' ? s.healthScore.toFixed(0) : '—';
       const tags = (s.tags || []).join(', ');
 
-      const selectId = `pro-duration-${s.id}`;
+      const selectTierId = `pro-tier-${s.id}`;
+      const selectDurationId = `pro-duration-${s.id}`;
       const actions =
         `<div style="display:flex;gap:4px;flex-wrap:wrap;flex-direction:column;">` +
         `<div style="display:flex;gap:4px;">` +
@@ -230,16 +245,21 @@
         `<button data-action="deleteSupplier" data-id="${s.id}">Delete</button>` +
         `</div>` +
         `<div class="small" style="margin-top:4px;">` +
-        `Pro trial: ` +
-        `<select id="${selectId}">` +
-        `<option value="">Choose length…</option>` +
-        `<option value="1d">1 day</option>` +
-        `<option value="7d">7 days</option>` +
-        `<option value="1m">1 month</option>` +
-        `<option value="1y">1 year</option>` +
+        `Subscription: ` +
+        `<select id="${selectTierId}">` +
+        `<option value="pro">Pro</option>` +
+        `<option value="pro_plus">Pro+</option>` +
+        `</select> ` +
+        `<select id="${selectDurationId}">` +
+        `<option value="">Duration…</option>` +
+        `<option value="7">7 days</option>` +
+        `<option value="14">14 days</option>` +
+        `<option value="30">30 days</option>` +
+        `<option value="90">90 days</option>` +
+        `<option value="365">1 year</option>` +
         `</select>` +
-        `<button data-action="setProPlan" data-id="${s.id}" data-param="duration">Set</button>` +
-        `<button data-action="setProPlan" data-id="${s.id}" data-param="cancel">Cancel</button>` +
+        `<button data-action="setProPlan" data-id="${s.id}" data-param="grant">Grant</button>` +
+        `<button data-action="setProPlan" data-id="${s.id}" data-param="cancel">Remove</button>` +
         `</div>` +
         `</div>`;
 
@@ -574,76 +594,81 @@
   };
 
   window.setProPlan = function (id, mode) {
-    if (mode === 'duration') {
-      const sel = document.getElementById(`pro-duration-${id}`);
-      if (!sel || !sel.value) {
+    if (mode === 'grant') {
+      const tierSel = document.getElementById(`pro-tier-${id}`);
+      const durationSel = document.getElementById(`pro-duration-${id}`);
+      if (!tierSel || !durationSel || !durationSel.value) {
         if (typeof Toast !== 'undefined') {
-          Toast.warning('Choose a duration first.');
+          Toast.warning('Choose a tier and duration first.');
         } else {
-          alert('Choose a duration first.');
+          alert('Choose a tier and duration first.');
         }
         return;
       }
-      api(`/api/admin/suppliers/${id}/pro`, 'POST', {
-        mode: 'duration',
-        duration: sel.value,
+      const tier = tierSel.value;
+      const days = parseInt(durationSel.value, 10);
+      const tierName = tier === 'pro_plus' ? 'Pro+' : 'Pro';
+      
+      api(`/api/admin/suppliers/${id}/subscription`, 'POST', {
+        tier: tier,
+        days: days,
       })
         .then(() => {
           if (typeof Toast !== 'undefined') {
-            Toast.success('Pro trial set for supplier.');
+            Toast.success(`${tierName} subscription granted for ${days} days.`);
           } else {
-            alert('Pro trial set for supplier.');
+            alert(`${tierName} subscription granted for ${days} days.`);
           }
           loadAll();
         })
         .catch(err => {
-          console.error('setProPlan (duration) failed', err);
+          console.error('setProPlan (grant) failed', err);
           if (typeof Toast !== 'undefined') {
-            Toast.error(`Failed to set Pro trial: ${err.message}`);
+            Toast.error(`Failed to grant subscription: ${err.message}`);
           } else {
-            alert(`Failed to set Pro trial: ${err.message}`);
+            alert(`Failed to grant subscription: ${err.message}`);
           }
         });
     } else if (mode === 'cancel') {
       if (typeof Modal !== 'undefined') {
         const modal = new Modal({
-          title: 'Cancel Pro Plan',
-          content: '<p>Remove Pro for this supplier?</p>',
-          confirmText: 'Cancel Pro',
-          cancelText: 'Keep Pro',
+          title: 'Remove Subscription',
+          content: '<p>Remove subscription for this supplier? They will lose Pro/Pro+ features immediately.</p>',
+          confirmText: 'Remove',
+          cancelText: 'Keep',
           onConfirm: function () {
-            api(`/api/admin/suppliers/${id}/pro`, 'POST', { mode: 'cancel' })
+            api(`/api/admin/suppliers/${id}/subscription`, 'DELETE')
               .then(() => {
                 if (typeof Toast !== 'undefined') {
-                  Toast.success('Pro plan cancelled for supplier.');
+                  Toast.success('Subscription removed.');
                 } else {
-                  alert('Pro plan cancelled for supplier.');
+                  alert('Subscription removed.');
                 }
                 loadAll();
               })
               .catch(err => {
                 console.error('setProPlan (cancel) failed', err);
                 if (typeof Toast !== 'undefined') {
-                  Toast.error(`Failed to cancel Pro plan: ${err.message}`);
+                  Toast.error(`Failed to remove subscription: ${err.message}`);
                 } else {
-                  alert(`Failed to cancel Pro plan: ${err.message}`);
+                  alert(`Failed to remove subscription: ${err.message}`);
                 }
               });
           },
         });
         modal.show();
       } else {
-        if (!confirm('Remove Pro for this supplier?')) {
+        if (!confirm('Remove subscription for this supplier? They will lose Pro/Pro+ features immediately.')) {
           return;
         }
-        api(`/api/admin/suppliers/${id}/pro`, 'POST', { mode: 'cancel' })
+        api(`/api/admin/suppliers/${id}/subscription`, 'DELETE')
           .then(() => {
-            alert('Pro plan cancelled for supplier.');
+            alert('Subscription removed.');
             loadAll();
           })
           .catch(err => {
             console.error('setProPlan (cancel) failed', err);
-            alert(`Failed to cancel Pro plan: ${err.message}`);
+            alert(`Failed to remove subscription: ${err.message}`);
           });
       }
     }
