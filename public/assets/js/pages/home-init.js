@@ -384,30 +384,32 @@ async function loadHeroCollageImages() {
         return;
       }
 
+      // Check if this is a custom uploaded image (not default)
+      const isCustomImage = !imageUrl.includes('/assets/images/collage-');
+
+      // Only update DOM for custom images - default images are already in HTML
+      if (!isCustomImage) {
+        console.log(`Using default image for ${category}, no DOM update needed`);
+        return;
+      }
+
       try {
-        // Add cache busting to force fresh load of images using consistent timestamp
+        // Add cache busting to force fresh load of custom images
         const cacheBustedUrl = imageUrl.includes('?')
           ? `${imageUrl}&t=${cacheBustTimestamp}`
           : `${imageUrl}?t=${cacheBustTimestamp}`;
 
-        // Update the image source - works for both default and custom images
+        // Update the image source with custom uploaded image
         imgElement.src = cacheBustedUrl;
+        imgElement.alt = `${category.charAt(0).toUpperCase() + category.slice(1)} - custom uploaded hero image`;
 
-        // Update alt text based on whether it's a custom or default image
-        const isCustomImage = !imageUrl.includes('/assets/images/collage-');
-        const altSuffix = isCustomImage ? 'custom uploaded hero image' : 'hero image';
-        imgElement.alt = `${category.charAt(0).toUpperCase() + category.slice(1)} - ${altSuffix}`;
-
-        // Remove the <source> element for custom images since we're using a single uploaded image
-        // For default images, keep the source element for WebP optimization
-        if (isCustomImage) {
-          const sourceElement = pictureElement.querySelector('source');
-          if (sourceElement) {
-            sourceElement.remove();
-          }
+        // Remove the <source> element since we're using a single uploaded image
+        const sourceElement = pictureElement.querySelector('source');
+        if (sourceElement) {
+          sourceElement.remove();
         }
 
-        console.log(`Updated hero collage image for ${category}: ${imageUrl}`);
+        console.log(`Updated hero collage image for ${category} with custom upload: ${imageUrl}`);
       } catch (updateError) {
         console.error(`Failed to update image for category ${category}:`, updateError);
       }

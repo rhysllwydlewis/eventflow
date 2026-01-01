@@ -132,30 +132,32 @@ describe('Hero Collage Image Loader', () => {
             return;
           }
 
+          // Check if this is a custom uploaded image (not default)
+          const isCustomImage = !imageUrl.includes('/assets/images/collage-');
+
+          // Only update DOM for custom images - default images are already in HTML
+          if (!isCustomImage) {
+            mockConsole.log(`Using default image for ${category}, no DOM update needed`);
+            return;
+          }
+
           try {
-            // Add cache busting to force fresh load of images using consistent timestamp
+            // Add cache busting to force fresh load of custom images
             const cacheBustedUrl = imageUrl.includes('?')
               ? `${imageUrl}&t=${cacheBustTimestamp}`
               : `${imageUrl}?t=${cacheBustTimestamp}`;
 
-            // Update the image source - works for both default and custom images
+            // Update the image source with custom uploaded image
             imgElement.src = cacheBustedUrl;
+            imgElement.alt = `${category.charAt(0).toUpperCase() + category.slice(1)} - custom uploaded hero image`;
 
-            // Update alt text based on whether it's a custom or default image
-            const isCustomImage = !imageUrl.includes('/assets/images/collage-');
-            const altSuffix = isCustomImage ? 'custom uploaded hero image' : 'hero image';
-            imgElement.alt = `${category.charAt(0).toUpperCase() + category.slice(1)} - ${altSuffix}`;
-
-            // Remove the <source> element for custom images since we're using a single uploaded image
-            // For default images, keep the source element for WebP optimization
-            if (isCustomImage) {
-              const sourceElement = pictureElement.querySelector('source');
-              if (sourceElement) {
-                sourceElement.remove();
-              }
+            // Remove the <source> element since we're using a single uploaded image
+            const sourceElement = pictureElement.querySelector('source');
+            if (sourceElement) {
+              sourceElement.remove();
             }
 
-            mockConsole.log(`Updated hero collage image for ${category}: ${imageUrl}`);
+            mockConsole.log(`Updated hero collage image for ${category} with custom upload: ${imageUrl}`);
           } catch (updateError) {
             mockConsole.error(`Failed to update image for category ${category}:`, updateError);
           }
@@ -205,14 +207,14 @@ describe('Hero Collage Image Loader', () => {
       // Verify custom image alt text
       expect(frames[0].querySelector('img').alt).toBe('Venues - custom uploaded hero image');
 
-      // Verify console logs
+      // Verify console logs with correct message
       expect(mockConsole.log).toHaveBeenCalledWith(
-        'Updated hero collage image for venues: https://res.cloudinary.com/test/image/upload/venue.jpg'
+        'Updated hero collage image for venues with custom upload: https://res.cloudinary.com/test/image/upload/venue.jpg'
       );
       expect(mockConsole.log).toHaveBeenCalledTimes(4);
     });
 
-    it('should update images with default paths', async () => {
+    it('should NOT update images with default paths', async () => {
       const mockHeroImages = {
         venues: '/assets/images/collage-venue.jpg',
         catering: '/assets/images/collage-catering.jpg',
@@ -227,14 +229,23 @@ describe('Hero Collage Image Loader', () => {
 
       await loadHeroCollageImages();
 
-      // Verify all images were updated even with default paths
+      // Verify images were NOT updated since they are defaults
       const frames = mockDocument.querySelectorAll('.collage .frame');
-      expect(frames[0].querySelector('img').src).toBe(
-        '/assets/images/collage-venue.jpg?t=1234567890'
-      );
+      expect(frames[0].querySelector('img').src).toBe(''); // Still empty, not updated
 
-      // Verify default image alt text
-      expect(frames[0].querySelector('img').alt).toBe('Venues - hero image');
+      // Verify console logs show defaults are being skipped
+      expect(mockConsole.log).toHaveBeenCalledWith(
+        'Using default image for venues, no DOM update needed'
+      );
+      expect(mockConsole.log).toHaveBeenCalledWith(
+        'Using default image for catering, no DOM update needed'
+      );
+      expect(mockConsole.log).toHaveBeenCalledWith(
+        'Using default image for entertainment, no DOM update needed'
+      );
+      expect(mockConsole.log).toHaveBeenCalledWith(
+        'Using default image for photography, no DOM update needed'
+      );
 
       // Verify all 4 images were updated
       expect(mockConsole.log).toHaveBeenCalledTimes(4);
@@ -256,14 +267,21 @@ describe('Hero Collage Image Loader', () => {
       await loadHeroCollageImages();
 
       const frames = mockDocument.querySelectorAll('.collage .frame');
-      // Should append with & for existing params
+      // Should append with & for existing params (custom Cloudinary URL)
       expect(frames[0].querySelector('img').src).toBe(
         'https://res.cloudinary.com/test/image/upload/venue.jpg?version=2&t=1234567890'
       );
-      // Should append with ? for no existing params
-      expect(frames[1].querySelector('img').src).toBe(
-        '/assets/images/collage-catering.jpg?t=1234567890'
+      // Catering is default, should NOT be updated
+      expect(frames[1].querySelector('img').src).toBe('');
+      // Entertainment is custom, should be updated
+      expect(frames[2].querySelector('img').src).toBe(
+        'https://res.cloudinary.com/test/image/upload/entertainment.jpg?t=1234567890'
       );
+      // Photography is default, should NOT be updated
+      expect(frames[3].querySelector('img').src).toBe('');
+
+      // Verify console logs - 2 custom updates, 2 default skips
+      expect(mockConsole.log).toHaveBeenCalledTimes(4);
     });
   });
 
@@ -368,16 +386,37 @@ describe('Hero Collage Image Loader', () => {
 
       const frames = mockDocument.querySelectorAll('.collage .frame');
 
-      // All should be updated
+      // Should have 2 custom updates + 2 default skips = 4 log calls total
       expect(mockConsole.log).toHaveBeenCalledTimes(4);
 
-      // Check custom images have correct alt text
+      // Check custom images were updated
+      expect(frames[0].querySelector('img').src).toBe(
+        'https://res.cloudinary.com/test/image/upload/venue.jpg?t=1234567890'
+      );
       expect(frames[0].querySelector('img').alt).toBe('Venues - custom uploaded hero image');
+      
+      expect(frames[2].querySelector('img').src).toBe(
+        'https://res.cloudinary.com/test/image/upload/entertainment.jpg?t=1234567890'
+      );
       expect(frames[2].querySelector('img').alt).toBe('Entertainment - custom uploaded hero image');
 
-      // Check default images have correct alt text
-      expect(frames[1].querySelector('img').alt).toBe('Catering - hero image');
-      expect(frames[3].querySelector('img').alt).toBe('Photography - hero image');
+      // Check default images were NOT updated (still empty)
+      expect(frames[1].querySelector('img').src).toBe('');
+      expect(frames[3].querySelector('img').src).toBe('');
+
+      // Verify console logs
+      expect(mockConsole.log).toHaveBeenCalledWith(
+        'Updated hero collage image for venues with custom upload: https://res.cloudinary.com/test/image/upload/venue.jpg'
+      );
+      expect(mockConsole.log).toHaveBeenCalledWith(
+        'Using default image for catering, no DOM update needed'
+      );
+      expect(mockConsole.log).toHaveBeenCalledWith(
+        'Updated hero collage image for entertainment with custom upload: https://res.cloudinary.com/test/image/upload/entertainment.jpg'
+      );
+      expect(mockConsole.log).toHaveBeenCalledWith(
+        'Using default image for photography, no DOM update needed'
+      );
     });
   });
 });
