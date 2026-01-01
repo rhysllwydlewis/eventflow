@@ -148,6 +148,12 @@ class SupplierCard {
         align-items: center !important;
         justify-content: center !important;
         white-space: nowrap !important;
+        /* Ensure focusable for accessibility */
+        outline-offset: 2px !important;
+      }
+      
+      .supplier-card-btn:focus {
+        outline: 2px solid var(--accent, #13B6A2) !important;
       }
 
       .supplier-card-btn.primary {
@@ -227,6 +233,11 @@ class SupplierCard {
 
   renderBadges() {
     const badges = [];
+
+    // Test data badge (show first for visibility)
+    if (this.supplier.isTest) {
+      badges.push('<span class="badge badge-test-data">Test data</span>');
+    }
 
     // Founding supplier badge
     if (this.supplier.isFounding) {
@@ -336,26 +347,29 @@ class SupplierCard {
       </div>
 
       <div class="supplier-card-actions">
-        ${this.supplier.id ? `<button class="supplier-card-btn primary" data-supplier-id="${this.supplier.id}" data-action="view-profile">View Profile</button>` : ''}
-        ${this.supplier.id ? `<button class="supplier-card-btn secondary" data-supplier-id="${this.supplier.id}" data-action="view-packages">View All Packages</button>` : ''}
+        ${this.supplier.id ? `<a href="/supplier.html?id=${this.supplier.id}" class="supplier-card-btn primary" data-supplier-id="${this.supplier.id}" data-action="view-profile">View Profile</a>` : ''}
+        ${this.supplier.id ? `<a href="/supplier.html?id=${this.supplier.id}#packages" class="supplier-card-btn secondary" data-supplier-id="${this.supplier.id}" data-action="view-packages">View All Packages</a>` : ''}
       </div>
     `;
 
     this.container.innerHTML = '';
     this.container.appendChild(card);
 
-    // Add CSP-safe event listeners for buttons
+    // Event listeners are optional - anchors provide navigation without JS
+    // Keep listeners for potential enhanced functionality (e.g., analytics, transitions)
     const viewProfileBtn = card.querySelector('[data-action="view-profile"]');
     if (viewProfileBtn) {
       viewProfileBtn.addEventListener('click', () => {
-        window.location.href = `/supplier.html?id=${this.supplier.id}`;
+        // Allow default anchor behavior - no preventDefault
+        // Could add analytics or other enhancements here
       });
     }
 
     const viewPackagesBtn = card.querySelector('[data-action="view-packages"]');
     if (viewPackagesBtn) {
       viewPackagesBtn.addEventListener('click', () => {
-        window.location.href = `/supplier.html?id=${this.supplier.id}#packages`;
+        // Allow default anchor behavior - no preventDefault
+        // Could add analytics or other enhancements here
       });
     }
   }
