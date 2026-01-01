@@ -5,10 +5,12 @@ This guide explains how to set up introductory pricing for the Professional plan
 ## Overview
 
 The Professional plan offers introductory pricing:
+
 - **First 3 months**: £39/month
 - **After 3 months**: £59/month
 
 This is implemented using:
+
 1. A Stripe recurring Price ID set to £59/month
 2. A Stripe Coupon that gives £20 off for the first 3 months
 3. Stripe Checkout applies the coupon automatically
@@ -58,6 +60,7 @@ STRIPE_PRO_INTRO_COUPON_ID=pro-intro-3mo
 ```
 
 **Important Notes:**
+
 - Both variables **must** be set for intro pricing to work
 - If either is missing, the system will fall back to one-time payments
 - The coupon and price must be in the same Stripe account
@@ -91,6 +94,7 @@ When a user subscribes to the Professional plan:
 ### Fallback Behavior
 
 If intro pricing is **not** configured (missing env vars):
+
 - System falls back to one-time payment mode
 - Uses the displayed price directly
 - No recurring subscription is created
@@ -127,7 +131,8 @@ If intro pricing is **not** configured (missing env vars):
 
 **Problem**: Server logs show warning about partial configuration
 
-**Solution**: 
+**Solution**:
+
 - Check both `STRIPE_PRO_PRICE_ID` and `STRIPE_PRO_INTRO_COUPON_ID` are set
 - Verify no typos in variable names
 - Restart the application after setting variables
@@ -137,6 +142,7 @@ If intro pricing is **not** configured (missing env vars):
 **Problem**: Checkout shows full £59 price
 
 **Solution**:
+
 - Verify coupon ID is correct in Stripe Dashboard
 - Check coupon is not expired or redeemed limit reached
 - Ensure coupon currency matches price currency (GBP)
@@ -147,6 +153,7 @@ If intro pricing is **not** configured (missing env vars):
 **Problem**: Stripe returns error about invalid price ID
 
 **Solution**:
+
 - Verify price ID is correct and exists in Stripe
 - Check you're using correct mode (test vs live)
 - Ensure price is set to "recurring" (not one-time)
@@ -157,6 +164,7 @@ If intro pricing is **not** configured (missing env vars):
 **Problem**: User charged full price instead of intro price
 
 **Solution**:
+
 - Verify coupon is set to "repeating" for 3 months
 - Check coupon amount is £20.00 off
 - Ensure coupon is applied before subscription created
@@ -185,6 +193,7 @@ Before deploying to production:
 ## Support
 
 If you encounter issues:
+
 1. Check server logs for detailed error messages
 2. Review Stripe Dashboard for failed payment attempts
 3. Verify all environment variables are set correctly

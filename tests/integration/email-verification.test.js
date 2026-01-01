@@ -93,10 +93,13 @@ describe('Email Verification Integration Tests', () => {
       const response = await request(app)
         .post('/api/auth/register')
         .send({
+          firstName: 'Test',
+          lastName: 'User',
           name: 'Test User',
           email: 'test@example.com',
           password: 'TestPass123',
           role: 'customer',
+          location: 'London',
         })
         .expect(200);
 
@@ -128,10 +131,13 @@ describe('Email Verification Integration Tests', () => {
       const response = await request(app)
         .post('/api/auth/register')
         .send({
+          firstName: 'Test',
+          lastName: 'User',
           name: 'Test User',
           email: 'fail@example.com',
           password: 'TestPass123',
           role: 'customer',
+          location: 'London',
         })
         .expect(500);
 
@@ -158,10 +164,13 @@ describe('Email Verification Integration Tests', () => {
       const response = await request(app)
         .post('/api/auth/register')
         .send({
+          firstName: 'New',
+          lastName: 'User',
           name: 'New User',
           email: 'existing@example.com',
           password: 'TestPass123',
           role: 'customer',
+          location: 'London',
         })
         .expect(409);
 
@@ -324,10 +333,13 @@ describe('Email Verification Integration Tests', () => {
       const registerResponse = await request(app)
         .post('/api/auth/register')
         .send({
+          firstName: 'Complete',
+          lastName: 'Test User',
           name: 'Complete Test User',
           email: 'complete@example.com',
           password: 'TestPass123',
           role: 'customer',
+          location: 'London',
         })
         .expect(200);
 

@@ -140,8 +140,7 @@ router.get('/:id', authRequired, async (req, res) => {
 
     // Check access permissions
     const hasAccess =
-      userRole === 'admin' ||
-      (ticket.senderId === userId && ticket.senderType === userRole);
+      userRole === 'admin' || (ticket.senderId === userId && ticket.senderType === userRole);
 
     if (!hasAccess) {
       return res.status(403).json({ error: 'Access denied' });
@@ -176,8 +175,7 @@ router.put('/:id', authRequired, writeLimiter, async (req, res) => {
 
     // Check access permissions
     const hasAccess =
-      userRole === 'admin' ||
-      (ticket.senderId === userId && ticket.senderType === userRole);
+      userRole === 'admin' || (ticket.senderId === userId && ticket.senderType === userRole);
 
     if (!hasAccess) {
       return res.status(403).json({ error: 'Access denied' });

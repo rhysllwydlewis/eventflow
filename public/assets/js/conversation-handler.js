@@ -61,7 +61,7 @@
           console.log('✓ Real-time messaging connected');
           showToast('✓ Connected', 'success');
         },
-        onMessage: (data) => {
+        onMessage: data => {
           if (data.threadId === threadId) {
             messages.push(data.message);
             renderMessages();
@@ -71,15 +71,15 @@
             }
           }
         },
-        onDisconnect: (reason) => {
+        onDisconnect: reason => {
           console.warn('WebSocket disconnected:', reason);
         },
       });
 
       wsClient.joinRoom(`thread:${threadId}`);
 
-      wsClient.socket?.on('reaction:received', (data) => {
-        const msgIndex = messages.findIndex((m) => m.id === data.messageId);
+      wsClient.socket?.on('reaction:received', data => {
+        const msgIndex = messages.findIndex(m => m.id === data.messageId);
         if (msgIndex !== -1) {
           messages[msgIndex].reactions = data.reactions;
           renderMessages();
@@ -124,7 +124,7 @@
   }
 
   function setupKeyboardShortcuts() {
-    document.addEventListener('keydown', (e) => {
+    document.addEventListener('keydown', e => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
         const form = document.getElementById('composerForm');
         if (form && document.activeElement === document.getElementById('messageInput')) {
@@ -164,7 +164,7 @@
       }
 
       const data = await response.json();
-      const draft = data.drafts?.find((d) => d.id === draftId);
+      const draft = data.drafts?.find(d => d.id === draftId);
 
       if (draft) {
         const textarea = document.getElementById('messageInput');
@@ -202,7 +202,7 @@
   }
 
   function setupEventHandlers() {
-    document.getElementById('composerForm')?.addEventListener('submit', async (e) => {
+    document.getElementById('composerForm')?.addEventListener('submit', async e => {
       e.preventDefault();
       await sendMessage(false);
     });
@@ -254,7 +254,7 @@
       }
 
       const reader = new FileReader();
-      reader.onload = (event) => {
+      reader.onload = event => {
         const attachment = {
           name: file.name,
           size: file.size,
@@ -294,7 +294,7 @@
   }
 
   function removeAttachment(name) {
-    currentAttachments = currentAttachments.filter((a) => a.name !== name);
+    currentAttachments = currentAttachments.filter(a => a.name !== name);
 
     const preview = document.getElementById('attachmentPreview');
     if (currentAttachments.length === 0) {
@@ -304,7 +304,7 @@
       preview.innerHTML = '<div style="display: flex; flex-wrap: wrap; gap: 8px;"></div>';
       const container = preview.firstElementChild;
 
-      currentAttachments.forEach((att) => {
+      currentAttachments.forEach(att => {
         const item = document.createElement('div');
         item.style.cssText =
           'display: flex; align-items: center; gap: 6px; padding: 6px 10px; background: white; border-radius: 4px; font-size: 12px;';
@@ -493,9 +493,11 @@
     }
 
     container.innerHTML = messages
-      .map((message) => {
+      .map(message => {
         const isSent = message.fromUserId === currentUserId;
-        const senderName = isSent ? 'You' : thread?.supplierName || thread?.customerName || 'Unknown';
+        const senderName = isSent
+          ? 'You'
+          : thread?.supplierName || thread?.customerName || 'Unknown';
         const initial = senderName.charAt(0).toUpperCase();
         const time = formatTime(message.sentAt || message.createdAt);
         const fullDate = formatFullTimestamp(message.sentAt || message.createdAt);
@@ -507,7 +509,7 @@
         if (message.attachments && message.attachments.length > 0) {
           attachmentsHtml =
             '<div class="message-attachments" style="margin-top: 8px; display: flex; flex-direction: column; gap: 6px;">';
-          message.attachments.forEach((att) => {
+          message.attachments.forEach(att => {
             const isImage = att.type && att.type.startsWith('image/');
             if (isImage) {
               attachmentsHtml += `
@@ -533,7 +535,7 @@
         let reactionsHtml = '';
         if (message.reactions && message.reactions.length > 0) {
           const reactionCounts = {};
-          message.reactions.forEach((r) => {
+          message.reactions.forEach(r => {
             reactionCounts[r.emoji] = (reactionCounts[r.emoji] || 0) + 1;
           });
 
@@ -583,14 +585,14 @@
     container.scrollTop = container.scrollHeight;
 
     // Add event delegation for reaction buttons
-    container.querySelectorAll('[data-show-reaction-picker]').forEach((btn) => {
+    container.querySelectorAll('[data-show-reaction-picker]').forEach(btn => {
       btn.addEventListener('click', () => {
         const messageId = btn.getAttribute('data-show-reaction-picker');
         showReactionPicker(messageId);
       });
     });
 
-    container.querySelectorAll('[data-toggle-reaction]').forEach((btn) => {
+    container.querySelectorAll('[data-toggle-reaction]').forEach(btn => {
       btn.addEventListener('click', () => {
         const messageId = btn.getAttribute('data-toggle-reaction');
         const emoji = btn.getAttribute('data-emoji');
@@ -598,7 +600,7 @@
       });
     });
 
-    container.querySelectorAll('.message').forEach((messageEl) => {
+    container.querySelectorAll('.message').forEach(messageEl => {
       const hasReactions = messageEl.getAttribute('data-has-reactions') === 'true';
       const reactionsEl = messageEl.querySelector('.message-reactions');
 
@@ -651,7 +653,7 @@
         created: thread.createdAt,
         lastUpdated: thread.updatedAt,
       },
-      messages: messages.map((msg) => ({
+      messages: messages.map(msg => ({
         id: msg.id,
         from: msg.fromUserId === currentUserId ? 'You' : otherPartyName,
         text: msg.text,
@@ -675,7 +677,7 @@
 
     const csvLines = [
       'Timestamp,From,Message',
-      ...messages.map((msg) => {
+      ...messages.map(msg => {
         const from = msg.fromUserId === currentUserId ? 'You' : otherPartyName;
         const timestamp = formatFullTimestamp(msg.sentAt || msg.createdAt);
         const text = msg.text || '';
@@ -684,7 +686,10 @@
     ];
     const csv = csvLines.join('\n');
 
-    const format = prompt('Export format:\n1. JSON (full data)\n2. CSV (simple table)\n\nEnter 1 or 2:', '2');
+    const format = prompt(
+      'Export format:\n1. JSON (full data)\n2. CSV (simple table)\n\nEnter 1 or 2:',
+      '2'
+    );
 
     if (format === '1') {
       const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
@@ -788,7 +793,7 @@
       'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); z-index: 10000; display: flex; gap: 8px; flex-wrap: wrap; max-width: 300px;';
 
     const emojis = ['👍', '❤️', '😂', '😮', '😢', '🎉', '🔥', '👏'];
-    emojis.forEach((emoji) => {
+    emojis.forEach(emoji => {
       const btn = document.createElement('button');
       btn.textContent = emoji;
       btn.style.cssText =
@@ -836,7 +841,7 @@
 
       const data = await response.json();
 
-      const msgIndex = messages.findIndex((m) => m.id === messageId);
+      const msgIndex = messages.findIndex(m => m.id === messageId);
       if (msgIndex !== -1) {
         messages[msgIndex].reactions = data.reactions;
         renderMessages();

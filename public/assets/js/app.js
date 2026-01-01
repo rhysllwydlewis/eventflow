@@ -195,8 +195,11 @@ function supplierCard(s, user) {
   // Enhanced badge rendering for Pro and Pro+ tiers
   let proBadge = '';
   // Check subscriptionTier field first (new), then fall back to subscription.tier or isPro
-  const tier = s.subscriptionTier || (s.subscription && s.subscription.tier) || (s.isPro || s.pro ? 'pro' : null);
-  
+  const tier =
+    s.subscriptionTier ||
+    (s.subscription && s.subscription.tier) ||
+    (s.isPro || s.pro ? 'pro' : null);
+
   if (tier === 'pro_plus') {
     proBadge = '<span class="badge badge-pro-plus">Professional Plus</span>';
   } else if (tier === 'pro') {
@@ -394,7 +397,7 @@ async function initSupplier() {
     (pkgs.items || [])
       .map(
         p => `
-    <div class="card pack">
+    <div class="card pack" data-package-slug="${escapeHtml(p.slug || '')}" style="cursor: pointer;">
       <img src="${escapeHtml(p.image)}" alt="${escapeHtml(p.title)} image">
       <div>
         <h3>${escapeHtml(p.title)}</h3>
@@ -408,8 +411,11 @@ async function initSupplier() {
   // Enhanced badge rendering for Pro and Pro+ tiers
   let proBadge = '';
   // Check subscriptionTier field first (new), then fall back to subscription.tier or isPro
-  const tier = s.subscriptionTier || (s.subscription && s.subscription.tier) || (s.isPro || s.pro ? 'pro' : null);
-  
+  const tier =
+    s.subscriptionTier ||
+    (s.subscription && s.subscription.tier) ||
+    (s.isPro || s.pro ? 'pro' : null);
+
   if (tier === 'pro_plus') {
     proBadge = '<span class="badge badge-pro-plus">Professional Plus</span>';
   } else if (tier === 'pro') {
@@ -584,6 +590,26 @@ async function initSupplier() {
       });
     });
   }
+
+  // Add click handlers to package cards
+  const packageCards = document.querySelectorAll('.card.pack[data-package-slug]');
+  packageCards.forEach(card => {
+    const slug = card.dataset.packageSlug;
+    if (slug) {
+      card.addEventListener('click', () => {
+        window.location.href = `/package.html?slug=${encodeURIComponent(slug)}`;
+      });
+      // Make keyboard accessible
+      card.setAttribute('tabindex', '0');
+      card.setAttribute('role', 'button');
+      card.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          window.location.href = `/package.html?slug=${encodeURIComponent(slug)}`;
+        }
+      });
+    }
+  });
 }
 
 async function initPlan() {
@@ -1552,8 +1578,11 @@ async function initDashSupplier() {
         // Enhanced badge rendering for Pro and Pro+ tiers
         let proBadge = '';
         // Check subscriptionTier field first (new), then fall back to subscription.tier or isPro
-        const tier = s.subscriptionTier || (s.subscription && s.subscription.tier) || (s.isPro || s.pro ? 'pro' : null);
-        
+        const tier =
+          s.subscriptionTier ||
+          (s.subscription && s.subscription.tier) ||
+          (s.isPro || s.pro ? 'pro' : null);
+
         if (tier === 'pro_plus') {
           proBadge = '<span class="badge badge-pro-plus">Professional Plus</span>';
         } else if (tier === 'pro') {
@@ -2288,7 +2317,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const rolePills = document.querySelectorAll('.role-pill');
     const supplierFields = document.getElementById('supplier-fields');
     const companyInput = document.getElementById('reg-company');
-    
+
     if (rolePills && rolePills.length) {
       rolePills.forEach(btn => {
         btn.addEventListener('click', () => {
@@ -2297,7 +2326,7 @@ document.addEventListener('DOMContentLoaded', () => {
           if (roleHidden) {
             const val = btn.getAttribute('data-role') || 'customer';
             roleHidden.value = val;
-            
+
             // Show/hide supplier-specific fields
             if (supplierFields) {
               if (val === 'supplier') {
@@ -2501,12 +2530,12 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (_e) {
               /* Ignore localStorage errors */
             }
-            
+
             // Check for redirect parameter
             const urlParams = new URLSearchParams(window.location.search);
             const redirect = urlParams.get('redirect');
             const plan = urlParams.get('plan');
-            
+
             if (redirect) {
               // Preserve plan parameter if it exists
               let redirectUrl = redirect;
@@ -2574,13 +2603,13 @@ document.addEventListener('DOMContentLoaded', () => {
           const role = roleHidden && roleHidden.value ? roleHidden.value : 'customer';
           const marketingEl = document.getElementById('reg-marketing');
           const marketingOptIn = !!(marketingEl && marketingEl.checked);
-          
+
           // Profile fields
           const locationEl = document.getElementById('reg-location');
           const location = locationEl ? locationEl.value.trim() : '';
           const postcodeEl = document.getElementById('reg-postcode');
           const postcode = postcodeEl ? postcodeEl.value.trim() : '';
-          
+
           // Supplier-specific fields
           const companyEl = document.getElementById('reg-company');
           const company = companyEl ? companyEl.value.trim() : '';
@@ -2588,7 +2617,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const jobTitle = jobTitleEl ? jobTitleEl.value.trim() : '';
           const websiteEl = document.getElementById('reg-website');
           const website = websiteEl ? websiteEl.value.trim() : '';
-          
+
           // Social media fields
           const instagramEl = document.getElementById('reg-instagram');
           const facebookEl = document.getElementById('reg-facebook');
@@ -2600,7 +2629,7 @@ document.addEventListener('DOMContentLoaded', () => {
             twitter: twitterEl ? twitterEl.value.trim() : '',
             linkedin: linkedinEl ? linkedinEl.value.trim() : '',
           };
-          
+
           // Validate required fields
           if (!location) {
             if (regStatus) {
@@ -2612,7 +2641,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             return;
           }
-          
+
           if (role === 'supplier' && !company) {
             if (regStatus) {
               regStatus.textContent = 'Company name is required for suppliers';
@@ -2623,22 +2652,22 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             return;
           }
-          
-          const payload = { 
-            firstName, 
-            lastName, 
-            email, 
-            password, 
-            role, 
+
+          const payload = {
+            firstName,
+            lastName,
+            email,
+            password,
+            role,
             marketingOptIn,
             location,
             postcode,
             company,
             jobTitle,
             website,
-            socials
+            socials,
           };
-          
+
           const r = await fetch('/api/auth/register', {
             method: 'POST',
             headers: getHeadersWithCsrf({ 'Content-Type': 'application/json' }),
@@ -2673,13 +2702,13 @@ document.addEventListener('DOMContentLoaded', () => {
               try {
                 const formData = new FormData();
                 formData.append('avatar', avatarInput.files[0]);
-                
+
                 const uploadRes = await fetch('/api/profile/avatar', {
                   method: 'POST',
                   credentials: 'include',
                   body: formData,
                 });
-                
+
                 if (!uploadRes.ok) {
                   console.warn('Avatar upload failed, but account was created');
                 }
@@ -2687,12 +2716,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.warn('Avatar upload error:', uploadErr);
               }
             }
-            
+
             // Check if there's a redirect parameter
             const urlParams = new URLSearchParams(window.location.search);
             const redirect = urlParams.get('redirect');
             const plan = urlParams.get('plan');
-            
+
             if (redirect) {
               // Preserve plan parameter if it exists
               let redirectUrl = redirect;
@@ -2727,7 +2756,10 @@ document.addEventListener('DOMContentLoaded', () => {
                       });
                       const resendData = await resendResp.json();
                       if (resendResp.ok) {
-                        showNetworkError(resendData.message || 'Verification email sent!', 'success');
+                        showNetworkError(
+                          resendData.message || 'Verification email sent!',
+                          'success'
+                        );
                       } else {
                         showNetworkError(resendData.error || 'Failed to send email', 'error');
                       }

@@ -2,12 +2,14 @@
  * Seed Founding Suppliers Script
  * Creates 25-30 realistic founding supplier profiles with full data
  * to fix empty marketplace perception
+ * Now enhanced with Pexels API integration for profile photos
  */
 
 'use strict';
 
 const dbUnified = require('../db-unified');
 const { uid } = require('../store');
+const { getPexelsService } = require('./pexels-service');
 
 const UK_LOCATIONS = [
   'London',
@@ -454,6 +456,18 @@ function generatePackages(supplierId, supplierName, category, location) {
 
   const templates = packageTemplates[category] || [];
 
+  // Package image placeholders based on category
+  const packageImages = {
+    Venues: '/assets/images/placeholders/venue-package.svg',
+    Photography: '/assets/images/placeholders/photography-package.svg',
+    Catering: '/assets/images/placeholders/catering-package.svg',
+    Entertainment: '/assets/images/placeholders/entertainment-package.svg',
+    'Decor & Styling': '/assets/images/placeholders/decor-package.svg',
+    'Event Planning': '/assets/images/placeholders/planning-package.svg',
+  };
+
+  const defaultImage = packageImages[category] || '/assets/images/placeholders/package-event.svg';
+
   return templates.map((template, index) => ({
     id: uid('pkg'),
     supplierId,
@@ -461,12 +475,90 @@ function generatePackages(supplierId, supplierName, category, location) {
     slug: `${supplierName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${template.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
     description: template.description,
     price: template.price,
+    price_display: template.price, // Ensure price_display is set
+    image: defaultImage,
     location,
     categories: [category.toLowerCase().replace(/[^a-z0-9]+/g, '-')],
     approved: true,
     featured: index === 0,
     isFeatured: index === 0,
   }));
+}
+
+/**
+ * Fetch profile photo from Pexels based on category
+ * @param {string} category - Supplier category
+ * @returns {Promise<string>} Photo URL from Pexels
+ */
+async function fetchPexelsPhoto(category) {
+  const pexels = getPexelsService();
+
+  if (!pexels.isConfigured()) {
+    console.warn('⚠️  Pexels not configured, using placeholder images');
+    return null;
+  }
+
+  // Map category to search query
+  const searchQueries = {
+    Venues: 'wedding venue elegant',
+    Photography: 'professional photographer',
+    Catering: 'chef catering food',
+    Entertainment: 'musician band entertainment',
+    'Decor & Styling': 'florist wedding flowers',
+    'Event Planning': 'event planner professional',
+  };
+
+  const query = searchQueries[category] || 'professional business person';
+
+  try {
+    const results = await pexels.searchPhotos(query, 15, 1);
+    if (results.photos && results.photos.length > 0) {
+      // Pick a random photo from results
+      const randomPhoto = results.photos[Math.floor(Math.random() * results.photos.length)];
+      return randomPhoto.src.medium; // Use medium size for profile photos
+    }
+  } catch (error) {
+    console.warn(`⚠️  Could not fetch Pexels photo for ${category}:`, error.message);
+  }
+
+  return null;
+}
+
+/**
+ * Fetch package/venue photos from Pexels
+ * @param {string} category - Supplier category
+ * @param {number} count - Number of photos to fetch
+ * @returns {Promise<string[]>} Array of photo URLs
+ */
+async function fetchPexelsPhotos(category, count = 3) {
+  const pexels = getPexelsService();
+
+  if (!pexels.isConfigured()) {
+    return [];
+  }
+
+  const searchQueries = {
+    Venues: 'wedding venue hall',
+    Photography: 'wedding photography',
+    Catering: 'catering buffet food',
+    Entertainment: 'live music band',
+    'Decor & Styling': 'wedding flowers decoration',
+    'Event Planning': 'event planning decoration',
+  };
+
+  const query = searchQueries[category] || 'event';
+
+  try {
+    const results = await pexels.searchPhotos(query, Math.min(count * 2, 30), 1);
+    if (results.photos && results.photos.length > 0) {
+      // Return requested number of photos
+      return results.photos.slice(0, count).map(photo => photo.src.large);
+    }
+  } catch (error) {
+    console.warn(`⚠️  Could not fetch Pexels photos for ${category}:`, error.message);
+  }
+
+  return [];
 }
 
 /**
@@ -486,28 +578,63 @@ async function seedFoundingSuppliers() {
     const allPackages = [];
     const allReviews = [];
 
+    // Check if Pexels is configured
+    const pexels = getPexelsService();
+    const usePexels = pexels.isConfigured();
+
+    if (usePexels) {
+      console.log('📸 Pexels API configured - will fetch profile photos');
+    } else {
+      console.log('⚠️  Pexels API not configured - using placeholder images');
+    }
+
     // Generate suppliers for each category
     for (const [category, suppliers] of Object.entries(SUPPLIER_DATA)) {
+      console.log(`\n📦 Processing ${category} suppliers...`);
+
       for (const supplierData of suppliers) {
         const supplierId = uid('sup');
 
-        // Create supplier
+        // Fetch profile photo from Pexels if available
+        let logoUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(supplierData.name)}&size=200&background=0B8073&color=fff`;
+
+        if (usePexels) {
+          const pexelsLogo = await fetchPexelsPhoto(category);
+          if (pexelsLogo) {
+            logoUrl = pexelsLogo;
+            console.log(`  ✓ Fetched profile photo for ${supplierData.name}`);
+          }
+        }
+
+        // Fetch venue/package photos from Pexels if available
+        let photos = supplierData.photos || [];
+
+        if (usePexels && photos.length === 0) {
+          const pexelsPhotos = await fetchPexelsPhotos(category, 3);
+          if (pexelsPhotos.length > 0) {
+            photos = pexelsPhotos;
+            console.log(`  ✓ Fetched ${pexelsPhotos.length} photos for ${supplierData.name}`);
+          }
+        }
+
+        // Create supplier with complete data
         const supplier = {
           id: supplierId,
           ownerUserId: null,
           name: supplierData.name,
-          logo: `https://ui-avatars.com/api/?name=${encodeURIComponent(supplierData.name)}&size=200&background=0B8073&color=fff`,
+          logo: logoUrl,
           blurb: supplierData.blurb,
           category,
           location: supplierData.location,
           price_display: supplierData.price_display,
-          website: '',
+          website: `https://www.${supplierData.name.toLowerCase().replace(/[^a-z0-9]+/g, '')}.co.uk`,
           email: `hello@${supplierData.name.toLowerCase().replace(/[^a-z0-9]+/g, '')}.co.uk`,
           phone: `0${Math.floor(Math.random() * 9000000000) + 1000000000}`,
-          license: '',
-          amenities: supplierData.amenities,
-          maxGuests: supplierData.maxGuests,
-          photos: supplierData.photos,
+          license:
+            category === 'Venues' ? `LIC-${Math.floor(Math.random() * 900000) + 100000}` : '',
+          amenities: supplierData.amenities || [],
+          maxGuests: supplierData.maxGuests || null,
+          photos: photos,
           description_short: supplierData.description_short,
           description_long: supplierData.description_long,
           approved: true,
@@ -583,24 +710,52 @@ async function seedFoundingSuppliers() {
       },
     ];
 
+    console.log('\n📦 Processing additional suppliers...');
+
     for (const supplierData of additionalSuppliers) {
       const supplierId = uid('sup');
+
+      // Fetch profile photo from Pexels if available
+      let logoUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(supplierData.name)}&size=200&background=0B8073&color=fff`;
+
+      if (usePexels) {
+        const pexelsLogo = await fetchPexelsPhoto(supplierData.category);
+        if (pexelsLogo) {
+          logoUrl = pexelsLogo;
+          console.log(`  ✓ Fetched profile photo for ${supplierData.name}`);
+        }
+      }
+
+      // Fetch venue/package photos from Pexels if available
+      let photos = supplierData.photos || [];
+
+      if (usePexels && photos.length === 0) {
+        const pexelsPhotos = await fetchPexelsPhotos(supplierData.category, 3);
+        if (pexelsPhotos.length > 0) {
+          photos = pexelsPhotos;
+          console.log(`  ✓ Fetched ${pexelsPhotos.length} photos for ${supplierData.name}`);
+        }
+      }
+
       const supplier = {
         id: supplierId,
         ownerUserId: null,
         name: supplierData.name,
-        logo: `https://ui-avatars.com/api/?name=${encodeURIComponent(supplierData.name)}&size=200&background=0B8073&color=fff`,
+        logo: logoUrl,
         blurb: supplierData.blurb,
         category: supplierData.category,
         location: supplierData.location,
         price_display: supplierData.price_display,
-        website: '',
+        website: `https://www.${supplierData.name.toLowerCase().replace(/[^a-z0-9]+/g, '')}.co.uk`,
         email: `hello@${supplierData.name.toLowerCase().replace(/[^a-z0-9]+/g, '')}.co.uk`,
         phone: `0${Math.floor(Math.random() * 9000000000) + 1000000000}`,
-        license: '',
-        amenities: supplierData.amenities,
-        maxGuests: supplierData.maxGuests,
-        photos: supplierData.photos,
+        license:
+          supplierData.category === 'Venues'
+            ? `LIC-${Math.floor(Math.random() * 900000) + 100000}`
+            : '',
+        amenities: supplierData.amenities || [],
+        maxGuests: supplierData.maxGuests || null,
+        photos: photos,
         description_short: supplierData.description_short,
         description_long: supplierData.description_long,
         approved: true,

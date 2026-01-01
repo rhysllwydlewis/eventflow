@@ -60,21 +60,32 @@ function updateLastLogin(userId) {
  * Register a new user account
  */
 router.post('/register', authLimiter, async (req, res) => {
-  const { 
-    firstName, lastName, name, email, password, role,
-    location, postcode, company, jobTitle, website, socials 
+  const {
+    firstName,
+    lastName,
+    name,
+    email,
+    password,
+    role,
+    location,
+    postcode,
+    company,
+    jobTitle,
+    website,
+    socials,
   } = req.body || {};
-  
+
   // Support both new (firstName/lastName) and legacy (name) formats
   const userFirstName = firstName || '';
   const userLastName = lastName || '';
-  const userFullName = firstName && lastName 
-    ? `${firstName.trim()} ${lastName.trim()}`.trim() 
-    : (name || '').trim();
-  
+  const userFullName =
+    firstName && lastName ? `${firstName.trim()} ${lastName.trim()}`.trim() : (name || '').trim();
+
   // Required fields validation
   if (!userFullName || !email || !password) {
-    return res.status(400).json({ error: 'Missing required fields (name or firstName/lastName, email, and password required)' });
+    return res.status(400).json({
+      error: 'Missing required fields (name or firstName/lastName, email, and password required)',
+    });
   }
   if (!firstName || !lastName) {
     return res.status(400).json({ error: 'First name and last name are required' });
@@ -85,9 +96,9 @@ router.post('/register', authLimiter, async (req, res) => {
   if (!passwordOk(password)) {
     return res.status(400).json({ error: 'Weak password' });
   }
-  
+
   const roleFinal = role === 'supplier' || role === 'customer' ? role : 'customer';
-  
+
   // Role-specific required field validation
   if (!location) {
     return res.status(400).json({ error: 'Location is required' });
@@ -102,10 +113,14 @@ router.post('/register', authLimiter, async (req, res) => {
   }
 
   // Sanitize and validate optional URLs
-  const sanitizeUrl = (url) => {
-    if (!url) return undefined;
+  const sanitizeUrl = url => {
+    if (!url) {
+      return undefined;
+    }
     const trimmed = String(url).trim();
-    if (!trimmed) return undefined;
+    if (!trimmed) {
+      return undefined;
+    }
     // Basic URL validation
     if (!validator.isURL(trimmed, { require_protocol: false })) {
       return undefined;
@@ -114,19 +129,21 @@ router.post('/register', authLimiter, async (req, res) => {
   };
 
   // Parse socials object
-  const socialsParsed = socials ? {
-    instagram: sanitizeUrl(socials.instagram),
-    facebook: sanitizeUrl(socials.facebook),
-    twitter: sanitizeUrl(socials.twitter),
-    linkedin: sanitizeUrl(socials.linkedin),
-  } : {};
+  const socialsParsed = socials
+    ? {
+        instagram: sanitizeUrl(socials.instagram),
+        facebook: sanitizeUrl(socials.facebook),
+        twitter: sanitizeUrl(socials.twitter),
+        linkedin: sanitizeUrl(socials.linkedin),
+      }
+    : {};
 
   // Determine founder badge eligibility
   const founderLaunchTs = process.env.FOUNDER_LAUNCH_TS || '2026-01-01T00:00:00Z';
   const founderLaunchDate = new Date(founderLaunchTs);
   const founderEndDate = new Date(founderLaunchDate);
   founderEndDate.setMonth(founderEndDate.getMonth() + 6); // 6 months from launch
-  
+
   const now = new Date();
   const badges = [];
   if (now <= founderEndDate) {

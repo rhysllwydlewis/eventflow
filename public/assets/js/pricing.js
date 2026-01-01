@@ -80,7 +80,7 @@
       if (originalHref) {
         const url = new URL(originalHref, window.location.origin);
         const plan = url.searchParams.get('plan');
-        
+
         if (plan) {
           // Redirect to auth with plan and redirect parameters
           const authUrl = new URL('/auth.html', window.location.origin);

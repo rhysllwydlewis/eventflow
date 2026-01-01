@@ -46,7 +46,9 @@ const INTRO_PRICING_ENABLED = !!(STRIPE_PRO_PRICE_ID && STRIPE_PRO_INTRO_COUPON_
 if (INTRO_PRICING_ENABLED) {
   console.log('✅ Professional plan introductory pricing enabled');
 } else if (STRIPE_PRO_PRICE_ID || STRIPE_PRO_INTRO_COUPON_ID) {
-  console.warn('⚠️  Partial introductory pricing config detected. Both STRIPE_PRO_PRICE_ID and STRIPE_PRO_INTRO_COUPON_ID are required.');
+  console.warn(
+    '⚠️  Partial introductory pricing config detected. Both STRIPE_PRO_PRICE_ID and STRIPE_PRO_INTRO_COUPON_ID are required.'
+  );
 }
 
 /**
@@ -55,20 +57,26 @@ if (INTRO_PRICING_ENABLED) {
  * @returns {string} - 'pro', 'pro_plus', or 'free'
  */
 function getSubscriptionTier(planName) {
-  if (!planName) return 'free';
-  
+  if (!planName) {
+    return 'free';
+  }
+
   const lowerName = planName.toLowerCase();
-  
+
   // Check for Professional Plus (must come before Professional check)
-  if (lowerName.includes('professional plus') || lowerName.includes('pro plus') || lowerName.includes('pro+')) {
+  if (
+    lowerName.includes('professional plus') ||
+    lowerName.includes('pro plus') ||
+    lowerName.includes('pro+')
+  ) {
     return 'pro_plus';
   }
-  
+
   // Check for Professional/Pro
   if (lowerName.includes('professional') || lowerName.includes('pro')) {
     return 'pro';
   }
-  
+
   return 'free';
 }
 
@@ -176,11 +184,10 @@ router.post(
 
       // Check for Professional plan with intro pricing
       const isProfessionalPlan = planName && getSubscriptionTier(planName) === 'pro';
-      
-      const useIntroPricing = INTRO_PRICING_ENABLED && 
-                             type === 'subscription' && 
-                             isProfessionalPlan;
-      
+
+      const useIntroPricing =
+        INTRO_PRICING_ENABLED && type === 'subscription' && isProfessionalPlan;
+
       if (useIntroPricing) {
         console.log('✅ Applying introductory pricing for Professional plan');
       }
@@ -237,14 +244,14 @@ router.post(
       } else {
         // Subscription
         const effectivePriceId = useIntroPricing ? STRIPE_PRO_PRICE_ID : priceId;
-        
+
         sessionConfig.line_items = [
           {
             price: effectivePriceId,
             quantity: 1,
           },
         ];
-        
+
         // Apply introductory coupon if enabled
         if (useIntroPricing) {
           sessionConfig.discounts = [
@@ -253,9 +260,11 @@ router.post(
             },
           ];
           sessionConfig.metadata.introPricing = 'true';
-          console.log(`Applied intro coupon: ${STRIPE_PRO_INTRO_COUPON_ID} to price: ${effectivePriceId}`);
+          console.log(
+            `Applied intro coupon: ${STRIPE_PRO_INTRO_COUPON_ID} to price: ${effectivePriceId}`
+          );
         }
-        
+
         if (planName) {
           sessionConfig.metadata.planName = planName;
         }
@@ -634,14 +643,16 @@ async function handleSubscriptionUpdated(subscription) {
     const planName = updates.subscriptionDetails.planName;
     const tier = getSubscriptionTier(planName);
     const isActive = subscription.status === 'active';
-    
+
     const userUpdates = {
       isPro: isActive && (tier === 'pro' || tier === 'pro_plus'),
       proExpiresAt: new Date(subscription.current_period_end * 1000).toISOString(),
       subscriptionTier: isActive ? tier : 'free',
     };
     await dbUnified.updateOne('users', userId, userUpdates);
-    console.log(`User ${userId} subscription updated - tier: ${userUpdates.subscriptionTier}, active: ${isActive}`);
+    console.log(
+      `User ${userId} subscription updated - tier: ${userUpdates.subscriptionTier}, active: ${isActive}`
+    );
   }
 
   console.log(`Subscription ${subscription.id} updated`);
