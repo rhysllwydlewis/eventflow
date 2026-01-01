@@ -70,6 +70,10 @@ function getConfirmation(message) {
 
 /**
  * Clean test data from a collection
+ *
+ * Note: For large datasets (>10,000 items), this approach of reading entire
+ * collections into memory may be inefficient. Consider implementing database-level
+ * filtering using MongoDB queries if performance becomes an issue.
  */
 async function cleanCollection(collectionName) {
   try {

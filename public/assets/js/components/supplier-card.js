@@ -354,24 +354,6 @@ class SupplierCard {
 
     this.container.innerHTML = '';
     this.container.appendChild(card);
-
-    // Event listeners are optional - anchors provide navigation without JS
-    // Keep listeners for potential enhanced functionality (e.g., analytics, transitions)
-    const viewProfileBtn = card.querySelector('[data-action="view-profile"]');
-    if (viewProfileBtn) {
-      viewProfileBtn.addEventListener('click', () => {
-        // Allow default anchor behavior - no preventDefault
-        // Could add analytics or other enhancements here
-      });
-    }
-
-    const viewPackagesBtn = card.querySelector('[data-action="view-packages"]');
-    if (viewPackagesBtn) {
-      viewPackagesBtn.addEventListener('click', () => {
-        // Allow default anchor behavior - no preventDefault
-        // Could add analytics or other enhancements here
-      });
-    }
   }
 }
 

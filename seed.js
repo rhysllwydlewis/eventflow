@@ -300,9 +300,12 @@ async function seed(options = {}) {
     if (skipIfExists && existingSuppliers.length > 0) {
       console.log('Suppliers already exist, skipping supplier seed');
     } else if (!Array.isArray(existingSuppliers) || existingSuppliers.length === 0) {
-      // Generate seed batch identifier for this seeding run
+      // Generate seed batch identifier for this seeding run (shared with packages)
       const seedBatch = `seed_${Date.now()}`;
       const now = new Date().toISOString();
+
+      // Store batch ID for use in package seeding
+      global.__SEED_BATCH__ = seedBatch;
 
       // Fetch Pexels photos if API key is available
       const barnLogo = await getPexelsPhoto(
@@ -419,7 +422,7 @@ async function seed(options = {}) {
       console.log('Packages already exist, skipping package seed');
     } else if (!Array.isArray(existingPackages) || existingPackages.length === 0) {
       // Use same seed batch from suppliers if available, or generate new one
-      const seedBatch = `seed_${Date.now()}`;
+      const seedBatch = global.__SEED_BATCH__ || `seed_${Date.now()}`;
       const now = new Date().toISOString();
 
       // Fetch Pexels photos if API key is available
