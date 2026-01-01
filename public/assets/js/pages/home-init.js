@@ -387,29 +387,53 @@ async function loadHeroCollageImages() {
       // Check if this is a custom uploaded image (not default)
       const isCustomImage = !imageUrl.includes('/assets/images/collage-');
 
-      // Only update DOM for custom images - default images are already in HTML
-      if (!isCustomImage) {
-        console.log(`Using default image for ${category}, no DOM update needed`);
+      // Get the current image URL (without query params for comparison)
+      const currentImageUrl = imgElement.src.split('?')[0];
+      const normalizedImageUrl = imageUrl.split('?')[0];
+
+      // Determine if we need to update based on URL comparison
+      const needsUpdate = !currentImageUrl.endsWith(normalizedImageUrl.split('/').pop());
+
+      // Skip update if URL matches and it's a default image
+      if (!needsUpdate && !isCustomImage) {
+        console.log(`Image already correct for ${category}, skipping update`);
         return;
       }
 
       try {
         // Add cache busting to force fresh load of custom images
-        const cacheBustedUrl = imageUrl.includes('?')
-          ? `${imageUrl}&t=${cacheBustTimestamp}`
-          : `${imageUrl}?t=${cacheBustTimestamp}`;
+        const cacheBustedUrl =
+          isCustomImage && imageUrl.includes('?')
+            ? `${imageUrl}&t=${cacheBustTimestamp}`
+            : isCustomImage
+              ? `${imageUrl}?t=${cacheBustTimestamp}`
+              : imageUrl;
 
-        // Update the image source with custom uploaded image
+        // Update the image source
         imgElement.src = cacheBustedUrl;
-        imgElement.alt = `${category.charAt(0).toUpperCase() + category.slice(1)} - custom uploaded hero image`;
+        imgElement.alt = `${category.charAt(0).toUpperCase() + category.slice(1)} - ${isCustomImage ? 'custom uploaded' : 'default'} hero image`;
 
-        // Remove the <source> element since we're using a single uploaded image
+        // Handle <source> element for responsive images
         const sourceElement = pictureElement.querySelector('source');
-        if (sourceElement) {
-          sourceElement.remove();
+        if (isCustomImage) {
+          // For custom images, remove source element to use single img
+          if (sourceElement) {
+            sourceElement.remove();
+            console.log(`Removed <source> element for ${category} (using custom image)`);
+          }
+        } else if (!sourceElement) {
+          // For default images, recreate the source element if it was removed
+          const newSource = document.createElement('source');
+          newSource.type = 'image/webp';
+          // Convert .jpg to .webp for the source
+          newSource.srcset = imageUrl.replace('.jpg', '.webp');
+          pictureElement.insertBefore(newSource, imgElement);
+          console.log(`Restored <source> element for ${category} (using default image)`);
         }
 
-        console.log(`Updated hero collage image for ${category} with custom upload: ${imageUrl}`);
+        console.log(
+          `Updated hero collage image for ${category} with ${isCustomImage ? 'custom upload' : 'default image'}: ${imageUrl}`
+        );
       } catch (updateError) {
         console.error(`Failed to update image for category ${category}:`, updateError);
       }
