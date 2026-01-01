@@ -29,6 +29,9 @@ const UK_LOCATIONS = [
   'Cambridge',
 ];
 
+// Founding supplier data template
+// Note: Photos arrays are empty - real suppliers will upload their own photos
+// or images can be fetched from Pexels API if PEXELS_API_KEY is configured
 const SUPPLIER_DATA = {
   Venues: [
     {
@@ -41,10 +44,7 @@ const SUPPLIER_DATA = {
       price_display: 'From £4,500',
       maxGuests: 150,
       amenities: ['Parking', 'Garden', 'Accommodation', 'Licensed', 'Catering'],
-      photos: [
-        'https://images.unsplash.com/photo-1519167758481-83f29da8c687',
-        'https://images.unsplash.com/photo-1464366400600-7168b8af9bc3',
-      ],
+      photos: [],
     },
     {
       name: 'Riverside Pavilion',
@@ -56,10 +56,7 @@ const SUPPLIER_DATA = {
       price_display: 'From £3,200',
       maxGuests: 120,
       amenities: ['Parking', 'City Views', 'Licensed', 'AV Equipment', 'Accessible'],
-      photos: [
-        'https://images.unsplash.com/photo-1478146896981-b80fe463b330',
-        'https://images.unsplash.com/photo-1470337458703-46ad1756a187',
-      ],
+      photos: [],
     },
     {
       name: 'The Castle Keep',
@@ -71,10 +68,7 @@ const SUPPLIER_DATA = {
       price_display: 'From £5,000',
       maxGuests: 100,
       amenities: ['Parking', 'Historic Setting', 'Accommodation', 'Licensed', 'Exclusive Use'],
-      photos: [
-        'https://images.unsplash.com/photo-1543730535-92d5f034b40e',
-        'https://images.unsplash.com/photo-1460472178825-e5240623afd5',
-      ],
+      photos: [],
     },
     {
       name: 'Botanical Glasshouse',
@@ -86,10 +80,7 @@ const SUPPLIER_DATA = {
       price_display: 'From £2,800',
       maxGuests: 80,
       amenities: ['Garden', 'Natural Light', 'Licensed', 'Catering', 'Unique Setting'],
-      photos: [
-        'https://images.unsplash.com/photo-1522057384400-681b421cfebc',
-        'https://images.unsplash.com/photo-1528605248644-14dd04022da1',
-      ],
+      photos: [],
     },
   ],
   Photography: [
@@ -103,10 +94,7 @@ const SUPPLIER_DATA = {
       price_display: 'From £1,800',
       maxGuests: null,
       amenities: ['Full Day Coverage', 'Engagement Shoot', 'Online Gallery', 'Print Rights'],
-      photos: [
-        'https://images.unsplash.com/photo-1606216794074-735e91aa2c92',
-        'https://images.unsplash.com/photo-1511285560929-80b456fea0bc',
-      ],
+      photos: [],
     },
     {
       name: 'James Wilson Photography',
@@ -118,10 +106,7 @@ const SUPPLIER_DATA = {
       price_display: 'From £2,200',
       maxGuests: null,
       amenities: ['8 Hour Coverage', 'Second Shooter', 'USB & Online Gallery', 'Pre-Wedding Shoot'],
-      photos: [
-        'https://images.unsplash.com/photo-1519741497674-611481863552',
-        'https://images.unsplash.com/photo-1606800052052-a08af7148866',
-      ],
+      photos: [],
     },
     {
       name: 'Sarah Mitchell Photo & Film',
@@ -139,10 +124,7 @@ const SUPPLIER_DATA = {
         'Full Day Coverage',
         'Online Galleries',
       ],
-      photos: [
-        'https://images.unsplash.com/photo-1519741497674-611481863552',
-        'https://images.unsplash.com/photo-1511285560929-80b456fea0bc',
-      ],
+      photos: [],
     },
   ],
   Catering: [
@@ -156,10 +138,7 @@ const SUPPLIER_DATA = {
       price_display: 'From £65 per head',
       maxGuests: 200,
       amenities: ['Dietary Requirements', 'Tastings', 'Wait Staff', 'Bar Service', 'Sustainable'],
-      photos: [
-        'https://images.unsplash.com/photo-1555244162-803834f70033',
-        'https://images.unsplash.com/photo-1544025162-d76694265947',
-      ],
+      photos: [],
     },
     {
       name: 'Spice Route Catering',
@@ -177,10 +156,7 @@ const SUPPLIER_DATA = {
         'Buffet & Plated',
         'Cultural Menus',
       ],
-      photos: [
-        'https://images.unsplash.com/photo-1596040033229-a0b3b83c3d99',
-        'https://images.unsplash.com/photo-1567337710282-00832b415979',
-      ],
+      photos: [],
     },
     {
       name: 'Coastal Seafood Co.',
@@ -192,10 +168,7 @@ const SUPPLIER_DATA = {
       price_display: 'From £70 per head',
       maxGuests: 150,
       amenities: ['Fresh Seafood', 'Wine Pairing', 'Tastings', 'Outdoor BBQ', 'Wait Staff'],
-      photos: [
-        'https://images.unsplash.com/photo-1559339352-11d035aa65de',
-        'https://images.unsplash.com/photo-1615870216519-2f9fa575fa5c',
-      ],
+      photos: [],
     },
   ],
   Entertainment: [
@@ -209,10 +182,7 @@ const SUPPLIER_DATA = {
       price_display: 'From £2,500',
       maxGuests: null,
       amenities: ['PA System', 'Lighting', 'DJ Between Sets', 'First Dance', 'Song Requests'],
-      photos: [
-        'https://images.unsplash.com/photo-1470225620780-dba8ba36b745',
-        'https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae',
-      ],
+      photos: [],
     },
     {
       name: 'DJ Marcus Cole',
@@ -230,10 +200,7 @@ const SUPPLIER_DATA = {
         'Ceremony Sound',
         'Wireless Mics',
       ],
-      photos: [
-        'https://images.unsplash.com/photo-1571266028243-d220bb1a8ffc',
-        'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7',
-      ],
+      photos: [],
     },
     {
       name: 'String Quartet Elegance',
@@ -245,10 +212,7 @@ const SUPPLIER_DATA = {
       price_display: 'From £600',
       maxGuests: null,
       amenities: ['Classical Repertoire', 'Modern Arrangements', 'Ceremony Music', '2-3 Hours'],
-      photos: [
-        'https://images.unsplash.com/photo-1519892300165-cb5542fb47c7',
-        'https://images.unsplash.com/photo-1507838153414-b4b713384a76',
-      ],
+      photos: [],
     },
   ],
   'Decor & Styling': [
@@ -268,10 +232,7 @@ const SUPPLIER_DATA = {
         'Centerpieces',
         'Setup & Breakdown',
       ],
-      photos: [
-        'https://images.unsplash.com/photo-1519225421980-715cb0215aed',
-        'https://images.unsplash.com/photo-1525310072745-f49212b5ac6d',
-      ],
+      photos: [],
     },
     {
       name: 'Luna Event Styling',
@@ -283,10 +244,7 @@ const SUPPLIER_DATA = {
       price_display: 'From £2,000',
       maxGuests: 200,
       amenities: ['Full Styling', 'Prop Hire', 'Lighting', 'Table Settings', 'Setup Team'],
-      photos: [
-        'https://images.unsplash.com/photo-1464366400600-7168b8af9bc3',
-        'https://images.unsplash.com/photo-1511795409834-ef04bbd61622',
-      ],
+      photos: [],
     },
   ],
   'Event Planning': [
@@ -306,10 +264,7 @@ const SUPPLIER_DATA = {
         'Budget Tracking',
         'Day Coordination',
       ],
-      photos: [
-        'https://images.unsplash.com/photo-1522673607200-164d1b6ce486',
-        'https://images.unsplash.com/photo-1519225421980-715cb0215aed',
-      ],
+      photos: [],
     },
     {
       name: 'Northern Events Ltd',
@@ -327,10 +282,7 @@ const SUPPLIER_DATA = {
         'Day-of Coordination',
         'Corporate Events',
       ],
-      photos: [
-        'https://images.unsplash.com/photo-1464366400600-7168b8af9bc3',
-        'https://images.unsplash.com/photo-1511578314322-379afb476865',
-      ],
+      photos: [],
     },
   ],
 };
@@ -687,10 +639,7 @@ async function seedFoundingSuppliers() {
         price_display: 'From £2,500',
         maxGuests: 100,
         amenities: ['Parking', 'Urban Setting', 'Licensed', 'Flexible Space'],
-        photos: [
-          'https://images.unsplash.com/photo-1519167758481-83f29da8c687',
-          'https://images.unsplash.com/photo-1464366400600-7168b8af9bc3',
-        ],
+      photos: [],
       },
       {
         category: 'Photography',
@@ -703,10 +652,7 @@ async function seedFoundingSuppliers() {
         price_display: 'From £1,600',
         maxGuests: null,
         amenities: ['Full Day Coverage', 'Second Shooter', 'Online Gallery', 'Print Rights'],
-        photos: [
-          'https://images.unsplash.com/photo-1606216794074-735e91aa2c92',
-          'https://images.unsplash.com/photo-1511285560929-80b456fea0bc',
-        ],
+      photos: [],
       },
     ];
 
