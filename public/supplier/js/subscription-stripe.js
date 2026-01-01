@@ -17,7 +17,7 @@ const PLANS = {
     billingCycle: 'monthly',
     trialDays: 14,
     introductoryPrice: 39.0,
-    regularPrice: 69.0,
+    regularPrice: 59.0,
     introductoryMonths: 3,
     features: [
       'Pro supplier badge on profile',
@@ -52,6 +52,7 @@ const PLANS = {
 
 let currentUser = null;
 let currentSubscription = null;
+let stripeConfig = null; // Store Stripe configuration
 
 /**
  * Initialize subscription page
@@ -93,6 +94,10 @@ async function initSubscriptionPage() {
     // Load current subscription status
     console.log('[Subscription] Loading subscription status...');
     await loadSubscriptionStatus();
+
+    // Load Stripe configuration
+    console.log('[Subscription] Loading Stripe configuration...');
+    await loadStripeConfig();
 
     // Render subscription plans
     console.log('[Subscription] Rendering subscription plans...');
@@ -187,6 +192,33 @@ async function loadSubscriptionStatus() {
     console.error('[Subscription] Error loading subscription:', error);
     console.error('[Subscription] Error stack:', error.stack);
     // Don't show error - user might not have subscription yet
+  }
+}
+
+/**
+ * Load Stripe configuration
+ */
+async function loadStripeConfig() {
+  try {
+    console.log('[Subscription] Fetching Stripe configuration from API...');
+    const response = await fetch('/api/payments/config', {
+      credentials: 'include',
+    });
+
+    console.log('[Subscription] Stripe config response:', response.status);
+
+    if (!response.ok) {
+      console.error('[Subscription] Failed to load Stripe config:', response.status);
+      return;
+    }
+
+    const data = await response.json();
+    console.log('[Subscription] Stripe config loaded, intro pricing enabled:', data.introPricingEnabled);
+    
+    stripeConfig = data;
+  } catch (error) {
+    console.error('[Subscription] Error loading Stripe config:', error);
+    console.error('[Subscription] Error stack:', error.stack);
   }
 }
 
@@ -324,11 +356,36 @@ async function handleSubscribe(planId) {
   }
 
   try {
-    // For now, use one-time payment
-    // In production, you'd create a Stripe Price ID for each plan
-    const amount = Math.round(plan.price * 100); // Convert to pence
+    // Check if this is the Professional plan and intro pricing is enabled
+    const isProfessionalPlan = plan.name.toLowerCase().includes('professional') && 
+                                !plan.name.toLowerCase().includes('plus');
+    const useIntroPricing = stripeConfig?.introPricingEnabled && 
+                           stripeConfig?.proPriceId && 
+                           isProfessionalPlan;
     
-    console.log('[Subscription] Creating checkout session with amount:', amount, 'pence');
+    let requestBody;
+    
+    if (useIntroPricing) {
+      // Use subscription with intro pricing
+      console.log('[Subscription] Using subscription mode with intro pricing');
+      requestBody = {
+        type: 'subscription',
+        priceId: stripeConfig.proPriceId,
+        planName: plan.name,
+      };
+    } else {
+      // Fallback to one-time payment
+      console.log('[Subscription] Using one-time payment mode (fallback)');
+      const amount = Math.round(plan.price * 100); // Convert to pence
+      requestBody = {
+        type: 'one_time',
+        amount: amount,
+        currency: 'gbp',
+        planName: plan.name,
+      };
+    }
+    
+    console.log('[Subscription] Creating checkout session with:', requestBody);
 
     const response = await fetch('/api/payments/create-checkout-session', {
       method: 'POST',
@@ -336,12 +393,7 @@ async function handleSubscribe(planId) {
         'Content-Type': 'application/json',
       },
       credentials: 'include',
-      body: JSON.stringify({
-        type: 'one_time',
-        amount: amount,
-        currency: 'gbp',
-        planName: plan.name,
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     console.log('[Subscription] Checkout session response status:', response.status);

@@ -38,6 +38,17 @@ const STRIPE_SUCCESS_URL =
 const STRIPE_CANCEL_URL =
   process.env.STRIPE_CANCEL_URL || 'http://localhost:3000/payment-cancel.html';
 
+// Introductory pricing configuration
+const STRIPE_PRO_PRICE_ID = process.env.STRIPE_PRO_PRICE_ID || '';
+const STRIPE_PRO_INTRO_COUPON_ID = process.env.STRIPE_PRO_INTRO_COUPON_ID || '';
+const INTRO_PRICING_ENABLED = !!(STRIPE_PRO_PRICE_ID && STRIPE_PRO_INTRO_COUPON_ID);
+
+if (INTRO_PRICING_ENABLED) {
+  console.log('✅ Professional plan introductory pricing enabled');
+} else if (STRIPE_PRO_PRICE_ID || STRIPE_PRO_INTRO_COUPON_ID) {
+  console.warn('⚠️  Partial introductory pricing config detected. Both STRIPE_PRO_PRICE_ID and STRIPE_PRO_INTRO_COUPON_ID are required.');
+}
+
 /**
  * Helper: Check if Stripe is enabled
  */
@@ -140,6 +151,20 @@ router.post(
         return res.status(400).json({ error: 'Price ID is required for subscriptions.' });
       }
 
+      // Check for Professional plan with intro pricing
+      const isProfessionalPlan = planName && (
+        planName.toLowerCase().includes('professional') || 
+        planName.toLowerCase().includes('pro')
+      ) && !planName.toLowerCase().includes('plus');
+      
+      const useIntroPricing = INTRO_PRICING_ENABLED && 
+                             type === 'subscription' && 
+                             isProfessionalPlan;
+      
+      if (useIntroPricing) {
+        console.log('✅ Applying introductory pricing for Professional plan');
+      }
+
       // Get or create Stripe customer
       let customer;
       const existingPayments = await dbUnified.find('payments', { userId: user.id });
@@ -191,12 +216,26 @@ router.post(
         ];
       } else {
         // Subscription
+        const effectivePriceId = useIntroPricing ? STRIPE_PRO_PRICE_ID : priceId;
+        
         sessionConfig.line_items = [
           {
-            price: priceId,
+            price: effectivePriceId,
             quantity: 1,
           },
         ];
+        
+        // Apply introductory coupon if enabled
+        if (useIntroPricing) {
+          sessionConfig.discounts = [
+            {
+              coupon: STRIPE_PRO_INTRO_COUPON_ID,
+            },
+          ];
+          sessionConfig.metadata.introPricing = 'true';
+          console.log(`Applied intro coupon: ${STRIPE_PRO_INTRO_COUPON_ID} to price: ${effectivePriceId}`);
+        }
+        
         if (planName) {
           sessionConfig.metadata.planName = planName;
         }
@@ -719,6 +758,8 @@ router.get('/config', authRequired, async (req, res) => {
 
     res.json({
       publishableKey: publishableKey,
+      introPricingEnabled: INTRO_PRICING_ENABLED,
+      proPriceId: STRIPE_PRO_PRICE_ID || null,
     });
   } catch (error) {
     console.error('Error getting payment config:', error);
