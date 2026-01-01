@@ -1411,7 +1411,6 @@
       setupNavButton('userManagementBtn', '/admin-users.html');
       setupNavButton('packageManagementBtn', '/admin-packages.html');
       setupNavButton('homepageChangesBtn', '/admin-homepage.html');
-      setupNavButton('heroCollageBtn', '/admin-hero-collage.html');
       setupNavButton('supportTicketsBtn', '/admin-tickets.html');
       setupNavButton('paymentsAnalyticsBtn', '/admin-payments.html');
       setupNavButton('reportsQueueBtn', '/admin-reports.html');
