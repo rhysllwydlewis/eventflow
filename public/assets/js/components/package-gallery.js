@@ -177,6 +177,32 @@ class PackageGallery {
     document.head.appendChild(style);
   }
 
+  /**
+   * Validate and sanitize image URL
+   * Replace blocked sources (unsplash, etc.) with placeholder
+   */
+  sanitizeImageUrl(url) {
+    if (!url || typeof url !== 'string') {
+      return PLACEHOLDER_IMAGE;
+    }
+
+    // Check if URL is from a blocked or problematic source
+    const blockedDomains = ['source.unsplash.com', 'unsplash.com'];
+    try {
+      const urlObj = new URL(url);
+      if (blockedDomains.some(domain => urlObj.hostname.includes(domain))) {
+        console.warn(`Image from blocked domain ${urlObj.hostname}, using placeholder`);
+        return PLACEHOLDER_IMAGE;
+      }
+    } catch (e) {
+      // Invalid URL, use placeholder
+      console.warn(`Invalid image URL: ${url}, using placeholder`);
+      return PLACEHOLDER_IMAGE;
+    }
+
+    return url;
+  }
+
   render() {
     if (!this.images || this.images.length === 0) {
       this.container.innerHTML = `
@@ -201,7 +227,11 @@ class PackageGallery {
       if (index === 0) {
         image.classList.add('active');
       }
-      image.src = img.url || img;
+
+      // Sanitize the image URL before setting src
+      const originalUrl = img.url || img;
+      const sanitizedUrl = this.sanitizeImageUrl(originalUrl);
+      image.src = sanitizedUrl;
       image.alt = img.alt || `Gallery image ${index + 1} of ${this.images.length}`;
       image.loading = 'lazy'; // Enable native lazy loading
 
@@ -219,8 +249,11 @@ class PackageGallery {
       // Add error handling for image loading
       image.onerror = () => {
         console.warn(`Failed to load gallery image: ${image.src}`);
-        image.src = PLACEHOLDER_IMAGE;
-        image.alt = 'Image failed to load - placeholder shown';
+        // Only try to fallback if we're not already showing the placeholder
+        if (image.src !== PLACEHOLDER_IMAGE && !image.src.includes('placeholder')) {
+          image.src = PLACEHOLDER_IMAGE;
+          image.alt = 'Image failed to load - placeholder shown';
+        }
       };
 
       mainContainer.appendChild(image);
@@ -265,7 +298,11 @@ class PackageGallery {
         if (index === 0) {
           thumb.classList.add('active');
         }
-        thumb.src = img.url || img;
+
+        // Sanitize thumbnail URL
+        const originalUrl = img.url || img;
+        const sanitizedUrl = this.sanitizeImageUrl(originalUrl);
+        thumb.src = sanitizedUrl;
         thumb.alt = `Thumbnail ${index + 1} of ${this.images.length}`;
         thumb.setAttribute('role', 'button');
         thumb.setAttribute('tabindex', '0');
@@ -274,7 +311,10 @@ class PackageGallery {
         // Add error handling for thumbnail loading
         thumb.onerror = () => {
           console.warn(`Failed to load thumbnail: ${thumb.src}`);
-          thumb.src = PLACEHOLDER_IMAGE;
+          // Only try to fallback if we're not already showing the placeholder
+          if (thumb.src !== PLACEHOLDER_IMAGE && !thumb.src.includes('placeholder')) {
+            thumb.src = PLACEHOLDER_IMAGE;
+          }
         };
 
         thumb.addEventListener('click', () => this.goToImage(index));
