@@ -310,6 +310,57 @@ GET /api/admin/suppliers
 }
 ```
 
+### Import Demo Suppliers
+
+```http
+POST /api/admin/suppliers/import-demo
+X-CSRF-Token: <token>
+```
+
+**Description:**
+
+Imports demo suppliers from `data/suppliers.json` into the database. This operation is idempotent - suppliers with matching IDs will be updated rather than duplicated.
+
+**Protection:**
+
+- Requires admin authentication
+- Requires CSRF token
+- Requires admin role
+
+**Response:**
+
+```json
+{
+  "ok": true,
+  "inserted": 2,
+  "updated": 1,
+  "total": 3,
+  "message": "Successfully imported 3 demo supplier(s): 2 new, 1 updated"
+}
+```
+
+**Error Responses:**
+
+```json
+{
+  "error": "Demo suppliers file not found at data/suppliers.json"
+}
+```
+
+```json
+{
+  "error": "Failed to parse demo suppliers file: Unexpected token"
+}
+```
+
+**Notes:**
+
+- Uses supplier `id` field as the unique identifier
+- Existing suppliers with the same ID are updated with new data
+- New suppliers are inserted with `createdAt` and `updatedAt` timestamps
+- Creates an audit log entry for the import operation
+- Safe to run multiple times - will not create duplicates
+
 ### Edit Supplier Profile
 
 ```http

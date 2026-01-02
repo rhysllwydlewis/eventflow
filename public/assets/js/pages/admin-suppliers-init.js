@@ -82,8 +82,9 @@
     document.getElementById('prevPageBtn')?.addEventListener('click', () => changePage(-1));
     document.getElementById('nextPageBtn')?.addEventListener('click', () => changePage(1));
     
-    // Export
+    // Export and Import
     document.getElementById('exportSuppliersBtn')?.addEventListener('click', exportSuppliers);
+    document.getElementById('importDemoSuppliersBtn')?.addEventListener('click', importDemoSuppliers);
   }
 
   // Handle filters
@@ -308,6 +309,28 @@
     } catch (error) {
       console.error('Error applying smart tags:', error);
       showToast(`Failed to apply smart tags: ${error.message}`, 'error');
+    }
+  }
+
+  // Import demo suppliers
+  async function importDemoSuppliers() {
+    if (!confirm('Import demo suppliers from data/suppliers.json?\n\nThis will add or update demo suppliers in the database. Existing suppliers with the same ID will be updated.')) {
+      return;
+    }
+
+    try {
+      showToast('Importing demo suppliers...', 'info');
+
+      const result = await AdminShared.api('/api/admin/suppliers/import-demo', 'POST', {});
+      
+      showToast(result.message || `Successfully imported ${result.total} supplier(s)`, 'success');
+      
+      // Reload suppliers to show the imported ones
+      await loadSuppliers();
+      renderTable();
+    } catch (error) {
+      console.error('Error importing demo suppliers:', error);
+      showToast(`Failed to import demo suppliers: ${error.message}`, 'error');
     }
   }
 
