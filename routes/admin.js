@@ -385,10 +385,10 @@ router.post(
     try {
       // Read demo suppliers from JSON file
       const demoSuppliersPath = path.join(__dirname, '../data/suppliers.json');
-      
+
       if (!fs.existsSync(demoSuppliersPath)) {
-        return res.status(500).json({ 
-          error: 'Demo suppliers file not found at data/suppliers.json' 
+        return res.status(500).json({
+          error: 'Demo suppliers file not found at data/suppliers.json',
         });
       }
 
@@ -398,26 +398,29 @@ router.post(
         demoSuppliers = JSON.parse(fileContent);
       } catch (parseError) {
         console.error('Error parsing suppliers.json:', parseError);
-        return res.status(500).json({ 
-          error: 'Failed to parse demo suppliers file: ' + parseError.message 
+        return res.status(500).json({
+          error: `Failed to parse demo suppliers file: ${parseError.message}`,
         });
       }
 
       if (!Array.isArray(demoSuppliers)) {
-        return res.status(500).json({ 
-          error: 'Invalid demo suppliers format: expected an array' 
+        return res.status(500).json({
+          error: 'Invalid demo suppliers format: expected an array',
         });
       }
 
       // Get current suppliers from database
       const existingSuppliers = await dbUnified.read('suppliers');
-      
-      // Create a map of existing suppliers by ID for quick lookup
-      const existingById = new Map(existingSuppliers.map(s => [s.id, s]));
-      
+
+      // Create a map of existing suppliers by ID for quick lookup with their indices
+      const existingById = new Map();
+      existingSuppliers.forEach((supplier, index) => {
+        existingById.set(supplier.id, index);
+      });
+
       let insertedCount = 0;
       let updatedCount = 0;
-      
+
       // Process each demo supplier (idempotent upsert)
       for (const demoSupplier of demoSuppliers) {
         if (!demoSupplier.id) {
@@ -425,11 +428,11 @@ router.post(
           continue;
         }
 
-        if (existingById.has(demoSupplier.id)) {
+        const existingIndex = existingById.get(demoSupplier.id);
+        if (existingIndex !== undefined) {
           // Update existing supplier
-          const index = existingSuppliers.findIndex(s => s.id === demoSupplier.id);
-          existingSuppliers[index] = {
-            ...existingSuppliers[index],
+          existingSuppliers[existingIndex] = {
+            ...existingSuppliers[existingIndex],
             ...demoSupplier,
             updatedAt: new Date().toISOString(),
           };
@@ -448,17 +451,18 @@ router.post(
       // Write back to database
       await dbUnified.write('suppliers', existingSuppliers);
 
-      // Create audit log
+      // Create audit log using DATA_EXPORT action as it's the closest match for data import
       auditLog({
         adminId: req.user.id,
         adminEmail: req.user.email,
-        action: AUDIT_ACTIONS.SUPPLIER_IMPORT_DEMO || 'SUPPLIER_IMPORT_DEMO',
+        action: AUDIT_ACTIONS.DATA_EXPORT,
         targetType: 'suppliers',
         targetId: 'demo-import',
-        details: { 
-          inserted: insertedCount, 
+        details: {
+          imported: true,
+          inserted: insertedCount,
           updated: updatedCount,
-          total: demoSuppliers.length 
+          total: demoSuppliers.length,
         },
       });
 
@@ -471,8 +475,8 @@ router.post(
       });
     } catch (error) {
       console.error('Error importing demo suppliers:', error);
-      res.status(500).json({ 
-        error: 'Failed to import demo suppliers: ' + error.message 
+      res.status(500).json({
+        error: `Failed to import demo suppliers: ${error.message}`,
       });
     }
   }
