@@ -5,12 +5,12 @@
     "email": "legacy@supplier.com",
     "approved": true,
     "isPro": true,
-    "proExpiresAt": "2026-02-01T00:01:37.695Z",
+    "proExpiresAt": "2026-02-01T00:08:56.778Z",
     "healthScore": 85,
     "tags": [
       "legacy"
     ],
-    "createdAt": "2026-01-02T00:01:37.695Z"
+    "createdAt": "2026-01-02T00:08:56.778Z"
   },
   {
     "id": "supplier-002",
@@ -20,8 +20,8 @@
     "subscription": {
       "tier": "pro_plus",
       "status": "active",
-      "startDate": "2026-01-02T00:01:37.695Z",
-      "endDate": "2026-03-03T00:01:37.695Z"
+      "startDate": "2026-01-02T00:08:56.778Z",
+      "endDate": "2026-03-03T00:08:56.778Z"
     },
     "isPro": true,
     "proPlan": "Pro+",
@@ -29,7 +29,7 @@
     "tags": [
       "pro_plus"
     ],
-    "createdAt": "2026-01-02T00:01:37.695Z"
+    "createdAt": "2026-01-02T00:08:56.778Z"
   },
   {
     "id": "supplier-003",
@@ -39,6 +39,6 @@
     "isPro": false,
     "healthScore": 75,
     "tags": [],
-    "createdAt": "2026-01-02T00:01:37.695Z"
+    "createdAt": "2026-01-02T00:08:56.778Z"
   }
 ]

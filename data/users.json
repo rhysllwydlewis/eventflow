@@ -2,10 +2,10 @@
   {
     "id": "admin-test-001",
     "email": "admin@test.com",
-    "password": "$2a$10$Wt3m3tShXp.voIaQOygsXeb7pMgWfcCacCSWhn3rggvSNegOcgrYC",
+    "password": "$2a$10$x2PXHB15nf6CROKfYSFVjOwKfU.1xMwr6LJirQu3B1Ijw69qJ3LOW",
     "name": "Test Admin",
     "role": "admin",
     "verified": true,
-    "createdAt": "2026-01-02T00:01:37.695Z"
+    "createdAt": "2026-01-02T00:08:56.778Z"
   }
 ]
