@@ -374,20 +374,57 @@
       return out;
     }
 
-    // Update stat cards
+    // Update stat cards with animated counters
     const totalUsersEl = document.getElementById('totalUsersCount');
-    if (totalUsersEl) {
+    if (totalUsersEl && window.AdminShared && window.AdminShared.animateCounter) {
+      window.AdminShared.animateCounter(totalUsersEl, counts.usersTotal || 0);
+    } else if (totalUsersEl) {
       totalUsersEl.textContent = counts.usersTotal || 0;
     }
 
     const totalPackagesEl = document.getElementById('totalPackagesCount');
-    if (totalPackagesEl) {
+    if (totalPackagesEl && window.AdminShared && window.AdminShared.animateCounter) {
+      window.AdminShared.animateCounter(totalPackagesEl, counts.packagesTotal || 0);
+    } else if (totalPackagesEl) {
       totalPackagesEl.textContent = counts.packagesTotal || 0;
     }
 
     const totalSuppliersEl = document.getElementById('totalSuppliersCount');
-    if (totalSuppliersEl) {
+    if (totalSuppliersEl && window.AdminShared && window.AdminShared.animateCounter) {
+      window.AdminShared.animateCounter(totalSuppliersEl, counts.suppliersTotal || 0);
+    } else if (totalSuppliersEl) {
       totalSuppliersEl.textContent = counts.suppliersTotal || 0;
+    }
+
+    // Update management card stats
+    const totalSuppliersCardEl = document.getElementById('totalSuppliersCountCard');
+    if (totalSuppliersCardEl) {
+      totalSuppliersCardEl.textContent = counts.suppliersTotal || 0;
+    }
+
+    const totalPackagesCardEl = document.getElementById('totalPackagesCountCard');
+    if (totalPackagesCardEl) {
+      totalPackagesCardEl.textContent = counts.packagesTotal || 0;
+    }
+
+    const pendingSuppliersEl = document.getElementById('pendingSuppliersCount');
+    if (pendingSuppliersEl) {
+      pendingSuppliersEl.textContent = counts.pendingSuppliers || 0;
+    }
+
+    const proSuppliersEl = document.getElementById('proSuppliersCount');
+    if (proSuppliersEl) {
+      proSuppliersEl.textContent = counts.proSuppliers || 0;
+    }
+
+    const pendingPackagesEl = document.getElementById('pendingPackagesCount');
+    if (pendingPackagesEl) {
+      pendingPackagesEl.textContent = counts.pendingPackages || 0;
+    }
+
+    const featuredPackagesEl = document.getElementById('featuredPackagesCount');
+    if (featuredPackagesEl) {
+      featuredPackagesEl.textContent = counts.featuredPackages || 0;
     }
 
     el.innerHTML =
