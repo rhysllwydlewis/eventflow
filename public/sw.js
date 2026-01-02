@@ -3,7 +3,7 @@
  * Provides offline functionality and caching strategies
  */
 
-const CACHE_VERSION = 'eventflow-v1';
+const CACHE_VERSION = 'eventflow-v17';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 const IMAGE_CACHE = `${CACHE_VERSION}-images`;
@@ -158,25 +158,31 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // Cache-first strategy for static assets
+  // Network-first strategy for static assets (JS, CSS, fonts, etc.)
+  // This ensures new deployments are reflected immediately
   if (
     url.pathname.startsWith('/assets/') ||
     url.pathname.endsWith('.css') ||
-    url.pathname.endsWith('.js')
+    url.pathname.endsWith('.js') ||
+    url.pathname.endsWith('.woff') ||
+    url.pathname.endsWith('.woff2') ||
+    url.pathname.endsWith('.ttf') ||
+    url.pathname.endsWith('.eot')
   ) {
     event.respondWith(
-      caches.match(request).then(response => {
-        return (
-          response ||
-          fetch(request).then(fetchResponse => {
-            const responseClone = fetchResponse.clone();
-            caches.open(STATIC_CACHE).then(cache => {
-              cache.put(request, responseClone);
-            });
-            return fetchResponse;
-          })
-        );
-      })
+      fetch(request)
+        .then(response => {
+          // Cache the fresh response for offline access
+          const responseClone = response.clone();
+          caches.open(STATIC_CACHE).then(cache => {
+            cache.put(request, responseClone);
+          });
+          return response;
+        })
+        .catch(() => {
+          // Fallback to cache only if network fails (offline mode)
+          return caches.match(request);
+        })
     );
     return;
   }
