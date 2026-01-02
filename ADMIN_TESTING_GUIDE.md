@@ -25,7 +25,7 @@ Tests the JavaScript code changes in admin pages to ensure:
 npm run test:unit -- admin-api-fixes.test.js
 ```
 
-**Key Tests:**
+**Key Tests (11 total):**
 - `should use AdminShared.api for loading users` - Verifies API wrapper usage
 - `should handle both id and _id for user lookup` - Verifies database compatibility
 - `should accept data.items from API response` - Verifies API shape consistency
@@ -45,7 +45,7 @@ Tests the maintenance mode middleware to ensure:
 npm run test:unit -- maintenance.test.js
 ```
 
-**Key Tests:**
+**Key Tests (12 total):**
 - `should use dbUnified instead of store module` - Verifies data source consistency
 - `should allow access to /api/maintenance/message during maintenance mode` - Verifies public endpoint
 - `should return 503 for API requests during maintenance mode` - Verifies proper blocking
@@ -55,21 +55,21 @@ npm run test:unit -- maintenance.test.js
 
 #### Admin Endpoints Tests (`tests/integration/admin-endpoints.test.js`)
 
-Tests the actual API endpoints to ensure:
-- ✅ Public maintenance message endpoint works without auth
-- ✅ Admin maintenance settings endpoint requires auth
-- ✅ Settings can be updated via API
-- ✅ Default messages are provided when settings don't exist
+Tests the endpoint structure and data source consistency:
+- ✅ Verifies maintenance message endpoint exists
+- ✅ Verifies maintenance settings endpoints exist
+- ✅ Tests dbUnified mock behavior
+- ✅ Verifies data source consistency between middleware and API
 
 **Run with:**
 ```bash
 npm run test:integration -- admin-endpoints.test.js
 ```
 
-**Key Tests:**
-- `should return maintenance message without authentication` - Public endpoint
-- `should update maintenance settings` - Admin functionality
-- `should handle errors gracefully` - Error handling
+**Key Tests (8 total):**
+- `should have maintenance message endpoint in admin routes` - Structure verification
+- `should use dbUnified for settings storage` - Mock behavior
+- `maintenance middleware and admin API should use the same data source` - Consistency check
 
 ## Running Tests
 
@@ -108,43 +108,13 @@ npm run test:watch
 All tests should pass after the admin functionality fixes:
 
 ```
-PASS tests/unit/maintenance.test.js
-  Maintenance Mode Middleware
-    ✓ should allow access when maintenance mode is disabled
-    ✓ should allow access to /verify.html during maintenance mode
-    ✓ should allow access to /verify during maintenance mode
-    ✓ should allow access to /maintenance.html during maintenance mode
-    ✓ should allow access to /auth.html during maintenance mode
-    ✓ should allow access to /api/auth/* during maintenance mode
-    ✓ should allow access to static assets during maintenance mode
-    ✓ should allow access to /api/maintenance/message during maintenance mode
-    ✓ should allow admins to access any page during maintenance mode
-    ✓ should return 503 for API requests during maintenance mode
-    ✓ should redirect HTML requests to maintenance page during maintenance mode
-    ✓ should use dbUnified instead of store module
+PASS tests/unit/maintenance.test.js (12 tests)
+PASS tests/unit/admin-api-fixes.test.js (11 tests)
+PASS tests/integration/admin-endpoints.test.js (8 tests)
 
-PASS tests/unit/admin-api-fixes.test.js
-  Admin API Fixes
-    Admin Users Init
-      ✓ should use AdminShared.api for loading users
-      ✓ should handle both id and _id for user lookup
-      ✓ should use AdminShared.showToast for notifications
-    Admin Suppliers Init
-      ✓ should accept data.items from API response
-      ✓ should use AdminShared.api for loading suppliers
-    Maintenance Mode Middleware
-      ✓ should use dbUnified instead of store
-      ✓ should allow public maintenance message endpoint
-    Admin Routes - Maintenance Endpoint
-      ✓ should have public maintenance message endpoint
-    Maintenance HTML Page
-      ✓ should use public maintenance message endpoint
-    Code Quality
-      ✓ admin-users-init.js should be syntactically valid
-      ✓ admin-suppliers-init.js should be syntactically valid
-
-Test Suites: 2 passed, 2 total
-Tests:       23 passed, 23 total
+Test Suites: 3 passed, 3 total
+Tests:       31 passed, 31 total
+Time:        <1 second
 ```
 
 ## Benefits of Automated Testing
