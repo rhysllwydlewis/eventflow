@@ -10,7 +10,8 @@
     "tags": [
       "legacy"
     ],
-    "createdAt": "2026-01-02T00:08:56.778Z"
+    "createdAt": "2026-01-02T00:08:56.778Z",
+    "updatedAt": "2026-01-02T17:34:22.078Z"
   },
   {
     "id": "supplier-002",
@@ -29,7 +30,8 @@
     "tags": [
       "pro_plus"
     ],
-    "createdAt": "2026-01-02T00:08:56.778Z"
+    "createdAt": "2026-01-02T00:08:56.778Z",
+    "updatedAt": "2026-01-02T17:34:22.078Z"
   },
   {
     "id": "supplier-003",
@@ -39,6 +41,7 @@
     "isPro": false,
     "healthScore": 75,
     "tags": [],
-    "createdAt": "2026-01-02T00:08:56.778Z"
+    "createdAt": "2026-01-02T00:08:56.778Z",
+    "updatedAt": "2026-01-02T17:34:22.078Z"
   }
 ]
