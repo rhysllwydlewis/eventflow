@@ -7,5 +7,50 @@
     "role": "admin",
     "verified": true,
     "createdAt": "2026-01-02T00:08:56.778Z"
+  },
+  {
+    "id": "usr_cvjudqcjw4l1u2",
+    "name": "EventFlow Owner",
+    "email": "admin@event-flow.co.uk",
+    "role": "admin",
+    "passwordHash": "$2a$10$Gl5mFyCk0P2bvycXQJSzBetJQ3TlKC7xtUuSGq3uh9UBhTXQl0gyi",
+    "createdAt": "2026-01-02T00:18:12.746Z",
+    "notify": true,
+    "marketingOptIn": false,
+    "verified": true,
+    "isOwner": true
+  },
+  {
+    "id": "usr_48qrtuqaw4l1wl",
+    "name": "Admin",
+    "email": "admin@eventflow.local",
+    "role": "admin",
+    "passwordHash": "$2a$10$GsOxqTNPrucFt0ygxMoyK.ydYKba7vHu.Oxj62.8mkfUYoiInv86m",
+    "createdAt": "2026-01-02T00:18:12.746Z",
+    "notify": true,
+    "marketingOptIn": false,
+    "verified": true
+  },
+  {
+    "id": "usr_om7tzqmzw4l1yz",
+    "name": "Supplier Demo",
+    "email": "supplier@eventflow.local",
+    "role": "supplier",
+    "passwordHash": "$2a$10$iF/RLQkURkG/NKEN7QHMD.woRMlkmw3.pKq2iU122CnXvj/wRs75S",
+    "createdAt": "2026-01-02T00:18:12.746Z",
+    "notify": true,
+    "marketingOptIn": false,
+    "verified": true
+  },
+  {
+    "id": "usr_6epqyr8vw4l21g",
+    "name": "Customer Demo",
+    "email": "customer@eventflow.local",
+    "role": "customer",
+    "passwordHash": "$2a$10$szi9MQOdKCgEKK/NXmKS7uQBk1cgBlBXflJyacNrpTVWKzrw45CSi",
+    "createdAt": "2026-01-02T00:18:12.746Z",
+    "notify": true,
+    "marketingOptIn": false,
+    "verified": true
   }
 ]
