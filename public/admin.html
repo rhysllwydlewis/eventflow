@@ -310,34 +310,52 @@
     </div>
   </div>
 
-  <!-- Suppliers Section -->
-  <div class="data-section">
-    <div class="data-header">
-      <h3 class="subsection-title">Suppliers</h3>
-      <div class="button-group">
-        <button id="bulkApproveSuppliers" class="btn-sm btn-success" class="hidden">✓ Approve Selected</button>
-        <button id="bulkRejectSuppliers" class="btn-sm btn-danger" class="hidden">✗ Reject Selected</button>
-        <button id="bulkDeleteSuppliers" class="btn-sm btn-danger" class="hidden">🗑 Delete Selected</button>
-        <button id="smartTagSuppliersBtn" class="btn-sm btn-accent">🤖 Smart Tagging (Beta)</button>
+  <!-- Management Cards Grid -->
+  <div class="management-grid">
+    <!-- Suppliers Management Card -->
+    <div class="management-card">
+      <div class="management-header">
+        <div class="management-icon">🏢</div>
+        <div class="management-badge" id="totalSuppliersCountCard">—</div>
       </div>
+      <h3 class="management-title">Suppliers</h3>
+      <p class="management-description">Manage supplier profiles, approvals, and subscriptions</p>
+      <div class="management-stats">
+        <div class="stat-item">
+          <span class="stat-value" id="pendingSuppliersCount">—</span>
+          <span class="stat-label-sm">Pending Approval</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-value" id="proSuppliersCount">—</span>
+          <span class="stat-label-sm">Pro+ Subscribers</span>
+        </div>
+      </div>
+      <button onclick="window.location.href='/admin-suppliers.html'" class="btn-manage">
+        Manage Suppliers →
+      </button>
     </div>
-    <div class="table-wrapper">
-      <table id="suppliers"></table>
-    </div>
-  </div>
 
-  <!-- Packages Section -->
-  <div class="data-section">
-    <div class="data-header">
-      <h3 class="subsection-title">Packages</h3>
-      <div class="button-group">
-        <button id="bulkApprovePackages" class="btn-sm btn-success" class="hidden">✓ Approve Selected</button>
-        <button id="bulkFeaturePackages" class="btn-sm btn-primary" class="hidden">⭐ Feature Selected</button>
-        <button id="bulkDeletePackages" class="btn-sm btn-danger" class="hidden">🗑 Delete Selected</button>
+    <!-- Packages Management Card -->
+    <div class="management-card">
+      <div class="management-header">
+        <div class="management-icon">📦</div>
+        <div class="management-badge" id="totalPackagesCountCard">—</div>
       </div>
-    </div>
-    <div class="table-wrapper">
-      <table id="packages"></table>
+      <h3 class="management-title">Packages</h3>
+      <p class="management-description">Manage package listings, featured items, and approvals</p>
+      <div class="management-stats">
+        <div class="stat-item">
+          <span class="stat-value" id="pendingPackagesCount">—</span>
+          <span class="stat-label-sm">Pending Approval</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-value" id="featuredPackagesCount">—</span>
+          <span class="stat-label-sm">Featured</span>
+        </div>
+      </div>
+      <button onclick="window.location.href='/admin-packages.html'" class="btn-manage">
+        Manage Packages →
+      </button>
     </div>
   </div>
 

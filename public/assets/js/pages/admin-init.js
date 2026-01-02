@@ -396,6 +396,37 @@
       totalSuppliersEl.textContent = counts.suppliersTotal || 0;
     }
 
+    // Update management card stats
+    const totalSuppliersCardEl = document.getElementById('totalSuppliersCountCard');
+    if (totalSuppliersCardEl) {
+      totalSuppliersCardEl.textContent = counts.suppliersTotal || 0;
+    }
+
+    const totalPackagesCardEl = document.getElementById('totalPackagesCountCard');
+    if (totalPackagesCardEl) {
+      totalPackagesCardEl.textContent = counts.packagesTotal || 0;
+    }
+
+    const pendingSuppliersEl = document.getElementById('pendingSuppliersCount');
+    if (pendingSuppliersEl) {
+      pendingSuppliersEl.textContent = counts.pendingSuppliers || 0;
+    }
+
+    const proSuppliersEl = document.getElementById('proSuppliersCount');
+    if (proSuppliersEl) {
+      proSuppliersEl.textContent = counts.proSuppliers || 0;
+    }
+
+    const pendingPackagesEl = document.getElementById('pendingPackagesCount');
+    if (pendingPackagesEl) {
+      pendingPackagesEl.textContent = counts.pendingPackages || 0;
+    }
+
+    const featuredPackagesEl = document.getElementById('featuredPackagesCount');
+    if (featuredPackagesEl) {
+      featuredPackagesEl.textContent = counts.featuredPackages || 0;
+    }
+
     el.innerHTML =
       `<div class="card">` +
       `<p><b>Total Users:</b> ${counts.usersTotal || 0}</p>` +

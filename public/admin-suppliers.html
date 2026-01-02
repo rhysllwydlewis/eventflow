@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang='en-GB'>
+<head>
+<meta charset='utf-8'>
+<meta name='viewport' content='width=device-width,initial-scale=1'>
+<title>Supplier Management — EventFlow Admin</title>
+<link rel='stylesheet' href='/assets/css/styles.css'>
+<link rel='stylesheet' href='/assets/css/eventflow-17.0.0.css'>
+<link rel='stylesheet' href='/assets/css/utilities.css'>
+<link rel='stylesheet' href='/assets/css/components.css'>
+<link rel='stylesheet' href='/assets/css/animations.css'>
+<link rel='stylesheet' href='/assets/css/admin.css'>
+<link rel='stylesheet' href='/assets/css/admin-enhanced.css'>
+<link rel='stylesheet' href='/assets/css/admin-navbar.css'>
+<link rel='stylesheet' href='/assets/css/admin-cards.css'>
+<link rel='icon' href='/favicon.svg'>
+<script src="/assets/js/admin-shared.js"></script>
+<script src="/assets/js/components.js" defer></script>
+<script src="/assets/js/admin-navbar.js" defer></script>
+<link rel="stylesheet" href="/assets/css/ui-ux-fixes.css">
+<style>
+  .filter-btn.active {
+    background: #667eea !important;
+    color: white !important;
+    border-color: #667eea !important;
+  }
+</style>
+</head>
+<body class="has-admin-navbar">
+<!-- Modern Top Navbar -->
+<nav class="admin-top-navbar">
+  <div class="admin-navbar-content">
+    <div class="admin-navbar-brand">
+      <a href="/admin.html" class="admin-navbar-logo">EventFlow</a>
+      <span class="admin-navbar-title">Admin Panel</span>
+    </div>
+
+    <button class="admin-hamburger" id="adminHamburger" aria-label="Toggle menu">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+
+    <div class="admin-navbar-nav" id="adminNavbarNav">
+      <a href="/admin.html" class="admin-nav-btn">
+        <span class="nav-icon">📊</span>
+        <span class="nav-label">Dashboard</span>
+      </a>
+      <a href="/admin-users.html" class="admin-nav-btn">
+        <span class="nav-icon">👥</span>
+        <span class="nav-label">Users</span>
+      </a>
+      <a href="/admin-packages.html" class="admin-nav-btn">
+        <span class="nav-icon">📦</span>
+        <span class="nav-label">Packages</span>
+      </a>
+      <a href="/admin-photos.html" class="admin-nav-btn">
+        <span class="nav-icon">📸</span>
+        <span class="nav-label">Photos</span>
+      </a>
+      <a href="/admin-tickets.html" class="admin-nav-btn">
+        <span class="nav-icon">🎫</span>
+        <span class="nav-label">Tickets</span>
+      </a>
+      <a href="/admin-reports.html" class="admin-nav-btn">
+        <span class="nav-icon">📈</span>
+        <span class="nav-label">Reports</span>
+      </a>
+      <a href="/admin-audit.html" class="admin-nav-btn">
+        <span class="nav-icon">📋</span>
+        <span class="nav-label">Audit</span>
+      </a>
+      <a href="/admin-homepage.html" class="admin-nav-btn">
+        <span class="nav-icon">🏠</span>
+        <span class="nav-label">Homepage</span>
+      </a>
+      <a href="/admin-payments.html" class="admin-nav-btn">
+        <span class="nav-icon">💳</span>
+        <span class="nav-label">Payments</span>
+      </a>
+      <a href="/admin-content.html" class="admin-nav-btn">
+        <span class="nav-icon">✏️</span>
+        <span class="nav-label">Content</span>
+      </a>
+      <a href="/admin-settings.html" class="admin-nav-btn">
+        <span class="nav-icon">⚙️</span>
+        <span class="nav-label">Settings</span>
+      </a>
+    </div>
+
+    <div class="admin-navbar-actions">
+      <div class="db-status-badge db-loading" id="dbStatusBadge" title="Database status">
+        <span class="db-status-dot"></span> Loading...
+      </div>
+      <button class="navbar-icon-btn" id="navRefreshBtn" title="Refresh data">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+        </svg>
+      </button>
+      <button class="navbar-icon-btn" id="navUserBtn" title="Admin">
+        <div class="user-avatar">A</div>
+        <span class="user-name">Admin</span>
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<main>
+<div class="container admin-page-container">
+  <!-- Page Header -->
+  <div class="section-header">
+    <div>
+      <h1 class="section-title">Supplier Management</h1>
+      <p class="section-description">Manage all supplier profiles, approvals, and subscriptions</p>
+    </div>
+    <div class="button-group">
+      <button id="exportSuppliersBtn" class="btn-sm">📥 Export List</button>
+    </div>
+  </div>
+
+  <!-- Stats Overview -->
+  <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 32px;">
+    <div class="stat-card-mini">
+      <div class="stat-label">Total Suppliers</div>
+      <div class="stat-value" id="totalSuppliers">—</div>
+    </div>
+    <div class="stat-card-mini">
+      <div class="stat-label">Pending Approval</div>
+      <div class="stat-value" id="pendingSuppliers">—</div>
+    </div>
+    <div class="stat-card-mini">
+      <div class="stat-label">Pro+ Subscribers</div>
+      <div class="stat-value" id="proSuppliers">—</div>
+    </div>
+    <div class="stat-card-mini">
+      <div class="stat-label">Avg. Score</div>
+      <div class="stat-value" id="avgScore">—</div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filter-panel" style="background: white; padding: 20px; border-radius: 12px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+    <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
+      <input type="text" id="searchInput" placeholder="Search suppliers..." style="flex: 1; min-width: 250px; padding: 10px 16px; border: 1px solid #e5e7eb; border-radius: 8px;">
+      <select id="approvalFilter" style="padding: 10px 16px; border: 1px solid #e5e7eb; border-radius: 8px;">
+        <option value="all">All Approval Status</option>
+        <option value="approved">Approved</option>
+        <option value="pending">Pending</option>
+        <option value="rejected">Rejected</option>
+      </select>
+      <select id="subscriptionFilter" style="padding: 10px 16px; border: 1px solid #e5e7eb; border-radius: 8px;">
+        <option value="all">All Subscriptions</option>
+        <option value="free">Free</option>
+        <option value="pro">Pro</option>
+        <option value="pro_plus">Pro+</option>
+      </select>
+      <button id="clearFiltersBtn" class="btn-sm">Clear Filters</button>
+    </div>
+  </div>
+
+  <!-- Bulk Actions -->
+  <div id="bulkActionsBar" style="display: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 16px 24px; border-radius: 12px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center;">
+    <span id="selectedCount">0 suppliers selected</span>
+    <div style="display: flex; gap: 12px;">
+      <button id="bulkApproveBtn" class="btn-sm" style="background: white; color: #667eea;">✓ Approve</button>
+      <button id="bulkRejectBtn" class="btn-sm" style="background: white; color: #ef4444;">✗ Reject</button>
+      <button id="bulkDeleteBtn" class="btn-sm" style="background: white; color: #ef4444;">🗑 Delete</button>
+      <button id="smartTagBtn" class="btn-sm" style="background: white; color: #667eea;">🤖 Smart Tag</button>
+    </div>
+  </div>
+
+  <!-- Suppliers Table -->
+  <div class="data-section">
+    <div class="table-wrapper">
+      <table class="table" id="suppliersTable">
+        <thead>
+          <tr>
+            <th><input type="checkbox" id="selectAll"></th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Approved</th>
+            <th>Subscription</th>
+            <th>Score</th>
+            <th>Tags</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="suppliersTableBody">
+          <tr>
+            <td colspan="8" style="text-align: center; padding: 40px; color: #9ca3af;">Loading suppliers...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Pagination -->
+  <div class="pagination" style="margin-top: 24px; display: flex; justify-content: space-between; align-items: center;">
+    <div id="paginationInfo">Showing 0 of 0 suppliers</div>
+    <div style="display: flex; gap: 8px;">
+      <button id="prevPageBtn" class="btn-sm" disabled>← Previous</button>
+      <button id="nextPageBtn" class="btn-sm" disabled>Next →</button>
+    </div>
+  </div>
+
+</div>
+</main>
+
+<footer class="footer" role="contentinfo">
+  <div class="container flex-between">
+    <div><strong>EventFlow</strong><br><span class="small">Event planning made simple.</span></div>
+    <div class="small">Version: v17.0.0</div>
+    <div class="small flex-center gap-half">
+      <a href="/blog.html">Blog</a> ·
+      <a href="/credits.html">Credits</a> ·
+      <a href="/contact.html">Contact</a> ·
+      <a href="/legal.html">Legal Hub</a>
+    </div>
+  </div>
+</footer>
+
+<script src="/assets/js/pages/admin-suppliers-init.js" defer></script>
+</body>
+</html>
