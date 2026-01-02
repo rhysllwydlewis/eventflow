@@ -29,11 +29,8 @@
     summary.textContent = 'Loading users…';
 
     try {
-      const response = await fetch('/api/admin/users');
-      if (!response.ok) {
-        throw new Error('Failed to load users');
-      }
-      const data = await response.json();
+      // Use AdminShared.api for consistent error handling
+      const data = await AdminShared.api('/api/admin/users', 'GET');
       allUsers = (data && data.items) || [];
 
       renderUsers();
@@ -165,42 +162,15 @@
         btn.textContent = 'Sending...';
 
         try {
-          const response = await fetch(`/api/admin/users/${userId}/resend-verification`, {
-            method: 'POST',
-            credentials: 'include',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          });
-
-          const data = await response.json();
-
-          if (response.ok) {
-            if (window.AdminShared && window.AdminShared.showToast) {
-              window.AdminShared.showToast(
-                data.message || 'Verification email sent successfully',
-                'success'
-              );
-            } else {
-              alert(data.message || 'Verification email sent successfully');
-            }
-          } else {
-            if (window.AdminShared && window.AdminShared.showToast) {
-              window.AdminShared.showToast(
-                data.error || 'Failed to send verification email',
-                'error'
-              );
-            } else {
-              alert(data.error || 'Failed to send verification email');
-            }
-          }
+          const data = await AdminShared.api(`/api/admin/users/${userId}/resend-verification`, 'POST');
+          
+          AdminShared.showToast(
+            data.message || 'Verification email sent successfully',
+            'success'
+          );
         } catch (error) {
           console.error('Error resending verification:', error);
-          if (window.AdminShared && window.AdminShared.showToast) {
-            window.AdminShared.showToast('Network error - please try again', 'error');
-          } else {
-            alert('Network error - please try again');
-          }
+          AdminShared.showToast(error.message || 'Failed to send verification email', 'error');
         } finally {
           btn.disabled = false;
           btn.textContent = originalText;
@@ -296,8 +266,8 @@
       return;
     }
 
-    // Find user from allUsers
-    const user = allUsers.find(u => u.id === userId);
+    // Find user from allUsers (handle both id and _id)
+    const user = allUsers.find(u => u.id === userId || u._id === userId);
 
     if (!user) {
       statusDiv.innerHTML = '<p class="text-error">User not found</p>';
@@ -325,14 +295,9 @@
       </div>
     `;
 
-    // Load subscription history
+    // Load subscription history using AdminShared.api
     try {
-      const response = await fetch(`/api/admin/users/${userId}/subscription-history`);
-      if (!response.ok) {
-        throw new Error('Failed to load subscription history');
-      }
-
-      const data = await response.json();
+      const data = await AdminShared.api(`/api/admin/users/${userId}/subscription-history`, 'GET');
       const history = data.history || [];
 
       if (history.length === 0) {
@@ -421,27 +386,18 @@
           }
 
           try {
-            const response = await fetch(`/api/admin/users/${userId}/subscription`, {
-              method: 'DELETE',
-              credentials: 'include',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({ reason: reason || 'Admin set to free tier' }),
-            });
+            const data = await AdminShared.api(
+              `/api/admin/users/${userId}/subscription`,
+              'DELETE',
+              { reason: reason || 'Admin set to free tier' }
+            );
 
-            const data = await response.json();
-
-            if (response.ok) {
-              alert(data.message || 'Subscription removed successfully');
-              closeSubscriptionModal();
-              loadAdminUsers(); // Reload users
-            } else {
-              alert(data.error || 'Failed to remove subscription');
-            }
+            AdminShared.showToast(data.message || 'Subscription removed successfully', 'success');
+            closeSubscriptionModal();
+            loadAdminUsers(); // Reload users
           } catch (error) {
             console.error('Error removing subscription:', error);
-            alert('Network error - please try again');
+            AdminShared.showToast(error.message || 'Failed to remove subscription', 'error');
           }
           return;
         }
@@ -452,27 +408,18 @@
         }
 
         try {
-          const response = await fetch(`/api/admin/users/${userId}/subscription`, {
-            method: 'POST',
-            credentials: 'include',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ tier, duration, reason }),
-          });
+          const data = await AdminShared.api(
+            `/api/admin/users/${userId}/subscription`,
+            'POST',
+            { tier, duration, reason }
+          );
 
-          const data = await response.json();
-
-          if (response.ok) {
-            alert(data.message || 'Subscription granted successfully');
-            closeSubscriptionModal();
-            loadAdminUsers(); // Reload users
-          } else {
-            alert(data.error || 'Failed to grant subscription');
-          }
+          AdminShared.showToast(data.message || 'Subscription granted successfully', 'success');
+          closeSubscriptionModal();
+          loadAdminUsers(); // Reload users
         } catch (error) {
           console.error('Error granting subscription:', error);
-          alert('Network error - please try again');
+          AdminShared.showToast(error.message || 'Failed to grant subscription', 'error');
         }
       });
     }
@@ -495,30 +442,18 @@
         }
 
         try {
-          const response = await fetch(
+          const data = await AdminShared.api(
             `/api/admin/users/${currentSubscriptionUserId}/subscription`,
-            {
-              method: 'DELETE',
-              credentials: 'include',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({ reason: reason || 'Manual admin removal' }),
-            }
+            'DELETE',
+            { reason: reason || 'Manual admin removal' }
           );
 
-          const data = await response.json();
-
-          if (response.ok) {
-            alert(data.message || 'Subscription removed successfully');
-            closeSubscriptionModal();
-            loadAdminUsers(); // Reload users
-          } else {
-            alert(data.error || 'Failed to remove subscription');
-          }
+          AdminShared.showToast(data.message || 'Subscription removed successfully', 'success');
+          closeSubscriptionModal();
+          loadAdminUsers(); // Reload users
         } catch (error) {
           console.error('Error removing subscription:', error);
-          alert('Network error - please try again');
+          AdminShared.showToast(error.message || 'Failed to remove subscription', 'error');
         }
       });
     }

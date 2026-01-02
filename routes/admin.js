@@ -3281,5 +3281,33 @@ router.post('/bulk/subscriptions', authRequired, roleRequired('admin'), async (r
   }
 });
 
+/**
+ * GET /api/maintenance/message (PUBLIC - no auth required)
+ * Get maintenance mode message for display on maintenance page
+ * This is intentionally not under /api/admin to avoid auth requirement
+ */
+router.get('/maintenance/message', async (req, res) => {
+  try {
+    const settings = (await dbUnified.read('settings')) || {};
+    const maintenance = settings.maintenance || {
+      enabled: false,
+      message: "We're performing scheduled maintenance. We'll be back soon!",
+    };
+    
+    // Only return the message and enabled status, not admin details
+    res.json({
+      enabled: maintenance.enabled,
+      message: maintenance.message,
+    });
+  } catch (error) {
+    console.error('Error reading maintenance message:', error);
+    // Return default message on error
+    res.json({
+      enabled: false,
+      message: "We're performing scheduled maintenance. We'll be back soon!",
+    });
+  }
+});
+
 module.exports = router;
 module.exports.setHelperFunctions = setHelperFunctions;

@@ -158,7 +158,8 @@
     // Fetch and display the custom maintenance message from settings
     (async function loadMaintenanceMessage() {
       try {
-        const response = await fetch('/api/admin/settings/maintenance');
+        // Use public endpoint that doesn't require auth
+        const response = await fetch('/api/admin/maintenance/message');
         if (response.ok) {
           const data = await response.json();
           if (data.message) {

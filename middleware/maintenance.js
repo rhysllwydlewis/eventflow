@@ -5,17 +5,17 @@
 
 'use strict';
 
-const { read } = require('../store');
+const dbUnified = require('../db-unified');
 
 /**
  * Middleware to check maintenance mode
  * If enabled, non-admin users are redirected to maintenance page
  * Admins can still access the site normally
  */
-function maintenanceMode(req, res, next) {
+async function maintenanceMode(req, res, next) {
   try {
-    // Get maintenance settings
-    const settings = read('settings') || {};
+    // Get maintenance settings from dbUnified (same as admin API)
+    const settings = (await dbUnified.read('settings')) || {};
     const maintenance = settings.maintenance || { enabled: false };
 
     // If maintenance mode is not enabled, continue normally
@@ -40,6 +40,11 @@ function maintenanceMode(req, res, next) {
 
     // Allow access to static assets
     if (req.path.startsWith('/assets/') || req.path.startsWith('/favicon')) {
+      return next();
+    }
+
+    // Allow public access to maintenance message endpoint
+    if (req.path === '/api/maintenance/message') {
       return next();
     }
 

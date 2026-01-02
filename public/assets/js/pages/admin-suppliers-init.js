@@ -16,11 +16,9 @@
   // Load suppliers data
   async function loadSuppliers() {
     try {
-      const response = await fetch('/api/admin/suppliers');
-      if (!response.ok) throw new Error('Failed to load suppliers');
-      
-      const data = await response.json();
-      allSuppliers = data.suppliers || [];
+      const data = await AdminShared.api('/api/admin/suppliers', 'GET');
+      // API returns data.items, not data.suppliers
+      allSuppliers = data.items || [];
       filteredSuppliers = [...allSuppliers];
       
       updateStats();
