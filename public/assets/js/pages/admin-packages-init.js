@@ -613,13 +613,14 @@
     });
   });
 
-  // Initialize
-  setupImageUpload();
-  loadPackages();
-  loadSuppliers();
+  // Initialize function to set up the page
+  function initializePage() {
+    setupImageUpload();
+    loadPackages();
+    loadSuppliers();
 
-  // Event delegation for dynamically created buttons
-  document.body.addEventListener('click', e => {
+    // Event delegation for dynamically created buttons
+    document.body.addEventListener('click', e => {
     const target = e.target;
     if (target.tagName !== 'BUTTON') {
       return;
@@ -658,7 +659,15 @@
   });
 
   // Back to dashboard button
-  document.getElementById('backToDashboard').addEventListener('click', () => {
+  document.getElementById('backToDashboard')?.addEventListener('click', () => {
     location.href = '/admin.html';
   });
+  }
+
+  // Initialize when DOM is ready (since this is a module script, it's automatically deferred)
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializePage);
+  } else {
+    initializePage();
+  }
 })();
