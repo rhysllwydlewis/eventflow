@@ -374,19 +374,25 @@
       return out;
     }
 
-    // Update stat cards
+    // Update stat cards with animated counters
     const totalUsersEl = document.getElementById('totalUsersCount');
-    if (totalUsersEl) {
+    if (totalUsersEl && window.AdminShared && window.AdminShared.animateCounter) {
+      window.AdminShared.animateCounter(totalUsersEl, counts.usersTotal || 0);
+    } else if (totalUsersEl) {
       totalUsersEl.textContent = counts.usersTotal || 0;
     }
 
     const totalPackagesEl = document.getElementById('totalPackagesCount');
-    if (totalPackagesEl) {
+    if (totalPackagesEl && window.AdminShared && window.AdminShared.animateCounter) {
+      window.AdminShared.animateCounter(totalPackagesEl, counts.packagesTotal || 0);
+    } else if (totalPackagesEl) {
       totalPackagesEl.textContent = counts.packagesTotal || 0;
     }
 
     const totalSuppliersEl = document.getElementById('totalSuppliersCount');
-    if (totalSuppliersEl) {
+    if (totalSuppliersEl && window.AdminShared && window.AdminShared.animateCounter) {
+      window.AdminShared.animateCounter(totalSuppliersEl, counts.suppliersTotal || 0);
+    } else if (totalSuppliersEl) {
       totalSuppliersEl.textContent = counts.suppliersTotal || 0;
     }
 

@@ -216,8 +216,14 @@
     const verifiedFilter = document.getElementById('verifiedFilter');
     const clearBtn = document.getElementById('clearFilters');
 
+    // Debounced search for better performance
     if (searchInput) {
-      searchInput.addEventListener('input', renderUsers);
+      if (window.AdminShared && window.AdminShared.debounce) {
+        const debouncedRender = window.AdminShared.debounce(renderUsers, 300);
+        searchInput.addEventListener('input', debouncedRender);
+      } else {
+        searchInput.addEventListener('input', renderUsers);
+      }
     }
 
     if (roleFilter) {
