@@ -397,71 +397,76 @@ function generateSlug(title) {
  * POST /api/admin/packages
  * Create a new package
  */
-router.post('/packages', authRequired, roleRequired('admin'), (req, res) => {
-  const { supplierId, title, description, price_display, image, approved, featured } = req.body;
+router.post('/packages', authRequired, roleRequired('admin'), async (req, res) => {
+  try {
+    const { supplierId, title, description, price_display, image, approved, featured } = req.body;
 
-  // Validate required fields
-  if (!supplierId || !title) {
-    return res.status(400).json({ error: 'Supplier ID and title are required' });
+    // Validate required fields
+    if (!supplierId || !title) {
+      return res.status(400).json({ error: 'Supplier ID and title are required' });
+    }
+
+    // Validate that supplier exists
+    const suppliers = await dbUnified.read('suppliers');
+    const supplier = suppliers.find(s => s.id === supplierId);
+    if (!supplier) {
+      return res.status(400).json({ error: 'Invalid supplier ID' });
+    }
+
+    const packages = await dbUnified.read('packages');
+    const now = new Date().toISOString();
+
+    // Generate slug from title
+    const slug = generateSlug(title);
+    if (!slug) {
+      return res
+        .status(400)
+        .json({ error: 'Title must contain valid characters for slug generation' });
+    }
+
+    // Check if slug already exists
+    const existingPackage = packages.find(p => p.slug === slug);
+    if (existingPackage) {
+      return res
+        .status(400)
+        .json({ error: 'A package with this title already exists. Please use a different title.' });
+    }
+
+    // Create new package
+    const newPackage = {
+      id: uid(),
+      supplierId,
+      title,
+      slug,
+      description: description || '',
+      price_display: price_display || 'Contact for pricing',
+      image: image || '/assets/images/placeholders/package-event.svg',
+      approved: approved === true,
+      featured: featured === true,
+      createdAt: now,
+      updatedAt: now,
+      createdBy: req.user.id,
+      versionHistory: [],
+    };
+
+    packages.push(newPackage);
+    await dbUnified.write('packages', packages);
+
+    // Create audit log
+    auditLog({
+      adminId: req.user.id,
+      adminEmail: req.user.email,
+      action: AUDIT_ACTIONS.PACKAGE_CREATED,
+      targetType: 'package',
+      targetId: newPackage.id,
+      details: { packageTitle: newPackage.title },
+    });
+
+    res.status(201).json({ success: true, package: newPackage });
+  } catch (error) {
+    console.error('Error creating package:', error);
+    res.status(500).json({ error: 'Failed to create package' });
   }
-
-  // Validate that supplier exists
-  const suppliers = read('suppliers');
-  const supplier = suppliers.find(s => s.id === supplierId);
-  if (!supplier) {
-    return res.status(400).json({ error: 'Invalid supplier ID' });
-  }
-
-  const packages = read('packages');
-  const now = new Date().toISOString();
-
-  // Generate slug from title
-  const slug = generateSlug(title);
-  if (!slug) {
-    return res
-      .status(400)
-      .json({ error: 'Title must contain valid characters for slug generation' });
-  }
-
-  // Check if slug already exists
-  const existingPackage = packages.find(p => p.slug === slug);
-  if (existingPackage) {
-    return res
-      .status(400)
-      .json({ error: 'A package with this title already exists. Please use a different title.' });
-  }
-
-  // Create new package
-  const newPackage = {
-    id: uid(),
-    supplierId,
-    title,
-    slug,
-    description: description || '',
-    price_display: price_display || 'Contact for pricing',
-    image: image || '/assets/images/placeholders/package-event.svg',
-    approved: approved === true,
-    featured: featured === true,
-    createdAt: now,
-    updatedAt: now,
-    createdBy: req.user.id,
-    versionHistory: [],
-  };
-
-  packages.push(newPackage);
-  write('packages', packages);
-
-  // Create audit log
-  auditLog({
-    adminId: req.user.id,
-    adminEmail: req.user.email,
-    action: AUDIT_ACTIONS.PACKAGE_CREATED,
-    targetType: 'package',
-    targetId: newPackage.id,
-    details: { packageTitle: newPackage.title },
-  });
-
-  res.status(201).json({ success: true, package: newPackage });
 });
 
 /**
@@ -781,163 +786,178 @@ router.post('/suppliers/:id/verify', authRequired, roleRequired('admin'), async 
  * Grant or update a supplier's subscription
  * Body: { tier: 'pro' | 'pro_plus', days: number }
  */
-router.post('/suppliers/:id/subscription', authRequired, roleRequired('admin'), async (req, res) => {
-  try {
-    const { tier, days } = req.body;
-    const suppliers = await dbUnified.read('suppliers');
-    const supplierIndex = suppliers.findIndex(s => s.id === req.params.id);
+router.post(
+  '/suppliers/:id/subscription',
+  authRequired,
+  roleRequired('admin'),
+  async (req, res) => {
+    try {
+      const { tier, days } = req.body;
+      const suppliers = await dbUnified.read('suppliers');
+      const supplierIndex = suppliers.findIndex(s => s.id === req.params.id);
 
-    if (supplierIndex < 0) {
-      return res.status(404).json({ error: 'Supplier not found' });
-    }
+      if (supplierIndex < 0) {
+        return res.status(404).json({ error: 'Supplier not found' });
+      }
 
-    if (!tier || !['pro', 'pro_plus'].includes(tier)) {
-      return res.status(400).json({ error: 'Invalid tier. Must be "pro" or "pro_plus"' });
-    }
+      if (!tier || !['pro', 'pro_plus'].includes(tier)) {
+        return res.status(400).json({ error: 'Invalid tier. Must be "pro" or "pro_plus"' });
+      }
 
-    if (!days || days <= 0) {
-      return res.status(400).json({ error: 'Invalid duration. Must be positive number of days' });
-    }
+      if (!days || days <= 0) {
+        return res.status(400).json({ error: 'Invalid duration. Must be positive number of days' });
+      }
 
-    const supplier = suppliers[supplierIndex];
-    const now = new Date().toISOString();
-    const expiryDate = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
+      const supplier = suppliers[supplierIndex];
+      const now = new Date().toISOString();
+      const expiryDate = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
 
-    // Update subscription
-    supplier.subscription = {
-      tier: tier,
-      status: 'active',
-      startDate: now,
-      endDate: expiryDate,
-      grantedBy: req.user.id,
-      grantedAt: now,
-      autoRenew: false,
-    };
-    supplier.updatedAt = now;
-
-    // Backward compatibility
-    supplier.isPro = true;
-    supplier.proPlan = tier === 'pro_plus' ? 'Pro+' : 'Pro';
-    supplier.proPlanExpiry = expiryDate;
-
-    suppliers[supplierIndex] = supplier;
-    await dbUnified.write('suppliers', suppliers);
-
-    // Create audit log with specific action
-    auditLog({
-      adminId: req.user.id,
-      adminEmail: req.user.email,
-      action: 'subscription_granted',
-      targetType: 'supplier',
-      targetId: supplier.id,
-      details: {
-        name: supplier.name,
+      // Update subscription
+      supplier.subscription = {
         tier: tier,
-        days: days,
-        expiryDate: expiryDate,
-      },
-    });
+        status: 'active',
+        startDate: now,
+        endDate: expiryDate,
+        grantedBy: req.user.id,
+        grantedAt: now,
+        autoRenew: false,
+      };
+      supplier.updatedAt = now;
 
-    res.json({
-      message: `${tier === 'pro_plus' ? 'Pro+' : 'Pro'} subscription granted successfully`,
-      supplier: {
-        id: supplier.id,
-        name: supplier.name,
-        subscription: supplier.subscription,
-      },
-    });
-  } catch (error) {
-    console.error('Error granting subscription:', error);
-    res.status(500).json({ error: 'Failed to grant subscription' });
+      // Backward compatibility
+      supplier.isPro = true;
+      supplier.proPlan = tier === 'pro_plus' ? 'Pro+' : 'Pro';
+      supplier.proPlanExpiry = expiryDate;
+
+      suppliers[supplierIndex] = supplier;
+      await dbUnified.write('suppliers', suppliers);
+
+      // Create audit log with specific action
+      auditLog({
+        adminId: req.user.id,
+        adminEmail: req.user.email,
+        action: 'subscription_granted',
+        targetType: 'supplier',
+        targetId: supplier.id,
+        details: {
+          name: supplier.name,
+          tier: tier,
+          days: days,
+          expiryDate: expiryDate,
+        },
+      });
+
+      res.json({
+        message: `${tier === 'pro_plus' ? 'Pro+' : 'Pro'} subscription granted successfully`,
+        supplier: {
+          id: supplier.id,
+          name: supplier.name,
+          subscription: supplier.subscription,
+        },
+      });
+    } catch (error) {
+      console.error('Error granting subscription:', error);
+      res.status(500).json({ error: 'Failed to grant subscription' });
+    }
   }
-});
+);
 
 /**
  * DELETE /api/admin/suppliers/:id/subscription
  * Remove a supplier's subscription
  */
-router.delete('/suppliers/:id/subscription', authRequired, roleRequired('admin'), async (req, res) => {
-  try {
-    const suppliers = await dbUnified.read('suppliers');
-    const supplierIndex = suppliers.findIndex(s => s.id === req.params.id);
+router.delete(
+  '/suppliers/:id/subscription',
+  authRequired,
+  roleRequired('admin'),
+  async (req, res) => {
+    try {
+      const suppliers = await dbUnified.read('suppliers');
+      const supplierIndex = suppliers.findIndex(s => s.id === req.params.id);
 
-    if (supplierIndex < 0) {
-      return res.status(404).json({ error: 'Supplier not found' });
+      if (supplierIndex < 0) {
+        return res.status(404).json({ error: 'Supplier not found' });
+      }
+
+      const supplier = suppliers[supplierIndex];
+      const now = new Date().toISOString();
+
+      // Remove subscription
+      supplier.subscription = {
+        tier: 'free',
+        status: 'cancelled',
+        cancelledAt: now,
+        cancelledBy: req.user.id,
+      };
+      supplier.updatedAt = now;
+
+      // Backward compatibility
+      supplier.isPro = false;
+      supplier.proPlan = null;
+      supplier.proPlanExpiry = null;
+
+      suppliers[supplierIndex] = supplier;
+      await dbUnified.write('suppliers', suppliers);
+
+      // Create audit log with specific action
+      auditLog({
+        adminId: req.user.id,
+        adminEmail: req.user.email,
+        action: 'subscription_removed',
+        targetType: 'supplier',
+        targetId: supplier.id,
+        details: {
+          name: supplier.name,
+        },
+      });
+
+      res.json({
+        message: 'Subscription removed successfully',
+        supplier: {
+          id: supplier.id,
+          name: supplier.name,
+          subscription: supplier.subscription,
+        },
+      });
+    } catch (error) {
+      console.error('Error removing subscription:', error);
+      res.status(500).json({ error: 'Failed to remove subscription' });
     }
-
-    const supplier = suppliers[supplierIndex];
-    const now = new Date().toISOString();
-
-    // Remove subscription
-    supplier.subscription = {
-      tier: 'free',
-      status: 'cancelled',
-      cancelledAt: now,
-      cancelledBy: req.user.id,
-    };
-    supplier.updatedAt = now;
-
-    // Backward compatibility
-    supplier.isPro = false;
-    supplier.proPlan = null;
-    supplier.proPlanExpiry = null;
-
-    suppliers[supplierIndex] = supplier;
-    await dbUnified.write('suppliers', suppliers);
-
-    // Create audit log with specific action
-    auditLog({
-      adminId: req.user.id,
-      adminEmail: req.user.email,
-      action: 'subscription_removed',
-      targetType: 'supplier',
-      targetId: supplier.id,
-      details: {
-        name: supplier.name,
-      },
-    });
-
-    res.json({
-      message: 'Subscription removed successfully',
-      supplier: {
-        id: supplier.id,
-        name: supplier.name,
-        subscription: supplier.subscription,
-      },
-    });
-  } catch (error) {
-    console.error('Error removing subscription:', error);
-    res.status(500).json({ error: 'Failed to remove subscription' });
   }
-});
+);
 
 /**
  * GET /api/admin/suppliers/pending-verification
  * Get suppliers awaiting verification
  */
-router.get('/suppliers/pending-verification', authRequired, roleRequired('admin'), async (req, res) => {
-  try {
-    const suppliers = await dbUnified.read('suppliers');
-    const pending = suppliers.filter(
-      s => !s.verified && (!s.verificationStatus || s.verificationStatus === 'pending')
-    );
+router.get(
+  '/suppliers/pending-verification',
+  authRequired,
+  roleRequired('admin'),
+  async (req, res) => {
+    try {
+      const suppliers = await dbUnified.read('suppliers');
+      const pending = suppliers.filter(
+        s => !s.verified && (!s.verificationStatus || s.verificationStatus === 'pending')
+      );
 
-    res.json({
-      suppliers: pending.map(s => ({
-        id: s.id,
-        name: s.name,
-        category: s.category,
-        location: s.location,
-        ownerUserId: s.ownerUserId,
-        createdAt: s.createdAt,
-      })),
-      count: pending.length,
-    });
-  } catch (error) {
-    console.error('Error fetching pending suppliers:', error);
-    res.status(500).json({ error: 'Failed to fetch pending suppliers' });
+      res.json({
+        suppliers: pending.map(s => ({
+          id: s.id,
+          name: s.name,
+          category: s.category,
+          location: s.location,
+          ownerUserId: s.ownerUserId,
+          createdAt: s.createdAt,
+        })),
+        count: pending.length,
+      });
+    } catch (error) {
+      console.error('Error fetching pending suppliers:', error);
+      res.status(500).json({ error: 'Failed to fetch pending suppliers' });
+    }
   }
-});
+);
 
 /**
  * POST /api/admin/suppliers/bulk-approve
@@ -947,7 +967,7 @@ router.get('/suppliers/pending-verification', authRequired, roleRequired('admin'
 router.post('/suppliers/bulk-approve', authRequired, roleRequired('admin'), async (req, res) => {
   try {
     const { supplierIds } = req.body;
-    
+
     if (!Array.isArray(supplierIds) || supplierIds.length === 0) {
       return res.status(400).json({ error: 'supplierIds must be a non-empty array' });
     }
@@ -998,7 +1018,7 @@ router.post('/suppliers/bulk-approve', authRequired, roleRequired('admin'), asyn
 router.post('/suppliers/bulk-reject', authRequired, roleRequired('admin'), async (req, res) => {
   try {
     const { supplierIds } = req.body;
-    
+
     if (!Array.isArray(supplierIds) || supplierIds.length === 0) {
       return res.status(400).json({ error: 'supplierIds must be a non-empty array' });
     }
@@ -1050,14 +1070,14 @@ router.post('/suppliers/bulk-reject', authRequired, roleRequired('admin'), async
 router.post('/suppliers/bulk-delete', authRequired, roleRequired('admin'), async (req, res) => {
   try {
     const { supplierIds } = req.body;
-    
+
     if (!Array.isArray(supplierIds) || supplierIds.length === 0) {
       return res.status(400).json({ error: 'supplierIds must be a non-empty array' });
     }
 
     const suppliers = await dbUnified.read('suppliers');
     const initialCount = suppliers.length;
-    
+
     // Filter out suppliers to delete
     const remainingSuppliers = suppliers.filter(s => !supplierIds.includes(s.id));
     const deletedCount = initialCount - remainingSuppliers.length;
@@ -1617,116 +1637,131 @@ router.post('/users/:id/revoke-admin', authRequired, roleRequired('admin'), (req
  * GET /api/admin/photos/pending
  * Get all photos pending approval
  */
-router.get('/photos/pending', authRequired, roleRequired('admin'), (req, res) => {
-  const photos = read('photos');
-  const pendingPhotos = photos.filter(p => p.status === 'pending');
+router.get('/photos/pending', authRequired, roleRequired('admin'), async (req, res) => {
+  try {
+    const photos = await dbUnified.read('photos');
+    const pendingPhotos = photos.filter(p => p.status === 'pending');
 
-  // Enrich with supplier information
-  const suppliers = read('suppliers');
-  const enrichedPhotos = pendingPhotos.map(photo => {
-    const supplier = suppliers.find(s => s.id === photo.supplierId);
-    return {
-      ...photo,
-      supplierName: supplier ? supplier.name : 'Unknown',
-      supplierCategory: supplier ? supplier.category : null,
-    };
-  });
+    // Enrich with supplier information
+    const suppliers = await dbUnified.read('suppliers');
+    const enrichedPhotos = pendingPhotos.map(photo => {
+      const supplier = suppliers.find(s => s.id === photo.supplierId);
+      return {
+        ...photo,
+        supplierName: supplier ? supplier.name : 'Unknown',
+        supplierCategory: supplier ? supplier.category : null,
+      };
+    });
 
-  res.json({ photos: enrichedPhotos });
+    res.json({ photos: enrichedPhotos });
+  } catch (error) {
+    console.error('Error fetching pending photos:', error);
+    res.status(500).json({ error: 'Failed to fetch pending photos' });
+  }
 });
 
 /**
  * POST /api/admin/photos/:id/approve
  * Approve a photo
  */
-router.post('/photos/:id/approve', authRequired, roleRequired('admin'), (req, res) => {
-  const { id } = req.params;
-  const photos = read('photos');
-  const photoIndex = photos.findIndex(p => p.id === id);
+router.post('/photos/:id/approve', authRequired, roleRequired('admin'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const photos = await dbUnified.read('photos');
+    const photoIndex = photos.findIndex(p => p.id === id);
 
-  if (photoIndex === -1) {
-    return res.status(404).json({ error: 'Photo not found' });
-  }
-
-  const photo = photos[photoIndex];
-  const now = new Date().toISOString();
-
-  // Update photo status
-  photo.status = 'approved';
-  photo.approvedAt = now;
-  photo.approvedBy = req.user.id;
-
-  photos[photoIndex] = photo;
-  write('photos', photos);
-
-  // Add photo to supplier's photos array if not already there
-  const suppliers = read('suppliers');
-  const supplierIndex = suppliers.findIndex(s => s.id === photo.supplierId);
-
-  if (supplierIndex !== -1) {
-    if (!suppliers[supplierIndex].photos) {
-      suppliers[supplierIndex].photos = [];
+    if (photoIndex === -1) {
+      return res.status(404).json({ error: 'Photo not found' });
     }
-    if (!suppliers[supplierIndex].photos.includes(photo.url)) {
-      suppliers[supplierIndex].photos.push(photo.url);
-      write('suppliers', suppliers);
+
+    const photo = photos[photoIndex];
+    const now = new Date().toISOString();
+
+    // Update photo status
+    photo.status = 'approved';
+    photo.approvedAt = now;
+    photo.approvedBy = req.user.id;
+
+    photos[photoIndex] = photo;
+    await dbUnified.write('photos', photos);
+
+    // Add photo to supplier's photos array if not already there
+    const suppliers = await dbUnified.read('suppliers');
+    const supplierIndex = suppliers.findIndex(s => s.id === photo.supplierId);
+
+    if (supplierIndex !== -1) {
+      if (!suppliers[supplierIndex].photos) {
+        suppliers[supplierIndex].photos = [];
+      }
+      if (!suppliers[supplierIndex].photos.includes(photo.url)) {
+        suppliers[supplierIndex].photos.push(photo.url);
+        await dbUnified.write('suppliers', suppliers);
+      }
     }
+
+    // Create audit log
+    auditLog({
+      adminId: req.user.id,
+      adminEmail: req.user.email,
+      action: AUDIT_ACTIONS.CONTENT_APPROVED,
+      targetType: 'photo',
+      targetId: photo.id,
+      details: { supplierId: photo.supplierId, url: photo.url },
+    });
+
+    res.json({ success: true, message: 'Photo approved successfully', photo });
+  } catch (error) {
+    console.error('Error approving photo:', error);
+    res.status(500).json({ error: 'Failed to approve photo' });
   }
-
-  // Create audit log
-  auditLog({
-    adminId: req.user.id,
-    adminEmail: req.user.email,
-    action: AUDIT_ACTIONS.CONTENT_APPROVED,
-    targetType: 'photo',
-    targetId: photo.id,
-    details: { supplierId: photo.supplierId, url: photo.url },
-  });
-
-  res.json({ success: true, message: 'Photo approved successfully', photo });
 });
 
 /**
  * POST /api/admin/photos/:id/reject
  * Reject a photo
  */
-router.post('/photos/:id/reject', authRequired, roleRequired('admin'), (req, res) => {
-  const { id } = req.params;
-  const { reason } = req.body;
-  const photos = read('photos');
-  const photoIndex = photos.findIndex(p => p.id === id);
+router.post('/photos/:id/reject', authRequired, roleRequired('admin'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { reason } = req.body;
+    const photos = await dbUnified.read('photos');
+    const photoIndex = photos.findIndex(p => p.id === id);
 
-  if (photoIndex === -1) {
-    return res.status(404).json({ error: 'Photo not found' });
+    if (photoIndex === -1) {
+      return res.status(404).json({ error: 'Photo not found' });
+    }
+
+    const photo = photos[photoIndex];
+    const now = new Date().toISOString();
+
+    // Update photo status
+    photo.status = 'rejected';
+    photo.rejectedAt = now;
+    photo.rejectedBy = req.user.id;
+    photo.rejectionReason = reason || 'No reason provided';
+
+    photos[photoIndex] = photo;
+    await dbUnified.write('photos', photos);
+
+    // Create audit log
+    auditLog({
+      adminId: req.user.id,
+      adminEmail: req.user.email,
+      action: AUDIT_ACTIONS.CONTENT_REJECTED,
+      targetType: 'photo',
+      targetId: photo.id,
+      details: {
+        supplierId: photo.supplierId,
+        url: photo.url,
+        reason: photo.rejectionReason,
+      },
+    });
+
+    res.json({ success: true, message: 'Photo rejected successfully', photo });
+  } catch (error) {
+    console.error('Error rejecting photo:', error);
+    res.status(500).json({ error: 'Failed to reject photo' });
   }
-
-  const photo = photos[photoIndex];
-  const now = new Date().toISOString();
-
-  // Update photo status
-  photo.status = 'rejected';
-  photo.rejectedAt = now;
-  photo.rejectedBy = req.user.id;
-  photo.rejectionReason = reason || 'No reason provided';
-
-  photos[photoIndex] = photo;
-  write('photos', photos);
-
-  // Create audit log
-  auditLog({
-    adminId: req.user.id,
-    adminEmail: req.user.email,
-    action: AUDIT_ACTIONS.CONTENT_REJECTED,
-    targetType: 'photo',
-    targetId: photo.id,
-    details: {
-      supplierId: photo.supplierId,
-      url: photo.url,
-      reason: photo.rejectionReason,
-    },
-  });
-
-  res.json({ success: true, message: 'Photo rejected successfully', photo });
 });
 
 // ---------- Smart Tagging ----------
@@ -3493,7 +3528,7 @@ router.get('/maintenance/message', async (req, res) => {
       enabled: false,
       message: "We're performing scheduled maintenance. We'll be back soon!",
     };
-    
+
     // Only return the message and enabled status, not admin details
     res.json({
       enabled: maintenance.enabled,
