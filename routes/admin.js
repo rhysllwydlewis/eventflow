@@ -259,99 +259,114 @@ router.post('/reset-demo', authRequired, roleRequired('admin'), (req, res) => {
  * GET /api/admin/suppliers
  * List all suppliers for admin moderation
  */
-router.get('/suppliers', authRequired, roleRequired('admin'), (_req, res) => {
-  const raw = read('suppliers');
-  const items = raw.map(s => ({
-    ...s,
-    isPro: supplierIsProActiveFn ? supplierIsProActiveFn(s) : s.isPro,
-    proExpiresAt: s.proExpiresAt || null,
-  }));
-  res.json({ items });
+router.get('/suppliers', authRequired, roleRequired('admin'), async (_req, res) => {
+  try {
+    const raw = await dbUnified.read('suppliers');
+    const items = raw.map(s => ({
+      ...s,
+      isPro: supplierIsProActiveFn ? supplierIsProActiveFn(s) : s.isPro,
+      proExpiresAt: s.proExpiresAt || null,
+    }));
+    res.json({ items });
+  } catch (error) {
+    console.error('Error reading suppliers:', error);
+    res.status(500).json({ error: 'Failed to load suppliers' });
+  }
 });
 
 /**
  * POST /api/admin/suppliers/:id/approve
  * Approve or reject a supplier
  */
-router.post('/suppliers/:id/approve', authRequired, roleRequired('admin'), (req, res) => {
-  const all = read('suppliers');
-  const i = all.findIndex(s => s.id === req.params.id);
-  if (i < 0) {
-    return res.status(404).json({ error: 'Not found' });
+router.post('/suppliers/:id/approve', authRequired, roleRequired('admin'), async (req, res) => {
+  try {
+    const all = await dbUnified.read('suppliers');
+    const i = all.findIndex(s => s.id === req.params.id);
+    if (i < 0) {
+      return res.status(404).json({ error: 'Not found' });
+    }
+    all[i].approved = !!(req.body && req.body.approved);
+    await dbUnified.write('suppliers', all);
+    res.json({ ok: true, supplier: all[i] });
+  } catch (error) {
+    console.error('Error approving supplier:', error);
+    res.status(500).json({ error: 'Failed to approve supplier' });
   }
-  all[i].approved = !!(req.body && req.body.approved);
-  write('suppliers', all);
-  res.json({ ok: true, supplier: all[i] });
 });
 
 /**
  * POST /api/admin/suppliers/:id/pro
  * Manage supplier Pro subscription
  */
-router.post('/suppliers/:id/pro', authRequired, roleRequired('admin'), (req, res) => {
-  const { mode, duration } = req.body || {};
-  const all = read('suppliers');
-  const i = all.findIndex(s => s.id === req.params.id);
-  if (i < 0) {
-    return res.status(404).json({ error: 'Not found' });
-  }
-
-  const s = all[i];
-  const now = Date.now();
-
-  if (mode === 'cancel') {
-    s.isPro = false;
-    s.proExpiresAt = null;
-  } else if (mode === 'duration') {
-    let ms = 0;
-    switch (duration) {
-      case '1d':
-        ms = 1 * 24 * 60 * 60 * 1000;
-        break;
-      case '7d':
-        ms = 7 * 24 * 60 * 60 * 1000;
-        break;
-      case '1m':
-        ms = 30 * 24 * 60 * 60 * 1000;
-        break;
-      case '1y':
-        ms = 365 * 24 * 60 * 60 * 1000;
-        break;
-      default:
-        return res.status(400).json({ error: 'Invalid duration' });
-    }
-    s.isPro = true;
-    s.proExpiresAt = new Date(now + ms).toISOString();
-  } else {
-    return res.status(400).json({ error: 'Invalid mode' });
-  }
-
-  // Optionally mirror Pro flag to the owning user, if present.
+router.post('/suppliers/:id/pro', authRequired, roleRequired('admin'), async (req, res) => {
   try {
-    if (s.ownerUserId) {
-      const users = read('users');
-      const u = users.find(u => u.id === s.ownerUserId);
-      if (u) {
-        u.isPro = !!s.isPro;
-        write('users', users);
-      }
+    const { mode, duration } = req.body || {};
+    const all = await dbUnified.read('suppliers');
+    const i = all.findIndex(s => s.id === req.params.id);
+    if (i < 0) {
+      return res.status(404).json({ error: 'Not found' });
     }
-  } catch (_e) {
-    // ignore errors from user store
+
+    const s = all[i];
+    const now = Date.now();
+
+    if (mode === 'cancel') {
+      s.isPro = false;
+      s.proExpiresAt = null;
+    } else if (mode === 'duration') {
+      let ms = 0;
+      switch (duration) {
+        case '1d':
+          ms = 1 * 24 * 60 * 60 * 1000;
+          break;
+        case '7d':
+          ms = 7 * 24 * 60 * 60 * 1000;
+          break;
+        case '1m':
+          ms = 30 * 24 * 60 * 60 * 1000;
+          break;
+        case '1y':
+          ms = 365 * 24 * 60 * 60 * 1000;
+          break;
+        default:
+          return res.status(400).json({ error: 'Invalid duration' });
+      }
+      s.isPro = true;
+      s.proExpiresAt = new Date(now + ms).toISOString();
+    } else {
+      return res.status(400).json({ error: 'Invalid mode' });
+    }
+
+    // Optionally mirror Pro flag to the owning user, if present.
+    try {
+      if (s.ownerUserId) {
+        const users = await dbUnified.read('users');
+        const u = users.find(u => u.id === s.ownerUserId);
+        if (u) {
+          u.isPro = !!s.isPro;
+          await dbUnified.write('users', users);
+        }
+      }
+    } catch (_e) {
+      // ignore errors from user store
+    }
+
+    all[i] = s;
+    await dbUnified.write('suppliers', all);
+
+    const active = supplierIsProActiveFn ? supplierIsProActiveFn(s) : s.isPro;
+    res.json({
+      ok: true,
+      supplier: {
+        ...s,
+        isPro: active,
+        proExpiresAt: s.proExpiresAt || null,
+      },
+    });
+  } catch (error) {
+    console.error('Error updating supplier Pro status:', error);
+    res.status(500).json({ error: 'Failed to update supplier Pro status' });
   }
-
-  all[i] = s;
-  write('suppliers', all);
-
-  const active = supplierIsProActiveFn ? supplierIsProActiveFn(s) : s.isPro;
-  res.json({
-    ok: true,
-    supplier: {
-      ...s,
-      isPro: active,
-      proExpiresAt: s.proExpiresAt || null,
-    },
-  });
 });
 
 /**
@@ -713,47 +728,52 @@ router.post('/users/:id/force-reset', authRequired, roleRequired('admin'), async
  * Verify a supplier account
  * Body: { verified: boolean, verificationNotes: string }
  */
-router.post('/suppliers/:id/verify', authRequired, roleRequired('admin'), (req, res) => {
-  const { verified, verificationNotes } = req.body;
-  const suppliers = read('suppliers');
-  const supplierIndex = suppliers.findIndex(s => s.id === req.params.id);
+router.post('/suppliers/:id/verify', authRequired, roleRequired('admin'), async (req, res) => {
+  try {
+    const { verified, verificationNotes } = req.body;
+    const suppliers = await dbUnified.read('suppliers');
+    const supplierIndex = suppliers.findIndex(s => s.id === req.params.id);
 
-  if (supplierIndex < 0) {
-    return res.status(404).json({ error: 'Supplier not found' });
+    if (supplierIndex < 0) {
+      return res.status(404).json({ error: 'Supplier not found' });
+    }
+
+    const supplier = suppliers[supplierIndex];
+    const now = new Date().toISOString();
+
+    supplier.verified = !!verified;
+    supplier.verifiedAt = verified ? now : null;
+    supplier.verifiedBy = verified ? req.user.id : null;
+    supplier.verificationNotes = verificationNotes || '';
+    supplier.verificationStatus = verified ? 'verified' : 'rejected';
+    supplier.updatedAt = now;
+
+    suppliers[supplierIndex] = supplier;
+    await dbUnified.write('suppliers', suppliers);
+
+    // Create audit log
+    auditLog({
+      adminId: req.user.id,
+      adminEmail: req.user.email,
+      action: verified ? AUDIT_ACTIONS.SUPPLIER_VERIFIED : AUDIT_ACTIONS.SUPPLIER_REJECTED,
+      targetType: 'supplier',
+      targetId: supplier.id,
+      details: { name: supplier.name, notes: verificationNotes },
+    });
+
+    res.json({
+      message: verified ? 'Supplier verified successfully' : 'Supplier verification rejected',
+      supplier: {
+        id: supplier.id,
+        name: supplier.name,
+        verified: supplier.verified,
+        verificationStatus: supplier.verificationStatus,
+      },
+    });
+  } catch (error) {
+    console.error('Error verifying supplier:', error);
+    res.status(500).json({ error: 'Failed to verify supplier' });
   }
-
-  const supplier = suppliers[supplierIndex];
-  const now = new Date().toISOString();
-
-  supplier.verified = !!verified;
-  supplier.verifiedAt = verified ? now : null;
-  supplier.verifiedBy = verified ? req.user.id : null;
-  supplier.verificationNotes = verificationNotes || '';
-  supplier.verificationStatus = verified ? 'verified' : 'rejected';
-  supplier.updatedAt = now;
-
-  suppliers[supplierIndex] = supplier;
-  write('suppliers', suppliers);
-
-  // Create audit log
-  auditLog({
-    adminId: req.user.id,
-    adminEmail: req.user.email,
-    action: verified ? AUDIT_ACTIONS.SUPPLIER_VERIFIED : AUDIT_ACTIONS.SUPPLIER_REJECTED,
-    targetType: 'supplier',
-    targetId: supplier.id,
-    details: { name: supplier.name, notes: verificationNotes },
-  });
-
-  res.json({
-    message: verified ? 'Supplier verified successfully' : 'Supplier verification rejected',
-    supplier: {
-      id: supplier.id,
-      name: supplier.name,
-      verified: supplier.verified,
-      verificationStatus: supplier.verificationStatus,
-    },
-  });
 });
 
 /**
@@ -761,147 +781,317 @@ router.post('/suppliers/:id/verify', authRequired, roleRequired('admin'), (req, 
  * Grant or update a supplier's subscription
  * Body: { tier: 'pro' | 'pro_plus', days: number }
  */
-router.post('/suppliers/:id/subscription', authRequired, roleRequired('admin'), (req, res) => {
-  const { tier, days } = req.body;
-  const suppliers = read('suppliers');
-  const supplierIndex = suppliers.findIndex(s => s.id === req.params.id);
+router.post('/suppliers/:id/subscription', authRequired, roleRequired('admin'), async (req, res) => {
+  try {
+    const { tier, days } = req.body;
+    const suppliers = await dbUnified.read('suppliers');
+    const supplierIndex = suppliers.findIndex(s => s.id === req.params.id);
 
-  if (supplierIndex < 0) {
-    return res.status(404).json({ error: 'Supplier not found' });
-  }
+    if (supplierIndex < 0) {
+      return res.status(404).json({ error: 'Supplier not found' });
+    }
 
-  if (!tier || !['pro', 'pro_plus'].includes(tier)) {
-    return res.status(400).json({ error: 'Invalid tier. Must be "pro" or "pro_plus"' });
-  }
+    if (!tier || !['pro', 'pro_plus'].includes(tier)) {
+      return res.status(400).json({ error: 'Invalid tier. Must be "pro" or "pro_plus"' });
+    }
 
-  if (!days || days <= 0) {
-    return res.status(400).json({ error: 'Invalid duration. Must be positive number of days' });
-  }
+    if (!days || days <= 0) {
+      return res.status(400).json({ error: 'Invalid duration. Must be positive number of days' });
+    }
 
-  const supplier = suppliers[supplierIndex];
-  const now = new Date().toISOString();
-  const expiryDate = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
+    const supplier = suppliers[supplierIndex];
+    const now = new Date().toISOString();
+    const expiryDate = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
 
-  // Update subscription
-  supplier.subscription = {
-    tier: tier,
-    status: 'active',
-    startDate: now,
-    endDate: expiryDate,
-    grantedBy: req.user.id,
-    grantedAt: now,
-    autoRenew: false,
-  };
-  supplier.updatedAt = now;
-
-  // Backward compatibility
-  supplier.isPro = true;
-  supplier.proPlan = tier === 'pro_plus' ? 'Pro+' : 'Pro';
-  supplier.proPlanExpiry = expiryDate;
-
-  suppliers[supplierIndex] = supplier;
-  write('suppliers', suppliers);
-
-  // Create audit log with specific action
-  auditLog({
-    adminId: req.user.id,
-    adminEmail: req.user.email,
-    action: 'subscription_granted',
-    targetType: 'supplier',
-    targetId: supplier.id,
-    details: {
-      name: supplier.name,
+    // Update subscription
+    supplier.subscription = {
       tier: tier,
-      days: days,
-      expiryDate: expiryDate,
-    },
-  });
+      status: 'active',
+      startDate: now,
+      endDate: expiryDate,
+      grantedBy: req.user.id,
+      grantedAt: now,
+      autoRenew: false,
+    };
+    supplier.updatedAt = now;
 
-  res.json({
-    message: `${tier === 'pro_plus' ? 'Pro+' : 'Pro'} subscription granted successfully`,
-    supplier: {
-      id: supplier.id,
-      name: supplier.name,
-      subscription: supplier.subscription,
-    },
-  });
+    // Backward compatibility
+    supplier.isPro = true;
+    supplier.proPlan = tier === 'pro_plus' ? 'Pro+' : 'Pro';
+    supplier.proPlanExpiry = expiryDate;
+
+    suppliers[supplierIndex] = supplier;
+    await dbUnified.write('suppliers', suppliers);
+
+    // Create audit log with specific action
+    auditLog({
+      adminId: req.user.id,
+      adminEmail: req.user.email,
+      action: 'subscription_granted',
+      targetType: 'supplier',
+      targetId: supplier.id,
+      details: {
+        name: supplier.name,
+        tier: tier,
+        days: days,
+        expiryDate: expiryDate,
+      },
+    });
+
+    res.json({
+      message: `${tier === 'pro_plus' ? 'Pro+' : 'Pro'} subscription granted successfully`,
+      supplier: {
+        id: supplier.id,
+        name: supplier.name,
+        subscription: supplier.subscription,
+      },
+    });
+  } catch (error) {
+    console.error('Error granting subscription:', error);
+    res.status(500).json({ error: 'Failed to grant subscription' });
+  }
 });
 
 /**
  * DELETE /api/admin/suppliers/:id/subscription
  * Remove a supplier's subscription
  */
-router.delete('/suppliers/:id/subscription', authRequired, roleRequired('admin'), (req, res) => {
-  const suppliers = read('suppliers');
-  const supplierIndex = suppliers.findIndex(s => s.id === req.params.id);
+router.delete('/suppliers/:id/subscription', authRequired, roleRequired('admin'), async (req, res) => {
+  try {
+    const suppliers = await dbUnified.read('suppliers');
+    const supplierIndex = suppliers.findIndex(s => s.id === req.params.id);
 
-  if (supplierIndex < 0) {
-    return res.status(404).json({ error: 'Supplier not found' });
+    if (supplierIndex < 0) {
+      return res.status(404).json({ error: 'Supplier not found' });
+    }
+
+    const supplier = suppliers[supplierIndex];
+    const now = new Date().toISOString();
+
+    // Remove subscription
+    supplier.subscription = {
+      tier: 'free',
+      status: 'cancelled',
+      cancelledAt: now,
+      cancelledBy: req.user.id,
+    };
+    supplier.updatedAt = now;
+
+    // Backward compatibility
+    supplier.isPro = false;
+    supplier.proPlan = null;
+    supplier.proPlanExpiry = null;
+
+    suppliers[supplierIndex] = supplier;
+    await dbUnified.write('suppliers', suppliers);
+
+    // Create audit log with specific action
+    auditLog({
+      adminId: req.user.id,
+      adminEmail: req.user.email,
+      action: 'subscription_removed',
+      targetType: 'supplier',
+      targetId: supplier.id,
+      details: {
+        name: supplier.name,
+      },
+    });
+
+    res.json({
+      message: 'Subscription removed successfully',
+      supplier: {
+        id: supplier.id,
+        name: supplier.name,
+        subscription: supplier.subscription,
+      },
+    });
+  } catch (error) {
+    console.error('Error removing subscription:', error);
+    res.status(500).json({ error: 'Failed to remove subscription' });
   }
-
-  const supplier = suppliers[supplierIndex];
-  const now = new Date().toISOString();
-
-  // Remove subscription
-  supplier.subscription = {
-    tier: 'free',
-    status: 'cancelled',
-    cancelledAt: now,
-    cancelledBy: req.user.id,
-  };
-  supplier.updatedAt = now;
-
-  // Backward compatibility
-  supplier.isPro = false;
-  supplier.proPlan = null;
-  supplier.proPlanExpiry = null;
-
-  suppliers[supplierIndex] = supplier;
-  write('suppliers', suppliers);
-
-  // Create audit log with specific action
-  auditLog({
-    adminId: req.user.id,
-    adminEmail: req.user.email,
-    action: 'subscription_removed',
-    targetType: 'supplier',
-    targetId: supplier.id,
-    details: {
-      name: supplier.name,
-    },
-  });
-
-  res.json({
-    message: 'Subscription removed successfully',
-    supplier: {
-      id: supplier.id,
-      name: supplier.name,
-      subscription: supplier.subscription,
-    },
-  });
 });
 
 /**
  * GET /api/admin/suppliers/pending-verification
  * Get suppliers awaiting verification
  */
-router.get('/suppliers/pending-verification', authRequired, roleRequired('admin'), (req, res) => {
-  const suppliers = read('suppliers');
-  const pending = suppliers.filter(
-    s => !s.verified && (!s.verificationStatus || s.verificationStatus === 'pending')
-  );
+router.get('/suppliers/pending-verification', authRequired, roleRequired('admin'), async (req, res) => {
+  try {
+    const suppliers = await dbUnified.read('suppliers');
+    const pending = suppliers.filter(
+      s => !s.verified && (!s.verificationStatus || s.verificationStatus === 'pending')
+    );
 
-  res.json({
-    suppliers: pending.map(s => ({
-      id: s.id,
-      name: s.name,
-      category: s.category,
-      location: s.location,
-      ownerUserId: s.ownerUserId,
-      createdAt: s.createdAt,
-    })),
-    count: pending.length,
-  });
+    res.json({
+      suppliers: pending.map(s => ({
+        id: s.id,
+        name: s.name,
+        category: s.category,
+        location: s.location,
+        ownerUserId: s.ownerUserId,
+        createdAt: s.createdAt,
+      })),
+      count: pending.length,
+    });
+  } catch (error) {
+    console.error('Error fetching pending suppliers:', error);
+    res.status(500).json({ error: 'Failed to fetch pending suppliers' });
+  }
+});
+
+/**
+ * POST /api/admin/suppliers/bulk-approve
+ * Bulk approve suppliers
+ * Body: { supplierIds: string[] }
+ */
+router.post('/suppliers/bulk-approve', authRequired, roleRequired('admin'), async (req, res) => {
+  try {
+    const { supplierIds } = req.body;
+    
+    if (!Array.isArray(supplierIds) || supplierIds.length === 0) {
+      return res.status(400).json({ error: 'supplierIds must be a non-empty array' });
+    }
+
+    const suppliers = await dbUnified.read('suppliers');
+    let updatedCount = 0;
+
+    supplierIds.forEach(supplierId => {
+      const index = suppliers.findIndex(s => s.id === supplierId);
+      if (index >= 0) {
+        suppliers[index].approved = true;
+        suppliers[index].updatedAt = new Date().toISOString();
+        suppliers[index].approvedBy = req.user.id;
+        updatedCount++;
+      }
+    });
+
+    if (updatedCount > 0) {
+      await dbUnified.write('suppliers', suppliers);
+    }
+
+    // Create audit log
+    auditLog({
+      adminId: req.user.id,
+      adminEmail: req.user.email,
+      action: 'BULK_SUPPLIERS_APPROVED',
+      targetType: 'suppliers',
+      targetId: 'bulk',
+      details: { supplierIds, count: updatedCount },
+    });
+
+    res.json({
+      success: true,
+      message: `Successfully approved ${updatedCount} supplier(s)`,
+      updatedCount,
+    });
+  } catch (error) {
+    console.error('Error bulk approving suppliers:', error);
+    res.status(500).json({ error: 'Failed to bulk approve suppliers' });
+  }
+});
+
+/**
+ * POST /api/admin/suppliers/bulk-reject
+ * Bulk reject suppliers
+ * Body: { supplierIds: string[] }
+ */
+router.post('/suppliers/bulk-reject', authRequired, roleRequired('admin'), async (req, res) => {
+  try {
+    const { supplierIds } = req.body;
+    
+    if (!Array.isArray(supplierIds) || supplierIds.length === 0) {
+      return res.status(400).json({ error: 'supplierIds must be a non-empty array' });
+    }
+
+    const suppliers = await dbUnified.read('suppliers');
+    let updatedCount = 0;
+
+    supplierIds.forEach(supplierId => {
+      const index = suppliers.findIndex(s => s.id === supplierId);
+      if (index >= 0) {
+        suppliers[index].approved = false;
+        suppliers[index].rejected = true;
+        suppliers[index].updatedAt = new Date().toISOString();
+        suppliers[index].rejectedBy = req.user.id;
+        updatedCount++;
+      }
+    });
+
+    if (updatedCount > 0) {
+      await dbUnified.write('suppliers', suppliers);
+    }
+
+    // Create audit log
+    auditLog({
+      adminId: req.user.id,
+      adminEmail: req.user.email,
+      action: 'BULK_SUPPLIERS_REJECTED',
+      targetType: 'suppliers',
+      targetId: 'bulk',
+      details: { supplierIds, count: updatedCount },
+    });
+
+    res.json({
+      success: true,
+      message: `Successfully rejected ${updatedCount} supplier(s)`,
+      updatedCount,
+    });
+  } catch (error) {
+    console.error('Error bulk rejecting suppliers:', error);
+    res.status(500).json({ error: 'Failed to bulk reject suppliers' });
+  }
+});
+
+/**
+ * POST /api/admin/suppliers/bulk-delete
+ * Bulk delete suppliers
+ * Body: { supplierIds: string[] }
+ */
+router.post('/suppliers/bulk-delete', authRequired, roleRequired('admin'), async (req, res) => {
+  try {
+    const { supplierIds } = req.body;
+    
+    if (!Array.isArray(supplierIds) || supplierIds.length === 0) {
+      return res.status(400).json({ error: 'supplierIds must be a non-empty array' });
+    }
+
+    const suppliers = await dbUnified.read('suppliers');
+    const initialCount = suppliers.length;
+    
+    // Filter out suppliers to delete
+    const remainingSuppliers = suppliers.filter(s => !supplierIds.includes(s.id));
+    const deletedCount = initialCount - remainingSuppliers.length;
+
+    if (deletedCount > 0) {
+      await dbUnified.write('suppliers', remainingSuppliers);
+
+      // Also delete associated packages
+      const packages = await dbUnified.read('packages');
+      const remainingPackages = packages.filter(p => !supplierIds.includes(p.supplierId));
+      if (remainingPackages.length < packages.length) {
+        await dbUnified.write('packages', remainingPackages);
+      }
+    }
+
+    // Create audit log
+    auditLog({
+      adminId: req.user.id,
+      adminEmail: req.user.email,
+      action: 'BULK_SUPPLIERS_DELETED',
+      targetType: 'suppliers',
+      targetId: 'bulk',
+      details: { supplierIds, count: deletedCount },
+    });
+
+    res.json({
+      success: true,
+      message: `Successfully deleted ${deletedCount} supplier(s) and their associated packages`,
+      deletedCount,
+    });
+  } catch (error) {
+    console.error('Error bulk deleting suppliers:', error);
+    res.status(500).json({ error: 'Failed to bulk delete suppliers' });
+  }
 });
 
 // Helper function to parse duration strings like "7d", "1h", "30m"
@@ -1035,69 +1225,74 @@ router.put('/packages/:id', authRequired, roleRequired('admin'), (req, res) => {
  * PUT /api/admin/suppliers/:id
  * Edit supplier profile (admin only)
  */
-router.put('/suppliers/:id', authRequired, roleRequired('admin'), (req, res) => {
-  const { id } = req.params;
-  const { name, description, contact, categories, amenities, location, serviceAreas } = req.body;
+router.put('/suppliers/:id', authRequired, roleRequired('admin'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, description, contact, categories, amenities, location, serviceAreas } = req.body;
 
-  const suppliers = read('suppliers');
-  const supplierIndex = suppliers.findIndex(s => s.id === id);
+    const suppliers = await dbUnified.read('suppliers');
+    const supplierIndex = suppliers.findIndex(s => s.id === id);
 
-  if (supplierIndex === -1) {
-    return res.status(404).json({ error: 'Supplier not found' });
-  }
+    if (supplierIndex === -1) {
+      return res.status(404).json({ error: 'Supplier not found' });
+    }
 
-  const supplier = suppliers[supplierIndex];
+    const supplier = suppliers[supplierIndex];
 
-  // Store previous version for history
-  if (!supplier.versionHistory) {
-    supplier.versionHistory = [];
-  }
-  supplier.versionHistory.push({
-    timestamp: new Date().toISOString(),
-    editedBy: req.user.id,
-    previousState: { ...supplier },
-  });
+    // Store previous version for history
+    if (!supplier.versionHistory) {
+      supplier.versionHistory = [];
+    }
+    supplier.versionHistory.push({
+      timestamp: new Date().toISOString(),
+      editedBy: req.user.id,
+      previousState: { ...supplier },
+    });
 
-  // Update fields if provided
-  if (name !== undefined) {
-    supplier.name = name;
-  }
-  if (description !== undefined) {
-    supplier.description = description;
-  }
-  if (contact !== undefined) {
-    supplier.contact = contact;
-  }
-  if (categories !== undefined) {
-    supplier.categories = categories;
-  }
-  if (amenities !== undefined) {
-    supplier.amenities = amenities;
-  }
-  if (location !== undefined) {
-    supplier.location = location;
-  }
-  if (serviceAreas !== undefined) {
-    supplier.serviceAreas = serviceAreas;
-  }
+    // Update fields if provided
+    if (name !== undefined) {
+      supplier.name = name;
+    }
+    if (description !== undefined) {
+      supplier.description = description;
+    }
+    if (contact !== undefined) {
+      supplier.contact = contact;
+    }
+    if (categories !== undefined) {
+      supplier.categories = categories;
+    }
+    if (amenities !== undefined) {
+      supplier.amenities = amenities;
+    }
+    if (location !== undefined) {
+      supplier.location = location;
+    }
+    if (serviceAreas !== undefined) {
+      supplier.serviceAreas = serviceAreas;
+    }
 
-  supplier.updatedAt = new Date().toISOString();
-  supplier.lastEditedBy = req.user.id;
+    supplier.updatedAt = new Date().toISOString();
+    supplier.lastEditedBy = req.user.id;
 
-  suppliers[supplierIndex] = supplier;
-  write('suppliers', suppliers);
+    suppliers[supplierIndex] = supplier;
+    await dbUnified.write('suppliers', suppliers);
 
-  // Create audit log
-  auditLog({
-    adminId: req.user.id,
-    adminEmail: req.user.email,
-    action: AUDIT_ACTIONS.SUPPLIER_EDITED,
-    targetType: 'supplier',
-    targetId: id,
-    details: { supplierName: supplier.name, changes: req.body },
-  });
+    // Create audit log
+    auditLog({
+      adminId: req.user.id,
+      adminEmail: req.user.email,
+      action: AUDIT_ACTIONS.SUPPLIER_EDITED,
+      targetType: 'supplier',
+      targetId: id,
+      details: { supplierName: supplier.name, changes: req.body },
+    });
 
-  res.json({ success: true, supplier });
+    res.json({ success: true, supplier });
+  } catch (error) {
+    console.error('Error updating supplier:', error);
+    res.status(500).json({ error: 'Failed to update supplier' });
+  }
 });
 
 /**
@@ -1216,39 +1411,44 @@ router.delete('/users/:id', authRequired, roleRequired('admin'), (req, res) => {
  * DELETE /api/admin/suppliers/:id
  * Delete a supplier (admin only)
  */
-router.delete('/suppliers/:id', authRequired, roleRequired('admin'), (req, res) => {
-  const { id } = req.params;
-  const suppliers = read('suppliers');
-  const supplierIndex = suppliers.findIndex(s => s.id === id);
+router.delete('/suppliers/:id', authRequired, roleRequired('admin'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const suppliers = await dbUnified.read('suppliers');
+    const supplierIndex = suppliers.findIndex(s => s.id === id);
 
-  if (supplierIndex === -1) {
-    return res.status(404).json({ error: 'Supplier not found' });
+    if (supplierIndex === -1) {
+      return res.status(404).json({ error: 'Supplier not found' });
+    }
+
+    const supplier = suppliers[supplierIndex];
+
+    // Remove the supplier
+    suppliers.splice(supplierIndex, 1);
+    await dbUnified.write('suppliers', suppliers);
+
+    // Also delete associated packages
+    const packages = await dbUnified.read('packages');
+    const updatedPackages = packages.filter(p => p.supplierId !== id);
+    if (updatedPackages.length < packages.length) {
+      await dbUnified.write('packages', updatedPackages);
+    }
+
+    // Create audit log
+    auditLog({
+      adminId: req.user.id,
+      adminEmail: req.user.email,
+      action: 'supplier_deleted',
+      targetType: 'supplier',
+      targetId: supplier.id,
+      details: { name: supplier.name },
+    });
+
+    res.json({ success: true, message: 'Supplier and associated packages deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting supplier:', error);
+    res.status(500).json({ error: 'Failed to delete supplier' });
   }
-
-  const supplier = suppliers[supplierIndex];
-
-  // Remove the supplier
-  suppliers.splice(supplierIndex, 1);
-  write('suppliers', suppliers);
-
-  // Also delete associated packages
-  const packages = read('packages');
-  const updatedPackages = packages.filter(p => p.supplierId !== id);
-  if (updatedPackages.length < packages.length) {
-    write('packages', updatedPackages);
-  }
-
-  // Create audit log
-  auditLog({
-    adminId: req.user.id,
-    adminEmail: req.user.email,
-    action: 'supplier_deleted',
-    targetType: 'supplier',
-    targetId: supplier.id,
-    details: { name: supplier.name },
-  });
-
-  res.json({ success: true, message: 'Supplier and associated packages deleted successfully' });
 });
 
 /**
