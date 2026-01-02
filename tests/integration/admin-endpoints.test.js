@@ -15,19 +15,39 @@ describe('Admin API Integration Tests', () => {
     it('should have maintenance message endpoint in admin routes', () => {
       const fs = require('fs');
       const adminRoutesContent = fs.readFileSync('routes/admin.js', 'utf8');
-      
+
       // Verify the public maintenance message endpoint exists
-      expect(adminRoutesContent).toContain('router.get(\'/maintenance/message\'');
-      expect(adminRoutesContent).toContain('dbUnified.read(\'settings\')');
+      expect(adminRoutesContent).toContain("router.get('/maintenance/message'");
+      expect(adminRoutesContent).toContain("dbUnified.read('settings')");
     });
 
     it('should have maintenance settings endpoints', () => {
       const fs = require('fs');
       const adminRoutesContent = fs.readFileSync('routes/admin.js', 'utf8');
-      
+
       // Verify maintenance settings endpoints exist
-      expect(adminRoutesContent).toContain('router.get(\'/settings/maintenance\'');
-      expect(adminRoutesContent).toContain('router.put(\'/settings/maintenance\'');
+      expect(adminRoutesContent).toContain("router.get('/settings/maintenance'");
+      expect(adminRoutesContent).toContain("router.put('/settings/maintenance'");
+    });
+
+    it('should have supplier management endpoints', () => {
+      const fs = require('fs');
+      const adminRoutesContent = fs.readFileSync('routes/admin.js', 'utf8');
+
+      // Verify supplier endpoints exist
+      expect(adminRoutesContent).toContain("router.get('/suppliers'");
+      expect(adminRoutesContent).toContain("router.post('/suppliers/:id/approve'");
+      expect(adminRoutesContent).toContain("router.delete('/suppliers/:id'");
+    });
+
+    it('should have bulk supplier action endpoints', () => {
+      const fs = require('fs');
+      const adminRoutesContent = fs.readFileSync('routes/admin.js', 'utf8');
+
+      // Verify bulk action endpoints exist
+      expect(adminRoutesContent).toContain("router.post('/suppliers/bulk-approve'");
+      expect(adminRoutesContent).toContain("router.post('/suppliers/bulk-reject'");
+      expect(adminRoutesContent).toContain("router.post('/suppliers/bulk-delete'");
     });
   });
 
@@ -52,7 +72,7 @@ describe('Admin API Integration Tests', () => {
 
       // Simulate reading maintenance settings
       const settings = await mockDbUnified.read('settings');
-      
+
       expect(settings.maintenance).toHaveProperty('enabled', true);
       expect(settings.maintenance).toHaveProperty('message', 'Under maintenance');
       expect(mockDbUnified.read).toHaveBeenCalledWith('settings');
@@ -85,8 +105,8 @@ describe('Admin API Integration Tests', () => {
       const maintenanceContent = fs.readFileSync('middleware/maintenance.js', 'utf8');
       const adminContent = fs.readFileSync('routes/admin.js', 'utf8');
 
-      expect(maintenanceContent).toContain('require(\'../db-unified\')');
-      expect(adminContent).toContain('require(\'../db-unified\')');
+      expect(maintenanceContent).toContain("require('../db-unified')");
+      expect(adminContent).toContain("require('../db-unified')");
     });
 
     it('maintenance middleware should be async', () => {
@@ -105,6 +125,82 @@ describe('Admin API Integration Tests', () => {
       // Verify both endpoints use dbUnified.read
       expect(adminContent).toMatch(/router\.get\('\/maintenance\/message'.*dbUnified\.read/s);
       expect(adminContent).toMatch(/router\.get\('\/settings\/maintenance'.*dbUnified\.read/s);
+    });
+
+    it('supplier routes should use dbUnified instead of legacy read/write', () => {
+      const fs = require('fs');
+      const adminContent = fs.readFileSync('routes/admin.js', 'utf8');
+
+      // Extract just the supplier-related routes (between GET /suppliers and pending-verification)
+      const supplierGetStart = adminContent.indexOf("router.get('/suppliers',");
+      const supplierSectionEnd = adminContent.indexOf(
+        'POST /api/admin/suppliers/bulk-delete',
+        supplierGetStart
+      );
+      const bulkDeleteEnd = adminContent.indexOf('});', supplierSectionEnd + 500);
+
+      const supplierRoutesSection = adminContent.substring(supplierGetStart, bulkDeleteEnd);
+
+      // Verify supplier routes use dbUnified.read/write
+      expect(supplierRoutesSection).toContain("dbUnified.read('suppliers')");
+      expect(supplierRoutesSection).toContain("dbUnified.write('suppliers'");
+
+      // Check that the main suppliers GET endpoint doesn't use legacy read
+      const supplierGetRoute = supplierRoutesSection.substring(0, 500);
+      expect(supplierGetRoute).toContain("await dbUnified.read('suppliers')");
+    });
+
+    it('supplier routes should be async functions', () => {
+      const fs = require('fs');
+      const adminContent = fs.readFileSync('routes/admin.js', 'utf8');
+
+      // Verify supplier GET route is async
+      expect(adminContent).toMatch(/router\.get\('\/suppliers'.*async.*\(.*req.*res.*\)/s);
+
+      // Verify supplier approve route is async
+      expect(adminContent).toMatch(
+        /router\.post\('\/suppliers\/:id\/approve'.*async.*\(.*req.*res.*\)/s
+      );
+
+      // Verify supplier delete route is async
+      expect(adminContent).toMatch(/router\.delete\('\/suppliers\/:id'.*async.*\(.*req.*res.*\)/s);
+    });
+
+    it('supplier routes should have error handling', () => {
+      const fs = require('fs');
+      const adminContent = fs.readFileSync('routes/admin.js', 'utf8');
+
+      // Extract supplier routes section
+      const supplierRoutesSection = adminContent.substring(
+        adminContent.indexOf('GET /api/admin/suppliers'),
+        adminContent.indexOf('// Helper function to parse duration strings')
+      );
+
+      // Verify error handling patterns
+      expect(supplierRoutesSection).toContain('try {');
+      expect(supplierRoutesSection).toContain('catch (error)');
+      expect(supplierRoutesSection).toContain('console.error');
+      expect(supplierRoutesSection).toContain('res.status(500).json({ error:');
+    });
+
+    it('bulk supplier action routes should exist and use dbUnified', () => {
+      const fs = require('fs');
+      const adminContent = fs.readFileSync('routes/admin.js', 'utf8');
+
+      // Verify bulk approve endpoint
+      expect(adminContent).toContain("router.post('/suppliers/bulk-approve'");
+      expect(adminContent).toMatch(/bulk-approve.*dbUnified\.read\('suppliers'\)/s);
+      expect(adminContent).toMatch(/bulk-approve.*dbUnified\.write\('suppliers'/s);
+
+      // Verify bulk reject endpoint
+      expect(adminContent).toContain("router.post('/suppliers/bulk-reject'");
+      expect(adminContent).toMatch(/bulk-reject.*dbUnified\.read\('suppliers'\)/s);
+      expect(adminContent).toMatch(/bulk-reject.*dbUnified\.write\('suppliers'/s);
+
+      // Verify bulk delete endpoint
+      expect(adminContent).toContain("router.post('/suppliers/bulk-delete'");
+      expect(adminContent).toMatch(/bulk-delete.*dbUnified\.read\('suppliers'\)/s);
+      expect(adminContent).toMatch(/bulk-delete.*dbUnified\.write\('suppliers'/s);
     });
   });
 

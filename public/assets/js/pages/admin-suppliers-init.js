@@ -16,15 +16,35 @@
   // Load suppliers data
   async function loadSuppliers() {
     try {
-      const data = await AdminShared.api('/api/admin/suppliers', 'GET');
-      // API returns data.items, not data.suppliers
-      allSuppliers = data.items || [];
+      const response = await fetch('/api/admin/suppliers', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+
+      if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+          showToast('Authentication required. Please log in.', 'error');
+          window.location.href = '/login.html';
+          return;
+        }
+        throw new Error(`HTTP ${response.status}: Failed to load suppliers`);
+      }
+
+      const data = await response.json();
+      // API may return data.items or data.suppliers - accept both for compatibility
+      allSuppliers = data.items || data.suppliers || [];
       filteredSuppliers = [...allSuppliers];
       
       updateStats();
     } catch (error) {
       console.error('Error loading suppliers:', error);
-      showToast('Failed to load suppliers', 'error');
+      showToast(`Failed to load suppliers: ${error.message}`, 'error');
+      // Show error state in table
+      const tbody = document.getElementById('suppliersTableBody');
+      if (tbody) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 40px; color: #ef4444;">⚠️ Error loading suppliers. Please refresh the page.</td></tr>';
+      }
     }
   }
 
@@ -216,17 +236,79 @@
   async function bulkAction(action) {
     if (selectedSuppliers.size === 0) return;
     
-    if (!confirm(`Are you sure you want to ${action} ${selectedSuppliers.size} supplier(s)?`)) {
+    const actionText = action === 'approve' ? 'approve' : action === 'reject' ? 'reject' : 'delete';
+    if (!confirm(`Are you sure you want to ${actionText} ${selectedSuppliers.size} supplier(s)?`)) {
       return;
     }
 
-    // Implement bulk action API calls here
-    showToast(`${action} action triggered for ${selectedSuppliers.size} suppliers`, 'info');
+    try {
+      const supplierIds = Array.from(selectedSuppliers);
+      const endpoint = `/api/admin/suppliers/bulk-${action}`;
+      
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: JSON.stringify({ supplierIds }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to ${actionText} suppliers`);
+      }
+
+      const result = await response.json();
+      showToast(result.message || `Successfully ${actionText}ed ${selectedSuppliers.size} supplier(s)`, 'success');
+      
+      // Clear selection and reload
+      selectedSuppliers.clear();
+      await loadSuppliers();
+      renderTable();
+    } catch (error) {
+      console.error(`Error bulk ${actionText}:`, error);
+      showToast(`Failed to ${actionText} suppliers: ${error.message}`, 'error');
+    }
   }
 
   // Smart tag
-  function smartTag() {
-    showToast('Smart tagging feature coming soon', 'info');
+  async function smartTag() {
+    if (selectedSuppliers.size === 0) {
+      showToast('Please select suppliers to tag', 'info');
+      return;
+    }
+
+    if (!confirm(`Apply smart tags to ${selectedSuppliers.size} supplier(s)? This will analyze their profiles and add relevant tags.`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/admin/suppliers/smart-tags', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: JSON.stringify({ 
+          supplierIds: Array.from(selectedSuppliers) 
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to apply smart tags');
+      }
+
+      const result = await response.json();
+      showToast(`Smart tags applied to ${result.taggedCount || selectedSuppliers.size} supplier(s)`, 'success');
+      
+      // Clear selection and reload
+      selectedSuppliers.clear();
+      await loadSuppliers();
+      renderTable();
+    } catch (error) {
+      console.error('Error applying smart tags:', error);
+      showToast(`Failed to apply smart tags: ${error.message}`, 'error');
+    }
   }
 
   // Export suppliers
@@ -289,19 +371,51 @@
 
   window.approveSupplier = async function (id) {
     if (confirm('Approve this supplier?')) {
-      // Implement approve API call
-      showToast('Supplier approved', 'success');
-      await loadSuppliers();
-      renderTable();
+      try {
+        const response = await fetch(`/api/admin/suppliers/${id}/approve`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          },
+          body: JSON.stringify({ approved: true }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to approve supplier');
+        }
+
+        showToast('Supplier approved', 'success');
+        await loadSuppliers();
+        renderTable();
+      } catch (error) {
+        console.error('Error approving supplier:', error);
+        showToast(`Failed to approve supplier: ${error.message}`, 'error');
+      }
     }
   };
 
   window.deleteSupplier = async function (id) {
-    if (confirm('Are you sure you want to delete this supplier?')) {
-      // Implement delete API call
-      showToast('Supplier deleted', 'success');
-      await loadSuppliers();
-      renderTable();
+    if (confirm('Are you sure you want to delete this supplier? This will also delete all their packages.')) {
+      try {
+        const response = await fetch(`/api/admin/suppliers/${id}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to delete supplier');
+        }
+
+        showToast('Supplier deleted', 'success');
+        await loadSuppliers();
+        renderTable();
+      } catch (error) {
+        console.error('Error deleting supplier:', error);
+        showToast(`Failed to delete supplier: ${error.message}`, 'error');
+      }
     }
   };
 
