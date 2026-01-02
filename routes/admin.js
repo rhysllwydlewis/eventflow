@@ -96,6 +96,7 @@ router.get('/users', authRequired, roleRequired('admin'), (req, res) => {
     marketingOptIn: !!u.marketingOptIn,
     createdAt: u.createdAt,
     lastLoginAt: u.lastLoginAt || null,
+    subscription: u.subscription || { tier: 'free', status: 'active' },
   }));
   // Sort newest first by createdAt
   users.sort((a, b) => {
@@ -2925,6 +2926,360 @@ router.delete(
     }
   }
 );
+
+/**
+ * POST /api/admin/users/:id/subscription
+ * Grant or update subscription for a user
+ * Body: { tier: 'pro' | 'pro_plus', duration: '7d' | '30d' | '90d' | '1y' | 'lifetime', reason: string }
+ */
+router.post('/users/:id/subscription', authRequired, roleRequired('admin'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { tier, duration, reason } = req.body;
+
+    // Validate tier
+    const validTiers = ['pro', 'pro_plus'];
+    if (!validTiers.includes(tier)) {
+      return res.status(400).json({ error: 'Invalid tier. Must be "pro" or "pro_plus"' });
+    }
+
+    // Validate duration
+    const validDurations = ['7d', '30d', '90d', '1y', 'lifetime'];
+    if (!validDurations.includes(duration)) {
+      return res
+        .status(400)
+        .json({ error: 'Invalid duration. Must be 7d, 30d, 90d, 1y, or lifetime' });
+    }
+
+    const users = read('users');
+    const userIndex = users.findIndex(u => u.id === id);
+
+    if (userIndex < 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const user = users[userIndex];
+    const now = new Date();
+    const startDate = now.toISOString();
+    let endDate = null;
+
+    // Calculate end date based on duration
+    if (duration !== 'lifetime') {
+      const durationMap = {
+        '7d': 7,
+        '30d': 30,
+        '90d': 90,
+        '1y': 365,
+      };
+      const days = durationMap[duration];
+      const end = new Date(now);
+      end.setDate(end.getDate() + days);
+      endDate = end.toISOString();
+    }
+
+    // Store previous subscription info for history
+    const previousTier = user.subscription?.tier || 'free';
+    const action =
+      !user.subscription || user.subscription.tier === 'free'
+        ? 'granted'
+        : tier !== previousTier
+          ? 'upgraded'
+          : 'renewed';
+
+    // Update user subscription
+    user.subscription = {
+      tier,
+      status: 'active',
+      startDate,
+      endDate,
+      grantedBy: req.user.id,
+      grantedAt: startDate,
+      reason: reason || 'Manual admin grant',
+      autoRenew: false,
+    };
+
+    // Initialize subscription history if it doesn't exist
+    if (!user.subscriptionHistory) {
+      user.subscriptionHistory = [];
+    }
+
+    // Add to subscription history
+    user.subscriptionHistory.push({
+      tier,
+      action,
+      date: startDate,
+      adminId: req.user.id,
+      adminEmail: req.user.email,
+      reason: reason || 'Manual admin grant',
+      previousTier,
+      duration,
+      endDate,
+    });
+
+    // Save updated user
+    users[userIndex] = user;
+    write('users', users);
+
+    // Log to audit
+    auditLog({
+      adminId: req.user.id,
+      adminEmail: req.user.email,
+      action: 'USER_SUBSCRIPTION_GRANTED',
+      targetType: 'user',
+      targetId: id,
+      details: { tier, duration, reason, endDate },
+    });
+
+    res.json({
+      success: true,
+      message: 'Subscription granted successfully',
+      subscription: user.subscription,
+    });
+  } catch (error) {
+    console.error('Error granting subscription:', error);
+    res.status(500).json({ error: 'Failed to grant subscription' });
+  }
+});
+
+/**
+ * DELETE /api/admin/users/:id/subscription
+ * Remove subscription from a user
+ * Body: { reason: string }
+ */
+router.delete('/users/:id/subscription', authRequired, roleRequired('admin'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { reason } = req.body;
+
+    const users = read('users');
+    const userIndex = users.findIndex(u => u.id === id);
+
+    if (userIndex < 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const user = users[userIndex];
+
+    if (!user.subscription || user.subscription.tier === 'free') {
+      return res.status(400).json({ error: 'User has no active subscription to remove' });
+    }
+
+    const previousTier = user.subscription.tier;
+
+    // Update subscription to cancelled/free
+    user.subscription = {
+      tier: 'free',
+      status: 'cancelled',
+      startDate: new Date().toISOString(),
+      endDate: null,
+      grantedBy: req.user.id,
+      grantedAt: new Date().toISOString(),
+      reason: reason || 'Manual admin removal',
+      autoRenew: false,
+    };
+
+    // Initialize subscription history if it doesn't exist
+    if (!user.subscriptionHistory) {
+      user.subscriptionHistory = [];
+    }
+
+    // Add to subscription history
+    user.subscriptionHistory.push({
+      tier: 'free',
+      action: 'cancelled',
+      date: new Date().toISOString(),
+      adminId: req.user.id,
+      adminEmail: req.user.email,
+      reason: reason || 'Manual admin removal',
+      previousTier,
+      duration: null,
+      endDate: null,
+    });
+
+    // Save updated user
+    users[userIndex] = user;
+    write('users', users);
+
+    // Log to audit
+    auditLog({
+      adminId: req.user.id,
+      adminEmail: req.user.email,
+      action: 'USER_SUBSCRIPTION_REMOVED',
+      targetType: 'user',
+      targetId: id,
+      details: { previousTier, reason },
+    });
+
+    res.json({
+      success: true,
+      message: 'Subscription removed successfully',
+    });
+  } catch (error) {
+    console.error('Error removing subscription:', error);
+    res.status(500).json({ error: 'Failed to remove subscription' });
+  }
+});
+
+/**
+ * GET /api/admin/users/:id/subscription-history
+ * Get subscription history for a user
+ */
+router.get('/users/:id/subscription-history', authRequired, roleRequired('admin'), (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const users = read('users');
+    const user = users.find(u => u.id === id);
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const history = user.subscriptionHistory || [];
+
+    res.json({
+      success: true,
+      history,
+      currentSubscription: user.subscription || null,
+    });
+  } catch (error) {
+    console.error('Error fetching subscription history:', error);
+    res.status(500).json({ error: 'Failed to fetch subscription history' });
+  }
+});
+
+/**
+ * POST /api/admin/bulk/subscriptions
+ * Bulk grant subscriptions to multiple users
+ * Body: { userIds: string[], tier: string, duration: string, reason: string }
+ */
+router.post('/bulk/subscriptions', authRequired, roleRequired('admin'), async (req, res) => {
+  try {
+    const { userIds, tier, duration, reason } = req.body;
+
+    // Validate input
+    if (!Array.isArray(userIds) || userIds.length === 0) {
+      return res.status(400).json({ error: 'userIds must be a non-empty array' });
+    }
+
+    const validTiers = ['pro', 'pro_plus'];
+    if (!validTiers.includes(tier)) {
+      return res.status(400).json({ error: 'Invalid tier. Must be "pro" or "pro_plus"' });
+    }
+
+    const validDurations = ['7d', '30d', '90d', '1y', 'lifetime'];
+    if (!validDurations.includes(duration)) {
+      return res
+        .status(400)
+        .json({ error: 'Invalid duration. Must be 7d, 30d, 90d, 1y, or lifetime' });
+    }
+
+    const users = read('users');
+    const now = new Date();
+    const startDate = now.toISOString();
+    let endDate = null;
+
+    // Calculate end date based on duration
+    if (duration !== 'lifetime') {
+      const durationMap = {
+        '7d': 7,
+        '30d': 30,
+        '90d': 90,
+        '1y': 365,
+      };
+      const days = durationMap[duration];
+      const end = new Date(now);
+      end.setDate(end.getDate() + days);
+      endDate = end.toISOString();
+    }
+
+    const successfulUserIds = [];
+    const failedUserIds = [];
+
+    userIds.forEach(userId => {
+      const userIndex = users.findIndex(u => u.id === userId);
+
+      if (userIndex < 0) {
+        failedUserIds.push(userId);
+        return;
+      }
+
+      const user = users[userIndex];
+      const previousTier = user.subscription?.tier || 'free';
+      const action =
+        !user.subscription || user.subscription.tier === 'free'
+          ? 'granted'
+          : tier !== previousTier
+            ? 'upgraded'
+            : 'renewed';
+
+      // Update user subscription
+      user.subscription = {
+        tier,
+        status: 'active',
+        startDate,
+        endDate,
+        grantedBy: req.user.id,
+        grantedAt: startDate,
+        reason: reason || 'Bulk admin grant',
+        autoRenew: false,
+      };
+
+      // Initialize subscription history if it doesn't exist
+      if (!user.subscriptionHistory) {
+        user.subscriptionHistory = [];
+      }
+
+      // Add to subscription history
+      user.subscriptionHistory.push({
+        tier,
+        action,
+        date: startDate,
+        adminId: req.user.id,
+        adminEmail: req.user.email,
+        reason: reason || 'Bulk admin grant',
+        previousTier,
+        duration,
+        endDate,
+      });
+
+      users[userIndex] = user;
+      successfulUserIds.push(userId);
+    });
+
+    // Save all updated users
+    write('users', users);
+
+    // Log to audit
+    auditLog({
+      adminId: req.user.id,
+      adminEmail: req.user.email,
+      action: 'BULK_SUBSCRIPTIONS_GRANTED',
+      targetType: 'users',
+      targetId: 'bulk',
+      details: {
+        tier,
+        duration,
+        reason,
+        successCount: successfulUserIds.length,
+        failedCount: failedUserIds.length,
+        userIds: successfulUserIds,
+      },
+    });
+
+    res.json({
+      success: true,
+      message: `Successfully granted subscriptions to ${successfulUserIds.length} user(s)`,
+      successCount: successfulUserIds.length,
+      failedCount: failedUserIds.length,
+      successfulUserIds,
+      failedUserIds,
+    });
+  } catch (error) {
+    console.error('Error granting bulk subscriptions:', error);
+    res.status(500).json({ error: 'Failed to grant bulk subscriptions' });
+  }
+});
 
 module.exports = router;
 module.exports.setHelperFunctions = setHelperFunctions;
