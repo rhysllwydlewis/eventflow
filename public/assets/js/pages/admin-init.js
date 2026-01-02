@@ -1383,7 +1383,8 @@
       });
   };
 
-  window.addEventListener('load', () => {
+  // Initialize when DOM is ready (since this script is deferred, load event may have already fired)
+  function initializeAdmin() {
     safeExecute(() => {
       loadAll();
 
@@ -1558,7 +1559,15 @@
           console.warn('Could not fetch CSRF token on page load');
         });
     });
-  });
+  }
+
+  // Call initialization immediately since this script is deferred
+  // (DOMContentLoaded has already fired by the time deferred scripts execute)
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeAdmin);
+  } else {
+    initializeAdmin();
+  }
 
   window.showCreateUserModal = function () {
     // Create modal content with form
