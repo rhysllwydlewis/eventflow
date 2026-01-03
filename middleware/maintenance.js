@@ -48,6 +48,12 @@ async function maintenanceMode(req, res, next) {
       return next();
     }
 
+    // Allow health check endpoints to pass through for platform health checks
+    // These endpoints must remain accessible even during maintenance for Railway, etc.
+    if (req.path === '/api/health' || req.path === '/api/ready' || req.path === '/api/status') {
+      return next();
+    }
+
     // Allow admins to access the site normally
     if (req.user && req.user.role === 'admin') {
       return next();
