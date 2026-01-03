@@ -919,7 +919,7 @@ app.post('/api/auth/register', strictAuthLimiter, csrfProtection, async (req, re
 });
 
 app.post('/api/auth/login', authLimiter, csrfProtection, async (req, res) => {
-  const { email, password } = req.body || {};
+  const { email, password, remember } = req.body || {};
   if (!email || !password) {
     return res.status(400).json({ error: 'Missing fields' });
   }
@@ -949,10 +949,25 @@ app.post('/api/auth/login', authLimiter, csrfProtection, async (req, res) => {
     console.error('Failed to update lastLoginAt', e);
   }
 
+  // Set JWT expiry based on "remember me" checkbox
+  // Remember me: 30 days, otherwise: 7 days
+  const expiresIn = remember ? '30d' : '7d';
   const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, {
-    expiresIn: '7d',
+    expiresIn,
   });
-  setAuthCookie(res, token);
+  
+  // Set cookie with appropriate max age
+  const isProd = process.env.NODE_ENV === 'production';
+  const maxAge = remember 
+    ? 1000 * 60 * 60 * 24 * 30  // 30 days
+    : 1000 * 60 * 60 * 24 * 7;   // 7 days
+  
+  res.cookie('token', token, {
+    httpOnly: true,
+    sameSite: isProd ? 'lax' : 'lax',
+    secure: isProd,
+    maxAge: maxAge,
+  });
 
   res.json({
     ok: true,

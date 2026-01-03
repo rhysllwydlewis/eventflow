@@ -15,12 +15,28 @@ const HEALTH_ENDPOINTS = ['/api/health', '/api/ready', '/api/status'];
  * Middleware to check maintenance mode
  * If enabled, non-admin users are redirected to maintenance page
  * Admins can still access the site normally
+ * Auto-disables maintenance if expiration time has passed
  */
 async function maintenanceMode(req, res, next) {
   try {
     // Get maintenance settings from dbUnified (same as admin API)
     const settings = (await dbUnified.read('settings')) || {};
     const maintenance = settings.maintenance || { enabled: false };
+
+    // Check if maintenance has expired and auto-disable if needed
+    if (maintenance.enabled && maintenance.expiresAt) {
+      const now = new Date();
+      const expiresAt = new Date(maintenance.expiresAt);
+      
+      if (now >= expiresAt) {
+        // Maintenance period has expired - auto-disable
+        console.log('Maintenance mode expired, auto-disabling...');
+        maintenance.enabled = false;
+        maintenance.autoDisabledAt = now.toISOString();
+        settings.maintenance = maintenance;
+        await dbUnified.write('settings', settings);
+      }
+    }
 
     // If maintenance mode is not enabled, continue normally
     if (!maintenance.enabled) {
@@ -34,6 +50,17 @@ async function maintenanceMode(req, res, next) {
 
     // Allow access to auth page for admin login
     if (req.path === '/auth.html' || req.path.startsWith('/api/auth')) {
+      return next();
+    }
+
+    // Allow access to admin pages and API endpoints (will be protected by auth middleware)
+    // This ensures admins can access admin dashboard even during maintenance
+    if (req.path.startsWith('/admin') || req.path.startsWith('/api/admin')) {
+      return next();
+    }
+
+    // Allow CSRF token endpoint (needed for login)
+    if (req.path === '/api/csrf-token') {
       return next();
     }
 

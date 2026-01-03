@@ -253,7 +253,26 @@
         </label>
       </div>
       
-      <div class="form-row" class="mt-1">
+      <div class="form-row" style="margin-top:1rem;">
+        <label for="maintenanceDuration">Auto-Disable Timer (Optional)</label>
+        <select id="maintenanceDuration">
+          <option value="">No auto-disable (manual only)</option>
+          <option value="15">15 minutes</option>
+          <option value="30">30 minutes</option>
+          <option value="60">1 hour</option>
+          <option value="120">2 hours</option>
+          <option value="240">4 hours</option>
+          <option value="480">8 hours</option>
+          <option value="1440">24 hours</option>
+        </select>
+        <div class="small" style="margin-top:0.5rem;color:#667;">
+          When set, maintenance mode will automatically disable after the selected duration. Leave blank to disable manually.
+        </div>
+        <div id="maintenanceCountdown" style="display:none;margin-top:0.5rem;padding:0.5rem;background:#f0f7ff;border-radius:6px;color:#667eea;font-weight:500;">
+        </div>
+      </div>
+      
+      <div class="form-row" style="margin-top:1rem;">
         <label for="maintenanceMessage">Maintenance Message</label>
         <textarea id="maintenanceMessage" rows="3" placeholder="We're performing scheduled maintenance. We'll be back soon!"></textarea>
       </div>
@@ -394,17 +413,86 @@
   });
   
   // Load maintenance mode
+  let maintenanceCountdownInterval = null;
+  
   async function loadMaintenanceMode() {
     try {
       const maintenance = await AdminShared.api('/api/admin/settings/maintenance');
       const isEnabled = maintenance.enabled || false;
       document.getElementById('maintenanceMode').checked = isEnabled;
       document.getElementById('maintenanceMessage').value = maintenance.message || '';
+      document.getElementById('maintenanceDuration').value = maintenance.duration || '';
       
       // Update quick toggle button
       updateMaintenanceButton(isEnabled);
+      
+      // Start countdown if maintenance is enabled and has expiration
+      if (isEnabled && maintenance.expiresAt) {
+        startMaintenanceCountdown(maintenance.expiresAt);
+      } else {
+        stopMaintenanceCountdown();
+      }
     } catch (err) {
       console.error('Failed to load maintenance mode:', err);
+    }
+  }
+  
+  // Format time remaining
+  function formatTimeRemaining(ms) {
+    const seconds = Math.floor(ms / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+    
+    if (days > 0) {
+      return `${days}d ${hours % 24}h ${minutes % 60}m`;
+    } else if (hours > 0) {
+      return `${hours}h ${minutes % 60}m ${seconds % 60}s`;
+    } else if (minutes > 0) {
+      return `${minutes}m ${seconds % 60}s`;
+    } else {
+      return `${seconds}s`;
+    }
+  }
+  
+  // Start maintenance countdown
+  function startMaintenanceCountdown(expiresAt) {
+    stopMaintenanceCountdown(); // Clear any existing interval
+    
+    const countdownEl = document.getElementById('maintenanceCountdown');
+    if (!countdownEl) return;
+    
+    function updateCountdown() {
+      const now = new Date();
+      const expires = new Date(expiresAt);
+      const remaining = expires - now;
+      
+      if (remaining <= 0) {
+        countdownEl.textContent = '⏰ Maintenance mode has expired and will auto-disable shortly';
+        countdownEl.style.background = '#fff3cd';
+        countdownEl.style.color = '#856404';
+        stopMaintenanceCountdown();
+        // Reload to reflect auto-disabled state
+        setTimeout(() => loadMaintenanceMode(), 2000);
+      } else {
+        countdownEl.textContent = `⏰ Auto-disable in: ${formatTimeRemaining(remaining)}`;
+        countdownEl.style.display = 'block';
+      }
+    }
+    
+    updateCountdown();
+    maintenanceCountdownInterval = setInterval(updateCountdown, 1000);
+  }
+  
+  // Stop maintenance countdown
+  function stopMaintenanceCountdown() {
+    if (maintenanceCountdownInterval) {
+      clearInterval(maintenanceCountdownInterval);
+      maintenanceCountdownInterval = null;
+    }
+    const countdownEl = document.getElementById('maintenanceCountdown');
+    if (countdownEl) {
+      countdownEl.style.display = 'none';
     }
   }
   
@@ -435,15 +523,20 @@
     }
     
     try {
+      const durationValue = document.getElementById('maintenanceDuration').value;
       const data = {
         enabled: newState,
         message: document.getElementById('maintenanceMessage').value || "We're performing scheduled maintenance. We'll be back soon!",
+        duration: durationValue ? Number(durationValue) : null,
       };
       
       await AdminShared.api('/api/admin/settings/maintenance', 'PUT', data);
       document.getElementById('maintenanceMode').checked = newState;
       updateMaintenanceButton(newState);
       AdminShared.showToast(`Maintenance mode ${newState ? 'enabled' : 'disabled'}`, 'success');
+      
+      // Reload to update countdown
+      await loadMaintenanceMode();
     } catch (err) {
       AdminShared.showToast(`Failed to toggle: ${err.message}`, 'error');
     }
@@ -451,9 +544,11 @@
   
   // Save maintenance mode
   document.getElementById('saveMaintenanceMode').addEventListener('click', async () => {
+    const durationValue = document.getElementById('maintenanceDuration').value;
     const data = {
       enabled: document.getElementById('maintenanceMode').checked,
       message: document.getElementById('maintenanceMessage').value,
+      duration: durationValue ? Number(durationValue) : null,
     };
     
     if (data.enabled && !AdminShared.confirm('Are you sure you want to enable maintenance mode? The site will be inaccessible to non-admin users.')) {
@@ -464,6 +559,9 @@
       await AdminShared.api('/api/admin/settings/maintenance', 'PUT', data);
       updateMaintenanceButton(data.enabled);
       AdminShared.showToast('Maintenance mode updated', 'success');
+      
+      // Reload to update countdown
+      await loadMaintenanceMode();
     } catch (err) {
       AdminShared.showToast(`Failed to save: ${err.message}`, 'error');
     }

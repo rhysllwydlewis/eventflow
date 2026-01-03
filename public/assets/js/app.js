@@ -2527,6 +2527,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // Validate required fields
         const email = loginEmail.value.trim();
         const password = loginPassword.value;
+        const rememberCheckbox = document.getElementById('login-remember');
+        const remember = rememberCheckbox ? rememberCheckbox.checked : false;
 
         if (!email || !password) {
           if (loginErrorEl) {
@@ -2558,7 +2560,7 @@ document.addEventListener('DOMContentLoaded', () => {
             method: 'POST',
             headers: getHeadersWithCsrf({ 'Content-Type': 'application/json' }),
             credentials: 'include',
-            body: JSON.stringify({ email, password }),
+            body: JSON.stringify({ email, password, remember }),
           });
           let data = {};
           try {

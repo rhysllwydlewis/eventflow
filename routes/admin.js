@@ -2645,12 +2645,22 @@ router.get('/settings/maintenance', authRequired, roleRequired('admin'), async (
  */
 router.put('/settings/maintenance', authRequired, roleRequired('admin'), async (req, res) => {
   try {
-    const { enabled, message } = req.body;
+    const { enabled, message, duration } = req.body;
 
     const settings = (await dbUnified.read('settings')) || {};
+    
+    // Calculate expiration time if duration is provided and maintenance is being enabled
+    let expiresAt = null;
+    if (enabled && duration && Number(duration) > 0) {
+      const durationMs = Number(duration) * 60 * 1000; // duration is in minutes
+      expiresAt = new Date(Date.now() + durationMs).toISOString();
+    }
+    
     settings.maintenance = {
       enabled: enabled === true,
       message: message || "We're performing scheduled maintenance. We'll be back soon!",
+      duration: duration ? Number(duration) : null, // Store duration in minutes
+      expiresAt: expiresAt,
       updatedAt: new Date().toISOString(),
       updatedBy: req.user.email,
     };
@@ -2663,7 +2673,7 @@ router.put('/settings/maintenance', authRequired, roleRequired('admin'), async (
       action: 'MAINTENANCE_UPDATED',
       targetType: 'maintenance',
       targetId: null,
-      details: { enabled, message },
+      details: { enabled, message, duration, expiresAt },
     });
 
     res.json({ success: true, maintenance: settings.maintenance });
