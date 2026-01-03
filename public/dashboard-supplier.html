@@ -151,6 +151,36 @@
       <div><label>Title</label><input id="pkg-title" name="title"></div>
       <div><label>Price</label><input id="pkg-price" name="price" placeholder="e.g. £999 or £45 pp"></div>
     </div>
+    <div class="form-row" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))">
+      <div>
+        <label>Primary Category <span style="color:red">*</span></label>
+        <select id="pkg-category" name="primaryCategoryKey" required>
+          <option value="">Choose a category…</option>
+          <option value="venues">Venues</option>
+          <option value="photography">Photography</option>
+          <option value="catering">Catering</option>
+          <option value="flowers">Flowers & Décor</option>
+          <option value="hair-makeup">Hair & Makeup</option>
+          <option value="entertainment">Entertainment</option>
+          <option value="transport">Transport</option>
+          <option value="extras">Extras & Add-ons</option>
+        </select>
+      </div>
+      <div>
+        <label>Event Types <span style="color:red">*</span></label>
+        <div style="display:flex;gap:1rem;align-items:center;padding-top:0.5rem;">
+          <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;">
+            <input type="checkbox" id="pkg-event-wedding" name="eventTypes" value="wedding">
+            <span>Wedding</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;">
+            <input type="checkbox" id="pkg-event-other" name="eventTypes" value="other">
+            <span>Other Events</span>
+          </label>
+        </div>
+        <p class="small" style="color:#667085;margin-top:0.25rem;">Select at least one</p>
+      </div>
+    </div>
     <div class="form-row"><label>Description</label><textarea id="pkg-desc" name="description" rows="4"></textarea></div>
     <div class="form-row" style="display:none">
       <label>Image URL (optional)</label>
