@@ -157,22 +157,24 @@
   }
 
   /**
-   * Load event type images - using local assets
+   * Load event type images from Pexels CDN
    */
   async function loadEventTypeImages() {
     const weddingImg = document.getElementById('wedding-image');
     const otherImg = document.getElementById('other-event-image');
 
     if (weddingImg) {
-      // Use venue image for wedding (elegant wedding venue)
-      weddingImg.src = '/assets/images/collage-venue.webp';
-      weddingImg.alt = 'Wedding venue';
+      // Wedding couple ceremony - Pexels photo
+      weddingImg.src =
+        'https://images.pexels.com/photos/265885/pexels-photo-265885.jpeg?auto=compress&cs=tinysrgb&w=600';
+      weddingImg.alt = 'Wedding couple getting married';
     }
 
     if (otherImg) {
-      // Use entertainment/party image for other events
-      otherImg.src = '/assets/images/collage-entertainment.webp';
-      otherImg.alt = 'Party and events';
+      // Elegant gala dinner party - Pexels photo
+      otherImg.src =
+        'https://images.pexels.com/photos/2306281/pexels-photo-2306281.jpeg?auto=compress&cs=tinysrgb&w=600';
+      otherImg.alt = 'Elegant gala dinner party';
     }
   }
 
