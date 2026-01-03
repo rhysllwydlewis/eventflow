@@ -1788,7 +1788,7 @@ async function initDashSupplier() {
       const id = payload.id;
       const path = id ? `/api/me/packages/${encodeURIComponent(id)}` : '/api/me/packages';
       const method = id ? 'PUT' : 'POST';
-      
+
       try {
         await api(path, {
           method,
@@ -1799,7 +1799,7 @@ async function initDashSupplier() {
         alert('Saved package.');
         pkgForm.reset();
       } catch (err) {
-        alert('Error saving package: ' + (err.message || 'Please try again'));
+        alert(`Error saving package: ${err.message || 'Please try again'}`);
       }
     });
   }

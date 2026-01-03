@@ -149,5 +149,29 @@
     "location": "Test Location",
     "verified": true,
     "createdAt": "2026-01-03T21:45:07.112Z"
+  },
+  {
+    "id": "usr_tugtjxq3yua886",
+    "name": "Test User No Plans",
+    "firstName": "Test",
+    "lastName": "NoPlans",
+    "email": "test-noplan-1767477190182@example.com",
+    "role": "customer",
+    "passwordHash": "$2a$10$5.ubV7T/KdGAvSqmpT.68O9Bmw0YFGjM15DiKGNF4fFQ6YiAN8Efa",
+    "location": "Test Location",
+    "verified": true,
+    "createdAt": "2026-01-03T21:53:10.272Z"
+  },
+  {
+    "id": "usr_51u3ffscyudzcf",
+    "name": "Test User No Plans",
+    "firstName": "Test",
+    "lastName": "NoPlans",
+    "email": "test-noplan-1767477365295@example.com",
+    "role": "customer",
+    "passwordHash": "$2a$10$gw80Ps8TgTq8glHAg7gdIOcIXioJYzFcb3/8bDBO9VdyHLt1V3a3a",
+    "location": "Test Location",
+    "verified": true,
+    "createdAt": "2026-01-03T21:56:05.381Z"
   }
 ]
