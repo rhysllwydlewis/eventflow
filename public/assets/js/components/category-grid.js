@@ -59,17 +59,25 @@ class CategoryGrid {
         padding: 20px;
       }
 
+      .category-card-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 12px;
+      }
+
       .category-card-icon {
         font-size: 32px;
-        margin-bottom: 12px;
-        display: block;
+        display: inline-block;
+        flex-shrink: 0;
       }
 
       .category-card-name {
         font-size: 1.25rem;
         font-weight: 600;
-        margin: 0 0 8px 0;
+        margin: 0;
         color: var(--color-text-primary, #212529);
+        display: inline-block;
       }
 
       .category-card-description {
@@ -144,8 +152,10 @@ class CategoryGrid {
     card.innerHTML = `
       ${imageHtml}
       <div class="category-card-content">
-        ${category.icon ? `<span class="category-card-icon">${category.icon}</span>` : ''}
-        <h3 class="category-card-name">${category.name}</h3>
+        <div class="category-card-header">
+          ${category.icon ? `<span class="category-card-icon">${category.icon}</span>` : ''}
+          <h3 class="category-card-name">${category.name}</h3>
+        </div>
         <p class="category-card-description">${category.description || ''}</p>
       </div>
     `;

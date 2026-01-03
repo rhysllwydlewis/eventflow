@@ -19,28 +19,43 @@
    * Get a cookie value by name
    */
   function getCookie(name) {
-    const nameEQ = `${name}=`;
-    const cookies = document.cookie.split(';');
-    for (let i = 0; i < cookies.length; i++) {
-      const cookie = cookies[i].trim();
-      if (cookie.indexOf(nameEQ) === 0) {
-        return cookie.substring(nameEQ.length);
+    try {
+      if (!name || typeof document === 'undefined' || !document.cookie) {
+        return null;
       }
+      const nameEQ = `${name}=`;
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i] ? cookies[i].trim() : '';
+        if (cookie && cookie.indexOf(nameEQ) === 0) {
+          return cookie.substring(nameEQ.length);
+        }
+      }
+      return null;
+    } catch (error) {
+      console.warn('Error reading cookie:', error);
+      return null;
     }
-    return null;
   }
 
   /**
    * Set a cookie
    */
   function setCookie(name, value, days) {
-    let expires = '';
-    if (days) {
-      const date = new Date();
-      date.setTime(date.getTime() + days * 24 * 60 * 60 * 1000);
-      expires = `; expires=${date.toUTCString()}`;
+    try {
+      if (!name || typeof document === 'undefined') {
+        return;
+      }
+      let expires = '';
+      if (days) {
+        const date = new Date();
+        date.setTime(date.getTime() + days * 24 * 60 * 60 * 1000);
+        expires = `; expires=${date.toUTCString()}`;
+      }
+      document.cookie = `${name}=${value || ''}${expires}; path=/; SameSite=Lax`;
+    } catch (error) {
+      console.warn('Error setting cookie:', error);
     }
-    document.cookie = `${name}=${value || ''}${expires}; path=/; SameSite=Lax`;
   }
 
   /**
