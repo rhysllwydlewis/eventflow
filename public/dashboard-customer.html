@@ -171,6 +171,9 @@ async function initDashboard() {
     return;
   }
 
+  // Check for guest plan token and claim it
+  await claimGuestPlanIfExists();
+
   // Load customer plans
   loadCustomerPlans();
 
@@ -184,6 +187,59 @@ async function initDashboard() {
       window.location.href = '/auth.html?redirect=/plan.html';
     }
   });
+}
+
+/**
+ * Claim guest plan if token exists in localStorage
+ */
+async function claimGuestPlanIfExists() {
+  const guestToken = localStorage.getItem('eventflow_guest_plan_token');
+  
+  if (!guestToken) {
+    return; // No guest plan to claim
+  }
+
+  try {
+    // Get CSRF token
+    const csrfToken = getCsrfToken();
+    
+    const response = await fetch('/api/me/plans/claim', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': csrfToken,
+      },
+      credentials: 'include',
+      body: JSON.stringify({ token: guestToken }),
+    });
+
+    if (response.ok) {
+      // Successfully claimed
+      localStorage.removeItem('eventflow_guest_plan_token');
+      console.log('Guest plan claimed successfully');
+    } else {
+      const error = await response.json();
+      console.warn('Failed to claim guest plan:', error.error);
+      // Remove token even if claim failed (might be expired or already claimed)
+      localStorage.removeItem('eventflow_guest_plan_token');
+    }
+  } catch (error) {
+    console.error('Error claiming guest plan:', error);
+    // Don't remove token on network error - try again next time
+  }
+}
+
+/**
+ * Get CSRF token from meta tag or cookie
+ */
+function getCsrfToken() {
+  const meta = document.querySelector('meta[name="csrf-token"]');
+  if (meta) {
+    return meta.getAttribute('content');
+  }
+  // Try cookie
+  const match = document.cookie.match(/csrfToken=([^;]+)/);
+  return match ? match[1] : '';
 }
 
 // Initialize dashboard

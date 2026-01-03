@@ -65,6 +65,38 @@
    */
   async function loadPackagesForCategory(categoryKey, eventType) {
     try {
+      // Special handling for venues - use proximity filtering if location is set
+      if (categoryKey === 'venues') {
+        const state = window.WizardState.getState();
+        if (state.location) {
+          // Use venue proximity endpoint
+          const params = new URLSearchParams({
+            location: state.location,
+            radiusMiles: '10',
+          });
+
+          const response = await fetch(`/api/venues/near?${params}`);
+          const data = await response.json();
+
+          // Convert venues to package format for display
+          const venues = (data.venues || []).map(venue => ({
+            id: venue.id,
+            title: venue.name,
+            supplierId: venue.id,
+            supplierName: venue.name,
+            description: venue.description_short || '',
+            price: venue.price_display || 'POA',
+            image: venue.photos && venue.photos[0] ? venue.photos[0] : null,
+            category: venue.category,
+            distance: venue.distance,
+            _isVenue: true,
+          }));
+
+          availablePackages[categoryKey] = venues;
+          return venues;
+        }
+      }
+
       const params = new URLSearchParams({
         category: categoryKey,
         eventType: eventType || 'Other',
@@ -189,24 +221,24 @@
         <p class="small">Location helps us find local suppliers. You can skip this step if you're not sure yet.</p>
         
         <div class="form-row">
-          <label>Location</label>
+          <label for="wizard-location">Location</label>
           <input type="text" id="wizard-location" placeholder="Town, city or postcode" 
                  value="${escapeHtml(state.location || '')}">
         </div>
 
         <div class="form-row">
-          <label>Event Date <span class="small">(optional)</span></label>
+          <label for="wizard-date">Event Date <span class="small">(optional)</span></label>
           <input type="date" id="wizard-date" value="${state.date || ''}">
         </div>
 
         <div class="form-row">
-          <label>Guest Count <span class="small">(approximate)</span></label>
+          <label for="wizard-guests">Guest Count <span class="small">(approximate)</span></label>
           <input type="number" id="wizard-guests" min="1" placeholder="e.g. 60" 
                  value="${state.guests || ''}">
         </div>
 
         <div class="form-row">
-          <label>Budget</label>
+          <label for="wizard-budget">Budget</label>
           <select id="wizard-budget">
             <option value="">Not sure yet</option>
             <option ${state.budget === 'Up to £1,000' ? 'selected' : ''}>Up to £1,000</option>
@@ -231,12 +263,24 @@
    */
   function renderCategoryStep(category) {
     const state = window.WizardState.getState();
-    const selectedPackageId = state.selectedPackages[category.key];
+
+    // Add proximity indicator for venues if location is set
+    let proximityInfo = '';
+    if (category.key === 'venues' && state.location) {
+      proximityInfo = `
+        <div class="wizard-proximity-info" style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 12px; margin-bottom: 16px;">
+          <p class="small" style="margin: 0; color: #0369a1;">
+            📍 Showing venues within 10 miles of <strong>${escapeHtml(state.location)}</strong>
+          </p>
+        </div>
+      `;
+    }
 
     return `
       <div class="wizard-card">
         <h2>${category.icon} ${category.name}</h2>
         <p class="small">Browse packages for ${category.name.toLowerCase()}. You can skip this and come back later.</p>
+        ${proximityInfo}
         
         <div id="wizard-packages-${category.key}" class="wizard-packages">
           <p class="small">Loading packages...</p>
@@ -409,11 +453,17 @@
     let html = '<div class="wizard-package-grid">';
     packages.slice(0, 6).forEach(pkg => {
       const isSelected = pkg.id === selectedId;
+      const distanceInfo =
+        pkg.distance !== undefined && pkg.distance !== null && typeof pkg.distance === 'number'
+          ? `<p class="small" style="color: #0369a1; font-weight: 500;">📍 ${pkg.distance.toFixed(1)} miles away</p>`
+          : '';
+
       html += `
         <div class="wizard-package-card ${isSelected ? 'selected' : ''}" 
              data-package-id="${pkg.id}" data-category="${categoryKey}">
           ${pkg.image ? `<img src="${pkg.image}" alt="${escapeHtml(pkg.title)}">` : ''}
           <h4>${escapeHtml(pkg.title)}</h4>
+          ${distanceInfo}
           <p class="small">${escapeHtml(pkg.price_display || pkg.price || 'Contact for pricing')}</p>
           ${isSelected ? '<div class="wizard-package-selected">✓ Selected</div>' : ''}
         </div>
@@ -508,21 +558,46 @@
       const authResponse = await fetch('/api/auth/me', { credentials: 'include' });
       const isLoggedIn = authResponse.ok;
 
+      const planData = window.WizardState.exportForPlanCreation();
+
       if (!isLoggedIn) {
-        // Store draft and redirect to auth
-        window.WizardState.markCompleted();
-        alert('Please log in to save your plan. Your selections will be preserved.');
-        location.href = '/auth.html?redirect=/start.html';
+        // Create guest plan
+        const csrfToken = await getCsrfToken();
+        const response = await fetch('/api/plans/guest', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': csrfToken,
+          },
+          credentials: 'include',
+          body: JSON.stringify(planData),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to create guest plan');
+        }
+
+        const result = await response.json();
+
+        // Store guest token for claiming after login
+        localStorage.setItem('eventflow_guest_plan_token', result.token);
+
+        // Clear wizard state
+        window.WizardState.clearState();
+
+        // Show success message and redirect to auth
+        alert('Your plan has been saved! Please log in or register to continue.');
+        location.href = '/auth.html?redirect=/dashboard-customer.html';
         return;
       }
 
-      // Create plan via API
-      const planData = window.WizardState.exportForPlanCreation();
+      // Create authenticated plan
+      const csrfToken = await getCsrfToken();
       const response = await fetch('/api/me/plans', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-CSRF-Token': getCsrfToken(),
+          'X-CSRF-Token': csrfToken,
         },
         credentials: 'include',
         body: JSON.stringify(planData),
@@ -545,16 +620,31 @@
   }
 
   /**
-   * Get CSRF token from meta tag or cookie
+   * Get CSRF token from meta tag, cookie, or API
    */
-  function getCsrfToken() {
+  async function getCsrfToken() {
     const meta = document.querySelector('meta[name="csrf-token"]');
     if (meta) {
       return meta.getAttribute('content');
     }
     // Try cookie
     const match = document.cookie.match(/csrfToken=([^;]+)/);
-    return match ? match[1] : '';
+    if (match) {
+      return match[1];
+    }
+
+    // Fetch from API as last resort
+    try {
+      const response = await fetch('/api/csrf-token', { credentials: 'include' });
+      if (response.ok) {
+        const data = await response.json();
+        return data.csrfToken || '';
+      }
+    } catch (err) {
+      console.error('Failed to fetch CSRF token:', err);
+    }
+
+    return '';
   }
 
   /**

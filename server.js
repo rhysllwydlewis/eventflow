@@ -95,6 +95,9 @@ const searchSystem = require('./search');
 // Lead scoring utilities
 const { calculateLeadScore } = require('./utils/leadScoring');
 
+// Geocoding utilities
+const geocoding = require('./utils/geocoding');
+
 // HTTP client for external API calls
 
 /**
@@ -955,13 +958,13 @@ app.post('/api/auth/login', authLimiter, csrfProtection, async (req, res) => {
   const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, {
     expiresIn,
   });
-  
+
   // Set cookie with appropriate max age
   const isProd = process.env.NODE_ENV === 'production';
-  const maxAge = remember 
-    ? 1000 * 60 * 60 * 24 * 30  // 30 days
-    : 1000 * 60 * 60 * 24 * 7;   // 7 days
-  
+  const maxAge = remember
+    ? 1000 * 60 * 60 * 24 * 30 // 30 days
+    : 1000 * 60 * 60 * 24 * 7; // 7 days
+
   res.cookie('token', token, {
     httpOnly: true,
     sameSite: isProd ? 'lax' : 'lax',
@@ -1555,6 +1558,96 @@ app.get('/api/suppliers', async (req, res) => {
   res.json({ items });
 });
 
+/**
+ * Get venues near a location
+ * GET /api/venues/near?location=Cardiff&radiusMiles=10
+ */
+app.get('/api/venues/near', async (req, res) => {
+  try {
+    const { location, radiusMiles = 10 } = req.query;
+
+    // Get all approved Venues category suppliers
+    let venues = (await dbUnified.read('suppliers')).filter(
+      s => s.approved && s.category === 'Venues'
+    );
+
+    // If no location provided, return all venues
+    if (!location || location.trim() === '') {
+      // Add distance as null for all venues
+      venues = venues.map(v => ({ ...v, distance: null }));
+
+      return res.json({
+        venues,
+        total: venues.length,
+        filtered: false,
+        message: 'Showing all venues (no location filter)',
+      });
+    }
+
+    // Try to geocode the location
+    const coords = await geocoding.geocodeLocation(location);
+
+    if (!coords) {
+      // Could not geocode - return all venues with a warning
+      venues = venues.map(v => ({ ...v, distance: null }));
+
+      return res.json({
+        venues,
+        total: venues.length,
+        filtered: false,
+        warning: `Could not find location "${location}". Showing all venues.`,
+      });
+    }
+
+    // Filter venues by proximity
+    const radius = parseFloat(radiusMiles) || 10;
+
+    // Calculate distance for each venue that has coordinates
+    const venuesWithDistance = venues
+      .map(venue => {
+        if (
+          venue.latitude !== null &&
+          venue.latitude !== undefined &&
+          venue.longitude !== null &&
+          venue.longitude !== undefined
+        ) {
+          const distance = geocoding.calculateDistance(
+            coords.latitude,
+            coords.longitude,
+            venue.latitude,
+            venue.longitude
+          );
+          return { ...venue, distance };
+        }
+        // Venue without coordinates - exclude from proximity filter
+        return null;
+      })
+      .filter(v => v !== null);
+
+    // Filter by radius
+    const nearbyVenues = venuesWithDistance.filter(v => v.distance <= radius);
+
+    // Sort by distance
+    nearbyVenues.sort((a, b) => a.distance - b.distance);
+
+    res.json({
+      venues: nearbyVenues,
+      total: nearbyVenues.length,
+      filtered: true,
+      location: location,
+      coordinates: coords,
+      radiusMiles: radius,
+      message: `Found ${nearbyVenues.length} venues within ${radius} miles of ${location}`,
+    });
+  } catch (error) {
+    console.error('Venue proximity search error:', error);
+    res.status(500).json({
+      error: 'Failed to search venues',
+      details: error.message,
+    });
+  }
+});
+
 // AI event planning assistant
 app.post('/api/ai/plan', express.json(), csrfProtection, async (req, res) => {
   const body = req.body || {};
@@ -2075,6 +2168,42 @@ app.get('/api/admin/photos/pending', authRequired, roleRequired('admin'), async 
 });
 
 /**
+ * GET /api/admin/photos
+ * Get photos for a specific supplier (admin view)
+ */
+app.get('/api/admin/photos', authRequired, roleRequired('admin'), async (req, res) => {
+  try {
+    const { supplierId } = req.query;
+
+    if (!supplierId) {
+      return res.status(400).json({ error: 'supplierId query parameter is required' });
+    }
+
+    const suppliers = await dbUnified.read('suppliers');
+    const supplier = suppliers.find(s => s.id === supplierId);
+
+    if (!supplier) {
+      return res.status(404).json({ error: 'Supplier not found' });
+    }
+
+    // Get photos from photosGallery (includes approved and unapproved)
+    const photos = supplier.photosGallery || [];
+
+    res.json({
+      success: true,
+      photos: photos.map(p => ({
+        ...p,
+        id: p.id || `${supplierId}_${p.uploadedAt}`,
+        supplierId,
+      })),
+    });
+  } catch (error) {
+    console.error('Error fetching supplier photos:', error);
+    res.status(500).json({ error: 'Failed to fetch photos', details: error.message });
+  }
+});
+
+/**
  * POST /api/admin/photos/:id/approve
  * Approve a photo
  */
@@ -2272,10 +2401,17 @@ app.get('/api/packages/search', async (req, res) => {
   // Apply filters
   items = items.filter(p => {
     // Approval filter
-    if (approved && !p.approved) return false;
+    if (approved && !p.approved) {
+      return false;
+    }
 
     // Text search
-    if (q && !((p.title || '').toLowerCase().includes(q) || (p.description || '').toLowerCase().includes(q))) {
+    if (
+      q &&
+      !(
+        (p.title || '').toLowerCase().includes(q) || (p.description || '').toLowerCase().includes(q)
+      )
+    ) {
       return false;
     }
 
@@ -2556,6 +2692,21 @@ app.post(
     if (!b.name || !b.category) {
       return res.status(400).json({ error: 'Missing fields' });
     }
+
+    // For Venues category, validate and require venuePostcode
+    if (b.category === 'Venues') {
+      if (!b.venuePostcode) {
+        return res.status(400).json({
+          error: 'Venue postcode is required for suppliers in the Venues category',
+        });
+      }
+      if (!geocoding.isValidUKPostcode(b.venuePostcode)) {
+        return res.status(400).json({
+          error: 'Invalid UK postcode format',
+        });
+      }
+    }
+
     const photos = (
       b.photos ? (Array.isArray(b.photos) ? b.photos : String(b.photos).split(/\r?\n/)) : []
     )
@@ -2583,6 +2734,28 @@ app.post(
       email: ((await dbUnified.read('users')).find(u => u.id === req.user.id) || {}).email || '',
       approved: false,
     };
+
+    // Add venue-specific fields if category is Venues
+    if (b.category === 'Venues' && b.venuePostcode) {
+      s.venuePostcode = String(b.venuePostcode).trim().toUpperCase();
+
+      // Geocode the postcode to get coordinates
+      try {
+        const coords = await geocoding.geocodePostcode(s.venuePostcode);
+        if (coords) {
+          s.latitude = coords.latitude;
+          s.longitude = coords.longitude;
+          s.venuePostcode = coords.postcode; // Use normalized postcode from API
+          console.log(`✅ Geocoded venue ${s.name}: ${coords.latitude}, ${coords.longitude}`);
+        } else {
+          console.warn(`⚠️ Could not geocode postcode ${s.venuePostcode} for venue ${s.name}`);
+        }
+      } catch (error) {
+        console.error('Geocoding error:', error);
+        // Continue without coordinates - validation already passed
+      }
+    }
+
     const all = await dbUnified.read('suppliers');
     all.push(s);
     await dbUnified.write('suppliers', all);
@@ -2602,6 +2775,32 @@ app.patch(
       return res.status(404).json({ error: 'Not found' });
     }
     const b = req.body || {};
+
+    // If updating a Venues category supplier with venuePostcode
+    if (b.venuePostcode && all[i].category === 'Venues') {
+      if (!geocoding.isValidUKPostcode(b.venuePostcode)) {
+        return res.status(400).json({
+          error: 'Invalid UK postcode format',
+        });
+      }
+
+      // Update postcode and geocode
+      all[i].venuePostcode = String(b.venuePostcode).trim().toUpperCase();
+
+      try {
+        const coords = await geocoding.geocodePostcode(all[i].venuePostcode);
+        if (coords) {
+          all[i].latitude = coords.latitude;
+          all[i].longitude = coords.longitude;
+          all[i].venuePostcode = coords.postcode;
+          console.log(`✅ Geocoded venue ${all[i].name}: ${coords.latitude}, ${coords.longitude}`);
+        } else {
+          console.warn(`⚠️ Could not geocode postcode ${all[i].venuePostcode}`);
+        }
+      } catch (error) {
+        console.error('Geocoding error:', error);
+      }
+    }
 
     const fields = [
       'name',
@@ -2658,26 +2857,29 @@ app.post(
   roleRequired('supplier'),
   csrfProtection,
   async (req, res) => {
-    const { supplierId, title, description, price, image, primaryCategoryKey, eventTypes } = req.body || {};
+    const { supplierId, title, description, price, image, primaryCategoryKey, eventTypes } =
+      req.body || {};
     if (!supplierId || !title) {
       return res.status(400).json({ error: 'Missing required fields: supplierId and title' });
     }
-    
+
     // Validate new required fields for wizard compatibility
     if (!primaryCategoryKey) {
       return res.status(400).json({ error: 'Primary category is required' });
     }
-    
+
     if (!eventTypes || !Array.isArray(eventTypes) || eventTypes.length === 0) {
-      return res.status(400).json({ error: 'At least one event type is required (wedding or other)' });
+      return res
+        .status(400)
+        .json({ error: 'At least one event type is required (wedding or other)' });
     }
-    
+
     // Validate event types
     const validEventTypes = eventTypes.filter(t => t === 'wedding' || t === 'other');
     if (validEventTypes.length === 0) {
       return res.status(400).json({ error: 'Event types must be "wedding" or "other"' });
     }
-    
+
     const own = (await dbUnified.read('suppliers')).find(
       s => s.id === supplierId && s.ownerUserId === req.user.id
     );
@@ -3574,34 +3776,144 @@ app.get('/api/me/plan', authRequired, planOwnerOnly, async (req, res) => {
   res.json({ ok: true, plan: p.plan });
 });
 
-// Create a new plan from wizard
-app.post('/api/me/plans', authRequired, roleRequired('customer'), csrfProtection, async (req, res) => {
-  const { eventType, eventName, location, date, guests, budget, packages } = req.body || {};
-  
-  if (!eventType) {
-    return res.status(400).json({ error: 'Event type is required' });
+// --- GUEST PLAN CREATION (No Auth Required) ---
+
+/**
+ * Create a guest plan (no authentication required)
+ * POST /api/plans/guest
+ * Returns: { ok: true, plan: {...}, token: 'secret-token' }
+ */
+app.post('/api/plans/guest', csrfProtection, async (req, res) => {
+  try {
+    const { eventType, eventName, location, date, guests, budget, packages } = req.body || {};
+
+    if (!eventType) {
+      return res.status(400).json({ error: 'Event type is required' });
+    }
+
+    const plans = await dbUnified.read('plans');
+
+    // Generate a secure token for guest plan claiming
+    const token = uid('gst'); // guest token
+
+    const newPlan = {
+      id: uid('pln'),
+      userId: null, // No user yet
+      guestToken: token,
+      eventType,
+      eventName: eventName || '',
+      location: location || '',
+      date: date || '',
+      guests: guests || null,
+      budget: budget || '',
+      packages: packages || [],
+      isGuestPlan: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    plans.push(newPlan);
+    await dbUnified.write('plans', plans);
+
+    res.json({
+      ok: true,
+      plan: newPlan,
+      token, // Frontend stores this to claim later
+    });
+  } catch (error) {
+    console.error('Error creating guest plan:', error);
+    res.status(500).json({ error: 'Failed to create guest plan' });
   }
-
-  const plans = await dbUnified.read('plans');
-  const newPlan = {
-    id: uid('pln'),
-    userId: req.user.id,
-    eventType,
-    eventName: eventName || '',
-    location: location || '',
-    date: date || '',
-    guests: guests || null,
-    budget: budget || '',
-    packages: packages || [],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  };
-
-  plans.push(newPlan);
-  await dbUnified.write('plans', plans);
-  
-  res.json({ ok: true, plan: newPlan });
 });
+
+/**
+ * Claim a guest plan and attach to authenticated user
+ * POST /api/me/plans/claim
+ * Body: { token: 'guest-token' }
+ */
+app.post(
+  '/api/me/plans/claim',
+  authRequired,
+  roleRequired('customer'),
+  csrfProtection,
+  async (req, res) => {
+    try {
+      const { token } = req.body || {};
+
+      if (!token) {
+        return res.status(400).json({ error: 'Guest plan token is required' });
+      }
+
+      const plans = await dbUnified.read('plans');
+      const planIndex = plans.findIndex(p => p.guestToken === token && p.isGuestPlan === true);
+
+      if (planIndex === -1) {
+        return res.status(404).json({ error: 'Guest plan not found or already claimed' });
+      }
+
+      // Check if user already has a plan
+      const existingUserPlan = plans.find(p => p.userId === req.user.id);
+      if (existingUserPlan) {
+        return res.status(400).json({
+          error: 'You already have a plan. Guest plan cannot be claimed.',
+          existingPlanId: existingUserPlan.id,
+        });
+      }
+
+      // Attach plan to user
+      plans[planIndex].userId = req.user.id;
+      plans[planIndex].isGuestPlan = false;
+      plans[planIndex].claimedAt = new Date().toISOString();
+      // Keep guestToken for audit trail but plan is now claimed
+
+      await dbUnified.write('plans', plans);
+
+      res.json({
+        ok: true,
+        plan: plans[planIndex],
+        message: 'Plan successfully claimed!',
+      });
+    } catch (error) {
+      console.error('Error claiming guest plan:', error);
+      res.status(500).json({ error: 'Failed to claim guest plan' });
+    }
+  }
+);
+
+// Create a new plan from wizard
+app.post(
+  '/api/me/plans',
+  authRequired,
+  roleRequired('customer'),
+  csrfProtection,
+  async (req, res) => {
+    const { eventType, eventName, location, date, guests, budget, packages } = req.body || {};
+
+    if (!eventType) {
+      return res.status(400).json({ error: 'Event type is required' });
+    }
+
+    const plans = await dbUnified.read('plans');
+    const newPlan = {
+      id: uid('pln'),
+      userId: req.user.id,
+      eventType,
+      eventName: eventName || '',
+      location: location || '',
+      date: date || '',
+      guests: guests || null,
+      budget: budget || '',
+      packages: packages || [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    plans.push(newPlan);
+    await dbUnified.write('plans', plans);
+
+    res.json({ ok: true, plan: newPlan });
+  }
+);
 
 // Get all plans for current user
 app.get('/api/me/plans', authRequired, roleRequired('customer'), async (req, res) => {
@@ -4020,6 +4332,34 @@ app.post('/api/reviews/:reviewId/helpful', csrfProtection, async (req, res) => {
   } catch (error) {
     console.error('Mark helpful error:', error);
     res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * Get reviews for a specific supplier (admin view - includes all statuses)
+ * GET /api/admin/reviews
+ */
+app.get('/api/admin/reviews', authRequired, roleRequired('admin'), async (req, res) => {
+  try {
+    const { supplierId } = req.query;
+
+    if (!supplierId) {
+      return res.status(400).json({ error: 'supplierId query parameter is required' });
+    }
+
+    // Get all reviews for the supplier (not just approved ones)
+    const reviews = await reviewsSystem.getSupplierReviews(supplierId, {
+      approvedOnly: false, // Admin sees all reviews
+    });
+
+    res.json({
+      success: true,
+      count: reviews.length,
+      reviews,
+    });
+  } catch (error) {
+    console.error('Get admin reviews error:', error);
+    res.status(500).json({ error: 'Failed to get reviews', details: error.message });
   }
 });
 

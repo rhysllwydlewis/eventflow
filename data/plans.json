@@ -1,1 +1,17 @@
-[]
+[
+  {
+    "id": "pln_55vhzghcyqqjeq",
+    "userId": null,
+    "guestToken": "gst_77ebixj1yqqjeq",
+    "eventType": "Wedding",
+    "eventName": "",
+    "location": "Cardiff",
+    "date": "",
+    "guests": null,
+    "budget": "",
+    "packages": [],
+    "isGuestPlan": true,
+    "createdAt": "2026-01-03T20:13:52.706Z",
+    "updatedAt": "2026-01-03T20:13:52.706Z"
+  }
+]
