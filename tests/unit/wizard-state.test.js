@@ -2,6 +2,8 @@
  * Unit tests for Wizard State Manager
  */
 
+/* eslint-env browser */
+
 describe('WizardState', () => {
   let mockLocalStorage;
 

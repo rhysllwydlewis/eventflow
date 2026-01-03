@@ -69,7 +69,7 @@ function csrfProtection(req, res, next) {
  * @param {Object} req - Express request object
  * @returns {string} The CSRF token
  */
-function getToken(req) {
+function getToken(_req) {
   // In a session-based system, you would store this in req.session
   // For now, we'll generate a new token each time
   const token = generateToken();

@@ -95,10 +95,7 @@ describe('Plan API Endpoints', () => {
     });
 
     it('should require authentication', async () => {
-      const res = await request(app)
-        .post('/api/me/plans')
-        .send({ eventType: 'Wedding' })
-        .expect(401);
+      await request(app).post('/api/me/plans').send({ eventType: 'Wedding' }).expect(401);
     });
   });
 

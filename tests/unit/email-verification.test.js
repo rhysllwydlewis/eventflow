@@ -5,7 +5,6 @@
 
 const path = require('path');
 const fs = require('fs');
-const crypto = require('crypto');
 
 // Mock postmark module
 jest.mock('postmark', () => ({

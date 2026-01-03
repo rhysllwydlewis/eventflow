@@ -38,7 +38,6 @@ const APP_VERSION = 'v17.0.0';
 
 require('dotenv').config();
 
-let stripe = null;
 let STRIPE_ENABLED = false;
 try {
   const secret = process.env.STRIPE_SECRET_KEY;
@@ -48,9 +47,9 @@ try {
     // Uses Stripe's default API version.
     // eslint-disable-next-line global-require, node/no-missing-require
     const stripeLib = require('stripe');
-    stripe = stripeLib(secret);
+    const _stripe = stripeLib(secret); // Reserved for future payment integration
     STRIPE_ENABLED = true;
-    // Note: stripe variable is initialized for future payment integration
+    // Note: _stripe variable is initialized for future payment integration
   }
 } catch (err) {
   console.warn('Stripe is not configured:', err.message);
@@ -529,7 +528,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 // Always save outgoing email to /outbox in dev
-function ensureOutbox() {
+function _ensureOutbox() {
   const outDir = path.join(DATA_DIR, '..', 'outbox');
   if (!fs.existsSync(outDir)) {
     fs.mkdirSync(outDir, { recursive: true });
@@ -543,7 +542,7 @@ function ensureOutbox() {
  * @param {object} data - Data to replace in template
  * @returns {string} Processed HTML
  */
-function loadEmailTemplate(templateName, data) {
+function _loadEmailTemplate(templateName, data) {
   try {
     const templatePath = path.join(__dirname, 'email-templates', `${templateName}.html`);
     if (!fs.existsSync(templatePath)) {
@@ -603,7 +602,7 @@ async function sendMail(toOrOpts, subject, text) {
 }
 
 // ---------- Auth helpers ----------
-function setAuthCookie(res, token) {
+function _setAuthCookie(res, token) {
   const isProd = process.env.NODE_ENV === 'production';
   res.cookie('token', token, {
     httpOnly: true,
@@ -657,7 +656,7 @@ function roleRequired(role) {
  * Returns 503 if database is not connected
  * Use this for routes that require database access
  */
-function dbRequired(req, res, next) {
+function _dbRequired(req, res, next) {
   const isMongoConnected = mongoDb.isConnected && mongoDb.isConnected();
 
   if (!isMongoConnected) {
@@ -3932,7 +3931,7 @@ app.get('/api/plan/export/pdf', authRequired, planOwnerOnly, async (req, res) =>
   }
 
   const suppliers = await dbUnified.read('suppliers');
-  const packages = await dbUnified.read('packages'); // currently unused, but kept for future detail
+  const _packages = await dbUnified.read('packages'); // currently unused, but kept for future detail
 
   res.setHeader('Content-Type', 'application/pdf');
   res.setHeader('Content-Disposition', 'attachment; filename=event_plan.pdf');
@@ -5369,7 +5368,7 @@ app.use(
 app.use(sentry.getErrorHandler());
 
 // Custom error handler
-app.use((err, req, res, next) => {
+app.use((err, req, res, _next) => {
   console.error('Error:', err);
 
   // Send error to Sentry

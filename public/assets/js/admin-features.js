@@ -414,7 +414,6 @@
               ${segments
                 .map((seg, i) => {
                   const circumference = 2 * Math.PI * 40;
-                  const offset = circumference - (seg.percentage / 100) * circumference;
                   const dashArray = `${(seg.percentage / 100) * circumference} ${circumference}`;
                   return `<circle cx="50" cy="50" r="40" fill="none" stroke="${seg.color}" stroke-width="20" stroke-dasharray="${dashArray}" stroke-dashoffset="${-segments.slice(0, i).reduce((sum, s) => sum + (s.percentage / 100) * circumference, 0)}" style="transition: stroke-dashoffset 1s ease;"/>`;
                 })

@@ -42,19 +42,15 @@ class KeyboardNavigationHelper {
    * Only show focus rings for keyboard navigation
    */
   setupFocusVisible() {
-    let isUsingKeyboard = false;
-
     // Detect keyboard usage
     document.addEventListener('keydown', e => {
       if (e.key === 'Tab') {
-        isUsingKeyboard = true;
         document.body.classList.add('using-keyboard');
       }
     });
 
     // Detect mouse usage
     document.addEventListener('mousedown', () => {
-      isUsingKeyboard = false;
       document.body.classList.remove('using-keyboard');
     });
 

@@ -300,7 +300,6 @@ describe('Webhook Handlers', () => {
   describe('Subscription Created', () => {
     it('should set subscription tier on user record', () => {
       const planName = 'Professional Monthly';
-      const subscriptionStatus = 'active';
 
       const tier = getSubscriptionTier(planName);
       const userUpdates = {
@@ -315,7 +314,6 @@ describe('Webhook Handlers', () => {
 
   describe('Subscription Updated', () => {
     it('should update subscription tier when plan changes', () => {
-      const oldPlanName = 'Professional';
       const newPlanName = 'Professional Plus';
       const subscriptionStatus = 'active';
 
@@ -332,7 +330,6 @@ describe('Webhook Handlers', () => {
     });
 
     it('should set tier to free when subscription becomes inactive', () => {
-      const planName = 'Professional';
       const subscriptionStatus = 'past_due';
 
       const isActive = subscriptionStatus === 'active';
