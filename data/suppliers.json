@@ -40,5 +40,14 @@
     "healthScore": 75,
     "tags": [],
     "createdAt": "2026-01-02T00:08:56.778Z"
+  },
+  {
+    "id": "test-unapproved-1767475762525",
+    "name": "Unapproved Venue",
+    "category": "Venues",
+    "approved": false,
+    "location": "Cardiff",
+    "latitude": 51.48,
+    "longitude": -3.18
   }
 ]
