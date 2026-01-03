@@ -53,5 +53,53 @@
     "notify": true,
     "marketingOptIn": false,
     "verified": true
+  },
+  {
+    "id": "usr_z55980mtyto5yh",
+    "name": "Test User No Plans",
+    "firstName": "Test",
+    "lastName": "NoPlans",
+    "email": "test-noplan-1767476160809@example.com",
+    "role": "customer",
+    "passwordHash": "$2a$10$09thk19Gx7cFebC89r5YPecR2l3em7DU2sWtxWXowSlyQ21Sp8wSy",
+    "location": "Test Location",
+    "verified": true,
+    "createdAt": "2026-01-03T21:36:00.891Z"
+  },
+  {
+    "id": "usr_j8jj5zgkytpt10",
+    "name": "Test User No Plans",
+    "firstName": "Test",
+    "lastName": "NoPlans",
+    "email": "test-noplan-1767476237364@example.com",
+    "role": "customer",
+    "passwordHash": "$2a$10$nam.Uf2P6hHpefWYOBSjr.vyzkkzX/7sex85mpxb2Md3RYH.hKh2y",
+    "location": "Test Location",
+    "verified": true,
+    "createdAt": "2026-01-03T21:37:17.462Z"
+  },
+  {
+    "id": "usr_4gr5scw0ytq9fc",
+    "name": "Test User No Plans",
+    "firstName": "Test",
+    "lastName": "NoPlans",
+    "email": "test-noplan-1767476258616@example.com",
+    "role": "customer",
+    "passwordHash": "$2a$10$sXgQpDVOxJxmtj4iPIonOOw2YwmQHMknHRl2pGS1aTsaCSYZctSn6",
+    "location": "Test Location",
+    "verified": true,
+    "createdAt": "2026-01-03T21:37:38.716Z"
+  },
+  {
+    "id": "usr_s5s40iq4ytqoyh",
+    "name": "Test User No Plans",
+    "firstName": "Test",
+    "lastName": "NoPlans",
+    "email": "test-noplan-1767476278745@example.com",
+    "role": "customer",
+    "passwordHash": "$2a$10$eneZ4X0NCn.DqvJVN0i4zuGXizuDgKn4yz25mU42DovSXOTkBGUKy",
+    "location": "Test Location",
+    "verified": true,
+    "createdAt": "2026-01-03T21:37:58.844Z"
   }
 ]

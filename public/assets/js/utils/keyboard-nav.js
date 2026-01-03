@@ -250,8 +250,9 @@ class KeyboardNavigationHelper {
       parts.push('meta');
     }
 
-    const key = e.key.toLowerCase();
-    if (!['control', 'alt', 'shift', 'meta'].includes(key)) {
+    // Guard against undefined key
+    const key = e.key ? e.key.toLowerCase() : '';
+    if (key && !['control', 'alt', 'shift', 'meta'].includes(key)) {
       parts.push(key);
     }
 
@@ -264,6 +265,11 @@ class KeyboardNavigationHelper {
    * @returns {string} - Normalized key
    */
   normalizeKey(key) {
+    // Guard against undefined or null key
+    if (!key) {
+      return '';
+    }
+
     const parts = key.toLowerCase().split('+');
     const modifiers = ['ctrl', 'alt', 'shift', 'meta'];
     const sorted = [];
@@ -290,8 +296,13 @@ class KeyboardNavigationHelper {
    * @returns {boolean}
    */
   shouldHandleShortcut(e) {
+    // Guard against undefined target
     const target = e.target;
-    const tagName = target.tagName.toLowerCase();
+    if (!target) {
+      return false;
+    }
+
+    const tagName = target.tagName ? target.tagName.toLowerCase() : '';
 
     // Don't handle shortcuts in input fields (except for specific keys like Escape)
     if (['input', 'textarea', 'select'].includes(tagName) && e.key !== 'Escape') {

@@ -5,26 +5,44 @@
 const request = require('supertest');
 const app = require('../../server');
 const dbUnified = require('../../db-unified');
+const bcrypt = require('bcryptjs');
+const { uid } = require('../../store');
+const jwt = require('jsonwebtoken');
+
+const JWT_SECRET =
+  process.env.JWT_SECRET || 'test-secret-key-for-testing-only-minimum-32-characters-long';
 
 describe('Plan API Endpoints', () => {
   let authToken;
   let userId;
+  let userEmail;
 
   beforeAll(async () => {
-    // Create a test user and get auth token
-    const registerRes = await request(app)
-      .post('/api/auth/register')
-      .send({
-        email: `test-plan-${Date.now()}@example.com`,
-        password: 'Test123!@#',
-        name: 'Test User',
-        role: 'customer',
-      });
+    // Create a verified test user directly in the database
+    userEmail = `test-plan-${Date.now()}@example.com`;
+    userId = uid('usr');
 
-    if (registerRes.body.token) {
-      authToken = registerRes.body.token;
-      userId = registerRes.body.user?.id;
-    }
+    const testUser = {
+      id: userId,
+      name: 'Test User',
+      firstName: 'Test',
+      lastName: 'User',
+      email: userEmail,
+      role: 'customer',
+      passwordHash: bcrypt.hashSync('Test123!@#', 10),
+      location: 'Test Location',
+      verified: true, // Pre-verified for testing
+      createdAt: new Date().toISOString(),
+    };
+
+    const users = await dbUnified.read('users');
+    users.push(testUser);
+    await dbUnified.write('users', users);
+
+    // Generate auth token
+    authToken = jwt.sign({ id: userId, email: userEmail, role: 'customer' }, JWT_SECRET, {
+      expiresIn: '1h',
+    });
   });
 
   afterAll(async () => {
@@ -87,14 +105,11 @@ describe('Plan API Endpoints', () => {
   describe('GET /api/me/plans', () => {
     it('should return user plans', async () => {
       // First create a plan
-      await request(app)
-        .post('/api/me/plans')
-        .set('Cookie', `token=${authToken}`)
-        .send({
-          eventType: 'Other',
-          eventName: 'Birthday Party',
-          location: 'Brighton',
-        });
+      await request(app).post('/api/me/plans').set('Cookie', `token=${authToken}`).send({
+        eventType: 'Other',
+        eventName: 'Birthday Party',
+        location: 'Brighton',
+      });
 
       // Then retrieve plans
       const res = await request(app)
@@ -112,19 +127,37 @@ describe('Plan API Endpoints', () => {
     });
 
     it('should return empty array when no plans', async () => {
-      // Create a new user with no plans
-      const newUserRes = await request(app)
-        .post('/api/auth/register')
-        .send({
-          email: `test-noplan-${Date.now()}@example.com`,
-          password: 'Test123!@#',
-          name: 'Test User No Plans',
-          role: 'customer',
-        });
+      // Create a new verified user with no plans directly in database
+      const newUserEmail = `test-noplan-${Date.now()}@example.com`;
+      const newUserId = uid('usr');
+
+      const newUser = {
+        id: newUserId,
+        name: 'Test User No Plans',
+        firstName: 'Test',
+        lastName: 'NoPlans',
+        email: newUserEmail,
+        role: 'customer',
+        passwordHash: bcrypt.hashSync('Test123!@#', 10),
+        location: 'Test Location',
+        verified: true,
+        createdAt: new Date().toISOString(),
+      };
+
+      const users = await dbUnified.read('users');
+      users.push(newUser);
+      await dbUnified.write('users', users);
+
+      // Generate auth token
+      const newUserToken = jwt.sign(
+        { id: newUserId, email: newUserEmail, role: 'customer' },
+        JWT_SECRET,
+        { expiresIn: '1h' }
+      );
 
       const res = await request(app)
         .get('/api/me/plans')
-        .set('Cookie', `token=${newUserRes.body.token}`)
+        .set('Cookie', `token=${newUserToken}`)
         .expect(200);
 
       expect(res.body.plans).toEqual([]);
@@ -147,10 +180,7 @@ describe('Plan API Endpoints', () => {
         packages: ['pkg1'],
       };
 
-      const res = await request(app)
-        .post('/api/plans/guest')
-        .send(planData)
-        .expect(200);
+      const res = await request(app).post('/api/plans/guest').send(planData).expect(200);
 
       expect(res.body.ok).toBe(true);
       expect(res.body.plan).toBeDefined();
@@ -177,31 +207,44 @@ describe('Plan API Endpoints', () => {
 
     beforeEach(async () => {
       // Create a guest plan first
-      const res = await request(app)
-        .post('/api/plans/guest')
-        .send({
-          eventType: 'Other',
-          eventName: 'Birthday Party',
-          location: 'Liverpool',
-        });
+      const res = await request(app).post('/api/plans/guest').send({
+        eventType: 'Other',
+        eventName: 'Birthday Party',
+        location: 'Liverpool',
+      });
 
       guestToken = res.body.token;
       guestPlanId = res.body.plan.id;
     });
 
     it('should claim a guest plan after authentication', async () => {
-      // Create a new user
-      const registerRes = await request(app)
-        .post('/api/auth/register')
-        .send({
-          email: `test-claim-${Date.now()}@example.com`,
-          password: 'Test123!@#',
-          name: 'Test Claim User',
-          role: 'customer',
-        });
+      // Create a new verified user directly in the database
+      const claimUserEmail = `test-claim-${Date.now()}@example.com`;
+      const claimUserId = uid('usr');
 
-      const claimToken = registerRes.body.token;
-      const claimUserId = registerRes.body.user?.id;
+      const claimUser = {
+        id: claimUserId,
+        name: 'Test Claim User',
+        firstName: 'Test',
+        lastName: 'Claim',
+        email: claimUserEmail,
+        role: 'customer',
+        passwordHash: bcrypt.hashSync('Test123!@#', 10),
+        location: 'Test Location',
+        verified: true,
+        createdAt: new Date().toISOString(),
+      };
+
+      const users = await dbUnified.read('users');
+      users.push(claimUser);
+      await dbUnified.write('users', users);
+
+      // Generate auth token
+      const claimToken = jwt.sign(
+        { id: claimUserId, email: claimUserEmail, role: 'customer' },
+        JWT_SECRET,
+        { expiresIn: '1h' }
+      );
 
       // Claim the guest plan
       const res = await request(app)
@@ -230,10 +273,7 @@ describe('Plan API Endpoints', () => {
     });
 
     it('should require authentication', async () => {
-      await request(app)
-        .post('/api/me/plans/claim')
-        .send({ token: guestToken })
-        .expect(401);
+      await request(app).post('/api/me/plans/claim').send({ token: guestToken }).expect(401);
     });
 
     it('should require token', async () => {

@@ -5741,12 +5741,17 @@ async function startServer() {
   }
 }
 
-// Start the server with proper initialization
-startServer().catch(error => {
-  console.error('Fatal error during startup:', error);
-  sentry.captureException(error);
-  process.exit(1);
-});
+// Export the app for testing (without starting the server)
+module.exports = app;
+
+// Only start the server if this file is run directly (not imported by tests)
+if (require.main === module) {
+  startServer().catch(error => {
+    console.error('Fatal error during startup:', error);
+    sentry.captureException(error);
+    process.exit(1);
+  });
+}
 
 // Global error handlers
 process.on('unhandledRejection', (reason, promise) => {
