@@ -4,7 +4,7 @@
  * Uses Firebase Firestore for real-time updates or falls back to MongoDB API
  */
 
-import { db, isFirebaseAvailable } from './firebase-config.js';
+import { isFirebaseAvailable } from './firebase-config.js';
 
 class MessagingSystem {
   constructor() {

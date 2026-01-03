@@ -28,6 +28,7 @@ const router = express.Router();
 const JWT_SECRET = String(process.env.JWT_SECRET || 'change_me');
 
 // This will be set by the main server.js when mounting these routes (legacy compatibility)
+// eslint-disable-next-line no-unused-vars
 let _sendMailFn = null;
 
 /**

@@ -616,7 +616,7 @@ class PhotoGallery {
     }
   }
 
-  handleDragEnd(e) {
+  handleDragEnd() {
     if (this.draggedElement) {
       this.draggedElement.classList.remove('dragging');
       this.draggedElement = null;

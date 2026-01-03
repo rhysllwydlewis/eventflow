@@ -162,7 +162,8 @@ async function read(collectionName) {
         const doc = await collection.findOne({ id: 'system' });
         if (doc) {
           // Remove MongoDB's _id and our internal id field from settings
-          const { _id: _mongoId, id: _internalId, ...settings } = doc;
+          // eslint-disable-next-line no-unused-vars
+          const { _id, id, ...settings } = doc;
           return settings;
         }
         return {};

@@ -381,6 +381,7 @@ class ExportUtility {
 }
 
 // Export singleton instance
+// eslint-disable-next-line no-unused-vars
 const exportUtility = new ExportUtility();
 
 // Export for use in modules

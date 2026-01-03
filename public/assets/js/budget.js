@@ -609,6 +609,7 @@ class BudgetManager {
 }
 
 // Initialize budget manager
+// eslint-disable-next-line no-unused-vars
 let budgetManager;
 
 document.addEventListener('DOMContentLoaded', () => {

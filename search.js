@@ -14,7 +14,7 @@ const dbUnified = require('./db-unified');
  */
 async function searchSuppliers(query) {
   const suppliers = await dbUnified.read('suppliers');
-  const reviews = await dbUnified.read('reviews'); // TODO: Use for rating-based sorting
+  // TODO: Use reviews for rating-based sorting
 
   let results = suppliers.filter(s => s.approved);
 

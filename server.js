@@ -47,7 +47,9 @@ try {
     // Uses Stripe's default API version.
     // eslint-disable-next-line global-require, node/no-missing-require
     const stripeLib = require('stripe');
-    const _stripe = stripeLib(secret); // Reserved for future payment integration
+    // Reserved for future payment integration
+    // eslint-disable-next-line no-unused-vars
+    const _stripe = stripeLib(secret);
     STRIPE_ENABLED = true;
     // Note: _stripe variable is initialized for future payment integration
   }
@@ -528,6 +530,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 // Always save outgoing email to /outbox in dev
+// eslint-disable-next-line no-unused-vars
 function _ensureOutbox() {
   const outDir = path.join(DATA_DIR, '..', 'outbox');
   if (!fs.existsSync(outDir)) {
@@ -542,6 +545,7 @@ function _ensureOutbox() {
  * @param {object} data - Data to replace in template
  * @returns {string} Processed HTML
  */
+// eslint-disable-next-line no-unused-vars
 function _loadEmailTemplate(templateName, data) {
   try {
     const templatePath = path.join(__dirname, 'email-templates', `${templateName}.html`);
@@ -602,6 +606,7 @@ async function sendMail(toOrOpts, subject, text) {
 }
 
 // ---------- Auth helpers ----------
+// eslint-disable-next-line no-unused-vars
 function _setAuthCookie(res, token) {
   const isProd = process.env.NODE_ENV === 'production';
   res.cookie('token', token, {
@@ -656,6 +661,7 @@ function roleRequired(role) {
  * Returns 503 if database is not connected
  * Use this for routes that require database access
  */
+// eslint-disable-next-line no-unused-vars
 function _dbRequired(req, res, next) {
   const isMongoConnected = mongoDb.isConnected && mongoDb.isConnected();
 
@@ -3931,6 +3937,7 @@ app.get('/api/plan/export/pdf', authRequired, planOwnerOnly, async (req, res) =>
   }
 
   const suppliers = await dbUnified.read('suppliers');
+  // eslint-disable-next-line no-unused-vars
   const _packages = await dbUnified.read('packages'); // currently unused, but kept for future detail
 
   res.setHeader('Content-Type', 'application/pdf');
@@ -4964,6 +4971,7 @@ app.post('/api/photos/bulk-edit', authRequired, csrfProtection, async (req, res)
  */
 app.post('/api/photos/:id/filters', authRequired, csrfProtection, async (req, res) => {
   try {
+    // eslint-disable-next-line no-unused-vars
     const { id: _id } = req.params; // Photo ID from URL (not currently used)
     const { imageUrl, brightness, contrast, saturation } = req.body;
 

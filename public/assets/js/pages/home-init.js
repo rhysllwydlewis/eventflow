@@ -260,7 +260,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initialize WebSocket connection for real-time notifications
     if (typeof WebSocketClient !== 'undefined') {
+      // eslint-disable-next-line no-unused-vars
       const wsClient = new WebSocketClient({
+        // eslint-disable-next-line no-unused-vars
         onNotification: notification => {
           // Update notification badge
           const badge = document.querySelector('.notification-badge');

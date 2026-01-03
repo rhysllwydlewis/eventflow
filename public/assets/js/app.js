@@ -2853,6 +2853,8 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Helper function to create resend verification form
+// Used by verify-init.js and other pages
+// eslint-disable-next-line no-unused-vars
 function createResendVerificationForm(containerId, initialEmail = '') {
   const container = document.getElementById(containerId);
   if (!container) {
@@ -2907,6 +2909,8 @@ function createResendVerificationForm(containerId, initialEmail = '') {
 }
 
 // Email verification page
+// Overridden in verify-init.js but provided as fallback
+// eslint-disable-next-line no-unused-vars
 async function initVerify() {
   const statusEl = document.getElementById('verify-status');
   const nextEl = document.getElementById('verify-next');
@@ -3439,6 +3443,8 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Experimental v4: simple confetti burst
+// Called by verify-init.js on successful verification
+// eslint-disable-next-line no-unused-vars
 function efConfetti() {
   try {
     const layer = document.createElement('div');
