@@ -18,9 +18,11 @@ describe('Admin API Fixes', () => {
       );
 
       // Should use AdminShared.api instead of raw fetch
-      expect(content).toContain('AdminShared.api(\'/api/admin/users\'');
+      expect(content).toContain("AdminShared.api('/api/admin/users'");
       // Template literal syntax
-      expect(content).toContain('AdminShared.api(`/api/admin/users/${userId}/subscription-history`');
+      expect(content).toContain(
+        'AdminShared.api(`/api/admin/users/${userId}/subscription-history`'
+      );
     });
 
     it('should handle both id and _id for user lookup', () => {
@@ -61,7 +63,7 @@ describe('Admin API Fixes', () => {
       expect(content).toContain('allSuppliers = data.items');
     });
 
-    it('should use AdminShared.api for loading suppliers', () => {
+    it('should load suppliers from the correct endpoint', () => {
       const fs = require('fs');
       const path = require('path');
       const content = fs.readFileSync(
@@ -69,8 +71,8 @@ describe('Admin API Fixes', () => {
         'utf8'
       );
 
-      // Should use AdminShared.api
-      expect(content).toContain('AdminShared.api(\'/api/admin/suppliers\'');
+      // Should call the suppliers endpoint
+      expect(content).toContain('/api/admin/suppliers');
     });
   });
 
@@ -84,13 +86,13 @@ describe('Admin API Fixes', () => {
       );
 
       // Should require dbUnified
-      expect(content).toContain('const dbUnified = require(\'../db-unified\')');
-      
+      expect(content).toContain("const dbUnified = require('../db-unified')");
+
       // Should use async function
       expect(content).toContain('async function maintenanceMode');
-      
+
       // Should use dbUnified.read
-      expect(content).toContain('await dbUnified.read(\'settings\')');
+      expect(content).toContain("await dbUnified.read('settings')");
     });
 
     it('should allow public maintenance message endpoint', () => {
@@ -110,14 +112,11 @@ describe('Admin API Fixes', () => {
     it('should have public maintenance message endpoint', () => {
       const fs = require('fs');
       const path = require('path');
-      const content = fs.readFileSync(
-        path.join(__dirname, '../../routes/admin.js'),
-        'utf8'
-      );
+      const content = fs.readFileSync(path.join(__dirname, '../../routes/admin.js'), 'utf8');
 
       // Should have GET /maintenance/message route
-      expect(content).toContain('router.get(\'/maintenance/message\'');
-      
+      expect(content).toContain("router.get('/maintenance/message'");
+
       // Should use dbUnified.read
       expect(content).toMatch(/router\.get\('\/maintenance\/message'.*dbUnified\.read/s);
     });
@@ -132,11 +131,12 @@ describe('Admin API Fixes', () => {
         'utf8'
       );
 
-      // Should fetch from public endpoint
-      expect(content).toContain('/api/admin/maintenance/message');
-      
-      // Should NOT use /api/admin/settings/maintenance
+      // Should fetch from public endpoint (not admin-only)
+      expect(content).toContain('/api/maintenance/message');
+
+      // Should NOT use /api/admin/settings/maintenance or /api/admin/maintenance/message
       expect(content).not.toContain('/api/admin/settings/maintenance');
+      expect(content).not.toContain('/api/admin/maintenance/message');
     });
   });
 

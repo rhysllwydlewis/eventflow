@@ -4583,6 +4583,30 @@ app.post('/api/photos/reorder', authRequired, csrfProtection, async (req, res) =
 const authRoutes = require('./routes/auth');
 app.use('/api/auth', authRoutes);
 
+// ---------- Public Maintenance Endpoint (must be before auth checks) ----------
+app.get('/api/maintenance/message', async (req, res) => {
+  try {
+    const settings = (await dbUnified.read('settings')) || {};
+    const maintenance = settings.maintenance || {
+      enabled: false,
+      message: "We're performing scheduled maintenance. We'll be back soon!",
+    };
+
+    // Return public maintenance information
+    res.json({
+      enabled: maintenance.enabled,
+      message: maintenance.message,
+    });
+  } catch (error) {
+    console.error('Error reading maintenance message:', error);
+    // Return default message on error
+    res.status(200).json({
+      enabled: false,
+      message: "We're performing scheduled maintenance. We'll be back soon!",
+    });
+  }
+});
+
 // ---------- Webhook Routes ----------
 const webhookRoutes = require('./routes/webhooks');
 app.use('/api/webhooks', webhookRoutes);
