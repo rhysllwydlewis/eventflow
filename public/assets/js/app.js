@@ -14,7 +14,7 @@ function efSetupPhotoDropZone(dropId, previewId, onImage) {
     if (!files || !files.length) {
       return;
     }
-    Array.prototype.slice.call(files).forEach((file, index) => {
+    Array.prototype.slice.call(files).forEach(file => {
       if (!file.type || file.type.indexOf('image/') !== 0) {
         return;
       }
@@ -159,9 +159,6 @@ function addLocal(id) {
     p.push(id);
     lsSet(p);
   }
-}
-function removeLocal(id) {
-  lsSet(lsGet().filter(x => x !== id));
 }
 
 async function me() {
@@ -1547,10 +1544,6 @@ function efMaybeShowOnboarding(page) {
   }
 }
 
-async function initDashCustomer() {
-  efMaybeShowOnboarding('dash_customer');
-  await renderThreads('threads-cust');
-}
 async function initDashSupplier() {
   efMaybeShowOnboarding('dash_supplier');
   // If returning from Stripe checkout with billing=success, mark this supplier account as Pro
@@ -1788,7 +1781,7 @@ async function initDashSupplier() {
       const id = payload.id;
       const path = id ? `/api/me/packages/${encodeURIComponent(id)}` : '/api/me/packages';
       const method = id ? 'PUT' : 'POST';
-      
+
       try {
         await api(path, {
           method,
@@ -1799,7 +1792,7 @@ async function initDashSupplier() {
         alert('Saved package.');
         pkgForm.reset();
       } catch (err) {
-        alert('Error saving package: ' + (err.message || 'Please try again'));
+        alert(`Error saving package: ${err.message || 'Please try again'}`);
       }
     });
   }
@@ -1946,22 +1939,22 @@ async function initAdmin() {
 
   // Helper function to add CSRF token to requests
   function addCsrfToken(opts) {
-    opts = opts || {};
-    opts.headers = opts.headers || {};
-    opts.credentials = 'include';
+    const options = opts || {};
+    options.headers = options.headers || {};
+    options.credentials = 'include';
     if (
       window.__CSRF_TOKEN__ &&
-      opts.method &&
-      ['POST', 'PUT', 'DELETE'].includes(opts.method.toUpperCase())
+      options.method &&
+      ['POST', 'PUT', 'DELETE'].includes(options.method.toUpperCase())
     ) {
-      opts.headers['X-CSRF-Token'] = window.__CSRF_TOKEN__;
+      options.headers['X-CSRF-Token'] = window.__CSRF_TOKEN__;
     }
-    return opts;
+    return options;
   }
 
   async function fetchJSON(url, opts) {
-    opts = addCsrfToken(opts);
-    const r = await fetch(url, opts || {});
+    const options = addCsrfToken(opts);
+    const r = await fetch(url, options || {});
     if (!r.ok) {
       throw new Error((await r.json()).error || 'Request failed');
     }
@@ -2860,6 +2853,8 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Helper function to create resend verification form
+// Used by verify-init.js and other pages
+// eslint-disable-next-line no-unused-vars
 function createResendVerificationForm(containerId, initialEmail = '') {
   const container = document.getElementById(containerId);
   if (!container) {
@@ -2914,6 +2909,8 @@ function createResendVerificationForm(containerId, initialEmail = '') {
 }
 
 // Email verification page
+// Overridden in verify-init.js but provided as fallback
+// eslint-disable-next-line no-unused-vars
 async function initVerify() {
   const statusEl = document.getElementById('verify-status');
   const nextEl = document.getElementById('verify-next');
@@ -3446,6 +3443,8 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Experimental v4: simple confetti burst
+// Called by verify-init.js on successful verification
+// eslint-disable-next-line no-unused-vars
 function efConfetti() {
   try {
     const layer = document.createElement('div');

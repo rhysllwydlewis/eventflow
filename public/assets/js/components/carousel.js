@@ -472,7 +472,7 @@ class Carousel {
       }
     };
 
-    const onPointerUp = e => {
+    const onPointerUp = () => {
       if (!isPointerDown) {
         return;
       }

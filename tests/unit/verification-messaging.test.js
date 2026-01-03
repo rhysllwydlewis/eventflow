@@ -300,12 +300,7 @@ describe('Messaging System', () => {
 describe('Smart Tagging', () => {
   describe('Tag Generation', () => {
     it('should generate category-based tags', () => {
-      const _supplier = {
-        id: 'supplier-123',
-        category: 'Venues',
-        approved: true,
-      };
-
+      // Supplier with Venues category
       const categoryTags = ['venue', 'location', 'space', 'ceremony', 'reception'];
 
       expect(categoryTags).toContain('venue');

@@ -3,7 +3,7 @@
  * Manages premium feature access based on subscription tier
  */
 
-import { db, auth, doc, getDoc, onAuthStateChanged } from '../../assets/js/firebase-config.js';
+import { db, auth, onAuthStateChanged } from '../../assets/js/firebase-config.js';
 
 // Feature tiers
 const FEATURE_TIERS = {

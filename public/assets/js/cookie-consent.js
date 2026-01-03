@@ -138,11 +138,17 @@
    * Initialize the cookie consent banner
    */
   function init() {
-    // Show banner if consent not given
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', showCookieBanner);
-    } else {
-      showCookieBanner();
+    try {
+      // Show banner if consent not given
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', showCookieBanner);
+      } else {
+        showCookieBanner();
+      }
+    } catch (error) {
+      // Silently fail if cookie consent banner fails to initialize
+      // This prevents blocking page load if script is blocked by adblockers
+      console.warn('Cookie consent banner failed to initialize:', error);
     }
   }
 
@@ -150,13 +156,22 @@
   window.CookieConsent = {
     hasConsent: hasConsent,
     getConsent: function () {
-      const consent = getCookie(CONSENT_COOKIE_NAME);
-      return consent === 'accepted';
+      try {
+        const consent = getCookie(CONSENT_COOKIE_NAME);
+        return consent === 'accepted';
+      } catch (error) {
+        console.warn('Failed to get cookie consent:', error);
+        return false;
+      }
     },
     show: showCookieBanner,
     init: init,
   };
 
-  // Auto-initialize
-  init();
+  // Auto-initialize with error handling
+  try {
+    init();
+  } catch (error) {
+    console.warn('Cookie consent auto-initialization failed:', error);
+  }
 })();

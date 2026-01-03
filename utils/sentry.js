@@ -45,7 +45,7 @@ function initSentry(app) {
         ...(Sentry.Integrations.Redis ? [new Sentry.Integrations.Redis()] : []),
       ],
       // BeforeSend hook for filtering/modifying events
-      beforeSend(event, hint) {
+      beforeSend(event) {
         // Don't send events in test environment
         if (environment === 'test') {
           return null;

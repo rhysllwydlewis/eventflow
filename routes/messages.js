@@ -7,7 +7,7 @@
 
 const express = require('express');
 const { authRequired } = require('../middleware/auth');
-const { auditLog, AUDIT_ACTIONS } = require('../middleware/audit');
+const { auditLog } = require('../middleware/audit');
 const dbUnified = require('../db-unified');
 const { uid } = require('../store');
 
@@ -891,7 +891,7 @@ router.post('/:conversationId', authRequired, async (req, res) => {
     const userId = req.user.id;
     const userRole = req.user.role;
     const { conversationId } = req.params;
-    const { message, senderId, senderType, senderName } = req.body;
+    const { message } = req.body;
 
     if (!message || message.trim().length === 0) {
       return res.status(400).json({ error: 'Message text required' });

@@ -38,7 +38,6 @@ const APP_VERSION = 'v17.0.0';
 
 require('dotenv').config();
 
-let stripe = null;
 let STRIPE_ENABLED = false;
 try {
   const secret = process.env.STRIPE_SECRET_KEY;
@@ -48,9 +47,11 @@ try {
     // Uses Stripe's default API version.
     // eslint-disable-next-line global-require, node/no-missing-require
     const stripeLib = require('stripe');
-    stripe = stripeLib(secret);
+    // Reserved for future payment integration
+    // eslint-disable-next-line no-unused-vars
+    const _stripe = stripeLib(secret);
     STRIPE_ENABLED = true;
-    // Note: stripe variable is initialized for future payment integration
+    // Note: _stripe variable is initialized for future payment integration
   }
 } catch (err) {
   console.warn('Stripe is not configured:', err.message);
@@ -529,7 +530,8 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 // Always save outgoing email to /outbox in dev
-function ensureOutbox() {
+// eslint-disable-next-line no-unused-vars
+function _ensureOutbox() {
   const outDir = path.join(DATA_DIR, '..', 'outbox');
   if (!fs.existsSync(outDir)) {
     fs.mkdirSync(outDir, { recursive: true });
@@ -543,7 +545,8 @@ function ensureOutbox() {
  * @param {object} data - Data to replace in template
  * @returns {string} Processed HTML
  */
-function loadEmailTemplate(templateName, data) {
+// eslint-disable-next-line no-unused-vars
+function _loadEmailTemplate(templateName, data) {
   try {
     const templatePath = path.join(__dirname, 'email-templates', `${templateName}.html`);
     if (!fs.existsSync(templatePath)) {
@@ -603,7 +606,8 @@ async function sendMail(toOrOpts, subject, text) {
 }
 
 // ---------- Auth helpers ----------
-function setAuthCookie(res, token) {
+// eslint-disable-next-line no-unused-vars
+function _setAuthCookie(res, token) {
   const isProd = process.env.NODE_ENV === 'production';
   res.cookie('token', token, {
     httpOnly: true,
@@ -657,7 +661,8 @@ function roleRequired(role) {
  * Returns 503 if database is not connected
  * Use this for routes that require database access
  */
-function dbRequired(req, res, next) {
+// eslint-disable-next-line no-unused-vars
+function _dbRequired(req, res, next) {
   const isMongoConnected = mongoDb.isConnected && mongoDb.isConnected();
 
   if (!isMongoConnected) {
@@ -1595,6 +1600,7 @@ app.get('/api/venues/near', async (req, res) => {
         venues,
         total: venues.length,
         filtered: false,
+        radiusMiles: parseFloat(radiusMiles) || 10,
         warning: `Could not find location "${location}". Showing all venues.`,
       });
     }
@@ -3931,7 +3937,8 @@ app.get('/api/plan/export/pdf', authRequired, planOwnerOnly, async (req, res) =>
   }
 
   const suppliers = await dbUnified.read('suppliers');
-  const packages = await dbUnified.read('packages'); // currently unused, but kept for future detail
+  // eslint-disable-next-line no-unused-vars
+  const _packages = await dbUnified.read('packages'); // currently unused, but kept for future detail
 
   res.setHeader('Content-Type', 'application/pdf');
   res.setHeader('Content-Disposition', 'attachment; filename=event_plan.pdf');
@@ -4964,6 +4971,7 @@ app.post('/api/photos/bulk-edit', authRequired, csrfProtection, async (req, res)
  */
 app.post('/api/photos/:id/filters', authRequired, csrfProtection, async (req, res) => {
   try {
+    // eslint-disable-next-line no-unused-vars
     const { id: _id } = req.params; // Photo ID from URL (not currently used)
     const { imageUrl, brightness, contrast, saturation } = req.body;
 
@@ -5368,7 +5376,7 @@ app.use(
 app.use(sentry.getErrorHandler());
 
 // Custom error handler
-app.use((err, req, res, next) => {
+app.use((err, req, res, _next) => {
   console.error('Error:', err);
 
   // Send error to Sentry
@@ -5741,12 +5749,17 @@ async function startServer() {
   }
 }
 
-// Start the server with proper initialization
-startServer().catch(error => {
-  console.error('Fatal error during startup:', error);
-  sentry.captureException(error);
-  process.exit(1);
-});
+// Export the app for testing (without starting the server)
+module.exports = app;
+
+// Only start the server if this file is run directly (not imported by tests)
+if (require.main === module) {
+  startServer().catch(error => {
+    console.error('Fatal error during startup:', error);
+    sentry.captureException(error);
+    process.exit(1);
+  });
+}
 
 // Global error handlers
 process.on('unhandledRejection', (reason, promise) => {

@@ -2,7 +2,7 @@
 (function () {
   let allSuppliers = [];
   let filteredSuppliers = [];
-  let selectedSuppliers = new Set();
+  const selectedSuppliers = new Set();
   let currentPage = 1;
   const itemsPerPage = 20;
 
@@ -18,7 +18,7 @@
     try {
       const response = await fetch('/api/admin/suppliers', {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
         },
       });
 
@@ -35,7 +35,7 @@
       // API may return data.items or data.suppliers - accept both for compatibility
       allSuppliers = data.items || data.suppliers || [];
       filteredSuppliers = [...allSuppliers];
-      
+
       updateStats();
     } catch (error) {
       console.error('Error loading suppliers:', error);
@@ -43,7 +43,8 @@
       // Show error state in table
       const tbody = document.getElementById('suppliersTableBody');
       if (tbody) {
-        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 40px; color: #ef4444;">⚠️ Error loading suppliers. Please refresh the page.</td></tr>';
+        tbody.innerHTML =
+          '<tr><td colspan="8" style="text-align: center; padding: 40px; color: #ef4444;">⚠️ Error loading suppliers. Please refresh the page.</td></tr>';
       }
     }
   }
@@ -65,26 +66,30 @@
   function setupEventListeners() {
     // Search
     document.getElementById('searchInput')?.addEventListener('input', handleFilters);
-    
+
     // Filters
     document.getElementById('approvalFilter')?.addEventListener('change', handleFilters);
     document.getElementById('subscriptionFilter')?.addEventListener('change', handleFilters);
     document.getElementById('clearFiltersBtn')?.addEventListener('click', clearFilters);
-    
+
     // Bulk actions
     document.getElementById('selectAll')?.addEventListener('change', toggleSelectAll);
-    document.getElementById('bulkApproveBtn')?.addEventListener('click', () => bulkAction('approve'));
+    document
+      .getElementById('bulkApproveBtn')
+      ?.addEventListener('click', () => bulkAction('approve'));
     document.getElementById('bulkRejectBtn')?.addEventListener('click', () => bulkAction('reject'));
     document.getElementById('bulkDeleteBtn')?.addEventListener('click', () => bulkAction('delete'));
     document.getElementById('smartTagBtn')?.addEventListener('click', smartTag);
-    
+
     // Pagination
     document.getElementById('prevPageBtn')?.addEventListener('click', () => changePage(-1));
     document.getElementById('nextPageBtn')?.addEventListener('click', () => changePage(1));
-    
+
     // Export and Import
     document.getElementById('exportSuppliersBtn')?.addEventListener('click', exportSuppliers);
-    document.getElementById('importDemoSuppliersBtn')?.addEventListener('click', importDemoSuppliers);
+    document
+      .getElementById('importDemoSuppliersBtn')
+      ?.addEventListener('click', importDemoSuppliers);
   }
 
   // Handle filters
@@ -94,19 +99,18 @@
     const subscription = document.getElementById('subscriptionFilter')?.value || 'all';
 
     filteredSuppliers = allSuppliers.filter(supplier => {
-      const matchesSearch = 
+      const matchesSearch =
         supplier.name?.toLowerCase().includes(search) ||
         supplier.email?.toLowerCase().includes(search);
-      
-      const matchesApproval = 
+
+      const matchesApproval =
         approval === 'all' ||
         (approval === 'approved' && supplier.approved) ||
         (approval === 'pending' && !supplier.approved && !supplier.rejected) ||
         (approval === 'rejected' && supplier.rejected);
-      
+
       const matchesSubscription =
-        subscription === 'all' ||
-        supplier.subscription?.tier === subscription;
+        subscription === 'all' || supplier.subscription?.tier === subscription;
 
       return matchesSearch && matchesApproval && matchesSubscription;
     });
@@ -126,23 +130,27 @@
   // Render table
   function renderTable() {
     const tbody = document.getElementById('suppliersTableBody');
-    if (!tbody) return;
+    if (!tbody) {
+      return;
+    }
 
     const start = (currentPage - 1) * itemsPerPage;
     const end = start + itemsPerPage;
     const pageSuppliers = filteredSuppliers.slice(start, end);
 
     if (pageSuppliers.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 40px; color: #9ca3af;">No suppliers found</td></tr>';
+      tbody.innerHTML =
+        '<tr><td colspan="8" style="text-align: center; padding: 40px; color: #9ca3af;">No suppliers found</td></tr>';
       updatePagination();
       return;
     }
 
-    tbody.innerHTML = pageSuppliers.map(supplier => {
-      const isSelected = selectedSuppliers.has(supplier.id);
-      const subscriptionBadge = getSubscriptionBadge(supplier.subscription?.tier || 'free');
-      
-      return `
+    tbody.innerHTML = pageSuppliers
+      .map(supplier => {
+        const isSelected = selectedSuppliers.has(supplier.id);
+        const subscriptionBadge = getSubscriptionBadge(supplier.subscription?.tier || 'free');
+
+        return `
         <tr>
           <td><input type="checkbox" ${isSelected ? 'checked' : ''} onchange="window.toggleSupplierSelection('${supplier.id}')"></td>
           <td><a href="/admin-supplier-detail.html?id=${supplier.id}" style="color: #667eea; font-weight: 500;">${escapeHtml(supplier.name || 'Unknown')}</a></td>
@@ -161,7 +169,8 @@
           </td>
         </tr>
       `;
-    }).join('');
+      })
+      .join('');
 
     updatePagination();
     updateBulkActionsBar();
@@ -172,7 +181,7 @@
     const badges = {
       free: '<span class="subscription-badge badge-free">FREE</span>',
       pro: '<span class="subscription-badge badge-pro">PRO</span>',
-      pro_plus: '<span class="subscription-badge badge-pro-plus">PRO+</span>'
+      pro_plus: '<span class="subscription-badge badge-pro-plus">PRO+</span>',
     };
     return badges[tier] || badges.free;
   }
@@ -183,11 +192,12 @@
     const start = (currentPage - 1) * itemsPerPage + 1;
     const end = Math.min(currentPage * itemsPerPage, filteredSuppliers.length);
 
-    document.getElementById('paginationInfo').textContent = 
+    document.getElementById('paginationInfo').textContent =
       `Showing ${start}-${end} of ${filteredSuppliers.length} suppliers`;
-    
+
     document.getElementById('prevPageBtn').disabled = currentPage === 1;
-    document.getElementById('nextPageBtn').disabled = currentPage === totalPages || totalPages === 0;
+    document.getElementById('nextPageBtn').disabled =
+      currentPage === totalPages || totalPages === 0;
   }
 
   // Change page
@@ -210,13 +220,13 @@
   function toggleSelectAll(e) {
     const checked = e.target.checked;
     selectedSuppliers.clear();
-    
+
     if (checked) {
       const start = (currentPage - 1) * itemsPerPage;
       const end = start + itemsPerPage;
       filteredSuppliers.slice(start, end).forEach(s => selectedSuppliers.add(s.id));
     }
-    
+
     renderTable();
   }
 
@@ -224,7 +234,7 @@
   function updateBulkActionsBar() {
     const bar = document.getElementById('bulkActionsBar');
     const count = document.getElementById('selectedCount');
-    
+
     if (selectedSuppliers.size > 0) {
       bar.style.display = 'flex';
       count.textContent = `${selectedSuppliers.size} supplier${selectedSuppliers.size > 1 ? 's' : ''} selected`;
@@ -235,8 +245,10 @@
 
   // Bulk actions
   async function bulkAction(action) {
-    if (selectedSuppliers.size === 0) return;
-    
+    if (selectedSuppliers.size === 0) {
+      return;
+    }
+
     const actionText = action === 'approve' ? 'approve' : action === 'reject' ? 'reject' : 'delete';
     if (!confirm(`Are you sure you want to ${actionText} ${selectedSuppliers.size} supplier(s)?`)) {
       return;
@@ -245,12 +257,12 @@
     try {
       const supplierIds = Array.from(selectedSuppliers);
       const endpoint = `/api/admin/suppliers/bulk-${action}`;
-      
+
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
         },
         body: JSON.stringify({ supplierIds }),
       });
@@ -260,8 +272,11 @@
       }
 
       const result = await response.json();
-      showToast(result.message || `Successfully ${actionText}ed ${selectedSuppliers.size} supplier(s)`, 'success');
-      
+      showToast(
+        result.message || `Successfully ${actionText}ed ${selectedSuppliers.size} supplier(s)`,
+        'success'
+      );
+
       // Clear selection and reload
       selectedSuppliers.clear();
       await loadSuppliers();
@@ -279,7 +294,11 @@
       return;
     }
 
-    if (!confirm(`Apply smart tags to ${selectedSuppliers.size} supplier(s)? This will analyze their profiles and add relevant tags.`)) {
+    if (
+      !confirm(
+        `Apply smart tags to ${selectedSuppliers.size} supplier(s)? This will analyze their profiles and add relevant tags.`
+      )
+    ) {
       return;
     }
 
@@ -288,10 +307,10 @@
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
         },
-        body: JSON.stringify({ 
-          supplierIds: Array.from(selectedSuppliers) 
+        body: JSON.stringify({
+          supplierIds: Array.from(selectedSuppliers),
         }),
       });
 
@@ -300,8 +319,11 @@
       }
 
       const result = await response.json();
-      showToast(`Smart tags applied to ${result.taggedCount || selectedSuppliers.size} supplier(s)`, 'success');
-      
+      showToast(
+        `Smart tags applied to ${result.taggedCount || selectedSuppliers.size} supplier(s)`,
+        'success'
+      );
+
       // Clear selection and reload
       selectedSuppliers.clear();
       await loadSuppliers();
@@ -314,7 +336,11 @@
 
   // Import demo suppliers
   async function importDemoSuppliers() {
-    if (!confirm('Import demo suppliers from data/suppliers.json?\n\nThis will add or update demo suppliers in the database. Existing suppliers with the same ID will be updated.')) {
+    if (
+      !confirm(
+        'Import demo suppliers from data/suppliers.json?\n\nThis will add or update demo suppliers in the database. Existing suppliers with the same ID will be updated.'
+      )
+    ) {
       return;
     }
 
@@ -322,9 +348,9 @@
       showToast('Importing demo suppliers...', 'info');
 
       const result = await AdminShared.api('/api/admin/suppliers/import-demo', 'POST', {});
-      
+
       showToast(result.message || `Successfully imported ${result.total} supplier(s)`, 'success');
-      
+
       // Reload suppliers to show the imported ones
       await loadSuppliers();
       renderTable();
@@ -357,9 +383,9 @@
       s.approved ? 'Yes' : 'No',
       s.subscription?.tier || 'free',
       s.score || 0,
-      s.tags?.join(';') || ''
+      s.tags?.join(';') || '',
     ]);
-    
+
     return [headers, ...rows].map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
   }
 
@@ -399,7 +425,7 @@
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
           },
           body: JSON.stringify({ approved: true }),
         });
@@ -419,12 +445,16 @@
   };
 
   window.deleteSupplier = async function (id) {
-    if (confirm('Are you sure you want to delete this supplier? This will also delete all their packages.')) {
+    if (
+      confirm(
+        'Are you sure you want to delete this supplier? This will also delete all their packages.'
+      )
+    ) {
       try {
         const response = await fetch(`/api/admin/suppliers/${id}`, {
           method: 'DELETE',
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
           },
         });
 

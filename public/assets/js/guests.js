@@ -234,7 +234,6 @@ class GuestManager {
 
   parseCSV(csv) {
     const lines = csv.trim().split('\n');
-    const headers = lines[0].split(',').map(h => h.trim());
     const guests = [];
 
     for (let i = 1; i < lines.length; i++) {
@@ -603,6 +602,7 @@ class GuestManager {
 }
 
 // Initialize guest manager
+// eslint-disable-next-line no-unused-vars
 let guestManager;
 
 document.addEventListener('DOMContentLoaded', () => {

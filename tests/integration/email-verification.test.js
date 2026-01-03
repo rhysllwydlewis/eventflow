@@ -6,7 +6,6 @@
 const request = require('supertest');
 const express = require('express');
 const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
 const { uid } = require('../../store');
 
 // Mock the store module

@@ -161,7 +161,8 @@ async function read(collectionName) {
       if (collectionName === 'settings') {
         const doc = await collection.findOne({ id: 'system' });
         if (doc) {
-          // Remove MongoDB's _id and our internal id field
+          // Remove MongoDB's _id and our internal id field from settings
+          // eslint-disable-next-line no-unused-vars
           const { _id, id, ...settings } = doc;
           return settings;
         }

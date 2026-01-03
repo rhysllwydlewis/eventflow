@@ -15,7 +15,6 @@ describe('Founder Badge Logic', () => {
 
   describe('Badge Eligibility', () => {
     const launchTs = '2026-01-01T00:00:00Z';
-    const expectedEndDate = new Date('2026-07-01T00:00:00Z'); // 6 months after launch
 
     it('should award founder badge to user registered on launch day', () => {
       const createdAt = '2026-01-01T00:00:00Z';

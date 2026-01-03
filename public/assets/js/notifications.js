@@ -432,6 +432,7 @@ class NotificationCenter {
 
 // Global notification manager instance
 let notificationManager = null;
+// eslint-disable-next-line no-unused-vars
 let notificationCenter = null;
 
 // Initialize on DOM load

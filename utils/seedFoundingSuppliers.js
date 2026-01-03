@@ -11,24 +11,6 @@ const dbUnified = require('../db-unified');
 const { uid } = require('../store');
 const { getPexelsService } = require('./pexels-service');
 
-const UK_LOCATIONS = [
-  'London',
-  'Manchester',
-  'Birmingham',
-  'Edinburgh',
-  'Cardiff',
-  'Bristol',
-  'Leeds',
-  'Liverpool',
-  'Glasgow',
-  'Newcastle',
-  'Sheffield',
-  'Nottingham',
-  'Brighton',
-  'Oxford',
-  'Cambridge',
-];
-
 // Founding supplier data template
 // Note: Photos arrays are intentionally empty - real suppliers upload their own photos
 // For demo suppliers with Pexels integration, see seed.js which uses getPexelsPhoto()
@@ -615,17 +597,6 @@ async function seedFoundingSuppliers() {
       }
     }
 
-    // Add additional suppliers from different locations to reach 25-30 total
-    const additionalLocations = [
-      'Liverpool',
-      'Newcastle',
-      'Glasgow',
-      'Sheffield',
-      'Nottingham',
-      'Oxford',
-      'Cambridge',
-    ];
-
     // Add a few more venues and photographers in different locations
     const additionalSuppliers = [
       {
@@ -639,7 +610,7 @@ async function seedFoundingSuppliers() {
         price_display: 'From £2,500',
         maxGuests: 100,
         amenities: ['Parking', 'Urban Setting', 'Licensed', 'Flexible Space'],
-      photos: [],
+        photos: [],
       },
       {
         category: 'Photography',
@@ -652,7 +623,7 @@ async function seedFoundingSuppliers() {
         price_display: 'From £1,600',
         maxGuests: null,
         amenities: ['Full Day Coverage', 'Second Shooter', 'Online Gallery', 'Print Rights'],
-      photos: [],
+        photos: [],
       },
     ];
 

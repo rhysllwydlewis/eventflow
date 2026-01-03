@@ -23,7 +23,7 @@ async function getCurrentUser() {
 }
 
 // Get user's suppliers
-async function getUserSuppliers(userId) {
+async function getUserSuppliers() {
   try {
     const response = await fetch('/api/me/suppliers');
     if (!response.ok) {
@@ -176,7 +176,6 @@ function openConversation(conversationId) {
     messages.forEach(message => {
       const timestamp = messagingSystem.formatFullTimestamp(message.timestamp);
       const isFromSupplier = message.senderType === 'supplier';
-      const alignment = isFromSupplier ? 'right' : 'left';
       const bgColor = isFromSupplier ? '#3b82f6' : '#e4e4e7';
       const textColor = isFromSupplier ? '#fff' : '#1a1a1a';
 

@@ -284,18 +284,18 @@ router.get('/suppliers/:id', authRequired, roleRequired('admin'), async (req, re
   try {
     const raw = await dbUnified.read('suppliers');
     const supplier = raw.find(s => s.id === req.params.id);
-    
+
     if (!supplier) {
       return res.status(404).json({ error: 'Supplier not found' });
     }
-    
+
     // Add computed fields
     const enrichedSupplier = {
       ...supplier,
       isPro: supplierIsProActiveFn ? supplierIsProActiveFn(supplier) : supplier.isPro,
       proExpiresAt: supplier.proExpiresAt || null,
     };
-    
+
     res.json({ supplier: enrichedSupplier });
   } catch (error) {
     console.error('Error reading supplier:', error);
@@ -1477,9 +1477,13 @@ router.put('/users/:id', authRequired, roleRequired('admin'), (req, res) => {
     user.versionHistory = [];
   }
   const {
+    // eslint-disable-next-line no-unused-vars
     password: _password,
+    // eslint-disable-next-line no-unused-vars
     passwordHash: _passwordHash,
+    // eslint-disable-next-line no-unused-vars
     resetToken: _resetToken,
+    // eslint-disable-next-line no-unused-vars
     twoFactorSecret: _twoFactorSecret,
     ...safeState
   } = user;
@@ -2090,6 +2094,7 @@ router.get('/users/:id', authRequired, roleRequired('admin'), (req, res) => {
   }
 
   // Return user without password
+  // eslint-disable-next-line no-unused-vars
   const { password, ...userWithoutPassword } = user;
   res.json(userWithoutPassword);
 });
@@ -2648,14 +2653,14 @@ router.put('/settings/maintenance', authRequired, roleRequired('admin'), async (
     const { enabled, message, duration } = req.body;
 
     const settings = (await dbUnified.read('settings')) || {};
-    
+
     // Calculate expiration time if duration is provided and maintenance is being enabled
     let expiresAt = null;
     if (enabled && duration && Number(duration) > 0) {
       const durationMs = Number(duration) * 60 * 1000; // duration is in minutes
       expiresAt = new Date(Date.now() + durationMs).toISOString();
     }
-    
+
     settings.maintenance = {
       enabled: enabled === true,
       message: message || "We're performing scheduled maintenance. We'll be back soon!",

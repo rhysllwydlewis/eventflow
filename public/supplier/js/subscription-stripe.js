@@ -50,6 +50,7 @@ const PLANS = {
   },
 };
 
+// eslint-disable-next-line no-unused-vars
 let currentUser = null;
 let currentSubscription = null;
 let stripeConfig = null; // Store Stripe configuration
@@ -528,6 +529,7 @@ function showError(message) {
 /**
  * Show success message
  */
+// eslint-disable-next-line no-unused-vars
 function showSuccess(message) {
   console.log('[Subscription] Showing success:', message);
 

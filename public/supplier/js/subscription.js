@@ -8,7 +8,6 @@ import {
   auth,
   collection,
   doc,
-  getDoc,
   getDocs,
   setDoc,
   query,
@@ -267,7 +266,6 @@ function createPlanCard(plan) {
   // Pro Plus is NOT featured/promoted per requirements
   // Removed featured class for pro_plus
 
-  const currentTier = currentSupplier?.subscription?.tier || 'free';
   const isCurrentPlan = currentSupplier?.subscription?.planId === plan.id;
 
   // Show introductory pricing for Pro plan
@@ -645,6 +643,7 @@ function showError(message) {
   showNotification(message, 'error');
 }
 
+// eslint-disable-next-line no-unused-vars
 function showWarning(message) {
   showNotification(message, 'warning');
 }

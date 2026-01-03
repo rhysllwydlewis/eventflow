@@ -17,7 +17,6 @@ import {
   orderBy,
   onSnapshot,
   serverTimestamp,
-  Timestamp,
   arrayUnion,
   isFirebaseAvailable,
 } from './firebase-config.js';

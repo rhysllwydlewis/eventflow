@@ -405,7 +405,6 @@ class PackageList {
     const rawImageUrl = pkg.image || '/assets/images/placeholders/package-event.svg';
     const sanitizedImageUrl = this.sanitizeImageUrl(rawImageUrl);
     const imageUrl = escapeHtml(sanitizedImageUrl);
-    const slug = escapeHtml(String(pkg.slug || ''));
     const title = escapeHtml(pkg.title);
     const description = escapeHtml(pkg.description || '');
     // Use price_display as primary source, fallback to price for consistency across all views
