@@ -60,23 +60,46 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 2rem 1rem;
+  padding: 0;
   border: 2px solid #e5e7eb;
   border-radius: 12px;
   background: white;
   cursor: pointer;
   transition: all 0.2s ease;
+  overflow: hidden;
+  position: relative;
+  min-height: 280px;
 }
 
 .wizard-option:hover {
   border-color: #13b6a2;
   background: #f0fdf9;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .wizard-option.selected {
   border-color: #0b8073;
   background: #f0fdf9;
   box-shadow: 0 0 0 3px rgba(11, 128, 115, 0.1);
+}
+
+.wizard-option-image-container {
+  width: 100%;
+  height: 200px;
+  overflow: hidden;
+  position: relative;
+}
+
+.wizard-option-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.wizard-option:hover .wizard-option-image {
+  transform: scale(1.05);
 }
 
 .wizard-option-icon {
@@ -88,6 +111,12 @@
   font-size: 1.125rem;
   font-weight: 600;
   color: #0b1220;
+  padding: 1rem;
+  width: 100%;
+  text-align: center;
+  background: white;
+  position: relative;
+  z-index: 1;
 }
 
 /* Package grid */

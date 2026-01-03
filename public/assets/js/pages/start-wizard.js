@@ -19,7 +19,7 @@
 
   let currentStep = 0;
   let wizardState = null;
-  let availablePackages = {}; // { categoryKey: [packages] }
+  const availablePackages = {}; // { categoryKey: [packages] }
 
   /**
    * Initialize the wizard
@@ -87,7 +87,9 @@
    */
   function renderStep(stepIndex) {
     const container = document.getElementById('wizard-container');
-    if (!container) return;
+    if (!container) {
+      return;
+    }
 
     let html = '';
 
@@ -132,13 +134,17 @@
         
         <div class="wizard-options">
           <button class="wizard-option ${state.eventType === 'Wedding' ? 'selected' : ''}" 
-                  data-value="Wedding" type="button">
-            <span class="wizard-option-icon">💒</span>
+                  data-value="Wedding" type="button" id="event-type-wedding">
+            <div class="wizard-option-image-container">
+              <img class="wizard-option-image" id="wedding-image" alt="Wedding" />
+            </div>
             <span class="wizard-option-label">Wedding</span>
           </button>
           <button class="wizard-option ${state.eventType === 'Other' ? 'selected' : ''}" 
-                  data-value="Other" type="button">
-            <span class="wizard-option-icon">🎉</span>
+                  data-value="Other" type="button" id="event-type-other">
+            <div class="wizard-option-image-container">
+              <img class="wizard-option-image" id="other-event-image" alt="Other Event" />
+            </div>
             <span class="wizard-option-label">Other Event</span>
           </button>
         </div>
@@ -148,6 +154,26 @@
         </div>
       </div>
     `;
+  }
+
+  /**
+   * Load event type images - using local assets
+   */
+  async function loadEventTypeImages() {
+    const weddingImg = document.getElementById('wedding-image');
+    const otherImg = document.getElementById('other-event-image');
+
+    if (weddingImg) {
+      // Use venue image for wedding (elegant wedding venue)
+      weddingImg.src = '/assets/images/collage-venue.webp';
+      weddingImg.alt = 'Wedding venue';
+    }
+
+    if (otherImg) {
+      // Use entertainment/party image for other events
+      otherImg.src = '/assets/images/collage-entertainment.webp';
+      otherImg.alt = 'Party and events';
+    }
   }
 
   /**
@@ -268,7 +294,9 @@
    */
   function renderPlanSummary() {
     const container = document.getElementById('plan-summary');
-    if (!container) return;
+    if (!container) {
+      return;
+    }
 
     const state = window.WizardState.getState();
     const selectedCount = Object.keys(state.selectedPackages || {}).length;
@@ -307,6 +335,9 @@
   function attachStepListeners(stepIndex) {
     // Event type selection
     if (stepIndex === 0) {
+      // Load event type images from Pexels
+      loadEventTypeImages();
+
       const options = document.querySelectorAll('.wizard-option');
       options.forEach(opt => {
         opt.addEventListener('click', function () {
@@ -361,7 +392,9 @@
    */
   function renderPackageList(categoryKey, packages) {
     const container = document.getElementById(`wizard-packages-${categoryKey}`);
-    if (!container) return;
+    if (!container) {
+      return;
+    }
 
     if (packages.length === 0) {
       container.innerHTML = '<p class="small">No packages available for this category yet.</p>';
@@ -460,7 +493,9 @@
    */
   async function handleCreatePlan() {
     const createBtn = document.querySelector('.wizard-create-plan');
-    if (!createBtn) return;
+    if (!createBtn) {
+      return;
+    }
 
     // Disable button
     createBtn.disabled = true;
@@ -512,7 +547,9 @@
    */
   function getCsrfToken() {
     const meta = document.querySelector('meta[name="csrf-token"]');
-    if (meta) return meta.getAttribute('content');
+    if (meta) {
+      return meta.getAttribute('content');
+    }
     // Try cookie
     const match = document.cookie.match(/csrfToken=([^;]+)/);
     return match ? match[1] : '';
@@ -522,7 +559,9 @@
    * HTML escape utility
    */
   function escapeHtml(unsafe) {
-    if (typeof unsafe !== 'string') return '';
+    if (typeof unsafe !== 'string') {
+      return '';
+    }
     const div = document.createElement('div');
     div.textContent = unsafe;
     return div.innerHTML;
