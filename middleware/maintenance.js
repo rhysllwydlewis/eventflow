@@ -7,6 +7,10 @@
 
 const dbUnified = require('../db-unified');
 
+// Health check endpoints that should remain accessible during maintenance
+// for platform health checks (Railway, Kubernetes, etc.)
+const HEALTH_ENDPOINTS = ['/api/health', '/api/ready', '/api/status'];
+
 /**
  * Middleware to check maintenance mode
  * If enabled, non-admin users are redirected to maintenance page
@@ -50,7 +54,7 @@ async function maintenanceMode(req, res, next) {
 
     // Allow health check endpoints to pass through for platform health checks
     // These endpoints must remain accessible even during maintenance for Railway, etc.
-    if (req.path === '/api/health' || req.path === '/api/ready' || req.path === '/api/status') {
+    if (HEALTH_ENDPOINTS.includes(req.path)) {
       return next();
     }
 
