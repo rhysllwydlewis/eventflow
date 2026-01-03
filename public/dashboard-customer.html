@@ -49,11 +49,21 @@
 </div>
 
 <div class="cards">
-  <!-- Your Plan Card -->
+  <!-- Your Plans Card -->
   <div class="card">
-    <h3 style="margin:0 0 0.5rem 0;font-size:1.25rem;color:#0B1220;">Your plan</h3>
-    <p class="small" style="color:#667085;margin:0 0 1rem 0;">Review and manage your suppliers.</p>
-    <button class="cta" id="openPlanBtn" style="width:100%;">Open My Plan</button>
+    <h3 style="margin:0 0 0.5rem 0;font-size:1.25rem;color:#0B1220;">Your Plans</h3>
+    <p class="small" style="color:#667085;margin:0 0 1rem 0;">Event plans created with the wizard.</p>
+    <div id="customer-plans-list" style="margin-bottom:1rem;">
+      <p class="small" style="color:#667085;">Loading plans...</p>
+    </div>
+    <a href="/start.html" class="cta secondary" style="text-decoration:none;width:100%;text-align:center;display:inline-block;">Create New Plan</a>
+  </div>
+
+  <!-- Your Saved Suppliers Card -->
+  <div class="card">
+    <h3 style="margin:0 0 0.5rem 0;font-size:1.25rem;color:#0B1220;">Saved Suppliers</h3>
+    <p class="small" style="color:#667085;margin:0 0 1rem 0;">Review and manage your saved suppliers.</p>
+    <button class="cta" id="openPlanBtn" style="width:100%;">View Saved Items</button>
   </div>
   
   <!-- Quick Actions Card -->
@@ -62,7 +72,6 @@
     <p class="small" style="color:#667085;margin:0 0 1rem 0;">Common tasks to help plan your event.</p>
     <div style="display:flex;flex-direction:column;gap:0.75rem;">
       <a href="/suppliers.html" class="cta secondary" style="text-decoration:none;width:100%;text-align:center;">Browse Suppliers</a>
-      <a href="/start.html" class="cta secondary" style="text-decoration:none;width:100%;text-align:center;">Start Planning</a>
       <a href="/budget.html" class="cta secondary" style="text-decoration:none;width:100%;text-align:center;">Budget Calculator</a>
     </div>
   </div>
@@ -92,6 +101,55 @@
 <script>
 window.__EF_PAGE__='dash_customer';
 
+// Load customer plans
+async function loadCustomerPlans() {
+  const container = document.getElementById('customer-plans-list');
+  if (!container) return;
+
+  try {
+    const response = await fetch('/api/me/plans', { credentials: 'include' });
+    if (!response.ok) {
+      container.innerHTML = '<p class="small" style="color:#667085;">Unable to load plans.</p>';
+      return;
+    }
+
+    const data = await response.json();
+    const plans = data.plans || [];
+
+    if (plans.length === 0) {
+      container.innerHTML = '<p class="small" style="color:#667085;">No plans yet. Create one to get started!</p>';
+      return;
+    }
+
+    container.innerHTML = plans.map(plan => {
+      const packageCount = (plan.packages || []).length;
+      return `
+        <div style="padding:0.75rem;background:#f9fafb;border-radius:8px;margin-bottom:0.75rem;">
+          <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:0.5rem;">
+            <div>
+              <strong style="color:#0B1220;">${escapeHtml(plan.eventName || plan.eventType || 'Untitled Event')}</strong>
+              ${plan.eventType ? `<span class="small" style="color:#667085;display:block;">${escapeHtml(plan.eventType)}</span>` : ''}
+            </div>
+            <span class="small" style="color:#667085;">${packageCount} packages</span>
+          </div>
+          ${plan.location ? `<p class="small" style="color:#667085;margin:0.25rem 0;">📍 ${escapeHtml(plan.location)}</p>` : ''}
+          ${plan.date ? `<p class="small" style="color:#667085;margin:0.25rem 0;">📅 ${plan.date}</p>` : ''}
+        </div>
+      `;
+    }).join('');
+  } catch (err) {
+    console.error('Error loading plans:', err);
+    container.innerHTML = '<p class="small" style="color:#667085;">Error loading plans.</p>';
+  }
+}
+
+function escapeHtml(unsafe) {
+  if (typeof unsafe !== 'string') return '';
+  const div = document.createElement('div');
+  div.textContent = unsafe;
+  return div.innerHTML;
+}
+
 // Check authentication on page load
 async function checkAuth() {
   try {
@@ -112,6 +170,9 @@ async function initDashboard() {
     window.location.href = '/auth.html?redirect=' + encodeURIComponent(window.location.pathname);
     return;
   }
+
+  // Load customer plans
+  loadCustomerPlans();
 
   // Setup Open My Plan button with auth-aware navigation
   document.getElementById('openPlanBtn')?.addEventListener('click', async (e) => {

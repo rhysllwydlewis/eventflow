@@ -1763,17 +1763,44 @@ async function initDashSupplier() {
       e.preventDefault();
       const fd = new FormData(pkgForm);
       const payload = {};
-      fd.forEach((v, k) => (payload[k] = v));
+      fd.forEach((v, k) => {
+        if (k === 'eventTypes') {
+          // Handle checkbox array for eventTypes
+          if (!payload.eventTypes) {
+            payload.eventTypes = [];
+          }
+          payload.eventTypes.push(v);
+        } else {
+          payload[k] = v;
+        }
+      });
+
+      // Validate required fields
+      if (!payload.primaryCategoryKey) {
+        alert('Please select a primary category');
+        return;
+      }
+      if (!payload.eventTypes || payload.eventTypes.length === 0) {
+        alert('Please select at least one event type (Wedding or Other)');
+        return;
+      }
+
       const id = payload.id;
       const path = id ? `/api/me/packages/${encodeURIComponent(id)}` : '/api/me/packages';
       const method = id ? 'PUT' : 'POST';
-      await api(path, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      await loadPackages();
-      alert('Saved package.');
+      
+      try {
+        await api(path, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        await loadPackages();
+        alert('Saved package.');
+        pkgForm.reset();
+      } catch (err) {
+        alert('Error saving package: ' + (err.message || 'Please try again'));
+      }
     });
   }
 

@@ -64,6 +64,7 @@ Getting "502 Bad Gateway" or "connection refused" errors? This usually means Mon
 
 ### Core Platform
 
+- ✅ **Multi-Step Planning Wizard** - Interactive wizard for creating event plans with package selection
 - ✅ **Advanced Photo Management** - Upload, optimize, crop with AWS S3 or local storage
 - ✅ **Reviews & Ratings System** - 5-star ratings with approval workflow
 - ✅ **Advanced Search & Discovery** - Full-text search, filters, trending, recommendations
@@ -74,6 +75,19 @@ Getting "502 Bad Gateway" or "connection refused" errors? This usually means Mon
 - ✅ **Admin Moderation** - Photo and review approval queues
 - ✅ **MongoDB Integration** - Schema validation, indexes, connection pooling
 - ✅ **API Documentation** - Interactive Swagger UI at `/api-docs`
+
+### Planning Wizard
+
+- Multi-step card-based UI with progress indicator
+- Event type selection (Wedding or Other events)
+- Location and event details (date, guest count, budget)
+- Category-based package browsing (Venues, Photography, Catering, etc.)
+- Skip functionality for flexible planning
+- Persistent plan summary sidebar
+- Plan persistence for logged-in users
+- Draft mode for anonymous users (prompts login to save)
+- Package classification by category and event type
+- Backward compatibility with legacy planning flow
 
 ### Photo Management
 
