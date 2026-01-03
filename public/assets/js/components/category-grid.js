@@ -68,7 +68,6 @@ class CategoryGrid {
 
       .category-card-icon {
         font-size: 32px;
-        display: inline-block;
         flex-shrink: 0;
       }
 
