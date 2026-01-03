@@ -7,7 +7,7 @@ const geocoding = require('../../utils/geocoding');
 describe('Geocoding Utility', () => {
   describe('calculateDistance', () => {
     it('should calculate distance between two coordinates', () => {
-      // London to Cardiff approximately 150 miles
+      // London to Cardiff approximately 130-140 miles
       const londonLat = 51.5074;
       const londonLon = -0.1278;
       const cardiffLat = 51.4816;
@@ -15,9 +15,9 @@ describe('Geocoding Utility', () => {
 
       const distance = geocoding.calculateDistance(londonLat, londonLon, cardiffLat, cardiffLon);
 
-      // Distance should be around 150 miles (allow some tolerance)
-      expect(distance).toBeGreaterThan(140);
-      expect(distance).toBeLessThan(160);
+      // Distance should be around 130-140 miles (allow some tolerance)
+      expect(distance).toBeGreaterThan(125);
+      expect(distance).toBeLessThan(145);
     });
 
     it('should return 0 for same coordinates', () => {
@@ -29,8 +29,8 @@ describe('Geocoding Utility', () => {
       // Two points about 1 mile apart
       const lat1 = 51.5074;
       const lon1 = -0.1278;
-      const lat2 = 51.5200;
-      const lon2 = -0.1400;
+      const lat2 = 51.52;
+      const lon2 = -0.14;
 
       const distance = geocoding.calculateDistance(lat1, lon1, lat2, lon2);
 

@@ -958,13 +958,13 @@ app.post('/api/auth/login', authLimiter, csrfProtection, async (req, res) => {
   const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, {
     expiresIn,
   });
-  
+
   // Set cookie with appropriate max age
   const isProd = process.env.NODE_ENV === 'production';
-  const maxAge = remember 
-    ? 1000 * 60 * 60 * 24 * 30  // 30 days
-    : 1000 * 60 * 60 * 24 * 7;   // 7 days
-  
+  const maxAge = remember
+    ? 1000 * 60 * 60 * 24 * 30 // 30 days
+    : 1000 * 60 * 60 * 24 * 7; // 7 days
+
   res.cookie('token', token, {
     httpOnly: true,
     sameSite: isProd ? 'lax' : 'lax',
@@ -1565,31 +1565,32 @@ app.get('/api/suppliers', async (req, res) => {
 app.get('/api/venues/near', async (req, res) => {
   try {
     const { location, radiusMiles = 10 } = req.query;
-    
+
     // Get all approved Venues category suppliers
-    let venues = (await dbUnified.read('suppliers'))
-      .filter(s => s.approved && s.category === 'Venues');
+    let venues = (await dbUnified.read('suppliers')).filter(
+      s => s.approved && s.category === 'Venues'
+    );
 
     // If no location provided, return all venues
     if (!location || location.trim() === '') {
       // Add distance as null for all venues
       venues = venues.map(v => ({ ...v, distance: null }));
-      
-      return res.json({ 
-        venues, 
+
+      return res.json({
+        venues,
         total: venues.length,
         filtered: false,
-        message: 'Showing all venues (no location filter)'
+        message: 'Showing all venues (no location filter)',
       });
     }
 
     // Try to geocode the location
     const coords = await geocoding.geocodeLocation(location);
-    
+
     if (!coords) {
       // Could not geocode - return all venues with a warning
       venues = venues.map(v => ({ ...v, distance: null }));
-      
+
       return res.json({
         venues,
         total: venues.length,
@@ -1600,7 +1601,7 @@ app.get('/api/venues/near', async (req, res) => {
 
     // Filter venues by proximity
     const radius = parseFloat(radiusMiles) || 10;
-    
+
     // Calculate distance for each venue that has coordinates
     const venuesWithDistance = venues
       .map(venue => {
@@ -1620,7 +1621,7 @@ app.get('/api/venues/near', async (req, res) => {
 
     // Filter by radius
     const nearbyVenues = venuesWithDistance.filter(v => v.distance <= radius);
-    
+
     // Sort by distance
     nearbyVenues.sort((a, b) => a.distance - b.distance);
 
@@ -1635,9 +1636,9 @@ app.get('/api/venues/near', async (req, res) => {
     });
   } catch (error) {
     console.error('Venue proximity search error:', error);
-    res.status(500).json({ 
-      error: 'Failed to search venues', 
-      details: error.message 
+    res.status(500).json({
+      error: 'Failed to search venues',
+      details: error.message,
     });
   }
 });
@@ -2168,28 +2169,28 @@ app.get('/api/admin/photos/pending', authRequired, roleRequired('admin'), async 
 app.get('/api/admin/photos', authRequired, roleRequired('admin'), async (req, res) => {
   try {
     const { supplierId } = req.query;
-    
+
     if (!supplierId) {
       return res.status(400).json({ error: 'supplierId query parameter is required' });
     }
 
     const suppliers = await dbUnified.read('suppliers');
     const supplier = suppliers.find(s => s.id === supplierId);
-    
+
     if (!supplier) {
       return res.status(404).json({ error: 'Supplier not found' });
     }
 
     // Get photos from photosGallery (includes approved and unapproved)
     const photos = supplier.photosGallery || [];
-    
-    res.json({ 
+
+    res.json({
       success: true,
       photos: photos.map(p => ({
         ...p,
         id: p.id || `${supplierId}_${p.uploadedAt}`,
         supplierId,
-      }))
+      })),
     });
   } catch (error) {
     console.error('Error fetching supplier photos:', error);
@@ -2395,10 +2396,17 @@ app.get('/api/packages/search', async (req, res) => {
   // Apply filters
   items = items.filter(p => {
     // Approval filter
-    if (approved && !p.approved) return false;
+    if (approved && !p.approved) {
+      return false;
+    }
 
     // Text search
-    if (q && !((p.title || '').toLowerCase().includes(q) || (p.description || '').toLowerCase().includes(q))) {
+    if (
+      q &&
+      !(
+        (p.title || '').toLowerCase().includes(q) || (p.description || '').toLowerCase().includes(q)
+      )
+    ) {
       return false;
     }
 
@@ -2683,13 +2691,13 @@ app.post(
     // For Venues category, validate and require venuePostcode
     if (b.category === 'Venues') {
       if (!b.venuePostcode) {
-        return res.status(400).json({ 
-          error: 'Venue postcode is required for suppliers in the Venues category' 
+        return res.status(400).json({
+          error: 'Venue postcode is required for suppliers in the Venues category',
         });
       }
       if (!geocoding.isValidUKPostcode(b.venuePostcode)) {
-        return res.status(400).json({ 
-          error: 'Invalid UK postcode format' 
+        return res.status(400).json({
+          error: 'Invalid UK postcode format',
         });
       }
     }
@@ -2725,7 +2733,7 @@ app.post(
     // Add venue-specific fields if category is Venues
     if (b.category === 'Venues' && b.venuePostcode) {
       s.venuePostcode = String(b.venuePostcode).trim().toUpperCase();
-      
+
       // Geocode the postcode to get coordinates
       try {
         const coords = await geocoding.geocodePostcode(s.venuePostcode);
@@ -2766,14 +2774,14 @@ app.patch(
     // If updating a Venues category supplier with venuePostcode
     if (b.venuePostcode && all[i].category === 'Venues') {
       if (!geocoding.isValidUKPostcode(b.venuePostcode)) {
-        return res.status(400).json({ 
-          error: 'Invalid UK postcode format' 
+        return res.status(400).json({
+          error: 'Invalid UK postcode format',
         });
       }
-      
+
       // Update postcode and geocode
       all[i].venuePostcode = String(b.venuePostcode).trim().toUpperCase();
-      
+
       try {
         const coords = await geocoding.geocodePostcode(all[i].venuePostcode);
         if (coords) {
@@ -2844,26 +2852,29 @@ app.post(
   roleRequired('supplier'),
   csrfProtection,
   async (req, res) => {
-    const { supplierId, title, description, price, image, primaryCategoryKey, eventTypes } = req.body || {};
+    const { supplierId, title, description, price, image, primaryCategoryKey, eventTypes } =
+      req.body || {};
     if (!supplierId || !title) {
       return res.status(400).json({ error: 'Missing required fields: supplierId and title' });
     }
-    
+
     // Validate new required fields for wizard compatibility
     if (!primaryCategoryKey) {
       return res.status(400).json({ error: 'Primary category is required' });
     }
-    
+
     if (!eventTypes || !Array.isArray(eventTypes) || eventTypes.length === 0) {
-      return res.status(400).json({ error: 'At least one event type is required (wedding or other)' });
+      return res
+        .status(400)
+        .json({ error: 'At least one event type is required (wedding or other)' });
     }
-    
+
     // Validate event types
     const validEventTypes = eventTypes.filter(t => t === 'wedding' || t === 'other');
     if (validEventTypes.length === 0) {
       return res.status(400).json({ error: 'Event types must be "wedding" or "other"' });
     }
-    
+
     const own = (await dbUnified.read('suppliers')).find(
       s => s.id === supplierId && s.ownerUserId === req.user.id
     );
@@ -3770,16 +3781,16 @@ app.get('/api/me/plan', authRequired, planOwnerOnly, async (req, res) => {
 app.post('/api/plans/guest', csrfProtection, async (req, res) => {
   try {
     const { eventType, eventName, location, date, guests, budget, packages } = req.body || {};
-    
+
     if (!eventType) {
       return res.status(400).json({ error: 'Event type is required' });
     }
 
     const plans = await dbUnified.read('plans');
-    
+
     // Generate a secure token for guest plan claiming
     const token = uid('gst'); // guest token
-    
+
     const newPlan = {
       id: uid('pln'),
       userId: null, // No user yet
@@ -3798,9 +3809,9 @@ app.post('/api/plans/guest', csrfProtection, async (req, res) => {
 
     plans.push(newPlan);
     await dbUnified.write('plans', plans);
-    
-    res.json({ 
-      ok: true, 
+
+    res.json({
+      ok: true,
       plan: newPlan,
       token, // Frontend stores this to claim later
     });
@@ -3815,77 +3826,89 @@ app.post('/api/plans/guest', csrfProtection, async (req, res) => {
  * POST /api/me/plans/claim
  * Body: { token: 'guest-token' }
  */
-app.post('/api/me/plans/claim', authRequired, roleRequired('customer'), csrfProtection, async (req, res) => {
-  try {
-    const { token } = req.body || {};
-    
-    if (!token) {
-      return res.status(400).json({ error: 'Guest plan token is required' });
+app.post(
+  '/api/me/plans/claim',
+  authRequired,
+  roleRequired('customer'),
+  csrfProtection,
+  async (req, res) => {
+    try {
+      const { token } = req.body || {};
+
+      if (!token) {
+        return res.status(400).json({ error: 'Guest plan token is required' });
+      }
+
+      const plans = await dbUnified.read('plans');
+      const planIndex = plans.findIndex(p => p.guestToken === token && p.isGuestPlan === true);
+
+      if (planIndex === -1) {
+        return res.status(404).json({ error: 'Guest plan not found or already claimed' });
+      }
+
+      // Check if user already has a plan
+      const existingUserPlan = plans.find(p => p.userId === req.user.id);
+      if (existingUserPlan) {
+        return res.status(400).json({
+          error: 'You already have a plan. Guest plan cannot be claimed.',
+          existingPlanId: existingUserPlan.id,
+        });
+      }
+
+      // Attach plan to user
+      plans[planIndex].userId = req.user.id;
+      plans[planIndex].isGuestPlan = false;
+      plans[planIndex].claimedAt = new Date().toISOString();
+      // Keep guestToken for audit trail but plan is now claimed
+
+      await dbUnified.write('plans', plans);
+
+      res.json({
+        ok: true,
+        plan: plans[planIndex],
+        message: 'Plan successfully claimed!',
+      });
+    } catch (error) {
+      console.error('Error claiming guest plan:', error);
+      res.status(500).json({ error: 'Failed to claim guest plan' });
+    }
+  }
+);
+
+// Create a new plan from wizard
+app.post(
+  '/api/me/plans',
+  authRequired,
+  roleRequired('customer'),
+  csrfProtection,
+  async (req, res) => {
+    const { eventType, eventName, location, date, guests, budget, packages } = req.body || {};
+
+    if (!eventType) {
+      return res.status(400).json({ error: 'Event type is required' });
     }
 
     const plans = await dbUnified.read('plans');
-    const planIndex = plans.findIndex(p => p.guestToken === token && p.isGuestPlan === true);
-    
-    if (planIndex === -1) {
-      return res.status(404).json({ error: 'Guest plan not found or already claimed' });
-    }
+    const newPlan = {
+      id: uid('pln'),
+      userId: req.user.id,
+      eventType,
+      eventName: eventName || '',
+      location: location || '',
+      date: date || '',
+      guests: guests || null,
+      budget: budget || '',
+      packages: packages || [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
 
-    // Check if user already has a plan
-    const existingUserPlan = plans.find(p => p.userId === req.user.id);
-    if (existingUserPlan) {
-      return res.status(400).json({ 
-        error: 'You already have a plan. Guest plan cannot be claimed.',
-        existingPlanId: existingUserPlan.id
-      });
-    }
-
-    // Attach plan to user
-    plans[planIndex].userId = req.user.id;
-    plans[planIndex].isGuestPlan = false;
-    plans[planIndex].claimedAt = new Date().toISOString();
-    // Keep guestToken for audit trail but plan is now claimed
-    
+    plans.push(newPlan);
     await dbUnified.write('plans', plans);
-    
-    res.json({ 
-      ok: true, 
-      plan: plans[planIndex],
-      message: 'Plan successfully claimed!'
-    });
-  } catch (error) {
-    console.error('Error claiming guest plan:', error);
-    res.status(500).json({ error: 'Failed to claim guest plan' });
+
+    res.json({ ok: true, plan: newPlan });
   }
-});
-
-// Create a new plan from wizard
-app.post('/api/me/plans', authRequired, roleRequired('customer'), csrfProtection, async (req, res) => {
-  const { eventType, eventName, location, date, guests, budget, packages } = req.body || {};
-  
-  if (!eventType) {
-    return res.status(400).json({ error: 'Event type is required' });
-  }
-
-  const plans = await dbUnified.read('plans');
-  const newPlan = {
-    id: uid('pln'),
-    userId: req.user.id,
-    eventType,
-    eventName: eventName || '',
-    location: location || '',
-    date: date || '',
-    guests: guests || null,
-    budget: budget || '',
-    packages: packages || [],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  };
-
-  plans.push(newPlan);
-  await dbUnified.write('plans', plans);
-  
-  res.json({ ok: true, plan: newPlan });
-});
+);
 
 // Get all plans for current user
 app.get('/api/me/plans', authRequired, roleRequired('customer'), async (req, res) => {
@@ -4314,7 +4337,7 @@ app.post('/api/reviews/:reviewId/helpful', csrfProtection, async (req, res) => {
 app.get('/api/admin/reviews', authRequired, roleRequired('admin'), async (req, res) => {
   try {
     const { supplierId } = req.query;
-    
+
     if (!supplierId) {
       return res.status(400).json({ error: 'supplierId query parameter is required' });
     }

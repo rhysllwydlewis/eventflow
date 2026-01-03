@@ -77,7 +77,7 @@
 
           const response = await fetch(`/api/venues/near?${params}`);
           const data = await response.json();
-          
+
           // Convert venues to package format for display
           const venues = (data.venues || []).map(venue => ({
             id: venue.id,
@@ -91,7 +91,7 @@
             distance: venue.distance,
             _isVenue: true,
           }));
-          
+
           availablePackages[categoryKey] = venues;
           return venues;
         }
@@ -263,7 +263,6 @@
    */
   function renderCategoryStep(category) {
     const state = window.WizardState.getState();
-    const selectedPackageId = state.selectedPackages[category.key];
 
     // Add proximity indicator for venues if location is set
     let proximityInfo = '';
@@ -454,10 +453,11 @@
     let html = '<div class="wizard-package-grid">';
     packages.slice(0, 6).forEach(pkg => {
       const isSelected = pkg.id === selectedId;
-      const distanceInfo = pkg.distance !== undefined && pkg.distance !== null 
-        ? `<p class="small" style="color: #0369a1; font-weight: 500;">📍 ${pkg.distance.toFixed(1)} miles away</p>` 
-        : '';
-      
+      const distanceInfo =
+        pkg.distance !== undefined && pkg.distance !== null
+          ? `<p class="small" style="color: #0369a1; font-weight: 500;">📍 ${pkg.distance.toFixed(1)} miles away</p>`
+          : '';
+
       html += `
         <div class="wizard-package-card ${isSelected ? 'selected' : ''}" 
              data-package-id="${pkg.id}" data-category="${categoryKey}">
@@ -577,13 +577,13 @@
         }
 
         const result = await response.json();
-        
+
         // Store guest token for claiming after login
         localStorage.setItem('eventflow_guest_plan_token', result.token);
-        
+
         // Clear wizard state
         window.WizardState.clearState();
-        
+
         // Show success message and redirect to auth
         alert('Your plan has been saved! Please log in or register to continue.');
         location.href = '/auth.html?redirect=/dashboard-customer.html';
