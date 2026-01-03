@@ -109,8 +109,8 @@
       background: white;
       border-radius: 24px;
       box-shadow: 0 25px 80px rgba(11, 128, 115, 0.4);
-      max-width: 800px;
-      width: 100%;
+      max-width: 95%;
+      width: 1000px;
       padding: 0;
       text-align: center;
       animation: slideUp 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -118,6 +118,9 @@
       z-index: 1;
       overflow: hidden;
       margin: 0 auto;
+      min-height: 80vh;
+      display: flex;
+      flex-direction: column;
     }
 
     @keyframes slideUp {
@@ -133,13 +136,14 @@
 
     /* Hero image/video section */
     .hero-section {
-      height: 240px;
+      height: 280px;
       background: linear-gradient(135deg, #0B8073 0%, #13B6A2 100%);
       display: flex;
       align-items: center;
       justify-content: center;
       position: relative;
       overflow: hidden;
+      flex-shrink: 0;
     }
 
     .hero-section::before {
@@ -176,8 +180,8 @@
     }
 
     .event-icon {
-      font-size: 4.5rem;
-      opacity: 0.25;
+      font-size: 5.5rem;
+      opacity: 0.3;
       animation: floatIcon 4s ease-in-out infinite;
       filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
     }
@@ -197,12 +201,17 @@
     }
 
     .content-section {
-      padding: 3.5rem 3rem 3rem;
+      padding: 4rem 4rem 3.5rem;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
     }
 
     .maintenance-icon {
-      font-size: 110px;
-      margin-bottom: 30px;
+      font-size: 130px;
+      margin-bottom: 35px;
       animation: bounce 2s ease-in-out infinite;
       display: inline-block;
       filter: drop-shadow(0 4px 12px rgba(11, 128, 115, 0.3));
@@ -224,10 +233,10 @@
     }
 
     h1 {
-      font-size: 42px;
+      font-size: 52px;
       font-weight: 700;
       color: #0B8073;
-      margin-bottom: 20px;
+      margin-bottom: 25px;
       letter-spacing: -0.5px;
       animation: fadeIn 1s ease-out 0.2s both;
     }
@@ -244,12 +253,13 @@
     }
 
     .maintenance-message {
-      font-size: 19px;
+      font-size: 22px;
       line-height: 1.7;
-      color: #666;
-      margin-bottom: 40px;
+      color: #444;
+      font-weight: 500;
+      margin-bottom: 45px;
       animation: fadeIn 1s ease-out 0.4s both;
-      max-width: 600px;
+      max-width: 700px;
       margin-left: auto;
       margin-right: auto;
     }
@@ -259,13 +269,13 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      gap: 30px;
-      margin: 40px 0 45px 0;
+      gap: 35px;
+      margin: 50px 0 50px 0;
       animation: fadeIn 1s ease-out 0.6s both;
     }
 
     .cog {
-      font-size: 65px;
+      font-size: 75px;
       color: #0B8073;
       animation: spin-cog 4s linear infinite;
       display: inline-block;
@@ -275,19 +285,19 @@
     .cog:nth-child(1) {
       animation: spin-cog 3s linear infinite;
       color: #0B8073;
-      font-size: 60px;
+      font-size: 70px;
     }
 
     .cog:nth-child(2) {
       animation: spin-cog-reverse 4s linear infinite;
-      font-size: 75px;
+      font-size: 85px;
       color: #13B6A2;
     }
 
     .cog:nth-child(3) {
       animation: spin-cog 3.5s linear infinite;
       color: #5EEAD4;
-      font-size: 60px;
+      font-size: 70px;
     }
 
     @keyframes spin-cog {
@@ -351,10 +361,10 @@
     }
 
     .footer-note {
-      margin-top: 35px;
+      margin-top: 40px;
       padding-bottom: 2rem;
-      font-size: 14px;
-      color: #999;
+      font-size: 15px;
+      color: #888;
       animation: fadeIn 1s ease-out 0.8s both;
     }
 
