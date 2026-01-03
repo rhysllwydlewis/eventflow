@@ -562,11 +562,12 @@
 
       if (!isLoggedIn) {
         // Create guest plan
+        const csrfToken = await getCsrfToken();
         const response = await fetch('/api/plans/guest', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'X-CSRF-Token': getCsrfToken(),
+            'X-CSRF-Token': csrfToken,
           },
           credentials: 'include',
           body: JSON.stringify(planData),
@@ -591,11 +592,12 @@
       }
 
       // Create authenticated plan
+      const csrfToken = await getCsrfToken();
       const response = await fetch('/api/me/plans', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-CSRF-Token': getCsrfToken(),
+          'X-CSRF-Token': csrfToken,
         },
         credentials: 'include',
         body: JSON.stringify(planData),
@@ -618,16 +620,31 @@
   }
 
   /**
-   * Get CSRF token from meta tag or cookie
+   * Get CSRF token from meta tag, cookie, or API
    */
-  function getCsrfToken() {
+  async function getCsrfToken() {
     const meta = document.querySelector('meta[name="csrf-token"]');
     if (meta) {
       return meta.getAttribute('content');
     }
     // Try cookie
     const match = document.cookie.match(/csrfToken=([^;]+)/);
-    return match ? match[1] : '';
+    if (match) {
+      return match[1];
+    }
+
+    // Fetch from API as last resort
+    try {
+      const response = await fetch('/api/csrf-token', { credentials: 'include' });
+      if (response.ok) {
+        const data = await response.json();
+        return data.csrfToken || '';
+      }
+    } catch (err) {
+      console.error('Failed to fetch CSRF token:', err);
+    }
+
+    return '';
   }
 
   /**
