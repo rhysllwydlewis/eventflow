@@ -319,6 +319,19 @@
       border-radius: 3px;
       font-family: monospace;
     }
+
+    /* Screen reader only text */
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border-width: 0;
+    }
   </style>
 </head>
 <body>
@@ -343,9 +356,9 @@
     
     <!-- Animated cogs showing work in progress -->
     <div class="cogs-container">
-      <span class="cog" title="Processing updates">⚙️</span>
-      <span class="cog" title="System maintenance in progress">⚙️</span>
-      <span class="cog" title="Optimizing performance">⚙️</span>
+      <span class="cog" title="Processing updates" aria-hidden="true">⚙️</span>
+      <span class="cog" title="System maintenance in progress" aria-hidden="true">⚙️</span>
+      <span class="cog" title="Optimizing performance" aria-hidden="true">⚙️</span>
     </div>
     
     <p class="footer-note">
@@ -353,15 +366,21 @@
     </p>
 
     <!-- Hidden admin login link -->
-    <a href="/auth.html" class="hidden-admin-link" title="Admin access" aria-label="Admin login">🔑</a>
+    <a href="/auth.html" class="hidden-admin-link" title="Admin access" aria-label="Admin login">
+      <span aria-hidden="true">🔑</span>
+      <span class="sr-only">Admin Login</span>
+    </a>
   </div>
 
   <!-- Keyboard shortcut hint -->
   <div class="keyboard-hint" id="keyboardHint">
-    Press <kbd>Alt</kbd> + <kbd>A</kbd> for admin access
+    Press <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>A</kbd> for admin access
   </div>
 
   <script>
+    // Constants
+    const HINT_HIDE_DELAY = 2000; // milliseconds
+    
     // Fetch and display the custom maintenance message from settings
     (async function loadMaintenanceMessage() {
       try {
@@ -379,26 +398,32 @@
       }
     })();
 
-    // Keyboard shortcut for admin login (Alt+A)
-    let altPressed = false;
+    // Keyboard shortcut for admin login (Ctrl+Shift+A to avoid conflicts with screen readers)
+    let ctrlPressed = false;
+    let shiftPressed = false;
+    
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Alt') {
-        altPressed = true;
+      if (e.key === 'Control') ctrlPressed = true;
+      if (e.key === 'Shift') shiftPressed = true;
+      
+      if (ctrlPressed && shiftPressed) {
         document.getElementById('keyboardHint').classList.add('show');
       }
       
-      if (altPressed && (e.key === 'a' || e.key === 'A')) {
+      if (ctrlPressed && shiftPressed && (e.key === 'a' || e.key === 'A')) {
         e.preventDefault();
         window.location.href = '/auth.html';
       }
     });
 
     document.addEventListener('keyup', (e) => {
-      if (e.key === 'Alt') {
-        altPressed = false;
+      if (e.key === 'Control') ctrlPressed = false;
+      if (e.key === 'Shift') shiftPressed = false;
+      
+      if (!ctrlPressed || !shiftPressed) {
         setTimeout(() => {
           document.getElementById('keyboardHint').classList.remove('show');
-        }, 2000);
+        }, HINT_HIDE_DELAY);
       }
     });
   </script>
