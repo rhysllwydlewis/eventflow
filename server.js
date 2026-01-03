@@ -1595,6 +1595,7 @@ app.get('/api/venues/near', async (req, res) => {
         venues,
         total: venues.length,
         filtered: false,
+        radiusMiles: parseFloat(radiusMiles) || 10,
         warning: `Could not find location "${location}". Showing all venues.`,
       });
     }
