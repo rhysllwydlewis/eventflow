@@ -94,6 +94,8 @@ async function geocodeLocation(location) {
       INVALIDLOCATION123: null, // Intentionally invalid for testing
     };
 
+    // Use Object.prototype.hasOwnProperty.call() to safely check property existence
+    // This avoids potential prototype pollution and satisfies ESLint no-prototype-builtins
     if (Object.prototype.hasOwnProperty.call(testLocations, trimmed)) {
       return testLocations[trimmed];
     }
