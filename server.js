@@ -2075,6 +2075,42 @@ app.get('/api/admin/photos/pending', authRequired, roleRequired('admin'), async 
 });
 
 /**
+ * GET /api/admin/photos
+ * Get photos for a specific supplier (admin view)
+ */
+app.get('/api/admin/photos', authRequired, roleRequired('admin'), async (req, res) => {
+  try {
+    const { supplierId } = req.query;
+    
+    if (!supplierId) {
+      return res.status(400).json({ error: 'supplierId query parameter is required' });
+    }
+
+    const suppliers = await dbUnified.read('suppliers');
+    const supplier = suppliers.find(s => s.id === supplierId);
+    
+    if (!supplier) {
+      return res.status(404).json({ error: 'Supplier not found' });
+    }
+
+    // Get photos from photosGallery (includes approved and unapproved)
+    const photos = supplier.photosGallery || [];
+    
+    res.json({ 
+      success: true,
+      photos: photos.map(p => ({
+        ...p,
+        id: p.id || `${supplierId}_${p.uploadedAt}`,
+        supplierId,
+      }))
+    });
+  } catch (error) {
+    console.error('Error fetching supplier photos:', error);
+    res.status(500).json({ error: 'Failed to fetch photos', details: error.message });
+  }
+});
+
+/**
  * POST /api/admin/photos/:id/approve
  * Approve a photo
  */
@@ -3574,6 +3610,104 @@ app.get('/api/me/plan', authRequired, planOwnerOnly, async (req, res) => {
   res.json({ ok: true, plan: p.plan });
 });
 
+// --- GUEST PLAN CREATION (No Auth Required) ---
+
+/**
+ * Create a guest plan (no authentication required)
+ * POST /api/plans/guest
+ * Returns: { ok: true, plan: {...}, token: 'secret-token' }
+ */
+app.post('/api/plans/guest', csrfProtection, async (req, res) => {
+  try {
+    const { eventType, eventName, location, date, guests, budget, packages } = req.body || {};
+    
+    if (!eventType) {
+      return res.status(400).json({ error: 'Event type is required' });
+    }
+
+    const plans = await dbUnified.read('plans');
+    
+    // Generate a secure token for guest plan claiming
+    const token = uid('gst'); // guest token
+    
+    const newPlan = {
+      id: uid('pln'),
+      userId: null, // No user yet
+      guestToken: token,
+      eventType,
+      eventName: eventName || '',
+      location: location || '',
+      date: date || '',
+      guests: guests || null,
+      budget: budget || '',
+      packages: packages || [],
+      isGuestPlan: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    plans.push(newPlan);
+    await dbUnified.write('plans', plans);
+    
+    res.json({ 
+      ok: true, 
+      plan: newPlan,
+      token, // Frontend stores this to claim later
+    });
+  } catch (error) {
+    console.error('Error creating guest plan:', error);
+    res.status(500).json({ error: 'Failed to create guest plan' });
+  }
+});
+
+/**
+ * Claim a guest plan and attach to authenticated user
+ * POST /api/me/plans/claim
+ * Body: { token: 'guest-token' }
+ */
+app.post('/api/me/plans/claim', authRequired, roleRequired('customer'), csrfProtection, async (req, res) => {
+  try {
+    const { token } = req.body || {};
+    
+    if (!token) {
+      return res.status(400).json({ error: 'Guest plan token is required' });
+    }
+
+    const plans = await dbUnified.read('plans');
+    const planIndex = plans.findIndex(p => p.guestToken === token && p.isGuestPlan === true);
+    
+    if (planIndex === -1) {
+      return res.status(404).json({ error: 'Guest plan not found or already claimed' });
+    }
+
+    // Check if user already has a plan
+    const existingUserPlan = plans.find(p => p.userId === req.user.id);
+    if (existingUserPlan) {
+      return res.status(400).json({ 
+        error: 'You already have a plan. Guest plan cannot be claimed.',
+        existingPlanId: existingUserPlan.id
+      });
+    }
+
+    // Attach plan to user
+    plans[planIndex].userId = req.user.id;
+    plans[planIndex].isGuestPlan = false;
+    plans[planIndex].claimedAt = new Date().toISOString();
+    // Keep guestToken for audit trail but plan is now claimed
+    
+    await dbUnified.write('plans', plans);
+    
+    res.json({ 
+      ok: true, 
+      plan: plans[planIndex],
+      message: 'Plan successfully claimed!'
+    });
+  } catch (error) {
+    console.error('Error claiming guest plan:', error);
+    res.status(500).json({ error: 'Failed to claim guest plan' });
+  }
+});
+
 // Create a new plan from wizard
 app.post('/api/me/plans', authRequired, roleRequired('customer'), csrfProtection, async (req, res) => {
   const { eventType, eventName, location, date, guests, budget, packages } = req.body || {};
@@ -4020,6 +4154,34 @@ app.post('/api/reviews/:reviewId/helpful', csrfProtection, async (req, res) => {
   } catch (error) {
     console.error('Mark helpful error:', error);
     res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * Get reviews for a specific supplier (admin view - includes all statuses)
+ * GET /api/admin/reviews
+ */
+app.get('/api/admin/reviews', authRequired, roleRequired('admin'), async (req, res) => {
+  try {
+    const { supplierId } = req.query;
+    
+    if (!supplierId) {
+      return res.status(400).json({ error: 'supplierId query parameter is required' });
+    }
+
+    // Get all reviews for the supplier (not just approved ones)
+    const reviews = await reviewsSystem.getSupplierReviews(supplierId, {
+      approvedOnly: false, // Admin sees all reviews
+    });
+
+    res.json({
+      success: true,
+      count: reviews.length,
+      reviews,
+    });
+  } catch (error) {
+    console.error('Get admin reviews error:', error);
+    res.status(500).json({ error: 'Failed to get reviews', details: error.message });
   }
 });
 

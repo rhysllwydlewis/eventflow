@@ -189,24 +189,24 @@
         <p class="small">Location helps us find local suppliers. You can skip this step if you're not sure yet.</p>
         
         <div class="form-row">
-          <label>Location</label>
+          <label for="wizard-location">Location</label>
           <input type="text" id="wizard-location" placeholder="Town, city or postcode" 
                  value="${escapeHtml(state.location || '')}">
         </div>
 
         <div class="form-row">
-          <label>Event Date <span class="small">(optional)</span></label>
+          <label for="wizard-date">Event Date <span class="small">(optional)</span></label>
           <input type="date" id="wizard-date" value="${state.date || ''}">
         </div>
 
         <div class="form-row">
-          <label>Guest Count <span class="small">(approximate)</span></label>
+          <label for="wizard-guests">Guest Count <span class="small">(approximate)</span></label>
           <input type="number" id="wizard-guests" min="1" placeholder="e.g. 60" 
                  value="${state.guests || ''}">
         </div>
 
         <div class="form-row">
-          <label>Budget</label>
+          <label for="wizard-budget">Budget</label>
           <select id="wizard-budget">
             <option value="">Not sure yet</option>
             <option ${state.budget === 'Up to £1,000' ? 'selected' : ''}>Up to £1,000</option>
@@ -508,16 +508,39 @@
       const authResponse = await fetch('/api/auth/me', { credentials: 'include' });
       const isLoggedIn = authResponse.ok;
 
+      const planData = window.WizardState.exportForPlanCreation();
+
       if (!isLoggedIn) {
-        // Store draft and redirect to auth
-        window.WizardState.markCompleted();
-        alert('Please log in to save your plan. Your selections will be preserved.');
-        location.href = '/auth.html?redirect=/start.html';
+        // Create guest plan
+        const response = await fetch('/api/plans/guest', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': getCsrfToken(),
+          },
+          credentials: 'include',
+          body: JSON.stringify(planData),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to create guest plan');
+        }
+
+        const result = await response.json();
+        
+        // Store guest token for claiming after login
+        localStorage.setItem('eventflow_guest_plan_token', result.token);
+        
+        // Clear wizard state
+        window.WizardState.clearState();
+        
+        // Show success message and redirect to auth
+        alert('Your plan has been saved! Please log in or register to continue.');
+        location.href = '/auth.html?redirect=/dashboard-customer.html';
         return;
       }
 
-      // Create plan via API
-      const planData = window.WizardState.exportForPlanCreation();
+      // Create authenticated plan
       const response = await fetch('/api/me/plans', {
         method: 'POST',
         headers: {
