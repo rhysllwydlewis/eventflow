@@ -113,6 +113,42 @@ describe('Maintenance Mode Middleware', () => {
     expect(next).toHaveBeenCalled();
   });
 
+  it('should allow access to /api/health during maintenance mode', async () => {
+    dbUnified.read.mockResolvedValue({ maintenance: { enabled: true } });
+
+    const req = { path: '/api/health' };
+    const res = {};
+    const next = jest.fn();
+
+    await maintenanceMode(req, res, next);
+
+    expect(next).toHaveBeenCalled();
+  });
+
+  it('should allow access to /api/ready during maintenance mode', async () => {
+    dbUnified.read.mockResolvedValue({ maintenance: { enabled: true } });
+
+    const req = { path: '/api/ready' };
+    const res = {};
+    const next = jest.fn();
+
+    await maintenanceMode(req, res, next);
+
+    expect(next).toHaveBeenCalled();
+  });
+
+  it('should allow access to /api/status during maintenance mode', async () => {
+    dbUnified.read.mockResolvedValue({ maintenance: { enabled: true } });
+
+    const req = { path: '/api/status' };
+    const res = {};
+    const next = jest.fn();
+
+    await maintenanceMode(req, res, next);
+
+    expect(next).toHaveBeenCalled();
+  });
+
   it('should allow admins to access any page during maintenance mode', async () => {
     dbUnified.read.mockResolvedValue({ maintenance: { enabled: true } });
 
