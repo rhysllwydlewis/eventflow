@@ -454,7 +454,7 @@
     packages.slice(0, 6).forEach(pkg => {
       const isSelected = pkg.id === selectedId;
       const distanceInfo =
-        pkg.distance !== undefined && pkg.distance !== null
+        pkg.distance !== undefined && pkg.distance !== null && typeof pkg.distance === 'number'
           ? `<p class="small" style="color: #0369a1; font-weight: 500;">📍 ${pkg.distance.toFixed(1)} miles away</p>`
           : '';
 

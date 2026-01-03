@@ -1605,7 +1605,12 @@ app.get('/api/venues/near', async (req, res) => {
     // Calculate distance for each venue that has coordinates
     const venuesWithDistance = venues
       .map(venue => {
-        if (venue.latitude && venue.longitude) {
+        if (
+          venue.latitude !== null &&
+          venue.latitude !== undefined &&
+          venue.longitude !== null &&
+          venue.longitude !== undefined
+        ) {
           const distance = geocoding.calculateDistance(
             coords.latitude,
             coords.longitude,

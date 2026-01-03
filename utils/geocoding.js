@@ -125,10 +125,7 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
 
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(toRadians(lat1)) *
-      Math.cos(toRadians(lat2)) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
+    Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
 
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
@@ -154,9 +151,8 @@ function isValidUKPostcode(postcode) {
     return false;
   }
 
-  // UK postcode regex (covers most valid formats)
-  const regex =
-    /^([A-Z]{1,2}\d{1,2}[A-Z]?)\s*(\d[A-Z]{2})$|^([A-Z]{1,2}\d{1,2})\s*(\d[A-Z]{2})$/i;
+  // UK postcode regex (simplified pattern)
+  const regex = /^[A-Z]{1,2}\d{1,2}[A-Z]?\s*\d[A-Z]{2}$/i;
   return regex.test(postcode.trim());
 }
 
