@@ -65,6 +65,38 @@
    */
   async function loadPackagesForCategory(categoryKey, eventType) {
     try {
+      // Special handling for venues - use proximity filtering if location is set
+      if (categoryKey === 'venues') {
+        const state = window.WizardState.getState();
+        if (state.location) {
+          // Use venue proximity endpoint
+          const params = new URLSearchParams({
+            location: state.location,
+            radiusMiles: '10',
+          });
+
+          const response = await fetch(`/api/venues/near?${params}`);
+          const data = await response.json();
+          
+          // Convert venues to package format for display
+          const venues = (data.venues || []).map(venue => ({
+            id: venue.id,
+            title: venue.name,
+            supplierId: venue.id,
+            supplierName: venue.name,
+            description: venue.description_short || '',
+            price: venue.price_display || 'POA',
+            image: venue.photos && venue.photos[0] ? venue.photos[0] : null,
+            category: venue.category,
+            distance: venue.distance,
+            _isVenue: true,
+          }));
+          
+          availablePackages[categoryKey] = venues;
+          return venues;
+        }
+      }
+
       const params = new URLSearchParams({
         category: categoryKey,
         eventType: eventType || 'Other',
@@ -233,10 +265,23 @@
     const state = window.WizardState.getState();
     const selectedPackageId = state.selectedPackages[category.key];
 
+    // Add proximity indicator for venues if location is set
+    let proximityInfo = '';
+    if (category.key === 'venues' && state.location) {
+      proximityInfo = `
+        <div class="wizard-proximity-info" style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 12px; margin-bottom: 16px;">
+          <p class="small" style="margin: 0; color: #0369a1;">
+            📍 Showing venues within 10 miles of <strong>${escapeHtml(state.location)}</strong>
+          </p>
+        </div>
+      `;
+    }
+
     return `
       <div class="wizard-card">
         <h2>${category.icon} ${category.name}</h2>
         <p class="small">Browse packages for ${category.name.toLowerCase()}. You can skip this and come back later.</p>
+        ${proximityInfo}
         
         <div id="wizard-packages-${category.key}" class="wizard-packages">
           <p class="small">Loading packages...</p>
@@ -409,11 +454,16 @@
     let html = '<div class="wizard-package-grid">';
     packages.slice(0, 6).forEach(pkg => {
       const isSelected = pkg.id === selectedId;
+      const distanceInfo = pkg.distance !== undefined && pkg.distance !== null 
+        ? `<p class="small" style="color: #0369a1; font-weight: 500;">📍 ${pkg.distance.toFixed(1)} miles away</p>` 
+        : '';
+      
       html += `
         <div class="wizard-package-card ${isSelected ? 'selected' : ''}" 
              data-package-id="${pkg.id}" data-category="${categoryKey}">
           ${pkg.image ? `<img src="${pkg.image}" alt="${escapeHtml(pkg.title)}">` : ''}
           <h4>${escapeHtml(pkg.title)}</h4>
+          ${distanceInfo}
           <p class="small">${escapeHtml(pkg.price_display || pkg.price || 'Contact for pricing')}</p>
           ${isSelected ? '<div class="wizard-package-selected">✓ Selected</div>' : ''}
         </div>

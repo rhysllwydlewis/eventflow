@@ -95,6 +95,9 @@ const searchSystem = require('./search');
 // Lead scoring utilities
 const { calculateLeadScore } = require('./utils/leadScoring');
 
+// Geocoding utilities
+const geocoding = require('./utils/geocoding');
+
 // HTTP client for external API calls
 
 /**
@@ -1555,6 +1558,90 @@ app.get('/api/suppliers', async (req, res) => {
   res.json({ items });
 });
 
+/**
+ * Get venues near a location
+ * GET /api/venues/near?location=Cardiff&radiusMiles=10
+ */
+app.get('/api/venues/near', async (req, res) => {
+  try {
+    const { location, radiusMiles = 10 } = req.query;
+    
+    // Get all approved Venues category suppliers
+    let venues = (await dbUnified.read('suppliers'))
+      .filter(s => s.approved && s.category === 'Venues');
+
+    // If no location provided, return all venues
+    if (!location || location.trim() === '') {
+      // Add distance as null for all venues
+      venues = venues.map(v => ({ ...v, distance: null }));
+      
+      return res.json({ 
+        venues, 
+        total: venues.length,
+        filtered: false,
+        message: 'Showing all venues (no location filter)'
+      });
+    }
+
+    // Try to geocode the location
+    const coords = await geocoding.geocodeLocation(location);
+    
+    if (!coords) {
+      // Could not geocode - return all venues with a warning
+      venues = venues.map(v => ({ ...v, distance: null }));
+      
+      return res.json({
+        venues,
+        total: venues.length,
+        filtered: false,
+        warning: `Could not find location "${location}". Showing all venues.`,
+      });
+    }
+
+    // Filter venues by proximity
+    const radius = parseFloat(radiusMiles) || 10;
+    
+    // Calculate distance for each venue that has coordinates
+    const venuesWithDistance = venues
+      .map(venue => {
+        if (venue.latitude && venue.longitude) {
+          const distance = geocoding.calculateDistance(
+            coords.latitude,
+            coords.longitude,
+            venue.latitude,
+            venue.longitude
+          );
+          return { ...venue, distance };
+        }
+        // Venue without coordinates - exclude from proximity filter
+        return null;
+      })
+      .filter(v => v !== null);
+
+    // Filter by radius
+    const nearbyVenues = venuesWithDistance.filter(v => v.distance <= radius);
+    
+    // Sort by distance
+    nearbyVenues.sort((a, b) => a.distance - b.distance);
+
+    res.json({
+      venues: nearbyVenues,
+      total: nearbyVenues.length,
+      filtered: true,
+      location: location,
+      coordinates: coords,
+      radiusMiles: radius,
+      message: `Found ${nearbyVenues.length} venues within ${radius} miles of ${location}`,
+    });
+  } catch (error) {
+    console.error('Venue proximity search error:', error);
+    res.status(500).json({ 
+      error: 'Failed to search venues', 
+      details: error.message 
+    });
+  }
+});
+
 // AI event planning assistant
 app.post('/api/ai/plan', express.json(), csrfProtection, async (req, res) => {
   const body = req.body || {};
@@ -2592,6 +2679,21 @@ app.post(
     if (!b.name || !b.category) {
       return res.status(400).json({ error: 'Missing fields' });
     }
+
+    // For Venues category, validate and require venuePostcode
+    if (b.category === 'Venues') {
+      if (!b.venuePostcode) {
+        return res.status(400).json({ 
+          error: 'Venue postcode is required for suppliers in the Venues category' 
+        });
+      }
+      if (!geocoding.isValidUKPostcode(b.venuePostcode)) {
+        return res.status(400).json({ 
+          error: 'Invalid UK postcode format' 
+        });
+      }
+    }
+
     const photos = (
       b.photos ? (Array.isArray(b.photos) ? b.photos : String(b.photos).split(/\r?\n/)) : []
     )
@@ -2619,6 +2721,28 @@ app.post(
       email: ((await dbUnified.read('users')).find(u => u.id === req.user.id) || {}).email || '',
       approved: false,
     };
+
+    // Add venue-specific fields if category is Venues
+    if (b.category === 'Venues' && b.venuePostcode) {
+      s.venuePostcode = String(b.venuePostcode).trim().toUpperCase();
+      
+      // Geocode the postcode to get coordinates
+      try {
+        const coords = await geocoding.geocodePostcode(s.venuePostcode);
+        if (coords) {
+          s.latitude = coords.latitude;
+          s.longitude = coords.longitude;
+          s.venuePostcode = coords.postcode; // Use normalized postcode from API
+          console.log(`✅ Geocoded venue ${s.name}: ${coords.latitude}, ${coords.longitude}`);
+        } else {
+          console.warn(`⚠️ Could not geocode postcode ${s.venuePostcode} for venue ${s.name}`);
+        }
+      } catch (error) {
+        console.error('Geocoding error:', error);
+        // Continue without coordinates - validation already passed
+      }
+    }
+
     const all = await dbUnified.read('suppliers');
     all.push(s);
     await dbUnified.write('suppliers', all);
@@ -2638,6 +2762,32 @@ app.patch(
       return res.status(404).json({ error: 'Not found' });
     }
     const b = req.body || {};
+
+    // If updating a Venues category supplier with venuePostcode
+    if (b.venuePostcode && all[i].category === 'Venues') {
+      if (!geocoding.isValidUKPostcode(b.venuePostcode)) {
+        return res.status(400).json({ 
+          error: 'Invalid UK postcode format' 
+        });
+      }
+      
+      // Update postcode and geocode
+      all[i].venuePostcode = String(b.venuePostcode).trim().toUpperCase();
+      
+      try {
+        const coords = await geocoding.geocodePostcode(all[i].venuePostcode);
+        if (coords) {
+          all[i].latitude = coords.latitude;
+          all[i].longitude = coords.longitude;
+          all[i].venuePostcode = coords.postcode;
+          console.log(`✅ Geocoded venue ${all[i].name}: ${coords.latitude}, ${coords.longitude}`);
+        } else {
+          console.warn(`⚠️ Could not geocode postcode ${all[i].venuePostcode}`);
+        }
+      } catch (error) {
+        console.error('Geocoding error:', error);
+      }
+    }
 
     const fields = [
       'name',
