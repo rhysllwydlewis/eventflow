@@ -14,7 +14,7 @@
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, #0B8073 0%, #13B6A2 50%, #5EEAD4 100%);
       min-height: 100vh;
       display: flex;
       align-items: center;
@@ -22,6 +22,37 @@
       padding: 20px;
       color: #333;
       overflow: hidden;
+      position: relative;
+    }
+
+    /* Animated background patterns */
+    body::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: 
+        radial-gradient(circle at 20% 50%, rgba(94, 234, 212, 0.2) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(19, 182, 162, 0.2) 0%, transparent 50%),
+        radial-gradient(circle at 40% 20%, rgba(11, 128, 115, 0.2) 0%, transparent 50%);
+      animation: backgroundMove 20s ease-in-out infinite;
+    }
+
+    @keyframes backgroundMove {
+      0%, 100% {
+        transform: translate(0, 0) rotate(0deg);
+      }
+      25% {
+        transform: translate(5%, 5%) rotate(90deg);
+      }
+      50% {
+        transform: translate(-5%, 5%) rotate(180deg);
+      }
+      75% {
+        transform: translate(-5%, -5%) rotate(270deg);
+      }
     }
 
     /* Floating particles background */
@@ -38,11 +69,12 @@
 
     .particle {
       position: absolute;
-      width: 10px;
-      height: 10px;
-      background: rgba(255, 255, 255, 0.3);
+      width: 12px;
+      height: 12px;
+      background: rgba(255, 255, 255, 0.4);
       border-radius: 50%;
       animation: float 20s infinite;
+      box-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
     }
 
     .particle:nth-child(1) { left: 10%; animation-delay: 0s; animation-duration: 15s; }
@@ -53,6 +85,8 @@
     .particle:nth-child(6) { left: 60%; animation-delay: 5s; animation-duration: 17s; }
     .particle:nth-child(7) { left: 70%; animation-delay: 2s; animation-duration: 21s; }
     .particle:nth-child(8) { left: 80%; animation-delay: 4s; animation-duration: 15s; }
+    .particle:nth-child(9) { left: 15%; animation-delay: 6s; animation-duration: 22s; }
+    .particle:nth-child(10) { left: 85%; animation-delay: 1s; animation-duration: 14s; }
 
     @keyframes float {
       0% {
@@ -74,14 +108,15 @@
     .maintenance-container {
       background: white;
       border-radius: 24px;
-      box-shadow: 0 25px 80px rgba(0, 0, 0, 0.35);
-      max-width: 650px;
+      box-shadow: 0 25px 80px rgba(11, 128, 115, 0.4);
+      max-width: 700px;
       width: 100%;
-      padding: 60px 50px;
+      padding: 0;
       text-align: center;
       animation: slideUp 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
       position: relative;
       z-index: 1;
+      overflow: hidden;
     }
 
     @keyframes slideUp {
@@ -95,11 +130,81 @@
       }
     }
 
+    /* Hero image/video section */
+    .hero-section {
+      height: 200px;
+      background: linear-gradient(135deg, #0B8073 0%, #13B6A2 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-section::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: 
+        url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120"><path fill="rgba(255,255,255,0.1)" d="M0,0 Q300,50 600,0 T1200,0 L1200,120 L0,120 Z"/></svg>') bottom/cover no-repeat;
+      opacity: 0.3;
+      animation: waveMove 15s ease-in-out infinite;
+    }
+
+    @keyframes waveMove {
+      0%, 100% {
+        transform: translateX(0);
+      }
+      50% {
+        transform: translateX(-50px);
+      }
+    }
+
+    /* Event-themed decorative elements */
+    .event-icons {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      padding: 0 2rem;
+    }
+
+    .event-icon {
+      font-size: 3rem;
+      opacity: 0.2;
+      animation: floatIcon 4s ease-in-out infinite;
+      filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
+    }
+
+    .event-icon:nth-child(1) { animation-delay: 0s; }
+    .event-icon:nth-child(2) { animation-delay: 0.5s; }
+    .event-icon:nth-child(3) { animation-delay: 1s; }
+    .event-icon:nth-child(4) { animation-delay: 1.5s; }
+
+    @keyframes floatIcon {
+      0%, 100% {
+        transform: translateY(0) rotate(0deg);
+      }
+      50% {
+        transform: translateY(-15px) rotate(5deg);
+      }
+    }
+
+    .content-section {
+      padding: 3rem 3rem 2.5rem;
+    }
+
     .maintenance-icon {
       font-size: 90px;
       margin-bottom: 25px;
       animation: bounce 2s ease-in-out infinite;
       display: inline-block;
+      filter: drop-shadow(0 4px 12px rgba(11, 128, 115, 0.3));
     }
 
     @keyframes bounce {
@@ -120,7 +225,7 @@
     h1 {
       font-size: 36px;
       font-weight: 700;
-      color: #1a1a1a;
+      color: #0B8073;
       margin-bottom: 20px;
       letter-spacing: -0.5px;
       animation: fadeIn 1s ease-out 0.2s both;
@@ -157,21 +262,26 @@
 
     .cog {
       font-size: 50px;
+      color: #0B8073;
       animation: spin-cog 4s linear infinite;
       display: inline-block;
+      filter: drop-shadow(0 2px 8px rgba(11, 128, 115, 0.3));
     }
 
     .cog:nth-child(1) {
       animation: spin-cog 3s linear infinite;
+      color: #0B8073;
     }
 
     .cog:nth-child(2) {
       animation: spin-cog-reverse 4s linear infinite;
       font-size: 60px;
+      color: #13B6A2;
     }
 
     .cog:nth-child(3) {
       animation: spin-cog 3.5s linear infinite;
+      color: #5EEAD4;
     }
 
     @keyframes spin-cog {
@@ -192,6 +302,24 @@
       }
     }
 
+    /* EventFlow branding */
+    .brand-strip {
+      background: linear-gradient(90deg, #0B8073 0%, #13B6A2 50%, #5EEAD4 100%);
+      height: 4px;
+      width: 100%;
+      margin-top: 2rem;
+      animation: shimmer 3s ease-in-out infinite;
+    }
+
+    @keyframes shimmer {
+      0%, 100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.6;
+      }
+    }
+
     /* Hidden admin login - only visible on hover at bottom */
     .hidden-admin-link {
       position: absolute;
@@ -207,16 +335,18 @@
       align-items: center;
       justify-content: center;
       font-size: 20px;
+      text-decoration: none;
     }
 
     .hidden-admin-link:hover {
       opacity: 1;
-      background: rgba(102, 126, 234, 0.1);
+      background: rgba(11, 128, 115, 0.1);
       transform: scale(1.2);
     }
 
     .footer-note {
       margin-top: 35px;
+      padding-bottom: 2rem;
       font-size: 14px;
       color: #999;
       animation: fadeIn 1s ease-out 0.8s both;
@@ -225,11 +355,23 @@
     /* Responsive */
     @media (max-width: 600px) {
       .maintenance-container {
-        padding: 45px 35px;
+        max-width: 95%;
+      }
+
+      .content-section {
+        padding: 2rem 1.5rem;
       }
 
       h1 {
         font-size: 28px;
+      }
+
+      .hero-section {
+        height: 150px;
+      }
+
+      .event-icon {
+        font-size: 2rem;
       }
 
       .maintenance-icon {
@@ -259,7 +401,7 @@
       width: 20px;
       height: 20px;
       border: 3px solid #f3f3f3;
-      border-top: 3px solid #667eea;
+      border-top: 3px solid #0B8073;
       border-radius: 50%;
       animation: spin 1s linear infinite;
       vertical-align: middle;
@@ -279,7 +421,7 @@
       left: -2px;
       right: -2px;
       bottom: -2px;
-      background: linear-gradient(135deg, #667eea, #764ba2, #667eea);
+      background: linear-gradient(135deg, #0B8073, #13B6A2, #5EEAD4, #0B8073);
       border-radius: 24px;
       z-index: -1;
       opacity: 0;
@@ -291,7 +433,7 @@
         opacity: 0;
       }
       50% {
-        opacity: 0.3;
+        opacity: 0.4;
       }
     }
 
@@ -302,11 +444,15 @@
       left: 50%;
       transform: translateX(-50%);
       font-size: 12px;
-      color: rgba(255, 255, 255, 0.4);
+      color: rgba(255, 255, 255, 0.6);
       opacity: 0;
       transition: opacity 0.3s ease;
       pointer-events: none;
       z-index: 10;
+      background: rgba(11, 128, 115, 0.9);
+      padding: 8px 16px;
+      border-radius: 8px;
+      backdrop-filter: blur(10px);
     }
 
     .keyboard-hint.show {
@@ -314,10 +460,11 @@
     }
 
     kbd {
-      background: rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.3);
       padding: 2px 6px;
       border-radius: 3px;
       font-family: monospace;
+      border: 1px solid rgba(255, 255, 255, 0.4);
     }
 
     /* Screen reader only text */
@@ -345,25 +492,42 @@
     <div class="particle"></div>
     <div class="particle"></div>
     <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
   </div>
 
   <div class="maintenance-container">
-    <div class="maintenance-icon">🔧</div>
-    <h1>We'll Be Right Back</h1>
-    <p class="maintenance-message" id="maintenanceMessage">
-      We're performing scheduled maintenance. We'll be back soon!
-    </p>
-    
-    <!-- Animated cogs showing work in progress -->
-    <div class="cogs-container">
-      <span class="cog" title="Processing updates" aria-hidden="true">⚙️</span>
-      <span class="cog" title="System maintenance in progress" aria-hidden="true">⚙️</span>
-      <span class="cog" title="Optimizing performance" aria-hidden="true">⚙️</span>
+    <!-- Hero section with event theme -->
+    <div class="hero-section">
+      <div class="event-icons">
+        <span class="event-icon" aria-hidden="true">🎉</span>
+        <span class="event-icon" aria-hidden="true">💐</span>
+        <span class="event-icon" aria-hidden="true">🎂</span>
+        <span class="event-icon" aria-hidden="true">🎊</span>
+      </div>
     </div>
-    
-    <p class="footer-note">
-      Thank you for your patience! Our team is working hard to improve your experience.
-    </p>
+
+    <div class="content-section">
+      <div class="maintenance-icon">🔧</div>
+      <h1>We'll Be Right Back</h1>
+      <p class="maintenance-message" id="maintenanceMessage">
+        We're performing scheduled maintenance to improve your event planning experience. We'll be back soon!
+      </p>
+      
+      <!-- Animated cogs showing work in progress -->
+      <div class="cogs-container">
+        <span class="cog" title="Processing updates" aria-hidden="true">⚙️</span>
+        <span class="cog" title="System maintenance in progress" aria-hidden="true">⚙️</span>
+        <span class="cog" title="Optimizing performance" aria-hidden="true">⚙️</span>
+      </div>
+      
+      <p class="footer-note">
+        Thank you for your patience! Our team is working hard to enhance your EventFlow experience.
+      </p>
+
+      <!-- EventFlow brand strip -->
+      <div class="brand-strip" aria-hidden="true"></div>
+    </div>
 
     <!-- Hidden admin login link -->
     <a href="/auth.html" class="hidden-admin-link" title="Admin access" aria-label="Admin login">
