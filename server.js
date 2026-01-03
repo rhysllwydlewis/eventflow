@@ -2248,11 +2248,35 @@ app.get('/api/packages/spotlight', async (_req, res) => {
 
 app.get('/api/packages/search', async (req, res) => {
   const q = String(req.query.q || '').toLowerCase();
-  const items = (await dbUnified.read('packages')).filter(
-    p =>
-      p.approved &&
-      ((p.title || '').toLowerCase().includes(q) || (p.description || '').toLowerCase().includes(q))
-  );
+  const category = String(req.query.category || '').toLowerCase();
+  const eventType = String(req.query.eventType || '').toLowerCase();
+  const approved = req.query.approved === 'true';
+
+  let items = await dbUnified.read('packages');
+
+  // Apply filters
+  items = items.filter(p => {
+    // Approval filter
+    if (approved && !p.approved) return false;
+
+    // Text search
+    if (q && !((p.title || '').toLowerCase().includes(q) || (p.description || '').toLowerCase().includes(q))) {
+      return false;
+    }
+
+    // Category filter
+    if (category && p.primaryCategoryKey !== category) {
+      return false;
+    }
+
+    // Event type filter
+    if (eventType && p.eventTypes && !p.eventTypes.includes(eventType)) {
+      return false;
+    }
+
+    return true;
+  });
+
   res.json({ items });
 });
 
@@ -2619,10 +2643,26 @@ app.post(
   roleRequired('supplier'),
   csrfProtection,
   async (req, res) => {
-    const { supplierId, title, description, price, image } = req.body || {};
+    const { supplierId, title, description, price, image, primaryCategoryKey, eventTypes } = req.body || {};
     if (!supplierId || !title) {
-      return res.status(400).json({ error: 'Missing fields' });
+      return res.status(400).json({ error: 'Missing required fields: supplierId and title' });
     }
+    
+    // Validate new required fields for wizard compatibility
+    if (!primaryCategoryKey) {
+      return res.status(400).json({ error: 'Primary category is required' });
+    }
+    
+    if (!eventTypes || !Array.isArray(eventTypes) || eventTypes.length === 0) {
+      return res.status(400).json({ error: 'At least one event type is required (wedding or other)' });
+    }
+    
+    // Validate event types
+    const validEventTypes = eventTypes.filter(t => t === 'wedding' || t === 'other');
+    if (validEventTypes.length === 0) {
+      return res.status(400).json({ error: 'Event types must be "wedding" or "other"' });
+    }
+    
     const own = (await dbUnified.read('suppliers')).find(
       s => s.id === supplierId && s.ownerUserId === req.user.id
     );
@@ -2651,8 +2691,11 @@ app.post(
       description: String(description || '').slice(0, 1500),
       price: String(price || '').slice(0, 60),
       image: image || '',
+      primaryCategoryKey: String(primaryCategoryKey),
+      eventTypes: validEventTypes,
       approved: false,
       featured: false,
+      createdAt: new Date().toISOString(),
     };
     const all = allPkgs;
     all.push(pkg);
@@ -3514,6 +3557,42 @@ app.get('/api/me/plan', authRequired, planOwnerOnly, async (req, res) => {
     return res.json({ ok: true, plan: null });
   }
   res.json({ ok: true, plan: p.plan });
+});
+
+// Create a new plan from wizard
+app.post('/api/me/plans', authRequired, roleRequired('customer'), csrfProtection, async (req, res) => {
+  const { eventType, eventName, location, date, guests, budget, packages } = req.body || {};
+  
+  if (!eventType) {
+    return res.status(400).json({ error: 'Event type is required' });
+  }
+
+  const plans = await dbUnified.read('plans');
+  const newPlan = {
+    id: uid('pln'),
+    userId: req.user.id,
+    eventType,
+    eventName: eventName || '',
+    location: location || '',
+    date: date || '',
+    guests: guests || null,
+    budget: budget || '',
+    packages: packages || [],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+
+  plans.push(newPlan);
+  await dbUnified.write('plans', plans);
+  
+  res.json({ ok: true, plan: newPlan });
+});
+
+// Get all plans for current user
+app.get('/api/me/plans', authRequired, roleRequired('customer'), async (req, res) => {
+  const plans = await dbUnified.read('plans');
+  const userPlans = plans.filter(p => p.userId === req.user.id);
+  res.json({ ok: true, plans: userPlans });
 });
 
 // --- PDF EXPORT ---

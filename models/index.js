@@ -182,6 +182,15 @@ const packageSchema = {
           items: { bsonType: 'string' },
           description: 'Category slugs this package belongs to',
         },
+        primaryCategoryKey: {
+          bsonType: 'string',
+          description: 'Primary category key/slug (required, single-select)',
+        },
+        eventTypes: {
+          bsonType: 'array',
+          items: { enum: ['wedding', 'other'] },
+          description: 'Event types this package is suitable for (required, multi-select)',
+        },
         tags: {
           bsonType: 'array',
           items: { bsonType: 'string' },
@@ -212,7 +221,19 @@ const planSchema = {
         userId: { bsonType: 'string', description: 'Customer user ID' },
         supplierId: { bsonType: 'string', description: 'Saved supplier ID' },
         plan: { bsonType: 'object', description: 'Complete plan data structure' },
+        eventType: { bsonType: 'string', description: 'Event type (Wedding, Other, etc.)' },
+        eventName: { bsonType: 'string', description: 'Event name/title' },
+        location: { bsonType: 'string', description: 'Event location' },
+        date: { bsonType: 'string', description: 'Event date' },
+        guests: { bsonType: 'int', description: 'Number of guests' },
+        budget: { bsonType: 'string', description: 'Budget range' },
+        packages: {
+          bsonType: 'array',
+          items: { bsonType: 'string' },
+          description: 'Package IDs selected in wizard',
+        },
         createdAt: { bsonType: 'string', description: 'Creation timestamp' },
+        updatedAt: { bsonType: 'string', description: 'Last update timestamp' },
       },
     },
   },
@@ -522,6 +543,8 @@ async function createIndexes(db) {
     await db.collection('packages').createIndex({ featured: 1 });
     await db.collection('packages').createIndex({ isFeatured: 1 });
     await db.collection('packages').createIndex({ categories: 1 });
+    await db.collection('packages').createIndex({ primaryCategoryKey: 1 });
+    await db.collection('packages').createIndex({ eventTypes: 1 });
 
     // Category indexes
     await db.collection('categories').createIndex({ id: 1 }, { unique: true });
