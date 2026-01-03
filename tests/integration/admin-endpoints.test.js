@@ -36,6 +36,7 @@ describe('Admin API Integration Tests', () => {
 
       // Verify supplier endpoints exist
       expect(adminRoutesContent).toContain("router.get('/suppliers'");
+      expect(adminRoutesContent).toContain("router.get('/suppliers/:id'");
       expect(adminRoutesContent).toContain("router.post('/suppliers/:id/approve'");
       expect(adminRoutesContent).toContain("router.delete('/suppliers/:id'");
     });

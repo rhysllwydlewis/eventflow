@@ -277,6 +277,33 @@ router.get('/suppliers', authRequired, roleRequired('admin'), async (_req, res) 
 });
 
 /**
+ * GET /api/admin/suppliers/:id
+ * Get details of a specific supplier
+ */
+router.get('/suppliers/:id', authRequired, roleRequired('admin'), async (req, res) => {
+  try {
+    const raw = await dbUnified.read('suppliers');
+    const supplier = raw.find(s => s.id === req.params.id);
+    
+    if (!supplier) {
+      return res.status(404).json({ error: 'Supplier not found' });
+    }
+    
+    // Add computed fields
+    const enrichedSupplier = {
+      ...supplier,
+      isPro: supplierIsProActiveFn ? supplierIsProActiveFn(supplier) : supplier.isPro,
+      proExpiresAt: supplier.proExpiresAt || null,
+    };
+    
+    res.json({ supplier: enrichedSupplier });
+  } catch (error) {
+    console.error('Error reading supplier:', error);
+    res.status(500).json({ error: 'Failed to load supplier' });
+  }
+});
+
+/**
  * POST /api/admin/suppliers/:id/approve
  * Approve or reject a supplier
  */
