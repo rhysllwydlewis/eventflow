@@ -15,7 +15,7 @@ This ensures that:
 
 ## Changes Made to JadeAssist Widget
 
-The JadeAssist widget repository has been updated with a positioning configuration API and deployed to GitHub.
+The JadeAssist widget repository includes avatar support and UX improvements.
 
 ### Latest Commit Information
 
@@ -23,30 +23,23 @@ The JadeAssist widget repository has been updated with a positioning configurati
 **Branch:** `main`
 **Status:** ✅ Pushed to GitHub and deployed via CDN
 
-### Files Changed
+### Features at This Commit
 
-```
-packages/widget/src/types.ts         - Added WidgetPosition interface
-packages/widget/src/styles.ts        - Dynamic positioning with config
-packages/widget/src/widget.ts        - Pass position to styles
-packages/widget/dist/jade-widget.js  - Built widget (23KB)
-```
+1. **Avatar Image Support**
+   - Custom avatar URL configuration via `avatarUrl` property
+   - Fallback emoji icon if avatar fails to load
+   - Woman avatar image included in assets
 
-### Changes Summary
+2. **Enhanced UX**
+   - Larger tap target for better mobile experience
+   - Floating animation on avatar button
+   - Greeting tooltip with dismissal
+   - Improved shadows and hover effects
 
-1. **Added WidgetPosition Interface** (`types.ts`)
-   - `bottom`, `right`, `left` positioning options
-   - `zIndex` configuration
-   - `mobile` object for mobile-specific overrides
-   - `respectSafeArea` flag for iOS safe area handling
-
-2. **Updated Widget Styles** (`styles.ts`)
-   - Dynamic CSS generation based on position config
-   - Mobile media query with config overrides
-   - iOS safe area inset support
-
-3. **Updated Widget Class** (`widget.ts`)
-   - Pass position config to `getWidgetStyles()`
+3. **Positioning Configuration**
+   - `offsetBottom`: Controls distance from bottom of viewport (default: '80px')
+   - `offsetRight`: Controls distance from right of viewport (default: '24px')
+   - Note: Advanced position API with mobile overrides and safe area support is not yet available at this commit
 
 4. **Built Distribution File** (`dist/jade-widget.js`)
    - Production-ready build with new API
@@ -89,20 +82,21 @@ npm test -- --testPathPattern=jadeassist-widget
 
 ## Widget API Documentation
 
-### New Configuration Options
+### Configuration Options
 
 ```typescript
-interface WidgetPosition {
-  bottom?: string; // e.g., '10rem', '160px'
-  right?: string; // e.g., '1.5rem', '24px'
-  left?: string; // Alternative to right
-  zIndex?: number; // Default: 999999
-  mobile?: {
-    bottom?: string; // Mobile-specific bottom
-    right?: string; // Mobile-specific right
-    left?: string; // Mobile-specific left
-  };
-  respectSafeArea?: boolean; // Handle iOS safe areas (default: true)
+interface WidgetConfig {
+  apiBaseUrl?: string;           // API endpoint (empty string for demo mode)
+  assistantName?: string;        // Display name (default: 'Jade')
+  greetingText?: string;         // Initial message in chat
+  greetingTooltipText?: string;  // Tooltip text on greeting bubble
+  avatarUrl?: string;            // URL to avatar image
+  primaryColor?: string;         // Main brand color (default: '#0B8073')
+  accentColor?: string;          // Accent brand color (default: '#13B6A2')
+  fontFamily?: string;           // Font stack for widget
+  showDelayMs?: number;          // Delay before showing greeting (default: 1000ms)
+  offsetBottom?: string;         // Distance from bottom (default: '80px')
+  offsetRight?: string;          // Distance from right (default: '24px')
 }
 ```
 
@@ -115,19 +109,12 @@ window.JadeWidget.init({
   accentColor: '#008C85',
   assistantName: 'Jade',
   greetingText: "Hi! I'm Jade.",
+  greetingTooltipText: "👋 Hi! Need help planning your event?",
   avatarUrl: '/path/to/avatar.png',
-
-  // NEW: Position configuration
-  position: {
-    bottom: '10rem',
-    right: '1.5rem',
-    zIndex: 999,
-    mobile: {
-      bottom: '11rem',
-      right: '1rem',
-    },
-    respectSafeArea: true,
-  },
+  
+  // Positioning
+  offsetBottom: '10rem',  // 160px - positions below back-to-top button
+  offsetRight: '1.5rem',  // 24px - spacing from right edge
 });
 ```
 
@@ -154,7 +141,7 @@ console.log(window.getComputedStyle(container).bottom); // Should be configured 
 
 ## Integration with EventFlow
 
-EventFlow has been updated to use the new positioning API:
+EventFlow uses the JadeAssist widget with custom branding and positioning:
 
 **File:** `public/assets/js/jadeassist-init.js`
 
@@ -164,26 +151,20 @@ window.JadeWidget.init({
   accentColor: '#008C85',
   assistantName: 'Jade',
   greetingText: "Hi! I'm Jade. Ready to plan your event?",
+  greetingTooltipText: "👋 Hi! Need help planning your event?",
   avatarUrl: '/assets/images/jade-avatar.png',
-  position: {
-    bottom: '10rem',
-    right: '1.5rem',
-    zIndex: 999,
-    mobile: {
-      bottom: '11rem',
-      right: '1rem',
-    },
-    respectSafeArea: true,
-  },
+  offsetBottom: '10rem',  // Positions below back-to-top button
+  offsetRight: '1.5rem',
 });
 ```
 
 This configuration:
 
-- Positions widget at `bottom: 10rem` (160px) on desktop
-- Positions widget at `bottom: 11rem` (176px) on mobile
-- Automatically handles iOS safe areas
-- Sets `zIndex: 999` to appear below modals but above content
+- Positions widget at `bottom: 10rem` (160px) - below the back-to-top button
+- Positions widget at `right: 1.5rem` (24px) from the right edge
+- Uses EventFlow brand colors (teal)
+- Loads custom avatar from EventFlow domain
+- Shows greeting tooltip after 1 second delay
 
 ---
 
