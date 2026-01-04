@@ -256,7 +256,7 @@
       applyCustomStyles();
 
       // Initialize with configuration
-      // Note: Using new PR #8 features - offsetLeft for left anchoring and scale for 15% smaller widget
+      // Using offsetLeft for left-side anchoring and scale for 15% smaller widget
       window.JadeWidget.init({
         primaryColor: '#00B2A9',
         accentColor: '#008C85',

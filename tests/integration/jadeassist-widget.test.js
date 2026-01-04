@@ -115,7 +115,8 @@ describe('JadeAssist Widget Pinning', () => {
         if (content.includes('/assets/js/jadeassist-init.v2.js')) {
           filesWithVersionedInit.push(path.relative(publicDir, filePath));
         }
-        if (content.includes('/assets/js/jadeassist-init.js"')) {
+        // Check for old init script reference (not followed by .v2)
+        if (content.match(/\/assets\/js\/jadeassist-init\.js["'\s>]/)) {
           filesWithOldInit.push(path.relative(publicDir, filePath));
         }
       }
