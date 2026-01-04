@@ -1,0 +1,182 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 256 256"
+  width="256"
+  height="256"
+>
+  <!-- Teal circular background -->
+  <defs>
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2fc4c8"/>
+      <stop offset="100%" stop-color="#1ba2a6"/>
+    </linearGradient>
+
+    <linearGradient id="hairGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f8e6a8"/>
+      <stop offset="50%" stop-color="#f3d36a"/>
+      <stop offset="100%" stop-color="#e8b94a"/>
+    </linearGradient>
+
+    <linearGradient id="skinGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fbd8c4"/>
+      <stop offset="100%" stop-color="#f2b89b"/>
+    </linearGradient>
+
+    <linearGradient id="shirtGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1c2b4d"/>
+      <stop offset="100%" stop-color="#131c33"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Teal circle (background) -->
+  <circle cx="128" cy="128" r="120" fill="url(#bgGrad)" />
+
+  <!-- Neck and shoulders -->
+  <path
+    d="M98 162
+       Q128 182 158 162
+       L176 210
+       Q128 230 80 210
+       Z"
+    fill="url(#shirtGrad)"
+  />
+
+  <!-- Neck -->
+  <path
+    d="M110 142
+       Q128 152 146 142
+       L146 164
+       Q128 172 110 164
+       Z"
+    fill="url(#skinGrad)"
+  />
+
+  <!-- Face -->
+  <ellipse
+    cx="128"
+    cy="120"
+    rx="40"
+    ry="48"
+    fill="url(#skinGrad)"
+  />
+
+  <!-- Hair behind head (flowing over one shoulder) -->
+  <path
+    d="M88 110
+       Q76 150 90 190
+       Q120 210 130 220
+       Q118 190 120 170
+       Q90 160 88 110
+       Z"
+    fill="url(#hairGrad)"
+  />
+  <path
+    d="M168 110
+       Q180 150 170 188
+       Q150 196 142 210
+       Q150 185 150 170
+       Q170 155 168 110
+       Z"
+    fill="url(#hairGrad)"
+  />
+
+  <!-- Hair top/frame -->
+  <path
+    d="M88 120
+       Q88 80 128 76
+       Q168 80 168 120
+       Q150 100 128 100
+       Q106 100 88 120
+       Z"
+    fill="url(#hairGrad)"
+  />
+
+  <!-- Headband -->
+  <path
+    d="M90 104
+       Q128 88 166 104
+       Q170 96 166 88
+       Q128 70 90 88
+       Q86 96 90 104
+       Z"
+    fill="#1f2e5f"
+  />
+
+  <!-- Ears -->
+  <ellipse cx="88" cy="122" rx="7" ry="10" fill="#f4c3a7" />
+  <ellipse cx="168" cy="122" rx="7" ry="10" fill="#f4c3a7" />
+
+  <!-- Eyes -->
+  <ellipse cx="112" cy="118" rx="7" ry="5" fill="#ffffff" />
+  <ellipse cx="144" cy="118" rx="7" ry="5" fill="#ffffff" />
+
+  <!-- Irises (blue) -->
+  <circle cx="112" cy="118" r="3" fill="#4b8dd9" />
+  <circle cx="144" cy="118" r="3" fill="#4b8dd9" />
+
+  <!-- Pupils -->
+  <circle cx="112" cy="118" r="1.6" fill="#000000" />
+  <circle cx="144" cy="118" r="1.6" fill="#000000" />
+
+  <!-- Eyebrows -->
+  <path
+    d="M104 110
+       Q112 106 120 110"
+    stroke="#8a5b32"
+    stroke-width="2.5"
+    stroke-linecap="round"
+    fill="none"
+  />
+  <path
+    d="M136 110
+       Q144 106 152 110"
+    stroke="#8a5b32"
+    stroke-width="2.5"
+    stroke-linecap="round"
+    fill="none"
+  />
+
+  <!-- Nose -->
+  <path
+    d="M128 120
+       Q126 126 128 130"
+    stroke="#d88f6c"
+    stroke-width="2"
+    stroke-linecap="round"
+    fill="none"
+  />
+
+  <!-- Smile -->
+  <path
+    d="M112 138
+       Q128 150 144 138"
+    stroke="#b85a43"
+    stroke-width="3"
+    stroke-linecap="round"
+    fill="none"
+  />
+
+  <!-- Teeth / inner mouth hint -->
+  <path
+    d="M116 138
+       Q128 146 140 138
+       Q128 142 116 138
+       Z"
+    fill="#f7f4f2"
+    opacity="0.9"
+  />
+
+  <!-- Cheek blush -->
+  <ellipse cx="108" cy="132" rx="7" ry="4" fill="#f29fa0" opacity="0.35" />
+  <ellipse cx="148" cy="132" rx="7" ry="4" fill="#f29fa0" opacity="0.35" />
+
+  <!-- Shirt neckline -->
+  <path
+    d="M100 162
+       Q128 180 156 162
+       Q150 152 128 150
+       Q106 152 100 162
+       Z"
+    fill="url(#shirtGrad)"
+  />
+</svg>
