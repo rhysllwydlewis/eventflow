@@ -1,14 +1,27 @@
 # JadeAssist Repository - Deployment Instructions
 
+## Current Setup (Updated)
+
+**EventFlow now loads the JadeAssist widget from jsDelivr CDN using a pinned commit SHA.**
+
+**Current Widget Version:** `93906b5068d1a4cbae45a64b8ed6dd33bc94aab8`
+
+This ensures that:
+- Latest JadeAssist changes are reflected on the live site
+- No manual vendoring required
+- Immutable URLs prevent caching issues
+
+---
+
 ## Changes Made to JadeAssist Widget
 
-The JadeAssist widget repository (`/tmp/JadeAssist`) has been updated with a positioning configuration API. These changes have been committed locally but **need to be pushed to GitHub**.
+The JadeAssist widget repository has been updated with a positioning configuration API and deployed to GitHub.
 
-### Commit Information
+### Latest Commit Information
 
-**Commit SHA:** `4459deb`
+**Commit SHA:** `93906b5068d1a4cbae45a64b8ed6dd33bc94aab8`
 **Branch:** `main`
-**Commit Message:** "Add positioning configuration API to widget"
+**Status:** ✅ Pushed to GitHub and deployed via CDN
 
 ### Files Changed
 
@@ -40,79 +53,36 @@ packages/widget/dist/jade-widget.js  - Built widget (23KB)
 
 ---
 
-## Deployment Options
+## Deployment Approach (Current)
 
-### Option 1: Push to GitHub (Recommended for Long-term)
+EventFlow uses the **jsDelivr CDN with pinned commit SHA** approach.
 
-If you want to use the widget from CDN in the future:
+**Widget URL:**
+```
+https://cdn.jsdelivr.net/gh/rhysllwydlewis/JadeAssist@93906b5068d1a4cbae45a64b8ed6dd33bc94aab8/packages/widget/dist/jade-widget.js
+```
+
+**Benefits:**
+
+- ✅ Latest JadeAssist changes automatically available
+- ✅ No vendored files to maintain
+- ✅ Immutable URLs (pinned SHA)
+- ✅ CDN caching for performance
+- ✅ Smaller EventFlow repository
+
+**How to Update to a Newer Version:**
 
 ```bash
-# Navigate to JadeAssist repo
-cd /path/to/JadeAssist
+# 1. Get the new commit SHA from JadeAssist repo
+# 2. Update all HTML files (48 files)
+find public -name "*.html" -type f -exec sed -i 's|JadeAssist@OLD_SHA|JadeAssist@NEW_SHA|g' {} \;
 
-# Verify changes
-git log -1 --stat
+# 3. Update the integration test
+# Edit tests/integration/jadeassist-widget.test.js
+# Change expectedCommitSHA to new SHA
 
-# Push to GitHub
-git push origin main
-
-# Tag new version
-git tag v1.1.0 -m "Add positioning configuration API"
-git push origin v1.1.0
-
-# Update EventFlow HTML files to use new version
-# Change: /assets/js/vendor/jade-widget.js
-# To: https://cdn.jsdelivr.net/gh/rhysllwydlewis/JadeAssist@v1.1.0/packages/widget/dist/jade-widget.js
-```
-
-### Option 2: Use Local Widget (Current Setup)
-
-EventFlow is currently configured to use the local widget file.
-No additional JadeAssist deployment needed - it's already included in EventFlow.
-
-**Pros:**
-
-- ✅ No CDN dependency
-- ✅ Full control over widget version
-- ✅ Faster load times (no external request)
-- ✅ Works immediately
-
-**Cons:**
-
-- ❌ Need to rebuild widget for updates
-- ❌ Larger EventFlow repository size (+23KB)
-
----
-
-## JadeAssist Repository Location
-
-The modified JadeAssist repository is located at:
-
-```
-/tmp/JadeAssist
-```
-
-### To Access and Push Changes
-
-```bash
-# Navigate to repo
-cd /tmp/JadeAssist
-
-# Check status
-git status
-
-# View commit
-git log -1 --stat
-
-# View remote
-git remote -v
-
-# Push (requires GitHub credentials)
-git push origin main
-
-# Tag and push tag
-git tag v1.1.0 -m "Add positioning configuration API"
-git push origin v1.1.0
+# 4. Run tests to verify
+npm test -- --testPathPattern=jadeassist-widget
 ```
 
 ---
@@ -165,23 +135,6 @@ window.JadeWidget.init({
 
 ## Testing the Widget
 
-### Verify Build Works
-
-```bash
-cd /tmp/JadeAssist/packages/widget
-
-# Install dependencies
-npm install
-
-# Run build
-npm run build
-
-# Check output
-ls -lh dist/jade-widget.js
-```
-
-### Test in Browser
-
 ```javascript
 // Open browser console on page with widget
 
@@ -195,29 +148,6 @@ console.log(document.querySelector('.jade-widget-root')); // Should be HTMLDivEl
 const root = document.querySelector('.jade-widget-root');
 const container = root.shadowRoot.querySelector('.jade-widget-container');
 console.log(window.getComputedStyle(container).bottom); // Should be configured value
-```
-
----
-
-## Rollback Instructions
-
-If you need to rollback the JadeAssist changes:
-
-```bash
-cd /tmp/JadeAssist
-
-# View commits
-git log --oneline -5
-
-# Reset to previous commit (before 4459deb)
-git reset --hard HEAD~1
-
-# Rebuild widget
-cd packages/widget
-npm run build
-
-# Copy to EventFlow
-cp dist/jade-widget.js /home/runner/work/eventflow/eventflow/public/assets/js/vendor/
 ```
 
 ---
@@ -259,20 +189,18 @@ This configuration:
 
 ## Files in EventFlow Using the Widget
 
-All HTML files have been updated to use the local widget:
+All HTML files load the widget from jsDelivr CDN with pinned SHA:
 
 ```html
-<!-- Before (CDN) -->
+<!-- Current approach (Pinned CDN) -->
 <script
-  src="https://cdn.jsdelivr.net/gh/rhysllwydlewis/JadeAssist@ca1aecd6.../jade-widget.js"
+  src="https://cdn.jsdelivr.net/gh/rhysllwydlewis/JadeAssist@93906b5068d1a4cbae45a64b8ed6dd33bc94aab8/packages/widget/dist/jade-widget.js"
   defer
 ></script>
-
-<!-- After (Local) -->
-<script src="/assets/js/vendor/jade-widget.js" defer></script>
+<script src="/assets/js/jadeassist-init.js" defer></script>
 ```
 
-**Files updated:** 46 HTML files across the public directory
+**Files updated:** 48 HTML files across the public directory
 
 ---
 
@@ -302,7 +230,7 @@ If issues arise:
    - Check computed styles on shadow DOM elements
 
 2. **Verify Files Deployed**
-   - `/assets/js/vendor/jade-widget.js` exists
+   - Widget loads from CDN (check Network tab)
    - `/assets/images/jade-avatar.png` exists
    - `/assets/js/jadeassist-init.js` has position config
 
@@ -322,9 +250,10 @@ If issues arise:
 
 ✅ JadeAssist widget enhanced with positioning API
 ✅ EventFlow updated to use new API  
-✅ Local widget file included in EventFlow
-✅ All HTML files updated
+✅ Widget loads from jsDelivr CDN with pinned SHA
+✅ All 48 HTML files updated
+✅ Vendored file removed
+✅ Integration tests passing
 ✅ Tested and verified working
-⏳ JadeAssist changes committed but not pushed to GitHub
 
-**Next Action:** Optionally push JadeAssist commit `4459deb` to GitHub and tag as `v1.1.0`
+**Current Setup:** EventFlow loads widget from `https://cdn.jsdelivr.net/gh/rhysllwydlewis/JadeAssist@93906b5068d1a4cbae45a64b8ed6dd33bc94aab8/packages/widget/dist/jade-widget.js`
