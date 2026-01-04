@@ -132,15 +132,15 @@
     style.textContent = `
       /* Widget positioning overrides for responsive alignment with back-to-top */
       .jade-widget-root {
-        /* Desktop: position lower, but still above footer */
-        bottom: 10rem !important;
+        /* Desktop: align with back-to-top at bottom: 5rem */
+        bottom: 5rem !important;
         left: 1.5rem !important;
       }
 
       @media (max-width: 768px) {
         .jade-widget-root {
-          /* Mobile: position appropriately above footer nav */
-          bottom: 11rem !important;
+          /* Mobile: align with back-to-top at bottom: 4.5rem */
+          bottom: 4.5rem !important;
           left: 1rem !important;
         }
       }
@@ -148,7 +148,7 @@
       /* Teaser bubble styles */
       .jade-teaser {
         position: fixed;
-        bottom: 13rem; /* Above widget (widget at 10rem + 3rem spacing) */
+        bottom: 8rem; /* Above widget (widget at 5rem + 3rem spacing) */
         left: 1.5rem;
         max-width: 280px;
         background: white;
@@ -221,7 +221,7 @@
       /* Mobile adjustments for teaser */
       @media (max-width: 768px) {
         .jade-teaser {
-          bottom: 14rem; /* Above widget on mobile (widget at 11rem + 3rem spacing) */
+          bottom: 7.5rem; /* Above widget on mobile (widget at 4.5rem + 3rem spacing) */
           left: 1rem;
           max-width: calc(100vw - 2rem);
         }
@@ -236,12 +236,12 @@
       /* Handle safe area insets for teaser on iOS */
       @supports (padding: env(safe-area-inset-bottom)) {
         .jade-teaser {
-          bottom: calc(13rem + env(safe-area-inset-bottom));
+          bottom: calc(8rem + env(safe-area-inset-bottom));
         }
 
         @media (max-width: 768px) {
           .jade-teaser {
-            bottom: calc(14rem + env(safe-area-inset-bottom));
+            bottom: calc(7.5rem + env(safe-area-inset-bottom));
           }
         }
       }
@@ -256,11 +256,11 @@
     // Get the base path from the current page's base tag or use root
     const baseElement = document.querySelector('base');
     const basePath = baseElement ? baseElement.getAttribute('href') : '/';
-    
+
     // Construct the full avatar URL
     const avatarPath = 'assets/images/jade-avatar.png';
     let avatarUrl;
-    
+
     if (basePath === '/' || !basePath) {
       avatarUrl = `/${avatarPath}`;
     } else {
@@ -268,7 +268,7 @@
       const cleanBasePath = basePath.endsWith('/') ? basePath.slice(0, -1) : basePath;
       avatarUrl = `${cleanBasePath}/${avatarPath}`;
     }
-    
+
     console.log('JadeAssist avatar URL:', avatarUrl);
     return avatarUrl;
   }
@@ -278,11 +278,14 @@
    */
   function checkAvatarLoad(avatarUrl) {
     const img = new Image();
-    img.onload = function() {
+    img.onload = function () {
       console.log('✅ JadeAssist avatar loaded successfully');
     };
-    img.onerror = function() {
-      console.warn('⚠️ JadeAssist avatar failed to load. Check that the image exists at:', avatarUrl);
+    img.onerror = function () {
+      console.warn(
+        '⚠️ JadeAssist avatar failed to load. Check that the image exists at:',
+        avatarUrl
+      );
     };
     img.src = avatarUrl;
   }
@@ -310,7 +313,7 @@
 
       // Get avatar URL with subpath support
       const avatarUrl = getAvatarUrl();
-      
+
       // Check if avatar loads (diagnostic)
       checkAvatarLoad(avatarUrl);
 
@@ -328,14 +331,14 @@
         // Custom positioning: aligned with back-to-top button (opposite side)
         // Desktop: back-to-top at bottom: 5rem, right: 1.5rem → widget at bottom: 5rem, left: 1.5rem
         // Mobile: back-to-top at bottom: 4.5rem, right: 1rem → widget at bottom: 4.5rem, left: 1rem
-        offsetBottom: '10rem',
+        offsetBottom: '5rem',
         offsetLeft: '1.5rem',
         scale: 0.85, // 15% smaller for better mobile UX
       });
 
       initialized = true;
       console.log('JadeAssist widget initialized successfully');
-      
+
       // Ensure chat is closed on initialization (defensive)
       setTimeout(() => {
         if (window.JadeWidget && typeof window.JadeWidget.close === 'function') {
