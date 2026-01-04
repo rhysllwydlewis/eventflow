@@ -130,10 +130,25 @@
     const style = document.createElement('style');
     style.id = 'jade-custom-styles';
     style.textContent = `
+      /* Widget positioning overrides for responsive alignment with back-to-top */
+      .jade-widget-root {
+        /* Desktop: align with back-to-top at bottom: 5rem */
+        bottom: 5rem !important;
+        left: 1.5rem !important;
+      }
+
+      @media (max-width: 768px) {
+        .jade-widget-root {
+          /* Mobile: align with back-to-top at bottom: 4.5rem */
+          bottom: 4.5rem !important;
+          left: 1rem !important;
+        }
+      }
+
       /* Teaser bubble styles */
       .jade-teaser {
         position: fixed;
-        bottom: 13rem; /* Above widget */
+        bottom: 8rem; /* Above widget (widget at 5rem + 3rem spacing) */
         left: 1.5rem;
         max-width: 280px;
         background: white;
@@ -206,7 +221,7 @@
       /* Mobile adjustments for teaser */
       @media (max-width: 768px) {
         .jade-teaser {
-          bottom: 14rem;
+          bottom: 7.5rem; /* Above widget on mobile (widget at 4.5rem + 3rem spacing) */
           left: 1rem;
           max-width: calc(100vw - 2rem);
         }
@@ -221,17 +236,57 @@
       /* Handle safe area insets for teaser on iOS */
       @supports (padding: env(safe-area-inset-bottom)) {
         .jade-teaser {
-          bottom: calc(13rem + env(safe-area-inset-bottom));
+          bottom: calc(8rem + env(safe-area-inset-bottom));
         }
 
         @media (max-width: 768px) {
           .jade-teaser {
-            bottom: calc(14rem + env(safe-area-inset-bottom));
+            bottom: calc(7.5rem + env(safe-area-inset-bottom));
           }
         }
       }
     `;
     document.head.appendChild(style);
+  }
+
+  /**
+   * Get the avatar URL, resolving relative paths for subpath deployments
+   */
+  function getAvatarUrl() {
+    // Get the base path from the current page's base tag or use root
+    const baseElement = document.querySelector('base');
+    const basePath = baseElement ? baseElement.getAttribute('href') : '/';
+    const avatarPath = 'assets/images/jade-avatar.png';
+
+    // Construct the full avatar URL
+    let avatarUrl;
+    if (basePath === '/' || !basePath) {
+      avatarUrl = `/${avatarPath}`;
+    } else {
+      // Remove trailing slash from basePath if present
+      const cleanBasePath = basePath.endsWith('/') ? basePath.slice(0, -1) : basePath;
+      avatarUrl = `${cleanBasePath}/${avatarPath}`;
+    }
+
+    console.log('JadeAssist avatar URL:', avatarUrl);
+    return avatarUrl;
+  }
+
+  /**
+   * Check if avatar image loads successfully
+   */
+  function checkAvatarLoad(avatarUrl) {
+    const img = new Image();
+    img.onload = function () {
+      console.log('✅ JadeAssist avatar loaded successfully');
+    };
+    img.onerror = function () {
+      console.warn(
+        '⚠️ JadeAssist avatar failed to load. Check that the image exists at:',
+        avatarUrl
+      );
+    };
+    img.src = avatarUrl;
   }
 
   /**
@@ -255,8 +310,15 @@
       // Apply custom styles first
       applyCustomStyles();
 
+      // Get avatar URL with subpath support
+      const avatarUrl = getAvatarUrl();
+
+      // Check if avatar loads (diagnostic)
+      checkAvatarLoad(avatarUrl);
+
       // Initialize with configuration
       // Using offsetLeft for left-side anchoring and scale for 15% smaller widget
+      // Positioning aligned with back-to-top button: bottom 5rem on desktop, 4.5rem on mobile
       window.JadeWidget.init({
         primaryColor: '#00B2A9',
         accentColor: '#008C85',
@@ -264,16 +326,25 @@
         greetingText: "Hi! I'm Jade. Ready to plan your event?",
         greetingTooltipText: '👋 Hi! Need help planning your event?',
         // Avatar served from EventFlow domain - PNG image with proper woman avatar art
-        avatarUrl: '/assets/images/jade-avatar.png',
-        // Custom positioning: below back-to-top button
-        // Using 10rem (160px) to position below back-to-top button (5rem) with spacing
-        offsetBottom: '10rem',
+        avatarUrl: avatarUrl,
+        // Custom positioning: aligned with back-to-top button (opposite side)
+        // Desktop: back-to-top at bottom: 5rem, right: 1.5rem → widget at bottom: 5rem, left: 1.5rem
+        // Mobile: back-to-top at bottom: 4.5rem, right: 1rem → widget at bottom: 4.5rem, left: 1rem
+        offsetBottom: '5rem',
         offsetLeft: '1.5rem',
         scale: 0.85, // 15% smaller for better mobile UX
       });
 
       initialized = true;
       console.log('JadeAssist widget initialized successfully');
+
+      // Ensure chat is closed on initialization (defensive)
+      setTimeout(() => {
+        if (window.JadeWidget && typeof window.JadeWidget.close === 'function') {
+          window.JadeWidget.close();
+          console.log('JadeAssist chat ensured closed on load');
+        }
+      }, 100);
 
       // Diagnostic: Check if widget root was created
       setTimeout(() => {
