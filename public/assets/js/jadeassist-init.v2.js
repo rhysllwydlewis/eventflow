@@ -396,21 +396,14 @@
       checkAvatarLoad(avatarUrl);
 
       // Initialize with configuration
-      // Using offsetLeft for left-side anchoring and scale for 15% smaller widget
-      // Positioning aligned with back-to-top button: bottom 5rem on desktop, 4.5rem on mobile
+      // Note: avatarUrl, offsetBottom, offsetLeft are not supported by this widget version
+      // They are applied manually via shadow DOM manipulation below
       window.JadeWidget.init({
         primaryColor: '#00B2A9',
         accentColor: '#008C85',
         assistantName: 'Jade',
         greetingText: "Hi! I'm Jade. Ready to plan your event?",
         greetingTooltipText: '👋 Hi! Need help planning your event?',
-        // Avatar served from EventFlow domain - PNG image with proper woman avatar art
-        avatarUrl: avatarUrl,
-        // Custom positioning: aligned with back-to-top button (opposite side)
-        // Desktop: back-to-top at bottom: 5rem, right: 1.5rem → widget at bottom: 5rem, left: 1.5rem
-        // Mobile: back-to-top at bottom: 4.5rem, right: 1rem → widget at bottom: 4.5rem, left: 1rem
-        offsetBottom: '5rem',
-        offsetLeft: '1.5rem',
         scale: 0.85, // 15% smaller for better mobile UX
       });
 
@@ -450,7 +443,7 @@
         if (widgetRoot) {
           const rootStyles = window.getComputedStyle(widgetRoot);
           const shadowContainer = widgetRoot.shadowRoot?.querySelector('.jade-widget-container');
-          
+
           console.log('📊 JadeAssist Widget Diagnostics:');
           console.log('   Root element:', {
             position: rootStyles.position,
@@ -458,7 +451,7 @@
             left: rootStyles.left,
             right: rootStyles.right,
           });
-          
+
           if (shadowContainer) {
             const containerStyles = window.getComputedStyle(shadowContainer);
             console.log('   Shadow container:', {
@@ -476,8 +469,13 @@
       }, 500);
 
       // Re-apply positioning on window resize for responsive behavior
+      // Debounced to avoid excessive calls during resize
+      let resizeTimeout;
       window.addEventListener('resize', () => {
-        applyShadowDOMPositioning();
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(() => {
+          applyShadowDOMPositioning();
+        }, 250); // Debounce 250ms
       });
 
       // Show teaser after delay
