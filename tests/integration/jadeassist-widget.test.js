@@ -11,7 +11,7 @@ const fs = require('fs');
 function findHtmlFiles(dir, fileList = []) {
   const files = fs.readdirSync(dir);
 
-  files.forEach((file) => {
+  files.forEach(file => {
     const filePath = path.join(dir, file);
     const stat = fs.statSync(filePath);
 
@@ -38,9 +38,7 @@ describe('JadeAssist Widget Pinning', () => {
         const content = fs.readFileSync(filePath, 'utf8');
 
         // Check for @main reference in JadeAssist URL
-        if (
-          content.includes('cdn.jsdelivr.net/gh/rhysllwydlewis/JadeAssist@main')
-        ) {
+        if (content.includes('cdn.jsdelivr.net/gh/rhysllwydlewis/JadeAssist@main')) {
           filesWithMain.push(path.relative(publicDir, filePath));
         }
       }
@@ -52,7 +50,7 @@ describe('JadeAssist Widget Pinning', () => {
       // Find all HTML files that include JadeAssist
       const htmlFiles = findHtmlFiles(publicDir);
 
-      const expectedCommitSHA = 'ca1aecd6c8ce2c230400f1b0aadcc965285a1625';
+      const expectedCommitSHA = '93906b5068d1a4cbae45a64b8ed6dd33bc94aab8';
       const filesWithWidget = [];
       const filesWithCorrectSHA = [];
 
