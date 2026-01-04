@@ -6,8 +6,14 @@
 (function () {
   'use strict';
 
-  // Flag to prevent double initialization
+  // Configuration
+  const MAX_RETRIES = 50; // Maximum retry attempts (5 seconds with 100ms interval)
+  const RETRY_INTERVAL = 100; // Retry interval in milliseconds
+
+  // State tracking
   let initialized = false;
+  let retryCount = 0;
+  let warningLogged = false;
 
   /**
    * Initialize the JadeAssist widget with EventFlow brand colors
@@ -19,7 +25,10 @@
     }
 
     if (typeof window.JadeWidget === 'undefined' || typeof window.JadeWidget.init !== 'function') {
-      console.warn('JadeWidget not yet available, will retry...');
+      if (!warningLogged) {
+        console.warn('JadeWidget not yet available, will retry...');
+        warningLogged = true;
+      }
       return;
     }
 
@@ -44,9 +53,11 @@
   function waitForWidget() {
     if (typeof window.JadeWidget !== 'undefined' && typeof window.JadeWidget.init === 'function') {
       initJadeWidget();
+    } else if (retryCount < MAX_RETRIES) {
+      retryCount++;
+      setTimeout(waitForWidget, RETRY_INTERVAL);
     } else {
-      // Retry after a short delay
-      setTimeout(waitForWidget, 100);
+      console.warn('JadeAssist widget failed to load after maximum retries');
     }
   }
 
