@@ -256,11 +256,10 @@
     // Get the base path from the current page's base tag or use root
     const baseElement = document.querySelector('base');
     const basePath = baseElement ? baseElement.getAttribute('href') : '/';
-    
-    // Construct the full avatar URL
     const avatarPath = 'assets/images/jade-avatar.png';
+
+    // Construct the full avatar URL
     let avatarUrl;
-    
     if (basePath === '/' || !basePath) {
       avatarUrl = `/${avatarPath}`;
     } else {
@@ -268,7 +267,7 @@
       const cleanBasePath = basePath.endsWith('/') ? basePath.slice(0, -1) : basePath;
       avatarUrl = `${cleanBasePath}/${avatarPath}`;
     }
-    
+
     console.log('JadeAssist avatar URL:', avatarUrl);
     return avatarUrl;
   }
@@ -278,11 +277,14 @@
    */
   function checkAvatarLoad(avatarUrl) {
     const img = new Image();
-    img.onload = function() {
+    img.onload = function () {
       console.log('✅ JadeAssist avatar loaded successfully');
     };
-    img.onerror = function() {
-      console.warn('⚠️ JadeAssist avatar failed to load. Check that the image exists at:', avatarUrl);
+    img.onerror = function () {
+      console.warn(
+        '⚠️ JadeAssist avatar failed to load. Check that the image exists at:',
+        avatarUrl
+      );
     };
     img.src = avatarUrl;
   }
@@ -310,7 +312,7 @@
 
       // Get avatar URL with subpath support
       const avatarUrl = getAvatarUrl();
-      
+
       // Check if avatar loads (diagnostic)
       checkAvatarLoad(avatarUrl);
 
@@ -335,7 +337,7 @@
 
       initialized = true;
       console.log('JadeAssist widget initialized successfully');
-      
+
       // Ensure chat is closed on initialization (defensive)
       setTimeout(() => {
         if (window.JadeWidget && typeof window.JadeWidget.close === 'function') {

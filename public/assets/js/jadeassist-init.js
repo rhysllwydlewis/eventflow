@@ -256,11 +256,10 @@
     // Get the base path from the current page's base tag or use root
     const baseElement = document.querySelector('base');
     const basePath = baseElement ? baseElement.getAttribute('href') : '/';
+    const avatarPath = 'assets/images/jade-avatar.png';
 
     // Construct the full avatar URL
-    const avatarPath = 'assets/images/jade-avatar.png';
     let avatarUrl;
-
     if (basePath === '/' || !basePath) {
       avatarUrl = `/${avatarPath}`;
     } else {
