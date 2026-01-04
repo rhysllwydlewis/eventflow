@@ -131,8 +131,8 @@
     style.textContent = `
       /* Enhanced hit area for floating button */
       #jade-widget-container {
-        /* Position below back-to-top button */
-        bottom: 10rem !important; /* 5rem (back-to-top) + 5rem spacing */
+        /* Position below back-to-top button (at 5rem) with 5rem additional spacing = 10rem total */
+        bottom: 10rem !important;
         right: 1.5rem !important;
         z-index: 999 !important;
       }
@@ -298,10 +298,8 @@
         accentColor: '#008C85',
         assistantName: 'Jade',
         greetingText: "Hi! I'm Jade. Ready to plan your event?",
+        // Avatar served from EventFlow domain for better performance and control
         avatarUrl: '/assets/images/jade-avatar.svg',
-        // Note: If JadeWidget supports offset configs, we'd use:
-        // offsetBottom: '10rem',
-        // offsetRight: '1.5rem',
       });
 
       initialized = true;
