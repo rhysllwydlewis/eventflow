@@ -119,6 +119,7 @@
 
   /**
    * Apply custom styles for enhanced UX
+   * Targets .jade-widget-root which is the actual container created by the widget
    */
   function applyCustomStyles() {
     // Check if styles already applied
@@ -129,28 +130,26 @@
     const style = document.createElement('style');
     style.id = 'jade-custom-styles';
     style.textContent = `
-      /* Enhanced hit area for floating button */
-      #jade-widget-container {
+      /* Target the actual widget container created by JadeAssist */
+      /* The widget creates a .jade-widget-root div with shadow DOM inside */
+      .jade-widget-root {
         /* Position below back-to-top button (at 5rem) with 5rem additional spacing = 10rem total */
+        position: fixed !important;
         bottom: 10rem !important;
         right: 1.5rem !important;
         z-index: 999 !important;
       }
 
-      #jade-widget-button {
-        position: relative;
-      }
-
-      /* Larger click/tap target using pseudo-element */
-      #jade-widget-button::before {
+      /* Larger tap target: add padding around the widget root */
+      .jade-widget-root::before {
         content: '';
         position: absolute;
         top: -12px;
         left: -12px;
         right: -12px;
         bottom: -12px;
-        border-radius: 50%;
-        /* Invisible but clickable area */
+        /* Invisible but clickable area - extends touch target */
+        pointer-events: all;
       }
 
       /* Teaser bubble styles */
@@ -228,7 +227,7 @@
 
       /* Mobile adjustments */
       @media (max-width: 768px) {
-        #jade-widget-container {
+        .jade-widget-root {
           /* Ensure it's above mobile footer nav (56px) + back-to-top */
           bottom: 11rem !important; /* Footer (3.5rem) + back-to-top (5rem) + spacing (2.5rem) */
           right: 1rem !important;
@@ -249,7 +248,7 @@
 
       /* Handle safe area insets for iOS */
       @supports (padding: env(safe-area-inset-bottom)) {
-        #jade-widget-container {
+        .jade-widget-root {
           bottom: calc(10rem + env(safe-area-inset-bottom)) !important;
         }
 
@@ -258,7 +257,7 @@
         }
 
         @media (max-width: 768px) {
-          #jade-widget-container {
+          .jade-widget-root {
             bottom: calc(11rem + env(safe-area-inset-bottom)) !important;
           }
 
@@ -298,12 +297,27 @@
         accentColor: '#008C85',
         assistantName: 'Jade',
         greetingText: "Hi! I'm Jade. Ready to plan your event?",
-        // Avatar served from EventFlow domain for better performance and control
-        avatarUrl: '/assets/images/jade-avatar.svg',
+        // Avatar served from EventFlow domain - PNG image with proper woman avatar art
+        avatarUrl: '/assets/images/jade-avatar.png',
       });
 
       initialized = true;
       console.log('JadeAssist widget initialized successfully');
+
+      // Diagnostic: Check if widget root was created
+      setTimeout(() => {
+        const widgetRoot = document.querySelector('.jade-widget-root');
+        if (widgetRoot) {
+          console.log('✅ Widget root element found:', {
+            position: window.getComputedStyle(widgetRoot).position,
+            bottom: window.getComputedStyle(widgetRoot).bottom,
+            right: window.getComputedStyle(widgetRoot).right,
+            zIndex: window.getComputedStyle(widgetRoot).zIndex,
+          });
+        } else {
+          console.warn('⚠️ Widget root element (.jade-widget-root) not found in DOM');
+        }
+      }, 500);
 
       // Show teaser after delay
       setTimeout(showTeaser, TEASER_DELAY);
