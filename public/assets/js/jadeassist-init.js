@@ -119,6 +119,7 @@
 
   /**
    * Apply custom styles for enhanced UX
+   * Note: With the updated widget supporting position config, we only need teaser styles
    */
   function applyCustomStyles() {
     // Check if styles already applied
@@ -129,30 +130,6 @@
     const style = document.createElement('style');
     style.id = 'jade-custom-styles';
     style.textContent = `
-      /* Enhanced hit area for floating button */
-      #jade-widget-container {
-        /* Position below back-to-top button (at 5rem) with 5rem additional spacing = 10rem total */
-        bottom: 10rem !important;
-        right: 1.5rem !important;
-        z-index: 999 !important;
-      }
-
-      #jade-widget-button {
-        position: relative;
-      }
-
-      /* Larger click/tap target using pseudo-element */
-      #jade-widget-button::before {
-        content: '';
-        position: absolute;
-        top: -12px;
-        left: -12px;
-        right: -12px;
-        bottom: -12px;
-        border-radius: 50%;
-        /* Invisible but clickable area */
-      }
-
       /* Teaser bubble styles */
       .jade-teaser {
         position: fixed;
@@ -226,14 +203,8 @@
         box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
       }
 
-      /* Mobile adjustments */
+      /* Mobile adjustments for teaser */
       @media (max-width: 768px) {
-        #jade-widget-container {
-          /* Ensure it's above mobile footer nav (56px) + back-to-top */
-          bottom: 11rem !important; /* Footer (3.5rem) + back-to-top (5rem) + spacing (2.5rem) */
-          right: 1rem !important;
-        }
-
         .jade-teaser {
           bottom: 14rem;
           right: 1rem;
@@ -247,21 +218,13 @@
         50% { transform: translateY(-6px); }
       }
 
-      /* Handle safe area insets for iOS */
+      /* Handle safe area insets for teaser on iOS */
       @supports (padding: env(safe-area-inset-bottom)) {
-        #jade-widget-container {
-          bottom: calc(10rem + env(safe-area-inset-bottom)) !important;
-        }
-
         .jade-teaser {
           bottom: calc(13rem + env(safe-area-inset-bottom));
         }
 
         @media (max-width: 768px) {
-          #jade-widget-container {
-            bottom: calc(11rem + env(safe-area-inset-bottom)) !important;
-          }
-
           .jade-teaser {
             bottom: calc(14rem + env(safe-area-inset-bottom));
           }
@@ -292,18 +255,51 @@
       // Apply custom styles first
       applyCustomStyles();
 
-      // Initialize with configuration
+      // Initialize with configuration including custom positioning
       window.JadeWidget.init({
         primaryColor: '#00B2A9',
         accentColor: '#008C85',
         assistantName: 'Jade',
         greetingText: "Hi! I'm Jade. Ready to plan your event?",
-        // Avatar served from EventFlow domain for better performance and control
-        avatarUrl: '/assets/images/jade-avatar.svg',
+        // Avatar served from EventFlow domain - PNG image with proper woman avatar art
+        avatarUrl: '/assets/images/jade-avatar.png',
+        // Custom positioning: below back-to-top button with mobile support
+        position: {
+          bottom: '10rem', // Desktop: 5rem back-to-top + 5rem spacing = 10rem total
+          right: '1.5rem',
+          zIndex: 999,
+          mobile: {
+            bottom: '11rem', // Mobile: above footer nav (3.5rem) + back-to-top (5rem) + spacing (2.5rem)
+            right: '1rem',
+          },
+          respectSafeArea: true, // Automatic iOS safe area handling
+        },
       });
 
       initialized = true;
       console.log('JadeAssist widget initialized successfully');
+
+      // Diagnostic: Check if widget root was created and positioning applied
+      setTimeout(() => {
+        const widgetRoot = document.querySelector('.jade-widget-root');
+        if (widgetRoot) {
+          const shadowContainer = widgetRoot.shadowRoot?.querySelector('.jade-widget-container');
+          if (shadowContainer) {
+            const styles = window.getComputedStyle(shadowContainer);
+            console.log('✅ Widget loaded with custom positioning:', {
+              position: styles.position,
+              bottom: styles.bottom,
+              right: styles.right,
+              zIndex: styles.zIndex,
+              method: 'Widget position config API',
+            });
+          } else {
+            console.log('✅ Widget root found but shadow container not accessible');
+          }
+        } else {
+          console.warn('⚠️ Widget root element (.jade-widget-root) not found in DOM');
+        }
+      }, 500);
 
       // Show teaser after delay
       setTimeout(showTeaser, TEASER_DELAY);
