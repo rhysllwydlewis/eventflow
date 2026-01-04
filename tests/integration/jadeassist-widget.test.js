@@ -94,9 +94,35 @@ describe('JadeAssist Widget Pinning', () => {
   });
 
   describe('Widget Initialization', () => {
-    it('should have jadeassist-init.js for widget configuration', () => {
+    it('should have jadeassist-init.v2.js for widget configuration', () => {
+      const initPath = path.join(publicDir, 'assets/js/jadeassist-init.v2.js');
+      expect(fs.existsSync(initPath)).toBe(true);
+    });
+
+    it('should have legacy jadeassist-init.js for backwards compatibility', () => {
       const initPath = path.join(publicDir, 'assets/js/jadeassist-init.js');
       expect(fs.existsSync(initPath)).toBe(true);
+    });
+
+    it('should reference versioned init script in HTML files', () => {
+      const htmlFiles = findHtmlFiles(publicDir);
+      const filesWithVersionedInit = [];
+      const filesWithOldInit = [];
+
+      for (const filePath of htmlFiles) {
+        const content = fs.readFileSync(filePath, 'utf8');
+
+        if (content.includes('/assets/js/jadeassist-init.v2.js')) {
+          filesWithVersionedInit.push(path.relative(publicDir, filePath));
+        }
+        if (content.includes('/assets/js/jadeassist-init.js"')) {
+          filesWithOldInit.push(path.relative(publicDir, filePath));
+        }
+      }
+
+      // All HTML files with JadeAssist should use the versioned init script
+      expect(filesWithOldInit).toEqual([]);
+      expect(filesWithVersionedInit.length).toBeGreaterThan(0);
     });
   });
 });
