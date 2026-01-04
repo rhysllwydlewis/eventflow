@@ -119,7 +119,7 @@
 
   /**
    * Apply custom styles for enhanced UX
-   * Note: With the updated widget supporting position config, we only need teaser styles
+   * Only teaser styles needed - widget handles its own positioning via offsetBottom/offsetRight
    */
   function applyCustomStyles() {
     // Check if styles already applied
@@ -255,31 +255,26 @@
       // Apply custom styles first
       applyCustomStyles();
 
-      // Initialize with configuration including custom positioning
+      // Initialize with configuration
+      // Note: Using offsetBottom and offsetRight (widget at commit 93906b5 doesn't support position object)
       window.JadeWidget.init({
         primaryColor: '#00B2A9',
         accentColor: '#008C85',
         assistantName: 'Jade',
         greetingText: "Hi! I'm Jade. Ready to plan your event?",
+        greetingTooltipText: "👋 Hi! Need help planning your event?",
         // Avatar served from EventFlow domain - PNG image with proper woman avatar art
         avatarUrl: '/assets/images/jade-avatar.png',
-        // Custom positioning: below back-to-top button with mobile support
-        position: {
-          bottom: '10rem', // Desktop: 5rem back-to-top + 5rem spacing = 10rem total
-          right: '1.5rem',
-          zIndex: 999,
-          mobile: {
-            bottom: '11rem', // Mobile: above footer nav (3.5rem) + back-to-top (5rem) + spacing (2.5rem)
-            right: '1rem',
-          },
-          respectSafeArea: true, // Automatic iOS safe area handling
-        },
+        // Custom positioning: below back-to-top button
+        // Using 10rem (160px) to position below back-to-top button (5rem) with spacing
+        offsetBottom: '10rem',
+        offsetRight: '1.5rem',
       });
 
       initialized = true;
       console.log('JadeAssist widget initialized successfully');
 
-      // Diagnostic: Check if widget root was created and positioning applied
+      // Diagnostic: Check if widget root was created
       setTimeout(() => {
         const widgetRoot = document.querySelector('.jade-widget-root');
         if (widgetRoot) {
@@ -291,7 +286,6 @@
               bottom: styles.bottom,
               right: styles.right,
               zIndex: styles.zIndex,
-              method: 'Widget position config API',
             });
           } else {
             console.log('✅ Widget root found but shadow container not accessible');

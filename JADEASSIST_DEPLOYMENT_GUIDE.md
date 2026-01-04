@@ -1,138 +1,102 @@
 # JadeAssist Repository - Deployment Instructions
 
+## Current Setup (Updated)
+
+**EventFlow now loads the JadeAssist widget from jsDelivr CDN using a pinned commit SHA.**
+
+**Current Widget Version:** `93906b5068d1a4cbae45a64b8ed6dd33bc94aab8`
+
+This ensures that:
+- Latest JadeAssist changes are reflected on the live site
+- No manual vendoring required
+- Immutable URLs prevent caching issues
+
+---
+
 ## Changes Made to JadeAssist Widget
 
-The JadeAssist widget repository (`/tmp/JadeAssist`) has been updated with a positioning configuration API. These changes have been committed locally but **need to be pushed to GitHub**.
+The JadeAssist widget repository includes avatar support and UX improvements.
 
-### Commit Information
+### Latest Commit Information
 
-**Commit SHA:** `4459deb`
+**Commit SHA:** `93906b5068d1a4cbae45a64b8ed6dd33bc94aab8`
 **Branch:** `main`
-**Commit Message:** "Add positioning configuration API to widget"
+**Status:** ✅ Pushed to GitHub and deployed via CDN
 
-### Files Changed
+### Features at This Commit
 
-```
-packages/widget/src/types.ts         - Added WidgetPosition interface
-packages/widget/src/styles.ts        - Dynamic positioning with config
-packages/widget/src/widget.ts        - Pass position to styles
-packages/widget/dist/jade-widget.js  - Built widget (23KB)
-```
+1. **Avatar Image Support**
+   - Custom avatar URL configuration via `avatarUrl` property
+   - Fallback emoji icon if avatar fails to load
+   - Woman avatar image included in assets
 
-### Changes Summary
+2. **Enhanced UX**
+   - Larger tap target for better mobile experience
+   - Floating animation on avatar button
+   - Greeting tooltip with dismissal
+   - Improved shadows and hover effects
 
-1. **Added WidgetPosition Interface** (`types.ts`)
-   - `bottom`, `right`, `left` positioning options
-   - `zIndex` configuration
-   - `mobile` object for mobile-specific overrides
-   - `respectSafeArea` flag for iOS safe area handling
-
-2. **Updated Widget Styles** (`styles.ts`)
-   - Dynamic CSS generation based on position config
-   - Mobile media query with config overrides
-   - iOS safe area inset support
-
-3. **Updated Widget Class** (`widget.ts`)
-   - Pass position config to `getWidgetStyles()`
+3. **Positioning Configuration**
+   - `offsetBottom`: Controls distance from bottom of viewport (default: '80px')
+   - `offsetRight`: Controls distance from right of viewport (default: '24px')
+   - Note: Advanced position API with mobile overrides and safe area support is not yet available at this commit
 
 4. **Built Distribution File** (`dist/jade-widget.js`)
    - Production-ready build with new API
 
 ---
 
-## Deployment Options
+## Deployment Approach (Current)
 
-### Option 1: Push to GitHub (Recommended for Long-term)
+EventFlow uses the **jsDelivr CDN with pinned commit SHA** approach.
 
-If you want to use the widget from CDN in the future:
+**Widget URL:**
+```
+https://cdn.jsdelivr.net/gh/rhysllwydlewis/JadeAssist@93906b5068d1a4cbae45a64b8ed6dd33bc94aab8/packages/widget/dist/jade-widget.js
+```
+
+**Benefits:**
+
+- ✅ Latest JadeAssist changes automatically available
+- ✅ No vendored files to maintain
+- ✅ Immutable URLs (pinned SHA)
+- ✅ CDN caching for performance
+- ✅ Smaller EventFlow repository
+
+**How to Update to a Newer Version:**
 
 ```bash
-# Navigate to JadeAssist repo
-cd /path/to/JadeAssist
+# 1. Get the new commit SHA from JadeAssist repo
+# 2. Update all HTML files (48 files)
+find public -name "*.html" -type f -exec sed -i 's|JadeAssist@OLD_SHA|JadeAssist@NEW_SHA|g' {} \;
 
-# Verify changes
-git log -1 --stat
+# 3. Update the integration test
+# Edit tests/integration/jadeassist-widget.test.js
+# Change expectedCommitSHA to new SHA
 
-# Push to GitHub
-git push origin main
-
-# Tag new version
-git tag v1.1.0 -m "Add positioning configuration API"
-git push origin v1.1.0
-
-# Update EventFlow HTML files to use new version
-# Change: /assets/js/vendor/jade-widget.js
-# To: https://cdn.jsdelivr.net/gh/rhysllwydlewis/JadeAssist@v1.1.0/packages/widget/dist/jade-widget.js
-```
-
-### Option 2: Use Local Widget (Current Setup)
-
-EventFlow is currently configured to use the local widget file.
-No additional JadeAssist deployment needed - it's already included in EventFlow.
-
-**Pros:**
-
-- ✅ No CDN dependency
-- ✅ Full control over widget version
-- ✅ Faster load times (no external request)
-- ✅ Works immediately
-
-**Cons:**
-
-- ❌ Need to rebuild widget for updates
-- ❌ Larger EventFlow repository size (+23KB)
-
----
-
-## JadeAssist Repository Location
-
-The modified JadeAssist repository is located at:
-
-```
-/tmp/JadeAssist
-```
-
-### To Access and Push Changes
-
-```bash
-# Navigate to repo
-cd /tmp/JadeAssist
-
-# Check status
-git status
-
-# View commit
-git log -1 --stat
-
-# View remote
-git remote -v
-
-# Push (requires GitHub credentials)
-git push origin main
-
-# Tag and push tag
-git tag v1.1.0 -m "Add positioning configuration API"
-git push origin v1.1.0
+# 4. Run tests to verify
+npm test -- --testPathPattern=jadeassist-widget
 ```
 
 ---
 
 ## Widget API Documentation
 
-### New Configuration Options
+### Configuration Options
 
 ```typescript
-interface WidgetPosition {
-  bottom?: string; // e.g., '10rem', '160px'
-  right?: string; // e.g., '1.5rem', '24px'
-  left?: string; // Alternative to right
-  zIndex?: number; // Default: 999999
-  mobile?: {
-    bottom?: string; // Mobile-specific bottom
-    right?: string; // Mobile-specific right
-    left?: string; // Mobile-specific left
-  };
-  respectSafeArea?: boolean; // Handle iOS safe areas (default: true)
+interface WidgetConfig {
+  apiBaseUrl?: string;           // API endpoint (empty string for demo mode)
+  assistantName?: string;        // Display name (default: 'Jade')
+  greetingText?: string;         // Initial message in chat
+  greetingTooltipText?: string;  // Tooltip text on greeting bubble
+  avatarUrl?: string;            // URL to avatar image
+  primaryColor?: string;         // Main brand color (default: '#0B8073')
+  accentColor?: string;          // Accent brand color (default: '#13B6A2')
+  fontFamily?: string;           // Font stack for widget
+  showDelayMs?: number;          // Delay before showing greeting (default: 1000ms)
+  offsetBottom?: string;         // Distance from bottom (default: '80px')
+  offsetRight?: string;          // Distance from right (default: '24px')
 }
 ```
 
@@ -145,42 +109,18 @@ window.JadeWidget.init({
   accentColor: '#008C85',
   assistantName: 'Jade',
   greetingText: "Hi! I'm Jade.",
+  greetingTooltipText: "👋 Hi! Need help planning your event?",
   avatarUrl: '/path/to/avatar.png',
-
-  // NEW: Position configuration
-  position: {
-    bottom: '10rem',
-    right: '1.5rem',
-    zIndex: 999,
-    mobile: {
-      bottom: '11rem',
-      right: '1rem',
-    },
-    respectSafeArea: true,
-  },
+  
+  // Positioning
+  offsetBottom: '10rem',  // 160px - positions below back-to-top button
+  offsetRight: '1.5rem',  // 24px - spacing from right edge
 });
 ```
 
 ---
 
 ## Testing the Widget
-
-### Verify Build Works
-
-```bash
-cd /tmp/JadeAssist/packages/widget
-
-# Install dependencies
-npm install
-
-# Run build
-npm run build
-
-# Check output
-ls -lh dist/jade-widget.js
-```
-
-### Test in Browser
 
 ```javascript
 // Open browser console on page with widget
@@ -199,32 +139,9 @@ console.log(window.getComputedStyle(container).bottom); // Should be configured 
 
 ---
 
-## Rollback Instructions
-
-If you need to rollback the JadeAssist changes:
-
-```bash
-cd /tmp/JadeAssist
-
-# View commits
-git log --oneline -5
-
-# Reset to previous commit (before 4459deb)
-git reset --hard HEAD~1
-
-# Rebuild widget
-cd packages/widget
-npm run build
-
-# Copy to EventFlow
-cp dist/jade-widget.js /home/runner/work/eventflow/eventflow/public/assets/js/vendor/
-```
-
----
-
 ## Integration with EventFlow
 
-EventFlow has been updated to use the new positioning API:
+EventFlow uses the JadeAssist widget with custom branding and positioning:
 
 **File:** `public/assets/js/jadeassist-init.js`
 
@@ -234,45 +151,37 @@ window.JadeWidget.init({
   accentColor: '#008C85',
   assistantName: 'Jade',
   greetingText: "Hi! I'm Jade. Ready to plan your event?",
+  greetingTooltipText: "👋 Hi! Need help planning your event?",
   avatarUrl: '/assets/images/jade-avatar.png',
-  position: {
-    bottom: '10rem',
-    right: '1.5rem',
-    zIndex: 999,
-    mobile: {
-      bottom: '11rem',
-      right: '1rem',
-    },
-    respectSafeArea: true,
-  },
+  offsetBottom: '10rem',  // Positions below back-to-top button
+  offsetRight: '1.5rem',
 });
 ```
 
 This configuration:
 
-- Positions widget at `bottom: 10rem` (160px) on desktop
-- Positions widget at `bottom: 11rem` (176px) on mobile
-- Automatically handles iOS safe areas
-- Sets `zIndex: 999` to appear below modals but above content
+- Positions widget at `bottom: 10rem` (160px) - below the back-to-top button
+- Positions widget at `right: 1.5rem` (24px) from the right edge
+- Uses EventFlow brand colors (teal)
+- Loads custom avatar from EventFlow domain
+- Shows greeting tooltip after 1 second delay
 
 ---
 
 ## Files in EventFlow Using the Widget
 
-All HTML files have been updated to use the local widget:
+All HTML files load the widget from jsDelivr CDN with pinned SHA:
 
 ```html
-<!-- Before (CDN) -->
+<!-- Current approach (Pinned CDN) -->
 <script
-  src="https://cdn.jsdelivr.net/gh/rhysllwydlewis/JadeAssist@ca1aecd6.../jade-widget.js"
+  src="https://cdn.jsdelivr.net/gh/rhysllwydlewis/JadeAssist@93906b5068d1a4cbae45a64b8ed6dd33bc94aab8/packages/widget/dist/jade-widget.js"
   defer
 ></script>
-
-<!-- After (Local) -->
-<script src="/assets/js/vendor/jade-widget.js" defer></script>
+<script src="/assets/js/jadeassist-init.js" defer></script>
 ```
 
-**Files updated:** 46 HTML files across the public directory
+**Files updated:** 48 HTML files across the public directory
 
 ---
 
@@ -302,7 +211,7 @@ If issues arise:
    - Check computed styles on shadow DOM elements
 
 2. **Verify Files Deployed**
-   - `/assets/js/vendor/jade-widget.js` exists
+   - Widget loads from CDN (check Network tab)
    - `/assets/images/jade-avatar.png` exists
    - `/assets/js/jadeassist-init.js` has position config
 
@@ -322,9 +231,10 @@ If issues arise:
 
 ✅ JadeAssist widget enhanced with positioning API
 ✅ EventFlow updated to use new API  
-✅ Local widget file included in EventFlow
-✅ All HTML files updated
+✅ Widget loads from jsDelivr CDN with pinned SHA
+✅ All 48 HTML files updated
+✅ Vendored file removed
+✅ Integration tests passing
 ✅ Tested and verified working
-⏳ JadeAssist changes committed but not pushed to GitHub
 
-**Next Action:** Optionally push JadeAssist commit `4459deb` to GitHub and tag as `v1.1.0`
+**Current Setup:** EventFlow loads widget from `https://cdn.jsdelivr.net/gh/rhysllwydlewis/JadeAssist@93906b5068d1a4cbae45a64b8ed6dd33bc94aab8/packages/widget/dist/jade-widget.js`
