@@ -134,7 +134,7 @@
       .jade-teaser {
         position: fixed;
         bottom: 13rem; /* Above widget */
-        right: 1.5rem;
+        left: 1.5rem;
         max-width: 280px;
         background: white;
         border-radius: 16px;
@@ -195,7 +195,7 @@
         content: '';
         position: absolute;
         bottom: -8px;
-        right: 24px;
+        left: 24px;
         width: 16px;
         height: 16px;
         background: white;
@@ -207,7 +207,7 @@
       @media (max-width: 768px) {
         .jade-teaser {
           bottom: 14rem;
-          right: 1rem;
+          left: 1rem;
           max-width: calc(100vw - 2rem);
         }
       }
@@ -256,19 +256,20 @@
       applyCustomStyles();
 
       // Initialize with configuration
-      // Note: Using offsetBottom and offsetRight (widget at commit 93906b5 doesn't support position object)
+      // Note: Using new PR #8 features - offsetLeft for left anchoring and scale for 15% smaller widget
       window.JadeWidget.init({
         primaryColor: '#00B2A9',
         accentColor: '#008C85',
         assistantName: 'Jade',
         greetingText: "Hi! I'm Jade. Ready to plan your event?",
-        greetingTooltipText: "👋 Hi! Need help planning your event?",
+        greetingTooltipText: '👋 Hi! Need help planning your event?',
         // Avatar served from EventFlow domain - PNG image with proper woman avatar art
         avatarUrl: '/assets/images/jade-avatar.png',
         // Custom positioning: below back-to-top button
         // Using 10rem (160px) to position below back-to-top button (5rem) with spacing
         offsetBottom: '10rem',
-        offsetRight: '1.5rem',
+        offsetLeft: '1.5rem',
+        scale: 0.85, // 15% smaller for better mobile UX
       });
 
       initialized = true;
