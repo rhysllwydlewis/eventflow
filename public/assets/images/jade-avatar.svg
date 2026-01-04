@@ -1,0 +1,12 @@
+<svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Professional woman avatar placeholder - teal themed -->
+  <circle cx="40" cy="40" r="40" fill="#00B2A9"/>
+  <!-- Head -->
+  <circle cx="40" cy="32" r="12" fill="#FFE4D6"/>
+  <!-- Body/Shoulders -->
+  <path d="M20 70 Q20 50 40 50 Q60 50 60 70 L60 80 L20 80 Z" fill="#FFE4D6"/>
+  <!-- Hair -->
+  <path d="M28 24 Q28 18 32 16 Q36 14 40 14 Q44 14 48 16 Q52 18 52 24 L52 30 Q50 28 48 27 Q46 26 44 26 Q42 26 40 26 Q38 26 36 26 Q34 26 32 27 Q30 28 28 30 Z" fill="#4A3228"/>
+  <!-- Professional attire suggestion -->
+  <rect x="30" y="50" width="20" height="30" fill="#008C85" opacity="0.8"/>
+</svg>
