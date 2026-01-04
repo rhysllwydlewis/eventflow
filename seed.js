@@ -214,7 +214,7 @@ async function seed(options = {}) {
         description:
           'Find the perfect space for your event, from grand ballrooms to intimate gardens',
         heroImage: '/assets/images/collage-venue.jpg',
-        icon: '🏛️',
+        icon: '⛪',
         order: 1,
       },
       {
