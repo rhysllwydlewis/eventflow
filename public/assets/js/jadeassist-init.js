@@ -317,7 +317,7 @@
       checkAvatarLoad(avatarUrl);
 
       // Initialize with configuration
-      // Note: Using new PR #8 features - offsetLeft for left anchoring and scale for 15% smaller widget
+      // Using offsetLeft for left-side anchoring and scale for 15% smaller widget
       // Positioning aligned with back-to-top button: bottom 5rem on desktop, 4.5rem on mobile
       window.JadeWidget.init({
         primaryColor: '#00B2A9',
