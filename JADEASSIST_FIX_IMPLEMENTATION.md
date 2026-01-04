@@ -210,6 +210,9 @@ If you see this, the widget loaded successfully and positioning is applied.
 - CSP issue → Check Content-Security-Policy headers
 - Script error → Check browser console for details
 
+**Security Note:**
+The widget is loaded from JSDelivr CDN using a pinned commit SHA (`@ca1aecd6...`) to ensure immutability. While adding an SRI (Subresource Integrity) hash would provide additional security, this requires knowing the hash in advance. The commit SHA provides version pinning to prevent unexpected changes from the upstream repository.
+
 ### Issue: Widget loads but positioning doesn't apply
 
 **Check:**

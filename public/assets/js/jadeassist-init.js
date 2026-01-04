@@ -141,6 +141,7 @@
       }
 
       /* Larger tap target: add padding around the widget root */
+      /* Note: The pseudo-element extends the clickable area without affecting layout */
       .jade-widget-root::before {
         content: '';
         position: absolute;
@@ -148,8 +149,8 @@
         left: -12px;
         right: -12px;
         bottom: -12px;
-        /* Invisible but clickable area - extends touch target */
-        pointer-events: all;
+        /* The widget button inside shadow DOM will handle actual clicks */
+        /* This just makes the effective click area larger for better UX */
       }
 
       /* Teaser bubble styles */

@@ -1,255 +1,265 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>JadeAssist Widget - Real Integration Test</title>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      min-height: 100vh;
-      padding: 2rem;
-      color: white;
-    }
-
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-
-    h1 {
-      font-size: 2.5rem;
-      margin-bottom: 1rem;
-      text-align: center;
-    }
-
-    .intro {
-      text-align: center;
-      font-size: 1.2rem;
-      margin-bottom: 3rem;
-      opacity: 0.9;
-    }
-
-    .test-section {
-      background: rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(10px);
-      border-radius: 16px;
-      padding: 2rem;
-      margin-bottom: 2rem;
-    }
-
-    .test-section h2 {
-      font-size: 1.5rem;
-      margin-bottom: 1rem;
-      color: #fff;
-    }
-
-    .test-section p {
-      font-size: 1rem;
-      line-height: 1.6;
-      opacity: 0.9;
-      margin-bottom: 0.5rem;
-    }
-
-    .test-section ul {
-      margin-left: 1.5rem;
-      margin-top: 0.5rem;
-    }
-
-    .test-section li {
-      margin-bottom: 0.5rem;
-      opacity: 0.9;
-    }
-
-    .status {
-      display: inline-block;
-      padding: 4px 12px;
-      border-radius: 8px;
-      font-size: 0.9rem;
-      font-weight: 600;
-      background: rgba(255, 255, 255, 0.2);
-      margin-left: 8px;
-    }
-
-    .success {
-      background: rgba(34, 197, 94, 0.3);
-    }
-
-    .pending {
-      background: rgba(234, 179, 8, 0.3);
-    }
-
-    /* Back to top button (simulated) */
-    .back-to-top {
-      position: fixed;
-      bottom: 5rem;
-      right: 1.5rem;
-      width: 44px;
-      height: 44px;
-      background: linear-gradient(135deg, #0B8073, #13B6A2);
-      color: #fff;
-      border: none;
-      border-radius: 50%;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.25rem;
-      font-weight: 700;
-      box-shadow: 0 4px 16px rgba(11, 128, 115, 0.3);
-      z-index: 100;
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
-    }
-
-    .back-to-top:hover {
-      transform: translateY(-3px) scale(1.05);
-      box-shadow: 0 8px 24px rgba(11, 128, 115, 0.4);
-    }
-
-    /* Mobile footer nav (simulated) */
-    .footer-nav {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 56px;
-      background: rgba(255,255,255,0.95);
-      backdrop-filter: blur(10px);
-      border-top: 1px solid rgba(0,0,0,0.1);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 100;
-      padding: 0 16px;
-    }
-
-    @media (max-width: 768px) {
-      .footer-nav {
-        display: flex;
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>JadeAssist Widget - Real Integration Test</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
       }
 
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell,
+          sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 2rem;
+        color: white;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+
+      h1 {
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+        text-align: center;
+      }
+
+      .intro {
+        text-align: center;
+        font-size: 1.2rem;
+        margin-bottom: 3rem;
+        opacity: 0.9;
+      }
+
+      .test-section {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        border-radius: 16px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+      }
+
+      .test-section h2 {
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
+        color: #fff;
+      }
+
+      .test-section p {
+        font-size: 1rem;
+        line-height: 1.6;
+        opacity: 0.9;
+        margin-bottom: 0.5rem;
+      }
+
+      .test-section ul {
+        margin-left: 1.5rem;
+        margin-top: 0.5rem;
+      }
+
+      .test-section li {
+        margin-bottom: 0.5rem;
+        opacity: 0.9;
+      }
+
+      .status {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        background: rgba(255, 255, 255, 0.2);
+        margin-left: 8px;
+      }
+
+      .success {
+        background: rgba(34, 197, 94, 0.3);
+      }
+
+      .pending {
+        background: rgba(234, 179, 8, 0.3);
+      }
+
+      /* Back to top button (simulated) */
       .back-to-top {
-        bottom: 6.5rem;
-        right: 1rem;
+        position: fixed;
+        bottom: 5rem;
+        right: 1.5rem;
+        width: 44px;
+        height: 44px;
+        background: linear-gradient(135deg, #0b8073, #13b6a2);
+        color: #fff;
+        border: none;
+        border-radius: 50%;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        font-weight: 700;
+        box-shadow: 0 4px 16px rgba(11, 128, 115, 0.3);
+        z-index: 100;
+        transition:
+          transform 0.3s ease,
+          box-shadow 0.3s ease;
       }
-    }
 
-    .console-log {
-      background: #1a1a1a;
-      color: #00ff00;
-      padding: 1rem;
-      border-radius: 8px;
-      font-family: 'Courier New', monospace;
-      font-size: 0.85rem;
-      max-height: 300px;
-      overflow-y: auto;
-      margin-top: 1rem;
-    }
+      .back-to-top:hover {
+        transform: translateY(-3px) scale(1.05);
+        box-shadow: 0 8px 24px rgba(11, 128, 115, 0.4);
+      }
 
-    .console-log div {
-      margin-bottom: 0.25rem;
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <h1>🧪 JadeAssist Widget - Real Integration Test</h1>
-    <p class="intro">Testing with actual CDN and updated selectors</p>
+      /* Mobile footer nav (simulated) */
+      .footer-nav {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 56px;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-top: 1px solid rgba(0, 0, 0, 0.1);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 100;
+        padding: 0 16px;
+      }
 
-    <div class="test-section">
-      <h2>✓ Test Criteria <span class="status pending">Testing...</span></h2>
-      <p><strong>What we're checking:</strong></p>
-      <ul>
-        <li>Widget loads from CDN (https://cdn.jsdelivr.net/gh/rhysllwydlewis/JadeAssist@...)</li>
-        <li>Widget creates .jade-widget-root element in DOM</li>
-        <li>CSS positioning applies correctly (bottom: 10rem, right: 1.5rem)</li>
-        <li>Avatar image loads from /assets/images/jade-avatar.png</li>
-        <li>Widget appears below back-to-top button</li>
-        <li>Teaser bubble displays correctly</li>
-        <li>Diagnostic logs confirm correct positioning</li>
-      </ul>
-    </div>
+      @media (max-width: 768px) {
+        .footer-nav {
+          display: flex;
+        }
 
-    <div class="test-section">
-      <h2>📊 Widget Status</h2>
-      <p id="widget-status">⏳ Waiting for widget to load...</p>
-    </div>
+        .back-to-top {
+          bottom: 6.5rem;
+          right: 1rem;
+        }
+      }
 
-    <div class="test-section">
-      <h2>🖥️ Console Output</h2>
-      <div class="console-log" id="console-output">
-        <div>[Starting test...]</div>
+      .console-log {
+        background: #1a1a1a;
+        color: #00ff00;
+        padding: 1rem;
+        border-radius: 8px;
+        font-family: 'Courier New', monospace;
+        font-size: 0.85rem;
+        max-height: 300px;
+        overflow-y: auto;
+        margin-top: 1rem;
+      }
+
+      .console-log div {
+        margin-bottom: 0.25rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🧪 JadeAssist Widget - Real Integration Test</h1>
+      <p class="intro">Testing with actual CDN and updated selectors</p>
+
+      <div class="test-section">
+        <h2>✓ Test Criteria <span class="status pending">Testing...</span></h2>
+        <p><strong>What we're checking:</strong></p>
+        <ul>
+          <li>Widget loads from CDN (https://cdn.jsdelivr.net/gh/rhysllwydlewis/JadeAssist@...)</li>
+          <li>Widget creates .jade-widget-root element in DOM</li>
+          <li>CSS positioning applies correctly (bottom: 10rem, right: 1.5rem)</li>
+          <li>Avatar image loads from /assets/images/jade-avatar.png</li>
+          <li>Widget appears below back-to-top button</li>
+          <li>Teaser bubble displays correctly</li>
+          <li>Diagnostic logs confirm correct positioning</li>
+        </ul>
+      </div>
+
+      <div class="test-section">
+        <h2>📊 Widget Status</h2>
+        <p id="widget-status">⏳ Waiting for widget to load...</p>
+      </div>
+
+      <div class="test-section">
+        <h2>🖥️ Console Output</h2>
+        <div class="console-log" id="console-output">
+          <div>[Starting test...]</div>
+        </div>
+      </div>
+
+      <div style="height: 50vh; display: flex; align-items: center; justify-content: center">
+        <p style="font-size: 1.5rem; opacity: 0.8">↓ Scroll to see widget positioning ↓</p>
       </div>
     </div>
 
-    <div style="height: 50vh; display: flex; align-items: center; justify-content: center;">
-      <p style="font-size: 1.5rem; opacity: 0.8;">↓ Scroll to see widget positioning ↓</p>
+    <!-- Back to top button (simulated) -->
+    <button class="back-to-top" title="Back to top">↑</button>
+
+    <!-- Mobile footer nav (for mobile demo) -->
+    <div class="footer-nav">
+      <p style="color: #0b1220; font-size: 0.9rem">Mobile Footer Nav (56px)</p>
     </div>
-  </div>
 
-  <!-- Back to top button (simulated) -->
-  <button class="back-to-top" title="Back to top">↑</button>
+    <!-- JadeAssist Chat Widget (real CDN) -->
+    <script
+      src="https://cdn.jsdelivr.net/gh/rhysllwydlewis/JadeAssist@ca1aecd6c8ce2c230400f1b0aadcc965285a1625/packages/widget/dist/jade-widget.js"
+      defer
+    ></script>
+    <script src="/assets/js/jadeassist-init.js" defer></script>
 
-  <!-- Mobile footer nav (for mobile demo) -->
-  <div class="footer-nav">
-    <p style="color: #0B1220; font-size: 0.9rem;">Mobile Footer Nav (56px)</p>
-  </div>
+    <script>
+      // Test-only: Capture console logs for display
+      // This is only for the test page to show console output visually
+      (function () {
+        const consoleOutput = document.getElementById('console-output');
+        const originalLog = console.log;
+        const originalWarn = console.warn;
+        const originalError = console.error;
 
-  <!-- JadeAssist Chat Widget (real CDN) -->
-  <script src="https://cdn.jsdelivr.net/gh/rhysllwydlewis/JadeAssist@ca1aecd6c8ce2c230400f1b0aadcc965285a1625/packages/widget/dist/jade-widget.js" defer></script>
-  <script src="/assets/js/jadeassist-init.js" defer></script>
+        function addToConsole(type, ...args) {
+          const msg = args.join(' ');
+          const div = document.createElement('div');
+          div.textContent = `[${type}] ${msg}`;
+          div.style.color = type === 'ERROR' ? '#ff4444' : type === 'WARN' ? '#ffaa00' : '#00ff00';
+          consoleOutput.appendChild(div);
+          consoleOutput.scrollTop = consoleOutput.scrollHeight;
+        }
 
-  <script>
-    // Capture console logs
-    const consoleOutput = document.getElementById('console-output');
-    const originalLog = console.log;
-    const originalWarn = console.warn;
-    const originalError = console.error;
+        console.log = function (...args) {
+          originalLog.apply(console, args);
+          addToConsole('LOG', ...args);
+        };
 
-    function addToConsole(type, ...args) {
-      const msg = args.join(' ');
-      const div = document.createElement('div');
-      div.textContent = `[${type}] ${msg}`;
-      div.style.color = type === 'ERROR' ? '#ff4444' : type === 'WARN' ? '#ffaa00' : '#00ff00';
-      consoleOutput.appendChild(div);
-      consoleOutput.scrollTop = consoleOutput.scrollHeight;
-    }
+        console.warn = function (...args) {
+          originalWarn.apply(console, args);
+          addToConsole('WARN', ...args);
+        };
 
-    console.log = function(...args) {
-      originalLog.apply(console, args);
-      addToConsole('LOG', ...args);
-    };
+        console.error = function (...args) {
+          originalError.apply(console, args);
+          addToConsole('ERROR', ...args);
+        };
+      })();
 
-    console.warn = function(...args) {
-      originalWarn.apply(console, args);
-      addToConsole('WARN', ...args);
-    };
+      // Check widget status
+      let checkCount = 0;
+      const checkInterval = setInterval(() => {
+        checkCount++;
 
-    console.error = function(...args) {
-      originalError.apply(console, args);
-      addToConsole('ERROR', ...args);
-    };
+        const widgetRoot = document.querySelector('.jade-widget-root');
+        const widgetExists = typeof window.JadeWidget !== 'undefined';
 
-    // Check widget status
-    let checkCount = 0;
-    const checkInterval = setInterval(() => {
-      checkCount++;
-      
-      const widgetRoot = document.querySelector('.jade-widget-root');
-      const widgetExists = typeof window.JadeWidget !== 'undefined';
-      
-      let status = '⏳ Checking... (' + checkCount + 's)';
-      
-      if (widgetRoot) {
-        const styles = window.getComputedStyle(widgetRoot);
-        status = `
+        let status = '⏳ Checking... (' + checkCount + 's)';
+
+        if (widgetRoot) {
+          const styles = window.getComputedStyle(widgetRoot);
+          status = `
           ✅ Widget Loaded Successfully!<br>
           <strong>Widget Root Found:</strong> .jade-widget-root<br>
           <strong>Position:</strong> ${styles.position}<br>
@@ -257,38 +267,38 @@
           <strong>Right:</strong> ${styles.right}<br>
           <strong>Z-Index:</strong> ${styles.zIndex}
         `;
-        
-        // Check shadow DOM
-        if (widgetRoot.shadowRoot) {
-          status += '<br><strong>Shadow DOM:</strong> ✓ Present';
-          const avatarButton = widgetRoot.shadowRoot.querySelector('.jade-avatar-button');
-          if (avatarButton) {
-            status += '<br><strong>Avatar Button:</strong> ✓ Found';
-            const avatarImg = widgetRoot.shadowRoot.querySelector('.jade-avatar-icon');
-            if (avatarImg && avatarImg.tagName === 'IMG') {
-              status += '<br><strong>Avatar Image:</strong> ✓ ' + avatarImg.src.split('/').pop();
+
+          // Check shadow DOM
+          if (widgetRoot.shadowRoot) {
+            status += '<br><strong>Shadow DOM:</strong> ✓ Present';
+            const avatarButton = widgetRoot.shadowRoot.querySelector('.jade-avatar-button');
+            if (avatarButton) {
+              status += '<br><strong>Avatar Button:</strong> ✓ Found';
+              const avatarImg = widgetRoot.shadowRoot.querySelector('.jade-avatar-icon');
+              if (avatarImg && avatarImg.tagName === 'IMG') {
+                status += '<br><strong>Avatar Image:</strong> ✓ ' + avatarImg.src.split('/').pop();
+              }
             }
           }
-        }
-        
-        clearInterval(checkInterval);
-      } else if (checkCount > 10) {
-        status = '❌ Widget failed to load after 10 seconds';
-        if (!widgetExists) {
-          status += '<br>⚠️ window.JadeWidget is not defined (CDN blocked?)';
-        }
-        clearInterval(checkInterval);
-      }
-      
-      document.getElementById('widget-status').innerHTML = status;
-    }, 1000);
 
-    // Back to top button
-    document.querySelector('.back-to-top').addEventListener('click', () => {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    });
+          clearInterval(checkInterval);
+        } else if (checkCount > 10) {
+          status = '❌ Widget failed to load after 10 seconds';
+          if (!widgetExists) {
+            status += '<br>⚠️ window.JadeWidget is not defined (CDN blocked?)';
+          }
+          clearInterval(checkInterval);
+        }
 
-    console.log('Test page loaded, waiting for widget...');
-  </script>
-</body>
+        document.getElementById('widget-status').innerHTML = status;
+      }, 1000);
+
+      // Back to top button
+      document.querySelector('.back-to-top').addEventListener('click', () => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+
+      console.log('Test page loaded, waiting for widget...');
+    </script>
+  </body>
 </html>
