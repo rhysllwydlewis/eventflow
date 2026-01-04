@@ -119,7 +119,7 @@
 
   /**
    * Apply custom styles for enhanced UX
-   * Targets .jade-widget-root which is the actual container created by the widget
+   * Note: With the updated widget supporting position config, we only need teaser styles
    */
   function applyCustomStyles() {
     // Check if styles already applied
@@ -130,29 +130,6 @@
     const style = document.createElement('style');
     style.id = 'jade-custom-styles';
     style.textContent = `
-      /* Target the actual widget container created by JadeAssist */
-      /* The widget creates a .jade-widget-root div with shadow DOM inside */
-      .jade-widget-root {
-        /* Position below back-to-top button (at 5rem) with 5rem additional spacing = 10rem total */
-        position: fixed !important;
-        bottom: 10rem !important;
-        right: 1.5rem !important;
-        z-index: 999 !important;
-      }
-
-      /* Larger tap target: add padding around the widget root */
-      /* Note: The pseudo-element extends the clickable area without affecting layout */
-      .jade-widget-root::before {
-        content: '';
-        position: absolute;
-        top: -12px;
-        left: -12px;
-        right: -12px;
-        bottom: -12px;
-        /* The widget button inside shadow DOM will handle actual clicks */
-        /* This just makes the effective click area larger for better UX */
-      }
-
       /* Teaser bubble styles */
       .jade-teaser {
         position: fixed;
@@ -226,14 +203,8 @@
         box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
       }
 
-      /* Mobile adjustments */
+      /* Mobile adjustments for teaser */
       @media (max-width: 768px) {
-        .jade-widget-root {
-          /* Ensure it's above mobile footer nav (56px) + back-to-top */
-          bottom: 11rem !important; /* Footer (3.5rem) + back-to-top (5rem) + spacing (2.5rem) */
-          right: 1rem !important;
-        }
-
         .jade-teaser {
           bottom: 14rem;
           right: 1rem;
@@ -247,21 +218,13 @@
         50% { transform: translateY(-6px); }
       }
 
-      /* Handle safe area insets for iOS */
+      /* Handle safe area insets for teaser on iOS */
       @supports (padding: env(safe-area-inset-bottom)) {
-        .jade-widget-root {
-          bottom: calc(10rem + env(safe-area-inset-bottom)) !important;
-        }
-
         .jade-teaser {
           bottom: calc(13rem + env(safe-area-inset-bottom));
         }
 
         @media (max-width: 768px) {
-          .jade-widget-root {
-            bottom: calc(11rem + env(safe-area-inset-bottom)) !important;
-          }
-
           .jade-teaser {
             bottom: calc(14rem + env(safe-area-inset-bottom));
           }
@@ -292,7 +255,7 @@
       // Apply custom styles first
       applyCustomStyles();
 
-      // Initialize with configuration
+      // Initialize with configuration including custom positioning
       window.JadeWidget.init({
         primaryColor: '#00B2A9',
         accentColor: '#008C85',
@@ -300,21 +263,39 @@
         greetingText: "Hi! I'm Jade. Ready to plan your event?",
         // Avatar served from EventFlow domain - PNG image with proper woman avatar art
         avatarUrl: '/assets/images/jade-avatar.png',
+        // Custom positioning: below back-to-top button with mobile support
+        position: {
+          bottom: '10rem', // Desktop: 5rem back-to-top + 5rem spacing = 10rem total
+          right: '1.5rem',
+          zIndex: 999,
+          mobile: {
+            bottom: '11rem', // Mobile: above footer nav (3.5rem) + back-to-top (5rem) + spacing (2.5rem)
+            right: '1rem',
+          },
+          respectSafeArea: true, // Automatic iOS safe area handling
+        },
       });
 
       initialized = true;
       console.log('JadeAssist widget initialized successfully');
 
-      // Diagnostic: Check if widget root was created
+      // Diagnostic: Check if widget root was created and positioning applied
       setTimeout(() => {
         const widgetRoot = document.querySelector('.jade-widget-root');
         if (widgetRoot) {
-          console.log('✅ Widget root element found:', {
-            position: window.getComputedStyle(widgetRoot).position,
-            bottom: window.getComputedStyle(widgetRoot).bottom,
-            right: window.getComputedStyle(widgetRoot).right,
-            zIndex: window.getComputedStyle(widgetRoot).zIndex,
-          });
+          const shadowContainer = widgetRoot.shadowRoot?.querySelector('.jade-widget-container');
+          if (shadowContainer) {
+            const styles = window.getComputedStyle(shadowContainer);
+            console.log('✅ Widget loaded with custom positioning:', {
+              position: styles.position,
+              bottom: styles.bottom,
+              right: styles.right,
+              zIndex: styles.zIndex,
+              method: 'Widget position config API',
+            });
+          } else {
+            console.log('✅ Widget root found but shadow container not accessible');
+          }
         } else {
           console.warn('⚠️ Widget root element (.jade-widget-root) not found in DOM');
         }

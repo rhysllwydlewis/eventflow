@@ -1,395 +1,606 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en-GB">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes">
-  <meta name="theme-color" content="#0B8073">
-  <title>EventFlow — UK Event Planning Made Simple | Wedding & Event Suppliers</title>
-  <meta name="description" content="Plan your perfect event with EventFlow. Find verified UK suppliers for weddings, parties & corporate events. Compare packages, build your plan, and message suppliers—all in one place.">
-  <meta name="keywords" content="event planning UK, wedding planning, event suppliers UK, wedding venues, catering services, event management, wedding planners UK, party planning">
-  <link rel="canonical" href="https://event-flow.co.uk/">
-  
-  <!-- Open Graph / Facebook -->
-  <meta property="og:type" content="website">
-  <meta property="og:url" content="https://event-flow.co.uk/">
-  <meta property="og:title" content="EventFlow — UK Event Planning Made Simple">
-  <meta property="og:description" content="Plan your perfect event with EventFlow. Find verified UK suppliers for weddings, parties & corporate events.">
-  <meta property="og:image" content="https://event-flow.co.uk/assets/images/eventflow-og-image.jpg">
-  <meta property="og:site_name" content="EventFlow">
-  
-  <!-- Twitter -->
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:url" content="https://event-flow.co.uk/">
-  <meta name="twitter:title" content="EventFlow — UK Event Planning Made Simple">
-  <meta name="twitter:description" content="Plan your perfect event with EventFlow. Find verified UK suppliers for weddings, parties & corporate events.">
-  <meta name="twitter:image" content="https://event-flow.co.uk/assets/images/eventflow-og-image.jpg">
-  
-  <!-- DNS Prefetch & Preconnect for external resources -->
-  <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
-  <link rel="dns-prefetch" href="https://fonts.googleapis.com">
-  <link rel="dns-prefetch" href="https://fonts.gstatic.com">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  
-  <!-- Preload critical CSS -->
-  <!-- Note: Update version number in preload hints when CSS version changes -->
-  <link rel="preload" href="/assets/css/styles.css" as="style">
-  <link rel="preload" href="/assets/css/eventflow-17.0.0.css" as="style">
-  
-  <!-- Stylesheets -->
-  <link rel="stylesheet" href="/assets/css/styles.css">
-  <link rel="stylesheet" href="/assets/css/eventflow-17.0.0.css">
-  <link rel="stylesheet" href="/assets/css/utilities.css">
-  <link rel="stylesheet" href="/assets/css/components.css">
-  <link rel="stylesheet" href="/assets/css/animations.css">
-  <link rel="stylesheet" href="/assets/css/mobile-optimizations.css">
-  <link rel="stylesheet" href="/assets/css/ui-ux-fixes.css">
-  <link rel="icon" href="/favicon.svg">
-  
-  <!-- Schema.org structured data -->
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "WebSite",
-    "name": "EventFlow",
-    "url": "https://event-flow.co.uk/",
-    "description": "UK event planning platform connecting couples and event organizers with verified suppliers for weddings, parties, and corporate events.",
-    "potentialAction": {
-      "@type": "SearchAction",
-      "target": "https://event-flow.co.uk/suppliers.html?q={search_term_string}",
-      "query-input": "required name=search_term_string"
-    }
-  }
-  </script>
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "Organization",
-    "name": "EventFlow",
-    "url": "https://event-flow.co.uk/",
-    "logo": "https://event-flow.co.uk/favicon.svg",
-    "sameAs": [],
-    "contactPoint": {
-      "@type": "ContactPoint",
-      "contactType": "Customer Service",
-      "areaServed": "GB",
-      "availableLanguage": "English"
-    }
-  }
-  </script>
-</head>
-<body>
-<header class="header" role="banner">
-  <div class="container header-inner">
-    <a class="brand" href="/" aria-label="EventFlow home">
-      <span class="logo" aria-hidden="true"></span>
-      <span class="brand-text">EventFlow</span>
-    </a>
-    <div class="header-actions">
-      <nav class="nav nav-inline" aria-label="Quick navigation">
-        <a href="/start.html" class="nav-link nav-main">Plan</a>
-        <a href="/suppliers.html" class="nav-link nav-main">Suppliers</a>
-        <a href="/pricing.html" class="nav-link nav-main">Pricing</a>
-        <a href="/blog.html" class="nav-link nav-main">Blog</a>
-        <a href="/auth.html" class="nav-link nav-main nav-main-login">Log in</a>
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes"
+    />
+    <meta name="theme-color" content="#0B8073" />
+    <title>EventFlow — UK Event Planning Made Simple | Wedding & Event Suppliers</title>
+    <meta
+      name="description"
+      content="Plan your perfect event with EventFlow. Find verified UK suppliers for weddings, parties & corporate events. Compare packages, build your plan, and message suppliers—all in one place."
+    />
+    <meta
+      name="keywords"
+      content="event planning UK, wedding planning, event suppliers UK, wedding venues, catering services, event management, wedding planners UK, party planning"
+    />
+    <link rel="canonical" href="https://event-flow.co.uk/" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://event-flow.co.uk/" />
+    <meta property="og:title" content="EventFlow — UK Event Planning Made Simple" />
+    <meta
+      property="og:description"
+      content="Plan your perfect event with EventFlow. Find verified UK suppliers for weddings, parties & corporate events."
+    />
+    <meta
+      property="og:image"
+      content="https://event-flow.co.uk/assets/images/eventflow-og-image.jpg"
+    />
+    <meta property="og:site_name" content="EventFlow" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://event-flow.co.uk/" />
+    <meta name="twitter:title" content="EventFlow — UK Event Planning Made Simple" />
+    <meta
+      name="twitter:description"
+      content="Plan your perfect event with EventFlow. Find verified UK suppliers for weddings, parties & corporate events."
+    />
+    <meta
+      name="twitter:image"
+      content="https://event-flow.co.uk/assets/images/eventflow-og-image.jpg"
+    />
+
+    <!-- DNS Prefetch & Preconnect for external resources -->
+    <link rel="dns-prefetch" href="https://cdn.jsdelivr.net" />
+    <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+    <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <!-- Preload critical CSS -->
+    <!-- Note: Update version number in preload hints when CSS version changes -->
+    <link rel="preload" href="/assets/css/styles.css" as="style" />
+    <link rel="preload" href="/assets/css/eventflow-17.0.0.css" as="style" />
+
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="/assets/css/styles.css" />
+    <link rel="stylesheet" href="/assets/css/eventflow-17.0.0.css" />
+    <link rel="stylesheet" href="/assets/css/utilities.css" />
+    <link rel="stylesheet" href="/assets/css/components.css" />
+    <link rel="stylesheet" href="/assets/css/animations.css" />
+    <link rel="stylesheet" href="/assets/css/mobile-optimizations.css" />
+    <link rel="stylesheet" href="/assets/css/ui-ux-fixes.css" />
+    <link rel="icon" href="/favicon.svg" />
+
+    <!-- Schema.org structured data -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "EventFlow",
+        "url": "https://event-flow.co.uk/",
+        "description": "UK event planning platform connecting couples and event organizers with verified suppliers for weddings, parties, and corporate events.",
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": "https://event-flow.co.uk/suppliers.html?q={search_term_string}",
+          "query-input": "required name=search_term_string"
+        }
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "EventFlow",
+        "url": "https://event-flow.co.uk/",
+        "logo": "https://event-flow.co.uk/favicon.svg",
+        "sameAs": [],
+        "contactPoint": {
+          "@type": "ContactPoint",
+          "contactType": "Customer Service",
+          "areaServed": "GB",
+          "availableLanguage": "English"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <header class="header" role="banner">
+      <div class="container header-inner">
+        <a class="brand" href="/" aria-label="EventFlow home">
+          <span class="logo" aria-hidden="true"></span>
+          <span class="brand-text">EventFlow</span>
+        </a>
+        <div class="header-actions">
+          <nav class="nav nav-inline" aria-label="Quick navigation">
+            <a href="/start.html" class="nav-link nav-main">Plan</a>
+            <a href="/suppliers.html" class="nav-link nav-main">Suppliers</a>
+            <a href="/pricing.html" class="nav-link nav-main">Pricing</a>
+            <a href="/blog.html" class="nav-link nav-main">Blog</a>
+            <a href="/auth.html" class="nav-link nav-main nav-main-login">Log in</a>
+          </nav>
+          <button
+            id="notification-bell"
+            class="icon-button"
+            type="button"
+            aria-label="Notifications"
+            style="display: none"
+          >
+            <span class="notification-icon">🔔</span>
+            <span class="notification-badge" style="display: none">0</span>
+          </button>
+          <button
+            id="burger"
+            class="nav-toggle"
+            type="button"
+            aria-label="Toggle navigation"
+            aria-expanded="false"
+          >
+            <span class="nav-toggle-bar"></span>
+            <span class="nav-toggle-bar"></span>
+            <span class="nav-toggle-bar"></span>
+          </button>
+        </div>
+      </div>
+      <nav class="nav nav-menu" aria-label="Primary navigation">
+        <a href="/start.html">Plan an Event</a>
+        <a href="/suppliers.html">Suppliers</a>
+        <a href="/plan.html">My Plan</a>
+        <a href="/pricing.html">Pricing</a>
+        <a href="/blog.html">Blog</a>
+        <a href="/for-suppliers.html">For Suppliers</a>
+        <a href="/faq.html">FAQ</a>
+        <a href="/settings.html">Settings</a>
+        <a href="/auth.html" id="nav-auth">Log in</a>
+        <a href="#" id="nav-dashboard" style="display: none">Dashboard</a>
+        <a href="#" id="nav-signout" style="display: none">Sign out</a>
       </nav>
-      <button id="notification-bell" class="icon-button" type="button" aria-label="Notifications" style="display:none;">
-        <span class="notification-icon">🔔</span>
-        <span class="notification-badge" style="display:none;">0</span>
-      </button>
-      <button id="burger" class="nav-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false">
-        <span class="nav-toggle-bar"></span>
-        <span class="nav-toggle-bar"></span>
-        <span class="nav-toggle-bar"></span>
-      </button>
-      </div>
-  </div>
-  <nav class="nav nav-menu" aria-label="Primary navigation">
-    <a href="/start.html">Plan an Event</a>
-    <a href="/suppliers.html">Suppliers</a>
-    <a href="/plan.html">My Plan</a>
-    <a href="/pricing.html">Pricing</a>
-    <a href="/blog.html">Blog</a>
-    <a href="/for-suppliers.html">For Suppliers</a>
-    <a href="/faq.html">FAQ</a>
-    <a href="/settings.html">Settings</a>
-    <a href="/auth.html" id="nav-auth">Log in</a>
-    <a href="#" id="nav-dashboard" style="display:none">Dashboard</a>
-    <a href="#" id="nav-signout" style="display:none">Sign out</a>
-  </nav>
-</header>
-<script src="/assets/js/auth-nav.js" defer></script>
-<script src="/assets/js/components.js" defer></script>
-<script src="/assets/js/animations.js" defer></script>
-<script src="/assets/js/notifications.js" defer></script>
-<script src="/assets/js/websocket-client.js" defer></script>
+    </header>
+    <script src="/assets/js/auth-nav.js" defer></script>
+    <script src="/assets/js/components.js" defer></script>
+    <script src="/assets/js/animations.js" defer></script>
+    <script src="/assets/js/notifications.js" defer></script>
+    <script src="/assets/js/websocket-client.js" defer></script>
 
-<main id="main-content">
-  <section class="hero">
-    <div class="container hero-grid">
-      <div>
-        <div class="small">Plan in minutes</div>
-        <h1>Everything you need to organise an event — in one clear place.</h1>
-        <p class="lead">
-          Find venues, catering, entertainment and more. Add to your plan with a click,
-          start conversations when you’re ready, and keep everything together.
-        </p>
-        <div class="hero-cta">
-          <button class="cta" id="start-planning-btn">Start planning</button>
-          <a class="cta secondary" href="/auth.html">Create a free account</a>
-        </div>
-      </div>
-      <div>
-        <div class="collage" aria-hidden="true">
-          <div class="frame">
-            <span class="tag">Venues</span>
-            <picture>
-              <source type="image/webp" srcset="/assets/images/collage-venue.webp">
-              <img
-                loading="lazy"
-                src="/assets/images/collage-venue.jpg"
-                alt="An event venue exterior"
-                width="800"
-                height="600"
-              >
-            </picture>
+    <main id="main-content">
+      <section class="hero">
+        <div class="container hero-grid">
+          <div>
+            <div class="small">Plan in minutes</div>
+            <h1>Everything you need to organise an event — in one clear place.</h1>
+            <p class="lead">
+              Find venues, catering, entertainment and more. Add to your plan with a click, start
+              conversations when you’re ready, and keep everything together.
+            </p>
+            <div class="hero-cta">
+              <button class="cta" id="start-planning-btn">Start planning</button>
+              <a class="cta secondary" href="/auth.html">Create a free account</a>
+            </div>
           </div>
-          <div class="frame">
-            <span class="tag">Catering</span>
-            <picture>
-              <source type="image/webp" srcset="/assets/images/collage-catering.webp">
-              <img
-                loading="lazy"
-                src="/assets/images/collage-catering.jpg"
-                alt="Plated event catering"
-                width="800"
-                height="600"
-              >
-            </picture>
-          </div>
-          <div class="frame">
-            <span class="tag">Entertainment</span>
-            <picture>
-              <source type="image/webp" srcset="/assets/images/collage-entertainment.webp">
-              <img
-                loading="lazy"
-                src="/assets/images/collage-entertainment.jpg"
-                alt="Live band performing at an event"
-                width="800"
-                height="600"
-              >
-            </picture>
-          </div>
-          <div class="frame">
-            <span class="tag">Photography</span>
-            <picture>
-              <source type="image/webp" srcset="/assets/images/collage-photography.webp">
-              <img
-                loading="lazy"
-                src="/assets/images/collage-photography.jpg"
-                alt="Photographer taking pictures at a wedding"
-                width="800"
-                height="600"
-              >
-            </picture>
+          <div>
+            <div class="collage" aria-hidden="true">
+              <div class="frame">
+                <span class="tag">Venues</span>
+                <picture>
+                  <source type="image/webp" srcset="/assets/images/collage-venue.webp" />
+                  <img
+                    loading="lazy"
+                    src="/assets/images/collage-venue.jpg"
+                    alt="An event venue exterior"
+                    width="800"
+                    height="600"
+                  />
+                </picture>
+              </div>
+              <div class="frame">
+                <span class="tag">Catering</span>
+                <picture>
+                  <source type="image/webp" srcset="/assets/images/collage-catering.webp" />
+                  <img
+                    loading="lazy"
+                    src="/assets/images/collage-catering.jpg"
+                    alt="Plated event catering"
+                    width="800"
+                    height="600"
+                  />
+                </picture>
+              </div>
+              <div class="frame">
+                <span class="tag">Entertainment</span>
+                <picture>
+                  <source type="image/webp" srcset="/assets/images/collage-entertainment.webp" />
+                  <img
+                    loading="lazy"
+                    src="/assets/images/collage-entertainment.jpg"
+                    alt="Live band performing at an event"
+                    width="800"
+                    height="600"
+                  />
+                </picture>
+              </div>
+              <div class="frame">
+                <span class="tag">Photography</span>
+                <picture>
+                  <source type="image/webp" srcset="/assets/images/collage-photography.webp" />
+                  <img
+                    loading="lazy"
+                    src="/assets/images/collage-photography.jpg"
+                    alt="Photographer taking pictures at a wedding"
+                    width="800"
+                    height="600"
+                  />
+                </picture>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
-    </div>
-  </section>
+      </section>
 
-  <section class="section" aria-label="Featured packages">
-    <div class="container">
-      <div class="small" style="text-transform:uppercase;letter-spacing:.2em;color:#7E8794">
-        Featured packages
-      </div>
-      <div id="featured-packages" class="featured-carousel">
-        <div class="card"><p class="small">Loading…</p></div>
-      </div>
-    </div>
-  </section>
+      <section class="section" aria-label="Featured packages">
+        <div class="container">
+          <div
+            class="small"
+            style="text-transform: uppercase; letter-spacing: 0.2em; color: #7e8794"
+          >
+            Featured packages
+          </div>
+          <div id="featured-packages" class="featured-carousel">
+            <div class="card"><p class="small">Loading…</p></div>
+          </div>
+        </div>
+      </section>
 
-  <section class="section" aria-label="Spotlight packages">
-    <div class="container">
-      <div class="small" style="text-transform:uppercase;letter-spacing:.2em;color:#7E8794">
-        Spotlight packages
-      </div>
-      <p class="small" style="margin-top: 8px; margin-bottom: 16px; color: var(--color-text-secondary, #6c757d);">
-        Discover something new — our spotlight changes every hour
-      </p>
-      <div id="spotlight-packages" class="featured-carousel">
-        <div class="card"><p class="small">Loading…</p></div>
-      </div>
-    </div>
-  </section>
+      <section class="section" aria-label="Spotlight packages">
+        <div class="container">
+          <div
+            class="small"
+            style="text-transform: uppercase; letter-spacing: 0.2em; color: #7e8794"
+          >
+            Spotlight packages
+          </div>
+          <p
+            class="small"
+            style="
+              margin-top: 8px;
+              margin-bottom: 16px;
+              color: var(--color-text-secondary, #6c757d);
+            "
+          >
+            Discover something new — our spotlight changes every hour
+          </p>
+          <div id="spotlight-packages" class="featured-carousel">
+            <div class="card"><p class="small">Loading…</p></div>
+          </div>
+        </div>
+      </section>
 
-  <section class="section" aria-label="Browse suppliers by category">
-    <div class="container">
-      <div class="small" style="text-transform:uppercase;letter-spacing:.2em;color:#7E8794">
-        Browse suppliers by category
-      </div>
-      <p class="small" style="margin-top: 8px; margin-bottom: 16px; color: var(--color-text-secondary, #6c757d);">
-        Explore our full range of verified UK suppliers
-      </p>
-      <div id="category-grid-home"></div>
-    </div>
-  </section>
+      <section class="section" aria-label="Browse suppliers by category">
+        <div class="container">
+          <div
+            class="small"
+            style="text-transform: uppercase; letter-spacing: 0.2em; color: #7e8794"
+          >
+            Browse suppliers by category
+          </div>
+          <p
+            class="small"
+            style="
+              margin-top: 8px;
+              margin-bottom: 16px;
+              color: var(--color-text-secondary, #6c757d);
+            "
+          >
+            Explore our full range of verified UK suppliers
+          </p>
+          <div id="category-grid-home"></div>
+        </div>
+      </section>
 
-  <section class="section" style="background: linear-gradient(135deg, var(--ink, #0B8073), var(--accent, #13B6A2)); color: white;" aria-label="EventFlow statistics">
-    <div class="container">
-      <div class="stats-grid">
-        <div class="stat-item" data-reveal>
-          <div class="stat-number" data-counter="500" data-suffix="+">0</div>
-          <div class="stat-label">Verified Suppliers</div>
+      <section
+        class="section"
+        style="
+          background: linear-gradient(135deg, var(--ink, #0b8073), var(--accent, #13b6a2));
+          color: white;
+        "
+        aria-label="EventFlow statistics"
+      >
+        <div class="container">
+          <div class="stats-grid">
+            <div class="stat-item" data-reveal>
+              <div class="stat-number" data-counter="500" data-suffix="+">0</div>
+              <div class="stat-label">Verified Suppliers</div>
+            </div>
+            <div class="stat-item" data-reveal>
+              <div class="stat-number" data-counter="1200" data-suffix="+">0</div>
+              <div class="stat-label">Events Planned</div>
+            </div>
+            <div class="stat-item" data-reveal>
+              <div class="stat-number" data-counter="98" data-suffix="%">0</div>
+              <div class="stat-label">Customer Satisfaction</div>
+            </div>
+            <div class="stat-item" data-reveal>
+              <div class="stat-number" data-counter="50" data-suffix="+">0</div>
+              <div class="stat-label">Service Categories</div>
+            </div>
+          </div>
         </div>
-        <div class="stat-item" data-reveal>
-          <div class="stat-number" data-counter="1200" data-suffix="+">0</div>
-          <div class="stat-label">Events Planned</div>
-        </div>
-        <div class="stat-item" data-reveal>
-          <div class="stat-number" data-counter="98" data-suffix="%">0</div>
-          <div class="stat-label">Customer Satisfaction</div>
-        </div>
-        <div class="stat-item" data-reveal>
-          <div class="stat-number" data-counter="50" data-suffix="+">0</div>
-          <div class="stat-label">Service Categories</div>
-        </div>
-      </div>
-    </div>
-  </section>
+      </section>
 
-  <section class="section">
-    <div class="container">
-      <div class="cards">
-        <div class="card card-hover" data-reveal>
-          <h3>1 · Tell us about your event</h3>
-          <p class="small">Type, location and date help us surface relevant suppliers.</p>
+      <section class="section">
+        <div class="container">
+          <div class="cards">
+            <div class="card card-hover" data-reveal>
+              <h3>1 · Tell us about your event</h3>
+              <p class="small">Type, location and date help us surface relevant suppliers.</p>
+            </div>
+            <div class="card card-hover" data-reveal>
+              <h3>2 · Compare suppliers</h3>
+              <p class="small">
+                Browse venues, catering, entertainment and more — add to your plan with one click.
+              </p>
+            </div>
+            <div class="card card-hover" data-reveal>
+              <h3>3 · Save &amp; message</h3>
+              <p class="small">
+                Create a free account to save your plan and start conversations with suppliers.
+              </p>
+            </div>
+          </div>
         </div>
-        <div class="card card-hover" data-reveal>
-          <h3>2 · Compare suppliers</h3>
-          <p class="small">
-            Browse venues, catering, entertainment and more — add to your plan with one click.
+      </section>
+
+      <!-- Supplier CTA Section -->
+      <section
+        class="section"
+        style="
+          background: linear-gradient(135deg, #f7fafc 0%, #e7f3f1 100%);
+          border-top: 1px solid #e3e9ef;
+          border-bottom: 1px solid #e3e9ef;
+        "
+      >
+        <div class="container" style="max-width: 900px; text-align: center">
+          <div
+            style="
+              display: inline-block;
+              background: #0b8073;
+              color: white;
+              padding: 6px 16px;
+              border-radius: 20px;
+              font-size: 0.85rem;
+              font-weight: 600;
+              letter-spacing: 0.5px;
+              margin-bottom: 1.5rem;
+            "
+          >
+            FOR SUPPLIERS
+          </div>
+          <h2 style="font-size: 2rem; margin: 0 0 1rem 0; color: #0b8073">
+            Are you a wedding or event supplier?
+          </h2>
+          <p
+            style="
+              font-size: 1.15rem;
+              line-height: 1.7;
+              color: #4a5568;
+              margin: 0 0 2rem 0;
+              max-width: 700px;
+              margin-left: auto;
+              margin-right: auto;
+            "
+          >
+            Join EventFlow and connect with couples planning their perfect day. Get discovered by
+            customers actively looking for services like yours, with no commission on bookings.
+          </p>
+
+          <div
+            style="
+              display: grid;
+              grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+              gap: 1.5rem;
+              margin: 2.5rem 0;
+              text-align: left;
+              max-width: 700px;
+              margin-left: auto;
+              margin-right: auto;
+            "
+          >
+            <div style="display: flex; align-items: flex-start; gap: 12px">
+              <div
+                style="
+                  background: #0b8073;
+                  color: white;
+                  width: 32px;
+                  height: 32px;
+                  border-radius: 50%;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  flex-shrink: 0;
+                  font-weight: 600;
+                "
+              >
+                ✓
+              </div>
+              <div>
+                <strong style="display: block; color: #1f2937; margin-bottom: 4px"
+                  >No Commission</strong
+                >
+                <span style="font-size: 0.9rem; color: #6b7280"
+                  >Keep 100% of your booking fees</span
+                >
+              </div>
+            </div>
+            <div style="display: flex; align-items: flex-start; gap: 12px">
+              <div
+                style="
+                  background: #0b8073;
+                  color: white;
+                  width: 32px;
+                  height: 32px;
+                  border-radius: 50%;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  flex-shrink: 0;
+                  font-weight: 600;
+                "
+              >
+                ✓
+              </div>
+              <div>
+                <strong style="display: block; color: #1f2937; margin-bottom: 4px"
+                  >Verified Leads</strong
+                >
+                <span style="font-size: 0.9rem; color: #6b7280"
+                  >Connect with serious customers</span
+                >
+              </div>
+            </div>
+            <div style="display: flex; align-items: flex-start; gap: 12px">
+              <div
+                style="
+                  background: #0b8073;
+                  color: white;
+                  width: 32px;
+                  height: 32px;
+                  border-radius: 50%;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  flex-shrink: 0;
+                  font-weight: 600;
+                "
+              >
+                ✓
+              </div>
+              <div>
+                <strong style="display: block; color: #1f2937; margin-bottom: 4px"
+                  >Easy Setup</strong
+                >
+                <span style="font-size: 0.9rem; color: #6b7280">Go live in minutes</span>
+              </div>
+            </div>
+          </div>
+
+          <div
+            style="
+              display: flex;
+              gap: 1rem;
+              justify-content: center;
+              flex-wrap: wrap;
+              margin-top: 2rem;
+            "
+          >
+            <a
+              href="/pricing.html"
+              class="cta"
+              style="
+                display: inline-block;
+                background: #0b8073;
+                color: white;
+                padding: 14px 32px;
+                text-decoration: none;
+                border-radius: 8px;
+                font-weight: 600;
+                font-size: 1.05rem;
+                box-shadow: 0 4px 12px rgba(11, 128, 115, 0.3);
+                transition:
+                  transform 0.2s,
+                  box-shadow 0.2s;
+              "
+            >
+              View Pricing & Plans
+            </a>
+            <a
+              href="/for-suppliers.html"
+              class="cta secondary"
+              style="
+                display: inline-block;
+                background: white;
+                color: #0b8073;
+                padding: 14px 32px;
+                text-decoration: none;
+                border-radius: 8px;
+                font-weight: 600;
+                font-size: 1.05rem;
+                border: 2px solid #0b8073;
+              "
+            >
+              Learn More
+            </a>
+          </div>
+
+          <p style="font-size: 0.85rem; color: #6b7280; margin-top: 2rem">
+            Join over 500+ verified suppliers already on EventFlow
           </p>
         </div>
-        <div class="card card-hover" data-reveal>
-          <h3>3 · Save &amp; message</h3>
-          <p class="small">
-            Create a free account to save your plan and start conversations with suppliers.
-          </p>
+      </section>
+    </main>
+
+    <footer class="footer" role="contentinfo">
+      <div
+        class="container"
+        style="
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 10px;
+          flex-wrap: wrap;
+        "
+      >
+        <div>
+          <strong>EventFlow</strong><br /><span class="small">Event planning made simple.</span>
+        </div>
+        <div class="version">Version: <span id="ef-version-label">loading…</span></div>
+        <div class="small">
+          <a href="/blog.html">Blog</a> · <a href="/credits.html">Credits</a> ·
+          <a href="/contact.html">Contact</a> ·
+          <a href="/legal.html">Legal Hub</a>
         </div>
       </div>
-    </div>
-  </section>
+    </footer>
 
-  <!-- Supplier CTA Section -->
-  <section class="section" style="background: linear-gradient(135deg, #f7fafc 0%, #e7f3f1 100%); border-top: 1px solid #e3e9ef; border-bottom: 1px solid #e3e9ef;">
-    <div class="container" style="max-width: 900px; text-align: center;">
-      <div style="display: inline-block; background: #0B8073; color: white; padding: 6px 16px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 1.5rem;">
-        FOR SUPPLIERS
-      </div>
-      <h2 style="font-size: 2rem; margin: 0 0 1rem 0; color: #0B8073;">Are you a wedding or event supplier?</h2>
-      <p style="font-size: 1.15rem; line-height: 1.7; color: #4a5568; margin: 0 0 2rem 0; max-width: 700px; margin-left: auto; margin-right: auto;">
-        Join EventFlow and connect with couples planning their perfect day. Get discovered by customers actively looking for services like yours, with no commission on bookings.
-      </p>
-      
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin: 2.5rem 0; text-align: left; max-width: 700px; margin-left: auto; margin-right: auto;">
-        <div style="display: flex; align-items: flex-start; gap: 12px;">
-          <div style="background: #0B8073; color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-weight: 600;">✓</div>
-          <div>
-            <strong style="display: block; color: #1f2937; margin-bottom: 4px;">No Commission</strong>
-            <span style="font-size: 0.9rem; color: #6b7280;">Keep 100% of your booking fees</span>
-          </div>
-        </div>
-        <div style="display: flex; align-items: flex-start; gap: 12px;">
-          <div style="background: #0B8073; color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-weight: 600;">✓</div>
-          <div>
-            <strong style="display: block; color: #1f2937; margin-bottom: 4px;">Verified Leads</strong>
-            <span style="font-size: 0.9rem; color: #6b7280;">Connect with serious customers</span>
-          </div>
-        </div>
-        <div style="display: flex; align-items: flex-start; gap: 12px;">
-          <div style="background: #0B8073; color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-weight: 600;">✓</div>
-          <div>
-            <strong style="display: block; color: #1f2937; margin-bottom: 4px;">Easy Setup</strong>
-            <span style="font-size: 0.9rem; color: #6b7280;">Go live in minutes</span>
-          </div>
-        </div>
-      </div>
+    <!-- Load core utilities -->
+    <script src="/assets/js/components/ErrorBoundary.js" defer></script>
+    <script src="/assets/js/utils/keyboard-nav.js" defer></script>
+    <script src="/assets/js/utils/pexels-client.js" defer></script>
+    <script src="/assets/js/utils/image-optimizer.js" defer></script>
+    <script src="/assets/js/utils/performance-monitor.js" defer></script>
+    <script src="/assets/js/utils/seo-helper.js" defer></script>
+    <script src="/assets/js/utils/mobile-enhancements.js" defer></script>
 
-      <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin-top: 2rem;">
-        <a href="/pricing.html" class="cta" style="display: inline-block; background: #0B8073; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 1.05rem; box-shadow: 0 4px 12px rgba(11, 128, 115, 0.3); transition: transform 0.2s, box-shadow 0.2s;">
-          View Pricing & Plans
-        </a>
-        <a href="/for-suppliers.html" class="cta secondary" style="display: inline-block; background: white; color: #0B8073; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 1.05rem; border: 2px solid #0B8073;">
-          Learn More
-        </a>
-      </div>
-      
-      <p style="font-size: 0.85rem; color: #6b7280; margin-top: 2rem;">
-        Join over 500+ verified suppliers already on EventFlow
-      </p>
-    </div>
-  </section>
-</main>
+    <script src="/assets/js/app.js" defer></script>
+    <script src="/assets/js/components/category-grid.js" defer></script>
+    <script src="/assets/js/components/package-list.js" defer></script>
+    <!-- Carousel must load before home-init.js -->
+    <script src="/assets/js/components/carousel.js" defer></script>
+    <script src="/assets/js/pages/home-init.js" defer></script>
+    <script src="/assets/js/components/footer-nav.js" defer></script>
+    <script src="/assets/js/cookie-consent.js" defer></script>
+    <script defer>
+      // Initialize core utilities
+      document.addEventListener('DOMContentLoaded', function () {
+        // Initialize error boundary
+        window.errorBoundary = new ErrorBoundary({
+          showErrorDetails: window.location.hostname === 'localhost',
+        });
 
-<footer class="footer" role="contentinfo">
-  <div class="container" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
-    <div><strong>EventFlow</strong><br><span class="small">Event planning made simple.</span></div>
-    <div class="version">Version: <span id="ef-version-label">loading…</span></div>
-    <div class="small">
-      <a href="/blog.html">Blog</a> ·
-      <a href="/credits.html">Credits</a> ·
-      <a href="/contact.html">Contact</a> ·
-      <a href="/legal.html">Legal Hub</a>
-    </div>
-  </div>
-</footer>
-
-<!-- Load core utilities -->
-<script src="/assets/js/components/ErrorBoundary.js" defer></script>
-<script src="/assets/js/utils/keyboard-nav.js" defer></script>
-<script src="/assets/js/utils/pexels-client.js" defer></script>
-<script src="/assets/js/utils/image-optimizer.js" defer></script>
-<script src="/assets/js/utils/performance-monitor.js" defer></script>
-<script src="/assets/js/utils/seo-helper.js" defer></script>
-<script src="/assets/js/utils/mobile-enhancements.js" defer></script>
-
-<script src="/assets/js/app.js" defer></script>
-<script src="/assets/js/components/category-grid.js" defer></script>
-<script src="/assets/js/components/package-list.js" defer></script>
-<!-- Carousel must load before home-init.js -->
-<script src="/assets/js/components/carousel.js" defer></script>
-<script src="/assets/js/pages/home-init.js" defer></script>
-<script src="/assets/js/components/footer-nav.js" defer></script>
-<script src="/assets/js/cookie-consent.js" defer></script>
-<script defer>
-  // Initialize core utilities
-  document.addEventListener('DOMContentLoaded', function() {
-    // Initialize error boundary
-    window.errorBoundary = new ErrorBoundary({
-      showErrorDetails: window.location.hostname === 'localhost'
-    });
-    
-    // Update SEO for homepage
-    if (window.seoHelper) {
-      window.seoHelper.setAll({
-        title: 'EventFlow — Plan your event the simple way',
-        description: 'Find suppliers, build your plan and keep everything in one place — beautifully simple on mobile and desktop.',
-        keywords: ['event planning', 'wedding planning', 'suppliers', 'venues', 'catering'],
-        canonical: '/',
-        type: 'website'
+        // Update SEO for homepage
+        if (window.seoHelper) {
+          window.seoHelper.setAll({
+            title: 'EventFlow — Plan your event the simple way',
+            description:
+              'Find suppliers, build your plan and keep everything in one place — beautifully simple on mobile and desktop.',
+            keywords: ['event planning', 'wedding planning', 'suppliers', 'venues', 'catering'],
+            canonical: '/',
+            type: 'website',
+          });
+        }
       });
-    }
-  });
-  
-  // Fix CSP violation - move inline onclick to event listener
-  document.getElementById('start-planning-btn')?.addEventListener('click', () => {
-    window.location.href = '/start.html';
-  });
-</script>
 
-<!-- JadeAssist Chat Widget -->
-<script src="https://cdn.jsdelivr.net/gh/rhysllwydlewis/JadeAssist@ca1aecd6c8ce2c230400f1b0aadcc965285a1625/packages/widget/dist/jade-widget.js" defer></script>
-<script src="/assets/js/jadeassist-init.js" defer></script>
-</body>
+      // Fix CSP violation - move inline onclick to event listener
+      document.getElementById('start-planning-btn')?.addEventListener('click', () => {
+        window.location.href = '/start.html';
+      });
+    </script>
+
+    <!-- JadeAssist Chat Widget - Using local build with positioning API -->
+    <script src="/assets/js/vendor/jade-widget.js" defer></script>
+    <script src="/assets/js/jadeassist-init.js" defer></script>
+  </body>
 </html>
