@@ -36,7 +36,7 @@
   // A/B test variants (can be toggled via localStorage for testing)
   const TEASER_VARIANTS = {
     A: {
-      desktop: 'Hi, I'm Jade — want help finding venues and trusted suppliers?',
+      desktop: "Hi, I'm Jade — want help finding venues and trusted suppliers?",
       mobile: 'Need help finding venues? 👋',
     },
     B: {
@@ -159,7 +159,9 @@
     // Responsive teaser message - shorter on mobile
     const variant = getTeaserVariant();
     const isMobile = window.innerWidth < MOBILE_BREAKPOINT;
-    const teaserMessage = isMobile ? TEASER_VARIANTS[variant].mobile : TEASER_VARIANTS[variant].desktop;
+    const teaserMessage = isMobile
+      ? TEASER_VARIANTS[variant].mobile
+      : TEASER_VARIANTS[variant].desktop;
 
     // Create teaser bubble
     teaserElement = document.createElement('div');
@@ -236,7 +238,9 @@
     const autoDismissTimeout = setTimeout(() => {
       if (teaserElement && teaserElement.parentNode) {
         dismissTeaser();
-        if (debug) console.log('[JadeAssist] Teaser auto-dismissed after 15s');
+        if (debug) {
+          console.log('[JadeAssist] Teaser auto-dismissed after 15s');
+        }
       }
     }, 15000);
 
@@ -410,7 +414,7 @@
   /**
    * Determine if debug mode should be enabled
    * Enable debug on non-production hostnames or via query param
-   * 
+   *
    * Troubleshooting tip: Append ?jade-debug to the URL to enable diagnostic logs
    * in the console, including avatar loading status and widget initialization details.
    */
@@ -440,7 +444,9 @@
     const debug = shouldEnableDebug();
 
     if (initialized) {
-      if (debug) console.log('[JadeAssist] Widget already initialized');
+      if (debug) {
+        console.log('[JadeAssist] Widget already initialized');
+      }
       return;
     }
 
@@ -460,7 +466,9 @@
       const avatarUrl = getAvatarUrl();
 
       // Verify avatar loads in debug mode
-      if (debug) verifyAvatarLoad(avatarUrl);
+      if (debug) {
+        verifyAvatarLoad(avatarUrl);
+      }
 
       // Initialize with configuration using new API
       window.JadeWidget.init({
@@ -493,13 +501,17 @@
       });
 
       initialized = true;
-      if (debug) console.log('[JadeAssist] Widget initialized successfully');
+      if (debug) {
+        console.log('[JadeAssist] Widget initialized successfully');
+      }
 
       // Ensure chat is closed on initialization (defensive)
       setTimeout(() => {
         if (window.JadeWidget && typeof window.JadeWidget.close === 'function') {
           window.JadeWidget.close();
-          if (debug) console.log('[JadeAssist] Chat ensured closed on load');
+          if (debug) {
+            console.log('[JadeAssist] Chat ensured closed on load');
+          }
         }
       }, 100);
 
@@ -513,7 +525,9 @@
           showTeaser();
           window.removeEventListener('scroll', showTeaserOnEngagement);
 
-          if (debug) console.log('[JadeAssist] Teaser shown after 25% scroll');
+          if (debug) {
+            console.log('[JadeAssist] Teaser shown after 25% scroll');
+          }
         }
       };
 
@@ -521,7 +535,9 @@
       const teaserDelayTimeout = setTimeout(() => {
         showTeaser();
         window.removeEventListener('scroll', showTeaserOnEngagement);
-        if (debug) console.log('[JadeAssist] Teaser shown after delay');
+        if (debug) {
+          console.log('[JadeAssist] Teaser shown after delay');
+        }
       }, TEASER_DELAY);
 
       // Listen for scroll engagement
@@ -543,7 +559,9 @@
       retryCount++;
       setTimeout(waitForWidget, RETRY_INTERVAL);
     } else {
-      if (debug) console.warn('[JadeAssist] Widget failed to load after maximum retries');
+      if (debug) {
+        console.warn('[JadeAssist] Widget failed to load after maximum retries');
+      }
     }
   }
 
