@@ -53,6 +53,7 @@ function ensureDir(dir) {
  * @returns {string|null} Processed HTML or null if not found
  */
 function loadEmailTemplate(templateName, data) {
+  const logger = require('./logger');
   try {
     const templatePath = path.join(__dirname, '..', 'email-templates', `${templateName}.html`);
     if (!fs.existsSync(templatePath)) {
@@ -75,7 +76,7 @@ function loadEmailTemplate(templateName, data) {
 
     return html;
   } catch (err) {
-    console.error('Error loading email template:', err);
+    logger.error('Error loading email template:', err);
     return null;
   }
 }

@@ -24,7 +24,9 @@ function configureHelmet() {
         scriptSrc: [
           "'self'",
           // 'unsafe-inline' needed for inline event handlers (onclick, onerror) in HTML
-          // TODO: Refactor to remove inline handlers and eliminate this directive
+          // TODO: SECURITY - Refactor to remove inline handlers and eliminate this directive
+          // This is a known security weakness that should be addressed in a future PR
+          // by moving all inline JavaScript to external files with event listeners
           "'unsafe-inline'",
           'https://cdn.jsdelivr.net',
           'https://cdn.socket.io',

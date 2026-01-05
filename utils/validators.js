@@ -93,10 +93,12 @@ function sanitizeString(input) {
 
 /**
  * Validate MongoDB ObjectId
+ * MongoDB ObjectIds are 24-character hexadecimal strings
  * @param {string} id - ID to validate
  * @returns {boolean} True if ID is valid MongoDB ObjectId
  */
 function isValidObjectId(id) {
+  // MongoDB ObjectId format: 24-character hexadecimal (a-f, 0-9)
   return typeof id === 'string' && /^[a-f\d]{24}$/i.test(id);
 }
 
