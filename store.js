@@ -21,6 +21,7 @@ const files = {
   payments: path.join(DATA_DIR, 'payments.json'),
   settings: path.join(DATA_DIR, 'settings.json'),
   badges: path.join(DATA_DIR, 'badges.json'),
+  marketplace_listings: path.join(DATA_DIR, 'marketplace_listings.json'),
 };
 
 function ensure() {

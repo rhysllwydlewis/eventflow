@@ -769,6 +769,11 @@ app.get('/robots.txt', (req, res) => {
   }
 });
 
+// Serve marketplace page
+app.get('/marketplace', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'marketplace.html'));
+});
+
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
@@ -3190,6 +3195,299 @@ app.post(
     })();
 
     res.json({ ok: true, message: entry });
+  }
+);
+
+// ---------- Marketplace Listings ----------
+// Get all marketplace listings (public)
+app.get('/api/marketplace/listings', async (req, res) => {
+  try {
+    const { category, condition, minPrice, maxPrice, search, sort } = req.query;
+    let listings = await dbUnified.read('marketplace_listings');
+
+    // Filter by approved and active status
+    listings = listings.filter(l => l.approved && l.status === 'active');
+
+    // Apply filters
+    if (category) {
+      listings = listings.filter(l => l.category === category);
+    }
+    if (condition) {
+      listings = listings.filter(l => l.condition === condition);
+    }
+    if (minPrice) {
+      listings = listings.filter(l => l.price >= parseFloat(minPrice));
+    }
+    if (maxPrice) {
+      listings = listings.filter(l => l.price <= parseFloat(maxPrice));
+    }
+    if (search) {
+      const searchLower = search.toLowerCase();
+      listings = listings.filter(
+        l =>
+          l.title.toLowerCase().includes(searchLower) ||
+          l.description.toLowerCase().includes(searchLower)
+      );
+    }
+
+    // Sort listings
+    if (sort === 'price-low') {
+      listings.sort((a, b) => a.price - b.price);
+    } else if (sort === 'price-high') {
+      listings.sort((a, b) => b.price - a.price);
+    } else {
+      // Default: most recent
+      listings.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    }
+
+    res.json({ listings });
+  } catch (error) {
+    console.error('Error fetching marketplace listings:', error);
+    sentry.captureException(error);
+    res.status(500).json({ error: 'Failed to fetch listings' });
+  }
+});
+
+// Get single marketplace listing (public)
+app.get('/api/marketplace/listings/:id', async (req, res) => {
+  try {
+    const listings = await dbUnified.read('marketplace_listings');
+    const listing = listings.find(l => l.id === req.params.id);
+
+    if (!listing) {
+      return res.status(404).json({ error: 'Listing not found' });
+    }
+
+    if (!listing.approved || listing.status !== 'active') {
+      return res.status(404).json({ error: 'Listing not available' });
+    }
+
+    res.json({ listing });
+  } catch (error) {
+    console.error('Error fetching marketplace listing:', error);
+    sentry.captureException(error);
+    res.status(500).json({ error: 'Failed to fetch listing' });
+  }
+});
+
+// Create marketplace listing (auth required)
+app.post('/api/marketplace/listings', writeLimiter, authRequired, csrfProtection, async (req, res) => {
+  try {
+    const { title, description, price, category, condition, location, images } = req.body || {};
+
+    // Validation
+    if (!title || !description || !price || !category || !condition) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    if (title.length > 100) {
+      return res.status(400).json({ error: 'Title must be 100 characters or less' });
+    }
+
+    if (description.length > 1000) {
+      return res.status(400).json({ error: 'Description must be 1000 characters or less' });
+    }
+
+    const priceNum = parseFloat(price);
+    if (isNaN(priceNum) || priceNum < 0) {
+      return res.status(400).json({ error: 'Invalid price' });
+    }
+
+    const validCategories = ['attire', 'decor', 'av-equipment', 'photography', 'party-supplies', 'florals'];
+    if (!validCategories.includes(category)) {
+      return res.status(400).json({ error: 'Invalid category' });
+    }
+
+    const validConditions = ['new', 'like-new', 'good', 'fair'];
+    if (!validConditions.includes(condition)) {
+      return res.status(400).json({ error: 'Invalid condition' });
+    }
+
+    const listing = {
+      id: uid('mkt'),
+      userId: req.user.id,
+      title: String(title).slice(0, 100),
+      description: String(description).slice(0, 1000),
+      price: priceNum,
+      category,
+      condition,
+      location: location ? String(location).slice(0, 100) : '',
+      images: Array.isArray(images) ? images.slice(0, 5) : [],
+      approved: false, // Requires admin approval
+      status: 'pending', // pending, active, sold, removed
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    const listings = await dbUnified.read('marketplace_listings');
+    listings.push(listing);
+    await dbUnified.write('marketplace_listings', listings);
+
+    res.json({ ok: true, listing });
+  } catch (error) {
+    console.error('Error creating marketplace listing:', error);
+    sentry.captureException(error);
+    res.status(500).json({ error: 'Failed to create listing' });
+  }
+});
+
+// Get user's own marketplace listings
+app.get('/api/marketplace/my-listings', authRequired, async (req, res) => {
+  try {
+    const listings = await dbUnified.read('marketplace_listings');
+    const myListings = listings.filter(l => l.userId === req.user.id);
+    res.json({ listings: myListings });
+  } catch (error) {
+    console.error('Error fetching user listings:', error);
+    sentry.captureException(error);
+    res.status(500).json({ error: 'Failed to fetch listings' });
+  }
+});
+
+// Update marketplace listing (owner only)
+app.put(
+  '/api/marketplace/listings/:id',
+  writeLimiter,
+  authRequired,
+  csrfProtection,
+  async (req, res) => {
+    try {
+      const listings = await dbUnified.read('marketplace_listings');
+      const listing = listings.find(l => l.id === req.params.id);
+
+      if (!listing) {
+        return res.status(404).json({ error: 'Listing not found' });
+      }
+
+      if (listing.userId !== req.user.id && req.user.role !== 'admin') {
+        return res.status(403).json({ error: 'Not authorized' });
+      }
+
+      const { title, description, price, condition, location, status } = req.body || {};
+
+      if (title) listing.title = String(title).slice(0, 100);
+      if (description) listing.description = String(description).slice(0, 1000);
+      if (price !== undefined) {
+        const priceNum = parseFloat(price);
+        if (!isNaN(priceNum) && priceNum >= 0) {
+          listing.price = priceNum;
+        }
+      }
+      if (condition) listing.condition = condition;
+      if (location) listing.location = String(location).slice(0, 100);
+      if (status && ['active', 'sold', 'removed'].includes(status)) {
+        listing.status = status;
+      }
+
+      listing.updatedAt = new Date().toISOString();
+
+      await dbUnified.write('marketplace_listings', listings);
+      res.json({ ok: true, listing });
+    } catch (error) {
+      console.error('Error updating marketplace listing:', error);
+      sentry.captureException(error);
+      res.status(500).json({ error: 'Failed to update listing' });
+    }
+  }
+);
+
+// Delete marketplace listing (owner only)
+app.delete(
+  '/api/marketplace/listings/:id',
+  writeLimiter,
+  authRequired,
+  csrfProtection,
+  async (req, res) => {
+    try {
+      let listings = await dbUnified.read('marketplace_listings');
+      const listing = listings.find(l => l.id === req.params.id);
+
+      if (!listing) {
+        return res.status(404).json({ error: 'Listing not found' });
+      }
+
+      if (listing.userId !== req.user.id && req.user.role !== 'admin') {
+        return res.status(403).json({ error: 'Not authorized' });
+      }
+
+      listings = listings.filter(l => l.id !== req.params.id);
+      await dbUnified.write('marketplace_listings', listings);
+
+      res.json({ ok: true });
+    } catch (error) {
+      console.error('Error deleting marketplace listing:', error);
+      sentry.captureException(error);
+      res.status(500).json({ error: 'Failed to delete listing' });
+    }
+  }
+);
+
+// Admin: Get all marketplace listings (including pending)
+app.get('/api/admin/marketplace/listings', authRequired, roleRequired('admin'), async (req, res) => {
+  try {
+    const listings = await dbUnified.read('marketplace_listings');
+    const users = await dbUnified.read('users');
+
+    // Enrich listings with user info
+    const enrichedListings = listings.map(listing => {
+      const user = users.find(u => u.id === listing.userId);
+      return {
+        ...listing,
+        userEmail: user ? user.email : 'Unknown',
+        userName: user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : 'Unknown',
+      };
+    });
+
+    res.json({ listings: enrichedListings });
+  } catch (error) {
+    console.error('Error fetching admin marketplace listings:', error);
+    sentry.captureException(error);
+    res.status(500).json({ error: 'Failed to fetch listings' });
+  }
+});
+
+// Admin: Approve/reject marketplace listing
+app.post(
+  '/api/admin/marketplace/listings/:id/approve',
+  writeLimiter,
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    try {
+      const { approved } = req.body || {};
+      const listings = await dbUnified.read('marketplace_listings');
+      const listing = listings.find(l => l.id === req.params.id);
+
+      if (!listing) {
+        return res.status(404).json({ error: 'Listing not found' });
+      }
+
+      listing.approved = !!approved;
+      listing.status = approved ? 'active' : 'pending';
+      listing.updatedAt = new Date().toISOString();
+
+      await dbUnified.write('marketplace_listings', listings);
+
+      // Log audit
+      const audit_logs = await dbUnified.read('audit_logs');
+      audit_logs.push({
+        id: uid('audit'),
+        adminId: req.user.id,
+        action: approved ? 'marketplace_listing_approved' : 'marketplace_listing_rejected',
+        targetId: listing.id,
+        targetType: 'marketplace_listing',
+        details: { listingTitle: listing.title },
+        timestamp: new Date().toISOString(),
+      });
+      await dbUnified.write('audit_logs', audit_logs);
+
+      res.json({ ok: true, listing });
+    } catch (error) {
+      console.error('Error approving marketplace listing:', error);
+      sentry.captureException(error);
+      res.status(500).json({ error: 'Failed to approve listing' });
+    }
   }
 );
 
