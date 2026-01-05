@@ -2082,24 +2082,19 @@ router.get('/badge-counts', authRequired, roleRequired('admin'), (req, res) => {
 
     // Count users created in last 7 days
     const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-    const newUsers = Array.isArray(users)
-      ? users.filter(u => {
-          if (!u.createdAt) {
-            return false;
-          }
-          return new Date(u.createdAt).getTime() > sevenDaysAgo;
-        }).length
-      : 0;
+    const newUsers = users.filter(u => {
+      if (!u.createdAt) {
+        return false;
+      }
+      return new Date(u.createdAt).getTime() > sevenDaysAgo;
+    }).length;
 
     // Count pending photos
-    const pendingPhotos = Array.isArray(photos)
-      ? photos.filter(p => !p.approved && !p.rejected).length
-      : 0;
+    const pendingPhotos = photos.filter(p => !p.approved && !p.rejected).length;
 
     // Count open tickets
-    const openTickets = Array.isArray(tickets)
-      ? tickets.filter(t => t.status === 'open' || t.status === 'in_progress').length
-      : 0;
+    const openTickets = tickets.filter(t => t.status === 'open' || t.status === 'in_progress')
+      .length;
 
     res.json({
       newUsers,

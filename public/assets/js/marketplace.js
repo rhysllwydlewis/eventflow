@@ -145,7 +145,7 @@
       }
 
       const data = await res.json();
-      allListings = Array.isArray(data.listings) ? data.listings : [];
+      allListings = data.listings || [];
       renderListings();
       updateResultCount();
     } catch (error) {
