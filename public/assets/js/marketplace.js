@@ -45,7 +45,9 @@
     const sellBtn = document.getElementById('sell-item-btn');
 
     if (currentUser) {
-      if (authCta) authCta.style.display = 'none';
+      if (authCta) {
+        authCta.style.display = 'none';
+      }
       if (sellBtn) {
         sellBtn.textContent = 'List an Item';
         sellBtn.onclick = () => showListItemModal();
@@ -70,10 +72,18 @@
       const queryInput = document.getElementById('marketplace-filter-query');
       const sortSelect = document.getElementById('marketplace-sort');
 
-      if (categoryFilter && categoryFilter.value) params.append('category', categoryFilter.value);
-      if (conditionFilter && conditionFilter.value) params.append('condition', conditionFilter.value);
-      if (queryInput && queryInput.value) params.append('search', queryInput.value);
-      if (sortSelect && sortSelect.value) params.append('sort', sortSelect.value);
+      if (categoryFilter && categoryFilter.value) {
+        params.append('category', categoryFilter.value);
+      }
+      if (conditionFilter && conditionFilter.value) {
+        params.append('condition', conditionFilter.value);
+      }
+      if (queryInput && queryInput.value) {
+        params.append('search', queryInput.value);
+      }
+      if (sortSelect && sortSelect.value) {
+        params.append('sort', sortSelect.value);
+      }
 
       // Handle price filter
       if (priceFilter && priceFilter.value) {
@@ -96,7 +106,9 @@
       }
 
       const res = await fetch(`/api/marketplace/listings?${params.toString()}`);
-      if (!res.ok) throw new Error('Failed to fetch listings');
+      if (!res.ok) {
+        throw new Error('Failed to fetch listings');
+      }
 
       const data = await res.json();
       allListings = data.listings || [];
@@ -118,7 +130,9 @@
   // Render listings
   function renderListings() {
     const resultsContainer = document.getElementById('marketplace-results');
-    if (!resultsContainer) return;
+    if (!resultsContainer) {
+      return;
+    }
 
     if (allListings.length === 0) {
       resultsContainer.innerHTML = `
@@ -129,9 +143,7 @@
       return;
     }
 
-    resultsContainer.innerHTML = allListings
-      .map(listing => createListingCard(listing))
-      .join('');
+    resultsContainer.innerHTML = allListings.map(listing => createListingCard(listing)).join('');
 
     // Re-attach event listeners
     document.querySelectorAll('.marketplace-item-card').forEach((card, index) => {
@@ -182,10 +194,14 @@
           <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">×</button>
         </div>
         <div class="modal-body">
-          ${listing.images && listing.images[0] ? `
+          ${
+            listing.images && listing.images[0]
+              ? `
             <img src="${listing.images[0]}" alt="${escapeHtml(listing.title)}" 
                  style="width: 100%; max-height: 300px; object-fit: cover; border-radius: 8px; margin-bottom: 16px;">
-          ` : ''}
+          `
+              : ''
+          }
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
             <div style="font-size: 24px; font-weight: 700; color: var(--ink, #0b8073);">£${listing.price.toFixed(2)}</div>
             <div style="padding: 4px 12px; background: #f3f4f6; border-radius: 12px; font-size: 13px;">
@@ -198,15 +214,21 @@
             <span>📂 ${formatCategory(listing.category)}</span>
             <span>🕒 Listed ${getTimeAgo(listing.createdAt)}</span>
           </div>
-          ${currentUser && currentUser.id !== listing.userId ? `
+          ${
+            currentUser && currentUser.id !== listing.userId
+              ? `
             <button class="cta" onclick="messageSeller('${listing.id}', '${escapeHtml(listing.title)}')">
               Message Seller
             </button>
-          ` : currentUser && currentUser.id === listing.userId ? `
+          `
+              : currentUser && currentUser.id === listing.userId
+                ? `
             <p style="color: #6b7280; font-style: italic;">This is your listing</p>
-          ` : `
+          `
+                : `
             <a href="/auth.html" class="cta">Log in to message seller</a>
-          `}
+          `
+          }
         </div>
       </div>
     `;
@@ -264,7 +286,9 @@
 
     // Close on background click
     modal.addEventListener('click', e => {
-      if (e.target === modal) modal.remove();
+      if (e.target === modal) {
+        modal.remove();
+      }
     });
   }
 
@@ -278,7 +302,9 @@
     try {
       // Get listing to find seller ID
       const res = await fetch(`/api/marketplace/listings/${listingId}`);
-      if (!res.ok) throw new Error('Failed to fetch listing');
+      if (!res.ok) {
+        throw new Error('Failed to fetch listing');
+      }
       const { listing } = await res.json();
 
       // Start a thread with the seller
@@ -292,7 +318,9 @@
         }),
       });
 
-      if (!threadRes.ok) throw new Error('Failed to start conversation');
+      if (!threadRes.ok) {
+        throw new Error('Failed to start conversation');
+      }
       const { threadId } = await threadRes.json();
 
       // Redirect to conversation
@@ -464,7 +492,9 @@
 
     // Close on background click
     modal.addEventListener('click', e => {
-      if (e.target === modal) modal.remove();
+      if (e.target === modal) {
+        modal.remove();
+      }
     });
   }
 
@@ -701,23 +731,7 @@
         }
       });
     });
-
-    // Save item buttons
-    const saveButtons = document.querySelectorAll('.marketplace-save-btn');
-    saveButtons.forEach(btn => {
-      btn.addEventListener('click', e => {
-        e.stopPropagation(); // Prevent card click
-        btn.classList.toggle('saved');
-        btn.textContent = btn.classList.contains('saved') ? '♥' : '♡';
-
-        // Show feedback
-        if (btn.classList.contains('saved')) {
-          showToast('Item saved to favourites');
-        } else {
-          showToast('Item removed from favourites');
-        }
-      });
-    });
+  }
 
   // Initialize list item button
   function initListItemButton() {
