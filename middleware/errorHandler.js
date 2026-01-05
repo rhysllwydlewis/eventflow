@@ -75,9 +75,9 @@ function notFoundHandler(req, res) {
  * @param {Error} err - Error object
  * @param {Object} req - Express request
  * @param {Object} res - Express response
- * @param {Function} next - Express next function
+ * @param {Function} _next - Express next function (unused)
  */
-function errorHandler(err, req, res, next) {
+function errorHandler(err, req, res, _next) {
   // Log error
   logger.error('Error:', {
     message: err.message,

@@ -6,6 +6,8 @@
 'use strict';
 
 const helmet = require('helmet');
+// cors is used in server.js via require('cors')
+// eslint-disable-next-line no-unused-vars
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const logger = require('../utils/logger');
