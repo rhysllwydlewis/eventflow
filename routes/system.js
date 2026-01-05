@@ -1,0 +1,220 @@
+/**
+ * System Routes
+ * Health checks, readiness probes, configuration, and metadata endpoints
+ */
+
+'use strict';
+
+const express = require('express');
+const router = express.Router();
+
+// These will be injected by server.js during route mounting
+let APP_VERSION;
+let EMAIL_ENABLED;
+let postmark;
+let mongoDb;
+let dbUnified;
+let getToken;
+let authLimiter;
+let healthCheckLimiter;
+
+/**
+ * Initialize dependencies from server.js
+ * @param {Object} deps - Dependencies object
+ */
+function initializeDependencies(deps) {
+  APP_VERSION = deps.APP_VERSION;
+  EMAIL_ENABLED = deps.EMAIL_ENABLED;
+  postmark = deps.postmark;
+  mongoDb = deps.mongoDb;
+  dbUnified = deps.dbUnified;
+  getToken = deps.getToken;
+  authLimiter = deps.authLimiter;
+  healthCheckLimiter = deps.healthCheckLimiter;
+}
+
+/**
+ * GET /api/csrf-token
+ * Get CSRF token for form submissions
+ */
+router.get('/csrf-token', authLimiter, async (req, res) => {
+  const token = getToken(req);
+  res.json({ csrfToken: token });
+});
+
+/**
+ * GET /api/config
+ * Client config endpoint - provides public configuration values
+ * Apply rate limiting to prevent abuse of API key exposure
+ */
+router.get('/config', authLimiter, async (req, res) => {
+  res.json({
+    googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || '',
+    version: APP_VERSION,
+  });
+});
+
+/**
+ * GET /api/meta
+ * Application metadata endpoint
+ */
+router.get('/meta', async (_req, res) => {
+  res.json({
+    ok: true,
+    version: APP_VERSION,
+    node: process.version,
+    env: process.env.NODE_ENV || 'development',
+  });
+});
+
+/**
+ * GET /api/health
+ * Health check endpoint for monitoring
+ * Returns 200 if server is running, with service status details
+ */
+router.get('/health', healthCheckLimiter, async (_req, res) => {
+  // Server is always "ok" if it's running and accepting requests
+  // Database status is reported as a service status, not overall health
+  const timestamp = new Date().toISOString();
+
+  // Determine email status
+  let emailStatus = 'disabled';
+  if (EMAIL_ENABLED) {
+    emailStatus = postmark.isPostmarkEnabled() ? 'postmark' : 'disabled';
+  }
+
+  // Initialize response with server status
+  const response = {
+    status: 'ok', // Always ok if server is running
+    timestamp,
+    services: {
+      server: 'running',
+    },
+  };
+
+  // Check MongoDB connection status (non-blocking)
+  try {
+    const mongoState = mongoDb.getConnectionState ? mongoDb.getConnectionState() : null;
+    const mongoError = mongoDb.getConnectionError ? mongoDb.getConnectionError() : null;
+
+    if (mongoState) {
+      // Map MongoDB states to service status
+      if (mongoState === 'connected') {
+        response.services.mongodb = 'connected';
+      } else if (mongoState === 'connecting') {
+        response.services.mongodb = 'connecting';
+        response.status = 'degraded'; // Server is degraded while DB is connecting
+      } else if (mongoState === 'error') {
+        response.services.mongodb = 'disconnected';
+        response.status = 'degraded';
+        if (mongoError) {
+          response.services.mongodbError = mongoError;
+          response.services.lastConnectionError = mongoError; // For debugging
+        }
+      } else {
+        response.services.mongodb = 'disconnected';
+      }
+    } else {
+      // Fallback for older db.js without state tracking
+      response.services.mongodb = mongoDb.isConnected() ? 'connected' : 'disconnected';
+    }
+  } catch (error) {
+    // If MongoDB check fails, report it but still return healthy
+    response.services.mongodb = 'unknown';
+    response.services.mongodbError = error.message;
+    response.services.lastConnectionError = error.message;
+    response.status = 'degraded';
+  }
+
+  // Check database status from unified layer and determine active backend
+  try {
+    const dbStatus = dbUnified.getDatabaseStatus ? dbUnified.getDatabaseStatus() : null;
+
+    if (dbStatus) {
+      response.services.activeBackend = dbStatus.type; // 'mongodb' or 'local'
+      response.services.databaseInitialized = dbStatus.initialized;
+
+      // If initialization failed, report degraded status
+      if (dbStatus.initializationState === 'failed' && dbStatus.initializationError) {
+        response.status = 'degraded';
+        response.services.databaseInitializationError = dbStatus.initializationError;
+      }
+
+      // Add query metrics if available
+      if (dbStatus.queryMetrics) {
+        response.services.queryMetrics = dbStatus.queryMetrics;
+      }
+    }
+  } catch (error) {
+    // If status check fails, report it but still return healthy
+    response.services.databaseStatusError = error.message;
+    response.status = 'degraded';
+  }
+
+  // Add email service status
+  response.services.email = emailStatus;
+
+  // Return health status (always 200, degraded state is informational)
+  res.status(200).json(response);
+});
+
+/**
+ * GET /api/ready
+ * Readiness probe for Kubernetes/Railway
+ * Returns 200 only if MongoDB is connected
+ */
+router.get('/ready', healthCheckLimiter, async (_req, res) => {
+  const timestamp = new Date().toISOString();
+
+  // Check if MongoDB is actually connected
+  const isMongoConnected = mongoDb.isConnected && mongoDb.isConnected();
+  const mongoState = mongoDb.getConnectionState ? mongoDb.getConnectionState() : 'disconnected';
+  const mongoError = mongoDb.getConnectionError ? mongoDb.getConnectionError() : null;
+
+  // Get active backend from unified database layer
+  let activeBackend = 'unknown';
+  try {
+    const dbStatus = dbUnified.getDatabaseStatus ? dbUnified.getDatabaseStatus() : null;
+    if (dbStatus) {
+      activeBackend = dbStatus.type; // 'mongodb' or 'local'
+    }
+  } catch (error) {
+    // Ignore errors in determining backend
+  }
+
+  if (!isMongoConnected) {
+    return res.status(503).json({
+      status: 'not_ready',
+      timestamp,
+      reason: 'Database not connected',
+      details: mongoError || 'MongoDB connection is not established',
+      services: {
+        server: 'running',
+        mongodb: mongoState,
+        activeBackend: activeBackend,
+      },
+      debug: {
+        mongoState: mongoState,
+        lastConnectionError: mongoError,
+        message:
+          'Server is operational but MongoDB is not connected. Using fallback storage if configured.',
+      },
+    });
+  }
+
+  // MongoDB is connected, server is ready
+  return res.status(200).json({
+    status: 'ready',
+    timestamp,
+    services: {
+      server: 'running',
+      mongodb: 'connected',
+      activeBackend: 'mongodb',
+    },
+    message: 'All systems operational',
+  });
+});
+
+// Export router and initialization function
+module.exports = router;
+module.exports.initializeDependencies = initializeDependencies;

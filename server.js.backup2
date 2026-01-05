@@ -1,15 +1,24 @@
-/* EventFlow v3.3.1 — Refactored server.js (modular architecture)
+/* EventFlow v3.3.1 — Rebuilt server.js (clean, validated)
  * Features: Auth (JWT cookie), Suppliers, Packages, Plans/Notes, Threads/Messages,
  * Admin approvals + metrics, Settings, Featured packages, Sitemap.
  * Email: safe dev mode by default (writes .eml files to /outbox).
  *
- * REFACTORED ARCHITECTURE:
- * - Configuration extracted to config/ folder
- * - Middleware extracted to middleware/ folder
- * - Services extracted to services/ folder
- * - Utilities extracted to utils/ folder
- * - Winston logger for structured logging
- * - Maintains 100% backward compatibility
+ * PRODUCTION DEPLOYMENT:
+ * - Server performs startup health checks before accepting requests
+ * - Cloud database (MongoDB Atlas or Firebase) is RECOMMENDED but not required
+ * - Falls back to local JSON storage if no cloud database is configured
+ * - LOCAL STORAGE WARNING: Data is non-persistent and will be lost on restart
+ * - Email service is optional but recommended for production
+ * - Rejects localhost MongoDB URIs in production
+ * - Exits with error code 1 if critical security configuration is missing (JWT_SECRET, BASE_URL)
+ * - Logs warnings for optional/recommended services (database, email, Stripe, OpenAI)
+ *
+ * TROUBLESHOOTING 502 ERRORS:
+ * - Check server startup logs for validation errors
+ * - If using MongoDB, ensure MONGODB_URI points to cloud database (not localhost)
+ * - Verify BASE_URL matches your actual domain
+ * - Email service (Postmark) is optional - warnings logged if not configured
+ * - Check /api/health endpoint for service status
  */
 
 'use strict';
@@ -17,49 +26,66 @@
 const path = require('path');
 const fs = require('fs');
 const express = require('express');
+const helmet = require('helmet');
+const cors = require('cors');
 const cookieParser = require('cookie-parser');
+const rateLimit = require('express-rate-limit');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const validator = require('validator');
-const PDFDocument = require('pdfkit');
 
 const APP_VERSION = 'v17.0.0';
 
 require('dotenv').config();
 
-// Configuration modules
-const logger = require('./utils/logger');
-const databaseConfig = require('./config/database');
-const emailConfig = require('./config/email');
-const stripeConfig = require('./config/stripe');
-const storageConfig = require('./config/storage');
+let STRIPE_ENABLED = false;
+try {
+  const secret = process.env.STRIPE_SECRET_KEY;
+  if (secret) {
+    // Lazy-load Stripe so the app still runs if the dependency is missing.
+    // Install with: npm install stripe
+    // Uses Stripe's default API version.
+    // eslint-disable-next-line global-require, node/no-missing-require
+    const stripeLib = require('stripe');
+    // Reserved for future payment integration
+    // eslint-disable-next-line no-unused-vars
+    const _stripe = stripeLib(secret);
+    STRIPE_ENABLED = true;
+    // Note: _stripe variable is initialized for future payment integration
+  }
+} catch (err) {
+  console.warn('Stripe is not configured:', err.message);
+}
 
-// Middleware modules
-const security = require('./middleware/security');
-// Error handlers will be used at the end of the middleware chain
-// eslint-disable-next-line no-unused-vars
-const { notFoundHandler, errorHandler } = require('./middleware/errorHandler');
-const {
-  authRequired,
-  roleRequired,
-  getUserFromCookie,
-  clearAuthCookie,
-} = require('./middleware/auth');
-
-// Utility modules
-const validators = require('./utils/validators');
-const helpers = require('./utils/helpers');
+let openaiClient = null;
+let AI_ENABLED = false;
+try {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (apiKey) {
+    // Lazy-load OpenAI so the app still runs if the dependency is missing.
+    // Install with: npm install openai
+    // eslint-disable-next-line global-require, node/no-missing-require
+    const OpenAI = require('openai');
+    openaiClient = new OpenAI({ apiKey });
+    AI_ENABLED = true;
+  }
+} catch (err) {
+  console.warn('OpenAI is not configured:', err.message);
+}
 
 // Data access layer - MongoDB-first with local storage fallback
-const dbUnified = databaseConfig.dbUnified;
-const mongoDb = databaseConfig.mongoDb;
+const dbUnified = require('./db-unified');
 const { uid, DATA_DIR } = require('./store');
 
-// Postmark email utility (for backward compatibility)
+// Postmark email utility
 const postmark = require('./utils/postmark');
 
+// Database modules for startup validation
+const mongoDb = require('./db');
+const { isMongoAvailable } = mongoDb;
+
 // Photo upload utilities
-const photoUpload = storageConfig.photoUpload;
+const photoUpload = require('./photo-upload');
 
 // Reviews and ratings system
 const reviewsSystem = require('./reviews');
@@ -72,24 +98,6 @@ const { calculateLeadScore } = require('./utils/leadScoring');
 
 // Geocoding utilities
 const geocoding = require('./utils/geocoding');
-
-// Initialize Stripe
-const STRIPE_ENABLED = stripeConfig.initializeStripe();
-
-// Initialize OpenAI (optional)
-let openaiClient = null;
-let AI_ENABLED = false;
-try {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (apiKey) {
-    // eslint-disable-next-line global-require, node/no-missing-require
-    const OpenAI = require('openai');
-    openaiClient = new OpenAI({ apiKey });
-    AI_ENABLED = true;
-  }
-} catch (err) {
-  logger.warn('OpenAI is not configured:', err.message);
-}
 
 // HTTP client for external API calls
 
@@ -152,7 +160,6 @@ async function verifyHCaptcha(token) {
 }
 
 // CSRF protection middleware
-// getToken is used by routes/system.js for csrf-token endpoint
 const { csrfProtection, getToken } = require('./middleware/csrf');
 
 // Swagger API documentation
@@ -173,20 +180,33 @@ const VALID_USER_ROLES = ['customer', 'supplier', 'admin'];
 const MAX_NAME_LENGTH = 80;
 const OWNER_EMAIL = 'admin@event-flow.co.uk'; // Owner account always has admin role
 
-// Helper functions (re-export from utils for backward compatibility)
-const { supplierIsProActive } = helpers;
-const { passwordOk } = validators;
+// Helper: determine if a supplier's Pro plan is currently active.
+// - isPro must be true, AND
+// - proExpiresAt is either missing/null (no expiry) or in the future.
+function supplierIsProActive(s) {
+  if (!s || !s.isPro) {
+    return false;
+  }
+  if (!s.proExpiresAt) {
+    return !!s.isPro;
+  }
+  const t = Date.parse(s.proExpiresAt);
+  if (!t || isNaN(t)) {
+    return !!s.isPro;
+  }
+  return t > Date.now();
+}
 
 const { seed } = require('./seed');
 
 // ---------- Initialisation ----------
+// Seed will be called after database initialization during startup
 const isProduction = process.env.NODE_ENV === 'production';
+
 const app = express();
+const PDFDocument = require('pdfkit');
 const PORT = Number(process.env.PORT || 3000);
 const JWT_SECRET = String(process.env.JWT_SECRET || 'change_me');
-
-// Validate email configuration
-emailConfig.validateEmailConfig();
 
 // Initialize Sentry for error tracking and performance monitoring
 sentry.initSentry(app);
@@ -205,40 +225,206 @@ const hasPlaceholder = knownPlaceholders.some(placeholder =>
 );
 
 if (!JWT_SECRET || hasPlaceholder || JWT_SECRET.length < 32) {
-  logger.error('❌ SECURITY ERROR: Invalid JWT_SECRET');
+  console.error('');
+  console.error('❌ SECURITY ERROR: Invalid JWT_SECRET');
+  console.error('');
+
   if (!JWT_SECRET) {
-    logger.error('   JWT_SECRET is not set in your environment.');
+    console.error('   JWT_SECRET is not set in your environment.');
   } else if (hasPlaceholder) {
-    logger.error('   JWT_SECRET contains placeholder values that must be replaced.');
+    console.error('   JWT_SECRET contains placeholder values that must be replaced.');
   } else if (JWT_SECRET.length < 32) {
-    logger.error(`   JWT_SECRET is too short (${JWT_SECRET.length} characters).`);
-    logger.error('   A secure JWT_SECRET must be at least 32 characters long.');
+    console.error(`   JWT_SECRET is too short (${JWT_SECRET.length} characters).`);
+    console.error('   A secure JWT_SECRET must be at least 32 characters long.');
   }
-  logger.error('🔧 To generate a secure JWT_SECRET, run:');
-  logger.error('   openssl rand -base64 32');
+
+  console.error('');
+  console.error('🔧 To generate a secure JWT_SECRET, run:');
+  console.error('   openssl rand -base64 32');
+  console.error('');
+  console.error('   Then add it to your .env file:');
+  console.error('   JWT_SECRET=<your-generated-secret>');
+  console.error('');
   process.exit(1);
 }
 
 // Configure trust proxy for Railway and other reverse proxies
+// This enables proper IP detection for rate limiting and X-Forwarded-* headers
 const trustProxyEnv = process.env.TRUST_PROXY?.toLowerCase();
 const isRailway = process.env.RAILWAY_ENVIRONMENT !== undefined;
 const shouldTrustProxy = trustProxyEnv === 'true' || (isRailway && trustProxyEnv !== 'false');
 
 if (shouldTrustProxy) {
   app.set('trust proxy', 1);
-  logger.info('🔧 Trust proxy: enabled (running behind proxy/load balancer)');
+  console.log('🔧 Trust proxy: enabled (running behind proxy/load balancer)');
 } else {
-  logger.info('🔧 Trust proxy: disabled (local development mode)');
+  console.log('🔧 Trust proxy: disabled (local development mode)');
 }
 
 app.disable('x-powered-by');
 
-// Apply security middleware
-app.use(security.configureHTTPSRedirect(isProduction));
-app.use(security.configureHelmet());
-app.use(require('cors')(security.configureCORS(isProduction)));
+// Force HTTPS redirect in production (fixes 3.2s latency from HTTP→HTTPS redirect)
+if (isProduction) {
+  app.use((req, res, next) => {
+    // Skip HTTPS redirect for health check and readiness endpoints
+    // This allows platform health probes (Railway, etc.) to work over HTTP
+    if (req.path === '/api/health' || req.path === '/api/ready') {
+      return next();
+    }
 
-// Sentry request and tracing handlers
+    // Check if request is not secure (HTTP)
+    const isSecure = req.secure || req.headers['x-forwarded-proto'] === 'https';
+
+    if (!isSecure) {
+      // Redirect to HTTPS
+      const httpsUrl = process.env.BASE_URL || `https://${req.headers.host}`;
+      const redirectUrl = `${httpsUrl}${req.url}`;
+      return res.redirect(301, redirectUrl);
+    }
+
+    // Check for non-www to www redirect (only if BASE_URL contains www)
+    const configuredBaseUrl = process.env.BASE_URL || '';
+    if (
+      configuredBaseUrl.includes('www.') &&
+      req.headers.host &&
+      !req.headers.host.startsWith('www.')
+    ) {
+      const wwwUrl = `https://www.${req.headers.host}${req.url}`;
+      return res.redirect(301, wwwUrl);
+    }
+
+    next();
+  });
+}
+
+// Enhanced CSP headers
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: [
+          "'self'",
+          // 'unsafe-inline' needed for inline event handlers (onclick, onerror) in HTML
+          // TODO: Refactor to remove inline handlers and eliminate this directive
+          "'unsafe-inline'",
+          'https://cdn.jsdelivr.net',
+          'https://cdn.socket.io',
+          'https://cdn.tidycal.net',
+          'https://estatic.com',
+          'https://*.estatic.com',
+          'https://maps.googleapis.com',
+          'https://*.googleapis.com',
+          'https://maps.gstatic.com',
+          'https://*.gstatic.com',
+          'https://googletagmanager.com',
+          'https://*.googletagmanager.com',
+          'https://hcaptcha.com',
+          'https://*.hcaptcha.com',
+          'https://js.stripe.com',
+        ],
+        scriptSrcAttr: ["'unsafe-inline'"], // Allow inline event handlers (onclick, onerror, etc.)
+        styleSrc: [
+          "'self'",
+          "'unsafe-inline'",
+          'https://cdn.jsdelivr.net',
+          'https://fonts.googleapis.com',
+        ],
+        fontSrc: ["'self'", 'https://fonts.gstatic.com'],
+        imgSrc: [
+          "'self'",
+          'data:',
+          'https:', // Allows all HTTPS images
+          'blob:',
+          // Explicitly list Pexels domains for documentation and clarity
+          // even though 'https:' already allows them
+          'https://images.pexels.com',
+          'https://*.pexels.com',
+        ],
+        connectSrc: [
+          "'self'",
+          'https:',
+          'wss:',
+          'ws:',
+          'https://googletagmanager.com',
+          'https://*.googletagmanager.com',
+          'https://*.google-analytics.com',
+          'https://*.analytics.google.com',
+          'https://*.tidycal.net',
+          'https://hcaptcha.com',
+          'https://*.hcaptcha.com',
+          'https://api.stripe.com',
+        ],
+        frameSrc: [
+          "'self'",
+          'https://www.google.com',
+          'https://maps.google.com',
+          'https://tidycal.com',
+          'https://*.tidycal.com',
+          'https://hcaptcha.com',
+          'https://*.hcaptcha.com',
+          'https://js.stripe.com',
+          'https://hooks.stripe.com',
+        ],
+        objectSrc: ["'none'"],
+        upgradeInsecureRequests: [],
+        reportUri: '/api/csp-report',
+      },
+    },
+    hsts: {
+      maxAge: 31536000, // 1 year
+      includeSubDomains: true,
+      preload: false, // Don't enable preload yet (requires all subdomains on HTTPS)
+    },
+    xFrameOptions: { action: 'deny' },
+    xContentTypeOptions: 'nosniff',
+    xDnsPrefetchControl: { allow: false },
+    referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+  })
+);
+
+// CORS Configuration - Allow credentials and proper origins for www subdomain
+// This fixes 403 Forbidden errors when frontend and backend are on different subdomains
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (mobile apps, curl, etc.)
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    // Get allowed origins from BASE_URL environment variable
+    const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+    const allowedOrigins = [baseUrl];
+
+    // If BASE_URL contains www, also allow non-www version and vice versa
+    if (baseUrl.includes('www.')) {
+      allowedOrigins.push(baseUrl.replace('www.', ''));
+    } else if (baseUrl.includes('://')) {
+      const [protocol, domain] = baseUrl.split('://');
+      allowedOrigins.push(`${protocol}://www.${domain}`);
+    }
+
+    // For development, allow localhost on any port
+    if (!isProduction) {
+      allowedOrigins.push('http://localhost:3000');
+      allowedOrigins.push('http://localhost:3001');
+      allowedOrigins.push('http://127.0.0.1:3000');
+    }
+
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(null, true); // Allow all origins but log warning
+      console.warn(`CORS request from non-configured origin: ${origin}`);
+    }
+  },
+  credentials: true, // Allow cookies to be sent with requests
+  optionsSuccessStatus: 200,
+};
+
+app.use(cors(corsOptions));
+
+// Sentry request and tracing handlers (must be first)
 app.use(sentry.getRequestHandler());
 app.use(sentry.getTracingHandler());
 
@@ -265,18 +451,55 @@ const { configureSanitization, inputValidationMiddleware } = require('./middlewa
 app.use(configureSanitization());
 app.use(inputValidationMiddleware);
 
-//Body parsing and cookies
 app.use(express.json({ limit: '2mb' }));
 app.use(cookieParser());
 
-// Create rate limiters
-// authLimiter and healthCheckLimiter are used by routes/system.js
-const rateLimiters = security.createRateLimiters();
-const { authLimiter, strictAuthLimiter, passwordResetLimiter, writeLimiter, healthCheckLimiter } =
-  rateLimiters;
+// Rate limits
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+const strictAuthLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: 'Too many requests. Please try again later.',
+});
+const passwordResetLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: 'Too many password reset attempts. Please try again later.',
+});
+const writeLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 80,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
-// Email configuration and wrapper
-const EMAIL_ENABLED = emailConfig.EMAIL_ENABLED;
+// Health check rate limiter - generous limits for monitoring tools
+const healthCheckLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 60, // 60 requests per minute (once per second)
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: 'Too many health check requests',
+});
+
+// ---------- Email Configuration ----------
+// Postmark is the ONLY supported email provider
+// All emails are sent via Postmark API using local HTML templates
+const EMAIL_ENABLED = String(process.env.EMAIL_ENABLED || 'false').toLowerCase() === 'true';
+
+// Postmark configuration is handled by utils/postmark.js
+// Required environment variables:
+// - POSTMARK_API_KEY: Your Postmark Server API key
+// - POSTMARK_FROM: Sender email (use admin@event-flow.co.uk)
 
 // Validate production environment
 if (process.env.NODE_ENV === 'production') {
@@ -289,18 +512,185 @@ if (process.env.NODE_ENV === 'production') {
     .map(([key]) => key);
 
   if (missing.length > 0) {
-    logger.error(`Production error: Missing required environment variables: ${missing.join(', ')}`);
-    logger.error('Please set these in your .env file before deploying.');
+    console.error(
+      `Production error: Missing required environment variables: ${missing.join(', ')}`
+    );
+    console.error('Please set these in your .env file before deploying.');
     process.exit(1);
+  }
+
+  // Warn about email configuration but don't block startup
+  if (EMAIL_ENABLED) {
+    if (!postmark.isPostmarkEnabled()) {
+      console.warn('⚠️  Warning: EMAIL_ENABLED=true but Postmark is not configured.');
+      console.warn('   Set POSTMARK_API_KEY and POSTMARK_FROM in your .env file.');
+      console.warn('   Emails will be saved to /outbox folder until Postmark is configured.');
+    }
+    if (!process.env.POSTMARK_FROM) {
+      console.warn('⚠️  Warning: POSTMARK_FROM not set. Using default: admin@event-flow.co.uk');
+    }
   }
 }
 
-// Email sending wrapper (for backward compatibility with inline routes)
-async function sendMail(toOrOpts, subject, text) {
-  return emailConfig.sendMail(toOrOpts, subject, text);
+// Always save outgoing email to /outbox in dev
+// eslint-disable-next-line no-unused-vars
+function _ensureOutbox() {
+  const outDir = path.join(DATA_DIR, '..', 'outbox');
+  if (!fs.existsSync(outDir)) {
+    fs.mkdirSync(outDir, { recursive: true });
+  }
+  return outDir;
 }
 
-// User extraction middleware
+/**
+ * Helper function to load and process email templates
+ * @param {string} templateName - Name of template file (without .html extension)
+ * @param {object} data - Data to replace in template
+ * @returns {string} Processed HTML
+ */
+// eslint-disable-next-line no-unused-vars
+function _loadEmailTemplate(templateName, data) {
+  try {
+    const templatePath = path.join(__dirname, 'email-templates', `${templateName}.html`);
+    if (!fs.existsSync(templatePath)) {
+      return null;
+    }
+    let html = fs.readFileSync(templatePath, 'utf8');
+
+    // Simple template replacement
+    Object.keys(data).forEach(key => {
+      const regex = new RegExp(`{{${key}}}`, 'g');
+      html = html.replace(regex, data[key] || '');
+    });
+
+    // Add current year
+    html = html.replace(/{{year}}/g, new Date().getFullYear());
+
+    // Add base URL
+    const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+    html = html.replace(/{{baseUrl}}/g, baseUrl);
+
+    return html;
+  } catch (err) {
+    console.error('Error loading email template:', err);
+    return null;
+  }
+}
+
+/**
+ * Send email via Postmark
+ * This is a wrapper function that delegates to utils/postmark.js
+ * Supports both legacy (to, subject, text) and modern object-based calls
+ *
+ * @param {string|Object} toOrOpts - Email address or options object
+ * @param {string} [subject] - Email subject (if using legacy format)
+ * @param {string} [text] - Email text body (if using legacy format)
+ * @returns {Promise<Object>} Postmark response
+ */
+async function sendMail(toOrOpts, subject, text) {
+  // Delegate all email sending to Postmark utility
+  // Postmark is the ONLY email provider supported
+
+  // Support both legacy (to, subject, text) and object-based calls
+  let options = {};
+
+  if (toOrOpts && typeof toOrOpts === 'object') {
+    options = toOrOpts;
+  } else {
+    options = {
+      to: toOrOpts,
+      subject: subject,
+      text: text,
+    };
+  }
+
+  // Delegate to Postmark utility
+  return postmark.sendMail(options);
+}
+
+// ---------- Auth helpers ----------
+// eslint-disable-next-line no-unused-vars
+function _setAuthCookie(res, token) {
+  const isProd = process.env.NODE_ENV === 'production';
+  res.cookie('token', token, {
+    httpOnly: true,
+    sameSite: isProd ? 'lax' : 'lax', // Changed from 'strict' to 'lax' for better cross-domain support
+    secure: isProd,
+    maxAge: 1000 * 60 * 60 * 24 * 7,
+  });
+}
+
+function clearAuthCookie(res) {
+  res.clearCookie('token');
+}
+
+function getUserFromCookie(req) {
+  const t = req.cookies && req.cookies.token;
+  if (!t) {
+    return null;
+  }
+  try {
+    return jwt.verify(t, JWT_SECRET);
+  } catch {
+    return null;
+  }
+}
+
+function authRequired(req, res, next) {
+  const u = getUserFromCookie(req);
+  if (!u) {
+    return res.status(401).json({ error: 'Unauthenticated' });
+  }
+  req.user = u;
+  // Also expose userId for routes that rely on it
+  req.userId = u.id;
+  next();
+}
+
+function roleRequired(role) {
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Unauthenticated' });
+    }
+
+    // Check if user is owner account - owner always has admin role
+    const isOwner = (req.user.email || '').toLowerCase() === OWNER_EMAIL.toLowerCase();
+    const userRole = isOwner ? 'admin' : req.user.role;
+
+    if (userRole !== role) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+    next();
+  };
+}
+
+/**
+ * Middleware to check if database is ready
+ * Returns 503 if database is not connected
+ * Use this for routes that require database access
+ */
+// eslint-disable-next-line no-unused-vars
+function _dbRequired(req, res, next) {
+  const isMongoConnected = mongoDb.isConnected && mongoDb.isConnected();
+
+  if (!isMongoConnected) {
+    return res.status(503).json({
+      error: 'Service temporarily unavailable',
+      message: 'Database is not connected. Please try again in a moment.',
+      retry: true,
+    });
+  }
+
+  next();
+}
+
+function passwordOk(pw = '') {
+  return typeof pw === 'string' && pw.length >= 8 && /[A-Za-z]/.test(pw) && /\d/.test(pw);
+}
+
+// ---------- Middleware: User Extraction & Maintenance Mode ----------
+// Extract user from cookie for all requests (optional - doesn't block if not authenticated)
+// This must come early so user context is available for static file checks and all routes
 app.use((req, res, next) => {
   const u = getUserFromCookie(req);
   if (u) {
@@ -777,7 +1167,21 @@ app.post('/api/auth/resend-verification', authLimiter, csrfProtection, async (re
   }
 });
 
-// System routes (health, config, meta, etc.) are now in routes/system.js
+// CSRF token endpoint - provides token for frontend use
+// Apply authLimiter to prevent token exhaustion attacks
+app.get('/api/csrf-token', authLimiter, async (req, res) => {
+  const token = getToken(req);
+  res.json({ csrfToken: token });
+});
+
+// Client config endpoint - provides public configuration values
+// Apply rate limiting to prevent abuse of API key exposure
+app.get('/api/config', authLimiter, async (req, res) => {
+  res.json({
+    googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || '',
+    version: APP_VERSION,
+  });
+});
 
 // Admin: list users (without password hashes)
 app.get('/api/admin/users', authRequired, roleRequired('admin'), async (req, res) => {
@@ -3284,7 +3688,14 @@ app.post('/api/me/settings', authRequired, csrfProtection, async (req, res) => {
 });
 
 // ---------- Meta & status ----------
-// Meta endpoint moved to routes/system.js
+app.get('/api/meta', async (_req, res) => {
+  res.json({
+    ok: true,
+    version: APP_VERSION,
+    node: process.version,
+    env: process.env.NODE_ENV || 'development',
+  });
+});
 
 // Lightweight metrics endpoints (no-op by default)
 app.post('/api/metrics/track', csrfProtection, async (req, res) => {
@@ -5077,7 +5488,7 @@ app.get('/api/photos/:id', async (req, res) => {
     const { id } = req.params;
 
     // Check if MongoDB is available
-    if (!databaseConfig.isMongoAvailable()) {
+    if (!isMongoAvailable()) {
       return res.status(503).json({ error: 'Photo storage not available' });
     }
 
@@ -5129,7 +5540,171 @@ app.get('/api/admin/audit-logs', authRequired, roleRequired('admin'), async (req
   res.json({ logs, count: logs.length });
 });
 
-// Health and ready endpoints moved to routes/system.js
+// Basic API healthcheck with rate limiting
+app.get('/api/health', healthCheckLimiter, async (_req, res) => {
+  // Server is always "ok" if it's running and accepting requests
+  // Database status is reported as a service status, not overall health
+  const timestamp = new Date().toISOString();
+
+  // Determine email status
+  let emailStatus = 'disabled';
+  if (EMAIL_ENABLED) {
+    emailStatus = postmark.isPostmarkEnabled() ? 'postmark' : 'disabled';
+  }
+
+  // Initialize response with server status
+  const response = {
+    status: 'ok', // Always ok if server is running
+    timestamp,
+    services: {
+      server: 'running',
+    },
+  };
+
+  // Check MongoDB connection status (non-blocking)
+  try {
+    const mongoState = mongoDb.getConnectionState ? mongoDb.getConnectionState() : null;
+    const mongoError = mongoDb.getConnectionError ? mongoDb.getConnectionError() : null;
+
+    if (mongoState) {
+      // Map MongoDB states to service status
+      if (mongoState === 'connected') {
+        response.services.mongodb = 'connected';
+      } else if (mongoState === 'connecting') {
+        response.services.mongodb = 'connecting';
+        response.status = 'degraded'; // Server is degraded while DB is connecting
+      } else if (mongoState === 'error') {
+        response.services.mongodb = 'disconnected';
+        response.status = 'degraded';
+        if (mongoError) {
+          response.services.mongodbError = mongoError;
+          response.services.lastConnectionError = mongoError; // For debugging
+        }
+      } else {
+        response.services.mongodb = 'disconnected';
+      }
+    } else {
+      // Fallback for older db.js without state tracking
+      response.services.mongodb = mongoDb.isConnected() ? 'connected' : 'disconnected';
+    }
+  } catch (error) {
+    // If MongoDB check fails, report it but still return healthy
+    response.services.mongodb = 'unknown';
+    response.services.mongodbError = error.message;
+    response.services.lastConnectionError = error.message;
+    response.status = 'degraded';
+  }
+
+  // Check database status from unified layer and determine active backend
+  try {
+    const dbStatus = dbUnified.getDatabaseStatus ? dbUnified.getDatabaseStatus() : null;
+
+    if (dbStatus) {
+      response.services.database = dbStatus.type;
+      response.services.activeBackend = dbStatus.type; // mongodb or local
+
+      // Determine database status based on state
+      if (dbStatus.connected) {
+        response.services.databaseStatus = 'connected';
+      } else if (dbStatus.state === 'in_progress') {
+        response.services.databaseStatus = 'initializing';
+        response.status = 'degraded';
+      } else {
+        response.services.databaseStatus = 'disconnected';
+      }
+
+      if (dbStatus.error) {
+        response.services.databaseError = dbStatus.error;
+        if (!response.services.lastConnectionError) {
+          response.services.lastConnectionError = dbStatus.error;
+        }
+      }
+    } else {
+      // Fallback for older db-unified versions
+      response.services.database = dbUnified.getDatabaseType
+        ? dbUnified.getDatabaseType()
+        : 'unknown';
+      response.services.databaseStatus = 'unknown';
+      response.services.activeBackend = response.services.database;
+    }
+  } catch (error) {
+    response.services.database = 'unknown';
+    response.services.databaseError = error.message;
+    response.services.activeBackend = 'unknown';
+  }
+
+  // Add additional service information
+  response.version = APP_VERSION;
+  response.environment = process.env.NODE_ENV || 'development';
+  response.email = emailStatus;
+
+  // Check Postmark status (non-critical)
+  if (postmark.isPostmarkEnabled()) {
+    const postmarkStatus = postmark.getPostmarkStatus();
+    response.services.emailStatus = 'configured';
+    response.services.postmarkFrom = postmarkStatus.domain;
+  } else {
+    response.services.emailStatus = EMAIL_ENABLED ? 'not_configured' : 'disabled';
+  }
+
+  // Always return 200 OK - Railway health checks should pass immediately
+  // even if database is still connecting (degraded state)
+  res.status(200).json(response);
+});
+
+// Readiness check endpoint - returns 200 only when MongoDB is connected
+// Use this for load balancers, uptime monitors, or readiness probes
+app.get('/api/ready', healthCheckLimiter, async (_req, res) => {
+  const timestamp = new Date().toISOString();
+
+  // Check if MongoDB is actually connected
+  const isMongoConnected = mongoDb.isConnected && mongoDb.isConnected();
+  const mongoState = mongoDb.getConnectionState ? mongoDb.getConnectionState() : 'disconnected';
+  const mongoError = mongoDb.getConnectionError ? mongoDb.getConnectionError() : null;
+
+  // Get active backend from unified database layer
+  let activeBackend = 'unknown';
+  try {
+    const dbStatus = dbUnified.getDatabaseStatus ? dbUnified.getDatabaseStatus() : null;
+    if (dbStatus) {
+      activeBackend = dbStatus.type; // 'mongodb' or 'local'
+    }
+  } catch (error) {
+    // Ignore errors in determining backend
+  }
+
+  if (!isMongoConnected) {
+    return res.status(503).json({
+      status: 'not_ready',
+      timestamp,
+      reason: 'Database not connected',
+      details: mongoError || 'MongoDB connection is not established',
+      services: {
+        server: 'running',
+        mongodb: mongoState,
+        activeBackend: activeBackend,
+      },
+      debug: {
+        mongoState: mongoState,
+        lastConnectionError: mongoError,
+        message:
+          'Server is operational but MongoDB is not connected. Using fallback storage if configured.',
+      },
+    });
+  }
+
+  // MongoDB is connected, server is ready
+  return res.status(200).json({
+    status: 'ready',
+    timestamp,
+    services: {
+      server: 'running',
+      mongodb: 'connected',
+      activeBackend: 'mongodb',
+    },
+    message: 'All systems operational',
+  });
+});
 
 // Cache statistics endpoint (admin only)
 app.get('/api/admin/cache/stats', authRequired, roleRequired('admin'), async (_req, res) => {
@@ -5414,7 +5989,7 @@ async function startServer() {
 
     // Warn if using local storage in production (before initialization)
     if (isProduction) {
-      if (!databaseConfig.isMongoAvailable()) {
+      if (!isMongoAvailable()) {
         console.warn('');
         console.warn('='.repeat(70));
         console.warn('⚠️  WARNING: NO CLOUD DATABASE CONFIGURED');

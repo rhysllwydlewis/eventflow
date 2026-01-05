@@ -1,17 +1,15 @@
+/**
+ * Routes Index
+ * Main router mounting point for all application routes
+ */
+
+'use strict';
+
 const express = require('express');
-const path = require('path');
-const rateLimit = require('express-rate-limit');
 const router = express.Router();
 
-// Rate limiter for static pages (lenient - 100 requests per 15 minutes)
-const staticPageLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
-  message: 'Too many requests, please try again later.',
-});
-
-// Import sub-routes (will be expanded in future iterations)
-// These routes are already extracted in the routes/ directory
+// Import route modules
+const systemRoutes = require('./system');
 const authRoutes = require('./auth');
 const adminRoutes = require('./admin');
 const messagesRoutes = require('./messages');
@@ -22,27 +20,47 @@ const reportsRoutes = require('./reports');
 const ticketsRoutes = require('./tickets');
 const webhooksRoutes = require('./webhooks');
 
-// Mount API sub-routes
-router.use('/api/auth', authRoutes);
-router.use('/api/admin', adminRoutes);
-router.use('/api/messages', messagesRoutes);
-router.use('/api/payments', paymentsRoutes);
-router.use('/api/pexels', pexelsRoutes);
-router.use('/api/profile', profileRoutes);
-router.use('/api/reports', reportsRoutes);
-router.use('/api/tickets', ticketsRoutes);
-router.use('/api/webhooks', webhooksRoutes);
+/**
+ * Mount all route modules
+ * @param {Object} app - Express app instance
+ * @param {Object} deps - Dependencies to inject into routes
+ */
+function mountRoutes(app, deps) {
+  // System routes (health, config, meta) - must be first for health checks
+  if (deps) {
+    systemRoutes.initializeDependencies(deps);
+  }
+  app.use('/api', systemRoutes);
 
-// Static HTML pages (main public pages)
-const staticPages = [
-  { route: '/marketplace', file: 'marketplace.html' },
-  { route: '/verify', file: 'verify.html' },
-];
+  // Auth routes (registration, login, logout, etc.)
+  app.use('/api/auth', authRoutes);
 
-staticPages.forEach(({ route, file }) => {
-  router.get(route, staticPageLimiter, (req, res) => {
-    res.sendFile(path.join(__dirname, '../public', file));
-  });
-});
+  // Admin routes
+  app.use('/api/admin', adminRoutes);
 
-module.exports = router;
+  // Messages routes
+  app.use('/api/messages', messagesRoutes);
+
+  // Payment routes
+  app.use('/api/payments', paymentsRoutes);
+
+  // Pexels image search routes
+  app.use('/api/pexels', pexelsRoutes);
+
+  // Profile routes
+  app.use('/api/profile', profileRoutes);
+
+  // Reports routes
+  app.use('/api/reports', reportsRoutes);
+
+  // Tickets routes
+  app.use('/api/tickets', ticketsRoutes);
+
+  // Webhook routes
+  app.use('/api/webhooks', webhooksRoutes);
+}
+
+module.exports = {
+  router,
+  mountRoutes,
+};

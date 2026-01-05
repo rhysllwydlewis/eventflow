@@ -1,32 +1,69 @@
 /**
- * Central Middleware Exports
- * Consolidates all middleware modules for easy import
+ * Middleware Index
+ * Central export point for all middleware modules
  */
 
-const { configureSecurityHeaders, configureRateLimiting } = require('./security');
-const { errorHandler, notFoundHandler, asyncHandler } = require('./errorHandler');
-const {
-  authRequired,
-  roleRequired,
-  getUserFromCookie,
-  setAuthCookie,
-  clearAuthCookie,
-} = require('./auth');
+'use strict';
+
+const auth = require('./auth');
+const security = require('./security');
+const errorHandler = require('./errorHandler');
+const validation = require('./validation');
+const rateLimit = require('./rateLimit');
+const csrf = require('./csrf');
+const apiVersioning = require('./api-versioning');
+const pagination = require('./pagination');
+const compression = require('./compression');
+const logging = require('./logging');
+const sanitize = require('./sanitize');
+const maintenance = require('./maintenance');
+const audit = require('./audit');
+const token = require('./token');
+const cache = require('./cache');
 
 module.exports = {
+  // Authentication & Authorization
+  ...auth,
+
   // Security
-  configureSecurityHeaders,
-  configureRateLimiting,
+  ...security,
 
-  // Error handling
-  errorHandler,
-  notFoundHandler,
-  asyncHandler,
+  // Error Handling
+  ...errorHandler,
 
-  // Authentication
-  authRequired,
-  roleRequired,
-  getUserFromCookie,
-  setAuthCookie,
-  clearAuthCookie,
+  // Validation
+  ...validation,
+
+  // Rate Limiting
+  ...rateLimit,
+
+  // CSRF Protection
+  ...csrf,
+
+  // API Versioning
+  ...apiVersioning,
+
+  // Pagination
+  ...pagination,
+
+  // Compression
+  compression,
+
+  // Logging
+  ...logging,
+
+  // Sanitization
+  ...sanitize,
+
+  // Maintenance
+  ...maintenance,
+
+  // Audit
+  ...audit,
+
+  // Token
+  ...token,
+
+  // Cache
+  ...cache,
 };

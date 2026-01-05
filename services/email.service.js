@@ -1,36 +1,102 @@
-const postmark = require('postmark');
+/**
+ * Email Service
+ * Handles email sending operations via Postmark
+ */
+
+'use strict';
+
+const emailConfig = require('../config/email');
 const logger = require('../utils/logger');
 
-let client = null;
-
-function getEmailClient() {
-  if (!client && process.env.POSTMARK_API_TOKEN) {
-    client = new postmark.ServerClient(process.env.POSTMARK_API_TOKEN);
-  }
-  return client;
-}
-
-async function sendEmail({ to, subject, text, html }) {
-  const emailClient = getEmailClient();
-  if (!emailClient) {
-    logger.warn('Email not configured, skipping send');
-    return false;
-  }
-
+/**
+ * Send email via Postmark
+ * @param {Object} options - Email options
+ * @param {string} options.to - Recipient email
+ * @param {string} options.subject - Email subject
+ * @param {string} options.text - Email text body
+ * @param {string} [options.html] - Email HTML body
+ * @param {string} [options.template] - Template name
+ * @param {Object} [options.templateData] - Template data
+ * @param {string} [options.messageStream] - Postmark message stream
+ * @returns {Promise<Object>} Email send result
+ */
+async function sendEmail(options) {
   try {
-    await emailClient.sendEmail({
-      From: process.env.FROM_EMAIL || 'noreply@event-flow.co.uk',
-      To: to,
-      Subject: subject,
-      TextBody: text,
-      HtmlBody: html,
+    const result = await emailConfig.sendMail(options);
+    logger.info('Email sent successfully', {
+      to: options.to,
+      subject: options.subject,
     });
-    logger.info(`Email sent to ${to}`);
-    return true;
+    return result;
   } catch (error) {
-    logger.error('Email failed:', error);
+    logger.error('Email send failed', {
+      to: options.to,
+      subject: options.subject,
+      error: error.message,
+    });
     throw error;
   }
 }
 
-module.exports = { sendEmail };
+/**
+ * Send verification email
+ * @param {string} to - Recipient email
+ * @param {string} name - Recipient name
+ * @param {string} verificationLink - Verification link
+ * @returns {Promise<Object>} Email send result
+ */
+async function sendVerificationEmail(to, name, verificationLink) {
+  return sendEmail({
+    to,
+    subject: 'Verify your email address',
+    template: 'email-verification',
+    templateData: {
+      name,
+      verificationLink,
+    },
+  });
+}
+
+/**
+ * Send password reset email
+ * @param {string} to - Recipient email
+ * @param {string} name - Recipient name
+ * @param {string} resetLink - Password reset link
+ * @returns {Promise<Object>} Email send result
+ */
+async function sendPasswordResetEmail(to, name, resetLink) {
+  return sendEmail({
+    to,
+    subject: 'Reset your password',
+    template: 'password-reset',
+    templateData: {
+      name,
+      resetLink,
+    },
+    messageStream: 'password-reset',
+  });
+}
+
+/**
+ * Send welcome email
+ * @param {string} to - Recipient email
+ * @param {string} name - Recipient name
+ * @returns {Promise<Object>} Email send result
+ */
+async function sendWelcomeEmail(to, name) {
+  return sendEmail({
+    to,
+    subject: 'Welcome to EventFlow',
+    template: 'welcome',
+    templateData: {
+      name,
+    },
+  });
+}
+
+module.exports = {
+  sendEmail,
+  sendVerificationEmail,
+  sendPasswordResetEmail,
+  sendWelcomeEmail,
+};
