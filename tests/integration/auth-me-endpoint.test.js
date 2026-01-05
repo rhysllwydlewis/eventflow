@@ -94,7 +94,6 @@ describe('Auth Me Endpoint', () => {
       // Verify owner email constant is defined
       expect(adminInitContent).toContain("const OWNER_EMAIL = 'admin@event-flow.co.uk'");
       expect(adminInitContent).toContain('isOwner');
-      expect(adminInitContent).toContain('isOwner');
     });
 
     it('should check admin role or owner email', () => {
