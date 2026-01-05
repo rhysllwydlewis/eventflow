@@ -555,7 +555,7 @@
       .catch(err => {
         console.error('Error loading admin', err);
         // Only show error message if it's not an auth error
-        if (statusEl && err.message && !err.message.includes('Authentication required')) {
+        if (statusEl && err && err.message && typeof err.message === 'string' && !err.message.includes('Authentication required')) {
           statusEl.innerText = 'Error loading data. Some features may be unavailable.';
         }
       });

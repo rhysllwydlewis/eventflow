@@ -65,7 +65,7 @@ const serverTimestamp = () => {
 const Timestamp = {
   now: () => {
     warnNotConfigured('Firestore');
-    return { seconds: Date.now() / 1000 };
+    return { seconds: Math.floor(Date.now() / 1000) };
   }
 };
 const arrayUnion = (...items) => {
