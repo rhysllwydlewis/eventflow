@@ -962,10 +962,14 @@ app.post('/api/auth/login', authLimiter, csrfProtection, async (req, res) => {
     console.error('Failed to update lastLoginAt', e);
   }
 
+  // Enforce owner account always has admin role
+  const isOwner = (user.email || '').toLowerCase() === 'admin@event-flow.co.uk';
+  const userRole = isOwner ? 'admin' : user.role;
+
   // Set JWT expiry based on "remember me" checkbox
   // Remember me: 30 days, otherwise: 7 days
   const expiresIn = remember ? '30d' : '7d';
-  const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, {
+  const token = jwt.sign({ id: user.id, email: user.email, role: userRole }, JWT_SECRET, {
     expiresIn,
   });
 
@@ -984,7 +988,7 @@ app.post('/api/auth/login', authLimiter, csrfProtection, async (req, res) => {
 
   res.json({
     ok: true,
-    user: { id: user.id, name: user.name, email: user.email, role: user.role },
+    user: { id: user.id, name: user.name, email: user.email, role: userRole },
   });
 });
 
@@ -1487,13 +1491,18 @@ app.get('/api/auth/me', async (req, res) => {
   if (!u) {
     return res.status(401).json({ error: 'User not found' });
   }
-  res.json({
+
+  // Enforce owner account always has admin role
+  const isOwner = (u.email || '').toLowerCase() === 'admin@event-flow.co.uk';
+  const userRole = isOwner ? 'admin' : u.role;
+
+  const userData = {
     id: u.id,
     name: u.name,
     firstName: u.firstName,
     lastName: u.lastName,
     email: u.email,
-    role: u.role,
+    role: userRole,
     location: u.location,
     postcode: u.postcode,
     company: u.company,
@@ -1507,6 +1516,15 @@ app.get('/api/auth/me', async (req, res) => {
     notify: u.notify !== false,
     notify_account: u.notify_account !== false,
     notify_marketing: u.notify_marketing === true,
+    isOwner: isOwner,
+  };
+
+  // Return wrapped format for consistency with frontend expectations
+  // Also include unwrapped properties for backward compatibility
+  res.json({
+    user: userData,
+    // Backward compatibility: include all user properties at root level
+    ...userData,
   });
 });
 
