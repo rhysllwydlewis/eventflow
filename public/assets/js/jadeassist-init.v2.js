@@ -9,14 +9,45 @@
 (function () {
   'use strict';
 
+  // Global initialization guard - prevent double-init if script loads twice
+  if (window.__JADE_WIDGET_INITIALIZED__) {
+    console.warn('[JadeAssist] Widget already initialized, skipping duplicate init');
+    return;
+  }
+  window.__JADE_WIDGET_INITIALIZED__ = true;
+
   // Configuration
   const MAX_RETRIES = 50; // Maximum retry attempts (5 seconds with 100ms interval)
   const RETRY_INTERVAL = 100; // Retry interval in milliseconds
-  const INIT_DELAY = 1000; // Delay before initializing widget (1 second)
+  const INIT_DELAY = 2000; // Delay before initializing widget (2 seconds - prioritize page content first)
   const TEASER_DELAY = 500; // Delay before showing teaser after init (500ms)
   const TEASER_STORAGE_KEY = 'jadeassist-teaser-dismissed';
   const TEASER_EXPIRY_DAYS = 1; // Teaser dismissal persists for 1 day
   const MOBILE_BREAKPOINT = 768; // px - matches CSS media query breakpoint
+
+  // Z-index coordination for stacking order
+  const Z_INDEX = {
+    WIDGET: 999, // JadeAssist widget
+    TEASER: 998, // Teaser bubble (below widget)
+    BACK_TO_TOP: 900, // Back-to-top button (below both)
+    NOTIFICATION: 100, // Notification panel (far below)
+  };
+
+  // A/B test variants (can be toggled via localStorage for testing)
+  const TEASER_VARIANTS = {
+    A: {
+      desktop: 'Hi, I'm Jade — want help finding venues and trusted suppliers?',
+      mobile: 'Need help finding venues? 👋',
+    },
+    B: {
+      desktop: 'Planning an event? Let me help you find the perfect suppliers! 🎉',
+      mobile: 'Planning an event? 🎉',
+    },
+    C: {
+      desktop: 'Find trusted event suppliers in minutes ⚡',
+      mobile: 'Find suppliers fast ⚡',
+    },
+  };
 
   // Positioning constants (now passed to widget config)
   // These values align the widget with the back-to-top button:
@@ -33,6 +64,18 @@
   let retryCount = 0;
   let warningLogged = false;
   let teaserElement = null;
+
+  /**
+   * Get A/B test variant (default to A, or override via localStorage)
+   */
+  function getTeaserVariant() {
+    try {
+      const override = localStorage.getItem('jadeassist-teaser-variant');
+      return override && TEASER_VARIANTS[override] ? override : 'A';
+    } catch (e) {
+      return 'A';
+    }
+  }
 
   /**
    * Check if teaser was recently dismissed
@@ -63,6 +106,11 @@
    * Mark teaser as dismissed
    */
   function dismissTeaser() {
+    // Clear auto-dismiss timeout if exists
+    if (teaserElement && teaserElement.dataset.autoDismissTimeout) {
+      clearTimeout(parseInt(teaserElement.dataset.autoDismissTimeout, 10));
+    }
+
     try {
       localStorage.setItem(TEASER_STORAGE_KEY, Date.now().toString());
     } catch (e) {
@@ -87,6 +135,13 @@
   function openChat() {
     if (window.JadeWidget && typeof window.JadeWidget.open === 'function') {
       window.JadeWidget.open();
+
+      // Track widget open
+      window.dispatchEvent(
+        new CustomEvent('jadeassist:widget-opened', {
+          detail: { timestamp: Date.now() },
+        })
+      );
     }
   }
 
@@ -98,28 +153,76 @@
       return;
     }
 
+    // Get debug mode setting
+    const debug = shouldEnableDebug();
+
+    // Responsive teaser message - shorter on mobile
+    const variant = getTeaserVariant();
+    const isMobile = window.innerWidth < MOBILE_BREAKPOINT;
+    const teaserMessage = isMobile ? TEASER_VARIANTS[variant].mobile : TEASER_VARIANTS[variant].desktop;
+
     // Create teaser bubble
     teaserElement = document.createElement('div');
     teaserElement.className = 'jade-teaser';
     teaserElement.innerHTML = `
       <div class="jade-teaser-content">
-        <span class="jade-teaser-text">Hi, I'm Jade — want help finding venues and trusted suppliers?</span>
+        <span class="jade-teaser-text">${teaserMessage}</span>
         <button class="jade-teaser-close" aria-label="Dismiss message">×</button>
       </div>
     `;
 
     document.body.appendChild(teaserElement);
 
+    // Keyboard accessibility
+    teaserElement.setAttribute('tabindex', '0');
+    teaserElement.setAttribute('role', 'button');
+    teaserElement.setAttribute('aria-label', 'Open chat with Jade');
+
     // Add event listeners
     const closeBtn = teaserElement.querySelector('.jade-teaser-close');
+
+    teaserElement.addEventListener('click', () => {
+      // Emit custom event for analytics tracking
+      window.dispatchEvent(
+        new CustomEvent('jadeassist:teaser-clicked', {
+          detail: { timestamp: Date.now(), source: 'teaser-bubble' },
+        })
+      );
+
+      dismissTeaser();
+      openChat();
+    });
+
+    teaserElement.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        dismissTeaser();
+        openChat();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        dismissTeaser();
+      }
+    });
+
     closeBtn.addEventListener('click', e => {
       e.stopPropagation();
+
+      // Track dismissal
+      window.dispatchEvent(
+        new CustomEvent('jadeassist:teaser-dismissed', {
+          detail: { timestamp: Date.now(), method: 'close-button' },
+        })
+      );
+
       dismissTeaser();
     });
 
-    teaserElement.addEventListener('click', () => {
-      dismissTeaser();
-      openChat();
+    closeBtn.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.stopPropagation();
+        e.preventDefault();
+        dismissTeaser();
+      }
     });
 
     // Animate in
@@ -128,6 +231,17 @@
         teaserElement.classList.add('jade-teaser-visible');
       }
     }, 50);
+
+    // Auto-dismiss teaser after 15 seconds (non-intrusive timing)
+    const autoDismissTimeout = setTimeout(() => {
+      if (teaserElement && teaserElement.parentNode) {
+        dismissTeaser();
+        if (debug) console.log('[JadeAssist] Teaser auto-dismissed after 15s');
+      }
+    }, 15000);
+
+    // Store timeout ID for cleanup
+    teaserElement.dataset.autoDismissTimeout = autoDismissTimeout.toString();
   }
 
   /**
@@ -153,16 +267,31 @@
         border-radius: 16px;
         box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
         padding: 0;
-        z-index: 998;
+        z-index: ${Z_INDEX.TEASER}; /* Below widget, above back-to-top */
         opacity: 0;
-        transform: translateY(10px);
-        transition: opacity 0.3s ease, transform 0.3s ease;
+        transform: translateY(10px) translateZ(0); /* GPU acceleration */
+        transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
+                    transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); /* Bounce easing */
         cursor: pointer;
+        will-change: opacity, transform; /* Performance hint for browser */
+        backface-visibility: hidden;
+        -webkit-font-smoothing: antialiased;
       }
 
       .jade-teaser-visible {
         opacity: 1;
-        transform: translateY(0);
+        transform: translateY(0) translateZ(0); /* Keep Z translation for GPU acceleration */
+      }
+
+      .jade-teaser:hover {
+        transform: translateY(-2px) scale(1.01) translateZ(0);
+        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
+        transition: all 0.2s ease;
+      }
+
+      .jade-teaser:focus {
+        outline: 2px solid #00B2A9;
+        outline-offset: 2px;
       }
 
       .jade-teaser-content {
@@ -264,6 +393,21 @@
   }
 
   /**
+   * Verify avatar loads correctly (for debug mode)
+   */
+  function verifyAvatarLoad(avatarUrl) {
+    const img = new Image();
+    img.onload = () => {
+      console.log('[JadeAssist] Avatar loaded successfully:', avatarUrl);
+    };
+    img.onerror = () => {
+      console.warn('[JadeAssist] Avatar failed to load, widget will use default');
+      // Widget has built-in fallback to emoji, this just logs the issue
+    };
+    img.src = avatarUrl;
+  }
+
+  /**
    * Determine if debug mode should be enabled
    * Enable debug on non-production hostnames or via query param
    * 
@@ -292,14 +436,17 @@
    * Initialize the JadeAssist widget with EventFlow brand colors
    */
   function initJadeWidget() {
+    // Determine debug mode
+    const debug = shouldEnableDebug();
+
     if (initialized) {
-      console.log('JadeAssist widget already initialized');
+      if (debug) console.log('[JadeAssist] Widget already initialized');
       return;
     }
 
     if (typeof window.JadeWidget === 'undefined' || typeof window.JadeWidget.init !== 'function') {
-      if (!warningLogged) {
-        console.warn('JadeWidget not yet available, will retry...');
+      if (debug || !warningLogged) {
+        console.warn('[JadeAssist] Widget not yet available, will retry...');
         warningLogged = true;
       }
       return;
@@ -312,8 +459,8 @@
       // Get avatar URL with subpath support
       const avatarUrl = getAvatarUrl();
 
-      // Determine debug mode
-      const debug = shouldEnableDebug();
+      // Verify avatar loads in debug mode
+      if (debug) verifyAvatarLoad(avatarUrl);
 
       // Initialize with configuration using new API
       window.JadeWidget.init({
@@ -324,7 +471,7 @@
         // Assistant configuration
         assistantName: 'Jade',
         greetingText: "Hi! I'm Jade. Ready to plan your event?",
-        greetingTooltipText: '👋 Hi! Need help planning your event?',
+        greetingTooltipText: '', // Disable built-in tooltip - using custom EventFlow teaser instead
 
         // Avatar (supported by JadeAssist PR #10 API)
         // Points to /assets/images/jade-avatar.png
@@ -346,20 +493,41 @@
       });
 
       initialized = true;
-      console.log('JadeAssist widget initialized successfully');
+      if (debug) console.log('[JadeAssist] Widget initialized successfully');
 
       // Ensure chat is closed on initialization (defensive)
       setTimeout(() => {
         if (window.JadeWidget && typeof window.JadeWidget.close === 'function') {
           window.JadeWidget.close();
-          console.log('JadeAssist chat ensured closed on load');
+          if (debug) console.log('[JadeAssist] Chat ensured closed on load');
         }
       }, 100);
 
-      // Show teaser after delay
-      setTimeout(showTeaser, TEASER_DELAY);
+      // Show teaser based on user engagement (scroll depth)
+      const showTeaserOnEngagement = () => {
+        const scrollDepth =
+          (window.scrollY / (document.documentElement.scrollHeight - window.innerHeight)) * 100;
+
+        // Show teaser after user scrolls 25% down page (engagement signal)
+        if (scrollDepth > 25) {
+          showTeaser();
+          window.removeEventListener('scroll', showTeaserOnEngagement);
+
+          if (debug) console.log('[JadeAssist] Teaser shown after 25% scroll');
+        }
+      };
+
+      // Show teaser after delay OR on scroll engagement (whichever comes first)
+      const teaserDelayTimeout = setTimeout(() => {
+        showTeaser();
+        window.removeEventListener('scroll', showTeaserOnEngagement);
+        if (debug) console.log('[JadeAssist] Teaser shown after delay');
+      }, TEASER_DELAY);
+
+      // Listen for scroll engagement
+      window.addEventListener('scroll', showTeaserOnEngagement, { passive: true });
     } catch (error) {
-      console.error('Failed to initialize JadeAssist widget:', error);
+      console.error('[JadeAssist] Failed to initialize widget:', error);
     }
   }
 
@@ -367,13 +535,15 @@
    * Wait for the widget script to load and then initialize
    */
   function waitForWidget() {
+    const debug = shouldEnableDebug();
+
     if (typeof window.JadeWidget !== 'undefined' && typeof window.JadeWidget.init === 'function') {
       initJadeWidget();
     } else if (retryCount < MAX_RETRIES) {
       retryCount++;
       setTimeout(waitForWidget, RETRY_INTERVAL);
     } else {
-      console.warn('JadeAssist widget failed to load after maximum retries');
+      if (debug) console.warn('[JadeAssist] Widget failed to load after maximum retries');
     }
   }
 
@@ -381,7 +551,7 @@
    * Start initialization with delay
    */
   function startInitialization() {
-    // Delay initialization by ~1 second to let page render first
+    // Delay initialization by 2 seconds to prioritize page content
     setTimeout(waitForWidget, INIT_DELAY);
   }
 
