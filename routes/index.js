@@ -1,6 +1,14 @@
 const express = require('express');
 const path = require('path');
+const rateLimit = require('express-rate-limit');
 const router = express.Router();
+
+// Rate limiter for static pages (lenient - 100 requests per 15 minutes)
+const staticPageLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+  message: 'Too many requests, please try again later.',
+});
 
 // Import sub-routes (will be expanded in future iterations)
 // These routes are already extracted in the routes/ directory
@@ -32,7 +40,7 @@ const staticPages = [
 ];
 
 staticPages.forEach(({ route, file }) => {
-  router.get(route, (req, res) => {
+  router.get(route, staticPageLimiter, (req, res) => {
     res.sendFile(path.join(__dirname, '../public', file));
   });
 });
