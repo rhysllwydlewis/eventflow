@@ -196,21 +196,27 @@
   function showListingDetail(listing) {
     const overlay = document.createElement('div');
     overlay.className = 'listing-detail-overlay';
-    
-    const images = listing.images && listing.images.length > 0 
-      ? listing.images 
-      : ['/assets/images/collage-venue.jpg'];
-    
-    const thumbnailsHTML = images.length > 1 
-      ? `<div class="listing-detail-thumbnails">
-          ${images.map((img, idx) => `
+
+    const images =
+      listing.images && listing.images.length > 0
+        ? listing.images
+        : ['/assets/images/collage-venue.jpg'];
+
+    const thumbnailsHTML =
+      images.length > 1
+        ? `<div class="listing-detail-thumbnails">
+          ${images
+            .map(
+              (img, idx) => `
             <div class="listing-detail-thumbnail ${idx === 0 ? 'active' : ''}" data-index="${idx}">
               <img src="${img}" alt="Image ${idx + 1}">
             </div>
-          `).join('')}
+          `
+            )
+            .join('')}
          </div>`
-      : '';
-    
+        : '';
+
     overlay.innerHTML = `
       <div class="listing-detail-container">
         <div class="listing-detail-gallery">
@@ -267,7 +273,7 @@
     `;
 
     document.body.appendChild(overlay);
-    
+
     // Trigger animation
     setTimeout(() => overlay.classList.add('active'), 10);
 
@@ -613,7 +619,7 @@
     return div.innerHTML;
   }
 
-  function toggleSave(btn, listing) {
+  function toggleSave(btn, _listing) {
     btn.classList.toggle('saved');
     btn.textContent = btn.classList.contains('saved') ? '♥' : '♡';
     showToast(btn.classList.contains('saved') ? 'Item saved' : 'Item unsaved');
@@ -622,7 +628,9 @@
   // Initialize location modal
   function initLocationModal() {
     const changeLocationBtn = document.getElementById('btn-change-location');
-    if (!changeLocationBtn) return;
+    if (!changeLocationBtn) {
+      return;
+    }
 
     changeLocationBtn.addEventListener('click', showLocationModal);
   }
@@ -630,9 +638,9 @@
   function showLocationModal() {
     const overlay = document.createElement('div');
     overlay.className = 'location-modal-overlay';
-    
+
     const savedLocation = JSON.parse(localStorage.getItem('marketplaceLocation') || '{}');
-    
+
     overlay.innerHTML = `
       <div class="location-modal">
         <div class="location-modal-header">
@@ -674,9 +682,11 @@
     // Close handlers
     const closeBtn = overlay.querySelector('.location-modal-close');
     closeBtn.addEventListener('click', () => closeModal(overlay));
-    
+
     overlay.addEventListener('click', e => {
-      if (e.target === overlay) closeModal(overlay);
+      if (e.target === overlay) {
+        closeModal(overlay);
+      }
     });
 
     const handleEscape = e => {
@@ -707,7 +717,7 @@
           useLocationBtn.disabled = false;
           showToast('Location detected');
         },
-        error => {
+        _error => {
           showToast('Unable to get location', 'error');
           useLocationBtn.textContent = 'Use My Location';
           useLocationBtn.disabled = false;
@@ -723,16 +733,16 @@
 
       // Save to localStorage
       localStorage.setItem('marketplaceLocation', JSON.stringify({ postcode, radius }));
-      
+
       // Update UI
       updateLocationSummary(postcode, radius);
-      
+
       // Close modal
       closeModal(overlay);
-      
+
       // Reload listings (in future, could filter by location)
       loadListings();
-      
+
       showToast('Location updated');
     });
   }
@@ -746,7 +756,9 @@
 
   function updateLocationSummary(postcode, radius) {
     const locationText = document.querySelector('.location-text');
-    if (!locationText) return;
+    if (!locationText) {
+      return;
+    }
 
     let text = '📍 ';
     if (postcode && radius) {
@@ -758,7 +770,7 @@
     } else {
       text += 'All UK';
     }
-    
+
     locationText.textContent = text;
   }
 
@@ -766,8 +778,10 @@
   function initMobileFilters() {
     const toggleBtn = document.getElementById('mobile-filter-toggle');
     const sidebar = document.querySelector('.marketplace-sidebar');
-    
-    if (!toggleBtn || !sidebar) return;
+
+    if (!toggleBtn || !sidebar) {
+      return;
+    }
 
     toggleBtn.addEventListener('click', () => {
       sidebar.classList.toggle('active');
@@ -786,12 +800,6 @@
         }
       });
     });
-  }
-
-  // Initialize map functionality (legacy, kept for reference but not used)
-  function initMap() {
-    // Map functionality replaced by location modal
-    // Keeping function signature for compatibility
   }
 
   // Initialize filters
@@ -845,7 +853,6 @@
   function initViewToggle() {
     const toggleBtn = document.getElementById('marketplace-view-toggle');
     const resultsContainer = document.getElementById('marketplace-results');
-    const viewIcon = document.getElementById('view-icon');
 
     if (!toggleBtn || !resultsContainer) {
       return;
