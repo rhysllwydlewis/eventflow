@@ -305,7 +305,8 @@ app.use(
         defaultSrc: ["'self'"],
         scriptSrc: [
           "'self'",
-          "'unsafe-eval'",
+          // 'unsafe-inline' needed for inline event handlers (onclick, onerror) in HTML
+          // TODO: Refactor to remove inline handlers and eliminate this directive
           "'unsafe-inline'",
           'https://cdn.jsdelivr.net',
           'https://cdn.socket.io',
@@ -367,12 +368,13 @@ app.use(
         ],
         objectSrc: ["'none'"],
         upgradeInsecureRequests: [],
+        reportUri: '/api/csp-report',
       },
     },
     hsts: {
-      maxAge: 31536000,
+      maxAge: 31536000, // 1 year
       includeSubDomains: true,
-      preload: true,
+      preload: false, // Don't enable preload yet (requires all subdomains on HTTPS)
     },
     xFrameOptions: { action: 'deny' },
     xContentTypeOptions: 'nosniff',
@@ -708,9 +710,9 @@ app.use(maintenanceMode);
 // This ensures files like verify.html are served before any route handlers
 // Static assets with caching strategy (fixes poor cache headers)
 app.use((req, res, next) => {
-  // Skip caching for HTML files (they might change more often)
-  if (req.path.endsWith('.html')) {
-    res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
+  // Short-term caching for HTML pages (5 minutes)
+  if (req.path.endsWith('.html') || req.path === '/') {
+    res.setHeader('Cache-Control', 'public, max-age=300, must-revalidate');
     return next();
   }
 
@@ -781,7 +783,15 @@ app.get('/marketplace', (req, res) => {
 });
 
 app.use(express.static(path.join(__dirname, 'public')));
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// Far-future caching for user uploads (they have unique filenames)
+app.use(
+  '/uploads',
+  (req, res, next) => {
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    next();
+  },
+  express.static(path.join(__dirname, 'uploads'))
+);
 
 // ---------- AUTH ----------
 app.post('/api/auth/register', strictAuthLimiter, csrfProtection, async (req, res) => {
@@ -5747,6 +5757,12 @@ app.post(
     }
   }
 );
+
+// CSP Violation Reporting Endpoint
+app.post('/api/csp-report', express.json({ type: 'application/csp-report' }), (req, res) => {
+  console.warn('CSP Violation:', req.body);
+  res.status(204).end();
+});
 
 // ---------- API Documentation & 404 Handler ----------
 // API Documentation (Swagger UI)

@@ -144,6 +144,75 @@ Getting "502 Bad Gateway" or "connection refused" errors? This usually means Mon
 - **Admin Access** - Admins can view all conversations for support purposes
 - **Real-time Updates** - Auto-refresh to show new messages
 
+---
+
+## 🔒 Security
+
+EventFlow implements industry-standard security practices:
+
+### HTTPS & Transport Security
+
+- **HTTPS Enforcement**: All HTTP requests are redirected to HTTPS in production
+- **HSTS**: HTTP Strict Transport Security enabled with 1-year max-age
+- **Secure Cookies**: Authentication cookies use `httpOnly`, `secure` (production), and `sameSite` flags
+
+### Security Headers (via Helmet)
+
+- **Content Security Policy (CSP)**: Restricts resource loading to trusted domains
+- **X-Frame-Options**: Prevents clickjacking with `DENY`
+- **X-Content-Type-Options**: Prevents MIME-sniffing with `nosniff`
+- **Referrer-Policy**: Set to `strict-origin-when-cross-origin`
+
+### Input Validation & Sanitization
+
+- MongoDB query sanitization via `express-mongo-sanitize`
+- Input validation using `validator` library
+- Rate limiting on authentication and write endpoints
+
+### Monitoring
+
+- CSP violation reporting endpoint at `/api/csp-report`
+- Sentry integration for error tracking
+- Audit logging for admin actions
+
+---
+
+## ⚡ Performance
+
+### Caching Strategy
+
+EventFlow uses a multi-tier caching strategy for optimal performance:
+
+- **HTML Pages**: 5-minute cache (`max-age=300, must-revalidate`)
+- **Versioned Assets** (hashed filenames): 1-year cache (`max-age=31536000, immutable`)
+- **Static Assets** (CSS/JS/images): 1-week cache (`max-age=604800, must-revalidate`)
+- **User Uploads**: 1-year cache (`max-age=31536000, immutable`)
+
+### Image Optimization
+
+- **Sharp** library for server-side image processing
+- WebP format generation for modern browsers
+- Responsive image sizes (thumbnail, large, optimized)
+- Lazy-loading support
+
+### Compression
+
+- Gzip compression via `compression` middleware
+- Applies to all text-based responses (HTML, CSS, JS, JSON)
+
+### CDN Recommendation
+
+For production deployments, we recommend adding Cloudflare in front of Railway for:
+
+- Global CDN with edge caching
+- DDoS protection
+- Additional image optimization
+- Automatic Brotli compression
+
+See `docs/CLOUDFLARE_SETUP.md` for setup instructions (coming soon).
+
+---
+
 ## 🚀 Quick Start
 
 ### Prerequisites
