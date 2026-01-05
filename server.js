@@ -178,6 +178,7 @@ const { generateSitemap, generateRobotsTxt } = require('./sitemap');
 // Constants for user management
 const VALID_USER_ROLES = ['customer', 'supplier', 'admin'];
 const MAX_NAME_LENGTH = 80;
+const OWNER_EMAIL = 'admin@event-flow.co.uk'; // Owner account always has admin role
 
 // Helper: determine if a supplier's Pro plan is currently active.
 // - isPro must be true, AND
@@ -649,7 +650,12 @@ function roleRequired(role) {
     if (!req.user) {
       return res.status(401).json({ error: 'Unauthenticated' });
     }
-    if (req.user.role !== role) {
+
+    // Check if user is owner account - owner always has admin role
+    const isOwner = (req.user.email || '').toLowerCase() === OWNER_EMAIL.toLowerCase();
+    const userRole = isOwner ? 'admin' : req.user.role;
+
+    if (userRole !== role) {
       return res.status(403).json({ error: 'Forbidden' });
     }
     next();
@@ -963,7 +969,7 @@ app.post('/api/auth/login', authLimiter, csrfProtection, async (req, res) => {
   }
 
   // Enforce owner account always has admin role
-  const isOwner = (user.email || '').toLowerCase() === 'admin@event-flow.co.uk';
+  const isOwner = (user.email || '').toLowerCase() === OWNER_EMAIL.toLowerCase();
   const userRole = isOwner ? 'admin' : user.role;
 
   // Set JWT expiry based on "remember me" checkbox
@@ -1493,7 +1499,7 @@ app.get('/api/auth/me', async (req, res) => {
   }
 
   // Enforce owner account always has admin role
-  const isOwner = (u.email || '').toLowerCase() === 'admin@event-flow.co.uk';
+  const isOwner = (u.email || '').toLowerCase() === OWNER_EMAIL.toLowerCase();
   const userRole = isOwner ? 'admin' : u.role;
 
   const userData = {

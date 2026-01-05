@@ -28,11 +28,14 @@ describe('Auth Me Endpoint', () => {
     it('should enforce owner admin role for admin@event-flow.co.uk', () => {
       const serverContent = fs.readFileSync(path.join(__dirname, '../../server.js'), 'utf8');
 
-      // Verify owner enforcement exists
+      // Verify owner enforcement exists - check for OWNER_EMAIL constant usage
       const authMeEndpoint = serverContent.match(/app\.get\('\/api\/auth\/me'[\s\S]*?^\}\);/m);
       expect(authMeEndpoint).toBeTruthy();
-      expect(authMeEndpoint[0]).toContain('admin@event-flow.co.uk');
+      expect(authMeEndpoint[0]).toContain('OWNER_EMAIL');
       expect(authMeEndpoint[0]).toContain('isOwner');
+
+      // Verify constant is defined
+      expect(serverContent).toContain("const OWNER_EMAIL = 'admin@event-flow.co.uk'");
     });
 
     it('should maintain backward compatibility with unwrapped format', () => {
@@ -49,12 +52,15 @@ describe('Auth Me Endpoint', () => {
     it('should enforce owner admin role during login JWT creation', () => {
       const serverContent = fs.readFileSync(path.join(__dirname, '../../server.js'), 'utf8');
 
-      // Verify login endpoint enforces owner role
+      // Verify login endpoint enforces owner role - check for OWNER_EMAIL constant usage
       const loginEndpoint = serverContent.match(/app\.post\('\/api\/auth\/login'[\s\S]*?^\}\);/m);
       expect(loginEndpoint).toBeTruthy();
-      expect(loginEndpoint[0]).toContain('admin@event-flow.co.uk');
+      expect(loginEndpoint[0]).toContain('OWNER_EMAIL');
       expect(loginEndpoint[0]).toContain('isOwner');
       expect(loginEndpoint[0]).toContain('userRole');
+
+      // Verify constant is defined
+      expect(serverContent).toContain("const OWNER_EMAIL = 'admin@event-flow.co.uk'");
     });
 
     it('should use enforced role in JWT token', () => {
@@ -85,8 +91,9 @@ describe('Auth Me Endpoint', () => {
         'utf8'
       );
 
-      // Verify owner email check exists
-      expect(adminInitContent).toContain('admin@event-flow.co.uk');
+      // Verify owner email constant is defined
+      expect(adminInitContent).toContain("const OWNER_EMAIL = 'admin@event-flow.co.uk'");
+      expect(adminInitContent).toContain('isOwner');
       expect(adminInitContent).toContain('isOwner');
     });
 

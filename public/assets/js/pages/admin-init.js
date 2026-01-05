@@ -1,4 +1,7 @@
 (function () {
+  // Constants
+  const OWNER_EMAIL = 'admin@event-flow.co.uk'; // Owner account always has admin role
+
   // Defensive error logging wrapper
   function safeExecute(fn, context) {
     try {
@@ -107,7 +110,7 @@
         ? '<span class="badge badge-yes">Yes</span>'
         : '<span class="badge badge-no">No</span>';
 
-      const isOwner = u.email === 'admin@event-flow.co.uk';
+      const isOwner = u.email === OWNER_EMAIL;
       const isAdmin = u.role === 'admin';
 
       let actions = '<div style="display:flex;gap:4px;flex-wrap:wrap;">';
@@ -453,7 +456,7 @@
         const user = me.user || me;
 
         // Check if user is admin - either by role or by owner email
-        const isOwner = user.email === 'admin@event-flow.co.uk';
+        const isOwner = user.email === OWNER_EMAIL;
         const isAdmin = user.role === 'admin' || isOwner;
 
         if (!isAdmin) {
