@@ -2,7 +2,8 @@
  * JadeAssist Widget Initialization
  * Initializes the JadeAssist chat widget with EventFlow branding
  * Enhanced with UX improvements: avatar, positioning, teaser, larger hit area
- * Updated to use JadeAssist PR #10 API (debug, offsetBottom/Left, mobile overrides)
+ * Updated to use JadeAssist PR #10 native config API which adds support for:
+ * - debug mode, offsetBottom/Left positioning, mobile positioning overrides
  */
 
 (function () {
@@ -326,7 +327,7 @@
         greetingTooltipText: '👋 Hi! Need help planning your event?',
 
         // Avatar (supported by JadeAssist PR #10 API)
-        // Points to /assets/images/jade-avatar.png (1.5MB, verified to exist)
+        // Points to /assets/images/jade-avatar.png
         avatarUrl: avatarUrl,
 
         // Desktop positioning (supported by JadeAssist PR #10 API)
