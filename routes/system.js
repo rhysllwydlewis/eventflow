@@ -55,10 +55,32 @@ function initializeDependencies(deps) {
 }
 
 /**
+ * Middleware wrapper that applies rate limiter if initialized
+ * This allows the module to be loaded before dependencies are injected
+ */
+function applyAuthLimiter(req, res, next) {
+  if (authLimiter) {
+    return authLimiter(req, res, next);
+  }
+  next();
+}
+
+/**
+ * Middleware wrapper that applies health check rate limiter if initialized
+ * This allows the module to be loaded before dependencies are injected
+ */
+function applyHealthCheckLimiter(req, res, next) {
+  if (healthCheckLimiter) {
+    return healthCheckLimiter(req, res, next);
+  }
+  next();
+}
+
+/**
  * GET /api/csrf-token
  * Get CSRF token for form submissions
  */
-router.get('/csrf-token', authLimiter, async (req, res) => {
+router.get('/csrf-token', applyAuthLimiter, async (req, res) => {
   if (!getToken) {
     return res.status(503).json({ error: 'CSRF token service not initialized' });
   }
@@ -71,7 +93,7 @@ router.get('/csrf-token', authLimiter, async (req, res) => {
  * Client config endpoint - provides public configuration values
  * Apply rate limiting to prevent abuse of API key exposure
  */
-router.get('/config', authLimiter, async (req, res) => {
+router.get('/config', applyAuthLimiter, async (req, res) => {
   if (!APP_VERSION) {
     return res.status(503).json({ error: 'Configuration service not initialized' });
   }
@@ -102,7 +124,7 @@ router.get('/meta', async (_req, res) => {
  * Health check endpoint for monitoring
  * Returns 200 if server is running, with service status details
  */
-router.get('/health', healthCheckLimiter, async (_req, res) => {
+router.get('/health', applyHealthCheckLimiter, async (_req, res) => {
   // Check if dependencies are initialized
   if (!mongoDb || !dbUnified || !postmark) {
     return res.status(503).json({
@@ -202,7 +224,7 @@ router.get('/health', healthCheckLimiter, async (_req, res) => {
  * Readiness probe for Kubernetes/Railway
  * Returns 200 only if MongoDB is connected
  */
-router.get('/ready', healthCheckLimiter, async (_req, res) => {
+router.get('/ready', applyHealthCheckLimiter, async (_req, res) => {
   // Check if dependencies are initialized
   if (!mongoDb || !dbUnified) {
     return res.status(503).json({
