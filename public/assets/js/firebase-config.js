@@ -7,6 +7,8 @@
 let db = null;
 let isFirebaseAvailable = false;
 let firestoreInstance = null;
+let storageInstance = null;
+let authInstance = null;
 
 // Try to initialize Firebase if config exists
 try {
@@ -14,6 +16,17 @@ try {
     firebase.initializeApp(window.__FIREBASE_CONFIG__);
     firestoreInstance = firebase.firestore();
     db = firestoreInstance;
+    
+    // Initialize storage if available
+    if (firebase.storage) {
+      storageInstance = firebase.storage();
+    }
+    
+    // Initialize auth if available
+    if (firebase.auth) {
+      authInstance = firebase.auth();
+    }
+    
     isFirebaseAvailable = true;
   }
 } catch (err) {
@@ -53,6 +66,27 @@ const arrayUnion = isFirebaseAvailable
   ? firebase.firestore.FieldValue.arrayUnion
   : (...items) => items;
 
+// Storage exports
+const storage = storageInstance || null;
+const ref = isFirebaseAvailable && storageInstance
+  ? (storageRef, path) => storageRef.ref(path)
+  : () => null;
+const uploadBytes = isFirebaseAvailable && storageInstance
+  ? (ref, data) => ref.put(data)
+  : () => Promise.reject(new Error('Firebase Storage not configured'));
+const getDownloadURL = isFirebaseAvailable && storageInstance
+  ? ref => ref.getDownloadURL()
+  : () => Promise.reject(new Error('Firebase Storage not configured'));
+const deleteObject = isFirebaseAvailable && storageInstance
+  ? ref => ref.delete()
+  : () => Promise.reject(new Error('Firebase Storage not configured'));
+
+// Auth exports
+const auth = authInstance || null;
+const onAuthStateChanged = isFirebaseAvailable && authInstance
+  ? (callback) => authInstance.onAuthStateChanged(callback)
+  : () => () => {};
+
 export {
   db,
   collection,
@@ -69,4 +103,13 @@ export {
   Timestamp,
   arrayUnion,
   isFirebaseAvailable,
+  // Storage exports
+  storage,
+  ref,
+  uploadBytes,
+  getDownloadURL,
+  deleteObject,
+  // Auth exports
+  auth,
+  onAuthStateChanged,
 };
