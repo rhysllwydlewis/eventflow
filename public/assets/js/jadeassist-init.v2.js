@@ -479,7 +479,8 @@
         // Assistant configuration
         assistantName: 'Jade',
         greetingText: "Hi! I'm Jade. Ready to plan your event?",
-        greetingTooltipText: '', // Disable built-in tooltip - using custom EventFlow teaser instead
+        greetingTooltipText:
+          'Hi! I am Jade, your virtual event planner. Can I help you plan your event?',
 
         // Avatar (supported by JadeAssist PR #10 API)
         // Points to /assets/images/jade-avatar.png
@@ -515,33 +516,8 @@
         }
       }, 100);
 
-      // Show teaser based on user engagement (scroll depth)
-      const showTeaserOnEngagement = () => {
-        const scrollDepth =
-          (window.scrollY / (document.documentElement.scrollHeight - window.innerHeight)) * 100;
-
-        // Show teaser after user scrolls 25% down page (engagement signal)
-        if (scrollDepth > 25) {
-          showTeaser();
-          window.removeEventListener('scroll', showTeaserOnEngagement);
-
-          if (debug) {
-            console.log('[JadeAssist] Teaser shown after 25% scroll');
-          }
-        }
-      };
-
-      // Show teaser after delay OR on scroll engagement (whichever comes first)
-      const teaserDelayTimeout = setTimeout(() => {
-        showTeaser();
-        window.removeEventListener('scroll', showTeaserOnEngagement);
-        if (debug) {
-          console.log('[JadeAssist] Teaser shown after delay');
-        }
-      }, TEASER_DELAY);
-
-      // Listen for scroll engagement
-      window.addEventListener('scroll', showTeaserOnEngagement, { passive: true });
+      // Custom teaser removed - using widget's built-in greetingTooltipText instead
+      // This eliminates duplicate teasers and uses the widget's native, functional greeting
     } catch (error) {
       console.error('[JadeAssist] Failed to initialize widget:', error);
     }
