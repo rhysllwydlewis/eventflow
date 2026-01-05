@@ -162,12 +162,12 @@
         btn.textContent = 'Sending...';
 
         try {
-          const data = await AdminShared.api(`/api/admin/users/${userId}/resend-verification`, 'POST');
-          
-          AdminShared.showToast(
-            data.message || 'Verification email sent successfully',
-            'success'
+          const data = await AdminShared.api(
+            `/api/admin/users/${userId}/resend-verification`,
+            'POST'
           );
+
+          AdminShared.showToast(data.message || 'Verification email sent successfully', 'success');
         } catch (error) {
           console.error('Error resending verification:', error);
           AdminShared.showToast(error.message || 'Failed to send verification email', 'error');
@@ -408,11 +408,11 @@
         }
 
         try {
-          const data = await AdminShared.api(
-            `/api/admin/users/${userId}/subscription`,
-            'POST',
-            { tier, duration, reason }
-          );
+          const data = await AdminShared.api(`/api/admin/users/${userId}/subscription`, 'POST', {
+            tier,
+            duration,
+            reason,
+          });
 
           AdminShared.showToast(data.message || 'Subscription granted successfully', 'success');
           closeSubscriptionModal();

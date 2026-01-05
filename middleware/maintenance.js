@@ -27,7 +27,7 @@ async function maintenanceMode(req, res, next) {
     if (maintenance.enabled && maintenance.expiresAt) {
       const now = new Date();
       const expiresAt = new Date(maintenance.expiresAt);
-      
+
       if (now >= expiresAt) {
         // Maintenance period has expired - auto-disable
         console.log('Maintenance mode expired, auto-disabling...');

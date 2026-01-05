@@ -1,6 +1,7 @@
 # Login System Fixes and Enhancements
 
 ## Overview
+
 This document summarizes all the fixes and enhancements made to address critical issues with the login system, maintenance mode, and admin functionality, plus the addition of a new auto-timer feature for maintenance mode.
 
 ## Issues Fixed
@@ -10,6 +11,7 @@ This document summarizes all the fixes and enhancements made to address critical
 **Problem:** When accessing the admin/login via the key icon on mobile, users were redirected to the admin login page. After attempting to sign in, it continuously redirected back to the maintenance page, creating an infinite loop.
 
 **Solution:**
+
 - Updated `middleware/maintenance.js` to allow access to:
   - Admin pages (`/admin*`)
   - Admin API endpoints (`/api/admin*`)
@@ -18,6 +20,7 @@ This document summarizes all the fixes and enhancements made to address critical
 - The maintenance middleware already allowed `/auth.html` and `/api/auth*`, but now also allows subsequent admin access
 
 **Files Changed:**
+
 - `middleware/maintenance.js` - Added admin page/API exemptions
 
 ### 2. CSRF Token Errors ✅
@@ -25,15 +28,18 @@ This document summarizes all the fixes and enhancements made to address critical
 **Problem:** The login form displayed "CSRF token missing" error, preventing authentication. Console showed network errors and TypeErrors on page load related to CSRF token handling.
 
 **Solution:**
+
 - Added CSRF token fetching script to `auth.html` that runs on page load
 - The script fetches from `/api/csrf-token` endpoint and stores it in `window.__CSRF_TOKEN__`
 - The existing `getHeadersWithCsrf()` function in `app.js` already uses this token
 - The backend `/api/csrf-token` endpoint was already implemented
 
 **Files Changed:**
+
 - `public/auth.html` - Added CSRF token fetch script
 
 **Code Added:**
+
 ```javascript
 <script>
   (async function() {
@@ -58,24 +64,28 @@ This document summarizes all the fixes and enhancements made to address critical
 
 ### 3. 'Remember Me' Feature Issues ✅
 
-**Problem:** 
+**Problem:**
+
 - The 'Remember Me' checkbox did not function - users were not kept logged in between sessions
 - The UI/UX and visual styling of the checkbox needed refinement
 
 **Solution:**
 
 #### Backend Changes:
+
 - Updated `/api/auth/login` endpoint in `server.js` to:
   - Accept `remember` parameter from request body
   - Set JWT expiry to 30 days when `remember=true`, otherwise 7 days
   - Set cookie max age to 30 days when `remember=true`, otherwise 7 days
 
 #### Frontend Changes:
+
 - Updated login form submission in `app.js` to:
   - Read the `login-remember` checkbox state
   - Include `remember` parameter in login request body
 
 #### UI/UX Improvements:
+
 - Enhanced checkbox styling in `styles.css`:
   - Increased checkbox size to 18x18px
   - Added accent color (#667eea) for better visibility
@@ -85,28 +95,30 @@ This document summarizes all the fixes and enhancements made to address critical
   - Improved spacing (gap: 10px)
 
 **Files Changed:**
+
 - `server.js` - Updated login endpoint
 - `public/assets/js/app.js` - Updated login form handler
 - `public/assets/css/styles.css` - Enhanced checkbox styling
 
 **Before and After:**
+
 ```css
 /* Before */
-.checkbox-label-right input[type="checkbox"]{
-  width:auto;
-  flex-shrink:0;
-  margin:0;
-  order:2;
+.checkbox-label-right input[type='checkbox'] {
+  width: auto;
+  flex-shrink: 0;
+  margin: 0;
+  order: 2;
 }
 
 /* After */
-.checkbox-label-right input[type="checkbox"]{
+.checkbox-label-right input[type='checkbox'] {
   width: 18px;
   height: 18px;
   cursor: pointer;
-  flex-shrink:0;
-  margin:0;
-  order:2;
+  flex-shrink: 0;
+  margin: 0;
+  order: 2;
   accent-color: #667eea;
 }
 ```
@@ -154,11 +166,13 @@ This document summarizes all the fixes and enhancements made to address critical
    - Updated save handlers to include duration parameter
 
 **Files Changed:**
+
 - `routes/admin.js` - Added duration handling
 - `middleware/maintenance.js` - Added auto-disable logic
 - `public/admin-settings.html` - Added UI and countdown logic
 
 **Features:**
+
 - ⏰ Real-time countdown display showing time remaining
 - 🔴 Visual indicator when maintenance expires
 - 🔄 Auto-reload after expiration detected
@@ -167,6 +181,7 @@ This document summarizes all the fixes and enhancements made to address critical
 - 🎨 Color-coded countdown (blue = active, yellow = expired)
 
 **UI Example:**
+
 ```
 Auto-Disable Timer (Optional)
 [Dropdown: Select duration]
@@ -236,6 +251,7 @@ Auto-Disable Timer (Optional)
 ## Browser Compatibility
 
 All changes use standard JavaScript and CSS features supported by:
+
 - Chrome/Edge 90+
 - Firefox 88+
 - Safari 14+

@@ -157,7 +157,9 @@ describe('Hero Collage Image Loader', () => {
               sourceElement.remove();
             }
 
-            mockConsole.log(`Updated hero collage image for ${category} with custom upload: ${imageUrl}`);
+            mockConsole.log(
+              `Updated hero collage image for ${category} with custom upload: ${imageUrl}`
+            );
           } catch (updateError) {
             mockConsole.error(`Failed to update image for category ${category}:`, updateError);
           }
@@ -394,7 +396,7 @@ describe('Hero Collage Image Loader', () => {
         'https://res.cloudinary.com/test/image/upload/venue.jpg?t=1234567890'
       );
       expect(frames[0].querySelector('img').alt).toBe('Venues - custom uploaded hero image');
-      
+
       expect(frames[2].querySelector('img').src).toBe(
         'https://res.cloudinary.com/test/image/upload/entertainment.jpg?t=1234567890'
       );

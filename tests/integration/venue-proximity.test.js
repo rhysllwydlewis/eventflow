@@ -82,7 +82,7 @@ describe('Venue Proximity API', () => {
         .expect(200);
 
       expect(res.body.radiusMiles).toBe(5);
-      
+
       // All returned venues should be within 5 miles
       res.body.venues.forEach(venue => {
         if (venue.distance !== null) {
