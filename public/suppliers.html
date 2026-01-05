@@ -19,6 +19,7 @@
   <link rel="icon" href="/favicon.svg">
 </head>
 <body>
+<a href="#main-content" class="skip-link">Skip to main content</a>
 <header class="header" role="banner">
   <div class="container header-inner">
     <a class="brand" href="/" aria-label="EventFlow home">
@@ -64,11 +65,11 @@
 <script src="/assets/js/search.js" defer></script>
 <script src="/assets/js/websocket-client.js" defer></script>
 
-<main class="section">
+<main id="main-content" class="section">
   <section class="section section--muted">
     <div class="container">
       <div class="card">
-        <h1 style="margin-top:.4rem;">Find wedding venues near you</h1>
+        <h2 style="margin-top:.4rem;">Find wedding venues near you</h2>
         <p class="small">
           This map uses your browser and Google Maps to search for wedding venues near your location.
           You can share your location or type a UK postcode. Results load directly in the map below.
@@ -103,7 +104,7 @@
     <div class="card">
       <div class="form-row" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr))">
         <div>
-          <label>Category</label>
+          <label for="filterCategory">Category</label>
           <select id="filterCategory">
             <option value="">Any</option>
             <option>Venues</option>
@@ -117,7 +118,7 @@
           </select>
         </div>
         <div>
-          <label>Price range</label>
+          <label for="filterPrice">Price range</label>
           <select id="filterPrice">
             <option value="">Any</option>
             <option>£</option>
@@ -126,14 +127,14 @@
           </select>
         </div>
         <div>
-          <label>Search</label>
+          <label for="filterQuery">Search</label>
           <input id="filterQuery" placeholder="Search by name or description">
         </div>
       </div>
     </div>
 
     <div class="card" id="results-tips">
-      <h2 class="h4">Tips for better results</h2>
+      <h3>Tips for better results</h3>
       <p class="small">
         Try searching by town or area, or filtering by one category at a time.
         You can also start from the <a href="/start.html">Start page</a> to tell us about your event.
