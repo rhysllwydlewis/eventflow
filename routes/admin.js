@@ -89,31 +89,36 @@ router.get('/db-status', authRequired, roleRequired('admin'), (_req, res) => {
  * List all users (without password hashes)
  */
 router.get('/users', authRequired, roleRequired('admin'), (req, res) => {
-  const users = read('users').map(u => ({
-    id: u.id,
-    name: u.name,
-    email: u.email,
-    role: u.role,
-    verified: !!u.verified,
-    marketingOptIn: !!u.marketingOptIn,
-    createdAt: u.createdAt,
-    lastLoginAt: u.lastLoginAt || null,
-    subscription: u.subscription || { tier: 'free', status: 'active' },
-  }));
-  // Sort newest first by createdAt
-  users.sort((a, b) => {
-    if (!a.createdAt && !b.createdAt) {
-      return 0;
-    }
-    if (!a.createdAt) {
-      return 1;
-    }
-    if (!b.createdAt) {
-      return -1;
-    }
-    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-  });
-  res.json({ items: users });
+  try {
+    const users = (read('users') || []).map(u => ({
+      id: u.id,
+      name: u.name,
+      email: u.email,
+      role: u.role,
+      verified: !!u.verified,
+      marketingOptIn: !!u.marketingOptIn,
+      createdAt: u.createdAt,
+      lastLoginAt: u.lastLoginAt || null,
+      subscription: u.subscription || { tier: 'free', status: 'active' },
+    }));
+    // Sort newest first by createdAt
+    users.sort((a, b) => {
+      if (!a.createdAt && !b.createdAt) {
+        return 0;
+      }
+      if (!a.createdAt) {
+        return 1;
+      }
+      if (!b.createdAt) {
+        return -1;
+      }
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+    res.json({ items: users });
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    res.status(500).json({ error: 'Failed to fetch users', items: [] });
+  }
 });
 
 /**
@@ -207,26 +212,42 @@ router.get('/metrics/timeseries', authRequired, roleRequired('admin'), (_req, re
  * Get admin dashboard metrics
  */
 router.get('/metrics', authRequired, roleRequired('admin'), (_req, res) => {
-  const users = read('users');
-  const suppliers = read('suppliers');
-  const plans = read('plans');
-  const msgs = read('messages');
-  const pkgs = read('packages');
-  const threads = read('threads');
-  res.json({
-    counts: {
-      usersTotal: users.length,
-      usersByRole: users.reduce((a, u) => {
-        a[u.role] = (a[u.role] || 0) + 1;
-        return a;
-      }, {}),
-      suppliersTotal: suppliers.length,
-      packagesTotal: pkgs.length,
-      plansTotal: plans.length,
-      messagesTotal: msgs.length,
-      threadsTotal: threads.length,
-    },
-  });
+  try {
+    const users = read('users') || [];
+    const suppliers = read('suppliers') || [];
+    const plans = read('plans') || [];
+    const msgs = read('messages') || [];
+    const pkgs = read('packages') || [];
+    const threads = read('threads') || [];
+    res.json({
+      counts: {
+        usersTotal: users.length,
+        usersByRole: users.reduce((a, u) => {
+          a[u.role] = (a[u.role] || 0) + 1;
+          return a;
+        }, {}),
+        suppliersTotal: suppliers.length,
+        packagesTotal: pkgs.length,
+        plansTotal: plans.length,
+        messagesTotal: msgs.length,
+        threadsTotal: threads.length,
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching metrics:', error);
+    res.status(500).json({
+      error: 'Failed to fetch metrics',
+      counts: {
+        usersTotal: 0,
+        usersByRole: {},
+        suppliersTotal: 0,
+        packagesTotal: 0,
+        plansTotal: 0,
+        messagesTotal: 0,
+        threadsTotal: 0,
+      },
+    });
+  }
 });
 
 /**
@@ -2053,30 +2074,42 @@ function generateUniqueId(prefix) {
  * Get counts for sidebar badges (new users, pending photos, open tickets)
  */
 router.get('/badge-counts', authRequired, roleRequired('admin'), (req, res) => {
-  const users = read('users');
-  const photos = read('photos') || [];
-  const tickets = read('tickets') || [];
+  try {
+    // Ensure we have arrays even if store.read returns undefined
+    const users = read('users') || [];
+    const photos = read('photos') || [];
+    const tickets = read('tickets') || [];
 
-  // Count users created in last 7 days
-  const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-  const newUsers = users.filter(u => {
-    if (!u.createdAt) {
-      return false;
-    }
-    return new Date(u.createdAt).getTime() > sevenDaysAgo;
-  }).length;
+    // Count users created in last 7 days
+    const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    const newUsers = users.filter(u => {
+      if (!u.createdAt) {
+        return false;
+      }
+      return new Date(u.createdAt).getTime() > sevenDaysAgo;
+    }).length;
 
-  // Count pending photos
-  const pendingPhotos = photos.filter(p => !p.approved && !p.rejected).length;
+    // Count pending photos
+    const pendingPhotos = photos.filter(p => !p.approved && !p.rejected).length;
 
-  // Count open tickets
-  const openTickets = tickets.filter(t => t.status === 'open' || t.status === 'in_progress').length;
+    // Count open tickets
+    const openTickets = tickets.filter(t => t.status === 'open' || t.status === 'in_progress').length;
 
-  res.json({
-    newUsers,
-    pendingPhotos,
-    openTickets,
-  });
+    res.json({
+      newUsers,
+      pendingPhotos,
+      openTickets,
+    });
+  } catch (error) {
+    console.error('Error fetching badge counts:', error);
+    // Return zeroed counts instead of crashing
+    res.status(500).json({
+      error: 'Failed to fetch badge counts',
+      newUsers: 0,
+      pendingPhotos: 0,
+      openTickets: 0,
+    });
+  }
 });
 
 // ---------- User Detail Operations ----------

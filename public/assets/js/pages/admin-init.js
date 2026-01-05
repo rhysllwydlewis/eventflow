@@ -461,12 +461,30 @@
         }
 
         return Promise.all([
-          api('/api/admin/suppliers'),
-          api('/api/admin/packages'),
-          api('/api/admin/users'),
-          api('/api/admin/metrics'),
-          api('/api/admin/photos/pending').catch(() => ({ photos: [] })),
-          api('/api/admin/reviews/pending').catch(() => ({ reviews: [] })),
+          api('/api/admin/suppliers').catch(err => {
+            console.warn('Failed to load suppliers:', err.message);
+            return { items: [] };
+          }),
+          api('/api/admin/packages').catch(err => {
+            console.warn('Failed to load packages:', err.message);
+            return { items: [] };
+          }),
+          api('/api/admin/users').catch(err => {
+            console.warn('Failed to load users:', err.message);
+            return { items: [] };
+          }),
+          api('/api/admin/metrics').catch(err => {
+            console.warn('Failed to load metrics:', err.message);
+            return { counts: {} };
+          }),
+          api('/api/admin/photos/pending').catch(err => {
+            console.warn('Failed to load pending photos:', err.message);
+            return { photos: [] };
+          }),
+          api('/api/admin/reviews/pending').catch(err => {
+            console.warn('Failed to load pending reviews:', err.message);
+            return { reviews: [] };
+          }),
         ]).then(results => {
           const suppliersResp = results[0] || {};
           const packagesResp = results[1] || {};
@@ -509,9 +527,9 @@
               }
             })
             .catch(err => {
-              console.error('Error loading pending reports:', err);
+              console.warn('Failed to load pending reports:', err.message);
               if (reportsEl) {
-                reportsEl.innerText = '?';
+                reportsEl.innerText = '0';
               }
             });
 
@@ -523,9 +541,9 @@
               }
             })
             .catch(err => {
-              console.error('Error loading pending supplier verifications:', err);
+              console.warn('Failed to load pending supplier verifications:', err.message);
               if (suppliersVerificationEl) {
-                suppliersVerificationEl.innerText = '?';
+                suppliersVerificationEl.innerText = '0';
               }
             });
 
@@ -536,8 +554,9 @@
       })
       .catch(err => {
         console.error('Error loading admin', err);
-        if (statusEl) {
-          statusEl.innerText = 'Error loading admin.';
+        // Only show error message if it's not an auth error
+        if (statusEl && err && err.message && typeof err.message === 'string' && !err.message.includes('Authentication required')) {
+          statusEl.innerText = 'Error loading data. Some features may be unavailable.';
         }
       });
   }

@@ -137,6 +137,13 @@
         throw new Error('Failed to fetch listings');
       }
 
+      // Check content type before parsing JSON
+      const contentType = res.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        console.warn('Response is not JSON:', contentType);
+        throw new Error('Invalid response format');
+      }
+
       const data = await res.json();
       allListings = data.listings || [];
       renderListings();
@@ -345,6 +352,14 @@
       if (!res.ok) {
         throw new Error('Failed to fetch listing');
       }
+
+      // Check content type before parsing JSON
+      const contentType = res.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        console.warn('Response is not JSON:', contentType);
+        throw new Error('Invalid response format');
+      }
+
       const { listing } = await res.json();
 
       // Start a thread with the seller
@@ -361,6 +376,14 @@
       if (!threadRes.ok) {
         throw new Error('Failed to start conversation');
       }
+
+      // Check content type before parsing JSON
+      const threadContentType = threadRes.headers.get('content-type');
+      if (!threadContentType || !threadContentType.includes('application/json')) {
+        console.warn('Response is not JSON:', threadContentType);
+        throw new Error('Invalid response format');
+      }
+
       const { threadId } = await threadRes.json();
 
       // Redirect to conversation
