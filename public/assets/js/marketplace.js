@@ -43,6 +43,7 @@
   function updateAuthUI() {
     const authCta = document.getElementById('auth-cta');
     const sellBtn = document.getElementById('sell-item-btn');
+    const myListingsLink = document.getElementById('my-listings-link');
 
     if (currentUser) {
       if (authCta) {
@@ -51,6 +52,9 @@
       if (sellBtn) {
         sellBtn.textContent = 'List an Item';
         sellBtn.onclick = () => showListItemModal();
+      }
+      if (myListingsLink) {
+        myListingsLink.style.display = 'inline-block';
       }
     } else {
       if (sellBtn) {
@@ -387,6 +391,14 @@
                 </select>
               </div>
             </div>
+            <div style="margin-bottom: 16px;">
+              <label for="item-images">Images (Optional)</label>
+              <input type="file" id="item-images" accept="image/*" multiple style="margin-bottom: 8px;">
+              <p class="small" style="color: #6b7280; margin: 0;">
+                Upload up to 5 images (JPG, PNG, max 5MB each). First image will be the main photo.
+              </p>
+              <div id="image-preview" style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px;"></div>
+            </div>
             <p class="small" style="color: #6b7280; margin-bottom: 16px;">
               Your listing will be reviewed by our team before it appears on the marketplace.
             </p>
@@ -453,6 +465,48 @@
 
     document.body.appendChild(modal);
 
+    // Handle image upload and preview
+    const imageInput = document.getElementById('item-images');
+    const imagePreview = document.getElementById('image-preview');
+    let selectedImages = [];
+
+    imageInput.addEventListener('change', async e => {
+      const files = Array.from(e.target.files).slice(0, 5); // Max 5 images
+      selectedImages = [];
+      imagePreview.innerHTML = '';
+
+      for (const file of files) {
+        if (file.size > 5 * 1024 * 1024) {
+          showToast('Image must be under 5MB', 'error');
+          continue;
+        }
+
+        // Convert to base64 for preview and storage
+        const reader = new FileReader();
+        reader.onload = function (event) {
+          const base64 = event.target.result;
+          selectedImages.push(base64);
+
+          // Create preview
+          const preview = document.createElement('div');
+          preview.style.cssText = `
+            position: relative;
+            width: 80px;
+            height: 80px;
+            border-radius: 4px;
+            overflow: hidden;
+            border: 1px solid #e5e7eb;
+          `;
+          preview.innerHTML = `
+            <img src="${base64}" style="width: 100%; height: 100%; object-fit: cover;">
+            <button type="button" style="position: absolute; top: 2px; right: 2px; background: rgba(0,0,0,0.5); color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer; font-size: 12px; line-height: 1;" onclick="this.parentElement.remove()">×</button>
+          `;
+          imagePreview.appendChild(preview);
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
     // Handle form submission
     const form = document.getElementById('list-item-form');
     form.addEventListener('submit', async e => {
@@ -465,7 +519,7 @@
         location: document.getElementById('item-location').value,
         category: document.getElementById('item-category').value,
         condition: document.getElementById('item-condition').value,
-        images: [],
+        images: selectedImages,
       };
 
       try {
