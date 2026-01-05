@@ -18,6 +18,10 @@
   const MOBILE_BREAKPOINT = 768; // px - matches CSS media query breakpoint
 
   // Positioning constants (now passed to widget config)
+  // These values align the widget with the back-to-top button:
+  // - Widget is positioned on the left (offsetLeft)
+  // - Back-to-top button is positioned on the right (at same bottom offset)
+  // - Both share the same baseline: 5rem desktop, 4.5rem mobile
   const DESKTOP_OFFSET_BOTTOM = '5rem';
   const DESKTOP_OFFSET_LEFT = '1.5rem';
   const MOBILE_OFFSET_BOTTOM = '4.5rem';
@@ -261,6 +265,9 @@
   /**
    * Determine if debug mode should be enabled
    * Enable debug on non-production hostnames or via query param
+   * 
+   * Troubleshooting tip: Append ?jade-debug to the URL to enable diagnostic logs
+   * in the console, including avatar loading status and widget initialization details.
    */
   function shouldEnableDebug() {
     // Check for debug query parameter
@@ -318,20 +325,23 @@
         greetingText: "Hi! I'm Jade. Ready to plan your event?",
         greetingTooltipText: '👋 Hi! Need help planning your event?',
 
-        // Avatar (now supported by API)
+        // Avatar (supported by JadeAssist PR #10 API)
+        // Points to /assets/images/jade-avatar.png (1.5MB, verified to exist)
         avatarUrl: avatarUrl,
 
-        // Desktop positioning (now supported by API)
+        // Desktop positioning (supported by JadeAssist PR #10 API)
+        // Aligns with back-to-top button on opposite side (both at bottom: 5rem)
         offsetBottom: DESKTOP_OFFSET_BOTTOM,
         offsetLeft: DESKTOP_OFFSET_LEFT,
 
-        // Mobile positioning (new in PR #10)
+        // Mobile positioning (supported by JadeAssist PR #10 API)
+        // Aligns with back-to-top button on opposite side (both at bottom: 4.5rem)
         offsetBottomMobile: MOBILE_OFFSET_BOTTOM,
         offsetLeftMobile: MOBILE_OFFSET_LEFT,
 
         // Size and debug
         scale: 0.85, // 15% smaller for better mobile UX
-        debug: debug, // Enable diagnostic logs on dev environments
+        debug: debug, // Enable diagnostic logs on dev environments or with ?jade-debug
       });
 
       initialized = true;

@@ -2,6 +2,7 @@
  * JadeAssist Widget Initialization
  * Initializes the JadeAssist chat widget with EventFlow branding
  * Enhanced with UX improvements: avatar, positioning, teaser, larger hit area
+ * Updated to use JadeAssist PR #10 API (debug, offsetBottom/Left, mobile overrides)
  */
 
 (function () {
@@ -15,25 +16,22 @@
   const TEASER_STORAGE_KEY = 'jadeassist-teaser-dismissed';
   const TEASER_EXPIRY_DAYS = 1; // Teaser dismissal persists for 1 day
   const MOBILE_BREAKPOINT = 768; // px - matches CSS media query breakpoint
-  const RESIZE_DEBOUNCE_MS = 250; // Debounce delay for resize events
 
-  // Shadow DOM selectors for avatar element (in order of priority)
-  // These target the launcher button's image element within the widget's shadow DOM
-  const AVATAR_SELECTORS = [
-    'button[aria-label*="chat" i] img',
-    '.jade-launcher-button img',
-    '.jade-avatar-button img',
-    '.jade-widget-button img',
-    'button img',
-    'img', // Fallback: any img in shadow root
-  ];
+  // Positioning constants (now passed to widget config)
+  // These values align the widget with the back-to-top button:
+  // - Widget is positioned on the left (offsetLeft)
+  // - Back-to-top button is positioned on the right (at same bottom offset)
+  // - Both share the same baseline: 5rem desktop, 4.5rem mobile
+  const DESKTOP_OFFSET_BOTTOM = '5rem';
+  const DESKTOP_OFFSET_LEFT = '1.5rem';
+  const MOBILE_OFFSET_BOTTOM = '4.5rem';
+  const MOBILE_OFFSET_LEFT = '1rem';
 
   // State tracking
   let initialized = false;
   let retryCount = 0;
   let warningLogged = false;
   let teaserElement = null;
-  let resizeAbortController = null; // For cleanup of resize listener
 
   /**
    * Check if teaser was recently dismissed
@@ -132,76 +130,8 @@
   }
 
   /**
-   * Apply shadow DOM-safe positioning
-   * Directly manipulates the widget container inside shadow DOM
-   */
-  function applyShadowDOMPositioning() {
-    const widgetRoot = document.querySelector('.jade-widget-root');
-    if (!widgetRoot) {
-      console.warn('⚠️ Widget root not found, cannot apply positioning');
-      return false;
-    }
-
-    // Check if we're on mobile
-    const isMobile = window.innerWidth <= MOBILE_BREAKPOINT;
-    const bottom = isMobile ? '4.5rem' : '5rem';
-    const left = isMobile ? '1rem' : '1.5rem';
-
-    // Try to access shadow DOM and set positioning
-    if (widgetRoot.shadowRoot) {
-      const container = widgetRoot.shadowRoot.querySelector('.jade-widget-container');
-      if (container) {
-        container.style.bottom = bottom;
-        container.style.left = left;
-        container.style.right = 'auto'; // Override any right positioning
-        console.log('✅ Applied shadow DOM positioning:', { bottom, left });
-        return true;
-      }
-    }
-
-    // Fallback: apply to widget root itself
-    widgetRoot.style.bottom = bottom;
-    widgetRoot.style.left = left;
-    widgetRoot.style.right = 'auto';
-    console.log('✅ Applied root-level positioning:', { bottom, left });
-    return true;
-  }
-
-  /**
-   * Apply custom avatar to widget launcher
-   * Works with shadow DOM to set the avatar image
-   */
-  function applyAvatarToLauncher(avatarUrl) {
-    const widgetRoot = document.querySelector('.jade-widget-root');
-    if (!widgetRoot || !widgetRoot.shadowRoot) {
-      console.warn('⚠️ Widget root or shadow DOM not found, cannot apply avatar');
-      return false;
-    }
-
-    // Try multiple selectors to find the launcher button/icon
-    let avatarImg = null;
-    for (const selector of AVATAR_SELECTORS) {
-      avatarImg = widgetRoot.shadowRoot.querySelector(selector);
-      if (avatarImg) {
-        console.log('✅ Found avatar element with selector:', selector);
-        break;
-      }
-    }
-
-    if (avatarImg) {
-      avatarImg.src = avatarUrl;
-      avatarImg.alt = 'Jade Assistant';
-      console.log('✅ Applied custom avatar:', avatarUrl);
-      return true;
-    } else {
-      console.warn('⚠️ Could not find avatar image element in shadow DOM');
-      return false;
-    }
-  }
-
-  /**
-   * Apply custom styles for enhanced UX
-   * Includes teaser styles and fallback positioning CSS
+   * Apply custom styles for teaser UX
+   * Note: Widget positioning is now handled via config API, not CSS overrides
    */
   function applyCustomStyles() {
     // Check if styles already applied
@@ -212,23 +142,6 @@
     const style = document.createElement('style');
     style.id = 'jade-custom-styles';
     style.textContent = `
-      /* Fallback widget positioning (in case shadow DOM manipulation doesn't work) */
-      .jade-widget-root {
-        /* Desktop: align with back-to-top at bottom: 5rem */
-        bottom: 5rem !important;
-        left: 1.5rem !important;
-        right: auto !important;
-      }
-
-      @media (max-width: ${MOBILE_BREAKPOINT}px) {
-        .jade-widget-root {
-          /* Mobile: align with back-to-top at bottom: 4.5rem */
-          bottom: 4.5rem !important;
-          left: 1rem !important;
-          right: auto !important;
-        }
-      }
-
       /* Teaser bubble styles */
       .jade-teaser {
         position: fixed;
@@ -311,12 +224,6 @@
         }
       }
 
-      /* Ensure button maintains floating animation */
-      @keyframes jade-float {
-        0%, 100% { transform: translateY(0); }
-        50% { transform: translateY(-6px); }
-      }
-
       /* Handle safe area insets for teaser on iOS */
       @supports (padding: env(safe-area-inset-bottom)) {
         .jade-teaser {
@@ -352,25 +259,32 @@
       avatarUrl = `${cleanBasePath}/${avatarPath}`;
     }
 
-    console.log('JadeAssist avatar URL:', avatarUrl);
     return avatarUrl;
   }
 
   /**
-   * Check if avatar image loads successfully
+   * Determine if debug mode should be enabled
+   * Enable debug on non-production hostnames or via query param
+   * 
+   * Troubleshooting tip: Append ?jade-debug to the URL to enable diagnostic logs
+   * in the console, including avatar loading status and widget initialization details.
    */
-  function checkAvatarLoad(avatarUrl) {
-    const img = new Image();
-    img.onload = function () {
-      console.log('✅ JadeAssist avatar loaded successfully');
-    };
-    img.onerror = function () {
-      console.warn(
-        '⚠️ JadeAssist avatar failed to load. Check that the image exists at:',
-        avatarUrl
-      );
-    };
-    img.src = avatarUrl;
+  function shouldEnableDebug() {
+    // Check for debug query parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('jade-debug')) {
+      return true;
+    }
+
+    // Enable on localhost and common dev domains
+    const hostname = window.location.hostname;
+    return (
+      hostname === 'localhost' ||
+      hostname === '127.0.0.1' ||
+      hostname.includes('.local') ||
+      hostname.includes('dev.') ||
+      hostname.includes('staging.')
+    );
   }
 
   /**
@@ -391,25 +305,43 @@
     }
 
     try {
-      // Apply custom styles first
+      // Apply custom styles for teaser
       applyCustomStyles();
 
       // Get avatar URL with subpath support
       const avatarUrl = getAvatarUrl();
 
-      // Check if avatar loads (diagnostic)
-      checkAvatarLoad(avatarUrl);
+      // Determine debug mode
+      const debug = shouldEnableDebug();
 
-      // Initialize with configuration
-      // Note: avatarUrl, offsetBottom, offsetLeft are not supported by this widget version
-      // They are applied manually via shadow DOM manipulation below
+      // Initialize with configuration using new API
       window.JadeWidget.init({
+        // Brand colors
         primaryColor: '#00B2A9',
         accentColor: '#008C85',
+
+        // Assistant configuration
         assistantName: 'Jade',
         greetingText: "Hi! I'm Jade. Ready to plan your event?",
         greetingTooltipText: '👋 Hi! Need help planning your event?',
+
+        // Avatar (supported by JadeAssist PR #10 API)
+        // Points to /assets/images/jade-avatar.png (1.5MB, verified to exist)
+        avatarUrl: avatarUrl,
+
+        // Desktop positioning (supported by JadeAssist PR #10 API)
+        // Aligns with back-to-top button on opposite side (both at bottom: 5rem)
+        offsetBottom: DESKTOP_OFFSET_BOTTOM,
+        offsetLeft: DESKTOP_OFFSET_LEFT,
+
+        // Mobile positioning (supported by JadeAssist PR #10 API)
+        // Aligns with back-to-top button on opposite side (both at bottom: 4.5rem)
+        offsetBottomMobile: MOBILE_OFFSET_BOTTOM,
+        offsetLeftMobile: MOBILE_OFFSET_LEFT,
+
+        // Size and debug
         scale: 0.85, // 15% smaller for better mobile UX
+        debug: debug, // Enable diagnostic logs on dev environments or with ?jade-debug
       });
 
       initialized = true;
@@ -422,72 +354,6 @@
           console.log('JadeAssist chat ensured closed on load');
         }
       }, 100);
-
-      // Apply positioning via shadow DOM (more reliable than CSS overrides)
-      setTimeout(() => {
-        const positioningSuccess = applyShadowDOMPositioning();
-        if (!positioningSuccess) {
-          console.warn('⚠️ Could not apply shadow DOM positioning, relying on CSS fallback');
-        }
-
-        // Apply custom avatar to launcher
-        const avatarSuccess = applyAvatarToLauncher(avatarUrl);
-        if (!avatarSuccess) {
-          console.warn('⚠️ Could not apply custom avatar, will retry after delay');
-          // Retry avatar application after another delay
-          setTimeout(() => {
-            const retrySuccess = applyAvatarToLauncher(avatarUrl);
-            if (!retrySuccess) {
-              console.error('❌ Failed to apply custom avatar after retry');
-            }
-          }, 1000);
-        }
-
-        // Diagnostic: Report final positioning
-        const widgetRoot = document.querySelector('.jade-widget-root');
-        if (widgetRoot) {
-          const rootStyles = window.getComputedStyle(widgetRoot);
-          const shadowContainer = widgetRoot.shadowRoot?.querySelector('.jade-widget-container');
-
-          console.log('📊 JadeAssist Widget Diagnostics:');
-          console.log('   Root element:', {
-            position: rootStyles.position,
-            bottom: rootStyles.bottom,
-            left: rootStyles.left,
-            right: rootStyles.right,
-          });
-
-          if (shadowContainer) {
-            const containerStyles = window.getComputedStyle(shadowContainer);
-            console.log('   Shadow container:', {
-              position: containerStyles.position,
-              bottom: containerStyles.bottom,
-              left: containerStyles.left,
-              right: containerStyles.right,
-            });
-          } else {
-            console.log('   Shadow container: not accessible');
-          }
-        } else {
-          console.warn('⚠️ Widget root element (.jade-widget-root) not found in DOM');
-        }
-      }, 500);
-
-      // Re-apply positioning on window resize for responsive behavior
-      // Debounced to avoid excessive calls during resize
-      // Uses AbortController for proper cleanup
-      resizeAbortController = new AbortController();
-      let resizeTimeout;
-      window.addEventListener(
-        'resize',
-        () => {
-          clearTimeout(resizeTimeout);
-          resizeTimeout = setTimeout(() => {
-            applyShadowDOMPositioning();
-          }, RESIZE_DEBOUNCE_MS);
-        },
-        { signal: resizeAbortController.signal }
-      );
 
       // Show teaser after delay
       setTimeout(showTeaser, TEASER_DELAY);
