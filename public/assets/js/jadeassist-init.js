@@ -14,12 +14,26 @@
   const TEASER_DELAY = 500; // Delay before showing teaser after init (500ms)
   const TEASER_STORAGE_KEY = 'jadeassist-teaser-dismissed';
   const TEASER_EXPIRY_DAYS = 1; // Teaser dismissal persists for 1 day
+  const MOBILE_BREAKPOINT = 768; // px - matches CSS media query breakpoint
+  const RESIZE_DEBOUNCE_MS = 250; // Debounce delay for resize events
+
+  // Shadow DOM selectors for avatar element (in order of priority)
+  // These target the launcher button's image element within the widget's shadow DOM
+  const AVATAR_SELECTORS = [
+    'button[aria-label*="chat" i] img',
+    '.jade-launcher-button img',
+    '.jade-avatar-button img',
+    '.jade-widget-button img',
+    'button img',
+    'img', // Fallback: any img in shadow root
+  ];
 
   // State tracking
   let initialized = false;
   let retryCount = 0;
   let warningLogged = false;
   let teaserElement = null;
+  let resizeAbortController = null; // For cleanup of resize listener
 
   /**
    * Check if teaser was recently dismissed
@@ -129,7 +143,7 @@
     }
 
     // Check if we're on mobile
-    const isMobile = window.innerWidth <= 768;
+    const isMobile = window.innerWidth <= MOBILE_BREAKPOINT;
     const bottom = isMobile ? '4.5rem' : '5rem';
     const left = isMobile ? '1rem' : '1.5rem';
 
@@ -165,17 +179,8 @@
     }
 
     // Try multiple selectors to find the launcher button/icon
-    const selectors = [
-      'button[aria-label*="chat" i] img',
-      '.jade-launcher-button img',
-      '.jade-avatar-button img',
-      '.jade-widget-button img',
-      'button img',
-      'img',
-    ];
-
     let avatarImg = null;
-    for (const selector of selectors) {
+    for (const selector of AVATAR_SELECTORS) {
       avatarImg = widgetRoot.shadowRoot.querySelector(selector);
       if (avatarImg) {
         console.log('✅ Found avatar element with selector:', selector);
@@ -215,7 +220,7 @@
         right: auto !important;
       }
 
-      @media (max-width: 768px) {
+      @media (max-width: ${MOBILE_BREAKPOINT}px) {
         .jade-widget-root {
           /* Mobile: align with back-to-top at bottom: 4.5rem */
           bottom: 4.5rem !important;
@@ -298,7 +303,7 @@
       }
 
       /* Mobile adjustments for teaser */
-      @media (max-width: 768px) {
+      @media (max-width: ${MOBILE_BREAKPOINT}px) {
         .jade-teaser {
           bottom: 7.5rem; /* Above widget on mobile (widget at 4.5rem + 3rem spacing) */
           left: 1rem;
@@ -318,7 +323,7 @@
           bottom: calc(8rem + env(safe-area-inset-bottom));
         }
 
-        @media (max-width: 768px) {
+        @media (max-width: ${MOBILE_BREAKPOINT}px) {
           .jade-teaser {
             bottom: calc(7.5rem + env(safe-area-inset-bottom));
           }
@@ -470,13 +475,19 @@
 
       // Re-apply positioning on window resize for responsive behavior
       // Debounced to avoid excessive calls during resize
+      // Uses AbortController for proper cleanup
+      resizeAbortController = new AbortController();
       let resizeTimeout;
-      window.addEventListener('resize', () => {
-        clearTimeout(resizeTimeout);
-        resizeTimeout = setTimeout(() => {
-          applyShadowDOMPositioning();
-        }, 250); // Debounce 250ms
-      });
+      window.addEventListener(
+        'resize',
+        () => {
+          clearTimeout(resizeTimeout);
+          resizeTimeout = setTimeout(() => {
+            applyShadowDOMPositioning();
+          }, RESIZE_DEBOUNCE_MS);
+        },
+        { signal: resizeAbortController.signal }
+      );
 
       // Show teaser after delay
       setTimeout(showTeaser, TEASER_DELAY);
