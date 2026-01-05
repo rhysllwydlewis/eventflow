@@ -185,7 +185,9 @@
 }
 
 .marketplace-list .marketplace-item-image img {
-  position: static;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .marketplace-list .marketplace-item-details {
@@ -256,8 +258,9 @@
 
 /* Filter row improvements for mobile */
 @media (max-width: 768px) {
-  .form-row {
-    grid-template-columns: 1fr !important;
+  .marketplace-grid + .card .form-row,
+  #marketplace-filter-category ~ .form-row {
+    grid-template-columns: 1fr;
     gap: 10px;
   }
 }

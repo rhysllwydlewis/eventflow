@@ -149,12 +149,26 @@
 
       if (isGridView) {
         resultsContainer.className = 'marketplace-grid';
-        viewIcon.textContent = '⊞';
-        toggleBtn.innerHTML = '<span id="view-icon">⊞</span> Grid View';
+        if (viewIcon) {
+          viewIcon.textContent = '⊞';
+        }
+        toggleBtn.textContent = '';
+        const icon = document.createElement('span');
+        icon.id = 'view-icon';
+        icon.textContent = '⊞';
+        toggleBtn.appendChild(icon);
+        toggleBtn.appendChild(document.createTextNode(' Grid View'));
       } else {
         resultsContainer.className = 'marketplace-list';
-        viewIcon.textContent = '☰';
-        toggleBtn.innerHTML = '<span id="view-icon">☰</span> List View';
+        if (viewIcon) {
+          viewIcon.textContent = '☰';
+        }
+        toggleBtn.textContent = '';
+        const icon = document.createElement('span');
+        icon.id = 'view-icon';
+        icon.textContent = '☰';
+        toggleBtn.appendChild(icon);
+        toggleBtn.appendChild(document.createTextNode(' List View'));
       }
     });
   }
