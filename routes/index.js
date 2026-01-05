@@ -9,6 +9,7 @@ const express = require('express');
 const router = express.Router();
 
 // Import route modules
+const systemRoutes = require('./system');
 const authRoutes = require('./auth');
 const adminRoutes = require('./admin');
 const messagesRoutes = require('./messages');
@@ -22,8 +23,15 @@ const webhooksRoutes = require('./webhooks');
 /**
  * Mount all route modules
  * @param {Object} app - Express app instance
+ * @param {Object} deps - Dependencies to inject into routes
  */
-function mountRoutes(app) {
+function mountRoutes(app, deps) {
+  // System routes (health, config, meta) - must be first for health checks
+  if (deps) {
+    systemRoutes.initializeDependencies(deps);
+  }
+  app.use('/api', systemRoutes);
+
   // Auth routes (registration, login, logout, etc.)
   app.use('/api/auth', authRoutes);
 

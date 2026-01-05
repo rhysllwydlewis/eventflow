@@ -152,7 +152,6 @@ async function verifyHCaptcha(token) {
 }
 
 // CSRF protection middleware
-// getToken is used by routes/system.js for csrf-token endpoint
 const { csrfProtection, getToken } = require('./middleware/csrf');
 
 // Swagger API documentation
@@ -270,7 +269,6 @@ app.use(express.json({ limit: '2mb' }));
 app.use(cookieParser());
 
 // Create rate limiters
-// authLimiter and healthCheckLimiter are used by routes/system.js
 const rateLimiters = security.createRateLimiters();
 const { authLimiter, strictAuthLimiter, passwordResetLimiter, writeLimiter, healthCheckLimiter } =
   rateLimiters;
@@ -5129,7 +5127,171 @@ app.get('/api/admin/audit-logs', authRequired, roleRequired('admin'), async (req
   res.json({ logs, count: logs.length });
 });
 
-// Health and ready endpoints moved to routes/system.js
+// Basic API healthcheck with rate limiting
+app.get('/api/health', healthCheckLimiter, async (_req, res) => {
+  // Server is always "ok" if it's running and accepting requests
+  // Database status is reported as a service status, not overall health
+  const timestamp = new Date().toISOString();
+
+  // Determine email status
+  let emailStatus = 'disabled';
+  if (EMAIL_ENABLED) {
+    emailStatus = postmark.isPostmarkEnabled() ? 'postmark' : 'disabled';
+  }
+
+  // Initialize response with server status
+  const response = {
+    status: 'ok', // Always ok if server is running
+    timestamp,
+    services: {
+      server: 'running',
+    },
+  };
+
+  // Check MongoDB connection status (non-blocking)
+  try {
+    const mongoState = mongoDb.getConnectionState ? mongoDb.getConnectionState() : null;
+    const mongoError = mongoDb.getConnectionError ? mongoDb.getConnectionError() : null;
+
+    if (mongoState) {
+      // Map MongoDB states to service status
+      if (mongoState === 'connected') {
+        response.services.mongodb = 'connected';
+      } else if (mongoState === 'connecting') {
+        response.services.mongodb = 'connecting';
+        response.status = 'degraded'; // Server is degraded while DB is connecting
+      } else if (mongoState === 'error') {
+        response.services.mongodb = 'disconnected';
+        response.status = 'degraded';
+        if (mongoError) {
+          response.services.mongodbError = mongoError;
+          response.services.lastConnectionError = mongoError; // For debugging
+        }
+      } else {
+        response.services.mongodb = 'disconnected';
+      }
+    } else {
+      // Fallback for older db.js without state tracking
+      response.services.mongodb = mongoDb.isConnected() ? 'connected' : 'disconnected';
+    }
+  } catch (error) {
+    // If MongoDB check fails, report it but still return healthy
+    response.services.mongodb = 'unknown';
+    response.services.mongodbError = error.message;
+    response.services.lastConnectionError = error.message;
+    response.status = 'degraded';
+  }
+
+  // Check database status from unified layer and determine active backend
+  try {
+    const dbStatus = dbUnified.getDatabaseStatus ? dbUnified.getDatabaseStatus() : null;
+
+    if (dbStatus) {
+      response.services.database = dbStatus.type;
+      response.services.activeBackend = dbStatus.type; // mongodb or local
+
+      // Determine database status based on state
+      if (dbStatus.connected) {
+        response.services.databaseStatus = 'connected';
+      } else if (dbStatus.state === 'in_progress') {
+        response.services.databaseStatus = 'initializing';
+        response.status = 'degraded';
+      } else {
+        response.services.databaseStatus = 'disconnected';
+      }
+
+      if (dbStatus.error) {
+        response.services.databaseError = dbStatus.error;
+        if (!response.services.lastConnectionError) {
+          response.services.lastConnectionError = dbStatus.error;
+        }
+      }
+    } else {
+      // Fallback for older db-unified versions
+      response.services.database = dbUnified.getDatabaseType
+        ? dbUnified.getDatabaseType()
+        : 'unknown';
+      response.services.databaseStatus = 'unknown';
+      response.services.activeBackend = response.services.database;
+    }
+  } catch (error) {
+    response.services.database = 'unknown';
+    response.services.databaseError = error.message;
+    response.services.activeBackend = 'unknown';
+  }
+
+  // Add additional service information
+  response.version = APP_VERSION;
+  response.environment = process.env.NODE_ENV || 'development';
+  response.email = emailStatus;
+
+  // Check Postmark status (non-critical)
+  if (postmark.isPostmarkEnabled()) {
+    const postmarkStatus = postmark.getPostmarkStatus();
+    response.services.emailStatus = 'configured';
+    response.services.postmarkFrom = postmarkStatus.domain;
+  } else {
+    response.services.emailStatus = EMAIL_ENABLED ? 'not_configured' : 'disabled';
+  }
+
+  // Always return 200 OK - Railway health checks should pass immediately
+  // even if database is still connecting (degraded state)
+  res.status(200).json(response);
+});
+
+// Readiness check endpoint - returns 200 only when MongoDB is connected
+// Use this for load balancers, uptime monitors, or readiness probes
+app.get('/api/ready', healthCheckLimiter, async (_req, res) => {
+  const timestamp = new Date().toISOString();
+
+  // Check if MongoDB is actually connected
+  const isMongoConnected = mongoDb.isConnected && mongoDb.isConnected();
+  const mongoState = mongoDb.getConnectionState ? mongoDb.getConnectionState() : 'disconnected';
+  const mongoError = mongoDb.getConnectionError ? mongoDb.getConnectionError() : null;
+
+  // Get active backend from unified database layer
+  let activeBackend = 'unknown';
+  try {
+    const dbStatus = dbUnified.getDatabaseStatus ? dbUnified.getDatabaseStatus() : null;
+    if (dbStatus) {
+      activeBackend = dbStatus.type; // 'mongodb' or 'local'
+    }
+  } catch (error) {
+    // Ignore errors in determining backend
+  }
+
+  if (!isMongoConnected) {
+    return res.status(503).json({
+      status: 'not_ready',
+      timestamp,
+      reason: 'Database not connected',
+      details: mongoError || 'MongoDB connection is not established',
+      services: {
+        server: 'running',
+        mongodb: mongoState,
+        activeBackend: activeBackend,
+      },
+      debug: {
+        mongoState: mongoState,
+        lastConnectionError: mongoError,
+        message:
+          'Server is operational but MongoDB is not connected. Using fallback storage if configured.',
+      },
+    });
+  }
+
+  // MongoDB is connected, server is ready
+  return res.status(200).json({
+    status: 'ready',
+    timestamp,
+    services: {
+      server: 'running',
+      mongodb: 'connected',
+      activeBackend: 'mongodb',
+    },
+    message: 'All systems operational',
+  });
+});
 
 // Cache statistics endpoint (admin only)
 app.get('/api/admin/cache/stats', authRequired, roleRequired('admin'), async (_req, res) => {
