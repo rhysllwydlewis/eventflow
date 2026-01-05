@@ -20,6 +20,7 @@ Both scripts are kept in sync to ensure consistent behavior.
 ### Current Avatar
 
 The widget uses a custom avatar image located at:
+
 ```
 public/assets/images/jade-avatar.png
 ```
@@ -37,10 +38,11 @@ To replace the avatar image:
    - Name it: `jade-avatar.png`
 
 2. **Replace the file:**
+
    ```bash
    # Backup the old avatar (optional)
    cp public/assets/images/jade-avatar.png public/assets/images/jade-avatar.png.backup
-   
+
    # Copy your new avatar
    cp /path/to/your/new-avatar.png public/assets/images/jade-avatar.png
    ```
@@ -64,11 +66,13 @@ This is handled by the `getAvatarUrl()` function which checks for a `<base>` tag
 ### Verifying Avatar Loads
 
 **Via Browser Console:**
+
 1. Open DevTools Console (F12)
 2. Look for: `✅ JadeAssist avatar loaded successfully`
 3. If failed: `⚠️ JadeAssist avatar failed to load. Check that the image exists at: [url]`
 
 **Via Network Tab:**
+
 1. Open DevTools Network tab (F12 → Network)
 2. Filter by "Img" or "jade-avatar"
 3. Refresh the page
@@ -77,6 +81,7 @@ This is handled by the `getAvatarUrl()` function which checks for a `<base>` tag
 6. If `404 Not Found` (red), the file doesn't exist at that path
 
 **Direct URL Test:**
+
 1. Navigate to: `https://your-domain.com/assets/images/jade-avatar.png`
 2. The image should display directly in your browser
 3. If you see a 404 error page, the file is missing
@@ -89,11 +94,11 @@ The widget is positioned on the **left side** of the screen, aligned with the ba
 
 ```css
 /* Widget (left side) */
-bottom: 5rem;  /* 80px from bottom */
-left: 1.5rem;  /* 24px from left */
+bottom: 5rem; /* 80px from bottom */
+left: 1.5rem; /* 24px from left */
 
 /* Back-to-top button (right side) - for reference */
-bottom: 5rem;  /* 80px from bottom */
+bottom: 5rem; /* 80px from bottom */
 right: 1.5rem; /* 24px from right */
 ```
 
@@ -104,62 +109,57 @@ On screens narrower than 768px, both buttons adjust:
 ```css
 /* Widget (left side) */
 bottom: 4.5rem; /* 72px from bottom */
-left: 1rem;     /* 16px from left */
+left: 1rem; /* 16px from left */
 
 /* Back-to-top button (right side) - for reference */
 bottom: 4.5rem; /* 72px from bottom */
-right: 1rem;    /* 16px from right */
+right: 1rem; /* 16px from right */
 ```
 
 ### How Positioning Works
 
-The positioning is controlled through two mechanisms:
+The positioning is now controlled through the widget's public API configuration:
 
-1. **Initial config** in `JadeWidget.init()`:
-   ```javascript
-   offsetBottom: '5rem',  // Initial value
-   offsetLeft: '1.5rem',
-   ```
+**Desktop positioning:**
 
-2. **CSS overrides** for responsive behavior:
-   ```css
-   .jade-widget-root {
-     bottom: 5rem !important;  /* Desktop */
-     left: 1.5rem !important;
-   }
-   
-   @media (max-width: 768px) {
-     .jade-widget-root {
-       bottom: 4.5rem !important;  /* Mobile */
-       left: 1rem !important;
-     }
-   }
-   ```
+```javascript
+offsetBottom: '5rem',  // Distance from bottom
+offsetLeft: '1.5rem',  // Distance from left
+```
+
+**Mobile positioning:**
+
+```javascript
+offsetBottomMobile: '4.5rem',  // Distance from bottom on mobile
+offsetLeftMobile: '1rem',       // Distance from left on mobile
+```
+
+The widget automatically handles responsive positioning based on these configuration options. No CSS overrides or shadow DOM manipulation is required.
 
 ### Adjusting Position
 
 To change the widget position:
 
-1. **Edit both init scripts:**
+1. **Edit the init script:**
    - `public/assets/js/jadeassist-init.v2.js`
-   - `public/assets/js/jadeassist-init.js`
 
-2. **Update the CSS in `applyCustomStyles()`:**
+2. **Update the positioning configuration:**
+
    ```javascript
-   .jade-widget-root {
-     bottom: YOUR_VALUE !important;  /* Desktop */
-     left: YOUR_VALUE !important;
-   }
-   
-   @media (max-width: 768px) {
-     .jade-widget-root {
-       bottom: YOUR_VALUE !important;  /* Mobile */
-       left: YOUR_VALUE !important;
-     }
-   }
+   window.JadeWidget.init({
+     // Desktop positioning
+     offsetBottom: 'YOUR_VALUE',
+     offsetLeft: 'YOUR_VALUE',
+
+     // Mobile positioning
+     offsetBottomMobile: 'YOUR_VALUE',
+     offsetLeftMobile: 'YOUR_VALUE',
+
+     // Other options...
+   });
    ```
 
-3. **Update the teaser positioning** to appear above the widget:
+3. **Update the teaser positioning** in the CSS to appear above the widget:
    - Teaser should be widget bottom + 3rem spacing
    - Example: Widget at 5rem → Teaser at 8rem
 
@@ -168,14 +168,16 @@ To change the widget position:
 The teaser bubble appears above the widget with these positions:
 
 **Desktop:**
+
 ```css
-bottom: 8rem;   /* Widget at 5rem + 3rem spacing */
+bottom: 8rem; /* Widget at 5rem + 3rem spacing */
 left: 1.5rem;
 ```
 
 **Mobile:**
+
 ```css
-bottom: 7.5rem;  /* Widget at 4.5rem + 3rem spacing */
+bottom: 7.5rem; /* Widget at 4.5rem + 3rem spacing */
 left: 1rem;
 ```
 
@@ -190,6 +192,7 @@ The widget is **closed by default** when the page loads:
 - A teaser bubble may appear after 500ms (if not recently dismissed)
 
 This is enforced defensively with:
+
 ```javascript
 setTimeout(() => {
   if (window.JadeWidget && typeof window.JadeWidget.close === 'function') {
@@ -201,12 +204,14 @@ setTimeout(() => {
 ### Opening the Widget
 
 Users can open the widget by:
+
 1. **Clicking the launcher button** (avatar icon)
 2. **Clicking the teaser bubble** (which also dismisses the teaser)
 
 ### Teaser Behavior
 
 The teaser bubble:
+
 - Shows after 500ms if not recently dismissed
 - Can be dismissed by clicking the "×" button (doesn't open chat)
 - Can be clicked to open the chat (opens chat and dismisses teaser)
@@ -217,18 +222,20 @@ The teaser bubble:
 The widget library is loaded from jsDelivr CDN with a pinned commit SHA:
 
 ```html
-<script 
-  src="https://cdn.jsdelivr.net/gh/rhysllwydlewis/JadeAssist@b346f7e4d9130a4c258e987f955e2d0c3149e9b2/packages/widget/dist/jade-widget.js"
+<script
+  src="https://cdn.jsdelivr.net/gh/rhysllwydlewis/JadeAssist@abbf580487e0bcf7739a0857d4d940213fe2e176/packages/widget/dist/jade-widget.js"
   defer
 ></script>
 ```
 
 **Why pinned SHA?**
+
 - Ensures consistent behavior across deployments
 - Prevents CDN caching issues with moving references like `@main`
 - Allows testing before updating to newer versions
 
 **To update the widget library:**
+
 1. Test the new version in `test-jadeassist-real.html`
 2. Update the commit SHA in all HTML files that reference the widget
 3. Run tests: `npm run test:integration`
@@ -294,10 +301,11 @@ If the chat opens on page load unexpectedly:
 ### Manual Testing
 
 1. **Test on a live page:**
+
    ```bash
    # Start the server
    npm start
-   
+
    # Open in browser
    http://localhost:3000/
    ```
@@ -319,11 +327,13 @@ If the chat opens on page load unexpectedly:
 ### Automated Testing
 
 Run the integration tests:
+
 ```bash
 npm run test:integration
 ```
 
 This verifies:
+
 - Widget CDN URLs use pinned commit SHA (not `@main`)
 - Init scripts exist and are referenced correctly
 - HTML files use the versioned init script (`.v2.js`)
@@ -340,25 +350,29 @@ This verifies:
   greetingText: "Hi! I'm Jade...",   // Greeting message
   greetingTooltipText: '👋 Hi!...',  // Tooltip on hover
   avatarUrl: '/assets/images/...',   // Avatar image path
-  offsetBottom: '5rem',              // Distance from bottom
-  offsetLeft: '1.5rem',              // Distance from left
+  offsetBottom: '5rem',              // Distance from bottom (desktop)
+  offsetLeft: '1.5rem',              // Distance from left (desktop)
+  offsetBottomMobile: '4.5rem',      // Distance from bottom (mobile)
+  offsetLeftMobile: '1rem',          // Distance from left (mobile)
   scale: 0.85,                       // Size scale (0.85 = 15% smaller)
+  debug: false,                      // Enable diagnostic logs
 }
 ```
 
 ### Key Constants
 
 ```javascript
-MAX_RETRIES: 50          // Widget load retry attempts (5 seconds)
-RETRY_INTERVAL: 100      // Time between retries (100ms)
-INIT_DELAY: 1000         // Delay before first init attempt (1s)
-TEASER_DELAY: 500        // Delay before showing teaser (500ms)
-TEASER_EXPIRY_DAYS: 1    // How long dismissal persists
+MAX_RETRIES: 50; // Widget load retry attempts (5 seconds)
+RETRY_INTERVAL: 100; // Time between retries (100ms)
+INIT_DELAY: 1000; // Delay before first init attempt (1s)
+TEASER_DELAY: 500; // Delay before showing teaser (500ms)
+TEASER_EXPIRY_DAYS: 1; // How long dismissal persists
 ```
 
 ## Support
 
 For issues with the JadeAssist widget:
+
 1. Check console for diagnostic messages
 2. Verify avatar and CDN resources load (Network tab)
 3. Review this documentation

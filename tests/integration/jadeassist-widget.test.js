@@ -50,7 +50,7 @@ describe('JadeAssist Widget Pinning', () => {
       // Find all HTML files that include JadeAssist
       const htmlFiles = findHtmlFiles(publicDir);
 
-      const expectedCommitSHA = 'b346f7e4d9130a4c258e987f955e2d0c3149e9b2';
+      const expectedCommitSHA = 'abbf580487e0bcf7739a0857d4d940213fe2e176';
       const filesWithWidget = [];
       const filesWithCorrectSHA = [];
 
