@@ -151,45 +151,30 @@
         </div>
       </section>
 
-      <!-- Search and Filter Section -->
-      <section class="section section--muted">
-        <div class="container">
-          <div class="card">
-            <h2>Find items near you</h2>
-            <p class="small">
-              Browse marketplace listings by location. Use your current location or enter a UK postcode to see items available in your area.
-            </p>
-            <div class="map-controls">
-              <div class="form-row">
-                <button class="cta secondary" type="button" id="marketplace-map-use-location">Use my location</button>
-              </div>
-              <form class="form-row" id="marketplace-map-postcode-form" action="#">
-                <label for="marketplace-map-postcode">Or enter a postcode</label>
-                <input id="marketplace-map-postcode" type="text" placeholder="e.g. SW1A 1AA">
-              </form>
-            </div>
-            <div id="marketplace-map-status" class="small"></div>
-            <div class="map-shell" style="margin-top:1rem;">
-              <iframe
-                id="marketplace-map"
-                title="Marketplace items near you"
-                loading="lazy"
-                referrerpolicy="no-referrer-when-downgrade"
-                allow="geolocation"
-                src="https://www.google.com/maps?q=event%20items%20marketplace%20UK&output=embed">
-              </iframe>
-            </div>
-          </div>
-        </div>
-      </section>
-
       <section class="section">
-        <div class="container">
-          <h2>Browse marketplace listings</h2>
-          <p class="small">Filter by category, price, condition, or search for specific items.</p>
-          <div class="card">
-            <div class="form-row" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
-              <div>
+        <div class="container marketplace-container">
+          <!-- Left Sidebar: Filters -->
+          <aside class="marketplace-sidebar">
+            <div class="card">
+              <h3 style="margin-top: 0;">Filters</h3>
+              
+              <!-- Location Summary -->
+              <div class="filter-group">
+                <label class="filter-label">Location</label>
+                <div class="location-summary" id="location-summary">
+                  <span class="location-text">📍 All UK</span>
+                  <button type="button" class="btn-change-location" id="btn-change-location">Change</button>
+                </div>
+              </div>
+
+              <!-- Search -->
+              <div class="filter-group">
+                <label for="marketplace-filter-query">Search</label>
+                <input id="marketplace-filter-query" type="text" placeholder="e.g. wedding dress, speakers">
+              </div>
+
+              <!-- Category -->
+              <div class="filter-group">
                 <label for="marketplace-filter-category">Category</label>
                 <select id="marketplace-filter-category">
                   <option value="">All categories</option>
@@ -201,7 +186,9 @@
                   <option value="florals">🌸 Florals</option>
                 </select>
               </div>
-              <div>
+
+              <!-- Price -->
+              <div class="filter-group">
                 <label for="marketplace-filter-price">Price range</label>
                 <select id="marketplace-filter-price">
                   <option value="">Any price</option>
@@ -212,7 +199,9 @@
                   <option value="500-plus">£500+</option>
                 </select>
               </div>
-              <div>
+
+              <!-- Condition -->
+              <div class="filter-group">
                 <label for="marketplace-filter-condition">Condition</label>
                 <select id="marketplace-filter-condition">
                   <option value="">Any condition</option>
@@ -222,69 +211,76 @@
                   <option value="fair">Fair</option>
                 </select>
               </div>
-              <div>
-                <label for="marketplace-filter-radius">Distance</label>
-                <select id="marketplace-filter-radius">
-                  <option value="">Any distance</option>
-                  <option value="5">Within 5 miles</option>
-                  <option value="10">Within 10 miles</option>
-                  <option value="25">Within 25 miles</option>
-                  <option value="50">Within 50 miles</option>
-                  <option value="100">Within 100 miles</option>
-                </select>
+
+              <!-- My Listings Link -->
+              <div class="filter-group" style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border, #E7EAF0);">
+                <a href="/my-marketplace-listings.html" class="btn-my-listings" id="my-listings-link" style="display: none;">
+                  📋 My Listings
+                </a>
               </div>
-              <div>
-                <label for="marketplace-filter-query">Search</label>
-                <input id="marketplace-filter-query" type="text" placeholder="e.g. wedding dress, speakers">
+            </div>
+
+            <!-- Quick Search Tips -->
+            <div class="card" id="marketplace-quick-tips">
+              <p class="small" style="margin: 0 0 0.75rem 0; font-weight: 600;">Popular searches:</p>
+              <div style="display: flex; flex-direction: column; gap: 6px;">
+                <button type="button" class="btn-quick-search" data-marketplace-search="wedding dress">Wedding Dress</button>
+                <button type="button" class="btn-quick-search" data-marketplace-search="table decorations">Table Décor</button>
+                <button type="button" class="btn-quick-search" data-marketplace-search="sound system">Sound System</button>
               </div>
+            </div>
+          </aside>
+
+          <!-- Main Content: Listings -->
+          <main class="marketplace-main">
+            <div class="marketplace-header">
               <div>
-                <label for="marketplace-sort">Sort by</label>
-                <select id="marketplace-sort">
+                <h2 style="margin: 0 0 0.5rem 0;">Browse marketplace listings</h2>
+                <div id="marketplace-result-count" class="small"></div>
+              </div>
+              <div class="marketplace-actions">
+                <select id="marketplace-sort" class="sort-select">
                   <option value="recent">Most recent</option>
                   <option value="price-low">Price: Low to High</option>
                   <option value="price-high">Price: High to Low</option>
                   <option value="distance">Distance: Near to Far</option>
                 </select>
+                <button type="button" class="btn-view-toggle" id="marketplace-view-toggle">
+                  <span id="view-icon">⊞</span> Grid
+                </button>
               </div>
             </div>
-          </div>
 
-          <div class="card" id="marketplace-results-tips">
-            <h3 class="h4">Marketplace tips</h3>
-            <p class="small">
-              Browse local listings to find items near you. Filter by category, price, or condition to narrow your search. Save items to your favourites by creating a free account.
-            </p>
-            <p class="small">
-              Popular searches:
-              <button type="button" class="cta secondary" data-marketplace-search="wedding dress">Wedding Dress</button>
-              <button type="button" class="cta secondary" data-marketplace-search="table decorations">Table Décor</button>
-              <button type="button" class="cta secondary" data-marketplace-search="sound system">Sound System</button>
-            </p>
-          </div>
-
-          <div style="display: flex; justify-content: space-between; align-items: center; margin: 1.5rem 0;">
-            <div id="marketplace-result-count" class="small"></div>
-            <div class="small">
-              <button type="button" class="cta secondary" id="marketplace-view-toggle" style="padding: 8px 16px;">
-                <span id="view-icon">⊞</span> Grid View
-              </button>
+            <!-- Marketplace Items -->
+            <div id="marketplace-results" class="marketplace-grid">
+              <div class="card"><p style="text-align: center; padding: 2rem;">Loading listings...</p></div>
             </div>
+          </main>
+        </div>
+      </section>
+
+      <!-- Mobile Filter Toggle Button -->
+      <button class="mobile-filter-toggle" id="mobile-filter-toggle" aria-label="Toggle filters">
+        <span>Filters</span>
+      </button>
+
+      <section class="section section--muted">
+        <div class="container">
+          <div class="card" id="marketplace-results-tips" style="text-align: center;">
+            <h3 class="h4">Browse local listings</h3>
+            <p class="small">
+              Filter by category, price, or condition to narrow your search. Save items to your favourites by creating a free account.
+            </p>
           </div>
 
-          <!-- Marketplace Items -->
-          <div id="marketplace-results" class="marketplace-grid">
-            <div class="card"><p style="text-align: center; padding: 2rem;">Loading listings...</p></div>
-          </div>
-
-          <div class="card" style="margin-top: 2rem; text-align: center; padding: 2rem;" id="marketplace-cta-section">
-            <h3>Ready to buy or sell?</h3>
-            <p class="small" style="margin: 1rem 0;">
+          <div class="card" id="marketplace-cta-section">
+            <h3 style="text-align: center;">Ready to buy or sell?</h3>
+            <p class="small" style="margin: 1rem 0; text-align: center;">
               Create a free account to list items for sale or message sellers about listings you're interested in.
             </p>
             <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin-top: 1.5rem;">
               <a href="/auth.html" class="cta" id="auth-cta">Create Free Account</a>
               <button class="cta secondary" id="sell-item-btn">List an Item</button>
-              <a href="/my-marketplace-listings.html" class="cta ghost" id="my-listings-link" style="display: none;">My Listings</a>
             </div>
           </div>
         </div>

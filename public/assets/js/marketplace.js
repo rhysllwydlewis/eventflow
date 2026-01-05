@@ -19,11 +19,13 @@
   async function init() {
     await checkAuth();
     await loadListings();
-    initMap();
+    initLocationModal();
     initFilters();
     initViewToggle();
     initQuickActions();
     initListItemButton();
+    initMobileFilters();
+    loadSavedLocation();
   }
 
   // Check if user is logged in
@@ -54,7 +56,7 @@
         sellBtn.onclick = () => showListItemModal();
       }
       if (myListingsLink) {
-        myListingsLink.style.display = 'inline-block';
+        myListingsLink.style.display = 'flex';
       }
     } else {
       if (sellBtn) {
@@ -62,6 +64,9 @@
           showToast('Please log in to list items');
           setTimeout(() => (window.location.href = '/auth.html'), 1500);
         };
+      }
+      if (myListingsLink) {
+        myListingsLink.style.display = 'none';
       }
     }
   }
@@ -187,113 +192,126 @@
     `;
   }
 
-  // Show listing detail modal
+  // Show listing detail modal (Facebook-style split-pane)
   function showListingDetail(listing) {
-    const modal = document.createElement('div');
-    modal.className = 'modal-overlay';
-    modal.innerHTML = `
-      <div class="modal-content" style="max-width: 600px;">
-        <div class="modal-header">
-          <h2>${escapeHtml(listing.title)}</h2>
-          <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">×</button>
-        </div>
-        <div class="modal-body">
-          ${
-            listing.images && listing.images[0]
-              ? `
-            <img src="${listing.images[0]}" alt="${escapeHtml(listing.title)}" 
-                 style="width: 100%; max-height: 300px; object-fit: cover; border-radius: 8px; margin-bottom: 16px;">
+    const overlay = document.createElement('div');
+    overlay.className = 'listing-detail-overlay';
+
+    const images =
+      listing.images && listing.images.length > 0
+        ? listing.images
+        : ['/assets/images/collage-venue.jpg'];
+
+    const thumbnailsHTML =
+      images.length > 1
+        ? `<div class="listing-detail-thumbnails">
+          ${images
+            .map(
+              (img, idx) => `
+            <div class="listing-detail-thumbnail ${idx === 0 ? 'active' : ''}" data-index="${idx}">
+              <img src="${img}" alt="Image ${idx + 1}">
+            </div>
           `
-              : ''
-          }
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-            <div style="font-size: 24px; font-weight: 700; color: var(--ink, #0b8073);">£${listing.price.toFixed(2)}</div>
-            <div style="padding: 4px 12px; background: #f3f4f6; border-radius: 12px; font-size: 13px;">
-              ${formatCondition(listing.condition)}
+            )
+            .join('')}
+         </div>`
+        : '';
+
+    overlay.innerHTML = `
+      <div class="listing-detail-container">
+        <div class="listing-detail-gallery">
+          <div class="listing-detail-main-image">
+            <img id="main-listing-image" src="${images[0]}" alt="${escapeHtml(listing.title)}">
+          </div>
+          ${thumbnailsHTML}
+        </div>
+        <div class="listing-detail-sidebar">
+          <div class="listing-detail-header">
+            <div style="flex: 1;">
+              <div class="listing-detail-price">£${listing.price.toFixed(2)}</div>
+              <h2 class="listing-detail-title">${escapeHtml(listing.title)}</h2>
+            </div>
+            <button class="listing-detail-close" aria-label="Close">&times;</button>
+          </div>
+          <div class="listing-detail-body">
+            <div class="listing-detail-meta">
+              <div class="listing-detail-meta-item">
+                <span class="listing-detail-meta-label">Condition:</span>
+                <span>${formatCondition(listing.condition)}</span>
+              </div>
+              <div class="listing-detail-meta-item">
+                <span class="listing-detail-meta-label">Category:</span>
+                <span>${formatCategory(listing.category)}</span>
+              </div>
+              <div class="listing-detail-meta-item">
+                <span class="listing-detail-meta-label">Location:</span>
+                <span>📍 ${escapeHtml(listing.location || 'Location not specified')}</span>
+              </div>
+              <div class="listing-detail-meta-item">
+                <span class="listing-detail-meta-label">Listed:</span>
+                <span>${getTimeAgo(listing.createdAt)}</span>
+              </div>
+            </div>
+            <div class="listing-detail-description">
+              <h4>Description</h4>
+              <p>${escapeHtml(listing.description)}</p>
             </div>
           </div>
-          <p style="margin-bottom: 16px;">${escapeHtml(listing.description)}</p>
-          <div style="display: flex; gap: 16px; flex-wrap: wrap; font-size: 14px; color: #6b7280; margin-bottom: 16px;">
-            <span>📍 ${escapeHtml(listing.location || 'Location not specified')}</span>
-            <span>📂 ${formatCategory(listing.category)}</span>
-            <span>🕒 Listed ${getTimeAgo(listing.createdAt)}</span>
+          <div class="listing-detail-actions">
+            ${
+              currentUser && currentUser.id !== listing.userId
+                ? `<button class="cta" onclick="messageSeller('${listing.id}', '${escapeHtml(listing.title).replace(/'/g, "\\'")}')">
+                     Message Seller
+                   </button>`
+                : currentUser && currentUser.id === listing.userId
+                  ? `<div class="listing-own-notice">This is your listing</div>`
+                  : `<a href="/auth.html" class="cta">Log in to message seller</a>`
+            }
           </div>
-          ${
-            currentUser && currentUser.id !== listing.userId
-              ? `
-            <button class="cta" onclick="messageSeller('${listing.id}', '${escapeHtml(listing.title)}')">
-              Message Seller
-            </button>
-          `
-              : currentUser && currentUser.id === listing.userId
-                ? `
-            <p style="color: #6b7280; font-style: italic;">This is your listing</p>
-          `
-                : `
-            <a href="/auth.html" class="cta">Log in to message seller</a>
-          `
-          }
         </div>
       </div>
     `;
 
-    modal.style.cssText = `
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0, 0, 0, 0.5);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 10000;
-      padding: 20px;
-    `;
+    document.body.appendChild(overlay);
 
-    const modalContent = modal.querySelector('.modal-content');
-    modalContent.style.cssText = `
-      background: white;
-      border-radius: 12px;
-      max-width: 600px;
-      width: 100%;
-      max-height: 90vh;
-      overflow-y: auto;
-    `;
+    // Trigger animation
+    setTimeout(() => overlay.classList.add('active'), 10);
 
-    const modalHeader = modal.querySelector('.modal-header');
-    modalHeader.style.cssText = `
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 20px;
-      border-bottom: 1px solid #e5e7eb;
-    `;
+    // Close button
+    const closeBtn = overlay.querySelector('.listing-detail-close');
+    closeBtn.addEventListener('click', () => closeModal(overlay));
 
-    const modalBody = modal.querySelector('.modal-body');
-    modalBody.style.cssText = 'padding: 20px;';
-
-    const closeBtn = modal.querySelector('.modal-close');
-    closeBtn.style.cssText = `
-      background: none;
-      border: none;
-      font-size: 28px;
-      cursor: pointer;
-      color: #6b7280;
-      line-height: 1;
-      padding: 0;
-      width: 32px;
-      height: 32px;
-    `;
-
-    document.body.appendChild(modal);
-
-    // Close on background click
-    modal.addEventListener('click', e => {
-      if (e.target === modal) {
-        modal.remove();
+    // Background click
+    overlay.addEventListener('click', e => {
+      if (e.target === overlay) {
+        closeModal(overlay);
       }
     });
+
+    // Escape key
+    const handleEscape = e => {
+      if (e.key === 'Escape') {
+        closeModal(overlay);
+        document.removeEventListener('keydown', handleEscape);
+      }
+    };
+    document.addEventListener('keydown', handleEscape);
+
+    // Thumbnail clicks
+    const thumbnails = overlay.querySelectorAll('.listing-detail-thumbnail');
+    const mainImage = overlay.querySelector('#main-listing-image');
+    thumbnails.forEach((thumb, idx) => {
+      thumb.addEventListener('click', () => {
+        thumbnails.forEach(t => t.classList.remove('active'));
+        thumb.classList.add('active');
+        mainImage.src = images[idx];
+      });
+    });
+  }
+
+  function closeModal(overlay) {
+    overlay.classList.remove('active');
+    setTimeout(() => overlay.remove(), 300);
   }
 
   // Message seller function
@@ -601,71 +619,187 @@
     return div.innerHTML;
   }
 
-  function toggleSave(btn, listing) {
+  function toggleSave(btn, _listing) {
     btn.classList.toggle('saved');
     btn.textContent = btn.classList.contains('saved') ? '♥' : '♡';
     showToast(btn.classList.contains('saved') ? 'Item saved' : 'Item unsaved');
   }
 
-  // Initialize map functionality
-  function initMap() {
-    const useLocationBtn = document.getElementById('marketplace-map-use-location');
-    const postcodeForm = document.getElementById('marketplace-map-postcode-form');
-    const postcodeInput = document.getElementById('marketplace-map-postcode');
-    const mapIframe = document.getElementById('marketplace-map');
-    const mapStatus = document.getElementById('marketplace-map-status');
-
-    if (!useLocationBtn || !postcodeForm || !mapIframe) {
+  // Initialize location modal
+  function initLocationModal() {
+    const changeLocationBtn = document.getElementById('btn-change-location');
+    if (!changeLocationBtn) {
       return;
     }
 
-    // Use current location
+    changeLocationBtn.addEventListener('click', showLocationModal);
+  }
+
+  function showLocationModal() {
+    const overlay = document.createElement('div');
+    overlay.className = 'location-modal-overlay';
+
+    const savedLocation = JSON.parse(localStorage.getItem('marketplaceLocation') || '{}');
+
+    overlay.innerHTML = `
+      <div class="location-modal">
+        <div class="location-modal-header">
+          <h3>Change Location</h3>
+          <button class="location-modal-close" aria-label="Close">&times;</button>
+        </div>
+        <div class="location-modal-body">
+          <div class="location-modal-group">
+            <label for="location-postcode">Postcode or City</label>
+            <input 
+              type="text" 
+              id="location-postcode" 
+              placeholder="e.g. SW1A 1AA or London"
+              value="${savedLocation.postcode || ''}"
+            >
+          </div>
+          <div class="location-modal-group">
+            <label for="location-radius">Search Radius</label>
+            <select id="location-radius">
+              <option value="">Any distance</option>
+              <option value="5" ${savedLocation.radius === '5' ? 'selected' : ''}>Within 5 miles</option>
+              <option value="10" ${savedLocation.radius === '10' ? 'selected' : ''}>Within 10 miles</option>
+              <option value="25" ${savedLocation.radius === '25' ? 'selected' : ''}>Within 25 miles</option>
+              <option value="50" ${savedLocation.radius === '50' ? 'selected' : ''}>Within 50 miles</option>
+              <option value="100" ${savedLocation.radius === '100' ? 'selected' : ''}>Within 100 miles</option>
+            </select>
+          </div>
+          <div class="location-modal-actions">
+            <button class="cta secondary" id="use-my-location">Use My Location</button>
+            <button class="cta" id="apply-location">Apply</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+    setTimeout(() => overlay.classList.add('active'), 10);
+
+    // Close handlers
+    const closeBtn = overlay.querySelector('.location-modal-close');
+    closeBtn.addEventListener('click', () => closeModal(overlay));
+
+    overlay.addEventListener('click', e => {
+      if (e.target === overlay) {
+        closeModal(overlay);
+      }
+    });
+
+    const handleEscape = e => {
+      if (e.key === 'Escape') {
+        closeModal(overlay);
+        document.removeEventListener('keydown', handleEscape);
+      }
+    };
+    document.addEventListener('keydown', handleEscape);
+
+    // Use my location
+    const useLocationBtn = overlay.querySelector('#use-my-location');
     useLocationBtn.addEventListener('click', () => {
       if (!navigator.geolocation) {
-        showMapStatus('Geolocation is not supported by your browser', 'error');
+        showToast('Geolocation is not supported', 'error');
         return;
       }
 
-      showMapStatus('Getting your location...', 'loading');
+      useLocationBtn.textContent = 'Getting location...';
+      useLocationBtn.disabled = true;
+
       navigator.geolocation.getCurrentPosition(
         position => {
           const { latitude, longitude } = position.coords;
-          const query = `event+marketplace+items+near+${latitude},${longitude}`;
-          mapIframe.src = `https://www.google.com/maps?q=${query}&output=embed`;
-          showMapStatus(`Showing items near your location`, 'success');
+          const postcodeInput = overlay.querySelector('#location-postcode');
+          postcodeInput.value = `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+          useLocationBtn.textContent = 'Use My Location';
+          useLocationBtn.disabled = false;
+          showToast('Location detected');
         },
-        error => {
-          showMapStatus('Unable to get your location. Please try entering a postcode.', 'error');
-          console.error('Geolocation error:', error);
+        _error => {
+          showToast('Unable to get location', 'error');
+          useLocationBtn.textContent = 'Use My Location';
+          useLocationBtn.disabled = false;
         }
       );
     });
 
-    // Search by postcode
-    postcodeForm.addEventListener('submit', e => {
-      e.preventDefault();
-      const postcode = postcodeInput.value.trim();
+    // Apply location
+    const applyBtn = overlay.querySelector('#apply-location');
+    applyBtn.addEventListener('click', () => {
+      const postcode = overlay.querySelector('#location-postcode').value.trim();
+      const radius = overlay.querySelector('#location-radius').value;
 
-      if (!postcode) {
-        showMapStatus('Please enter a postcode', 'error');
-        return;
-      }
+      // Save to localStorage
+      localStorage.setItem('marketplaceLocation', JSON.stringify({ postcode, radius }));
 
-      showMapStatus(`Searching near ${postcode}...`, 'loading');
-      const query = `event+marketplace+items+near+${encodeURIComponent(postcode)}+UK`;
-      mapIframe.src = `https://www.google.com/maps?q=${query}&output=embed`;
-      showMapStatus(`Showing items near ${postcode}`, 'success');
+      // Update UI
+      updateLocationSummary(postcode, radius);
+
+      // Close modal
+      closeModal(overlay);
+
+      // Reload listings (in future, could filter by location)
+      loadListings();
+
+      showToast('Location updated');
+    });
+  }
+
+  function loadSavedLocation() {
+    const saved = JSON.parse(localStorage.getItem('marketplaceLocation') || '{}');
+    if (saved.postcode || saved.radius) {
+      updateLocationSummary(saved.postcode, saved.radius);
+    }
+  }
+
+  function updateLocationSummary(postcode, radius) {
+    const locationText = document.querySelector('.location-text');
+    if (!locationText) {
+      return;
+    }
+
+    let text = '📍 ';
+    if (postcode && radius) {
+      text += `${postcode}, ${radius} miles`;
+    } else if (postcode) {
+      text += postcode;
+    } else if (radius) {
+      text += `Within ${radius} miles`;
+    } else {
+      text += 'All UK';
+    }
+
+    locationText.textContent = text;
+  }
+
+  // Initialize mobile filters toggle
+  function initMobileFilters() {
+    const toggleBtn = document.getElementById('mobile-filter-toggle');
+    const sidebar = document.querySelector('.marketplace-sidebar');
+
+    if (!toggleBtn || !sidebar) {
+      return;
+    }
+
+    toggleBtn.addEventListener('click', () => {
+      sidebar.classList.toggle('active');
+      document.body.style.overflow = sidebar.classList.contains('active') ? 'hidden' : '';
     });
 
-    function showMapStatus(message, type) {
-      if (!mapStatus) {
-        return;
-      }
-      mapStatus.textContent = message;
-      mapStatus.style.color =
-        type === 'error' ? '#dc2626' : type === 'success' ? '#16a34a' : '#6b7280';
-      mapStatus.style.marginTop = '8px';
-    }
+    // Close on filter selection (mobile)
+    const filterInputs = sidebar.querySelectorAll('select, input[type="text"]');
+    filterInputs.forEach(input => {
+      input.addEventListener('change', () => {
+        if (window.innerWidth <= 768) {
+          setTimeout(() => {
+            sidebar.classList.remove('active');
+            document.body.style.overflow = '';
+          }, 300);
+        }
+      });
+    });
   }
 
   // Initialize filters
@@ -673,12 +807,11 @@
     const categoryFilter = document.getElementById('marketplace-filter-category');
     const priceFilter = document.getElementById('marketplace-filter-price');
     const conditionFilter = document.getElementById('marketplace-filter-condition');
-    const radiusFilter = document.getElementById('marketplace-filter-radius');
     const queryInput = document.getElementById('marketplace-filter-query');
     const sortSelect = document.getElementById('marketplace-sort');
 
     // Add change listeners
-    [categoryFilter, priceFilter, conditionFilter, radiusFilter, sortSelect].forEach(element => {
+    [categoryFilter, priceFilter, conditionFilter, sortSelect].forEach(element => {
       if (element) {
         element.addEventListener('change', applyFilters);
       }
@@ -711,7 +844,6 @@
         (categoryFilter && categoryFilter.value) ||
         (priceFilter && priceFilter.value) ||
         (conditionFilter && conditionFilter.value) ||
-        (radiusFilter && radiusFilter.value) ||
         (queryInput && queryInput.value.trim())
       );
     }
@@ -721,7 +853,6 @@
   function initViewToggle() {
     const toggleBtn = document.getElementById('marketplace-view-toggle');
     const resultsContainer = document.getElementById('marketplace-results');
-    const viewIcon = document.getElementById('view-icon');
 
     if (!toggleBtn || !resultsContainer) {
       return;
@@ -734,26 +865,10 @@
 
       if (isGridView) {
         resultsContainer.className = 'marketplace-grid';
-        if (viewIcon) {
-          viewIcon.textContent = '⊞';
-        }
-        toggleBtn.textContent = '';
-        const icon = document.createElement('span');
-        icon.id = 'view-icon';
-        icon.textContent = '⊞';
-        toggleBtn.appendChild(icon);
-        toggleBtn.appendChild(document.createTextNode(' Grid View'));
+        toggleBtn.innerHTML = '<span id="view-icon">⊞</span> Grid';
       } else {
         resultsContainer.className = 'marketplace-list';
-        if (viewIcon) {
-          viewIcon.textContent = '☰';
-        }
-        toggleBtn.textContent = '';
-        const icon = document.createElement('span');
-        icon.id = 'view-icon';
-        icon.textContent = '☰';
-        toggleBtn.appendChild(icon);
-        toggleBtn.appendChild(document.createTextNode(' List View'));
+        toggleBtn.innerHTML = '<span id="view-icon">☰</span> List';
       }
     });
   }
