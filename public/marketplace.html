@@ -64,6 +64,7 @@
     <link rel="stylesheet" href="/assets/css/animations.css" />
     <link rel="stylesheet" href="/assets/css/mobile-optimizations.css" />
     <link rel="stylesheet" href="/assets/css/ui-ux-fixes.css" />
+    <link rel="stylesheet" href="/assets/css/marketplace.css" />
     <link rel="icon" href="/favicon.svg" />
 
     <!-- Schema.org structured data -->
@@ -147,6 +148,243 @@
           <p class="lead">
             Buy and sell pre-loved event items — dresses, décor, AV gear and more. Free to use, UK-focused, no platform fees.
           </p>
+        </div>
+      </section>
+
+      <!-- Search and Filter Section -->
+      <section class="section section--muted">
+        <div class="container">
+          <div class="card">
+            <h2>Find items near you</h2>
+            <p class="small">
+              Browse marketplace listings by location. Use your current location or enter a UK postcode to see items available in your area.
+            </p>
+            <div class="map-controls">
+              <div class="form-row">
+                <button class="cta secondary" type="button" id="marketplace-map-use-location">Use my location</button>
+              </div>
+              <form class="form-row" id="marketplace-map-postcode-form" action="#">
+                <label for="marketplace-map-postcode">Or enter a postcode</label>
+                <input id="marketplace-map-postcode" type="text" placeholder="e.g. SW1A 1AA">
+              </form>
+            </div>
+            <div id="marketplace-map-status" class="small"></div>
+            <div class="map-shell" style="margin-top:1rem;">
+              <iframe
+                id="marketplace-map"
+                title="Marketplace items near you"
+                loading="lazy"
+                referrerpolicy="no-referrer-when-downgrade"
+                src="https://www.google.com/maps?q=event%20items%20marketplace%20UK&output=embed">
+              </iframe>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="container">
+          <h2>Browse marketplace listings</h2>
+          <p class="small">Filter by category, price, condition, or search for specific items.</p>
+          <div class="card">
+            <div class="form-row" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
+              <div>
+                <label for="marketplace-filter-category">Category</label>
+                <select id="marketplace-filter-category">
+                  <option value="">All categories</option>
+                  <option value="attire">👗 Attire</option>
+                  <option value="decor">🎨 Décor</option>
+                  <option value="av-equipment">🔊 AV Equipment</option>
+                  <option value="photography">📸 Photography</option>
+                  <option value="party-supplies">🎉 Party Supplies</option>
+                  <option value="florals">🌸 Florals</option>
+                </select>
+              </div>
+              <div>
+                <label for="marketplace-filter-price">Price range</label>
+                <select id="marketplace-filter-price">
+                  <option value="">Any price</option>
+                  <option value="0-50">Under £50</option>
+                  <option value="50-100">£50 - £100</option>
+                  <option value="100-250">£100 - £250</option>
+                  <option value="250-500">£250 - £500</option>
+                  <option value="500-plus">£500+</option>
+                </select>
+              </div>
+              <div>
+                <label for="marketplace-filter-condition">Condition</label>
+                <select id="marketplace-filter-condition">
+                  <option value="">Any condition</option>
+                  <option value="new">New / Unused</option>
+                  <option value="like-new">Like New</option>
+                  <option value="good">Good</option>
+                  <option value="fair">Fair</option>
+                </select>
+              </div>
+              <div>
+                <label for="marketplace-filter-radius">Distance</label>
+                <select id="marketplace-filter-radius">
+                  <option value="">Any distance</option>
+                  <option value="5">Within 5 miles</option>
+                  <option value="10">Within 10 miles</option>
+                  <option value="25">Within 25 miles</option>
+                  <option value="50">Within 50 miles</option>
+                  <option value="100">Within 100 miles</option>
+                </select>
+              </div>
+              <div>
+                <label for="marketplace-filter-query">Search</label>
+                <input id="marketplace-filter-query" type="text" placeholder="e.g. wedding dress, speakers">
+              </div>
+              <div>
+                <label for="marketplace-sort">Sort by</label>
+                <select id="marketplace-sort">
+                  <option value="recent">Most recent</option>
+                  <option value="price-low">Price: Low to High</option>
+                  <option value="price-high">Price: High to Low</option>
+                  <option value="distance">Distance: Near to Far</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" id="marketplace-results-tips">
+            <h3 class="h4">Marketplace tips</h3>
+            <p class="small">
+              Browse local listings to find items near you. Filter by category, price, or condition to narrow your search. Save items to your favourites by creating a free account.
+            </p>
+            <p class="small">
+              Popular searches:
+              <button type="button" class="cta secondary" data-marketplace-search="wedding dress">Wedding Dress</button>
+              <button type="button" class="cta secondary" data-marketplace-search="table decorations">Table Décor</button>
+              <button type="button" class="cta secondary" data-marketplace-search="sound system">Sound System</button>
+            </p>
+          </div>
+
+          <div style="display: flex; justify-content: space-between; align-items: center; margin: 1.5rem 0;">
+            <div id="marketplace-result-count" class="small"></div>
+            <div class="small">
+              <button type="button" class="cta secondary" id="marketplace-view-toggle" style="padding: 8px 16px;">
+                <span id="view-icon">⊞</span> Grid View
+              </button>
+            </div>
+          </div>
+
+          <!-- Demo Marketplace Items (Facebook Marketplace-style) -->
+          <div id="marketplace-results" class="marketplace-grid">
+            <!-- Item Card 1 -->
+            <div class="marketplace-item-card">
+              <div class="marketplace-item-image">
+                <img src="/assets/images/collage-venue.jpg" alt="Ivory Wedding Dress" loading="lazy">
+                <button class="marketplace-save-btn" aria-label="Save item">♡</button>
+              </div>
+              <div class="marketplace-item-details">
+                <div class="marketplace-item-price">£450</div>
+                <h3 class="marketplace-item-title">Ivory Wedding Dress, Size 10</h3>
+                <div class="marketplace-item-meta">
+                  <span class="marketplace-item-location">📍 London</span>
+                  <span class="marketplace-item-condition">Like New</span>
+                </div>
+                <div class="marketplace-item-time">Listed 2 days ago</div>
+              </div>
+            </div>
+
+            <!-- Item Card 2 -->
+            <div class="marketplace-item-card">
+              <div class="marketplace-item-image">
+                <img src="/assets/images/collage-catering.jpg" alt="Table Centrepieces" loading="lazy">
+                <button class="marketplace-save-btn" aria-label="Save item">♡</button>
+              </div>
+              <div class="marketplace-item-details">
+                <div class="marketplace-item-price">£120</div>
+                <h3 class="marketplace-item-title">20x Glass Vase Centrepieces</h3>
+                <div class="marketplace-item-meta">
+                  <span class="marketplace-item-location">📍 Manchester</span>
+                  <span class="marketplace-item-condition">Good</span>
+                </div>
+                <div class="marketplace-item-time">Listed 5 days ago</div>
+              </div>
+            </div>
+
+            <!-- Item Card 3 -->
+            <div class="marketplace-item-card">
+              <div class="marketplace-item-image">
+                <img src="/assets/images/collage-entertainment.jpg" alt="PA System" loading="lazy">
+                <button class="marketplace-save-btn" aria-label="Save item">♡</button>
+              </div>
+              <div class="marketplace-item-details">
+                <div class="marketplace-item-price">£850</div>
+                <h3 class="marketplace-item-title">Professional PA System with Speakers</h3>
+                <div class="marketplace-item-meta">
+                  <span class="marketplace-item-location">📍 Birmingham</span>
+                  <span class="marketplace-item-condition">Good</span>
+                </div>
+                <div class="marketplace-item-time">Listed 1 week ago</div>
+              </div>
+            </div>
+
+            <!-- Item Card 4 -->
+            <div class="marketplace-item-card">
+              <div class="marketplace-item-image">
+                <img src="/assets/images/collage-photography.jpg" alt="LED Uplighters" loading="lazy">
+                <button class="marketplace-save-btn" aria-label="Save item">♡</button>
+              </div>
+              <div class="marketplace-item-details">
+                <div class="marketplace-item-price">£200</div>
+                <h3 class="marketplace-item-title">12x LED Uplighters for Venue</h3>
+                <div class="marketplace-item-meta">
+                  <span class="marketplace-item-location">📍 Leeds</span>
+                  <span class="marketplace-item-condition">Like New</span>
+                </div>
+                <div class="marketplace-item-time">Listed 3 days ago</div>
+              </div>
+            </div>
+
+            <!-- Item Card 5 -->
+            <div class="marketplace-item-card">
+              <div class="marketplace-item-image">
+                <img src="/assets/images/collage-venue.jpg" alt="Wedding Arch" loading="lazy">
+                <button class="marketplace-save-btn" aria-label="Save item">♡</button>
+              </div>
+              <div class="marketplace-item-details">
+                <div class="marketplace-item-price">£95</div>
+                <h3 class="marketplace-item-title">White Floral Arch with Stand</h3>
+                <div class="marketplace-item-meta">
+                  <span class="marketplace-item-location">📍 Bristol</span>
+                  <span class="marketplace-item-condition">Good</span>
+                </div>
+                <div class="marketplace-item-time">Listed 1 day ago</div>
+              </div>
+            </div>
+
+            <!-- Item Card 6 -->
+            <div class="marketplace-item-card">
+              <div class="marketplace-item-image">
+                <img src="/assets/images/collage-catering.jpg" alt="Bridesmaid Dresses" loading="lazy">
+                <button class="marketplace-save-btn" aria-label="Save item">♡</button>
+              </div>
+              <div class="marketplace-item-details">
+                <div class="marketplace-item-price">£180</div>
+                <h3 class="marketplace-item-title">3x Sage Green Bridesmaid Dresses, Size 12</h3>
+                <div class="marketplace-item-meta">
+                  <span class="marketplace-item-location">📍 Edinburgh</span>
+                  <span class="marketplace-item-condition">Like New</span>
+                </div>
+                <div class="marketplace-item-time">Listed 4 days ago</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" style="margin-top: 2rem; text-align: center; padding: 2rem;">
+            <h3>Ready to buy or sell?</h3>
+            <p class="small" style="margin: 1rem 0;">
+              These are example listings to show how the marketplace will work. Sign up for a free account to be notified when the full marketplace launches.
+            </p>
+            <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin-top: 1.5rem;">
+              <a href="/auth.html" class="cta">Create Free Account</a>
+              <button class="cta secondary" id="sell-item-btn">List an Item</button>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -269,6 +507,7 @@
     <script src="/assets/js/app.js" defer></script>
     <script src="/assets/js/components/footer-nav.js" defer></script>
     <script src="/assets/js/cookie-consent.js" defer></script>
+    <script src="/assets/js/marketplace.js" defer></script>
     <script defer>
       // Initialize core utilities
       document.addEventListener('DOMContentLoaded', function () {
