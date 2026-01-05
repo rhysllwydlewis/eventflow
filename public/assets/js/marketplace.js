@@ -33,11 +33,16 @@
     try {
       const res = await fetch('/api/user', { credentials: 'include' });
       if (res.ok) {
-        currentUser = await res.json();
+        const data = await res.json();
+        // Handle both wrapped ({user: ...}) and unwrapped response formats
+        currentUser = data.user || data;
         updateAuthUI();
+      } else if (res.status === 401) {
+        // User not logged in - this is expected, not an error
+        currentUser = null;
       }
     } catch (error) {
-      // User not logged in, that's fine
+      // Network error or other issue - treat as not logged in
       currentUser = null;
     }
   }
@@ -159,7 +164,7 @@
     if (allListings.length === 0) {
       resultsContainer.innerHTML = `
         <div class="card" style="text-align: center; padding: 2rem; grid-column: 1 / -1;">
-          <p>No listings found. ${currentUser ? 'Be the first to list an item!' : 'Create an account to start listing.'}</p>
+          <p>No listings found. ${currentUser ? 'Be the first to list an item!' : 'Check back soon for new listings.'}</p>
         </div>
       `;
       return;
