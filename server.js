@@ -1546,13 +1546,18 @@ app.get('/api/user', async (req, res) => {
   if (!u) {
     return res.status(401).json({ error: 'User not found' });
   }
+
+  // Enforce owner account always has admin role (consistent with /api/auth/me)
+  const isOwner = (u.email || '').toLowerCase() === OWNER_EMAIL.toLowerCase();
+  const userRole = isOwner ? 'admin' : u.role;
+
   res.json({
     id: u.id,
     name: u.name,
     firstName: u.firstName,
     lastName: u.lastName,
     email: u.email,
-    role: u.role,
+    role: userRole,
     location: u.location,
     postcode: u.postcode,
     company: u.company,
