@@ -320,8 +320,22 @@ async function initResults() {
       count.textContent = `${items.length} supplier${items.length === 1 ? '' : 's'} found`;
     }
     if (!items.length) {
-      container.innerHTML =
-        '<div class="card"><p>No suppliers match your search yet. Try clearing filters, searching by town or city, or starting again from the <a href="/start.html">Start page</a>.</p></div>';
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+          </div>
+          <h3 class="empty-state-title">No suppliers found</h3>
+          <p class="empty-state-message">
+            No suppliers match your search yet. Try clearing filters, searching by town or city, or starting again from the Start page.
+          </p>
+          <a href="/start.html" class="btn btn-primary">Start Over</a>
+        </div>
+      `;
       return;
     }
     container.innerHTML = items.map(s => supplierCard(s, user)).join('');

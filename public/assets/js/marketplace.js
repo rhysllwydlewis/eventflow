@@ -170,8 +170,19 @@
 
     if (allListings.length === 0) {
       resultsContainer.innerHTML = `
-        <div class="card" style="text-align: center; padding: 2rem; grid-column: 1 / -1;">
-          <p>No listings found. ${currentUser ? 'Be the first to list an item!' : 'Check back soon for new listings.'}</p>
+        <div class="empty-state" style="grid-column: 1 / -1;">
+          <div class="empty-state-icon">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+          </div>
+          <h3 class="empty-state-title">No listings yet</h3>
+          <p class="empty-state-message">
+            ${currentUser ? 'Be the first to list a pre-loved event item and help others save money!' : 'Check back soon for new listings or create an account to list your items.'}
+          </p>
+          ${currentUser ? '<a href="/list-item.html" class="btn btn-primary">List Your First Item</a>' : '<a href="/auth.html" class="btn btn-primary">Create Account</a>'}
         </div>
       `;
       return;
