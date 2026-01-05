@@ -769,6 +769,11 @@ app.get('/robots.txt', (req, res) => {
   }
 });
 
+// Serve marketplace page
+app.get('/marketplace', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'marketplace.html'));
+});
+
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
