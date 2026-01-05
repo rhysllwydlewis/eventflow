@@ -271,118 +271,18 @@
             </div>
           </div>
 
-          <!-- Demo Marketplace Items (Facebook Marketplace-style) -->
+          <!-- Marketplace Items -->
           <div id="marketplace-results" class="marketplace-grid">
-            <!-- Item Card 1 -->
-            <div class="marketplace-item-card">
-              <div class="marketplace-item-image">
-                <img src="/assets/images/collage-venue.jpg" alt="Ivory Wedding Dress" loading="lazy">
-                <button class="marketplace-save-btn" aria-label="Save item">♡</button>
-              </div>
-              <div class="marketplace-item-details">
-                <div class="marketplace-item-price">£450</div>
-                <h3 class="marketplace-item-title">Ivory Wedding Dress, Size 10</h3>
-                <div class="marketplace-item-meta">
-                  <span class="marketplace-item-location">📍 London</span>
-                  <span class="marketplace-item-condition">Like New</span>
-                </div>
-                <div class="marketplace-item-time">Listed 2 days ago</div>
-              </div>
-            </div>
-
-            <!-- Item Card 2 -->
-            <div class="marketplace-item-card">
-              <div class="marketplace-item-image">
-                <img src="/assets/images/collage-catering.jpg" alt="Table Centrepieces" loading="lazy">
-                <button class="marketplace-save-btn" aria-label="Save item">♡</button>
-              </div>
-              <div class="marketplace-item-details">
-                <div class="marketplace-item-price">£120</div>
-                <h3 class="marketplace-item-title">20x Glass Vase Centrepieces</h3>
-                <div class="marketplace-item-meta">
-                  <span class="marketplace-item-location">📍 Manchester</span>
-                  <span class="marketplace-item-condition">Good</span>
-                </div>
-                <div class="marketplace-item-time">Listed 5 days ago</div>
-              </div>
-            </div>
-
-            <!-- Item Card 3 -->
-            <div class="marketplace-item-card">
-              <div class="marketplace-item-image">
-                <img src="/assets/images/collage-entertainment.jpg" alt="PA System" loading="lazy">
-                <button class="marketplace-save-btn" aria-label="Save item">♡</button>
-              </div>
-              <div class="marketplace-item-details">
-                <div class="marketplace-item-price">£850</div>
-                <h3 class="marketplace-item-title">Professional PA System with Speakers</h3>
-                <div class="marketplace-item-meta">
-                  <span class="marketplace-item-location">📍 Birmingham</span>
-                  <span class="marketplace-item-condition">Good</span>
-                </div>
-                <div class="marketplace-item-time">Listed 1 week ago</div>
-              </div>
-            </div>
-
-            <!-- Item Card 4 -->
-            <div class="marketplace-item-card">
-              <div class="marketplace-item-image">
-                <img src="/assets/images/collage-photography.jpg" alt="LED Uplighters" loading="lazy">
-                <button class="marketplace-save-btn" aria-label="Save item">♡</button>
-              </div>
-              <div class="marketplace-item-details">
-                <div class="marketplace-item-price">£200</div>
-                <h3 class="marketplace-item-title">12x LED Uplighters for Venue</h3>
-                <div class="marketplace-item-meta">
-                  <span class="marketplace-item-location">📍 Leeds</span>
-                  <span class="marketplace-item-condition">Like New</span>
-                </div>
-                <div class="marketplace-item-time">Listed 3 days ago</div>
-              </div>
-            </div>
-
-            <!-- Item Card 5 -->
-            <div class="marketplace-item-card">
-              <div class="marketplace-item-image">
-                <img src="/assets/images/collage-venue.jpg" alt="Wedding Arch" loading="lazy">
-                <button class="marketplace-save-btn" aria-label="Save item">♡</button>
-              </div>
-              <div class="marketplace-item-details">
-                <div class="marketplace-item-price">£95</div>
-                <h3 class="marketplace-item-title">White Floral Arch with Stand</h3>
-                <div class="marketplace-item-meta">
-                  <span class="marketplace-item-location">📍 Bristol</span>
-                  <span class="marketplace-item-condition">Good</span>
-                </div>
-                <div class="marketplace-item-time">Listed 1 day ago</div>
-              </div>
-            </div>
-
-            <!-- Item Card 6 -->
-            <div class="marketplace-item-card">
-              <div class="marketplace-item-image">
-                <img src="/assets/images/collage-catering.jpg" alt="Bridesmaid Dresses" loading="lazy">
-                <button class="marketplace-save-btn" aria-label="Save item">♡</button>
-              </div>
-              <div class="marketplace-item-details">
-                <div class="marketplace-item-price">£180</div>
-                <h3 class="marketplace-item-title">3x Sage Green Bridesmaid Dresses, Size 12</h3>
-                <div class="marketplace-item-meta">
-                  <span class="marketplace-item-location">📍 Edinburgh</span>
-                  <span class="marketplace-item-condition">Like New</span>
-                </div>
-                <div class="marketplace-item-time">Listed 4 days ago</div>
-              </div>
-            </div>
+            <div class="card"><p style="text-align: center; padding: 2rem;">Loading listings...</p></div>
           </div>
 
-          <div class="card" style="margin-top: 2rem; text-align: center; padding: 2rem;">
+          <div class="card" style="margin-top: 2rem; text-align: center; padding: 2rem;" id="marketplace-cta-section">
             <h3>Ready to buy or sell?</h3>
             <p class="small" style="margin: 1rem 0;">
-              These are example listings to show how the marketplace will work. Sign up for a free account to be notified when the full marketplace launches.
+              Create a free account to list items for sale or message sellers about listings you're interested in.
             </p>
             <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin-top: 1.5rem;">
-              <a href="/auth.html" class="cta">Create Free Account</a>
+              <a href="/auth.html" class="cta" id="auth-cta">Create Free Account</a>
               <button class="cta secondary" id="sell-item-btn">List an Item</button>
             </div>
           </div>
