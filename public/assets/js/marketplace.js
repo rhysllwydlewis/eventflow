@@ -139,7 +139,7 @@
 
       // Check content type before parsing JSON
       const contentType = res.headers.get('content-type');
-      if (!contentType || contentType.indexOf('application/json') === -1) {
+      if (!contentType || !contentType.includes('application/json')) {
         console.warn('Response is not JSON:', contentType);
         throw new Error('Invalid response format');
       }
@@ -355,7 +355,7 @@
 
       // Check content type before parsing JSON
       const contentType = res.headers.get('content-type');
-      if (!contentType || contentType.indexOf('application/json') === -1) {
+      if (!contentType || !contentType.includes('application/json')) {
         console.warn('Response is not JSON:', contentType);
         throw new Error('Invalid response format');
       }
@@ -379,7 +379,7 @@
 
       // Check content type before parsing JSON
       const threadContentType = threadRes.headers.get('content-type');
-      if (!threadContentType || threadContentType.indexOf('application/json') === -1) {
+      if (!threadContentType || !threadContentType.includes('application/json')) {
         console.warn('Response is not JSON:', threadContentType);
         throw new Error('Invalid response format');
       }
