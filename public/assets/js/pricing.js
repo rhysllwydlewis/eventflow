@@ -14,19 +14,26 @@
       });
 
       if (response.ok) {
-        const user = await response.json();
+        const data = await response.json();
+        // Handle both wrapped ({user: ...}) and unwrapped response formats
+        const user = data.user || data;
 
         if (user) {
           // User is logged in, update buttons based on their current plan
           updateButtonsForAuthenticatedUser(user);
+        } else {
+          // No user data in response
+          updateButtonsForUnauthenticatedUser();
         }
+      } else if (response.status === 401) {
+        // User is not authenticated - this is expected, not an error
+        updateButtonsForUnauthenticatedUser();
       } else {
-        // User is not authenticated, update buttons to redirect to auth
+        // Other error status
         updateButtonsForUnauthenticatedUser();
       }
     } catch (error) {
-      console.error('Error checking authentication:', error);
-      // Fail silently - buttons will show default state
+      // Network error - fail silently and show default state
       updateButtonsForUnauthenticatedUser();
     }
   }

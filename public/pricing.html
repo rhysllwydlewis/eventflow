@@ -510,38 +510,30 @@
   </section>
 </main>
 
-<footer class="footer">
-  <div class="container">
-    <div class="footer-grid">
-      <div>
-        <div class="footer-brand">EventFlow</div>
-        <p class="footer-tagline">Plan events the simple way</p>
-      </div>
-      <div>
-        <h3 class="footer-title">Product</h3>
-        <ul class="footer-links">
-          <li><a href="/start.html">Plan an Event</a></li>
-          <li><a href="/suppliers.html">Find Suppliers</a></li>
-          <li><a href="/pricing.html">Pricing</a></li>
-          <li><a href="/for-suppliers.html">For Suppliers</a></li>
-        </ul>
-      </div>
-      <div>
-        <h3 class="footer-title">Support</h3>
-        <ul class="footer-links">
-          <li><a href="/faq.html">FAQ</a></li>
-          <li><a href="/contact.html">Contact</a></li>
-          <li><a href="/privacy.html">Privacy Policy</a></li>
-          <li><a href="/terms.html">Terms of Service</a></li>
-        </ul>
-      </div>
+<footer class="footer" role="contentinfo">
+  <div
+    class="container"
+    style="
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    "
+  >
+    <div>
+      <strong>EventFlow</strong><br /><span class="small">Event planning made simple.</span>
     </div>
-    <div class="footer-bottom">
-      <p>&copy; 2025 EventFlow. All rights reserved.</p>
+    <div class="version">Version: <span id="ef-version-label">loading…</span></div>
+    <div class="small">
+      <a href="/blog.html">Blog</a> · <a href="/credits.html">Credits</a> ·
+      <a href="/contact.html">Contact</a> ·
+      <a href="/legal.html">Legal Hub</a>
     </div>
   </div>
 </footer>
 
+<script src="/assets/js/app.js" defer></script>
 
 <!-- JadeAssist Chat Widget -->
 <script src="https://cdn.jsdelivr.net/gh/rhysllwydlewis/JadeAssist@abbf580487e0bcf7739a0857d4d940213fe2e176/packages/widget/dist/jade-widget.js" defer></script>
