@@ -38,6 +38,7 @@
       }
     } catch (error) {
       // User not logged in, that's fine
+      currentUser = null;
     }
   }
 
@@ -46,8 +47,13 @@
     const authCta = document.getElementById('auth-cta');
     const sellBtn = document.getElementById('sell-item-btn');
     const myListingsLink = document.getElementById('my-listings-link');
+    const ctaSection = document.getElementById('marketplace-cta-section');
 
     if (currentUser) {
+      // Hide entire CTA section for logged-in users
+      if (ctaSection) {
+        ctaSection.style.display = 'none';
+      }
       if (authCta) {
         authCta.style.display = 'none';
       }
@@ -59,6 +65,13 @@
         myListingsLink.style.display = 'flex';
       }
     } else {
+      // Show CTA section for logged-out users
+      if (ctaSection) {
+        ctaSection.style.display = 'block';
+      }
+      if (authCta) {
+        authCta.style.display = 'inline-flex';
+      }
       if (sellBtn) {
         sellBtn.onclick = () => {
           showToast('Please log in to list items');

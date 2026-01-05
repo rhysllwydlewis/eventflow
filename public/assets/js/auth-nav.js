@@ -171,8 +171,11 @@
       const r = await fetch('/api/auth/me', {
         credentials: 'include',
       });
+      if (!r.ok) {
+        return null;
+      }
       const data = await r.json();
-      return data.user || null;
+      return data || null;
     } catch (_) {
       return null;
     }

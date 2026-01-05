@@ -14,8 +14,7 @@
       });
 
       if (response.ok) {
-        const data = await response.json();
-        const user = data.user;
+        const user = await response.json();
 
         if (user) {
           // User is logged in, update buttons based on their current plan

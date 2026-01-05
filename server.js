@@ -1481,33 +1481,67 @@ app.post('/api/auth/logout', csrfProtection, async (_req, res) => {
 app.get('/api/auth/me', async (req, res) => {
   const p = getUserFromCookie(req);
   if (!p) {
-    return res.json({ user: null });
+    return res.status(401).json({ error: 'Not authenticated' });
   }
   const u = (await dbUnified.read('users')).find(x => x.id === p.id);
+  if (!u) {
+    return res.status(401).json({ error: 'User not found' });
+  }
   res.json({
-    user: u
-      ? {
-          id: u.id,
-          name: u.name,
-          firstName: u.firstName,
-          lastName: u.lastName,
-          email: u.email,
-          role: u.role,
-          location: u.location,
-          postcode: u.postcode,
-          company: u.company,
-          jobTitle: u.jobTitle,
-          website: u.website,
-          socials: u.socials || {},
-          avatarUrl: u.avatarUrl,
-          badges: u.badges || [],
-          isPro: u.isPro || false,
-          proExpiresAt: u.proExpiresAt || null,
-          notify: u.notify !== false,
-          notify_account: u.notify_account !== false,
-          notify_marketing: u.notify_marketing === true,
-        }
-      : null,
+    id: u.id,
+    name: u.name,
+    firstName: u.firstName,
+    lastName: u.lastName,
+    email: u.email,
+    role: u.role,
+    location: u.location,
+    postcode: u.postcode,
+    company: u.company,
+    jobTitle: u.jobTitle,
+    website: u.website,
+    socials: u.socials || {},
+    avatarUrl: u.avatarUrl,
+    badges: u.badges || [],
+    isPro: u.isPro || false,
+    proExpiresAt: u.proExpiresAt || null,
+    notify: u.notify !== false,
+    notify_account: u.notify_account !== false,
+    notify_marketing: u.notify_marketing === true,
+  });
+});
+
+// Backward-compatible alias for /api/auth/me
+app.get('/api/user', async (req, res) => {
+  res.set('Deprecation', 'true');
+  res.set('Link', '</api/auth/me>; rel="canonical"');
+  const p = getUserFromCookie(req);
+  if (!p) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+  const u = (await dbUnified.read('users')).find(x => x.id === p.id);
+  if (!u) {
+    return res.status(401).json({ error: 'User not found' });
+  }
+  res.json({
+    id: u.id,
+    name: u.name,
+    firstName: u.firstName,
+    lastName: u.lastName,
+    email: u.email,
+    role: u.role,
+    location: u.location,
+    postcode: u.postcode,
+    company: u.company,
+    jobTitle: u.jobTitle,
+    website: u.website,
+    socials: u.socials || {},
+    avatarUrl: u.avatarUrl,
+    badges: u.badges || [],
+    isPro: u.isPro || false,
+    proExpiresAt: u.proExpiresAt || null,
+    notify: u.notify !== false,
+    notify_account: u.notify_account !== false,
+    notify_marketing: u.notify_marketing === true,
   });
 });
 
