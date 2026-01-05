@@ -1,92 +1,105 @@
 /**
  * Firebase Configuration Stub
- * Provides fallback when Firebase is not configured
+ * 
+ * NOTE: This project uses MongoDB as the database and Cloudinary for image storage.
+ * Firebase/Firestore is NOT in use. This file exists only to prevent module import
+ * errors in legacy code that hasn't been migrated yet.
+ * 
+ * All exports are non-functional stubs that log warnings when called.
  */
 
-// Check if Firebase is available
-let db = null;
-let isFirebaseAvailable = false;
-let firestoreInstance = null;
-let storageInstance = null;
-let authInstance = null;
+// Firebase is not configured - all functions are stubs
+const isFirebaseAvailable = false;
+const db = null;
 
-// Try to initialize Firebase if config exists
-try {
-  if (typeof firebase !== 'undefined' && window.__FIREBASE_CONFIG__) {
-    firebase.initializeApp(window.__FIREBASE_CONFIG__);
-    firestoreInstance = firebase.firestore();
-    db = firestoreInstance;
-    
-    // Initialize storage if available
-    if (firebase.storage) {
-      storageInstance = firebase.storage();
-    }
-    
-    // Initialize auth if available
-    if (firebase.auth) {
-      authInstance = firebase.auth();
-    }
-    
-    isFirebaseAvailable = true;
+// Stub functions that log warnings
+const warnNotConfigured = (feature) => {
+  console.warn(`Firebase ${feature} is not configured. This project uses MongoDB/Cloudinary instead.`);
+};
+
+// Firestore stubs
+const collection = () => {
+  warnNotConfigured('Firestore');
+  return null;
+};
+const doc = () => {
+  warnNotConfigured('Firestore');
+  return null;
+};
+const addDoc = () => {
+  warnNotConfigured('Firestore');
+  return Promise.reject(new Error('Firebase not configured - use MongoDB API instead'));
+};
+const getDoc = () => {
+  warnNotConfigured('Firestore');
+  return Promise.reject(new Error('Firebase not configured - use MongoDB API instead'));
+};
+const getDocs = () => {
+  warnNotConfigured('Firestore');
+  return Promise.reject(new Error('Firebase not configured - use MongoDB API instead'));
+};
+const updateDoc = () => {
+  warnNotConfigured('Firestore');
+  return Promise.reject(new Error('Firebase not configured - use MongoDB API instead'));
+};
+const query = () => {
+  warnNotConfigured('Firestore');
+  return null;
+};
+const where = () => {
+  warnNotConfigured('Firestore');
+  return null;
+};
+const orderBy = () => {
+  warnNotConfigured('Firestore');
+  return null;
+};
+const onSnapshot = () => {
+  warnNotConfigured('Firestore');
+  return () => {};
+};
+const serverTimestamp = () => {
+  warnNotConfigured('Firestore');
+  return new Date();
+};
+const Timestamp = {
+  now: () => {
+    warnNotConfigured('Firestore');
+    return { seconds: Date.now() / 1000 };
   }
-} catch (err) {
-  console.warn('Firebase not available:', err.message);
-}
+};
+const arrayUnion = (...items) => {
+  warnNotConfigured('Firestore');
+  return items;
+};
 
-// Provide stub implementations if Firebase is not available
-const collection = isFirebaseAvailable
-  ? (...args) => firestoreInstance.collection(...args)
-  : () => null;
-const doc = isFirebaseAvailable ? (...args) => firestoreInstance.doc(...args) : () => null;
-const addDoc = isFirebaseAvailable
-  ? (col, data) => col.add(data)
-  : () => Promise.reject(new Error('Firebase not configured'));
-const getDoc = isFirebaseAvailable
-  ? ref => ref.get()
-  : () => Promise.reject(new Error('Firebase not configured'));
-const getDocs = isFirebaseAvailable
-  ? ref => ref.get()
-  : () => Promise.reject(new Error('Firebase not configured'));
-const updateDoc = isFirebaseAvailable
-  ? (ref, data) => ref.update(data)
-  : () => Promise.reject(new Error('Firebase not configured'));
-const query = isFirebaseAvailable ? (...args) => firestoreInstance.query(...args) : () => null;
-const where = isFirebaseAvailable ? (...args) => firestoreInstance.where(...args) : () => null;
-const orderBy = isFirebaseAvailable ? (...args) => firestoreInstance.orderBy(...args) : () => null;
-const onSnapshot = isFirebaseAvailable
-  ? (ref, callback) => ref.onSnapshot(callback)
-  : () => () => {};
-const serverTimestamp = isFirebaseAvailable
-  ? firebase.firestore.FieldValue.serverTimestamp
-  : () => new Date();
-const Timestamp = isFirebaseAvailable
-  ? firebase.firestore.Timestamp
-  : { now: () => ({ seconds: Date.now() / 1000 }) };
-const arrayUnion = isFirebaseAvailable
-  ? firebase.firestore.FieldValue.arrayUnion
-  : (...items) => items;
+// Storage stubs
+const storage = null;
+const ref = () => {
+  warnNotConfigured('Storage');
+  return null;
+};
+const uploadBytes = () => {
+  warnNotConfigured('Storage');
+  return Promise.reject(new Error('Firebase Storage not configured - use Cloudinary API instead'));
+};
+const getDownloadURL = () => {
+  warnNotConfigured('Storage');
+  return Promise.reject(new Error('Firebase Storage not configured - use Cloudinary API instead'));
+};
+const deleteObject = () => {
+  warnNotConfigured('Storage');
+  return Promise.reject(new Error('Firebase Storage not configured - use Cloudinary API instead'));
+};
 
-// Storage exports
-const storage = storageInstance || null;
-const ref = isFirebaseAvailable && storageInstance
-  ? (storageRef, path) => storageRef.ref(path)
-  : () => null;
-const uploadBytes = isFirebaseAvailable && storageInstance
-  ? (ref, data) => ref.put(data)
-  : () => Promise.reject(new Error('Firebase Storage not configured'));
-const getDownloadURL = isFirebaseAvailable && storageInstance
-  ? ref => ref.getDownloadURL()
-  : () => Promise.reject(new Error('Firebase Storage not configured'));
-const deleteObject = isFirebaseAvailable && storageInstance
-  ? ref => ref.delete()
-  : () => Promise.reject(new Error('Firebase Storage not configured'));
+// Auth stubs
+const auth = null;
+const onAuthStateChanged = () => {
+  warnNotConfigured('Auth');
+  return () => {};
+};
 
-// Auth exports
-const auth = authInstance || null;
-const onAuthStateChanged = isFirebaseAvailable && authInstance
-  ? (callback) => authInstance.onAuthStateChanged(callback)
-  : () => () => {};
-
+// Export all stubs to prevent import errors
 export {
   db,
   collection,
