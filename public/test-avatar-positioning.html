@@ -219,6 +219,7 @@
     </button>
 
     <!-- JadeAssist Widget -->
+    <!-- Note: CDN URL uses pinned commit SHA (not @main) to ensure consistent behavior and prevent unexpected changes -->
     <script 
       src="https://cdn.jsdelivr.net/gh/rhysllwydlewis/JadeAssist@b346f7e4d9130a4c258e987f955e2d0c3149e9b2/packages/widget/dist/jade-widget.js"
       defer
@@ -362,7 +363,14 @@
 
       function clearLocalStorage() {
         localStorage.removeItem('jadeassist-teaser-dismissed');
-        alert('Teaser dismissal cleared! Reload the page to see the teaser again.');
+        console.log('✅ Teaser dismissal cleared! Reload the page to see the teaser again.');
+        
+        // Show feedback in the diagnostic output
+        const output = document.getElementById('diagnostics');
+        const feedbackLine = document.createElement('div');
+        feedbackLine.className = 'diagnostic-line success';
+        feedbackLine.textContent = '✅ Teaser dismissal cleared! Reload the page to see the teaser again.';
+        output.insertBefore(feedbackLine, output.firstChild);
       }
 
       function scrollToBottom() {
