@@ -377,3 +377,95 @@ For issues with the JadeAssist widget:
 2. Verify avatar and CDN resources load (Network tab)
 3. Review this documentation
 4. Check the widget library repository: https://github.com/rhysllwydlewis/JadeAssist
+
+## Analytics Integration
+
+The widget emits custom events that can be tracked:
+
+```javascript
+// Listen for teaser clicks
+window.addEventListener('jadeassist:teaser-clicked', (e) => {
+  console.log('Teaser clicked:', e.detail);
+  // Send to analytics
+  gtag('event', 'teaser_click', { timestamp: e.detail.timestamp });
+});
+
+// Listen for widget opens
+window.addEventListener('jadeassist:widget-opened', (e) => {
+  console.log('Widget opened:', e.detail);
+  // Send to analytics
+  gtag('event', 'widget_open', { timestamp: e.detail.timestamp });
+});
+
+// Listen for teaser dismissals
+window.addEventListener('jadeassist:teaser-dismissed', (e) => {
+  console.log('Teaser dismissed:', e.detail);
+  // Send to analytics
+  gtag('event', 'teaser_dismiss', { 
+    timestamp: e.detail.timestamp,
+    method: e.detail.method 
+  });
+});
+```
+
+### Event Details
+
+- **jadeassist:teaser-clicked**: Fired when user clicks the teaser bubble to open chat
+  - `detail.timestamp`: Time of click
+  - `detail.source`: Always 'teaser-bubble'
+
+- **jadeassist:widget-opened**: Fired when the chat widget is opened
+  - `detail.timestamp`: Time of opening
+
+- **jadeassist:teaser-dismissed**: Fired when teaser is dismissed without opening
+  - `detail.timestamp`: Time of dismissal
+  - `detail.method`: How it was dismissed ('close-button' or 'auto-dismiss')
+
+## A/B Testing
+
+Test different teaser messages:
+
+### Setting Test Variants
+
+The widget supports three teaser message variants (A, B, C). To test different variants:
+
+```javascript
+// Set variant in console
+localStorage.setItem('jadeassist-teaser-variant', 'B');
+location.reload();
+
+// Check current variant
+localStorage.getItem('jadeassist-teaser-variant'); // 'A', 'B', or 'C'
+
+// Clear variant (revert to default 'A')
+localStorage.removeItem('jadeassist-teaser-variant');
+location.reload();
+```
+
+### Available Variants
+
+**Variant A (Default):**
+- Desktop: "Hi, I'm Jade — want help finding venues and trusted suppliers?"
+- Mobile: "Need help finding venues? 👋"
+
+**Variant B:**
+- Desktop: "Planning an event? Let me help you find the perfect suppliers! 🎉"
+- Mobile: "Planning an event? 🎉"
+
+**Variant C:**
+- Desktop: "Find trusted event suppliers in minutes ⚡"
+- Mobile: "Find suppliers fast ⚡"
+
+### Testing Workflow
+
+1. **Set variant**: Use localStorage to select variant (A, B, or C)
+2. **Track events**: Use analytics integration to measure conversion rates
+3. **Compare metrics**: 
+   - Teaser click-through rate
+   - Widget engagement rate
+   - Time to first interaction
+4. **Choose winner**: Implement the best-performing variant as the new default
+
+### Implementation
+
+To change the default variant or add new variants, edit the `TEASER_VARIANTS` constant in the initialization scripts (`jadeassist-init.v2.js` and `jadeassist-init.js`).
