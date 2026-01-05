@@ -12,7 +12,7 @@ Since we own the repo, we should add integrity verification for security.
 
 ```html
 <script
-  src="https://cdn.jsdelivr.net/gh/rhysllwydlewis/JadeAssist@93906b5068d1a4cbae45a64b8ed6dd33bc94aab8/packages/widget/dist/jade-widget.js"
+  src="https://cdn.jsdelivr.net/gh/rhysllwydlewis/JadeAssist@abbf580487e0bcf7739a0857d4d940213fe2e176/packages/widget/dist/jade-widget.js"
   defer
 ></script>
 ```
@@ -21,7 +21,7 @@ Since we own the repo, we should add integrity verification for security.
 
 ```html
 <script
-  src="https://cdn.jsdelivr.net/gh/rhysllwydlewis/JadeAssist@93906b5068d1a4cbae45a64b8ed6dd33bc94aab8/packages/widget/dist/jade-widget.js"
+  src="https://cdn.jsdelivr.net/gh/rhysllwydlewis/JadeAssist@abbf580487e0bcf7739a0857d4d940213fe2e176/packages/widget/dist/jade-widget.js"
   integrity="sha384-[HASH_VALUE]"
   crossorigin="anonymous"
   defer
@@ -32,7 +32,7 @@ Since we own the repo, we should add integrity verification for security.
 
 ```bash
 # Download the widget file
-curl -sL "https://cdn.jsdelivr.net/gh/rhysllwydlewis/JadeAssist@93906b5068d1a4cbae45a64b8ed6dd33bc94aab8/packages/widget/dist/jade-widget.js" -o jade-widget.js
+curl -sL "https://cdn.jsdelivr.net/gh/rhysllwydlewis/JadeAssist@abbf580487e0bcf7739a0857d4d940213fe2e176/packages/widget/dist/jade-widget.js" -o jade-widget.js
 
 # Generate SHA-384 hash
 cat jade-widget.js | openssl dgst -sha384 -binary | openssl base64 -A
