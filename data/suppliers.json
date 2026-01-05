@@ -49,5 +49,14 @@
     "location": "Cardiff",
     "latitude": 51.48,
     "longitude": -3.18
+  },
+  {
+    "id": "test-unapproved-1767650990878",
+    "name": "Unapproved Venue",
+    "category": "Venues",
+    "approved": false,
+    "location": "Cardiff",
+    "latitude": 51.48,
+    "longitude": -3.18
   }
 ]
