@@ -1,4 +1,7 @@
 (function () {
+  // Constants
+  const OWNER_EMAIL = 'admin@event-flow.co.uk'; // Owner account always has admin role
+
   // Defensive error logging wrapper
   function safeExecute(fn, context) {
     try {
@@ -107,7 +110,7 @@
         ? '<span class="badge badge-yes">Yes</span>'
         : '<span class="badge badge-no">No</span>';
 
-      const isOwner = u.email === 'admin@event-flow.co.uk';
+      const isOwner = u.email === OWNER_EMAIL;
       const isAdmin = u.role === 'admin';
 
       let actions = '<div style="display:flex;gap:4px;flex-wrap:wrap;">';
@@ -449,7 +452,14 @@
 
     api('/api/auth/me')
       .then(me => {
-        if (!me || !me.user || me.user.role !== 'admin') {
+        // Handle both wrapped ({ user: {...} }) and unwrapped formats for backward compatibility
+        const user = me.user || me;
+
+        // Check if user is admin - either by role or by owner email
+        const isOwner = user.email === OWNER_EMAIL;
+        const isAdmin = user.role === 'admin' || isOwner;
+
+        if (!isAdmin) {
           if (statusEl) {
             statusEl.innerText = 'Not admin / not logged in.';
           }
@@ -555,7 +565,13 @@
       .catch(err => {
         console.error('Error loading admin', err);
         // Only show error message if it's not an auth error
-        if (statusEl && err && err.message && typeof err.message === 'string' && !err.message.includes('Authentication required')) {
+        if (
+          statusEl &&
+          err &&
+          err.message &&
+          typeof err.message === 'string' &&
+          !err.message.includes('Authentication required')
+        ) {
           statusEl.innerText = 'Error loading data. Some features may be unavailable.';
         }
       });

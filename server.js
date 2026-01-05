@@ -178,6 +178,7 @@ const { generateSitemap, generateRobotsTxt } = require('./sitemap');
 // Constants for user management
 const VALID_USER_ROLES = ['customer', 'supplier', 'admin'];
 const MAX_NAME_LENGTH = 80;
+const OWNER_EMAIL = 'admin@event-flow.co.uk'; // Owner account always has admin role
 
 // Helper: determine if a supplier's Pro plan is currently active.
 // - isPro must be true, AND
@@ -649,7 +650,12 @@ function roleRequired(role) {
     if (!req.user) {
       return res.status(401).json({ error: 'Unauthenticated' });
     }
-    if (req.user.role !== role) {
+
+    // Check if user is owner account - owner always has admin role
+    const isOwner = (req.user.email || '').toLowerCase() === OWNER_EMAIL.toLowerCase();
+    const userRole = isOwner ? 'admin' : req.user.role;
+
+    if (userRole !== role) {
       return res.status(403).json({ error: 'Forbidden' });
     }
     next();
@@ -962,10 +968,14 @@ app.post('/api/auth/login', authLimiter, csrfProtection, async (req, res) => {
     console.error('Failed to update lastLoginAt', e);
   }
 
+  // Enforce owner account always has admin role
+  const isOwner = (user.email || '').toLowerCase() === OWNER_EMAIL.toLowerCase();
+  const userRole = isOwner ? 'admin' : user.role;
+
   // Set JWT expiry based on "remember me" checkbox
   // Remember me: 30 days, otherwise: 7 days
   const expiresIn = remember ? '30d' : '7d';
-  const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, {
+  const token = jwt.sign({ id: user.id, email: user.email, role: userRole }, JWT_SECRET, {
     expiresIn,
   });
 
@@ -984,7 +994,7 @@ app.post('/api/auth/login', authLimiter, csrfProtection, async (req, res) => {
 
   res.json({
     ok: true,
-    user: { id: user.id, name: user.name, email: user.email, role: user.role },
+    user: { id: user.id, name: user.name, email: user.email, role: userRole },
   });
 });
 
@@ -1487,13 +1497,18 @@ app.get('/api/auth/me', async (req, res) => {
   if (!u) {
     return res.status(401).json({ error: 'User not found' });
   }
-  res.json({
+
+  // Enforce owner account always has admin role
+  const isOwner = (u.email || '').toLowerCase() === OWNER_EMAIL.toLowerCase();
+  const userRole = isOwner ? 'admin' : u.role;
+
+  const userData = {
     id: u.id,
     name: u.name,
     firstName: u.firstName,
     lastName: u.lastName,
     email: u.email,
-    role: u.role,
+    role: userRole,
     location: u.location,
     postcode: u.postcode,
     company: u.company,
@@ -1507,6 +1522,15 @@ app.get('/api/auth/me', async (req, res) => {
     notify: u.notify !== false,
     notify_account: u.notify_account !== false,
     notify_marketing: u.notify_marketing === true,
+    isOwner: isOwner,
+  };
+
+  // Return wrapped format for consistency with frontend expectations
+  // Also include unwrapped properties for backward compatibility
+  res.json({
+    user: userData,
+    // Backward compatibility: include all user properties at root level
+    ...userData,
   });
 });
 
@@ -1522,13 +1546,18 @@ app.get('/api/user', async (req, res) => {
   if (!u) {
     return res.status(401).json({ error: 'User not found' });
   }
+
+  // Enforce owner account always has admin role (consistent with /api/auth/me)
+  const isOwner = (u.email || '').toLowerCase() === OWNER_EMAIL.toLowerCase();
+  const userRole = isOwner ? 'admin' : u.role;
+
   res.json({
     id: u.id,
     name: u.name,
     firstName: u.firstName,
     lastName: u.lastName,
     email: u.email,
-    role: u.role,
+    role: userRole,
     location: u.location,
     postcode: u.postcode,
     company: u.company,
