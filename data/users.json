@@ -281,5 +281,17 @@
     "location": "Test Location",
     "verified": true,
     "createdAt": "2026-01-04T23:23:12.098Z"
+  },
+  {
+    "id": "usr_5n556pnf0gsf26",
+    "name": "Test User No Plans",
+    "firstName": "Test",
+    "lastName": "NoPlans",
+    "email": "test-noplan-1767575456574@example.com",
+    "role": "customer",
+    "passwordHash": "$2a$10$QubwozbDOWdmRTyxBoHVPu.ESOcPTDXNoOjHs5kwzHloTQn3qndAy",
+    "location": "Test Location",
+    "verified": true,
+    "createdAt": "2026-01-05T01:10:56.657Z"
   }
 ]

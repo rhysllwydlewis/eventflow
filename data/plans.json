@@ -353,5 +353,22 @@
     "isGuestPlan": true,
     "createdAt": "2026-01-04T23:23:12.122Z",
     "updatedAt": "2026-01-04T23:23:12.122Z"
+  },
+  {
+    "id": "pln_9xm8ebh80gsf4y",
+    "userId": null,
+    "guestToken": "gst_55nun9b90gsf4y",
+    "eventType": "Wedding",
+    "eventName": "Guest Wedding",
+    "location": "Manchester",
+    "date": "2024-09-20",
+    "guests": 80,
+    "budget": "£3,000–£10,000",
+    "packages": [
+      "pkg1"
+    ],
+    "isGuestPlan": true,
+    "createdAt": "2026-01-05T01:10:56.674Z",
+    "updatedAt": "2026-01-05T01:10:56.674Z"
   }
 ]

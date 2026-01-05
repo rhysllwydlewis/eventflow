@@ -4,9 +4,10 @@
 
 **EventFlow now loads the JadeAssist widget from jsDelivr CDN using a pinned commit SHA.**
 
-**Current Widget Version:** `93906b5068d1a4cbae45a64b8ed6dd33bc94aab8`
+**Current Widget Version:** `abbf580487e0bcf7739a0857d4d940213fe2e176`
 
 This ensures that:
+
 - Latest JadeAssist changes are reflected on the live site
 - No manual vendoring required
 - Immutable URLs prevent caching issues
@@ -19,7 +20,7 @@ The JadeAssist widget repository includes avatar support and UX improvements.
 
 ### Latest Commit Information
 
-**Commit SHA:** `93906b5068d1a4cbae45a64b8ed6dd33bc94aab8`
+**Commit SHA:** `abbf580487e0bcf7739a0857d4d940213fe2e176`
 **Branch:** `main`
 **Status:** ✅ Pushed to GitHub and deployed via CDN
 
@@ -37,9 +38,10 @@ The JadeAssist widget repository includes avatar support and UX improvements.
    - Improved shadows and hover effects
 
 3. **Positioning Configuration**
-   - `offsetBottom`: Controls distance from bottom of viewport (default: '80px')
-   - `offsetRight`: Controls distance from right of viewport (default: '24px')
-   - Note: Advanced position API with mobile overrides and safe area support is not yet available at this commit
+   - `offsetBottom`, `offsetLeft`: Controls distance from bottom/left of viewport
+   - `offsetBottomMobile`, `offsetLeftMobile`, `offsetRightMobile`: Mobile-specific positioning
+   - CSS custom properties for advanced positioning control
+   - Note: Full position API with mobile overrides and CSS variables is now available at this commit
 
 4. **Built Distribution File** (`dist/jade-widget.js`)
    - Production-ready build with new API
@@ -51,8 +53,9 @@ The JadeAssist widget repository includes avatar support and UX improvements.
 EventFlow uses the **jsDelivr CDN with pinned commit SHA** approach.
 
 **Widget URL:**
+
 ```
-https://cdn.jsdelivr.net/gh/rhysllwydlewis/JadeAssist@93906b5068d1a4cbae45a64b8ed6dd33bc94aab8/packages/widget/dist/jade-widget.js
+https://cdn.jsdelivr.net/gh/rhysllwydlewis/JadeAssist@abbf580487e0bcf7739a0857d4d940213fe2e176/packages/widget/dist/jade-widget.js
 ```
 
 **Benefits:**
@@ -86,17 +89,23 @@ npm test -- --testPathPattern=jadeassist-widget
 
 ```typescript
 interface WidgetConfig {
-  apiBaseUrl?: string;           // API endpoint (empty string for demo mode)
-  assistantName?: string;        // Display name (default: 'Jade')
-  greetingText?: string;         // Initial message in chat
-  greetingTooltipText?: string;  // Tooltip text on greeting bubble
-  avatarUrl?: string;            // URL to avatar image
-  primaryColor?: string;         // Main brand color (default: '#0B8073')
-  accentColor?: string;          // Accent brand color (default: '#13B6A2')
-  fontFamily?: string;           // Font stack for widget
-  showDelayMs?: number;          // Delay before showing greeting (default: 1000ms)
-  offsetBottom?: string;         // Distance from bottom (default: '80px')
-  offsetRight?: string;          // Distance from right (default: '24px')
+  apiBaseUrl?: string; // API endpoint (empty string for demo mode)
+  assistantName?: string; // Display name (default: 'Jade')
+  greetingText?: string; // Initial message in chat
+  greetingTooltipText?: string; // Tooltip text on greeting bubble
+  avatarUrl?: string; // URL to avatar image
+  primaryColor?: string; // Main brand color (default: '#0B8073')
+  accentColor?: string; // Accent brand color (default: '#13B6A2')
+  fontFamily?: string; // Font stack for widget
+  showDelayMs?: number; // Delay before showing greeting (default: 1000ms)
+  offsetBottom?: string; // Distance from bottom (default: '80px')
+  offsetLeft?: string; // Distance from left edge
+  offsetRight?: string; // Distance from right (default: '24px')
+  offsetBottomMobile?: string; // Mobile-specific bottom distance
+  offsetLeftMobile?: string; // Mobile-specific left distance
+  offsetRightMobile?: string; // Mobile-specific right distance
+  debug?: boolean; // Enable diagnostic logs (default: false)
+  scale?: number; // Size scale factor (default: 1.0)
 }
 ```
 
@@ -109,12 +118,20 @@ window.JadeWidget.init({
   accentColor: '#008C85',
   assistantName: 'Jade',
   greetingText: "Hi! I'm Jade.",
-  greetingTooltipText: "👋 Hi! Need help planning your event?",
+  greetingTooltipText: '👋 Hi! Need help planning your event?',
   avatarUrl: '/path/to/avatar.png',
-  
-  // Positioning
-  offsetBottom: '10rem',  // 160px - positions below back-to-top button
-  offsetRight: '1.5rem',  // 24px - spacing from right edge
+
+  // Positioning (desktop)
+  offsetBottom: '5rem', // Distance from bottom
+  offsetLeft: '1.5rem', // Distance from left edge
+
+  // Positioning (mobile)
+  offsetBottomMobile: '4.5rem',
+  offsetLeftMobile: '1rem',
+
+  // Other options
+  scale: 0.85, // 15% smaller for better mobile UX
+  debug: false, // Enable diagnostic logs
 });
 ```
 
@@ -151,19 +168,24 @@ window.JadeWidget.init({
   accentColor: '#008C85',
   assistantName: 'Jade',
   greetingText: "Hi! I'm Jade. Ready to plan your event?",
-  greetingTooltipText: "👋 Hi! Need help planning your event?",
+  greetingTooltipText: '👋 Hi! Need help planning your event?',
   avatarUrl: '/assets/images/jade-avatar.png',
-  offsetBottom: '10rem',  // Positions below back-to-top button
-  offsetRight: '1.5rem',
+  offsetBottom: '5rem', // Desktop: positions widget 5rem from bottom
+  offsetLeft: '1.5rem', // Desktop: positions widget 1.5rem from left
+  offsetBottomMobile: '4.5rem', // Mobile: positions widget 4.5rem from bottom
+  offsetLeftMobile: '1rem', // Mobile: positions widget 1rem from left
+  scale: 0.85, // 15% smaller for better mobile UX
+  debug: false, // Disable diagnostic logs in production
 });
 ```
 
 This configuration:
 
-- Positions widget at `bottom: 10rem` (160px) - below the back-to-top button
-- Positions widget at `right: 1.5rem` (24px) from the right edge
+- Positions widget at `bottom: 5rem` on desktop, `4.5rem` on mobile
+- Positions widget at `left: 1.5rem` on desktop, `1rem` on mobile
 - Uses EventFlow brand colors (teal)
 - Loads custom avatar from EventFlow domain
+- Scales widget to 85% size for better mobile UX
 - Shows greeting tooltip after 1 second delay
 
 ---
@@ -175,13 +197,13 @@ All HTML files load the widget from jsDelivr CDN with pinned SHA:
 ```html
 <!-- Current approach (Pinned CDN) -->
 <script
-  src="https://cdn.jsdelivr.net/gh/rhysllwydlewis/JadeAssist@93906b5068d1a4cbae45a64b8ed6dd33bc94aab8/packages/widget/dist/jade-widget.js"
+  src="https://cdn.jsdelivr.net/gh/rhysllwydlewis/JadeAssist@abbf580487e0bcf7739a0857d4d940213fe2e176/packages/widget/dist/jade-widget.js"
   defer
 ></script>
-<script src="/assets/js/jadeassist-init.js" defer></script>
+<script src="/assets/js/jadeassist-init.v2.js" defer></script>
 ```
 
-**Files updated:** 48 HTML files across the public directory
+**Files updated:** 49 HTML files across the public directory
 
 ---
 
@@ -237,4 +259,4 @@ If issues arise:
 ✅ Integration tests passing
 ✅ Tested and verified working
 
-**Current Setup:** EventFlow loads widget from `https://cdn.jsdelivr.net/gh/rhysllwydlewis/JadeAssist@93906b5068d1a4cbae45a64b8ed6dd33bc94aab8/packages/widget/dist/jade-widget.js`
+**Current Setup:** EventFlow loads widget from `https://cdn.jsdelivr.net/gh/rhysllwydlewis/JadeAssist@abbf580487e0bcf7739a0857d4d940213fe2e176/packages/widget/dist/jade-widget.js`
