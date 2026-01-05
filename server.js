@@ -38,6 +38,9 @@ const APP_VERSION = 'v17.0.0';
 
 require('dotenv').config();
 
+// Winston logger for structured logging
+const logger = require('./utils/logger');
+
 let STRIPE_ENABLED = false;
 try {
   const secret = process.env.STRIPE_SECRET_KEY;
@@ -5780,7 +5783,7 @@ app.use(sentry.getErrorHandler());
 
 // Custom error handler
 app.use((err, req, res, _next) => {
-  console.error('Error:', err);
+  logger.error('Error:', { message: err.message, stack: err.stack, url: req.url });
 
   // Send error to Sentry
   sentry.captureException(err, {
@@ -6043,6 +6046,7 @@ async function startServer() {
       console.log('');
       console.log('WebSocket server initialized for real-time features');
       console.log('Server is now accepting requests');
+      logger.info(`Server started successfully on port ${PORT}`);
       console.log('');
       console.log('🔌 Database initialization running in background...');
     });
@@ -6159,6 +6163,7 @@ module.exports = app;
 if (require.main === module) {
   startServer().catch(error => {
     console.error('Fatal error during startup:', error);
+    logger.error('Fatal error during startup', { error: error.message, stack: error.stack });
     sentry.captureException(error);
     process.exit(1);
   });
