@@ -79,19 +79,23 @@
 }
 
 .btn-change-location {
-  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ink, #0B8073);
+  color: #fff;
   border: none;
-  color: var(--ink, #0B8073);
+  padding: 6px 12px;
+  border-radius: 6px;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 4px;
-  transition: background 0.2s ease;
+  transition: transform 140ms ease-out, box-shadow 160ms ease-out;
 }
 
 .btn-change-location:hover {
-  background: rgba(11, 128, 115, 0.1);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(11, 128, 115, 0.25);
 }
 
 /* My Listings Button */
@@ -118,22 +122,25 @@
 
 /* Quick Search Buttons */
 .btn-quick-search {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 8px 12px;
-  background: var(--bg, #fff);
-  border: 1px solid var(--border, #E7EAF0);
+  background: #F6FAF9;
+  border: 1px solid #CFEDEA;
   border-radius: 6px;
-  color: var(--text, #0B1220);
+  color: var(--ink, #0B8073);
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
-  text-align: left;
-  transition: all 0.2s ease;
+  text-align: center;
+  transition: transform 140ms ease-out, background 160ms ease-out, box-shadow 160ms ease-out;
 }
 
 .btn-quick-search:hover {
-  background: #F6FAF9;
-  border-color: #CFEDEA;
-  color: var(--ink, #0B8073);
+  background: #EDF7F5;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(11, 128, 115, 0.15);
 }
 
 /* Main Content */
