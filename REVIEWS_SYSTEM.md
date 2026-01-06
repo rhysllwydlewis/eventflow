@@ -462,7 +462,7 @@ WCAG 2.1 AA compliant features:
 - [ ] Supplier can respond to review
 - [ ] Admin can moderate flagged reviews
 - [ ] Mobile layout displays correctly
-- [ ] Dark mode renders properly
+- [ ] Animations are smooth and performant
 
 ### Edge Cases
 

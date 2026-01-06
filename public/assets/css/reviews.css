@@ -10,7 +10,7 @@
  * - Admin moderation interface
  * - Trust scores and badges
  * - Mobile responsive design
- * - Dark mode support
+ * - Smooth animations and transitions
  */
 
 /* ========================================
@@ -41,15 +41,35 @@
   grid-template-columns: auto 1fr;
   gap: 2rem;
   align-items: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.review-summary::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+  animation: pulse 3s ease-in-out infinite;
 }
 
 .review-summary-score {
   text-align: center;
   padding: 1rem;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.15);
   border-radius: 12px;
   backdrop-filter: blur(10px);
   min-width: 150px;
+  position: relative;
+  z-index: 1;
+  transition: transform 0.3s ease;
+}
+
+.review-summary-score:hover {
+  transform: scale(1.05);
 }
 
 .review-average-rating {
@@ -71,6 +91,8 @@
 
 .review-summary-details {
   flex: 1;
+  position: relative;
+  z-index: 1;
 }
 
 .review-summary-title {
@@ -929,27 +951,32 @@
 }
 
 .reviews-empty {
-  padding: 3rem 2rem;
+  padding: 4rem 2rem;
   text-align: center;
+  animation: fadeIn 0.5s ease;
 }
 
 .empty-icon {
   font-size: 4rem;
-  color: #d1d5db;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
+  animation: pulse 2s ease infinite;
 }
 
 .empty-title {
   font-size: 1.5rem;
   font-weight: 600;
   color: #374151;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.75rem;
 }
 
 .empty-message {
   font-size: 1rem;
   color: #6b7280;
   margin-bottom: 1.5rem;
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.6;
 }
 
 /* ========================================
@@ -1029,67 +1056,46 @@
 }
 
 /* ========================================
-   Dark Mode Support
+   Enhanced Animations
    ======================================== */
 
-@media (prefers-color-scheme: dark) {
-  .reviews-section {
-    background: #1f2937;
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
   }
-  
-  .reviews-title,
-  .review-author-name,
-  .review-title {
-    color: #f9fafb;
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
-  
-  .review-text {
-    color: #d1d5db;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
   }
-  
-  .review-card {
-    border-bottom-color: #374151;
+  to {
+    opacity: 1;
+    transform: translateX(0);
   }
-  
-  .review-card:hover {
-    background-color: #111827;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
   }
-  
-  .reviews-header,
-  .review-controls {
-    background: #111827;
-    border-bottom-color: #374151;
+  50% {
+    opacity: 0.8;
   }
-  
-  .review-input,
-  .review-textarea,
-  .review-filter-select {
-    background: #374151;
-    border-color: #4b5563;
-    color: #f9fafb;
-  }
-  
-  .review-modal {
-    background: #1f2937;
-  }
-  
-  .review-modal-header {
-    border-bottom-color: #374151;
-  }
-  
-  .review-modal-footer {
-    border-top-color: #374151;
-  }
-  
-  .btn-cancel {
-    background: #374151;
-    border-color: #4b5563;
-    color: #f9fafb;
-  }
-  
-  .btn-cancel:hover {
-    background: #4b5563;
-  }
+}
+
+.review-card {
+  animation: fadeIn 0.3s ease;
+}
+
+.rating-bar-fill {
+  animation: slideIn 0.5s ease;
 }
 
 /* ========================================

@@ -169,10 +169,10 @@
       if (reviews.length === 0) {
         container.innerHTML = `
           <div class="reviews-empty">
-            <div class="empty-icon">📝</div>
+            <div class="empty-icon">⭐</div>
             <h3 class="empty-title">No Reviews Yet</h3>
-            <p class="empty-message">Be the first to review this supplier!</p>
-            ${this.currentUser ? '<button class="btn-write-review" onclick="reviewsManager.openReviewModal()">Write a Review</button>' : ''}
+            <p class="empty-message">This supplier is new to our platform. Be the first to share your experience!</p>
+            ${this.currentUser ? '<button class="btn-write-review" onclick="reviewsManager.openReviewModal()">Write the First Review</button>' : '<p style="color: #6b7280; margin-top: 1rem;">Sign in to write a review</p>'}
           </div>
         `;
         return;
@@ -512,15 +512,33 @@
 
       container.innerHTML = html;
 
-      // Update summary
+      // Update summary - Show "New" for suppliers with no reviews
       const avgElement = document.querySelector('.review-average-rating');
       if (avgElement) {
-        avgElement.textContent = data.average ? data.average.toFixed(1) : '0.0';
+        if (total === 0) {
+          avgElement.textContent = 'New';
+          avgElement.style.fontSize = '2.5rem';
+        } else {
+          avgElement.textContent = data.average ? data.average.toFixed(1) : '0.0';
+          avgElement.style.fontSize = '3.5rem';
+        }
       }
 
       const countElement = document.querySelector('.review-count');
       if (countElement) {
-        countElement.textContent = `${total} ${total === 1 ? 'Review' : 'Reviews'}`;
+        if (total === 0) {
+          countElement.textContent = 'No reviews yet';
+        } else {
+          countElement.textContent = `${total} ${total === 1 ? 'Review' : 'Reviews'}`;
+        }
+      }
+
+      // Update stars display
+      const starsElement = document.querySelector('.review-stars-large');
+      if (starsElement && total === 0) {
+        starsElement.style.opacity = '0.3';
+      } else if (starsElement) {
+        starsElement.style.opacity = '1';
       }
     },
 

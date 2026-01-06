@@ -150,7 +150,7 @@ POST   /api/admin/reviews/:reviewId/approve   - Old approve endpoint
 - Review cards with author info
 - Modal forms with validation states
 - Admin moderation panels
-- **Dark mode support**
+- Professional aesthetics with smooth animations
 - **Mobile responsive** (768px & 480px breakpoints)
 - **WCAG 2.1 AA accessible**
 
