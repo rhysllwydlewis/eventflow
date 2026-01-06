@@ -915,3 +915,24 @@ body.has-admin-navbar {
   display: none !important;
 }
 
+
+/* JadeAssist Widget Teaser Width Override */
+/* Make the greeting tooltip/teaser slightly wider for better readability */
+.jade-widget-greeting-tooltip,
+.jade-widget-greeting,
+[class*="jade"][class*="greeting"],
+[class*="jade"][class*="tooltip"] {
+  max-width: 280px !important; /* Increased from default ~240px */
+  min-width: 260px !important;
+}
+
+/* For mobile screens, keep it reasonable */
+@media (max-width: 480px) {
+  .jade-widget-greeting-tooltip,
+  .jade-widget-greeting,
+  [class*="jade"][class*="greeting"],
+  [class*="jade"][class*="tooltip"] {
+    max-width: 260px !important;
+    min-width: 240px !important;
+  }
+}
