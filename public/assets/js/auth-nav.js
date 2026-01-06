@@ -175,7 +175,7 @@
         return null;
       }
       const data = await r.json();
-      return data || null;
+      return data.user || null;
     } catch (_) {
       return null;
     }
