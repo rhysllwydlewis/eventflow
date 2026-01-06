@@ -13,15 +13,24 @@ const JWT_SECRET = String(process.env.JWT_SECRET || 'change_me');
  * Set authentication cookie with JWT token
  * @param {Object} res - Express response object
  * @param {string} token - JWT token to set in cookie
+ * @param {Object} options - Cookie options
+ * @param {boolean} options.remember - If true, persists for 7 days; if false, session-only
  */
-function setAuthCookie(res, token) {
+function setAuthCookie(res, token, options = {}) {
   const isProd = process.env.NODE_ENV === 'production';
-  res.cookie('token', token, {
+  const cookieOptions = {
     httpOnly: true,
     sameSite: isProd ? 'strict' : 'lax',
     secure: isProd,
-    maxAge: 1000 * 60 * 60 * 24 * 7,
-  });
+  };
+
+  // If remember is true, set maxAge for 7 days; otherwise, no maxAge (session-only)
+  if (options.remember) {
+    cookieOptions.maxAge = 1000 * 60 * 60 * 24 * 7; // 7 days
+  }
+  // If remember is false or not set, cookie expires when browser closes (session-only)
+
+  res.cookie('token', token, cookieOptions);
 }
 
 /**
