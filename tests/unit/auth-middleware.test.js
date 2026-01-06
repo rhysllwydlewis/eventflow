@@ -16,13 +16,33 @@ const JWT_SECRET =
 
 describe('Auth Middleware', () => {
   describe('setAuthCookie', () => {
-    it('should set httpOnly cookie with token', () => {
+    it('should set httpOnly cookie without maxAge when remember is false', () => {
       const res = {
         cookie: jest.fn(),
       };
       const token = 'test-token';
 
-      setAuthCookie(res, token);
+      setAuthCookie(res, token, { remember: false });
+
+      expect(res.cookie).toHaveBeenCalledWith(
+        'token',
+        token,
+        expect.objectContaining({
+          httpOnly: true,
+        })
+      );
+      // Ensure maxAge is NOT set (session-only cookie)
+      const callArgs = res.cookie.mock.calls[0][2];
+      expect(callArgs.maxAge).toBeUndefined();
+    });
+
+    it('should set httpOnly cookie with maxAge when remember is true', () => {
+      const res = {
+        cookie: jest.fn(),
+      };
+      const token = 'test-token';
+
+      setAuthCookie(res, token, { remember: true });
 
       expect(res.cookie).toHaveBeenCalledWith(
         'token',
@@ -43,7 +63,7 @@ describe('Auth Middleware', () => {
       };
       const token = 'test-token';
 
-      setAuthCookie(res, token);
+      setAuthCookie(res, token, { remember: true });
 
       expect(res.cookie).toHaveBeenCalledWith(
         'token',
@@ -66,7 +86,7 @@ describe('Auth Middleware', () => {
       };
       const token = 'test-token';
 
-      setAuthCookie(res, token);
+      setAuthCookie(res, token, { remember: true });
 
       expect(res.cookie).toHaveBeenCalledWith(
         'token',
