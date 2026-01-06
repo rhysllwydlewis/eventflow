@@ -40,15 +40,29 @@
     return;
   }
 
-  // Hide body initially to prevent flash of wrong content
-  document.body.style.visibility = 'hidden';
-  document.body.style.opacity = '0';
+  // Inject style tag to hide body initially (works even in <head> before body exists)
+  // This prevents flash of wrong content without causing errors
+  const styleId = 'dashboard-guard-style';
+  if (!document.getElementById(styleId)) {
+    const style = document.createElement('style');
+    style.id = styleId;
+    style.textContent = 'body { visibility: hidden !important; opacity: 0 !important; }';
+    document.head.appendChild(style);
+  }
+
+  // Helper function to show the page (removes the hiding style)
+  function showPage() {
+    const style = document.getElementById(styleId);
+    if (style) {
+      style.remove();
+    }
+  }
 
   try {
     // Fetch current user with cache-busting
     // Using timestamp + random value for better cache-busting
-    const cacheBuster = Date.now() + '-' + Math.random().toString(36).substring(2, 9);
-    const response = await fetch('/api/auth/me?t=' + cacheBuster, {
+    const cacheBuster = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    const response = await fetch(`/api/auth/me?t=${cacheBuster}`, {
       credentials: 'include',
       headers: {
         'Cache-Control': 'no-cache',
@@ -58,7 +72,7 @@
 
     if (!response.ok) {
       // Failed to check auth - redirect to login
-      window.location.replace('/auth.html?return=' + encodeURIComponent(currentPath));
+      window.location.replace(`/auth.html?return=${encodeURIComponent(currentPath)}`);
       return;
     }
 
@@ -67,7 +81,7 @@
 
     if (!user || !user.id) {
       // Not authenticated - redirect to login
-      window.location.replace('/auth.html?return=' + encodeURIComponent(currentPath));
+      window.location.replace(`/auth.html?return=${encodeURIComponent(currentPath)}`);
       return;
     }
 
@@ -97,11 +111,10 @@
     }
 
     // Access granted - show the page
-    document.body.style.visibility = 'visible';
-    document.body.style.opacity = '1';
+    showPage();
   } catch (error) {
     console.error('Dashboard guard error:', error);
-    // On error, redirect to login to be safe
-    window.location.replace('/auth.html?return=' + encodeURIComponent(currentPath));
+    // On error, redirect to login to be safe (fail closed)
+    window.location.replace(`/auth.html?return=${encodeURIComponent(currentPath)}`);
   }
 })();

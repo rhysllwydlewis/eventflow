@@ -212,8 +212,15 @@
       } catch (_) {
         /* Ignore logout errors */
       }
-      // Force reload to clear any cached state
-      window.location.href = '/?t=' + Date.now();
+      // Clear any auth-related storage
+      try {
+        localStorage.removeItem('eventflow_onboarding_new');
+        sessionStorage.clear();
+      } catch (_) {
+        /* Ignore storage errors */
+      }
+      // Force full reload with cache-busting to ensure clean state
+      window.location.href = `/?t=${Date.now()}`;
     }
 
     if (user) {

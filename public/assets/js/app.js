@@ -95,6 +95,63 @@ function generateSupplierGradient(name) {
   return `linear-gradient(135deg, ${colors[index][0]} 0%, ${colors[index][1]} 100%)`;
 }
 
+// Validate redirect parameter for role-based access (SECURITY)
+// Only allows same-origin, allowlisted paths appropriate for the user's role
+function validateRedirectForRole(redirectUrl, userRole) {
+  if (!redirectUrl || typeof redirectUrl !== 'string') {
+    return false;
+  }
+
+  // Remove any whitespace
+  const url = redirectUrl.trim();
+
+  // Must start with / (relative path only, no external redirects)
+  if (!url.startsWith('/')) {
+    return false;
+  }
+
+  // Parse URL to get pathname (strip query string and hash)
+  let pathname;
+  try {
+    const urlObj = new URL(url, window.location.origin);
+    // Verify it's same-origin
+    if (urlObj.origin !== window.location.origin) {
+      return false;
+    }
+    pathname = urlObj.pathname;
+  } catch (_) {
+    // If URL parsing fails, treat as pathname directly
+    pathname = url.split('?')[0].split('#')[0];
+  }
+
+  // Define allowlisted pages per role
+  const allowedPaths = {
+    admin: [
+      '/admin.html',
+      '/admin-audit.html',
+      '/admin-content.html',
+      '/admin-homepage.html',
+      '/admin-marketplace.html',
+      '/admin-packages.html',
+      '/admin-payments.html',
+      '/admin-pexels.html',
+      '/admin-photos.html',
+      '/admin-reports.html',
+      '/admin-settings.html',
+      '/admin-supplier-detail.html',
+      '/admin-suppliers.html',
+      '/admin-tickets.html',
+      '/admin-user-detail.html',
+      '/admin-users.html',
+    ],
+    supplier: ['/dashboard-supplier.html', '/settings.html', '/plan.html'],
+    customer: ['/dashboard-customer.html', '/settings.html', '/plan.html', '/checkout.html'],
+  };
+
+  const allowed = allowedPaths[userRole] || [];
+  return allowed.includes(pathname);
+}
+
 // Global network error handler & fetch wrapper (v5.3)
 (function () {
   let efErrorBanner = null;
@@ -2284,6 +2341,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const label = existing.name || existing.email || existing.role || 'your account';
           loginStatus.textContent = `You are already signed in as ${label}. Redirecting…`;
           setTimeout(() => {
+            // Use role-based routing, ignore any redirect params if already logged in
             if (existing.role === 'admin') {
               location.href = '/admin.html';
             } else if (existing.role === 'supplier') {
@@ -2640,26 +2698,39 @@ document.addEventListener('DOMContentLoaded', () => {
               /* Ignore localStorage errors */
             }
 
-            // Check for redirect parameter
+            // Determine destination based on user role (SECURITY: never trust redirect param alone)
+            let destination;
+            if (user.role === 'admin') {
+              destination = '/admin.html';
+            } else if (user.role === 'supplier') {
+              destination = '/dashboard-supplier.html';
+            } else {
+              destination = '/dashboard-customer.html';
+            }
+
+            // Check for redirect parameter - only allow if it matches user's role-appropriate pages
             const urlParams = new URLSearchParams(window.location.search);
-            const redirect = urlParams.get('redirect');
+            const redirect = urlParams.get('redirect') || urlParams.get('return');
             const plan = urlParams.get('plan');
 
             if (redirect) {
-              // Preserve plan parameter if it exists
-              let redirectUrl = redirect;
-              if (plan && !redirect.includes('plan=')) {
-                const separator = redirect.includes('?') ? '&' : '?';
-                redirectUrl = `${redirect}${separator}plan=${encodeURIComponent(plan)}`;
+              // Validate redirect is safe: same-origin and allowlisted for user's role
+              const isValidRedirect = validateRedirectForRole(redirect, user.role);
+              if (isValidRedirect) {
+                destination = redirect;
+                // Preserve plan parameter if it exists and not already in redirect
+                if (plan && !destination.includes('plan=')) {
+                  const separator = destination.includes('?') ? '&' : '?';
+                  destination = `${destination}${separator}plan=${encodeURIComponent(plan)}`;
+                }
+              } else {
+                console.warn(
+                  `Ignoring untrusted redirect param: ${redirect} for role: ${user.role}`
+                );
               }
-              location.href = redirectUrl;
-            } else if (user.role === 'admin') {
-              location.href = '/admin.html';
-            } else if (user.role === 'supplier') {
-              location.href = '/dashboard-supplier.html';
-            } else {
-              location.href = '/dashboard-customer.html';
             }
+
+            location.href = destination;
           }
         } catch (err) {
           if (loginErrorEl) {
