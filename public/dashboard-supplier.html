@@ -50,6 +50,25 @@
   <p class="small" style="color:rgba(255,255,255,0.9);margin:0;">Manage your supplier profiles, packages, and customer inquiries.</p>
 </div>
 
+<!-- Quick Actions Section -->
+<div class="card" style="margin-bottom:1.5rem;">
+  <h2 style="margin:0 0 1rem 0;font-size:1.25rem;color:#0B1220;">Quick Actions</h2>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:0.75rem;">
+    <button class="cta secondary" onclick="document.getElementById('sup-name').focus();document.getElementById('sup-name').scrollIntoView({behavior:'smooth',block:'center'});" style="width:100%;text-align:center;">
+      ➕ Create Profile
+    </button>
+    <button class="cta secondary" onclick="document.getElementById('pkg-title').focus();document.getElementById('pkg-title').scrollIntoView({behavior:'smooth',block:'center'});" style="width:100%;text-align:center;">
+      📦 Create Package
+    </button>
+    <a href="/supplier/photos.html" class="cta secondary" style="width:100%;text-align:center;text-decoration:none;display:inline-block;">
+      📸 Manage Photos
+    </a>
+    <button class="cta secondary" id="viewConversationsBtn" style="width:100%;text-align:center;">
+      💬 View Messages
+    </button>
+  </div>
+</div>
+
 <h2>Your supplier profiles</h2>
 <div class="card">
   <h3>Profile management</h3>
@@ -228,6 +247,21 @@
   </div>
   <div id="threads-sup" class="section"><p class="small">Loading…</p></div>
 </div>
+
+<script>
+  // Quick Actions: Handle view conversations button
+  document.addEventListener('DOMContentLoaded', () => {
+    const viewConvBtn = document.getElementById('viewConversationsBtn');
+    if (viewConvBtn) {
+      viewConvBtn.addEventListener('click', () => {
+        const threadsSection = document.getElementById('threads-sup');
+        if (threadsSection) {
+          threadsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+    }
+  });
+</script>
 
 <script src="/assets/js/app.js?v=17.0.1"></script>
 <script src="/assets/js/components.js?v=17.0.1"></script>

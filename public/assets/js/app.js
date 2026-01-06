@@ -1636,6 +1636,31 @@ async function initDashSupplier() {
           proBadge = '<span class="badge badge-pro">Professional</span>';
         }
 
+        // Calculate profile completeness checklist
+        const hasPhotos = s.photos && s.photos.length > 0;
+        const hasDescription = s.description_long && s.description_long.length > 50;
+        const hasCategory = s.category && s.category.length > 0;
+        const hasLocation = s.location && s.location.length > 0;
+        const hasWebsite = s.website && s.website.length > 0;
+
+        const checklistItems = [
+          { label: 'Photos uploaded', complete: hasPhotos },
+          { label: 'Detailed description', complete: hasDescription },
+          { label: 'Category set', complete: hasCategory },
+          { label: 'Location specified', complete: hasLocation },
+          { label: 'Website added', complete: hasWebsite },
+        ];
+        const completedCount = checklistItems.filter(item => item.complete).length;
+        const checklistHtml = checklistItems
+          .map(
+            item =>
+              `<div style="display:flex;align-items:center;gap:0.5rem;font-size:0.875rem;color:#667085;">
+            <span style="color:${item.complete ? '#10b981' : '#d1d5db'}">${item.complete ? '✓' : '○'}</span>
+            <span>${item.label}</span>
+          </div>`
+          )
+          .join('');
+
         return `<div class="supplier-card card" style="margin-bottom:10px">
       <img src="${(s.photos && s.photos[0]) || '/assets/images/collage-venue.svg'}">
       <div>
@@ -1648,6 +1673,14 @@ async function initDashSupplier() {
           </div>
           <div class="listing-health-label">Listing health: calculating…</div>
         </div>
+        <details style="margin-top:0.75rem;">
+          <summary style="cursor:pointer;font-size:0.875rem;color:#667eea;font-weight:500;">
+            Profile Setup Checklist (${completedCount}/${checklistItems.length})
+          </summary>
+          <div style="margin-top:0.5rem;display:flex;flex-direction:column;gap:0.25rem;padding-left:0.5rem;">
+            ${checklistHtml}
+          </div>
+        </details>
       </div>
     </div>`;
       })
