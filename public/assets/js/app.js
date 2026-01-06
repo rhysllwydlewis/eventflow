@@ -2471,11 +2471,11 @@ document.addEventListener('DOMContentLoaded', () => {
         regPasswordConfirm.addEventListener('keyup', checkCapsLock);
       }
 
-      // Password validation function
+      // Password validation function (matches server-side validation)
       const validatePassword = password => {
         const hasLength = password.length >= 8;
-        const hasLetter = /[a-zA-Z]/.test(password);
-        const hasNumber = /[0-9]/.test(password);
+        const hasLetter = /[A-Za-z]/.test(password);
+        const hasNumber = /\d/.test(password);
 
         // Update requirements list
         if (reqLength) {
@@ -2926,10 +2926,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const regPasswordConfirm = document.getElementById('reg-password-confirm');
         const passwordConfirm = regPasswordConfirm ? regPasswordConfirm.value : '';
 
-        // Check password meets minimum requirements
+        // Check password meets minimum requirements (matches server-side validation)
         const hasMinLength = password.length >= 8;
-        const hasLetter = /[a-zA-Z]/.test(password);
-        const hasNumber = /[0-9]/.test(password);
+        const hasLetter = /[A-Za-z]/.test(password);
+        const hasNumber = /\d/.test(password);
 
         if (!hasMinLength || !hasLetter || !hasNumber) {
           if (regStatus) {
