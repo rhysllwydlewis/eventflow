@@ -29,6 +29,17 @@ function setAuthCookie(res, token) {
  * @param {Object} res - Express response object
  */
 function clearAuthCookie(res) {
+  const isProd = process.env.NODE_ENV === 'production';
+
+  // Clear cookie with same options used when setting it
+  res.clearCookie('token', {
+    httpOnly: true,
+    sameSite: isProd ? 'strict' : 'lax',
+    secure: isProd,
+    path: '/',
+  });
+
+  // Also clear without path option for legacy compatibility
   res.clearCookie('token');
 }
 

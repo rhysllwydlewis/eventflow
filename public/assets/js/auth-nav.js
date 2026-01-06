@@ -200,6 +200,22 @@
       }
     }
 
+    // Logout handler function
+    async function handleLogout(e) {
+      e.preventDefault();
+      try {
+        await fetch('/api/auth/logout', {
+          method: 'POST',
+          headers: { 'X-CSRF-Token': window.__CSRF_TOKEN__ || '' },
+          credentials: 'include',
+        });
+      } catch (_) {
+        /* Ignore logout errors */
+      }
+      // Force reload to clear any cached state
+      window.location.href = '/?t=' + Date.now();
+    }
+
     if (user) {
       // Mobile nav
       if (auth) {
@@ -218,19 +234,11 @@
       }
       if (signout) {
         signout.style.display = '';
-        signout.addEventListener('click', async e => {
-          e.preventDefault();
-          try {
-            await fetch('/api/auth/logout', {
-              method: 'POST',
-              headers: { 'X-CSRF-Token': window.__CSRF_TOKEN__ || '' },
-              credentials: 'include',
-            });
-          } catch (_) {
-            /* Ignore logout errors */
-          }
-          location.href = '/';
-        });
+        // Remove existing event listeners by cloning the node
+        const newSignout = signout.cloneNode(true);
+        signout.parentNode.replaceChild(newSignout, signout);
+        // Add event listener to the new node
+        newSignout.addEventListener('click', handleLogout);
       }
 
       // Inline nav (top-right on desktop)
@@ -253,19 +261,11 @@
       if (inlineLogin) {
         inlineLogin.textContent = 'Log out';
         inlineLogin.href = '#';
-        inlineLogin.addEventListener('click', async e => {
-          e.preventDefault();
-          try {
-            await fetch('/api/auth/logout', {
-              method: 'POST',
-              headers: { 'X-CSRF-Token': window.__CSRF_TOKEN__ || '' },
-              credentials: 'include',
-            });
-          } catch (_) {
-            /* Ignore logout errors */
-          }
-          location.href = '/';
-        });
+        // Remove existing event listeners by cloning the node
+        const newInlineLogin = inlineLogin.cloneNode(true);
+        inlineLogin.parentNode.replaceChild(newInlineLogin, inlineLogin);
+        // Add event listener to the new node
+        newInlineLogin.addEventListener('click', handleLogout);
       }
     } else {
       // Not signed in
@@ -282,6 +282,9 @@
       if (inlineLogin) {
         inlineLogin.textContent = 'Log in';
         inlineLogin.href = '/auth.html';
+        // Remove any existing logout handlers
+        const newInlineLogin = inlineLogin.cloneNode(true);
+        inlineLogin.parentNode.replaceChild(newInlineLogin, inlineLogin);
       }
       if (inlineNav) {
         const dashInline = inlineNav.querySelector('.nav-main-dashboard');
