@@ -1,0 +1,73 @@
+<!-- 
+  EventFlow Review Widget Template
+  
+  This template can be included in supplier.html or any page that needs to display reviews.
+-->
+
+<div class="reviews-widget" id="reviews-widget">
+  <section class="reviews-section">
+    <div class="review-summary">
+      <div class="review-summary-score">
+        <div class="review-average-rating">0.0</div>
+        <div class="review-stars-large">☆☆☆☆☆</div>
+        <div class="review-count">0 Reviews</div>
+      </div>
+      
+      <div class="review-summary-details">
+        <h2 class="review-summary-title">Customer Reviews & Ratings</h2>
+        <div class="rating-distribution"></div>
+        <div class="review-trust-section">
+          <div class="trust-score-badge">
+            <div>
+              <div class="trust-score-value">--</div>
+              <div class="trust-score-label">Trust Score</div>
+            </div>
+          </div>
+          <div class="review-badges" id="supplier-badges"></div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="reviews-header">
+      <h3 class="reviews-title">All Reviews</h3>
+      <div class="review-actions">
+        <button id="btn-write-review" class="btn-write-review">✍️ Write a Review</button>
+      </div>
+    </div>
+    
+    <div class="review-controls">
+      <div class="review-filter-group">
+        <label class="review-filter-label" for="filter-min-rating">Minimum Rating:</label>
+        <select id="filter-min-rating" class="review-filter-select">
+          <option value="">All Ratings</option>
+          <option value="5">5 Stars</option>
+          <option value="4">4+ Stars</option>
+          <option value="3">3+ Stars</option>
+        </select>
+      </div>
+      
+      <div class="review-filter-group">
+        <label class="review-filter-label" for="filter-sort-by">Sort By:</label>
+        <select id="filter-sort-by" class="review-filter-select">
+          <option value="date">Most Recent</option>
+          <option value="rating">Highest Rating</option>
+          <option value="helpful">Most Helpful</option>
+        </select>
+      </div>
+      
+      <label class="review-verified-filter">
+        <input type="checkbox" id="filter-verified" />
+        <span>✓ Verified Customers Only</span>
+      </label>
+    </div>
+    
+    <div id="reviews-list" class="reviews-list">
+      <div class="reviews-loading">
+        <div class="loading-spinner"></div>
+        <p style="margin-top: 1rem; color: #6b7280;">Loading reviews...</p>
+      </div>
+    </div>
+    
+    <div id="review-pagination" class="review-pagination" style="display: none;"></div>
+  </section>
+</div>
