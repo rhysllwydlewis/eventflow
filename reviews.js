@@ -309,7 +309,10 @@ async function getSupplierReviews(supplierId, options = {}) {
 
   // Filter by minimum rating
   if (minRating) {
-    filtered = filtered.filter(r => r.rating >= parseInt(minRating, 10));
+    const rating = Number(minRating);
+    if (!isNaN(rating) && rating >= 1 && rating <= 5) {
+      filtered = filtered.filter(r => r.rating >= rating);
+    }
   }
 
   // Sort reviews
@@ -360,7 +363,9 @@ async function voteOnReview(reviewId, voteType, userId, ipAddress) {
   // Check if user/IP already voted
   const votes = await dbUnified.read('reviewVotes');
   const existingVote = votes.find(
-    v => v.reviewId === reviewId && (v.userId === userId || v.ipAddress === hashedIp)
+    v =>
+      v.reviewId === reviewId &&
+      ((v.userId === userId && userId !== null) || (v.ipAddress === hashedIp && !userId))
   );
 
   if (existingVote) {
