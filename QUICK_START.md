@@ -1,4 +1,4 @@
-# Quick Start Guide - Google Pay Subscriptions
+# Quick Start Guide - EventFlow
 
 ## For Developers
 
@@ -20,100 +20,93 @@
    ```
 
 3. **Start Local Development**
+
    ```bash
    npm run dev
    ```
 
-### Testing Subscription Flow
+   Visit http://localhost:3000
 
-1. **Access Subscription Page**
-   - Navigate to: `http://localhost:3000/supplier/subscription.html`
-   - Must be logged in as a supplier
+### Architecture Overview
 
-2. **View in Dashboard**
-   - Go to: `http://localhost:3000/dashboard-supplier.html`
-   - See subscription status card
-   - Check package limit notice
+EventFlow uses:
 
-3. **Test Google Pay** (requires configuration)
-   - Update merchant ID in `public/supplier/js/googlepay-config.js`
-   - Use Google Pay test cards
-   - Monitor browser console for errors
+- **Database**: MongoDB (primary) with fallback to local file storage (dev only)
+- **Authentication**: JWT-based cookie auth (not localStorage bearer tokens)
+- **Image Storage**: Cloudinary for cloud storage or local filesystem
+- **Email**: Postmark for transactional emails
+- **Payments**: Stripe for subscription payments (not Google Pay)
 
 ### Key Files to Know
 
-| File                                     | Purpose                     | When to Edit                 |
-| ---------------------------------------- | --------------------------- | ---------------------------- |
-| `functions/subscriptions.js`             | Subscription business logic | Add features, change pricing |
-| `public/supplier/js/subscription.js`     | Frontend subscription UI    | Change UI behavior           |
-| `public/supplier/css/subscription.css`   | Subscription styles         | Customize appearance         |
-| `public/supplier/js/googlepay-config.js` | Google Pay settings         | Configure payment gateway    |
-| `firestore.rules`                        | Database security           | Add/modify data access rules |
+| File                               | Purpose                    | When to Edit                      |
+| ---------------------------------- | -------------------------- | --------------------------------- |
+| `server.js`                        | Main Express server        | Add routes, middleware            |
+| `middleware/auth.js`               | JWT cookie authentication  | Modify auth logic                 |
+| `public/assets/js/auth-nav.js`     | Navigation auth state      | Update dashboard routing          |
+| `public/assets/js/admin-shared.js` | Admin API helper with CSRF | Add admin utility functions       |
+| `routes/admin.js`                  | Admin API endpoints        | Add admin features                |
+| `db-unified.js`                    | Database abstraction layer | Modify database operations        |
+| `.env`                             | Environment configuration  | Set MongoDB URI, JWT secret, etc. |
+
+### Authentication Flow
+
+EventFlow uses **cookie-based JWT authentication**:
+
+1. User logs in at `/auth.html`
+2. Server validates credentials and sets `token` cookie (httpOnly, secure in production)
+3. Frontend makes requests with `credentials: 'include'` (not Authorization header)
+4. Server validates cookie via `middleware/auth.js`
+5. CSRF token is fetched from `/api/csrf-token` and stored in `window.__CSRF_TOKEN__`
+6. State-changing requests include `X-CSRF-Token` header
 
 ### Common Tasks
 
-#### Add a New Subscription Plan
+#### Add a New Admin Feature
 
-1. Edit `functions/subscriptions.js`:
-
-   ```javascript
-   const SUBSCRIPTION_PLANS = {
-     // ... existing plans
-     new_plan_id: {
-       id: 'new_plan_id',
-       name: 'Plan Name',
-       tier: 'pro',
-       price: 29.99,
-       currency: 'GBP',
-       billingCycle: 'monthly',
-       trialDays: 14,
-       features: ['Feature 1', 'Feature 2'],
-     },
-   };
-   ```
-
-2. Update frontend in `public/supplier/js/subscription.js`:
+1. Add route in `routes/admin.js`:
 
    ```javascript
-   const PLANS = {
-     // Add same plan definition
-   };
+   router.get('/my-feature', authRequired, roleRequired('admin'), async (req, res) => {
+     // Your logic here
+     res.json({ data: 'value' });
+   });
    ```
 
-3. Deploy and reinitialize plans
+2. Call from frontend using AdminShared helper:
 
-#### Change Badge Styles
+   ```javascript
+   const data = await AdminShared.api('/api/admin/my-feature');
+   ```
 
-Edit `public/assets/css/styles.css`:
+#### Update Dashboard
 
-```css
-.supplier-badge.pro {
-  background: linear-gradient(135deg, #your-color 0%, #your-color 100%);
-  color: white;
+Edit the appropriate dashboard file:
+
+- Admin: `public/admin.html`
+- Supplier: `public/dashboard-supplier.html`
+- Customer: `public/dashboard-customer.html`
+
+#### Modify Feature Access
+
+Edit role-based middleware in `middleware/auth.js`:
+
+```javascript
+function roleRequired(role) {
+  return (req, res, next) => {
+    if (req.user.role !== role) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+    next();
+  };
 }
 ```
 
-#### Modify Feature Limits
+#### Add Email Templates
 
-Edit `public/supplier/js/feature-access.js`:
-
-```javascript
-const FEATURE_TIERS = {
-  pro: {
-    maxPackages: 100, // Change limit
-    // ... other features
-  },
-};
-```
-
-#### Add Email Notifications
-
-In `functions/subscriptions.js`, find TODO comments:
-
-```javascript
-// TODO: Send confirmation email
-// Add your email service integration here
-```
+1. Create template in `email-templates/`
+2. Use Postmark service in `services/email.js`
+3. Test locally (emails saved to `/outbox` if Postmark not configured)
 
 ### Debugging
 
@@ -122,100 +115,121 @@ In `functions/subscriptions.js`, find TODO comments:
 ```bash
 # Check server logs
 npm run dev
-# Monitor MongoDB queries in the terminal
+# Monitor MongoDB connection and queries in the terminal
+```
+
+#### Check Database
+
+```bash
+# MongoDB Atlas: https://cloud.mongodb.com/
+# Or use MongoDB Compass to connect locally
 ```
 
 ### Deployment
 
-#### Deploy to Railway or Similar Platform
+#### Deploy to Railway
 
 ```bash
-# Push code to GitHub
-git push origin main
+railway login
+railway init
+# Set environment variables (use your REAL MongoDB connection string!)
+railway variables set JWT_SECRET="..." MONGODB_URI="mongodb+srv://..."
+railway up
+```
 
-# Railway will auto-deploy from GitHub
-# Configure environment variables in Railway dashboard
+#### Deploy to Heroku
+
+```bash
+heroku create eventflow-app
+# Set environment variables
+heroku config:set JWT_SECRET="..." MONGODB_URI="mongodb+srv://..."
+git push heroku main
 ```
 
 ### Environment Variables
 
-Set these in your hosting platform (Railway, Heroku, etc.):
+**Required for production:**
 
 ```bash
-MONGODB_URI=your_mongodb_connection_string
-JWT_SECRET=your_secret_key
-SENDGRID_API_KEY=xxx  # If using SendGrid for emails
+MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/eventflow
+JWT_SECRET=your-secret-key-min-32-chars
+NODE_ENV=production
+BASE_URL=https://yourdomain.com
 ```
 
-### Monitoring
-
-#### Check Subscription Status
-
-1. Connect to MongoDB Atlas
-2. Navigate to `suppliers` collection
-3. Check `subscription` field for any supplier
-
-#### Check Payment Records
-
-1. Navigate to `payments` collection
-2. Filter by `status: "success"`
-
-### Troubleshooting
-
-| Issue                         | Solution                                                |
-| ----------------------------- | ------------------------------------------------------- |
-| Google Pay button not showing | Check browser console, verify Google Pay script loaded  |
-| Payment not processing        | Check server logs, verify payment gateway configuration |
-| Badge not displaying          | Verify supplier has `subscription.tier` field           |
-| Package limit not enforced    | Check `feature-access.js` imported in dashboard         |
-
-### Useful Commands
+**Recommended:**
 
 ```bash
-# Start development server
-npm run dev
+# Email (Postmark)
+POSTMARK_API_KEY=your-server-token
+POSTMARK_FROM=admin@yourdomain.com
+EMAIL_ENABLED=true
 
+# Image storage (Cloudinary)
+CLOUDINARY_CLOUD_NAME=your-cloud
+CLOUDINARY_API_KEY=your-key
+CLOUDINARY_API_SECRET=your-secret
+```
+
+See `.env.example` for all options.
+
+### Testing
+
+```bash
 # Run linter
 npm run lint
 
 # Run tests
 npm test
 
-# Syntax check
-node -c public/supplier/js/subscription.js
+# Run specific test suite
+npm run test:unit
+npm run test:integration
 ```
+
+### Troubleshooting
+
+| Issue                             | Solution                                                           |
+| --------------------------------- | ------------------------------------------------------------------ |
+| "Unauthenticated" errors          | Check cookie is being sent (`credentials: 'include'`)              |
+| CSRF token missing                | Ensure `auth-nav.js` loaded and `window.__CSRF_TOKEN__` available  |
+| Database connection failed        | Verify `MONGODB_URI` in environment, check network access in Atlas |
+| Admin pages not loading           | Check user role is 'admin', verify `middleware/auth.js` role check |
+| Dashboard redirects to wrong page | Check `auth-nav.js` dashboard routing logic                        |
 
 ### Security Checklist
 
+- [x] JWT tokens stored in httpOnly cookies (not localStorage)
+- [x] CSRF protection on state-changing requests
+- [x] Input validation and sanitization
+- [x] Rate limiting on auth endpoints
+- [x] Helmet security headers enabled
 - [ ] Never commit `.env` files
-- [ ] Keep merchant IDs in environment variables
-- [ ] Don't expose sensitive error messages to clients
-- [ ] Verify user authentication in Cloud Functions
-- [ ] Use Firestore security rules for data access
-- [ ] Sanitize all user inputs
+- [ ] Use strong JWT_SECRET (min 32 chars)
 - [ ] Use HTTPS only in production
 
 ### Resources
 
-- 📚 [Full Deployment Guide](./GOOGLE_PAY_DEPLOYMENT.md)
-- 📚 [Implementation Summary](./IMPLEMENTATION_SUMMARY.md)
-- 🔧 [Firebase Functions Docs](https://firebase.google.com/docs/functions)
-- 💳 [Google Pay Integration](https://developers.google.com/pay/api/web)
-- 🔥 [Firestore Security Rules](https://firebase.google.com/docs/firestore/security/get-started)
+- 📚 [README.md](./README.md) - Full documentation
+- 📚 [API Documentation](./API_DOCUMENTATION.md) - Complete API reference
+- 📚 [Admin Guide](./ADMIN_GUIDE.md) - Admin dashboard user guide
+- 📚 [MongoDB Setup](./.github/docs/MONGODB_SETUP_SIMPLE.md) - Database configuration
+- 📚 [Postmark Setup](./POSTMARK_SETUP.md) - Email configuration
+- 📚 [Stripe Integration](./STRIPE_INTEGRATION_GUIDE.md) - Payment setup
 
 ### Getting Help
 
-1. Check the logs: `firebase functions:log`
+1. Check server logs: `npm run dev` output
 2. Review documentation in this repo
-3. Check Firebase Console for errors
-4. Review Google Pay integration guide
+3. Check MongoDB Atlas for connection issues
+4. Review Express route handlers in `routes/`
 5. Contact the development team
 
 ---
 
 **Quick Links:**
 
-- [Subscription Page](./public/supplier/subscription.html)
-- [Cloud Functions](./functions/subscriptions.js)
-- [Feature Access Control](./public/supplier/js/feature-access.js)
-- [Firestore Rules](./firestore.rules)
+- [Admin Dashboard](http://localhost:3000/admin.html)
+- [Supplier Dashboard](http://localhost:3000/dashboard-supplier.html)
+- [Customer Dashboard](http://localhost:3000/dashboard-customer.html)
+- [API Documentation](http://localhost:3000/api-docs)

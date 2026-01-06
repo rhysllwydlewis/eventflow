@@ -681,10 +681,10 @@ During development without Postmark configured, emails are saved to `/outbox` fo
 eventflow/
 ├── src/                # Source modules (npm imports)
 │   ├── config/        # Configuration files
-│   │   └── firebase.js # Firebase config (npm package)
-│   └── firebase.js    # Firebase re-export (convenience)
+│   │   └── firebase.js # Firebase stub (not in use - see firebase-config.js)
+│   └── firebase.js    # Firebase stub (MongoDB/Cloudinary in use)
 ├── middleware/         # Reusable middleware functions
-│   ├── auth.js        # Authentication & authorization
+│   ├── auth.js        # JWT cookie authentication & authorization
 │   ├── validation.js  # Input validation helpers
 │   └── rateLimit.js   # Rate limiting configuration
 ├── routes/            # Modular route handlers
@@ -696,7 +696,7 @@ eventflow/
 │   │   ├── css/      # Stylesheets
 │   │   └── js/       # JavaScript modules
 │   └── *.html        # Page templates
-├── data/             # JSON data storage (development)
+├── data/             # JSON data storage (development fallback)
 ├── photo-upload.js   # Photo upload utilities
 ├── reviews.js        # Reviews system module
 ├── search.js         # Search & discovery module
