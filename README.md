@@ -179,6 +179,24 @@ EventFlow implements industry-standard security practices:
 
 ## ⚡ Performance
 
+EventFlow implements comprehensive performance optimizations for production deployments:
+
+### Compression Strategy
+
+- **Brotli Compression**: Primary compression method (15-20% better than gzip)
+- **Gzip Fallback**: Automatic fallback for older clients
+- **Selective Compression**: Only compresses text-based content > 1KB
+- **Quality Tuning**: Balanced compression levels for optimal speed/size ratio
+  - Brotli quality: 4 (good for dynamic content)
+  - Gzip level: 6 (default balanced setting)
+
+**Verify Compression:**
+
+```bash
+curl -H "Accept-Encoding: br" -I https://yourdomain.com/
+# Should return: Content-Encoding: br
+```
+
 ### Caching Strategy
 
 EventFlow uses a multi-tier caching strategy for optimal performance:
@@ -188,17 +206,44 @@ EventFlow uses a multi-tier caching strategy for optimal performance:
 - **Static Assets** (CSS/JS/images): 1-week cache (`max-age=604800, must-revalidate`)
 - **User Uploads**: 1-year cache (`max-age=31536000, immutable`)
 
+**Verify Caching:**
+
+```bash
+curl -I https://yourdomain.com/assets/css/styles.css
+# Should return: Cache-Control: public, max-age=604800, must-revalidate
+```
+
+### Asset Optimization
+
+- **Minified Assets**: CSS (~292KB) and JS (~1.2MB) are production-ready
+- **Optimized Favicon**: 245 bytes SVG (extremely small)
+- **Deferred Loading**: JavaScript loads with `defer` attribute
+- **Lazy Loading**: Images load on-demand as they enter viewport
+
+### Performance Verification
+
+EventFlow includes a built-in performance verification endpoint:
+
+```bash
+# Check compression and caching configuration
+curl http://localhost:3000/api/performance
+```
+
+**Response includes:**
+
+- Client compression support (Brotli, gzip, deflate)
+- Server compression configuration
+- Caching strategy documentation
+- Performance recommendations
+
+**Full Testing Guide:** See [docs/PERFORMANCE_TESTING.md](docs/PERFORMANCE_TESTING.md)
+
 ### Image Optimization
 
 - **Sharp** library for server-side image processing
 - WebP format generation for modern browsers
 - Responsive image sizes (thumbnail, large, optimized)
-- Lazy-loading support
-
-### Compression
-
-- Gzip compression via `compression` middleware
-- Applies to all text-based responses (HTML, CSS, JS, JSON)
+- Automatic thumbnail generation on upload
 
 ### CDN Recommendation
 
@@ -279,6 +324,8 @@ See [DOCKER_GUIDE.md](DOCKER_GUIDE.md) for details.
 - **[API Documentation](API_DOCUMENTATION.md)** - Complete API reference with examples
 - **[Deployment Guide](DEPLOYMENT_GUIDE.md)** - Production deployment instructions
 - **[MongoDB Setup (Technical)](.github/docs/MONGODB_SETUP.md)** - Database configuration guide
+- **[MongoDB Migration Plan](docs/mongodb-migration.md)** - Complete MongoDB migration guide with architecture
+- **[Performance Testing Guide](docs/PERFORMANCE_TESTING.md)** - Performance verification and QA procedures
 - **[Docker Guide](DOCKER_GUIDE.md)** - Docker Compose usage
 - **[Stripe Introductory Pricing Setup](STRIPE_INTRO_PRICING_SETUP.md)** - Configure intro pricing for Professional plan
 - **[Stripe Integration Guide](STRIPE_INTEGRATION_GUIDE.md)** - General Stripe setup
@@ -760,6 +807,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **[GDPR_COMPLIANCE.md](GDPR_COMPLIANCE.md)** - Data protection and privacy
 - **[DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)** - Production deployment
 - **[MONGODB_SETUP.md](.github/docs/MONGODB_SETUP.md)** - Database configuration
+- **[MongoDB Migration Plan](docs/mongodb-migration.md)** - Complete MongoDB migration guide
+- **[Performance Testing Guide](docs/PERFORMANCE_TESTING.md)** - Performance verification and testing
 - **[AWS_SES_SETUP.md](AWS_SES_SETUP.md)** - Email service setup
 - **[2FA_IMPLEMENTATION.md](2FA_IMPLEMENTATION.md)** - Two-factor auth (planned)
 
