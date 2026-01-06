@@ -70,7 +70,13 @@
     <section id="panel-signin" style="margin-top:12px">
       <form id="login-form" class="card" action="#">
         <div class="form-row"><label for="login-email">Email</label><input id="login-email" name="email" type="email" required placeholder="you@example.com" aria-required="true" autocomplete="email"></div>
-        <div class="form-row"><label for="login-password">Password</label><input id="login-password" name="password" type="password" required placeholder="Your password" aria-required="true" autocomplete="current-password"></div>
+        <div class="form-row">
+          <label for="login-password">Password</label>
+          <input id="login-password" name="password" type="password" required placeholder="Your password" aria-required="true" autocomplete="current-password">
+          <div id="login-caps-lock-warning" style="display:none;margin-top:4px;padding:6px 10px;background:#fff3cd;border:1px solid #ffc107;border-radius:4px;font-size:0.875rem;color:#856404">
+            ⚠️ Caps Lock is on
+          </div>
+        </div>
         <div class="form-row">
           <div id="login-error" class="error" style="display: none; visibility: hidden; color: #b00020; font-size: 0.875rem;" aria-live="polite"></div>
         </div>

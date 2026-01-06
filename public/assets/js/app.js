@@ -2425,6 +2425,20 @@ document.addEventListener('DOMContentLoaded', () => {
       attachPasswordToggle(regPasswordConfirm);
     }
 
+    // Add caps lock warning to login password field
+    if (loginPassword) {
+      const loginCapsLockWarning = document.getElementById('login-caps-lock-warning');
+      if (loginCapsLockWarning) {
+        loginPassword.addEventListener('keyup', e => {
+          if (e.getModifierState && e.getModifierState('CapsLock')) {
+            loginCapsLockWarning.style.display = 'block';
+          } else {
+            loginCapsLockWarning.style.display = 'none';
+          }
+        });
+      }
+    }
+
     // Real-time email validation for registration
     if (regEmail) {
       const emailValidationMsg = document.getElementById('email-validation-msg');
