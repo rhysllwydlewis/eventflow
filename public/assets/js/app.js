@@ -2754,8 +2754,9 @@ document.addEventListener('DOMContentLoaded', () => {
                   cleanUrl.searchParams.delete('redirect');
                   cleanUrl.searchParams.delete('return');
                   window.history.replaceState({}, '', cleanUrl.toString());
-                } catch (_) {
-                  /* Ignore history API errors */
+                } catch (_e) {
+                  // Ignore URL parsing or history API errors - cleanup is optional and non-critical
+                  // These errors can occur in older browsers or restricted contexts
                 }
               }
             }
