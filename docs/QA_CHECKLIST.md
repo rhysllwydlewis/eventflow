@@ -7,7 +7,7 @@
 #### Start Server
 
 ```bash
-cd /home/runner/work/eventflow/eventflow
+cd eventflow  # or your repository directory
 JWT_SECRET="test-secret-min-32-chars-for-qa" npm start
 ```
 
@@ -452,9 +452,9 @@ curl -w "\nHTTP Status: %{http_code}\n" https://yourdomain.com/api/ready
 
 ## Sign-Off
 
-### Performed By: ********\_********
+### Performed By: **\*\*\*\***\_**\*\*\*\***
 
-### Date: ********\_********
+### Date: **\*\*\*\***\_**\*\*\*\***
 
 ### Checklist Summary
 
@@ -479,4 +479,4 @@ curl -w "\nHTTP Status: %{http_code}\n" https://yourdomain.com/api/ready
 
 ### Approval: ☐ Approved ☐ Rejected ☐ Needs Work
 
-### Signature: ********\_********
+### Signature: **\*\*\*\***\_**\*\*\*\***

@@ -26,8 +26,6 @@ function configureCompression() {
         params: {
           // Brotli quality level (0-11, where 4 is good balance for dynamic content)
           [zlib.constants.BROTLI_PARAM_QUALITY]: 4,
-          // Size hint for better compression
-          [zlib.constants.BROTLI_PARAM_SIZE_HINT]: zlib.constants.BROTLI_DEFAULT_WINDOW,
         },
       },
     },

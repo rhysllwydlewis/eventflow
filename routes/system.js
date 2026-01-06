@@ -377,7 +377,7 @@ router.get('/performance', applyHealthCheckLimiter, async (req, res) => {
       compression: compressionConfig,
       caching: cachingStrategy,
     },
-    recommendations: recommendations.length > 0 ? recommendations : ['All optimizations active'],
+    recommendations: recommendations.length > 0 ? recommendations : [],
     verification: {
       compressionActive: supportsBrotli || supportsGzip,
       cachingActive: true,
