@@ -234,10 +234,28 @@
    */
   const logoutBtn = document.getElementById('adminLogoutBtn');
   if (logoutBtn) {
-    logoutBtn.addEventListener('click', e => {
+    logoutBtn.addEventListener('click', async e => {
       e.preventDefault();
       if (confirm('Are you sure you want to sign out?')) {
-        window.location.href = '/api/auth/logout';
+        try {
+          // Call POST logout endpoint with CSRF token if available
+          await fetch('/api/auth/logout', {
+            method: 'POST',
+            headers: { 'X-CSRF-Token': window.__CSRF_TOKEN__ || '' },
+            credentials: 'include',
+          });
+        } catch (_) {
+          /* Ignore logout errors */
+        }
+        // Clear any auth-related storage
+        try {
+          localStorage.removeItem('eventflow_onboarding_new');
+          sessionStorage.clear();
+        } catch (_) {
+          /* Ignore storage errors */
+        }
+        // Force full reload with cache-busting to ensure clean state
+        window.location.href = `/?t=${Date.now()}`;
       }
     });
   }

@@ -644,6 +644,10 @@ router.post('/logout', authLimiter, (_req, res) => {
  * Log out current user and redirect to home page
  */
 router.get('/logout', authLimiter, (_req, res) => {
+  // Set cache control headers to prevent caching of logout response
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+  res.setHeader('Pragma', 'no-cache');
+
   clearAuthCookie(res);
   res.redirect('/');
 });
