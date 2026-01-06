@@ -631,6 +631,10 @@ router.post('/reset-password', authLimiter, async (req, res) => {
  * Log out current user
  */
 router.post('/logout', authLimiter, (_req, res) => {
+  // Set cache control headers to prevent caching of logout response
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+  res.setHeader('Pragma', 'no-cache');
+
   clearAuthCookie(res);
   res.json({ ok: true });
 });
@@ -649,6 +653,11 @@ router.get('/logout', authLimiter, (_req, res) => {
  * Get current authenticated user
  */
 router.get('/me', (req, res) => {
+  // Set cache control headers to prevent caching of auth state
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Vary', 'Cookie');
+
   const p = getUserFromCookie(req);
   if (!p) {
     return res.json({ user: null });
