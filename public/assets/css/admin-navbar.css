@@ -42,7 +42,7 @@
 .admin-navbar-logo {
   font-size: 28px;
   font-weight: 700;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0B8073 0%, #13B6A2 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -94,12 +94,12 @@
 
 .admin-nav-btn:hover {
   background: rgba(102, 126, 234, 0.08);
-  color: #667eea;
+  color: #0B8073;
   transform: translateY(-1px);
 }
 
 .admin-nav-btn.active {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0B8073 0%, #13B6A2 100%);
   color: #ffffff;
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
@@ -214,8 +214,8 @@
 
 .navbar-icon-btn:hover {
   background: #f3f4f6;
-  border-color: #667eea;
-  color: #667eea;
+  border-color: #0B8073;
+  color: #0B8073;
   transform: scale(1.08);
   box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
 }
@@ -255,7 +255,7 @@
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0B8073 0%, #13B6A2 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -322,7 +322,7 @@
 
 .admin-dropdown-item:hover {
   background: #f3f4f6;
-  color: #667eea;
+  color: #0B8073;
 }
 
 .admin-dropdown-divider {

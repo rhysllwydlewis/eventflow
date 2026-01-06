@@ -836,5 +836,111 @@ router.post('/resend-verification', authLimiter, async (req, res) => {
   });
 });
 
+/**
+ * PUT /api/auth/profile
+ * Update current user's profile information
+ */
+router.put('/profile', authRequired, async (req, res) => {
+  const {
+    name,
+    firstName,
+    lastName,
+    email,
+    phone,
+    location,
+    postcode,
+    company,
+    jobTitle,
+    website,
+  } = req.body;
+
+  const users = read('users');
+  const idx = users.findIndex(u => u.id === req.user.id);
+
+  if (idx === -1) {
+    return res.status(404).json({ error: 'User not found' });
+  }
+
+  const user = users[idx];
+
+  // Check if email is being changed and if it's already taken
+  if (email && email !== user.email) {
+    const emailExists = users.some(u => u.email === email && u.id !== user.id);
+    if (emailExists) {
+      return res.status(400).json({ error: 'Email address is already in use' });
+    }
+
+    // Email changed - mark as unverified and send new verification email
+    user.email = email;
+    user.verified = false;
+    user.verificationToken = tokenUtils.generateVerificationToken(user, { expiresInHours: 24 });
+    user.verificationTokenExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+
+    // Send verification email asynchronously
+    postmark.sendVerificationEmail(user, user.verificationToken).catch(err => {
+      console.error('Failed to send verification email:', err);
+    });
+  }
+
+  // Update allowed fields
+  if (name !== undefined) {
+    user.name = name;
+  }
+  if (firstName !== undefined) {
+    user.firstName = firstName;
+  }
+  if (lastName !== undefined) {
+    user.lastName = lastName;
+  }
+  if (phone !== undefined) {
+    user.phone = phone;
+  }
+  if (location !== undefined) {
+    user.location = location;
+  }
+  if (postcode !== undefined) {
+    user.postcode = postcode;
+  }
+  if (company !== undefined) {
+    user.company = company;
+  }
+  if (jobTitle !== undefined) {
+    user.jobTitle = jobTitle;
+  }
+  if (website !== undefined) {
+    user.website = website;
+  }
+
+  user.updatedAt = new Date().toISOString();
+
+  users[idx] = user;
+  write('users', users);
+
+  // Return updated user info
+  res.json({
+    ok: true,
+    message:
+      email && email !== req.user.email
+        ? 'Profile updated. Please check your new email address to verify it.'
+        : 'Profile updated successfully',
+    user: {
+      id: user.id,
+      name: user.name,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      phone: user.phone,
+      role: user.role,
+      location: user.location,
+      postcode: user.postcode,
+      company: user.company,
+      jobTitle: user.jobTitle,
+      website: user.website,
+      avatarUrl: user.avatarUrl,
+      verified: user.verified,
+    },
+  });
+});
+
 module.exports = router;
 module.exports.setSendMailFunction = setSendMailFunction;

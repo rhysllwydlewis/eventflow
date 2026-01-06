@@ -16,22 +16,7 @@
   // Load suppliers data
   async function loadSuppliers() {
     try {
-      const response = await fetch('/api/admin/suppliers', {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-        },
-      });
-
-      if (!response.ok) {
-        if (response.status === 401 || response.status === 403) {
-          showToast('Authentication required. Please log in.', 'error');
-          window.location.href = '/login.html';
-          return;
-        }
-        throw new Error(`HTTP ${response.status}: Failed to load suppliers`);
-      }
-
-      const data = await response.json();
+      const data = await AdminShared.api('/api/admin/suppliers');
       // API may return data.items or data.suppliers - accept both for compatibility
       allSuppliers = data.items || data.suppliers || [];
       filteredSuppliers = [...allSuppliers];
@@ -258,20 +243,7 @@
       const supplierIds = Array.from(selectedSuppliers);
       const endpoint = `/api/admin/suppliers/bulk-${action}`;
 
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-        },
-        body: JSON.stringify({ supplierIds }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to ${actionText} suppliers`);
-      }
-
-      const result = await response.json();
+      const result = await AdminShared.api(endpoint, 'POST', { supplierIds });
       showToast(
         result.message || `Successfully ${actionText}ed ${selectedSuppliers.size} supplier(s)`,
         'success'
@@ -303,22 +275,10 @@
     }
 
     try {
-      const response = await fetch('/api/admin/suppliers/smart-tags', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-        },
-        body: JSON.stringify({
-          supplierIds: Array.from(selectedSuppliers),
-        }),
+      const result = await AdminShared.api('/api/admin/suppliers/smart-tags', 'POST', {
+        supplierIds: Array.from(selectedSuppliers),
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to apply smart tags');
-      }
-
-      const result = await response.json();
       showToast(
         `Smart tags applied to ${result.taggedCount || selectedSuppliers.size} supplier(s)`,
         'success'
@@ -421,19 +381,7 @@
   window.approveSupplier = async function (id) {
     if (confirm('Approve this supplier?')) {
       try {
-        const response = await fetch(`/api/admin/suppliers/${id}/approve`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
-          },
-          body: JSON.stringify({ approved: true }),
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to approve supplier');
-        }
-
+        await AdminShared.api(`/api/admin/suppliers/${id}/approve`, 'POST', { approved: true });
         showToast('Supplier approved', 'success');
         await loadSuppliers();
         renderTable();
@@ -451,17 +399,7 @@
       )
     ) {
       try {
-        const response = await fetch(`/api/admin/suppliers/${id}`, {
-          method: 'DELETE',
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to delete supplier');
-        }
-
+        await AdminShared.api(`/api/admin/suppliers/${id}`, 'DELETE');
         showToast('Supplier deleted', 'success');
         await loadSuppliers();
         renderTable();

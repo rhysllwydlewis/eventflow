@@ -72,11 +72,11 @@
   left: 0;
   right: 0;
   height: 4px;
-  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(90deg, #0B8073 0%, #13B6A2 100%);
 }
 
 .stat-card.stat-primary::before {
-  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(90deg, #0B8073 0%, #13B6A2 100%);
 }
 
 .stat-card.stat-success::before {
@@ -147,7 +147,7 @@
 }
 
 .stat-card-icon.stat-icon-purple {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0B8073 0%, #13B6A2 100%);
   color: white;
 }
 
@@ -195,7 +195,7 @@
 
 /* Action Card */
 .action-card {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0B8073 0%, #13B6A2 100%);
   color: white;
   border-radius: 16px;
   padding: 28px;
@@ -367,7 +367,7 @@
 
 /* Dashboard Header */
 .dashboard-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0B8073 0%, #13B6A2 100%);
   border-radius: 20px;
   padding: 32px;
   margin-bottom: 32px;
@@ -440,7 +440,7 @@
 .btn-secondary {
   padding: 10px 20px;
   background: white;
-  color: #667eea;
+  color: #0B8073;
   border: none;
   border-radius: 10px;
   font-size: 14px;
