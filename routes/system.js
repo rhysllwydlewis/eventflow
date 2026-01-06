@@ -23,6 +23,27 @@ let healthCheckLimiter;
  * @param {Object} deps - Dependencies object
  */
 function initializeDependencies(deps) {
+  if (!deps) {
+    throw new Error('System routes: dependencies object is required');
+  }
+
+  // Validate required dependencies
+  const required = [
+    'APP_VERSION',
+    'EMAIL_ENABLED',
+    'postmark',
+    'mongoDb',
+    'dbUnified',
+    'getToken',
+    'authLimiter',
+    'healthCheckLimiter',
+  ];
+
+  const missing = required.filter(key => deps[key] === undefined);
+  if (missing.length > 0) {
+    throw new Error(`System routes: missing required dependencies: ${missing.join(', ')}`);
+  }
+
   APP_VERSION = deps.APP_VERSION;
   EMAIL_ENABLED = deps.EMAIL_ENABLED;
   postmark = deps.postmark;
@@ -34,10 +55,35 @@ function initializeDependencies(deps) {
 }
 
 /**
+ * Middleware wrapper that applies rate limiter if initialized
+ * This allows the module to be loaded before dependencies are injected
+ */
+function applyAuthLimiter(req, res, next) {
+  if (authLimiter) {
+    return authLimiter(req, res, next);
+  }
+  next();
+}
+
+/**
+ * Middleware wrapper that applies health check rate limiter if initialized
+ * This allows the module to be loaded before dependencies are injected
+ */
+function applyHealthCheckLimiter(req, res, next) {
+  if (healthCheckLimiter) {
+    return healthCheckLimiter(req, res, next);
+  }
+  next();
+}
+
+/**
  * GET /api/csrf-token
  * Get CSRF token for form submissions
  */
-router.get('/csrf-token', authLimiter, async (req, res) => {
+router.get('/csrf-token', applyAuthLimiter, async (req, res) => {
+  if (!getToken) {
+    return res.status(503).json({ error: 'CSRF token service not initialized' });
+  }
   const token = getToken(req);
   res.json({ csrfToken: token });
 });
@@ -47,7 +93,10 @@ router.get('/csrf-token', authLimiter, async (req, res) => {
  * Client config endpoint - provides public configuration values
  * Apply rate limiting to prevent abuse of API key exposure
  */
-router.get('/config', authLimiter, async (req, res) => {
+router.get('/config', applyAuthLimiter, async (req, res) => {
+  if (!APP_VERSION) {
+    return res.status(503).json({ error: 'Configuration service not initialized' });
+  }
   res.json({
     googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || '',
     version: APP_VERSION,
@@ -59,6 +108,9 @@ router.get('/config', authLimiter, async (req, res) => {
  * Application metadata endpoint
  */
 router.get('/meta', async (_req, res) => {
+  if (!APP_VERSION) {
+    return res.status(503).json({ error: 'Metadata service not initialized' });
+  }
   res.json({
     ok: true,
     version: APP_VERSION,
@@ -72,7 +124,16 @@ router.get('/meta', async (_req, res) => {
  * Health check endpoint for monitoring
  * Returns 200 if server is running, with service status details
  */
-router.get('/health', healthCheckLimiter, async (_req, res) => {
+router.get('/health', applyHealthCheckLimiter, async (_req, res) => {
+  // Check if dependencies are initialized
+  if (!mongoDb || !dbUnified || !postmark) {
+    return res.status(503).json({
+      status: 'error',
+      timestamp: new Date().toISOString(),
+      error: 'Health check service dependencies not initialized',
+    });
+  }
+
   // Server is always "ok" if it's running and accepting requests
   // Database status is reported as a service status, not overall health
   const timestamp = new Date().toISOString();
@@ -163,7 +224,16 @@ router.get('/health', healthCheckLimiter, async (_req, res) => {
  * Readiness probe for Kubernetes/Railway
  * Returns 200 only if MongoDB is connected
  */
-router.get('/ready', healthCheckLimiter, async (_req, res) => {
+router.get('/ready', applyHealthCheckLimiter, async (_req, res) => {
+  // Check if dependencies are initialized
+  if (!mongoDb || !dbUnified) {
+    return res.status(503).json({
+      ready: false,
+      timestamp: new Date().toISOString(),
+      error: 'Readiness probe dependencies not initialized',
+    });
+  }
+
   const timestamp = new Date().toISOString();
 
   // Check if MongoDB is actually connected

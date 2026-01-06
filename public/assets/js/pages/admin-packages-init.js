@@ -621,47 +621,47 @@
 
     // Event delegation for dynamically created buttons
     document.body.addEventListener('click', e => {
-    const target = e.target;
-    if (target.tagName !== 'BUTTON') {
-      return;
-    }
+      const target = e.target;
+      if (target.tagName !== 'BUTTON') {
+        return;
+      }
 
-    const action = target.getAttribute('data-action');
-    if (!action) {
-      return;
-    }
+      const action = target.getAttribute('data-action');
+      if (!action) {
+        return;
+      }
 
-    const id = target.getAttribute('data-id');
-    const param = target.getAttribute('data-param');
+      const id = target.getAttribute('data-id');
+      const param = target.getAttribute('data-param');
 
-    switch (action) {
-      case 'editPackage':
-        if (id) {
-          editPackage(id);
-        }
-        break;
-      case 'toggleApproval':
-        if (id && param !== null) {
-          toggleApproval(id, param === 'true');
-        }
-        break;
-      case 'toggleFeatured':
-        if (id && param !== null) {
-          toggleFeatured(id, param === 'true');
-        }
-        break;
-      case 'deletePackage':
-        if (id) {
-          deletePackage(id);
-        }
-        break;
-    }
-  });
+      switch (action) {
+        case 'editPackage':
+          if (id) {
+            editPackage(id);
+          }
+          break;
+        case 'toggleApproval':
+          if (id && param !== null) {
+            toggleApproval(id, param === 'true');
+          }
+          break;
+        case 'toggleFeatured':
+          if (id && param !== null) {
+            toggleFeatured(id, param === 'true');
+          }
+          break;
+        case 'deletePackage':
+          if (id) {
+            deletePackage(id);
+          }
+          break;
+      }
+    });
 
-  // Back to dashboard button
-  document.getElementById('backToDashboard')?.addEventListener('click', () => {
-    location.href = '/admin.html';
-  });
+    // Back to dashboard button
+    document.getElementById('backToDashboard')?.addEventListener('click', () => {
+      location.href = '/admin.html';
+    });
   }
 
   // Initialize when DOM is ready (since this is a module script, it's automatically deferred)

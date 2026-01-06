@@ -2093,7 +2093,9 @@ router.get('/badge-counts', authRequired, roleRequired('admin'), (req, res) => {
     const pendingPhotos = photos.filter(p => !p.approved && !p.rejected).length;
 
     // Count open tickets
-    const openTickets = tickets.filter(t => t.status === 'open' || t.status === 'in_progress').length;
+    const openTickets = tickets.filter(
+      t => t.status === 'open' || t.status === 'in_progress'
+    ).length;
 
     res.json({
       newUsers,

@@ -384,26 +384,26 @@ The widget emits custom events that can be tracked:
 
 ```javascript
 // Listen for teaser clicks
-window.addEventListener('jadeassist:teaser-clicked', (e) => {
+window.addEventListener('jadeassist:teaser-clicked', e => {
   console.log('Teaser clicked:', e.detail);
   // Send to analytics
   gtag('event', 'teaser_click', { timestamp: e.detail.timestamp });
 });
 
 // Listen for widget opens
-window.addEventListener('jadeassist:widget-opened', (e) => {
+window.addEventListener('jadeassist:widget-opened', e => {
   console.log('Widget opened:', e.detail);
   // Send to analytics
   gtag('event', 'widget_open', { timestamp: e.detail.timestamp });
 });
 
 // Listen for teaser dismissals
-window.addEventListener('jadeassist:teaser-dismissed', (e) => {
+window.addEventListener('jadeassist:teaser-dismissed', e => {
   console.log('Teaser dismissed:', e.detail);
   // Send to analytics
-  gtag('event', 'teaser_dismiss', { 
+  gtag('event', 'teaser_dismiss', {
     timestamp: e.detail.timestamp,
-    method: e.detail.method 
+    method: e.detail.method,
   });
 });
 ```
@@ -445,14 +445,17 @@ location.reload();
 ### Available Variants
 
 **Variant A (Default):**
+
 - Desktop: "Hi, I'm Jade — want help finding venues and trusted suppliers?"
 - Mobile: "Need help finding venues? 👋"
 
 **Variant B:**
+
 - Desktop: "Planning an event? Let me help you find the perfect suppliers! 🎉"
 - Mobile: "Planning an event? 🎉"
 
 **Variant C:**
+
 - Desktop: "Find trusted event suppliers in minutes ⚡"
 - Mobile: "Find suppliers fast ⚡"
 
@@ -460,7 +463,7 @@ location.reload();
 
 1. **Set variant**: Use localStorage to select variant (A, B, or C)
 2. **Track events**: Use analytics integration to measure conversion rates
-3. **Compare metrics**: 
+3. **Compare metrics**:
    - Teaser click-through rate
    - Widget engagement rate
    - Time to first interaction

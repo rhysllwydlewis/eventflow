@@ -5189,6 +5189,20 @@ app.post('/api/csp-report', express.json({ type: 'application/csp-report' }), (r
   res.status(204).end();
 });
 
+// ---------- Mount Modular Routes ----------
+// Mount all modular routes from routes/index.js
+const { mountRoutes } = require('./routes/index');
+mountRoutes(app, {
+  APP_VERSION,
+  EMAIL_ENABLED,
+  postmark,
+  mongoDb,
+  dbUnified,
+  getToken,
+  authLimiter,
+  healthCheckLimiter,
+});
+
 // ---------- API Documentation & 404 Handler ----------
 // API Documentation (Swagger UI)
 app.use(

@@ -9,6 +9,7 @@ This document provides a visual representation of the improvements made to the l
 ## 1. CSRF Token Implementation
 
 ### Before ❌
+
 ```
 Browser → /auth.html
           ↓
@@ -24,6 +25,7 @@ POST /api/auth/login
 ```
 
 ### After ✅
+
 ```
 Browser → /auth.html
           ↓
@@ -44,6 +46,7 @@ Body: {
 ```
 
 **User Experience Impact:**
+
 - ✅ No more "CSRF token missing" errors
 - ✅ Seamless login experience
 - ✅ Improved security against CSRF attacks
@@ -55,6 +58,7 @@ Body: {
 ### Before ❌
 
 **UI Issues:**
+
 ```
 ┌─────────────────────────────────────┐
 │ Email                               │
@@ -72,12 +76,14 @@ Body: {
 ```
 
 **Session Behavior:**
+
 - Default: 7 days (even when checked)
 - No difference between checked/unchecked
 
 ### After ✅
 
 **Improved UI:**
+
 ```
 ┌─────────────────────────────────────┐
 │ Email                               │
@@ -98,14 +104,15 @@ Body: {
 **Smart Session Management:**
 
 | Remember Me | Session Duration | Cookie Max Age |
-|-------------|------------------|----------------|
+| ----------- | ---------------- | -------------- |
 | ☐ Unchecked | 7 days           | 604,800 sec    |
 | ☑ Checked   | 30 days          | 2,592,000 sec  |
 
 **CSS Improvements:**
+
 ```css
 /* Before */
-.checkbox-label-right input[type="checkbox"] {
+.checkbox-label-right input[type='checkbox'] {
   width: auto;
   flex-shrink: 0;
   margin: 0;
@@ -113,19 +120,19 @@ Body: {
 }
 
 /* After */
-.checkbox-label-right input[type="checkbox"] {
+.checkbox-label-right input[type='checkbox'] {
   width: 18px;
   height: 18px;
   cursor: pointer;
-  accent-color: #667eea;  /* Purple brand color */
+  accent-color: #667eea; /* Purple brand color */
 }
 
 .checkbox-label-right:hover {
-  opacity: 0.8;  /* Visual feedback */
+  opacity: 0.8; /* Visual feedback */
 }
 
-.checkbox-label-right input[type="checkbox"]:focus {
-  outline: 2px solid #667eea;  /* Accessibility */
+.checkbox-label-right input[type='checkbox']:focus {
+  outline: 2px solid #667eea; /* Accessibility */
 }
 ```
 
@@ -136,6 +143,7 @@ Body: {
 ### Before ❌
 
 **Maintenance Lockout Flow:**
+
 ```
 Admin User Journey:
 1. Site enters maintenance mode
@@ -158,6 +166,7 @@ Admin User Journey:
 ```
 
 **Problem Areas:**
+
 - `/admin.html` blocked during maintenance
 - `/api/admin/*` endpoints blocked
 - Redirect loop: login → dashboard → maintenance → login
@@ -165,6 +174,7 @@ Admin User Journey:
 ### After ✅
 
 **Fixed Access Flow:**
+
 ```
 Admin User Journey:
 1. Site enters maintenance mode
@@ -190,6 +200,7 @@ Admin User Journey:
 ```
 
 **Middleware Logic:**
+
 ```javascript
 // Maintenance mode checks (in order):
 1. Is maintenance disabled? → Allow all
@@ -207,6 +218,7 @@ Admin User Journey:
 ### Before ❌
 
 **Manual-Only Mode:**
+
 ```
 ┌─────────────────────────────────────┐
 │ Maintenance Mode Settings           │
@@ -230,6 +242,7 @@ Problems:
 ### After ✅
 
 **Smart Auto-Timer:**
+
 ```
 ┌─────────────────────────────────────────────────┐
 │ Maintenance Mode Settings                       │
@@ -263,6 +276,7 @@ Problems:
 **Countdown Display States:**
 
 **Active (Blue):**
+
 ```
 ┌─────────────────────────────────────────────┐
 │ ⏰ Auto-disable in: 1h 23m 45s              │
@@ -272,6 +286,7 @@ Color: #667eea (purple)
 ```
 
 **Expiring Soon (Yellow):**
+
 ```
 ┌─────────────────────────────────────────────┐
 │ ⏰ Auto-disable in: 2m 15s                  │
@@ -281,6 +296,7 @@ Color: #856404 (dark yellow)
 ```
 
 **Expired (Auto-disabling):**
+
 ```
 ┌─────────────────────────────────────────────┐
 │ ⏰ Maintenance has expired (auto-disabling) │
@@ -316,16 +332,17 @@ Site Accessible Again!
 ### Database Schema
 
 **settings.json:**
+
 ```json
 {
   "maintenance": {
     "enabled": true,
     "message": "We're performing scheduled maintenance.",
-    "duration": 60,                          // minutes
-    "expiresAt": "2026-01-03T20:00:00Z",    // ISO timestamp
+    "duration": 60, // minutes
+    "expiresAt": "2026-01-03T20:00:00Z", // ISO timestamp
     "updatedAt": "2026-01-03T19:00:00Z",
     "updatedBy": "admin@event-flow.co.uk",
-    "autoDisabledAt": null                   // Set when auto-disabled
+    "autoDisabledAt": null // Set when auto-disabled
   }
 }
 ```
@@ -336,25 +353,25 @@ Site Accessible Again!
 
 ### Login Experience
 
-| Aspect              | Before ❌                          | After ✅                                |
-|---------------------|------------------------------------|-----------------------------------------|
-| CSRF Token          | Missing → Login fails              | Auto-fetched → Login succeeds           |
-| Remember Me         | Not functional (always 7 days)     | Works correctly (30 days when checked)  |
-| Checkbox UI         | Small, hard to click               | Larger, styled, accessible              |
-| Admin Maintenance   | Infinite redirect loop             | Seamless admin access                   |
-| Mobile Login        | Broken during maintenance          | Works perfectly                         |
-| Error Messages      | Generic "CSRF token missing"       | Clear, actionable errors                |
+| Aspect            | Before ❌                      | After ✅                               |
+| ----------------- | ------------------------------ | -------------------------------------- |
+| CSRF Token        | Missing → Login fails          | Auto-fetched → Login succeeds          |
+| Remember Me       | Not functional (always 7 days) | Works correctly (30 days when checked) |
+| Checkbox UI       | Small, hard to click           | Larger, styled, accessible             |
+| Admin Maintenance | Infinite redirect loop         | Seamless admin access                  |
+| Mobile Login      | Broken during maintenance      | Works perfectly                        |
+| Error Messages    | Generic "CSRF token missing"   | Clear, actionable errors               |
 
 ### Admin Experience
 
-| Feature             | Before ❌                          | After ✅                                |
-|---------------------|------------------------------------|-----------------------------------------|
-| Maintenance Timer   | Manual disable only                | Auto-disable with countdown             |
-| Countdown Display   | None                               | Real-time countdown in dashboard        |
-| Timer Options       | N/A                                | 7 preset durations                      |
-| Visual Feedback     | None                               | Color-coded countdown states            |
-| Auto-Disable        | Never                              | Automatic when timer expires            |
-| Logging             | No logs                            | Console logs auto-disable events        |
+| Feature           | Before ❌           | After ✅                         |
+| ----------------- | ------------------- | -------------------------------- |
+| Maintenance Timer | Manual disable only | Auto-disable with countdown      |
+| Countdown Display | None                | Real-time countdown in dashboard |
+| Timer Options     | N/A                 | 7 preset durations               |
+| Visual Feedback   | None                | Color-coded countdown states     |
+| Auto-Disable      | Never               | Automatic when timer expires     |
+| Logging           | No logs             | Console logs auto-disable events |
 
 ---
 
@@ -518,6 +535,7 @@ Site Accessible Again!
 ### Responsive Design
 
 **Desktop (1920x1080):**
+
 ```
 ┌────────────────────────────────────────────────────┐
 │  EventFlow                    Dashboard  Settings  │
@@ -542,6 +560,7 @@ Site Accessible Again!
 ```
 
 **Mobile (375x667):**
+
 ```
 ┌─────────────────────┐
 │  ☰  EventFlow       │
@@ -564,6 +583,7 @@ Site Accessible Again!
 ```
 
 **Key Mobile Improvements:**
+
 - ✅ Larger touch targets (18x18px checkbox)
 - ✅ No infinite redirect loops
 - ✅ CSRF token works on all devices
@@ -577,6 +597,7 @@ Site Accessible Again!
 ### CSRF Token Error (Fixed)
 
 **Before:**
+
 ```
 ┌─────────────────────────────────────┐
 │ Console Errors:                     │
@@ -589,6 +610,7 @@ Site Accessible Again!
 ```
 
 **After:**
+
 ```
 ┌─────────────────────────────────────┐
 │ Console Messages:                   │
@@ -602,6 +624,7 @@ Site Accessible Again!
 ### Maintenance Countdown States
 
 **Active:**
+
 ```
 ┌────────────────────────────────────────┐
 │ ⏰ Auto-disable in: 45m 30s           │
@@ -610,6 +633,7 @@ Site Accessible Again!
 ```
 
 **Expired:**
+
 ```
 ┌────────────────────────────────────────┐
 │ ⏰ Maintenance has expired             │
@@ -618,6 +642,7 @@ Site Accessible Again!
 ```
 
 **No Timer Set:**
+
 ```
 ┌────────────────────────────────────────┐
 │ No auto-disable timer set              │
@@ -632,23 +657,23 @@ Site Accessible Again!
 
 ### Page Load Performance
 
-| Metric                  | Before | After | Change   |
-|-------------------------|--------|-------|----------|
-| Auth Page Load Time     | 1.2s   | 1.25s | +0.05s   |
-| CSRF Token Fetch        | N/A    | 45ms  | New      |
-| Login Request Time      | 180ms  | 185ms | +5ms     |
-| Dashboard Redirect      | 320ms  | 320ms | No change|
+| Metric              | Before | After | Change    |
+| ------------------- | ------ | ----- | --------- |
+| Auth Page Load Time | 1.2s   | 1.25s | +0.05s    |
+| CSRF Token Fetch    | N/A    | 45ms  | New       |
+| Login Request Time  | 180ms  | 185ms | +5ms      |
+| Dashboard Redirect  | 320ms  | 320ms | No change |
 
 **Impact:** Minimal performance overhead (< 50ms total)
 
 ### Memory Usage
 
-| Component               | Memory  | CPU   |
-|-------------------------|---------|-------|
-| CSRF Token Storage      | < 1 KB  | 0%    |
-| Countdown Timer         | < 5 KB  | < 1%  |
-| Remember Me Cookie      | 1.5 KB  | 0%    |
-| Total Additional        | < 8 KB  | < 1%  |
+| Component          | Memory | CPU  |
+| ------------------ | ------ | ---- |
+| CSRF Token Storage | < 1 KB | 0%   |
+| Countdown Timer    | < 5 KB | < 1% |
+| Remember Me Cookie | 1.5 KB | 0%   |
+| Total Additional   | < 8 KB | < 1% |
 
 **Impact:** Negligible memory and CPU usage
 
@@ -657,7 +682,7 @@ Site Accessible Again!
 ## 11. Browser Compatibility Matrix
 
 | Feature          | Chrome | Firefox | Safari | Edge | Mobile |
-|------------------|--------|---------|--------|------|--------|
+| ---------------- | ------ | ------- | ------ | ---- | ------ |
 | CSRF Token       | ✅     | ✅      | ✅     | ✅   | ✅     |
 | Remember Me      | ✅     | ✅      | ✅     | ✅   | ✅     |
 | Checkbox Styling | ✅     | ✅      | ✅     | ✅   | ✅     |
@@ -666,6 +691,7 @@ Site Accessible Again!
 | Countdown        | ✅     | ✅      | ✅     | ✅   | ✅     |
 
 **Tested Versions:**
+
 - Chrome/Edge 120+
 - Firefox 121+
 - Safari 17+
@@ -678,16 +704,17 @@ Site Accessible Again!
 
 ### WCAG 2.1 Compliance
 
-| Criterion           | Level | Status | Implementation                  |
-|---------------------|-------|--------|---------------------------------|
-| Keyboard Navigation | A     | ✅     | Tab navigation, Enter to submit |
-| Focus Indicators    | AA    | ✅     | 2px outline on checkbox focus   |
-| Color Contrast      | AA    | ✅     | 4.5:1 minimum contrast ratio    |
-| Error Identification| A     | ✅     | Clear error messages with ARIA  |
-| Label Association   | A     | ✅     | Proper label[for] attributes    |
-| Touch Target Size   | AAA   | ✅     | 18x18px minimum                 |
+| Criterion            | Level | Status | Implementation                  |
+| -------------------- | ----- | ------ | ------------------------------- |
+| Keyboard Navigation  | A     | ✅     | Tab navigation, Enter to submit |
+| Focus Indicators     | AA    | ✅     | 2px outline on checkbox focus   |
+| Color Contrast       | AA    | ✅     | 4.5:1 minimum contrast ratio    |
+| Error Identification | A     | ✅     | Clear error messages with ARIA  |
+| Label Association    | A     | ✅     | Proper label[for] attributes    |
+| Touch Target Size    | AAA   | ✅     | 18x18px minimum                 |
 
 **Screen Reader Support:**
+
 - VoiceOver (iOS/macOS): ✅ Tested
 - NVDA (Windows): ✅ Tested
 - JAWS (Windows): ✅ Compatible

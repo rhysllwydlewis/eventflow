@@ -11,14 +11,17 @@ Investigated the JadeAssist avatar widget positioning implementation to identify
 The widget is currently configured to be positioned on the **LEFT side** of the screen, vertically aligned with the back-to-top button:
 
 **Desktop (> 768px):**
+
 - Widget: `bottom: 5rem (80px), left: 1.5rem (24px)`
 - Back-to-top: `bottom: 5rem (80px), right: 1.5rem (24px)`
 
 **Mobile (≤ 768px):**
+
 - Widget: `bottom: 4.5rem (72px), left: 1rem (16px)`
 - Back-to-top: `bottom: 4.5rem (72px), right: 1rem (16px)`
 
 **Teaser Bubble:**
+
 - Desktop: `bottom: 8rem` (3rem above widget)
 - Mobile: `bottom: 7.5rem` (3rem above widget)
 
@@ -68,6 +71,7 @@ The positioning is achieved through two mechanisms:
 ## Test Page Created
 
 Created `public/test-avatar-positioning.html` with:
+
 - Live widget integration
 - Real-time diagnostics
 - Visual alignment guides
@@ -79,6 +83,7 @@ Created `public/test-avatar-positioning.html` with:
 ### None Found in Code ✅
 
 After thorough review:
+
 - ✅ Positioning values are consistent across all files
 - ✅ Shadow DOM manipulation is correctly implemented
 - ✅ CSS fallback is properly configured
@@ -91,26 +96,31 @@ After thorough review:
 If positioning issues exist on the live site (not in code), they could be caused by:
 
 ### 1. Browser Caching
+
 - **Symptom**: Old CSS/JS files are cached
 - **Solution**: Hard refresh (Ctrl+Shift+R) or clear cache
 - **Detection**: Check Network tab for 304 (cached) vs 200 (fresh)
 
 ### 2. CDN Caching
+
 - **Symptom**: jsDelivr CDN returns old version of widget library
 - **Solution**: Wait for CDN cache to expire, or update commit SHA
 - **Detection**: Check widget library version in Network tab
 
 ### 3. CSS Specificity Conflict
+
 - **Symptom**: Another stylesheet overrides widget positioning
 - **Solution**: Increase specificity or add more `!important` flags
 - **Detection**: Inspect `.jade-widget-root` and check for crossed-out styles
 
 ### 4. Inline Styles from Widget Library
+
 - **Symptom**: Widget library applies inline styles that override our CSS
 - **Solution**: Shadow DOM manipulation should handle this (already implemented)
 - **Detection**: Inspect element and check for `style=""` attribute
 
 ### 5. JavaScript Timing Issue
+
 - **Symptom**: Positioning applied before widget fully renders
 - **Solution**: Increase timeout delays (currently 500ms)
 - **Detection**: Watch console logs for timing of positioning application
@@ -184,6 +194,7 @@ teaser: { bottom: '7.5rem', left: '1rem' }
 The implementation is correct and consistent across all files. Widget positioning logic is sound, with both shadow DOM manipulation and CSS fallback mechanisms in place. Responsive behavior is properly configured to match the back-to-top button positioning.
 
 If positioning issues are observed on the live site, they are likely due to:
+
 1. Browser/CDN caching
 2. Deployment issues (old files served)
 3. External CSS conflicts (unlikely given `!important` usage)

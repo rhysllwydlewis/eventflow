@@ -1,10 +1,10 @@
 /**
  * Firebase Configuration Stub
- * 
+ *
  * NOTE: This project uses MongoDB as the database and Cloudinary for image storage.
  * Firebase/Firestore is NOT in use. This file exists only to prevent module import
  * errors in legacy code that hasn't been migrated yet.
- * 
+ *
  * All exports are non-functional stubs that log warnings when called.
  */
 
@@ -13,8 +13,10 @@ const isFirebaseAvailable = false;
 const db = null;
 
 // Stub functions that log warnings
-const warnNotConfigured = (feature) => {
-  console.warn(`Firebase ${feature} is not configured. This project uses MongoDB/Cloudinary instead.`);
+const warnNotConfigured = feature => {
+  console.warn(
+    `Firebase ${feature} is not configured. This project uses MongoDB/Cloudinary instead.`
+  );
 };
 
 // Firestore stubs
@@ -66,7 +68,7 @@ const Timestamp = {
   now: () => {
     warnNotConfigured('Firestore');
     return { seconds: Math.floor(Date.now() / 1000) };
-  }
+  },
 };
 const arrayUnion = (...items) => {
   warnNotConfigured('Firestore');
