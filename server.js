@@ -4216,7 +4216,68 @@ app.get('/api/search/amenities', async (req, res) => {
 // ---------- Reviews and Ratings System ----------
 
 /**
- * Create a review for a supplier
+ * Submit a review for a supplier
+ * POST /api/suppliers/:supplierId/reviews
+ * Body: { rating, title, comment, recommend, eventType, eventDate, photos }
+ */
+app.post('/api/suppliers/:supplierId/reviews', authRequired, csrfProtection, async (req, res) => {
+  try {
+    const { supplierId } = req.params;
+    const { rating, title, comment, recommend, eventType, eventDate, photos } = req.body;
+
+    // Check if supplier exists
+    const suppliers = await dbUnified.read('suppliers');
+    const supplier = suppliers.find(s => s.id === supplierId);
+    if (!supplier) {
+      return res.status(404).json({ error: 'Supplier not found' });
+    }
+
+    // Get user info
+    const users = await dbUnified.read('users');
+    const user = users.find(u => u.id === req.user.id);
+
+    // Create review with full validation and anti-abuse checks
+    const review = await reviewsSystem.createReview(
+      {
+        supplierId,
+        userId: req.user.id,
+        userName: user?.name || user?.firstName || 'Anonymous',
+        rating: Number(rating),
+        title: title || '',
+        comment: comment || '',
+        recommend: recommend === true || recommend === 'true',
+        eventType: eventType || '',
+        eventDate: eventDate || '',
+        photos: photos || [],
+      },
+      {
+        ipAddress: req.ip || req.connection?.remoteAddress,
+        userAgent: req.get('user-agent'),
+      }
+    );
+
+    // Determine message based on review status
+    let message = 'Review submitted successfully!';
+    if (review.flagged) {
+      message = 'Review submitted and is pending moderation.';
+    } else if (!review.verified) {
+      message =
+        'Review submitted successfully! Note: Verified badge requires message history with supplier.';
+    }
+
+    res.json({
+      success: true,
+      review,
+      message,
+    });
+  } catch (error) {
+    console.error('Create review error:', error);
+    res.status(400).json({ error: error.message });
+  }
+});
+
+/**
+ * Create a review for a supplier (Legacy endpoint)
  * POST /api/reviews
  * Body: { supplierId, rating, comment, eventType, eventDate }
  */
@@ -4230,41 +4291,77 @@ app.post('/api/reviews', authRequired, csrfProtection, async (req, res) => {
     }
 
     // Check if supplier exists
-    const suppliers = await await dbUnified.read('suppliers');
+    const suppliers = await dbUnified.read('suppliers');
     const supplier = suppliers.find(s => s.id === supplierId);
     if (!supplier) {
       return res.status(404).json({ error: 'Supplier not found' });
     }
 
     // Get user info
-    const users = await await dbUnified.read('users');
+    const users = await dbUnified.read('users');
     const user = users.find(u => u.id === req.user.id);
 
-    // Create review
-    const review = await reviewsSystem.createReview({
-      supplierId,
-      userId: req.user.id,
-      userName: user.name || 'Anonymous',
-      rating: Number(rating),
-      comment: comment || '',
-      eventType: eventType || '',
-      eventDate: eventDate || '',
-      verified: false, // TODO: Check if user actually booked this supplier
-    });
+    // Create review using enhanced system
+    const review = await reviewsSystem.createReview(
+      {
+        supplierId,
+        userId: req.user.id,
+        userName: user?.name || user?.firstName || 'Anonymous',
+        rating: Number(rating),
+        comment: comment || '',
+        eventType: eventType || '',
+        eventDate: eventDate || '',
+      },
+      {
+        ipAddress: req.ip || req.connection?.remoteAddress,
+        userAgent: req.get('user-agent'),
+      }
+    );
 
     res.json({
       success: true,
       review,
-      message: 'Review submitted successfully. Pending admin approval.',
+      message: review.flagged
+        ? 'Review submitted and is pending moderation.'
+        : 'Review submitted successfully.',
     });
   } catch (error) {
     console.error('Create review error:', error);
-    res.status(500).json({ error: 'Failed to create review', details: error.message });
+    res.status(400).json({ error: error.message });
   }
 });
 
 /**
- * Get reviews for a supplier
+ * Get reviews for a supplier with pagination and filtering
+ * GET /api/suppliers/:supplierId/reviews
+ * Query: ?page=1&perPage=10&minRating=4&sortBy=date|rating|helpful&verifiedOnly=false
+ */
+app.get('/api/suppliers/:supplierId/reviews', async (req, res) => {
+  try {
+    const { supplierId } = req.params;
+    const { page, perPage, minRating, sortBy, verifiedOnly } = req.query;
+
+    const result = await reviewsSystem.getSupplierReviews(supplierId, {
+      page: page ? parseInt(page, 10) : 1,
+      perPage: perPage ? parseInt(perPage, 10) : 10,
+      minRating: minRating ? parseInt(minRating, 10) : undefined,
+      sortBy: sortBy || 'date',
+      approvedOnly: true,
+      verifiedOnly: verifiedOnly === 'true',
+    });
+
+    res.json({
+      success: true,
+      ...result,
+    });
+  } catch (error) {
+    console.error('Get reviews error:', error);
+    res.status(500).json({ error: 'Failed to get reviews', details: error.message });
+  }
+});
+
+/**
+ * Get reviews for a supplier (Legacy endpoint)
  * GET /api/reviews/supplier/:supplierId
  */
 app.get('/api/reviews/supplier/:supplierId', async (req, res) => {
@@ -4272,7 +4369,7 @@ app.get('/api/reviews/supplier/:supplierId', async (req, res) => {
     const { supplierId } = req.params;
     const { minRating, sortBy } = req.query;
 
-    const reviews = await reviewsSystem.getSupplierReviews(supplierId, {
+    const result = await reviewsSystem.getSupplierReviews(supplierId, {
       approvedOnly: true,
       minRating: minRating ? Number(minRating) : undefined,
       sortBy: sortBy || 'date',
@@ -4280,8 +4377,8 @@ app.get('/api/reviews/supplier/:supplierId', async (req, res) => {
 
     res.json({
       success: true,
-      count: reviews.length,
-      reviews,
+      count: result.reviews.length,
+      reviews: result.reviews,
     });
   } catch (error) {
     console.error('Get reviews error:', error);
@@ -4309,13 +4406,53 @@ app.get('/api/reviews/supplier/:supplierId/distribution', async (req, res) => {
 });
 
 /**
- * Mark review as helpful
+ * Vote on a review (helpful/unhelpful)
+ * POST /api/reviews/:reviewId/vote
+ * Body: { voteType: 'helpful' | 'unhelpful' }
+ */
+app.post('/api/reviews/:reviewId/vote', csrfProtection, async (req, res) => {
+  try {
+    const { reviewId } = req.params;
+    const { voteType } = req.body;
+    const userId = req.user?.id || null; // Optional: allow anonymous voting
+
+    if (!['helpful', 'unhelpful'].includes(voteType)) {
+      return res.status(400).json({ error: 'voteType must be "helpful" or "unhelpful"' });
+    }
+
+    const review = await reviewsSystem.voteOnReview(
+      reviewId,
+      voteType,
+      userId,
+      req.ip || req.connection?.remoteAddress
+    );
+
+    res.json({
+      success: true,
+      review,
+      message: `Marked as ${voteType}. Thank you for your feedback!`,
+    });
+  } catch (error) {
+    console.error('Vote on review error:', error);
+    res.status(400).json({ error: error.message });
+  }
+});
+
+/**
+ * Mark review as helpful (Legacy endpoint)
  * POST /api/reviews/:reviewId/helpful
  */
 app.post('/api/reviews/:reviewId/helpful', csrfProtection, async (req, res) => {
   try {
     const { reviewId } = req.params;
-    const review = await reviewsSystem.markHelpful(reviewId);
+    const userId = req.user?.id || null;
+
+    const review = await reviewsSystem.voteOnReview(
+      reviewId,
+      'helpful',
+      userId,
+      req.ip || req.connection?.remoteAddress
+    );
 
     res.json({
       success: true,
@@ -4324,9 +4461,86 @@ app.post('/api/reviews/:reviewId/helpful', csrfProtection, async (req, res) => {
     });
   } catch (error) {
     console.error('Mark helpful error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(400).json({ error: error.message });
   }
 });
+
+/**
+ * Supplier responds to a review
+ * POST /api/reviews/:reviewId/respond
+ * Body: { response: string }
+ */
+app.post(
+  '/api/reviews/:reviewId/respond',
+  authRequired,
+  roleRequired('supplier'),
+  csrfProtection,
+  async (req, res) => {
+    try {
+      const { reviewId } = req.params;
+      const { response } = req.body;
+
+      if (!response || response.trim().length === 0) {
+        return res.status(400).json({ error: 'Response text is required' });
+      }
+
+      // Get supplier ID from user's supplier profile
+      const suppliers = await dbUnified.read('suppliers');
+      const supplier = suppliers.find(s => s.ownerUserId === req.user.id);
+
+      if (!supplier) {
+        return res.status(404).json({ error: 'Supplier profile not found' });
+      }
+
+      const review = await reviewsSystem.addSupplierResponse(
+        reviewId,
+        supplier.id,
+        response.trim(),
+        req.user.id
+      );
+
+      res.json({
+        success: true,
+        review,
+        message: 'Response posted successfully',
+      });
+    } catch (error) {
+      console.error('Add supplier response error:', error);
+      res.status(400).json({ error: error.message });
+    }
+  }
+);
+
+/**
+ * Get reviews for supplier dashboard
+ * GET /api/supplier/dashboard/reviews
+ */
+app.get(
+  '/api/supplier/dashboard/reviews',
+  authRequired,
+  roleRequired('supplier'),
+  async (req, res) => {
+    try {
+      // Get supplier ID from user's supplier profile
+      const suppliers = await dbUnified.read('suppliers');
+      const supplier = suppliers.find(s => s.ownerUserId === req.user.id);
+
+      if (!supplier) {
+        return res.status(404).json({ error: 'Supplier profile not found' });
+      }
+
+      const dashboard = await reviewsSystem.getSupplierDashboardReviews(supplier.id);
+
+      res.json({
+        success: true,
+        ...dashboard,
+      });
+    } catch (error) {
+      console.error('Get supplier dashboard reviews error:', error);
+      res.status(500).json({ error: 'Failed to get dashboard data', details: error.message });
+    }
+  }
+);
 
 /**
  * Get reviews for a specific supplier (admin view - includes all statuses)
@@ -4341,14 +4555,14 @@ app.get('/api/admin/reviews', authRequired, roleRequired('admin'), async (req, r
     }
 
     // Get all reviews for the supplier (not just approved ones)
-    const reviews = await reviewsSystem.getSupplierReviews(supplierId, {
+    const result = await reviewsSystem.getSupplierReviews(supplierId, {
       approvedOnly: false, // Admin sees all reviews
     });
 
     res.json({
       success: true,
-      count: reviews.length,
-      reviews,
+      count: result.reviews.length,
+      reviews: result.reviews,
     });
   } catch (error) {
     console.error('Get admin reviews error:', error);
@@ -4357,17 +4571,36 @@ app.get('/api/admin/reviews', authRequired, roleRequired('admin'), async (req, r
 });
 
 /**
- * Get pending reviews (admin only)
+ * Get flagged reviews for moderation (admin only)
+ * GET /api/admin/reviews/flagged
+ */
+app.get('/api/admin/reviews/flagged', authRequired, roleRequired('admin'), async (req, res) => {
+  try {
+    const flagged = await reviewsSystem.getFlaggedReviews();
+
+    res.json({
+      success: true,
+      count: flagged.length,
+      reviews: flagged,
+    });
+  } catch (error) {
+    console.error('Get flagged reviews error:', error);
+    res.status(500).json({ error: 'Failed to get flagged reviews', details: error.message });
+  }
+});
+
+/**
+ * Get pending reviews (admin only) - deprecated, use /flagged
  * GET /api/admin/reviews/pending
  */
 app.get('/api/admin/reviews/pending', authRequired, roleRequired('admin'), async (req, res) => {
   try {
-    const pending = await reviewsSystem.getPendingReviews();
+    const flagged = await reviewsSystem.getFlaggedReviews();
 
     res.json({
       success: true,
-      count: pending.length,
-      reviews: pending,
+      count: flagged.length,
+      reviews: flagged,
     });
   } catch (error) {
     console.error('Get pending reviews error:', error);
@@ -4376,7 +4609,45 @@ app.get('/api/admin/reviews/pending', authRequired, roleRequired('admin'), async
 });
 
 /**
- * Approve or reject a review (admin only)
+ * Moderate a review (admin only) - approve or reject
+ * POST /api/admin/reviews/:reviewId/moderate
+ * Body: { action: 'approve' | 'reject', reason?: string }
+ */
+app.post(
+  '/api/admin/reviews/:reviewId/moderate',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    try {
+      const { reviewId } = req.params;
+      const { action, reason } = req.body;
+
+      if (!['approve', 'reject'].includes(action)) {
+        return res.status(400).json({ error: 'Action must be "approve" or "reject"' });
+      }
+
+      const review = await reviewsSystem.moderateReview(
+        reviewId,
+        action,
+        req.user.id,
+        reason || ''
+      );
+
+      res.json({
+        success: true,
+        review,
+        message: action === 'approve' ? 'Review approved' : 'Review rejected',
+      });
+    } catch (error) {
+      console.error('Moderate review error:', error);
+      res.status(400).json({ error: error.message });
+    }
+  }
+);
+
+/**
+ * Approve or reject a review (admin only) - Legacy endpoint
  * POST /api/admin/reviews/:reviewId/approve
  * Body: { approved: boolean }
  */
@@ -4394,7 +4665,8 @@ app.post(
         return res.status(400).json({ error: 'Invalid input' });
       }
 
-      const review = await reviewsSystem.approveReview(reviewId, approved, req.user.id);
+      const action = approved ? 'approve' : 'reject';
+      const review = await reviewsSystem.moderateReview(reviewId, action, req.user.id, '');
 
       res.json({
         success: true,
@@ -4403,7 +4675,7 @@ app.post(
       });
     } catch (error) {
       console.error('Approve review error:', error);
-      res.status(500).json({ error: error.message });
+      res.status(400).json({ error: error.message });
     }
   }
 );

@@ -470,6 +470,180 @@ const paymentSchema = {
 };
 
 /**
+ * Review Schema
+ * Stores customer reviews and ratings for suppliers with anti-abuse protection
+ */
+const reviewSchema = {
+  validator: {
+    $jsonSchema: {
+      bsonType: 'object',
+      required: ['id', 'supplierId', 'userId', 'rating'],
+      properties: {
+        id: { bsonType: 'string', description: 'Unique review identifier' },
+        supplierId: { bsonType: 'string', description: 'Reviewed supplier ID' },
+        userId: { bsonType: 'string', description: 'Reviewer user ID' },
+        userName: { bsonType: 'string', description: 'Reviewer display name' },
+        rating: {
+          bsonType: 'int',
+          minimum: 1,
+          maximum: 5,
+          description: 'Star rating (1-5)',
+        },
+        title: { bsonType: 'string', description: 'Review title' },
+        comment: { bsonType: 'string', description: 'Review text content' },
+        recommend: { bsonType: 'bool', description: 'Would recommend supplier' },
+        eventType: { bsonType: 'string', description: 'Type of event' },
+        eventDate: { bsonType: 'string', description: 'Event date' },
+        verified: {
+          bsonType: 'bool',
+          description: 'Verified customer (has message history)',
+        },
+        emailVerified: {
+          bsonType: 'bool',
+          description: 'Email address verified',
+        },
+        approved: {
+          bsonType: 'bool',
+          description: 'Admin approval status',
+        },
+        approvedAt: { bsonType: 'string', description: 'Approval timestamp' },
+        approvedBy: { bsonType: 'string', description: 'Admin user ID who approved' },
+        flagged: {
+          bsonType: 'bool',
+          description: 'Flagged for moderation',
+        },
+        flagReason: {
+          bsonType: 'array',
+          items: { bsonType: 'string' },
+          description: 'Reasons for flagging',
+        },
+        ipAddress: { bsonType: 'string', description: 'Reviewer IP address (hashed)' },
+        userAgent: { bsonType: 'string', description: 'Browser user agent' },
+        helpfulCount: { bsonType: 'int', description: 'Helpful votes count' },
+        unhelpfulCount: { bsonType: 'int', description: 'Unhelpful votes count' },
+        supplierResponse: {
+          bsonType: 'object',
+          description: 'Supplier response to review',
+          properties: {
+            text: { bsonType: 'string', description: 'Response text' },
+            respondedAt: { bsonType: 'string', description: 'Response timestamp' },
+            respondedBy: { bsonType: 'string', description: 'Supplier user ID' },
+          },
+        },
+        createdAt: { bsonType: 'string', description: 'Creation timestamp' },
+        updatedAt: { bsonType: 'string', description: 'Last update timestamp' },
+      },
+    },
+  },
+};
+
+/**
+ * Review Vote Schema
+ * Tracks helpful/unhelpful votes on reviews
+ */
+const reviewVoteSchema = {
+  validator: {
+    $jsonSchema: {
+      bsonType: 'object',
+      required: ['id', 'reviewId', 'userId', 'voteType'],
+      properties: {
+        id: { bsonType: 'string', description: 'Unique vote identifier' },
+        reviewId: { bsonType: 'string', description: 'Reviewed review ID' },
+        userId: { bsonType: 'string', description: 'Voter user ID (optional for anonymous)' },
+        voteType: {
+          enum: ['helpful', 'unhelpful'],
+          description: 'Type of vote',
+        },
+        ipAddress: { bsonType: 'string', description: 'Voter IP address (hashed)' },
+        createdAt: { bsonType: 'string', description: 'Vote timestamp' },
+      },
+    },
+  },
+};
+
+/**
+ * Supplier Analytics Schema
+ * Stores aggregated supplier metrics and trust scores
+ */
+const supplierAnalyticsSchema = {
+  validator: {
+    $jsonSchema: {
+      bsonType: 'object',
+      required: ['id', 'supplierId'],
+      properties: {
+        id: { bsonType: 'string', description: 'Unique analytics identifier' },
+        supplierId: { bsonType: 'string', description: 'Supplier ID' },
+        averageRating: { bsonType: 'number', description: 'Average star rating' },
+        totalReviews: { bsonType: 'int', description: 'Total approved reviews' },
+        ratingDistribution: {
+          bsonType: 'object',
+          description: 'Count of each star rating',
+          properties: {
+            1: { bsonType: 'int' },
+            2: { bsonType: 'int' },
+            3: { bsonType: 'int' },
+            4: { bsonType: 'int' },
+            5: { bsonType: 'int' },
+          },
+        },
+        recommendationRate: {
+          bsonType: 'number',
+          description: 'Percentage of customers who recommend',
+        },
+        trustScore: {
+          bsonType: 'number',
+          description: 'Overall trust score (0-100)',
+        },
+        responseRate: {
+          bsonType: 'number',
+          description: 'Percentage of reviews with supplier response',
+        },
+        averageResponseTime: {
+          bsonType: 'number',
+          description: 'Average response time in hours',
+        },
+        badges: {
+          bsonType: 'array',
+          items: { bsonType: 'string' },
+          description: 'Earned badges (top-rated, responsive, etc.)',
+        },
+        lastCalculated: { bsonType: 'string', description: 'Last calculation timestamp' },
+        updatedAt: { bsonType: 'string', description: 'Last update timestamp' },
+      },
+    },
+  },
+};
+
+/**
+ * Review Moderation Schema
+ * Audit trail for review moderation actions
+ */
+const reviewModerationSchema = {
+  validator: {
+    $jsonSchema: {
+      bsonType: 'object',
+      required: ['id', 'reviewId', 'moderatorId', 'action'],
+      properties: {
+        id: { bsonType: 'string', description: 'Unique moderation record identifier' },
+        reviewId: { bsonType: 'string', description: 'Moderated review ID' },
+        moderatorId: { bsonType: 'string', description: 'Moderator user ID' },
+        action: {
+          enum: ['approve', 'reject', 'flag', 'unflag'],
+          description: 'Moderation action taken',
+        },
+        reason: { bsonType: 'string', description: 'Reason for action' },
+        notes: { bsonType: 'string', description: 'Internal moderator notes' },
+        previousState: {
+          bsonType: 'object',
+          description: 'Review state before action',
+        },
+        createdAt: { bsonType: 'string', description: 'Action timestamp' },
+      },
+    },
+  },
+};
+
+/**
  * Initialize collections with schemas and indexes
  * @param {Object} db - MongoDB database instance
  */
@@ -486,6 +660,10 @@ async function initializeCollections(db) {
     events: eventSchema,
     badges: badgeSchema,
     payments: paymentSchema,
+    reviews: reviewSchema,
+    reviewVotes: reviewVoteSchema,
+    supplierAnalytics: supplierAnalyticsSchema,
+    reviewModerations: reviewModerationSchema,
   };
 
   for (const [name, schema] of Object.entries(collections)) {
@@ -590,6 +768,40 @@ async function createIndexes(db) {
     await db.collection('payments').createIndex({ stripeSubscriptionId: 1 }, { sparse: true });
     await db.collection('payments').createIndex({ status: 1 });
     await db.collection('payments').createIndex({ createdAt: 1 });
+
+    // Review indexes
+    await db.collection('reviews').createIndex({ id: 1 }, { unique: true });
+    await db.collection('reviews').createIndex({ supplierId: 1 });
+    await db.collection('reviews').createIndex({ userId: 1 });
+    await db.collection('reviews').createIndex({ approved: 1 });
+    await db.collection('reviews').createIndex({ flagged: 1 });
+    await db.collection('reviews').createIndex({ verified: 1 });
+    await db.collection('reviews').createIndex({ rating: 1 });
+    await db.collection('reviews').createIndex({ createdAt: 1 });
+    await db.collection('reviews').createIndex({ supplierId: 1, approved: 1 });
+    await db.collection('reviews').createIndex({ supplierId: 1, createdAt: -1 });
+
+    // Review vote indexes
+    await db.collection('reviewVotes').createIndex({ id: 1 }, { unique: true });
+    await db.collection('reviewVotes').createIndex({ reviewId: 1 });
+    await db.collection('reviewVotes').createIndex({ userId: 1 }, { sparse: true });
+    await db
+      .collection('reviewVotes')
+      .createIndex({ reviewId: 1, userId: 1 }, { unique: true, sparse: true });
+    await db.collection('reviewVotes').createIndex({ ipAddress: 1 });
+
+    // Supplier analytics indexes
+    await db.collection('supplierAnalytics').createIndex({ id: 1 }, { unique: true });
+    await db.collection('supplierAnalytics').createIndex({ supplierId: 1 }, { unique: true });
+    await db.collection('supplierAnalytics').createIndex({ averageRating: 1 });
+    await db.collection('supplierAnalytics').createIndex({ trustScore: 1 });
+    await db.collection('supplierAnalytics').createIndex({ totalReviews: 1 });
+
+    // Review moderation indexes
+    await db.collection('reviewModerations').createIndex({ id: 1 }, { unique: true });
+    await db.collection('reviewModerations').createIndex({ reviewId: 1 });
+    await db.collection('reviewModerations').createIndex({ moderatorId: 1 });
+    await db.collection('reviewModerations').createIndex({ createdAt: 1 });
 
     console.log('Database indexes created successfully');
   } catch (error) {
