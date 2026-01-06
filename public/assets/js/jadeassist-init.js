@@ -515,6 +515,10 @@
         }
       }, 100);
 
+      // Show teaser after delay OR on scroll engagement (whichever comes first)
+      // eslint-disable-next-line prefer-const
+      let teaserDelayTimeout;
+
       // Show teaser based on user engagement (scroll depth)
       const showTeaserOnEngagement = () => {
         const scrollDepth =
@@ -522,6 +526,7 @@
 
         // Show teaser after user scrolls 25% down page (engagement signal)
         if (scrollDepth > 25) {
+          clearTimeout(teaserDelayTimeout);
           showTeaser();
           window.removeEventListener('scroll', showTeaserOnEngagement);
 
@@ -531,8 +536,7 @@
         }
       };
 
-      // Show teaser after delay OR on scroll engagement (whichever comes first)
-      const teaserDelayTimeout = setTimeout(() => {
+      teaserDelayTimeout = setTimeout(() => {
         showTeaser();
         window.removeEventListener('scroll', showTeaserOnEngagement);
         if (debug) {

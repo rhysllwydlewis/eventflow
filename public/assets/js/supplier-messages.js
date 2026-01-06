@@ -10,7 +10,9 @@ import { getLeadQualityBadge } from './utils/lead-quality-helper.js';
 // Get current user
 async function getCurrentUser() {
   try {
-    const response = await fetch('/api/auth/me');
+    const response = await fetch('/api/auth/me', {
+      credentials: 'include',
+    });
     if (!response.ok) {
       return null;
     }

@@ -443,13 +443,13 @@ html[data-theme="dark"] .timeline-step::before{
   flex-shrink:0;
   margin:0;
   order:2;
-  accent-color: #667eea;
+  accent-color: #0B8073;
 }
 .checkbox-label-right:hover {
   opacity: 0.8;
 }
 .checkbox-label-right input[type="checkbox"]:focus {
-  outline: 2px solid #667eea;
+  outline: 2px solid #0B8073;
   outline-offset: 2px;
 }
 
@@ -1276,7 +1276,7 @@ button, .cta{
 }
 
 .supplier-badge.pro {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0B8073 0%, #13B6A2 100%);
   color: white;
 }
 
@@ -1295,7 +1295,7 @@ button, .cta{
 
 /* Pro Ribbon for dashboard */
 .pro-ribbon {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0B8073 0%, #13B6A2 100%);
   color: white;
   padding: 0.75rem;
   text-align: center;

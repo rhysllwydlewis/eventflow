@@ -44,9 +44,18 @@
 <h1>Your dashboard</h1>
 
 <!-- Welcome Section -->
-<div class="card" style="background:linear-gradient(135deg, #0B8073 0%, #13B6A2 100%);color:white;margin-bottom:1.5rem;padding:2rem;">
-  <h2 style="margin:0 0 0.75rem 0;color:white;font-size:1.75rem;">Welcome to EventFlow!</h2>
-  <p class="small" style="color:rgba(255,255,255,0.95);margin:0;font-size:1rem;">Plan your perfect event with our curated suppliers.</p>
+<div id="welcome-section" class="card" style="background:linear-gradient(135deg, #0B8073 0%, #13B6A2 100%);color:white;margin-bottom:1.5rem;padding:2rem;">
+  <h2 id="welcome-heading" style="margin:0 0 0.75rem 0;color:white;font-size:1.75rem;">Welcome to EventFlow!</h2>
+  <p class="small" style="color:rgba(255,255,255,0.95);margin:0 0 1rem 0;font-size:1rem;">Plan your perfect event with our curated suppliers.</p>
+  <div id="what-you-can-do" style="margin-top:1rem;padding-top:1rem;border-top:1px solid rgba(255,255,255,0.2);">
+    <h3 style="margin:0 0 0.5rem 0;color:white;font-size:1.1rem;">What you can do from here:</h3>
+    <ul style="margin:0;padding-left:1.25rem;color:rgba(255,255,255,0.95);font-size:0.95rem;">
+      <li style="margin-bottom:0.25rem;">Create and manage event plans with our wizard</li>
+      <li style="margin-bottom:0.25rem;">Browse and save suppliers for your events</li>
+      <li style="margin-bottom:0.25rem;">Track your budget with our calculator</li>
+      <li style="margin-bottom:0.25rem;">Manage support tickets and conversations</li>
+    </ul>
+  </div>
 </div>
 
 <div class="cards">
@@ -155,21 +164,34 @@ function escapeHtml(unsafe) {
 async function checkAuth() {
   try {
     const response = await fetch('/api/auth/me', { credentials: 'include' });
-    return response.ok;
+    if (!response.ok) {
+      return null;
+    }
+    const data = await response.json();
+    return data.user || null;
   } catch (error) {
     console.error('Auth check failed:', error);
-    return false;
+    return null;
   }
 }
 
 // Setup navigation with auth check
 async function initDashboard() {
-  const isAuthenticated = await checkAuth();
+  const user = await checkAuth();
   
-  if (!isAuthenticated) {
+  if (!user) {
     // Redirect to login if not authenticated
     window.location.href = '/auth.html?redirect=' + encodeURIComponent(window.location.pathname);
     return;
+  }
+
+  // Personalize welcome message
+  const welcomeHeading = document.getElementById('welcome-heading');
+  if (welcomeHeading && user.firstName) {
+    welcomeHeading.textContent = `Welcome ${escapeHtml(user.firstName)} to your customer dashboard!`;
+  } else if (welcomeHeading && user.name) {
+    const firstName = user.name.split(' ')[0];
+    welcomeHeading.textContent = `Welcome ${escapeHtml(firstName)} to your customer dashboard!`;
   }
 
   // Check for guest plan token and claim it
@@ -181,12 +203,7 @@ async function initDashboard() {
   // Setup Open My Plan button with auth-aware navigation
   document.getElementById('openPlanBtn')?.addEventListener('click', async (e) => {
     e.preventDefault();
-    const authenticated = await checkAuth();
-    if (authenticated) {
-      window.location.href = '/plan.html';
-    } else {
-      window.location.href = '/auth.html?redirect=/plan.html';
-    }
+    window.location.href = '/plan.html';
   });
 }
 
