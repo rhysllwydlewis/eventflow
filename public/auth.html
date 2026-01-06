@@ -72,7 +72,7 @@
         <div class="form-row"><label for="login-email">Email</label><input id="login-email" name="email" type="email" required placeholder="you@example.com" aria-required="true" autocomplete="email"></div>
         <div class="form-row"><label for="login-password">Password</label><input id="login-password" name="password" type="password" required placeholder="Your password" aria-required="true" autocomplete="current-password"></div>
         <div class="form-row">
-          <div id="login-error" class="error" style="display: none; visibility: hidden; color: #b00020; font-size: 0.875rem;" aria-live="polite" aria-hidden="true"></div>
+          <div id="login-error" class="error" style="display: none; visibility: hidden; color: #b00020; font-size: 0.875rem;" aria-live="polite"></div>
         </div>
         <div class="form-row">
           <label class="small checkbox-label-right" for="login-remember">
@@ -252,7 +252,15 @@
     
     <!-- Initialize form validation -->
     <script defer>
-      document.addEventListener('DOMContentLoaded', function() {
+      // Wait for dependencies to load before initializing
+      function initFormValidation() {
+        // Check if dependencies are loaded
+        if (typeof FormValidator === 'undefined' || typeof ErrorBoundary === 'undefined') {
+          // Retry after a short delay
+          setTimeout(initFormValidation, 50);
+          return;
+        }
+        
         // Initialize error boundary
         window.errorBoundary = new ErrorBoundary({
           onError: function(errorInfo) {
@@ -328,7 +336,14 @@
             // The existing auth-init.js will handle the actual submission
           });
         }
-      });
+      }
+      
+      // Start initialization when DOM is ready
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initFormValidation);
+      } else {
+        initFormValidation();
+      }
     </script>
   </div>
 </main>
