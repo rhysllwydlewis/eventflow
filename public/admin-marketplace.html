@@ -288,6 +288,7 @@
         </div>
         <div class="listing-actions">
           <span class="status-badge status-${listing.status}">${listing.status}</span>
+          <button class="cta" onclick="editListing('${listing.id}')">✏️ Edit</button>
           ${listing.status === 'pending' ? `
             <button class="cta" onclick="approveListing('${listing.id}', true)">Approve</button>
             <button class="cta secondary" onclick="approveListing('${listing.id}', false)">Reject</button>
@@ -361,6 +362,137 @@
     }
   };
 
+  // Edit listing
+  window.editListing = function(id) {
+    const listing = allListings.find(l => l.id === id);
+    if (!listing) return;
+
+    // Create modal for editing
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+      padding: 20px;
+    `;
+
+    modal.innerHTML = `
+      <div style="background: white; border-radius: 12px; padding: 24px; max-width: 600px; width: 100%; max-height: 90vh; overflow-y: auto;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <h2 style="margin: 0;">Edit Listing</h2>
+          <button id="closeModal" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #666;">&times;</button>
+        </div>
+        <form id="editListingForm" style="display: flex; flex-direction: column; gap: 16px;">
+          <div>
+            <label style="display: block; margin-bottom: 4px; font-weight: 500;">Title</label>
+            <input type="text" id="editTitle" value="${escapeHtml(listing.title)}" required style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px;">
+          </div>
+          <div>
+            <label style="display: block; margin-bottom: 4px; font-weight: 500;">Description</label>
+            <textarea id="editDescription" rows="4" required style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px;">${escapeHtml(listing.description)}</textarea>
+          </div>
+          <div>
+            <label style="display: block; margin-bottom: 4px; font-weight: 500;">Price (£)</label>
+            <input type="number" id="editPrice" value="${listing.price}" required min="0" step="0.01" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px;">
+          </div>
+          <div>
+            <label style="display: block; margin-bottom: 4px; font-weight: 500;">Location</label>
+            <input type="text" id="editLocation" value="${escapeHtml(listing.location || '')}" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px;">
+          </div>
+          <div>
+            <label style="display: block; margin-bottom: 4px; font-weight: 500;">Category</label>
+            <select id="editCategory" required style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px;">
+              <option value="furniture" ${listing.category === 'furniture' ? 'selected' : ''}>Furniture</option>
+              <option value="electronics" ${listing.category === 'electronics' ? 'selected' : ''}>Electronics</option>
+              <option value="clothing" ${listing.category === 'clothing' ? 'selected' : ''}>Clothing</option>
+              <option value="books" ${listing.category === 'books' ? 'selected' : ''}>Books</option>
+              <option value="toys" ${listing.category === 'toys' ? 'selected' : ''}>Toys</option>
+              <option value="sports" ${listing.category === 'sports' ? 'selected' : ''}>Sports</option>
+              <option value="home" ${listing.category === 'home' ? 'selected' : ''}>Home & Garden</option>
+              <option value="other" ${listing.category === 'other' ? 'selected' : ''}>Other</option>
+            </select>
+          </div>
+          <div>
+            <label style="display: block; margin-bottom: 4px; font-weight: 500;">Condition</label>
+            <select id="editCondition" required style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px;">
+              <option value="new" ${listing.condition === 'new' ? 'selected' : ''}>New</option>
+              <option value="like-new" ${listing.condition === 'like-new' ? 'selected' : ''}>Like New</option>
+              <option value="good" ${listing.condition === 'good' ? 'selected' : ''}>Good</option>
+              <option value="fair" ${listing.condition === 'fair' ? 'selected' : ''}>Fair</option>
+              <option value="poor" ${listing.condition === 'poor' ? 'selected' : ''}>Poor</option>
+            </select>
+          </div>
+          <div>
+            <label style="display: block; margin-bottom: 4px; font-weight: 500;">Status</label>
+            <select id="editStatus" required style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px;">
+              <option value="pending" ${listing.status === 'pending' ? 'selected' : ''}>Pending</option>
+              <option value="active" ${listing.status === 'active' ? 'selected' : ''}>Active</option>
+              <option value="sold" ${listing.status === 'sold' ? 'selected' : ''}>Sold</option>
+              <option value="removed" ${listing.status === 'removed' ? 'selected' : ''}>Removed</option>
+            </select>
+          </div>
+          <div style="display: flex; gap: 12px; margin-top: 8px;">
+            <button type="submit" class="cta" style="flex: 1;">Save Changes</button>
+            <button type="button" id="cancelEdit" class="cta secondary" style="flex: 1;">Cancel</button>
+          </div>
+        </form>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // Close modal handlers
+    const closeModal = () => modal.remove();
+    modal.querySelector('#closeModal').addEventListener('click', closeModal);
+    modal.querySelector('#cancelEdit').addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) closeModal();
+    });
+
+    // Form submit
+    modal.querySelector('#editListingForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const updatedData = {
+        title: modal.querySelector('#editTitle').value,
+        description: modal.querySelector('#editDescription').value,
+        price: parseFloat(modal.querySelector('#editPrice').value),
+        location: modal.querySelector('#editLocation').value,
+        category: modal.querySelector('#editCategory').value,
+        condition: modal.querySelector('#editCondition').value,
+        status: modal.querySelector('#editStatus').value
+      };
+
+      try {
+        const res = await fetch(`/api/marketplace/listings/${id}`, {
+          method: 'PUT',
+          headers: { 
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': window.__CSRF_TOKEN__ || ''
+          },
+          credentials: 'include',
+          body: JSON.stringify(updatedData)
+        });
+
+        if (!res.ok) throw new Error('Failed to update listing');
+
+        showToast('Listing updated successfully');
+        closeModal();
+        await loadListings();
+      } catch (error) {
+        console.error('Error updating listing:', error);
+        showToast('Failed to update listing', 'error');
+      }
+    });
+  };
+
   // Show toast notification
   function showToast(message, type = 'success') {
     const toast = document.createElement('div');
@@ -412,5 +544,6 @@
   await loadListings();
 })();
 </script>
+<script src="/assets/js/cookie-consent.js" defer></script>
 </body>
 </html>

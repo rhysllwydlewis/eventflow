@@ -139,7 +139,7 @@
 body {
   margin: 0;
   margin-left: 260px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0B8073 0%, #13B6A2 100%);
   background-attachment: fixed;
   min-height: 100vh;
   transition: margin-left 0.3s ease;
@@ -205,8 +205,8 @@ main.section {
 
 .btn-icon:hover {
   background: #f3f4f6;
-  border-color: #667eea;
-  color: #667eea;
+  border-color: #0B8073;
+  color: #0B8073;
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
 }
@@ -255,7 +255,7 @@ main.section {
   left: 0;
   right: 0;
   height: 4px;
-  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(90deg, #0B8073 0%, #13B6A2 100%);
   opacity: 0;
   transition: opacity 0.3s;
 }
@@ -404,7 +404,7 @@ main.section {
 .btn-mod {
   width: 100%;
   padding: 0.75rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0B8073 0%, #13B6A2 100%);
   color: white;
   border: none;
   border-radius: 10px;
@@ -442,7 +442,7 @@ main.section {
 }
 
 .action-btn:hover {
-  border-color: #667eea;
+  border-color: #0B8073;
   background: #f8f9ff;
   transform: translateY(-2px);
   box-shadow: 0 4px 8px -2px rgba(102, 126, 234, 0.2);
@@ -541,13 +541,13 @@ th.sortable:hover::after {
 th.sorted-asc::after {
   content: '↑';
   opacity: 1;
-  color: #667eea;
+  color: #0B8073;
 }
 
 th.sorted-desc::after {
   content: '↓';
   opacity: 1;
-  color: #667eea;
+  color: #0B8073;
 }
 
 td {
@@ -599,7 +599,7 @@ tbody tr.selected td {
 
 .search-input:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: #0B8073;
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
@@ -615,7 +615,7 @@ tbody tr.selected td {
 
 .filter-select:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: #0B8073;
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
@@ -650,7 +650,7 @@ tbody tr.selected td {
 }
 
 .btn-accent {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0B8073 0%, #13B6A2 100%);
   color: white;
   border: none;
 }
@@ -685,7 +685,7 @@ tbody tr.selected td {
 }
 
 .analytics-grid b {
-  color: #667eea;
+  color: #0B8073;
   font-weight: 600;
 }
 
@@ -712,7 +712,7 @@ tbody tr.selected td {
 }
 
 .admin-nav-link.active {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0B8073 0%, #13B6A2 100%);
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 }
 
@@ -830,7 +830,7 @@ tbody tr.selected td {
 
 /* Stat Icon Gradient Variations */
 .stat-icon-purple {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0B8073 0%, #13B6A2 100%);
 }
 
 .stat-icon-pink {
@@ -1348,7 +1348,7 @@ tbody tr.selected td {
 
 /* Stat box gradient backgrounds */
 .stat-box-purple {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0B8073 0%, #13B6A2 100%);
 }
 
 .stat-box-pink {
@@ -1425,7 +1425,7 @@ tbody tr.selected td {
 }
 
 .badge-pro {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0B8073 0%, #13B6A2 100%);
   color: white;
 }
 
@@ -1532,7 +1532,7 @@ tbody tr.selected td {
 }
 
 .subscription-status-card {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0B8073 0%, #13B6A2 100%);
   color: white;
   padding: 20px;
   border-radius: 12px;
@@ -1574,7 +1574,7 @@ tbody tr.selected td {
 
 .form-control:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: #0B8073;
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
@@ -1674,8 +1674,8 @@ tbody tr.selected td {
 
 .pagination-btn:hover:not(:disabled) {
   background: #f9fafb;
-  border-color: #667eea;
-  color: #667eea;
+  border-color: #0B8073;
+  color: #0B8073;
 }
 
 .pagination-btn:disabled {
@@ -1684,9 +1684,9 @@ tbody tr.selected td {
 }
 
 .pagination-btn.active {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0B8073 0%, #13B6A2 100%);
   color: white;
-  border-color: #667eea;
+  border-color: #0B8073;
 }
 
 .page-size-selector {
@@ -1784,7 +1784,7 @@ tbody tr.selected td {
 .floating-label-group textarea:focus,
 .floating-label-group select:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: #0B8073;
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
@@ -1796,7 +1796,7 @@ tbody tr.selected td {
 .floating-label-group select:not([value=""]) + label {
   top: 0;
   font-size: 12px;
-  color: #667eea;
+  color: #0B8073;
 }
 
 .form-error {
@@ -1857,7 +1857,7 @@ tbody tr.selected td {
 }
 
 .toggle-switch input:checked + .toggle-slider {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0B8073 0%, #13B6A2 100%);
 }
 
 .toggle-switch input:checked + .toggle-slider:before {
@@ -2263,12 +2263,12 @@ tbody tr.selected td {
   align-items: center;
   justify-content: center;
   font-size: 32px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0B8073 0%, #13B6A2 100%);
   box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
 }
 
 .management-badge {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0B8073 0%, #13B6A2 100%);
   color: white;
   padding: 8px 16px;
   border-radius: 20px;
@@ -2328,7 +2328,7 @@ tbody tr.selected td {
 .btn-manage {
   width: 100%;
   padding: 14px 24px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0B8073 0%, #13B6A2 100%);
   color: white;
   border: none;
   border-radius: 12px;
@@ -2420,7 +2420,7 @@ tbody tr.selected td {
 .stat-card-mini .stat-value {
   font-size: 32px;
   font-weight: 700;
-  color: #667eea;
+  color: #0B8073;
   line-height: 1;
 }
 
@@ -2437,7 +2437,7 @@ tbody tr.selected td {
 
 .btn-xs:hover {
   background: #f9fafb;
-  border-color: #667eea;
+  border-color: #0B8073;
   transform: translateY(-1px);
 }
 
@@ -2454,7 +2454,7 @@ tbody tr.selected td {
 
 .btn-sm:hover {
   background: #f9fafb;
-  border-color: #667eea;
+  border-color: #0B8073;
 }
 
 .btn-sm:disabled {
