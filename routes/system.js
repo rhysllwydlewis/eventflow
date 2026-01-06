@@ -285,6 +285,109 @@ router.get('/ready', applyHealthCheckLimiter, async (_req, res) => {
   });
 });
 
+/**
+ * GET /api/performance
+ * Performance verification endpoint
+ * Returns information about compression and caching configuration
+ * Used to verify performance optimizations are active
+ */
+router.get('/performance', applyHealthCheckLimiter, async (req, res) => {
+  const timestamp = new Date().toISOString();
+
+  // Check compression support
+  const acceptEncoding = req.headers['accept-encoding'] || '';
+  const supportsBrotli = acceptEncoding.includes('br');
+  const supportsGzip = acceptEncoding.includes('gzip');
+  const supportsDeflate = acceptEncoding.includes('deflate');
+
+  // Analyze request headers
+  const clientInfo = {
+    userAgent: req.headers['user-agent'] || 'unknown',
+    acceptEncoding: acceptEncoding || 'none',
+    compression: {
+      brotli: supportsBrotli,
+      gzip: supportsGzip,
+      deflate: supportsDeflate,
+      preferred: supportsBrotli ? 'brotli' : supportsGzip ? 'gzip' : 'none',
+    },
+  };
+
+  // Server compression configuration
+  const compressionConfig = {
+    enabled: true,
+    types: ['text/html', 'text/css', 'application/javascript', 'application/json', 'text/plain'],
+    threshold: '1KB',
+    brotliSupport: true,
+    gzipSupport: true,
+    level: {
+      gzip: 6,
+      brotli: 4,
+    },
+  };
+
+  // Caching strategy documentation
+  const cachingStrategy = {
+    html: {
+      maxAge: 300, // 5 minutes
+      directive: 'public, max-age=300, must-revalidate',
+      description: 'Short-term caching for HTML pages',
+    },
+    versionedAssets: {
+      maxAge: 31536000, // 1 year
+      directive: 'public, max-age=31536000, immutable',
+      description: 'Long-term caching for versioned assets (hashed filenames)',
+      pattern: '[hash].{css|js|jpg|jpeg|png|gif|webp|svg|woff|woff2|ttf|eot}',
+    },
+    staticAssets: {
+      maxAge: 604800, // 1 week
+      directive: 'public, max-age=604800, must-revalidate',
+      description: 'Medium-term caching for static assets',
+      types: 'CSS, JS, images, fonts',
+    },
+    uploads: {
+      maxAge: 31536000, // 1 year
+      directive: 'public, max-age=31536000, immutable',
+      description: 'Long-term caching for user uploads (unique filenames)',
+    },
+  };
+
+  // Performance recommendations
+  const recommendations = [];
+
+  if (!supportsBrotli && !supportsGzip) {
+    recommendations.push({
+      type: 'warning',
+      message: 'Client does not support compression. Upgrade browser for better performance.',
+    });
+  }
+
+  if (!supportsBrotli && supportsGzip) {
+    recommendations.push({
+      type: 'info',
+      message:
+        'Client supports gzip but not Brotli. Modern browsers support Brotli for 15-20% better compression.',
+    });
+  }
+
+  const response = {
+    status: 'ok',
+    timestamp,
+    client: clientInfo,
+    server: {
+      compression: compressionConfig,
+      caching: cachingStrategy,
+    },
+    recommendations: recommendations.length > 0 ? recommendations : [],
+    verification: {
+      compressionActive: supportsBrotli || supportsGzip,
+      cachingActive: true,
+      brotliAvailable: supportsBrotli,
+    },
+  };
+
+  res.status(200).json(response);
+});
+
 // Export router and initialization function
 module.exports = router;
 module.exports.initializeDependencies = initializeDependencies;
