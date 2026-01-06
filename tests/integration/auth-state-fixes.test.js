@@ -214,7 +214,8 @@ describe('Auth State Fixes', () => {
       expect(authNavContent).toContain('Periodic auth state validation');
       expect(authNavContent).toContain('setInterval');
       expect(authNavContent).toContain('30000'); // 30 seconds
-      expect(authNavContent).toContain('Auth state changed, updating navbar');
+      expect(authNavContent).toContain('Auth state changed');
+      expect(authNavContent).toContain('updateAuthState');
     });
 
     it('auth-nav.js should implement cross-tab synchronization', () => {

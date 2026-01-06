@@ -222,13 +222,18 @@
       // Update navbar immediately to show logged-out state
       initAuthNav(null);
 
-      // Call logout endpoint and wait for completion
-      try {
-        const response = await fetch('/api/auth/logout', {
+      // Helper to call logout endpoint
+      const callLogout = async () => {
+        return await fetch('/api/auth/logout', {
           method: 'POST',
           headers: { 'X-CSRF-Token': window.__CSRF_TOKEN__ || '' },
           credentials: 'include',
         });
+      };
+
+      // Call logout endpoint and wait for completion
+      try {
+        const response = await callLogout();
 
         // Re-check auth state to verify logout completed
         if (response.ok) {
@@ -236,11 +241,7 @@
           if (currentUser) {
             // Logout didn't complete properly - retry once
             console.warn('Logout verification failed, retrying...');
-            await fetch('/api/auth/logout', {
-              method: 'POST',
-              headers: { 'X-CSRF-Token': window.__CSRF_TOKEN__ || '' },
-              credentials: 'include',
-            });
+            await callLogout();
           }
         }
       } catch (_) {
@@ -353,6 +354,14 @@
   // --- Periodic auth state validation ---
   // Re-verify auth state every 30 seconds to catch token expiration or stale state
   let lastKnownAuthState = user;
+
+  // Helper to update auth state
+  const updateAuthState = (currentUser, reason) => {
+    console.log(`${reason}, updating navbar...`);
+    lastKnownAuthState = currentUser;
+    initAuthNav(currentUser);
+  };
+
   setInterval(async () => {
     try {
       const currentUser = await me();
@@ -361,15 +370,11 @@
 
       // Check if auth state changed
       if (wasLoggedIn !== isLoggedIn) {
-        console.log('Auth state changed, updating navbar...');
-        lastKnownAuthState = currentUser;
-        initAuthNav(currentUser);
-      } else if (isLoggedIn && currentUser && lastKnownAuthState) {
+        updateAuthState(currentUser, 'Auth state changed');
+      } else if (currentUser && lastKnownAuthState) {
         // Check if role changed (edge case)
         if (currentUser.role !== lastKnownAuthState.role) {
-          console.log('User role changed, updating navbar...');
-          lastKnownAuthState = currentUser;
-          initAuthNav(currentUser);
+          updateAuthState(currentUser, 'User role changed');
         }
       }
     } catch (error) {
