@@ -1097,11 +1097,11 @@ app.post('/api/auth/logout', csrfProtection, async (_req, res) => {
 app.get('/api/auth/me', async (req, res) => {
   const p = getUserFromCookie(req);
   if (!p) {
-    return res.status(401).json({ error: 'Not authenticated' });
+    return res.status(200).json({ user: null });
   }
   const u = (await dbUnified.read('users')).find(x => x.id === p.id);
   if (!u) {
-    return res.status(401).json({ error: 'User not found' });
+    return res.status(200).json({ user: null });
   }
 
   // Enforce owner account always has admin role
@@ -1146,11 +1146,11 @@ app.get('/api/user', async (req, res) => {
   res.set('Link', '</api/auth/me>; rel="canonical"');
   const p = getUserFromCookie(req);
   if (!p) {
-    return res.status(401).json({ error: 'Not authenticated' });
+    return res.status(200).json({ user: null });
   }
   const u = (await dbUnified.read('users')).find(x => x.id === p.id);
   if (!u) {
-    return res.status(401).json({ error: 'User not found' });
+    return res.status(200).json({ user: null });
   }
 
   // Enforce owner account always has admin role (consistent with /api/auth/me)

@@ -42,6 +42,7 @@ function configureHelmet() {
           'https://hcaptcha.com',
           'https://*.hcaptcha.com',
           'https://js.stripe.com',
+          'https://static.cloudflareinsights.com',
         ],
         scriptSrcAttr: ["'unsafe-inline'"], // Allow inline event handlers (onclick, onerror, etc.)
         styleSrc: [
@@ -74,6 +75,7 @@ function configureHelmet() {
           'https://hcaptcha.com',
           'https://*.hcaptcha.com',
           'https://api.stripe.com',
+          'https://static.cloudflareinsights.com',
         ],
         frameSrc: [
           "'self'",

@@ -7,14 +7,18 @@ BIMI (Brand Indicators for Message Identification) allows your brand logo to app
 ## Prerequisites
 
 ### DMARC Policy
+
 BIMI requires a DMARC policy with enforcement enabled. Your domain must have a DMARC TXT record with either:
+
 - `p=quarantine` (recommended minimum), or
 - `p=reject` (highest security)
 
 You can check your current DMARC policy at: `_dmarc.event-flow.co.uk`
 
 ### Logo Requirements
+
 The BIMI logo must be:
+
 - SVG format (SVG Tiny 1.2 PS profile)
 - Served over HTTPS
 - Square aspect ratio (recommended)
@@ -29,11 +33,13 @@ EventFlow's BIMI logo is available at: `https://event-flow.co.uk/bimi.svg`
 Add the following DNS TXT record to your domain:
 
 **Host/Name:**
+
 ```
 default._bimi
 ```
 
 **Value:**
+
 ```
 v=BIMI1; l=https://event-flow.co.uk/bimi.svg;
 ```
@@ -41,13 +47,16 @@ v=BIMI1; l=https://event-flow.co.uk/bimi.svg;
 **TTL:** 3600 (or your default)
 
 ### DNS Record Details
+
 - `v=BIMI1` - BIMI version
 - `l=` - Location of the logo SVG file (must be HTTPS)
 
 ### Optional: Verified Mark Certificate (VMC)
+
 Some email providers (especially Gmail for organizational accounts) require a Verified Mark Certificate (VMC). This is a digitally signed certificate that proves trademark ownership.
 
 To add a VMC, modify the BIMI record to include the `a=` parameter:
+
 ```
 v=BIMI1; l=https://event-flow.co.uk/bimi.svg; a=https://example.com/certificate.pem;
 ```
@@ -57,7 +66,9 @@ VMCs are issued by authorized providers (e.g., DigiCert, Entrust) and typically 
 ## Verification Steps
 
 ### 1. Verify DNS Record Propagation
+
 Use a DNS lookup tool to verify your BIMI record:
+
 ```bash
 nslookup -type=TXT default._bimi.event-flow.co.uk
 ```
@@ -65,7 +76,9 @@ nslookup -type=TXT default._bimi.event-flow.co.uk
 Or use an online DNS checker.
 
 ### 2. Verify Logo Accessibility
+
 Confirm the logo is publicly accessible:
+
 ```bash
 curl -I https://event-flow.co.uk/bimi.svg
 ```
@@ -73,13 +86,17 @@ curl -I https://event-flow.co.uk/bimi.svg
 Should return `200 OK` with `Content-Type: image/svg+xml`
 
 ### 3. Test BIMI Implementation
+
 Use these tools to validate your BIMI setup:
+
 - [BIMI Group Inspector](https://bimigroup.org/bimi-generator/)
 - [MXToolbox BIMI Lookup](https://mxtoolbox.com/bimi.aspx)
 - Send a test email to a Gmail or Yahoo account and check if the logo appears
 
 ### 4. Timeline
+
 BIMI display can take time:
+
 - DNS propagation: Up to 48 hours (usually much faster)
 - Email provider caching: Several hours to days
 - Logo appears gradually as email reputation builds
@@ -87,6 +104,7 @@ BIMI display can take time:
 ## Troubleshooting
 
 ### Logo Not Appearing
+
 1. **Check DMARC policy**: Must be `p=quarantine` or `p=reject`
 2. **Verify DNS record**: Use DNS lookup tools to confirm proper configuration
 3. **Check SVG accessibility**: Ensure HTTPS, no authentication required
@@ -94,6 +112,7 @@ BIMI display can take time:
 5. **Domain reputation**: New domains may take time to build reputation
 
 ### Common Issues
+
 - **Mixed content**: Ensure logo URL uses HTTPS, not HTTP
 - **SVG validation errors**: Check that SVG complies with Tiny PS profile
 - **DNS propagation**: Allow 24-48 hours for full propagation
