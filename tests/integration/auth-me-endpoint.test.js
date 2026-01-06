@@ -16,6 +16,15 @@ describe('Auth Me Endpoint', () => {
       expect(serverContent).toContain('getUserFromCookie');
     });
 
+    it('should return 200 with { user: null } for unauthenticated users', () => {
+      const serverContent = fs.readFileSync(path.join(__dirname, '../../server.js'), 'utf8');
+
+      // Verify the endpoint returns 200 with { user: null } for unauthenticated users
+      const authMeEndpoint = serverContent.match(/app\.get\('\/api\/auth\/me'[\s\S]*?^\}\);/m);
+      expect(authMeEndpoint).toBeTruthy();
+      expect(authMeEndpoint[0]).toContain('res.status(200).json({ user: null })');
+    });
+
     it('should return wrapped response format with user property', () => {
       const serverContent = fs.readFileSync(path.join(__dirname, '../../server.js'), 'utf8');
 
