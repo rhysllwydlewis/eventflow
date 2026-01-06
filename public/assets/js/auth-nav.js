@@ -175,7 +175,7 @@
         return null;
       }
       const data = await r.json();
-      return data || null;
+      return data.user || null;
     } catch (_) {
       return null;
     }
@@ -215,6 +215,7 @@
       // Clear any auth-related storage
       try {
         localStorage.removeItem('eventflow_onboarding_new');
+        localStorage.removeItem('user');
         sessionStorage.clear();
       } catch (_) {
         /* Ignore storage errors */

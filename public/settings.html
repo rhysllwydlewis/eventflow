@@ -157,7 +157,7 @@
       
       if (!user) {
         // Not logged in, redirect to login
-        window.location.href = '/auth.html?return=' + encodeURIComponent(window.location.href);
+        window.location.href = '/auth.html?redirect=' + encodeURIComponent(window.location.href);
         return;
       }
       

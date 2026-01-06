@@ -100,7 +100,7 @@ const AdminShared = (function () {
             if (currentPath !== '/auth.html') {
               // Validate that we're staying on the same origin
               const returnUrl = encodeURIComponent(window.location.href);
-              const loginUrl = `/auth.html?return=${returnUrl}`;
+              const loginUrl = `/auth.html?redirect=${returnUrl}`;
               // Ensure the redirect is to the same origin
               if (loginUrl.startsWith('/')) {
                 window.location.href = loginUrl;

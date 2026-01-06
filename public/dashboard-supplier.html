@@ -477,11 +477,15 @@ function escapeHtml(unsafe) {
     if (user) {
       // Personalize welcome message - using textContent is safe but also escape for consistency
       const welcomeHeading = document.getElementById('welcome-heading');
-      if (welcomeHeading && user.firstName) {
-        welcomeHeading.textContent = `Welcome ${escapeHtml(user.firstName)} to your supplier dashboard!`;
-      } else if (welcomeHeading && user.name) {
-        const firstName = user.name.split(' ')[0];
-        welcomeHeading.textContent = `Welcome ${escapeHtml(firstName)} to your supplier dashboard!`;
+      if (welcomeHeading) {
+        if (user.firstName) {
+          welcomeHeading.textContent = `Welcome ${escapeHtml(user.firstName)}!`;
+        } else if (user.name) {
+          const firstName = user.name.split(' ')[0];
+          welcomeHeading.textContent = `Welcome ${escapeHtml(firstName)}!`;
+        } else {
+          welcomeHeading.textContent = `Welcome to your Supplier Dashboard!`;
+        }
       }
     }
   } catch (error) {
