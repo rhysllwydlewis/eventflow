@@ -45,9 +45,18 @@
   <div id="supplier-pro-ribbon" class="pro-ribbon" style="display:none"></div>
 
 <!-- Welcome Section -->
-<div class="card" style="background:linear-gradient(135deg, #0B8073 0%, #0a6b5f 100%);color:white;margin-bottom:1rem;">
-  <h1 style="margin:0 0 0.5rem 0;color:white;">Supplier Dashboard</h1>
-  <p class="small" style="color:rgba(255,255,255,0.9);margin:0;">Manage your supplier profiles, packages, and customer inquiries.</p>
+<div id="welcome-section" class="card" style="background:linear-gradient(135deg, #0B8073 0%, #0a6b5f 100%);color:white;margin-bottom:1rem;">
+  <h1 id="welcome-heading" style="margin:0 0 0.5rem 0;color:white;">Supplier Dashboard</h1>
+  <p class="small" style="color:rgba(255,255,255,0.9);margin:0 0 1rem 0;">Manage your supplier profiles, packages, and customer inquiries.</p>
+  <div id="what-you-can-do" style="margin-top:1rem;padding-top:1rem;border-top:1px solid rgba(255,255,255,0.2);">
+    <h3 style="margin:0 0 0.5rem 0;color:white;font-size:1.1rem;">What you can do from here:</h3>
+    <ul style="margin:0;padding-left:1.25rem;color:rgba(255,255,255,0.95);font-size:0.95rem;">
+      <li style="margin-bottom:0.25rem;">Create and manage your supplier profiles</li>
+      <li style="margin-bottom:0.25rem;">Add and edit service packages</li>
+      <li style="margin-bottom:0.25rem;">Respond to customer inquiries and support tickets</li>
+      <li style="margin-bottom:0.25rem;">Track conversations with potential clients</li>
+    </ul>
+  </div>
 </div>
 
 <!-- Quick Actions Section -->
@@ -444,6 +453,34 @@
   displaySubscriptionStatus();
 </script>
 <script>window.__EF_PAGE__='dash_supplier'</script>
+<script>
+// Check auth and personalize dashboard
+(async function() {
+  try {
+    const response = await fetch('/api/auth/me', { credentials: 'include' });
+    if (!response.ok) {
+      // Redirect to login if not authenticated
+      window.location.href = '/auth.html?redirect=' + encodeURIComponent(window.location.pathname);
+      return;
+    }
+    const data = await response.json();
+    const user = data.user;
+    
+    if (user) {
+      // Personalize welcome message
+      const welcomeHeading = document.getElementById('welcome-heading');
+      if (welcomeHeading && user.firstName) {
+        welcomeHeading.textContent = `Welcome ${user.firstName} to your supplier dashboard!`;
+      } else if (welcomeHeading && user.name) {
+        const firstName = user.name.split(' ')[0];
+        welcomeHeading.textContent = `Welcome ${firstName} to your supplier dashboard!`;
+      }
+    }
+  } catch (error) {
+    console.error('Failed to load user data:', error);
+  }
+})();
+</script>
 </div></main>
 <footer class="footer" role="contentinfo">
   <div class="container" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
