@@ -175,7 +175,7 @@
         <button class="filter-btn" data-filter="sold">Sold</button>
         <button class="filter-btn" data-filter="removed">Removed</button>
       </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
         <input type="text" id="searchInput" placeholder="Search listings..." style="flex:1;min-width:200px">
         <select id="categoryFilter">
           <option value="">All Categories</option>
@@ -186,7 +186,19 @@
           <option value="party-supplies">Party Supplies</option>
           <option value="florals">Florals</option>
         </select>
+        <button class="cta secondary" id="exportListingsBtn" title="Export listings to CSV">
+          📥 Export
+        </button>
       </div>
+    </div>
+
+    <!-- Bulk Actions Bar -->
+    <div id="bulkActionsBar" style="display:none;margin-bottom:16px;padding:12px 16px;background:#f3f4f6;border-radius:8px;align-items:center;gap:12px;">
+      <input type="checkbox" id="selectAll" style="cursor:pointer">
+      <span id="selectedCount" style="flex:1;font-weight:500;">0 selected</span>
+      <button class="cta" onclick="bulkApprove()" style="padding:6px 12px;font-size:14px;">Approve Selected</button>
+      <button class="cta secondary" onclick="bulkMarkSold()" style="padding:6px 12px;font-size:14px;">Mark Sold</button>
+      <button class="cta ghost" onclick="bulkDelete()" style="padding:6px 12px;font-size:14px;">Delete Selected</button>
     </div>
 
     <!-- Listings -->
@@ -202,6 +214,7 @@
 
   let allListings = [];
   let currentFilter = 'all';
+  const selectedListings = new Set();
 
   // Fetch listings
   async function loadListings() {
@@ -212,8 +225,10 @@
       if (!res.ok) throw new Error('Failed to fetch listings');
       const data = await res.json();
       allListings = data.listings || [];
+      selectedListings.clear();
       updateStats();
       renderListings();
+      updateBulkActionsBar();
     } catch (error) {
       console.error('Error loading listings:', error);
       document.getElementById('listings-container').innerHTML = 
@@ -266,7 +281,8 @@
 
     container.innerHTML = filtered.map(listing => `
       <div class="listing-card">
-        <div>
+        <div style="display:flex;align-items:flex-start;gap:8px;">
+          <input type="checkbox" onchange="toggleSelection('${listing.id}')" ${selectedListings.has(listing.id) ? 'checked' : ''} style="margin-top:4px;cursor:pointer;">
           ${listing.images && listing.images[0] 
             ? `<img src="${listing.images[0]}" alt="${listing.title}" class="listing-image">`
             : '<div class="listing-image"></div>'
@@ -519,6 +535,171 @@
     div.textContent = text;
     return div.innerHTML;
   }
+
+  // Toggle selection
+  window.toggleSelection = function(id) {
+    if (selectedListings.has(id)) {
+      selectedListings.delete(id);
+    } else {
+      selectedListings.add(id);
+    }
+    updateBulkActionsBar();
+  };
+
+  // Update bulk actions bar
+  function updateBulkActionsBar() {
+    const bar = document.getElementById('bulkActionsBar');
+    const count = document.getElementById('selectedCount');
+    const selectAll = document.getElementById('selectAll');
+    
+    if (selectedListings.size > 0) {
+      bar.style.display = 'flex';
+      count.textContent = `${selectedListings.size} selected`;
+    } else {
+      bar.style.display = 'none';
+    }
+    
+    // Update select all checkbox
+    const filtered = getFilteredListings();
+    selectAll.checked = filtered.length > 0 && filtered.every(l => selectedListings.has(l.id));
+  }
+
+  // Get filtered listings
+  function getFilteredListings() {
+    let filtered = allListings;
+    const search = document.getElementById('searchInput').value.toLowerCase();
+    const category = document.getElementById('categoryFilter').value;
+    
+    if (currentFilter !== 'all') {
+      filtered = filtered.filter(l => l.status === currentFilter);
+    }
+    if (search) {
+      filtered = filtered.filter(l => 
+        l.title.toLowerCase().includes(search) ||
+        l.description.toLowerCase().includes(search) ||
+        l.userEmail.toLowerCase().includes(search)
+      );
+    }
+    if (category) {
+      filtered = filtered.filter(l => l.category === category);
+    }
+    
+    return filtered;
+  }
+
+  // Select all handler
+  document.getElementById('selectAll').addEventListener('change', function(e) {
+    const filtered = getFilteredListings();
+    if (e.target.checked) {
+      filtered.forEach(l => selectedListings.add(l.id));
+    } else {
+      filtered.forEach(l => selectedListings.delete(l.id));
+    }
+    renderListings();
+    updateBulkActionsBar();
+  });
+
+  // Bulk approve
+  window.bulkApprove = async function() {
+    if (selectedListings.size === 0) return;
+    if (!confirm(`Approve ${selectedListings.size} listing(s)?`)) return;
+
+    try {
+      const promises = Array.from(selectedListings).map(id =>
+        fetch(`/api/admin/marketplace/listings/${id}/approve`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': window.__CSRF_TOKEN__ || '' },
+          credentials: 'include',
+          body: JSON.stringify({ approved: true })
+        })
+      );
+      await Promise.all(promises);
+      showToast(`Approved ${selectedListings.size} listing(s)`);
+      await loadListings();
+    } catch (error) {
+      console.error('Error bulk approving:', error);
+      showToast('Failed to approve some listings', 'error');
+    }
+  };
+
+  // Bulk mark sold
+  window.bulkMarkSold = async function() {
+    if (selectedListings.size === 0) return;
+    if (!confirm(`Mark ${selectedListings.size} listing(s) as sold?`)) return;
+
+    try {
+      const promises = Array.from(selectedListings).map(id =>
+        fetch(`/api/marketplace/listings/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': window.__CSRF_TOKEN__ || '' },
+          credentials: 'include',
+          body: JSON.stringify({ status: 'sold' })
+        })
+      );
+      await Promise.all(promises);
+      showToast(`Marked ${selectedListings.size} listing(s) as sold`);
+      await loadListings();
+    } catch (error) {
+      console.error('Error bulk marking sold:', error);
+      showToast('Failed to mark some listings as sold', 'error');
+    }
+  };
+
+  // Bulk delete
+  window.bulkDelete = async function() {
+    if (selectedListings.size === 0) return;
+    if (!confirm(`Delete ${selectedListings.size} listing(s)? This cannot be undone.`)) return;
+
+    try {
+      const promises = Array.from(selectedListings).map(id =>
+        fetch(`/api/marketplace/listings/${id}`, {
+          method: 'DELETE',
+          headers: { 'X-CSRF-Token': window.__CSRF_TOKEN__ || '' },
+          credentials: 'include'
+        })
+      );
+      await Promise.all(promises);
+      showToast(`Deleted ${selectedListings.size} listing(s)`);
+      await loadListings();
+    } catch (error) {
+      console.error('Error bulk deleting:', error);
+      showToast('Failed to delete some listings', 'error');
+    }
+  };
+
+  // Export listings
+  document.getElementById('exportListingsBtn').addEventListener('click', function() {
+    const filtered = getFilteredListings();
+    if (filtered.length === 0) {
+      showToast('No listings to export', 'error');
+      return;
+    }
+
+    const csv = [
+      ['Title', 'Description', 'Price', 'Category', 'Condition', 'Status', 'Location', 'Posted By', 'Created At'].join(','),
+      ...filtered.map(l => [
+        `"${l.title.replace(/"/g, '""')}"`,
+        `"${l.description.replace(/"/g, '""').slice(0, 100)}"`,
+        l.price,
+        l.category,
+        l.condition,
+        l.status,
+        `"${(l.location || '').replace(/"/g, '""')}"`,
+        l.userEmail,
+        new Date(l.createdAt).toISOString()
+      ].join(','))
+    ].join('\n');
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `marketplace-listings-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    showToast(`Exported ${filtered.length} listing(s)`);
+  });
 
   // Filter buttons
   document.querySelectorAll('.filter-btn').forEach(btn => {
