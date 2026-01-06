@@ -94,38 +94,36 @@ describe('JadeAssist Widget Pinning', () => {
   });
 
   describe('Widget Initialization', () => {
-    it('should have jadeassist-init.v2.js for reference (simplified version without teaser)', () => {
+    it('should have jadeassist-init.v2.js for widget configuration', () => {
       const initPath = path.join(publicDir, 'assets/js/jadeassist-init.v2.js');
       expect(fs.existsSync(initPath)).toBe(true);
     });
 
-    it('should have jadeassist-init.js with custom teaser functionality', () => {
+    it('should have legacy jadeassist-init.js for backwards compatibility', () => {
       const initPath = path.join(publicDir, 'assets/js/jadeassist-init.js');
       expect(fs.existsSync(initPath)).toBe(true);
     });
 
-    it('should reference custom teaser init script in HTML files', () => {
+    it('should reference versioned init script in HTML files', () => {
       const htmlFiles = findHtmlFiles(publicDir);
-      const filesWithCustomInit = [];
-      const filesWithOldV2Init = [];
+      const filesWithVersionedInit = [];
+      const filesWithOldInit = [];
 
       for (const filePath of htmlFiles) {
         const content = fs.readFileSync(filePath, 'utf8');
 
-        // Check for jadeassist-init.js (custom teaser version)
-        if (content.match(/\/assets\/js\/jadeassist-init\.js["'\s>]/)) {
-          filesWithCustomInit.push(path.relative(publicDir, filePath));
-        }
-        // Check for old v2 init script reference (no teaser)
         if (content.includes('/assets/js/jadeassist-init.v2.js')) {
-          filesWithOldV2Init.push(path.relative(publicDir, filePath));
+          filesWithVersionedInit.push(path.relative(publicDir, filePath));
+        }
+        // Check for old init script reference (not followed by .v2)
+        if (content.match(/\/assets\/js\/jadeassist-init\.js["'\s>]/)) {
+          filesWithOldInit.push(path.relative(publicDir, filePath));
         }
       }
 
-      // All HTML files with JadeAssist should use the custom teaser init script (v1)
-      // The v2 script was a simplified version without teaser, but users want the teaser back
-      expect(filesWithOldV2Init).toEqual([]);
-      expect(filesWithCustomInit.length).toBeGreaterThan(0);
+      // All HTML files with JadeAssist should use the versioned init script
+      expect(filesWithOldInit).toEqual([]);
+      expect(filesWithVersionedInit.length).toBeGreaterThan(0);
     });
   });
 });
