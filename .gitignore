@@ -159,3 +159,4 @@ DEPLOYMENT_NOTES.md
 # Playwright test results
 playwright-report/
 test-results/
+test-navbar-auth.js

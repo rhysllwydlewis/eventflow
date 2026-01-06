@@ -185,10 +185,44 @@ describe('Auth State Fixes', () => {
     });
 
     it('auth-nav.js should use CSRF token in logout request', () => {
-      const logoutFunction = authNavContent.match(/async function handleLogout[\s\S]*?^\s*}/m);
-      expect(logoutFunction).toBeTruthy();
-      expect(logoutFunction[0]).toContain('X-CSRF-Token');
-      expect(logoutFunction[0]).toContain('window.__CSRF_TOKEN__');
+      // The logout function is now nested inside initAuthNav, so we need to check the whole file
+      expect(authNavContent).toContain('X-CSRF-Token');
+      expect(authNavContent).toContain('window.__CSRF_TOKEN__');
+      expect(authNavContent).toContain('async function handleLogout');
+      expect(authNavContent).toContain('/api/auth/logout');
+    });
+
+    it('auth-nav.js should add cache-busting to /api/auth/me calls', () => {
+      expect(authNavContent).toContain('Date.now()');
+      expect(authNavContent).toContain('/api/auth/me');
+      expect(authNavContent).toContain('Cache-Control');
+      expect(authNavContent).toContain('no-cache');
+    });
+
+    it('auth-nav.js should verify logout completion before redirecting', () => {
+      expect(authNavContent).toContain('Re-check auth state to verify logout completed');
+      expect(authNavContent).toContain('const currentUser = await me()');
+      expect(authNavContent).toContain('Logout verification failed, retrying');
+    });
+
+    it('auth-nav.js should update navbar immediately on logout', () => {
+      expect(authNavContent).toContain('Update navbar immediately to show logged-out state');
+      expect(authNavContent).toContain('initAuthNav(null)');
+    });
+
+    it('auth-nav.js should implement periodic auth state validation', () => {
+      expect(authNavContent).toContain('Periodic auth state validation');
+      expect(authNavContent).toContain('setInterval');
+      expect(authNavContent).toContain('30000'); // 30 seconds
+      expect(authNavContent).toContain('Auth state changed');
+      expect(authNavContent).toContain('updateAuthState');
+    });
+
+    it('auth-nav.js should implement cross-tab synchronization', () => {
+      expect(authNavContent).toContain('Cross-tab auth state synchronization');
+      expect(authNavContent).toContain('addEventListener');
+      expect(authNavContent).toContain('storage');
+      expect(authNavContent).toContain('Logout detected in another tab');
     });
   });
 });
