@@ -454,6 +454,14 @@
 </script>
 <script>window.__EF_PAGE__='dash_supplier'</script>
 <script>
+// Escape HTML helper
+function escapeHtml(unsafe) {
+  if (typeof unsafe !== 'string') return '';
+  const div = document.createElement('div');
+  div.textContent = unsafe;
+  return div.innerHTML;
+}
+
 // Check auth and personalize dashboard
 (async function() {
   try {
@@ -467,13 +475,13 @@
     const user = data.user;
     
     if (user) {
-      // Personalize welcome message
+      // Personalize welcome message - using textContent is safe but also escape for consistency
       const welcomeHeading = document.getElementById('welcome-heading');
       if (welcomeHeading && user.firstName) {
-        welcomeHeading.textContent = `Welcome ${user.firstName} to your supplier dashboard!`;
+        welcomeHeading.textContent = `Welcome ${escapeHtml(user.firstName)} to your supplier dashboard!`;
       } else if (welcomeHeading && user.name) {
         const firstName = user.name.split(' ')[0];
-        welcomeHeading.textContent = `Welcome ${firstName} to your supplier dashboard!`;
+        welcomeHeading.textContent = `Welcome ${escapeHtml(firstName)} to your supplier dashboard!`;
       }
     }
   } catch (error) {
