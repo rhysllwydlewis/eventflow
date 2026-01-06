@@ -2392,6 +2392,10 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!wrapper) {
         return;
       }
+      // Check if toggle already exists
+      if (wrapper.querySelector('.password-toggle')) {
+        return;
+      }
       const toggle = document.createElement('button');
       toggle.type = 'button';
       toggle.className = 'password-toggle';
@@ -2415,6 +2419,12 @@ document.addEventListener('DOMContentLoaded', () => {
     attachPasswordToggle(loginPassword);
     attachPasswordToggle(regPassword);
 
+    // Also attach to confirm password field if it exists
+    const regPasswordConfirm = document.getElementById('reg-password-confirm');
+    if (regPasswordConfirm) {
+      attachPasswordToggle(regPasswordConfirm);
+    }
+
     // Real-time email validation for registration
     if (regEmail) {
       const emailValidationMsg = document.getElementById('email-validation-msg');
@@ -2433,49 +2443,184 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
-    // Password strength indicator for registration
+    // Password strength indicator for registration with progress bar
     if (regPassword) {
       const passwordStrengthMsg = document.getElementById('password-strength-msg');
+      const passwordStrengthBar = document.getElementById('password-strength-bar');
+      const passwordStrengthLabel = document.getElementById('password-strength-label');
+      const passwordStrengthContainer = document.getElementById('password-strength-container');
+      const passwordRequirements = document.getElementById('password-requirements');
+      const reqLength = document.getElementById('req-length');
+      const reqLetter = document.getElementById('req-letter');
+      const reqNumber = document.getElementById('req-number');
+      const capsLockWarning = document.getElementById('caps-lock-warning');
+      const regPasswordConfirm = document.getElementById('reg-password-confirm');
+      const passwordMatchMsg = document.getElementById('password-match-msg');
+
+      // Caps lock warning
+      const checkCapsLock = e => {
+        if (capsLockWarning && e.getModifierState && e.getModifierState('CapsLock')) {
+          capsLockWarning.style.display = 'block';
+        } else if (capsLockWarning) {
+          capsLockWarning.style.display = 'none';
+        }
+      };
+
+      regPassword.addEventListener('keyup', checkCapsLock);
+      if (regPasswordConfirm) {
+        regPasswordConfirm.addEventListener('keyup', checkCapsLock);
+      }
+
+      // Password validation function
+      const validatePassword = password => {
+        const hasLength = password.length >= 8;
+        const hasLetter = /[a-zA-Z]/.test(password);
+        const hasNumber = /[0-9]/.test(password);
+
+        // Update requirements list
+        if (reqLength) {
+          reqLength.style.color = hasLength ? '#10b981' : '#b00020';
+          reqLength.style.fontWeight = hasLength ? '600' : '400';
+        }
+        if (reqLetter) {
+          reqLetter.style.color = hasLetter ? '#10b981' : '#b00020';
+          reqLetter.style.fontWeight = hasLetter ? '600' : '400';
+        }
+        if (reqNumber) {
+          reqNumber.style.color = hasNumber ? '#10b981' : '#b00020';
+          reqNumber.style.fontWeight = hasNumber ? '600' : '400';
+        }
+
+        return hasLength && hasLetter && hasNumber;
+      };
+
+      // Password strength calculation
       regPassword.addEventListener('input', () => {
         const password = regPassword.value;
-        if (password && passwordStrengthMsg) {
-          let strength = 0;
-          let feedback = '';
-          if (password.length >= 8) {
-            strength++;
-          }
-          if (/[a-z]/.test(password)) {
-            strength++;
-          }
-          if (/[A-Z]/.test(password)) {
-            strength++;
-          }
-          if (/[0-9]/.test(password)) {
-            strength++;
-          }
-          if (/[^a-zA-Z0-9]/.test(password)) {
-            strength++;
-          }
 
-          if (password.length < 8) {
-            feedback = 'Password must be at least 8 characters';
-            passwordStrengthMsg.style.color = '#b00020';
-          } else if (strength <= 2) {
-            feedback = 'Weak password - add letters and numbers';
-            passwordStrengthMsg.style.color = '#f59e0b';
-          } else if (strength === 3) {
-            feedback = 'Fair password';
-            passwordStrengthMsg.style.color = '#f59e0b';
-          } else if (strength === 4) {
-            feedback = 'Good password';
-            passwordStrengthMsg.style.color = '#10b981';
-          } else {
-            feedback = 'Strong password';
-            passwordStrengthMsg.style.color = '#10b981';
+        if (!password) {
+          if (passwordStrengthContainer) {
+            passwordStrengthContainer.style.display = 'none';
           }
-          passwordStrengthMsg.textContent = feedback;
+          if (passwordRequirements) {
+            passwordRequirements.style.display = 'none';
+          }
+          return;
+        }
+
+        if (passwordStrengthContainer) {
+          passwordStrengthContainer.style.display = 'block';
+        }
+        if (passwordRequirements) {
+          passwordRequirements.style.display = 'block';
+        }
+
+        const isValid = validatePassword(password);
+
+        let strength = 0;
+        let label = '';
+        let barColor = '#b00020';
+        let barWidth = '0%';
+        let message = '';
+
+        // Calculate strength
+        if (password.length >= 8) {
+          strength++;
+        }
+        if (/[a-z]/.test(password)) {
+          strength++;
+        }
+        if (/[A-Z]/.test(password)) {
+          strength++;
+        }
+        if (/[0-9]/.test(password)) {
+          strength++;
+        }
+        if (/[^a-zA-Z0-9]/.test(password)) {
+          strength++;
+        }
+
+        if (password.length < 8) {
+          label = 'Too short';
+          barColor = '#b00020';
+          barWidth = '20%';
+          message = 'Add more characters';
+        } else if (!isValid) {
+          label = 'Weak';
+          barColor = '#b00020';
+          barWidth = '33%';
+          message = 'Add both letters and numbers';
+        } else if (strength === 2) {
+          label = 'Weak';
+          barColor = '#ef4444';
+          barWidth = '33%';
+          message = 'Consider adding uppercase letters or symbols';
+        } else if (strength === 3) {
+          label = 'Fair';
+          barColor = '#f59e0b';
+          barWidth = '50%';
+          message = 'Add uppercase letters or special characters for better security';
+        } else if (strength === 4) {
+          label = 'Good';
+          barColor = '#10b981';
+          barWidth = '75%';
+          message = 'Strong enough for most uses';
+        } else {
+          label = 'Strong';
+          barColor = '#059669';
+          barWidth = '100%';
+          message = 'Excellent password strength';
+        }
+
+        if (passwordStrengthBar) {
+          passwordStrengthBar.style.width = barWidth;
+          passwordStrengthBar.style.background = barColor;
+        }
+        if (passwordStrengthLabel) {
+          passwordStrengthLabel.textContent = label;
+          passwordStrengthLabel.style.color = barColor;
+        }
+        if (passwordStrengthMsg) {
+          passwordStrengthMsg.textContent = message;
+        }
+
+        // Validate confirm password if it has content
+        if (regPasswordConfirm && regPasswordConfirm.value) {
+          validatePasswordMatch();
         }
       });
+
+      // Password match validation
+      const validatePasswordMatch = () => {
+        if (!regPasswordConfirm || !passwordMatchMsg) {
+          return;
+        }
+
+        const password = regPassword.value;
+        const confirmPassword = regPasswordConfirm.value;
+
+        if (!confirmPassword) {
+          passwordMatchMsg.style.display = 'none';
+          return;
+        }
+
+        if (password !== confirmPassword) {
+          passwordMatchMsg.textContent = 'Passwords do not match';
+          passwordMatchMsg.style.display = 'block';
+          passwordMatchMsg.style.color = '#b00020';
+          return false;
+        } else {
+          passwordMatchMsg.textContent = '✓ Passwords match';
+          passwordMatchMsg.style.display = 'block';
+          passwordMatchMsg.style.color = '#10b981';
+          return true;
+        }
+      };
+
+      if (regPasswordConfirm) {
+        regPasswordConfirm.addEventListener('input', validatePasswordMatch);
+        regPasswordConfirm.addEventListener('blur', validatePasswordMatch);
+      }
     }
 
     // Account type toggle (customer / supplier)
@@ -2776,6 +2921,43 @@ document.addEventListener('DOMContentLoaded', () => {
           regStatus.textContent = '';
         }
 
+        // Validate password requirements
+        const password = regPassword.value;
+        const regPasswordConfirm = document.getElementById('reg-password-confirm');
+        const passwordConfirm = regPasswordConfirm ? regPasswordConfirm.value : '';
+
+        // Check password meets minimum requirements
+        const hasMinLength = password.length >= 8;
+        const hasLetter = /[a-zA-Z]/.test(password);
+        const hasNumber = /[0-9]/.test(password);
+
+        if (!hasMinLength || !hasLetter || !hasNumber) {
+          if (regStatus) {
+            regStatus.textContent =
+              'Password must be at least 8 characters and contain both letters and numbers';
+          }
+          // Scroll to password field
+          regPassword.focus();
+          return;
+        }
+
+        // Check password confirmation
+        if (password !== passwordConfirm) {
+          if (regStatus) {
+            regStatus.textContent = 'Passwords do not match';
+          }
+          const passwordMatchMsg = document.getElementById('password-match-msg');
+          if (passwordMatchMsg) {
+            passwordMatchMsg.textContent = 'Passwords do not match';
+            passwordMatchMsg.style.display = 'block';
+            passwordMatchMsg.style.color = '#b00020';
+          }
+          if (regPasswordConfirm) {
+            regPasswordConfirm.focus();
+          }
+          return;
+        }
+
         // Validate terms checkbox
         const termsCheckbox = document.getElementById('reg-terms');
         if (termsCheckbox && !termsCheckbox.checked) {
@@ -2794,7 +2976,6 @@ document.addEventListener('DOMContentLoaded', () => {
           const firstName = regFirstName ? regFirstName.value.trim() : '';
           const lastName = regLastName ? regLastName.value.trim() : '';
           const email = regEmail.value.trim();
-          const password = regPassword.value;
           const roleHidden = document.getElementById('reg-role');
           const role = roleHidden && roleHidden.value ? roleHidden.value : 'customer';
           const marketingEl = document.getElementById('reg-marketing');

@@ -212,7 +212,8 @@ router.post('/register', authLimiter, async (req, res) => {
   const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, {
     expiresIn: '7d',
   });
-  setAuthCookie(res, token);
+  // Default to remember=true for registration to provide better UX
+  setAuthCookie(res, token, { remember: true });
 
   res.json({
     ok: true,
@@ -225,7 +226,7 @@ router.post('/register', authLimiter, async (req, res) => {
  * Authenticate user and create session
  */
 router.post('/login', authLimiter, (req, res) => {
-  const { email, password } = req.body || {};
+  const { email, password, remember } = req.body || {};
   if (!email || !password) {
     return res.status(400).json({ error: 'Missing fields' });
   }
@@ -249,7 +250,9 @@ router.post('/login', authLimiter, (req, res) => {
   const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, {
     expiresIn: '7d',
   });
-  setAuthCookie(res, token);
+
+  // Set cookie with remember option: if remember is true, persist for 7 days; otherwise session-only
+  setAuthCookie(res, token, { remember: !!remember });
 
   res.json({
     ok: true,

@@ -104,8 +104,29 @@
         </div>
         <div class="form-row">
           <label for="reg-password">Password</label>
-          <input id="reg-password" name="password" type="password" required placeholder="Min 8 chars incl. a letter and a number" aria-required="true" aria-describedby="password-strength-msg" autocomplete="new-password">
-          <span class="small" id="password-strength-msg" style="margin-top:4px;display:block" role="status"></span>
+          <input id="reg-password" name="password" type="password" required placeholder="Min 8 chars with letter and number" aria-required="true" aria-describedby="password-strength-msg password-requirements" autocomplete="new-password">
+          <div id="password-strength-container" style="margin-top:8px;display:none">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+              <div style="flex:1;height:6px;background:#e3e9ef;border-radius:3px;overflow:hidden">
+                <div id="password-strength-bar" style="height:100%;width:0%;background:#b00020;transition:width 0.3s ease, background-color 0.3s ease"></div>
+              </div>
+              <span id="password-strength-label" style="font-size:0.75rem;font-weight:600;min-width:60px"></span>
+            </div>
+            <span class="small" id="password-strength-msg" style="display:block;color:#666" role="status"></span>
+          </div>
+          <ul id="password-requirements" class="small" style="margin-top:8px;padding-left:20px;color:#666;font-size:0.875rem;display:none">
+            <li id="req-length" style="color:#b00020">At least 8 characters</li>
+            <li id="req-letter" style="color:#b00020">Contains a letter</li>
+            <li id="req-number" style="color:#b00020">Contains a number</li>
+          </ul>
+          <div id="caps-lock-warning" style="display:none;margin-top:4px;padding:6px 10px;background:#fff3cd;border:1px solid #ffc107;border-radius:4px;font-size:0.875rem;color:#856404">
+            ⚠️ Caps Lock is on
+          </div>
+        </div>
+        <div class="form-row">
+          <label for="reg-password-confirm">Confirm Password</label>
+          <input id="reg-password-confirm" name="passwordConfirm" type="password" required placeholder="Re-enter your password" aria-required="true" aria-describedby="password-match-msg" autocomplete="new-password">
+          <span class="small" id="password-match-msg" style="margin-top:4px;display:none;color:#b00020" role="alert"></span>
         </div>
         <div class="form-row">
           <label for="reg-location">Location (UK County) *</label>
