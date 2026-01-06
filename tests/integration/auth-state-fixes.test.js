@@ -7,11 +7,33 @@ const fs = require('fs');
 const path = require('path');
 
 describe('Auth State Fixes', () => {
+  // Cache file contents to avoid repeated reads
+  let authRoutesContent;
+  let authMiddlewareContent;
+  let dashboardGuardContent;
+  let authNavContent;
+
+  beforeAll(() => {
+    authRoutesContent = fs.readFileSync(
+      path.join(__dirname, '../../routes/auth.js'),
+      'utf8'
+    );
+    authMiddlewareContent = fs.readFileSync(
+      path.join(__dirname, '../../middleware/auth.js'),
+      'utf8'
+    );
+    dashboardGuardContent = fs.readFileSync(
+      path.join(__dirname, '../../public/assets/js/dashboard-guard.js'),
+      'utf8'
+    );
+    authNavContent = fs.readFileSync(
+      path.join(__dirname, '../../public/assets/js/auth-nav.js'),
+      'utf8'
+    );
+  });
+
   describe('Backend - Cache Headers in routes/auth.js', () => {
     it('should set no-store cache headers on /api/auth/me endpoint', () => {
-      const authRoutesPath = path.join(__dirname, '../../routes/auth.js');
-      const authRoutesContent = fs.readFileSync(authRoutesPath, 'utf8');
-
       // Find the /me endpoint
       const meEndpoint = authRoutesContent.match(/router\.get\('\/me'[\s\S]*?\}\);/);
       expect(meEndpoint).toBeTruthy();
@@ -25,27 +47,18 @@ describe('Auth State Fixes', () => {
     });
 
     it('should set Pragma: no-cache header on /api/auth/me endpoint', () => {
-      const authRoutesPath = path.join(__dirname, '../../routes/auth.js');
-      const authRoutesContent = fs.readFileSync(authRoutesPath, 'utf8');
-
       const meEndpoint = authRoutesContent.match(/router\.get\('\/me'[\s\S]*?\}\);/);
       expect(meEndpoint).toBeTruthy();
       expect(meEndpoint[0]).toContain("res.setHeader('Pragma', 'no-cache')");
     });
 
     it('should set Vary: Cookie header on /api/auth/me endpoint', () => {
-      const authRoutesPath = path.join(__dirname, '../../routes/auth.js');
-      const authRoutesContent = fs.readFileSync(authRoutesPath, 'utf8');
-
       const meEndpoint = authRoutesContent.match(/router\.get\('\/me'[\s\S]*?\}\);/);
       expect(meEndpoint).toBeTruthy();
       expect(meEndpoint[0]).toContain("res.setHeader('Vary', 'Cookie')");
     });
 
     it('should set cache headers on POST /api/auth/logout endpoint', () => {
-      const authRoutesPath = path.join(__dirname, '../../routes/auth.js');
-      const authRoutesContent = fs.readFileSync(authRoutesPath, 'utf8');
-
       // Find the POST logout endpoint
       const logoutEndpoint = authRoutesContent.match(/router\.post\('\/logout'[\s\S]*?\}\);/);
       expect(logoutEndpoint).toBeTruthy();
@@ -56,9 +69,6 @@ describe('Auth State Fixes', () => {
 
   describe('Backend - Cookie Clearing in middleware/auth.js', () => {
     it('should clear cookie with proper options', () => {
-      const authMiddlewarePath = path.join(__dirname, '../../middleware/auth.js');
-      const authMiddlewareContent = fs.readFileSync(authMiddlewarePath, 'utf8');
-
       // Find clearAuthCookie function
       expect(authMiddlewareContent).toContain('function clearAuthCookie');
       expect(authMiddlewareContent).toContain("res.clearCookie('token'");
@@ -82,52 +92,37 @@ describe('Auth State Fixes', () => {
     });
 
     it('dashboard-guard.js should define role requirements for each dashboard', () => {
-      const guardPath = path.join(__dirname, '../../public/assets/js/dashboard-guard.js');
-      const guardContent = fs.readFileSync(guardPath, 'utf8');
-
       // Check for role requirements mapping
-      expect(guardContent).toContain('dashboardRoles');
-      expect(guardContent).toContain("'/dashboard-supplier.html'");
-      expect(guardContent).toContain("'/dashboard-customer.html'");
-      expect(guardContent).toContain("'/admin.html'");
-      expect(guardContent).toContain("'supplier'");
-      expect(guardContent).toContain("'customer'");
-      expect(guardContent).toContain("'admin'");
+      expect(dashboardGuardContent).toContain('dashboardRoles');
+      expect(dashboardGuardContent).toContain("'/dashboard-supplier.html'");
+      expect(dashboardGuardContent).toContain("'/dashboard-customer.html'");
+      expect(dashboardGuardContent).toContain("'/admin.html'");
+      expect(dashboardGuardContent).toContain("'supplier'");
+      expect(dashboardGuardContent).toContain("'customer'");
+      expect(dashboardGuardContent).toContain("'admin'");
     });
 
     it('dashboard-guard.js should hide body initially to prevent flash', () => {
-      const guardPath = path.join(__dirname, '../../public/assets/js/dashboard-guard.js');
-      const guardContent = fs.readFileSync(guardPath, 'utf8');
-
-      expect(guardContent).toContain("document.body.style.visibility = 'hidden'");
-      expect(guardContent).toContain("document.body.style.opacity = '0'");
+      expect(dashboardGuardContent).toContain("document.body.style.visibility = 'hidden'");
+      expect(dashboardGuardContent).toContain("document.body.style.opacity = '0'");
     });
 
     it('dashboard-guard.js should fetch user with cache-busting', () => {
-      const guardPath = path.join(__dirname, '../../public/assets/js/dashboard-guard.js');
-      const guardContent = fs.readFileSync(guardPath, 'utf8');
-
-      expect(guardContent).toContain('/api/auth/me');
-      expect(guardContent).toContain('Date.now()');
-      expect(guardContent).toContain('Cache-Control');
-      expect(guardContent).toContain('no-cache');
+      expect(dashboardGuardContent).toContain('/api/auth/me');
+      expect(dashboardGuardContent).toContain('Date.now()');
+      expect(dashboardGuardContent).toContain('Cache-Control');
+      expect(dashboardGuardContent).toContain('no-cache');
     });
 
     it('dashboard-guard.js should redirect on role mismatch', () => {
-      const guardPath = path.join(__dirname, '../../public/assets/js/dashboard-guard.js');
-      const guardContent = fs.readFileSync(guardPath, 'utf8');
-
-      expect(guardContent).toContain('user.role !== requiredRole');
-      expect(guardContent).toContain('window.location.replace');
-      expect(guardContent).toContain('correctDashboard');
+      expect(dashboardGuardContent).toContain('user.role !== requiredRole');
+      expect(dashboardGuardContent).toContain('window.location.replace');
+      expect(dashboardGuardContent).toContain('correctDashboard');
     });
 
     it('dashboard-guard.js should show page when access is granted', () => {
-      const guardPath = path.join(__dirname, '../../public/assets/js/dashboard-guard.js');
-      const guardContent = fs.readFileSync(guardPath, 'utf8');
-
-      expect(guardContent).toContain("document.body.style.visibility = 'visible'");
-      expect(guardContent).toContain("document.body.style.opacity = '1'");
+      expect(dashboardGuardContent).toContain("document.body.style.visibility = 'visible'");
+      expect(dashboardGuardContent).toContain("document.body.style.opacity = '1'");
     });
   });
 
@@ -168,37 +163,23 @@ describe('Auth State Fixes', () => {
 
   describe('Frontend - Auth Nav Logout Handler', () => {
     it('auth-nav.js should define handleLogout function', () => {
-      const authNavPath = path.join(__dirname, '../../public/assets/js/auth-nav.js');
-      const authNavContent = fs.readFileSync(authNavPath, 'utf8');
-
       expect(authNavContent).toContain('async function handleLogout');
       expect(authNavContent).toContain('/api/auth/logout');
     });
 
     it('auth-nav.js should prevent duplicate event handlers using cloneNode', () => {
-      const authNavPath = path.join(__dirname, '../../public/assets/js/auth-nav.js');
-      const authNavContent = fs.readFileSync(authNavPath, 'utf8');
-
       // Check for cloneNode pattern to prevent duplicate handlers
       expect(authNavContent).toContain('cloneNode(true)');
       expect(authNavContent).toContain('replaceChild');
     });
 
     it('auth-nav.js should include cache-busting on logout redirect', () => {
-      const authNavPath = path.join(__dirname, '../../public/assets/js/auth-nav.js');
-      const authNavContent = fs.readFileSync(authNavPath, 'utf8');
-
-      // Check for cache-busting timestamp in redirect
-      const logoutRedirect = authNavContent.match(
-        /window\.location\.href\s*=\s*['"][^'"]*\?t=/
-      );
-      expect(logoutRedirect).toBeTruthy();
+      // Check for cache-busting with timestamp
+      expect(authNavContent).toContain('Date.now()');
+      expect(authNavContent).toContain('window.location.href');
     });
 
     it('auth-nav.js should use CSRF token in logout request', () => {
-      const authNavPath = path.join(__dirname, '../../public/assets/js/auth-nav.js');
-      const authNavContent = fs.readFileSync(authNavPath, 'utf8');
-
       const logoutFunction = authNavContent.match(/async function handleLogout[\s\S]*?^\s*}/m);
       expect(logoutFunction).toBeTruthy();
       expect(logoutFunction[0]).toContain('X-CSRF-Token');

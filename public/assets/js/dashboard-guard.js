@@ -46,7 +46,9 @@
 
   try {
     // Fetch current user with cache-busting
-    const response = await fetch('/api/auth/me?t=' + Date.now(), {
+    // Using timestamp + random value for better cache-busting
+    const cacheBuster = Date.now() + '-' + Math.random().toString(36).substring(2, 9);
+    const response = await fetch('/api/auth/me?t=' + cacheBuster, {
       credentials: 'include',
       headers: {
         'Cache-Control': 'no-cache',
