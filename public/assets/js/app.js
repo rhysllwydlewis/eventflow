@@ -114,8 +114,9 @@ function validateRedirectForRole(redirectUrl, userRole) {
   let pathname;
   try {
     const urlObj = new URL(url, window.location.origin);
-    // Verify it's same-origin
-    if (urlObj.origin !== window.location.origin) {
+    // Verify it's same-origin - use location.host for more robust check
+    // This ensures protocol + hostname + port all match
+    if (urlObj.host !== window.location.host || urlObj.protocol !== window.location.protocol) {
       return false;
     }
     pathname = urlObj.pathname;

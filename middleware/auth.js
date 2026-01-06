@@ -47,8 +47,16 @@ function clearAuthCookie(res) {
   if (isProd) {
     // Try clearing with explicit domain for production domains
     // This handles cases where cookie may have been set with domain=.event-flow.co.uk
-    const productionDomains = ['.event-flow.co.uk', 'event-flow.co.uk'];
-    productionDomains.forEach(domain => {
+    // SECURITY: Use environment variable to avoid hardcoding production domain
+    const productionDomain = process.env.COOKIE_DOMAIN || '.event-flow.co.uk';
+    const domains = [productionDomain];
+
+    // Also try without leading dot if provided with dot
+    if (productionDomain.startsWith('.')) {
+      domains.push(productionDomain.substring(1));
+    }
+
+    domains.forEach(domain => {
       res.clearCookie('token', {
         httpOnly: true,
         sameSite: 'strict',
