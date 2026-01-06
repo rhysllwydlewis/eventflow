@@ -187,11 +187,15 @@ async function initDashboard() {
 
   // Personalize welcome message
   const welcomeHeading = document.getElementById('welcome-heading');
-  if (welcomeHeading && user.firstName) {
-    welcomeHeading.textContent = `Welcome ${escapeHtml(user.firstName)} to your customer dashboard!`;
-  } else if (welcomeHeading && user.name) {
-    const firstName = user.name.split(' ')[0];
-    welcomeHeading.textContent = `Welcome ${escapeHtml(firstName)} to your customer dashboard!`;
+  if (welcomeHeading) {
+    if (user.firstName) {
+      welcomeHeading.textContent = `Welcome ${escapeHtml(user.firstName)}!`;
+    } else if (user.name) {
+      const firstName = user.name.split(' ')[0];
+      welcomeHeading.textContent = `Welcome ${escapeHtml(firstName)}!`;
+    } else {
+      welcomeHeading.textContent = `Welcome to EventFlow!`;
+    }
   }
 
   // Check for guest plan token and claim it

@@ -2668,8 +2668,23 @@ document.addEventListener('DOMContentLoaded', () => {
             /* Ignore JSON parse errors */
           }
           if (!r.ok) {
-            const errorMsg =
+            let errorMsg =
               data.error || 'Could not sign in. Please check your details and try again.';
+
+            // Provide more specific error messages
+            if (r.status === 401) {
+              errorMsg = 'Invalid email or password. Please check your credentials and try again.';
+            } else if (r.status === 403 && errorMsg.toLowerCase().includes('verify')) {
+              errorMsg =
+                'Please verify your email address before signing in. Check your inbox for the verification link.';
+            } else if (r.status === 429) {
+              errorMsg = 'Too many login attempts. Please wait a moment and try again.';
+            } else if (
+              !errorMsg ||
+              errorMsg === 'Could not sign in. Please check your details and try again.'
+            ) {
+              errorMsg = 'Unable to sign in. Please check your email and password.';
+            }
 
             if (loginErrorEl) {
               loginErrorEl.textContent = errorMsg;
