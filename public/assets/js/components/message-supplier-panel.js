@@ -339,7 +339,7 @@ class MessageSupplierPanel {
     if (loginBtn) {
       loginBtn.addEventListener('click', () => {
         this.savePendingMessage();
-        window.location.href = `/auth.html?return=${encodeURIComponent(window.location.href)}`;
+        window.location.href = `/auth.html?redirect=${encodeURIComponent(window.location.href)}`;
       });
     }
 

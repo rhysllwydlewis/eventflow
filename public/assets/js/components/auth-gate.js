@@ -52,7 +52,7 @@ class AuthGate {
    * @param {string} returnUrl - Optional return URL after login
    */
   redirectToLogin(returnUrl) {
-    const url = returnUrl ? `/auth.html?return=${encodeURIComponent(returnUrl)}` : '/auth.html';
+    const url = returnUrl ? `/auth.html?redirect=${encodeURIComponent(returnUrl)}` : '/auth.html';
     window.location.href = url;
   }
 

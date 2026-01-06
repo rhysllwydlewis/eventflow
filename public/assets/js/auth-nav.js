@@ -215,6 +215,7 @@
       // Clear any auth-related storage
       try {
         localStorage.removeItem('eventflow_onboarding_new');
+        localStorage.removeItem('user');
         sessionStorage.clear();
       } catch (_) {
         /* Ignore storage errors */

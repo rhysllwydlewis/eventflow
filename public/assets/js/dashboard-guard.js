@@ -72,7 +72,7 @@
 
     if (!response.ok) {
       // Failed to check auth - redirect to login
-      window.location.replace(`/auth.html?return=${encodeURIComponent(currentPath)}`);
+      window.location.replace(`/auth.html?redirect=${encodeURIComponent(currentPath)}`);
       return;
     }
 
@@ -81,7 +81,7 @@
 
     if (!user || !user.id) {
       // Not authenticated - redirect to login
-      window.location.replace(`/auth.html?return=${encodeURIComponent(currentPath)}`);
+      window.location.replace(`/auth.html?redirect=${encodeURIComponent(currentPath)}`);
       return;
     }
 
@@ -115,6 +115,6 @@
   } catch (error) {
     console.error('Dashboard guard error:', error);
     // On error, redirect to login to be safe (fail closed)
-    window.location.replace(`/auth.html?return=${encodeURIComponent(currentPath)}`);
+    window.location.replace(`/auth.html?redirect=${encodeURIComponent(currentPath)}`);
   }
 })();
