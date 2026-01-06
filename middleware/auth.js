@@ -26,6 +26,7 @@ function setAuthCookie(res, token) {
 
 /**
  * Clear authentication cookie
+ * Clears cookie with multiple domain configurations to ensure cleanup across www/apex variants
  * @param {Object} res - Express response object
  */
 function clearAuthCookie(res) {
@@ -41,6 +42,30 @@ function clearAuthCookie(res) {
 
   // Also clear without path option for legacy compatibility
   res.clearCookie('token');
+
+  // In production, also try clearing with domain variants to handle www/apex domain cases
+  if (isProd) {
+    // Try clearing with explicit domain for production domains
+    // This handles cases where cookie may have been set with domain=.event-flow.co.uk
+    // SECURITY: Use environment variable to avoid hardcoding production domain
+    const productionDomain = process.env.COOKIE_DOMAIN || '.event-flow.co.uk';
+    const domains = [productionDomain];
+
+    // Also try without leading dot if provided with dot
+    if (productionDomain.startsWith('.')) {
+      domains.push(productionDomain.substring(1));
+    }
+
+    domains.forEach(domain => {
+      res.clearCookie('token', {
+        httpOnly: true,
+        sameSite: 'strict',
+        secure: true,
+        path: '/',
+        domain: domain,
+      });
+    });
+  }
 }
 
 /**

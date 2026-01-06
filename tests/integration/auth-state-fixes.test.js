@@ -14,10 +14,7 @@ describe('Auth State Fixes', () => {
   let authNavContent;
 
   beforeAll(() => {
-    authRoutesContent = fs.readFileSync(
-      path.join(__dirname, '../../routes/auth.js'),
-      'utf8'
-    );
+    authRoutesContent = fs.readFileSync(path.join(__dirname, '../../routes/auth.js'), 'utf8');
     authMiddlewareContent = fs.readFileSync(
       path.join(__dirname, '../../middleware/auth.js'),
       'utf8'
@@ -74,9 +71,7 @@ describe('Auth State Fixes', () => {
       expect(authMiddlewareContent).toContain("res.clearCookie('token'");
 
       // Verify it sets options for proper clearing
-      const clearFunction = authMiddlewareContent.match(
-        /function clearAuthCookie[\s\S]*?^}/m
-      );
+      const clearFunction = authMiddlewareContent.match(/function clearAuthCookie[\s\S]*?^}/m);
       expect(clearFunction).toBeTruthy();
       expect(clearFunction[0]).toContain('httpOnly');
       expect(clearFunction[0]).toContain('sameSite');
@@ -102,9 +97,13 @@ describe('Auth State Fixes', () => {
       expect(dashboardGuardContent).toContain("'admin'");
     });
 
-    it('dashboard-guard.js should hide body initially to prevent flash', () => {
-      expect(dashboardGuardContent).toContain("document.body.style.visibility = 'hidden'");
-      expect(dashboardGuardContent).toContain("document.body.style.opacity = '0'");
+    it('dashboard-guard.js should use style tag to hide body (not direct body access)', () => {
+      // Should NOT access document.body directly (causes crashes in <head>)
+      expect(dashboardGuardContent).not.toContain("document.body.style.visibility = 'hidden'");
+      expect(dashboardGuardContent).not.toContain("document.body.style.opacity = '0'");
+      // Should instead inject style in head
+      expect(dashboardGuardContent).toContain('dashboard-guard-style');
+      expect(dashboardGuardContent).toContain('visibility: hidden !important');
     });
 
     it('dashboard-guard.js should fetch user with cache-busting', () => {
@@ -114,6 +113,12 @@ describe('Auth State Fixes', () => {
       expect(dashboardGuardContent).toContain('no-cache');
     });
 
+    it('dashboard-guard.js should inject style tag in head to hide body', () => {
+      expect(dashboardGuardContent).toContain('dashboard-guard-style');
+      expect(dashboardGuardContent).toContain('visibility: hidden !important');
+      expect(dashboardGuardContent).toContain('opacity: 0 !important');
+    });
+
     it('dashboard-guard.js should redirect on role mismatch', () => {
       expect(dashboardGuardContent).toContain('user.role !== requiredRole');
       expect(dashboardGuardContent).toContain('window.location.replace');
@@ -121,8 +126,8 @@ describe('Auth State Fixes', () => {
     });
 
     it('dashboard-guard.js should show page when access is granted', () => {
-      expect(dashboardGuardContent).toContain("document.body.style.visibility = 'visible'");
-      expect(dashboardGuardContent).toContain("document.body.style.opacity = '1'");
+      expect(dashboardGuardContent).toContain('showPage()');
+      expect(dashboardGuardContent).toContain('style.remove()');
     });
   });
 

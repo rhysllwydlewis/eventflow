@@ -91,6 +91,69 @@ describe('Auth Middleware', () => {
 
       expect(res.clearCookie).toHaveBeenCalledWith('token');
     });
+
+    it('should clear cookie with proper options', () => {
+      const res = {
+        clearCookie: jest.fn(),
+      };
+
+      clearAuthCookie(res);
+
+      // Should be called multiple times with different options
+      expect(res.clearCookie).toHaveBeenCalled();
+      expect(res.clearCookie.mock.calls.length).toBeGreaterThanOrEqual(2);
+
+      // First call with full options
+      expect(res.clearCookie).toHaveBeenCalledWith(
+        'token',
+        expect.objectContaining({
+          httpOnly: true,
+          path: '/',
+        })
+      );
+
+      // Second call without options for legacy compatibility
+      expect(res.clearCookie).toHaveBeenCalledWith('token');
+    });
+
+    it('should clear cookie with domain variants in production', () => {
+      const originalEnv = process.env.NODE_ENV;
+      process.env.NODE_ENV = 'production';
+
+      const res = {
+        clearCookie: jest.fn(),
+      };
+
+      clearAuthCookie(res);
+
+      // Should attempt to clear with domain variants for production
+      expect(res.clearCookie).toHaveBeenCalled();
+      expect(res.clearCookie.mock.calls.length).toBeGreaterThanOrEqual(3);
+
+      // Check for domain-specific clearing
+      const domainCalls = res.clearCookie.mock.calls.filter(
+        call => call[1] && call[1].domain !== undefined
+      );
+      expect(domainCalls.length).toBeGreaterThan(0);
+
+      process.env.NODE_ENV = originalEnv;
+    });
+
+    it('should not use domain variants in development', () => {
+      const originalEnv = process.env.NODE_ENV;
+      process.env.NODE_ENV = 'development';
+
+      const res = {
+        clearCookie: jest.fn(),
+      };
+
+      clearAuthCookie(res);
+
+      // In development, should only clear twice (with and without options)
+      expect(res.clearCookie.mock.calls.length).toBe(2);
+
+      process.env.NODE_ENV = originalEnv;
+    });
   });
 
   describe('getUserFromCookie', () => {
