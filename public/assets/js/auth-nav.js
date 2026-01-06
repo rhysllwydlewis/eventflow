@@ -168,8 +168,14 @@
   // --- Auth helper ---
   async function me() {
     try {
-      const r = await fetch('/api/auth/me', {
+      // Add cache-busting to every /api/auth/me call to prevent cached responses
+      const cacheBuster = `?_=${Date.now()}`;
+      const r = await fetch(`/api/auth/me${cacheBuster}`, {
         credentials: 'include',
+        headers: {
+          'Cache-Control': 'no-cache',
+          Pragma: 'no-cache',
+        },
       });
       if (!r.ok) {
         return null;
@@ -203,16 +209,8 @@
     // Logout handler function
     async function handleLogout(e) {
       e.preventDefault();
-      try {
-        await fetch('/api/auth/logout', {
-          method: 'POST',
-          headers: { 'X-CSRF-Token': window.__CSRF_TOKEN__ || '' },
-          credentials: 'include',
-        });
-      } catch (_) {
-        /* Ignore logout errors */
-      }
-      // Clear any auth-related storage
+
+      // Clear any auth-related storage immediately
       try {
         localStorage.removeItem('eventflow_onboarding_new');
         localStorage.removeItem('user');
@@ -220,6 +218,35 @@
       } catch (_) {
         /* Ignore storage errors */
       }
+
+      // Update navbar immediately to show logged-out state
+      initAuthNav(null);
+
+      // Call logout endpoint and wait for completion
+      try {
+        const response = await fetch('/api/auth/logout', {
+          method: 'POST',
+          headers: { 'X-CSRF-Token': window.__CSRF_TOKEN__ || '' },
+          credentials: 'include',
+        });
+
+        // Re-check auth state to verify logout completed
+        if (response.ok) {
+          const currentUser = await me();
+          if (currentUser) {
+            // Logout didn't complete properly - retry once
+            console.warn('Logout verification failed, retrying...');
+            await fetch('/api/auth/logout', {
+              method: 'POST',
+              headers: { 'X-CSRF-Token': window.__CSRF_TOKEN__ || '' },
+              credentials: 'include',
+            });
+          }
+        }
+      } catch (_) {
+        /* Ignore logout errors */
+      }
+
       // Force full reload with cache-busting to ensure clean state
       window.location.href = `/?t=${Date.now()}`;
     }
@@ -311,4 +338,42 @@
   // Then check auth and wire up auth-aware nav
   const user = await me();
   initAuthNav(user);
+
+  // --- Cross-tab auth state synchronization ---
+  // Listen for storage events to detect logout in other tabs
+  window.addEventListener('storage', async event => {
+    // Check if auth-related storage was cleared (logout in another tab)
+    if (event.key === 'user' && event.newValue === null) {
+      console.log('Logout detected in another tab, updating navbar...');
+      const currentUser = await me();
+      initAuthNav(currentUser);
+    }
+  });
+
+  // --- Periodic auth state validation ---
+  // Re-verify auth state every 30 seconds to catch token expiration or stale state
+  let lastKnownAuthState = user;
+  setInterval(async () => {
+    try {
+      const currentUser = await me();
+      const wasLoggedIn = !!lastKnownAuthState;
+      const isLoggedIn = !!currentUser;
+
+      // Check if auth state changed
+      if (wasLoggedIn !== isLoggedIn) {
+        console.log('Auth state changed, updating navbar...');
+        lastKnownAuthState = currentUser;
+        initAuthNav(currentUser);
+      } else if (isLoggedIn && currentUser && lastKnownAuthState) {
+        // Check if role changed (edge case)
+        if (currentUser.role !== lastKnownAuthState.role) {
+          console.log('User role changed, updating navbar...');
+          lastKnownAuthState = currentUser;
+          initAuthNav(currentUser);
+        }
+      }
+    } catch (error) {
+      console.error('Periodic auth check failed:', error);
+    }
+  }, 30000); // 30 seconds
 })();
