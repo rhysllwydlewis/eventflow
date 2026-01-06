@@ -15,7 +15,7 @@ You can check your current DMARC policy at: `_dmarc.event-flow.co.uk`
 
 ### Logo Requirements
 The BIMI logo must be:
-- SVG format (SVG Tiny PS profile)
+- SVG format (SVG Tiny 1.2 PS profile)
 - Served over HTTPS
 - Square aspect ratio (recommended)
 - Publicly accessible without authentication
