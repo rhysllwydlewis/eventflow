@@ -2341,35 +2341,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (existing && loginStatus) {
           const label = existing.name || existing.email || existing.role || 'your account';
           loginStatus.textContent = `You are already signed in as ${label}. Redirecting…`;
-
-          // Determine correct dashboard based on role
-          let correctDashboard;
-          if (existing.role === 'admin') {
-            correctDashboard = '/admin.html';
-          } else if (existing.role === 'supplier') {
-            correctDashboard = '/dashboard-supplier.html';
-          } else {
-            correctDashboard = '/dashboard-customer.html';
-          }
-
-          // Check if there's a return parameter and validate it
-          const urlParams = new URLSearchParams(window.location.search);
-          const redirect = urlParams.get('redirect') || urlParams.get('return');
-
-          let destination = correctDashboard;
-          if (redirect) {
-            const isValidRedirect = validateRedirectForRole(redirect, existing.role);
-            if (isValidRedirect) {
-              destination = redirect;
-            } else {
-              console.warn(
-                `Ignoring invalid redirect param for already logged-in user: ${redirect} for role: ${existing.role}`
-              );
-            }
-          }
-
           setTimeout(() => {
-            location.href = destination;
+            // Use role-based routing, ignore any redirect params if already logged in
+            if (existing.role === 'admin') {
+              location.href = '/admin.html';
+            } else if (existing.role === 'supplier') {
+              location.href = '/dashboard-supplier.html';
+            } else {
+              location.href = '/dashboard-customer.html';
+            }
           }, 600);
         }
       } catch (_) {
@@ -2748,16 +2728,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.warn(
                   `Ignoring untrusted redirect param: ${redirect} for role: ${user.role}`
                 );
-                // Clear the invalid redirect from browser history to prevent confusion
-                try {
-                  const cleanUrl = new URL(window.location.href);
-                  cleanUrl.searchParams.delete('redirect');
-                  cleanUrl.searchParams.delete('return');
-                  window.history.replaceState({}, '', cleanUrl.toString());
-                } catch (_e) {
-                  // Ignore URL parsing or history API errors - cleanup is optional and non-critical
-                  // These errors can occur in older browsers or restricted contexts
-                }
               }
             }
 
