@@ -47,6 +47,15 @@ const ALLOWED_IMAGE_TYPES = [
  */
 async function validateFileType(buffer) {
   try {
+    // Ensure buffer is valid
+    if (!Buffer.isBuffer(buffer) || buffer.length === 0) {
+      return {
+        valid: false,
+        detectedType: 'invalid',
+        error: 'Invalid or empty file buffer.',
+      };
+    }
+
     const fileType = await fileTypeFromBuffer(buffer);
     
     if (!fileType) {
@@ -226,19 +235,11 @@ async function processWithMetadataStripping(buffer, options = {}) {
   }
 
   // Convert to JPEG with quality settings
-  // This automatically strips all metadata including EXIF
+  // Sharp automatically strips metadata when converting formats
   processor = processor.jpeg({
     quality,
     progressive: true,
     mozjpeg: true,
-  });
-
-  // Explicitly remove all metadata
-  processor = processor.withMetadata({
-    // Remove all EXIF data (including GPS)
-    exif: {},
-    // Remove ICC profile to reduce file size (optional)
-    // icc: undefined,
   });
 
   return processor.toBuffer();
