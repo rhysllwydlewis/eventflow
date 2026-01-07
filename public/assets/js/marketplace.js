@@ -225,6 +225,18 @@
     const defaultImage = '/assets/images/collage-venue.jpg';
     const image = listing.images && listing.images[0] ? listing.images[0] : defaultImage;
 
+    // Generate tags (category, location, condition)
+    const tags = [];
+    if (listing.category) {
+      tags.push(`<span class="marketplace-tag">${formatCategory(listing.category)}</span>`);
+    }
+    if (listing.location) {
+      tags.push(`<span class="marketplace-tag">📍 ${escapeHtml(listing.location)}</span>`);
+    }
+    if (listing.condition) {
+      tags.push(`<span class="marketplace-tag">${formatCondition(listing.condition)}</span>`);
+    }
+
     return `
       <div class="marketplace-item-card" data-listing-id="${listing.id}">
         <div class="marketplace-item-image">
@@ -234,10 +246,7 @@
         <div class="marketplace-item-details">
           <div class="marketplace-item-price">£${listing.price.toFixed(2)}</div>
           <h3 class="marketplace-item-title">${escapeHtml(listing.title)}</h3>
-          <div class="marketplace-item-meta">
-            <span class="marketplace-item-location">📍 ${escapeHtml(listing.location || 'Location not specified')}</span>
-            <span class="marketplace-item-condition">${formatCondition(listing.condition)}</span>
-          </div>
+          ${tags.length > 0 ? `<div class="marketplace-item-tags">${tags.join('')}</div>` : ''}
           <div class="marketplace-item-time">Listed ${timeAgo}</div>
         </div>
       </div>

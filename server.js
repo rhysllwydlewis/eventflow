@@ -3081,11 +3081,27 @@ app.post(
 // Get user's own marketplace listings
 app.get('/api/marketplace/my-listings', authRequired, async (req, res) => {
   try {
+    logger.info('Fetching marketplace listings', {
+      userId: req.user.id,
+      userRole: req.user.role,
+      endpoint: '/api/marketplace/my-listings'
+    });
+    
     const listings = await dbUnified.read('marketplace_listings');
     const myListings = listings.filter(l => l.userId === req.user.id);
+    
+    logger.info('Marketplace listings retrieved', {
+      userId: req.user.id,
+      count: myListings.length
+    });
+    
     res.json({ listings: myListings });
   } catch (error) {
-    console.error('Error fetching user listings:', error);
+    logger.error('Error fetching user listings', {
+      userId: req.user ? req.user.id : 'unknown',
+      error: error.message,
+      stack: error.stack
+    });
     sentry.captureException(error);
     res.status(500).json({ error: 'Failed to fetch listings' });
   }
