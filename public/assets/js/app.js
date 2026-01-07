@@ -556,8 +556,8 @@ async function initSupplier() {
     badges.push('<span class="badge badge-founding" title="Founding Supplier">🏆 Founding</span>');
   }
 
-  // Featured supplier
-  if (s.featured) {
+  // Featured supplier (check both featured and featuredSupplier properties)
+  if (s.featured || s.featuredSupplier) {
     badges.push('<span class="badge badge-featured" title="Featured Supplier">⭐ Featured</span>');
   }
 
