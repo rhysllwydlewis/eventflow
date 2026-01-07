@@ -5199,7 +5199,7 @@ app.post(
       }
 
       if (type === 'supplier') {
-        const suppliers = await await dbUnified.read('suppliers');
+        const suppliers = await dbUnified.read('suppliers');
         const supplier = suppliers.find(s => s.id === id);
 
         if (!supplier) {
@@ -5212,11 +5212,11 @@ app.post(
             photo.approved = approved;
             photo.approvedAt = Date.now();
             photo.approvedBy = req.user.id;
-            await await dbUnified.write('suppliers', suppliers);
+            await dbUnified.write('suppliers', suppliers);
           }
         }
       } else if (type === 'package') {
-        const packages = await await dbUnified.read('packages');
+        const packages = await dbUnified.read('packages');
         const pkg = packages.find(p => p.id === id);
 
         if (!pkg) {
@@ -5229,7 +5229,7 @@ app.post(
             photo.approved = approved;
             photo.approvedAt = Date.now();
             photo.approvedBy = req.user.id;
-            await await dbUnified.write('packages', packages);
+            await dbUnified.write('packages', packages);
           }
         }
       }
@@ -5285,7 +5285,7 @@ app.get('/api/photos/pending', authRequired, roleRequired('admin'), async (req, 
     const pendingPhotos = [];
 
     // Get pending supplier photos
-    const suppliers = await await dbUnified.read('suppliers');
+    const suppliers = await dbUnified.read('suppliers');
     for (const supplier of suppliers) {
       if (supplier.photosGallery) {
         const pending = supplier.photosGallery
@@ -5301,7 +5301,7 @@ app.get('/api/photos/pending', authRequired, roleRequired('admin'), async (req, 
     }
 
     // Get pending package photos
-    const packages = await await dbUnified.read('packages');
+    const packages = await dbUnified.read('packages');
     for (const pkg of packages) {
       if (pkg.gallery) {
         const pending = pkg.gallery
