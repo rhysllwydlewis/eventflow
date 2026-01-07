@@ -1226,3 +1226,40 @@
     transform: translateX(-50%) translateY(20px);
   }
 }
+
+/* Marketplace Item Tags */
+.marketplace-item-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+  margin-bottom: 8px;
+}
+
+.marketplace-tag {
+  display: inline-block;
+  padding: 4px 10px;
+  background: #f3f4f6;
+  color: #374151;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.marketplace-tag:first-child {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+/* Responsive adjustments for tags */
+@media (max-width: 640px) {
+  .marketplace-item-tags {
+    gap: 4px;
+  }
+  
+  .marketplace-tag {
+    font-size: 10px;
+    padding: 3px 8px;
+  }
+}
