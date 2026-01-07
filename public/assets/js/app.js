@@ -500,11 +500,21 @@ async function initSupplier() {
     return;
   }
   const s = await r.json();
-  const pkgs = await (
-    await fetch(`/api/suppliers/${encodeURIComponent(id)}/packages`, {
+
+  // Fetch packages with error handling
+  let pkgs = { items: [] };
+  try {
+    const pkgsRes = await fetch(`/api/suppliers/${encodeURIComponent(id)}/packages`, {
       credentials: 'include',
-    })
-  ).json();
+    });
+    if (pkgsRes.ok) {
+      pkgs = await pkgsRes.json();
+    } else {
+      console.warn('Failed to load supplier packages:', pkgsRes.status);
+    }
+  } catch (error) {
+    console.error('Error fetching supplier packages:', error);
+  }
   const img = (s.photos && s.photos[0]) || '/assets/images/hero-venue.svg';
   const gallery = (s.photos || [])
     .slice(1)
@@ -551,13 +561,13 @@ async function initSupplier() {
     badges.push('<span class="badge badge-verified" title="Verified Supplier">✓ Verified</span>');
   }
 
-  // Founding supplier
-  if (s.founding) {
+  // Founding supplier (check both founding and isFounding properties)
+  if (s.founding || s.isFounding) {
     badges.push('<span class="badge badge-founding" title="Founding Supplier">🏆 Founding</span>');
   }
 
-  // Featured supplier
-  if (s.featured) {
+  // Featured supplier (check both featured and featuredSupplier properties)
+  if (s.featured || s.featuredSupplier) {
     badges.push('<span class="badge badge-featured" title="Featured Supplier">⭐ Featured</span>');
   }
 
@@ -568,8 +578,8 @@ async function initSupplier() {
     );
   }
 
-  // Top rated (if rating >= 4.5)
-  if (s.avgRating && s.avgRating >= 4.5) {
+  // Top rated (if rating >= 4.5) - check both avgRating and averageRating properties
+  if ((s.avgRating && s.avgRating >= 4.5) || (s.averageRating && s.averageRating >= 4.5)) {
     badges.push('<span class="badge badge-top-rated" title="Top Rated">🌟 Top Rated</span>');
   }
 

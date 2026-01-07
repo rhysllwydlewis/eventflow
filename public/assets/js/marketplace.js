@@ -23,7 +23,6 @@
     initFilters();
     initViewToggle();
     initQuickActions();
-    initListItemButton();
     initMobileFilters();
     loadSavedLocation();
 
@@ -40,15 +39,27 @@
       if (res.ok) {
         const data = await res.json();
         // Handle both wrapped ({user: ...}) and unwrapped response formats
-        currentUser = data.user || data;
+        // Check if user property exists and is not null before using it
+        if (data.user !== undefined) {
+          currentUser = data.user;
+        } else if (data.id) {
+          // User data is unwrapped (direct user object)
+          currentUser = data;
+        } else {
+          // No valid user data
+          currentUser = null;
+        }
         updateAuthUI();
       } else if (res.status === 401) {
         // User not logged in - this is expected, not an error
         currentUser = null;
+        updateAuthUI();
       }
     } catch (error) {
       // Network error or other issue - treat as not logged in
+      console.error('Auth check failed:', error);
       currentUser = null;
+      updateAuthUI();
     }
   }
 
@@ -987,20 +998,6 @@
         }
       });
     });
-  }
-
-  // Initialize list item button
-  function initListItemButton() {
-    const sellBtn = document.getElementById('sell-item-btn');
-    if (sellBtn && !sellBtn.onclick) {
-      // onclick was set in updateAuthUI
-      if (!currentUser) {
-        sellBtn.onclick = () => {
-          showToast('Please log in to list items');
-          setTimeout(() => (window.location.href = '/auth.html'), 1500);
-        };
-      }
-    }
   }
 
   // Update result count
