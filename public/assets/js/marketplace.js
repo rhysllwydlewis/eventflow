@@ -80,7 +80,9 @@
       }
       if (sellBtn) {
         sellBtn.textContent = 'List an Item';
-        sellBtn.onclick = () => showListItemModal();
+        sellBtn.onclick = () => {
+          window.location.href = '/supplier/marketplace-new-listing.html';
+        };
       }
       if (myListingsLink) {
         myListingsLink.style.display = 'flex';
@@ -198,7 +200,7 @@
           <p class="empty-state-message">
             ${currentUser ? 'Be the first to list a pre-loved event item and help others save money!' : 'Check back soon for new listings or create an account to list your items.'}
           </p>
-          ${currentUser ? '<button onclick="window.showListItemModal()" class="btn btn-primary">List Your First Item</button>' : '<a href="/auth.html" class="btn btn-primary">Create Account</a>'}
+          ${currentUser ? '<a href="/supplier/marketplace-new-listing.html" class="btn btn-primary">List Your First Item</a>' : '<a href="/auth.html" class="btn btn-primary">Create Account</a>'}
         </div>
       `;
       return;
@@ -438,7 +440,8 @@
       const csrfRes = await fetch('/api/csrf-token', { credentials: 'include' });
       if (csrfRes.ok) {
         const csrfData = await csrfRes.json();
-        csrfToken = csrfData.token;
+        csrfToken = csrfData.csrfToken;
+        window.__CSRF_TOKEN__ = csrfData.csrfToken;
       }
     } catch (error) {
       console.error('Failed to fetch CSRF token:', error);

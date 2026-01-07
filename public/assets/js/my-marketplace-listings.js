@@ -297,13 +297,13 @@
     // Generate tags
     const tags = [];
     if (listing.category) {
-      tags.push(`<span class="listing-tag">${formatCategory(listing.category)}</span>`);
+      tags.push(`<span class="marketplace-tag">${formatCategory(listing.category)}</span>`);
     }
     if (listing.location) {
-      tags.push(`<span class="listing-tag">📍 ${escapeHtml(listing.location)}</span>`);
+      tags.push(`<span class="marketplace-tag">📍 ${escapeHtml(listing.location)}</span>`);
     }
     if (listing.condition) {
-      tags.push(`<span class="listing-tag">${formatCondition(listing.condition)}</span>`);
+      tags.push(`<span class="marketplace-tag">${formatCondition(listing.condition)}</span>`);
     }
 
     return `
@@ -318,7 +318,7 @@
             <span>Listed ${timeAgo}</span>
             ${!listing.approved ? '<span style="color: #dc2626;">⚠️ Awaiting approval</span>' : ''}
           </div>
-          ${tags.length > 0 ? `<div class="listing-tags">${tags.join('')}</div>` : ''}
+          ${tags.length > 0 ? `<div class="marketplace-item-tags">${tags.join('')}</div>` : ''}
         </div>
         <div class="listing-card-actions">
           ${
