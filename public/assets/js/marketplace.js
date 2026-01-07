@@ -28,6 +28,8 @@
     loadSavedLocation();
 
     // Expose showListItemModal globally for onclick handlers after initialization
+    // Note: Required for dynamically generated HTML with onclick handlers (e.g., empty state button)
+    // Alternative would require refactoring to use event delegation or data attributes
     window.showListItemModal = showListItemModal;
   }
 

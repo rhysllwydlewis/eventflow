@@ -1161,6 +1161,8 @@
   animation: fadeInScale 0.4s ease-out backwards;
 }
 
+/* Staggered entrance animations for first 6 cards */
+/* Note: Items beyond 6 will still animate, just without delay */
 .marketplace-item-card:nth-child(1) { animation-delay: 0.05s; }
 .marketplace-item-card:nth-child(2) { animation-delay: 0.1s; }
 .marketplace-item-card:nth-child(3) { animation-delay: 0.15s; }

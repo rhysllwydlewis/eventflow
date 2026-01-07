@@ -585,9 +585,12 @@ async function initSupplier() {
       ? `<div class="supplier-badges" style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px;">${badges.join('')}</div>`
       : '';
 
-  // Calculate years active
+  // Calculate years active more precisely
   const yearsActive = s.createdAt
-    ? Math.max(1, new Date().getFullYear() - new Date(s.createdAt).getFullYear())
+    ? Math.max(
+        1,
+        Math.floor((Date.now() - new Date(s.createdAt).getTime()) / (1000 * 60 * 60 * 24 * 365.25))
+      )
     : null;
 
   // Build stats section

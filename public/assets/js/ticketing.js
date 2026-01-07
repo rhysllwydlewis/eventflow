@@ -251,7 +251,6 @@ class TicketingSystem {
       }
     }, 5000); // Poll every 5 seconds
 
-    this.pollingIntervals = this.pollingIntervals.filter(i => i !== pollInterval);
     this.pollingIntervals.push(pollInterval);
 
     // Return unsubscribe function

@@ -156,11 +156,11 @@ class SupplierPhotoUpload {
 
           canvas.toBlob(
             blob => {
-              if (blob) {
-                resolve(blob);
-              } else {
+              if (!blob) {
                 reject(new Error('Failed to compress image'));
+                return;
               }
+              resolve(blob);
             },
             'image/jpeg',
             this.compressionQuality
