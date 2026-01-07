@@ -140,8 +140,15 @@ function configureCORS(isProduction = false) {
       if (allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
-        callback(null, true); // Allow all origins but log warning
-        logger.warn(`CORS request from non-configured origin: ${origin}`);
+        // In production, reject disallowed origins
+        if (isProduction) {
+          logger.warn(`CORS request rejected from non-configured origin: ${origin}`);
+          callback(new Error('Not allowed by CORS'));
+        } else {
+          // In development, allow but warn
+          callback(null, true);
+          logger.warn(`CORS request from non-configured origin: ${origin}`);
+        }
       }
     },
     credentials: true, // Allow cookies to be sent with requests

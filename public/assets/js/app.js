@@ -147,6 +147,7 @@ function validateRedirectForRole(redirectUrl, userRole) {
     ],
     supplier: [
       '/dashboard-supplier.html',
+      '/dashboard.html',
       '/settings.html',
       '/plan.html',
       '/my-marketplace-listings.html',
@@ -154,6 +155,7 @@ function validateRedirectForRole(redirectUrl, userRole) {
     ],
     customer: [
       '/dashboard-customer.html',
+      '/dashboard.html',
       '/settings.html',
       '/plan.html',
       '/checkout.html',

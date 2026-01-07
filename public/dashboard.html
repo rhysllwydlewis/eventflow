@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dashboard — EventFlow</title>
+  <link rel="stylesheet" href="/assets/css/styles.css?v=17.0.1">
+  <style>
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: linear-gradient(135deg, #0B8073 0%, #0a6b5f 100%);
+    }
+    .loading-container {
+      text-align: center;
+      color: white;
+    }
+    .spinner {
+      border: 4px solid rgba(255, 255, 255, 0.3);
+      border-top: 4px solid white;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 1rem;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="loading-container">
+    <div class="spinner" role="status" aria-label="Loading"></div>
+    <p>Redirecting to your dashboard...</p>
+  </div>
+  <script>
+    (async function() {
+      try {
+        // Fetch user info to determine role
+        const res = await fetch('/api/user', {
+          credentials: 'include',
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
+          }
+        });
+
+        if (res.status === 401) {
+          // Not authenticated - redirect to login with return URL
+          window.location.href = '/auth.html?redirect=/dashboard.html';
+          return;
+        }
+
+        if (!res.ok) {
+          console.error('Failed to fetch user:', res.status);
+          window.location.href = '/auth.html?redirect=/dashboard.html';
+          return;
+        }
+
+        const data = await res.json();
+        
+        // Handle both wrapped ({user: ...}) and unwrapped response formats
+        const user = data.user || data;
+
+        if (!user || !user.role) {
+          window.location.href = '/auth.html?redirect=/dashboard.html';
+          return;
+        }
+
+        // Redirect based on role
+        if (user.role === 'admin') {
+          window.location.href = '/admin.html';
+        } else if (user.role === 'supplier') {
+          window.location.href = '/dashboard-supplier.html';
+        } else {
+          // Default to customer dashboard
+          window.location.href = '/dashboard-customer.html';
+        }
+      } catch (error) {
+        console.error('Error redirecting to dashboard:', error);
+        // Fallback to auth page
+        window.location.href = '/auth.html?redirect=/dashboard.html';
+      }
+    })();
+  </script>
+</body>
+</html>

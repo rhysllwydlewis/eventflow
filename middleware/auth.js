@@ -9,6 +9,16 @@ const jwt = require('jsonwebtoken');
 
 const JWT_SECRET = String(process.env.JWT_SECRET || 'change_me');
 
+// Validate JWT secret at module load time in production
+if (process.env.NODE_ENV === 'production') {
+  if (!process.env.JWT_SECRET || process.env.JWT_SECRET.trim() === '' || process.env.JWT_SECRET === 'change_me') {
+    throw new Error(
+      'FATAL: JWT_SECRET is missing, blank, or set to default value in production. ' +
+      'Please set a strong JWT_SECRET environment variable.'
+    );
+  }
+}
+
 /**
  * Set authentication cookie with JWT token
  * @param {Object} res - Express response object

@@ -272,12 +272,12 @@ Content-Type: multipart/form-data
 photo: [file]
 ```
 
-Requires authentication. Uploads photo for supplier or package.
+Requires authentication. Uploads photo for supplier, package, or marketplace listing.
 
 **Query Parameters:**
 
-- `type` - Either `supplier` or `package`
-- `id` - ID of the supplier or package
+- `type` - Either `supplier`, `package`, or `marketplace`
+- `id` - ID of the supplier, package, or marketplace listing
 
 **Supported Formats:** JPEG, PNG, WebP, GIF  
 **Max Size:** 10MB per file
@@ -305,6 +305,17 @@ Requires authentication. Uploads photo for supplier or package.
 }
 ```
 
+**Marketplace Response:**
+
+For marketplace type, the response is simplified and returns URLs directly:
+
+```json
+{
+  "success": true,
+  "urls": ["https://...", "https://..."]
+}
+```
+
 #### Batch Upload Photos
 
 ```http
@@ -314,7 +325,13 @@ Content-Type: multipart/form-data
 photos: [file1, file2, file3, ...]
 ```
 
-Upload up to 10 photos at once.
+Upload up to 10 photos at once for suppliers/packages, or up to 5 photos total for marketplace listings (capped at 5 images per listing).
+
+**Marketplace Listings:**
+- Uses `type=marketplace&id=<listingId>`
+- Maximum 5 images total per listing
+- Requires listing ownership or admin role
+- Images are stored directly in the listing's `images` array
 
 #### Delete Photo
 
