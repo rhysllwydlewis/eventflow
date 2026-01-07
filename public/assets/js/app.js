@@ -529,35 +529,162 @@ async function initSupplier() {
       )
       .join('') || `<div class="card"><p class="small">No approved packages yet.</p></div>`;
 
-  // Enhanced badge rendering for Pro and Pro+ tiers
-  let proBadge = '';
-  // Check subscriptionTier field first (new), then fall back to subscription.tier or isPro
+  // Enhanced badge system
+  const badges = [];
+
+  // Tier badges
   const tier =
     s.subscriptionTier ||
     (s.subscription && s.subscription.tier) ||
     (s.isPro || s.pro ? 'pro' : null);
 
   if (tier === 'pro_plus') {
-    proBadge = '<span class="badge badge-pro-plus">Professional Plus</span>';
+    badges.push(
+      '<span class="badge badge-pro-plus" title="Professional Plus Member">✨ Pro+</span>'
+    );
   } else if (tier === 'pro') {
-    proBadge = '<span class="badge badge-pro">Professional</span>';
+    badges.push('<span class="badge badge-pro" title="Professional Member">⭐ Pro</span>');
   }
 
+  // Verified badge
+  if (s.approved || s.verified) {
+    badges.push('<span class="badge badge-verified" title="Verified Supplier">✓ Verified</span>');
+  }
+
+  // Founding supplier
+  if (s.founding) {
+    badges.push('<span class="badge badge-founding" title="Founding Supplier">🏆 Founding</span>');
+  }
+
+  // Featured supplier
+  if (s.featured) {
+    badges.push('<span class="badge badge-featured" title="Featured Supplier">⭐ Featured</span>');
+  }
+
+  // Fast responder (if response time < 24 hours)
+  if (s.avgResponseTime && s.avgResponseTime < 24) {
+    badges.push(
+      '<span class="badge badge-fast-responder" title="Responds within 24 hours">⚡ Fast Responder</span>'
+    );
+  }
+
+  // Top rated (if rating >= 4.5)
+  if (s.avgRating && s.avgRating >= 4.5) {
+    badges.push('<span class="badge badge-top-rated" title="Top Rated">🌟 Top Rated</span>');
+  }
+
+  // Expert (if completed events > 50)
+  if (s.completedEvents && s.completedEvents > 50) {
+    badges.push(
+      '<span class="badge badge-expert" title="Over 50 completed events">👨‍🎓 Expert</span>'
+    );
+  }
+
+  const badgesHtml =
+    badges.length > 0
+      ? `<div class="supplier-badges" style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px;">${badges.join('')}</div>`
+      : '';
+
+  // Calculate years active
+  const yearsActive = s.createdAt
+    ? Math.max(1, new Date().getFullYear() - new Date(s.createdAt).getFullYear())
+    : null;
+
+  // Build stats section
+  const statsHtml = `
+    <div class="supplier-stats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 16px; margin: 20px 0; padding: 20px; background: linear-gradient(135deg, #F6FAF9 0%, #EBF5F4 100%); border-radius: 12px;">
+      ${
+        s.completedEvents
+          ? `<div class="stat-item" style="text-align: center;">
+        <div class="stat-value" style="font-size: 28px; font-weight: 700; color: var(--ink, #0B8073);">${s.completedEvents}</div>
+        <div class="stat-label" style="font-size: 12px; color: #6b7280; font-weight: 500;">Events</div>
+      </div>`
+          : ''
+      }
+      ${
+        yearsActive
+          ? `<div class="stat-item" style="text-align: center;">
+        <div class="stat-value" style="font-size: 28px; font-weight: 700; color: var(--ink, #0B8073);">${yearsActive}</div>
+        <div class="stat-label" style="font-size: 12px; color: #6b7280; font-weight: 500;">Years Active</div>
+      </div>`
+          : ''
+      }
+      ${
+        s.avgResponseTime
+          ? `<div class="stat-item" style="text-align: center;">
+        <div class="stat-value" style="font-size: 28px; font-weight: 700; color: var(--ink, #0B8073);">${Math.round(s.avgResponseTime)}h</div>
+        <div class="stat-label" style="font-size: 12px; color: #6b7280; font-weight: 500;">Response Time</div>
+      </div>`
+          : ''
+      }
+      ${
+        s.reviewCount
+          ? `<div class="stat-item" style="text-align: center;">
+        <div class="stat-value" style="font-size: 28px; font-weight: 700; color: var(--ink, #0B8073);">${s.reviewCount}</div>
+        <div class="stat-label" style="font-size: 12px; color: #6b7280; font-weight: 500;">Reviews</div>
+      </div>`
+          : ''
+      }
+    </div>
+  `;
+
+  // Trust indicators
+  const trustHtml = `
+    <div class="supplier-trust" style="margin: 20px 0; padding: 16px; background: white; border: 2px solid #E7EAF0; border-radius: 12px;">
+      <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 12px; color: var(--text, #0B1220);">Trust & Safety</h3>
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        ${s.verifications?.email ? '<div style="display: flex; align-items: center; gap: 8px;"><span style="color: #10b981; font-weight: 600;">✓</span> <span style="font-size: 14px;">Email verified</span></div>' : ''}
+        ${s.verifications?.phone ? '<div style="display: flex; align-items: center; gap: 8px;"><span style="color: #10b981; font-weight: 600;">✓</span> <span style="font-size: 14px;">Phone verified</span></div>' : ''}
+        ${s.verifications?.business ? '<div style="display: flex; align-items: center; gap: 8px;"><span style="color: #10b981; font-weight: 600;">✓</span> <span style="font-size: 14px;">Business verified</span></div>' : ''}
+        ${s.insurance ? '<div style="display: flex; align-items: center; gap: 8px;"><span style="color: #10b981; font-weight: 600;">✓</span> <span style="font-size: 14px;">Insured</span></div>' : ''}
+        ${s.license ? '<div style="display: flex; align-items: center; gap: 8px;"><span style="color: #10b981; font-weight: 600;">✓</span> <span style="font-size: 14px;">Licensed</span></div>' : ''}
+      </div>
+    </div>
+  `;
+
   document.getElementById('supplier-container').innerHTML = `
-    <div class="card"><div class="supplier-card">
-      <img src="${escapeHtml(img)}" alt="${escapeHtml(s.name)} image"><div>
-        <h1>${escapeHtml(s.name)} ${proBadge}</h1><div class="small">${escapeHtml(s.location || '')} · <span class="badge">${escapeHtml(s.category)}</span> ${s.price_display ? `· ${escapeHtml(s.price_display)}` : ''}</div>
-        ${facts}
-        <div class="small" style="margin-top:8px">${amenities}</div>
-        <p style="margin-top:8px">${escapeHtml(s.description_long || s.description_short || '')}</p>
-        <div class="form-actions" style="margin-top:8px">
-          <button class="cta" id="add">Add to my plan</button>
-          <button class="cta secondary" id="start-thread">Start conversation</button>
+    <div class="card supplier-profile-card" style="background: linear-gradient(135deg, #0B8073 0%, #0a6d61 100%); color: white; padding: 0; overflow: hidden; animation: fadeInScale 0.5s ease-out;">
+      <div style="position: relative; height: 200px; overflow: hidden;">
+        <img src="${escapeHtml(img)}" alt="${escapeHtml(s.name)} banner" style="width: 100%; height: 100%; object-fit: cover; opacity: 0.3;">
+        <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(to bottom, transparent 0%, rgba(11, 128, 115, 0.8) 100%);"></div>
+      </div>
+      <div style="padding: 24px; margin-top: -60px; position: relative;">
+        <div style="background: white; border-radius: 50%; width: 100px; height: 100px; display: flex; align-items: center; justify-content: center; font-size: 48px; font-weight: 700; color: var(--ink, #0B8073); box-shadow: 0 4px 12px rgba(0,0,0,0.15); margin-bottom: 16px;">
+          ${s.name ? s.name.charAt(0).toUpperCase() : 'S'}
         </div>
-      </div></div></div>
-    <section class="section"><h2>Gallery</h2><div class="cards">${gallery || '<div class="card"><p class="small">No photos yet.</p></div>'}</div></section>
-    <section class="section"><h2>Packages</h2><div class="cards">${packagesHtml}</div></section>
-    <div class="reviews-widget" id="reviews-widget" role="region" aria-label="Customer reviews and ratings">
+        <h1 style="font-size: 32px; font-weight: 700; margin: 0 0 8px 0; color: white;">${escapeHtml(s.name)}</h1>
+        <div style="font-size: 16px; color: rgba(255,255,255,0.9); margin-bottom: 12px;">
+          ${escapeHtml(s.location || '')} · <span class="badge" style="background: rgba(255,255,255,0.2); color: white;">${escapeHtml(s.category)}</span> ${s.price_display ? `· ${escapeHtml(s.price_display)}` : ''}
+        </div>
+        ${badgesHtml}
+      </div>
+    </div>
+
+    ${statsHtml}
+    
+    <div class="card" style="animation: fadeInUp 0.5s ease-out 0.1s backwards;">
+      <h2 style="font-size: 20px; font-weight: 600; margin-bottom: 12px;">About</h2>
+      ${facts}
+      <div class="small" style="margin-top:12px">${amenities}</div>
+      <p style="margin-top:16px; line-height: 1.6;">${escapeHtml(s.description_long || s.description_short || '')}</p>
+      ${trustHtml}
+      <div class="form-actions" style="margin-top:20px; display: flex; gap: 12px; flex-wrap: wrap;">
+        <button class="cta" id="add" style="flex: 1; min-width: 150px;">Add to My Plan</button>
+        <button class="cta secondary" id="start-thread" style="flex: 1; min-width: 150px;">Start Conversation</button>
+      </div>
+    </div>
+
+    <section class="section" style="animation: fadeInUp 0.5s ease-out 0.2s backwards;">
+      <h2 style="font-size: 24px; font-weight: 600; margin-bottom: 16px;">Gallery</h2>
+      <div class="cards">${gallery || '<div class="card"><p class="small">No photos yet.</p></div>'}</div>
+    </section>
+    
+    <section class="section" style="animation: fadeInUp 0.5s ease-out 0.3s backwards;">
+      <h2 style="font-size: 24px; font-weight: 600; margin-bottom: 16px;">Packages & Services</h2>
+      <div class="cards">${packagesHtml}</div>
+    </section>
+    
+    <div class="reviews-widget" id="reviews-widget" role="region" aria-label="Customer reviews and ratings" style="animation: fadeInUp 0.5s ease-out 0.4s backwards;">
       <section class="reviews-section">
         <div class="review-summary">
           <div class="review-summary-score">
