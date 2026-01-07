@@ -1,52 +1,36 @@
 /**
  * Customer Management Module for EventFlow
- * Handles customer CRUD operations with Firebase Firestore
+ * Handles customer CRUD operations via MongoDB API
+ *
+ * NOTE: This module has been migrated from Firebase to MongoDB.
+ * All operations now use the EventFlow REST API backed by MongoDB.
  */
-
-import {
-  db,
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  setDoc,
-  updateDoc,
-  deleteDoc,
-  query,
-  orderBy,
-  onSnapshot,
-  serverTimestamp,
-} from './firebase-config.js';
 
 class CustomerManager {
   constructor() {
-    this.unsubscribers = [];
+    this.pollingIntervals = [];
+    this.apiBase = '/api';
   }
 
   /**
-   * Create or update customer profile
+   * Create or update customer profile via MongoDB API
    * @param {string} userId - User ID
    * @param {Object} customerData - Customer information
    * @returns {Promise<string>} Customer ID
    */
   async saveCustomer(userId, customerData) {
     try {
-      const customerRef = doc(db, 'customers', userId);
+      const response = await fetch(`${this.apiBase}/customers/${userId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(customerData),
+      });
 
-      const data = {
-        ...customerData,
-        userId: userId,
-        updatedAt: serverTimestamp(),
-      };
-
-      // Check if customer exists
-      const customerSnap = await getDoc(customerRef);
-
-      if (!customerSnap.exists()) {
-        data.createdAt = serverTimestamp();
+      if (!response.ok) {
+        throw new Error('Failed to save customer');
       }
 
-      await setDoc(customerRef, data, { merge: true });
       console.log('Customer saved:', userId);
       return userId;
     } catch (error) {
@@ -56,20 +40,24 @@ class CustomerManager {
   }
 
   /**
-   * Get customer by user ID
+   * Get customer by user ID via MongoDB API
    * @param {string} userId - User ID
    * @returns {Promise<Object|null>} Customer data
    */
   async getCustomer(userId) {
     try {
-      const customerRef = doc(db, 'customers', userId);
-      const customerSnap = await getDoc(customerRef);
+      const response = await fetch(`${this.apiBase}/customers/${userId}`, {
+        credentials: 'include',
+      });
 
-      if (!customerSnap.exists()) {
-        return null;
+      if (!response.ok) {
+        if (response.status === 404) {
+          return null;
+        }
+        throw new Error('Failed to fetch customer');
       }
 
-      return { id: customerSnap.id, ...customerSnap.data() };
+      return await response.json();
     } catch (error) {
       console.error('Error getting customer:', error);
       throw error;
@@ -77,32 +65,21 @@ class CustomerManager {
   }
 
   /**
-   * Get all customers
+   * Get all customers via MongoDB API
    * @param {Object} options - Query options
    * @returns {Promise<Array>} Array of customers
    */
   async getAllCustomers(options = {}) {
     try {
-      let q = collection(db, 'customers');
-
-      const constraints = [];
-
-      if (options.orderBy) {
-        constraints.push(orderBy(options.orderBy.field, options.orderBy.direction || 'asc'));
-      }
-
-      if (constraints.length > 0) {
-        q = query(collection(db, 'customers'), ...constraints);
-      }
-
-      const querySnapshot = await getDocs(q);
-      const customers = [];
-
-      querySnapshot.forEach(doc => {
-        customers.push({ id: doc.id, ...doc.data() });
+      const response = await fetch(`${this.apiBase}/customers`, {
+        credentials: 'include',
       });
 
-      return customers;
+      if (!response.ok) {
+        throw new Error('Failed to fetch customers');
+      }
+
+      return await response.json();
     } catch (error) {
       console.error('Error getting customers:', error);
       throw error;
@@ -110,34 +87,29 @@ class CustomerManager {
   }
 
   /**
-   * Update customer profile
+   * Update customer profile via MongoDB API
    * @param {string} userId - User ID
    * @param {Object} updates - Fields to update
    */
   async updateCustomer(userId, updates) {
-    try {
-      const customerRef = doc(db, 'customers', userId);
-
-      await updateDoc(customerRef, {
-        ...updates,
-        updatedAt: serverTimestamp(),
-      });
-
-      console.log('Customer updated:', userId);
-    } catch (error) {
-      console.error('Error updating customer:', error);
-      throw error;
-    }
+    return this.saveCustomer(userId, updates);
   }
 
   /**
-   * Delete customer
+   * Delete customer via MongoDB API
    * @param {string} userId - User ID
    */
   async deleteCustomer(userId) {
     try {
-      const customerRef = doc(db, 'customers', userId);
-      await deleteDoc(customerRef);
+      const response = await fetch(`${this.apiBase}/customers/${userId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete customer');
+      }
+
       console.log('Customer deleted:', userId);
     } catch (error) {
       console.error('Error deleting customer:', error);
@@ -146,145 +118,163 @@ class CustomerManager {
   }
 
   /**
-   * Listen to customer changes in real-time
+   * Listen to customer changes using polling
+   * (MongoDB doesn't have real-time updates like Firebase)
    * @param {string} userId - User ID
    * @param {Function} callback - Callback function
    * @returns {Function} Unsubscribe function
    */
   listenToCustomer(userId, callback) {
-    try {
-      const customerRef = doc(db, 'customers', userId);
+    console.warn('Real-time updates not available with MongoDB. Using polling instead.');
 
-      const unsubscribe = onSnapshot(
-        customerRef,
-        doc => {
-          if (doc.exists()) {
-            callback({ id: doc.id, ...doc.data() });
-          } else {
-            callback(null);
-          }
-        },
-        error => {
-          console.error('Error listening to customer:', error);
-          callback(null);
-        }
-      );
+    const pollInterval = setInterval(async () => {
+      try {
+        const customer = await this.getCustomer(userId);
+        callback(customer);
+      } catch (error) {
+        console.error('Error polling customer:', error);
+        callback(null);
+      }
+    }, 5000); // Poll every 5 seconds
 
-      this.unsubscribers.push(unsubscribe);
-      return unsubscribe;
-    } catch (error) {
-      console.error('Error setting up customer listener:', error);
-      throw error;
-    }
+    this.pollingIntervals.push(pollInterval);
+
+    // Return unsubscribe function
+    return () => {
+      clearInterval(pollInterval);
+      this.pollingIntervals = this.pollingIntervals.filter(i => i !== pollInterval);
+    };
   }
 
   /**
-   * Listen to all customers
+   * Listen to all customers using polling
    * @param {Object} options - Query options
    * @param {Function} callback - Callback function
    * @returns {Function} Unsubscribe function
    */
   listenToCustomers(options = {}, callback) {
+    console.warn('Real-time updates not available with MongoDB. Using polling instead.');
+
+    const pollInterval = setInterval(async () => {
+      try {
+        const customers = await this.getAllCustomers(options);
+        callback(customers);
+      } catch (error) {
+        console.error('Error polling customers:', error);
+        callback([]);
+      }
+    }, 5000); // Poll every 5 seconds
+
+    this.pollingIntervals.push(pollInterval);
+
+    // Return unsubscribe function
+    return () => {
+      clearInterval(pollInterval);
+      this.pollingIntervals = this.pollingIntervals.filter(i => i !== pollInterval);
+    };
+  }
+
+  /**
+   * Get customer's event history via MongoDB API
+   * @param {string} userId - User ID
+   * @returns {Promise<Array>} Array of events
+   */
+  async getCustomerEvents(userId) {
     try {
-      let q = collection(db, 'customers');
+      const response = await fetch(`${this.apiBase}/customers/${userId}/events`, {
+        credentials: 'include',
+      });
 
-      const constraints = [];
-
-      if (options.orderBy) {
-        constraints.push(orderBy(options.orderBy.field, options.orderBy.direction || 'asc'));
+      if (!response.ok) {
+        throw new Error('Failed to fetch customer events');
       }
 
-      if (constraints.length > 0) {
-        q = query(collection(db, 'customers'), ...constraints);
-      }
-
-      const unsubscribe = onSnapshot(
-        q,
-        querySnapshot => {
-          const customers = [];
-          querySnapshot.forEach(doc => {
-            customers.push({ id: doc.id, ...doc.data() });
-          });
-          callback(customers);
-        },
-        error => {
-          console.error('Error listening to customers:', error);
-          callback([]);
-        }
-      );
-
-      this.unsubscribers.push(unsubscribe);
-      return unsubscribe;
+      return await response.json();
     } catch (error) {
-      console.error('Error setting up customers listener:', error);
+      console.error('Error getting customer events:', error);
       throw error;
     }
   }
 
   /**
-   * Get customer's favorite suppliers
+   * Get customer's saved suppliers via MongoDB API
    * @param {string} userId - User ID
    * @returns {Promise<Array>} Array of supplier IDs
    */
-  async getFavorites(userId) {
+  async getSavedSuppliers(userId) {
     try {
-      const customer = await this.getCustomer(userId);
-      return customer?.favorites || [];
-    } catch (error) {
-      console.error('Error getting favorites:', error);
-      return [];
-    }
-  }
+      const response = await fetch(`${this.apiBase}/customers/${userId}/saved-suppliers`, {
+        credentials: 'include',
+      });
 
-  /**
-   * Add supplier to favorites
-   * @param {string} userId - User ID
-   * @param {string} supplierId - Supplier ID
-   */
-  async addFavorite(userId, supplierId) {
-    try {
-      const customer = await this.getCustomer(userId);
-      const favorites = customer?.favorites || [];
-
-      if (!favorites.includes(supplierId)) {
-        favorites.push(supplierId);
-        await this.updateCustomer(userId, { favorites });
-        console.log('Added to favorites:', supplierId);
+      if (!response.ok) {
+        throw new Error('Failed to fetch saved suppliers');
       }
+
+      return await response.json();
     } catch (error) {
-      console.error('Error adding favorite:', error);
+      console.error('Error getting saved suppliers:', error);
       throw error;
     }
   }
 
   /**
-   * Remove supplier from favorites
+   * Save a supplier to customer's favorites via MongoDB API
    * @param {string} userId - User ID
    * @param {string} supplierId - Supplier ID
    */
-  async removeFavorite(userId, supplierId) {
+  async saveSupplier(userId, supplierId) {
     try {
-      const customer = await this.getCustomer(userId);
-      const favorites = customer?.favorites || [];
+      const response = await fetch(`${this.apiBase}/customers/${userId}/saved-suppliers`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ supplierId }),
+      });
 
-      const index = favorites.indexOf(supplierId);
-      if (index > -1) {
-        favorites.splice(index, 1);
-        await this.updateCustomer(userId, { favorites });
-        console.log('Removed from favorites:', supplierId);
+      if (!response.ok) {
+        throw new Error('Failed to save supplier');
       }
+
+      console.log('Supplier saved to favorites:', supplierId);
     } catch (error) {
-      console.error('Error removing favorite:', error);
+      console.error('Error saving supplier:', error);
       throw error;
     }
   }
 
   /**
-   * Clean up all listeners
+   * Remove a supplier from customer's favorites via MongoDB API
+   * @param {string} userId - User ID
+   * @param {string} supplierId - Supplier ID
+   */
+  async unsaveSupplier(userId, supplierId) {
+    try {
+      const response = await fetch(
+        `${this.apiBase}/customers/${userId}/saved-suppliers/${supplierId}`,
+        {
+          method: 'DELETE',
+          credentials: 'include',
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to unsave supplier');
+      }
+
+      console.log('Supplier removed from favorites:', supplierId);
+    } catch (error) {
+      console.error('Error unsaving supplier:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Clean up all polling intervals
    */
   cleanup() {
-    this.unsubscribers.forEach(unsubscribe => unsubscribe());
-    this.unsubscribers = [];
+    this.pollingIntervals.forEach(interval => clearInterval(interval));
+    this.pollingIntervals = [];
   }
 }
 

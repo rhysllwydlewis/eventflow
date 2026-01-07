@@ -1,9 +1,10 @@
 /**
  * Supplier Photo Upload Module for EventFlow
- * Handles uploading supplier gallery photos to Firebase Storage
+ * Handles uploading supplier gallery photos to Cloudinary via MongoDB API
+ *
+ * NOTE: This module has been migrated from Firebase Storage to Cloudinary.
+ * All operations now use the EventFlow REST API backed by Cloudinary.
  */
-
-import { storage, ref, uploadBytes, getDownloadURL, deleteObject } from './firebase-config.js';
 
 class SupplierPhotoUpload {
   constructor() {
@@ -13,10 +14,11 @@ class SupplierPhotoUpload {
     this.compressionQuality = 0.85; // 85% quality
     this.maxImageWidth = 1920;
     this.maxImageHeight = 1920;
+    this.apiBase = '/api';
   }
 
   /**
-   * Upload a photo to Firebase Storage
+   * Upload a photo to Cloudinary via MongoDB API
    * @param {File} file - The image file to upload
    * @param {string} supplierId - The supplier ID
    * @returns {Promise<Object>} Photo metadata with download URL
@@ -33,34 +35,36 @@ class SupplierPhotoUpload {
         throw new Error(`File too large. Maximum size is ${this.maxFileSize / (1024 * 1024)}MB.`);
       }
 
-      // Generate unique filename
-      const timestamp = Date.now();
-      const randomStr = Math.random().toString(36).substring(2, 9);
-      const extension = file.name.split('.').pop() || 'jpg';
-      const filename = `${timestamp}_${randomStr}.${extension}`;
+      // Compress image if needed
+      const compressedFile = await this.compressImage(file);
 
-      // Create storage reference
-      const storagePath = `suppliers/${supplierId}/gallery/${filename}`;
-      const storageRef = ref(storage, storagePath);
+      // Create FormData
+      const formData = new FormData();
+      formData.append('photo', compressedFile);
+      formData.append('supplierId', supplierId);
 
-      // Upload file
-      const snapshot = await uploadBytes(storageRef, file);
+      // Upload via API
+      const response = await fetch(`${this.apiBase}/suppliers/${supplierId}/photos`, {
+        method: 'POST',
+        credentials: 'include',
+        body: formData,
+      });
 
-      // Get download URL
-      const downloadURL = await getDownloadURL(snapshot.ref);
+      if (!response.ok) {
+        throw new Error('Failed to upload photo');
+      }
 
-      // Return photo metadata
-      const photoData = {
-        url: downloadURL,
-        path: storagePath,
-        filename: filename,
-        originalName: file.name,
-        size: file.size,
+      const data = await response.json();
+      const photoMetadata = {
+        id: data.photoId,
+        url: data.url,
+        filename: file.name,
         uploadedAt: new Date().toISOString(),
       };
 
-      console.log('Photo uploaded successfully:', photoData);
-      return photoData;
+      this.uploadedPhotos.push(photoMetadata);
+      console.log('Photo uploaded successfully:', photoMetadata);
+      return photoMetadata;
     } catch (error) {
       console.error('Error uploading photo:', error);
       throw error;
@@ -68,52 +72,24 @@ class SupplierPhotoUpload {
   }
 
   /**
-   * Upload multiple photos
-   * @param {FileList|Array} files - Array of files to upload
-   * @param {string} supplierId - The supplier ID
-   * @param {Function} onProgress - Progress callback (optional)
-   * @returns {Promise<Array>} Array of uploaded photo metadata
+   * Delete a photo from Cloudinary via MongoDB API
+   * @param {string} photoId - Photo ID
+   * @param {string} supplierId - Supplier ID
+   * @returns {Promise<void>}
    */
-  async uploadMultiplePhotos(files, supplierId, onProgress) {
+  async deletePhoto(photoId, supplierId) {
     try {
-      const fileArray = Array.from(files);
-      const results = [];
+      const response = await fetch(`${this.apiBase}/suppliers/${supplierId}/photos/${photoId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
 
-      for (let i = 0; i < fileArray.length; i++) {
-        const file = fileArray[i];
-
-        try {
-          const photoData = await this.uploadPhoto(file, supplierId);
-          results.push({ success: true, photo: photoData });
-
-          if (onProgress) {
-            onProgress(i + 1, fileArray.length, photoData);
-          }
-        } catch (error) {
-          results.push({ success: false, error: error.message, filename: file.name });
-
-          if (onProgress) {
-            onProgress(i + 1, fileArray.length, null, error);
-          }
-        }
+      if (!response.ok) {
+        throw new Error('Failed to delete photo');
       }
 
-      return results;
-    } catch (error) {
-      console.error('Error uploading multiple photos:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Delete a photo from Firebase Storage
-   * @param {string} storagePath - The storage path of the photo
-   */
-  async deletePhoto(storagePath) {
-    try {
-      const storageRef = ref(storage, storagePath);
-      await deleteObject(storageRef);
-      console.log('Photo deleted successfully:', storagePath);
+      this.uploadedPhotos = this.uploadedPhotos.filter(p => p.id !== photoId);
+      console.log('Photo deleted successfully:', photoId);
     } catch (error) {
       console.error('Error deleting photo:', error);
       throw error;
@@ -121,81 +97,146 @@ class SupplierPhotoUpload {
   }
 
   /**
+   * Get all photos for a supplier via MongoDB API
+   * @param {string} supplierId - Supplier ID
+   * @returns {Promise<Array>} Array of photo metadata
+   */
+  async getSupplierPhotos(supplierId) {
+    try {
+      const response = await fetch(`${this.apiBase}/suppliers/${supplierId}/photos`, {
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch photos');
+      }
+
+      const photos = await response.json();
+      this.uploadedPhotos = photos;
+      return photos;
+    } catch (error) {
+      console.error('Error fetching photos:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Compress an image file before upload
-   * @param {File} file - The image file to compress
-   * @returns {Promise<File>} Compressed file
+   * @param {File} file - Image file
+   * @returns {Promise<Blob>} Compressed image blob
    */
   async compressImage(file) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
 
-      reader.addEventListener('load', e => {
+      reader.onload = e => {
         const img = new Image();
 
-        img.addEventListener('load', () => {
+        img.onload = () => {
           const canvas = document.createElement('canvas');
-          const ctx = canvas.getContext('2d');
-
-          // Use configured max dimensions
-          const maxWidth = this.maxImageWidth;
-          const maxHeight = this.maxImageHeight;
-
           let width = img.width;
           let height = img.height;
 
-          // Calculate new dimensions
-          if (width > height) {
-            if (width > maxWidth) {
-              height = Math.round((height * maxWidth) / width);
-              width = maxWidth;
-            }
-          } else {
-            if (height > maxHeight) {
-              width = Math.round((width * maxHeight) / height);
-              height = maxHeight;
+          // Calculate new dimensions while maintaining aspect ratio
+          if (width > this.maxImageWidth || height > this.maxImageHeight) {
+            if (width > height) {
+              height = (height / width) * this.maxImageWidth;
+              width = this.maxImageWidth;
+            } else {
+              width = (width / height) * this.maxImageHeight;
+              height = this.maxImageHeight;
             }
           }
 
           canvas.width = width;
           canvas.height = height;
 
-          // Draw image on canvas
+          const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, width, height);
 
-          // Convert to blob
           canvas.toBlob(
             blob => {
-              if (!blob) {
+              if (blob) {
+                resolve(blob);
+              } else {
                 reject(new Error('Failed to compress image'));
-                return;
               }
-
-              // Create new file from blob
-              const compressedFile = new File([blob], file.name, {
-                type: 'image/jpeg',
-                lastModified: Date.now(),
-              });
-
-              resolve(compressedFile);
             },
             'image/jpeg',
             this.compressionQuality
           );
-        });
+        };
 
-        img.addEventListener('error', () => {
-          reject(new Error('Failed to load image'));
-        });
-
+        img.onerror = () => reject(new Error('Failed to load image'));
         img.src = e.target.result;
-      });
+      };
 
-      reader.addEventListener('error', () => {
-        reject(new Error('Failed to read file'));
-      });
-
+      reader.onerror = () => reject(new Error('Failed to read file'));
       reader.readAsDataURL(file);
     });
+  }
+
+  /**
+   * Validate image dimensions
+   * @param {File} file - Image file
+   * @returns {Promise<{width: number, height: number}>}
+   */
+  async getImageDimensions(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+
+      reader.onload = e => {
+        const img = new Image();
+        img.onload = () => {
+          resolve({ width: img.width, height: img.height });
+        };
+        img.onerror = () => reject(new Error('Failed to load image'));
+        img.src = e.target.result;
+      };
+
+      reader.onerror = () => reject(new Error('Failed to read file'));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  /**
+   * Batch upload multiple photos
+   * @param {File[]} files - Array of image files
+   * @param {string} supplierId - Supplier ID
+   * @param {Function} progressCallback - Progress callback (optional)
+   * @returns {Promise<Array>} Array of uploaded photo metadata
+   */
+  async batchUpload(files, supplierId, progressCallback) {
+    const results = [];
+    const errors = [];
+
+    for (let i = 0; i < files.length; i++) {
+      try {
+        const photo = await this.uploadPhoto(files[i], supplierId);
+        results.push(photo);
+
+        if (progressCallback) {
+          progressCallback({
+            current: i + 1,
+            total: files.length,
+            success: results.length,
+            errors: errors.length,
+          });
+        }
+      } catch (error) {
+        errors.push({ file: files[i].name, error: error.message });
+        console.error(`Failed to upload ${files[i].name}:`, error);
+      }
+    }
+
+    return { results, errors };
+  }
+
+  /**
+   * Clear uploaded photos cache
+   */
+  clearCache() {
+    this.uploadedPhotos = [];
   }
 }
 
