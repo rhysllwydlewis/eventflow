@@ -345,33 +345,51 @@
         const responseData = await res.json();
         const listingId = responseData.listing?.id || editingListingId;
 
-        // Upload images separately as multipart
+        // Upload images separately as multipart (concurrently for better performance)
         const newImages = selectedImages.filter(img => img.new && img.file);
+        let failedImageCount = 0;
+
         if (newImages.length > 0) {
-          for (const img of newImages) {
+          const uploadPromises = newImages.map(async img => {
             const formData = new FormData();
             formData.append('files', img.file);
 
-            const uploadRes = await fetch(`/api/photos/upload?type=marketplace&id=${listingId}`, {
-              method: 'POST',
-              credentials: 'include',
-              headers: { 'X-CSRF-Token': csrfToken },
-              body: formData,
-            });
+            try {
+              const uploadRes = await fetch(`/api/photos/upload?type=marketplace&id=${listingId}`, {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'X-CSRF-Token': csrfToken },
+                body: formData,
+              });
 
-            if (!uploadRes.ok) {
-              console.warn('Image upload failed, but listing was created');
+              if (!uploadRes.ok) {
+                throw new Error('Upload failed');
+              }
+              return { success: true };
+            } catch (error) {
+              console.warn('Image upload failed:', error);
+              return { success: false };
             }
-          }
+          });
+
+          const results = await Promise.all(uploadPromises);
+          failedImageCount = results.filter(r => !r.success).length;
         }
 
-        // Success!
-        showToast(
-          isEditMode
-            ? 'Listing updated successfully!'
-            : 'Listing created successfully! It will appear after admin approval.',
-          'success'
-        );
+        // Show appropriate success message
+        if (failedImageCount > 0) {
+          showToast(
+            `Listing ${isEditMode ? 'updated' : 'created'}, but ${failedImageCount} image(s) failed to upload. You can try uploading them again by editing the listing.`,
+            'warning'
+          );
+        } else {
+          showToast(
+            isEditMode
+              ? 'Listing updated successfully!'
+              : 'Listing created successfully! It will appear after admin approval.',
+            'success'
+          );
+        }
 
         // Redirect to my listings page after a short delay
         setTimeout(() => {
