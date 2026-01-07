@@ -271,7 +271,10 @@ describe('Auth Middleware', () => {
       authRequired(req, res, next);
 
       expect(res.status).toHaveBeenCalledWith(401);
-      expect(res.json).toHaveBeenCalledWith({ error: 'Unauthenticated' });
+      expect(res.json).toHaveBeenCalledWith({
+        error: 'Unauthenticated',
+        message: 'Please log in to access this resource.',
+      });
       expect(next).not.toHaveBeenCalled();
     });
 
@@ -288,7 +291,10 @@ describe('Auth Middleware', () => {
       authRequired(req, res, next);
 
       expect(res.status).toHaveBeenCalledWith(401);
-      expect(res.json).toHaveBeenCalledWith({ error: 'Unauthenticated' });
+      expect(res.json).toHaveBeenCalledWith({
+        error: 'Unauthenticated',
+        message: 'Please log in to access this resource.',
+      });
       expect(next).not.toHaveBeenCalled();
     });
   });
@@ -327,7 +333,10 @@ describe('Auth Middleware', () => {
       middleware(req, res, next);
 
       expect(res.status).toHaveBeenCalledWith(403);
-      expect(res.json).toHaveBeenCalledWith({ error: 'Forbidden' });
+      expect(res.json).toHaveBeenCalledWith({
+        error: 'Forbidden',
+        message: 'This action requires admin role. Your current role is customer.',
+      });
       expect(next).not.toHaveBeenCalled();
     });
 
@@ -344,7 +353,10 @@ describe('Auth Middleware', () => {
       middleware(req, res, next);
 
       expect(res.status).toHaveBeenCalledWith(401);
-      expect(res.json).toHaveBeenCalledWith({ error: 'Unauthenticated' });
+      expect(res.json).toHaveBeenCalledWith({
+        error: 'Unauthenticated',
+        message: 'Please log in to access this resource.',
+      });
       expect(next).not.toHaveBeenCalled();
     });
 

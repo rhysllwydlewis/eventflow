@@ -2909,11 +2909,19 @@ app.get('/api/marketplace/listings', async (req, res) => {
       listings.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     }
 
+    logger.info('Marketplace listings fetched', {
+      count: listings.length,
+      filters: { category, condition, minPrice, maxPrice, search, sort },
+    });
+
     res.json({ listings });
   } catch (error) {
-    console.error('Error fetching marketplace listings:', error);
+    logger.error('Error fetching marketplace listings:', error);
     sentry.captureException(error);
-    res.status(500).json({ error: 'Failed to fetch listings' });
+    res.status(500).json({
+      error: 'Failed to fetch marketplace listings',
+      message: 'Unable to load listings at this time. Please try again later.',
+    });
   }
 });
 
@@ -2924,18 +2932,34 @@ app.get('/api/marketplace/listings/:id', async (req, res) => {
     const listing = listings.find(l => l.id === req.params.id);
 
     if (!listing) {
-      return res.status(404).json({ error: 'Listing not found' });
+      logger.warn('Marketplace listing not found', { listingId: req.params.id });
+      return res.status(404).json({
+        error: 'Listing not found',
+        message: 'This listing does not exist or has been removed.',
+      });
     }
 
     if (!listing.approved || listing.status !== 'active') {
-      return res.status(404).json({ error: 'Listing not available' });
+      logger.warn('Marketplace listing not available', {
+        listingId: req.params.id,
+        approved: listing.approved,
+        status: listing.status,
+      });
+      return res.status(404).json({
+        error: 'Listing not available',
+        message: 'This listing is not currently available for viewing.',
+      });
     }
 
+    logger.info('Marketplace listing fetched', { listingId: req.params.id });
     res.json({ listing });
   } catch (error) {
-    console.error('Error fetching marketplace listing:', error);
+    logger.error('Error fetching marketplace listing:', error);
     sentry.captureException(error);
-    res.status(500).json({ error: 'Failed to fetch listing' });
+    res.status(500).json({
+      error: 'Failed to fetch listing',
+      message: 'Unable to load this listing. Please try again later.',
+    });
   }
 });
 
@@ -2949,22 +2973,44 @@ app.post(
     try {
       const { title, description, price, category, condition, location, images } = req.body || {};
 
-      // Validation
+      // Validation with detailed messages
       if (!title || !description || !price || !category || !condition) {
-        return res.status(400).json({ error: 'Missing required fields' });
+        logger.warn('Marketplace listing creation failed - missing fields', {
+          userId: req.user.id,
+          provided: {
+            title: !!title,
+            description: !!description,
+            price: !!price,
+            category: !!category,
+            condition: !!condition,
+          },
+        });
+        return res.status(400).json({
+          error: 'Missing required fields',
+          message: 'Please provide title, description, price, category, and condition.',
+        });
       }
 
       if (title.length > 100) {
-        return res.status(400).json({ error: 'Title must be 100 characters or less' });
+        return res.status(400).json({
+          error: 'Title too long',
+          message: 'Title must be 100 characters or less.',
+        });
       }
 
       if (description.length > 1000) {
-        return res.status(400).json({ error: 'Description must be 1000 characters or less' });
+        return res.status(400).json({
+          error: 'Description too long',
+          message: 'Description must be 1000 characters or less.',
+        });
       }
 
       const priceNum = parseFloat(price);
       if (isNaN(priceNum) || priceNum < 0) {
-        return res.status(400).json({ error: 'Invalid price' });
+        return res.status(400).json({
+          error: 'Invalid price',
+          message: 'Please enter a valid price (must be a positive number).',
+        });
       }
 
       const validCategories = [
@@ -2976,12 +3022,18 @@ app.post(
         'florals',
       ];
       if (!validCategories.includes(category)) {
-        return res.status(400).json({ error: 'Invalid category' });
+        return res.status(400).json({
+          error: 'Invalid category',
+          message: 'Please select a valid category from the list.',
+        });
       }
 
       const validConditions = ['new', 'like-new', 'good', 'fair'];
       if (!validConditions.includes(condition)) {
-        return res.status(400).json({ error: 'Invalid condition' });
+        return res.status(400).json({
+          error: 'Invalid condition',
+          message: 'Please select a valid condition from the list.',
+        });
       }
 
       const listing = {
@@ -3004,11 +3056,24 @@ app.post(
       listings.push(listing);
       await dbUnified.write('marketplace_listings', listings);
 
-      res.json({ ok: true, listing });
+      logger.info('Marketplace listing created', {
+        listingId: listing.id,
+        userId: req.user.id,
+        category: listing.category,
+      });
+
+      res.json({
+        ok: true,
+        listing,
+        message: 'Listing submitted successfully! It will be reviewed by our team.',
+      });
     } catch (error) {
-      console.error('Error creating marketplace listing:', error);
+      logger.error('Error creating marketplace listing:', error);
       sentry.captureException(error);
-      res.status(500).json({ error: 'Failed to create listing' });
+      res.status(500).json({
+        error: 'Failed to create listing',
+        message: 'Unable to create your listing at this time. Please try again later.',
+      });
     }
   }
 );

@@ -104,7 +104,10 @@ function getUserFromCookie(req) {
 function authRequired(req, res, next) {
   const u = getUserFromCookie(req);
   if (!u) {
-    return res.status(401).json({ error: 'Unauthenticated' });
+    return res.status(401).json({
+      error: 'Unauthenticated',
+      message: 'Please log in to access this resource.',
+    });
   }
   req.user = u;
   // Also expose userId for routes that rely on it
@@ -120,10 +123,16 @@ function authRequired(req, res, next) {
 function roleRequired(role) {
   return (req, res, next) => {
     if (!req.user) {
-      return res.status(401).json({ error: 'Unauthenticated' });
+      return res.status(401).json({
+        error: 'Unauthenticated',
+        message: 'Please log in to access this resource.',
+      });
     }
     if (req.user.role !== role) {
-      return res.status(403).json({ error: 'Forbidden' });
+      return res.status(403).json({
+        error: 'Forbidden',
+        message: `This action requires ${role} role. Your current role is ${req.user.role}.`,
+      });
     }
     next();
   };
