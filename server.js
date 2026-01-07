@@ -4830,10 +4830,11 @@ app.delete('/api/reviews/:reviewId', authRequired, csrfProtection, async (req, r
 // ---------- Photo Upload & Management ----------
 
 /**
- * Upload single photo for supplier or package
+ * Upload photos for supplier, package, or marketplace listing
  * POST /api/photos/upload
- * Body: multipart/form-data with 'photo' field
- * Query: ?type=supplier|package&id=<supplierId|packageId>
+ * Body: multipart/form-data with 'files' field (array)
+ * Query: ?type=supplier|package|marketplace&id=<supplierId|packageId|listingId>
+ * Note: Accepts up to 5 files per request. Marketplace listings capped at 5 images total.
  */
 app.post(
   '/api/photos/upload',
@@ -4865,11 +4866,16 @@ app.post(
           return res.status(403).json({ error: 'Not authorized' });
         }
 
-        // Process and append URLs
+        // Process and append URLs with error handling
         const uploadedUrls = [];
+        const errors = [];
         for (const file of req.files) {
-          const images = await photoUpload.processAndSaveImage(file.buffer, file.originalname);
-          uploadedUrls.push(images.optimized);
+          try {
+            const images = await photoUpload.processAndSaveImage(file.buffer, file.originalname);
+            uploadedUrls.push(images.optimized);
+          } catch (error) {
+            errors.push({ filename: file.originalname, error: error.message });
+          }
         }
 
         // Cap at 5 images total
@@ -4884,7 +4890,15 @@ app.post(
           count: uploadedUrls.length,
         });
 
-        return res.json({ success: true, urls: uploadedUrls });
+        return res.json({
+          success: true,
+          urls: uploadedUrls,
+          errors: errors.length > 0 ? errors : undefined,
+          message:
+            uploadedUrls.length > 0
+              ? `${uploadedUrls.length} image(s) uploaded successfully${errors.length > 0 ? `, ${errors.length} failed` : ''}.`
+              : 'No images were uploaded.',
+        });
       }
 
       // Handle single file for supplier/package types
@@ -4980,7 +4994,8 @@ app.post(
  * Upload multiple photos (batch upload)
  * POST /api/photos/upload/batch
  * Body: multipart/form-data with 'photos' field (multiple files)
- * Query: ?type=supplier|package&id=<supplierId|packageId>
+ * Query: ?type=supplier|package|marketplace&id=<supplierId|packageId|listingId>
+ * Note: Accepts up to 10 files for supplier/package, marketplace listings capped at 5 images total
  */
 app.post(
   '/api/photos/upload/batch',
