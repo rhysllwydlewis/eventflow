@@ -43,12 +43,12 @@
    */
   async function checkAuth() {
     try {
-      const res = await fetch('/api/user', { 
+      const res = await fetch('/api/user', {
         credentials: 'include',
         headers: {
           'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
-        }
+          Pragma: 'no-cache',
+        },
       });
 
       if (res.status === 401) {
@@ -66,7 +66,7 @@
       }
 
       const data = await res.json();
-      
+
       // Handle both wrapped ({user: ...}) and unwrapped response formats
       if (data.user !== undefined) {
         currentUser = data.user;
@@ -94,8 +94,8 @@
    */
   async function loadListingForEdit(listingId) {
     try {
-      const res = await fetch(`/api/marketplace/listings/${listingId}`, {
-        credentials: 'include'
+      const res = await fetch(`/api/marketplace/my-listings/${listingId}`, {
+        credentials: 'include',
       });
 
       if (!res.ok) {
@@ -122,7 +122,6 @@
       // Update page title
       document.querySelector('.form-header h1').textContent = 'Edit Listing';
       document.querySelector('button[type="submit"]').textContent = 'Save Changes';
-
     } catch (error) {
       console.error('Error loading listing:', error);
       showToast('Failed to load listing for editing', 'error');
@@ -148,7 +147,7 @@
     input.addEventListener('change', handleFileSelect);
 
     // Drag and drop
-    zone.addEventListener('dragover', (e) => {
+    zone.addEventListener('dragover', e => {
       e.preventDefault();
       zone.classList.add('dragover');
     });
@@ -157,10 +156,10 @@
       zone.classList.remove('dragover');
     });
 
-    zone.addEventListener('drop', (e) => {
+    zone.addEventListener('drop', e => {
       e.preventDefault();
       zone.classList.remove('dragover');
-      
+
       const files = Array.from(e.dataTransfer.files);
       handleFiles(files);
     });
@@ -200,17 +199,23 @@
         continue;
       }
 
-      // Convert to base64
+      // Create preview (read as base64 for preview only)
       try {
-        const base64 = await fileToBase64(file);
-        selectedImages.push({ url: base64, file: file, new: true });
+        const reader = new FileReader();
+        reader.onload = e => {
+          selectedImages.push({
+            file: file, // Store actual File object
+            preview: e.target.result, // Base64 preview only
+            new: true,
+          });
+          renderImagePreviews();
+        };
+        reader.readAsDataURL(file);
       } catch (error) {
         console.error('Error processing image:', error);
         showToast(`Failed to process ${file.name}`, 'error');
       }
     }
-
-    renderImagePreviews();
   }
 
   /**
@@ -230,15 +235,17 @@
    */
   function renderImagePreviews() {
     const grid = document.getElementById('image-preview-grid');
-    
+
     if (selectedImages.length === 0) {
       grid.innerHTML = '';
       return;
     }
 
-    grid.innerHTML = selectedImages.map((img, index) => `
+    grid.innerHTML = selectedImages
+      .map(
+        (img, index) => `
       <div class="image-preview-item">
-        <img src="${img.url}" alt="Preview ${index + 1}">
+        <img src="${img.preview || img.url}" alt="Preview ${index + 1}">
         <button 
           type="button" 
           class="image-preview-remove" 
@@ -246,7 +253,9 @@
           aria-label="Remove image"
         >×</button>
       </div>
-    `).join('');
+    `
+      )
+      .join('');
   }
 
   /**
@@ -267,7 +276,7 @@
     textarea.addEventListener('input', () => {
       const length = textarea.value.length;
       counter.textContent = length;
-      
+
       if (length > 900) {
         counter.style.color = '#dc2626';
       } else {
@@ -281,21 +290,21 @@
    */
   function initFormSubmission() {
     const form = document.getElementById('new-listing-form');
-    
-    form.addEventListener('submit', async (e) => {
+
+    form.addEventListener('submit', async e => {
       e.preventDefault();
 
       // Disable submit button to prevent double submission
       const submitBtn = form.querySelector('button[type="submit"]');
       const originalText = submitBtn.textContent;
       submitBtn.disabled = true;
-      submitBtn.textContent = isEditMode ? 'Saving...' : 'Submitting...';
+      submitBtn.textContent = isEditMode ? 'Saving...' : 'Creating...';
 
       try {
         // Get CSRF token
         const csrfToken = window.__CSRF_TOKEN__ || '';
 
-        // Prepare listing data
+        // Prepare listing data WITHOUT images
         const listingData = {
           title: document.getElementById('listing-title').value.trim(),
           description: document.getElementById('listing-description').value.trim(),
@@ -303,12 +312,17 @@
           location: document.getElementById('listing-location').value.trim(),
           category: document.getElementById('listing-category').value,
           condition: document.getElementById('listing-condition').value,
-          images: selectedImages.map(img => img.url)
+          // DON'T include images as base64
         };
 
         // Validate required fields
-        if (!listingData.title || !listingData.description || !listingData.price || 
-            !listingData.category || !listingData.condition) {
+        if (
+          !listingData.title ||
+          !listingData.description ||
+          !listingData.price ||
+          !listingData.category ||
+          !listingData.condition
+        ) {
           throw new Error('Please fill in all required fields');
         }
 
@@ -317,44 +331,68 @@
         }
 
         // Submit to API
-        const url = isEditMode 
+        const url = isEditMode
           ? `/api/marketplace/listings/${editingListingId}`
           : '/api/marketplace/listings';
-        
+
         const method = isEditMode ? 'PUT' : 'POST';
 
         const res = await fetch(url, {
           method: method,
           headers: {
             'Content-Type': 'application/json',
-            'X-CSRF-Token': csrfToken
+            'X-CSRF-Token': csrfToken,
           },
           credentials: 'include',
-          body: JSON.stringify(listingData)
+          body: JSON.stringify(listingData),
         });
 
         if (!res.ok) {
           const errorData = await res.json().catch(() => ({}));
-          throw new Error(errorData.error || `Failed to ${isEditMode ? 'update' : 'create'} listing`);
+          throw new Error(
+            errorData.error || `Failed to ${isEditMode ? 'update' : 'create'} listing`
+          );
+        }
+
+        const responseData = await res.json();
+        const listingId = responseData.listing?.id || editingListingId;
+
+        // Upload images separately as multipart
+        const newImages = selectedImages.filter(img => img.new && img.file);
+        if (newImages.length > 0) {
+          for (const img of newImages) {
+            const formData = new FormData();
+            formData.append('files', img.file);
+
+            const uploadRes = await fetch(`/api/photos/upload?type=marketplace&id=${listingId}`, {
+              method: 'POST',
+              credentials: 'include',
+              headers: { 'X-CSRF-Token': csrfToken },
+              body: formData,
+            });
+
+            if (!uploadRes.ok) {
+              console.warn('Image upload failed, but listing was created');
+            }
+          }
         }
 
         // Success!
         showToast(
-          isEditMode 
-            ? 'Listing updated successfully!' 
-            : 'Listing submitted! It will appear after admin approval.',
+          isEditMode
+            ? 'Listing updated successfully!'
+            : 'Listing created successfully! It will appear after admin approval.',
           'success'
         );
 
         // Redirect to my listings page after a short delay
         setTimeout(() => {
           window.location.href = '/my-marketplace-listings.html';
-        }, 2000);
-
+        }, 1500);
       } catch (error) {
         console.error('Error submitting listing:', error);
         showToast(error.message || 'Failed to submit listing', 'error');
-        
+
         // Re-enable submit button
         submitBtn.disabled = false;
         submitBtn.textContent = originalText;
@@ -388,6 +426,6 @@
 
   // Expose functions that need to be called from HTML onclick handlers
   window.NewListing = {
-    removeImage
+    removeImage,
   };
 })();

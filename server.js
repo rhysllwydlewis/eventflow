@@ -2963,6 +2963,43 @@ app.get('/api/marketplace/listings/:id', async (req, res) => {
   }
 });
 
+/**
+ * GET /api/marketplace/my-listings/:id
+ * Get a single listing owned by the authenticated user (including pending/unapproved)
+ */
+app.get('/api/marketplace/my-listings/:id', authRequired, async (req, res) => {
+  try {
+    const listings = await dbUnified.read('marketplace_listings');
+    const listing = listings.find(l => l.id === req.params.id);
+
+    if (!listing) {
+      logger.warn('Marketplace listing not found', { listingId: req.params.id });
+      return res.status(404).json({ error: 'Listing not found' });
+    }
+
+    // Must be owner or admin
+    if (listing.userId !== req.user.id && req.user.role !== 'admin') {
+      logger.warn('Unauthorized access to listing', {
+        listingId: req.params.id,
+        userId: req.user.id,
+        ownerId: listing.userId,
+      });
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+
+    // Return regardless of approval/status
+    logger.info('Marketplace listing fetched for edit', {
+      listingId: req.params.id,
+      userId: req.user.id,
+    });
+    res.json({ listing });
+  } catch (error) {
+    logger.error('Error fetching user listing:', error);
+    sentry.captureException(error);
+    res.status(500).json({ error: 'Failed to fetch listing' });
+  }
+});
+
 // Create marketplace listing (auth required)
 app.post(
   '/api/marketplace/listings',
@@ -3084,23 +3121,23 @@ app.get('/api/marketplace/my-listings', authRequired, async (req, res) => {
     logger.info('Fetching marketplace listings', {
       userId: req.user.id,
       userRole: req.user.role,
-      endpoint: '/api/marketplace/my-listings'
+      endpoint: '/api/marketplace/my-listings',
     });
-    
+
     const listings = await dbUnified.read('marketplace_listings');
     const myListings = listings.filter(l => l.userId === req.user.id);
-    
+
     logger.info('Marketplace listings retrieved', {
       userId: req.user.id,
-      count: myListings.length
+      count: myListings.length,
     });
-    
+
     res.json({ listings: myListings });
   } catch (error) {
     logger.error('Error fetching user listings', {
       userId: req.user ? req.user.id : 'unknown',
       error: error.message,
-      stack: error.stack
+      stack: error.stack,
     });
     sentry.captureException(error);
     res.status(500).json({ error: 'Failed to fetch listings' });
@@ -4793,11 +4830,11 @@ app.delete('/api/reviews/:reviewId', authRequired, csrfProtection, async (req, r
 app.post(
   '/api/photos/upload',
   authRequired,
-  photoUpload.upload.single('photo'),
+  photoUpload.upload.array('files', 5), // Support up to 5 files for marketplace
   csrfProtection,
   async (req, res) => {
     try {
-      if (!req.file) {
+      if (!req.files || req.files.length === 0) {
         return res.status(400).json({ error: 'No file uploaded' });
       }
 
@@ -4806,11 +4843,50 @@ app.post(
         return res.status(400).json({ error: 'Missing type or id parameter' });
       }
 
+      // Handle marketplace type with multiple files
+      if (type === 'marketplace') {
+        const listings = await dbUnified.read('marketplace_listings');
+        const listing = listings.find(l => l.id === id);
+
+        if (!listing) {
+          return res.status(404).json({ error: 'Listing not found' });
+        }
+
+        // Verify ownership
+        if (listing.userId !== req.user.id && req.user.role !== 'admin') {
+          return res.status(403).json({ error: 'Not authorized' });
+        }
+
+        // Process and append URLs
+        const uploadedUrls = [];
+        for (const file of req.files) {
+          const images = await photoUpload.processAndSaveImage(file.buffer, file.originalname);
+          uploadedUrls.push(images.optimized);
+        }
+
+        // Cap at 5 images total
+        listing.images = (listing.images || []).concat(uploadedUrls).slice(0, 5);
+        listing.updatedAt = new Date().toISOString();
+
+        await dbUnified.write('marketplace_listings', listings);
+
+        logger.info('Marketplace images uploaded', {
+          listingId: id,
+          userId: req.user.id,
+          count: uploadedUrls.length,
+        });
+
+        return res.json({ success: true, urls: uploadedUrls });
+      }
+
+      // Handle single file for supplier/package types
+      const file = req.files[0];
+
       // Process and save image
-      const images = await photoUpload.processAndSaveImage(req.file.buffer, req.file.originalname);
+      const images = await photoUpload.processAndSaveImage(file.buffer, file.originalname);
 
       // Get metadata
-      const metadata = await photoUpload.getImageMetadata(req.file.buffer);
+      const metadata = await photoUpload.getImageMetadata(file.buffer);
 
       // Create photo record
       const photoRecord = {
@@ -4881,7 +4957,9 @@ app.post(
           message: 'Photo uploaded successfully. Pending admin approval.',
         });
       } else {
-        return res.status(400).json({ error: 'Invalid type. Must be supplier or package.' });
+        return res
+          .status(400)
+          .json({ error: 'Invalid type. Must be supplier, package, or marketplace.' });
       }
     } catch (error) {
       console.error('Photo upload error:', error);
