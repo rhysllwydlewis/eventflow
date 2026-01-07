@@ -21,7 +21,7 @@
     await checkAuth();
     initAddListingButton();
     initTabSwitching();
-    
+
     if (currentUser) {
       await loadListings();
     }
@@ -34,21 +34,21 @@
    */
   async function checkAuth() {
     try {
-      const res = await fetch('/api/user', { 
+      const res = await fetch('/api/user', {
         credentials: 'include',
         headers: {
           'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
-        }
+          Pragma: 'no-cache',
+        },
       });
-      
+
       if (res.status === 401) {
         // Expected logged-out state
         currentUser = null;
         showAuthMessage('logged-out');
         return false;
       }
-      
+
       if (!res.ok) {
         // Network or server error
         currentUser = null;
@@ -57,7 +57,7 @@
       }
 
       const data = await res.json();
-      
+
       // Handle both wrapped ({user: ...}) and unwrapped response formats
       // Check if user property exists and is not null before using it
       if (data.user !== undefined) {
@@ -92,7 +92,9 @@
    */
   function showAuthMessage(state) {
     const container = document.getElementById('auth-message-container');
-    if (!container) return;
+    if (!container) {
+      return;
+    }
 
     let message = '';
     let className = 'auth-message';
@@ -132,7 +134,7 @@
     }
 
     container.innerHTML = `<div class="${className}">${message}</div>`;
-    
+
     // Hide listings container when not authenticated
     if (state === 'logged-out' || state === 'error') {
       const listingsContainer = document.getElementById('my-listings-container');
@@ -158,7 +160,9 @@
    */
   function initAddListingButton() {
     const btn = document.getElementById('add-listing-btn');
-    if (!btn) return;
+    if (!btn) {
+      return;
+    }
 
     btn.addEventListener('click', async () => {
       // Re-check auth state in case it changed
@@ -177,7 +181,7 @@
 
       // Check if user has supplier role (optional check - can be removed if any user can list)
       // For now, allow any authenticated user to list items
-      
+
       // Navigate to dedicated listing creation page
       window.location.href = '/supplier/marketplace-new-listing.html';
     });
@@ -189,15 +193,17 @@
    */
   async function loadListings() {
     const container = document.getElementById('my-listings-container');
-    if (!container) return;
+    if (!container) {
+      return;
+    }
 
     try {
       const res = await fetch('/api/marketplace/my-listings', {
         credentials: 'include',
         headers: {
           'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
-        }
+          Pragma: 'no-cache',
+        },
       });
 
       if (res.status === 401) {
@@ -244,7 +250,9 @@
    */
   function renderListings() {
     const container = document.getElementById('my-listings-container');
-    if (!container) return;
+    if (!container) {
+      return;
+    }
 
     let filtered = allListings;
     if (currentStatus !== 'all') {
@@ -252,27 +260,30 @@
     }
 
     if (filtered.length === 0) {
-      const message = currentStatus === 'all' 
-        ? 'Create your first listing to get started!'
-        : `No ${currentStatus} listings found.`;
-        
+      const message =
+        currentStatus === 'all'
+          ? 'Create your first listing to get started!'
+          : `No ${currentStatus} listings found.`;
+
       container.innerHTML = `
         <div class="card" style="text-align: center; padding: 3rem;">
           <h3>No listings found</h3>
           <p class="small">${message}</p>
-          ${currentStatus === 'all' ? `
+          ${
+            currentStatus === 'all'
+              ? `
             <button class="cta" onclick="window.location.href='/supplier/marketplace-new-listing.html'" style="margin-top: 1rem;">
               + List an Item
             </button>
-          ` : ''}
+          `
+              : ''
+          }
         </div>
       `;
       return;
     }
 
-    container.innerHTML = filtered
-      .map(listing => createListingCard(listing))
-      .join('');
+    container.innerHTML = filtered.map(listing => createListingCard(listing)).join('');
   }
 
   /**
@@ -310,9 +321,13 @@
           ${tags.length > 0 ? `<div class="listing-tags">${tags.join('')}</div>` : ''}
         </div>
         <div class="listing-card-actions">
-          ${listing.status === 'active' ? `
+          ${
+            listing.status === 'active'
+              ? `
             <button class="cta secondary" onclick="window.MyListings.markAsSold('${listing.id}')">Mark as Sold</button>
-          ` : ''}
+          `
+              : ''
+          }
           <button class="cta ghost" onclick="window.MyListings.editListing('${listing.id}')">Edit</button>
           <button class="cta ghost" onclick="window.MyListings.deleteListing('${listing.id}')" style="color: #dc2626;">Delete</button>
         </div>
@@ -324,14 +339,16 @@
    * Mark listing as sold
    */
   async function markAsSold(id) {
-    if (!confirm('Mark this listing as sold?')) return;
+    if (!confirm('Mark this listing as sold?')) {
+      return;
+    }
 
     try {
       const res = await fetch(`/api/marketplace/listings/${id}`, {
         method: 'PUT',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
-          'X-CSRF-Token': window.__CSRF_TOKEN__ || ''
+          'X-CSRF-Token': window.__CSRF_TOKEN__ || '',
         },
         credentials: 'include',
         body: JSON.stringify({ status: 'sold' }),
@@ -354,15 +371,17 @@
    * Delete listing
    */
   async function deleteListing(id) {
-    if (!confirm('Are you sure you want to delete this listing? This cannot be undone.')) return;
+    if (!confirm('Are you sure you want to delete this listing? This cannot be undone.')) {
+      return;
+    }
 
     try {
       const res = await fetch(`/api/marketplace/listings/${id}`, {
         method: 'DELETE',
         credentials: 'include',
         headers: {
-          'X-CSRF-Token': window.__CSRF_TOKEN__ || ''
-        }
+          'X-CSRF-Token': window.__CSRF_TOKEN__ || '',
+        },
       });
 
       if (!res.ok) {
@@ -454,7 +473,9 @@
   }
 
   function escapeHtml(text) {
-    if (!text) return '';
+    if (!text) {
+      return '';
+    }
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
@@ -483,6 +504,6 @@
   window.MyListings = {
     markAsSold,
     deleteListing,
-    editListing
+    editListing,
   };
 })();
