@@ -477,13 +477,25 @@ async function initSupplier() {
   const user = await me();
   const params = new URLSearchParams(location.search);
   const id = params.get('id');
+
+  // Validate supplier ID
+  if (!id) {
+    const c = document.getElementById('supplier-container');
+    if (c) {
+      c.innerHTML =
+        '<div class="card"><p>No supplier ID provided. Please return to the <a href="/suppliers.html">suppliers page</a>.</p></div>';
+    }
+    return;
+  }
+
   const r = await fetch(`/api/suppliers/${encodeURIComponent(id)}`, {
     credentials: 'include',
   });
   if (!r.ok) {
     const c = document.getElementById('supplier-container');
     if (c) {
-      c.innerHTML = '<div class="card"><p>Not found.</p></div>';
+      c.innerHTML =
+        '<div class="card"><p>Supplier not found. Please return to the <a href="/suppliers.html">suppliers page</a>.</p></div>';
     }
     return;
   }
@@ -545,6 +557,73 @@ async function initSupplier() {
       </div></div></div>
     <section class="section"><h2>Gallery</h2><div class="cards">${gallery || '<div class="card"><p class="small">No photos yet.</p></div>'}</div></section>
     <section class="section"><h2>Packages</h2><div class="cards">${packagesHtml}</div></section>
+    <div class="reviews-widget" id="reviews-widget" role="region" aria-label="Customer reviews and ratings">
+      <section class="reviews-section">
+        <div class="review-summary">
+          <div class="review-summary-score">
+            <div class="review-average-rating" aria-label="Average rating">New</div>
+            <div class="review-stars-large" aria-hidden="true" style="opacity: 0.3;">☆☆☆☆☆</div>
+            <div class="review-count">No reviews yet</div>
+          </div>
+          
+          <div class="review-summary-details">
+            <h2 class="review-summary-title">Customer Reviews & Ratings</h2>
+            <div class="rating-distribution" aria-label="Rating distribution"></div>
+            <div class="review-trust-section">
+              <div class="trust-score-badge">
+                <div>
+                  <div class="trust-score-value">New</div>
+                  <div class="trust-score-label">Building Trust</div>
+                </div>
+              </div>
+              <div class="review-badges" id="supplier-badges" aria-label="Supplier badges"></div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="reviews-header">
+          <h3 class="reviews-title">All Reviews</h3>
+          <div class="review-actions">
+            <button id="btn-write-review" class="btn-write-review" aria-label="Write a review for this supplier">✍️ Write a Review</button>
+          </div>
+        </div>
+        
+        <div class="review-controls" role="search" aria-label="Filter and sort reviews">
+          <div class="review-filter-group">
+            <label class="review-filter-label" for="filter-min-rating">Minimum Rating:</label>
+            <select id="filter-min-rating" class="review-filter-select" aria-label="Filter by minimum rating">
+              <option value="">All Ratings</option>
+              <option value="5">5 Stars</option>
+              <option value="4">4+ Stars</option>
+              <option value="3">3+ Stars</option>
+            </select>
+          </div>
+          
+          <div class="review-filter-group">
+            <label class="review-filter-label" for="filter-sort-by">Sort By:</label>
+            <select id="filter-sort-by" class="review-filter-select" aria-label="Sort reviews">
+              <option value="date">Most Recent</option>
+              <option value="rating">Highest Rating</option>
+              <option value="helpful">Most Helpful</option>
+            </select>
+          </div>
+          
+          <label class="review-verified-filter">
+            <input type="checkbox" id="filter-verified" aria-label="Show only verified customers" />
+            <span>✓ Verified Customers Only</span>
+          </label>
+        </div>
+        
+        <div id="reviews-list" class="reviews-list" role="list" aria-live="polite" aria-label="Customer reviews">
+          <div class="reviews-loading">
+            <div class="loading-spinner" role="status" aria-label="Loading reviews"></div>
+            <p style="margin-top: 1rem; color: #6b7280;">Loading reviews...</p>
+          </div>
+        </div>
+        
+        <div id="review-pagination" class="review-pagination" style="display: none;" role="navigation" aria-label="Review pagination"></div>
+      </section>
+    </div>
   `;
 
   const addBtn = document.getElementById('add');
@@ -719,6 +798,79 @@ async function initSupplier() {
       });
     }
   });
+
+  // Initialize reviews system with retry logic
+  const initReviews = () => {
+    if (window.reviewsManager && id) {
+      try {
+        // Constants for animations and timing
+        const ANIMATION_DELAY_MS = 100;
+        const SCROLL_BEHAVIOR = 'smooth';
+
+        // Get current user if logged in
+        const currentUser = user || null;
+        reviewsManager.init(id, currentUser);
+
+        // Add smooth scroll functionality to write review button
+        const writeBtn = document.getElementById('btn-write-review');
+        if (writeBtn) {
+          writeBtn.addEventListener('click', () => {
+            // Scroll to reviews section smoothly
+            const reviewsWidget = document.getElementById('reviews-widget');
+            if (reviewsWidget) {
+              reviewsWidget.scrollIntoView({ behavior: SCROLL_BEHAVIOR, block: 'start' });
+            }
+          });
+        }
+
+        // Add fade-in animation to reviews widget
+        const reviewsWidget = document.getElementById('reviews-widget');
+        if (reviewsWidget) {
+          reviewsWidget.style.opacity = '0';
+          reviewsWidget.style.transform = 'translateY(20px)';
+          reviewsWidget.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+          setTimeout(() => {
+            reviewsWidget.style.opacity = '1';
+            reviewsWidget.style.transform = 'translateY(0)';
+          }, ANIMATION_DELAY_MS);
+        }
+      } catch (error) {
+        console.error('Error initializing reviews system:', error);
+        const reviewsList = document.getElementById('reviews-list');
+        if (reviewsList) {
+          reviewsList.innerHTML =
+            '<div class="card"><p class="small" style="color: #b00020;">Unable to load reviews. Please refresh the page.</p></div>';
+        }
+      }
+    }
+  };
+
+  // Try to initialize immediately, or wait for reviewsManager to load
+  if (window.reviewsManager) {
+    initReviews();
+  } else {
+    // Wait for reviews.js to load with retry logic
+    const RETRY_INTERVAL_MS = 100;
+    const MAX_RETRY_ATTEMPTS = 30;
+    const RETRY_TIMEOUT_MS = MAX_RETRY_ATTEMPTS * RETRY_INTERVAL_MS; // 3 seconds
+
+    let attempts = 0;
+    const checkInterval = setInterval(() => {
+      attempts++;
+      if (window.reviewsManager) {
+        clearInterval(checkInterval);
+        initReviews();
+      } else if (attempts >= MAX_RETRY_ATTEMPTS) {
+        clearInterval(checkInterval);
+        console.warn(`Reviews system not loaded after ${RETRY_TIMEOUT_MS / 1000} seconds`);
+        const reviewsList = document.getElementById('reviews-list');
+        if (reviewsList) {
+          reviewsList.innerHTML =
+            '<div class="card"><p class="small" style="color: #6b7280;">Reviews are temporarily unavailable.</p></div>';
+        }
+      }
+    }, RETRY_INTERVAL_MS);
+  }
 }
 
 async function initPlan() {
