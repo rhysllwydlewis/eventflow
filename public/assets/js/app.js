@@ -545,74 +545,72 @@ async function initSupplier() {
       </div></div></div>
     <section class="section"><h2>Gallery</h2><div class="cards">${gallery || '<div class="card"><p class="small">No photos yet.</p></div>'}</div></section>
     <section class="section"><h2>Packages</h2><div class="cards">${packagesHtml}</div></section>
-    <div style="margin-top: 2rem;">
-      <div class="reviews-widget" id="reviews-widget">
-        <section class="reviews-section">
-          <div class="review-summary">
-            <div class="review-summary-score">
-              <div class="review-average-rating">New</div>
-              <div class="review-stars-large" style="opacity: 0.3;">☆☆☆☆☆</div>
-              <div class="review-count">No reviews yet</div>
-            </div>
-            
-            <div class="review-summary-details">
-              <h2 class="review-summary-title">Customer Reviews & Ratings</h2>
-              <div class="rating-distribution"></div>
-              <div class="review-trust-section">
-                <div class="trust-score-badge">
-                  <div>
-                    <div class="trust-score-value">New</div>
-                    <div class="trust-score-label">Building Trust</div>
-                  </div>
+    <div class="reviews-widget" id="reviews-widget">
+      <section class="reviews-section">
+        <div class="review-summary">
+          <div class="review-summary-score">
+            <div class="review-average-rating">New</div>
+            <div class="review-stars-large" style="opacity: 0.3;">☆☆☆☆☆</div>
+            <div class="review-count">No reviews yet</div>
+          </div>
+          
+          <div class="review-summary-details">
+            <h2 class="review-summary-title">Customer Reviews & Ratings</h2>
+            <div class="rating-distribution"></div>
+            <div class="review-trust-section">
+              <div class="trust-score-badge">
+                <div>
+                  <div class="trust-score-value">New</div>
+                  <div class="trust-score-label">Building Trust</div>
                 </div>
-                <div class="review-badges" id="supplier-badges"></div>
               </div>
+              <div class="review-badges" id="supplier-badges"></div>
             </div>
           </div>
-          
-          <div class="reviews-header">
-            <h3 class="reviews-title">All Reviews</h3>
-            <div class="review-actions">
-              <button id="btn-write-review" class="btn-write-review">✍️ Write a Review</button>
-            </div>
+        </div>
+        
+        <div class="reviews-header">
+          <h3 class="reviews-title">All Reviews</h3>
+          <div class="review-actions">
+            <button id="btn-write-review" class="btn-write-review">✍️ Write a Review</button>
+          </div>
+        </div>
+        
+        <div class="review-controls">
+          <div class="review-filter-group">
+            <label class="review-filter-label" for="filter-min-rating">Minimum Rating:</label>
+            <select id="filter-min-rating" class="review-filter-select">
+              <option value="">All Ratings</option>
+              <option value="5">5 Stars</option>
+              <option value="4">4+ Stars</option>
+              <option value="3">3+ Stars</option>
+            </select>
           </div>
           
-          <div class="review-controls">
-            <div class="review-filter-group">
-              <label class="review-filter-label" for="filter-min-rating">Minimum Rating:</label>
-              <select id="filter-min-rating" class="review-filter-select">
-                <option value="">All Ratings</option>
-                <option value="5">5 Stars</option>
-                <option value="4">4+ Stars</option>
-                <option value="3">3+ Stars</option>
-              </select>
-            </div>
-            
-            <div class="review-filter-group">
-              <label class="review-filter-label" for="filter-sort-by">Sort By:</label>
-              <select id="filter-sort-by" class="review-filter-select">
-                <option value="date">Most Recent</option>
-                <option value="rating">Highest Rating</option>
-                <option value="helpful">Most Helpful</option>
-              </select>
-            </div>
-            
-            <label class="review-verified-filter">
-              <input type="checkbox" id="filter-verified" />
-              <span>✓ Verified Customers Only</span>
-            </label>
+          <div class="review-filter-group">
+            <label class="review-filter-label" for="filter-sort-by">Sort By:</label>
+            <select id="filter-sort-by" class="review-filter-select">
+              <option value="date">Most Recent</option>
+              <option value="rating">Highest Rating</option>
+              <option value="helpful">Most Helpful</option>
+            </select>
           </div>
           
-          <div id="reviews-list" class="reviews-list">
-            <div class="reviews-loading">
-              <div class="loading-spinner"></div>
-              <p style="margin-top: 1rem; color: #6b7280;">Loading reviews...</p>
-            </div>
+          <label class="review-verified-filter">
+            <input type="checkbox" id="filter-verified" />
+            <span>✓ Verified Customers Only</span>
+          </label>
+        </div>
+        
+        <div id="reviews-list" class="reviews-list">
+          <div class="reviews-loading">
+            <div class="loading-spinner"></div>
+            <p style="margin-top: 1rem; color: #6b7280;">Loading reviews...</p>
           </div>
-          
-          <div id="review-pagination" class="review-pagination" style="display: none;"></div>
-        </section>
-      </div>
+        </div>
+        
+        <div id="review-pagination" class="review-pagination" style="display: none;"></div>
+      </section>
     </div>
   `;
 
