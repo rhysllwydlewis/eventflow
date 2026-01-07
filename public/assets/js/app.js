@@ -803,6 +803,10 @@ async function initSupplier() {
   const initReviews = () => {
     if (window.reviewsManager && id) {
       try {
+        // Constants for animations and timing
+        const ANIMATION_DELAY_MS = 100;
+        const SCROLL_BEHAVIOR = 'smooth';
+
         // Get current user if logged in
         const currentUser = user || null;
         reviewsManager.init(id, currentUser);
@@ -814,7 +818,7 @@ async function initSupplier() {
             // Scroll to reviews section smoothly
             const reviewsWidget = document.getElementById('reviews-widget');
             if (reviewsWidget) {
-              reviewsWidget.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              reviewsWidget.scrollIntoView({ behavior: SCROLL_BEHAVIOR, block: 'start' });
             }
           });
         }
@@ -828,7 +832,7 @@ async function initSupplier() {
           setTimeout(() => {
             reviewsWidget.style.opacity = '1';
             reviewsWidget.style.transform = 'translateY(0)';
-          }, 100);
+          }, ANIMATION_DELAY_MS);
         }
       } catch (error) {
         console.error('Error initializing reviews system:', error);
@@ -845,24 +849,27 @@ async function initSupplier() {
   if (window.reviewsManager) {
     initReviews();
   } else {
-    // Wait for reviews.js to load (max 3 seconds)
+    // Wait for reviews.js to load with retry logic
+    const RETRY_INTERVAL_MS = 100;
+    const MAX_RETRY_ATTEMPTS = 30;
+    const RETRY_TIMEOUT_MS = MAX_RETRY_ATTEMPTS * RETRY_INTERVAL_MS; // 3 seconds
+
     let attempts = 0;
-    const maxAttempts = 30;
     const checkInterval = setInterval(() => {
       attempts++;
       if (window.reviewsManager) {
         clearInterval(checkInterval);
         initReviews();
-      } else if (attempts >= maxAttempts) {
+      } else if (attempts >= MAX_RETRY_ATTEMPTS) {
         clearInterval(checkInterval);
-        console.warn('Reviews system not loaded after 3 seconds');
+        console.warn(`Reviews system not loaded after ${RETRY_TIMEOUT_MS / 1000} seconds`);
         const reviewsList = document.getElementById('reviews-list');
         if (reviewsList) {
           reviewsList.innerHTML =
             '<div class="card"><p class="small" style="color: #6b7280;">Reviews are temporarily unavailable.</p></div>';
         }
       }
-    }, 100);
+    }, RETRY_INTERVAL_MS);
   }
 }
 
