@@ -26,6 +26,11 @@
     initListItemButton();
     initMobileFilters();
     loadSavedLocation();
+
+    // Expose showListItemModal globally for onclick handlers after initialization
+    // Note: Required for dynamically generated HTML with onclick handlers (e.g., empty state button)
+    // Alternative would require refactoring to use event delegation or data attributes
+    window.showListItemModal = showListItemModal;
   }
 
   // Check if user is logged in
@@ -182,7 +187,7 @@
           <p class="empty-state-message">
             ${currentUser ? 'Be the first to list a pre-loved event item and help others save money!' : 'Check back soon for new listings or create an account to list your items.'}
           </p>
-          ${currentUser ? '<a href="/list-item.html" class="btn btn-primary">List Your First Item</a>' : '<a href="/auth.html" class="btn btn-primary">Create Account</a>'}
+          ${currentUser ? '<button onclick="window.showListItemModal()" class="btn btn-primary">List Your First Item</button>' : '<a href="/auth.html" class="btn btn-primary">Create Account</a>'}
         </div>
       `;
       return;
@@ -406,7 +411,21 @@
   };
 
   // Show list item modal
-  function showListItemModal() {
+  async function showListItemModal() {
+    // Fetch CSRF token first
+    let csrfToken = '';
+    try {
+      const csrfRes = await fetch('/api/csrf-token', { credentials: 'include' });
+      if (csrfRes.ok) {
+        const csrfData = await csrfRes.json();
+        csrfToken = csrfData.token;
+      }
+    } catch (error) {
+      console.error('Failed to fetch CSRF token:', error);
+      showToast('Unable to load form. Please try again.', 'error');
+      return;
+    }
+
     const modal = document.createElement('div');
     modal.className = 'modal-overlay';
     modal.innerHTML = `
@@ -595,14 +614,30 @@
       try {
         const res = await fetch('/api/marketplace/listings', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': csrfToken,
+          },
           credentials: 'include',
           body: JSON.stringify(listing),
         });
 
         if (!res.ok) {
-          const error = await res.json();
-          throw new Error(error.error || 'Failed to create listing');
+          const errorData = await res.json().catch(() => ({}));
+          const errorMessage = errorData.error || 'Failed to create listing';
+
+          // Handle specific error cases
+          if (res.status === 401) {
+            showToast('Please log in to list items', 'error');
+            setTimeout(() => (window.location.href = '/auth.html'), 1500);
+            return;
+          } else if (res.status === 403) {
+            showToast('Session expired. Please log in again.', 'error');
+            setTimeout(() => (window.location.href = '/auth.html'), 1500);
+            return;
+          }
+
+          throw new Error(errorMessage);
         }
 
         modal.remove();

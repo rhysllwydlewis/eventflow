@@ -1,50 +1,39 @@
 /**
  * Supplier Management Module for EventFlow
- * Handles supplier CRUD operations with Firebase Firestore
+ * Handles supplier CRUD operations via MongoDB API
+ *
+ * NOTE: This module has been migrated from Firebase to MongoDB.
+ * All operations now use the EventFlow REST API backed by MongoDB.
  */
-
-import {
-  db,
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  setDoc,
-  updateDoc,
-  deleteDoc,
-  query,
-  where,
-  orderBy,
-  onSnapshot,
-  serverTimestamp,
-} from './firebase-config.js';
 
 class SupplierManager {
   constructor() {
-    this.unsubscribers = [];
+    this.pollingIntervals = [];
+    this.apiBase = '/api';
   }
 
   /**
-   * Create a new supplier
+   * Create a new supplier via MongoDB API
    * @param {Object} supplierData - Supplier information
    * @returns {Promise<string>} Supplier ID
    */
   async createSupplier(supplierData) {
     try {
-      const supplierId = supplierData.id || this.generateId();
-      const supplierRef = doc(db, 'suppliers', supplierId);
+      const response = await fetch(`${this.apiBase}/suppliers`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(supplierData),
+      });
 
-      const data = {
-        ...supplierData,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        approved: supplierData.approved !== undefined ? supplierData.approved : false,
-        verified: supplierData.verified !== undefined ? supplierData.verified : false,
-      };
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ error: 'Failed to create supplier' }));
+        throw new Error(error.error || 'Failed to create supplier');
+      }
 
-      await setDoc(supplierRef, data);
-      console.log('Supplier created:', supplierId);
-      return supplierId;
+      const result = await response.json();
+      console.log('Supplier created:', result.id);
+      return result.id;
     } catch (error) {
       console.error('Error creating supplier:', error);
       throw error;
@@ -52,20 +41,24 @@ class SupplierManager {
   }
 
   /**
-   * Get supplier by ID
+   * Get supplier by ID via MongoDB API
    * @param {string} supplierId - Supplier ID
    * @returns {Promise<Object|null>} Supplier data
    */
   async getSupplier(supplierId) {
     try {
-      const supplierRef = doc(db, 'suppliers', supplierId);
-      const supplierSnap = await getDoc(supplierRef);
+      const response = await fetch(`${this.apiBase}/suppliers/${supplierId}`, {
+        credentials: 'include',
+      });
 
-      if (!supplierSnap.exists()) {
-        return null;
+      if (!response.ok) {
+        if (response.status === 404) {
+          return null;
+        }
+        throw new Error('Failed to fetch supplier');
       }
 
-      return { id: supplierSnap.id, ...supplierSnap.data() };
+      return await response.json();
     } catch (error) {
       console.error('Error getting supplier:', error);
       throw error;
@@ -73,49 +66,36 @@ class SupplierManager {
   }
 
   /**
-   * Get all suppliers
+   * Get all suppliers via MongoDB API
    * @param {Object} options - Query options
    * @returns {Promise<Array>} Array of suppliers
    */
   async getAllSuppliers(options = {}) {
     try {
-      let q = collection(db, 'suppliers');
-
-      // Apply filters
-      const constraints = [];
+      const params = new URLSearchParams();
 
       if (options.approved !== undefined) {
-        constraints.push(where('approved', '==', options.approved));
+        params.append('approved', options.approved);
       }
-
       if (options.verified !== undefined) {
-        constraints.push(where('verified', '==', options.verified));
+        params.append('verified', options.verified);
       }
-
       if (options.ownerUserId) {
-        constraints.push(where('ownerUserId', '==', options.ownerUserId));
+        params.append('ownerUserId', options.ownerUserId);
       }
-
       if (options.category) {
-        constraints.push(where('category', '==', options.category));
+        params.append('category', options.category);
       }
 
-      if (options.orderBy) {
-        constraints.push(orderBy(options.orderBy.field, options.orderBy.direction || 'asc'));
-      }
-
-      if (constraints.length > 0) {
-        q = query(collection(db, 'suppliers'), ...constraints);
-      }
-
-      const querySnapshot = await getDocs(q);
-      const suppliers = [];
-
-      querySnapshot.forEach(doc => {
-        suppliers.push({ id: doc.id, ...doc.data() });
+      const response = await fetch(`${this.apiBase}/suppliers?${params.toString()}`, {
+        credentials: 'include',
       });
 
-      return suppliers;
+      if (!response.ok) {
+        throw new Error('Failed to fetch suppliers');
+      }
+
+      return await response.json();
     } catch (error) {
       console.error('Error getting suppliers:', error);
       throw error;
@@ -123,18 +103,22 @@ class SupplierManager {
   }
 
   /**
-   * Update supplier
+   * Update supplier via MongoDB API
    * @param {string} supplierId - Supplier ID
    * @param {Object} updates - Fields to update
    */
   async updateSupplier(supplierId, updates) {
     try {
-      const supplierRef = doc(db, 'suppliers', supplierId);
-
-      await updateDoc(supplierRef, {
-        ...updates,
-        updatedAt: serverTimestamp(),
+      const response = await fetch(`${this.apiBase}/suppliers/${supplierId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(updates),
       });
+
+      if (!response.ok) {
+        throw new Error('Failed to update supplier');
+      }
 
       console.log('Supplier updated:', supplierId);
     } catch (error) {
@@ -144,13 +128,20 @@ class SupplierManager {
   }
 
   /**
-   * Delete supplier
+   * Delete supplier via MongoDB API
    * @param {string} supplierId - Supplier ID
    */
   async deleteSupplier(supplierId) {
     try {
-      const supplierRef = doc(db, 'suppliers', supplierId);
-      await deleteDoc(supplierRef);
+      const response = await fetch(`${this.apiBase}/suppliers/${supplierId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete supplier');
+      }
+
       console.log('Supplier deleted:', supplierId);
     } catch (error) {
       console.error('Error deleting supplier:', error);
@@ -159,91 +150,60 @@ class SupplierManager {
   }
 
   /**
-   * Listen to supplier changes in real-time
+   * Listen to supplier changes using polling
+   * (MongoDB doesn't have real-time updates like Firebase)
    * @param {string} supplierId - Supplier ID
    * @param {Function} callback - Callback function
    * @returns {Function} Unsubscribe function
    */
   listenToSupplier(supplierId, callback) {
-    try {
-      const supplierRef = doc(db, 'suppliers', supplierId);
+    console.warn('Real-time updates not available with MongoDB. Using polling instead.');
 
-      const unsubscribe = onSnapshot(
-        supplierRef,
-        doc => {
-          if (doc.exists()) {
-            callback({ id: doc.id, ...doc.data() });
-          } else {
-            callback(null);
-          }
-        },
-        error => {
-          console.error('Error listening to supplier:', error);
-          callback(null);
-        }
-      );
+    const pollInterval = setInterval(async () => {
+      try {
+        const supplier = await this.getSupplier(supplierId);
+        callback(supplier);
+      } catch (error) {
+        console.error('Error polling supplier:', error);
+        callback(null);
+      }
+    }, 5000); // Poll every 5 seconds
 
-      this.unsubscribers.push(unsubscribe);
-      return unsubscribe;
-    } catch (error) {
-      console.error('Error setting up supplier listener:', error);
-      throw error;
-    }
+    this.pollingIntervals.push(pollInterval);
+
+    // Return unsubscribe function
+    return () => {
+      clearInterval(pollInterval);
+      this.pollingIntervals = this.pollingIntervals.filter(i => i !== pollInterval);
+    };
   }
 
   /**
-   * Listen to all suppliers with filters
+   * Listen to all suppliers with filters using polling
    * @param {Object} options - Query options
    * @param {Function} callback - Callback function
    * @returns {Function} Unsubscribe function
    */
   listenToSuppliers(options = {}, callback) {
-    try {
-      let q = collection(db, 'suppliers');
+    console.warn('Real-time updates not available with MongoDB. Using polling instead.');
 
-      const constraints = [];
-
-      if (options.approved !== undefined) {
-        constraints.push(where('approved', '==', options.approved));
+    const pollInterval = setInterval(async () => {
+      try {
+        const suppliers = await this.getAllSuppliers(options);
+        callback(suppliers);
+      } catch (error) {
+        console.error('Error polling suppliers:', error);
+        callback([]);
       }
+    }, 5000); // Poll every 5 seconds
 
-      if (options.verified !== undefined) {
-        constraints.push(where('verified', '==', options.verified));
-      }
+    this.pollingIntervals.push(pollInterval);
 
-      if (options.ownerUserId) {
-        constraints.push(where('ownerUserId', '==', options.ownerUserId));
-      }
-
-      if (options.orderBy) {
-        constraints.push(orderBy(options.orderBy.field, options.orderBy.direction || 'asc'));
-      }
-
-      if (constraints.length > 0) {
-        q = query(collection(db, 'suppliers'), ...constraints);
-      }
-
-      const unsubscribe = onSnapshot(
-        q,
-        querySnapshot => {
-          const suppliers = [];
-          querySnapshot.forEach(doc => {
-            suppliers.push({ id: doc.id, ...doc.data() });
-          });
-          callback(suppliers);
-        },
-        error => {
-          console.error('Error listening to suppliers:', error);
-          callback([]);
-        }
-      );
-
-      this.unsubscribers.push(unsubscribe);
-      return unsubscribe;
-    } catch (error) {
-      console.error('Error setting up suppliers listener:', error);
-      throw error;
-    }
+    // Return unsubscribe function
+    return () => {
+      clearInterval(pollInterval);
+      this.pollingIntervals = this.pollingIntervals.filter(i => i !== pollInterval);
+    };
   }
 
   /**
@@ -291,11 +251,11 @@ class SupplierManager {
   }
 
   /**
-   * Clean up all listeners
+   * Clean up all polling intervals
    */
   cleanup() {
-    this.unsubscribers.forEach(unsubscribe => unsubscribe());
-    this.unsubscribers = [];
+    this.pollingIntervals.forEach(interval => clearInterval(interval));
+    this.pollingIntervals = [];
   }
 }
 
