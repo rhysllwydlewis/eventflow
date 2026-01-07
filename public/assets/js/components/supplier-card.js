@@ -240,8 +240,8 @@ class SupplierCard {
       badges.push('<span class="badge badge-test-data">Test data</span>');
     }
 
-    // Founding supplier badge
-    if (this.supplier.isFounding) {
+    // Founding supplier badge (check both founding and isFounding properties)
+    if (this.supplier.isFounding || this.supplier.founding) {
       badges.push('<span class="badge badge-founding">Founding Supplier</span>');
     }
 
@@ -258,6 +258,11 @@ class SupplierCard {
       badges.push('<span class="badge badge-pro-plus">Professional Plus</span>');
     } else if (tier === 'pro') {
       badges.push('<span class="badge badge-pro">Professional</span>');
+    }
+
+    // Featured supplier badge (check both featured boolean and featuredSupplier properties)
+    if (this.supplier.featured || this.supplier.featuredSupplier) {
+      badges.push('<span class="badge badge-featured">⭐ Featured</span>');
     }
 
     // Verification badges

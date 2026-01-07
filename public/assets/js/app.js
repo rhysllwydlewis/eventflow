@@ -500,11 +500,21 @@ async function initSupplier() {
     return;
   }
   const s = await r.json();
-  const pkgs = await (
-    await fetch(`/api/suppliers/${encodeURIComponent(id)}/packages`, {
+  
+  // Fetch packages with error handling
+  let pkgs = { items: [] };
+  try {
+    const pkgsRes = await fetch(`/api/suppliers/${encodeURIComponent(id)}/packages`, {
       credentials: 'include',
-    })
-  ).json();
+    });
+    if (pkgsRes.ok) {
+      pkgs = await pkgsRes.json();
+    } else {
+      console.warn('Failed to load supplier packages:', pkgsRes.status);
+    }
+  } catch (error) {
+    console.error('Error fetching supplier packages:', error);
+  }
   const img = (s.photos && s.photos[0]) || '/assets/images/hero-venue.svg';
   const gallery = (s.photos || [])
     .slice(1)

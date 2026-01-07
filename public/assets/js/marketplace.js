@@ -23,7 +23,6 @@
     initFilters();
     initViewToggle();
     initQuickActions();
-    initListItemButton();
     initMobileFilters();
     loadSavedLocation();
 
@@ -999,20 +998,6 @@
         }
       });
     });
-  }
-
-  // Initialize list item button
-  function initListItemButton() {
-    const sellBtn = document.getElementById('sell-item-btn');
-    if (sellBtn && !sellBtn.onclick) {
-      // onclick was set in updateAuthUI
-      if (!currentUser) {
-        sellBtn.onclick = () => {
-          showToast('Please log in to list items');
-          setTimeout(() => (window.location.href = '/auth.html'), 1500);
-        };
-      }
-    }
   }
 
   // Update result count
