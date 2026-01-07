@@ -3010,14 +3010,22 @@ app.post(
     try {
       const { title, description, price, category, condition, location, images } = req.body || {};
 
-      // Validation with detailed messages
-      if (!title || !description || !price || !category || !condition) {
+      // Validation with detailed messages - check for undefined, null, or empty string (allow 0)
+      if (
+        !title ||
+        !description ||
+        price === undefined ||
+        price === null ||
+        price === '' ||
+        !category ||
+        !condition
+      ) {
         logger.warn('Marketplace listing creation failed - missing fields', {
           userId: req.user.id,
           provided: {
             title: !!title,
             description: !!description,
-            price: !!price,
+            price: price !== undefined && price !== null && price !== '',
             category: !!category,
             condition: !!condition,
           },
@@ -4822,10 +4830,11 @@ app.delete('/api/reviews/:reviewId', authRequired, csrfProtection, async (req, r
 // ---------- Photo Upload & Management ----------
 
 /**
- * Upload single photo for supplier or package
+ * Upload photos for supplier, package, or marketplace listing
  * POST /api/photos/upload
- * Body: multipart/form-data with 'photo' field
- * Query: ?type=supplier|package&id=<supplierId|packageId>
+ * Body: multipart/form-data with 'files' field (array)
+ * Query: ?type=supplier|package|marketplace&id=<supplierId|packageId|listingId>
+ * Note: Accepts up to 5 files per request. Marketplace listings capped at 5 images total.
  */
 app.post(
   '/api/photos/upload',
@@ -4857,11 +4866,16 @@ app.post(
           return res.status(403).json({ error: 'Not authorized' });
         }
 
-        // Process and append URLs
+        // Process and append URLs with error handling
         const uploadedUrls = [];
+        const errors = [];
         for (const file of req.files) {
-          const images = await photoUpload.processAndSaveImage(file.buffer, file.originalname);
-          uploadedUrls.push(images.optimized);
+          try {
+            const images = await photoUpload.processAndSaveImage(file.buffer, file.originalname);
+            uploadedUrls.push(images.optimized);
+          } catch (error) {
+            errors.push({ filename: file.originalname, error: error.message });
+          }
         }
 
         // Cap at 5 images total
@@ -4876,7 +4890,15 @@ app.post(
           count: uploadedUrls.length,
         });
 
-        return res.json({ success: true, urls: uploadedUrls });
+        return res.json({
+          success: true,
+          urls: uploadedUrls,
+          errors: errors.length > 0 ? errors : undefined,
+          message:
+            uploadedUrls.length > 0
+              ? `${uploadedUrls.length} image(s) uploaded successfully${errors.length > 0 ? `, ${errors.length} failed` : ''}.`
+              : 'No images were uploaded.',
+        });
       }
 
       // Handle single file for supplier/package types
@@ -4902,7 +4924,7 @@ app.post(
 
       // Update supplier or package with new photo
       if (type === 'supplier') {
-        const suppliers = await await dbUnified.read('suppliers');
+        const suppliers = await dbUnified.read('suppliers');
         const supplier = suppliers.find(s => s.id === id);
 
         if (!supplier) {
@@ -4920,7 +4942,7 @@ app.post(
         }
         supplier.photosGallery.push(photoRecord);
 
-        await await dbUnified.write('suppliers', suppliers);
+        await dbUnified.write('suppliers', suppliers);
 
         return res.json({
           success: true,
@@ -4928,7 +4950,7 @@ app.post(
           message: 'Photo uploaded successfully. Pending admin approval.',
         });
       } else if (type === 'package') {
-        const packages = await await dbUnified.read('packages');
+        const packages = await dbUnified.read('packages');
         const pkg = packages.find(p => p.id === id);
 
         if (!pkg) {
@@ -4936,7 +4958,7 @@ app.post(
         }
 
         // Check if user owns this package's supplier
-        const suppliers = await await dbUnified.read('suppliers');
+        const suppliers = await dbUnified.read('suppliers');
         const supplier = suppliers.find(s => s.id === pkg.supplierId);
 
         if (!supplier || (supplier.ownerUserId !== req.user.id && req.user.role !== 'admin')) {
@@ -4949,7 +4971,7 @@ app.post(
         }
         pkg.gallery.push(photoRecord);
 
-        await await dbUnified.write('packages', packages);
+        await dbUnified.write('packages', packages);
 
         return res.json({
           success: true,
@@ -4972,7 +4994,8 @@ app.post(
  * Upload multiple photos (batch upload)
  * POST /api/photos/upload/batch
  * Body: multipart/form-data with 'photos' field (multiple files)
- * Query: ?type=supplier|package&id=<supplierId|packageId>
+ * Query: ?type=supplier|package|marketplace&id=<supplierId|packageId|listingId>
+ * Note: Accepts up to 10 files for supplier/package, marketplace listings capped at 5 images total
  */
 app.post(
   '/api/photos/upload/batch',
@@ -5016,9 +5039,42 @@ app.post(
         }
       }
 
-      // Update supplier or package with new photos
-      if (type === 'supplier') {
-        const suppliers = await await dbUnified.read('suppliers');
+      // Update supplier, package, or marketplace listing with new photos
+      if (type === 'marketplace') {
+        const listings = await dbUnified.read('marketplace_listings');
+        const listing = listings.find(l => l.id === id);
+
+        if (!listing) {
+          return res.status(404).json({ error: 'Listing not found' });
+        }
+
+        // Verify ownership
+        if (listing.userId !== req.user.id && req.user.role !== 'admin') {
+          return res.status(403).json({ error: 'Not authorized' });
+        }
+
+        // Process and append URLs (cap at 5 images total)
+        const uploadedUrls = uploadedPhotos.map(p => p.url);
+        listing.images = (listing.images || []).concat(uploadedUrls).slice(0, 5);
+        listing.updatedAt = new Date().toISOString();
+
+        await dbUnified.write('marketplace_listings', listings);
+
+        logger.info('Marketplace images uploaded (batch)', {
+          listingId: id,
+          userId: req.user.id,
+          count: uploadedUrls.length,
+        });
+
+        return res.json({
+          success: true,
+          uploaded: uploadedUrls.length,
+          urls: uploadedUrls,
+          errors: errors,
+          message: `${uploadedUrls.length} photo(s) uploaded successfully to marketplace listing.`,
+        });
+      } else if (type === 'supplier') {
+        const suppliers = await dbUnified.read('suppliers');
         const supplier = suppliers.find(s => s.id === id);
 
         if (!supplier) {
@@ -5034,16 +5090,16 @@ app.post(
         }
         supplier.photosGallery.push(...uploadedPhotos);
 
-        await await dbUnified.write('suppliers', suppliers);
+        await dbUnified.write('suppliers', suppliers);
       } else if (type === 'package') {
-        const packages = await await dbUnified.read('packages');
+        const packages = await dbUnified.read('packages');
         const pkg = packages.find(p => p.id === id);
 
         if (!pkg) {
           return res.status(404).json({ error: 'Package not found' });
         }
 
-        const suppliers = await await dbUnified.read('suppliers');
+        const suppliers = await dbUnified.read('suppliers');
         const supplier = suppliers.find(s => s.id === pkg.supplierId);
 
         if (!supplier || (supplier.ownerUserId !== req.user.id && req.user.role !== 'admin')) {
@@ -5055,7 +5111,7 @@ app.post(
         }
         pkg.gallery.push(...uploadedPhotos);
 
-        await await dbUnified.write('packages', packages);
+        await dbUnified.write('packages', packages);
       } else {
         return res.status(400).json({ error: 'Invalid type' });
       }
@@ -5090,7 +5146,7 @@ app.delete('/api/photos/delete', authRequired, csrfProtection, async (req, res) 
     const decodedUrl = decodeURIComponent(photoUrl);
 
     if (type === 'supplier') {
-      const suppliers = await await dbUnified.read('suppliers');
+      const suppliers = await dbUnified.read('suppliers');
       const supplier = suppliers.find(s => s.id === id);
 
       if (!supplier) {
@@ -5103,20 +5159,20 @@ app.delete('/api/photos/delete', authRequired, csrfProtection, async (req, res) 
 
       if (supplier.photosGallery) {
         supplier.photosGallery = supplier.photosGallery.filter(p => p.url !== decodedUrl);
-        await await dbUnified.write('suppliers', suppliers);
+        await dbUnified.write('suppliers', suppliers);
 
         // Delete physical files
         await photoUpload.deleteImage(decodedUrl);
       }
     } else if (type === 'package') {
-      const packages = await await dbUnified.read('packages');
+      const packages = await dbUnified.read('packages');
       const pkg = packages.find(p => p.id === id);
 
       if (!pkg) {
         return res.status(404).json({ error: 'Package not found' });
       }
 
-      const suppliers = await await dbUnified.read('suppliers');
+      const suppliers = await dbUnified.read('suppliers');
       const supplier = suppliers.find(s => s.id === pkg.supplierId);
 
       if (!supplier || (supplier.ownerUserId !== req.user.id && req.user.role !== 'admin')) {
@@ -5125,7 +5181,7 @@ app.delete('/api/photos/delete', authRequired, csrfProtection, async (req, res) 
 
       if (pkg.gallery) {
         pkg.gallery = pkg.gallery.filter(p => p.url !== decodedUrl);
-        await await dbUnified.write('packages', packages);
+        await dbUnified.write('packages', packages);
 
         // Delete physical files
         await photoUpload.deleteImage(decodedUrl);
@@ -5158,7 +5214,7 @@ app.post(
       }
 
       if (type === 'supplier') {
-        const suppliers = await await dbUnified.read('suppliers');
+        const suppliers = await dbUnified.read('suppliers');
         const supplier = suppliers.find(s => s.id === id);
 
         if (!supplier) {
@@ -5171,11 +5227,11 @@ app.post(
             photo.approved = approved;
             photo.approvedAt = Date.now();
             photo.approvedBy = req.user.id;
-            await await dbUnified.write('suppliers', suppliers);
+            await dbUnified.write('suppliers', suppliers);
           }
         }
       } else if (type === 'package') {
-        const packages = await await dbUnified.read('packages');
+        const packages = await dbUnified.read('packages');
         const pkg = packages.find(p => p.id === id);
 
         if (!pkg) {
@@ -5188,7 +5244,7 @@ app.post(
             photo.approved = approved;
             photo.approvedAt = Date.now();
             photo.approvedBy = req.user.id;
-            await await dbUnified.write('packages', packages);
+            await dbUnified.write('packages', packages);
           }
         }
       }
@@ -5244,7 +5300,7 @@ app.get('/api/photos/pending', authRequired, roleRequired('admin'), async (req, 
     const pendingPhotos = [];
 
     // Get pending supplier photos
-    const suppliers = await await dbUnified.read('suppliers');
+    const suppliers = await dbUnified.read('suppliers');
     for (const supplier of suppliers) {
       if (supplier.photosGallery) {
         const pending = supplier.photosGallery
@@ -5260,7 +5316,7 @@ app.get('/api/photos/pending', authRequired, roleRequired('admin'), async (req, 
     }
 
     // Get pending package photos
-    const packages = await await dbUnified.read('packages');
+    const packages = await dbUnified.read('packages');
     for (const pkg of packages) {
       if (pkg.gallery) {
         const pending = pkg.gallery

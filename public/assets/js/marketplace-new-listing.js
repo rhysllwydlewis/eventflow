@@ -307,15 +307,17 @@
         if (
           !listingData.title ||
           !listingData.description ||
-          !listingData.price ||
+          listingData.price === undefined ||
+          listingData.price === null ||
+          listingData.price === '' ||
           !listingData.category ||
           !listingData.condition
         ) {
           throw new Error('Please fill in all required fields');
         }
 
-        if (listingData.price <= 0) {
-          throw new Error('Price must be greater than 0');
+        if (listingData.price < 0) {
+          throw new Error('Price must be 0 or greater');
         }
 
         // Submit to API

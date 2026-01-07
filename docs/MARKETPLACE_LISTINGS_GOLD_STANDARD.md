@@ -7,6 +7,7 @@ This document describes the gold-standard implementation for the EventFlow marke
 **Status**: ✅ Implemented (January 2026)  
 **Related PRs**: #[TBD]  
 **Pages Affected**:
+
 - `/my-marketplace-listings.html`
 - `/supplier/marketplace-new-listing.html`
 - `/marketplace.html` (tag display improvements)
@@ -101,24 +102,25 @@ The implementation handles both wrapped and unwrapped API responses:
 ```
 
 **Logic**:
+
 ```javascript
 if (data.user !== undefined) {
-  currentUser = data.user;  // Could be null!
+  currentUser = data.user; // Could be null!
 } else if (data.id) {
-  currentUser = data;  // Direct user object
+  currentUser = data; // Direct user object
 } else {
-  currentUser = null;  // No user data
+  currentUser = null; // No user data
 }
 ```
 
 ### Status Code Meanings
 
-| Code | Meaning | User Experience |
-|------|---------|----------------|
-| `200` | Authenticated & authorized | Show listings |
-| `401` | Not authenticated | "Log in to manage listings" + redirect |
+| Code  | Meaning                        | User Experience                              |
+| ----- | ------------------------------ | -------------------------------------------- |
+| `200` | Authenticated & authorized     | Show listings                                |
+| `401` | Not authenticated              | "Log in to manage listings" + redirect       |
 | `403` | Authenticated but not supplier | "You need a supplier account" + support link |
-| `500` | Server error | "Failed to load listings" + retry button |
+| `500` | Server error                   | "Failed to load listings" + retry button     |
 
 ## The "+ List an Item" Button
 
@@ -129,10 +131,12 @@ The button always works, regardless of listings load state or auth errors.
 #### State 1: Logged Out
 
 **Behavior**:
+
 1. Show toast: "Please log in to list items"
 2. After 1.5 seconds, redirect to `/auth.html?redirect=/my-marketplace-listings.html`
 
 **Code**:
+
 ```javascript
 showToast('Please log in to list items');
 setTimeout(() => {
@@ -143,10 +147,12 @@ setTimeout(() => {
 #### State 2: Logged In (any role)
 
 **Behavior**:
+
 1. Navigate immediately to `/supplier/marketplace-new-listing.html`
 2. User can create listing (will be reviewed before appearing)
 
 **Code**:
+
 ```javascript
 window.location.href = '/supplier/marketplace-new-listing.html';
 ```
@@ -156,6 +162,7 @@ window.location.href = '/supplier/marketplace-new-listing.html';
 If role-based restrictions are added in the future:
 
 **Behavior**:
+
 1. Show toast: "You need a supplier account to list items"
 2. Optionally redirect to supplier onboarding or contact page
 
@@ -223,6 +230,7 @@ Tags appear below the title on listing cards:
 ```
 
 **HTML**:
+
 ```html
 <div class="marketplace-item-tags">
   <span class="marketplace-tag">Attire</span>
@@ -232,6 +240,7 @@ Tags appear below the title on listing cards:
 ```
 
 **CSS**:
+
 ```css
 .marketplace-item-tags {
   display: flex;
@@ -267,6 +276,7 @@ Currently, filtering is done via the existing sidebar filters on `/marketplace.h
 - **Price** range
 
 Client-side filtering can be added in the future by:
+
 1. Adding clickable tag chips at the top of results
 2. Filtering `allListings` array based on selected tags
 3. Re-rendering filtered results
@@ -338,7 +348,7 @@ Improved logging helps debug issues in production:
 logger.info('Fetching marketplace listings', {
   userId: req.user.id,
   userRole: req.user.role,
-  endpoint: '/api/marketplace/my-listings'
+  endpoint: '/api/marketplace/my-listings',
 });
 
 // In auth middleware (401 responses)
@@ -346,7 +356,7 @@ logger.warn('Authentication required but no valid user found', {
   path: req.path,
   method: req.method,
   ip: req.ip,
-  userAgent: req.get('user-agent')
+  userAgent: req.get('user-agent'),
 });
 ```
 
@@ -412,6 +422,7 @@ logger.warn('Authentication required but no valid user found', {
 **File**: `tests/unit/my-marketplace-listings.test.js`
 
 Tests cover:
+
 - ✅ User data parsing (wrapped, unwrapped, null)
 - ✅ Auth state messaging logic
 - ✅ Button behavior in different auth states
@@ -421,6 +432,7 @@ Tests cover:
 - ✅ Format helper functions
 
 **Run tests**:
+
 ```bash
 npm run test:unit -- my-marketplace-listings
 ```
@@ -508,20 +520,20 @@ npm run test:unit -- my-marketplace-listings
 ```javascript
 async function checkAuth() {
   try {
-    const res = await fetch('/api/user', { 
+    const res = await fetch('/api/user', {
       credentials: 'include',
       headers: {
         'Cache-Control': 'no-cache',
-        'Pragma': 'no-cache'
-      }
+        Pragma: 'no-cache',
+      },
     });
-    
+
     if (res.status === 401) {
       currentUser = null;
       showAuthMessage('logged-out');
       return false;
     }
-    
+
     if (!res.ok) {
       currentUser = null;
       showAuthMessage('error');
@@ -529,7 +541,7 @@ async function checkAuth() {
     }
 
     const data = await res.json();
-    
+
     // Handle both wrapped ({user: ...}) and unwrapped response formats
     if (data.user !== undefined) {
       currentUser = data.user;
@@ -567,8 +579,8 @@ async function loadListings() {
       credentials: 'include',
       headers: {
         'Cache-Control': 'no-cache',
-        'Pragma': 'no-cache'
-      }
+        Pragma: 'no-cache',
+      },
     });
 
     if (res.status === 401) {

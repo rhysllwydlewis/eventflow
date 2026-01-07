@@ -88,21 +88,21 @@ describe('My Marketplace Listings - Auth & Error Handling', () => {
   describe('Auth state messaging', () => {
     it('should determine correct message for logged-out state', () => {
       const state = 'logged-out';
-      
+
       expect(state).toBe('logged-out');
       // Message should prompt user to log in with redirect
     });
 
     it('should determine correct message for error state', () => {
       const state = 'error';
-      
+
       expect(state).toBe('error');
       // Message should indicate connection problem
     });
 
     it('should determine correct message for not-supplier state', () => {
       const state = 'not-supplier';
-      
+
       expect(state).toBe('not-supplier');
       // Message should indicate supplier account needed
     });
@@ -114,7 +114,7 @@ describe('My Marketplace Listings - Auth & Error Handling', () => {
       // regardless of whether listings loaded successfully
       const buttonExists = true;
       const hasHandler = true;
-      
+
       expect(buttonExists).toBe(true);
       expect(hasHandler).toBe(true);
     });
@@ -122,7 +122,7 @@ describe('My Marketplace Listings - Auth & Error Handling', () => {
     it('should redirect logged-out users to auth with redirect param', () => {
       const currentUser = null;
       const expectedRedirect = '/auth.html?redirect=/my-marketplace-listings.html';
-      
+
       expect(currentUser).toBeNull();
       expect(expectedRedirect).toContain('redirect=/my-marketplace-listings.html');
     });
@@ -130,7 +130,7 @@ describe('My Marketplace Listings - Auth & Error Handling', () => {
     it('should navigate authenticated users to new listing page', () => {
       const currentUser = { id: 'usr_123', role: 'customer' };
       const expectedDestination = '/supplier/marketplace-new-listing.html';
-      
+
       expect(currentUser).toBeTruthy();
       expect(expectedDestination).toBe('/supplier/marketplace-new-listing.html');
     });
@@ -139,7 +139,7 @@ describe('My Marketplace Listings - Auth & Error Handling', () => {
   describe('Error handling for listings API', () => {
     it('should handle 401 Unauthorized gracefully', () => {
       const responseStatus = 401;
-      
+
       // Should not throw JS error
       // Should show appropriate auth message
       // Should clear listings display
@@ -148,7 +148,7 @@ describe('My Marketplace Listings - Auth & Error Handling', () => {
 
     it('should handle 403 Forbidden (not a supplier)', () => {
       const responseStatus = 403;
-      
+
       // Should show not-supplier message
       // Should not break the page
       expect(responseStatus).toBe(403);
@@ -156,7 +156,7 @@ describe('My Marketplace Listings - Auth & Error Handling', () => {
 
     it('should handle 500 Internal Server Error', () => {
       const responseStatus = 500;
-      
+
       // Should show error message with retry option
       // Should not break the page
       expect(responseStatus).toBe(500);
@@ -164,7 +164,7 @@ describe('My Marketplace Listings - Auth & Error Handling', () => {
 
     it('should handle network errors', () => {
       const error = new Error('Network request failed');
-      
+
       // Should catch and display user-friendly message
       expect(error).toBeInstanceOf(Error);
       expect(error.message).toContain('Network');
@@ -179,7 +179,7 @@ describe('My Marketplace Listings - Auth & Error Handling', () => {
         category: 'attire',
         price: 50,
       };
-      
+
       expect(listing.category).toBe('attire');
     });
 
@@ -190,7 +190,7 @@ describe('My Marketplace Listings - Auth & Error Handling', () => {
         location: 'London',
         price: 50,
       };
-      
+
       expect(listing.location).toBe('London');
     });
 
@@ -201,7 +201,7 @@ describe('My Marketplace Listings - Auth & Error Handling', () => {
         condition: 'like-new',
         price: 50,
       };
-      
+
       expect(listing.condition).toBe('like-new');
     });
 
@@ -212,7 +212,7 @@ describe('My Marketplace Listings - Auth & Error Handling', () => {
         price: 50,
         // No category, location, or condition
       };
-      
+
       expect(listing.category).toBeUndefined();
       expect(listing.location).toBeUndefined();
       expect(listing.condition).toBeUndefined();
@@ -230,17 +230,16 @@ describe('My Marketplace Listings - Auth & Error Handling', () => {
 
     it('should show all listings when "all" tab selected', () => {
       const currentStatus = 'all';
-      const filtered = currentStatus === 'all' 
-        ? listings 
-        : listings.filter(l => l.status === currentStatus);
-      
+      const filtered =
+        currentStatus === 'all' ? listings : listings.filter(l => l.status === currentStatus);
+
       expect(filtered.length).toBe(4);
     });
 
     it('should filter to active listings only', () => {
       const currentStatus = 'active';
       const filtered = listings.filter(l => l.status === currentStatus);
-      
+
       expect(filtered.length).toBe(2);
       expect(filtered.every(l => l.status === 'active')).toBe(true);
     });
@@ -248,7 +247,7 @@ describe('My Marketplace Listings - Auth & Error Handling', () => {
     it('should filter to pending listings only', () => {
       const currentStatus = 'pending';
       const filtered = listings.filter(l => l.status === currentStatus);
-      
+
       expect(filtered.length).toBe(1);
       expect(filtered[0].status).toBe('pending');
     });
@@ -256,7 +255,7 @@ describe('My Marketplace Listings - Auth & Error Handling', () => {
     it('should filter to sold listings only', () => {
       const currentStatus = 'sold';
       const filtered = listings.filter(l => l.status === currentStatus);
-      
+
       expect(filtered.length).toBe(1);
       expect(filtered[0].status).toBe('sold');
     });
@@ -265,14 +264,14 @@ describe('My Marketplace Listings - Auth & Error Handling', () => {
   describe('Form validation helpers', () => {
     it('should format category names correctly', () => {
       const categories = {
-        'attire': 'Attire',
-        'decor': 'Décor',
+        attire: 'Attire',
+        decor: 'Décor',
         'av-equipment': 'AV Equipment',
-        'photography': 'Photography',
+        photography: 'Photography',
         'party-supplies': 'Party Supplies',
-        'florals': 'Florals',
+        florals: 'Florals',
       };
-      
+
       expect(categories['attire']).toBe('Attire');
       expect(categories['decor']).toBe('Décor');
       expect(categories['av-equipment']).toBe('AV Equipment');
@@ -280,24 +279,24 @@ describe('My Marketplace Listings - Auth & Error Handling', () => {
 
     it('should format condition names correctly', () => {
       const conditions = {
-        'new': 'New',
+        new: 'New',
         'like-new': 'Like New',
-        'good': 'Good',
-        'fair': 'Fair',
+        good: 'Good',
+        fair: 'Fair',
       };
-      
+
       expect(conditions['new']).toBe('New');
       expect(conditions['like-new']).toBe('Like New');
     });
 
     it('should format status names correctly', () => {
       const statuses = {
-        'pending': 'Pending',
-        'active': 'Active',
-        'sold': 'Sold',
-        'removed': 'Removed',
+        pending: 'Pending',
+        active: 'Active',
+        sold: 'Sold',
+        removed: 'Removed',
       };
-      
+
       expect(statuses['pending']).toBe('Pending');
       expect(statuses['active']).toBe('Active');
     });
