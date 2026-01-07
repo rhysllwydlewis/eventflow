@@ -2,6 +2,12 @@
  * Photo Upload Middleware and Utilities
  * Handles file uploads, image optimization, and MongoDB storage
  * Photos are stored in MongoDB for persistence across deployments
+ * 
+ * Security features:
+ * - Magic-byte detection for true file type validation
+ * - Pixel count limits to prevent decompression bombs
+ * - Automatic metadata stripping (EXIF/GPS)
+ * - Configurable file size limits per context
  */
 
 'use strict';
@@ -16,6 +22,9 @@ const crypto = require('crypto');
 // MongoDB for photo storage
 const mongoDb = require('./db');
 const { uid } = require('./store');
+
+// Import validation utilities
+const uploadValidation = require('./utils/uploadValidation');
 
 // Storage type based on MongoDB availability
 let STORAGE_TYPE = 'local'; // 'mongodb' or 'local'
@@ -69,13 +78,16 @@ const IMAGE_CONFIGS = {
   thumbnail: { width: 300, height: 300, fit: 'cover', quality: 80 },
   optimized: { width: 1200, height: 1200, fit: 'inside', quality: 85 },
   large: { width: 2000, height: 2000, fit: 'inside', quality: 90 },
+  avatar: { width: 400, height: 400, fit: 'cover', quality: 90 }, // Square avatar
 };
 
-// Allowed file types
-const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+// Allowed file types (now validated via magic bytes, not just MIME type)
+const ALLOWED_MIME_TYPES = uploadValidation.ALLOWED_IMAGE_TYPES;
 
-// Maximum file size (10MB)
-const MAX_FILE_SIZE = 10 * 1024 * 1024;
+// Maximum file sizes (configurable via environment)
+const MAX_FILE_SIZE = uploadValidation.MAX_FILE_SIZE_SUPPLIER;
+const MAX_FILE_SIZE_AVATAR = uploadValidation.MAX_FILE_SIZE_AVATAR;
+const MAX_FILE_SIZE_MARKETPLACE = uploadValidation.MAX_FILE_SIZE_MARKETPLACE;
 
 /**
  * Generate unique filename
@@ -117,31 +129,18 @@ const upload = multer({
 
 /**
  * Process and optimize image
+ * Automatically strips metadata (EXIF/GPS) for privacy
  * @param {Buffer} buffer - Image buffer
  * @param {Object} config - Processing configuration
  * @returns {Promise<Buffer>} Processed image buffer
  */
 async function processImage(buffer, config) {
-  let processor = sharp(buffer);
-
-  // Resize
-  if (config.width || config.height) {
-    processor = processor.resize({
-      width: config.width,
-      height: config.height,
-      fit: config.fit || 'inside',
-      withoutEnlargement: true,
-    });
-  }
-
-  // Convert to JPEG and optimize
-  processor = processor.jpeg({
+  return uploadValidation.processWithMetadataStripping(buffer, {
+    width: config.width,
+    height: config.height,
+    fit: config.fit || 'inside',
     quality: config.quality || 85,
-    progressive: true,
-    mozjpeg: true,
   });
-
-  return processor.toBuffer();
 }
 
 /**
@@ -195,11 +194,23 @@ async function saveToMongoDB(buffer, filename, type = 'optimized') {
 
 /**
  * Process and save image with multiple sizes
+ * Performs comprehensive validation before processing
  * @param {Buffer} buffer - Original image buffer
  * @param {string} originalFilename - Original filename
+ * @param {string} context - Upload context ('marketplace', 'supplier', 'avatar')
  * @returns {Promise<Object>} URLs/IDs for all image sizes
  */
-async function processAndSaveImage(buffer, originalFilename) {
+async function processAndSaveImage(buffer, originalFilename, context = 'supplier') {
+  // Validate upload (type, size, dimensions)
+  const validation = await uploadValidation.validateUpload(buffer, context);
+  
+  if (!validation.valid) {
+    const error = new Error(validation.errors.join('; '));
+    error.name = 'ValidationError';
+    error.details = validation.details;
+    throw error;
+  }
+
   const filename = generateFilename(originalFilename);
   const baseFilename = filename.replace(path.extname(filename), '');
 
@@ -211,7 +222,23 @@ async function processAndSaveImage(buffer, originalFilename) {
   };
 
   try {
-    // Process each size
+    // For avatars, only generate one optimized square size
+    if (context === 'avatar') {
+      const avatarProcessed = await processImage(buffer, IMAGE_CONFIGS.avatar);
+      
+      if (STORAGE_TYPE === 'mongodb') {
+        const avatarId = await saveToMongoDB(avatarProcessed, `${baseFilename}.jpg`, 'avatar');
+        results.optimized = `/api/photos/${avatarId}`;
+      } else {
+        await saveToLocal(avatarProcessed, `${baseFilename}.jpg`, 'optimized');
+        results.optimized = `/uploads/optimized/${baseFilename}.jpg`;
+        await saveToLocal(avatarProcessed, `${baseFilename}.jpg`, 'public');
+      }
+      
+      return results;
+    }
+
+    // Process each size (with automatic metadata stripping)
     const [originalProcessed, thumbnail, optimized, large] = await Promise.all([
       buffer, // Keep original as-is for backup
       processImage(buffer, IMAGE_CONFIGS.thumbnail),
