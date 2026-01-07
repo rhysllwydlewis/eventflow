@@ -24,6 +24,7 @@ All phases of the marketplace supplier experience gold-standard implementation h
 
 - **Status**: ✅ Complete
 - **Verification**:
+
   ```bash
   $ grep -A 10 '<header class="header"' public/my-marketplace-listings.html
   ```
@@ -37,6 +38,7 @@ All phases of the marketplace supplier experience gold-standard implementation h
 
 - **Status**: ✅ Complete
 - **Verification**:
+
   ```bash
   $ grep -E "components/(header|back-to-top|footer-nav)\.js" public/my-marketplace-listings.html
   # Exit code 1 (not found) - GOOD

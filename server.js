@@ -3011,7 +3011,15 @@ app.post(
       const { title, description, price, category, condition, location, images } = req.body || {};
 
       // Validation with detailed messages - check for undefined, null, or empty string (allow 0)
-      if (!title || !description || price === undefined || price === null || price === '' || !category || !condition) {
+      if (
+        !title ||
+        !description ||
+        price === undefined ||
+        price === null ||
+        price === '' ||
+        !category ||
+        !condition
+      ) {
         logger.warn('Marketplace listing creation failed - missing fields', {
           userId: req.user.id,
           provided: {

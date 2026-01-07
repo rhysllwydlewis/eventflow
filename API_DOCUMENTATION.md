@@ -328,6 +328,7 @@ photos: [file1, file2, file3, ...]
 Upload up to 10 photos at once for suppliers/packages, or up to 5 photos total for marketplace listings (capped at 5 images per listing).
 
 **Marketplace Listings:**
+
 - Uses `type=marketplace&id=<listingId>`
 - Maximum 5 images total per listing
 - Requires listing ownership or admin role

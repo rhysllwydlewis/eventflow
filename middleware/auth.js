@@ -11,10 +11,14 @@ const JWT_SECRET = String(process.env.JWT_SECRET || 'change_me');
 
 // Validate JWT secret at module load time in production
 if (process.env.NODE_ENV === 'production') {
-  if (!process.env.JWT_SECRET || process.env.JWT_SECRET.trim() === '' || process.env.JWT_SECRET === 'change_me') {
+  if (
+    !process.env.JWT_SECRET ||
+    process.env.JWT_SECRET.trim() === '' ||
+    process.env.JWT_SECRET === 'change_me'
+  ) {
     throw new Error(
       'FATAL: JWT_SECRET is missing, blank, or set to default value in production. ' +
-      'Please set a strong JWT_SECRET environment variable.'
+        'Please set a strong JWT_SECRET environment variable.'
     );
   }
 }
@@ -115,23 +119,31 @@ function authRequired(req, res, next) {
   const u = getUserFromCookie(req);
   if (!u) {
     // Log 401 for debugging (use logger if available, otherwise console)
-    const logger = typeof require !== 'undefined' ? 
-      (function() { try { return require('../utils/logger'); } catch(e) { return null; } })() : null;
-    
+    const logger =
+      typeof require !== 'undefined'
+        ? (function () {
+            try {
+              return require('../utils/logger');
+            } catch (e) {
+              return null;
+            }
+          })()
+        : null;
+
     if (logger) {
       logger.warn('Authentication required but no valid user found', {
         path: req.path,
         method: req.method,
         ip: req.ip,
-        userAgent: req.get('user-agent')
+        userAgent: req.get('user-agent'),
       });
     } else {
       console.warn('Auth required - 401:', {
         path: req.path,
-        method: req.method
+        method: req.method,
       });
     }
-    
+
     return res.status(401).json({
       error: 'Unauthenticated',
       message: 'Please log in to access this resource.',
