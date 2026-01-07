@@ -145,8 +145,20 @@ function validateRedirectForRole(redirectUrl, userRole) {
       '/admin-user-detail.html',
       '/admin-users.html',
     ],
-    supplier: ['/dashboard-supplier.html', '/settings.html', '/plan.html'],
-    customer: ['/dashboard-customer.html', '/settings.html', '/plan.html', '/checkout.html'],
+    supplier: [
+      '/dashboard-supplier.html',
+      '/settings.html',
+      '/plan.html',
+      '/my-marketplace-listings.html',
+      '/supplier/marketplace-new-listing.html',
+    ],
+    customer: [
+      '/dashboard-customer.html',
+      '/settings.html',
+      '/plan.html',
+      '/checkout.html',
+      '/my-marketplace-listings.html',
+    ],
   };
 
   const allowed = allowedPaths[userRole] || [];

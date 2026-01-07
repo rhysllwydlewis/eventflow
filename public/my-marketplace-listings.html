@@ -120,21 +120,14 @@
         background: #fee2e2;
         color: #991b1b;
       }
-      .listing-tags {
+      /* Use marketplace-tag classes for consistency */
+      .marketplace-item-tags {
         display: flex;
         flex-wrap: wrap;
         gap: 6px;
         margin-top: 8px;
       }
-      .listing-tag {
-        display: inline-block;
-        padding: 3px 10px;
-        background: #f3f4f6;
-        color: #374151;
-        border-radius: 12px;
-        font-size: 11px;
-        font-weight: 500;
-      }
+      /* marketplace-tag styles are inherited from marketplace.css */
       @media (max-width: 768px) {
         .listing-card {
           grid-template-columns: 1fr;
@@ -252,10 +245,6 @@
       </div>
     </footer>
 
-    <!-- Core scripts -->
-    <script src="/assets/js/app.js" defer></script>
-    <script src="/assets/js/my-marketplace-listings.js" defer></script>
-    <script src="/assets/js/cookie-consent.js" defer></script>
     <!-- Core scripts -->
     <script src="/assets/js/app.js" defer></script>
     <script src="/assets/js/my-marketplace-listings.js" defer></script>
