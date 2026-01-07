@@ -500,7 +500,7 @@ async function initSupplier() {
     return;
   }
   const s = await r.json();
-  
+
   // Fetch packages with error handling
   let pkgs = { items: [] };
   try {
