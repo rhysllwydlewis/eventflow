@@ -1,15 +1,20 @@
 <!doctype html>
 <html lang="en-GB">
   <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes" />
+    <meta name="theme-color" content="#0B8073" />
     <title>My Marketplace Listings — EventFlow</title>
+    <meta name="description" content="Manage your marketplace listings on EventFlow. View, edit, and track all your items for sale." />
+    
+    <link rel="preload" href="/assets/css/styles.css" as="style" />
     <link rel="stylesheet" href="/assets/css/styles.css" />
     <link rel="stylesheet" href="/assets/css/eventflow-17.0.0.css" />
     <link rel="stylesheet" href="/assets/css/utilities.css" />
     <link rel="stylesheet" href="/assets/css/components.css" />
     <link rel="stylesheet" href="/assets/css/animations.css" />
     <link rel="stylesheet" href="/assets/css/mobile-optimizations.css" />
+    <link rel="stylesheet" href="/assets/css/ui-ux-fixes.css" />
     <link rel="stylesheet" href="/assets/css/marketplace.css" />
     <link rel="icon" href="/favicon.svg" />
     <style>
@@ -115,6 +120,21 @@
         background: #fee2e2;
         color: #991b1b;
       }
+      .listing-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 8px;
+      }
+      .listing-tag {
+        display: inline-block;
+        padding: 3px 10px;
+        background: #f3f4f6;
+        color: #374151;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 500;
+      }
       @media (max-width: 768px) {
         .listing-card {
           grid-template-columns: 1fr;
@@ -124,29 +144,66 @@
           flex-wrap: wrap;
         }
       }
+      .auth-message {
+        background: #fef3c7;
+        border: 1px solid #fbbf24;
+        padding: 16px;
+        border-radius: 8px;
+        margin-bottom: 24px;
+      }
+      .auth-message.error {
+        background: #fee2e2;
+        border-color: #ef4444;
+      }
+      .auth-message.info {
+        background: #dbeafe;
+        border-color: #3b82f6;
+      }
     </style>
   </head>
   <body>
 <a href="#main-content" class="skip-link">Skip to main content</a>
-<!-- Header -->
-    <header class="header">
-      <div class="header-content">
-        <a href="/" class="logo-link">
-          <div class="logo">EventFlow</div>
-        </a>
-        <nav class="quick-nav">
-          <a href="/start.html">Plan</a>
-          <a href="/suppliers.html">Suppliers</a>
-          <a href="/pricing.html">Pricing</a>
-          <a href="/blog.html">Blog</a>
-          <a href="/auth.html" id="auth-link">Log in</a>
-        </nav>
-        <button class="mobile-menu-toggle" aria-label="Toggle navigation">☰</button>
-        <button class="notification-btn" aria-label="Notifications">🔔</button>
-      </div>
-    </header>
+<!-- Modern navbar matching pricing.html -->
+<header class="header" role="banner">
+  <div class="container header-inner">
+    <a class="brand" href="/" aria-label="EventFlow home">
+      <span class="logo" aria-hidden="true"></span>
+      <span class="brand-text">EventFlow</span>
+    </a>
+    <div class="header-actions">
+      <nav class="nav nav-inline" aria-label="Quick navigation">
+        <a href="/start.html" class="nav-link nav-main">Plan</a>
+        <a href="/suppliers.html" class="nav-link nav-main">Suppliers</a>
+        <a href="/marketplace.html" class="nav-link nav-main">Marketplace</a>
+        <a href="/pricing.html" class="nav-link nav-main">Pricing</a>
+        <a href="/blog.html" class="nav-link nav-main">Blog</a>
+        <a href="/auth.html" class="nav-link nav-main nav-main-login">Log in</a>
+      </nav>
+      <button id="burger" class="nav-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false">
+        <span class="nav-toggle-bar"></span>
+        <span class="nav-toggle-bar"></span>
+        <span class="nav-toggle-bar"></span>
+      </button>
+    </div>
+  </div>
+  <nav class="nav nav-menu" aria-label="Primary navigation">
+    <a href="/start.html">Plan an Event</a>
+    <a href="/suppliers.html">Suppliers</a>
+    <a href="/marketplace.html">Marketplace</a>
+    <a href="/pricing.html">Pricing</a>
+    <a href="/for-suppliers.html">For Suppliers</a>
+    <a href="/auth.html" id="nav-auth">Log in</a>
+    <a href="#" id="nav-dashboard" style="display:none">Dashboard</a>
+    <a href="#" id="nav-signout" style="display:none">Sign out</a>
+  </nav>
+</header>
+
+<script src="/assets/js/auth-nav.js" defer></script>
 
     <main id="main-content" class="my-listings-container">
+      <!-- Auth state message container -->
+      <div id="auth-message-container"></div>
+
       <div class="my-listings-header">
         <div>
           <h1>My Marketplace Listings</h1>
@@ -171,437 +228,37 @@
       </div>
     </main>
 
-    <!-- Footer -->
-    <footer class="footer">
-      <div class="footer-content">
+    <!-- Modern footer matching pricing.html -->
+    <footer class="footer" role="contentinfo">
+      <div
+        class="container"
+        style="
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 10px;
+          flex-wrap: wrap;
+        "
+      >
         <div>
-          <strong>EventFlow</strong>
-          <p class="small">Event planning made simple.</p>
+          <strong>EventFlow</strong><br /><span class="small">Event planning made simple.</span>
         </div>
-        <div class="footer-links">
+        <div class="version">Version: <span id="ef-version-label">loading…</span></div>
+        <div class="small">
           <a href="/blog.html">Blog</a> · <a href="/credits.html">Credits</a> ·
-          <a href="/contact.html">Contact</a> · <a href="/legal.html">Legal Hub</a>
+          <a href="/contact.html">Contact</a> ·
+          <a href="/legal.html">Legal Hub</a>
         </div>
       </div>
     </footer>
 
-    <!-- Fixed footer nav -->
-    <nav class="footer-nav">
-      <a href="/start.html" class="footer-nav-item">Plan</a>
-      <a href="/suppliers.html" class="footer-nav-item">Suppliers</a>
-      <a href="/plan.html" class="footer-nav-item">My Plan</a>
-      <a href="/settings.html" class="footer-nav-item">Settings</a>
-    </nav>
-
-    <script src="/assets/js/components/header.js"></script>
-    <script src="/assets/js/components/footer-nav.js"></script>
-    <script src="/assets/js/components/cookie-consent.js"></script>
-    <script src="/assets/js/components/back-to-top.js"></script>
-    <script>
-      (async function () {
-        'use strict';
-
-        let allListings = [];
-        let currentStatus = 'all';
-
-        // Check authentication
-        async function checkAuth() {
-          try {
-            const res = await fetch('/api/user', { credentials: 'include' });
-            if (!res.ok) {
-              window.location.href = '/auth.html';
-              return false;
-            }
-            return true;
-          } catch (error) {
-            window.location.href = '/auth.html';
-            return false;
-          }
-        }
-
-        // Load user's listings
-        async function loadListings() {
-          try {
-            const res = await fetch('/api/marketplace/my-listings', {
-              credentials: 'include',
-            });
-            if (!res.ok) throw new Error('Failed to fetch listings');
-
-            const data = await res.json();
-            allListings = data.listings || [];
-            renderListings();
-          } catch (error) {
-            console.error('Error loading listings:', error);
-            document.getElementById('my-listings-container').innerHTML = `
-              <div class="card">
-                <p class="error">Failed to load your listings. Please try again.</p>
-              </div>
-            `;
-          }
-        }
-
-        // Render listings
-        function renderListings() {
-          const container = document.getElementById('my-listings-container');
-
-          let filtered = allListings;
-          if (currentStatus !== 'all') {
-            filtered = filtered.filter(l => l.status === currentStatus);
-          }
-
-          if (filtered.length === 0) {
-            container.innerHTML = `
-              <div class="card" style="text-align: center; padding: 3rem;">
-                <h3>No listings found</h3>
-                <p class="small">Create your first listing to get started!</p>
-                <button class="cta" onclick="showListItemModal()" style="margin-top: 1rem;">+ List an Item</button>
-              </div>
-            `;
-            return;
-          }
-
-          container.innerHTML = filtered
-            .map(listing => createListingCard(listing))
-            .join('');
-        }
-
-        // Create listing card HTML
-        function createListingCard(listing) {
-          const defaultImage = '/assets/images/collage-venue.jpg';
-          const image = listing.images && listing.images[0] ? listing.images[0] : defaultImage;
-          const timeAgo = getTimeAgo(listing.createdAt);
-
-          return `
-            <div class="listing-card">
-              <img src="${image}" alt="${escapeHtml(listing.title)}" class="listing-card-image" onerror="this.src='${defaultImage}'">
-              <div class="listing-card-info">
-                <span class="status-badge status-${listing.status}">${listing.status}</span>
-                <h3>${escapeHtml(listing.title)}</h3>
-                <p class="small">${escapeHtml(listing.description.slice(0, 150))}${listing.description.length > 150 ? '...' : ''}</p>
-                <div class="listing-card-meta">
-                  <span><strong>£${listing.price.toFixed(2)}</strong></span>
-                  <span>📍 ${escapeHtml(listing.location || 'No location')}</span>
-                  <span>${formatCondition(listing.condition)}</span>
-                  <span>${formatCategory(listing.category)}</span>
-                </div>
-                <div class="listing-card-meta">
-                  <span>Listed ${timeAgo}</span>
-                  ${!listing.approved ? '<span style="color: #dc2626;">⚠️ Awaiting approval</span>' : ''}
-                </div>
-              </div>
-              <div class="listing-card-actions">
-                ${listing.status === 'active' ? `
-                  <button class="cta secondary" onclick="markAsSold('${listing.id}')">Mark as Sold</button>
-                ` : ''}
-                <button class="cta ghost" onclick="editListing('${listing.id}')">Edit</button>
-                <button class="cta ghost" onclick="deleteListing('${listing.id}')" style="color: #dc2626;">Delete</button>
-              </div>
-            </div>
-          `;
-        }
-
-        // Mark as sold
-        window.markAsSold = async function (id) {
-          if (!confirm('Mark this listing as sold?')) return;
-
-          try {
-            const res = await fetch(`/api/marketplace/listings/${id}`, {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              credentials: 'include',
-              body: JSON.stringify({ status: 'sold' }),
-            });
-
-            if (!res.ok) throw new Error('Failed to update listing');
-
-            showToast('Listing marked as sold');
-            await loadListings();
-          } catch (error) {
-            console.error('Error updating listing:', error);
-            showToast('Failed to update listing', 'error');
-          }
-        };
-
-        // Delete listing
-        window.deleteListing = async function (id) {
-          if (!confirm('Are you sure you want to delete this listing? This cannot be undone.')) return;
-
-          try {
-            const res = await fetch(`/api/marketplace/listings/${id}`, {
-              method: 'DELETE',
-              credentials: 'include',
-            });
-
-            if (!res.ok) throw new Error('Failed to delete listing');
-
-            showToast('Listing deleted');
-            await loadListings();
-          } catch (error) {
-            console.error('Error deleting listing:', error);
-            showToast('Failed to delete listing', 'error');
-          }
-        };
-
-        // Edit listing
-        window.editListing = async function (id) {
-          const listing = allListings.find(l => l.id === id);
-          if (!listing) return;
-
-          showEditListingModal(listing);
-        };
-
-        // Show list item modal (from marketplace.js)
-        window.showListItemModal = function () {
-          window.location.href = '/marketplace#list-item';
-        };
-
-        // Show edit listing modal
-        function showEditListingModal(listing) {
-          const modal = document.createElement('div');
-          modal.className = 'modal-overlay';
-          modal.innerHTML = `
-            <div class="modal-content" style="max-width: 600px;">
-              <div class="modal-header">
-                <h2>Edit Listing</h2>
-                <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">×</button>
-              </div>
-              <div class="modal-body">
-                <form id="edit-listing-form">
-                  <div style="margin-bottom: 16px;">
-                    <label for="edit-title">Title *</label>
-                    <input type="text" id="edit-title" required maxlength="100" value="${escapeHtml(listing.title)}">
-                  </div>
-                  <div style="margin-bottom: 16px;">
-                    <label for="edit-description">Description *</label>
-                    <textarea id="edit-description" required maxlength="1000" rows="4">${escapeHtml(listing.description)}</textarea>
-                  </div>
-                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
-                    <div>
-                      <label for="edit-price">Price (£) *</label>
-                      <input type="number" id="edit-price" required min="0" step="0.01" value="${listing.price}">
-                    </div>
-                    <div>
-                      <label for="edit-location">Location</label>
-                      <input type="text" id="edit-location" maxlength="100" value="${escapeHtml(listing.location || '')}">
-                    </div>
-                  </div>
-                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
-                    <div>
-                      <label for="edit-category">Category *</label>
-                      <select id="edit-category" required>
-                        <option value="">Select category</option>
-                        <option value="attire" ${listing.category === 'attire' ? 'selected' : ''}>Attire</option>
-                        <option value="decor" ${listing.category === 'decor' ? 'selected' : ''}>Décor</option>
-                        <option value="av-equipment" ${listing.category === 'av-equipment' ? 'selected' : ''}>AV Equipment</option>
-                        <option value="photography" ${listing.category === 'photography' ? 'selected' : ''}>Photography</option>
-                        <option value="party-supplies" ${listing.category === 'party-supplies' ? 'selected' : ''}>Party Supplies</option>
-                        <option value="florals" ${listing.category === 'florals' ? 'selected' : ''}>Florals</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label for="edit-condition">Condition *</label>
-                      <select id="edit-condition" required>
-                        <option value="">Select condition</option>
-                        <option value="new" ${listing.condition === 'new' ? 'selected' : ''}>New / Unused</option>
-                        <option value="like-new" ${listing.condition === 'like-new' ? 'selected' : ''}>Like New</option>
-                        <option value="good" ${listing.condition === 'good' ? 'selected' : ''}>Good</option>
-                        <option value="fair" ${listing.condition === 'fair' ? 'selected' : ''}>Fair</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div style="display: flex; gap: 8px;">
-                    <button type="submit" class="cta">Save Changes</button>
-                    <button type="button" class="cta secondary" onclick="this.closest('.modal-overlay').remove()">
-                      Cancel
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          `;
-
-          // Apply styles
-          modal.style.cssText = `
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 10000;
-            padding: 20px;
-          `;
-
-          const modalContent = modal.querySelector('.modal-content');
-          modalContent.style.cssText = `
-            background: white;
-            border-radius: 12px;
-            max-width: 600px;
-            width: 100%;
-            max-height: 90vh;
-            overflow-y: auto;
-          `;
-
-          const modalHeader = modal.querySelector('.modal-header');
-          modalHeader.style.cssText = `
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 20px;
-            border-bottom: 1px solid #e5e7eb;
-          `;
-
-          const modalBody = modal.querySelector('.modal-body');
-          modalBody.style.cssText = 'padding: 20px;';
-
-          const closeBtn = modal.querySelector('.modal-close');
-          closeBtn.style.cssText = `
-            background: none;
-            border: none;
-            font-size: 28px;
-            cursor: pointer;
-            color: #6b7280;
-            line-height: 1;
-            padding: 0;
-            width: 32px;
-            height: 32px;
-          `;
-
-          document.body.appendChild(modal);
-
-          // Handle form submission
-          const form = document.getElementById('edit-listing-form');
-          form.addEventListener('submit', async e => {
-            e.preventDefault();
-
-            const updates = {
-              title: document.getElementById('edit-title').value,
-              description: document.getElementById('edit-description').value,
-              price: parseFloat(document.getElementById('edit-price').value),
-              location: document.getElementById('edit-location').value,
-              category: document.getElementById('edit-category').value,
-              condition: document.getElementById('edit-condition').value,
-            };
-
-            try {
-              const res = await fetch(`/api/marketplace/listings/${listing.id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify(updates),
-              });
-
-              if (!res.ok) {
-                const error = await res.json();
-                throw new Error(error.error || 'Failed to update listing');
-              }
-
-              modal.remove();
-              showToast('Listing updated successfully');
-              await loadListings();
-            } catch (error) {
-              console.error('Error updating listing:', error);
-              showToast(error.message || 'Failed to update listing', 'error');
-            }
-          });
-
-          // Close on background click
-          modal.addEventListener('click', e => {
-            if (e.target === modal) modal.remove();
-          });
-        }
-
-        // Helper functions
-        function getTimeAgo(dateString) {
-          const seconds = Math.floor((new Date() - new Date(dateString)) / 1000);
-          const intervals = {
-            year: 31536000,
-            month: 2592000,
-            week: 604800,
-            day: 86400,
-            hour: 3600,
-            minute: 60,
-          };
-
-          for (const [name, secondsInInterval] of Object.entries(intervals)) {
-            const interval = Math.floor(seconds / secondsInInterval);
-            if (interval >= 1) {
-              return `${interval} ${name}${interval > 1 ? 's' : ''} ago`;
-            }
-          }
-          return 'Just now';
-        }
-
-        function formatCondition(condition) {
-          const map = {
-            new: 'New / Unused',
-            'like-new': 'Like New',
-            good: 'Good',
-            fair: 'Fair',
-          };
-          return map[condition] || condition;
-        }
-
-        function formatCategory(category) {
-          const map = {
-            attire: 'Attire',
-            decor: 'Décor',
-            'av-equipment': 'AV Equipment',
-            photography: 'Photography',
-            'party-supplies': 'Party Supplies',
-            florals: 'Florals',
-          };
-          return map[category] || category;
-        }
-
-        function escapeHtml(text) {
-          const div = document.createElement('div');
-          div.textContent = text;
-          return div.innerHTML;
-        }
-
-        function showToast(message, type = 'success') {
-          const toast = document.createElement('div');
-          toast.textContent = message;
-          toast.style.cssText = `
-            position: fixed;
-            bottom: 80px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: ${type === 'error' ? '#dc2626' : '#16a34a'};
-            color: white;
-            padding: 12px 24px;
-            border-radius: 8px;
-            font-size: 14px;
-            z-index: 10000;
-          `;
-          document.body.appendChild(toast);
-          setTimeout(() => toast.remove(), 3000);
-        }
-
-        // Tab switching
-        document.querySelectorAll('.my-listings-tab').forEach(tab => {
-          tab.addEventListener('click', () => {
-            document.querySelectorAll('.my-listings-tab').forEach(t => t.classList.remove('active'));
-            tab.classList.add('active');
-            currentStatus = tab.dataset.status;
-            renderListings();
-          });
-        });
-
-        // Add listing button
-        document.getElementById('add-listing-btn').addEventListener('click', () => {
-          window.location.href = '/marketplace#list-item';
-        });
-
-        // Initialize
-        if (await checkAuth()) {
-          await loadListings();
-        }
-      })();
-    </script>
+    <!-- Core scripts -->
+    <script src="/assets/js/app.js" defer></script>
+    <script src="/assets/js/my-marketplace-listings.js" defer></script>
+    <script src="/assets/js/cookie-consent.js" defer></script>
+    <!-- Core scripts -->
+    <script src="/assets/js/app.js" defer></script>
+    <script src="/assets/js/my-marketplace-listings.js" defer></script>
+    <script src="/assets/js/cookie-consent.js" defer></script>
   </body>
 </html>

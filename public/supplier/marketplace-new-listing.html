@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes">
+  <meta name="theme-color" content="#0B8073">
+  
+  <title>Create Marketplace Listing — EventFlow</title>
+  <meta name="description" content="List your pre-loved event items on the EventFlow marketplace. Free to list, reach customers across the UK.">
+  
+  <link rel="preload" href="/assets/css/styles.css" as="style">
+  <link rel="stylesheet" href="/assets/css/styles.css">
+  <link rel="stylesheet" href="/assets/css/eventflow-17.0.0.css">
+  <link rel="stylesheet" href="/assets/css/utilities.css">
+  <link rel="stylesheet" href="/assets/css/components.css">
+  <link rel="stylesheet" href="/assets/css/ui-ux-fixes.css">
+  <link rel="icon" href="/favicon.svg">
+  
+  <style>
+    .form-container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+    
+    .form-header {
+      margin-bottom: 32px;
+    }
+    
+    .form-header h1 {
+      font-size: 2rem;
+      margin-bottom: 8px;
+    }
+    
+    .form-card {
+      background: white;
+      border-radius: 12px;
+      padding: 32px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+    
+    .form-group {
+      margin-bottom: 24px;
+    }
+    
+    .form-group label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #374151;
+    }
+    
+    .form-group label .required {
+      color: #dc2626;
+    }
+    
+    .form-group input,
+    .form-group textarea,
+    .form-group select {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 16px;
+      font-family: inherit;
+    }
+    
+    .form-group input:focus,
+    .form-group textarea:focus,
+    .form-group select:focus {
+      outline: none;
+      border-color: #0B8073;
+      box-shadow: 0 0 0 3px rgba(11, 128, 115, 0.1);
+    }
+    
+    .form-group textarea {
+      resize: vertical;
+      min-height: 120px;
+    }
+    
+    .form-group-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    
+    @media (max-width: 640px) {
+      .form-group-row {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    .form-help {
+      font-size: 14px;
+      color: #6b7280;
+      margin-top: 4px;
+    }
+    
+    .image-upload-zone {
+      border: 2px dashed #d1d5db;
+      border-radius: 8px;
+      padding: 32px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .image-upload-zone:hover {
+      border-color: #0B8073;
+      background: #f0fdf4;
+    }
+    
+    .image-upload-zone.dragover {
+      border-color: #0B8073;
+      background: #f0fdf4;
+    }
+    
+    .image-preview-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 12px;
+      margin-top: 16px;
+    }
+    
+    .image-preview-item {
+      position: relative;
+      aspect-ratio: 1;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid #e5e7eb;
+    }
+    
+    .image-preview-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    
+    .image-preview-remove {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      background: rgba(0, 0, 0, 0.6);
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      cursor: pointer;
+      font-size: 16px;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .image-preview-remove:hover {
+      background: rgba(0, 0, 0, 0.8);
+    }
+    
+    .form-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 32px;
+    }
+    
+    .notice {
+      background: #fef3c7;
+      border: 1px solid #fbbf24;
+      padding: 16px;
+      border-radius: 8px;
+      margin-bottom: 24px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+<a href="#main-content" class="skip-link">Skip to main content</a>
+
+<header class="header" role="banner">
+  <div class="container header-inner">
+    <a class="brand" href="/" aria-label="EventFlow home">
+      <span class="logo" aria-hidden="true"></span>
+      <span class="brand-text">EventFlow</span>
+    </a>
+    <div class="header-actions">
+      <nav class="nav nav-inline" aria-label="Quick navigation">
+        <a href="/start.html" class="nav-link nav-main">Plan</a>
+        <a href="/suppliers.html" class="nav-link nav-main">Suppliers</a>
+        <a href="/marketplace.html" class="nav-link nav-main">Marketplace</a>
+        <a href="/pricing.html" class="nav-link nav-main">Pricing</a>
+        <a href="/blog.html" class="nav-link nav-main">Blog</a>
+        <a href="/auth.html" class="nav-link nav-main nav-main-login">Log in</a>
+      </nav>
+      <button id="burger" class="nav-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false">
+        <span class="nav-toggle-bar"></span>
+        <span class="nav-toggle-bar"></span>
+        <span class="nav-toggle-bar"></span>
+      </button>
+    </div>
+  </div>
+  <nav class="nav nav-menu" aria-label="Primary navigation">
+    <a href="/start.html">Plan an Event</a>
+    <a href="/suppliers.html">Suppliers</a>
+    <a href="/marketplace.html">Marketplace</a>
+    <a href="/pricing.html">Pricing</a>
+    <a href="/for-suppliers.html">For Suppliers</a>
+    <a href="/auth.html" id="nav-auth">Log in</a>
+    <a href="#" id="nav-dashboard" style="display:none">Dashboard</a>
+    <a href="#" id="nav-signout" style="display:none">Sign out</a>
+  </nav>
+</header>
+
+<script src="/assets/js/auth-nav.js" defer></script>
+
+<main id="main-content" class="form-container">
+  <div class="form-header">
+    <h1>List an Item</h1>
+    <p class="small">List your pre-loved event items for free on the EventFlow marketplace</p>
+  </div>
+
+  <div class="notice">
+    <p><strong>ℹ️ Listing Review Process</strong></p>
+    <p class="small" style="margin-top: 6px;">
+      Your listing will be reviewed by our team before it appears on the marketplace. 
+      This usually takes 24-48 hours. We'll notify you once it's approved.
+    </p>
+  </div>
+
+  <div class="form-card">
+    <form id="new-listing-form">
+      <!-- Title -->
+      <div class="form-group">
+        <label for="listing-title">
+          Title <span class="required">*</span>
+        </label>
+        <input 
+          type="text" 
+          id="listing-title" 
+          name="title"
+          required 
+          maxlength="100" 
+          placeholder="e.g. Ivory Wedding Dress, Size 10"
+        >
+        <p class="form-help">Choose a clear, descriptive title that buyers will search for</p>
+      </div>
+
+      <!-- Description -->
+      <div class="form-group">
+        <label for="listing-description">
+          Description <span class="required">*</span>
+        </label>
+        <textarea 
+          id="listing-description" 
+          name="description"
+          required 
+          maxlength="1000"
+          placeholder="Describe your item in detail. Include condition, size, material, brand, and any special features..."
+        ></textarea>
+        <p class="form-help">
+          <span id="char-count">0</span>/1000 characters
+        </p>
+      </div>
+
+      <!-- Price and Location -->
+      <div class="form-group-row">
+        <div class="form-group">
+          <label for="listing-price">
+            Price (£) <span class="required">*</span>
+          </label>
+          <input 
+            type="number" 
+            id="listing-price" 
+            name="price"
+            required 
+            min="0" 
+            step="0.01" 
+            placeholder="0.00"
+          >
+          <p class="form-help">Set a fair price for your item</p>
+        </div>
+
+        <div class="form-group">
+          <label for="listing-location">
+            Location
+          </label>
+          <input 
+            type="text" 
+            id="listing-location" 
+            name="location"
+            maxlength="100" 
+            placeholder="e.g. London, Manchester"
+          >
+          <p class="form-help">City or region (optional)</p>
+        </div>
+      </div>
+
+      <!-- Category and Condition -->
+      <div class="form-group-row">
+        <div class="form-group">
+          <label for="listing-category">
+            Category <span class="required">*</span>
+          </label>
+          <select id="listing-category" name="category" required>
+            <option value="">Select category</option>
+            <option value="attire">Attire</option>
+            <option value="decor">Décor</option>
+            <option value="av-equipment">AV Equipment</option>
+            <option value="photography">Photography</option>
+            <option value="party-supplies">Party Supplies</option>
+            <option value="florals">Florals</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="listing-condition">
+            Condition <span class="required">*</span>
+          </label>
+          <select id="listing-condition" name="condition" required>
+            <option value="">Select condition</option>
+            <option value="new">New / Unused</option>
+            <option value="like-new">Like New</option>
+            <option value="good">Good</option>
+            <option value="fair">Fair</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Images -->
+      <div class="form-group">
+        <label>
+          Photos
+        </label>
+        <div class="image-upload-zone" id="image-upload-zone">
+          <input 
+            type="file" 
+            id="listing-images" 
+            name="images"
+            accept="image/*" 
+            multiple 
+            style="display: none;"
+          >
+          <p style="font-size: 40px; margin: 0;">📸</p>
+          <p style="margin: 8px 0 4px 0; font-weight: 600;">
+            Click or drag photos here
+          </p>
+          <p class="small" style="color: #6b7280;">
+            Upload up to 5 images (JPG, PNG, max 5MB each)
+          </p>
+        </div>
+        <div class="image-preview-grid" id="image-preview-grid"></div>
+      </div>
+
+      <!-- Actions -->
+      <div class="form-actions">
+        <button type="submit" class="cta">Submit Listing</button>
+        <a href="/my-marketplace-listings.html" class="cta secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+</main>
+
+<footer class="footer" role="contentinfo">
+  <div
+    class="container"
+    style="
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    "
+  >
+    <div>
+      <strong>EventFlow</strong><br /><span class="small">Event planning made simple.</span>
+    </div>
+    <div class="version">Version: <span id="ef-version-label">loading…</span></div>
+    <div class="small">
+      <a href="/blog.html">Blog</a> · <a href="/credits.html">Credits</a> ·
+      <a href="/contact.html">Contact</a> ·
+      <a href="/legal.html">Legal Hub</a>
+    </div>
+  </div>
+</footer>
+
+<script src="/assets/js/app.js" defer></script>
+<script src="/assets/js/marketplace-new-listing.js" defer></script>
+<script src="/assets/js/cookie-consent.js" defer></script>
+</body>
+</html>
