@@ -1,83 +1,89 @@
 /**
  * Messaging System for EventFlow
  * Handles conversations between customers and suppliers
- * Uses Firebase Firestore for real-time updates or falls back to MongoDB API
+ * Uses MongoDB API exclusively
+ *
+ * NOTE: This module has been migrated from Firebase to MongoDB.
+ * All operations now use the EventFlow REST API backed by MongoDB.
  */
-
-import { isFirebaseAvailable } from './firebase-config.js';
 
 class MessagingSystem {
   constructor() {
-    this.unsubscribers = [];
-    this.useFirebase = isFirebaseAvailable;
+    this.pollingIntervals = [];
+    this.apiBase = '/api';
   }
 
   /**
-   * Listen to user's conversations
+   * Listen to user's conversations using polling
    * @param {string} userId - User ID
    * @param {string} userType - 'customer' | 'supplier'
    * @param {Function} callback - Callback function
    * @returns {Function} Unsubscribe function
    */
   listenToUserConversations(userId, userType, callback) {
-    if (!this.useFirebase) {
-      // Fallback: Use MongoDB API
-      this.fetchConversationsFromAPI(userId, userType, callback);
-      return () => {}; // No-op unsubscribe
-    }
+    console.warn('Real-time updates not available with MongoDB. Using polling instead.');
 
-    // Firebase implementation would go here
-    callback([]);
-    return () => {};
+    // Initial fetch
+    this.fetchConversationsFromAPI(userId, userType, callback);
+
+    // Poll for updates
+    const pollInterval = setInterval(() => {
+      this.fetchConversationsFromAPI(userId, userType, callback);
+    }, 5000); // Poll every 5 seconds
+
+    this.pollingIntervals.push(pollInterval);
+
+    // Return unsubscribe function
+    return () => {
+      clearInterval(pollInterval);
+      this.pollingIntervals = this.pollingIntervals.filter(i => i !== pollInterval);
+    };
   }
 
   /**
-   * Listen to messages in a conversation
+   * Listen to messages in a conversation using polling
    * @param {string} conversationId - Conversation ID
    * @param {Function} callback - Callback function
    * @returns {Function} Unsubscribe function
    */
   listenToMessages(conversationId, callback) {
-    if (!this.useFirebase) {
-      // Fallback: Use MongoDB API
-      this.fetchMessagesFromAPI(conversationId, callback);
-      return () => {}; // No-op unsubscribe
-    }
+    console.warn('Real-time updates not available with MongoDB. Using polling instead.');
 
-    // Firebase implementation would go here
-    callback([]);
-    return () => {};
+    // Initial fetch
+    this.fetchMessagesFromAPI(conversationId, callback);
+
+    // Poll for updates
+    const pollInterval = setInterval(() => {
+      this.fetchMessagesFromAPI(conversationId, callback);
+    }, 3000); // Poll every 3 seconds for more responsive messaging
+
+    this.pollingIntervals.push(pollInterval);
+
+    // Return unsubscribe function
+    return () => {
+      clearInterval(pollInterval);
+      this.pollingIntervals = this.pollingIntervals.filter(i => i !== pollInterval);
+    };
   }
 
   /**
-   * Send a message
+   * Send a message via MongoDB API
    * @param {string} conversationId - Conversation ID
    * @param {Object} messageData - Message data
    * @returns {Promise<string>} Message ID
    */
   async sendMessage(conversationId, messageData) {
-    if (!this.useFirebase) {
-      // Fallback: Use MongoDB API
-      return this.sendMessageViaAPI(conversationId, messageData);
-    }
-
-    // TODO: Firebase implementation when available
     return this.sendMessageViaAPI(conversationId, messageData);
   }
 
   /**
-   * Mark messages as read
+   * Mark messages as read via MongoDB API
    * @param {string} conversationId - Conversation ID
    * @param {string} userId - User ID
    * @returns {Promise<void>}
    */
   async markMessagesAsRead(conversationId, userId) {
-    if (!this.useFirebase) {
-      // Fallback: Use MongoDB API
-      return this.markMessagesAsReadViaAPI(conversationId, userId);
-    }
-
-    return Promise.resolve();
+    return this.markMessagesAsReadViaAPI(conversationId, userId);
   }
 
   /**
@@ -255,11 +261,11 @@ class MessagingSystem {
   }
 
   /**
-   * Clean up all subscriptions
+   * Clean up all polling intervals
    */
   cleanup() {
-    this.unsubscribers.forEach(unsub => unsub());
-    this.unsubscribers = [];
+    this.pollingIntervals.forEach(interval => clearInterval(interval));
+    this.pollingIntervals = [];
   }
 }
 

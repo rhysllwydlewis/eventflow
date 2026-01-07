@@ -66,10 +66,10 @@ class CustomerManager {
 
   /**
    * Get all customers via MongoDB API
-   * @param {Object} options - Query options
+   * @param {Object} _options - Query options (reserved for future use)
    * @returns {Promise<Array>} Array of customers
    */
-  async getAllCustomers(options = {}) {
+  async getAllCustomers(_options = {}) {
     try {
       const response = await fetch(`${this.apiBase}/customers`, {
         credentials: 'include',
