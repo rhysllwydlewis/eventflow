@@ -463,4 +463,8 @@ module.exports = {
   applyFilters,
   updatePhotoOrder,
   IMAGE_CONFIGS,
+  // Export file size constants for use in routes
+  MAX_FILE_SIZE_SUPPLIER: MAX_FILE_SIZE,
+  MAX_FILE_SIZE_AVATAR,
+  MAX_FILE_SIZE_MARKETPLACE,
 };

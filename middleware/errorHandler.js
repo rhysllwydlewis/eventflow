@@ -168,7 +168,7 @@ function errorHandler(err, req, res, _next) {
   }
 
   // Capture in Sentry (except for expected client errors)
-  if (statusCode >= 500 || err.message === 'Not allowed by CORS') {
+  if (statusCode >= 500) {
     sentry.captureException(err, {
       tags: {
         path: req.path,

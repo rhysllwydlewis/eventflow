@@ -33,7 +33,6 @@ const MAX_PIXEL_COUNT = parseInt(process.env.MAX_PIXEL_COUNT || '25000000', 10);
 // Allowed image types (magic bytes)
 const ALLOWED_IMAGE_TYPES = [
   'image/jpeg',
-  'image/jpg',
   'image/png',
   'image/webp',
   'image/gif',
