@@ -551,8 +551,8 @@ async function initSupplier() {
     badges.push('<span class="badge badge-verified" title="Verified Supplier">✓ Verified</span>');
   }
 
-  // Founding supplier
-  if (s.founding) {
+  // Founding supplier (check both founding and isFounding properties)
+  if (s.founding || s.isFounding) {
     badges.push('<span class="badge badge-founding" title="Founding Supplier">🏆 Founding</span>');
   }
 
@@ -568,8 +568,8 @@ async function initSupplier() {
     );
   }
 
-  // Top rated (if rating >= 4.5)
-  if (s.avgRating && s.avgRating >= 4.5) {
+  // Top rated (if rating >= 4.5) - check both avgRating and averageRating properties
+  if ((s.avgRating && s.avgRating >= 4.5) || (s.averageRating && s.averageRating >= 4.5)) {
     badges.push('<span class="badge badge-top-rated" title="Top Rated">🌟 Top Rated</span>');
   }
 
