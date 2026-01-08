@@ -14,8 +14,12 @@
     UNAUTHENTICATED: 'unauthenticated',
   };
 
-  // Storage keys
-  const STORAGE_KEY = 'ef_auth_checked';
+  // Storage keys - these match keys used throughout the app
+  const STORAGE_KEYS = {
+    USER: 'user',
+    ONBOARDING: 'eventflow_onboarding_new',
+  };
+
   const SESSION_COOKIE_NAME = 'connect.sid'; // Express session cookie name
 
   class AuthStateManager {
@@ -125,9 +129,8 @@
      */
     _clearAuthState() {
       try {
-        localStorage.removeItem('user');
-        localStorage.removeItem('eventflow_onboarding_new');
-        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(STORAGE_KEYS.USER);
+        localStorage.removeItem(STORAGE_KEYS.ONBOARDING);
         sessionStorage.clear();
       } catch (e) {
         // Ignore storage errors
