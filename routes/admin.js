@@ -85,6 +85,194 @@ router.get('/db-status', authRequired, roleRequired('admin'), (_req, res) => {
 });
 
 /**
+ * GET /api/admin/dashboard/stats
+ * Get comprehensive dashboard statistics for admin overview
+ */
+router.get('/dashboard/stats', authRequired, roleRequired('admin'), async (req, res) => {
+  try {
+    // Fetch all necessary data in parallel for performance
+    const [users, suppliers, packages, photos, tickets, plans, auditLogs, marketplaceListings] =
+      await Promise.all([
+        dbUnified.read('users'),
+        dbUnified.read('suppliers'),
+        dbUnified.read('packages'),
+        dbUnified.read('photos'),
+        dbUnified.read('tickets'),
+        dbUnified.read('plans'),
+        dbUnified.read('audit_logs'),
+        dbUnified.read('marketplace_listings'),
+      ]);
+
+    // Calculate various stats
+    const stats = {
+      users: {
+        total: users.length,
+        verified: users.filter(u => u.verified).length,
+        unverified: users.filter(u => !u.verified).length,
+        suspended: users.filter(u => u.suspended).length,
+        customers: users.filter(u => u.role === 'customer').length,
+        suppliers: users.filter(u => u.role === 'supplier').length,
+        admins: users.filter(u => u.role === 'admin').length,
+        recentSignups: users.filter(u => {
+          const createdAt = new Date(u.createdAt);
+          const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+          return createdAt > dayAgo;
+        }).length,
+      },
+      suppliers: {
+        total: suppliers.length,
+        pending: suppliers.filter(s => !s.approved).length,
+        approved: suppliers.filter(s => s.approved).length,
+        verified: suppliers.filter(s => s.verified).length,
+        pro: suppliers.filter(s => s.isPro).length,
+        featured: suppliers.filter(s => s.featured).length,
+      },
+      packages: {
+        total: packages.length,
+        pending: packages.filter(p => !p.approved).length,
+        approved: packages.filter(p => p.approved).length,
+        featured: packages.filter(p => p.featured).length,
+      },
+      photos: {
+        total: photos.length,
+        pending: photos.filter(p => !p.approved && !p.rejected).length,
+        approved: photos.filter(p => p.approved).length,
+        rejected: photos.filter(p => p.rejected).length,
+      },
+      tickets: {
+        total: tickets.length,
+        open: tickets.filter(t => t.status === 'open').length,
+        inProgress: tickets.filter(t => t.status === 'in-progress').length,
+        closed: tickets.filter(t => t.status === 'closed').length,
+        highPriority: tickets.filter(t => t.priority === 'high' && t.status !== 'closed').length,
+      },
+      marketplace: {
+        total: marketplaceListings.length,
+        pending: marketplaceListings.filter(l => !l.approved && l.status === 'pending').length,
+        active: marketplaceListings.filter(l => l.approved && l.status === 'active').length,
+      },
+      plans: {
+        total: plans.length,
+        active: plans.filter(p => p.status === 'active').length,
+      },
+      recentActivity: {
+        last24Hours: auditLogs.filter(log => {
+          const logTime = new Date(log.timestamp);
+          const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+          return logTime > dayAgo;
+        }).length,
+        last7Days: auditLogs.filter(log => {
+          const logTime = new Date(log.timestamp);
+          const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+          return logTime > weekAgo;
+        }).length,
+      },
+      pendingActions: {
+        totalPending:
+          suppliers.filter(s => !s.approved).length +
+          packages.filter(p => !p.approved).length +
+          photos.filter(p => !p.approved && !p.rejected).length +
+          marketplaceListings.filter(l => !l.approved && l.status === 'pending').length,
+        breakdown: {
+          suppliers: suppliers.filter(s => !s.approved).length,
+          packages: packages.filter(p => !p.approved).length,
+          photos: photos.filter(p => !p.approved && !p.rejected).length,
+          marketplace: marketplaceListings.filter(l => !l.approved && l.status === 'pending')
+            .length,
+        },
+      },
+    };
+
+    res.json(stats);
+  } catch (error) {
+    console.error('Error fetching dashboard stats:', error);
+    res.status(500).json({ error: 'Failed to fetch dashboard statistics' });
+  }
+});
+
+/**
+ * GET /api/admin/dashboard/recent-activity
+ * Get recent admin activity for timeline view
+ */
+router.get('/dashboard/recent-activity', authRequired, roleRequired('admin'), async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit, 10) || 20;
+    const auditLogs = await dbUnified.read('audit_logs');
+
+    // Sort by timestamp descending (newest first) and limit
+    const recentLogs = auditLogs
+      .sort((a, b) => {
+        const aTime = new Date(a.timestamp).getTime();
+        const bTime = new Date(b.timestamp).getTime();
+        return bTime - aTime;
+      })
+      .slice(0, limit);
+
+    // Enrich with human-readable descriptions
+    const enrichedLogs = recentLogs.map(log => ({
+      ...log,
+      description: formatActionDescription(log),
+      timeAgo: getTimeAgo(log.timestamp),
+    }));
+
+    res.json({ activities: enrichedLogs });
+  } catch (error) {
+    console.error('Error fetching recent activity:', error);
+    res.status(500).json({ error: 'Failed to fetch recent activity' });
+  }
+});
+
+// Helper function to format action descriptions
+function formatActionDescription(log) {
+  const action = log.action || '';
+  const targetType = log.targetType || '';
+
+  const actionMap = {
+    user_suspended: `Suspended user`,
+    user_unsuspended: `Unsuspended user`,
+    user_verified: `Verified user`,
+    user_banned: `Banned user`,
+    supplier_approved: `Approved supplier`,
+    supplier_rejected: `Rejected supplier`,
+    package_approved: `Approved package`,
+    package_rejected: `Rejected package`,
+    photo_approved: `Approved photo`,
+    photo_rejected: `Rejected photo`,
+    marketplace_listing_approved: `Approved marketplace listing`,
+    marketplace_listing_rejected: `Rejected marketplace listing`,
+    BULK_PACKAGES_APPROVED: `Bulk approved packages`,
+    BULK_PACKAGES_FEATURED: `Bulk featured packages`,
+    BULK_USERS_VERIFIED: `Bulk verified users`,
+    BULK_USERS_SUSPENDED: `Bulk suspended users`,
+  };
+
+  return actionMap[action] || `Performed ${action} on ${targetType}`;
+}
+
+// Helper function to get human-readable time ago
+function getTimeAgo(timestamp) {
+  const now = Date.now();
+  const time = new Date(timestamp).getTime();
+  const diff = now - time;
+
+  const minutes = Math.floor(diff / (1000 * 60));
+  const hours = Math.floor(diff / (1000 * 60 * 60));
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+  if (minutes < 1) {
+    return 'just now';
+  } else if (minutes < 60) {
+    return `${minutes} minute${minutes !== 1 ? 's' : ''} ago`;
+  } else if (hours < 24) {
+    return `${hours} hour${hours !== 1 ? 's' : ''} ago`;
+  } else if (days < 30) {
+    return `${days} day${days !== 1 ? 's' : ''} ago`;
+  } else {
+    return new Date(timestamp).toLocaleDateString();
+  }
+}
+
+/**
  * GET /api/admin/users
  * List all users (without password hashes)
  */
@@ -119,6 +307,113 @@ router.get('/users', authRequired, roleRequired('admin'), async (req, res) => {
   } catch (error) {
     console.error('Error fetching users:', error);
     res.status(500).json({ error: 'Failed to fetch users', items: [] });
+  }
+});
+
+/**
+ * GET /api/admin/users/search
+ * Advanced user search with filtering
+ * Query params: q (search term), role, verified, suspended, startDate, endDate, limit, offset
+ */
+router.get('/users/search', authRequired, roleRequired('admin'), async (req, res) => {
+  try {
+    const {
+      q, // search term
+      role,
+      verified,
+      suspended,
+      startDate,
+      endDate,
+      limit = 50,
+      offset = 0,
+    } = req.query;
+
+    const allUsers = await dbUnified.read('users');
+
+    // Apply filters
+    let filteredUsers = allUsers;
+
+    // Search term (email or name)
+    if (q && q.trim()) {
+      const searchTerm = q.trim().toLowerCase();
+      filteredUsers = filteredUsers.filter(
+        u =>
+          (u.email && u.email.toLowerCase().includes(searchTerm)) ||
+          (u.name && u.name.toLowerCase().includes(searchTerm))
+      );
+    }
+
+    // Role filter
+    if (role) {
+      filteredUsers = filteredUsers.filter(u => u.role === role);
+    }
+
+    // Verified filter
+    if (verified !== undefined) {
+      const isVerified = verified === 'true' || verified === true;
+      filteredUsers = filteredUsers.filter(u => !!u.verified === isVerified);
+    }
+
+    // Suspended filter
+    if (suspended !== undefined) {
+      const isSuspended = suspended === 'true' || suspended === true;
+      filteredUsers = filteredUsers.filter(u => !!u.suspended === isSuspended);
+    }
+
+    // Date range filter
+    if (startDate) {
+      const start = new Date(startDate);
+      filteredUsers = filteredUsers.filter(u => {
+        const createdAt = new Date(u.createdAt);
+        return createdAt >= start;
+      });
+    }
+
+    if (endDate) {
+      const end = new Date(endDate);
+      filteredUsers = filteredUsers.filter(u => {
+        const createdAt = new Date(u.createdAt);
+        return createdAt <= end;
+      });
+    }
+
+    // Sort by createdAt descending
+    filteredUsers.sort((a, b) => {
+      const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return bTime - aTime;
+    });
+
+    // Apply pagination
+    const total = filteredUsers.length;
+    const startIndex = parseInt(offset, 10) || 0;
+    const endIndex = startIndex + (parseInt(limit, 10) || 50);
+    const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
+
+    // Remove sensitive data
+    const sanitizedUsers = paginatedUsers.map(u => ({
+      id: u.id,
+      name: u.name,
+      email: u.email,
+      role: u.role,
+      verified: !!u.verified,
+      suspended: !!u.suspended,
+      marketingOptIn: !!u.marketingOptIn,
+      createdAt: u.createdAt,
+      lastLoginAt: u.lastLoginAt || null,
+      subscription: u.subscription || { tier: 'free', status: 'active' },
+    }));
+
+    res.json({
+      items: sanitizedUsers,
+      total,
+      limit: parseInt(limit, 10) || 50,
+      offset: parseInt(offset, 10) || 0,
+      hasMore: endIndex < total,
+    });
+  } catch (error) {
+    console.error('Error searching users:', error);
+    res.status(500).json({ error: 'Failed to search users' });
   }
 });
 
@@ -661,6 +956,177 @@ router.post('/packages/:id/feature', authRequired, roleRequired('admin'), (req, 
   res.json({ ok: true, package: all[i] });
 });
 
+/**
+ * POST /api/admin/packages/bulk-approve
+ * Bulk approve packages
+ * Body: { packageIds: string[], approved: boolean }
+ */
+router.post(
+  '/packages/bulk-approve',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    try {
+      const { packageIds, approved = true } = req.body;
+
+      if (!Array.isArray(packageIds) || packageIds.length === 0) {
+        return res.status(400).json({ error: 'packageIds must be a non-empty array' });
+      }
+
+      const packages = await dbUnified.read('packages');
+      let updatedCount = 0;
+
+      packageIds.forEach(packageId => {
+        const index = packages.findIndex(p => p.id === packageId);
+        if (index >= 0) {
+          packages[index].approved = !!approved;
+          packages[index].updatedAt = new Date().toISOString();
+          packages[index].approvedBy = req.user.id;
+          updatedCount++;
+        }
+      });
+
+      if (updatedCount > 0) {
+        await dbUnified.write('packages', packages);
+      }
+
+      // Create audit log
+      await auditLog({
+        adminId: req.user.id,
+        adminEmail: req.user.email,
+        action: approved ? 'BULK_PACKAGES_APPROVED' : 'BULK_PACKAGES_REJECTED',
+        targetType: 'packages',
+        targetId: 'bulk',
+        details: { packageIds, count: updatedCount, approved },
+        ipAddress: req.ip || req.connection.remoteAddress,
+        userAgent: req.get('user-agent'),
+      });
+
+      res.json({
+        success: true,
+        message: `Successfully ${approved ? 'approved' : 'rejected'} ${updatedCount} package(s)`,
+        updatedCount,
+      });
+    } catch (error) {
+      console.error('Error bulk approving packages:', error);
+      res.status(500).json({ error: 'Failed to bulk approve packages' });
+    }
+  }
+);
+
+/**
+ * POST /api/admin/packages/bulk-feature
+ * Bulk feature/unfeature packages
+ * Body: { packageIds: string[], featured: boolean }
+ */
+router.post(
+  '/packages/bulk-feature',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    try {
+      const { packageIds, featured = true } = req.body;
+
+      if (!Array.isArray(packageIds) || packageIds.length === 0) {
+        return res.status(400).json({ error: 'packageIds must be a non-empty array' });
+      }
+
+      const packages = await dbUnified.read('packages');
+      let updatedCount = 0;
+
+      packageIds.forEach(packageId => {
+        const index = packages.findIndex(p => p.id === packageId);
+        if (index >= 0) {
+          packages[index].featured = !!featured;
+          packages[index].updatedAt = new Date().toISOString();
+          packages[index].featuredBy = req.user.id;
+          updatedCount++;
+        }
+      });
+
+      if (updatedCount > 0) {
+        await dbUnified.write('packages', packages);
+      }
+
+      // Create audit log
+      await auditLog({
+        adminId: req.user.id,
+        adminEmail: req.user.email,
+        action: featured ? 'BULK_PACKAGES_FEATURED' : 'BULK_PACKAGES_UNFEATURED',
+        targetType: 'packages',
+        targetId: 'bulk',
+        details: { packageIds, count: updatedCount, featured },
+        ipAddress: req.ip || req.connection.remoteAddress,
+        userAgent: req.get('user-agent'),
+      });
+
+      res.json({
+        success: true,
+        message: `Successfully ${featured ? 'featured' : 'unfeatured'} ${updatedCount} package(s)`,
+        updatedCount,
+      });
+    } catch (error) {
+      console.error('Error bulk featuring packages:', error);
+      res.status(500).json({ error: 'Failed to bulk feature packages' });
+    }
+  }
+);
+
+/**
+ * POST /api/admin/packages/bulk-delete
+ * Bulk delete packages
+ * Body: { packageIds: string[] }
+ */
+router.post(
+  '/packages/bulk-delete',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    try {
+      const { packageIds } = req.body;
+
+      if (!Array.isArray(packageIds) || packageIds.length === 0) {
+        return res.status(400).json({ error: 'packageIds must be a non-empty array' });
+      }
+
+      const packages = await dbUnified.read('packages');
+      const initialCount = packages.length;
+
+      // Filter out packages to delete
+      const remainingPackages = packages.filter(p => !packageIds.includes(p.id));
+      const deletedCount = initialCount - remainingPackages.length;
+
+      if (deletedCount > 0) {
+        await dbUnified.write('packages', remainingPackages);
+      }
+
+      // Create audit log
+      await auditLog({
+        adminId: req.user.id,
+        adminEmail: req.user.email,
+        action: 'BULK_PACKAGES_DELETED',
+        targetType: 'packages',
+        targetId: 'bulk',
+        details: { packageIds, count: deletedCount },
+        ipAddress: req.ip || req.connection.remoteAddress,
+        userAgent: req.get('user-agent'),
+      });
+
+      res.json({
+        success: true,
+        message: `Successfully deleted ${deletedCount} package(s)`,
+        deletedCount,
+      });
+    } catch (error) {
+      console.error('Error bulk deleting packages:', error);
+      res.status(500).json({ error: 'Failed to bulk delete packages' });
+    }
+  }
+);
+
 // ---------- User Management ----------
 
 /**
@@ -889,6 +1355,172 @@ router.post('/users/:id/force-reset', authRequired, roleRequired('admin'), async
     },
   });
 });
+
+/**
+ * POST /api/admin/users/bulk-verify
+ * Bulk verify user emails
+ * Body: { userIds: string[] }
+ */
+router.post(
+  '/users/bulk-verify',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    try {
+      const { userIds } = req.body;
+
+      if (!Array.isArray(userIds) || userIds.length === 0) {
+        return res.status(400).json({ error: 'userIds must be a non-empty array' });
+      }
+
+      const users = await dbUnified.read('users');
+      const now = new Date().toISOString();
+      let verifiedCount = 0;
+      let alreadyVerifiedCount = 0;
+
+      userIds.forEach(userId => {
+        const index = users.findIndex(u => u.id === userId);
+        if (index >= 0 && !users[index].verified) {
+          users[index].verified = true;
+          users[index].verifiedAt = now;
+          users[index].verifiedBy = req.user.id;
+          users[index].verificationToken = null;
+          users[index].updatedAt = now;
+          verifiedCount++;
+        } else if (index >= 0 && users[index].verified) {
+          alreadyVerifiedCount++;
+        }
+      });
+
+      if (verifiedCount > 0) {
+        await dbUnified.write('users', users);
+      }
+
+      // Create audit log
+      await auditLog({
+        adminId: req.user.id,
+        adminEmail: req.user.email,
+        action: 'BULK_USERS_VERIFIED',
+        targetType: 'users',
+        targetId: 'bulk',
+        details: { userIds, verifiedCount, alreadyVerifiedCount },
+        ipAddress: req.ip || req.connection.remoteAddress,
+        userAgent: req.get('user-agent'),
+      });
+
+      res.json({
+        success: true,
+        message: `Successfully verified ${verifiedCount} user(s)`,
+        verifiedCount,
+        alreadyVerifiedCount,
+        totalRequested: userIds.length,
+      });
+    } catch (error) {
+      console.error('Error bulk verifying users:', error);
+      res.status(500).json({ error: 'Failed to bulk verify users' });
+    }
+  }
+);
+
+/**
+ * POST /api/admin/users/bulk-suspend
+ * Bulk suspend users
+ * Body: { userIds: string[], suspended: boolean, reason: string, duration: string }
+ */
+router.post(
+  '/users/bulk-suspend',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    try {
+      const { userIds, suspended = true, reason, duration } = req.body;
+
+      if (!Array.isArray(userIds) || userIds.length === 0) {
+        return res.status(400).json({ error: 'userIds must be a non-empty array' });
+      }
+
+      const users = await dbUnified.read('users');
+      const now = new Date().toISOString();
+      let updatedCount = 0;
+
+      userIds.forEach(userId => {
+        const index = users.findIndex(u => u.id === userId);
+        if (index >= 0 && users[index].id !== req.user.id) {
+          // Don't allow admins to suspend themselves
+          users[index].suspended = !!suspended;
+          users[index].suspendedAt = suspended ? now : null;
+          users[index].suspendedBy = suspended ? req.user.id : null;
+          users[index].suspensionReason = suspended ? reason || 'Bulk suspension' : null;
+          users[index].suspensionDuration = suspended ? duration : null;
+          users[index].updatedAt = now;
+
+          // Calculate expiry if duration is provided
+          if (suspended && duration) {
+            const durationMs = parseDuration(duration);
+            if (durationMs > 0) {
+              const expiryDate = new Date(Date.now() + durationMs);
+              users[index].suspensionExpiresAt = expiryDate.toISOString();
+            }
+          } else {
+            users[index].suspensionExpiresAt = null;
+          }
+
+          updatedCount++;
+        }
+      });
+
+      if (updatedCount > 0) {
+        await dbUnified.write('users', users);
+      }
+
+      // Create audit log
+      await auditLog({
+        adminId: req.user.id,
+        adminEmail: req.user.email,
+        action: suspended ? 'BULK_USERS_SUSPENDED' : 'BULK_USERS_UNSUSPENDED',
+        targetType: 'users',
+        targetId: 'bulk',
+        details: { userIds, count: updatedCount, reason, duration },
+        ipAddress: req.ip || req.connection.remoteAddress,
+        userAgent: req.get('user-agent'),
+      });
+
+      res.json({
+        success: true,
+        message: `Successfully ${suspended ? 'suspended' : 'unsuspended'} ${updatedCount} user(s)`,
+        updatedCount,
+        totalRequested: userIds.length,
+      });
+    } catch (error) {
+      console.error('Error bulk suspending users:', error);
+      res.status(500).json({ error: 'Failed to bulk suspend users' });
+    }
+  }
+);
+
+// Helper function to parse duration strings like "7d", "1h", "30m"
+function parseDuration(duration) {
+  const match = duration.match(/^(\d+)([dhm])$/);
+  if (!match) {
+    return 0;
+  }
+
+  const value = parseInt(match[1], 10);
+  const unit = match[2];
+
+  switch (unit) {
+    case 'd':
+      return value * 24 * 60 * 60 * 1000; // days
+    case 'h':
+      return value * 60 * 60 * 1000; // hours
+    case 'm':
+      return value * 60 * 1000; // minutes
+    default:
+      return 0;
+  }
+}
 
 /**
  * POST /api/admin/suppliers/:id/verify

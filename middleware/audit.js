@@ -218,6 +218,11 @@ const AUDIT_ACTIONS = {
   USER_EDITED: 'user_edited',
   RESEND_VERIFICATION: 'resend_verification',
 
+  // Bulk user operations
+  BULK_USERS_VERIFIED: 'bulk_users_verified',
+  BULK_USERS_SUSPENDED: 'bulk_users_suspended',
+  BULK_USERS_UNSUSPENDED: 'bulk_users_unsuspended',
+
   // Supplier management
   SUPPLIER_APPROVED: 'supplier_approved',
   SUPPLIER_REJECTED: 'supplier_rejected',
@@ -233,6 +238,13 @@ const AUDIT_ACTIONS = {
   PACKAGE_REJECTED: 'package_rejected',
   PACKAGE_DELETED: 'package_deleted',
   PACKAGE_EDITED: 'package_edited',
+
+  // Bulk package operations
+  BULK_PACKAGES_APPROVED: 'bulk_packages_approved',
+  BULK_PACKAGES_REJECTED: 'bulk_packages_rejected',
+  BULK_PACKAGES_FEATURED: 'bulk_packages_featured',
+  BULK_PACKAGES_UNFEATURED: 'bulk_packages_unfeatured',
+  BULK_PACKAGES_DELETED: 'bulk_packages_deleted',
 
   // Content moderation
   REVIEW_APPROVED: 'review_approved',
