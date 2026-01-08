@@ -1421,3 +1421,29 @@ html[data-theme="dark"] .skeleton-card {
     right: 10px;
   }
 }
+
+/* Featured Package Enhancements */
+.pack,
+.featured-fallback-card {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.pack:hover img,
+.featured-fallback-card:hover img {
+  transform: scale(1.05);
+}
+
+/* Supplier avatar on package cards */
+.pack .supplier-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--ink, #0b8073);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 18px;
+  margin-right: 12px;
+}
