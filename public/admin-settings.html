@@ -235,6 +235,17 @@
             <span class="toggle-slider"></span>
           </label>
         </div>
+        
+        <div class="feature-item">
+          <div>
+            <strong>Pexels Dynamic Collage</strong>
+            <div class="small">Enable cycling Pexels photos on homepage hero collage</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="featurePexelsCollage">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
       </div>
       
       <button class="btn btn-primary" id="saveFeatureFlags" class="mt-1">Save Feature Flags</button>
@@ -399,6 +410,7 @@
       document.getElementById('featureReviews').checked = flags.reviews !== false;
       document.getElementById('featurePhotoUploads').checked = flags.photoUploads !== false;
       document.getElementById('featureSupportTickets').checked = flags.supportTickets !== false;
+      document.getElementById('featurePexelsCollage').checked = flags.pexelsCollage === true;
     } catch (err) {
       console.error('Failed to load feature flags:', err);
     }
@@ -412,6 +424,7 @@
       reviews: document.getElementById('featureReviews').checked,
       photoUploads: document.getElementById('featurePhotoUploads').checked,
       supportTickets: document.getElementById('featureSupportTickets').checked,
+      pexelsCollage: document.getElementById('featurePexelsCollage').checked,
     };
     
     try {

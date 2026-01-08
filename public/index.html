@@ -119,6 +119,34 @@
     <link rel="stylesheet" href="/assets/css/mobile-optimizations.css" />
     <link rel="stylesheet" href="/assets/css/ui-ux-fixes.css" />
     <link rel="icon" href="/favicon.svg" />
+    
+    <!-- Pexels Collage Crossfade Animations -->
+    <style>
+      .collage .frame {
+        position: relative;
+      }
+      .collage .frame img {
+        transition: opacity 1s ease-in-out;
+      }
+      .collage .frame img.fading {
+        opacity: 0;
+      }
+      .pexels-credit {
+        position: absolute;
+        bottom: 4px;
+        right: 4px;
+        background: rgba(0, 0, 0, 0.6);
+        color: white;
+        font-size: 10px;
+        padding: 2px 6px;
+        border-radius: 2px;
+        z-index: 10;
+      }
+      .pexels-credit a {
+        color: white;
+        text-decoration: underline;
+      }
+    </style>
   </head>
   <body>
     <header class="header" role="banner">
