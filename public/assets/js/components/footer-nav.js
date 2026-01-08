@@ -26,21 +26,22 @@
         <div class="footer-nav-links">
           <a href="/start.html" class="footer-nav-link">Plan</a>
           <a href="/suppliers.html" class="footer-nav-link">Suppliers</a>
-          <a href="/plan.html" class="footer-nav-link">My Plan</a>
-          <a href="/settings.html" class="footer-nav-link">Settings</a>
+          <a href="/pricing.html" class="footer-nav-link">Pricing</a>
+          <a href="/blog.html" class="footer-nav-link">Blog</a>
+          <a href="/auth.html" class="footer-nav-link">Log in</a>
         </div>
       </div>
     `;
 
     document.body.appendChild(footerNav);
-    
+
     // Add body padding class
     document.body.classList.add('has-footer-nav');
-    
+
     if (window.location.hostname === 'localhost') {
       console.info('[FooterNav] Component created and injected');
     }
-    
+
     // Initialize scroll behavior after a short delay to ensure DOM is ready
     setTimeout(() => {
       initScrollBehavior(footerNav);
@@ -65,15 +66,15 @@
       // Add a meaningful buffer (100px) so nav only appears after scrolling past hero
       const buffer = 100;
       const threshold = headerHeight + buffer;
-      
+
       if (window.location.hostname === 'localhost') {
         console.info('[FooterNav] Threshold calculated:', {
           headerHeight,
           buffer,
-          threshold
+          threshold,
         });
       }
-      
+
       return threshold;
     };
 
@@ -118,7 +119,7 @@
     // Use setTimeout to ensure DOM is fully settled
     setTimeout(() => {
       handleScroll();
-      
+
       if (window.location.hostname === 'localhost') {
         console.info('[FooterNav] Initialized with scroll position:', window.scrollY);
       }
