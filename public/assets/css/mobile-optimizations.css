@@ -862,14 +862,12 @@
    ============================================ */
 
 /* Ensure all form inputs have minimum 16px font-size to prevent iOS auto-zoom */
-input, select, textarea, button {
-  font-size: 16px;
-}
-
-/* Maintain larger sizes on desktop */
-@media (min-width: 1024px) {
-  input, select, textarea {
-    font-size: inherit;
+/* Only target form elements to avoid affecting buttons with specific styling */
+@media (max-width: 1023px) {
+  input:not([type="button"]):not([type="submit"]):not([type="reset"]),
+  select,
+  textarea {
+    font-size: 16px !important;
   }
 }
 
@@ -877,8 +875,15 @@ input, select, textarea, button {
    IMAGE OPTIMIZATION
    ============================================ */
 
-/* Ensure all images are responsive */
-img {
+/* Ensure images in content areas are responsive */
+/* Exclude icons and small UI images */
+.hero img,
+.pack img,
+.card img,
+.photo img,
+.content img,
+.section img,
+article img {
   max-width: 100%;
   height: auto;
 }
@@ -887,9 +892,15 @@ img {
 .hero img,
 .pack img,
 .card img,
-.photo img,
+.photo img {
+  object-fit: cover;
+}
+
+/* Keep avatars circular */
 .avatar {
   object-fit: cover;
+  max-width: 100%;
+  height: auto;
 }
 
 /* ============================================
@@ -1093,7 +1104,19 @@ h4 {
   .dashboard-sidebar.is-open,
   .admin-sidebar.is-open {
     left: 0;
-    box-shadow: 0 0 0 100vw rgba(0, 0, 0, 0.5);
+  }
+  
+  /* Overlay for sidebar */
+  .dashboard-sidebar.is-open::before,
+  .admin-sidebar.is-open::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 280px;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: -1;
   }
   
   .dashboard-main,
@@ -1221,7 +1244,7 @@ h4 {
   }
   
   .order-summary-content.is-expanded {
-    max-height: 1000px;
+    max-height: 100vh;
   }
   
   /* Full-width payment buttons */
@@ -1280,12 +1303,6 @@ h4 {
   .message-compose textarea {
     min-height: 44px;
     font-size: 16px;
-  }
-  
-  /* Optimize for keyboard visibility */
-  .conversation-compose:focus-within {
-    position: fixed;
-    bottom: 0;
   }
 }
 
