@@ -500,10 +500,23 @@
   }
 
   async function loadAnalytics() {
-    document.getElementById('totalViews').textContent = Math.floor(Math.random() * 1000);
-    document.getElementById('totalBookings').textContent = Math.floor(Math.random() * 50);
-    document.getElementById('avgRating').textContent = (Math.random() * 2 + 3).toFixed(1);
-    document.getElementById('healthScore').textContent = supplierData?.healthScore || 0;
+    // Real analytics are not currently implemented
+    // Show "Not configured" state instead of fake data
+    document.getElementById('totalViews').textContent = '—';
+    document.getElementById('totalBookings').textContent = '—';
+    document.getElementById('avgRating').textContent = '—';
+    document.getElementById('healthScore').textContent = supplierData?.healthScore || '—';
+    
+    // Add a note below the analytics section if it exists
+    const analyticsSection = document.querySelector('.analytics-grid');
+    if (analyticsSection && !analyticsSection.querySelector('.analytics-note')) {
+      const note = document.createElement('p');
+      note.className = 'analytics-note small';
+      note.style.color = '#6b7280';
+      note.style.marginTop = '1rem';
+      note.textContent = 'Analytics data not yet configured';
+      analyticsSection.appendChild(note);
+    }
   }
 
   // Action handlers

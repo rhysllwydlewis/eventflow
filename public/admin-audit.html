@@ -216,9 +216,11 @@
       if (startDate) params.append('startDate', new Date(startDate).toISOString());
       if (endDate) params.append('endDate', new Date(endDate).toISOString());
       
-      const url = `/api/admin/audit${params.toString() ? '?' + params.toString() : ''}`;
+      // Use canonical audit-logs endpoint with standardized response format
+      const url = `/api/admin/audit-logs${params.toString() ? '?' + params.toString() : ''}`;
       const data = await AdminShared.api(url);
-      allLogs = data.items || [];
+      // Response is { logs: [...], count: n }
+      allLogs = data.logs || [];
       renderAuditLogs();
     } catch (error) {
       console.error('Error loading audit logs:', error);

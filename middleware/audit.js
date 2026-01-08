@@ -5,10 +5,11 @@
 
 'use strict';
 
-const { write, read, uid } = require('../store');
+const dbUnified = require('../db-unified');
 
 /**
  * Log an admin action to the audit log
+ * Resilient: does not throw on logging failures
  * @param {Object} params - Audit log parameters
  * @param {string} params.adminId - ID of the admin user performing the action
  * @param {string} params.adminEmail - Email of the admin user
@@ -18,9 +19,9 @@ const { write, read, uid } = require('../store');
  * @param {Object} params.details - Additional details about the action
  * @param {string} params.ipAddress - IP address of the request
  * @param {string} params.userAgent - User agent string
- * @returns {Object} The created audit log entry
+ * @returns {Promise<Object|null>} The created audit log entry or null on error
  */
-function auditLog(params) {
+async function auditLog(params) {
   const {
     adminId,
     adminEmail,
@@ -34,7 +35,7 @@ function auditLog(params) {
 
   const now = new Date().toISOString();
   const logEntry = {
-    id: uid('audit'),
+    id: dbUnified.uid('audit'),
     adminId,
     adminEmail,
     action,
@@ -47,13 +48,20 @@ function auditLog(params) {
     createdAt: now,
   };
 
-  const logs = read('audit_logs');
-  logs.push(logEntry);
-  write('audit_logs', logs);
+  try {
+    const logs = await dbUnified.read('audit_logs');
+    logs.push(logEntry);
+    await dbUnified.write('audit_logs', logs);
 
-  console.log(`[AUDIT] ${adminEmail} performed ${action} on ${targetType} ${targetId}`);
+    console.log(`[AUDIT] ${adminEmail} performed ${action} on ${targetType} ${targetId}`);
 
-  return logEntry;
+    return logEntry;
+  } catch (error) {
+    // Log error but don't throw - audit logging should never break the main flow
+    console.error('[AUDIT ERROR] Failed to write audit log:', error.message);
+    console.error('[AUDIT ERROR] Failed log entry:', logEntry);
+    return null;
+  }
 }
 
 /**
@@ -72,46 +80,50 @@ function auditMiddleware(action, getTargetInfo = null) {
     res.json = function (data) {
       // Only log if the response was successful (2xx status code)
       if (res.statusCode >= 200 && res.statusCode < 300) {
-        try {
-          let targetType = 'unknown';
-          let targetId = 'unknown';
+        // Fire and forget - don't wait for audit log
+        (async () => {
+          try {
+            let targetType = 'unknown';
+            let targetId = 'unknown';
 
-          // Extract target info from custom function or request params
-          if (getTargetInfo) {
-            const targetInfo = getTargetInfo(req, data);
-            targetType = targetInfo.targetType;
-            targetId = targetInfo.targetId;
-          } else if (req.params.id) {
-            targetId = req.params.id;
-            // Try to infer type from URL
-            if (req.path.includes('/users/')) {
-              targetType = 'user';
-            } else if (req.path.includes('/suppliers/')) {
-              targetType = 'supplier';
-            } else if (req.path.includes('/reviews/')) {
-              targetType = 'review';
-            } else if (req.path.includes('/reports/')) {
-              targetType = 'report';
+            // Extract target info from custom function or request params
+            if (getTargetInfo) {
+              const targetInfo = getTargetInfo(req, data);
+              targetType = targetInfo.targetType;
+              targetId = targetInfo.targetId;
+            } else if (req.params.id) {
+              targetId = req.params.id;
+              // Try to infer type from URL
+              if (req.path.includes('/users/')) {
+                targetType = 'user';
+              } else if (req.path.includes('/suppliers/')) {
+                targetType = 'supplier';
+              } else if (req.path.includes('/reviews/')) {
+                targetType = 'review';
+              } else if (req.path.includes('/reports/')) {
+                targetType = 'report';
+              }
             }
-          }
 
-          auditLog({
-            adminId: req.user.id,
-            adminEmail: req.user.email,
-            action,
-            targetType,
-            targetId,
-            details: {
-              body: req.body,
-              query: req.query,
-              params: req.params,
-            },
-            ipAddress: req.ip || req.connection.remoteAddress,
-            userAgent: req.get('user-agent'),
-          });
-        } catch (err) {
-          console.error('Error creating audit log:', err.message);
-        }
+            await auditLog({
+              adminId: req.user.id,
+              adminEmail: req.user.email,
+              action,
+              targetType,
+              targetId,
+              details: {
+                body: req.body,
+                query: req.query,
+                params: req.params,
+              },
+              ipAddress: req.ip || req.connection.remoteAddress,
+              userAgent: req.get('user-agent'),
+            });
+          } catch (err) {
+            // Error already logged in auditLog function
+            // Just silently continue here
+          }
+        })();
       }
 
       return originalJson(data);
@@ -123,50 +135,70 @@ function auditMiddleware(action, getTargetInfo = null) {
 
 /**
  * Get audit logs with optional filtering
+ * Supports filtering by adminId, adminEmail, action, targetType, targetId, date range, and limit
  * @param {Object} filters - Filter options
  * @param {string} filters.adminId - Filter by admin user ID
+ * @param {string} filters.adminEmail - Filter by admin email
  * @param {string} filters.action - Filter by action type
  * @param {string} filters.targetType - Filter by target type
  * @param {string} filters.targetId - Filter by target ID
  * @param {string} filters.startDate - Filter by start date (ISO string)
  * @param {string} filters.endDate - Filter by end date (ISO string)
  * @param {number} filters.limit - Maximum number of results
- * @returns {Array} Filtered audit log entries
+ * @returns {Promise<Array>} Filtered audit log entries, sorted newest-first
  */
-function getAuditLogs(filters = {}) {
-  const { adminId, action, targetType, targetId, startDate, endDate, limit = 100 } = filters;
+async function getAuditLogs(filters = {}) {
+  const {
+    adminId,
+    adminEmail,
+    action,
+    targetType,
+    targetId,
+    startDate,
+    endDate,
+    limit = 100,
+  } = filters;
 
-  let logs = read('audit_logs');
+  try {
+    let logs = await dbUnified.read('audit_logs');
 
-  // Apply filters
-  if (adminId) {
-    logs = logs.filter(log => log.adminId === adminId);
-  }
-  if (action) {
-    logs = logs.filter(log => log.action === action);
-  }
-  if (targetType) {
-    logs = logs.filter(log => log.targetType === targetType);
-  }
-  if (targetId) {
-    logs = logs.filter(log => log.targetId === targetId);
-  }
-  if (startDate) {
-    logs = logs.filter(log => log.timestamp >= startDate);
-  }
-  if (endDate) {
-    logs = logs.filter(log => log.timestamp <= endDate);
-  }
+    // Apply filters
+    if (adminId) {
+      logs = logs.filter(log => log.adminId === adminId);
+    }
+    if (adminEmail) {
+      logs = logs.filter(log => log.adminEmail === adminEmail);
+    }
+    if (action) {
+      logs = logs.filter(log => log.action === action);
+    }
+    if (targetType) {
+      logs = logs.filter(log => log.targetType === targetType);
+    }
+    if (targetId) {
+      logs = logs.filter(log => log.targetId === targetId);
+    }
+    if (startDate) {
+      logs = logs.filter(log => log.timestamp >= startDate);
+    }
+    if (endDate) {
+      logs = logs.filter(log => log.timestamp <= endDate);
+    }
 
-  // Sort by timestamp descending (newest first)
-  logs.sort((a, b) => {
-    const aTime = new Date(a.timestamp).getTime();
-    const bTime = new Date(b.timestamp).getTime();
-    return bTime - aTime;
-  });
+    // Sort by timestamp descending (newest first)
+    logs.sort((a, b) => {
+      const aTime = new Date(a.timestamp).getTime();
+      const bTime = new Date(b.timestamp).getTime();
+      return bTime - aTime;
+    });
 
-  // Apply limit
-  return logs.slice(0, limit);
+    // Apply limit
+    return logs.slice(0, limit);
+  } catch (error) {
+    console.error('Error fetching audit logs:', error.message);
+    // Return empty array on error - don't fail the request
+    return [];
+  }
 }
 
 /**
@@ -186,6 +218,11 @@ const AUDIT_ACTIONS = {
   USER_EDITED: 'user_edited',
   RESEND_VERIFICATION: 'resend_verification',
 
+  // Bulk user operations
+  BULK_USERS_VERIFIED: 'bulk_users_verified',
+  BULK_USERS_SUSPENDED: 'bulk_users_suspended',
+  BULK_USERS_UNSUSPENDED: 'bulk_users_unsuspended',
+
   // Supplier management
   SUPPLIER_APPROVED: 'supplier_approved',
   SUPPLIER_REJECTED: 'supplier_rejected',
@@ -201,6 +238,13 @@ const AUDIT_ACTIONS = {
   PACKAGE_REJECTED: 'package_rejected',
   PACKAGE_DELETED: 'package_deleted',
   PACKAGE_EDITED: 'package_edited',
+
+  // Bulk package operations
+  BULK_PACKAGES_APPROVED: 'bulk_packages_approved',
+  BULK_PACKAGES_REJECTED: 'bulk_packages_rejected',
+  BULK_PACKAGES_FEATURED: 'bulk_packages_featured',
+  BULK_PACKAGES_UNFEATURED: 'bulk_packages_unfeatured',
+  BULK_PACKAGES_DELETED: 'bulk_packages_deleted',
 
   // Content moderation
   REVIEW_APPROVED: 'review_approved',
