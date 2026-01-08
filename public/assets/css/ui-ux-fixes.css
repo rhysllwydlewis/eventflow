@@ -1410,7 +1410,7 @@ html[data-theme="dark"] .footer-nav-icon-button:active {
 /* Footer nav burger button */
 .footer-nav-burger {
   position: relative;
-  padding: 8px;
+  padding: 0;
   border-radius: 10px;
   border: 1px solid rgba(71, 85, 105, 0.2);
   background: transparent;
@@ -1421,8 +1421,11 @@ html[data-theme="dark"] .footer-nav-icon-button:active {
   align-items: center;
   justify-content: center;
   gap: 3px;
-  min-height: 44px;
-  min-width: 44px;
+  /* Match top navbar burger size */
+  min-height: 34px;
+  min-width: 34px;
+  width: 34px;
+  height: 34px;
 }
 
 .footer-nav-burger:hover {
@@ -1442,7 +1445,7 @@ html[data-theme="dark"] .footer-nav-icon-button:active {
 }
 
 .footer-nav-burger-bar {
-  width: 16px;
+  width: 14px;
   height: 2px;
   border-radius: 999px;
   background: #475569;
@@ -1530,11 +1533,13 @@ body.has-footer-nav {
   
   /* Burger button optimizations for mobile */
   .footer-nav-burger {
-    /* Reduce padding for better spacing while maintaining touch target */
-    padding: 7px !important;
-    /* Keep touch-friendly minimum size (44x44px for WCAG AA) */
-    min-height: 44px;
-    min-width: 44px;
+    /* Match top navbar burger size for aesthetic consistency */
+    padding: 0 !important;
+    /* Align with top navbar: 34x34px */
+    min-height: 34px;
+    min-width: 34px;
+    width: 34px;
+    height: 34px;
   }
   
   /* Hide any label text inside burger button to prevent overlap */
@@ -1544,8 +1549,9 @@ body.has-footer-nav {
   }
   
   .footer-nav-burger-bar {
-    /* Slightly reduce bar width for more compact appearance */
-    width: 15px;
+    /* Match burger bar sizing to top navbar proportions */
+    width: 14px;
+    height: 2px;
   }
 }
 
@@ -1575,14 +1581,17 @@ body.has-footer-nav {
   }
   
   .footer-nav-burger {
-    padding: 6px !important;
-    /* Maintain touch-friendly size even on small screens */
-    min-height: 44px;
-    min-width: 44px;
+    padding: 0 !important;
+    /* Match top navbar sizing */
+    min-height: 34px;
+    min-width: 34px;
+    width: 34px;
+    height: 34px;
   }
   
   .footer-nav-burger-bar {
-    width: 14px;
+    width: 13px;
+    height: 2px;
   }
 }
 
@@ -1613,13 +1622,16 @@ body.has-footer-nav {
   }
   
   .footer-nav-burger {
-    padding: 6px !important;
-    min-height: 44px;
-    min-width: 44px;
+    padding: 0 !important;
+    min-height: 34px;
+    min-width: 34px;
+    width: 34px;
+    height: 34px;
   }
   
   .footer-nav-burger-bar {
-    width: 14px;
+    width: 13px;
+    height: 2px;
   }
 }
 
@@ -1652,14 +1664,17 @@ body.has-footer-nav {
   }
   
   .footer-nav-burger {
-    padding: 5px !important;
+    padding: 0 !important;
     gap: 2px;
-    min-height: 44px;
-    min-width: 44px;
+    min-height: 34px;
+    min-width: 34px;
+    width: 34px;
+    height: 34px;
   }
   
   .footer-nav-burger-bar {
-    width: 13px;
+    width: 12px;
+    height: 2px;
   }
 }
 
@@ -1677,13 +1692,16 @@ body.has-footer-nav {
   }
   
   .footer-nav-burger {
-    padding: 5px !important;
-    min-height: 44px;
-    min-width: 44px;
+    padding: 0 !important;
+    min-height: 34px;
+    min-width: 34px;
+    width: 34px;
+    height: 34px;
   }
   
   .footer-nav-burger-bar {
     width: 12px;
+    height: 2px;
   }
 }
 
