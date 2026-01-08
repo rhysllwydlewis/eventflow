@@ -3902,7 +3902,16 @@ document.addEventListener('DOMContentLoaded', () => {
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': window.__CSRF_TOKEN__ },
         credentials: 'include',
         body: JSON.stringify({ type: 'pageview', meta: { path: location.pathname } }),
-      }).catch(() => {});
+      })
+        .then(response => {
+          // Silently handle 403/401 - metrics endpoint may not be configured
+          if (!response.ok && window.location.hostname === 'localhost') {
+            console.info('Metrics tracking not available');
+          }
+        })
+        .catch(() => {
+          // Silently ignore network errors for tracking beacon
+        });
     } else if (Date.now() - startTime < maxWait) {
       // Retry after a short delay
       timeoutId = setTimeout(attemptSend, 100);

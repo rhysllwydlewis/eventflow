@@ -302,16 +302,31 @@ async function loadHeroCollageImages() {
   // First, check if Pexels collage is enabled
   try {
     const settingsResponse = await fetch('/api/public/homepage-settings');
-    if (settingsResponse.ok) {
+    
+    // Check response status explicitly
+    if (settingsResponse.status === 404) {
+      // Silently handle 404 - endpoint may not be configured yet
+      if (window.location.hostname === 'localhost') {
+        console.info('Homepage settings endpoint not available (404), using defaults');
+      }
+    } else if (settingsResponse.ok) {
       const settings = await settingsResponse.json();
       if (settings.pexelsCollageEnabled) {
         console.log('Pexels collage enabled, initializing dynamic collage');
         await initPexelsCollage(settings.pexelsCollageSettings);
         return; // Skip static image loading
       }
+    } else {
+      // Other non-2xx status
+      if (window.location.hostname === 'localhost') {
+        console.warn('Homepage settings returned status:', settingsResponse.status);
+      }
     }
   } catch (error) {
-    console.warn('Failed to check Pexels collage settings, falling back to static images:', error);
+    // Network error or other exception
+    if (window.location.hostname === 'localhost') {
+      console.info('Using default collage images (settings unavailable):', error.message);
+    }
   }
 
   // If Pexels is not enabled or failed, load static images
@@ -784,6 +799,15 @@ async function fetchTestimonials() {
 
   try {
     const response = await fetch('/api/reviews?limit=6&approved=true&sort=rating');
+    if (response.status === 404) {
+      // Silently handle 404 - reviews endpoint may not be available
+      section.style.display = 'none';
+      if (window.location.hostname === 'localhost') {
+        console.info('Reviews endpoint not available (404)');
+      }
+      return;
+    }
+    
     if (!response.ok) {
       throw new Error('Testimonials fetch failed');
     }
@@ -837,7 +861,10 @@ async function fetchTestimonials() {
     // Show the section
     section.style.display = 'block';
   } catch (error) {
-    console.error('Failed to load testimonials:', error);
+    // Only log for non-404 errors in production
+    if (window.location.hostname === 'localhost') {
+      console.error('Failed to load testimonials:', error);
+    }
     // Hide section gracefully
     section.style.display = 'none';
   }

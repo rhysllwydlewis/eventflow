@@ -65,20 +65,70 @@
             <a class="brand" href="/" aria-label="EventFlow home">
                 <span class="brand-text">EventFlow Test</span>
             </a>
+            <div class="header-actions">
+                <nav class="nav nav-inline" aria-label="Quick navigation">
+                    <a href="/start.html" class="nav-link nav-main">Plan</a>
+                    <a href="/suppliers.html" class="nav-link nav-main">Suppliers</a>
+                    <a href="/pricing.html" class="nav-link nav-main">Pricing</a>
+                    <a href="/blog.html" class="nav-link nav-main">Blog</a>
+                    <a href="/auth.html" class="nav-link nav-main nav-main-login">Log in</a>
+                </nav>
+                <button
+                    id="notification-bell"
+                    class="icon-button"
+                    type="button"
+                    aria-label="Notifications"
+                    style="display: none"
+                >
+                    <span class="notification-icon">🔔</span>
+                    <span class="notification-badge" style="display: none">0</span>
+                </button>
+                <button
+                    id="burger"
+                    class="nav-toggle"
+                    type="button"
+                    aria-label="Toggle navigation"
+                    aria-expanded="false"
+                >
+                    <span class="nav-toggle-bar"></span>
+                    <span class="nav-toggle-bar"></span>
+                    <span class="nav-toggle-bar"></span>
+                </button>
+            </div>
         </div>
+        <nav class="nav nav-menu" aria-label="Primary navigation">
+            <a href="/start.html">Plan an Event</a>
+            <a href="/suppliers.html">Suppliers</a>
+            <a href="/plan.html">My Plan</a>
+            <a href="/pricing.html">Pricing</a>
+            <a href="/blog.html">Blog</a>
+            <a href="/for-suppliers.html">For Suppliers</a>
+            <a href="/faq.html">FAQ</a>
+            <a href="/settings.html">Settings</a>
+            <a href="/auth.html" id="nav-auth">Log in</a>
+            <a href="#" id="nav-dashboard" style="display: none">Dashboard</a>
+            <a href="#" id="nav-signout" style="display: none">Sign out</a>
+        </nav>
     </header>
+    <script src="/assets/js/auth-nav.js"></script>
 
     <div class="instructions">
-        <h3>📱 Footer Navigation Behavior Test</h3>
+        <h3>📱 Footer Navigation & Burger Menu Test</h3>
         <p><strong>Testing Instructions:</strong></p>
         <ul>
             <li>✅ <strong>At the top of the page</strong>: The footer nav should be <strong>completely hidden</strong> (not visible)</li>
-            <li>✅ <strong>After scrolling down</strong> past the header area (~180px): The footer nav should <strong>smoothly slide up</strong> from the bottom</li>
+            <li>✅ <strong>After scrolling past the top navbar</strong>: The footer nav should <strong>smoothly slide up</strong> from the bottom</li>
             <li>✅ <strong>When scrolling back to top</strong>: The footer nav should <strong>smoothly slide down</strong> and disappear</li>
+            <li>✅ <strong>Footer Nav Order (Logged Out)</strong>: Plan, Suppliers, Pricing, Blog, Log in, Burger</li>
+            <li>✅ <strong>Footer Nav Order (Logged In)</strong>: Plan, Suppliers, Pricing, Blog, Bell, Log out, Burger</li>
+            <li>✅ <strong>Mobile (≤600px, Logged Out)</strong>: Plan, Suppliers, Pricing, Log in, Burger (Blog hidden)</li>
+            <li>✅ <strong>Mobile (≤600px, Logged In)</strong>: Plan, Suppliers, Pricing, Bell, Log out, Burger (Blog hidden)</li>
+            <li>✅ <strong>Burger Menu Test</strong>: Click both header burger (top-right) and footer burger (bottom-right when scrolled) - they should both open/close the same menu</li>
+            <li>✅ <strong>Burger Sync Test</strong>: Open menu with header burger, close with footer burger (or vice versa) - both burgers should stay in sync</li>
             <li>✅ <strong>Open browser console</strong> to see diagnostic messages (localhost only)</li>
             <li>✅ <strong>Test on mobile viewport</strong>: Resize browser to 375px width or use device emulation</li>
         </ul>
-        <p><strong>Expected Behavior:</strong> Footer nav is OFF-SCREEN at page top, VISIBLE after scrolling ~180px down.</p>
+        <p><strong>Expected Behavior:</strong> Footer nav is OFF-SCREEN at page top, VISIBLE after scrolling past top navbar. Bell appears BEFORE Log in/out (only when logged in).</p>
     </div>
 
     <main>
@@ -95,8 +145,8 @@
 
         <div class="test-section">
             <h2>Section 2: Starting to Scroll</h2>
-            <p>As you scroll down to this section, the footer navigation should <strong>remain hidden</strong> until you pass the threshold.</p>
-            <p>The threshold is set to: Header Height (60-80px) + 100px buffer = ~180px total</p>
+            <p>As you scroll down to this section, the footer navigation should <strong>remain hidden</strong> until you pass the top navbar.</p>
+            <p>The threshold is now set to: Header Height only (no buffer) = ~60-80px total</p>
         </div>
 
         <div class="test-section">
@@ -107,7 +157,10 @@
             <ul>
                 <li>Semi-transparent white background with blur effect</li>
                 <li>Shadow above the bar</li>
-                <li>Five navigation links mirroring top nav: Plan, Suppliers, Pricing, Blog, Log in</li>
+                <li><strong>Logged out:</strong> Plan, Suppliers, Pricing, Blog, Log in, Burger</li>
+                <li><strong>Logged in:</strong> Plan, Suppliers, Pricing, Blog, Bell 🔔, Log out, Burger</li>
+                <li><strong>Mobile (≤600px, logged out):</strong> Plan, Suppliers, Pricing, Log in, Burger</li>
+                <li><strong>Mobile (≤600px, logged in):</strong> Plan, Suppliers, Pricing, Bell 🔔, Log out, Burger</li>
                 <li>Fixed at the bottom of the viewport</li>
                 <li>Hover states matching the top navigation style</li>
             </ul>

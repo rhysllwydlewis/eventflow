@@ -143,13 +143,55 @@
 
   // Sync footer burger button with top burger button
   function initFooterBurger() {
-    const topBurger = document.getElementById('burger');
     const footerBurger = document.getElementById('footer-burger');
 
-    if (!topBurger || !footerBurger) {
+    if (!footerBurger) {
+      if (window.location.hostname === 'localhost') {
+        console.info('[FooterNav] Footer burger not found');
+      }
       return;
     }
 
+    // Wait for top burger to be initialized by auth-nav.js
+    let retryCount = 0;
+    const MAX_RETRIES = 20; // 1 second total (20 * 50ms)
+    
+    const waitForBurger = () => {
+      const topBurger = document.getElementById('burger');
+      
+      if (!topBurger) {
+        if (window.location.hostname === 'localhost') {
+          console.info('[FooterNav] Top burger not found, skipping sync');
+        }
+        return;
+      }
+
+      // Check if burger has been initialized by auth-nav.js
+      if (topBurger.dataset.navInitialized !== 'true') {
+        retryCount++;
+        
+        if (retryCount >= MAX_RETRIES) {
+          if (window.location.hostname === 'localhost') {
+            console.warn('[FooterNav] Timeout waiting for burger initialization');
+          }
+          return;
+        }
+        
+        // Retry after a short delay
+        setTimeout(waitForBurger, 50);
+        return;
+      }
+
+      // Now burger is initialized, set up sync
+      setupBurgerSync(topBurger, footerBurger);
+    };
+
+    // Start waiting for burger initialization
+    waitForBurger();
+  }
+
+  // Set up synchronization between top and footer burgers
+  function setupBurgerSync(topBurger, footerBurger) {
     // Shared function to sync footer burger state
     const syncFooterBurgerState = isExpanded => {
       footerBurger.setAttribute('aria-expanded', String(isExpanded));
@@ -194,6 +236,14 @@
       attributes: true,
       attributeFilter: ['class'],
     });
+
+    // Initial sync
+    const isExpanded = topBurger.getAttribute('aria-expanded') === 'true';
+    syncFooterBurgerState(isExpanded);
+
+    if (window.location.hostname === 'localhost') {
+      console.info('[FooterNav] Burger sync initialized');
+    }
   }
 
   // Initialize scroll-based show/hide behavior
@@ -208,17 +258,16 @@
       return;
     }
 
-    // Calculate the threshold (height of top nav + buffer for hero section)
+    // Calculate the threshold (height of top nav - appears when top nav scrolls out of view)
     const getScrollThreshold = () => {
       const headerHeight = topNav.offsetHeight || 80;
-      // Add a meaningful buffer (100px) so nav only appears after scrolling past hero
-      const buffer = 100;
-      const threshold = headerHeight + buffer;
+      // Footer nav appears only after scrolling past the entire top navbar
+      // No buffer needed - should appear as soon as top nav is scrolled past
+      const threshold = headerHeight;
 
       if (window.location.hostname === 'localhost') {
         console.info('[FooterNav] Threshold calculated:', {
           headerHeight,
-          buffer,
           threshold,
         });
       }
