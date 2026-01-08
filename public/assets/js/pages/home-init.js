@@ -14,241 +14,59 @@ document.addEventListener('DOMContentLoaded', () => {
     categoryGrid.loadCategories();
   }
 
+  // Handle quick plan form submission
+  const quickPlanForm = document.getElementById('quick-plan-form');
+  if (quickPlanForm) {
+    quickPlanForm.addEventListener('submit', e => {
+      e.preventDefault();
+
+      const formData = new FormData(quickPlanForm);
+      const params = new URLSearchParams();
+
+      // Only add params that have values
+      for (const [key, value] of formData.entries()) {
+        if (value && value.trim()) {
+          params.append(key, value.trim());
+        }
+      }
+
+      // Redirect to wizard with params
+      const queryString = params.toString();
+      window.location.href = queryString ? `/start.html?${queryString}` : '/start.html';
+    });
+  }
+
+  // Hide version label unless ?debug=1 is present
+  const versionContainer = document.querySelector('.version');
+  if (versionContainer) {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (!urlParams.has('debug') || urlParams.get('debug') !== '1') {
+      versionContainer.style.display = 'none';
+    } else {
+      // If debug mode, show version
+      const versionLabel = document.getElementById('ef-version-label');
+      if (versionLabel) {
+        versionLabel.textContent = 'v17.0.0';
+      }
+    }
+  }
+
   // Load and update hero collage images from admin-uploaded category photos
   loadHeroCollageImages();
 
   // Load featured packages
-  fetch('/api/packages/featured')
-    .then(res => res.json())
-    .then(data => {
-      const container = document.getElementById('featured-packages');
-      if (!container) {
-        console.warn('Featured packages container not found');
-        return;
-      }
+  loadPackagesCarousel({
+    endpoint: '/api/packages/featured',
+    containerId: 'featured-packages',
+    emptyMessage: 'No featured packages available yet.',
+  });
 
-      if (!data.items || data.items.length === 0) {
-        container.innerHTML = '<p class="small">No featured packages available yet.</p>';
-        return;
-      }
-
-      // Check if Carousel class is available
-      if (typeof Carousel === 'undefined') {
-        console.error('Carousel class not loaded. Rendering fallback.');
-        // Fallback: render simple grid without carousel functionality
-        // Helper to safely escape HTML
-        const escape = text => {
-          const div = document.createElement('div');
-          div.textContent = text || '';
-          return div.innerHTML;
-        };
-
-        // Validate and sanitize URLs to prevent XSS
-        const sanitizeUrl = url => {
-          if (!url) {
-            return '/assets/images/placeholder-package.jpg';
-          }
-          const urlStr = String(url);
-          // Block javascript:, data:, vbscript:, and file: URLs
-          if (/^(javascript|data|vbscript|file):/i.test(urlStr)) {
-            return '/assets/images/placeholder-package.jpg';
-          }
-          return escape(urlStr);
-        };
-
-        // Validate slug for URL safety
-        const validateSlug = (value, fallbackId) => {
-          const slugStr = String(value || '');
-          // Only allow alphanumeric, hyphens, and underscores
-          const cleaned = slugStr.replace(/[^a-zA-Z0-9_-]/g, '');
-          // Fall back to provided id if slug becomes empty after cleaning
-          return cleaned || String(fallbackId || 'unknown');
-        };
-
-        // Format price with £ symbol if it's a number
-        const formatPrice = priceDisplay => {
-          if (!priceDisplay) {
-            return 'Contact for pricing';
-          }
-          const priceStr = String(priceDisplay);
-          // If it's a plain number (integer or decimal), format as £X
-          if (/^\d+(\.\d+)?$/.test(priceStr)) {
-            return `£${priceStr}`;
-          }
-          // Otherwise return as-is
-          return priceStr;
-        };
-
-        container.innerHTML = data.items
-          .map(item => {
-            const title = escape(item.title || 'Untitled Package');
-            const supplierName = escape(item.supplier_name || '');
-            const description = escape(item.description || '');
-            const truncDesc =
-              description.length > 100 ? `${description.substring(0, 100)}...` : description;
-            const price = escape(formatPrice(item.price_display || item.price));
-            const imgSrc = sanitizeUrl(item.image);
-            const slug = encodeURIComponent(validateSlug(item.slug, item.id));
-
-            return `
-            <div class="card featured-fallback-card">
-              <a href="/package.html?slug=${slug}" class="featured-fallback-link">
-                <img src="${imgSrc}" alt="${title}" class="featured-fallback-img">
-                <div class="featured-fallback-content">
-                  <h3 class="featured-fallback-title">${title}</h3>
-                  ${supplierName ? `<p class="featured-fallback-supplier">${supplierName}</p>` : ''}
-                  <p class="featured-fallback-desc">${truncDesc}</p>
-                  <div class="featured-fallback-price">${price}</div>
-                </div>
-              </a>
-            </div>
-          `;
-          })
-          .join('');
-        return;
-      }
-
-      // Initialize carousel
-      try {
-        const carousel = new Carousel('featured-packages', {
-          itemsPerView: 3,
-          itemsPerViewTablet: 2,
-          itemsPerViewMobile: 1,
-          autoScroll: true,
-          autoScrollInterval: 5000,
-        });
-        carousel.setItems(data.items);
-      } catch (error) {
-        console.error('Failed to initialize carousel:', error);
-        // Fallback to simple list on error
-        container.innerHTML = '<p class="small">Featured packages are temporarily unavailable.</p>';
-      }
-    })
-    .catch(error => {
-      console.error('Failed to load featured packages:', error);
-      const container = document.getElementById('featured-packages');
-      if (container) {
-        container.innerHTML =
-          '<p class="small">Unable to load featured packages. Please try again later.</p>';
-      }
-    });
-
-  // Load spotlight packages (same logic as featured but different endpoint)
-  fetch('/api/packages/spotlight')
-    .then(res => res.json())
-    .then(data => {
-      const container = document.getElementById('spotlight-packages');
-      if (!container) {
-        console.warn('Spotlight packages container not found');
-        return;
-      }
-
-      if (!data.items || data.items.length === 0) {
-        container.innerHTML = '<p class="small">No spotlight packages available yet.</p>';
-        return;
-      }
-
-      // Check if Carousel class is available
-      if (typeof Carousel === 'undefined') {
-        console.error('Carousel class not loaded. Rendering fallback.');
-        // Fallback: render simple grid without carousel functionality
-        // Helper to safely escape HTML
-        const escape = text => {
-          const div = document.createElement('div');
-          div.textContent = text || '';
-          return div.innerHTML;
-        };
-
-        // Validate and sanitize URLs to prevent XSS
-        const sanitizeUrl = url => {
-          if (!url) {
-            return '/assets/images/placeholder-package.jpg';
-          }
-          const urlStr = String(url);
-          // Block javascript:, data:, vbscript:, and file: URLs
-          if (/^(javascript|data|vbscript|file):/i.test(urlStr)) {
-            return '/assets/images/placeholder-package.jpg';
-          }
-          return escape(urlStr);
-        };
-
-        // Validate slug for URL safety
-        const validateSlug = (value, fallbackId) => {
-          const slugStr = String(value || '');
-          // Only allow alphanumeric, hyphens, and underscores
-          const cleaned = slugStr.replace(/[^a-zA-Z0-9_-]/g, '');
-          // Fall back to provided id if slug becomes empty after cleaning
-          return cleaned || String(fallbackId || 'unknown');
-        };
-
-        // Format price with £ symbol if it's a number
-        const formatPrice = priceDisplay => {
-          if (!priceDisplay) {
-            return 'Contact for pricing';
-          }
-          const priceStr = String(priceDisplay);
-          // If it's a plain number (integer or decimal), format as £X
-          if (/^\d+(\.\d+)?$/.test(priceStr)) {
-            return `£${priceStr}`;
-          }
-          // Otherwise return as-is
-          return priceStr;
-        };
-
-        container.innerHTML = data.items
-          .map(item => {
-            const title = escape(item.title || 'Untitled Package');
-            const supplierName = escape(item.supplier_name || '');
-            const description = escape(item.description || '');
-            const truncDesc =
-              description.length > 100 ? `${description.substring(0, 100)}...` : description;
-            const price = escape(formatPrice(item.price_display || item.price));
-            const imgSrc = sanitizeUrl(item.image);
-            const slug = encodeURIComponent(validateSlug(item.slug, item.id));
-
-            return `
-            <div class="card featured-fallback-card">
-              <a href="/package.html?slug=${slug}" class="featured-fallback-link">
-                <img src="${imgSrc}" alt="${title}" class="featured-fallback-img">
-                <div class="featured-fallback-content">
-                  <h3 class="featured-fallback-title">${title}</h3>
-                  ${supplierName ? `<p class="featured-fallback-supplier">${supplierName}</p>` : ''}
-                  <p class="featured-fallback-desc">${truncDesc}</p>
-                  <div class="featured-fallback-price">${price}</div>
-                </div>
-              </a>
-            </div>
-          `;
-          })
-          .join('');
-        return;
-      }
-
-      // Initialize carousel
-      try {
-        const carousel = new Carousel('spotlight-packages', {
-          itemsPerView: 3,
-          itemsPerViewTablet: 2,
-          itemsPerViewMobile: 1,
-          autoScroll: true,
-          autoScrollInterval: 5000,
-        });
-        carousel.setItems(data.items);
-      } catch (error) {
-        console.error('Failed to initialize spotlight carousel:', error);
-        // Fallback to simple list on error
-        container.innerHTML =
-          '<p class="small">Spotlight packages are temporarily unavailable.</p>';
-      }
-    })
-    .catch(error => {
-      console.error('Failed to load spotlight packages:', error);
-      const container = document.getElementById('spotlight-packages');
-      if (container) {
-        container.innerHTML =
-          '<p class="small">Unable to load spotlight packages. Please try again later.</p>';
-      }
-    });
+  // Load spotlight packages
+  loadPackagesCarousel({
+    endpoint: '/api/packages/spotlight',
+    containerId: 'spotlight-packages',
+    emptyMessage: 'No spotlight packages available yet.',
+  });
 
   // Show notification bell for logged-in users
   const user = localStorage.getItem('user');
@@ -275,6 +93,15 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
   }
+
+  // Fetch and render public stats
+  fetchPublicStats();
+
+  // Fetch and render marketplace preview
+  fetchMarketplacePreview();
+
+  // Fetch and render guides
+  fetchGuides();
 
   // Animate stat counters when they come into view (only if Counter and IntersectionObserver are available)
   if (typeof Counter === 'function' && 'IntersectionObserver' in window) {
@@ -312,6 +139,170 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 });
+
+/**
+ * Shared helper to load packages carousel with skeleton, timeout, and retry
+ * @param {Object} options - Configuration options
+ * @param {string} options.endpoint - API endpoint to fetch packages from
+ * @param {string} options.containerId - DOM container ID for carousel
+ * @param {string} options.emptyMessage - Message to show when no packages found
+ */
+async function loadPackagesCarousel({ endpoint, containerId, emptyMessage }) {
+  const container = document.getElementById(containerId);
+  if (!container) {
+    console.warn(`Container ${containerId} not found`);
+    return;
+  }
+
+  // Show skeleton cards while loading
+  container.innerHTML = `
+    <div class="skeleton-carousel">
+      <div class="skeleton-card"></div>
+      <div class="skeleton-card"></div>
+      <div class="skeleton-card"></div>
+    </div>
+  `;
+
+  // Create AbortController for timeout (8 seconds)
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+  try {
+    const response = await fetch(endpoint, { signal: controller.signal });
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (!data.items || data.items.length === 0) {
+      container.innerHTML = `<p class="small">${emptyMessage}</p>`;
+      return;
+    }
+
+    // Check if Carousel class is available
+    if (typeof Carousel === 'undefined') {
+      console.error('Carousel class not loaded. Rendering fallback.');
+      renderPackageFallback(container, data.items);
+      return;
+    }
+
+    // Initialize carousel
+    try {
+      const carousel = new Carousel(containerId, {
+        itemsPerView: 3,
+        itemsPerViewTablet: 2,
+        itemsPerViewMobile: 1,
+        autoScroll: true,
+        autoScrollInterval: 5000,
+      });
+      carousel.setItems(data.items);
+    } catch (error) {
+      console.error('Failed to initialize carousel:', error);
+      renderPackageFallback(container, data.items);
+    }
+  } catch (error) {
+    clearTimeout(timeoutId);
+    console.error(`Failed to load packages from ${endpoint}:`, error);
+
+    // Show error with retry button
+    const errorMessage =
+      error.name === 'AbortError' ? 'Request timed out' : 'Unable to load packages';
+    container.innerHTML = `
+      <div style="text-align: center; padding: 2rem;">
+        <p class="small">${errorMessage}. Please try again.</p>
+        <button class="cta secondary retry-packages-btn" aria-label="Retry loading packages">
+          Retry
+        </button>
+      </div>
+    `;
+
+    // Attach retry handler
+    const retryBtn = container.querySelector('.retry-packages-btn');
+    if (retryBtn) {
+      retryBtn.addEventListener('click', () => location.reload());
+    }
+  }
+}
+
+/**
+ * Render packages in fallback grid format (when Carousel is unavailable)
+ * @param {HTMLElement} container - Container element
+ * @param {Array} items - Package items to render
+ */
+function renderPackageFallback(container, items) {
+  // Helper to safely escape HTML
+  const escape = text => {
+    const div = document.createElement('div');
+    div.textContent = text || '';
+    return div.innerHTML;
+  };
+
+  // Validate and sanitize URLs to prevent XSS
+  const sanitizeUrl = url => {
+    if (!url) {
+      return '/assets/images/placeholder-package.jpg';
+    }
+    const urlStr = String(url);
+    // Block javascript:, data:, vbscript:, and file: URLs
+    if (/^(javascript|data|vbscript|file):/i.test(urlStr)) {
+      return '/assets/images/placeholder-package.jpg';
+    }
+    return escape(urlStr);
+  };
+
+  // Validate slug for URL safety
+  const validateSlug = (value, fallbackId) => {
+    const slugStr = String(value || '');
+    // Only allow alphanumeric, hyphens, and underscores
+    const cleaned = slugStr.replace(/[^a-zA-Z0-9_-]/g, '');
+    // Fall back to provided id if slug becomes empty after cleaning
+    return cleaned || String(fallbackId || 'unknown');
+  };
+
+  // Format price with £ symbol if it's a number
+  const formatPrice = priceDisplay => {
+    if (!priceDisplay) {
+      return 'Contact for pricing';
+    }
+    const priceStr = String(priceDisplay);
+    // If it's a plain number (integer or decimal), format as £X
+    if (/^\d+(\.\d+)?$/.test(priceStr)) {
+      return `£${priceStr}`;
+    }
+    // Otherwise return as-is
+    return priceStr;
+  };
+
+  container.innerHTML = items
+    .map(item => {
+      const title = escape(item.title || 'Untitled Package');
+      const supplierName = escape(item.supplier_name || '');
+      const description = escape(item.description || '');
+      const truncDesc =
+        description.length > 100 ? `${description.substring(0, 100)}...` : description;
+      const price = escape(formatPrice(item.price_display || item.price));
+      const imgSrc = sanitizeUrl(item.image);
+      const slug = encodeURIComponent(validateSlug(item.slug, item.id));
+
+      return `
+        <div class="card featured-fallback-card">
+          <a href="/package.html?slug=${slug}" class="featured-fallback-link">
+            <img src="${imgSrc}" alt="${title}" class="featured-fallback-img">
+            <div class="featured-fallback-content">
+              <h3 class="featured-fallback-title">${title}</h3>
+              ${supplierName ? `<p class="featured-fallback-supplier">${supplierName}</p>` : ''}
+              <p class="featured-fallback-desc">${truncDesc}</p>
+              <div class="featured-fallback-price">${price}</div>
+            </div>
+          </a>
+        </div>
+      `;
+    })
+    .join('');
+}
 
 /**
  * Load hero collage images from category heroImages
@@ -447,5 +438,172 @@ async function loadHeroCollageImages() {
   } catch (error) {
     console.error('Error loading hero collage images:', error);
     // Default images will remain if there's an error
+  }
+}
+
+/**
+ * Fetch and render public stats with graceful fallback
+ */
+async function fetchPublicStats() {
+  try {
+    const response = await fetch('/api/public/stats');
+    if (!response.ok) {
+      throw new Error('Stats fetch failed');
+    }
+
+    const stats = await response.json();
+
+    // Update stat counters with real data
+    const statItems = document.querySelectorAll('.stat-item');
+    if (statItems.length >= 4) {
+      // Update counters with real data
+      const counters = [
+        { value: stats.suppliersVerified, suffix: '+' },
+        { value: stats.packagesApproved, suffix: '+' },
+        { value: stats.marketplaceListingsActive, suffix: '+' },
+        { value: stats.reviewsApproved, suffix: '+' },
+      ];
+
+      statItems.forEach((item, index) => {
+        const counterEl = item.querySelector('.stat-number');
+        if (counterEl && counters[index]) {
+          counterEl.setAttribute('data-counter', counters[index].value);
+          counterEl.setAttribute('data-suffix', counters[index].suffix);
+        }
+      });
+    }
+  } catch (error) {
+    console.error('Failed to load public stats:', error);
+    // Graceful fallback: Use copy-only approach
+    // Stats will show 0 or the data-counter defaults, which is acceptable
+  }
+}
+
+/**
+ * Fetch and render marketplace preview items
+ */
+async function fetchMarketplacePreview() {
+  const container = document.getElementById('marketplace-preview');
+  if (!container) {
+    return;
+  }
+
+  try {
+    const response = await fetch('/api/marketplace/listings?limit=4');
+    if (!response.ok) {
+      throw new Error('Marketplace fetch failed');
+    }
+
+    const data = await response.json();
+    const listings = data.listings || [];
+
+    if (listings.length === 0) {
+      container.innerHTML = '<p class="small">No marketplace items available yet.</p>';
+      return;
+    }
+
+    // Helper to safely escape HTML
+    const escape = text => {
+      const div = document.createElement('div');
+      div.textContent = text || '';
+      return div.innerHTML;
+    };
+
+    // Render marketplace items
+    container.innerHTML = `
+      <div class="cards">
+        ${listings
+          .map(
+            listing => `
+          <div class="card card-hover">
+            ${
+              listing.images && listing.images[0]
+                ? `<img src="${escape(listing.images[0])}" alt="${escape(listing.title)}" style="width: 100%; height: 180px; object-fit: cover; border-radius: 8px 8px 0 0;" />`
+                : ''
+            }
+            <div style="padding: 1rem;">
+              <h3 style="margin: 0 0 0.5rem 0; font-size: 1.1rem;">${escape(listing.title)}</h3>
+              <p class="small" style="margin: 0 0 0.5rem 0; font-weight: 600; color: var(--ink, #0b8073);">£${escape(String(listing.price))}</p>
+              <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.5rem;">
+                ${listing.category ? `<span class="badge badge-secondary">${escape(listing.category)}</span>` : ''}
+                ${listing.condition ? `<span class="badge badge-info">${escape(listing.condition)}</span>` : ''}
+                ${listing.location ? `<span class="badge badge-secondary">${escape(listing.location)}</span>` : ''}
+              </div>
+            </div>
+          </div>
+        `
+          )
+          .join('')}
+      </div>
+    `;
+  } catch (error) {
+    console.error('Failed to load marketplace preview:', error);
+    // Hide the entire section gracefully
+    const section = document.getElementById('marketplace-preview-section');
+    if (section) {
+      section.style.display = 'none';
+    }
+  }
+}
+
+/**
+ * Fetch and render guides
+ */
+async function fetchGuides() {
+  const container = document.getElementById('guides-list');
+  const section = document.getElementById('guides-section');
+
+  if (!container || !section) {
+    return;
+  }
+
+  try {
+    const response = await fetch('/assets/data/guides.json');
+    if (!response.ok) {
+      throw new Error('Guides fetch failed');
+    }
+
+    const guides = await response.json();
+
+    if (!Array.isArray(guides) || guides.length === 0) {
+      throw new Error('No guides available');
+    }
+
+    // Helper to safely escape HTML
+    const escape = text => {
+      const div = document.createElement('div');
+      div.textContent = text || '';
+      return div.innerHTML;
+    };
+
+    // Render guides (limit to 3 for homepage)
+    container.innerHTML = guides
+      .slice(0, 3)
+      .map(
+        guide => `
+        <div class="card card-hover">
+          <h3 style="margin: 0 0 0.5rem 0; font-size: 1.1rem;">
+            <a href="${escape(guide.href)}" style="text-decoration: none; color: inherit;">${escape(guide.title)}</a>
+          </h3>
+          <p class="small" style="margin: 0 0 0.5rem 0; color: var(--color-text-secondary, #6c757d);">
+            ${escape(guide.description || '')}
+          </p>
+          <div style="display: flex; gap: 0.5rem; align-items: center; margin-top: 0.5rem;">
+            <span class="badge badge-info">${escape(guide.category)}</span>
+            <span class="small" style="color: var(--color-text-secondary, #6c757d);">
+              ${escape(String(guide.readingMins))} min read
+            </span>
+          </div>
+        </div>
+      `
+      )
+      .join('');
+
+    // Show the section
+    section.style.display = 'block';
+  } catch (error) {
+    console.error('Failed to load guides:', error);
+    // Hide the entire section gracefully
+    section.style.display = 'none';
   }
 }

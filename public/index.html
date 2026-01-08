@@ -48,6 +48,7 @@
     {
       "@context": "https://schema.org",
       "@type": "Organization",
+      "@id": "https://event-flow.co.uk/#organization",
       "name": "EventFlow",
       "url": "https://event-flow.co.uk",
       "description": "UK event planning platform connecting customers with verified event suppliers",
@@ -63,12 +64,36 @@
     {
       "@context": "https://schema.org",
       "@type": "WebSite",
+      "@id": "https://event-flow.co.uk/#website",
       "name": "EventFlow",
       "url": "https://event-flow.co.uk",
+      "publisher": {
+        "@id": "https://event-flow.co.uk/#organization"
+      },
       "potentialAction": {
         "@type": "SearchAction",
         "target": "https://event-flow.co.uk/suppliers?q={search_term_string}",
         "query-input": "required name=search_term_string"
+      }
+    }
+    </script>
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      "@id": "https://event-flow.co.uk/#webpage",
+      "url": "https://event-flow.co.uk/",
+      "name": "EventFlow - UK Event Planning Platform",
+      "description": "Plan your perfect UK event with EventFlow. Connect with verified suppliers, browse packages, and manage your event in one place. Free to use, no platform fees.",
+      "isPartOf": {
+        "@id": "https://event-flow.co.uk/#website"
+      },
+      "about": {
+        "@id": "https://event-flow.co.uk/#organization"
+      },
+      "publisher": {
+        "@id": "https://event-flow.co.uk/#organization"
       }
     }
     </script>
@@ -163,8 +188,55 @@
               Find venues, catering, entertainment and more. Add to your plan with a click, start
               conversations when you’re ready, and keep everything together.
             </p>
-            <div class="hero-cta">
-              <button class="cta" id="start-planning-btn">Start planning</button>
+            <!-- Quick plan form -->
+            <form id="quick-plan-form" class="quick-plan-form" aria-label="Quick event planning form">
+              <div class="quick-plan-row">
+                <div class="quick-plan-field">
+                  <label for="quick-event-type" class="sr-only">Event Type</label>
+                  <select id="quick-event-type" name="eventType" aria-label="Event type">
+                    <option value="">Event type</option>
+                    <option value="Wedding">Wedding</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+                <div class="quick-plan-field">
+                  <label for="quick-location" class="sr-only">Location</label>
+                  <input 
+                    type="text" 
+                    id="quick-location" 
+                    name="location" 
+                    placeholder="Location (e.g. London)" 
+                    aria-label="Event location"
+                  />
+                </div>
+              </div>
+              <div class="quick-plan-row">
+                <div class="quick-plan-field">
+                  <label for="quick-guests" class="sr-only">Number of Guests</label>
+                  <input 
+                    type="number" 
+                    id="quick-guests" 
+                    name="guests" 
+                    placeholder="Guests (optional)" 
+                    min="1" 
+                    aria-label="Number of guests"
+                  />
+                </div>
+                <div class="quick-plan-field">
+                  <label for="quick-budget" class="sr-only">Budget</label>
+                  <select id="quick-budget" name="budget" aria-label="Budget range">
+                    <option value="">Budget (optional)</option>
+                    <option value="Up to £1,000">Up to £1,000</option>
+                    <option value="£1,000–£3,000">£1,000–£3,000</option>
+                    <option value="£3,000–£10,000">£3,000–£10,000</option>
+                    <option value="£10,000+">£10,000+</option>
+                  </select>
+                </div>
+              </div>
+              <button type="submit" class="cta">Start planning</button>
+            </form>
+
+            <div class="hero-cta" style="margin-top: 1rem;">
               <a class="cta secondary" href="/auth.html">Create a free account</a>
               <a class="cta" href="/marketplace">Marketplace</a>
             </div>
@@ -295,6 +367,7 @@
           color: white;
         "
         aria-label="EventFlow statistics"
+        aria-live="polite"
       >
         <div class="container">
           <div class="stats-grid">
@@ -304,16 +377,57 @@
             </div>
             <div class="stat-item" data-reveal>
               <div class="stat-number" data-counter="1200" data-suffix="+">0</div>
-              <div class="stat-label">Events Planned</div>
+              <div class="stat-label">Packages Available</div>
             </div>
             <div class="stat-item" data-reveal>
-              <div class="stat-number" data-counter="98" data-suffix="%">0</div>
-              <div class="stat-label">Customer Satisfaction</div>
+              <div class="stat-number" data-counter="150" data-suffix="+">0</div>
+              <div class="stat-label">Marketplace Items</div>
             </div>
             <div class="stat-item" data-reveal>
-              <div class="stat-number" data-counter="50" data-suffix="+">0</div>
-              <div class="stat-label">Service Categories</div>
+              <div class="stat-number" data-counter="500" data-suffix="+">0</div>
+              <div class="stat-label">Customer Reviews</div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Marketplace Preview Section -->
+      <section class="section" aria-label="Marketplace preview" id="marketplace-preview-section">
+        <div class="container">
+          <div
+            class="small"
+            style="text-transform: uppercase; letter-spacing: 0.2em; color: #7e8794"
+          >
+            Marketplace
+          </div>
+          <h2 style="margin-top: 0.5rem; margin-bottom: 1rem;">Latest Items for Sale</h2>
+          <p
+            class="small"
+            style="margin-bottom: 1.5rem; color: var(--color-text-secondary, #6c757d);"
+          >
+            Buy and sell pre-loved event items — dresses, décor, AV gear and more
+          </p>
+          <div id="marketplace-preview" aria-live="polite">
+            <p class="small">Loading marketplace items...</p>
+          </div>
+          <div style="text-align: center; margin-top: 1.5rem;">
+            <a href="/marketplace" class="cta">View All Marketplace Items</a>
+          </div>
+        </div>
+      </section>
+
+      <!-- Latest Guides Section -->
+      <section class="section" aria-label="Planning guides" id="guides-section" style="display: none;">
+        <div class="container">
+          <div
+            class="small"
+            style="text-transform: uppercase; letter-spacing: 0.2em; color: #7e8794"
+          >
+            Helpful Guides
+          </div>
+          <h2 style="margin-top: 0.5rem; margin-bottom: 1rem;">Event Planning Resources</h2>
+          <div id="guides-list" class="cards" aria-live="polite">
+            <p class="small">Loading guides...</p>
           </div>
         </div>
       </section>
@@ -626,10 +740,7 @@
         }
       });
 
-      // Fix CSP violation - move inline onclick to event listener
-      document.getElementById('start-planning-btn')?.addEventListener('click', () => {
-        window.location.href = '/start.html';
-      });
+
     </script>
 
     <!-- JadeAssist Chat Widget - Using local build with positioning API -->
