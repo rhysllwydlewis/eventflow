@@ -39,6 +39,17 @@
             <span class="footer-notification-badge" style="display: none">0</span>
           </button>
           <a href="/auth.html" class="footer-nav-link footer-nav-auth">Log in</a>
+          <button
+            id="footer-burger"
+            class="footer-nav-burger"
+            type="button"
+            aria-label="Toggle navigation"
+            aria-expanded="false"
+          >
+            <span class="footer-nav-burger-bar"></span>
+            <span class="footer-nav-burger-bar"></span>
+            <span class="footer-nav-burger-bar"></span>
+          </button>
         </div>
       </div>
     `;
@@ -50,6 +61,9 @@
 
     // Sync notification bell visibility with top nav
     syncNotificationBell();
+
+    // Initialize footer burger button
+    initFooterBurger();
 
     if (window.location.hostname === 'localhost') {
       console.info('[FooterNav] Component created and injected');
@@ -124,6 +138,67 @@
     footerBell.addEventListener('click', () => {
       // Redirect to notifications page or trigger same action as top bell
       window.location.href = '/dashboard.html#notifications';
+    });
+  }
+
+  // Sync footer burger button with top burger button
+  function initFooterBurger() {
+    const topBurger = document.getElementById('burger');
+    const footerBurger = document.getElementById('footer-burger');
+
+    if (!topBurger || !footerBurger) {
+      return;
+    }
+
+    // Make footer burger trigger the same nav menu as top burger
+    footerBurger.addEventListener('click', () => {
+      // Trigger click on top burger to open/close nav menu
+      topBurger.click();
+
+      // Sync aria-expanded state
+      const isExpanded = topBurger.getAttribute('aria-expanded') === 'true';
+      footerBurger.setAttribute('aria-expanded', String(isExpanded));
+
+      // Sync visual state
+      if (isExpanded) {
+        footerBurger.classList.add('footer-nav-burger--open');
+      } else {
+        footerBurger.classList.remove('footer-nav-burger--open');
+      }
+    });
+
+    // Watch for changes to top burger state to sync footer burger
+    const observer = new MutationObserver(() => {
+      const isExpanded = topBurger.getAttribute('aria-expanded') === 'true';
+      footerBurger.setAttribute('aria-expanded', String(isExpanded));
+
+      if (isExpanded) {
+        footerBurger.classList.add('footer-nav-burger--open');
+      } else {
+        footerBurger.classList.remove('footer-nav-burger--open');
+      }
+    });
+
+    observer.observe(topBurger, {
+      attributes: true,
+      attributeFilter: ['aria-expanded'],
+    });
+
+    // Also watch for body.nav-open class changes
+    const bodyObserver = new MutationObserver(() => {
+      const isOpen = document.body.classList.contains('nav-open');
+      if (isOpen) {
+        footerBurger.classList.add('footer-nav-burger--open');
+        footerBurger.setAttribute('aria-expanded', 'true');
+      } else {
+        footerBurger.classList.remove('footer-nav-burger--open');
+        footerBurger.setAttribute('aria-expanded', 'false');
+      }
+    });
+
+    bodyObserver.observe(document.body, {
+      attributes: true,
+      attributeFilter: ['class'],
     });
   }
 

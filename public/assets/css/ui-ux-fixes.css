@@ -1375,6 +1375,77 @@ html[data-theme="dark"] .footer-nav-icon-button:active {
   background: rgba(11, 128, 115, 0.2);
 }
 
+/* Footer nav burger button */
+.footer-nav-burger {
+  position: relative;
+  padding: 8px;
+  border-radius: 10px;
+  border: 1px solid rgba(71, 85, 105, 0.2);
+  background: transparent;
+  cursor: pointer;
+  transition: all 180ms cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-height: 44px;
+  min-width: 44px;
+}
+
+.footer-nav-burger:hover {
+  background: rgba(11, 128, 115, 0.08);
+  border-color: rgba(11, 128, 115, 0.3);
+}
+
+.footer-nav-burger:active {
+  background: rgba(11, 128, 115, 0.12);
+  transform: scale(0.98);
+}
+
+.footer-nav-burger:focus-visible {
+  outline: 2px solid var(--ink, #0b8073);
+  outline-offset: 3px;
+  background: rgba(11, 128, 115, 0.08);
+}
+
+.footer-nav-burger-bar {
+  width: 16px;
+  height: 2px;
+  border-radius: 999px;
+  background: #475569;
+  transition: transform 180ms ease, opacity 180ms ease;
+}
+
+.footer-nav-burger--open .footer-nav-burger-bar:nth-child(1) {
+  transform: translateY(5px) rotate(45deg);
+}
+
+.footer-nav-burger--open .footer-nav-burger-bar:nth-child(2) {
+  opacity: 0;
+}
+
+.footer-nav-burger--open .footer-nav-burger-bar:nth-child(3) {
+  transform: translateY(-5px) rotate(-45deg);
+}
+
+html[data-theme="dark"] .footer-nav-burger {
+  border-color: rgba(148, 163, 184, 0.2);
+}
+
+html[data-theme="dark"] .footer-nav-burger-bar {
+  background: #94a3b8;
+}
+
+html[data-theme="dark"] .footer-nav-burger:hover {
+  background: rgba(11, 128, 115, 0.15);
+  border-color: rgba(11, 128, 115, 0.4);
+}
+
+html[data-theme="dark"] .footer-nav-burger:active {
+  background: rgba(11, 128, 115, 0.2);
+}
+
 /* Add bottom padding to body when footer nav is present */
 body.has-footer-nav {
   padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px) + 16px);
@@ -1443,6 +1514,16 @@ body.has-footer-nav {
     font-size: 16px;
     padding: 6px;
   }
+  
+  .footer-nav-burger {
+    padding: 7px;
+    min-height: 42px;
+    min-width: 42px;
+  }
+  
+  .footer-nav-burger-bar {
+    width: 15px;
+  }
 }
 
 @media (max-width: 375px) {
@@ -1454,6 +1535,15 @@ body.has-footer-nav {
   
   .footer-nav-links {
     gap: 2px;
+  }
+  
+  .footer-nav-burger {
+    padding: 6px;
+    gap: 2px;
+  }
+  
+  .footer-nav-burger-bar {
+    width: 14px;
   }
 }
 
