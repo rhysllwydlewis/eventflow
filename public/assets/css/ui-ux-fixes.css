@@ -1242,7 +1242,7 @@ html[data-theme="dark"] .footer-nav {
 .footer-nav-links {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
   flex-wrap: nowrap;
   justify-content: center;
   width: 100%;
@@ -1250,7 +1250,7 @@ html[data-theme="dark"] .footer-nav {
 
 /* Individual footer nav link */
 .footer-nav-link {
-  padding: 10px 16px;
+  padding: 10px 12px;
   border-radius: 10px;
   font-size: 15px;
   font-weight: 500;
@@ -1480,13 +1480,13 @@ body.has-footer-nav {
   }
   
   .footer-nav-links {
-    gap: 3px;
+    gap: 2px;
   }
   
   .footer-nav-link {
     font-size: 13px;
-    padding: 8px 11px;
-    min-width: 50px;
+    padding: 8px 10px;
+    min-width: 48px;
   }
   
   .footer-nav-icon-button {
@@ -1506,8 +1506,8 @@ body.has-footer-nav {
   
   .footer-nav-link {
     font-size: 12px;
-    padding: 8px 9px;
-    min-width: 46px;
+    padding: 8px 8px;
+    min-width: 44px;
   }
   
   .footer-nav-icon-button {
@@ -1529,12 +1529,12 @@ body.has-footer-nav {
 @media (max-width: 375px) {
   .footer-nav-link {
     font-size: 11px;
-    padding: 8px 7px;
+    padding: 8px 6px;
     min-width: 44px;
   }
   
   .footer-nav-links {
-    gap: 2px;
+    gap: 1px;
   }
   
   .footer-nav-burger {
