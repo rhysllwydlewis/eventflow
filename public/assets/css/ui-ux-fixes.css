@@ -1613,7 +1613,7 @@ body.has-footer-nav {
     font-size: 11px; /* Increased from 10px for better accessibility */
     padding: 5px 5px;
     min-width: 44px;
-    max-width: 42px; /* Slightly increased to accommodate 11px font */
+    max-width: 44px; /* Keep consistent with min-width for predictable sizing */
   }
 }
 
@@ -1622,7 +1622,7 @@ body.has-footer-nav {
     font-size: 10px; /* Increased from 9px for better accessibility */
     padding: 5px 4px;
     min-width: 44px;
-    max-width: 40px; /* Slightly increased to accommodate 10px font */
+    max-width: 44px; /* Keep consistent with min-width for predictable sizing */
   }
   
   .footer-nav-links {
@@ -1645,7 +1645,7 @@ body.has-footer-nav {
     font-size: 9px; /* Increased from 8px for better accessibility */
     padding: 4px 3px;
     min-width: 44px;
-    /* Removed conflicting max-width - keep accessibility compliance */
+    max-width: 44px; /* Keep consistent with min-width for predictable sizing */
   }
   
   .footer-nav-links {
