@@ -1311,6 +1311,70 @@ html[data-theme="dark"] .footer-nav-link:active {
   background: rgba(11, 128, 115, 0.2);
 }
 
+/* Footer nav notification bell */
+.footer-nav-icon-button {
+  position: relative;
+  padding: 8px;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  color: #475569;
+  cursor: pointer;
+  transition: all 180ms cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  min-width: 44px;
+  font-size: 20px;
+}
+
+.footer-nav-icon-button:hover {
+  background: rgba(11, 128, 115, 0.08);
+  color: var(--ink, #0b8073);
+  transform: translateY(-1px);
+}
+
+.footer-nav-icon-button:active {
+  background: rgba(11, 128, 115, 0.12);
+  transform: translateY(0);
+}
+
+.footer-nav-icon-button:focus-visible {
+  outline: 2px solid var(--ink, #0b8073);
+  outline-offset: 3px;
+  background: rgba(11, 128, 115, 0.08);
+}
+
+.footer-notification-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: #ef4444;
+  color: white;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 10px;
+  min-width: 18px;
+  text-align: center;
+  line-height: 1.2;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+html[data-theme="dark"] .footer-nav-icon-button {
+  color: #94a3b8;
+}
+
+html[data-theme="dark"] .footer-nav-icon-button:hover {
+  background: rgba(11, 128, 115, 0.15);
+  color: #00d4aa;
+}
+
+html[data-theme="dark"] .footer-nav-icon-button:active {
+  background: rgba(11, 128, 115, 0.2);
+}
+
 /* Add bottom padding to body when footer nav is present */
 body.has-footer-nav {
   padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px) + 16px);
@@ -1330,6 +1394,11 @@ body.has-footer-nav {
     font-size: 14px;
     padding: 9px 14px;
   }
+  
+  .footer-nav-icon-button {
+    font-size: 18px;
+    padding: 7px;
+  }
 }
 
 @media (max-width: 600px) {
@@ -1341,6 +1410,11 @@ body.has-footer-nav {
     font-size: 13px;
     padding: 8px 12px;
     min-width: 52px;
+  }
+  
+  .footer-nav-icon-button {
+    font-size: 17px;
+    padding: 6px;
   }
 }
 
@@ -1357,6 +1431,11 @@ body.has-footer-nav {
     font-size: 12px;
     padding: 8px 10px;
     min-width: 48px;
+  }
+  
+  .footer-nav-icon-button {
+    font-size: 16px;
+    padding: 6px;
   }
 }
 

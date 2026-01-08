@@ -28,7 +28,17 @@
           <a href="/suppliers.html" class="footer-nav-link">Suppliers</a>
           <a href="/pricing.html" class="footer-nav-link">Pricing</a>
           <a href="/blog.html" class="footer-nav-link">Blog</a>
-          <a href="/auth.html" class="footer-nav-link">Log in</a>
+          <button
+            id="footer-notification-bell"
+            class="footer-nav-icon-button"
+            type="button"
+            aria-label="Notifications"
+            style="display: none"
+          >
+            <span class="notification-icon">🔔</span>
+            <span class="footer-notification-badge" style="display: none">0</span>
+          </button>
+          <a href="/auth.html" class="footer-nav-link footer-nav-auth">Log in</a>
         </div>
       </div>
     `;
@@ -38,6 +48,9 @@
     // Add body padding class
     document.body.classList.add('has-footer-nav');
 
+    // Sync notification bell visibility with top nav
+    syncNotificationBell();
+
     if (window.location.hostname === 'localhost') {
       console.info('[FooterNav] Component created and injected');
     }
@@ -46,6 +59,65 @@
     setTimeout(() => {
       initScrollBehavior(footerNav);
     }, 100);
+  }
+
+  // Sync footer notification bell with top notification bell
+  function syncNotificationBell() {
+    const topBell = document.getElementById('notification-bell');
+    const footerBell = document.getElementById('footer-notification-bell');
+
+    if (!footerBell) {
+      return;
+    }
+
+    // Function to update footer bell visibility based on top bell
+    const updateFooterBell = () => {
+      if (topBell && topBell.style.display !== 'none') {
+        footerBell.style.display = 'flex';
+
+        // Sync badge count
+        const topBadge = document.querySelector('.notification-badge');
+        const footerBadge = document.querySelector('.footer-notification-badge');
+
+        if (topBadge && footerBadge) {
+          footerBadge.style.display = topBadge.style.display;
+          footerBadge.textContent = topBadge.textContent;
+        }
+      } else {
+        footerBell.style.display = 'none';
+      }
+    };
+
+    // Initial sync
+    updateFooterBell();
+
+    // Watch for changes to top bell visibility (for login/logout)
+    const observer = new MutationObserver(updateFooterBell);
+
+    if (topBell) {
+      observer.observe(topBell, {
+        attributes: true,
+        attributeFilter: ['style'],
+      });
+
+      // Also watch for badge changes
+      const topBadge = document.querySelector('.notification-badge');
+      if (topBadge) {
+        observer.observe(topBadge, {
+          attributes: true,
+          attributeFilter: ['style'],
+          childList: true,
+          characterData: true,
+          subtree: true,
+        });
+      }
+    }
+
+    // Add click handler to footer bell
+    footerBell.addEventListener('click', () => {
+      // Redirect to notifications page or trigger same action as top bell
+      window.location.href = '/dashboard.html#notifications';
+    });
   }
 
   // Initialize scroll-based show/hide behavior
