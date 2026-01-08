@@ -1531,7 +1531,7 @@ body.has-footer-nav {
   /* Burger button optimizations for mobile */
   .footer-nav-burger {
     /* Reduce padding for better spacing while maintaining touch target */
-    padding: 7px;
+    padding: 7px !important;
     /* Keep touch-friendly minimum size (44x44px for WCAG AA) */
     min-height: 44px;
     min-width: 44px;
@@ -1575,7 +1575,7 @@ body.has-footer-nav {
   }
   
   .footer-nav-burger {
-    padding: 6px;
+    padding: 6px !important;
     /* Maintain touch-friendly size even on small screens */
     min-height: 44px;
     min-width: 44px;
@@ -1613,7 +1613,7 @@ body.has-footer-nav {
   }
   
   .footer-nav-burger {
-    padding: 6px;
+    padding: 6px !important;
     min-height: 44px;
     min-width: 44px;
   }
@@ -1652,7 +1652,7 @@ body.has-footer-nav {
   }
   
   .footer-nav-burger {
-    padding: 5px;
+    padding: 5px !important;
     gap: 2px;
     min-height: 44px;
     min-width: 44px;
@@ -1677,7 +1677,7 @@ body.has-footer-nav {
   }
   
   .footer-nav-burger {
-    padding: 5px;
+    padding: 5px !important;
     min-height: 44px;
     min-width: 44px;
   }
