@@ -34,6 +34,42 @@
     wizardState = window.WizardState.getState();
     currentStep = wizardState.currentStep || 0;
 
+    // Parse URL params and prefill wizard state if present
+    const urlParams = new URLSearchParams(window.location.search);
+    const hasParams = Array.from(urlParams.keys()).length > 0;
+
+    if (hasParams) {
+      // Prefill step 0 (event type) if provided
+      const eventType = urlParams.get('eventType');
+      if (eventType && (eventType === 'Wedding' || eventType === 'Other')) {
+        window.WizardState.saveStep(0, { eventType });
+      }
+
+      // Prefill step 1 (location, guests, budget) if provided
+      const prefillData = {};
+      const location = urlParams.get('location');
+      const guests = urlParams.get('guests');
+      const budget = urlParams.get('budget');
+
+      if (location) {
+        prefillData.location = location;
+      }
+      if (guests && !isNaN(parseInt(guests, 10))) {
+        prefillData.guests = parseInt(guests, 10);
+      }
+      if (budget) {
+        prefillData.budget = budget;
+      }
+
+      // Only save if we have data to prefill
+      if (Object.keys(prefillData).length > 0) {
+        window.WizardState.saveStep(1, prefillData);
+      }
+
+      // Reload state after prefilling
+      wizardState = window.WizardState.getState();
+    }
+
     // Load categories and packages
     loadCategories();
 

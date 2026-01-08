@@ -1,0 +1,34 @@
+[
+  {
+    "title": "How to Choose the Perfect Wedding Venue",
+    "href": "/blog.html?guide=wedding-venue",
+    "category": "Venues",
+    "readingMins": 8,
+    "published": "2024-12-15",
+    "description": "A comprehensive guide to finding and booking your dream wedding venue, with tips on budget, capacity, and location."
+  },
+  {
+    "title": "Budget Planning for Your Event",
+    "href": "/blog.html?guide=budget-planning",
+    "category": "Planning",
+    "readingMins": 6,
+    "published": "2025-01-02",
+    "description": "Learn how to create a realistic event budget and allocate funds across different suppliers and services."
+  },
+  {
+    "title": "Working with Event Suppliers: A Guide",
+    "href": "/blog.html?guide=supplier-guide",
+    "category": "Suppliers",
+    "readingMins": 5,
+    "published": "2024-11-20",
+    "description": "Tips for communicating with suppliers, negotiating contracts, and building strong working relationships."
+  },
+  {
+    "title": "Timeline: Planning Your Event Step-by-Step",
+    "href": "/blog.html?guide=event-timeline",
+    "category": "Planning",
+    "readingMins": 7,
+    "published": "2024-10-30",
+    "description": "A month-by-month timeline showing when to book suppliers, send invitations, and finalize details."
+  }
+]

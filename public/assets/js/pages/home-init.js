@@ -14,6 +14,51 @@ document.addEventListener('DOMContentLoaded', () => {
     categoryGrid.loadCategories();
   }
 
+  // Attach start planning button handler (CSP-friendly)
+  const startPlanningBtn = document.getElementById('start-planning-btn');
+  if (startPlanningBtn) {
+    startPlanningBtn.addEventListener('click', () => {
+      window.location.href = '/start.html';
+    });
+  }
+
+  // Handle quick plan form submission
+  const quickPlanForm = document.getElementById('quick-plan-form');
+  if (quickPlanForm) {
+    quickPlanForm.addEventListener('submit', e => {
+      e.preventDefault();
+
+      const formData = new FormData(quickPlanForm);
+      const params = new URLSearchParams();
+
+      // Only add params that have values
+      for (const [key, value] of formData.entries()) {
+        if (value && value.trim()) {
+          params.append(key, value.trim());
+        }
+      }
+
+      // Redirect to wizard with params
+      const queryString = params.toString();
+      window.location.href = queryString ? `/start.html?${queryString}` : '/start.html';
+    });
+  }
+
+  // Hide version label unless ?debug=1 is present
+  const versionContainer = document.querySelector('.version');
+  if (versionContainer) {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (!urlParams.has('debug') || urlParams.get('debug') !== '1') {
+      versionContainer.style.display = 'none';
+    } else {
+      // If debug mode, show version
+      const versionLabel = document.getElementById('ef-version-label');
+      if (versionLabel) {
+        versionLabel.textContent = 'v17.0.0';
+      }
+    }
+  }
+
   // Load and update hero collage images from admin-uploaded category photos
   loadHeroCollageImages();
 

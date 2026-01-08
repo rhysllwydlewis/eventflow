@@ -2118,6 +2118,53 @@ app.get('/api/categories', async (_req, res) => {
   res.json({ items: sorted });
 });
 
+/**
+ * GET /api/public/stats
+ * Public endpoint for homepage statistics
+ * Returns real counts with 5-minute cache
+ */
+app.get('/api/public/stats', async (_req, res) => {
+  try {
+    // Set cache headers (5 minutes)
+    res.set('Cache-Control', 'public, max-age=300');
+
+    // Get suppliers count (approved/verified)
+    const suppliers = await dbUnified.read('suppliers');
+    const suppliersVerified = suppliers.filter(s => s.approved || s.verified).length;
+
+    // Get packages count (approved)
+    const packages = await dbUnified.read('packages');
+    const packagesApproved = packages.filter(p => p.approved === true).length;
+
+    // Get marketplace listings count (approved and active)
+    const listings = await dbUnified.read('marketplace_listings');
+    const marketplaceListingsActive = listings.filter(
+      l => l.approved === true && l.status === 'active'
+    ).length;
+
+    // Get reviews count (approved)
+    const reviews = await dbUnified.read('reviews');
+    const reviewsApproved = reviews.filter(r => r.approved === true).length;
+
+    res.json({
+      suppliersVerified,
+      packagesApproved,
+      marketplaceListingsActive,
+      reviewsApproved,
+    });
+  } catch (error) {
+    logger.error('Error fetching public stats:', error);
+    sentry.captureException(error);
+    res.status(500).json({
+      error: 'Failed to fetch statistics',
+      suppliersVerified: 0,
+      packagesApproved: 0,
+      marketplaceListingsActive: 0,
+      reviewsApproved: 0,
+    });
+  }
+});
+
 // Admin: Update category hero image
 app.post(
   '/api/admin/categories/:id/hero-image',
@@ -2873,7 +2920,7 @@ app.post(
 // Get all marketplace listings (public)
 app.get('/api/marketplace/listings', async (req, res) => {
   try {
-    const { category, condition, minPrice, maxPrice, search, sort } = req.query;
+    const { category, condition, minPrice, maxPrice, search, sort, limit } = req.query;
     let listings = await dbUnified.read('marketplace_listings');
 
     // Filter by approved and active status
@@ -2911,9 +2958,19 @@ app.get('/api/marketplace/listings', async (req, res) => {
       listings.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     }
 
+    // Apply limit parameter (default 12, cap at 24)
+    let resultLimit = 12; // default
+    if (limit) {
+      const parsedLimit = parseInt(limit, 10);
+      if (!isNaN(parsedLimit) && parsedLimit > 0) {
+        resultLimit = Math.min(parsedLimit, 24); // cap at 24
+      }
+    }
+    listings = listings.slice(0, resultLimit);
+
     logger.info('Marketplace listings fetched', {
       count: listings.length,
-      filters: { category, condition, minPrice, maxPrice, search, sort },
+      filters: { category, condition, minPrice, maxPrice, search, sort, limit: resultLimit },
     });
 
     res.json({ listings });
@@ -4873,7 +4930,11 @@ app.post(
         const errors = [];
         for (const file of req.files) {
           try {
-            const images = await photoUpload.processAndSaveImage(file.buffer, file.originalname, 'marketplace');
+            const images = await photoUpload.processAndSaveImage(
+              file.buffer,
+              file.originalname,
+              'marketplace'
+            );
             uploadedUrls.push(images.optimized);
           } catch (error) {
             errors.push({ filename: file.originalname, error: error.message });
@@ -5021,7 +5082,11 @@ app.post(
 
       for (const file of req.files) {
         try {
-          const images = await photoUpload.processAndSaveImage(file.buffer, file.originalname, type);
+          const images = await photoUpload.processAndSaveImage(
+            file.buffer,
+            file.originalname,
+            type
+          );
           const metadata = await photoUpload.getImageMetadata(file.buffer);
 
           const photoRecord = {
