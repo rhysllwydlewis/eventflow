@@ -150,33 +150,33 @@
       return;
     }
 
+    // Shared function to sync footer burger state
+    const syncFooterBurgerState = isExpanded => {
+      footerBurger.setAttribute('aria-expanded', String(isExpanded));
+
+      if (isExpanded) {
+        footerBurger.classList.add('footer-nav-burger--open');
+      } else {
+        footerBurger.classList.remove('footer-nav-burger--open');
+      }
+    };
+
     // Make footer burger trigger the same nav menu as top burger
     footerBurger.addEventListener('click', () => {
       // Trigger click on top burger to open/close nav menu
       topBurger.click();
 
-      // Sync aria-expanded state
-      const isExpanded = topBurger.getAttribute('aria-expanded') === 'true';
-      footerBurger.setAttribute('aria-expanded', String(isExpanded));
-
-      // Sync visual state
-      if (isExpanded) {
-        footerBurger.classList.add('footer-nav-burger--open');
-      } else {
-        footerBurger.classList.remove('footer-nav-burger--open');
-      }
+      // Sync state after brief delay to allow top burger to update
+      setTimeout(() => {
+        const isExpanded = topBurger.getAttribute('aria-expanded') === 'true';
+        syncFooterBurgerState(isExpanded);
+      }, 50);
     });
 
     // Watch for changes to top burger state to sync footer burger
     const observer = new MutationObserver(() => {
       const isExpanded = topBurger.getAttribute('aria-expanded') === 'true';
-      footerBurger.setAttribute('aria-expanded', String(isExpanded));
-
-      if (isExpanded) {
-        footerBurger.classList.add('footer-nav-burger--open');
-      } else {
-        footerBurger.classList.remove('footer-nav-burger--open');
-      }
+      syncFooterBurgerState(isExpanded);
     });
 
     observer.observe(topBurger, {
@@ -187,13 +187,7 @@
     // Also watch for body.nav-open class changes
     const bodyObserver = new MutationObserver(() => {
       const isOpen = document.body.classList.contains('nav-open');
-      if (isOpen) {
-        footerBurger.classList.add('footer-nav-burger--open');
-        footerBurger.setAttribute('aria-expanded', 'true');
-      } else {
-        footerBurger.classList.remove('footer-nav-burger--open');
-        footerBurger.setAttribute('aria-expanded', 'false');
-      }
+      syncFooterBurgerState(isOpen);
     });
 
     bodyObserver.observe(document.body, {
