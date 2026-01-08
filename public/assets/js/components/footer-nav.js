@@ -177,7 +177,7 @@
                 const isCurrentlyOpen = document.body.classList.contains('nav-open');
 
                 if (navMenu) {
-                  // Use only nav-menu--open for consistency
+                  // Use nav-menu--open to maintain consistency with auth-nav.js
                   navMenu.classList.toggle('nav-menu--open');
                 }
                 document.body.classList.toggle('nav-open');
@@ -217,19 +217,17 @@
 
     // Make footer burger trigger the same nav menu as top burger
     footerBurger.addEventListener('click', e => {
-      // Prevent default to avoid any interference
+      // Prevent default and stop propagation to avoid event interference
       e.preventDefault();
       e.stopPropagation();
 
       // Trigger click on top burger to open/close nav menu
       topBurger.click();
 
-      // Sync state after brief delay using requestAnimationFrame to ensure DOM updates
+      // Sync state after DOM updates using requestAnimationFrame
       requestAnimationFrame(() => {
-        setTimeout(() => {
-          const isExpanded = topBurger.getAttribute('aria-expanded') === 'true';
-          syncFooterBurgerState(isExpanded);
-        }, 10);
+        const isExpanded = topBurger.getAttribute('aria-expanded') === 'true';
+        syncFooterBurgerState(isExpanded);
       });
     });
 
