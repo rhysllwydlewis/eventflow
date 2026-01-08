@@ -456,7 +456,9 @@ async function loadHeroCollageImages() {
 const PEXELS_TRANSITION_DURATION_MS = 1000;
 
 async function initPexelsCollage(settings) {
-  const { interval = 8 } = settings;
+  // Use intervalSeconds from settings, fallback to old 'interval' property for backwards compatibility, default to 2.5 seconds
+  const intervalSeconds = settings?.intervalSeconds ?? settings?.interval ?? 2.5;
+  const intervalMs = intervalSeconds * 1000;
 
   // Map category keys to their collage frame elements
   const categoryMapping = {
@@ -525,12 +527,20 @@ async function initPexelsCollage(settings) {
     if (Object.keys(imageCache).length > 0) {
       setInterval(() => {
         cyclePexelsImages(imageCache, currentImageIndex, collageFrames, categoryMapping);
-      }, interval * 1000);
+      }, intervalMs);
+
+      console.log(
+        `Pexels collage initialized with ${intervalSeconds}s interval (${Object.keys(imageCache).length} categories)`
+      );
     } else {
       console.warn('No Pexels images loaded, falling back to static images');
+      // Fall back to loading static hero images
+      await loadHeroCollageImages();
     }
   } catch (error) {
     console.error('Error initializing Pexels collage:', error);
+    // Fall back to loading static hero images
+    await loadHeroCollageImages();
   }
 }
 

@@ -3967,7 +3967,7 @@ router.get('/public/homepage-settings', async (req, res) => {
     const settings = (await dbUnified.read('settings')) || {};
     const features = settings.features || {};
     const pexelsCollageSettings = settings.pexelsCollageSettings || {
-      interval: 8,
+      intervalSeconds: 2.5,
       queries: {
         venues: 'wedding venue elegant ballroom',
         catering: 'wedding catering food elegant',
@@ -3975,6 +3975,11 @@ router.get('/public/homepage-settings', async (req, res) => {
         photography: 'wedding photography professional',
       },
     };
+
+    // Support backwards compatibility: if 'interval' exists and 'intervalSeconds' doesn't, copy it over
+    if (pexelsCollageSettings.interval && !pexelsCollageSettings.intervalSeconds) {
+      pexelsCollageSettings.intervalSeconds = pexelsCollageSettings.interval;
+    }
 
     res.json({
       pexelsCollageEnabled: features.pexelsCollage === true,
