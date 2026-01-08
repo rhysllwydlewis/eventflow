@@ -11,6 +11,9 @@
   function createFooterNav() {
     // Check if footer nav already exists
     if (document.querySelector('.footer-nav')) {
+      if (window.location.hostname === 'localhost') {
+        console.info('[FooterNav] Already exists, skipping initialization');
+      }
       return;
     }
 
@@ -34,6 +37,10 @@
     // Add body padding class
     document.body.classList.add('has-footer-nav');
     
+    if (window.location.hostname === 'localhost') {
+      console.info('[FooterNav] Component created and injected');
+    }
+    
     // Initialize scroll behavior after a short delay to ensure DOM is ready
     setTimeout(() => {
       initScrollBehavior(footerNav);
@@ -46,16 +53,33 @@
     const topNav = document.querySelector('.header');
     if (!topNav) {
       // If no top nav found, keep footer nav hidden by default
+      if (window.location.hostname === 'localhost') {
+        console.info('[FooterNav] No .header element found, keeping nav hidden');
+      }
       return;
     }
 
-    // Calculate the threshold (height of top nav + some buffer)
+    // Calculate the threshold (height of top nav + buffer for hero section)
     const getScrollThreshold = () => {
-      return topNav.offsetHeight || 80;
+      const headerHeight = topNav.offsetHeight || 80;
+      // Add a meaningful buffer (100px) so nav only appears after scrolling past hero
+      const buffer = 100;
+      const threshold = headerHeight + buffer;
+      
+      if (window.location.hostname === 'localhost') {
+        console.info('[FooterNav] Threshold calculated:', {
+          headerHeight,
+          buffer,
+          threshold
+        });
+      }
+      
+      return threshold;
     };
 
     let ticking = false;
     let threshold = getScrollThreshold();
+    let lastScrollY = window.scrollY;
 
     // Update threshold on resize
     const handleResize = () => {
@@ -67,8 +91,9 @@
       if (!ticking) {
         window.requestAnimationFrame(() => {
           const currentScrollY = window.scrollY;
+          lastScrollY = currentScrollY;
 
-          // Show footer nav when scrolled past the top nav
+          // Show footer nav when scrolled past the threshold
           if (currentScrollY > threshold) {
             footerNav.classList.remove('footer-nav--hidden');
             footerNav.classList.add('footer-nav--visible');
@@ -89,8 +114,15 @@
     window.addEventListener('resize', handleResize, { passive: true });
     window.addEventListener('scroll', handleScroll, { passive: true });
 
-    // Initial check on page load
-    handleScroll();
+    // Initial check on page load - ensure correct state is set immediately
+    // Use setTimeout to ensure DOM is fully settled
+    setTimeout(() => {
+      handleScroll();
+      
+      if (window.location.hostname === 'localhost') {
+        console.info('[FooterNav] Initialized with scroll position:', window.scrollY);
+      }
+    }, 50);
   }
 
   // Initialize when DOM is ready
