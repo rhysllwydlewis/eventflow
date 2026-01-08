@@ -456,8 +456,8 @@ async function loadHeroCollageImages() {
 const PEXELS_TRANSITION_DURATION_MS = 1000;
 
 async function initPexelsCollage(settings) {
-  // Use intervalSeconds from settings, default to 2.5 seconds if not provided
-  const intervalSeconds = settings?.intervalSeconds ?? 2.5;
+  // Use intervalSeconds from settings, fallback to old 'interval' property for backwards compatibility, default to 2.5 seconds
+  const intervalSeconds = settings?.intervalSeconds ?? settings?.interval ?? 2.5;
   const intervalMs = intervalSeconds * 1000;
 
   // Map category keys to their collage frame elements

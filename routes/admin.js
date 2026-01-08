@@ -3976,6 +3976,11 @@ router.get('/public/homepage-settings', async (req, res) => {
       },
     };
 
+    // Support backwards compatibility: if 'interval' exists and 'intervalSeconds' doesn't, copy it over
+    if (pexelsCollageSettings.interval && !pexelsCollageSettings.intervalSeconds) {
+      pexelsCollageSettings.intervalSeconds = pexelsCollageSettings.interval;
+    }
+
     res.json({
       pexelsCollageEnabled: features.pexelsCollage === true,
       pexelsCollageSettings,
