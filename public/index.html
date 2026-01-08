@@ -218,24 +218,24 @@
             </p>
 
             <!-- Hero Search Bar -->
-            <div class="hero-search" style="margin: 2rem 0;">
-              <form id="hero-search-form" style="position: relative; max-width: 600px;">
+            <div class="hero-search">
+              <form id="hero-search-form" class="hero-search-form">
                 <input 
                   type="text" 
                   id="hero-search-input" 
+                  class="hero-search-input"
                   placeholder="Search for suppliers, packages, or venues..." 
                   autocomplete="off"
                   aria-label="Search suppliers and packages"
-                  style="width: 100%; padding: 16px 50px 16px 20px; border: 2px solid #E7EAF0; border-radius: 12px; font-size: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); transition: all 0.3s ease;"
                 >
                 <button 
                   type="submit" 
+                  class="hero-search-button"
                   aria-label="Search"
-                  style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: var(--ink, #0b8073); color: white; border: none; border-radius: 8px; padding: 10px 16px; cursor: pointer; font-size: 18px;"
                 >
                   🔍
                 </button>
-                <div id="hero-search-results" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: white; border: 2px solid #E7EAF0; border-top: none; border-radius: 0 0 12px 12px; max-height: 400px; overflow-y: auto; box-shadow: 0 8px 16px rgba(0,0,0,0.1); z-index: 100; margin-top: -10px;">
+                <div id="hero-search-results" class="hero-search-results">
                   <!-- Autocomplete results will be inserted here -->
                 </div>
               </form>

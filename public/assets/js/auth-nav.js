@@ -345,7 +345,10 @@
   window.addEventListener('storage', async event => {
     // Check if auth-related storage was cleared (logout in another tab)
     if (event.key === 'user' && event.newValue === null) {
-      console.log('Logout detected in another tab, updating navbar...');
+      // Only log if we had a logged-in user before
+      if (lastKnownAuthState) {
+        console.info('Logout detected in another tab');
+      }
       const currentUser = await me();
       initAuthNav(currentUser);
     }
@@ -357,7 +360,10 @@
 
   // Helper to update auth state
   const updateAuthState = (currentUser, reason) => {
-    console.log(`${reason}, updating navbar...`);
+    // Only log state changes for logged-in users, not guest state
+    if (currentUser || lastKnownAuthState) {
+      console.info(`${reason}`);
+    }
     lastKnownAuthState = currentUser;
     initAuthNav(currentUser);
   };

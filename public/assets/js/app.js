@@ -238,7 +238,12 @@ async function me() {
     const r = await fetch('/api/auth/me', {
       credentials: 'include',
     });
-    return (await r.json()).user;
+    // Treat 401/403 as expected guest state, not an error
+    if (!r.ok) {
+      return null;
+    }
+    const data = await r.json();
+    return data.user || null;
   } catch (_) {
     return null;
   }
