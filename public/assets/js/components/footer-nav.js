@@ -16,6 +16,8 @@
 
     const footerNav = document.createElement('div');
     footerNav.className = 'footer-nav footer-nav--hidden';
+    footerNav.setAttribute('role', 'navigation');
+    footerNav.setAttribute('aria-label', 'Quick navigation');
     footerNav.innerHTML = `
       <div class="footer-nav-content">
         <div class="footer-nav-links">
@@ -52,21 +54,20 @@
       return topNav.offsetHeight || 80;
     };
 
-    let lastScrollY = window.scrollY;
     let ticking = false;
     let threshold = getScrollThreshold();
 
     // Update threshold on resize
-    window.addEventListener('resize', () => {
+    const handleResize = () => {
       threshold = getScrollThreshold();
-    }, { passive: true });
+    };
 
     // Scroll handler with requestAnimationFrame for better performance
     const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-
       if (!ticking) {
         window.requestAnimationFrame(() => {
+          const currentScrollY = window.scrollY;
+
           // Show footer nav when scrolled past the top nav
           if (currentScrollY > threshold) {
             footerNav.classList.remove('footer-nav--hidden');
@@ -77,7 +78,6 @@
             footerNav.classList.add('footer-nav--hidden');
           }
 
-          lastScrollY = currentScrollY;
           ticking = false;
         });
 
@@ -85,7 +85,8 @@
       }
     };
 
-    // Add scroll event listener with passive flag for better performance
+    // Add event listeners with passive flag for better performance
+    window.addEventListener('resize', handleResize, { passive: true });
     window.addEventListener('scroll', handleScroll, { passive: true });
 
     // Initial check on page load

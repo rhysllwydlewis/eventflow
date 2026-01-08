@@ -1061,6 +1061,27 @@ body.has-admin-navbar {
   box-shadow: 0 4px 16px rgba(11, 128, 115, 0.15);
 }
 
+/* Dark mode support for hero search */
+html[data-theme="dark"] .hero-search-input {
+  background: #0f172a;
+  border-color: #374151;
+  color: #E5E7EB;
+}
+
+html[data-theme="dark"] .hero-search-input:focus {
+  border-color: var(--ink, #0b8073);
+  box-shadow: 0 4px 16px rgba(11, 128, 115, 0.25);
+}
+
+html[data-theme="dark"] .hero-search-input::placeholder {
+  color: #9ca3af;
+}
+
+html[data-theme="dark"] .hero-search-results {
+  background: #1F2937;
+  border-color: #374151;
+}
+
 /* Hero search button */
 .hero-search-button {
   position: absolute;
@@ -1077,17 +1098,24 @@ body.has-admin-navbar {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.2s ease;
+  transition: background 0.2s ease, transform 0.1s ease;
   min-width: 44px;
   min-height: 44px;
 }
 
 .hero-search-button:hover {
   background: #0a6d61;
+  transform: translateY(-50%) scale(1.05);
 }
 
 .hero-search-button:active {
   background: #095a4f;
+  transform: translateY(-50%) scale(0.98);
+}
+
+.hero-search-button:focus-visible {
+  outline: 2px solid var(--ink, #0b8073);
+  outline-offset: 2px;
 }
 
 /* Hero search results dropdown */
@@ -1165,11 +1193,13 @@ body.has-admin-navbar {
   padding: 0 16px;
   box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
   z-index: 90;
-  /* Start hidden with transform and opacity */
+  /* Start hidden - will be controlled by JS classes */
   opacity: 0;
   transform: translateY(100%);
-  transition: opacity 0.3s ease, transform 0.3s ease;
+  transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
+              transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   pointer-events: none;
+  will-change: transform, opacity;
 }
 
 /* Show bottom nav when scrolled */
@@ -1218,17 +1248,36 @@ html[data-theme="dark"] .footer-nav {
   font-size: 14px;
   color: var(--text);
   text-decoration: none;
-  transition: background 140ms ease-out;
+  transition: background 140ms ease-out, color 140ms ease-out;
   pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
 }
 
 .footer-nav-link:hover {
   background: rgba(15, 23, 42, 0.06);
   text-decoration: none;
+  color: var(--ink, #0b8073);
+}
+
+.footer-nav-link:active {
+  background: rgba(15, 23, 42, 0.1);
+  transform: scale(0.98);
+}
+
+.footer-nav-link:focus-visible {
+  outline: 2px solid var(--ink, #0b8073);
+  outline-offset: 2px;
 }
 
 html[data-theme="dark"] .footer-nav-link:hover {
   background: rgba(55, 65, 81, 0.6);
+  color: var(--ink, #0b8073);
+}
+
+html[data-theme="dark"] .footer-nav-link:active {
+  background: rgba(55, 65, 81, 0.8);
 }
 
 /* Add bottom padding to body when footer nav is present */
