@@ -1610,19 +1610,19 @@ body.has-footer-nav {
   }
   
   .footer-nav-link {
-    font-size: 10px;
+    font-size: 11px; /* Increased from 10px for better accessibility */
     padding: 5px 5px;
     min-width: 44px;
-    max-width: 40px;
+    max-width: 42px; /* Slightly increased to accommodate 11px font */
   }
 }
 
 @media (max-width: 375px) {
   .footer-nav-link {
-    font-size: 9px;
+    font-size: 10px; /* Increased from 9px for better accessibility */
     padding: 5px 4px;
     min-width: 44px;
-    max-width: 38px;
+    max-width: 40px; /* Slightly increased to accommodate 10px font */
   }
   
   .footer-nav-links {
@@ -1642,7 +1642,7 @@ body.has-footer-nav {
 
 @media (max-width: 320px) {
   .footer-nav-link {
-    font-size: 8px;
+    font-size: 9px; /* Increased from 8px for better accessibility */
     padding: 4px 3px;
     min-width: 44px;
     /* Removed conflicting max-width - keep accessibility compliance */
