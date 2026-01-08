@@ -1504,9 +1504,9 @@ body.has-footer-nav {
 
 @media (max-width: 600px) {
   /* Hide Blog link on mobile in both top and footer nav */
-  .nav-inline .nav-main[href="/blog.html"],
-  .footer-nav-link[href="/blog.html"] {
-    display: none !important;
+  .nav.nav-inline .nav-main[href="/blog.html"],
+  .footer-nav .footer-nav-links .footer-nav-link[href="/blog.html"] {
+    display: none;
   }
   
   .footer-nav-links {
@@ -1528,8 +1528,8 @@ body.has-footer-nav {
 /* Reduce footer nav items on very small screens to prevent overcrowding */
 @media (max-width: 430px) {
   /* Hide Pricing link on very narrow screens to reduce crowding */
-  .footer-nav-link[href="/pricing.html"] {
-    display: none !important;
+  .footer-nav .footer-nav-links .footer-nav-link[href="/pricing.html"] {
+    display: none;
   }
   
   .footer-nav-links {

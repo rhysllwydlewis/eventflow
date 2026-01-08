@@ -302,27 +302,30 @@ async function loadHeroCollageImages() {
   // First, check if Pexels collage is enabled
   try {
     const settingsResponse = await fetch('/api/public/homepage-settings');
-    if (settingsResponse.ok) {
+    
+    // Check response status explicitly
+    if (settingsResponse.status === 404) {
+      // Silently handle 404 - endpoint may not be configured yet
+      if (window.location.hostname === 'localhost') {
+        console.info('Homepage settings endpoint not available (404), using defaults');
+      }
+    } else if (settingsResponse.ok) {
       const settings = await settingsResponse.json();
       if (settings.pexelsCollageEnabled) {
         console.log('Pexels collage enabled, initializing dynamic collage');
         await initPexelsCollage(settings.pexelsCollageSettings);
         return; // Skip static image loading
       }
-    } else if (settingsResponse.status === 404) {
-      // Silently handle 404 - endpoint may not be configured yet
-      if (window.location.hostname === 'localhost') {
-        console.info('Homepage settings endpoint not available (404), using defaults');
-      }
     } else {
+      // Other non-2xx status
       if (window.location.hostname === 'localhost') {
         console.warn('Homepage settings returned status:', settingsResponse.status);
       }
     }
   } catch (error) {
-    // Only log if it's a network error, not a 404
-    if (error.name !== 'TypeError' || window.location.hostname === 'localhost') {
-      console.info('Using default collage images (settings unavailable)');
+    // Network error or other exception
+    if (window.location.hostname === 'localhost') {
+      console.info('Using default collage images (settings unavailable):', error.message);
     }
   }
 

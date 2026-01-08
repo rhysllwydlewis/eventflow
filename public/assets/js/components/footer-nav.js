@@ -153,6 +153,9 @@
     }
 
     // Wait for top burger to be initialized by auth-nav.js
+    let retryCount = 0;
+    const MAX_RETRIES = 20; // 1 second total (20 * 50ms)
+    
     const waitForBurger = () => {
       const topBurger = document.getElementById('burger');
       
@@ -165,6 +168,15 @@
 
       // Check if burger has been initialized by auth-nav.js
       if (topBurger.dataset.navInitialized !== 'true') {
+        retryCount++;
+        
+        if (retryCount >= MAX_RETRIES) {
+          if (window.location.hostname === 'localhost') {
+            console.warn('[FooterNav] Timeout waiting for burger initialization');
+          }
+          return;
+        }
+        
         // Retry after a short delay
         setTimeout(waitForBurger, 50);
         return;
