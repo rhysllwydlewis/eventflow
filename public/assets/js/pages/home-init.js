@@ -14,14 +14,6 @@ document.addEventListener('DOMContentLoaded', () => {
     categoryGrid.loadCategories();
   }
 
-  // Attach start planning button handler (CSP-friendly)
-  const startPlanningBtn = document.getElementById('start-planning-btn');
-  if (startPlanningBtn) {
-    startPlanningBtn.addEventListener('click', () => {
-      window.location.href = '/start.html';
-    });
-  }
-
   // Handle quick plan form submission
   const quickPlanForm = document.getElementById('quick-plan-form');
   if (quickPlanForm) {
@@ -221,11 +213,17 @@ async function loadPackagesCarousel({ endpoint, containerId, emptyMessage }) {
     container.innerHTML = `
       <div style="text-align: center; padding: 2rem;">
         <p class="small">${errorMessage}. Please try again.</p>
-        <button class="cta secondary" onclick="location.reload()" aria-label="Retry loading packages">
+        <button class="cta secondary retry-packages-btn" aria-label="Retry loading packages">
           Retry
         </button>
       </div>
     `;
+
+    // Attach retry handler
+    const retryBtn = container.querySelector('.retry-packages-btn');
+    if (retryBtn) {
+      retryBtn.addEventListener('click', () => location.reload());
+    }
   }
 }
 
