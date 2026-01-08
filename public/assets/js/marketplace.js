@@ -229,12 +229,12 @@
 
     // Category icon mapping
     const categoryIcons = {
-      'attire': '👗',
-      'decor': '🎨',
+      attire: '👗',
+      decor: '🎨',
       'av-equipment': '🔊',
-      'photography': '📸',
+      photography: '📸',
       'party-supplies': '🎉',
-      'florals': '🌸'
+      florals: '🌸',
     };
 
     // Generate tags (category, location, condition)
@@ -1108,50 +1108,53 @@
   document.head.appendChild(style);
 })();
 
-  // Share functions
-  window.shareOnFacebook = function(listingId) {
-    const url = `${window.location.origin}/marketplace.html?listing=${listingId}`;
-    const shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
-    window.open(shareUrl, '_blank', 'width=600,height=400');
-  };
+// Share functions
+window.shareOnFacebook = function (listingId) {
+  const url = `${window.location.origin}/marketplace.html?listing=${listingId}`;
+  const shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
+  window.open(shareUrl, '_blank', 'width=600,height=400');
+};
 
-  window.shareOnTwitter = function(title, listingId) {
-    const url = `${window.location.origin}/marketplace.html?listing=${listingId}`;
-    const text = `Check out this item on EventFlow Marketplace: ${title}`;
-    const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
-    window.open(shareUrl, '_blank', 'width=600,height=400');
-  };
+window.shareOnTwitter = function (title, listingId) {
+  const url = `${window.location.origin}/marketplace.html?listing=${listingId}`;
+  const text = `Check out this item on EventFlow Marketplace: ${title}`;
+  const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
+  window.open(shareUrl, '_blank', 'width=600,height=400');
+};
 
-  window.copyListingLink = function(listingId) {
-    const url = `${window.location.origin}/marketplace.html?listing=${listingId}`;
-    
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(url).then(() => {
+window.copyListingLink = function (listingId) {
+  const url = `${window.location.origin}/marketplace.html?listing=${listingId}`;
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard
+      .writeText(url)
+      .then(() => {
         showToast('Link copied to clipboard!');
-      }).catch(err => {
+      })
+      .catch(err => {
         console.error('Failed to copy link:', err);
         fallbackCopyLink(url);
       });
-    } else {
-      fallbackCopyLink(url);
-    }
-  };
-
-  function fallbackCopyLink(url) {
-    const textArea = document.createElement('textarea');
-    textArea.value = url;
-    textArea.style.position = 'fixed';
-    textArea.style.left = '-9999px';
-    document.body.appendChild(textArea);
-    textArea.select();
-    
-    try {
-      document.execCommand('copy');
-      showToast('Link copied to clipboard!');
-    } catch (err) {
-      console.error('Failed to copy link:', err);
-      showToast('Failed to copy link', 'error');
-    }
-    
-    document.body.removeChild(textArea);
+  } else {
+    fallbackCopyLink(url);
   }
+};
+
+function fallbackCopyLink(url) {
+  const textArea = document.createElement('textarea');
+  textArea.value = url;
+  textArea.style.position = 'fixed';
+  textArea.style.left = '-9999px';
+  document.body.appendChild(textArea);
+  textArea.select();
+
+  try {
+    document.execCommand('copy');
+    showToast('Link copied to clipboard!');
+  } catch (err) {
+    console.error('Failed to copy link:', err);
+    showToast('Failed to copy link', 'error');
+  }
+
+  document.body.removeChild(textArea);
+}

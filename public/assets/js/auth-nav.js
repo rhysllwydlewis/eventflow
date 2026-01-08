@@ -165,12 +165,17 @@
     });
   }
 
-  // --- Auth helper ---
+  // --- Auth helper (using centralized AuthStateManager) ---
   async function me() {
+    // Use centralized auth state manager if available
+    if (window.AuthStateManager) {
+      const authState = await window.AuthStateManager.init();
+      return authState.user;
+    }
+
+    // Fallback to direct API call (should not happen if auth-state.js is loaded)
     try {
-      // Add cache-busting to every /api/auth/me call to prevent cached responses
-      const cacheBuster = `?_=${Date.now()}`;
-      const r = await fetch(`/api/auth/me${cacheBuster}`, {
+      const r = await fetch('/api/auth/me', {
         credentials: 'include',
         headers: {
           'Cache-Control': 'no-cache',

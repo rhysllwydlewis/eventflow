@@ -294,21 +294,15 @@ function renderPackageFallback(container, items) {
     .join('');
 }
 
-/**
- * Load hero collage images from category heroImages
- * Allows admin to override default images with custom uploads
- */
 async function loadHeroCollageImages() {
   // First, check if Pexels collage is enabled
   try {
     const settingsResponse = await fetch('/api/public/homepage-settings');
-    
+
     // Check response status explicitly
     if (settingsResponse.status === 404) {
       // Silently handle 404 - endpoint may not be configured yet
-      if (window.location.hostname === 'localhost') {
-        console.info('Homepage settings endpoint not available (404), using defaults');
-      }
+      // Continue to load static images
     } else if (settingsResponse.ok) {
       const settings = await settingsResponse.json();
       if (settings.pexelsCollageEnabled) {
@@ -316,24 +310,17 @@ async function loadHeroCollageImages() {
         await initPexelsCollage(settings.pexelsCollageSettings);
         return; // Skip static image loading
       }
-    } else {
-      // Other non-2xx status
-      if (window.location.hostname === 'localhost') {
-        console.warn('Homepage settings returned status:', settingsResponse.status);
-      }
     }
+    // If non-200 and non-404, just continue to static images
   } catch (error) {
-    // Network error or other exception
-    if (window.location.hostname === 'localhost') {
-      console.info('Using default collage images (settings unavailable):', error.message);
-    }
+    // Network error or other exception - continue to static images
   }
 
   // If Pexels is not enabled or failed, load static images
   try {
     const response = await fetch('/api/public/homepage/hero-images');
     if (!response.ok) {
-      console.warn('Failed to load hero collage images from settings, using defaults');
+      // Silently use defaults if endpoint not available
       return;
     }
 
@@ -361,7 +348,6 @@ async function loadHeroCollageImages() {
 
     // Validate DOM elements exist
     if (!collageFrames || collageFrames.length === 0) {
-      console.warn('No collage frames found in DOM');
       return;
     }
 
@@ -370,7 +356,6 @@ async function loadHeroCollageImages() {
 
       // Validate URL exists and is a non-empty string
       if (!imageUrl || typeof imageUrl !== 'string' || imageUrl.trim() === '') {
-        console.warn(`No valid image URL for category: ${category}`);
         return;
       }
 
@@ -379,7 +364,6 @@ async function loadHeroCollageImages() {
 
       // Ensure frame element exists
       if (!frame) {
-        console.warn(`Frame not found for category: ${category} at index ${frameIndex}`);
         return;
       }
 
@@ -389,12 +373,10 @@ async function loadHeroCollageImages() {
 
       // Ensure both elements exist before attempting update
       if (!imgElement) {
-        console.warn(`Image element not found for category: ${category}`);
         return;
       }
 
       if (!pictureElement) {
-        console.warn(`Picture element not found for category: ${category}`);
         return;
       }
 
@@ -410,7 +392,6 @@ async function loadHeroCollageImages() {
 
       // Skip update if URL matches and it's a default image
       if (!needsUpdate && !isCustomImage) {
-        console.log(`Image already correct for ${category}, skipping update`);
         return;
       }
 
@@ -437,7 +418,6 @@ async function loadHeroCollageImages() {
           // For custom images, remove source element to use single img
           if (sourceElement) {
             sourceElement.remove();
-            console.log(`Removed <source> element for ${category} (using custom image)`);
           }
         } else if (!sourceElement) {
           // For default images, recreate the source element if it was removed
@@ -446,18 +426,12 @@ async function loadHeroCollageImages() {
           // Convert .jpg to .webp for the source
           newSource.srcset = imageUrl.replace('.jpg', '.webp');
           pictureElement.insertBefore(newSource, imgElement);
-          console.log(`Restored <source> element for ${category} (using default image)`);
         }
-
-        console.log(
-          `Updated hero collage image for ${category} with ${isCustomImage ? 'custom upload' : 'default image'}: ${imageUrl}`
-        );
       } catch (updateError) {
         console.error(`Failed to update image for category ${category}:`, updateError);
       }
     });
   } catch (error) {
-    console.error('Error loading hero collage images:', error);
     // Default images will remain if there's an error
   }
 }
@@ -786,9 +760,6 @@ async function fetchGuides() {
   }
 }
 
-/**
- * Fetch and render testimonials/reviews
- */
 async function fetchTestimonials() {
   const section = document.getElementById('testimonials-section');
   const container = document.getElementById('testimonials-carousel');
@@ -802,12 +773,9 @@ async function fetchTestimonials() {
     if (response.status === 404) {
       // Silently handle 404 - reviews endpoint may not be available
       section.style.display = 'none';
-      if (window.location.hostname === 'localhost') {
-        console.info('Reviews endpoint not available (404)');
-      }
       return;
     }
-    
+
     if (!response.ok) {
       throw new Error('Testimonials fetch failed');
     }
@@ -861,11 +829,7 @@ async function fetchTestimonials() {
     // Show the section
     section.style.display = 'block';
   } catch (error) {
-    // Only log for non-404 errors in production
-    if (window.location.hostname === 'localhost') {
-      console.error('Failed to load testimonials:', error);
-    }
-    // Hide section gracefully
+    // Silently handle errors and hide section
     section.style.display = 'none';
   }
 }
