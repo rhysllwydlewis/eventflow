@@ -4517,7 +4517,7 @@ router.get('/public/pexels-collage', async (req, res) => {
     const features = settings.features || {};
 
     if (features.pexelsCollage !== true) {
-      return res.status(403).json({ error: 'Pexels collage feature is not enabled' });
+      return res.status(404).json({ error: 'Pexels collage feature is not enabled' });
     }
 
     const pexelsCollageSettings = settings.pexelsCollageSettings || {

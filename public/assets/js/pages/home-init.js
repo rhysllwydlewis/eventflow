@@ -451,6 +451,10 @@ async function loadHeroCollageImages() {
  * Initialize Pexels dynamic collage
  * Fetches images from Pexels API and cycles them with crossfade transitions
  */
+
+// Crossfade transition duration (must match CSS transition in index.html)
+const PEXELS_TRANSITION_DURATION_MS = 1000;
+
 async function initPexelsCollage(settings) {
   const { interval = 8 } = settings;
 
@@ -568,7 +572,7 @@ function cyclePexelsImages(imageCache, currentImageIndex, collageFrames, categor
 
         // Update photographer credit
         addPhotographerCredit(frame, nextImage);
-      }, 1000); // Match CSS transition duration
+      }, PEXELS_TRANSITION_DURATION_MS);
     };
   });
 }
@@ -586,10 +590,7 @@ function addPhotographerCredit(frame, photo) {
   // Add new credit
   const credit = document.createElement('div');
   credit.className = 'pexels-credit';
-  credit.style.cssText =
-    'position:absolute;bottom:4px;right:4px;background:rgba(0,0,0,0.6);color:white;font-size:10px;padding:2px 6px;border-radius:2px;';
-  credit.innerHTML = `Photo by <a href="${photo.photographerUrl}" target="_blank" rel="noopener" style="color:white;text-decoration:underline;">${photo.photographer}</a>`;
-  frame.style.position = 'relative';
+  credit.innerHTML = `Photo by <a href="${photo.photographerUrl}" target="_blank" rel="noopener">${photo.photographer}</a>`;
   frame.appendChild(credit);
 }
 
