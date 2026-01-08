@@ -201,6 +201,11 @@
     const dash = document.getElementById('nav-dashboard');
     const signout = document.getElementById('nav-signout');
 
+    // Footer nav elements
+    const footerAuth = document.querySelector('.footer-nav-auth');
+    const footerDashboard = document.querySelector('.footer-nav-dashboard');
+    const footerBell = document.getElementById('footer-notification-bell');
+
     const inlineNav = document.querySelector('.nav.nav-inline');
     const inlineLogin = inlineNav ? inlineNav.querySelector('.nav-main-login') : null;
     const firstNavItem = inlineNav ? inlineNav.querySelector('.nav-main') : null;
@@ -287,6 +292,24 @@
         newSignout.addEventListener('click', handleLogout);
       }
 
+      // Footer nav - logged in state
+      if (footerAuth) {
+        footerAuth.textContent = 'Log out';
+        footerAuth.href = '#';
+        // Remove existing event listeners by cloning the node
+        const newFooterAuth = footerAuth.cloneNode(true);
+        footerAuth.parentNode.replaceChild(newFooterAuth, footerAuth);
+        // Add event listener to the new node
+        newFooterAuth.addEventListener('click', handleLogout);
+      }
+      if (footerDashboard) {
+        footerDashboard.style.display = '';
+        footerDashboard.href = dashHref;
+      }
+      if (footerBell) {
+        footerBell.style.display = 'flex';
+      }
+
       // Inline nav (top-right on desktop)
       let dashInline = inlineNav ? inlineNav.querySelector('.nav-main-dashboard') : null;
       if (inlineNav) {
@@ -323,6 +346,21 @@
       }
       if (signout) {
         signout.style.display = 'none';
+      }
+
+      // Footer nav - logged out state
+      if (footerAuth) {
+        footerAuth.textContent = 'Log in';
+        footerAuth.href = '/auth.html';
+        // Remove any existing logout handlers
+        const newFooterAuth = footerAuth.cloneNode(true);
+        footerAuth.parentNode.replaceChild(newFooterAuth, footerAuth);
+      }
+      if (footerDashboard) {
+        footerDashboard.style.display = 'none';
+      }
+      if (footerBell) {
+        footerBell.style.display = 'none';
       }
 
       if (inlineLogin) {
