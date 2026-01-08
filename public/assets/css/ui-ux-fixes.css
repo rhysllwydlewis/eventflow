@@ -1527,6 +1527,26 @@ body.has-footer-nav {
     font-size: 17px;
     padding: 6px;
   }
+  
+  /* Burger button optimizations for mobile */
+  .footer-nav-burger {
+    /* Reduce padding for better spacing while maintaining touch target */
+    padding: 7px;
+    /* Keep touch-friendly minimum size (44x44px for WCAG AA) */
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Hide any label text inside burger button to prevent overlap */
+  .footer-nav-burger-label,
+  .footer-nav-burger span:not(.footer-nav-burger-bar) {
+    display: none !important;
+  }
+  
+  .footer-nav-burger-bar {
+    /* Slightly reduce bar width for more compact appearance */
+    width: 15px;
+  }
 }
 
 @media (max-width: 480px) {
@@ -1555,13 +1575,14 @@ body.has-footer-nav {
   }
   
   .footer-nav-burger {
-    padding: 7px;
-    min-height: 42px;
-    min-width: 42px;
+    padding: 6px;
+    /* Maintain touch-friendly size even on small screens */
+    min-height: 44px;
+    min-width: 44px;
   }
   
   .footer-nav-burger-bar {
-    width: 15px;
+    width: 14px;
   }
 }
 
@@ -1587,18 +1608,18 @@ body.has-footer-nav {
   .footer-nav-icon-button {
     font-size: 16px;
     padding: 7px;
-    min-width: 42px;
-    min-height: 42px;
+    min-width: 44px;
+    min-height: 44px;
   }
   
   .footer-nav-burger {
-    padding: 7px;
-    min-height: 42px;
-    min-width: 42px;
+    padding: 6px;
+    min-height: 44px;
+    min-width: 44px;
   }
   
   .footer-nav-burger-bar {
-    width: 15px;
+    width: 14px;
   }
 }
 
@@ -1631,12 +1652,14 @@ body.has-footer-nav {
   }
   
   .footer-nav-burger {
-    padding: 6px;
+    padding: 5px;
     gap: 2px;
+    min-height: 44px;
+    min-width: 44px;
   }
   
   .footer-nav-burger-bar {
-    width: 14px;
+    width: 13px;
   }
 }
 
@@ -1651,6 +1674,16 @@ body.has-footer-nav {
   .footer-nav-links {
     gap: 0;
     flex-wrap: nowrap !important;
+  }
+  
+  .footer-nav-burger {
+    padding: 5px;
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  .footer-nav-burger-bar {
+    width: 12px;
   }
 }
 
