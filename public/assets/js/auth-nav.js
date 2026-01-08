@@ -172,7 +172,7 @@
       const authState = await window.AuthStateManager.init();
       return authState.user;
     }
-    
+
     // Fallback to direct API call (should not happen if auth-state.js is loaded)
     try {
       const r = await fetch('/api/auth/me', {

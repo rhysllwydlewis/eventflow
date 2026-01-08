@@ -239,7 +239,7 @@ async function me() {
     const authState = await window.AuthStateManager.init();
     return authState.user;
   }
-  
+
   // Fallback to direct API call (should not happen if auth-state.js is loaded)
   try {
     const r = await fetch('/api/auth/me', {
@@ -542,23 +542,24 @@ async function initSupplier() {
     console.error('Error fetching supplier packages:', error);
   }
   const img = (s.photos && s.photos[0]) || '/assets/images/hero-venue.svg';
-  
+
   // Create lightbox gallery HTML for photos
   const galleryPhotos = s.photos || [];
-  const gallery = galleryPhotos.length > 1
-    ? galleryPhotos
-        .slice(1)
-        .map(
-          (u, index) => `
+  const gallery =
+    galleryPhotos.length > 1
+      ? galleryPhotos
+          .slice(1)
+          .map(
+            (u, index) => `
       <div class="gallery-item" data-index="${index + 1}" style="cursor: pointer; position: relative; overflow: hidden; border-radius: 8px; transition: transform 0.3s ease;">
         <img loading="lazy" src="${escapeHtml(u)}" alt="${escapeHtml(s.name)} - Photo ${index + 2}" style="width: 100%; height: 200px; object-fit: cover; transition: transform 0.3s ease;">
         <div class="gallery-overlay" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); opacity: 0; transition: opacity 0.3s ease; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px;">🔍</div>
       </div>
     `
-        )
-        .join('')
-    : '';
-  
+          )
+          .join('')
+      : '';
+
   const facts = `<div class="small">${s.website ? `<a href="${escapeHtml(s.website)}" target="_blank" rel="noopener">${escapeHtml(s.website)}</a> · ` : ''}${escapeHtml(s.phone || '')} ${escapeHtml(s.license || '')} ${s.maxGuests ? `· Max ${escapeHtml(String(s.maxGuests))} guests` : ''}</div>`;
   const amenities = (s.amenities || [])
     .map(a => `<span class="badge">${escapeHtml(a)}</span>`)

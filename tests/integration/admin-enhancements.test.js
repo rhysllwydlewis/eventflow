@@ -16,7 +16,7 @@ describe('Admin Enhancements', () => {
         'utf8'
       );
 
-      expect(adminRoutesContent).toContain("router.post");
+      expect(adminRoutesContent).toContain('router.post');
       expect(adminRoutesContent).toContain("'/packages/bulk-approve'");
       expect(adminRoutesContent).toContain('csrfProtection');
       expect(adminRoutesContent).toContain('packageIds');
@@ -70,9 +70,7 @@ describe('Admin Enhancements', () => {
       );
 
       // Check that bulk operations use dbUnified.read and write
-      const bulkApproveMatch = adminRoutesContent.match(
-        /\/packages\/bulk-approve'[\s\S]*?}\s*\);/
-      );
+      const bulkApproveMatch = adminRoutesContent.match(/\/packages\/bulk-approve'[\s\S]*?}\s*\);/);
       const bulkVerifyMatch = adminRoutesContent.match(/\/users\/bulk-verify'[\s\S]*?}\s*\);/);
 
       expect(bulkApproveMatch).toBeTruthy();

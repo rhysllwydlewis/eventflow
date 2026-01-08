@@ -298,7 +298,7 @@ async function loadHeroCollageImages() {
   // First, check if Pexels collage is enabled
   try {
     const settingsResponse = await fetch('/api/public/homepage-settings');
-    
+
     // Check response status explicitly
     if (settingsResponse.status === 404) {
       // Silently handle 404 - endpoint may not be configured yet
@@ -775,7 +775,7 @@ async function fetchTestimonials() {
       section.style.display = 'none';
       return;
     }
-    
+
     if (!response.ok) {
       throw new Error('Testimonials fetch failed');
     }
