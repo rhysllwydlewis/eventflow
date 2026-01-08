@@ -832,17 +832,15 @@
 
 /* High Contrast Mode Support */
 @media (prefers-contrast: high) {
-  * {
-    border-color: currentColor !important;
+  .card, .pack, .modal, .dropdown-menu,
+  input, select, textarea, button {
+    border-width: 2px;
+    border-color: currentColor;
   }
   
   a, button, .cta {
     text-decoration: underline;
     text-decoration-thickness: 2px;
-  }
-  
-  .card, .pack, .modal, .dropdown-menu {
-    border: 2px solid currentColor !important;
   }
   
   /* Ensure sufficient contrast for text */
@@ -863,7 +861,7 @@
 
 /* Ensure all form inputs have minimum 16px font-size to prevent iOS auto-zoom */
 /* Only target form elements to avoid affecting buttons with specific styling */
-@media (max-width: 1023px) {
+@media (max-width: 768px) {
   input:not([type="button"]):not([type="submit"]):not([type="reset"]),
   select,
   textarea {
@@ -1107,8 +1105,8 @@ h4 {
   }
   
   /* Overlay for sidebar */
-  .dashboard-sidebar.is-open::before,
-  .admin-sidebar.is-open::before {
+  .dashboard-sidebar.is-open::after,
+  .admin-sidebar.is-open::after {
     content: '';
     position: fixed;
     top: 0;
@@ -1116,7 +1114,8 @@ h4 {
     right: 0;
     bottom: 0;
     background: rgba(0, 0, 0, 0.5);
-    z-index: -1;
+    z-index: 999;
+    pointer-events: none;
   }
   
   .dashboard-main,
@@ -1238,13 +1237,16 @@ h4 {
   }
   
   .order-summary-content {
-    max-height: 0;
     overflow: hidden;
-    transition: max-height 0.3s ease-out;
+    transition: max-height 0.3s ease-out, padding 0.3s ease-out;
+    max-height: 0;
+    padding: 0;
   }
   
   .order-summary-content.is-expanded {
-    max-height: 100vh;
+    max-height: 500px;
+    padding: 12px;
+    overflow-y: auto;
   }
   
   /* Full-width payment buttons */
