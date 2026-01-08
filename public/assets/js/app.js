@@ -234,6 +234,13 @@ function addLocal(id) {
 }
 
 async function me() {
+  // Use centralized auth state manager if available
+  if (window.AuthStateManager) {
+    const authState = await window.AuthStateManager.init();
+    return authState.user;
+  }
+  
+  // Fallback to direct API call (should not happen if auth-state.js is loaded)
   try {
     const r = await fetch('/api/auth/me', {
       credentials: 'include',
