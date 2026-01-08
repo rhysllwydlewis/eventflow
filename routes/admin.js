@@ -1908,28 +1908,6 @@ router.post('/suppliers/bulk-delete', authRequired, roleRequired('admin'), async
   }
 });
 
-// Helper function to parse duration strings like "7d", "1h", "30m"
-function parseDuration(duration) {
-  const match = duration.match(/^(\d+)([dhm])$/);
-  if (!match) {
-    return 0;
-  }
-
-  const value = parseInt(match[1], 10);
-  const unit = match[2];
-
-  switch (unit) {
-    case 'd':
-      return value * 24 * 60 * 60 * 1000; // days
-    case 'h':
-      return value * 60 * 60 * 1000; // hours
-    case 'm':
-      return value * 60 * 1000; // minutes
-    default:
-      return 0;
-  }
-}
-
 /**
  * PUT /api/admin/packages/:id
  * Edit package details (admin only)
@@ -3249,6 +3227,7 @@ router.get('/settings/features', authRequired, roleRequired('admin'), async (req
       reviews: true,
       photoUploads: true,
       supportTickets: true,
+      pexelsCollage: false,
     };
     res.json(features);
   } catch (error) {
@@ -3263,7 +3242,14 @@ router.get('/settings/features', authRequired, roleRequired('admin'), async (req
  */
 router.put('/settings/features', authRequired, roleRequired('admin'), async (req, res) => {
   try {
-    const { registration, supplierApplications, reviews, photoUploads, supportTickets } = req.body;
+    const {
+      registration,
+      supplierApplications,
+      reviews,
+      photoUploads,
+      supportTickets,
+      pexelsCollage,
+    } = req.body;
 
     const settings = (await dbUnified.read('settings')) || {};
     settings.features = {
@@ -3272,6 +3258,7 @@ router.put('/settings/features', authRequired, roleRequired('admin'), async (req
       reviews: reviews !== false,
       photoUploads: photoUploads !== false,
       supportTickets: supportTickets !== false,
+      pexelsCollage: pexelsCollage === true,
       updatedAt: new Date().toISOString(),
       updatedBy: req.user.email,
     };
@@ -3967,6 +3954,35 @@ router.get('/homepage/hero-images-public', async (req, res) => {
   } catch (error) {
     console.error('Error reading hero images:', error);
     res.status(500).json({ error: 'Failed to read hero images' });
+  }
+});
+
+/**
+ * GET /api/public/homepage-settings
+ * Get homepage settings for public display (no auth required)
+ * Returns Pexels collage feature status and configuration
+ */
+router.get('/public/homepage-settings', async (req, res) => {
+  try {
+    const settings = (await dbUnified.read('settings')) || {};
+    const features = settings.features || {};
+    const pexelsCollageSettings = settings.pexelsCollageSettings || {
+      interval: 8,
+      queries: {
+        venues: 'wedding venue elegant ballroom',
+        catering: 'wedding catering food elegant',
+        entertainment: 'live band wedding party',
+        photography: 'wedding photography professional',
+      },
+    };
+
+    res.json({
+      pexelsCollageEnabled: features.pexelsCollage === true,
+      pexelsCollageSettings,
+    });
+  } catch (error) {
+    console.error('Error reading homepage settings:', error);
+    res.status(500).json({ error: 'Failed to read homepage settings' });
   }
 });
 
