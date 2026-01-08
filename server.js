@@ -3297,80 +3297,6 @@ app.delete(
   }
 );
 
-// Admin: Get all marketplace listings (including pending)
-app.get(
-  '/api/admin/marketplace/listings',
-  authRequired,
-  roleRequired('admin'),
-  async (req, res) => {
-    try {
-      const listings = await dbUnified.read('marketplace_listings');
-      const users = await dbUnified.read('users');
-
-      // Enrich listings with user info
-      const enrichedListings = listings.map(listing => {
-        const user = users.find(u => u.id === listing.userId);
-        return {
-          ...listing,
-          userEmail: user ? user.email : 'Unknown',
-          userName: user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : 'Unknown',
-        };
-      });
-
-      res.json({ listings: enrichedListings });
-    } catch (error) {
-      console.error('Error fetching admin marketplace listings:', error);
-      sentry.captureException(error);
-      res.status(500).json({ error: 'Failed to fetch listings' });
-    }
-  }
-);
-
-// Admin: Approve/reject marketplace listing
-app.post(
-  '/api/admin/marketplace/listings/:id/approve',
-  writeLimiter,
-  authRequired,
-  roleRequired('admin'),
-  csrfProtection,
-  async (req, res) => {
-    try {
-      const { approved } = req.body || {};
-      const listings = await dbUnified.read('marketplace_listings');
-      const listing = listings.find(l => l.id === req.params.id);
-
-      if (!listing) {
-        return res.status(404).json({ error: 'Listing not found' });
-      }
-
-      listing.approved = !!approved;
-      listing.status = approved ? 'active' : 'pending';
-      listing.updatedAt = new Date().toISOString();
-
-      await dbUnified.write('marketplace_listings', listings);
-
-      // Log audit
-      const audit_logs = await dbUnified.read('audit_logs');
-      audit_logs.push({
-        id: uid('audit'),
-        adminId: req.user.id,
-        action: approved ? 'marketplace_listing_approved' : 'marketplace_listing_rejected',
-        targetId: listing.id,
-        targetType: 'marketplace_listing',
-        details: { listingTitle: listing.title },
-        timestamp: new Date().toISOString(),
-      });
-      await dbUnified.write('audit_logs', audit_logs);
-
-      res.json({ ok: true, listing });
-    } catch (error) {
-      console.error('Error approving marketplace listing:', error);
-      sentry.captureException(error);
-      res.status(500).json({ error: 'Failed to approve listing' });
-    }
-  }
-);
-
 // ---------- Plan & Notes (customer) ----------
 app.get('/api/plan', authRequired, async (req, res) => {
   if (req.user.role !== 'customer') {
@@ -5663,25 +5589,8 @@ app.get('/api/photos/:id', async (req, res) => {
 // ---------- Audit Logging ----------
 const { getAuditLogs, auditLog, AUDIT_ACTIONS } = require('./middleware/audit');
 
-/**
- * GET /api/admin/audit-logs
- * Get audit logs with optional filtering
- */
-app.get('/api/admin/audit-logs', authRequired, roleRequired('admin'), async (req, res) => {
-  const { adminId, action, targetType, targetId, startDate, endDate, limit } = req.query;
-
-  const logs = getAuditLogs({
-    adminId,
-    action,
-    targetType,
-    targetId,
-    startDate,
-    endDate,
-    limit: limit ? parseInt(limit, 10) : 100,
-  });
-
-  res.json({ logs, count: logs.length });
-});
+// Note: Admin audit endpoints moved to routes/admin.js for consolidation
+// GET /api/admin/audit and GET /api/admin/audit-logs are now in routes/admin.js
 
 // Health and ready endpoints moved to routes/system.js
 

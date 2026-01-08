@@ -88,9 +88,10 @@ router.get('/db-status', authRequired, roleRequired('admin'), (_req, res) => {
  * GET /api/admin/users
  * List all users (without password hashes)
  */
-router.get('/users', authRequired, roleRequired('admin'), (req, res) => {
+router.get('/users', authRequired, roleRequired('admin'), async (req, res) => {
   try {
-    const users = (read('users') || []).map(u => ({
+    const allUsers = await dbUnified.read('users');
+    const users = (allUsers || []).map(u => ({
       id: u.id,
       name: u.name,
       email: u.email,
@@ -3143,21 +3144,28 @@ router.post(
 // ---------- Audit Logs ----------
 
 /**
- * GET /api/admin/audit
- * Get audit logs with optional filtering
+ * GET /api/admin/audit-logs
+ * Get audit logs with optional filtering (canonical endpoint)
  */
-router.get('/audit', authRequired, roleRequired('admin'), (req, res) => {
-  const { adminId, action, targetType, startDate, endDate, limit } = req.query;
+router.get('/audit-logs', authRequired, roleRequired('admin'), async (req, res) => {
+  const { adminId, adminEmail, action, targetType, targetId, startDate, endDate, limit } =
+    req.query;
 
   const filters = {};
   if (adminId) {
     filters.adminId = adminId;
+  }
+  if (adminEmail) {
+    filters.adminEmail = adminEmail;
   }
   if (action) {
     filters.action = action;
   }
   if (targetType) {
     filters.targetType = targetType;
+  }
+  if (targetId) {
+    filters.targetId = targetId;
   }
   if (startDate) {
     filters.startDate = startDate;
@@ -3170,10 +3178,125 @@ router.get('/audit', authRequired, roleRequired('admin'), (req, res) => {
   }
 
   const { getAuditLogs } = require('../middleware/audit');
-  const logs = getAuditLogs(filters);
+  const logs = await getAuditLogs(filters);
 
-  res.json({ items: logs });
+  res.json({ logs, count: logs.length });
 });
+
+/**
+ * GET /api/admin/audit
+ * Get audit logs with optional filtering
+ * Backwards compatible endpoint - returns same format as /api/admin/audit-logs
+ */
+router.get('/audit', authRequired, roleRequired('admin'), async (req, res) => {
+  const { adminId, adminEmail, action, targetType, targetId, startDate, endDate, limit } =
+    req.query;
+
+  const filters = {};
+  if (adminId) {
+    filters.adminId = adminId;
+  }
+  if (adminEmail) {
+    filters.adminEmail = adminEmail;
+  }
+  if (action) {
+    filters.action = action;
+  }
+  if (targetType) {
+    filters.targetType = targetType;
+  }
+  if (targetId) {
+    filters.targetId = targetId;
+  }
+  if (startDate) {
+    filters.startDate = startDate;
+  }
+  if (endDate) {
+    filters.endDate = endDate;
+  }
+  if (limit) {
+    filters.limit = parseInt(limit, 10);
+  }
+
+  const { getAuditLogs } = require('../middleware/audit');
+  const logs = await getAuditLogs(filters);
+
+  // Use standardized response format
+  res.json({ logs, count: logs.length });
+});
+
+// ---------- Marketplace Admin ----------
+
+/**
+ * GET /api/admin/marketplace/listings
+ * Get all marketplace listings (including pending) for admin moderation
+ */
+router.get('/marketplace/listings', authRequired, roleRequired('admin'), async (req, res) => {
+  try {
+    const listings = await dbUnified.read('marketplace_listings');
+    const users = await dbUnified.read('users');
+
+    // Enrich listings with user info
+    const enrichedListings = listings.map(listing => {
+      const user = users.find(u => u.id === listing.userId);
+      return {
+        ...listing,
+        userEmail: user ? user.email : 'Unknown',
+        userName: user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : 'Unknown',
+      };
+    });
+
+    res.json({ listings: enrichedListings });
+  } catch (error) {
+    console.error('Error fetching admin marketplace listings:', error);
+    res.status(500).json({ error: 'Failed to fetch listings' });
+  }
+});
+
+/**
+ * POST /api/admin/marketplace/listings/:id/approve
+ * Approve or reject a marketplace listing
+ */
+router.post(
+  '/marketplace/listings/:id/approve',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    try {
+      const { approved } = req.body || {};
+      const listings = await dbUnified.read('marketplace_listings');
+      const listing = listings.find(l => l.id === req.params.id);
+
+      if (!listing) {
+        return res.status(404).json({ error: 'Listing not found' });
+      }
+
+      listing.approved = !!approved;
+      listing.status = approved ? 'active' : 'pending';
+      listing.updatedAt = new Date().toISOString();
+
+      await dbUnified.write('marketplace_listings', listings);
+
+      // Log audit using auditLog function
+      await auditLog({
+        adminId: req.user.id,
+        adminEmail: req.user.email,
+        action: approved ? 'marketplace_listing_approved' : 'marketplace_listing_rejected',
+        targetType: 'marketplace_listing',
+        targetId: listing.id,
+        details: { listingTitle: listing.title, approved },
+        ipAddress: req.ip || req.connection.remoteAddress,
+        userAgent: req.get('user-agent'),
+      });
+
+      res.json({ ok: true, listing });
+    } catch (error) {
+      console.error('Error approving marketplace listing:', error);
+      res.status(500).json({ error: 'Failed to approve listing' });
+    }
+  }
+);
 
 /**
  * GET /api/admin/homepage/hero-images
