@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Footer Nav Test - EventFlow</title>
+    <link rel="stylesheet" href="/assets/css/styles.css">
+    <link rel="stylesheet" href="/assets/css/eventflow-17.0.0.css">
+    <link rel="stylesheet" href="/assets/css/ui-ux-fixes.css">
+    <style>
+        /* Test page specific styles */
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+        
+        .test-header {
+            background: linear-gradient(135deg, #0B8073, #13b6a2);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .test-section {
+            min-height: 600px;
+            padding: 40px 20px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .test-section:nth-child(even) {
+            background: #f9fafb;
+        }
+        
+        .test-section h2 {
+            margin-top: 0;
+        }
+        
+        .instructions {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px;
+        }
+        
+        .instructions h3 {
+            margin-top: 0;
+            color: #856404;
+        }
+        
+        .instructions ul {
+            margin-bottom: 0;
+        }
+        
+        .instructions li {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header that matches the actual site -->
+    <header class="header" role="banner">
+        <div class="container header-inner">
+            <a class="brand" href="/" aria-label="EventFlow home">
+                <span class="brand-text">EventFlow Test</span>
+            </a>
+        </div>
+    </header>
+
+    <div class="instructions">
+        <h3>📱 Footer Navigation Behavior Test</h3>
+        <p><strong>Testing Instructions:</strong></p>
+        <ul>
+            <li>✅ <strong>At the top of the page</strong>: The footer nav should be <strong>completely hidden</strong> (not visible)</li>
+            <li>✅ <strong>After scrolling down</strong> past the header area (~180px): The footer nav should <strong>smoothly slide up</strong> from the bottom</li>
+            <li>✅ <strong>When scrolling back to top</strong>: The footer nav should <strong>smoothly slide down</strong> and disappear</li>
+            <li>✅ <strong>Open browser console</strong> to see diagnostic messages (localhost only)</li>
+            <li>✅ <strong>Test on mobile viewport</strong>: Resize browser to 375px width or use device emulation</li>
+        </ul>
+        <p><strong>Expected Behavior:</strong> Footer nav is OFF-SCREEN at page top, VISIBLE after scrolling ~180px down.</p>
+    </div>
+
+    <main>
+        <div class="test-header">
+            <h1>🔬 Footer Navigation Component Test</h1>
+            <p>Scroll down to test the footer navigation behavior</p>
+        </div>
+
+        <div class="test-section">
+            <h2>Section 1: At the Top</h2>
+            <p>When you're at this section (at the top of the page), the footer navigation should be <strong>completely hidden</strong>.</p>
+            <p>The navigation bar should be off-screen and not clickable.</p>
+        </div>
+
+        <div class="test-section">
+            <h2>Section 2: Starting to Scroll</h2>
+            <p>As you scroll down to this section, the footer navigation should <strong>remain hidden</strong> until you pass the threshold.</p>
+            <p>The threshold is set to: Header Height (60-80px) + 100px buffer = ~180px total</p>
+        </div>
+
+        <div class="test-section">
+            <h2>Section 3: Navigation Should Be Visible</h2>
+            <p>By the time you reach this section, the footer navigation should be <strong>clearly visible</strong> at the bottom of the screen.</p>
+            <p>It should have smoothly animated into view with a slide-up effect.</p>
+            <p><strong>Key visual indicators:</strong></p>
+            <ul>
+                <li>Semi-transparent white background with blur effect</li>
+                <li>Shadow above the bar</li>
+                <li>Four navigation links: Plan, Suppliers, My Plan, Settings</li>
+                <li>Fixed at the bottom of the viewport</li>
+            </ul>
+        </div>
+
+        <div class="test-section">
+            <h2>Section 4: Navigation Stays Visible</h2>
+            <p>The footer navigation should <strong>remain visible</strong> as long as you're scrolled down past the threshold.</p>
+            <p>Try scrolling back up to the top - the navigation should smoothly disappear.</p>
+        </div>
+
+        <div class="test-section">
+            <h2>Section 5: Test Scroll Up</h2>
+            <p>Now scroll back up to the top of the page.</p>
+            <p>The footer navigation should <strong>smoothly slide down and disappear</strong> when you get close to the top.</p>
+        </div>
+
+        <div class="test-section">
+            <h2>Section 6: Mobile Viewport Test</h2>
+            <p><strong>Mobile Testing:</strong></p>
+            <ul>
+                <li>Open DevTools (F12)</li>
+                <li>Toggle device toolbar (Ctrl+Shift+M / Cmd+Shift+M)</li>
+                <li>Select iPhone SE (375px) or iPhone 12 Pro (390px)</li>
+                <li>Test the scroll behavior on mobile viewport</li>
+                <li>Footer nav should be 60px tall on mobile</li>
+                <li>Links should remain visible and tappable</li>
+            </ul>
+        </div>
+
+        <div class="test-section">
+            <h2>Section 7: Accessibility Test</h2>
+            <p><strong>Accessibility Features:</strong></p>
+            <ul>
+                <li>Footer nav has <code>role="navigation"</code></li>
+                <li>Footer nav has <code>aria-label="Quick navigation"</code></li>
+                <li>All links have minimum 44px tap targets</li>
+                <li>Focus visible styles on Tab key navigation</li>
+                <li>Reduced motion respected for users with that preference</li>
+            </ul>
+        </div>
+
+        <div class="test-section">
+            <h2>Section 8: End of Test</h2>
+            <p>✅ If you can see the footer navigation at the bottom, the test is working correctly!</p>
+            <p>Check the browser console for diagnostic messages (only visible on localhost).</p>
+        </div>
+    </main>
+
+    <footer style="padding: 40px 20px; text-align: center; background: #f9fafb;">
+        <p><strong>EventFlow Footer Nav Test Page</strong></p>
+        <p><small>This is a test page to verify footer navigation behavior</small></p>
+    </footer>
+
+    <!-- Load the footer nav component -->
+    <script src="/assets/js/components/footer-nav.js"></script>
+</body>
+</html>

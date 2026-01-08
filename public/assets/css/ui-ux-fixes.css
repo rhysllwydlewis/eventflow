@@ -1178,6 +1178,8 @@ html[data-theme="dark"] .hero-search-results {
 
 /* Bottom navigation bar - initially hidden at top of page */
 .footer-nav {
+  --footer-nav-hide-distance: 120%;
+  
   position: fixed;
   bottom: 0;
   left: 0;
@@ -1195,7 +1197,7 @@ html[data-theme="dark"] .hero-search-results {
   z-index: 100;
   /* Start hidden - will be controlled by JS classes */
   opacity: 0;
-  transform: translateY(120%);
+  transform: translateY(var(--footer-nav-hide-distance));
   transition: opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1), 
               transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
   pointer-events: none;
@@ -1214,7 +1216,7 @@ html[data-theme="dark"] .hero-search-results {
 /* Hidden state - explicitly ensure it's completely off-screen */
 .footer-nav.footer-nav--hidden {
   opacity: 0;
-  transform: translateY(120%);
+  transform: translateY(var(--footer-nav-hide-distance));
   pointer-events: none;
   visibility: hidden;
 }
