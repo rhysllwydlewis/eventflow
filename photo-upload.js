@@ -2,7 +2,7 @@
  * Photo Upload Middleware and Utilities
  * Handles file uploads, image optimization, and MongoDB storage
  * Photos are stored in MongoDB for persistence across deployments
- * 
+ *
  * Security features:
  * - Magic-byte detection for true file type validation
  * - Pixel count limits to prevent decompression bombs
@@ -203,7 +203,7 @@ async function saveToMongoDB(buffer, filename, type = 'optimized') {
 async function processAndSaveImage(buffer, originalFilename, context = 'supplier') {
   // Validate upload (type, size, dimensions)
   const validation = await uploadValidation.validateUpload(buffer, context);
-  
+
   if (!validation.valid) {
     const error = new Error(validation.errors.join('; '));
     error.name = 'ValidationError';
@@ -225,7 +225,7 @@ async function processAndSaveImage(buffer, originalFilename, context = 'supplier
     // For avatars, only generate one optimized square size
     if (context === 'avatar') {
       const avatarProcessed = await processImage(buffer, IMAGE_CONFIGS.avatar);
-      
+
       if (STORAGE_TYPE === 'mongodb') {
         const avatarId = await saveToMongoDB(avatarProcessed, `${baseFilename}.jpg`, 'avatar');
         results.optimized = `/api/photos/${avatarId}`;
@@ -234,7 +234,7 @@ async function processAndSaveImage(buffer, originalFilename, context = 'supplier
         results.optimized = `/uploads/optimized/${baseFilename}.jpg`;
         await saveToLocal(avatarProcessed, `${baseFilename}.jpg`, 'public');
       }
-      
+
       return results;
     }
 

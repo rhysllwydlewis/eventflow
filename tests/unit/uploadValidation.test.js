@@ -94,7 +94,7 @@ describe('Upload Validation', () => {
       // So we'll test that the validation function works correctly
       const metadata = await sharp(buffer).metadata();
       expect(metadata.width * metadata.height).toBe(10000);
-      
+
       // Just verify the function returns correct structure
       const result = await uploadValidation.validateImageDimensions(buffer);
       expect(result).toHaveProperty('valid');
@@ -151,7 +151,7 @@ describe('Upload Validation', () => {
         .toBuffer();
 
       const result = await uploadValidation.validateUpload(buffer, 'supplier');
-      
+
       // Verify structure regardless of synthetic image detection
       expect(result).toHaveProperty('valid');
       expect(result).toHaveProperty('errors');
@@ -211,7 +211,7 @@ describe('Upload Validation', () => {
       expect(metadata.width).toBeLessThanOrEqual(100);
       expect(metadata.height).toBeLessThanOrEqual(100);
       expect(metadata.format).toBe('jpeg');
-      
+
       // EXIF data should be minimal or absent (Sharp strips it during JPEG conversion)
       // If present, it should only be basic orientation info, not GPS/camera data
       if (metadata.exif) {

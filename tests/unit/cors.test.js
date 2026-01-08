@@ -28,9 +28,7 @@ describe('CORS Configuration', () => {
     });
 
     test('should allow localhost origins', async () => {
-      const response = await request(app)
-        .get('/test')
-        .set('Origin', 'http://localhost:3000');
+      const response = await request(app).get('/test').set('Origin', 'http://localhost:3000');
 
       expect(response.status).toBe(200);
       expect(response.body).toEqual({ ok: true });
@@ -44,9 +42,7 @@ describe('CORS Configuration', () => {
     });
 
     test('should warn but allow non-configured origins in development', async () => {
-      const response = await request(app)
-        .get('/test')
-        .set('Origin', 'http://unknown-domain.com');
+      const response = await request(app).get('/test').set('Origin', 'http://unknown-domain.com');
 
       // In development, we allow but warn
       expect(response.status).toBe(200);
@@ -73,9 +69,7 @@ describe('CORS Configuration', () => {
     });
 
     test('should allow configured BASE_URL origin', async () => {
-      const response = await request(app)
-        .get('/test')
-        .set('Origin', 'https://event-flow.co.uk');
+      const response = await request(app).get('/test').set('Origin', 'https://event-flow.co.uk');
 
       expect(response.status).toBe(200);
       expect(response.body).toEqual({ ok: true });
@@ -91,9 +85,7 @@ describe('CORS Configuration', () => {
     });
 
     test('should reject non-configured origin with 403', async () => {
-      const response = await request(app)
-        .get('/test')
-        .set('Origin', 'https://malicious-site.com');
+      const response = await request(app).get('/test').set('Origin', 'https://malicious-site.com');
 
       expect(response.status).toBe(403);
       expect(response.body).toHaveProperty('error');
@@ -112,7 +104,8 @@ describe('CORS Configuration', () => {
     beforeEach(() => {
       // Set BASE_URL and additional origins
       process.env.BASE_URL = 'https://event-flow.co.uk';
-      process.env.ALLOWED_ORIGINS = 'https://preview.event-flow.co.uk,https://staging.event-flow.co.uk';
+      process.env.ALLOWED_ORIGINS =
+        'https://preview.event-flow.co.uk,https://staging.event-flow.co.uk';
 
       app.use(cors(configureCORS(true)));
       app.get('/test', (req, res) => {
@@ -127,9 +120,7 @@ describe('CORS Configuration', () => {
     });
 
     test('should allow primary BASE_URL', async () => {
-      const response = await request(app)
-        .get('/test')
-        .set('Origin', 'https://event-flow.co.uk');
+      const response = await request(app).get('/test').set('Origin', 'https://event-flow.co.uk');
 
       expect(response.status).toBe(200);
     });
@@ -238,9 +229,7 @@ describe('CORS Error Handler', () => {
   });
 
   test('should return JSON error for CORS rejection', async () => {
-    const response = await request(app)
-      .get('/test')
-      .set('Origin', 'https://evil-site.com');
+    const response = await request(app).get('/test').set('Origin', 'https://evil-site.com');
 
     expect(response.status).toBe(403);
     expect(response.type).toBe('application/json');
@@ -249,9 +238,7 @@ describe('CORS Error Handler', () => {
   });
 
   test('should not leak stack traces in production', async () => {
-    const response = await request(app)
-      .get('/test')
-      .set('Origin', 'https://evil-site.com');
+    const response = await request(app).get('/test').set('Origin', 'https://evil-site.com');
 
     expect(response.body).not.toHaveProperty('stack');
   });
