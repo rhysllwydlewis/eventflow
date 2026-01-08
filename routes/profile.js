@@ -6,63 +6,17 @@
 'use strict';
 
 const express = require('express');
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
 const validator = require('validator');
-const sharp = require('sharp');
 
 const dbUnified = require('../db-unified');
 const { authRequired } = require('../middleware/auth');
+const photoUpload = require('../photo-upload');
 
 const router = express.Router();
 
-// Configuration from environment variables
-const AVATAR_MAX_MB = parseInt(process.env.AVATAR_MAX_MB || '5', 10);
-const AVATAR_MAX_BYTES = AVATAR_MAX_MB * 1024 * 1024;
-const AVATAR_ALLOWED_TYPES = (process.env.AVATAR_ALLOWED_TYPES || 'jpeg,jpg,png,webp')
-  .split(',')
-  .map(t => t.trim().toLowerCase());
-const AVATAR_STORAGE_PATH = process.env.AVATAR_STORAGE_PATH || 'uploads/avatars';
-
-// Ensure avatar storage directory exists
-const avatarDir = path.join(__dirname, '..', AVATAR_STORAGE_PATH);
-if (!fs.existsSync(avatarDir)) {
-  fs.mkdirSync(avatarDir, { recursive: true });
-  console.log(`📁 Created avatar directory: ${avatarDir}`);
-}
-
-// Configure multer for avatar uploads
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, avatarDir);
-  },
-  filename: function (req, file, cb) {
-    // Generate unique filename with user ID and timestamp
-    const userId = req.user.id;
-    const ext = path.extname(file.originalname).toLowerCase();
-    const timestamp = Date.now();
-    cb(null, `${userId}-${timestamp}${ext}`);
-  },
-});
-
-const upload = multer({
-  storage: storage,
-  limits: {
-    fileSize: AVATAR_MAX_BYTES,
-  },
-  fileFilter: function (req, file, cb) {
-    const ext = path.extname(file.originalname).toLowerCase().substring(1);
-    const mimeParts = file.mimetype.split('/');
-    const mimeSubtype = mimeParts[1] ? mimeParts[1].toLowerCase() : '';
-
-    if (AVATAR_ALLOWED_TYPES.includes(ext) || AVATAR_ALLOWED_TYPES.includes(mimeSubtype)) {
-      cb(null, true);
-    } else {
-      cb(new Error(`Invalid file type. Allowed types: ${AVATAR_ALLOWED_TYPES.join(', ')}`));
-    }
-  },
-});
+// Use shared photo upload configuration for avatars (memory storage)
+// This ensures consistent validation and security across all uploads
+const avatarUpload = photoUpload.upload;
 
 /**
  * GET /api/profile
@@ -233,19 +187,22 @@ router.put('/', authRequired, async (req, res) => {
 /**
  * POST /api/profile/avatar
  * Upload or replace user avatar
+ * Uses hardened upload pipeline with magic-byte validation and metadata stripping
  */
 router.post('/avatar', authRequired, (req, res) => {
   if (!req.user || !req.user.id) {
     return res.status(401).json({ error: 'Authentication required' });
   }
 
-  upload.single('avatar')(req, res, async err => {
+  avatarUpload.single('avatar')(req, res, async err => {
+    // Handle multer errors with consistent JSON responses
     if (err) {
-      if (err instanceof multer.MulterError) {
+      if (err instanceof require('multer').MulterError) {
         if (err.code === 'LIMIT_FILE_SIZE') {
+          const maxSizeMB = Math.floor(photoUpload.MAX_FILE_SIZE_AVATAR / 1024 / 1024);
           return res
-            .status(400)
-            .json({ error: `File too large. Maximum size is ${AVATAR_MAX_MB}MB` });
+            .status(413)
+            .json({ error: `File too large. Maximum size is ${maxSizeMB}MB` });
         }
         return res.status(400).json({ error: err.message });
       }
@@ -257,45 +214,25 @@ router.post('/avatar', authRequired, (req, res) => {
     }
 
     try {
-      // Process image with sharp (resize, optimize)
-      const processedFilename = `${req.user.id}-${Date.now()}-processed.jpg`;
-      const processedPath = path.join(avatarDir, processedFilename);
+      // Process avatar using hardened upload pipeline
+      // This includes: magic-byte validation, pixel limits, metadata stripping
+      // Use square cover crop (400x400) for avatars
+      const images = await photoUpload.processAndSaveImage(
+        req.file.buffer,
+        `avatar-${req.user.id}.jpg`,
+        'avatar' // Use avatar-specific size limits
+      );
 
-      await sharp(req.file.path)
-        .resize(400, 400, {
-          fit: 'cover',
-          position: 'center',
-        })
-        .jpeg({ quality: 90 })
-        .toFile(processedPath);
-
-      // Delete original uploaded file
-      fs.unlinkSync(req.file.path);
-
-      // Update user avatar URL
+      // Update user avatar URL (use optimized version which is square 400x400)
       const users = await dbUnified.read('users');
       const idx = users.findIndex(u => u.id === req.user.id);
 
       if (idx === -1) {
-        // Clean up uploaded file
-        fs.unlinkSync(processedPath);
         return res.status(404).json({ error: 'User not found' });
       }
 
-      // Delete old avatar if exists
-      if (users[idx].avatarUrl) {
-        const oldAvatarPath = path.join(__dirname, '..', users[idx].avatarUrl.replace(/^\//, ''));
-        if (fs.existsSync(oldAvatarPath)) {
-          try {
-            fs.unlinkSync(oldAvatarPath);
-          } catch (unlinkErr) {
-            console.error('Failed to delete old avatar:', unlinkErr);
-          }
-        }
-      }
-
-      // Store relative URL path
-      users[idx].avatarUrl = `/${AVATAR_STORAGE_PATH}/${processedFilename}`;
+      // Store avatar URL
+      users[idx].avatarUrl = images.optimized;
       users[idx].updatedAt = new Date().toISOString();
       await dbUnified.write('users', users);
 
@@ -305,10 +242,15 @@ router.post('/avatar', authRequired, (req, res) => {
       });
     } catch (processError) {
       console.error('Avatar processing error:', processError);
-      // Clean up uploaded file if processing failed
-      if (req.file && fs.existsSync(req.file.path)) {
-        fs.unlinkSync(req.file.path);
+      
+      // Handle validation errors with appropriate status codes
+      if (processError.name === 'ValidationError') {
+        return res.status(400).json({
+          error: processError.message,
+          details: processError.details,
+        });
       }
+      
       res.status(500).json({ error: 'Failed to process avatar image' });
     }
   });
@@ -334,14 +276,12 @@ router.delete('/avatar', authRequired, async (req, res) => {
     return res.status(404).json({ error: 'No avatar to delete' });
   }
 
-  // Delete avatar file
-  const avatarPath = path.join(__dirname, '..', users[idx].avatarUrl.replace(/^\//, ''));
-  if (fs.existsSync(avatarPath)) {
-    try {
-      fs.unlinkSync(avatarPath);
-    } catch (unlinkErr) {
-      console.error('Failed to delete avatar file:', unlinkErr);
-    }
+  // Delete avatar using centralized photo deletion
+  try {
+    await photoUpload.deleteImage(users[idx].avatarUrl);
+  } catch (deleteErr) {
+    console.error('Failed to delete avatar file:', deleteErr);
+    // Continue anyway to clean up database record
   }
 
   // Remove avatar URL from user

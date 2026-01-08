@@ -2142,7 +2142,8 @@ app.post(
       // Process and save the image
       const imageData = await photoUpload.processAndSaveImage(
         req.file.buffer,
-        req.file.originalname
+        req.file.originalname,
+        'supplier'
       );
 
       // Update category with new hero image URL
@@ -2230,7 +2231,8 @@ app.post(
       // Process and save the image
       const imageData = await photoUpload.processAndSaveImage(
         req.file.buffer,
-        req.file.originalname
+        req.file.originalname,
+        'supplier'
       );
 
       // Update package with new image URL
@@ -4871,7 +4873,7 @@ app.post(
         const errors = [];
         for (const file of req.files) {
           try {
-            const images = await photoUpload.processAndSaveImage(file.buffer, file.originalname);
+            const images = await photoUpload.processAndSaveImage(file.buffer, file.originalname, 'marketplace');
             uploadedUrls.push(images.optimized);
           } catch (error) {
             errors.push({ filename: file.originalname, error: error.message });
@@ -4905,7 +4907,7 @@ app.post(
       const file = req.files[0];
 
       // Process and save image
-      const images = await photoUpload.processAndSaveImage(file.buffer, file.originalname);
+      const images = await photoUpload.processAndSaveImage(file.buffer, file.originalname, type);
 
       // Get metadata
       const metadata = await photoUpload.getImageMetadata(file.buffer);
@@ -5019,7 +5021,7 @@ app.post(
 
       for (const file of req.files) {
         try {
-          const images = await photoUpload.processAndSaveImage(file.buffer, file.originalname);
+          const images = await photoUpload.processAndSaveImage(file.buffer, file.originalname, type);
           const metadata = await photoUpload.getImageMetadata(file.buffer);
 
           const photoRecord = {
@@ -5704,28 +5706,8 @@ app.use(
 // Sentry error handler (must be before other error handlers)
 app.use(sentry.getErrorHandler());
 
-// Custom error handler
-app.use((err, req, res, _next) => {
-  console.error('Error:', err);
-
-  // Send error to Sentry
-  sentry.captureException(err, {
-    tags: {
-      path: req.path,
-      method: req.method,
-    },
-    extra: {
-      query: req.query,
-      body: req.body,
-    },
-  });
-
-  // Send response
-  res.status(err.status || 500).json({
-    error: err.message || 'Internal server error',
-    status: err.status || 500,
-  });
-});
+// Use centralized error handler
+app.use(errorHandler);
 
 // Catch-all 404 handler (must be the LAST middleware)
 // This will only be reached if no static files or routes matched

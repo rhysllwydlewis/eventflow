@@ -71,6 +71,74 @@ function notFoundHandler(req, res) {
 }
 
 /**
+ * Map known errors to HTTP status codes
+ * @param {Error} err - Error object
+ * @returns {number} - HTTP status code
+ */
+function getErrorStatusCode(err) {
+  // CORS errors
+  if (err.message === 'Not allowed by CORS') {
+    return 403;
+  }
+
+  // Multer file upload errors
+  if (err.code === 'LIMIT_FILE_SIZE') {
+    return 413;
+  }
+  if (err.code === 'LIMIT_FILE_COUNT') {
+    return 400;
+  }
+  if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+    return 400;
+  }
+
+  // Validation errors
+  if (err.name === 'ValidationError') {
+    return 400;
+  }
+
+  // JWT errors
+  if (err.name === 'JsonWebTokenError' || err.name === 'TokenExpiredError') {
+    return 401;
+  }
+
+  // Default to provided status or 500
+  return err.status || err.statusCode || 500;
+}
+
+/**
+ * Get user-friendly error message based on error type
+ * @param {Error} err - Error object
+ * @param {boolean} isProduction - Whether in production mode
+ * @returns {string} - Error message
+ */
+function getErrorMessage(err, isProduction) {
+  // Don't leak error details in production for server errors
+  if (isProduction && getErrorStatusCode(err) >= 500) {
+    return 'Internal Server Error';
+  }
+
+  // CORS errors
+  if (err.message === 'Not allowed by CORS') {
+    return 'Access denied: Origin not allowed';
+  }
+
+  // Multer file upload errors
+  if (err.code === 'LIMIT_FILE_SIZE') {
+    return 'File size exceeds the maximum allowed limit';
+  }
+  if (err.code === 'LIMIT_FILE_COUNT') {
+    return 'Too many files uploaded';
+  }
+  if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+    return 'Unexpected file field';
+  }
+
+  // Return the original error message for known error types
+  return err.message || 'An error occurred';
+}
+
+/**
  * Global Error Handler - Must be added after all routes and middlewares
  * @param {Error} err - Error object
  * @param {Object} req - Express request
@@ -78,25 +146,47 @@ function notFoundHandler(req, res) {
  * @param {Function} _next - Express next function (unused)
  */
 function errorHandler(err, req, res, _next) {
-  // Log error
-  logger.error('Error:', {
-    message: err.message,
-    stack: err.stack,
-    path: req.path,
-    method: req.method,
-  });
-
-  // Capture in Sentry
-  sentry.captureException(err);
-
-  // Don't leak error details in production
+  // Get status code
+  const statusCode = getErrorStatusCode(err);
   const isProduction = process.env.NODE_ENV === 'production';
-  const errorMessage = isProduction ? 'Internal Server Error' : err.message;
+
+  // Log error (but not CORS rejections at error level)
+  if (err.message === 'Not allowed by CORS') {
+    logger.warn('CORS rejection:', {
+      origin: req.headers.origin,
+      path: req.path,
+      method: req.method,
+    });
+  } else {
+    logger.error('Error:', {
+      message: err.message,
+      code: err.code,
+      stack: isProduction ? undefined : err.stack,
+      path: req.path,
+      method: req.method,
+    });
+  }
+
+  // Capture in Sentry (except for expected client errors)
+  if (statusCode >= 500) {
+    sentry.captureException(err, {
+      tags: {
+        path: req.path,
+        method: req.method,
+        statusCode,
+      },
+    });
+  }
+
+  // Get user-friendly error message
+  const errorMessage = getErrorMessage(err, isProduction);
   const errorStack = isProduction ? undefined : err.stack;
 
-  // Send error response
-  res.status(err.status || 500).json({
+  // Send JSON error response
+  res.status(statusCode).json({
     error: errorMessage,
+    status: statusCode,
+    ...(err.code && { code: err.code }),
     ...(errorStack && { stack: errorStack }),
   });
 }

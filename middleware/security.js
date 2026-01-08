@@ -107,6 +107,7 @@ function configureHelmet() {
 
 /**
  * Configure CORS with proper origin handling
+ * Supports multiple origins via environment variables and Railway preview URLs
  * @param {boolean} isProduction - Whether running in production
  * @returns {Object} CORS options
  */
@@ -122,6 +123,17 @@ function configureCORS(isProduction = false) {
       const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
       const allowedOrigins = [baseUrl];
 
+      // Support additional origins via comma-separated ALLOWED_ORIGINS env var
+      const additionalOrigins = process.env.ALLOWED_ORIGINS;
+      if (additionalOrigins) {
+        additionalOrigins.split(',').forEach(o => {
+          const trimmed = o.trim();
+          if (trimmed) {
+            allowedOrigins.push(trimmed);
+          }
+        });
+      }
+
       // If BASE_URL contains www, also allow non-www version and vice versa
       if (baseUrl.includes('www.')) {
         allowedOrigins.push(baseUrl.replace('www.', ''));
@@ -130,11 +142,21 @@ function configureCORS(isProduction = false) {
         allowedOrigins.push(`${protocol}://www.${domain}`);
       }
 
+      // Support Railway preview URLs in non-production
+      // Railway preview URLs follow pattern: https://projectname-pr-123.railway.app
+      if (!isProduction && origin.includes('.railway.app')) {
+        allowedOrigins.push(origin);
+      }
+
       // For development, allow localhost on any port
       if (!isProduction) {
         allowedOrigins.push('http://localhost:3000');
         allowedOrigins.push('http://localhost:3001');
         allowedOrigins.push('http://127.0.0.1:3000');
+        // Also allow any localhost port for flexibility in development
+        if (origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:')) {
+          allowedOrigins.push(origin);
+        }
       }
 
       if (allowedOrigins.includes(origin)) {
