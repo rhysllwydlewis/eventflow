@@ -299,6 +299,22 @@ function renderPackageFallback(container, items) {
  * Allows admin to override default images with custom uploads
  */
 async function loadHeroCollageImages() {
+  // First, check if Pexels collage is enabled
+  try {
+    const settingsResponse = await fetch('/api/public/homepage-settings');
+    if (settingsResponse.ok) {
+      const settings = await settingsResponse.json();
+      if (settings.pexelsCollageEnabled) {
+        console.log('Pexels collage enabled, initializing dynamic collage');
+        await initPexelsCollage(settings.pexelsCollageSettings);
+        return; // Skip static image loading
+      }
+    }
+  } catch (error) {
+    console.warn('Failed to check Pexels collage settings, falling back to static images:', error);
+  }
+
+  // If Pexels is not enabled or failed, load static images
   try {
     const response = await fetch('/api/admin/homepage/hero-images-public');
     if (!response.ok) {
@@ -429,6 +445,154 @@ async function loadHeroCollageImages() {
     console.error('Error loading hero collage images:', error);
     // Default images will remain if there's an error
   }
+}
+
+/**
+ * Initialize Pexels dynamic collage
+ * Fetches images from Pexels API and cycles them with crossfade transitions
+ */
+async function initPexelsCollage(settings) {
+  const { interval = 8, queries = {} } = settings;
+
+  // Map category keys to their collage frame elements
+  const categoryMapping = {
+    venues: 0,
+    catering: 1,
+    entertainment: 2,
+    photography: 3,
+  };
+
+  // Get all collage frames
+  const collageFrames = document.querySelectorAll('.collage .frame');
+
+  if (!collageFrames || collageFrames.length === 0) {
+    console.warn('No collage frames found for Pexels collage');
+    return;
+  }
+
+  // Cache for storing fetched images per category
+  const imageCache = {};
+  const currentImageIndex = {};
+
+  // Fetch images for each category
+  try {
+    const categories = Object.keys(categoryMapping);
+    for (const category of categories) {
+      const query = queries[category] || category;
+
+      try {
+        // Use the public Pexels collage endpoint
+        const response = await fetch(
+          `/api/public/pexels-collage?category=${encodeURIComponent(category)}`
+        );
+
+        if (!response.ok) {
+          console.warn(`Failed to fetch Pexels images for ${category}, falling back to static`);
+          continue;
+        }
+
+        const data = await response.json();
+
+        if (data.photos && data.photos.length > 0) {
+          imageCache[category] = data.photos.map(photo => ({
+            url: photo.src.large || photo.src.original,
+            photographer: photo.photographer,
+            photographerUrl: photo.photographer_url,
+          }));
+          currentImageIndex[category] = 0;
+
+          // Set initial image
+          const frameIndex = categoryMapping[category];
+          const frame = collageFrames[frameIndex];
+          const imgElement = frame.querySelector('img');
+
+          if (imgElement) {
+            imgElement.src = imageCache[category][0].url;
+            imgElement.alt = `${category.charAt(0).toUpperCase() + category.slice(1)} - Photo by ${imageCache[category][0].photographer}`;
+
+            // Add photographer attribution
+            addPhotographerCredit(frame, imageCache[category][0]);
+          }
+        }
+      } catch (error) {
+        console.error(`Error fetching Pexels images for ${category}:`, error);
+      }
+    }
+
+    // Start cycling images
+    if (Object.keys(imageCache).length > 0) {
+      setInterval(() => {
+        cyclePexelsImages(imageCache, currentImageIndex, collageFrames, categoryMapping);
+      }, interval * 1000);
+    } else {
+      console.warn('No Pexels images loaded, falling back to static images');
+    }
+  } catch (error) {
+    console.error('Error initializing Pexels collage:', error);
+  }
+}
+
+/**
+ * Cycle through Pexels images with crossfade transition
+ */
+function cyclePexelsImages(imageCache, currentImageIndex, collageFrames, categoryMapping) {
+  Object.keys(imageCache).forEach(category => {
+    const images = imageCache[category];
+    if (!images || images.length === 0) {
+      return;
+    }
+
+    // Move to next image
+    currentImageIndex[category] = (currentImageIndex[category] + 1) % images.length;
+    const nextImage = images[currentImageIndex[category]];
+
+    const frameIndex = categoryMapping[category];
+    const frame = collageFrames[frameIndex];
+    const imgElement = frame.querySelector('img');
+
+    if (!imgElement) {
+      return;
+    }
+
+    // Preload next image for smooth transition
+    const nextImg = new Image();
+    nextImg.src = nextImage.url;
+
+    nextImg.onload = () => {
+      // Add fading class for transition
+      imgElement.classList.add('fading');
+
+      // After fade out, change image and fade in
+      setTimeout(() => {
+        imgElement.src = nextImage.url;
+        imgElement.alt = `${category.charAt(0).toUpperCase() + category.slice(1)} - Photo by ${nextImage.photographer}`;
+        imgElement.classList.remove('fading');
+
+        // Update photographer credit
+        addPhotographerCredit(frame, nextImage);
+      }, 1000); // Match CSS transition duration
+    };
+  });
+}
+
+/**
+ * Add photographer credit to collage frame
+ */
+function addPhotographerCredit(frame, photo) {
+  // Remove existing credit if present
+  const existingCredit = frame.querySelector('.pexels-credit');
+  if (existingCredit) {
+    existingCredit.remove();
+  }
+
+  // Add new credit
+  const credit = document.createElement('div');
+  credit.className = 'pexels-credit';
+  credit.style.cssText =
+    'position:absolute;bottom:4px;right:4px;background:rgba(0,0,0,0.6);color:white;font-size:10px;padding:2px 6px;border-radius:2px;';
+  credit.innerHTML = `Photo by <a href="${photo.photographerUrl}" target="_blank" rel="noopener" style="color:white;text-decoration:underline;">${photo.photographer}</a>`;
+  frame.style.position = 'relative';
+  frame.appendChild(credit);
 }
 
 /**
@@ -696,9 +860,7 @@ function initHeroSearch() {
 
     searchTimeout = setTimeout(async () => {
       try {
-        const response = await fetch(
-          `/api/search?q=${encodeURIComponent(query)}&limit=5`
-        );
+        const response = await fetch(`/api/search?q=${encodeURIComponent(query)}&limit=5`);
         if (!response.ok) {
           throw new Error('Search failed');
         }
@@ -707,7 +869,8 @@ function initHeroSearch() {
         const results = data.results || [];
 
         if (results.length === 0) {
-          resultsContainer.innerHTML = '<div style="padding: 16px; text-align: center; color: #6b7280;">No results found</div>';
+          resultsContainer.innerHTML =
+            '<div style="padding: 16px; text-align: center; color: #6b7280;">No results found</div>';
           resultsContainer.style.display = 'block';
           return;
         }
@@ -803,10 +966,11 @@ function initNewsletterForm() {
       `;
     } catch (error) {
       console.error('Newsletter subscription error:', error);
-      
+
       // Show error message
       const errorDiv = document.createElement('div');
-      errorDiv.style.cssText = 'margin-top: 12px; padding: 12px; background: rgba(255,255,255,0.2); border-radius: 8px; color: white; text-align: center;';
+      errorDiv.style.cssText =
+        'margin-top: 12px; padding: 12px; background: rgba(255,255,255,0.2); border-radius: 8px; color: white; text-align: center;';
       errorDiv.textContent = 'Something went wrong. Please try again.';
       form.appendChild(errorDiv);
 

@@ -4505,5 +4505,66 @@ router.get('/maintenance/message', async (req, res) => {
   }
 });
 
+/**
+ * GET /api/public/pexels-collage
+ * Public endpoint to fetch Pexels images for homepage collage
+ * Uses Pexels API on behalf of public users when feature is enabled
+ */
+router.get('/public/pexels-collage', async (req, res) => {
+  try {
+    // Check if Pexels collage is enabled
+    const settings = (await dbUnified.read('settings')) || {};
+    const features = settings.features || {};
+
+    if (features.pexelsCollage !== true) {
+      return res.status(403).json({ error: 'Pexels collage feature is not enabled' });
+    }
+
+    const pexelsCollageSettings = settings.pexelsCollageSettings || {
+      queries: {
+        venues: 'wedding venue elegant ballroom',
+        catering: 'wedding catering food elegant',
+        entertainment: 'live band wedding party',
+        photography: 'wedding photography professional',
+      },
+    };
+
+    // Import Pexels service
+    const { getPexelsService } = require('../utils/pexels-service');
+    const pexels = getPexelsService();
+
+    if (!pexels.isConfigured()) {
+      return res.status(503).json({
+        error: 'Pexels API not configured',
+        message: 'Please configure PEXELS_API_KEY in environment variables',
+      });
+    }
+
+    const { category } = req.query;
+
+    if (!category) {
+      return res.status(400).json({ error: 'Category parameter required' });
+    }
+
+    const validCategories = ['venues', 'catering', 'entertainment', 'photography'];
+    if (!validCategories.includes(category)) {
+      return res.status(400).json({ error: 'Invalid category' });
+    }
+
+    const query = pexelsCollageSettings.queries[category] || category;
+    const results = await pexels.searchPhotos(query, 8, 1);
+
+    res.json({
+      success: true,
+      category,
+      query,
+      photos: results.photos,
+    });
+  } catch (error) {
+    console.error('Error fetching Pexels collage images:', error);
+    res.status(500).json({ error: 'Failed to fetch Pexels images' });
+  }
+});
+
 module.exports = router;
 module.exports.setHelperFunctions = setHelperFunctions;
