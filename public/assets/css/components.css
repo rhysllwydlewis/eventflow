@@ -1301,14 +1301,8 @@ html[data-theme="dark"] .skeleton-card {
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
-  .hero-search {
-    margin: 1.5rem 0 !important;
-  }
-
-  .hero-search input {
-    font-size: 14px;
-    padding: 12px 45px 12px 16px;
-  }
+  /* Hero search styles moved to ui-ux-fixes.css to prevent conflicts */
+  /* Removed conflicting .hero-search and .hero-search input rules */
 
   #newsletter-form {
     flex-direction: column;

@@ -309,9 +309,21 @@ async function loadHeroCollageImages() {
         await initPexelsCollage(settings.pexelsCollageSettings);
         return; // Skip static image loading
       }
+    } else if (settingsResponse.status === 404) {
+      // Silently handle 404 - endpoint may not be configured yet
+      if (window.location.hostname === 'localhost') {
+        console.info('Homepage settings endpoint not available (404), using defaults');
+      }
+    } else {
+      if (window.location.hostname === 'localhost') {
+        console.warn('Homepage settings returned status:', settingsResponse.status);
+      }
     }
   } catch (error) {
-    console.warn('Failed to check Pexels collage settings, falling back to static images:', error);
+    // Only log if it's a network error, not a 404
+    if (error.name !== 'TypeError' || window.location.hostname === 'localhost') {
+      console.info('Using default collage images (settings unavailable)');
+    }
   }
 
   // If Pexels is not enabled or failed, load static images
@@ -784,6 +796,15 @@ async function fetchTestimonials() {
 
   try {
     const response = await fetch('/api/reviews?limit=6&approved=true&sort=rating');
+    if (response.status === 404) {
+      // Silently handle 404 - reviews endpoint may not be available
+      section.style.display = 'none';
+      if (window.location.hostname === 'localhost') {
+        console.info('Reviews endpoint not available (404)');
+      }
+      return;
+    }
+    
     if (!response.ok) {
       throw new Error('Testimonials fetch failed');
     }
@@ -837,7 +858,10 @@ async function fetchTestimonials() {
     // Show the section
     section.style.display = 'block';
   } catch (error) {
-    console.error('Failed to load testimonials:', error);
+    // Only log for non-404 errors in production
+    if (window.location.hostname === 'localhost') {
+      console.error('Failed to load testimonials:', error);
+    }
     // Hide section gracefully
     section.style.display = 'none';
   }
