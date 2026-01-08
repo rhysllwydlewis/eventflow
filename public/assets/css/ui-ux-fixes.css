@@ -1529,6 +1529,42 @@ body.has-footer-nav {
   }
 }
 
+@media (max-width: 480px) {
+  .footer-nav {
+    height: 56px;
+  }
+  
+  body.has-footer-nav {
+    padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px) + 12px);
+  }
+  
+  .footer-nav-link {
+    font-size: 12px;
+    padding: 8px 8px;
+    min-width: 44px;
+  }
+  
+  .footer-nav-links {
+    gap: 3px;
+    flex-wrap: nowrap !important;
+  }
+  
+  .footer-nav-icon-button {
+    font-size: 16px;
+    padding: 6px;
+  }
+  
+  .footer-nav-burger {
+    padding: 7px;
+    min-height: 42px;
+    min-width: 42px;
+  }
+  
+  .footer-nav-burger-bar {
+    width: 15px;
+  }
+}
+
 /* Reduce footer nav items on very small screens to prevent overcrowding */
 @media (max-width: 430px) {
   /* Hide Pricing link on very narrow screens to reduce crowding */
@@ -1581,42 +1617,6 @@ body.has-footer-nav {
   }
 }
 
-@media (max-width: 480px) {
-  .footer-nav {
-    height: 56px;
-  }
-  
-  body.has-footer-nav {
-    padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px) + 12px);
-  }
-  
-  .footer-nav-link {
-    font-size: 12px;
-    padding: 8px 8px;
-    min-width: 44px;
-  }
-  
-  .footer-nav-links {
-    gap: 3px;
-    flex-wrap: nowrap !important;
-  }
-  
-  .footer-nav-icon-button {
-    font-size: 16px;
-    padding: 6px;
-  }
-  
-  .footer-nav-burger {
-    padding: 7px;
-    min-height: 42px;
-    min-width: 42px;
-  }
-  
-  .footer-nav-burger-bar {
-    width: 15px;
-  }
-}
-
 @media (max-width: 375px) {
   .footer-nav-link {
     font-size: 9px;
@@ -1645,7 +1645,7 @@ body.has-footer-nav {
     font-size: 8px;
     padding: 4px 3px;
     min-width: 44px;
-    max-width: 32px;
+    /* Removed conflicting max-width - keep accessibility compliance */
   }
   
   .footer-nav-links {
