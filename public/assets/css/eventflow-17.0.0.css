@@ -217,7 +217,7 @@ html[data-theme="dark"] .footer-nav {
   display: flex;
   align-items: center;
   gap: 8px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 
 .footer-nav-link {

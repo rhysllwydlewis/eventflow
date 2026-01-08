@@ -1512,55 +1512,20 @@ body.has-footer-nav {
   }
   
   .footer-nav-links {
-    gap: 4px;
+    gap: 2px;
+    flex-wrap: nowrap !important;
   }
   
   .footer-nav-link {
-    font-size: 13px;
-    padding: 8px 10px;
-    min-width: 48px;
+    font-size: 12px;
+    padding: 6px 8px;
+    min-width: 44px;
+    max-width: 50px;
   }
   
   .footer-nav-icon-button {
     font-size: 17px;
     padding: 6px;
-  }
-}
-
-/* Reduce footer nav items on very small screens to prevent overcrowding */
-@media (max-width: 430px) {
-  /* Hide Pricing link on very narrow screens to reduce crowding */
-  .footer-nav .footer-nav-links .footer-nav-link[href="/pricing.html"] {
-    display: none !important;
-  }
-  
-  .footer-nav-links {
-    gap: 2px;
-    flex-wrap: nowrap; /* Ensure no wrapping */
-  }
-  
-  .footer-nav-link {
-    font-size: 11px;
-    padding: 7px 6px;
-    min-width: 46px;
-    max-width: 70px; /* Prevent over-expansion */
-  }
-  
-  .footer-nav-icon-button {
-    font-size: 16px;
-    padding: 7px;
-    min-width: 42px;
-    min-height: 42px;
-  }
-  
-  .footer-nav-burger {
-    padding: 7px;
-    min-height: 42px;
-    min-width: 42px;
-  }
-  
-  .footer-nav-burger-bar {
-    width: 15px;
   }
 }
 
@@ -1581,6 +1546,7 @@ body.has-footer-nav {
   
   .footer-nav-links {
     gap: 3px;
+    flex-wrap: nowrap !important;
   }
   
   .footer-nav-icon-button {
@@ -1599,17 +1565,69 @@ body.has-footer-nav {
   }
 }
 
+/* Reduce footer nav items on very small screens to prevent overcrowding */
+@media (max-width: 430px) {
+  /* Hide Pricing link on very narrow screens to reduce crowding */
+  .footer-nav .footer-nav-links .footer-nav-link[href="/pricing.html"] {
+    display: none !important;
+  }
+  
+  .footer-nav-links {
+    gap: 2px;
+    flex-wrap: nowrap !important;
+  }
+  
+  .footer-nav-link {
+    font-size: 11px;
+    padding: 6px 6px;
+    min-width: 44px;
+    max-width: 45px;
+  }
+  
+  .footer-nav-icon-button {
+    font-size: 16px;
+    padding: 7px;
+    min-width: 42px;
+    min-height: 42px;
+  }
+  
+  .footer-nav-burger {
+    padding: 7px;
+    min-height: 42px;
+    min-width: 42px;
+  }
+  
+  .footer-nav-burger-bar {
+    width: 15px;
+  }
+}
+
+/* Critical 398px breakpoint - reported issue viewport */
+@media (max-width: 398px) {
+  .footer-nav-links {
+    gap: 1px;
+    flex-wrap: nowrap !important;
+  }
+  
+  .footer-nav-link {
+    font-size: 11px; /* Increased from 10px for better accessibility */
+    padding: 5px 5px;
+    min-width: 44px;
+    max-width: 44px; /* Keep consistent with min-width for predictable sizing */
+  }
+}
+
 @media (max-width: 375px) {
   .footer-nav-link {
-    font-size: 10px;
-    padding: 6px 5px;
+    font-size: 10px; /* Increased from 9px for better accessibility */
+    padding: 5px 4px;
     min-width: 44px;
-    max-width: 60px; /* Prevent over-expansion on small screens */
+    max-width: 44px; /* Keep consistent with min-width for predictable sizing */
   }
   
   .footer-nav-links {
     gap: 1px;
-    flex-wrap: nowrap; /* Ensure no wrapping */
+    flex-wrap: nowrap !important;
   }
   
   .footer-nav-burger {
@@ -1624,15 +1642,15 @@ body.has-footer-nav {
 
 @media (max-width: 320px) {
   .footer-nav-link {
-    font-size: 9px;
-    padding: 6px 4px;
-    min-width: 42px;
-    max-width: 55px; /* Prevent over-expansion on very small screens */
+    font-size: 9px; /* Increased from 8px for better accessibility */
+    padding: 4px 3px;
+    min-width: 44px;
+    max-width: 44px; /* Keep consistent with min-width for predictable sizing */
   }
   
   .footer-nav-links {
     gap: 0;
-    flex-wrap: nowrap; /* Ensure no wrapping */
+    flex-wrap: nowrap !important;
   }
 }
 
