@@ -210,10 +210,9 @@
 <script src="/assets/js/app.js"></script>
 <script>
 (async function() {
-  // Check admin authentication
+  // Check admin authentication - using AdminShared if available, otherwise fall back to fetch
   try {
-    const response = await fetch('/api/auth/me');
-    const data = await response.json();
+    const data = await AdminShared.api('/api/auth/me');
     const user = data.user; // Extract user from response
     if (!user || user.role !== 'admin') {
       window.location.href = '/auth.html';
@@ -223,6 +222,9 @@
     window.location.href = '/auth.html';
     return;
   }
+  
+  // Fetch CSRF token once at page load
+  await AdminShared.fetchCSRFToken();
   
   let photos = [];
   let selectedPhotos = new Set();
@@ -249,16 +251,12 @@
   
   async function loadPhotos() {
     try {
-      const response = await fetch('/api/admin/photos/pending');
-      if (response.ok) {
-        const data = await response.json();
-        photos = data.photos || [];
-        renderPhotos();
-      } else {
-        queueElement.innerHTML = '<div class="card"><p class="small">Failed to load photos. Please try again.</p></div>';
-      }
+      const data = await AdminShared.api('/api/admin/photos/pending');
+      photos = data.photos || [];
+      renderPhotos();
     } catch (err) {
       console.error('Error loading photos:', err);
+      AdminShared.showToast('Failed to load photos', 'error');
       queueElement.innerHTML = '<div class="card"><p class="small">Failed to load photos. Please try again.</p></div>';
     }
   }
@@ -347,20 +345,12 @@
   
   window.approvePhoto = async function(photoId) {
     try {
-      const response = await fetch(`/api/admin/photos/${photoId}/approve`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ approved: true })
-      });
-      
-      if (response.ok) {
-        await loadPhotos();
-      } else {
-        alert('Failed to approve photo');
-      }
+      await AdminShared.api(`/api/admin/photos/${photoId}/approve`, 'POST', { approved: true });
+      await loadPhotos();
+      AdminShared.showToast('Photo approved', 'success');
     } catch (err) {
       console.error('Error approving photo:', err);
-      alert('Failed to approve photo');
+      AdminShared.showToast('Failed to approve photo', 'error');
     }
   };
   
@@ -368,20 +358,12 @@
     if (!confirm('Are you sure you want to reject this photo?')) return;
     
     try {
-      const response = await fetch(`/api/admin/photos/${photoId}/approve`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ approved: false })
-      });
-      
-      if (response.ok) {
-        await loadPhotos();
-      } else {
-        alert('Failed to reject photo');
-      }
+      await AdminShared.api(`/api/admin/photos/${photoId}/approve`, 'POST', { approved: false });
+      await loadPhotos();
+      AdminShared.showToast('Photo rejected', 'success');
     } catch (err) {
       console.error('Error rejecting photo:', err);
-      alert('Failed to reject photo');
+      AdminShared.showToast('Failed to reject photo', 'error');
     }
   };
   
@@ -392,19 +374,16 @@
     
     try {
       const promises = Array.from(selectedPhotos).map(id =>
-        fetch(`/api/admin/photos/${id}/approve`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ approved: true })
-        })
+        AdminShared.api(`/api/admin/photos/${id}/approve`, 'POST', { approved: true })
       );
       
       await Promise.all(promises);
       selectedPhotos.clear();
       await loadPhotos();
+      AdminShared.showToast(`${promises.length} photo(s) approved`, 'success');
     } catch (err) {
       console.error('Error batch approving:', err);
-      alert('Failed to approve some photos');
+      AdminShared.showToast('Failed to approve some photos', 'error');
     }
   });
   
@@ -415,19 +394,16 @@
     
     try {
       const promises = Array.from(selectedPhotos).map(id =>
-        fetch(`/api/admin/photos/${id}/approve`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ approved: false })
-        })
+        AdminShared.api(`/api/admin/photos/${id}/approve`, 'POST', { approved: false })
       );
       
       await Promise.all(promises);
       selectedPhotos.clear();
       await loadPhotos();
+      AdminShared.showToast(`${promises.length} photo(s) rejected`, 'success');
     } catch (err) {
       console.error('Error batch rejecting:', err);
-      alert('Failed to reject some photos');
+      AdminShared.showToast('Failed to reject some photos', 'error');
     }
   });
   
