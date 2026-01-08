@@ -1256,3 +1256,69 @@ html[data-theme="dark"] .skeleton-card {
   background: linear-gradient(90deg, #2d3748 25%, #1e2530 50%, #2d3748 75%);
   background-size: 200% 100%;
 }
+
+/* Hero Search Component */
+.hero-search input:focus {
+  outline: none;
+  border-color: var(--ink, #0b8073);
+  box-shadow: 0 4px 20px rgba(11, 128, 115, 0.2);
+}
+
+.hero-search button:hover {
+  background: var(--accent, #13b6a2);
+}
+
+/* Trust Badges */
+.trust-badge {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.trust-badge:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 16px rgba(0,0,0,0.12);
+}
+
+/* Testimonials Grid */
+.testimonials-grid .card {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.testimonials-grid .card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+}
+
+/* Newsletter Form */
+#newsletter-form input:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3);
+}
+
+#newsletter-form button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .hero-search {
+    margin: 1.5rem 0 !important;
+  }
+
+  .hero-search input {
+    font-size: 14px;
+    padding: 12px 45px 12px 16px;
+  }
+
+  #newsletter-form {
+    flex-direction: column;
+  }
+
+  #newsletter-form input {
+    min-width: 100%;
+  }
+
+  #newsletter-form button {
+    width: 100%;
+  }
+}

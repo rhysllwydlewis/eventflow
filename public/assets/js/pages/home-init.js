@@ -81,6 +81,18 @@ document.addEventListener('DOMContentLoaded', () => {
   // Fetch and render guides
   fetchGuides();
 
+  // Fetch and render testimonials
+  fetchTestimonials();
+
+  // Initialize hero search with autocomplete
+  initHeroSearch();
+
+  // Initialize newsletter form
+  initNewsletterForm();
+
+  // Add parallax effect to collage
+  initParallaxCollage();
+
   // Animate stat counters when they come into view (only if Counter and IntersectionObserver are available)
   if (typeof Counter === 'function' && 'IntersectionObserver' in window) {
     const observer = new IntersectionObserver(
@@ -584,4 +596,253 @@ async function fetchGuides() {
     // Hide the entire section gracefully
     section.style.display = 'none';
   }
+}
+
+/**
+ * Fetch and render testimonials/reviews
+ */
+async function fetchTestimonials() {
+  const section = document.getElementById('testimonials-section');
+  const container = document.getElementById('testimonials-carousel');
+
+  if (!container || !section) {
+    return;
+  }
+
+  try {
+    const response = await fetch('/api/reviews?limit=6&approved=true&sort=rating');
+    if (!response.ok) {
+      throw new Error('Testimonials fetch failed');
+    }
+
+    const data = await response.json();
+    const reviews = data.reviews || [];
+
+    if (reviews.length === 0) {
+      // Hide section if no reviews
+      section.style.display = 'none';
+      return;
+    }
+
+    // Helper to safely escape HTML
+    const escape = text => {
+      const div = document.createElement('div');
+      div.textContent = text || '';
+      return div.innerHTML;
+    };
+
+    // Render testimonials in a grid
+    container.innerHTML = `
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px;">
+        ${reviews
+          .slice(0, 3)
+          .map(
+            review => `
+          <div class="card" style="padding: 24px; background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+              ${'⭐'.repeat(review.rating || 5)}
+            </div>
+            <p style="font-style: italic; color: #374151; margin-bottom: 16px; line-height: 1.6;">
+              "${escape((review.comment || '').substring(0, 150))}${(review.comment || '').length > 150 ? '...' : ''}"
+            </p>
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--ink, #0b8073); color: white; display: flex; align-items: center; justify-content: center; font-weight: 600;">
+                ${escape((review.customerName || 'A').charAt(0).toUpperCase())}
+              </div>
+              <div>
+                <div style="font-weight: 600; color: #111827;">${escape(review.customerName || 'Anonymous')}</div>
+                <div class="small" style="color: #6b7280;">${escape(review.supplierName || '')}</div>
+              </div>
+            </div>
+          </div>
+        `
+          )
+          .join('')}
+      </div>
+    `;
+
+    // Show the section
+    section.style.display = 'block';
+  } catch (error) {
+    console.error('Failed to load testimonials:', error);
+    // Hide section gracefully
+    section.style.display = 'none';
+  }
+}
+
+/**
+ * Initialize hero search with autocomplete
+ */
+function initHeroSearch() {
+  const form = document.getElementById('hero-search-form');
+  const input = document.getElementById('hero-search-input');
+  const resultsContainer = document.getElementById('hero-search-results');
+
+  if (!form || !input || !resultsContainer) {
+    return;
+  }
+
+  let searchTimeout;
+
+  // Handle input for autocomplete
+  input.addEventListener('input', () => {
+    clearTimeout(searchTimeout);
+    const query = input.value.trim();
+
+    if (query.length < 2) {
+      resultsContainer.style.display = 'none';
+      return;
+    }
+
+    searchTimeout = setTimeout(async () => {
+      try {
+        const response = await fetch(
+          `/api/search?q=${encodeURIComponent(query)}&limit=5`
+        );
+        if (!response.ok) {
+          throw new Error('Search failed');
+        }
+
+        const data = await response.json();
+        const results = data.results || [];
+
+        if (results.length === 0) {
+          resultsContainer.innerHTML = '<div style="padding: 16px; text-align: center; color: #6b7280;">No results found</div>';
+          resultsContainer.style.display = 'block';
+          return;
+        }
+
+        // Helper to safely escape HTML
+        const escape = text => {
+          const div = document.createElement('div');
+          div.textContent = text || '';
+          return div.innerHTML;
+        };
+
+        resultsContainer.innerHTML = results
+          .map(
+            result => `
+          <a 
+            href="${escape(result.url || '#')}" 
+            style="display: block; padding: 12px 16px; border-bottom: 1px solid #E7EAF0; text-decoration: none; color: inherit; transition: background 0.2s;"
+            onmouseover="this.style.background='#f9fafb'"
+            onmouseout="this.style.background='white'"
+          >
+            <div style="font-weight: 600; color: var(--ink, #0b8073);">${escape(result.title)}</div>
+            <div class="small" style="color: #6b7280; margin-top: 4px;">${escape(result.type)} ${result.location ? `· ${escape(result.location)}` : ''}</div>
+          </a>
+        `
+          )
+          .join('');
+
+        resultsContainer.style.display = 'block';
+      } catch (error) {
+        console.error('Search error:', error);
+        resultsContainer.style.display = 'none';
+      }
+    }, 300);
+  });
+
+  // Handle form submission
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    const query = input.value.trim();
+    if (query) {
+      window.location.href = `/suppliers.html?q=${encodeURIComponent(query)}`;
+    }
+  });
+
+  // Close results when clicking outside
+  document.addEventListener('click', e => {
+    if (!form.contains(e.target)) {
+      resultsContainer.style.display = 'none';
+    }
+  });
+}
+
+/**
+ * Initialize newsletter signup form
+ */
+function initNewsletterForm() {
+  const form = document.getElementById('newsletter-form');
+  const emailInput = document.getElementById('newsletter-email');
+
+  if (!form || !emailInput) {
+    return;
+  }
+
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+
+    const email = emailInput.value.trim();
+    if (!email) {
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/newsletter/subscribe', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ email }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Subscription failed');
+      }
+
+      // Show success message
+      form.innerHTML = `
+        <div style="text-align: center; padding: 20px;">
+          <div style="font-size: 48px; margin-bottom: 12px;">✓</div>
+          <div style="font-size: 18px; font-weight: 600; color: white;">Thank you for subscribing!</div>
+          <p style="margin-top: 8px; color: rgba(255,255,255,0.9);">Check your inbox for a confirmation email.</p>
+        </div>
+      `;
+    } catch (error) {
+      console.error('Newsletter subscription error:', error);
+      
+      // Show error message
+      const errorDiv = document.createElement('div');
+      errorDiv.style.cssText = 'margin-top: 12px; padding: 12px; background: rgba(255,255,255,0.2); border-radius: 8px; color: white; text-align: center;';
+      errorDiv.textContent = 'Something went wrong. Please try again.';
+      form.appendChild(errorDiv);
+
+      setTimeout(() => {
+        errorDiv.remove();
+      }, 3000);
+    }
+  });
+}
+
+/**
+ * Initialize parallax effect on collage
+ */
+function initParallaxCollage() {
+  const collage = document.querySelector('.collage');
+  if (!collage) {
+    return;
+  }
+
+  // Add parallax on scroll
+  let ticking = false;
+
+  window.addEventListener('scroll', () => {
+    if (!ticking) {
+      window.requestAnimationFrame(() => {
+        const scrolled = window.pageYOffset;
+        const rate = scrolled * 0.3;
+
+        if (collage) {
+          collage.style.transform = `translateY(${rate}px)`;
+        }
+
+        ticking = false;
+      });
+
+      ticking = true;
+    }
+  });
 }
