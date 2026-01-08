@@ -143,13 +143,43 @@
 
   // Sync footer burger button with top burger button
   function initFooterBurger() {
-    const topBurger = document.getElementById('burger');
     const footerBurger = document.getElementById('footer-burger');
 
-    if (!topBurger || !footerBurger) {
+    if (!footerBurger) {
+      if (window.location.hostname === 'localhost') {
+        console.info('[FooterNav] Footer burger not found');
+      }
       return;
     }
 
+    // Wait for top burger to be initialized by auth-nav.js
+    const waitForBurger = () => {
+      const topBurger = document.getElementById('burger');
+      
+      if (!topBurger) {
+        if (window.location.hostname === 'localhost') {
+          console.info('[FooterNav] Top burger not found, skipping sync');
+        }
+        return;
+      }
+
+      // Check if burger has been initialized by auth-nav.js
+      if (topBurger.dataset.navInitialized !== 'true') {
+        // Retry after a short delay
+        setTimeout(waitForBurger, 50);
+        return;
+      }
+
+      // Now burger is initialized, set up sync
+      setupBurgerSync(topBurger, footerBurger);
+    };
+
+    // Start waiting for burger initialization
+    waitForBurger();
+  }
+
+  // Set up synchronization between top and footer burgers
+  function setupBurgerSync(topBurger, footerBurger) {
     // Shared function to sync footer burger state
     const syncFooterBurgerState = isExpanded => {
       footerBurger.setAttribute('aria-expanded', String(isExpanded));
@@ -194,6 +224,14 @@
       attributes: true,
       attributeFilter: ['class'],
     });
+
+    // Initial sync
+    const isExpanded = topBurger.getAttribute('aria-expanded') === 'true';
+    syncFooterBurgerState(isExpanded);
+
+    if (window.location.hostname === 'localhost') {
+      console.info('[FooterNav] Burger sync initialized');
+    }
   }
 
   // Initialize scroll-based show/hide behavior
