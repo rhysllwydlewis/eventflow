@@ -5587,7 +5587,7 @@ app.get('/api/photos/:id', async (req, res) => {
 });
 
 // ---------- Audit Logging ----------
-const { getAuditLogs, auditLog, AUDIT_ACTIONS } = require('./middleware/audit');
+const { auditLog, AUDIT_ACTIONS } = require('./middleware/audit');
 
 // Note: Admin audit endpoints moved to routes/admin.js for consolidation
 // GET /api/admin/audit and GET /api/admin/audit-logs are now in routes/admin.js
