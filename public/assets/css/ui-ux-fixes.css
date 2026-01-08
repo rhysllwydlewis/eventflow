@@ -1402,14 +1402,20 @@ body.has-footer-nav {
 }
 
 @media (max-width: 600px) {
+  /* Hide Blog link on mobile in both top and footer nav */
+  .nav-inline .nav-main[href="/blog.html"],
+  .footer-nav-link[href="/blog.html"] {
+    display: none !important;
+  }
+  
   .footer-nav-links {
-    gap: 2px;
+    gap: 3px;
   }
   
   .footer-nav-link {
     font-size: 13px;
-    padding: 8px 12px;
-    min-width: 52px;
+    padding: 8px 11px;
+    min-width: 50px;
   }
   
   .footer-nav-icon-button {
@@ -1429,8 +1435,8 @@ body.has-footer-nav {
   
   .footer-nav-link {
     font-size: 12px;
-    padding: 8px 10px;
-    min-width: 48px;
+    padding: 8px 9px;
+    min-width: 46px;
   }
   
   .footer-nav-icon-button {
@@ -1442,8 +1448,12 @@ body.has-footer-nav {
 @media (max-width: 375px) {
   .footer-nav-link {
     font-size: 11px;
-    padding: 8px 8px;
+    padding: 8px 7px;
     min-width: 44px;
+  }
+  
+  .footer-nav-links {
+    gap: 2px;
   }
 }
 
