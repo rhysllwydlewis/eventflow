@@ -15,7 +15,10 @@
         window.__CSRF_TOKEN__ = csrfToken;
       }
     } catch (e) {
-      console.error('Failed to fetch CSRF token', e);
+      // Only log CSRF errors in development
+      if (window.location.hostname === 'localhost') {
+        console.error('Failed to fetch CSRF token', e);
+      }
     }
   }
 
@@ -70,7 +73,7 @@
       const burger = original.cloneNode(true);
       original.parentNode.replaceChild(burger, original);
 
-      // Mark as initialized
+      // Mark as initialized - this is used by footer-nav.js
       burger.dataset.navInitialized = 'true';
 
       // Add aria-controls if nav menu has an id
@@ -245,7 +248,9 @@
           const currentUser = await me();
           if (currentUser) {
             // Logout didn't complete properly - retry once
-            console.warn('Logout verification failed, retrying...');
+            if (window.location.hostname === 'localhost') {
+              console.warn('Logout verification failed, retrying...');
+            }
             await callLogout();
           }
         }
@@ -350,8 +355,8 @@
   window.addEventListener('storage', async event => {
     // Check if auth-related storage was cleared (logout in another tab)
     if (event.key === 'user' && event.newValue === null) {
-      // Only log if we had a logged-in user before
-      if (lastKnownAuthState) {
+      // Only log if we had a logged-in user before and in development
+      if (lastKnownAuthState && window.location.hostname === 'localhost') {
         console.info('Logout detected in another tab');
       }
       const currentUser = await me();
@@ -365,8 +370,8 @@
 
   // Helper to update auth state
   const updateAuthState = (currentUser, reason) => {
-    // Only log state changes for logged-in users, not guest state
-    if (currentUser || lastKnownAuthState) {
+    // Only log state changes for logged-in users, not guest state, and only in development
+    if ((currentUser || lastKnownAuthState) && window.location.hostname === 'localhost') {
       console.info(`${reason}`);
     }
     lastKnownAuthState = currentUser;
@@ -389,7 +394,10 @@
         }
       }
     } catch (error) {
-      console.error('Periodic auth check failed:', error);
+      // Only log errors in development
+      if (window.location.hostname === 'localhost') {
+        console.error('Periodic auth check failed:', error);
+      }
     }
   }, 30000); // 30 seconds
 })();

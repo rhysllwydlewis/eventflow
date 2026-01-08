@@ -1295,6 +1295,8 @@ html[data-theme="dark"] .footer-nav {
   min-width: 44px;
   white-space: nowrap;
   position: relative;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .footer-nav-link:hover {
@@ -1534,12 +1536,14 @@ body.has-footer-nav {
   
   .footer-nav-links {
     gap: 3px;
+    flex-wrap: nowrap; /* Ensure no wrapping */
   }
   
   .footer-nav-link {
     font-size: 12.5px;
     padding: 8px 9px;
     min-width: 46px;
+    max-width: 70px; /* Prevent over-expansion */
   }
   
   .footer-nav-icon-button {
@@ -1596,10 +1600,12 @@ body.has-footer-nav {
     font-size: 11px;
     padding: 8px 6px;
     min-width: 44px;
+    max-width: 60px; /* Prevent over-expansion on small screens */
   }
   
   .footer-nav-links {
     gap: 1px;
+    flex-wrap: nowrap; /* Ensure no wrapping */
   }
   
   .footer-nav-burger {
@@ -1617,5 +1623,11 @@ body.has-footer-nav {
     font-size: 10px;
     padding: 8px 6px;
     min-width: 42px;
+    max-width: 55px; /* Prevent over-expansion on very small screens */
+  }
+  
+  .footer-nav-links {
+    gap: 0px;
+    flex-wrap: nowrap; /* Ensure no wrapping */
   }
 }

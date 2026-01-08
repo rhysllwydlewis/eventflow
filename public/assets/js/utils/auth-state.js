@@ -94,13 +94,23 @@
           return { state: this.state, user: null };
         } else {
           // Other error - treat as unauthenticated
-          console.warn('Auth check failed with status:', response.status);
+          // Only log non-auth errors in development
+          if (
+            window.location.hostname === 'localhost' &&
+            response.status !== 401 &&
+            response.status !== 403
+          ) {
+            console.warn('Auth check failed with status:', response.status);
+          }
           this._setState(AUTH_STATES.UNAUTHENTICATED, null);
           return { state: this.state, user: null };
         }
       } catch (error) {
         // Network error - treat as unauthenticated
-        console.error('Auth check failed:', error);
+        // Only log in development mode
+        if (window.location.hostname === 'localhost') {
+          console.error('Auth check failed:', error);
+        }
         this._setState(AUTH_STATES.UNAUTHENTICATED, null);
         return { state: this.state, user: null };
       }
@@ -161,7 +171,10 @@
         try {
           listener({ state: this.state, user: this.user });
         } catch (e) {
-          console.error('Error in auth state listener:', e);
+          // Only log errors in development
+          if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+            console.error('Error in auth state listener:', e);
+          }
         }
       });
     }
