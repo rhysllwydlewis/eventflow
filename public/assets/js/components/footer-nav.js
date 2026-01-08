@@ -28,6 +28,7 @@
           <a href="/suppliers.html" class="footer-nav-link">Suppliers</a>
           <a href="/pricing.html" class="footer-nav-link">Pricing</a>
           <a href="/blog.html" class="footer-nav-link">Blog</a>
+          <a href="/auth.html" class="footer-nav-link footer-nav-auth">Log in</a>
           <button
             id="footer-notification-bell"
             class="footer-nav-icon-button"
@@ -38,7 +39,6 @@
             <span class="notification-icon">🔔</span>
             <span class="footer-notification-badge" style="display: none">0</span>
           </button>
-          <a href="/auth.html" class="footer-nav-link footer-nav-auth">Log in</a>
           <button
             id="footer-burger"
             class="footer-nav-burger"
@@ -258,17 +258,16 @@
       return;
     }
 
-    // Calculate the threshold (height of top nav + buffer for hero section)
+    // Calculate the threshold (height of top nav - appears when top nav scrolls out of view)
     const getScrollThreshold = () => {
       const headerHeight = topNav.offsetHeight || 80;
-      // Add a meaningful buffer (100px) so nav only appears after scrolling past hero
-      const buffer = 100;
-      const threshold = headerHeight + buffer;
+      // Footer nav appears only after scrolling past the entire top navbar
+      // No buffer needed - should appear as soon as top nav is scrolled past
+      const threshold = headerHeight;
 
       if (window.location.hostname === 'localhost') {
         console.info('[FooterNav] Threshold calculated:', {
           headerHeight,
-          buffer,
           threshold,
         });
       }
