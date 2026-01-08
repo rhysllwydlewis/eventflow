@@ -140,7 +140,9 @@ document.addEventListener('DOMContentLoaded', () => {
 async function loadPackagesCarousel({ endpoint, containerId, emptyMessage }) {
   const container = document.getElementById(containerId);
   if (!container) {
-    console.warn(`Container ${containerId} not found`);
+    if (window.location.hostname === 'localhost') {
+      console.warn(`Container ${containerId} not found`);
+    }
     return;
   }
 
@@ -174,7 +176,9 @@ async function loadPackagesCarousel({ endpoint, containerId, emptyMessage }) {
 
     // Check if Carousel class is available
     if (typeof Carousel === 'undefined') {
-      console.error('Carousel class not loaded. Rendering fallback.');
+      if (window.location.hostname === 'localhost') {
+        console.error('Carousel class not loaded. Rendering fallback.');
+      }
       renderPackageFallback(container, data.items);
       return;
     }
@@ -190,12 +194,16 @@ async function loadPackagesCarousel({ endpoint, containerId, emptyMessage }) {
       });
       carousel.setItems(data.items);
     } catch (error) {
-      console.error('Failed to initialize carousel:', error);
+      if (window.location.hostname === 'localhost') {
+        console.error('Failed to initialize carousel:', error);
+      }
       renderPackageFallback(container, data.items);
     }
   } catch (error) {
     clearTimeout(timeoutId);
-    console.error(`Failed to load packages from ${endpoint}:`, error);
+    if (window.location.hostname === 'localhost') {
+      console.error(`Failed to load packages from ${endpoint}:`, error);
+    }
 
     // Show error with retry button
     const errorMessage =
@@ -299,21 +307,24 @@ async function loadHeroCollageImages() {
   try {
     const settingsResponse = await fetch('/api/public/homepage-settings');
 
-    // Check response status explicitly
-    if (settingsResponse.status === 404) {
-      // Silently handle 404 - endpoint may not be configured yet
-      // Continue to load static images
+    // Check response status explicitly - handle 404 and 403 silently
+    if (settingsResponse.status === 404 || settingsResponse.status === 403) {
+      // Silently handle 404/403 - endpoint may not be deployed or configured yet
+      // Continue to load static images (no console output)
     } else if (settingsResponse.ok) {
       const settings = await settingsResponse.json();
       if (settings.pexelsCollageEnabled) {
-        console.log('Pexels collage enabled, initializing dynamic collage');
+        // Only log if in development mode
+        if (window.location.hostname === 'localhost') {
+          console.log('Pexels collage enabled, initializing dynamic collage');
+        }
         await initPexelsCollage(settings.pexelsCollageSettings);
         return; // Skip static image loading
       }
     }
-    // If non-200 and non-404, just continue to static images
+    // If non-200 and non-404/403, just continue to static images
   } catch (error) {
-    // Network error or other exception - continue to static images
+    // Network error or other exception - continue to static images silently
   }
 
   // If Pexels is not enabled or failed, load static images
@@ -428,7 +439,10 @@ async function loadHeroCollageImages() {
           pictureElement.insertBefore(newSource, imgElement);
         }
       } catch (updateError) {
-        console.error(`Failed to update image for category ${category}:`, updateError);
+        // Only log errors in development mode
+        if (window.location.hostname === 'localhost') {
+          console.error(`Failed to update image for category ${category}:`, updateError);
+        }
       }
     });
   } catch (error) {
@@ -461,7 +475,9 @@ async function initPexelsCollage(settings) {
   const collageFrames = document.querySelectorAll('.collage .frame');
 
   if (!collageFrames || collageFrames.length === 0) {
-    console.warn('No collage frames found for Pexels collage');
+    if (window.location.hostname === 'localhost') {
+      console.warn('No collage frames found for Pexels collage');
+    }
     return;
   }
 
@@ -480,7 +496,10 @@ async function initPexelsCollage(settings) {
         );
 
         if (!response.ok) {
-          console.warn(`Failed to fetch Pexels images for ${category}, falling back to static`);
+          // Only warn in development mode
+          if (window.location.hostname === 'localhost') {
+            console.warn(`Failed to fetch Pexels images for ${category}, falling back to static`);
+          }
           continue;
         }
 
@@ -508,7 +527,10 @@ async function initPexelsCollage(settings) {
           }
         }
       } catch (error) {
-        console.error(`Error fetching Pexels images for ${category}:`, error);
+        // Only log errors in development mode
+        if (window.location.hostname === 'localhost') {
+          console.error(`Error fetching Pexels images for ${category}:`, error);
+        }
       }
     }
 
@@ -518,17 +540,26 @@ async function initPexelsCollage(settings) {
         cyclePexelsImages(imageCache, currentImageIndex, collageFrames, categoryMapping);
       }, intervalMs);
 
-      console.log(
-        `Pexels collage initialized with ${intervalSeconds}s interval (${Object.keys(imageCache).length} categories)`
-      );
-    } else {
-      console.warn('No Pexels images loaded, falling back to static images');
+      // Only log in development mode
+      if (window.location.hostname === 'localhost') {
+        console.log(
+          `Pexels collage initialized with ${intervalSeconds}s interval (${Object.keys(imageCache).length} categories)`
+        );
+      }
+      } else {
+        // Only warn in development mode
+        if (window.location.hostname === 'localhost') {
+          console.warn('No Pexels images loaded, falling back to static images');
+        }
+        // Fall back to loading static hero images
+        await loadHeroCollageImages();
+      }
+    } catch (error) {
+      // Only log errors in development mode
+      if (window.location.hostname === 'localhost') {
+        console.error('Error initializing Pexels collage:', error);
+      }
       // Fall back to loading static hero images
-      await loadHeroCollageImages();
-    }
-  } catch (error) {
-    console.error('Error initializing Pexels collage:', error);
-    // Fall back to loading static hero images
     await loadHeroCollageImages();
   }
 }
@@ -625,7 +656,9 @@ async function fetchPublicStats() {
       });
     }
   } catch (error) {
-    console.error('Failed to load public stats:', error);
+    if (window.location.hostname === 'localhost') {
+      console.error('Failed to load public stats:', error);
+    }
     // Graceful fallback: Use copy-only approach
     // Stats will show 0 or the data-counter defaults, which is acceptable
   }
@@ -689,7 +722,9 @@ async function fetchMarketplacePreview() {
       </div>
     `;
   } catch (error) {
-    console.error('Failed to load marketplace preview:', error);
+    if (window.location.hostname === 'localhost') {
+      console.error('Failed to load marketplace preview:', error);
+    }
     // Hide the entire section gracefully
     const section = document.getElementById('marketplace-preview-section');
     if (section) {
@@ -754,7 +789,9 @@ async function fetchGuides() {
     // Show the section
     section.style.display = 'block';
   } catch (error) {
-    console.error('Failed to load guides:', error);
+    if (window.location.hostname === 'localhost') {
+      console.error('Failed to load guides:', error);
+    }
     // Hide the entire section gracefully
     section.style.display = 'none';
   }
@@ -770,14 +807,17 @@ async function fetchTestimonials() {
 
   try {
     const response = await fetch('/api/reviews?limit=6&approved=true&sort=rating');
+    
+    // Silently handle 404 - reviews endpoint may not be deployed yet
     if (response.status === 404) {
-      // Silently handle 404 - reviews endpoint may not be available
       section.style.display = 'none';
       return;
     }
 
     if (!response.ok) {
-      throw new Error('Testimonials fetch failed');
+      // Silently handle other errors - this is optional content
+      section.style.display = 'none';
+      return;
     }
 
     const data = await response.json();
@@ -829,7 +869,7 @@ async function fetchTestimonials() {
     // Show the section
     section.style.display = 'block';
   } catch (error) {
-    // Silently handle errors and hide section
+    // Silently handle errors and hide section - this is optional content
     section.style.display = 'none';
   }
 }
@@ -900,7 +940,9 @@ function initHeroSearch() {
 
         resultsContainer.style.display = 'block';
       } catch (error) {
-        console.error('Search error:', error);
+        if (window.location.hostname === 'localhost') {
+          console.error('Search error:', error);
+        }
         resultsContainer.style.display = 'none';
       }
     }, 300);
@@ -965,7 +1007,9 @@ function initNewsletterForm() {
         </div>
       `;
     } catch (error) {
-      console.error('Newsletter subscription error:', error);
+      if (window.location.hostname === 'localhost') {
+        console.error('Newsletter subscription error:', error);
+      }
 
       // Show error message
       const errorDiv = document.createElement('div');

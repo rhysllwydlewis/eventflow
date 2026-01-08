@@ -70,7 +70,7 @@
       const burger = original.cloneNode(true);
       original.parentNode.replaceChild(burger, original);
 
-      // Mark as initialized
+      // Mark as initialized - this is used by footer-nav.js
       burger.dataset.navInitialized = 'true';
 
       // Add aria-controls if nav menu has an id
