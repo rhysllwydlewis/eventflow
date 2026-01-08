@@ -70,15 +70,16 @@
       return;
     }
 
+    // Cache DOM elements
+    const topBadge = document.querySelector('.notification-badge');
+    const footerBadge = document.querySelector('.footer-notification-badge');
+
     // Function to update footer bell visibility based on top bell
     const updateFooterBell = () => {
       if (topBell && topBell.style.display !== 'none') {
         footerBell.style.display = 'flex';
 
         // Sync badge count
-        const topBadge = document.querySelector('.notification-badge');
-        const footerBadge = document.querySelector('.footer-notification-badge');
-
         if (topBadge && footerBadge) {
           footerBadge.style.display = topBadge.style.display;
           footerBadge.textContent = topBadge.textContent;
@@ -91,19 +92,25 @@
     // Initial sync
     updateFooterBell();
 
-    // Watch for changes to top bell visibility (for login/logout)
-    const observer = new MutationObserver(updateFooterBell);
+    // Debounce helper to prevent excessive callback executions
+    let debounceTimer;
+    const debouncedUpdate = () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(updateFooterBell, 10);
+    };
 
+    // Watch for changes to top bell visibility (for login/logout)
     if (topBell) {
-      observer.observe(topBell, {
+      const bellObserver = new MutationObserver(debouncedUpdate);
+      bellObserver.observe(topBell, {
         attributes: true,
         attributeFilter: ['style'],
       });
 
-      // Also watch for badge changes
-      const topBadge = document.querySelector('.notification-badge');
+      // Watch for badge changes with separate observer
       if (topBadge) {
-        observer.observe(topBadge, {
+        const badgeObserver = new MutationObserver(debouncedUpdate);
+        badgeObserver.observe(topBadge, {
           attributes: true,
           attributeFilter: ['style'],
           childList: true,
