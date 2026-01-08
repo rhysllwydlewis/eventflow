@@ -1213,3 +1213,46 @@ html[data-theme="dark"] .quick-plan-form input {
   border-color: #4a5568;
   color: #e5e7eb;
 }
+
+/* Skeleton loading cards */
+.skeleton-carousel {
+  display: flex;
+  gap: 1rem;
+  overflow: hidden;
+}
+
+.skeleton-card {
+  flex: 0 0 calc(33.333% - 1rem);
+  min-width: 0;
+  height: 280px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s ease-in-out infinite;
+  border-radius: 8px;
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .skeleton-card {
+    flex: 0 0 calc(50% - 0.5rem);
+  }
+}
+
+@media (max-width: 480px) {
+  .skeleton-card {
+    flex: 0 0 100%;
+  }
+}
+
+html[data-theme="dark"] .skeleton-card {
+  background: linear-gradient(90deg, #2d3748 25%, #1e2530 50%, #2d3748 75%);
+  background-size: 200% 100%;
+}

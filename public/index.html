@@ -48,6 +48,7 @@
     {
       "@context": "https://schema.org",
       "@type": "Organization",
+      "@id": "https://event-flow.co.uk/#organization",
       "name": "EventFlow",
       "url": "https://event-flow.co.uk",
       "description": "UK event planning platform connecting customers with verified event suppliers",
@@ -63,12 +64,36 @@
     {
       "@context": "https://schema.org",
       "@type": "WebSite",
+      "@id": "https://event-flow.co.uk/#website",
       "name": "EventFlow",
       "url": "https://event-flow.co.uk",
+      "publisher": {
+        "@id": "https://event-flow.co.uk/#organization"
+      },
       "potentialAction": {
         "@type": "SearchAction",
         "target": "https://event-flow.co.uk/suppliers?q={search_term_string}",
         "query-input": "required name=search_term_string"
+      }
+    }
+    </script>
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      "@id": "https://event-flow.co.uk/#webpage",
+      "url": "https://event-flow.co.uk/",
+      "name": "EventFlow - UK Event Planning Platform",
+      "description": "Plan your perfect UK event with EventFlow. Connect with verified suppliers, browse packages, and manage your event in one place. Free to use, no platform fees.",
+      "isPartOf": {
+        "@id": "https://event-flow.co.uk/#website"
+      },
+      "about": {
+        "@id": "https://event-flow.co.uk/#organization"
+      },
+      "publisher": {
+        "@id": "https://event-flow.co.uk/#organization"
       }
     }
     </script>
