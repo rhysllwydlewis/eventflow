@@ -1512,13 +1512,15 @@ body.has-footer-nav {
   }
   
   .footer-nav-links {
-    gap: 4px;
+    gap: 2px;
+    flex-wrap: nowrap !important;
   }
   
   .footer-nav-link {
-    font-size: 13px;
-    padding: 8px 10px;
-    min-width: 48px;
+    font-size: 12px;
+    padding: 6px 8px;
+    min-width: 44px;
+    max-width: 50px;
   }
   
   .footer-nav-icon-button {
@@ -1536,14 +1538,14 @@ body.has-footer-nav {
   
   .footer-nav-links {
     gap: 2px;
-    flex-wrap: nowrap; /* Ensure no wrapping */
+    flex-wrap: nowrap !important;
   }
   
   .footer-nav-link {
     font-size: 11px;
-    padding: 7px 6px;
-    min-width: 46px;
-    max-width: 70px; /* Prevent over-expansion */
+    padding: 6px 6px;
+    min-width: 44px;
+    max-width: 45px;
   }
   
   .footer-nav-icon-button {
@@ -1561,6 +1563,21 @@ body.has-footer-nav {
   
   .footer-nav-burger-bar {
     width: 15px;
+  }
+}
+
+/* Critical 398px breakpoint - reported issue viewport */
+@media (max-width: 398px) {
+  .footer-nav-links {
+    gap: 1px;
+    flex-wrap: nowrap !important;
+  }
+  
+  .footer-nav-link {
+    font-size: 10px;
+    padding: 5px 5px;
+    min-width: 44px;
+    max-width: 40px;
   }
 }
 
@@ -1581,6 +1598,7 @@ body.has-footer-nav {
   
   .footer-nav-links {
     gap: 3px;
+    flex-wrap: nowrap !important;
   }
   
   .footer-nav-icon-button {
@@ -1601,15 +1619,15 @@ body.has-footer-nav {
 
 @media (max-width: 375px) {
   .footer-nav-link {
-    font-size: 10px;
-    padding: 6px 5px;
+    font-size: 9px;
+    padding: 5px 4px;
     min-width: 44px;
-    max-width: 60px; /* Prevent over-expansion on small screens */
+    max-width: 38px;
   }
   
   .footer-nav-links {
     gap: 1px;
-    flex-wrap: nowrap; /* Ensure no wrapping */
+    flex-wrap: nowrap !important;
   }
   
   .footer-nav-burger {
@@ -1624,15 +1642,15 @@ body.has-footer-nav {
 
 @media (max-width: 320px) {
   .footer-nav-link {
-    font-size: 9px;
-    padding: 6px 4px;
-    min-width: 42px;
-    max-width: 55px; /* Prevent over-expansion on very small screens */
+    font-size: 8px;
+    padding: 4px 3px;
+    min-width: 44px;
+    max-width: 32px;
   }
   
   .footer-nav-links {
     gap: 0;
-    flex-wrap: nowrap; /* Ensure no wrapping */
+    flex-wrap: nowrap !important;
   }
 }
 
