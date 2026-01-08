@@ -189,6 +189,30 @@
               conversations when you’re ready, and keep everything together.
             </p>
 
+            <!-- Hero Search Bar -->
+            <div class="hero-search" style="margin: 2rem 0;">
+              <form id="hero-search-form" style="position: relative; max-width: 600px;">
+                <input 
+                  type="text" 
+                  id="hero-search-input" 
+                  placeholder="Search for suppliers, packages, or venues..." 
+                  autocomplete="off"
+                  aria-label="Search suppliers and packages"
+                  style="width: 100%; padding: 16px 50px 16px 20px; border: 2px solid #E7EAF0; border-radius: 12px; font-size: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); transition: all 0.3s ease;"
+                >
+                <button 
+                  type="submit" 
+                  aria-label="Search"
+                  style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: var(--ink, #0b8073); color: white; border: none; border-radius: 8px; padding: 10px 16px; cursor: pointer; font-size: 18px;"
+                >
+                  🔍
+                </button>
+                <div id="hero-search-results" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: white; border: 2px solid #E7EAF0; border-top: none; border-radius: 0 0 12px 12px; max-height: 400px; overflow-y: auto; box-shadow: 0 8px 16px rgba(0,0,0,0.1); z-index: 100; margin-top: -10px;">
+                  <!-- Autocomplete results will be inserted here -->
+                </div>
+              </form>
+            </div>
+
             <div class="hero-cta">
               <a class="cta" href="/start.html">Start planning your event</a>
               <a class="cta secondary" href="/suppliers.html">Browse suppliers</a>
@@ -340,6 +364,47 @@
               <div class="stat-number" data-counter="500" data-suffix="+">0</div>
               <div class="stat-label">Customer Reviews</div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Trust Badges Section -->
+      <section class="section" aria-label="Trust indicators">
+        <div class="container">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 24px; max-width: 900px; margin: 0 auto;">
+            <div class="trust-badge" style="text-align: center; padding: 24px; background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+              <div style="font-size: 48px; margin-bottom: 12px;">✓</div>
+              <h3 style="font-size: 18px; font-weight: 600; margin: 0 0 8px 0; color: var(--ink, #0B8073);">Verified Suppliers</h3>
+              <p class="small" style="margin: 0; color: #6b7280;">All suppliers are verified and vetted</p>
+            </div>
+            <div class="trust-badge" style="text-align: center; padding: 24px; background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+              <div style="font-size: 48px; margin-bottom: 12px;">🔒</div>
+              <h3 style="font-size: 18px; font-weight: 600; margin: 0 0 8px 0; color: var(--ink, #0B8073);">Secure Messaging</h3>
+              <p class="small" style="margin: 0; color: #6b7280;">Safe and private communication</p>
+            </div>
+            <div class="trust-badge" style="text-align: center; padding: 24px; background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+              <div style="font-size: 48px; margin-bottom: 12px;">💷</div>
+              <h3 style="font-size: 18px; font-weight: 600; margin: 0 0 8px 0; color: var(--ink, #0B8073);">No Platform Fees</h3>
+              <p class="small" style="margin: 0; color: #6b7280;">Direct bookings with suppliers</p>
+            </div>
+            <div class="trust-badge" style="text-align: center; padding: 24px; background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+              <div style="font-size: 48px; margin-bottom: 12px;">🇬🇧</div>
+              <h3 style="font-size: 18px; font-weight: 600; margin: 0 0 8px 0; color: var(--ink, #0B8073);">UK Based Support</h3>
+              <p class="small" style="margin: 0; color: #6b7280;">Local support when you need it</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Testimonials Section -->
+      <section class="section section--muted" aria-label="Customer testimonials" id="testimonials-section" style="display: none;">
+        <div class="container">
+          <div style="text-align: center; margin-bottom: 2rem;">
+            <div class="small" style="text-transform: uppercase; letter-spacing: 0.2em; color: #7e8794;">Testimonials</div>
+            <h2 style="margin-top: 0.5rem; margin-bottom: 1rem;">What Our Customers Say</h2>
+          </div>
+          <div id="testimonials-carousel" class="testimonials-grid">
+            <p class="small">Loading testimonials...</p>
           </div>
         </div>
       </section>
@@ -631,6 +696,33 @@
           <div style="margin-top: 2rem">
             <a href="/marketplace" class="cta"> Visit the Marketplace </a>
           </div>
+        </div>
+      </section>
+
+      <!-- Newsletter Signup Section -->
+      <section class="section" style="background: linear-gradient(135deg, var(--ink, #0b8073), var(--accent, #13b6a2)); color: white;" aria-label="Newsletter signup">
+        <div class="container" style="max-width: 700px; text-align: center;">
+          <h2 style="font-size: 2rem; margin: 0 0 1rem 0; color: white;">Stay Updated</h2>
+          <p style="font-size: 1.15rem; line-height: 1.7; color: rgba(255,255,255,0.9); margin: 0 0 2rem 0;">
+            Get the latest event planning tips, supplier spotlights, and special offers delivered to your inbox.
+          </p>
+          <form id="newsletter-form" style="display: flex; gap: 12px; max-width: 500px; margin: 0 auto; flex-wrap: wrap;">
+            <input 
+              type="email" 
+              id="newsletter-email" 
+              name="email" 
+              placeholder="Enter your email address" 
+              required
+              aria-label="Email address"
+              style="flex: 1; min-width: 250px; padding: 14px 20px; border: none; border-radius: 8px; font-size: 16px;"
+            >
+            <button type="submit" class="cta" style="background: white; color: var(--ink, #0b8073); border: none; padding: 14px 32px; border-radius: 8px; font-weight: 600; font-size: 16px; cursor: pointer;">
+              Subscribe
+            </button>
+          </form>
+          <p class="small" style="margin-top: 1rem; color: rgba(255,255,255,0.7);">
+            We respect your privacy. Unsubscribe at any time.
+          </p>
         </div>
       </section>
     </main>
