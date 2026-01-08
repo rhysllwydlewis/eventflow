@@ -227,10 +227,21 @@
     const defaultImage = '/assets/images/collage-venue.jpg';
     const image = listing.images && listing.images[0] ? listing.images[0] : defaultImage;
 
+    // Category icon mapping
+    const categoryIcons = {
+      'attire': '👗',
+      'decor': '🎨',
+      'av-equipment': '🔊',
+      'photography': '📸',
+      'party-supplies': '🎉',
+      'florals': '🌸'
+    };
+
     // Generate tags (category, location, condition)
     const tags = [];
     if (listing.category) {
-      tags.push(`<span class="marketplace-tag">${formatCategory(listing.category)}</span>`);
+      const icon = categoryIcons[listing.category] || '📦';
+      tags.push(`<span class="marketplace-tag">${icon} ${formatCategory(listing.category)}</span>`);
     }
     if (listing.location) {
       tags.push(`<span class="marketplace-tag">📍 ${escapeHtml(listing.location)}</span>`);
@@ -318,6 +329,22 @@
             <div class="listing-detail-description">
               <h4>Description</h4>
               <p>${escapeHtml(listing.description)}</p>
+            </div>
+            
+            <!-- Share Buttons -->
+            <div class="listing-detail-share" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #E7EAF0;">
+              <h4 style="font-size: 14px; font-weight: 600; margin-bottom: 12px; color: #6b7280;">Share this listing</h4>
+              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <button onclick="shareOnFacebook('${listing.id}')" class="btn-share" style="padding: 8px 16px; border: 1px solid #E7EAF0; border-radius: 6px; background: white; cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 6px; transition: all 0.2s;">
+                  📘 Facebook
+                </button>
+                <button onclick="shareOnTwitter('${escapeHtml(listing.title)}', '${listing.id}')" class="btn-share" style="padding: 8px 16px; border: 1px solid #E7EAF0; border-radius: 6px; background: white; cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 6px; transition: all 0.2s;">
+                  🐦 Twitter
+                </button>
+                <button onclick="copyListingLink('${listing.id}')" class="btn-share" style="padding: 8px 16px; border: 1px solid #E7EAF0; border-radius: 6px; background: white; cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 6px; transition: all 0.2s;">
+                  🔗 Copy Link
+                </button>
+              </div>
             </div>
           </div>
           <div class="listing-detail-actions">
@@ -1080,3 +1107,51 @@
   `;
   document.head.appendChild(style);
 })();
+
+  // Share functions
+  window.shareOnFacebook = function(listingId) {
+    const url = `${window.location.origin}/marketplace.html?listing=${listingId}`;
+    const shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
+    window.open(shareUrl, '_blank', 'width=600,height=400');
+  };
+
+  window.shareOnTwitter = function(title, listingId) {
+    const url = `${window.location.origin}/marketplace.html?listing=${listingId}`;
+    const text = `Check out this item on EventFlow Marketplace: ${title}`;
+    const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
+    window.open(shareUrl, '_blank', 'width=600,height=400');
+  };
+
+  window.copyListingLink = function(listingId) {
+    const url = `${window.location.origin}/marketplace.html?listing=${listingId}`;
+    
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(() => {
+        showToast('Link copied to clipboard!');
+      }).catch(err => {
+        console.error('Failed to copy link:', err);
+        fallbackCopyLink(url);
+      });
+    } else {
+      fallbackCopyLink(url);
+    }
+  };
+
+  function fallbackCopyLink(url) {
+    const textArea = document.createElement('textarea');
+    textArea.value = url;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-9999px';
+    document.body.appendChild(textArea);
+    textArea.select();
+    
+    try {
+      document.execCommand('copy');
+      showToast('Link copied to clipboard!');
+    } catch (err) {
+      console.error('Failed to copy link:', err);
+      showToast('Failed to copy link', 'error');
+    }
+    
+    document.body.removeChild(textArea);
+  }

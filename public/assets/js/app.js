@@ -530,10 +530,23 @@ async function initSupplier() {
     console.error('Error fetching supplier packages:', error);
   }
   const img = (s.photos && s.photos[0]) || '/assets/images/hero-venue.svg';
-  const gallery = (s.photos || [])
-    .slice(1)
-    .map(u => `<img loading="lazy" src="${escapeHtml(u)}" alt="${escapeHtml(s.name)}">`)
-    .join('');
+  
+  // Create lightbox gallery HTML for photos
+  const galleryPhotos = s.photos || [];
+  const gallery = galleryPhotos.length > 1
+    ? galleryPhotos
+        .slice(1)
+        .map(
+          (u, index) => `
+      <div class="gallery-item" data-index="${index + 1}" style="cursor: pointer; position: relative; overflow: hidden; border-radius: 8px; transition: transform 0.3s ease;">
+        <img loading="lazy" src="${escapeHtml(u)}" alt="${escapeHtml(s.name)} - Photo ${index + 2}" style="width: 100%; height: 200px; object-fit: cover; transition: transform 0.3s ease;">
+        <div class="gallery-overlay" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); opacity: 0; transition: opacity 0.3s ease; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px;">🔍</div>
+      </div>
+    `
+        )
+        .join('')
+    : '';
+  
   const facts = `<div class="small">${s.website ? `<a href="${escapeHtml(s.website)}" target="_blank" rel="noopener">${escapeHtml(s.website)}</a> · ` : ''}${escapeHtml(s.phone || '')} ${escapeHtml(s.license || '')} ${s.maxGuests ? `· Max ${escapeHtml(String(s.maxGuests))} guests` : ''}</div>`;
   const amenities = (s.amenities || [])
     .map(a => `<span class="badge">${escapeHtml(a)}</span>`)
@@ -780,6 +793,9 @@ async function initSupplier() {
     </div>
   `;
 
+  // Initialize lightbox gallery
+  initSupplierGallery(galleryPhotos);
+
   const addBtn = document.getElementById('add');
   if (addBtn) {
     // Check if supplier is already in plan
@@ -1025,6 +1041,111 @@ async function initSupplier() {
       }
     }, RETRY_INTERVAL_MS);
   }
+}
+
+/**
+ * Initialize supplier photo gallery with lightbox
+ * @param {Array} photos - Array of photo URLs
+ */
+function initSupplierGallery(photos) {
+  if (!photos || photos.length <= 1) {
+    return; // Need at least 2 photos (hero + 1 gallery photo)
+  }
+
+  const galleryItems = document.querySelectorAll('.gallery-item');
+  if (!galleryItems.length) {
+    return;
+  }
+
+  // Add click handlers to open lightbox
+  galleryItems.forEach((item, index) => {
+    item.addEventListener('click', () => {
+      openLightbox(photos, index + 1); // +1 because hero image is photos[0]
+    });
+  });
+}
+
+/**
+ * Open lightbox for photo gallery
+ * @param {Array} photos - Array of photo URLs
+ * @param {number} startIndex - Index to start at
+ */
+function openLightbox(photos, startIndex = 0) {
+  let currentIndex = startIndex;
+
+  const modal = document.createElement('div');
+  modal.className = 'lightbox-modal';
+  modal.innerHTML = `
+    <div class="lightbox-content">
+      <button class="lightbox-close" aria-label="Close lightbox">&times;</button>
+      ${photos.length > 1 ? '<button class="lightbox-nav lightbox-prev" aria-label="Previous photo">&lsaquo;</button>' : ''}
+      <img class="lightbox-image" src="${escapeHtml(photos[currentIndex])}" alt="Gallery photo ${currentIndex + 1}">
+      ${photos.length > 1 ? '<button class="lightbox-nav lightbox-next" aria-label="Next photo">&rsaquo;</button>' : ''}
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+  document.body.style.overflow = 'hidden';
+
+  const img = modal.querySelector('.lightbox-image');
+  const closeBtn = modal.querySelector('.lightbox-close');
+  const prevBtn = modal.querySelector('.lightbox-prev');
+  const nextBtn = modal.querySelector('.lightbox-next');
+
+  // Close lightbox
+  const closeLightbox = () => {
+    modal.remove();
+    document.body.style.overflow = '';
+  };
+
+  closeBtn.addEventListener('click', closeLightbox);
+  modal.addEventListener('click', e => {
+    if (e.target === modal) {
+      closeLightbox();
+    }
+  });
+
+  // Navigate photos
+  const updateImage = () => {
+    img.src = escapeHtml(photos[currentIndex]);
+    img.alt = `Gallery photo ${currentIndex + 1}`;
+  };
+
+  if (prevBtn) {
+    prevBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      currentIndex = currentIndex > 0 ? currentIndex - 1 : photos.length - 1;
+      updateImage();
+    });
+  }
+
+  if (nextBtn) {
+    nextBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      currentIndex = currentIndex < photos.length - 1 ? currentIndex + 1 : 0;
+      updateImage();
+    });
+  }
+
+  // Keyboard navigation
+  const handleKeydown = e => {
+    if (e.key === 'Escape') {
+      closeLightbox();
+    } else if (e.key === 'ArrowLeft' && prevBtn) {
+      currentIndex = currentIndex > 0 ? currentIndex - 1 : photos.length - 1;
+      updateImage();
+    } else if (e.key === 'ArrowRight' && nextBtn) {
+      currentIndex = currentIndex < photos.length - 1 ? currentIndex + 1 : 0;
+      updateImage();
+    }
+  };
+
+  document.addEventListener('keydown', handleKeydown);
+
+  // Clean up on close
+  modal.addEventListener('remove', () => {
+    document.removeEventListener('keydown', handleKeydown);
+  });
 }
 
 async function initPlan() {
