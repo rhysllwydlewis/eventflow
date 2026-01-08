@@ -28,7 +28,6 @@
           <a href="/suppliers.html" class="footer-nav-link">Suppliers</a>
           <a href="/pricing.html" class="footer-nav-link">Pricing</a>
           <a href="/blog.html" class="footer-nav-link">Blog</a>
-          <a href="/auth.html" class="footer-nav-link footer-nav-auth">Log in</a>
           <button
             id="footer-notification-bell"
             class="footer-nav-icon-button"
@@ -39,6 +38,7 @@
             <span class="notification-icon">🔔</span>
             <span class="footer-notification-badge" style="display: none">0</span>
           </button>
+          <a href="/auth.html" class="footer-nav-link footer-nav-auth">Log in</a>
           <button
             id="footer-burger"
             class="footer-nav-burger"

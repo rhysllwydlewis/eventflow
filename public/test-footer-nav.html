@@ -119,13 +119,16 @@
             <li>✅ <strong>At the top of the page</strong>: The footer nav should be <strong>completely hidden</strong> (not visible)</li>
             <li>✅ <strong>After scrolling past the top navbar</strong>: The footer nav should <strong>smoothly slide up</strong> from the bottom</li>
             <li>✅ <strong>When scrolling back to top</strong>: The footer nav should <strong>smoothly slide down</strong> and disappear</li>
-            <li>✅ <strong>Notification Bell Position</strong>: Bell icon should appear AFTER "Log in/out" link (when logged in only)</li>
+            <li>✅ <strong>Footer Nav Order (Logged Out)</strong>: Plan, Suppliers, Pricing, Blog, Log in, Burger</li>
+            <li>✅ <strong>Footer Nav Order (Logged In)</strong>: Plan, Suppliers, Pricing, Blog, Bell, Log out, Burger</li>
+            <li>✅ <strong>Mobile (≤600px, Logged Out)</strong>: Plan, Suppliers, Pricing, Log in, Burger (Blog hidden)</li>
+            <li>✅ <strong>Mobile (≤600px, Logged In)</strong>: Plan, Suppliers, Pricing, Bell, Log out, Burger (Blog hidden)</li>
             <li>✅ <strong>Burger Menu Test</strong>: Click both header burger (top-right) and footer burger (bottom-right when scrolled) - they should both open/close the same menu</li>
             <li>✅ <strong>Burger Sync Test</strong>: Open menu with header burger, close with footer burger (or vice versa) - both burgers should stay in sync</li>
             <li>✅ <strong>Open browser console</strong> to see diagnostic messages (localhost only)</li>
             <li>✅ <strong>Test on mobile viewport</strong>: Resize browser to 375px width or use device emulation</li>
         </ul>
-        <p><strong>Expected Behavior:</strong> Footer nav is OFF-SCREEN at page top, VISIBLE after scrolling past top navbar. Bell appears after Log in/out, only when logged in.</p>
+        <p><strong>Expected Behavior:</strong> Footer nav is OFF-SCREEN at page top, VISIBLE after scrolling past top navbar. Bell appears BEFORE Log in/out (only when logged in).</p>
     </div>
 
     <main>
@@ -154,9 +157,10 @@
             <ul>
                 <li>Semi-transparent white background with blur effect</li>
                 <li>Shadow above the bar</li>
-                <li>Navigation links: Plan, Suppliers, Pricing, Blog, Log in</li>
-                <li><strong>Notification bell appears AFTER "Log in" (only when logged in)</strong></li>
-                <li>Burger menu on the far right</li>
+                <li><strong>Logged out:</strong> Plan, Suppliers, Pricing, Blog, Log in, Burger</li>
+                <li><strong>Logged in:</strong> Plan, Suppliers, Pricing, Blog, Bell 🔔, Log out, Burger</li>
+                <li><strong>Mobile (≤600px, logged out):</strong> Plan, Suppliers, Pricing, Log in, Burger</li>
+                <li><strong>Mobile (≤600px, logged in):</strong> Plan, Suppliers, Pricing, Bell 🔔, Log out, Burger</li>
                 <li>Fixed at the bottom of the viewport</li>
                 <li>Hover states matching the top navigation style</li>
             </ul>

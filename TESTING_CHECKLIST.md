@@ -208,9 +208,13 @@ Before merging:
 - Footer nav now appears immediately when top navbar scrolls out of view
 
 ### Footer Nav Order
-- **Before:** Plan, Suppliers, Pricing, Blog, Bell, Log in, Burger
-- **After:** Plan, Suppliers, Pricing, Blog, Log in, Bell, Burger
-- Bell now clearly associated with logged-in state
+- **Before:** Plan, Suppliers, Pricing, Blog, Log in, Bell, Burger
+- **After (Logged Out - Desktop):** Plan, Suppliers, Pricing, Blog, Log in, Burger
+- **After (Logged In - Desktop):** Plan, Suppliers, Pricing, Blog, Bell, Log out, Burger
+- **After (Logged Out - Mobile ≤600px):** Plan, Suppliers, Pricing, Log in, Burger (Blog hidden)
+- **After (Logged In - Mobile ≤600px):** Plan, Suppliers, Pricing, Bell, Log out, Burger (Blog hidden)
+
+Bell now appears BEFORE login/logout link when user is logged in
 
 ### Browser Support
 - All modern browsers (Chrome, Firefox, Safari, Edge)
