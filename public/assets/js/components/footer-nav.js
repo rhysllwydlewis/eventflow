@@ -277,7 +277,6 @@
 
     let ticking = false;
     let threshold = getScrollThreshold();
-    let lastScrollY = window.scrollY;
 
     // Update threshold on resize
     const handleResize = () => {
@@ -289,7 +288,6 @@
       if (!ticking) {
         window.requestAnimationFrame(() => {
           const currentScrollY = window.scrollY;
-          lastScrollY = currentScrollY;
 
           // Show footer nav when scrolled past the threshold
           if (currentScrollY > threshold) {
