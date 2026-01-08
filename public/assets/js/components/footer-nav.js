@@ -26,8 +26,8 @@
         <div class="footer-nav-links">
           <a href="/start.html" class="footer-nav-link">Plan</a>
           <a href="/suppliers.html" class="footer-nav-link">Suppliers</a>
-          <a href="/pricing.html" class="footer-nav-link">Pricing</a>
-          <a href="/blog.html" class="footer-nav-link">Blog</a>
+          <a href="/blog.html" class="footer-nav-link">Guides</a>
+          <a href="/dashboard.html" class="footer-nav-link footer-nav-dashboard" style="display: none">Dashboard</a>
           <button
             id="footer-notification-bell"
             class="footer-nav-icon-button"
