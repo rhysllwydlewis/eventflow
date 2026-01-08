@@ -452,7 +452,7 @@ async function loadHeroCollageImages() {
  * Fetches images from Pexels API and cycles them with crossfade transitions
  */
 async function initPexelsCollage(settings) {
-  const { interval = 8, queries = {} } = settings;
+  const { interval = 8 } = settings;
 
   // Map category keys to their collage frame elements
   const categoryMapping = {
@@ -478,8 +478,6 @@ async function initPexelsCollage(settings) {
   try {
     const categories = Object.keys(categoryMapping);
     for (const category of categories) {
-      const query = queries[category] || category;
-
       try {
         // Use the public Pexels collage endpoint
         const response = await fetch(
