@@ -14,29 +14,17 @@ const sharp = require('sharp');
 const logger = require('./logger');
 
 // Configurable limits from environment variables with safe defaults
-const MAX_FILE_SIZE_MARKETPLACE = parseInt(
-  process.env.MAX_FILE_SIZE_MARKETPLACE_MB || '10',
-  10
-) * 1024 * 1024;
-const MAX_FILE_SIZE_SUPPLIER = parseInt(
-  process.env.MAX_FILE_SIZE_SUPPLIER_MB || '10',
-  10
-) * 1024 * 1024;
-const MAX_FILE_SIZE_AVATAR = parseInt(
-  process.env.MAX_FILE_SIZE_AVATAR_MB || '5',
-  10
-) * 1024 * 1024;
+const MAX_FILE_SIZE_MARKETPLACE =
+  parseInt(process.env.MAX_FILE_SIZE_MARKETPLACE_MB || '10', 10) * 1024 * 1024;
+const MAX_FILE_SIZE_SUPPLIER =
+  parseInt(process.env.MAX_FILE_SIZE_SUPPLIER_MB || '10', 10) * 1024 * 1024;
+const MAX_FILE_SIZE_AVATAR = parseInt(process.env.MAX_FILE_SIZE_AVATAR_MB || '5', 10) * 1024 * 1024;
 
 // Maximum pixel count to prevent decompression bombs (25 megapixels)
 const MAX_PIXEL_COUNT = parseInt(process.env.MAX_PIXEL_COUNT || '25000000', 10);
 
 // Allowed image types (magic bytes)
-const ALLOWED_IMAGE_TYPES = [
-  'image/jpeg',
-  'image/png',
-  'image/webp',
-  'image/gif',
-];
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 
 /**
  * Validate file type using magic-byte detection
@@ -56,7 +44,7 @@ async function validateFileType(buffer) {
     }
 
     const fileType = await fileTypeFromBuffer(buffer);
-    
+
     if (!fileType) {
       return {
         valid: false,
@@ -66,7 +54,7 @@ async function validateFileType(buffer) {
     }
 
     const isAllowed = ALLOWED_IMAGE_TYPES.includes(fileType.mime);
-    
+
     if (!isAllowed) {
       return {
         valid: false,
@@ -136,7 +124,7 @@ async function validateImageDimensions(buffer) {
  */
 function validateFileSize(size, context = 'supplier') {
   let maxSize;
-  
+
   switch (context) {
     case 'marketplace':
       maxSize = MAX_FILE_SIZE_MARKETPLACE;
@@ -214,12 +202,7 @@ async function validateUpload(buffer, context = 'supplier') {
  * @returns {Promise<Buffer>} - Processed image buffer with metadata stripped
  */
 async function processWithMetadataStripping(buffer, options = {}) {
-  const {
-    width,
-    height,
-    fit = 'inside',
-    quality = 85,
-  } = options;
+  const { width, height, fit = 'inside', quality = 85 } = options;
 
   let processor = sharp(buffer);
 

@@ -200,9 +200,7 @@ router.post('/avatar', authRequired, (req, res) => {
       if (err instanceof require('multer').MulterError) {
         if (err.code === 'LIMIT_FILE_SIZE') {
           const maxSizeMB = Math.floor(photoUpload.MAX_FILE_SIZE_AVATAR / 1024 / 1024);
-          return res
-            .status(413)
-            .json({ error: `File too large. Maximum size is ${maxSizeMB}MB` });
+          return res.status(413).json({ error: `File too large. Maximum size is ${maxSizeMB}MB` });
         }
         return res.status(400).json({ error: err.message });
       }
@@ -242,7 +240,7 @@ router.post('/avatar', authRequired, (req, res) => {
       });
     } catch (processError) {
       console.error('Avatar processing error:', processError);
-      
+
       // Handle validation errors with appropriate status codes
       if (processError.name === 'ValidationError') {
         return res.status(400).json({
@@ -250,7 +248,7 @@ router.post('/avatar', authRequired, (req, res) => {
           details: processError.details,
         });
       }
-      
+
       res.status(500).json({ error: 'Failed to process avatar image' });
     }
   });

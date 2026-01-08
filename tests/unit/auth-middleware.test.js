@@ -261,6 +261,10 @@ describe('Auth Middleware', () => {
     it('should return 401 if no authentication', () => {
       const req = {
         cookies: {},
+        get: jest.fn().mockReturnValue('test-user-agent'),
+        path: '/test',
+        method: 'GET',
+        ip: '127.0.0.1',
       };
       const res = {
         status: jest.fn().mockReturnThis(),
@@ -281,6 +285,10 @@ describe('Auth Middleware', () => {
     it('should return 401 for invalid token', () => {
       const req = {
         cookies: { token: 'invalid.token' },
+        get: jest.fn().mockReturnValue('test-user-agent'),
+        path: '/test',
+        method: 'GET',
+        ip: '127.0.0.1',
       };
       const res = {
         status: jest.fn().mockReturnThis(),

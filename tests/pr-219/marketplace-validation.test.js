@@ -13,7 +13,7 @@ describe('Marketplace Listing Validation', () => {
   beforeEach(() => {
     // Mock validation service
     validationService = {
-      validateListing: (listing) => {
+      validateListing: listing => {
         const errors = [];
 
         // Validate title
@@ -109,9 +109,9 @@ describe('Marketplace Listing Validation', () => {
         return {
           isValid: errors.length === 0,
           errors: errors,
-          warnings: []
+          warnings: [],
         };
-      }
+      },
     };
   });
 
@@ -120,12 +120,10 @@ describe('Marketplace Listing Validation', () => {
       const listing = {
         title: 'Professional Photography Service',
         description: 'High-quality professional photography for your events',
-        price: 150.00,
+        price: 150.0,
         category: 'services',
         currency: 'USD',
-        images: [
-          { url: 'https://example.com/photo1.jpg', alt: 'Photo sample 1' }
-        ]
+        images: [{ url: 'https://example.com/photo1.jpg', alt: 'Photo sample 1' }],
       };
 
       const result = validationService.validateListing(listing);
@@ -140,9 +138,7 @@ describe('Marketplace Listing Validation', () => {
         price: 0,
         category: 'workshops',
         currency: 'USD',
-        images: [
-          { url: 'https://example.com/workshop.jpg', alt: 'Workshop image' }
-        ]
+        images: [{ url: 'https://example.com/workshop.jpg', alt: 'Workshop image' }],
       };
 
       const result = validationService.validateListing(listing);
@@ -160,8 +156,8 @@ describe('Marketplace Listing Validation', () => {
         images: [
           { url: 'https://example.com/img1.jpg', alt: 'Setup image 1' },
           { url: 'https://example.com/img2.jpg', alt: 'Setup image 2' },
-          { url: 'https://example.com/img3.jpg', alt: 'Setup image 3' }
-        ]
+          { url: 'https://example.com/img3.jpg', alt: 'Setup image 3' },
+        ],
       };
 
       const result = validationService.validateListing(listing);
@@ -177,7 +173,7 @@ describe('Marketplace Listing Validation', () => {
         price: 0,
         category: 'services',
         currency: 'USD',
-        images: [{ url: 'https://example.com/free.jpg', alt: 'Free offer' }]
+        images: [{ url: 'https://example.com/free.jpg', alt: 'Free offer' }],
       };
 
       const result = validationService.validateListing(listing);
@@ -193,7 +189,7 @@ describe('Marketplace Listing Validation', () => {
         price: 0.01,
         category: 'services',
         currency: 'USD',
-        images: [{ url: 'https://example.com/cheap.jpg', alt: 'Affordable' }]
+        images: [{ url: 'https://example.com/cheap.jpg', alt: 'Affordable' }],
       };
 
       const result = validationService.validateListing(listing);
@@ -207,7 +203,7 @@ describe('Marketplace Listing Validation', () => {
         price: -10,
         category: 'services',
         currency: 'USD',
-        images: [{ url: 'https://example.com/img.jpg', alt: 'Image' }]
+        images: [{ url: 'https://example.com/img.jpg', alt: 'Image' }],
       };
 
       const result = validationService.validateListing(listing);
@@ -222,7 +218,7 @@ describe('Marketplace Listing Validation', () => {
         price: 0.005,
         category: 'services',
         currency: 'USD',
-        images: [{ url: 'https://example.com/img.jpg', alt: 'Image' }]
+        images: [{ url: 'https://example.com/img.jpg', alt: 'Image' }],
       };
 
       const result = validationService.validateListing(listing);
@@ -236,7 +232,7 @@ describe('Marketplace Listing Validation', () => {
         description: 'This listing is missing the price field',
         category: 'services',
         currency: 'USD',
-        images: [{ url: 'https://example.com/img.jpg', alt: 'Image' }]
+        images: [{ url: 'https://example.com/img.jpg', alt: 'Image' }],
       };
 
       const result = validationService.validateListing(listing);
@@ -251,7 +247,7 @@ describe('Marketplace Listing Validation', () => {
         price: 'expensive',
         category: 'services',
         currency: 'USD',
-        images: [{ url: 'https://example.com/img.jpg', alt: 'Image' }]
+        images: [{ url: 'https://example.com/img.jpg', alt: 'Image' }],
       };
 
       const result = validationService.validateListing(listing);
@@ -266,7 +262,7 @@ describe('Marketplace Listing Validation', () => {
         price: Infinity,
         category: 'services',
         currency: 'USD',
-        images: [{ url: 'https://example.com/img.jpg', alt: 'Image' }]
+        images: [{ url: 'https://example.com/img.jpg', alt: 'Image' }],
       };
 
       const resultInfinity = validationService.validateListing(listingInfinity);
@@ -279,7 +275,7 @@ describe('Marketplace Listing Validation', () => {
         price: NaN,
         category: 'services',
         currency: 'USD',
-        images: [{ url: 'https://example.com/img.jpg', alt: 'Image' }]
+        images: [{ url: 'https://example.com/img.jpg', alt: 'Image' }],
       };
 
       const resultNaN = validationService.validateListing(listingNaN);
@@ -288,7 +284,7 @@ describe('Marketplace Listing Validation', () => {
     });
 
     it('should accept various positive prices', () => {
-      const prices = [0.50, 1, 10, 99.99, 1000, 10000.50];
+      const prices = [0.5, 1, 10, 99.99, 1000, 10000.5];
 
       prices.forEach(price => {
         const listing = {
@@ -297,15 +293,11 @@ describe('Marketplace Listing Validation', () => {
           price: price,
           category: 'services',
           currency: 'USD',
-          images: [{ url: 'https://example.com/img.jpg', alt: 'Image' }]
+          images: [{ url: 'https://example.com/img.jpg', alt: 'Image' }],
         };
 
         const result = validationService.validateListing(listing);
-        assert.strictEqual(
-          result.isValid,
-          true,
-          `Price ${price} should be valid`
-        );
+        assert.strictEqual(result.isValid, true, `Price ${price} should be valid`);
       });
     });
   });
@@ -318,7 +310,7 @@ describe('Marketplace Listing Validation', () => {
         price: 50,
         category: 'services',
         currency: 'USD',
-        images: [{ url: 'https://example.com/img.jpg', alt: 'Image' }]
+        images: [{ url: 'https://example.com/img.jpg', alt: 'Image' }],
       };
 
       const result = validationService.validateListing(listing);
@@ -333,7 +325,7 @@ describe('Marketplace Listing Validation', () => {
         price: 50,
         category: 'services',
         currency: 'USD',
-        images: [{ url: 'https://example.com/img.jpg', alt: 'Image' }]
+        images: [{ url: 'https://example.com/img.jpg', alt: 'Image' }],
       };
 
       const result = validationService.validateListing(listing);
@@ -348,7 +340,7 @@ describe('Marketplace Listing Validation', () => {
         price: 50,
         category: 'services',
         currency: 'USD',
-        images: [{ url: 'https://example.com/img.jpg', alt: 'Image' }]
+        images: [{ url: 'https://example.com/img.jpg', alt: 'Image' }],
       };
 
       const result = validationService.validateListing(listing);
@@ -365,7 +357,7 @@ describe('Marketplace Listing Validation', () => {
         price: 50,
         category: 'services',
         currency: 'USD',
-        images: [{ url: 'https://example.com/img.jpg', alt: 'Image' }]
+        images: [{ url: 'https://example.com/img.jpg', alt: 'Image' }],
       };
 
       const result = validationService.validateListing(listing);
@@ -380,7 +372,7 @@ describe('Marketplace Listing Validation', () => {
         price: 50,
         category: 'services',
         currency: 'USD',
-        images: [{ url: 'https://example.com/img.jpg', alt: 'Image' }]
+        images: [{ url: 'https://example.com/img.jpg', alt: 'Image' }],
       };
 
       const result = validationService.validateListing(listing);
@@ -395,7 +387,7 @@ describe('Marketplace Listing Validation', () => {
         price: 50,
         category: 'services',
         currency: 'USD',
-        images: [{ url: 'https://example.com/img.jpg', alt: 'Image' }]
+        images: [{ url: 'https://example.com/img.jpg', alt: 'Image' }],
       };
 
       const result = validationService.validateListing(listing);
@@ -415,14 +407,11 @@ describe('Marketplace Listing Validation', () => {
           price: 50,
           category: category,
           currency: 'USD',
-          images: [{ url: 'https://example.com/img.jpg', alt: 'Image' }]
+          images: [{ url: 'https://example.com/img.jpg', alt: 'Image' }],
         };
 
         const result = validationService.validateListing(listing);
-        assert(
-          result.isValid,
-          `Category '${category}' should be valid`
-        );
+        assert(result.isValid, `Category '${category}' should be valid`);
       });
     });
 
@@ -433,7 +422,7 @@ describe('Marketplace Listing Validation', () => {
         price: 50,
         category: 'invalid_category',
         currency: 'USD',
-        images: [{ url: 'https://example.com/img.jpg', alt: 'Image' }]
+        images: [{ url: 'https://example.com/img.jpg', alt: 'Image' }],
       };
 
       const result = validationService.validateListing(listing);
@@ -447,7 +436,7 @@ describe('Marketplace Listing Validation', () => {
         description: 'This is a valid description',
         price: 50,
         currency: 'USD',
-        images: [{ url: 'https://example.com/img.jpg', alt: 'Image' }]
+        images: [{ url: 'https://example.com/img.jpg', alt: 'Image' }],
       };
 
       const result = validationService.validateListing(listing);
@@ -467,14 +456,11 @@ describe('Marketplace Listing Validation', () => {
           price: 50,
           category: 'services',
           currency: currency,
-          images: [{ url: 'https://example.com/img.jpg', alt: 'Image' }]
+          images: [{ url: 'https://example.com/img.jpg', alt: 'Image' }],
         };
 
         const result = validationService.validateListing(listing);
-        assert(
-          result.isValid,
-          `Currency '${currency}' should be valid`
-        );
+        assert(result.isValid, `Currency '${currency}' should be valid`);
       });
     });
 
@@ -485,7 +471,7 @@ describe('Marketplace Listing Validation', () => {
         price: 50,
         category: 'services',
         currency: 'XYZ',
-        images: [{ url: 'https://example.com/img.jpg', alt: 'Image' }]
+        images: [{ url: 'https://example.com/img.jpg', alt: 'Image' }],
       };
 
       const result = validationService.validateListing(listing);
@@ -499,7 +485,7 @@ describe('Marketplace Listing Validation', () => {
         description: 'This is a valid description',
         price: 50,
         category: 'services',
-        images: [{ url: 'https://example.com/img.jpg', alt: 'Image' }]
+        images: [{ url: 'https://example.com/img.jpg', alt: 'Image' }],
       };
 
       const result = validationService.validateListing(listing);
@@ -515,7 +501,7 @@ describe('Marketplace Listing Validation', () => {
         description: 'This is a valid description',
         price: 50,
         category: 'services',
-        currency: 'USD'
+        currency: 'USD',
       };
 
       const result = validationService.validateListing(listing);
@@ -530,7 +516,7 @@ describe('Marketplace Listing Validation', () => {
         price: 50,
         category: 'services',
         currency: 'USD',
-        images: []
+        images: [],
       };
 
       const result = validationService.validateListing(listing);
@@ -539,10 +525,12 @@ describe('Marketplace Listing Validation', () => {
     });
 
     it('should reject more than 10 images', () => {
-      const images = Array(11).fill(null).map((_, i) => ({
-        url: `https://example.com/img${i}.jpg`,
-        alt: `Image ${i}`
-      }));
+      const images = Array(11)
+        .fill(null)
+        .map((_, i) => ({
+          url: `https://example.com/img${i}.jpg`,
+          alt: `Image ${i}`,
+        }));
 
       const listing = {
         title: 'Valid Title',
@@ -550,7 +538,7 @@ describe('Marketplace Listing Validation', () => {
         price: 50,
         category: 'services',
         currency: 'USD',
-        images: images
+        images: images,
       };
 
       const result = validationService.validateListing(listing);
@@ -559,10 +547,12 @@ describe('Marketplace Listing Validation', () => {
     });
 
     it('should accept exactly 10 images', () => {
-      const images = Array(10).fill(null).map((_, i) => ({
-        url: `https://example.com/img${i}.jpg`,
-        alt: `Image ${i}`
-      }));
+      const images = Array(10)
+        .fill(null)
+        .map((_, i) => ({
+          url: `https://example.com/img${i}.jpg`,
+          alt: `Image ${i}`,
+        }));
 
       const listing = {
         title: 'Valid Title',
@@ -570,7 +560,7 @@ describe('Marketplace Listing Validation', () => {
         price: 50,
         category: 'services',
         currency: 'USD',
-        images: images
+        images: images,
       };
 
       const result = validationService.validateListing(listing);
@@ -584,9 +574,7 @@ describe('Marketplace Listing Validation', () => {
         price: 50,
         category: 'services',
         currency: 'USD',
-        images: [
-          { url: '', alt: 'Image' }
-        ]
+        images: [{ url: '', alt: 'Image' }],
       };
 
       const result = validationService.validateListing(listing);
@@ -601,9 +589,7 @@ describe('Marketplace Listing Validation', () => {
         price: 50,
         category: 'services',
         currency: 'USD',
-        images: [
-          { url: 'https://example.com/img.jpg', alt: '' }
-        ]
+        images: [{ url: 'https://example.com/img.jpg', alt: '' }],
       };
 
       const result = validationService.validateListing(listing);
@@ -621,7 +607,7 @@ describe('Marketplace Listing Validation', () => {
           price: 50,
           category: 'services',
           currency: 'USD',
-          images: [{ url: 'https://example.com/img.jpg', alt: 'Image' }]
+          images: [{ url: 'https://example.com/img.jpg', alt: 'Image' }],
         };
 
         const result = validationService.validateListing(listing);
@@ -638,8 +624,8 @@ describe('Marketplace Listing Validation', () => {
           images: [{ url: 'https://example.com/img.jpg', alt: 'Image' }],
           location: {
             country: 'United Kingdom',
-            city: 'London'
-          }
+            city: 'London',
+          },
         };
 
         const result = validationService.validateListing(listing);
@@ -655,8 +641,8 @@ describe('Marketplace Listing Validation', () => {
           currency: 'USD',
           images: [{ url: 'https://example.com/img.jpg', alt: 'Image' }],
           location: {
-            city: 'London'
-          }
+            city: 'London',
+          },
         };
 
         const result = validationService.validateListing(listing);
@@ -673,8 +659,8 @@ describe('Marketplace Listing Validation', () => {
           currency: 'USD',
           images: [{ url: 'https://example.com/img.jpg', alt: 'Image' }],
           location: {
-            country: 'United Kingdom'
-          }
+            country: 'United Kingdom',
+          },
         };
 
         const result = validationService.validateListing(listing);
@@ -691,7 +677,7 @@ describe('Marketplace Listing Validation', () => {
           price: 50,
           category: 'services',
           currency: 'USD',
-          images: [{ url: 'https://example.com/img.jpg', alt: 'Image' }]
+          images: [{ url: 'https://example.com/img.jpg', alt: 'Image' }],
         };
 
         const result = validationService.validateListing(listing);
@@ -706,7 +692,7 @@ describe('Marketplace Listing Validation', () => {
           category: 'services',
           currency: 'USD',
           images: [{ url: 'https://example.com/img.jpg', alt: 'Image' }],
-          tags: ['event', 'professional', 'photography']
+          tags: ['event', 'professional', 'photography'],
         };
 
         const result = validationService.validateListing(listing);
@@ -721,7 +707,7 @@ describe('Marketplace Listing Validation', () => {
           category: 'services',
           currency: 'USD',
           images: [{ url: 'https://example.com/img.jpg', alt: 'Image' }],
-          tags: 'event'
+          tags: 'event',
         };
 
         const result = validationService.validateListing(listing);
@@ -737,7 +723,7 @@ describe('Marketplace Listing Validation', () => {
           category: 'services',
           currency: 'USD',
           images: [{ url: 'https://example.com/img.jpg', alt: 'Image' }],
-          tags: Array(11).fill('tag')
+          tags: Array(11).fill('tag'),
         };
 
         const result = validationService.validateListing(listing);
@@ -753,7 +739,7 @@ describe('Marketplace Listing Validation', () => {
           category: 'services',
           currency: 'USD',
           images: [{ url: 'https://example.com/img.jpg', alt: 'Image' }],
-          tags: ['event', '', 'photography']
+          tags: ['event', '', 'photography'],
         };
 
         const result = validationService.validateListing(listing);
@@ -769,7 +755,9 @@ describe('Marketplace Listing Validation', () => {
           category: 'services',
           currency: 'USD',
           images: [{ url: 'https://example.com/img.jpg', alt: 'Image' }],
-          tags: Array(10).fill(null).map((_, i) => `tag${i}`)
+          tags: Array(10)
+            .fill(null)
+            .map((_, i) => `tag${i}`),
         };
 
         const result = validationService.validateListing(listing);
@@ -782,19 +770,20 @@ describe('Marketplace Listing Validation', () => {
     it('should validate free workshop with comprehensive details', () => {
       const listing = {
         title: 'Free Community Gardening Workshop',
-        description: 'Learn sustainable gardening techniques in this free community workshop. Perfect for beginners.',
+        description:
+          'Learn sustainable gardening techniques in this free community workshop. Perfect for beginners.',
         price: 0,
         category: 'workshops',
         currency: 'USD',
         images: [
           { url: 'https://example.com/workshop1.jpg', alt: 'Garden workshop' },
-          { url: 'https://example.com/workshop2.jpg', alt: 'Participants gardening' }
+          { url: 'https://example.com/workshop2.jpg', alt: 'Participants gardening' },
         ],
         location: {
           country: 'United Kingdom',
-          city: 'Manchester'
+          city: 'Manchester',
         },
-        tags: ['free', 'gardening', 'workshop', 'sustainable']
+        tags: ['free', 'gardening', 'workshop', 'sustainable'],
       };
 
       const result = validationService.validateListing(listing);
@@ -809,14 +798,12 @@ describe('Marketplace Listing Validation', () => {
         price: 0,
         category: 'products',
         currency: 'EUR',
-        images: [
-          { url: 'https://example.com/sample1.jpg', alt: 'Product sample' }
-        ],
+        images: [{ url: 'https://example.com/sample1.jpg', alt: 'Product sample' }],
         location: {
           country: 'Germany',
-          city: 'Berlin'
+          city: 'Berlin',
         },
-        tags: ['free', 'sample', 'products']
+        tags: ['free', 'sample', 'products'],
       };
 
       const result = validationService.validateListing(listing);
@@ -830,7 +817,7 @@ describe('Marketplace Listing Validation', () => {
         price: 0,
         category: 'services',
         currency: 'GBP',
-        images: [{ url: 'https://example.com/free.jpg', alt: 'Free offer' }]
+        images: [{ url: 'https://example.com/free.jpg', alt: 'Free offer' }],
       };
 
       const paidListing = {
@@ -839,7 +826,7 @@ describe('Marketplace Listing Validation', () => {
         price: 99.99,
         category: 'services',
         currency: 'GBP',
-        images: [{ url: 'https://example.com/premium.jpg', alt: 'Premium offer' }]
+        images: [{ url: 'https://example.com/premium.jpg', alt: 'Premium offer' }],
       };
 
       const freeResult = validationService.validateListing(freeListing);
@@ -852,19 +839,33 @@ describe('Marketplace Listing Validation', () => {
     it('should validate listing with minimum price and maximum details', () => {
       const listing = {
         title: 'Almost Free Service Offering',
-        description: 'An incredibly affordable service that costs just one cent, providing exceptional value',
+        description:
+          'An incredibly affordable service that costs just one cent, providing exceptional value',
         price: 0.01,
         category: 'services',
         currency: 'USD',
-        images: Array(10).fill(null).map((_, i) => ({
-          url: `https://example.com/img${i}.jpg`,
-          alt: `Service image ${i}`
-        })),
+        images: Array(10)
+          .fill(null)
+          .map((_, i) => ({
+            url: `https://example.com/img${i}.jpg`,
+            alt: `Service image ${i}`,
+          })),
         location: {
           country: 'Canada',
-          city: 'Toronto'
+          city: 'Toronto',
         },
-        tags: ['affordable', 'budget', 'service', 'cheap', 'value', 'penny', 'deal', 'offer', 'save', 'cheap-deals']
+        tags: [
+          'affordable',
+          'budget',
+          'service',
+          'cheap',
+          'value',
+          'penny',
+          'deal',
+          'offer',
+          'save',
+          'cheap-deals',
+        ],
       };
 
       const result = validationService.validateListing(listing);
@@ -880,7 +881,7 @@ describe('Marketplace Listing Validation', () => {
         price: 0,
         category: 'services',
         currency: 'USD',
-        images: [{ url: 'https://example.com/img.jpg', alt: 'Image' }]
+        images: [{ url: 'https://example.com/img.jpg', alt: 'Image' }],
       };
 
       const result = validationService.validateListing(listing);
@@ -894,7 +895,7 @@ describe('Marketplace Listing Validation', () => {
         price: 50,
         category: 'services',
         currency: 'USD',
-        images: [{ url: 'https://example.com/img.jpg', alt: 'Image' }]
+        images: [{ url: 'https://example.com/img.jpg', alt: 'Image' }],
       };
 
       const result = validationService.validateListing(listing);
@@ -908,7 +909,7 @@ describe('Marketplace Listing Validation', () => {
         price: -50,
         category: 'invalid',
         currency: 'INVALID',
-        images: []
+        images: [],
       };
 
       const result = validationService.validateListing(listing);
@@ -925,7 +926,7 @@ describe('Marketplace Listing Validation', () => {
         currency: 'USD',
         images: [{ url: 'https://example.com/img.jpg', alt: 'Image' }],
         location: null,
-        tags: null
+        tags: null,
       };
 
       const result = validationService.validateListing(listing);
@@ -942,15 +943,11 @@ describe('Marketplace Listing Validation', () => {
           price: price,
           category: 'services',
           currency: 'USD',
-          images: [{ url: 'https://example.com/img.jpg', alt: 'Image' }]
+          images: [{ url: 'https://example.com/img.jpg', alt: 'Image' }],
         };
 
         const result = validationService.validateListing(listing);
-        assert.strictEqual(
-          result.isValid,
-          true,
-          `Price ${price} should be valid`
-        );
+        assert.strictEqual(result.isValid, true, `Price ${price} should be valid`);
       });
     });
   });
@@ -963,7 +960,7 @@ describe('Marketplace Listing Validation', () => {
         price: 50,
         category: 'services',
         currency: 'USD',
-        images: [{ url: 'https://example.com/img.jpg', alt: 'Image' }]
+        images: [{ url: 'https://example.com/img.jpg', alt: 'Image' }],
       };
 
       const result = validationService.validateListing(listing);
@@ -978,7 +975,7 @@ describe('Marketplace Listing Validation', () => {
         price: 50,
         category: 'services',
         currency: 'USD',
-        images: [{ url: 'https://example.com/img.jpg', alt: 'Image' }]
+        images: [{ url: 'https://example.com/img.jpg', alt: 'Image' }],
       };
 
       const result = validationService.validateListing(listing);
@@ -993,7 +990,7 @@ describe('Marketplace Listing Validation', () => {
         price: 50,
         category: 'services',
         currency: 'USD',
-        images: [{ url: 'https://example.com/img.jpg', alt: 'Image' }]
+        images: [{ url: 'https://example.com/img.jpg', alt: 'Image' }],
       };
 
       const result = validationService.validateListing(listing);
