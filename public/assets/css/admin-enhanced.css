@@ -2478,3 +2478,118 @@ tbody tr.selected td {
   gap: 16px;
   margin-bottom: 32px;
 }
+
+/* ============================================
+   ADMIN RESPONSIVE ENHANCEMENTS (2025-2026)
+   ============================================ */
+
+/* Additional 320px breakpoint for admin panels */
+@media (max-width: 320px) {
+  .admin-header {
+    padding: 8px 12px;
+  }
+  
+  .admin-title {
+    font-size: 1.25rem;
+  }
+  
+  .admin-card {
+    padding: 12px;
+  }
+  
+  .stats-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .btn, button {
+    font-size: 14px;
+    padding: 10px 14px;
+  }
+  
+  .table-wrapper {
+    font-size: 13px;
+  }
+}
+
+/* Additional 480px breakpoint for admin panels */
+@media (max-width: 480px) {
+  /* Full-width buttons on mobile */
+  .admin-actions button,
+  .filter-panel button,
+  .form-actions button {
+    width: 100%;
+  }
+  
+  /* Stack button groups */
+  .admin-actions,
+  .form-actions {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  /* Single column stats */
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  /* Admin tables with horizontal scroll */
+  .admin-table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .admin-table {
+    min-width: 600px;
+  }
+  
+  /* Sticky first column in tables */
+  .admin-table th:first-child,
+  .admin-table td:first-child {
+    position: sticky;
+    left: 0;
+    background: white;
+    z-index: 10;
+    box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05);
+  }
+  
+  /* Admin forms full-width */
+  .admin-form input,
+  .admin-form select,
+  .admin-form textarea {
+    width: 100%;
+    font-size: 16px; /* Prevent iOS zoom */
+  }
+  
+  .admin-form .form-row {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  /* Compact filter panel */
+  .filter-panel {
+    padding: 16px;
+  }
+  
+  .filter-panel .form-group {
+    margin-bottom: 12px;
+  }
+}
+
+/* Touch-friendly admin interface */
+@media (pointer: coarse) {
+  .admin-nav a,
+  .admin-menu button,
+  .admin-table button,
+  .admin-card button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Larger checkboxes and radio buttons */
+  input[type="checkbox"],
+  input[type="radio"] {
+    width: 20px;
+    height: 20px;
+  }
+}
