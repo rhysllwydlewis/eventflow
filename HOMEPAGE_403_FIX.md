@@ -10,7 +10,8 @@ From the browser console logs:
 
 1. `GET /api/csrf-token` - 403 (Forbidden)
 2. `GET /api/categories` - 403 (Forbidden)
-3. `GET /api/admin/homepage/hero-images_public` - 403 (Forbidden) ← **Primary Issue**
+3. `GET /api/admin/homepage/hero-images-public` - 403 (Forbidden) ← **Primary Issue**
+   - Note: The problem statement mentions "hero-images_public" with underscore, but the actual endpoint uses a dash "-"
 4. `GET /api/packages/featured` - 403 (Forbidden)
 5. `GET /api/packages/spotlight` - 403 (Forbidden)
 6. `GET /api/auth/me` - 403 (Forbidden)

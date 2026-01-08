@@ -2184,7 +2184,7 @@ app.get('/api/public/homepage/hero-images', async (_req, res) => {
     };
     res.json(heroImages);
   } catch (error) {
-    logger.error('Error reading hero images:', error);
+    logger.error('Error fetching hero images from settings for public homepage:', error);
     sentry.captureException(error);
     // Return default images on error
     res.status(200).json({
