@@ -1508,11 +1508,11 @@ body.has-footer-nav {
   /* Hide Blog link on mobile in both top and footer nav */
   .nav.nav-inline .nav-main[href="/blog.html"],
   .footer-nav .footer-nav-links .footer-nav-link[href="/blog.html"] {
-    display: none;
+    display: none !important;
   }
   
   .footer-nav-links {
-    gap: 2px;
+    gap: 4px;
   }
   
   .footer-nav-link {
@@ -1531,17 +1531,17 @@ body.has-footer-nav {
 @media (max-width: 430px) {
   /* Hide Pricing link on very narrow screens to reduce crowding */
   .footer-nav .footer-nav-links .footer-nav-link[href="/pricing.html"] {
-    display: none;
+    display: none !important;
   }
   
   .footer-nav-links {
-    gap: 3px;
+    gap: 2px;
     flex-wrap: nowrap; /* Ensure no wrapping */
   }
   
   .footer-nav-link {
-    font-size: 12.5px;
-    padding: 8px 9px;
+    font-size: 11px;
+    padding: 7px 6px;
     min-width: 46px;
     max-width: 70px; /* Prevent over-expansion */
   }
@@ -1579,6 +1579,10 @@ body.has-footer-nav {
     min-width: 44px;
   }
   
+  .footer-nav-links {
+    gap: 3px;
+  }
+  
   .footer-nav-icon-button {
     font-size: 16px;
     padding: 6px;
@@ -1597,8 +1601,8 @@ body.has-footer-nav {
 
 @media (max-width: 375px) {
   .footer-nav-link {
-    font-size: 11px;
-    padding: 8px 6px;
+    font-size: 10px;
+    padding: 6px 5px;
     min-width: 44px;
     max-width: 60px; /* Prevent over-expansion on small screens */
   }
@@ -1620,14 +1624,37 @@ body.has-footer-nav {
 
 @media (max-width: 320px) {
   .footer-nav-link {
-    font-size: 10px;
-    padding: 8px 6px;
+    font-size: 9px;
+    padding: 6px 4px;
     min-width: 42px;
     max-width: 55px; /* Prevent over-expansion on very small screens */
   }
   
   .footer-nav-links {
-    gap: 0px;
+    gap: 0;
     flex-wrap: nowrap; /* Ensure no wrapping */
+  }
+}
+
+/* ============================================
+   CRITICAL: Override eventflow-17.0.0.css hiding footer nav
+   ============================================ */
+
+/* Force footer nav links to display on ALL screen sizes */
+.footer-nav .footer-nav-links {
+  display: flex !important;
+  align-items: center !important;
+  pointer-events: auto !important;
+}
+
+/* Override the base pointer-events: none on container */
+.footer-nav {
+  pointer-events: auto !important;
+}
+
+/* Ensure footer nav links remain visible on mobile */
+@media (max-width: 600px) {
+  .footer-nav .footer-nav-links {
+    display: flex !important;
   }
 }

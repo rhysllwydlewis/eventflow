@@ -152,42 +152,40 @@
       return;
     }
 
-    // Wait for top burger to be initialized by auth-nav.js
-    let retryCount = 0;
-    const MAX_RETRIES = 20; // 1 second total (20 * 50ms)
-
-    const waitForBurger = () => {
+    const trySetupSync = () => {
       const topBurger = document.getElementById('burger');
-
-      if (!topBurger) {
-        if (window.location.hostname === 'localhost') {
-          console.info('[FooterNav] Top burger not found, skipping sync');
-        }
-        return;
+      
+      if (topBurger) {
+        setupBurgerSync(topBurger, footerBurger);
+        return true;
       }
-
-      // Check if burger has been initialized by auth-nav.js
-      if (topBurger.dataset.navInitialized !== 'true') {
-        retryCount++;
-
-        if (retryCount >= MAX_RETRIES) {
-          if (window.location.hostname === 'localhost') {
-            console.warn('[FooterNav] Timeout waiting for burger initialization');
-          }
-          return;
-        }
-
-        // Retry after a short delay
-        setTimeout(waitForBurger, 50);
-        return;
-      }
-
-      // Now burger is initialized, set up sync
-      setupBurgerSync(topBurger, footerBurger);
+      return false;
     };
 
-    // Start waiting for burger initialization
-    waitForBurger();
+    // Try immediately
+    if (!trySetupSync()) {
+      // Try again after DOM settles
+      setTimeout(() => {
+        if (!trySetupSync()) {
+          // Still no top burger - make footer burger work independently
+          footerBurger.addEventListener('click', () => {
+            const navMenu = document.querySelector('.nav-menu');
+            const isCurrentlyOpen = document.body.classList.contains('nav-open');
+            
+            if (navMenu) {
+              navMenu.classList.toggle('nav-menu--open');
+            }
+            document.body.classList.toggle('nav-open');
+            footerBurger.setAttribute('aria-expanded', String(!isCurrentlyOpen));
+            footerBurger.classList.toggle('footer-nav-burger--open');
+          });
+          
+          if (window.location.hostname === 'localhost') {
+            console.info('[FooterNav] Footer burger set up independently');
+          }
+        }
+      }, 300);
+    }
   }
 
   // Set up synchronization between top and footer burgers

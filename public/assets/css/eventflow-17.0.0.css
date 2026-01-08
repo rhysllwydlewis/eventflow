@@ -195,7 +195,7 @@ html[data-theme="dark"] .nav-toggle:hover {
   z-index: 100;
   padding: 0 16px;
   box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
-  pointer-events: none;
+  pointer-events: auto;
 }
 
 html[data-theme="dark"] .footer-nav {
@@ -266,7 +266,8 @@ body {
   padding-bottom: 70px;
 }
 
-/* Mobile responsive footer */
+/* Mobile responsive footer - COMMENTED OUT to allow override in ui-ux-fixes.css */
+/* 
 @media (max-width: 600px) {
   .footer-nav-links {
     display: none;
@@ -276,6 +277,7 @@ body {
     justify-content: center;
   }
 }
+*/
 
 /* Footer theme icon button - nicer, smaller SVG icon */
 .footer-theme-icon-btn {
