@@ -155,7 +155,8 @@
     const trySetupSync = () => {
       const topBurger = document.getElementById('burger');
       
-      if (topBurger) {
+      // Only set up sync if top burger exists and is initialized by auth-nav.js
+      if (topBurger && topBurger.dataset.navInitialized === 'true') {
         setupBurgerSync(topBurger, footerBurger);
         return true;
       }
@@ -164,27 +165,40 @@
 
     // Try immediately
     if (!trySetupSync()) {
-      // Try again after DOM settles
+      // Try again after a short delay to allow auth-nav.js to initialize
       setTimeout(() => {
         if (!trySetupSync()) {
-          // Still no top burger - make footer burger work independently
-          footerBurger.addEventListener('click', () => {
-            const navMenu = document.querySelector('.nav-menu');
-            const isCurrentlyOpen = document.body.classList.contains('nav-open');
-            
-            if (navMenu) {
-              navMenu.classList.toggle('nav-menu--open');
+          // Try one more time with longer delay
+          setTimeout(() => {
+            if (!trySetupSync()) {
+              // Still no top burger - make footer burger work independently
+              footerBurger.addEventListener('click', () => {
+                const navMenu = document.querySelector('.nav-menu');
+                const isCurrentlyOpen = document.body.classList.contains('nav-open');
+                
+                if (navMenu) {
+                  navMenu.classList.toggle('nav-menu--open');
+                  navMenu.classList.toggle('is-open');
+                }
+                document.body.classList.toggle('nav-open');
+                footerBurger.setAttribute('aria-expanded', String(!isCurrentlyOpen));
+                footerBurger.classList.toggle('footer-nav-burger--open');
+                
+                // Prevent background scrolling when menu is open
+                if (!isCurrentlyOpen) {
+                  document.body.style.overflow = 'hidden';
+                } else {
+                  document.body.style.overflow = '';
+                }
+              });
+              
+              if (window.location.hostname === 'localhost') {
+                console.info('[FooterNav] Footer burger set up independently');
+              }
             }
-            document.body.classList.toggle('nav-open');
-            footerBurger.setAttribute('aria-expanded', String(!isCurrentlyOpen));
-            footerBurger.classList.toggle('footer-nav-burger--open');
-          });
-          
-          if (window.location.hostname === 'localhost') {
-            console.info('[FooterNav] Footer burger set up independently');
-          }
+          }, 500);
         }
-      }, 300);
+      }, 100);
     }
   }
 
