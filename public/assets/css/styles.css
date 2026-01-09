@@ -643,7 +643,11 @@ body.nav-open .nav-toggle-bar:nth-child(3){
 .nav-menu{
   display:flex;
   position:fixed;
-  inset:56px 12px auto 12px;
+  top:50%;
+  left:50%;
+  transform:translate(-50%, -50%) translateY(-6px);
+  width:min(400px, calc(100vw - 24px));
+  max-width:calc(100vw - 24px);
   border-radius:16px;
   background:rgba(255,255,255,.98);
   box-shadow:0 24px 70px rgba(15,23,42,.35);
@@ -653,19 +657,18 @@ body.nav-open .nav-toggle-bar:nth-child(3){
   max-height:70vh;
   overflow:auto;
   opacity:0;
-  transform:translateY(-6px);
   pointer-events:none;
   transition:opacity 160ms ease-out, transform 160ms ease-out;
   z-index:1000;
 }
 .nav-menu.nav-menu--open{
   opacity:1;
-  transform:translateY(0);
+  transform:translate(-50%, -50%);
   pointer-events:auto;
 }
 body.nav-open .nav-menu{
   opacity:1;
-  transform:translateY(0);
+  transform:translate(-50%, -50%);
   pointer-events:auto;
 }
 .nav-menu a{
@@ -703,7 +706,11 @@ body.nav-open .nav-menu{
   .nav-menu{
     display:flex;
     position:fixed;
-    inset:56px 12px auto 12px;
+    top:50%;
+    left:50%;
+    transform:translate(-50%, -50%) translateY(-6px);
+    width:min(400px, calc(100vw - 24px));
+    max-width:calc(100vw - 24px);
     border-radius:16px;
     background:rgba(255,255,255,.98);
     box-shadow:0 24px 70px rgba(15,23,42,.35);
@@ -713,7 +720,6 @@ body.nav-open .nav-menu{
     max-height:70vh;
     overflow:auto;
     opacity:0;
-    transform:translateY(-6px);
     pointer-events:none;
     transition:opacity 160ms ease-out, transform 160ms ease-out;
     z-index:1000;
@@ -721,12 +727,12 @@ body.nav-open .nav-menu{
   .nav-menu.nav-menu--open{
     display:flex;
     opacity:1;
-    transform:translateY(0);
+    transform:translate(-50%, -50%);
     pointer-events:auto;
   }
   body.nav-open .nav-menu{
     opacity:1;
-    transform:translateY(0);
+    transform:translate(-50%, -50%);
     pointer-events:auto;
   }
   .nav-menu a{
