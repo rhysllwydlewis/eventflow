@@ -414,25 +414,20 @@
   // Dispatch custom event to notify other components of initial auth state
   window.dispatchEvent(new CustomEvent('auth-state-changed', { detail: { user } }));
 
-  // Listen for logout requests from other components (e.g., footer nav)
-  // Call the shared handleLogout function directly instead of programmatic clicking
-  window.addEventListener('logout-requested', async () => {
-    // Find the signout button to get its handler, or call a shared logout function
-    const signout = document.getElementById('nav-signout');
-    if (signout) {
-      // Trigger the click event which will call handleLogout
-      signout.click();
-    }
-  });
-
-  // Expose handleLogout on window for direct access from other components
-  // This allows direct function calls instead of programmatic clicking
-  window.__eventflow_logout = async () => {
+  // Helper to trigger logout programmatically
+  const triggerLogout = () => {
     const signout = document.getElementById('nav-signout');
     if (signout) {
       signout.click();
     }
   };
+
+  // Listen for logout requests from other components (e.g., footer nav)
+  window.addEventListener('logout-requested', triggerLogout);
+
+  // Expose logout function on window for direct access from other components
+  // This allows direct function calls instead of programmatic clicking
+  window.__eventflow_logout = triggerLogout;
 
   // --- Cross-tab auth state synchronization ---
   // Listen for storage events to detect logout in other tabs

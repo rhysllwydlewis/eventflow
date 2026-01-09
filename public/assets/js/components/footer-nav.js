@@ -373,7 +373,15 @@
       return;
     }
 
-    // Helper function to safely replace element and clean up event listeners
+    /**
+     * Safely replace an element to remove all event listeners
+     * @param {HTMLElement} element - The element to replace
+     * @returns {HTMLElement} The new cloned element with no event listeners
+     *
+     * This function clones the element and replaces it in the DOM, effectively
+     * removing all attached event listeners. This is useful for cleanup when
+     * we need to attach new event listeners without accumulating old ones.
+     */
     const replaceElementAndCleanup = element => {
       const newElement = element.cloneNode(true);
       element.parentNode.replaceChild(newElement, element);

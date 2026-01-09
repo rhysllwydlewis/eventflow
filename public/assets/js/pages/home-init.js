@@ -331,11 +331,13 @@ function isDevelopmentEnvironment() {
   }
 
   // 172.16.0.0/12 range (172.16.x.x to 172.31.x.x)
+  const PRIVATE_172_RANGE_START = 16;
+  const PRIVATE_172_RANGE_END = 31;
   if (hostname.startsWith('172.')) {
     const parts = hostname.split('.');
     if (parts.length >= 2) {
       const secondOctet = parseInt(parts[1], 10);
-      if (secondOctet >= 16 && secondOctet <= 31) {
+      if (secondOctet >= PRIVATE_172_RANGE_START && secondOctet <= PRIVATE_172_RANGE_END) {
         return true;
       }
     }
