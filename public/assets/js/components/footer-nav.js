@@ -65,6 +65,11 @@
     // Initialize footer burger button
     initFooterBurger();
 
+    // Listen for auth state changes to update footer nav
+    window.addEventListener('auth-state-changed', event => {
+      updateFooterAuthState(event.detail.user);
+    });
+
     if (window.location.hostname === 'localhost') {
       console.info('[FooterNav] Component created and injected');
     }
@@ -133,6 +138,12 @@
         });
       }
     }
+
+    // Listen for auth state changes from auth-nav.js
+    window.addEventListener('auth-state-changed', () => {
+      // Delay slightly to allow auth-nav.js to update DOM first
+      setTimeout(updateFooterBell, 50);
+    });
 
     // Add click handler to footer bell
     footerBell.addEventListener('click', () => {
@@ -350,6 +361,75 @@
         console.info('[FooterNav] Initialized with scroll position:', window.scrollY);
       }
     }, 50);
+  }
+
+  // Update footer nav auth state based on user
+  function updateFooterAuthState(user) {
+    const footerAuth = document.querySelector('.footer-nav-auth');
+    const footerDashboard = document.querySelector('.footer-nav-dashboard');
+    const footerBell = document.getElementById('footer-notification-bell');
+
+    if (!footerAuth) {
+      return;
+    }
+
+    /**
+     * Safely replace an element to remove all event listeners
+     * @param {HTMLElement} element - The element to replace
+     * @returns {HTMLElement} The new cloned element with no event listeners
+     *
+     * This function clones the element and replaces it in the DOM, effectively
+     * removing all attached event listeners. This is useful for cleanup when
+     * we need to attach new event listeners without accumulating old ones.
+     */
+    const replaceElementAndCleanup = element => {
+      const newElement = element.cloneNode(true);
+      element.parentNode.replaceChild(newElement, element);
+      return newElement;
+    };
+
+    if (user) {
+      // Logged in state
+      const dashHref =
+        user.role === 'admin'
+          ? '/admin.html'
+          : user.role === 'supplier'
+            ? '/dashboard-supplier.html'
+            : '/dashboard-customer.html';
+
+      const newFooterAuth = replaceElementAndCleanup(footerAuth);
+      newFooterAuth.textContent = 'Log out';
+      newFooterAuth.href = '#';
+
+      // Add logout handler - dispatch event instead of programmatically clicking
+      newFooterAuth.addEventListener('click', async e => {
+        e.preventDefault();
+        // Dispatch custom logout event for auth-nav.js to handle
+        window.dispatchEvent(new CustomEvent('logout-requested'));
+      });
+
+      if (footerDashboard) {
+        footerDashboard.style.display = '';
+        footerDashboard.href = dashHref;
+      }
+
+      if (footerBell) {
+        footerBell.style.display = 'flex';
+      }
+    } else {
+      // Logged out state
+      const newFooterAuth = replaceElementAndCleanup(footerAuth);
+      newFooterAuth.textContent = 'Log in';
+      newFooterAuth.href = '/auth.html';
+
+      if (footerDashboard) {
+        footerDashboard.style.display = 'none';
+      }
+
+      if (footerBell) {
+        footerBell.style.display = 'none';
+      }
+    }
   }
 
   // Initialize when DOM is ready

@@ -229,7 +229,9 @@
 
     // Logout handler function
     async function handleLogout(e) {
-      e.preventDefault();
+      if (e) {
+        e.preventDefault();
+      }
 
       // Clear any auth-related storage immediately
       try {
@@ -270,6 +272,9 @@
       } catch (_) {
         /* Ignore logout errors */
       }
+
+      // Dispatch custom event to notify other components
+      window.dispatchEvent(new CustomEvent('auth-state-changed', { detail: { user: null } }));
 
       // Force full reload with cache-busting to ensure clean state
       window.location.href = `/?t=${Date.now()}`;
@@ -406,6 +411,24 @@
   const user = await me();
   initAuthNav(user);
 
+  // Dispatch custom event to notify other components of initial auth state
+  window.dispatchEvent(new CustomEvent('auth-state-changed', { detail: { user } }));
+
+  // Helper to trigger logout programmatically
+  const triggerLogout = () => {
+    const signout = document.getElementById('nav-signout');
+    if (signout) {
+      signout.click();
+    }
+  };
+
+  // Listen for logout requests from other components (e.g., footer nav)
+  window.addEventListener('logout-requested', triggerLogout);
+
+  // Expose logout function on window for direct access from other components
+  // This allows direct function calls instead of programmatic clicking
+  window.__eventflow_logout = triggerLogout;
+
   // --- Cross-tab auth state synchronization ---
   // Listen for storage events to detect logout in other tabs
   window.addEventListener('storage', async event => {
@@ -417,6 +440,10 @@
       }
       const currentUser = await me();
       initAuthNav(currentUser);
+      // Dispatch event for cross-component sync
+      window.dispatchEvent(
+        new CustomEvent('auth-state-changed', { detail: { user: currentUser } })
+      );
     }
   });
 
@@ -432,6 +459,8 @@
     }
     lastKnownAuthState = currentUser;
     initAuthNav(currentUser);
+    // Dispatch event for cross-component sync
+    window.dispatchEvent(new CustomEvent('auth-state-changed', { detail: { user: currentUser } }));
   };
 
   setInterval(async () => {

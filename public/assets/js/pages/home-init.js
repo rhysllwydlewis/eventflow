@@ -140,7 +140,7 @@ document.addEventListener('DOMContentLoaded', () => {
 async function loadPackagesCarousel({ endpoint, containerId, emptyMessage }) {
   const container = document.getElementById(containerId);
   if (!container) {
-    if (window.location.hostname === 'localhost') {
+    if (isDevelopmentEnvironment()) {
       console.warn(`Container ${containerId} not found`);
     }
     return;
@@ -176,7 +176,7 @@ async function loadPackagesCarousel({ endpoint, containerId, emptyMessage }) {
 
     // Check if Carousel class is available
     if (typeof Carousel === 'undefined') {
-      if (window.location.hostname === 'localhost') {
+      if (isDevelopmentEnvironment()) {
         console.error('Carousel class not loaded. Rendering fallback.');
       }
       renderPackageFallback(container, data.items);
@@ -194,14 +194,14 @@ async function loadPackagesCarousel({ endpoint, containerId, emptyMessage }) {
       });
       carousel.setItems(data.items);
     } catch (error) {
-      if (window.location.hostname === 'localhost') {
+      if (isDevelopmentEnvironment()) {
         console.error('Failed to initialize carousel:', error);
       }
       renderPackageFallback(container, data.items);
     }
   } catch (error) {
     clearTimeout(timeoutId);
-    if (window.location.hostname === 'localhost') {
+    if (isDevelopmentEnvironment()) {
       console.error(`Failed to load packages from ${endpoint}:`, error);
     }
 
@@ -302,20 +302,77 @@ function renderPackageFallback(container, items) {
     .join('');
 }
 
+/**
+ * Detect if running in a development environment
+ * @returns {boolean} true if hostname matches common development patterns, false otherwise
+ *
+ * Development environments include:
+ * - localhost and loopback addresses (127.0.0.1, ::1)
+ * - mDNS .local domains
+ * - Private IP ranges (10.x, 172.16-31.x, 192.168.x)
+ * - Link-local addresses (169.254.x)
+ */
+function isDevelopmentEnvironment() {
+  const hostname = window.location.hostname;
+
+  // Quick checks for common cases
+  if (
+    hostname === 'localhost' ||
+    hostname === '127.0.0.1' ||
+    hostname === '::1' ||
+    hostname.endsWith('.local')
+  ) {
+    return true;
+  }
+
+  // Private IP ranges
+  if (hostname.startsWith('192.168.') || hostname.startsWith('10.')) {
+    return true;
+  }
+
+  // 172.16.0.0/12 range (172.16.x.x to 172.31.x.x)
+  const PRIVATE_172_RANGE_START = 16;
+  const PRIVATE_172_RANGE_END = 31;
+  if (hostname.startsWith('172.')) {
+    const parts = hostname.split('.');
+    if (parts.length >= 2) {
+      const secondOctet = parseInt(parts[1], 10);
+      if (secondOctet >= PRIVATE_172_RANGE_START && secondOctet <= PRIVATE_172_RANGE_END) {
+        return true;
+      }
+    }
+  }
+
+  // Link-local address range
+  if (hostname.startsWith('169.254.')) {
+    return true;
+  }
+
+  return false;
+}
+
 async function loadHeroCollageImages() {
   // First, check if Pexels collage is enabled
   try {
-    const settingsResponse = await fetch('/api/public/homepage-settings');
+    const settingsResponse = await fetch('/api/public/homepage-settings').catch(err => {
+      // Log network errors in development mode only
+      if (isDevelopmentEnvironment()) {
+        console.warn('Network error fetching homepage settings:', err.message);
+      }
+      return null;
+    });
 
-    // Check response status explicitly - handle 404 and 403 silently
-    if (settingsResponse.status === 404 || settingsResponse.status === 403) {
+    // If fetch failed (network error), continue to static images
+    if (!settingsResponse) {
+      // Continue to load static images (no console output)
+    } else if (settingsResponse.status === 404 || settingsResponse.status === 403) {
       // Silently handle 404/403 - endpoint may not be deployed or configured yet
       // Continue to load static images (no console output)
     } else if (settingsResponse.ok) {
       const settings = await settingsResponse.json();
       if (settings.pexelsCollageEnabled) {
         // Only log if in development mode
-        if (window.location.hostname === 'localhost') {
+        if (isDevelopmentEnvironment()) {
           console.log('Pexels collage enabled, initializing dynamic collage');
         }
         await initPexelsCollage(settings.pexelsCollageSettings);
@@ -324,7 +381,10 @@ async function loadHeroCollageImages() {
     }
     // If non-200 and non-404/403, just continue to static images
   } catch (error) {
-    // Network error or other exception - continue to static images silently
+    // JSON parsing or other error - continue to static images silently
+    if (isDevelopmentEnvironment()) {
+      console.warn('Error processing homepage settings:', error.message);
+    }
   }
 
   // If Pexels is not enabled or failed, load static images
@@ -440,7 +500,7 @@ async function loadHeroCollageImages() {
         }
       } catch (updateError) {
         // Only log errors in development mode
-        if (window.location.hostname === 'localhost') {
+        if (isDevelopmentEnvironment()) {
           console.error(`Failed to update image for category ${category}:`, updateError);
         }
       }
@@ -475,7 +535,7 @@ async function initPexelsCollage(settings) {
   const collageFrames = document.querySelectorAll('.collage .frame');
 
   if (!collageFrames || collageFrames.length === 0) {
-    if (window.location.hostname === 'localhost') {
+    if (isDevelopmentEnvironment()) {
       console.warn('No collage frames found for Pexels collage');
     }
     return;
@@ -497,7 +557,7 @@ async function initPexelsCollage(settings) {
 
         if (!response.ok) {
           // Only warn in development mode
-          if (window.location.hostname === 'localhost') {
+          if (isDevelopmentEnvironment()) {
             console.warn(`Failed to fetch Pexels images for ${category}, falling back to static`);
           }
           continue;
@@ -528,7 +588,7 @@ async function initPexelsCollage(settings) {
         }
       } catch (error) {
         // Only log errors in development mode
-        if (window.location.hostname === 'localhost') {
+        if (isDevelopmentEnvironment()) {
           console.error(`Error fetching Pexels images for ${category}:`, error);
         }
       }
@@ -541,14 +601,14 @@ async function initPexelsCollage(settings) {
       }, intervalMs);
 
       // Only log in development mode
-      if (window.location.hostname === 'localhost') {
+      if (isDevelopmentEnvironment()) {
         console.log(
           `Pexels collage initialized with ${intervalSeconds}s interval (${Object.keys(imageCache).length} categories)`
         );
       }
     } else {
       // Only warn in development mode
-      if (window.location.hostname === 'localhost') {
+      if (isDevelopmentEnvironment()) {
         console.warn('No Pexels images loaded, falling back to static images');
       }
       // Fall back to loading static hero images
@@ -556,7 +616,7 @@ async function initPexelsCollage(settings) {
     }
   } catch (error) {
     // Only log errors in development mode
-    if (window.location.hostname === 'localhost') {
+    if (isDevelopmentEnvironment()) {
       console.error('Error initializing Pexels collage:', error);
     }
     // Fall back to loading static hero images
@@ -656,7 +716,7 @@ async function fetchPublicStats() {
       });
     }
   } catch (error) {
-    if (window.location.hostname === 'localhost') {
+    if (isDevelopmentEnvironment()) {
       console.error('Failed to load public stats:', error);
     }
     // Graceful fallback: Use copy-only approach
@@ -722,7 +782,7 @@ async function fetchMarketplacePreview() {
       </div>
     `;
   } catch (error) {
-    if (window.location.hostname === 'localhost') {
+    if (isDevelopmentEnvironment()) {
       console.error('Failed to load marketplace preview:', error);
     }
     // Hide the entire section gracefully
@@ -789,7 +849,7 @@ async function fetchGuides() {
     // Show the section
     section.style.display = 'block';
   } catch (error) {
-    if (window.location.hostname === 'localhost') {
+    if (isDevelopmentEnvironment()) {
       console.error('Failed to load guides:', error);
     }
     // Hide the entire section gracefully
@@ -806,16 +866,22 @@ async function fetchTestimonials() {
   }
 
   try {
-    const response = await fetch('/api/reviews?limit=6&approved=true&sort=rating');
+    const response = await fetch('/api/reviews?limit=6&approved=true&sort=rating').catch(err => {
+      // Log network errors in development mode only
+      if (isDevelopmentEnvironment()) {
+        console.warn('Network error fetching reviews:', err.message);
+      }
+      return null;
+    });
 
-    // Silently handle 404 - reviews endpoint may not be deployed yet
-    if (response.status === 404) {
+    // If fetch failed (network error), hide section
+    if (!response) {
       section.style.display = 'none';
       return;
     }
 
-    if (!response.ok) {
-      // Silently handle other errors - this is optional content
+    // Silently handle 404, 403, and other non-200 responses - reviews endpoint may not be deployed yet
+    if (response.status === 404 || response.status === 403 || !response.ok) {
       section.style.display = 'none';
       return;
     }
@@ -940,7 +1006,7 @@ function initHeroSearch() {
 
         resultsContainer.style.display = 'block';
       } catch (error) {
-        if (window.location.hostname === 'localhost') {
+        if (isDevelopmentEnvironment()) {
           console.error('Search error:', error);
         }
         resultsContainer.style.display = 'none';
@@ -1007,7 +1073,7 @@ function initNewsletterForm() {
         </div>
       `;
     } catch (error) {
-      if (window.location.hostname === 'localhost') {
+      if (isDevelopmentEnvironment()) {
         console.error('Newsletter subscription error:', error);
       }
 
