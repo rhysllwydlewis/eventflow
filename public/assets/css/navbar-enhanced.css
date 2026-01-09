@@ -1,0 +1,658 @@
+/**
+ * EventFlow Gold Standard Navigation - Enhanced Styles
+ * World-class navbar styling inspired by Stripe, Apple, and Airbnb
+ * Features: Micro-interactions, smooth animations, accessibility-first design
+ */
+
+/* ===================================================================
+   HEADER - ENHANCED STATES
+   =================================================================== */
+
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+  transition: transform 280ms cubic-bezier(0.4, 0, 0.2, 1),
+              background 200ms ease-out,
+              box-shadow 200ms ease-out,
+              border-color 200ms ease-out;
+  will-change: transform;
+}
+
+/* Scrolled state - elevated appearance */
+.header--scrolled {
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08),
+              0 4px 12px rgba(15, 23, 42, 0.04);
+  border-bottom-color: rgba(15, 23, 42, 0.12);
+}
+
+/* Hidden state - smooth slide up */
+.header--hidden {
+  transform: translateY(-100%);
+  box-shadow: none;
+}
+
+/* ===================================================================
+   NAVIGATION LINKS - ENHANCED MICRO-INTERACTIONS
+   =================================================================== */
+
+.nav-inline .nav-main,
+.nav-link {
+  position: relative;
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #374151;
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+}
+
+/* Hover state - smooth elevation */
+.nav-inline .nav-main:hover,
+.nav-link:hover {
+  background: rgba(11, 128, 115, 0.08);
+  color: #0B8073;
+  transform: translateY(-1px);
+  border-color: rgba(11, 128, 115, 0.12);
+}
+
+/* Active state */
+.nav-inline .nav-main:active,
+.nav-link:active {
+  transform: translateY(0);
+  background: rgba(11, 128, 115, 0.12);
+}
+
+/* Focus state - accessibility first */
+.nav-inline .nav-main:focus-visible,
+.nav-link:focus-visible {
+  outline: 2px solid #0B8073;
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+/* Current page indicator */
+.nav-inline .nav-main[aria-current="page"],
+.nav-link[aria-current="page"] {
+  background: rgba(11, 128, 115, 0.12);
+  color: #0B8073;
+  font-weight: 600;
+}
+
+/* Login/CTA button - enhanced */
+.nav-inline .nav-main-login {
+  background: linear-gradient(135deg, #0B8073 0%, #13B6A2 100%);
+  color: #ffffff;
+  font-weight: 600;
+  border: none;
+  box-shadow: 0 2px 8px rgba(11, 128, 115, 0.2);
+}
+
+.nav-inline .nav-main-login:hover {
+  background: linear-gradient(135deg, #0a7067 0%, #11a592 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(11, 128, 115, 0.3);
+}
+
+/* ===================================================================
+   RIPPLE EFFECT - MATERIAL DESIGN INSPIRED
+   =================================================================== */
+
+.nav-ripple {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(11, 128, 115, 0.3);
+  transform: scale(0);
+  animation: ripple-animation 600ms ease-out;
+  pointer-events: none;
+}
+
+@keyframes ripple-animation {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+/* ===================================================================
+   KEYBOARD NAVIGATION - ENHANCED FOCUS INDICATORS
+   =================================================================== */
+
+.keyboard-nav *:focus {
+  outline: 2px solid #0B8073;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.keyboard-nav *:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* ===================================================================
+   ICON BUTTONS - ENHANCED INTERACTIONS
+   =================================================================== */
+
+.icon-button,
+.nav-toggle {
+  position: relative;
+  border: none;
+  background: transparent;
+  padding: 8px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  color: #374151;
+}
+
+.icon-button:hover,
+.nav-toggle:hover {
+  background: rgba(11, 128, 115, 0.08);
+  color: #0B8073;
+  transform: scale(1.05);
+}
+
+.icon-button:active,
+.nav-toggle:active {
+  transform: scale(0.95);
+}
+
+/* Notification badge - enhanced */
+.notification-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: white;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+  animation: badge-pulse 2s ease-in-out infinite;
+}
+
+@keyframes badge-pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+/* ===================================================================
+   MOBILE MENU - ENHANCED ANIMATIONS
+   =================================================================== */
+
+.nav-menu {
+  transition: opacity 300ms cubic-bezier(0.4, 0, 0.2, 1),
+              transform 300ms cubic-bezier(0.4, 0, 0.2, 1),
+              visibility 300ms;
+}
+
+.nav-menu--from-top {
+  transform-origin: top center;
+}
+
+.nav-menu--from-bottom {
+  transform-origin: bottom center;
+}
+
+/* Mobile menu backdrop */
+body.nav-open::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 999;
+  animation: backdrop-fade-in 300ms ease-out;
+}
+
+@keyframes backdrop-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ===================================================================
+   SEARCH INPUT - ENHANCED STYLING (if exists)
+   =================================================================== */
+
+input[type="search"],
+input[placeholder*="search" i] {
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+input[type="search"]:focus,
+input[placeholder*="search" i]:focus {
+  box-shadow: 0 0 0 3px rgba(11, 128, 115, 0.1);
+  border-color: #0B8073;
+}
+
+/* ===================================================================
+   LOADING STATES
+   =================================================================== */
+
+.nav-loading {
+  position: relative;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.nav-loading::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 16px;
+  height: 16px;
+  margin: -8px 0 0 -8px;
+  border: 2px solid transparent;
+  border-top-color: #0B8073;
+  border-radius: 50%;
+  animation: spin 600ms linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ===================================================================
+   RESPONSIVE ENHANCEMENTS
+   =================================================================== */
+
+@media (max-width: 768px) {
+  .header {
+    backdrop-filter: saturate(180%) blur(12px);
+    -webkit-backdrop-filter: saturate(180%) blur(12px);
+  }
+
+  .nav-inline .nav-main {
+    padding: 10px 16px;
+    font-size: 16px; /* Minimum 16px to prevent iOS zoom */
+  }
+
+  /* Larger touch targets for mobile */
+  .icon-button,
+  .nav-toggle {
+    padding: 12px;
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+/* ===================================================================
+   REDUCED MOTION - ACCESSIBILITY
+   =================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .header,
+  .nav-inline .nav-main,
+  .nav-link,
+  .icon-button,
+  .nav-toggle,
+  .nav-menu {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+
+  .nav-ripple,
+  .notification-badge {
+    animation: none !important;
+  }
+}
+
+/* ===================================================================
+   HIGH CONTRAST MODE - ACCESSIBILITY
+   =================================================================== */
+
+@media (prefers-contrast: high) {
+  .header {
+    background: #ffffff;
+    border-bottom: 2px solid #000000;
+  }
+
+  .nav-inline .nav-main,
+  .nav-link {
+    border: 2px solid #000000;
+  }
+
+  .nav-inline .nav-main:hover,
+  .nav-link:hover {
+    background: #000000;
+    color: #ffffff;
+  }
+}
+
+/* ===================================================================
+   PRINT STYLES
+   =================================================================== */
+
+@media print {
+  .header {
+    position: static;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+  }
+
+  .icon-button,
+  .nav-toggle,
+  .notification-badge {
+    display: none;
+  }
+}
+
+/* ===================================================================
+   FOOTER NAVIGATION - GOLD STANDARD
+   =================================================================== */
+
+.footer-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 900;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 -2px 12px rgba(15, 23, 42, 0.08);
+  padding: 8px 0;
+  transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 300ms cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 200ms ease-out;
+  will-change: transform;
+}
+
+/* Hidden state */
+.footer-nav--hidden {
+  transform: translateY(100%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Visible state */
+.footer-nav--visible {
+  transform: translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Scrolling indicator */
+.footer-nav--scrolling {
+  box-shadow: 0 -4px 16px rgba(15, 23, 42, 0.12);
+}
+
+/* Footer content */
+.footer-nav-content {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+.footer-nav-links {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  gap: 8px;
+}
+
+/* Footer navigation links */
+.footer-nav-link {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 16px;
+  border-radius: 12px;
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  min-width: 60px;
+  text-align: center;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.footer-nav-link:hover {
+  background: rgba(11, 128, 115, 0.08);
+  color: #0B8073;
+  transform: translateY(-2px);
+}
+
+.footer-nav-link:active {
+  transform: translateY(0);
+  background: rgba(11, 128, 115, 0.12);
+}
+
+/* Active link indicator */
+.footer-nav-link[aria-current="page"]::before {
+  content: '';
+  position: absolute;
+  top: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 24px;
+  height: 3px;
+  background: linear-gradient(135deg, #0B8073 0%, #13B6A2 100%);
+  border-radius: 999px;
+}
+
+/* Footer icon button */
+.footer-nav-icon-button {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 12px;
+  background: transparent;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.footer-nav-icon-button:hover {
+  background: rgba(11, 128, 115, 0.08);
+  color: #0B8073;
+  transform: scale(1.05);
+}
+
+.footer-nav-icon-button:active {
+  transform: scale(0.95);
+}
+
+/* Footer notification badge */
+.footer-notification-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: white;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+}
+
+/* Footer burger button */
+.footer-nav-burger {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 12px;
+  background: transparent;
+  cursor: pointer;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.footer-nav-burger:hover {
+  background: rgba(11, 128, 115, 0.08);
+}
+
+.footer-nav-burger:active {
+  transform: scale(0.95);
+}
+
+.footer-nav-burger-bar {
+  width: 20px;
+  height: 2px;
+  background: #6b7280;
+  border-radius: 2px;
+  transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.footer-nav-burger:hover .footer-nav-burger-bar {
+  background: #0B8073;
+}
+
+/* Open state animation */
+.footer-nav-burger--open .footer-nav-burger-bar:nth-child(1) {
+  transform: translateY(6px) rotate(45deg);
+}
+
+.footer-nav-burger--open .footer-nav-burger-bar:nth-child(2) {
+  opacity: 0;
+  transform: scaleX(0);
+}
+
+.footer-nav-burger--open .footer-nav-burger-bar:nth-child(3) {
+  transform: translateY(-6px) rotate(-45deg);
+}
+
+/* Body padding for footer nav */
+body.has-footer-nav {
+  padding-bottom: 72px;
+}
+
+/* ===================================================================
+   FOOTER NAV - RESPONSIVE
+   =================================================================== */
+
+@media (min-width: 769px) {
+  .footer-nav {
+    display: none; /* Hide on desktop */
+  }
+
+  body.has-footer-nav {
+    padding-bottom: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .footer-nav-link {
+    padding: 6px 12px;
+    min-width: 50px;
+    font-size: 11px;
+  }
+
+  .footer-nav-links {
+    gap: 4px;
+  }
+}
+
+/* ===================================================================
+   FOOTER NAV - ACCESSIBILITY
+   =================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .footer-nav,
+  .footer-nav-link,
+  .footer-nav-icon-button,
+  .footer-nav-burger,
+  .footer-nav-burger-bar {
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media (prefers-contrast: high) {
+  .footer-nav {
+    background: #ffffff;
+    border-top: 2px solid #000000;
+  }
+
+  .footer-nav-link,
+  .footer-nav-icon-button,
+  .footer-nav-burger {
+    border: 1px solid #000000;
+  }
+}
+
+/* ===================================================================
+   DARK MODE SUPPORT (if implemented)
+   =================================================================== */
+
+@media (prefers-color-scheme: dark) {
+  .footer-nav {
+    background: rgba(17, 24, 39, 0.96);
+    border-top-color: rgba(255, 255, 255, 0.08);
+  }
+
+  .footer-nav-link,
+  .footer-nav-icon-button {
+    color: #9ca3af;
+  }
+
+  .footer-nav-link:hover,
+  .footer-nav-icon-button:hover {
+    background: rgba(11, 128, 115, 0.16);
+    color: #13B6A2;
+  }
+
+  .footer-nav-burger-bar {
+    background: #9ca3af;
+  }
+
+  .footer-nav-burger:hover .footer-nav-burger-bar {
+    background: #13B6A2;
+  }
+}
