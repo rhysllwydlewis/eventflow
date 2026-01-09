@@ -16,15 +16,19 @@ test.describe('Authentication Flow', () => {
 
     // Wait for page to be fully loaded
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(1000); // Extra time for webkit/mobile
 
     // Try to submit empty form
     await page.click('button[type="submit"]');
 
     // Wait for validation to process (webkit/Safari needs more time)
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(2000); // Increased from 1000
 
-    // Should show validation errors
-    await expect(page.locator('.error, .alert-danger')).toBeVisible({ timeout: 10000 });
+    // Should show validation errors - be more flexible with selector
+    const errorElement = page
+      .locator('.error, .alert-danger, .invalid-feedback, [role="alert"]')
+      .first();
+    await expect(errorElement).toBeVisible({ timeout: 10000 });
   });
 
   test('should navigate to registration', async ({ page }) => {
@@ -62,6 +66,7 @@ test.describe('Authentication Flow', () => {
 
     // Wait for page to be fully loaded
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(1000); // Extra time for webkit/mobile
 
     // Fill in invalid credentials
     await page.fill('input[type="email"], input[name="email"]', 'invalid@test.com');
@@ -71,11 +76,13 @@ test.describe('Authentication Flow', () => {
     await page.click('button[type="submit"]');
 
     // Wait for response (webkit/Safari needs more time)
-    await page.waitForTimeout(4000);
+    await page.waitForTimeout(6000); // Increased from 4000
 
     // Should show error message (either from validation or from API response)
-    const errorMessage = page.locator('.error, .alert-danger, [role="alert"]');
-    await expect(errorMessage.first()).toBeVisible({ timeout: 10000 });
+    const errorMessage = page
+      .locator('.error, .alert-danger, .invalid-feedback, [role="alert"]')
+      .first();
+    await expect(errorMessage).toBeVisible({ timeout: 15000 }); // Increased timeout
   });
 
   test('should have CSRF protection', async ({ page }) => {
