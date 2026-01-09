@@ -645,7 +645,7 @@ body.nav-open .nav-toggle-bar:nth-child(3){
   position:fixed;
   top:50%;
   left:50%;
-  transform:translate(-50%, -50%) translateY(-6px);
+  transform:translate(-50%, -50%);
   width:min(400px, calc(100vw - 24px));
   max-width:calc(100vw - 24px);
   border-radius:16px;
@@ -661,11 +661,25 @@ body.nav-open .nav-toggle-bar:nth-child(3){
   transition:opacity 160ms ease-out, transform 160ms ease-out;
   z-index:1000;
 }
-.nav-menu.nav-menu--open{
+/* Animate from top when opened from top burger */
+.nav-menu.nav-menu--from-top{
+  transform:translate(-50%, -50%) translateY(-20px);
+}
+.nav-menu.nav-menu--from-top.nav-menu--open{
   opacity:1;
   transform:translate(-50%, -50%);
   pointer-events:auto;
 }
+/* Animate from bottom when opened from bottom burger */
+.nav-menu.nav-menu--from-bottom{
+  transform:translate(-50%, -50%) translateY(20px);
+}
+.nav-menu.nav-menu--from-bottom.nav-menu--open{
+  opacity:1;
+  transform:translate(-50%, -50%);
+  pointer-events:auto;
+}
+/* Legacy support for body.nav-open */
 body.nav-open .nav-menu{
   opacity:1;
   transform:translate(-50%, -50%);
@@ -708,7 +722,7 @@ body.nav-open .nav-menu{
     position:fixed;
     top:50%;
     left:50%;
-    transform:translate(-50%, -50%) translateY(-6px);
+    transform:translate(-50%, -50%);
     width:min(400px, calc(100vw - 24px));
     max-width:calc(100vw - 24px);
     border-radius:16px;
@@ -724,12 +738,27 @@ body.nav-open .nav-menu{
     transition:opacity 160ms ease-out, transform 160ms ease-out;
     z-index:1000;
   }
-  .nav-menu.nav-menu--open{
+  /* Animate from top when opened from top burger */
+  .nav-menu.nav-menu--from-top{
+    transform:translate(-50%, -50%) translateY(-20px);
+  }
+  .nav-menu.nav-menu--from-top.nav-menu--open{
     display:flex;
     opacity:1;
     transform:translate(-50%, -50%);
     pointer-events:auto;
   }
+  /* Animate from bottom when opened from bottom burger */
+  .nav-menu.nav-menu--from-bottom{
+    transform:translate(-50%, -50%) translateY(20px);
+  }
+  .nav-menu.nav-menu--from-bottom.nav-menu--open{
+    display:flex;
+    opacity:1;
+    transform:translate(-50%, -50%);
+    pointer-events:auto;
+  }
+  /* Legacy support for body.nav-open */
   body.nav-open .nav-menu{
     opacity:1;
     transform:translate(-50%, -50%);

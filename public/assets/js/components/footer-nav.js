@@ -179,6 +179,13 @@
                 if (navMenu) {
                   // Use nav-menu--open to maintain consistency with auth-nav.js
                   navMenu.classList.toggle('nav-menu--open');
+                  // Add/remove direction class for bottom animation
+                  if (!isCurrentlyOpen) {
+                    navMenu.classList.add('nav-menu--from-bottom');
+                    navMenu.classList.remove('nav-menu--from-top');
+                  } else {
+                    navMenu.classList.remove('nav-menu--from-bottom', 'nav-menu--from-top');
+                  }
                 }
                 document.body.classList.toggle('nav-open');
                 footerBurger.setAttribute('aria-expanded', String(!isCurrentlyOpen));
@@ -220,6 +227,14 @@
       // Prevent default and stop propagation to avoid event interference
       e.preventDefault();
       e.stopPropagation();
+
+      // Get the nav menu to add direction class
+      const navMenu = document.querySelector('.nav-menu');
+      if (navMenu) {
+        // Remove top direction class and add bottom direction class
+        navMenu.classList.remove('nav-menu--from-top');
+        navMenu.classList.add('nav-menu--from-bottom');
+      }
 
       // Trigger click on top burger to open/close nav menu
       topBurger.click();
