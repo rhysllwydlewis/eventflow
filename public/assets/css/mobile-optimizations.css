@@ -129,8 +129,7 @@
     text-decoration: none;
   }
   
-  /* Backdrop overlay for nav menu - proper z-index */
-  .nav-backdrop,
+  /* Backdrop overlay for nav menu - proper z-index using ::before pseudo-element */
   body.nav-open::before {
     content: '';
     position: fixed;
@@ -142,6 +141,8 @@
     z-index: 1998; /* Below nav-menu, above content */
     backdrop-filter: blur(2px);
     -webkit-backdrop-filter: blur(2px);
+    pointer-events: auto;
+    cursor: pointer;
   }
 }
 

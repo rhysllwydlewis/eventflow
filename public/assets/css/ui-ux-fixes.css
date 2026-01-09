@@ -44,7 +44,7 @@ html {
 }
 
 /* ============================================
-   BUTTON FIXES
+   MOBILE MENU & BACKDROP FIXES
    ============================================ */
 
 /* Ensure body doesn't scroll when mobile menu is open */
@@ -73,12 +73,6 @@ body.nav-open {
 
 body.nav-open .nav-backdrop {
   display: block;
-}
-
-/* Alternative backdrop via ::before pseudo-element */
-body.nav-open::before {
-  pointer-events: auto;
-  cursor: pointer;
 }
 
 /* Touch optimization for mobile menu */
