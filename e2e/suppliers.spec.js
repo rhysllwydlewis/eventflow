@@ -23,6 +23,7 @@ test.describe('Supplier Search and Filtering', () => {
     if ((await suppliersLink.count()) > 0) {
       await suppliersLink.first().click();
       await page.waitForLoadState('networkidle');
+      await page.waitForTimeout(2000); // Extra time for mobile browsers
 
       // Should show supplier listings
       const supplierCards = page.locator('.supplier-card, [data-supplier-id], .card');

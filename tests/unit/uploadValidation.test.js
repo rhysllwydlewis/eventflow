@@ -3,8 +3,6 @@
  * Tests magic-byte detection, pixel limits, and metadata stripping
  */
 
-const fs = require('fs');
-const path = require('path');
 const sharp = require('sharp');
 const uploadValidation = require('../../utils/uploadValidation');
 

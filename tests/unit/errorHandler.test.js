@@ -5,7 +5,6 @@
 
 const request = require('supertest');
 const express = require('express');
-const multer = require('multer');
 const { errorHandler } = require('../../middleware/errorHandler');
 
 describe('Error Handler', () => {

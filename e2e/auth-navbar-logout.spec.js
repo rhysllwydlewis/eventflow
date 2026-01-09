@@ -9,9 +9,9 @@ test.describe('Authentication Navbar and Logout Flow', () => {
     // Try to access a protected page directly
     await page.goto('/dashboard-customer.html');
 
-    // Wait for redirect
+    // Wait for redirect with more generous timeout for webkit/mobile
     await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(2000); // Wait for dashboard-guard.js to redirect
+    await page.waitForTimeout(4000); // Increased from 2000 for webkit/mobile browsers
 
     // Should be redirected to auth page with redirect parameter
     const url = page.url();
@@ -66,7 +66,7 @@ test.describe('Logout Flow (Simulated)', () => {
     // Reload to pick up the localStorage changes
     await page.reload();
     await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(1500); // Wait for auth-nav.js to run
+    await page.waitForTimeout(3000); // Increased from 1500 for webkit/mobile
 
     // Now simulate logout by calling the logout function
     await page.evaluate(async () => {
@@ -85,6 +85,9 @@ test.describe('Logout Flow (Simulated)', () => {
       localStorage.removeItem('user');
       sessionStorage.clear();
     });
+
+    // Wait a bit more for storage to be cleared
+    await page.waitForTimeout(500);
 
     // Check that localStorage is cleared
     const userInStorage = await page.evaluate(() => localStorage.getItem('user'));

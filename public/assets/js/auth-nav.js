@@ -84,7 +84,12 @@
 
       const closeNav = () => {
         body.classList.remove('nav-open');
-        navMenu.classList.remove('nav-menu--open', 'is-open', 'nav-menu--from-top', 'nav-menu--from-bottom');
+        navMenu.classList.remove(
+          'nav-menu--open',
+          'is-open',
+          'nav-menu--from-top',
+          'nav-menu--from-bottom'
+        );
         burger.setAttribute('aria-expanded', 'false');
         // Restore background scrolling
         body.style.overflow = '';
