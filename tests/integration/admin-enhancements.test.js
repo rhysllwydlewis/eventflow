@@ -70,8 +70,13 @@ describe('Admin Enhancements', () => {
       );
 
       // Check that bulk operations use dbUnified.read and write
-      const bulkApproveMatch = adminRoutesContent.match(/\/packages\/bulk-approve'[\s\S]*?}\s*\);/);
-      const bulkVerifyMatch = adminRoutesContent.match(/\/users\/bulk-verify'[\s\S]*?}\s*\);/);
+      // Use a more robust regex that captures the full router.post() call
+      const bulkApproveMatch = adminRoutesContent.match(
+        /router\.post\(\s*'\/packages\/bulk-approve'[\s\S]*?\n\);/
+      );
+      const bulkVerifyMatch = adminRoutesContent.match(
+        /router\.post\(\s*'\/users\/bulk-verify'[\s\S]*?\n\);/
+      );
 
       expect(bulkApproveMatch).toBeTruthy();
       expect(bulkApproveMatch[0]).toContain('await dbUnified.read');
@@ -211,12 +216,19 @@ describe('Admin Enhancements', () => {
         'utf8'
       );
 
-      const searchSection = adminRoutesContent.match(/\/users\/search'[\s\S]*?}\s*\);/);
-      expect(searchSection).toBeTruthy();
+      // Find the route and capture until the next router. or comment
+      const startIdx = adminRoutesContent.indexOf("router.get('/users/search'");
+      const nextRouteIdx = adminRoutesContent.indexOf('router.', startIdx + 1);
+      const nextCommentIdx = adminRoutesContent.indexOf('/**', startIdx + 1);
+      const endIdx = Math.min(
+        nextRouteIdx !== -1 ? nextRouteIdx : Infinity,
+        nextCommentIdx !== -1 ? nextCommentIdx : Infinity
+      );
+      const searchSection = adminRoutesContent.substring(startIdx, endIdx);
 
-      expect(searchSection[0]).toContain('total:');
-      expect(searchSection[0]).toContain('hasMore:');
-      expect(searchSection[0]).toContain('slice(startIndex, endIndex)');
+      expect(searchSection).toContain('total');
+      expect(searchSection).toContain('hasMore');
+      expect(searchSection).toContain('slice(startIndex, endIndex)');
     });
 
     it('users search should sanitize returned data', () => {
@@ -225,10 +237,18 @@ describe('Admin Enhancements', () => {
         'utf8'
       );
 
-      const searchSection = adminRoutesContent.match(/\/users\/search'[\s\S]*?}\s*\);/);
-      expect(searchSection).toBeTruthy();
-      expect(searchSection[0]).toContain('sanitizedUsers');
-      expect(searchSection[0]).not.toContain('password');
+      // Find the route and capture until the next router. or comment
+      const startIdx = adminRoutesContent.indexOf("router.get('/users/search'");
+      const nextRouteIdx = adminRoutesContent.indexOf('router.', startIdx + 1);
+      const nextCommentIdx = adminRoutesContent.indexOf('/**', startIdx + 1);
+      const endIdx = Math.min(
+        nextRouteIdx !== -1 ? nextRouteIdx : Infinity,
+        nextCommentIdx !== -1 ? nextCommentIdx : Infinity
+      );
+      const searchSection = adminRoutesContent.substring(startIdx, endIdx);
+
+      expect(searchSection).toContain('sanitizedUsers');
+      expect(searchSection).not.toContain('password');
     });
   });
 
@@ -315,7 +335,9 @@ describe('Admin Enhancements', () => {
         'utf8'
       );
 
-      const bulkSuspendSection = adminRoutesContent.match(/\/users\/bulk-suspend'[\s\S]*?}\s*\);/);
+      const bulkSuspendSection = adminRoutesContent.match(
+        /router\.post\(\s*'\/users\/bulk-suspend'[\s\S]*?\n\);/
+      );
       expect(bulkSuspendSection).toBeTruthy();
       expect(bulkSuspendSection[0]).toContain('req.user.id');
       expect(bulkSuspendSection[0]).toContain('!==');

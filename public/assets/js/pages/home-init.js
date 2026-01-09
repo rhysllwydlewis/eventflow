@@ -546,20 +546,20 @@ async function initPexelsCollage(settings) {
           `Pexels collage initialized with ${intervalSeconds}s interval (${Object.keys(imageCache).length} categories)`
         );
       }
-      } else {
-        // Only warn in development mode
-        if (window.location.hostname === 'localhost') {
-          console.warn('No Pexels images loaded, falling back to static images');
-        }
-        // Fall back to loading static hero images
-        await loadHeroCollageImages();
-      }
-    } catch (error) {
-      // Only log errors in development mode
+    } else {
+      // Only warn in development mode
       if (window.location.hostname === 'localhost') {
-        console.error('Error initializing Pexels collage:', error);
+        console.warn('No Pexels images loaded, falling back to static images');
       }
       // Fall back to loading static hero images
+      await loadHeroCollageImages();
+    }
+  } catch (error) {
+    // Only log errors in development mode
+    if (window.location.hostname === 'localhost') {
+      console.error('Error initializing Pexels collage:', error);
+    }
+    // Fall back to loading static hero images
     await loadHeroCollageImages();
   }
 }
@@ -807,7 +807,7 @@ async function fetchTestimonials() {
 
   try {
     const response = await fetch('/api/reviews?limit=6&approved=true&sort=rating');
-    
+
     // Silently handle 404 - reviews endpoint may not be deployed yet
     if (response.status === 404) {
       section.style.display = 'none';
