@@ -154,8 +154,9 @@
 
     const trySetupSync = () => {
       const topBurger = document.getElementById('burger');
-      
-      if (topBurger) {
+
+      // Only set up sync if top burger exists and is initialized by auth-nav.js
+      if (topBurger && topBurger.dataset.navInitialized === 'true') {
         setupBurgerSync(topBurger, footerBurger);
         return true;
       }
@@ -164,27 +165,47 @@
 
     // Try immediately
     if (!trySetupSync()) {
-      // Try again after DOM settles
+      // Try again after a short delay to allow auth-nav.js to initialize
       setTimeout(() => {
         if (!trySetupSync()) {
-          // Still no top burger - make footer burger work independently
-          footerBurger.addEventListener('click', () => {
-            const navMenu = document.querySelector('.nav-menu');
-            const isCurrentlyOpen = document.body.classList.contains('nav-open');
-            
-            if (navMenu) {
-              navMenu.classList.toggle('nav-menu--open');
+          // Try one more time with longer delay
+          setTimeout(() => {
+            if (!trySetupSync()) {
+              // Still no top burger - make footer burger work independently
+              footerBurger.addEventListener('click', () => {
+                const navMenu = document.querySelector('.nav-menu');
+                const isCurrentlyOpen = document.body.classList.contains('nav-open');
+
+                if (navMenu) {
+                  // Use nav-menu--open to maintain consistency with auth-nav.js
+                  navMenu.classList.toggle('nav-menu--open');
+                  // Add/remove direction class for bottom animation
+                  if (!isCurrentlyOpen) {
+                    navMenu.classList.add('nav-menu--from-bottom');
+                    navMenu.classList.remove('nav-menu--from-top');
+                  } else {
+                    navMenu.classList.remove('nav-menu--from-bottom', 'nav-menu--from-top');
+                  }
+                }
+                document.body.classList.toggle('nav-open');
+                footerBurger.setAttribute('aria-expanded', String(!isCurrentlyOpen));
+                footerBurger.classList.toggle('footer-nav-burger--open');
+
+                // Prevent background scrolling when menu is open
+                if (!isCurrentlyOpen) {
+                  document.body.style.overflow = 'hidden';
+                } else {
+                  document.body.style.overflow = '';
+                }
+              });
+
+              if (window.location.hostname === 'localhost') {
+                console.info('[FooterNav] Footer burger set up independently');
+              }
             }
-            document.body.classList.toggle('nav-open');
-            footerBurger.setAttribute('aria-expanded', String(!isCurrentlyOpen));
-            footerBurger.classList.toggle('footer-nav-burger--open');
-          });
-          
-          if (window.location.hostname === 'localhost') {
-            console.info('[FooterNav] Footer burger set up independently');
-          }
+          }, 500);
         }
-      }, 300);
+      }, 100);
     }
   }
 
@@ -202,15 +223,27 @@
     };
 
     // Make footer burger trigger the same nav menu as top burger
-    footerBurger.addEventListener('click', () => {
+    footerBurger.addEventListener('click', e => {
+      // Prevent default and stop propagation to avoid event interference
+      e.preventDefault();
+      e.stopPropagation();
+
+      // Get the nav menu to add direction class
+      const navMenu = document.querySelector('.nav-menu');
+      if (navMenu) {
+        // Remove top direction class and add bottom direction class
+        navMenu.classList.remove('nav-menu--from-top');
+        navMenu.classList.add('nav-menu--from-bottom');
+      }
+
       // Trigger click on top burger to open/close nav menu
       topBurger.click();
 
-      // Sync state after brief delay to allow top burger to update
-      setTimeout(() => {
+      // Sync state after DOM updates using requestAnimationFrame
+      requestAnimationFrame(() => {
         const isExpanded = topBurger.getAttribute('aria-expanded') === 'true';
         syncFooterBurgerState(isExpanded);
-      }, 50);
+      });
     });
 
     // Watch for changes to top burger state to sync footer burger
