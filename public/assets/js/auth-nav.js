@@ -1,38 +1,198 @@
-(async function () {
-  // --- CSRF Token Management ---
-  let csrfToken = null;
+/**
+ * EventFlow Top Navigation - Complete Rebuild
+ * Modern, clean architecture for navbar functionality
+ * Handles authentication state, mobile menu, and user interactions
+ */
 
-  // Fetch CSRF token on page load
-  async function fetchCsrfToken() {
+(function () {
+  'use strict';
+
+  // ==========================================
+  // STATE MANAGEMENT
+  // ==========================================
+  
+  const state = {
+    user: null,
+    csrfToken: null,
+    isInitialized: false
+  };
+
+  // ==========================================
+  // CSRF TOKEN
+  // ==========================================
+  
+  async function initCsrfToken() {
     try {
-      const response = await fetch('/api/csrf-token', {
-        credentials: 'include',
-      });
+      const response = await fetch('/api/csrf-token', { credentials: 'include' });
       if (response.ok) {
         const data = await response.json();
-        csrfToken = data.csrfToken;
-        // Store in window for access by other scripts
-        window.__CSRF_TOKEN__ = csrfToken;
+        state.csrfToken = data.csrfToken;
+        window.__CSRF_TOKEN__ = data.csrfToken;
       }
-    } catch (e) {
-      // Only log CSRF errors in development
-      if (window.location.hostname === 'localhost') {
-        console.error('Failed to fetch CSRF token', e);
-      }
+    } catch (error) {
+      // Silently fail - not critical
     }
   }
 
-  // Fetch token immediately
-  await fetchCsrfToken();
+  // ==========================================
+  // AUTH MANAGEMENT
+  // ==========================================
+  
+  async function fetchCurrentUser() {
+    try {
+      const response = await fetch('/api/auth/me', {
+        credentials: 'include',
+        headers: { 'Cache-Control': 'no-cache' }
+      });
+      
+      if (!response.ok) return null;
+      
+      const data = await response.json();
+      return data.user || null;
+    } catch (error) {
+      return null;
+    }
+  }
 
-  // --- Brand wordmark animation ---
+  async function logout() {
+    // Clear local state
+    try {
+      localStorage.removeItem('eventflow_onboarding_new');
+      localStorage.removeItem('user');
+      sessionStorage.clear();
+    } catch (error) {
+      // Ignore storage errors
+    }
+
+    // Call logout API
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: { 'X-CSRF-Token': state.csrfToken || '' },
+        credentials: 'include'
+      });
+    } catch (error) {
+      // Ignore API errors
+    }
+
+    // Notify components and reload
+    state.user = null;
+    dispatchAuthChange(null);
+    window.location.href = `/?t=${Date.now()}`;
+  }
+
+  function dispatchAuthChange(user) {
+    window.dispatchEvent(new CustomEvent('auth-state-changed', { 
+      detail: { user } 
+    }));
+  }
+
+  // ==========================================
+  // MOBILE MENU
+  // ==========================================
+  
+  function initMobileMenu() {
+    const burger = document.getElementById('burger');
+    const navMenu = document.querySelector('.nav-menu');
+    
+    if (!burger || !navMenu) return;
+
+    // Prevent duplicate initialization
+    if (burger.dataset.navInitialized === 'true') return;
+    burger.dataset.navInitialized = 'true';
+
+    // Set up accessibility
+    if (!navMenu.id) navMenu.id = 'primary-nav-menu';
+    burger.setAttribute('aria-controls', navMenu.id);
+    burger.setAttribute('aria-expanded', 'false');
+
+    // Toggle function
+    const toggle = () => {
+      const isOpen = document.body.classList.contains('nav-open');
+      
+      if (isOpen) {
+        // Close menu
+        document.body.classList.remove('nav-open');
+        navMenu.classList.remove('nav-menu--open', 'is-open', 'nav-menu--from-top', 'nav-menu--from-bottom');
+        burger.setAttribute('aria-expanded', 'false');
+        document.body.style.overflow = '';
+      } else {
+        // Open menu
+        document.body.classList.add('nav-open');
+        navMenu.classList.add('nav-menu--open', 'is-open', 'nav-menu--from-top');
+        burger.setAttribute('aria-expanded', 'true');
+        document.body.style.overflow = 'hidden';
+      }
+    };
+
+    // Event listeners
+    burger.addEventListener('click', toggle);
+    
+    burger.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        toggle();
+      }
+    });
+
+    // Close on link click
+    navMenu.addEventListener('click', (event) => {
+      if (event.target.tagName === 'A') {
+        toggle();
+      }
+    });
+
+    // Close on ESC key
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && document.body.classList.contains('nav-open')) {
+        toggle();
+      }
+    });
+
+    // Close when clicking outside
+    document.addEventListener('click', (event) => {
+      if (document.body.classList.contains('nav-open')) {
+        if (!burger.contains(event.target) && !navMenu.contains(event.target)) {
+          toggle();
+        }
+      }
+    });
+  }
+
+  // ==========================================
+  // HEADER SCROLL BEHAVIOR
+  // ==========================================
+  
+  function initHeaderScroll() {
+    const header = document.querySelector('.header');
+    if (!header) return;
+
+    let lastScrollY = window.scrollY;
+    let ticking = false;
+
+    window.addEventListener('scroll', () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const currentScrollY = window.scrollY;
+          const shouldHide = currentScrollY > lastScrollY && currentScrollY > 80;
+          header.classList.toggle('header--hidden', shouldHide);
+          lastScrollY = currentScrollY;
+          ticking = false;
+        });
+        ticking = true;
+      }
+    });
+  }
+
+  // ==========================================
+  // BRAND ANIMATION
+  // ==========================================
+  
   function initBrandAnimation() {
     const brandText = document.querySelector('.brand-text');
-    if (!brandText || brandText.dataset.animated === 'true') {
-      return;
-    }
-    brandText.dataset.animated = 'true';
+    if (!brandText || brandText.dataset.animated === 'true') return;
 
+    brandText.dataset.animated = 'true';
     brandText.style.display = 'inline-block';
     brandText.style.whiteSpace = 'nowrap';
     brandText.style.overflow = 'hidden';
@@ -48,441 +208,155 @@
     }, 3000);
   }
 
-  // --- Nav (burger + scroll behaviour) ---
-  function initNavToggle() {
-    const navMenu = document.querySelector('.nav.nav-menu');
-    if (!navMenu) {
-      return;
-    }
+  // ==========================================
+  // AUTH UI UPDATES
+  // ==========================================
+  
+  function updateAuthUI(user) {
+    // Mobile nav elements
+    const mobileAuth = document.getElementById('nav-auth');
+    const mobileDash = document.getElementById('nav-dashboard');
+    const mobileSignout = document.getElementById('nav-signout');
 
-    const body = document.body;
+    // Desktop inline nav
+    const inlineNav = document.querySelector('.nav-inline');
+    const inlineLogin = inlineNav?.querySelector('.nav-main-login');
+    
+    // Notification bell
+    const notificationBell = document.getElementById('notification-bell');
 
-    // Defer setup so any inline burger scripts run first.
-    setTimeout(() => {
-      const original = document.getElementById('burger');
-      if (!original) {
-        return;
+    if (user) {
+      // Logged in state
+      const dashboardUrl = user.role === 'admin' ? '/admin.html' 
+        : user.role === 'supplier' ? '/dashboard-supplier.html'
+        : '/dashboard-customer.html';
+
+      // Mobile nav
+      if (mobileAuth) mobileAuth.style.display = 'none';
+      if (mobileDash) {
+        mobileDash.style.display = '';
+        mobileDash.href = dashboardUrl;
       }
-
-      // Prevent re-initialization
-      if (original.dataset.navInitialized === 'true') {
-        return;
-      }
-
-      // Clone the burger to remove any previously-attached click handlers
-      const burger = original.cloneNode(true);
-      original.parentNode.replaceChild(burger, original);
-
-      // Mark as initialized - this is used by footer-nav.js
-      burger.dataset.navInitialized = 'true';
-
-      // Add aria-controls if nav menu has an id
-      if (!navMenu.id) {
-        navMenu.id = 'primary-nav-menu';
-      }
-      burger.setAttribute('aria-controls', navMenu.id);
-
-      const closeNav = () => {
-        body.classList.remove('nav-open');
-        navMenu.classList.remove(
-          'nav-menu--open',
-          'is-open',
-          'nav-menu--from-top',
-          'nav-menu--from-bottom'
-        );
-        burger.setAttribute('aria-expanded', 'false');
-        // Restore background scrolling
-        body.style.overflow = '';
-      };
-
-      const openNav = () => {
-        body.classList.add('nav-open');
-        navMenu.classList.add('nav-menu--open', 'is-open', 'nav-menu--from-top');
-        burger.setAttribute('aria-expanded', 'true');
-        // Prevent background scrolling when menu is open
-        body.style.overflow = 'hidden';
-      };
-
-      const toggleNav = () => {
-        const isOpen = body.classList.contains('nav-open');
-        if (isOpen) {
-          closeNav();
-        } else {
-          openNav();
-        }
-      };
-
-      burger.addEventListener('click', toggleNav);
-      burger.addEventListener('keydown', event => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault();
-          toggleNav();
-        }
-      });
-
-      // Close nav when a menu link is clicked
-      navMenu.addEventListener('click', event => {
-        const target = event.target;
-        if (target && target.tagName === 'A') {
-          closeNav();
-        }
-      });
-
-      // Close nav on ESC key press
-      document.addEventListener('keydown', event => {
-        if (event.key === 'Escape' && body.classList.contains('nav-open')) {
-          closeNav();
-        }
-      });
-
-      // Close nav when clicking outside
-      document.addEventListener('click', event => {
-        const isOpen = body.classList.contains('nav-open');
-        if (!isOpen) {
-          return;
-        }
-        // Check if click is outside burger and nav menu
-        if (!burger.contains(event.target) && !navMenu.contains(event.target)) {
-          closeNav();
-        }
-      });
-    }, 0);
-  }
-
-  // --- Header scroll hide / show ---
-  function initHeaderScroll() {
-    const header = document.querySelector('.header');
-    if (!header) {
-      return;
-    }
-
-    let lastY = window.scrollY;
-    let ticking = false;
-
-    window.addEventListener('scroll', () => {
-      const currentY = window.scrollY;
-      if (!ticking) {
-        window.requestAnimationFrame(() => {
-          const goingDown = currentY > lastY && currentY > 80;
-          header.classList.toggle('header--hidden', goingDown);
-          lastY = currentY;
-          ticking = false;
+      if (mobileSignout) {
+        mobileSignout.style.display = '';
+        const newSignout = mobileSignout.cloneNode(true);
+        mobileSignout.parentNode.replaceChild(newSignout, mobileSignout);
+        newSignout.addEventListener('click', (e) => {
+          e.preventDefault();
+          logout();
         });
-        ticking = true;
       }
-    });
-  }
 
-  // --- Auth helper (using centralized AuthStateManager) ---
-  async function me() {
-    // Use centralized auth state manager if available
-    if (window.AuthStateManager) {
-      const authState = await window.AuthStateManager.init();
-      return authState.user;
+      // Desktop inline nav
+      if (inlineLogin) {
+        inlineLogin.textContent = 'Log out';
+        inlineLogin.href = '#';
+        const newInlineLogin = inlineLogin.cloneNode(true);
+        inlineLogin.parentNode.replaceChild(newInlineLogin, inlineLogin);
+        newInlineLogin.addEventListener('click', (e) => {
+          e.preventDefault();
+          logout();
+        });
+      }
+
+      // Add dashboard link to desktop nav if not exists
+      if (inlineNav && !inlineNav.querySelector('.nav-main-dashboard')) {
+        const dashLink = document.createElement('a');
+        dashLink.className = 'nav-link nav-main nav-main-dashboard';
+        dashLink.textContent = 'Dashboard';
+        dashLink.href = dashboardUrl;
+        if (inlineLogin) {
+          inlineNav.insertBefore(dashLink, inlineLogin);
+        } else {
+          inlineNav.appendChild(dashLink);
+        }
+      }
+
+      // Show notification bell
+      if (notificationBell) notificationBell.style.display = 'flex';
+
+    } else {
+      // Logged out state
+      if (mobileAuth) mobileAuth.style.display = '';
+      if (mobileDash) mobileDash.style.display = 'none';
+      if (mobileSignout) mobileSignout.style.display = 'none';
+
+      if (inlineLogin) {
+        inlineLogin.textContent = 'Log in';
+        inlineLogin.href = '/auth.html';
+        const newInlineLogin = inlineLogin.cloneNode(true);
+        inlineLogin.parentNode.replaceChild(newInlineLogin, inlineLogin);
+      }
+
+      // Remove dashboard link
+      const dashboardLink = inlineNav?.querySelector('.nav-main-dashboard');
+      if (dashboardLink) dashboardLink.remove();
+
+      // Hide notification bell
+      if (notificationBell) notificationBell.style.display = 'none';
     }
 
-    // Fallback to direct API call (should not happen if auth-state.js is loaded)
-    try {
-      const r = await fetch('/api/auth/me', {
-        credentials: 'include',
-        headers: {
-          'Cache-Control': 'no-cache',
-          Pragma: 'no-cache',
-        },
-      });
-      if (!r.ok) {
-        return null;
-      }
-      const data = await r.json();
-      return data.user || null;
-    } catch (_) {
-      return null;
-    }
-  }
-
-  // --- Auth-aware nav (and normalising labels) ---
-  function initAuthNav(user) {
-    const auth = document.getElementById('nav-auth');
-    const dash = document.getElementById('nav-dashboard');
-    const signout = document.getElementById('nav-signout');
-
-    // Top nav notification bell
-    const topBell = document.getElementById('notification-bell');
-
-    // Footer nav elements
-    const footerAuth = document.querySelector('.footer-nav-auth');
-    const footerDashboard = document.querySelector('.footer-nav-dashboard');
-    const footerBell = document.getElementById('footer-notification-bell');
-
-    const inlineNav = document.querySelector('.nav.nav-inline');
-    const inlineLogin = inlineNav ? inlineNav.querySelector('.nav-main-login') : null;
-    const firstNavItem = inlineNav ? inlineNav.querySelector('.nav-main') : null;
-
-    // Normalise top-left "Plan" label everywhere:
-    // "Plan an Event" -> "Plan"
+    // Normalize "Plan" label
+    const firstNavItem = inlineNav?.querySelector('.nav-main');
     if (firstNavItem) {
       const text = firstNavItem.textContent.trim();
       if (text === 'Plan an Event' || text === 'Plan an event') {
         firstNavItem.textContent = 'Plan';
       }
     }
-
-    // Logout handler function
-    async function handleLogout(e) {
-      if (e) {
-        e.preventDefault();
-      }
-
-      // Clear any auth-related storage immediately
-      try {
-        localStorage.removeItem('eventflow_onboarding_new');
-        localStorage.removeItem('user');
-        sessionStorage.clear();
-      } catch (_) {
-        /* Ignore storage errors */
-      }
-
-      // Update navbar immediately to show logged-out state
-      initAuthNav(null);
-
-      // Helper to call logout endpoint
-      const callLogout = async () => {
-        return await fetch('/api/auth/logout', {
-          method: 'POST',
-          headers: { 'X-CSRF-Token': window.__CSRF_TOKEN__ || '' },
-          credentials: 'include',
-        });
-      };
-
-      // Call logout endpoint and wait for completion
-      try {
-        const response = await callLogout();
-
-        // Re-check auth state to verify logout completed
-        if (response.ok) {
-          const currentUser = await me();
-          if (currentUser) {
-            // Logout didn't complete properly - retry once
-            if (window.location.hostname === 'localhost') {
-              console.warn('Logout verification failed, retrying...');
-            }
-            await callLogout();
-          }
-        }
-      } catch (_) {
-        /* Ignore logout errors */
-      }
-
-      // Dispatch custom event to notify other components
-      window.dispatchEvent(new CustomEvent('auth-state-changed', { detail: { user: null } }));
-
-      // Force full reload with cache-busting to ensure clean state
-      window.location.href = `/?t=${Date.now()}`;
-    }
-
-    if (user) {
-      // Mobile nav
-      if (auth) {
-        auth.style.display = 'none';
-      }
-      const dashHref =
-        user.role === 'admin'
-          ? '/admin.html'
-          : user.role === 'supplier'
-            ? '/dashboard-supplier.html'
-            : '/dashboard-customer.html';
-
-      if (dash) {
-        dash.style.display = '';
-        dash.href = dashHref;
-      }
-      if (signout) {
-        signout.style.display = '';
-        // Remove existing event listeners by cloning the node
-        const newSignout = signout.cloneNode(true);
-        signout.parentNode.replaceChild(newSignout, signout);
-        // Add event listener to the new node
-        newSignout.addEventListener('click', handleLogout);
-      }
-
-      // Top nav notification bell - show when logged in
-      if (topBell) {
-        topBell.style.display = 'flex';
-      }
-
-      // Footer nav - logged in state
-      if (footerAuth) {
-        footerAuth.textContent = 'Log out';
-        footerAuth.href = '#';
-        // Remove existing event listeners by cloning the node
-        const newFooterAuth = footerAuth.cloneNode(true);
-        footerAuth.parentNode.replaceChild(newFooterAuth, footerAuth);
-        // Add event listener to the new node
-        newFooterAuth.addEventListener('click', handleLogout);
-      }
-      if (footerDashboard) {
-        footerDashboard.style.display = '';
-        footerDashboard.href = dashHref;
-      }
-      if (footerBell) {
-        footerBell.style.display = 'flex';
-      }
-
-      // Inline nav (top-right on desktop)
-      let dashInline = inlineNav ? inlineNav.querySelector('.nav-main-dashboard') : null;
-      if (inlineNav) {
-        if (!dashInline) {
-          dashInline = document.createElement('a');
-          dashInline.className = 'nav-link nav-main nav-main-dashboard';
-          dashInline.textContent = 'Dashboard';
-          // Insert before login link if present, otherwise append
-          if (inlineLogin && inlineLogin.parentNode === inlineNav) {
-            inlineNav.insertBefore(dashInline, inlineLogin);
-          } else {
-            inlineNav.appendChild(dashInline);
-          }
-        }
-        dashInline.href = dashHref;
-      }
-
-      if (inlineLogin) {
-        inlineLogin.textContent = 'Log out';
-        inlineLogin.href = '#';
-        // Remove existing event listeners by cloning the node
-        const newInlineLogin = inlineLogin.cloneNode(true);
-        inlineLogin.parentNode.replaceChild(newInlineLogin, inlineLogin);
-        // Add event listener to the new node
-        newInlineLogin.addEventListener('click', handleLogout);
-      }
-    } else {
-      // Not signed in
-      if (auth) {
-        auth.style.display = '';
-      }
-      if (dash) {
-        dash.style.display = 'none';
-      }
-      if (signout) {
-        signout.style.display = 'none';
-      }
-
-      // Top nav notification bell - hide when logged out
-      if (topBell) {
-        topBell.style.display = 'none';
-      }
-
-      // Footer nav - logged out state
-      if (footerAuth) {
-        footerAuth.textContent = 'Log in';
-        footerAuth.href = '/auth.html';
-        // Remove any existing logout handlers
-        const newFooterAuth = footerAuth.cloneNode(true);
-        footerAuth.parentNode.replaceChild(newFooterAuth, footerAuth);
-      }
-      if (footerDashboard) {
-        footerDashboard.style.display = 'none';
-      }
-      if (footerBell) {
-        footerBell.style.display = 'none';
-      }
-
-      if (inlineLogin) {
-        inlineLogin.textContent = 'Log in';
-        inlineLogin.href = '/auth.html';
-        // Remove any existing logout handlers
-        const newInlineLogin = inlineLogin.cloneNode(true);
-        inlineLogin.parentNode.replaceChild(newInlineLogin, inlineLogin);
-      }
-      if (inlineNav) {
-        const dashInline = inlineNav.querySelector('.nav-main-dashboard');
-        if (dashInline) {
-          dashInline.remove();
-        }
-      }
-    }
   }
 
-  // Initialise UI pieces that don't depend on auth
-  initBrandAnimation();
-  initNavToggle();
-  initHeaderScroll();
+  // ==========================================
+  // INITIALIZATION
+  // ==========================================
+  
+  async function init() {
+    if (state.isInitialized) return;
+    state.isInitialized = true;
 
-  // Then check auth and wire up auth-aware nav
-  const user = await me();
-  initAuthNav(user);
+    // Initialize non-auth features
+    initBrandAnimation();
+    initMobileMenu();
+    initHeaderScroll();
 
-  // Dispatch custom event to notify other components of initial auth state
-  window.dispatchEvent(new CustomEvent('auth-state-changed', { detail: { user } }));
+    // Fetch CSRF token
+    await initCsrfToken();
 
-  // Helper to trigger logout programmatically
-  const triggerLogout = () => {
-    const signout = document.getElementById('nav-signout');
-    if (signout) {
-      signout.click();
-    }
-  };
+    // Fetch current user and update UI
+    state.user = await fetchCurrentUser();
+    updateAuthUI(state.user);
 
-  // Listen for logout requests from other components (e.g., footer nav)
-  window.addEventListener('logout-requested', triggerLogout);
+    // Dispatch initial auth state
+    dispatchAuthChange(state.user);
 
-  // Expose logout function on window for direct access from other components
-  // This allows direct function calls instead of programmatic clicking
-  window.__eventflow_logout = triggerLogout;
+    // Expose logout globally
+    window.__eventflow_logout = logout;
+    window.addEventListener('logout-requested', logout);
 
-  // --- Cross-tab auth state synchronization ---
-  // Listen for storage events to detect logout in other tabs
-  window.addEventListener('storage', async event => {
-    // Check if auth-related storage was cleared (logout in another tab)
-    if (event.key === 'user' && event.newValue === null) {
-      // Only log if we had a logged-in user before and in development
-      if (lastKnownAuthState && window.location.hostname === 'localhost') {
-        console.info('Logout detected in another tab');
+    // Watch for auth changes in other tabs
+    window.addEventListener('storage', async (event) => {
+      if (event.key === 'user' && event.newValue === null) {
+        state.user = await fetchCurrentUser();
+        updateAuthUI(state.user);
+        dispatchAuthChange(state.user);
       }
-      const currentUser = await me();
-      initAuthNav(currentUser);
-      // Dispatch event for cross-component sync
-      window.dispatchEvent(
-        new CustomEvent('auth-state-changed', { detail: { user: currentUser } })
-      );
-    }
-  });
+    });
 
-  // --- Periodic auth state validation ---
-  // Re-verify auth state every 30 seconds to catch token expiration or stale state
-  let lastKnownAuthState = user;
-
-  // Helper to update auth state
-  const updateAuthState = (currentUser, reason) => {
-    // Only log state changes for logged-in users, not guest state, and only in development
-    if ((currentUser || lastKnownAuthState) && window.location.hostname === 'localhost') {
-      console.info(`${reason}`);
-    }
-    lastKnownAuthState = currentUser;
-    initAuthNav(currentUser);
-    // Dispatch event for cross-component sync
-    window.dispatchEvent(new CustomEvent('auth-state-changed', { detail: { user: currentUser } }));
-  };
-
-  setInterval(async () => {
-    try {
-      const currentUser = await me();
-      const wasLoggedIn = !!lastKnownAuthState;
-      const isLoggedIn = !!currentUser;
-
-      // Check if auth state changed
-      if (wasLoggedIn !== isLoggedIn) {
-        updateAuthState(currentUser, 'Auth state changed');
-      } else if (currentUser && lastKnownAuthState) {
-        // Check if role changed (edge case)
-        if (currentUser.role !== lastKnownAuthState.role) {
-          updateAuthState(currentUser, 'User role changed');
-        }
+    // Periodic auth verification
+    setInterval(async () => {
+      const currentUser = await fetchCurrentUser();
+      if ((!!currentUser) !== (!!state.user)) {
+        state.user = currentUser;
+        updateAuthUI(currentUser);
+        dispatchAuthChange(currentUser);
       }
-    } catch (error) {
-      // Only log errors in development
-      if (window.location.hostname === 'localhost') {
-        console.error('Periodic auth check failed:', error);
-      }
-    }
-  }, 30000); // 30 seconds
+    }, 30000);
+  }
+
+  // Start initialization
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
 })();
