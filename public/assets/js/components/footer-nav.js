@@ -10,26 +10,30 @@
   // ==========================================
   // STATE
   // ==========================================
-  
+
   const state = {
     isInitialized: false,
-    threshold: 80
+    threshold: 80,
   };
 
   // ==========================================
   // DOM CREATION
   // ==========================================
-  
+
   function createFooterNav() {
-    if (document.querySelector('.footer-nav')) return;
-    if (state.isInitialized) return;
+    if (document.querySelector('.footer-nav')) {
+      return;
+    }
+    if (state.isInitialized) {
+      return;
+    }
     state.isInitialized = true;
 
     const footerNav = document.createElement('div');
     footerNav.className = 'footer-nav footer-nav--hidden';
     footerNav.setAttribute('role', 'navigation');
     footerNav.setAttribute('aria-label', 'Quick navigation');
-    
+
     footerNav.innerHTML = `
       <div class="footer-nav-content">
         <div class="footer-nav-links">
@@ -59,7 +63,7 @@
     initNotificationSync();
 
     // Listen for auth changes
-    window.addEventListener('auth-state-changed', (event) => {
+    window.addEventListener('auth-state-changed', event => {
       updateAuthState(event.detail.user);
     });
   }
@@ -67,7 +71,7 @@
   // ==========================================
   // SCROLL BEHAVIOR
   // ==========================================
-  
+
   function initScrollBehavior(footerNav) {
     const header = document.querySelector('.header');
     if (header) {
@@ -80,8 +84,16 @@
       if (!ticking) {
         window.requestAnimationFrame(() => {
           const shouldShow = window.scrollY > state.threshold;
-          footerNav.classList.toggle('footer-nav--visible', shouldShow);
-          footerNav.classList.toggle('footer-nav--hidden', !shouldShow);
+
+          // Atomic class changes to prevent intermediate states
+          if (shouldShow) {
+            footerNav.classList.add('footer-nav--visible');
+            footerNav.classList.remove('footer-nav--hidden');
+          } else {
+            footerNav.classList.remove('footer-nav--visible');
+            footerNav.classList.add('footer-nav--hidden');
+          }
+
           ticking = false;
         });
         ticking = true;
@@ -104,10 +116,12 @@
   // ==========================================
   // BURGER MENU SYNC
   // ==========================================
-  
+
   function initBurgerSync() {
     const footerBurger = document.getElementById('footer-burger');
-    if (!footerBurger) return;
+    if (!footerBurger) {
+      return;
+    }
 
     // Wait for top burger initialization
     const setupSync = () => {
@@ -117,13 +131,13 @@
       }
 
       // Sync state function
-      const syncState = (isExpanded) => {
+      const syncState = isExpanded => {
         footerBurger.setAttribute('aria-expanded', String(isExpanded));
         footerBurger.classList.toggle('footer-nav-burger--open', isExpanded);
       };
 
       // Click handler - trigger top burger
-      footerBurger.addEventListener('click', (e) => {
+      footerBurger.addEventListener('click', e => {
         e.preventDefault();
         e.stopPropagation();
 
@@ -149,7 +163,7 @@
 
       observer.observe(topBurger, {
         attributes: true,
-        attributeFilter: ['aria-expanded']
+        attributeFilter: ['aria-expanded'],
       });
 
       // Initial sync
@@ -172,10 +186,12 @@
   // ==========================================
   // NOTIFICATION BELL SYNC
   // ==========================================
-  
+
   function initNotificationSync() {
     const footerBell = document.getElementById('footer-notification-bell');
-    if (!footerBell) return;
+    if (!footerBell) {
+      return;
+    }
 
     const topBell = document.getElementById('notification-bell');
     const topBadge = document.querySelector('.notification-badge');
@@ -184,7 +200,7 @@
     const syncBell = () => {
       if (topBell && topBell.style.display !== 'none') {
         footerBell.style.display = 'flex';
-        
+
         if (topBadge && footerBadge) {
           footerBadge.style.display = topBadge.style.display;
           footerBadge.textContent = topBadge.textContent;
@@ -202,7 +218,7 @@
       const observer = new MutationObserver(syncBell);
       observer.observe(topBell, {
         attributes: true,
-        attributeFilter: ['style']
+        attributeFilter: ['style'],
       });
     }
 
@@ -220,16 +236,18 @@
   // ==========================================
   // AUTH STATE UPDATES
   // ==========================================
-  
+
   function updateAuthState(user) {
     const footerAuth = document.querySelector('.footer-nav-auth');
     const footerDashboard = document.querySelector('.footer-nav-dashboard');
     const footerBell = document.getElementById('footer-notification-bell');
 
-    if (!footerAuth) return;
+    if (!footerAuth) {
+      return;
+    }
 
     // Clean clone helper
-    const cleanClone = (element) => {
+    const cleanClone = element => {
       const clone = element.cloneNode(true);
       element.parentNode.replaceChild(clone, element);
       return clone;
@@ -237,14 +255,17 @@
 
     if (user) {
       // Logged in
-      const dashboardUrl = user.role === 'admin' ? '/admin.html'
-        : user.role === 'supplier' ? '/dashboard-supplier.html'
-        : '/dashboard-customer.html';
+      const dashboardUrl =
+        user.role === 'admin'
+          ? '/admin.html'
+          : user.role === 'supplier'
+            ? '/dashboard-supplier.html'
+            : '/dashboard-customer.html';
 
       const newAuth = cleanClone(footerAuth);
       newAuth.textContent = 'Log out';
       newAuth.href = '#';
-      newAuth.addEventListener('click', (e) => {
+      newAuth.addEventListener('click', e => {
         e.preventDefault();
         window.dispatchEvent(new CustomEvent('logout-requested'));
       });
@@ -257,7 +278,6 @@
       if (footerBell) {
         footerBell.style.display = 'flex';
       }
-
     } else {
       // Logged out
       const newAuth = cleanClone(footerAuth);
@@ -277,7 +297,7 @@
   // ==========================================
   // INITIALIZATION
   // ==========================================
-  
+
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', createFooterNav);
   } else {

@@ -10,17 +10,17 @@
   // ==========================================
   // STATE MANAGEMENT
   // ==========================================
-  
+
   const state = {
     user: null,
     csrfToken: null,
-    isInitialized: false
+    isInitialized: false,
   };
 
   // ==========================================
   // CSRF TOKEN
   // ==========================================
-  
+
   async function initCsrfToken() {
     try {
       const response = await fetch('/api/csrf-token', { credentials: 'include' });
@@ -37,16 +37,18 @@
   // ==========================================
   // AUTH MANAGEMENT
   // ==========================================
-  
+
   async function fetchCurrentUser() {
     try {
       const response = await fetch('/api/auth/me', {
         credentials: 'include',
-        headers: { 'Cache-Control': 'no-cache' }
+        headers: { 'Cache-Control': 'no-cache' },
       });
-      
-      if (!response.ok) return null;
-      
+
+      if (!response.ok) {
+        return null;
+      }
+
       const data = await response.json();
       return data.user || null;
     } catch (error) {
@@ -64,15 +66,17 @@
       // Ignore storage errors
     }
 
-    // Call logout API
-    try {
-      await fetch('/api/auth/logout', {
-        method: 'POST',
-        headers: { 'X-CSRF-Token': state.csrfToken || '' },
-        credentials: 'include'
-      });
-    } catch (error) {
-      // Ignore API errors
+    // Call logout API - only if CSRF token is available
+    if (state.csrfToken) {
+      try {
+        await fetch('/api/auth/logout', {
+          method: 'POST',
+          headers: { 'X-CSRF-Token': state.csrfToken },
+          credentials: 'include',
+        });
+      } catch (error) {
+        // Ignore API errors
+      }
     }
 
     // Notify components and reload
@@ -82,38 +86,51 @@
   }
 
   function dispatchAuthChange(user) {
-    window.dispatchEvent(new CustomEvent('auth-state-changed', { 
-      detail: { user } 
-    }));
+    window.dispatchEvent(
+      new CustomEvent('auth-state-changed', {
+        detail: { user },
+      })
+    );
   }
 
   // ==========================================
   // MOBILE MENU
   // ==========================================
-  
+
   function initMobileMenu() {
     const burger = document.getElementById('burger');
     const navMenu = document.querySelector('.nav-menu');
-    
-    if (!burger || !navMenu) return;
+
+    if (!burger || !navMenu) {
+      return;
+    }
 
     // Prevent duplicate initialization
-    if (burger.dataset.navInitialized === 'true') return;
+    if (burger.dataset.navInitialized === 'true') {
+      return;
+    }
     burger.dataset.navInitialized = 'true';
 
     // Set up accessibility
-    if (!navMenu.id) navMenu.id = 'primary-nav-menu';
+    if (!navMenu.id) {
+      navMenu.id = 'primary-nav-menu';
+    }
     burger.setAttribute('aria-controls', navMenu.id);
     burger.setAttribute('aria-expanded', 'false');
 
     // Toggle function
     const toggle = () => {
       const isOpen = document.body.classList.contains('nav-open');
-      
+
       if (isOpen) {
         // Close menu
         document.body.classList.remove('nav-open');
-        navMenu.classList.remove('nav-menu--open', 'is-open', 'nav-menu--from-top', 'nav-menu--from-bottom');
+        navMenu.classList.remove(
+          'nav-menu--open',
+          'is-open',
+          'nav-menu--from-top',
+          'nav-menu--from-bottom'
+        );
         burger.setAttribute('aria-expanded', 'false');
         document.body.style.overflow = '';
       } else {
@@ -127,8 +144,8 @@
 
     // Event listeners
     burger.addEventListener('click', toggle);
-    
-    burger.addEventListener('keydown', (event) => {
+
+    burger.addEventListener('keydown', event => {
       if (event.key === 'Enter' || event.key === ' ') {
         event.preventDefault();
         toggle();
@@ -136,21 +153,21 @@
     });
 
     // Close on link click
-    navMenu.addEventListener('click', (event) => {
+    navMenu.addEventListener('click', event => {
       if (event.target.tagName === 'A') {
         toggle();
       }
     });
 
     // Close on ESC key
-    document.addEventListener('keydown', (event) => {
+    document.addEventListener('keydown', event => {
       if (event.key === 'Escape' && document.body.classList.contains('nav-open')) {
         toggle();
       }
     });
 
     // Close when clicking outside
-    document.addEventListener('click', (event) => {
+    document.addEventListener('click', event => {
       if (document.body.classList.contains('nav-open')) {
         if (!burger.contains(event.target) && !navMenu.contains(event.target)) {
           toggle();
@@ -162,10 +179,12 @@
   // ==========================================
   // HEADER SCROLL BEHAVIOR
   // ==========================================
-  
+
   function initHeaderScroll() {
     const header = document.querySelector('.header');
-    if (!header) return;
+    if (!header) {
+      return;
+    }
 
     let lastScrollY = window.scrollY;
     let ticking = false;
@@ -187,10 +206,12 @@
   // ==========================================
   // BRAND ANIMATION
   // ==========================================
-  
+
   function initBrandAnimation() {
     const brandText = document.querySelector('.brand-text');
-    if (!brandText || brandText.dataset.animated === 'true') return;
+    if (!brandText || brandText.dataset.animated === 'true') {
+      return;
+    }
 
     brandText.dataset.animated = 'true';
     brandText.style.display = 'inline-block';
@@ -211,7 +232,7 @@
   // ==========================================
   // AUTH UI UPDATES
   // ==========================================
-  
+
   function updateAuthUI(user) {
     // Mobile nav elements
     const mobileAuth = document.getElementById('nav-auth');
@@ -221,18 +242,23 @@
     // Desktop inline nav
     const inlineNav = document.querySelector('.nav-inline');
     const inlineLogin = inlineNav?.querySelector('.nav-main-login');
-    
+
     // Notification bell
     const notificationBell = document.getElementById('notification-bell');
 
     if (user) {
       // Logged in state
-      const dashboardUrl = user.role === 'admin' ? '/admin.html' 
-        : user.role === 'supplier' ? '/dashboard-supplier.html'
-        : '/dashboard-customer.html';
+      const dashboardUrl =
+        user.role === 'admin'
+          ? '/admin.html'
+          : user.role === 'supplier'
+            ? '/dashboard-supplier.html'
+            : '/dashboard-customer.html';
 
       // Mobile nav
-      if (mobileAuth) mobileAuth.style.display = 'none';
+      if (mobileAuth) {
+        mobileAuth.style.display = 'none';
+      }
       if (mobileDash) {
         mobileDash.style.display = '';
         mobileDash.href = dashboardUrl;
@@ -241,7 +267,7 @@
         mobileSignout.style.display = '';
         const newSignout = mobileSignout.cloneNode(true);
         mobileSignout.parentNode.replaceChild(newSignout, mobileSignout);
-        newSignout.addEventListener('click', (e) => {
+        newSignout.addEventListener('click', e => {
           e.preventDefault();
           logout();
         });
@@ -253,7 +279,7 @@
         inlineLogin.href = '#';
         const newInlineLogin = inlineLogin.cloneNode(true);
         inlineLogin.parentNode.replaceChild(newInlineLogin, inlineLogin);
-        newInlineLogin.addEventListener('click', (e) => {
+        newInlineLogin.addEventListener('click', e => {
           e.preventDefault();
           logout();
         });
@@ -273,13 +299,20 @@
       }
 
       // Show notification bell
-      if (notificationBell) notificationBell.style.display = 'flex';
-
+      if (notificationBell) {
+        notificationBell.style.display = 'flex';
+      }
     } else {
       // Logged out state
-      if (mobileAuth) mobileAuth.style.display = '';
-      if (mobileDash) mobileDash.style.display = 'none';
-      if (mobileSignout) mobileSignout.style.display = 'none';
+      if (mobileAuth) {
+        mobileAuth.style.display = '';
+      }
+      if (mobileDash) {
+        mobileDash.style.display = 'none';
+      }
+      if (mobileSignout) {
+        mobileSignout.style.display = 'none';
+      }
 
       if (inlineLogin) {
         inlineLogin.textContent = 'Log in';
@@ -290,10 +323,14 @@
 
       // Remove dashboard link
       const dashboardLink = inlineNav?.querySelector('.nav-main-dashboard');
-      if (dashboardLink) dashboardLink.remove();
+      if (dashboardLink) {
+        dashboardLink.remove();
+      }
 
       // Hide notification bell
-      if (notificationBell) notificationBell.style.display = 'none';
+      if (notificationBell) {
+        notificationBell.style.display = 'none';
+      }
     }
 
     // Normalize "Plan" label
@@ -309,9 +346,11 @@
   // ==========================================
   // INITIALIZATION
   // ==========================================
-  
+
   async function init() {
-    if (state.isInitialized) return;
+    if (state.isInitialized) {
+      return;
+    }
     state.isInitialized = true;
 
     // Initialize non-auth features
@@ -334,7 +373,7 @@
     window.addEventListener('logout-requested', logout);
 
     // Watch for auth changes in other tabs
-    window.addEventListener('storage', async (event) => {
+    window.addEventListener('storage', async event => {
       if (event.key === 'user' && event.newValue === null) {
         state.user = await fetchCurrentUser();
         updateAuthUI(state.user);
@@ -345,10 +384,21 @@
     // Periodic auth verification
     setInterval(async () => {
       const currentUser = await fetchCurrentUser();
-      if ((!!currentUser) !== (!!state.user)) {
+      const wasLoggedIn = !!state.user;
+      const isLoggedIn = !!currentUser;
+
+      // Check if auth state changed
+      if (wasLoggedIn !== isLoggedIn) {
         state.user = currentUser;
         updateAuthUI(currentUser);
         dispatchAuthChange(currentUser);
+      } else if (currentUser && state.user) {
+        // Check if role changed (edge case)
+        if (currentUser.role !== state.user.role) {
+          state.user = currentUser;
+          updateAuthUI(currentUser);
+          dispatchAuthChange(currentUser);
+        }
       }
     }, 30000);
   }
