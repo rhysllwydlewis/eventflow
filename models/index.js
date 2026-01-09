@@ -644,6 +644,70 @@ const reviewModerationSchema = {
 };
 
 /**
+ * Notification Schema
+ * Stores user notifications for real-time updates
+ */
+const notificationSchema = {
+  validator: {
+    $jsonSchema: {
+      bsonType: 'object',
+      required: ['id', 'userId', 'type', 'title', 'message'],
+      properties: {
+        id: { bsonType: 'string', description: 'Unique notification identifier' },
+        userId: { bsonType: 'string', description: 'Recipient user ID' },
+        type: {
+          enum: [
+            'message',
+            'booking',
+            'payment',
+            'review',
+            'system',
+            'marketing',
+            'reminder',
+            'approval',
+            'update',
+          ],
+          description: 'Notification type/category',
+        },
+        title: { bsonType: 'string', description: 'Notification title' },
+        message: { bsonType: 'string', description: 'Notification message content' },
+        actionUrl: { bsonType: 'string', description: 'URL for notification action/link' },
+        actionText: { bsonType: 'string', description: 'Text for action button' },
+        icon: { bsonType: 'string', description: 'Icon identifier or emoji' },
+        priority: {
+          enum: ['low', 'normal', 'high', 'urgent'],
+          description: 'Notification priority level',
+        },
+        category: { bsonType: 'string', description: 'Custom category tag' },
+        metadata: {
+          bsonType: 'object',
+          description: 'Additional structured data',
+        },
+        isRead: {
+          bsonType: 'bool',
+          description: 'Whether notification has been read',
+        },
+        readAt: { bsonType: 'string', description: 'Timestamp when marked as read' },
+        isDismissed: {
+          bsonType: 'bool',
+          description: 'Whether notification has been dismissed',
+        },
+        dismissedAt: {
+          bsonType: 'string',
+          description: 'Timestamp when dismissed',
+        },
+        expiresAt: {
+          bsonType: 'string',
+          description: 'Expiration timestamp for temporary notifications',
+        },
+        createdAt: { bsonType: 'string', description: 'Creation timestamp' },
+        updatedAt: { bsonType: 'string', description: 'Last update timestamp' },
+      },
+    },
+  },
+};
+
+/**
  * Initialize collections with schemas and indexes
  * @param {Object} db - MongoDB database instance
  */
@@ -664,6 +728,7 @@ async function initializeCollections(db) {
     reviewVotes: reviewVoteSchema,
     supplierAnalytics: supplierAnalyticsSchema,
     reviewModerations: reviewModerationSchema,
+    notifications: notificationSchema,
   };
 
   for (const [name, schema] of Object.entries(collections)) {
@@ -802,6 +867,16 @@ async function createIndexes(db) {
     await db.collection('reviewModerations').createIndex({ reviewId: 1 });
     await db.collection('reviewModerations').createIndex({ moderatorId: 1 });
     await db.collection('reviewModerations').createIndex({ createdAt: 1 });
+
+    // Notification indexes
+    await db.collection('notifications').createIndex({ id: 1 }, { unique: true });
+    await db.collection('notifications').createIndex({ userId: 1 });
+    await db.collection('notifications').createIndex({ userId: 1, createdAt: -1 });
+    await db.collection('notifications').createIndex({ userId: 1, isRead: 1 });
+    await db.collection('notifications').createIndex({ type: 1 });
+    await db.collection('notifications').createIndex({ priority: 1 });
+    await db.collection('notifications').createIndex({ createdAt: -1 });
+    await db.collection('notifications').createIndex({ expiresAt: 1 }, { sparse: true });
 
     console.log('Database indexes created successfully');
   } catch (error) {
