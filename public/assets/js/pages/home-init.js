@@ -354,20 +354,18 @@ function isDevelopmentEnvironment() {
 async function loadHeroCollageImages() {
   // First, check if Pexels collage is enabled
   try {
-    const settingsResponse = await fetch('/api/public/homepage-settings').catch(err => {
-      // Log network errors in development mode only
-      if (isDevelopmentEnvironment()) {
-        console.warn('Network error fetching homepage settings:', err.message);
-      }
+    const settingsResponse = await fetch('/api/public/homepage-settings').catch(() => {
+      // Silent fail - network errors are expected when offline or endpoint not available
+      // No logging even in development to reduce console noise
       return null;
     });
 
     // If fetch failed (network error), continue to static images
     if (!settingsResponse) {
-      // Continue to load static images (no console output)
+      // Continue to load static images (silent)
     } else if (settingsResponse.status === 404 || settingsResponse.status === 403) {
       // Silently handle 404/403 - endpoint may not be deployed or configured yet
-      // Continue to load static images (no console output)
+      // Continue to load static images (silent)
     } else if (settingsResponse.ok) {
       const settings = await settingsResponse.json();
       if (settings.pexelsCollageEnabled) {
@@ -382,9 +380,7 @@ async function loadHeroCollageImages() {
     // If non-200 and non-404/403, just continue to static images
   } catch (error) {
     // JSON parsing or other error - continue to static images silently
-    if (isDevelopmentEnvironment()) {
-      console.warn('Error processing homepage settings:', error.message);
-    }
+    // No logging to keep production console clean
   }
 
   // If Pexels is not enabled or failed, load static images
@@ -866,11 +862,9 @@ async function fetchTestimonials() {
   }
 
   try {
-    const response = await fetch('/api/reviews?limit=6&approved=true&sort=rating').catch(err => {
-      // Log network errors in development mode only
-      if (isDevelopmentEnvironment()) {
-        console.warn('Network error fetching reviews:', err.message);
-      }
+    const response = await fetch('/api/reviews?limit=6&approved=true&sort=rating').catch(() => {
+      // Silent fail - network errors don't need logging
+      // Reviews are optional content
       return null;
     });
 
