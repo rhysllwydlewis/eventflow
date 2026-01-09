@@ -1,14 +1,7 @@
 /**
- * EventFlow Footer Navigation - Gold Standard Implementation
- * World-class bottom navigation with exceptional UX/UI
- * Inspired by industry leaders: Stripe, Apple, Airbnb
- * 
- * Features:
- * - Smooth scroll-based visibility transitions
- * - Smart gesture support for mobile
- * - Progressive enhancement
- * - Performance-optimized rendering
- * - Accessibility-first design
+ * EventFlow Footer Navigation - Simplified Implementation
+ * Works with pre-rendered HTML footer nav
+ * Uses centralized auth state for updates
  */
 
 (function () {
@@ -20,187 +13,104 @@
 
   const state = {
     isInitialized: false,
-    threshold: 80,
-    isVisible: false,
-    lastTouchY: 0,
   };
 
+  // Get centralized auth state manager
+  const getAuthState = () => window.__authState || window.AuthStateManager;
+
   // ==========================================
-  // DOM CREATION
+  // INITIALIZATION
   // ==========================================
 
-  function createFooterNav() {
-    if (document.querySelector('.footer-nav')) {
-      return;
-    }
+  function init() {
     if (state.isInitialized) {
       return;
     }
     state.isInitialized = true;
 
-    const footerNav = document.createElement('div');
-    footerNav.className = 'footer-nav footer-nav--hidden';
-    footerNav.setAttribute('role', 'navigation');
-    footerNav.setAttribute('aria-label', 'Quick navigation');
-
-    footerNav.innerHTML = `
-      <div class="footer-nav-content">
-        <div class="footer-nav-links">
-          <a href="/start.html" class="footer-nav-link">Plan</a>
-          <a href="/suppliers.html" class="footer-nav-link">Suppliers</a>
-          <a href="/blog.html" class="footer-nav-link">Guides</a>
-          <a href="/dashboard.html" class="footer-nav-link footer-nav-dashboard" style="display: none">Dashboard</a>
-          <button id="footer-notification-bell" class="footer-nav-icon-button" type="button" aria-label="Notifications" style="display: none">
-            <span class="notification-icon">🔔</span>
-            <span class="footer-notification-badge" style="display: none">0</span>
-          </button>
-          <a href="/auth.html" class="footer-nav-link footer-nav-auth">Log in</a>
-          <button id="footer-burger" class="footer-nav-burger" type="button" aria-label="Toggle navigation" aria-expanded="false">
-            <span class="footer-nav-burger-bar"></span>
-            <span class="footer-nav-burger-bar"></span>
-            <span class="footer-nav-burger-bar"></span>
-          </button>
-        </div>
-      </div>
-    `;
-
-    document.body.appendChild(footerNav);
+    // Mark body as having footer nav
     document.body.classList.add('has-footer-nav');
 
-    initScrollBehavior(footerNav);
+    // Initialize components
+    initAuthListener();
     initBurgerSync();
-    initNotificationSync();
-
-    // Listen for auth changes
-    window.addEventListener('auth-state-changed', event => {
-      updateAuthState(event.detail.user);
-    });
+    initNotificationBellSync();
   }
 
   // ==========================================
-  // SCROLL BEHAVIOR - ENHANCED
+  // AUTH STATE LISTENER
   // ==========================================
 
-  function initScrollBehavior(footerNav) {
-    const header = document.querySelector('.header');
-    if (header) {
-      state.threshold = header.offsetHeight || 80;
+  function initAuthListener() {
+    const authState = getAuthState();
+    if (authState) {
+      authState.onchange(updateAuthUI);
+    }
+  }
+
+  function updateAuthUI(user) {
+    const footerAuth = document.querySelector('.footer-nav-auth');
+    const footerDashboard = document.querySelector('.footer-nav-dashboard');
+    const footerBell = document.getElementById('footer-notification-bell');
+
+    if (!footerAuth) {
+      return;
     }
 
-    let ticking = false;
-    let scrollTimeout;
+    if (user) {
+      // Logged in
+      const dashboardUrl = user.role === 'admin'
+        ? '/admin.html'
+        : user.role === 'supplier'
+          ? '/dashboard-supplier.html'
+          : '/dashboard-customer.html';
 
-    const handleScroll = () => {
-      if (!ticking) {
-        window.requestAnimationFrame(() => {
-          const shouldShow = window.scrollY > state.threshold;
-
-          // Smooth transition with proper timing
-          if (shouldShow !== state.isVisible) {
-            state.isVisible = shouldShow;
-
-            if (shouldShow) {
-              footerNav.classList.add('footer-nav--visible');
-              footerNav.classList.remove('footer-nav--hidden');
-              footerNav.setAttribute('aria-hidden', 'false');
-            } else {
-              footerNav.classList.remove('footer-nav--visible');
-              footerNav.classList.add('footer-nav--hidden');
-              footerNav.setAttribute('aria-hidden', 'true');
-            }
-          }
-
-          // Add scrolling indicator
-          footerNav.classList.add('footer-nav--scrolling');
-          clearTimeout(scrollTimeout);
-          scrollTimeout = setTimeout(() => {
-            footerNav.classList.remove('footer-nav--scrolling');
-          }, 150);
-
-          ticking = false;
-        });
-        ticking = true;
-      }
-    };
-
-    const handleResize = () => {
-      if (header) {
-        state.threshold = header.offsetHeight || 80;
-      }
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    window.addEventListener('resize', handleResize, { passive: true });
-
-    // Touch gesture support for mobile
-    initTouchGestures(footerNav);
-
-    // Initial check
-    setTimeout(handleScroll, 50);
-  }
-
-  // ==========================================
-  // TOUCH GESTURES - MOBILE ENHANCEMENT
-  // ==========================================
-
-  function initTouchGestures(footerNav) {
-    let touchStartY = 0;
-    let touchStartTime = 0;
-    let touchMoveRAF = null;
-
-    footerNav.addEventListener(
-      'touchstart',
-      e => {
-        touchStartY = e.touches[0].clientY;
-        touchStartTime = Date.now();
-      },
-      { passive: true }
-    );
-
-    footerNav.addEventListener(
-      'touchmove',
-      e => {
-        const touchY = e.touches[0].clientY;
-        const deltaY = touchStartY - touchY;
-
-        // Use RAF to avoid layout thrashing
-        if (touchMoveRAF) cancelAnimationFrame(touchMoveRAF);
-
-        touchMoveRAF = requestAnimationFrame(() => {
-          // Add visual feedback during drag
-          if (Math.abs(deltaY) > 5) {
-            footerNav.style.transform = `translateY(${Math.max(0, -deltaY / 2)}px)`;
-          }
-        });
-      },
-      { passive: true }
-    );
-
-    footerNav.addEventListener(
-      'touchend',
-      e => {
-        const touchEndTime = Date.now();
-        const duration = touchEndTime - touchStartTime;
-
-        if (touchMoveRAF) {
-          cancelAnimationFrame(touchMoveRAF);
-          touchMoveRAF = null;
+      // Update auth link to logout
+      footerAuth.textContent = 'Log out';
+      footerAuth.href = '#';
+      
+      // Remove old event listeners by cloning
+      const newAuth = footerAuth.cloneNode(true);
+      footerAuth.parentNode.replaceChild(newAuth, footerAuth);
+      
+      newAuth.addEventListener('click', async (e) => {
+        e.preventDefault();
+        if (window.__eventflow_logout) {
+          window.__eventflow_logout();
+        } else {
+          window.dispatchEvent(new CustomEvent('logout-requested'));
         }
+      });
 
-        // Reset transform
-        footerNav.style.transform = '';
+      // Show dashboard link
+      if (footerDashboard) {
+        footerDashboard.href = dashboardUrl;
+        footerDashboard.style.display = '';
+      }
 
-        // Haptic feedback if supported
-        if (navigator.vibrate && duration < 300) {
-          try {
-            navigator.vibrate(10);
-          } catch (error) {
-            // Silently fail if vibration not supported or permission denied
-          }
-        }
-      },
-      { passive: true }
-    );
+      // Show notification bell
+      if (footerBell) {
+        footerBell.style.display = 'flex';
+      }
+    } else {
+      // Logged out
+      footerAuth.textContent = 'Log in';
+      footerAuth.href = '/auth.html';
+      
+      // Remove old event listeners by cloning
+      const newAuth = footerAuth.cloneNode(true);
+      footerAuth.parentNode.replaceChild(newAuth, footerAuth);
+
+      // Hide dashboard link
+      if (footerDashboard) {
+        footerDashboard.style.display = 'none';
+      }
+
+      // Hide notification bell
+      if (footerBell) {
+        footerBell.style.display = 'none';
+      }
+    }
   }
 
   // ==========================================
@@ -216,7 +126,7 @@
     // Wait for top burger initialization
     const setupSync = () => {
       const topBurger = document.getElementById('burger');
-      if (!topBurger || topBurger.dataset.navInitialized !== 'true') {
+      if (!topBurger) {
         return false;
       }
 
@@ -230,22 +140,10 @@
       footerBurger.addEventListener('click', e => {
         e.preventDefault();
         e.stopPropagation();
-
-        const navMenu = document.querySelector('.nav-menu');
-        if (navMenu) {
-          navMenu.classList.remove('nav-menu--from-top');
-          navMenu.classList.add('nav-menu--from-bottom');
-        }
-
         topBurger.click();
-
-        requestAnimationFrame(() => {
-          const isExpanded = topBurger.getAttribute('aria-expanded') === 'true';
-          syncState(isExpanded);
-        });
       });
 
-      // Watch for top burger changes
+      // Watch for top burger changes using MutationObserver
       const observer = new MutationObserver(() => {
         const isExpanded = topBurger.getAttribute('aria-expanded') === 'true';
         syncState(isExpanded);
@@ -263,7 +161,7 @@
       return true;
     };
 
-    // Try multiple times with delays
+    // Try multiple times with delays to ensure top burger is initialized
     if (!setupSync()) {
       setTimeout(() => {
         if (!setupSync()) {
@@ -277,111 +175,45 @@
   // NOTIFICATION BELL SYNC
   // ==========================================
 
-  function initNotificationSync() {
+  function initNotificationBellSync() {
     const footerBell = document.getElementById('footer-notification-bell');
     if (!footerBell) {
       return;
     }
 
     const topBell = document.getElementById('notification-bell');
+    if (!topBell) {
+      return;
+    }
+
     const topBadge = document.querySelector('.notification-badge');
     const footerBadge = document.querySelector('.footer-notification-badge');
 
     const syncBell = () => {
-      if (topBell && topBell.style.display !== 'none') {
-        footerBell.style.display = 'flex';
+      // Sync visibility
+      footerBell.style.display = topBell.style.display;
 
-        if (topBadge && footerBadge) {
-          footerBadge.style.display = topBadge.style.display;
-          footerBadge.textContent = topBadge.textContent;
-        }
-      } else {
-        footerBell.style.display = 'none';
+      // Sync badge
+      if (topBadge && footerBadge) {
+        footerBadge.style.display = topBadge.style.display;
+        footerBadge.textContent = topBadge.textContent;
       }
     };
 
     // Initial sync
     syncBell();
 
-    // Watch for changes
-    if (topBell) {
-      const observer = new MutationObserver(syncBell);
-      observer.observe(topBell, {
-        attributes: true,
-        attributeFilter: ['style'],
-      });
-    }
-
-    // Listen for auth changes
-    window.addEventListener('auth-state-changed', () => {
-      setTimeout(syncBell, 50);
+    // Watch for changes using MutationObserver
+    const observer = new MutationObserver(syncBell);
+    observer.observe(topBell, {
+      attributes: true,
+      attributeFilter: ['style'],
     });
 
     // Click handler
     footerBell.addEventListener('click', () => {
-      window.location.href = '/dashboard.html#notifications';
+      window.location.href = '/dashboard-customer.html#notifications';
     });
-  }
-
-  // ==========================================
-  // AUTH STATE UPDATES
-  // ==========================================
-
-  function updateAuthState(user) {
-    const footerAuth = document.querySelector('.footer-nav-auth');
-    const footerDashboard = document.querySelector('.footer-nav-dashboard');
-    const footerBell = document.getElementById('footer-notification-bell');
-
-    if (!footerAuth) {
-      return;
-    }
-
-    // Clean clone helper
-    const cleanClone = element => {
-      const clone = element.cloneNode(true);
-      element.parentNode.replaceChild(clone, element);
-      return clone;
-    };
-
-    if (user) {
-      // Logged in
-      const dashboardUrl =
-        user.role === 'admin'
-          ? '/admin.html'
-          : user.role === 'supplier'
-            ? '/dashboard-supplier.html'
-            : '/dashboard-customer.html';
-
-      const newAuth = cleanClone(footerAuth);
-      newAuth.textContent = 'Log out';
-      newAuth.href = '#';
-      newAuth.addEventListener('click', e => {
-        e.preventDefault();
-        window.dispatchEvent(new CustomEvent('logout-requested'));
-      });
-
-      if (footerDashboard) {
-        footerDashboard.style.display = '';
-        footerDashboard.href = dashboardUrl;
-      }
-
-      if (footerBell) {
-        footerBell.style.display = 'flex';
-      }
-    } else {
-      // Logged out
-      const newAuth = cleanClone(footerAuth);
-      newAuth.textContent = 'Log in';
-      newAuth.href = '/auth.html';
-
-      if (footerDashboard) {
-        footerDashboard.style.display = 'none';
-      }
-
-      if (footerBell) {
-        footerBell.style.display = 'none';
-      }
-    }
   }
 
   // ==========================================
@@ -389,8 +221,8 @@
   // ==========================================
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', createFooterNav);
+    document.addEventListener('DOMContentLoaded', init);
   } else {
-    createFooterNav();
+    init();
   }
 })();

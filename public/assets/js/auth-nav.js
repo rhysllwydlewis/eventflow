@@ -19,13 +19,15 @@
   // ==========================================
 
   const state = {
-    user: null,
     csrfToken: null,
     isInitialized: false,
     scrollDirection: null,
     lastScrollY: 0,
     scrollThreshold: 5,
   };
+
+  // Get centralized auth state manager
+  const getAuthState = () => window.__authState || window.AuthStateManager;
 
   // ==========================================
   // CSRF TOKEN
@@ -48,25 +50,9 @@
   // AUTH MANAGEMENT
   // ==========================================
 
-  async function fetchCurrentUser() {
-    try {
-      const response = await fetch('/api/auth/me', {
-        credentials: 'include',
-        headers: { 'Cache-Control': 'no-cache' },
-      });
-
-      if (!response.ok) {
-        return null;
-      }
-
-      const data = await response.json();
-      return data.user || null;
-    } catch (error) {
-      return null;
-    }
-  }
-
   async function logout() {
+    const authState = getAuthState();
+    
     // Clear local state
     try {
       localStorage.removeItem('eventflow_onboarding_new');
@@ -89,9 +75,12 @@
       }
     }
 
-    // Notify components and reload
-    state.user = null;
-    dispatchAuthChange(null);
+    // Update centralized auth state
+    if (authState) {
+      authState.logout();
+    }
+    
+    // Reload page
     window.location.href = `/?t=${Date.now()}`;
   }
 
@@ -518,12 +507,12 @@
     // Fetch CSRF token
     await initCsrfToken();
 
-    // Fetch current user and update UI
-    state.user = await fetchCurrentUser();
-    updateAuthUI(state.user);
-
-    // Dispatch initial auth state
-    dispatchAuthChange(state.user);
+    // Wait for auth state manager to be ready
+    const authState = getAuthState();
+    if (authState) {
+      // Subscribe to auth state changes
+      authState.onchange(updateAuthUI);
+    }
 
     // Expose logout globally
     window.__eventflow_logout = logout;
@@ -532,32 +521,11 @@
     // Watch for auth changes in other tabs
     window.addEventListener('storage', async event => {
       if (event.key === 'user' && event.newValue === null) {
-        state.user = await fetchCurrentUser();
-        updateAuthUI(state.user);
-        dispatchAuthChange(state.user);
-      }
-    });
-
-    // Periodic auth verification
-    setInterval(async () => {
-      const currentUser = await fetchCurrentUser();
-      const wasLoggedIn = !!state.user;
-      const isLoggedIn = !!currentUser;
-
-      // Check if auth state changed
-      if (wasLoggedIn !== isLoggedIn) {
-        state.user = currentUser;
-        updateAuthUI(currentUser);
-        dispatchAuthChange(currentUser);
-      } else if (currentUser && state.user) {
-        // Check if role changed (edge case)
-        if (currentUser.role !== state.user.role) {
-          state.user = currentUser;
-          updateAuthUI(currentUser);
-          dispatchAuthChange(currentUser);
+        if (authState) {
+          await authState.refresh();
         }
       }
-    }, 30000);
+    });
   }
 
   // Start initialization

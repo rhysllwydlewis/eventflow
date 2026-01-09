@@ -204,9 +204,24 @@
    =================================================================== */
 
 .nav-menu {
-  transition: opacity 300ms cubic-bezier(0.4, 0, 0.2, 1),
-              transform 300ms cubic-bezier(0.4, 0, 0.2, 1),
+  position: fixed;
+  top: 60px;
+  left: 0;
+  right: 0;
+  z-index: 999;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: saturate(180%) blur(20px);
+  max-height: calc(100vh - 60px);
+  overflow-y: auto;
+  transform: scaleY(0);
+  transform-origin: top center;
+  transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 300ms cubic-bezier(0.4, 0, 0.2, 1),
               visibility 300ms;
+}
+
+.nav-menu.nav-menu--open {
+  transform: scaleY(1);
 }
 
 .nav-menu--from-top {
@@ -228,7 +243,7 @@ body.nav-open::before {
   background: rgba(15, 23, 42, 0.4);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
-  z-index: 999;
+  z-index: 998;
   animation: backdrop-fade-in 300ms ease-out;
 }
 
@@ -373,7 +388,7 @@ input[placeholder*="search" i]:focus {
 }
 
 /* ===================================================================
-   FOOTER NAVIGATION - GOLD STANDARD
+   FOOTER NAVIGATION - GOLD STANDARD (ALWAYS VISIBLE ON MOBILE)
    =================================================================== */
 
 .footer-nav {
@@ -388,24 +403,12 @@ input[placeholder*="search" i]:focus {
   border-top: 1px solid rgba(15, 23, 42, 0.08);
   box-shadow: 0 -2px 12px rgba(15, 23, 42, 0.08);
   padding: 8px 0;
-  transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1),
-              opacity 300ms cubic-bezier(0.4, 0, 0.2, 1),
-              box-shadow 200ms ease-out;
-  will-change: transform;
+  transition: box-shadow 200ms ease-out;
 }
 
-/* Hidden state */
-.footer-nav--hidden {
-  transform: translateY(100%);
-  opacity: 0;
-  pointer-events: none;
-}
-
-/* Visible state */
-.footer-nav--visible {
-  transform: translateY(0);
-  opacity: 1;
-  pointer-events: auto;
+/* Mobile-only visibility - always shown on mobile */
+.footer-nav--mobile-only {
+  display: block;
 }
 
 /* Scrolling indicator */
@@ -578,13 +581,25 @@ body.has-footer-nav {
    FOOTER NAV - RESPONSIVE
    =================================================================== */
 
+/* Hide on desktop */
 @media (min-width: 769px) {
   .footer-nav {
-    display: none; /* Hide on desktop */
+    display: none !important;
+  }
+  
+  body.has-footer-nav {
+    padding-bottom: 0;
+  }
+}
+
+/* Show on mobile from page load */
+@media (max-width: 768px) {
+  .footer-nav {
+    display: block !important;
   }
 
   body.has-footer-nav {
-    padding-bottom: 0;
+    padding-bottom: 72px;
   }
 }
 

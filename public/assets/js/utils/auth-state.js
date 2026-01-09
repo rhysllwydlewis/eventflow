@@ -226,6 +226,32 @@
     }
 
     /**
+     * Subscribe to auth state changes and call immediately with current state
+     * Alias for subscribe that calls the callback immediately
+     * @param {Function} callback - Callback function (receives user object)
+     * @returns {Function} Unsubscribe function
+     */
+    onchange(callback) {
+      // Call immediately with current user state
+      try {
+        callback(this.user);
+      } catch (e) {
+        if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+          console.error('Error in auth state onchange callback:', e);
+        }
+      }
+
+      // Subscribe for future changes
+      const wrappedCallback = ({ user }) => callback(user);
+      this.listeners.push(wrappedCallback);
+
+      // Return unsubscribe function
+      return () => {
+        this.listeners = this.listeners.filter(l => l !== wrappedCallback);
+      };
+    }
+
+    /**
      * Refresh auth state (e.g., after login/logout)
      * @returns {Promise<Object>}
      */
@@ -242,11 +268,49 @@
       this._clearAuthState();
       this._setState(AUTH_STATES.UNAUTHENTICATED, null);
     }
+
+    /**
+     * Set user directly (for compatibility)
+     */
+    setUser(user) {
+      if (user) {
+        this._setState(AUTH_STATES.AUTHENTICATED, user);
+      } else {
+        this._setState(AUTH_STATES.UNAUTHENTICATED, null);
+      }
+    }
   }
 
   // Export as singleton
   if (typeof window !== 'undefined') {
     window.AuthStateManager = new AuthStateManager();
     window.AUTH_STATES = AUTH_STATES;
+    // Also expose as __authState for compatibility
+    window.__authState = window.AuthStateManager;
+
+    // Initialize on DOM ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => {
+        window.AuthStateManager.init();
+      });
+    } else {
+      window.AuthStateManager.init();
+    }
+
+    // Listen for legacy auth-state-changed event
+    window.addEventListener('auth-state-changed', (event) => {
+      if (event.detail && event.detail.user !== undefined) {
+        window.AuthStateManager.setUser(event.detail.user);
+      }
+    });
+
+    // Dispatch __auth-state-updated for compatibility
+    const originalNotify = AuthStateManager.prototype._notifyListeners;
+    AuthStateManager.prototype._notifyListeners = function() {
+      originalNotify.call(this);
+      window.dispatchEvent(new CustomEvent('__auth-state-updated', {
+        detail: { user: this.user }
+      }));
+    };
   }
 })();
