@@ -146,6 +146,7 @@
   function initTouchGestures(footerNav) {
     let touchStartY = 0;
     let touchStartTime = 0;
+    let touchMoveRAF = null;
 
     footerNav.addEventListener(
       'touchstart',
@@ -162,10 +163,15 @@
         const touchY = e.touches[0].clientY;
         const deltaY = touchStartY - touchY;
 
-        // Add visual feedback during drag
-        if (Math.abs(deltaY) > 5) {
-          footerNav.style.transform = `translateY(${Math.max(0, -deltaY / 2)}px)`;
-        }
+        // Use RAF to avoid layout thrashing
+        if (touchMoveRAF) cancelAnimationFrame(touchMoveRAF);
+
+        touchMoveRAF = requestAnimationFrame(() => {
+          // Add visual feedback during drag
+          if (Math.abs(deltaY) > 5) {
+            footerNav.style.transform = `translateY(${Math.max(0, -deltaY / 2)}px)`;
+          }
+        });
       },
       { passive: true }
     );
@@ -176,12 +182,21 @@
         const touchEndTime = Date.now();
         const duration = touchEndTime - touchStartTime;
 
+        if (touchMoveRAF) {
+          cancelAnimationFrame(touchMoveRAF);
+          touchMoveRAF = null;
+        }
+
         // Reset transform
         footerNav.style.transform = '';
 
         // Haptic feedback if supported
         if (navigator.vibrate && duration < 300) {
-          navigator.vibrate(10);
+          try {
+            navigator.vibrate(10);
+          } catch (error) {
+            // Silently fail if vibration not supported or permission denied
+          }
         }
       },
       { passive: true }

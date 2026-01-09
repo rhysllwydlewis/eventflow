@@ -336,19 +336,17 @@
     const searchInput = document.querySelector('input[type="search"], input[placeholder*="search" i]');
     if (!searchInput) return;
 
+    // Cache search icon
+    const searchIcon = searchInput.parentElement?.querySelector('.search-icon, [class*="search"]');
+    if (!searchIcon) return;
+
     // Add search icon animation on focus
     searchInput.addEventListener('focus', () => {
-      const searchIcon = searchInput.parentElement.querySelector('.search-icon, [class*="search"]');
-      if (searchIcon) {
-        searchIcon.style.transform = 'scale(1.1)';
-      }
+      searchIcon.style.transform = 'scale(1.1)';
     });
 
     searchInput.addEventListener('blur', () => {
-      const searchIcon = searchInput.parentElement.querySelector('.search-icon, [class*="search"]');
-      if (searchIcon) {
-        searchIcon.style.transform = '';
-      }
+      searchIcon.style.transform = '';
     });
   }
 
@@ -367,8 +365,13 @@
           performance.measure('nav-initialization', 'nav-init-start', 'nav-init-end');
           const measure = performance.getEntriesByName('nav-initialization')[0];
 
-          // Log only in development
-          if (window.location.hostname === 'localhost') {
+          // Log only in development (localhost or 127.0.0.1)
+          const isDev =
+            window.location.hostname === 'localhost' ||
+            window.location.hostname === '127.0.0.1' ||
+            window.location.hostname.includes('local');
+
+          if (isDev) {
             console.log(`Navigation initialized in ${measure.duration.toFixed(2)}ms`);
           }
         } catch (error) {
