@@ -48,6 +48,7 @@
 
 @media (max-width: 768px) {
   /* Header fixed positioning - always on top */
+  /* Z-index hierarchy: header (2000) > nav-menu (1999) > backdrop (1998) > content (default) */
   .header {
     position: fixed;
     top: 0;

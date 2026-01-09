@@ -48,6 +48,8 @@ html {
    ============================================ */
 
 /* Ensure body doesn't scroll when mobile menu is open */
+/* Using !important here is necessary to override any inline styles or other conflicting rules */
+/* that may be applied dynamically by JavaScript or third-party scripts */
 body.nav-open {
   overflow: hidden !important;
   position: fixed;
