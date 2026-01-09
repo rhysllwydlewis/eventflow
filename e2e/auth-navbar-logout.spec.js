@@ -1,5 +1,13 @@
 import { test, expect } from '@playwright/test';
 
+// Browser-specific timeout constants for webkit compatibility
+const WEBKIT_REDIRECT_WAIT = 8000;
+const WEBKIT_LOCALSTORAGE_WAIT = 6000;
+const WEBKIT_STORAGE_CLEAR_WAIT = 2000;
+const DEFAULT_REDIRECT_WAIT = 4000;
+const DEFAULT_LOCALSTORAGE_WAIT = 3000;
+const DEFAULT_STORAGE_CLEAR_WAIT = 1000;
+
 test.describe('Authentication Navbar and Logout Flow', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
@@ -15,7 +23,7 @@ test.describe('Authentication Navbar and Logout Flow', () => {
     // Wait for redirect with more generous timeout for webkit/mobile
     await page.waitForLoadState('networkidle');
     // Webkit needs significantly more time than chromium/firefox
-    const waitTime = browserName === 'webkit' ? 8000 : 4000;
+    const waitTime = browserName === 'webkit' ? WEBKIT_REDIRECT_WAIT : DEFAULT_REDIRECT_WAIT;
     await page.waitForTimeout(waitTime);
 
     // Should be redirected to auth page with redirect parameter
@@ -72,7 +80,8 @@ test.describe('Logout Flow (Simulated)', () => {
     await page.reload();
     await page.waitForLoadState('networkidle');
     // Webkit needs more time to process localStorage and initial render
-    const waitTime = browserName === 'webkit' ? 6000 : 3000;
+    const waitTime =
+      browserName === 'webkit' ? WEBKIT_LOCALSTORAGE_WAIT : DEFAULT_LOCALSTORAGE_WAIT;
     await page.waitForTimeout(waitTime);
 
     // Now simulate logout by calling the logout function
@@ -94,7 +103,8 @@ test.describe('Logout Flow (Simulated)', () => {
     });
 
     // Wait a bit more for storage to be cleared
-    const storageWait = browserName === 'webkit' ? 2000 : 1000;
+    const storageWait =
+      browserName === 'webkit' ? WEBKIT_STORAGE_CLEAR_WAIT : DEFAULT_STORAGE_CLEAR_WAIT;
     await page.waitForTimeout(storageWait);
 
     // Check that localStorage is cleared
