@@ -11,24 +11,27 @@ test.describe('Authentication Flow', () => {
     await expect(page.locator('#login-form')).toBeVisible();
   });
 
-  test('should show validation errors for empty login', async ({ page }) => {
+  test('should show validation errors for empty login', async ({ page, browserName }) => {
     await page.goto('/auth.html');
 
     // Wait for page to be fully loaded
     await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(1000); // Extra time for webkit/mobile
+    // Webkit needs more time to fully render and initialize validators
+    const initialWait = browserName === 'webkit' ? 2000 : 1000;
+    await page.waitForTimeout(initialWait);
 
     // Try to submit empty form
     await page.click('button[type="submit"]');
 
     // Wait for validation to process (webkit/Safari needs more time)
-    await page.waitForTimeout(2000); // Increased from 1000
+    const validationWait = browserName === 'webkit' ? 4000 : 2000;
+    await page.waitForTimeout(validationWait);
 
     // Should show validation errors - be more flexible with selector
     const errorElement = page
       .locator('.error, .alert-danger, .invalid-feedback, [role="alert"]')
       .first();
-    await expect(errorElement).toBeVisible({ timeout: 10000 });
+    await expect(errorElement).toBeVisible({ timeout: 15000 });
   });
 
   test('should navigate to registration', async ({ page }) => {
@@ -61,12 +64,14 @@ test.describe('Authentication Flow', () => {
     }
   });
 
-  test('should handle login with invalid credentials', async ({ page }) => {
+  test('should handle login with invalid credentials', async ({ page, browserName }) => {
     await page.goto('/auth.html');
 
     // Wait for page to be fully loaded
     await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(1000); // Extra time for webkit/mobile
+    // Webkit needs more time to initialize
+    const initialWait = browserName === 'webkit' ? 2000 : 1000;
+    await page.waitForTimeout(initialWait);
 
     // Fill in invalid credentials
     await page.fill('input[type="email"], input[name="email"]', 'invalid@test.com');
@@ -75,14 +80,15 @@ test.describe('Authentication Flow', () => {
     // Submit form
     await page.click('button[type="submit"]');
 
-    // Wait for response (webkit/Safari needs more time)
-    await page.waitForTimeout(6000); // Increased from 4000
+    // Wait for response (webkit/Safari needs more time for fetch and rendering)
+    const responseWait = browserName === 'webkit' ? 10000 : 6000;
+    await page.waitForTimeout(responseWait);
 
     // Should show error message (either from validation or from API response)
     const errorMessage = page
       .locator('.error, .alert-danger, .invalid-feedback, [role="alert"]')
       .first();
-    await expect(errorMessage).toBeVisible({ timeout: 15000 }); // Increased timeout
+    await expect(errorMessage).toBeVisible({ timeout: 20000 }); // Increased timeout for webkit
   });
 
   test('should have CSRF protection', async ({ page }) => {

@@ -1,17 +1,30 @@
 import { test, expect } from '@playwright/test';
 
+// Browser-specific timeout constants for webkit compatibility
+const WEBKIT_REDIRECT_WAIT = 8000;
+const WEBKIT_LOCALSTORAGE_WAIT = 6000;
+const WEBKIT_STORAGE_CLEAR_WAIT = 2000;
+const DEFAULT_REDIRECT_WAIT = 4000;
+const DEFAULT_LOCALSTORAGE_WAIT = 3000;
+const DEFAULT_STORAGE_CLEAR_WAIT = 1000;
+
 test.describe('Authentication Navbar and Logout Flow', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
   });
 
-  test('should redirect to login with redirect parameter from protected page', async ({ page }) => {
+  test('should redirect to login with redirect parameter from protected page', async ({
+    page,
+    browserName,
+  }) => {
     // Try to access a protected page directly
     await page.goto('/dashboard-customer.html');
 
     // Wait for redirect with more generous timeout for webkit/mobile
     await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(4000); // Increased from 2000 for webkit/mobile browsers
+    // Webkit needs significantly more time than chromium/firefox
+    const waitTime = browserName === 'webkit' ? WEBKIT_REDIRECT_WAIT : DEFAULT_REDIRECT_WAIT;
+    await page.waitForTimeout(waitTime);
 
     // Should be redirected to auth page with redirect parameter
     const url = page.url();
@@ -31,7 +44,7 @@ test.describe('Authentication Navbar and Logout Flow', () => {
 });
 
 test.describe('Logout Flow (Simulated)', () => {
-  test('logout should clear localStorage and redirect to home', async ({ page }) => {
+  test('logout should clear localStorage and redirect to home', async ({ page, browserName }) => {
     await page.goto('/');
 
     // Simulate being logged in by setting localStorage
@@ -66,7 +79,10 @@ test.describe('Logout Flow (Simulated)', () => {
     // Reload to pick up the localStorage changes
     await page.reload();
     await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(3000); // Increased from 1500 for webkit/mobile
+    // Webkit needs more time to process localStorage and initial render
+    const waitTime =
+      browserName === 'webkit' ? WEBKIT_LOCALSTORAGE_WAIT : DEFAULT_LOCALSTORAGE_WAIT;
+    await page.waitForTimeout(waitTime);
 
     // Now simulate logout by calling the logout function
     await page.evaluate(async () => {
@@ -87,7 +103,9 @@ test.describe('Logout Flow (Simulated)', () => {
     });
 
     // Wait a bit more for storage to be cleared
-    await page.waitForTimeout(500);
+    const storageWait =
+      browserName === 'webkit' ? WEBKIT_STORAGE_CLEAR_WAIT : DEFAULT_STORAGE_CLEAR_WAIT;
+    await page.waitForTimeout(storageWait);
 
     // Check that localStorage is cleared
     const userInStorage = await page.evaluate(() => localStorage.getItem('user'));
