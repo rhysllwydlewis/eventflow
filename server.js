@@ -5578,6 +5578,23 @@ app.use('/api/payments', paymentRoutes);
 const profileRoutes = require('./routes/profile');
 app.use('/api/profile', profileRoutes);
 
+// ---------- Notification Routes ----------
+const notificationRoutes = require('./routes/notifications');
+// WebSocket server will be passed when available (after server starts)
+let notificationRouter;
+app.use('/api/notifications', (req, res, next) => {
+  if (!notificationRouter && global.wsServer) {
+    notificationRouter = notificationRoutes(mongoDb.db, global.wsServer);
+  }
+  if (notificationRouter) {
+    notificationRouter(req, res, next);
+  } else {
+    // Fallback if WebSocket not ready yet
+    const tempRouter = notificationRoutes(mongoDb.db, null);
+    tempRouter(req, res, next);
+  }
+});
+
 // ---------- Photo Serving from MongoDB ----------
 /**
  * GET /api/photos/:id
@@ -5803,7 +5820,8 @@ const server = http.createServer(app);
 const WebSocketServer = require('./websocket-server');
 const wsServer = new WebSocketServer(server);
 
-// Make wsServer available to routes if needed
+// Make wsServer available globally for notification routes
+global.wsServer = wsServer;
 app.set('wsServer', wsServer);
 
 /**
