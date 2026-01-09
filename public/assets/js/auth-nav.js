@@ -412,6 +412,15 @@
   // Dispatch custom event to notify other components of initial auth state
   window.dispatchEvent(new CustomEvent('auth-state-changed', { detail: { user } }));
 
+  // Listen for logout requests from other components (e.g., footer nav)
+  window.addEventListener('logout-requested', async () => {
+    // Find the signout button and trigger its click
+    const signout = document.getElementById('nav-signout');
+    if (signout) {
+      signout.click();
+    }
+  });
+
   // --- Cross-tab auth state synchronization ---
   // Listen for storage events to detect logout in other tabs
   window.addEventListener('storage', async event => {
@@ -424,7 +433,9 @@
       const currentUser = await me();
       initAuthNav(currentUser);
       // Dispatch event for cross-component sync
-      window.dispatchEvent(new CustomEvent('auth-state-changed', { detail: { user: currentUser } }));
+      window.dispatchEvent(
+        new CustomEvent('auth-state-changed', { detail: { user: currentUser } })
+      );
     }
   });
 

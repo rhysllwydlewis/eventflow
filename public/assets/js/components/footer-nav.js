@@ -373,6 +373,13 @@
       return;
     }
 
+    // Helper function to safely replace element and clean up event listeners
+    const replaceElementAndCleanup = element => {
+      const newElement = element.cloneNode(true);
+      element.parentNode.replaceChild(newElement, element);
+      return newElement;
+    };
+
     if (user) {
       // Logged in state
       const dashHref =
@@ -382,21 +389,15 @@
             ? '/dashboard-supplier.html'
             : '/dashboard-customer.html';
 
-      footerAuth.textContent = 'Log out';
-      footerAuth.href = '#';
+      const newFooterAuth = replaceElementAndCleanup(footerAuth);
+      newFooterAuth.textContent = 'Log out';
+      newFooterAuth.href = '#';
 
-      // Remove existing event listeners by cloning the node
-      const newFooterAuth = footerAuth.cloneNode(true);
-      footerAuth.parentNode.replaceChild(newFooterAuth, footerAuth);
-
-      // Add logout handler
+      // Add logout handler - dispatch event instead of programmatically clicking
       newFooterAuth.addEventListener('click', async e => {
         e.preventDefault();
-        // Trigger logout through the main auth-nav.js by clicking the top logout button
-        const topSignout = document.getElementById('nav-signout');
-        if (topSignout) {
-          topSignout.click();
-        }
+        // Dispatch custom logout event for auth-nav.js to handle
+        window.dispatchEvent(new CustomEvent('logout-requested'));
       });
 
       if (footerDashboard) {
@@ -409,12 +410,9 @@
       }
     } else {
       // Logged out state
-      footerAuth.textContent = 'Log in';
-      footerAuth.href = '/auth.html';
-
-      // Remove any existing logout handlers
-      const newFooterAuth = footerAuth.cloneNode(true);
-      footerAuth.parentNode.replaceChild(newFooterAuth, footerAuth);
+      const newFooterAuth = replaceElementAndCleanup(footerAuth);
+      newFooterAuth.textContent = 'Log in';
+      newFooterAuth.href = '/auth.html';
 
       if (footerDashboard) {
         footerDashboard.style.display = 'none';
