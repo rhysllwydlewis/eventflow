@@ -1,5 +1,11 @@
 import { test, expect } from '@playwright/test';
 
+// Browser-specific timeout constants for webkit compatibility
+const WEBKIT_INITIAL_WAIT = 5000;
+const WEBKIT_WAIT_TIMEOUT = 20000;
+const DEFAULT_INITIAL_WAIT = 2000;
+const DEFAULT_WAIT_TIMEOUT = 10000;
+
 test.describe('Supplier Reviews Widget Integration', () => {
   test('should display review widget on supplier profile page', async ({ page }) => {
     await page.goto('/suppliers.html');
@@ -19,7 +25,7 @@ test.describe('Supplier Reviews Widget Integration', () => {
     await page.goto('/supplier.html?id=test');
     await page.waitForLoadState('networkidle');
     // Webkit needs significantly more time to load and execute JavaScript
-    const initialWait = browserName === 'webkit' ? 5000 : 2000;
+    const initialWait = browserName === 'webkit' ? WEBKIT_INITIAL_WAIT : DEFAULT_INITIAL_WAIT;
     await page.waitForTimeout(initialWait);
 
     const reviewsCssLoaded = await page.evaluate(() => {
@@ -29,7 +35,7 @@ test.describe('Supplier Reviews Widget Integration', () => {
     expect(reviewsCssLoaded).toBe(true);
 
     // Webkit needs more time for JavaScript initialization
-    const waitTimeout = browserName === 'webkit' ? 20000 : 10000;
+    const waitTimeout = browserName === 'webkit' ? WEBKIT_WAIT_TIMEOUT : DEFAULT_WAIT_TIMEOUT;
     const reviewsManagerExists = await page.waitForFunction(
       () => typeof window.reviewsManager !== 'undefined',
       { timeout: waitTimeout }
@@ -50,14 +56,17 @@ test.describe('Supplier Reviews Widget Integration', () => {
     }
   });
 
-  test('should handle missing supplier ID gracefully', async ({ page }) => {
+  test('should handle missing supplier ID gracefully', async ({ page, browserName }) => {
     await page.goto('/supplier.html');
     await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(2000); // Wait for page to render
+    // Wait for page to render - webkit needs more time
+    const renderWait = browserName === 'webkit' ? 3000 : 2000;
+    await page.waitForTimeout(renderWait);
 
     const container = page.locator('#supplier-container');
     // Wait for the container to finish loading - it might show "Loading supplier…" initially
-    await page.waitForTimeout(3000);
+    const contentWait = browserName === 'webkit' ? 5000 : 3000;
+    await page.waitForTimeout(contentWait);
 
     const content = await container.textContent();
     // Be more flexible - accept either the error message or a loading state

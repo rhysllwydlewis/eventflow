@@ -94,7 +94,8 @@ test.describe('Logout Flow (Simulated)', () => {
     });
 
     // Wait a bit more for storage to be cleared
-    await page.waitForTimeout(1000);
+    const storageWait = browserName === 'webkit' ? 2000 : 1000;
+    await page.waitForTimeout(storageWait);
 
     // Check that localStorage is cleared
     const userInStorage = await page.evaluate(() => localStorage.getItem('user'));

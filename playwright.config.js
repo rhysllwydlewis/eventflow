@@ -58,8 +58,8 @@ export default defineConfig({
       use: {
         ...devices['Desktop Safari'],
         // Webkit/Safari needs more time for JS execution and rendering
-        actionTimeout: 30000, // Increased from default 30s
-        navigationTimeout: 60000, // Increased from default 30s
+        actionTimeout: 30000, // Set explicit timeout (default is 0/no timeout)
+        navigationTimeout: 60000, // Increased from 30s default
       },
     },
 
