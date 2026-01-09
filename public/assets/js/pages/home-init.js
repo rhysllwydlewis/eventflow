@@ -305,10 +305,12 @@ function renderPackageFallback(container, items) {
 async function loadHeroCollageImages() {
   // First, check if Pexels collage is enabled
   try {
-    const settingsResponse = await fetch('/api/public/homepage-settings');
+    const settingsResponse = await fetch('/api/public/homepage-settings').catch(() => null);
 
-    // Check response status explicitly - handle 404 and 403 silently
-    if (settingsResponse.status === 404 || settingsResponse.status === 403) {
+    // Silently handle network errors or fetch failures
+    if (!settingsResponse) {
+      // Continue to load static images (no console output)
+    } else if (settingsResponse.status === 404 || settingsResponse.status === 403) {
       // Silently handle 404/403 - endpoint may not be deployed or configured yet
       // Continue to load static images (no console output)
     } else if (settingsResponse.ok) {
@@ -806,16 +808,16 @@ async function fetchTestimonials() {
   }
 
   try {
-    const response = await fetch('/api/reviews?limit=6&approved=true&sort=rating');
+    const response = await fetch('/api/reviews?limit=6&approved=true&sort=rating').catch(() => null);
 
-    // Silently handle 404 - reviews endpoint may not be deployed yet
-    if (response.status === 404) {
+    // Silently handle network errors or fetch failures
+    if (!response) {
       section.style.display = 'none';
       return;
     }
 
-    if (!response.ok) {
-      // Silently handle other errors - this is optional content
+    // Silently handle 404, 403, and other non-200 responses - reviews endpoint may not be deployed yet
+    if (response.status === 404 || response.status === 403 || !response.ok) {
       section.style.display = 'none';
       return;
     }

@@ -65,6 +65,11 @@
     // Initialize footer burger button
     initFooterBurger();
 
+    // Listen for auth state changes to update footer nav
+    window.addEventListener('auth-state-changed', event => {
+      updateFooterAuthState(event.detail.user);
+    });
+
     if (window.location.hostname === 'localhost') {
       console.info('[FooterNav] Component created and injected');
     }
@@ -133,6 +138,12 @@
         });
       }
     }
+
+    // Listen for auth state changes from auth-nav.js
+    window.addEventListener('auth-state-changed', () => {
+      // Delay slightly to allow auth-nav.js to update DOM first
+      setTimeout(updateFooterBell, 50);
+    });
 
     // Add click handler to footer bell
     footerBell.addEventListener('click', () => {
@@ -350,6 +361,69 @@
         console.info('[FooterNav] Initialized with scroll position:', window.scrollY);
       }
     }, 50);
+  }
+
+  // Update footer nav auth state based on user
+  function updateFooterAuthState(user) {
+    const footerAuth = document.querySelector('.footer-nav-auth');
+    const footerDashboard = document.querySelector('.footer-nav-dashboard');
+    const footerBell = document.getElementById('footer-notification-bell');
+
+    if (!footerAuth) {
+      return;
+    }
+
+    if (user) {
+      // Logged in state
+      const dashHref =
+        user.role === 'admin'
+          ? '/admin.html'
+          : user.role === 'supplier'
+            ? '/dashboard-supplier.html'
+            : '/dashboard-customer.html';
+
+      footerAuth.textContent = 'Log out';
+      footerAuth.href = '#';
+
+      // Remove existing event listeners by cloning the node
+      const newFooterAuth = footerAuth.cloneNode(true);
+      footerAuth.parentNode.replaceChild(newFooterAuth, footerAuth);
+
+      // Add logout handler
+      newFooterAuth.addEventListener('click', async e => {
+        e.preventDefault();
+        // Trigger logout through the main auth-nav.js by clicking the top logout button
+        const topSignout = document.getElementById('nav-signout');
+        if (topSignout) {
+          topSignout.click();
+        }
+      });
+
+      if (footerDashboard) {
+        footerDashboard.style.display = '';
+        footerDashboard.href = dashHref;
+      }
+
+      if (footerBell) {
+        footerBell.style.display = 'flex';
+      }
+    } else {
+      // Logged out state
+      footerAuth.textContent = 'Log in';
+      footerAuth.href = '/auth.html';
+
+      // Remove any existing logout handlers
+      const newFooterAuth = footerAuth.cloneNode(true);
+      footerAuth.parentNode.replaceChild(newFooterAuth, footerAuth);
+
+      if (footerDashboard) {
+        footerDashboard.style.display = 'none';
+      }
+
+      if (footerBell) {
+        footerBell.style.display = 'none';
+      }
+    }
   }
 
   // Initialize when DOM is ready

@@ -82,20 +82,21 @@
   /* Dropdown menu improvements */
   .nav-menu {
     position: fixed;
-    top: 60px;
+    top: 0;
     left: 0;
     right: 0;
     background: rgba(255, 255, 255, 0.98);
     backdrop-filter: blur(10px);
     border-bottom: 1px solid var(--border);
     padding: 16px;
+    padding-top: 80px; /* Account for header height */
     display: none;
     flex-direction: column;
     gap: 8px;
-    max-height: calc(100vh - 60px);
+    max-height: 100vh;
     overflow-y: auto;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    z-index: 1000;
+    z-index: 999; /* Below header but above content */
   }
   
   .nav-menu.is-open,
@@ -129,8 +130,13 @@
     right: 0;
     bottom: 0;
     background: rgba(0, 0, 0, 0.3);
-    z-index: 999;
+    z-index: 998; /* Below nav-menu */
     backdrop-filter: blur(2px);
+  }
+  
+  /* Ensure header stays on top */
+  .header {
+    z-index: 1000;
   }
 }
 

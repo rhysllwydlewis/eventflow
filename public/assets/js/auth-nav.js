@@ -271,6 +271,9 @@
         /* Ignore logout errors */
       }
 
+      // Dispatch custom event to notify other components
+      window.dispatchEvent(new CustomEvent('auth-state-changed', { detail: { user: null } }));
+
       // Force full reload with cache-busting to ensure clean state
       window.location.href = `/?t=${Date.now()}`;
     }
@@ -406,6 +409,9 @@
   const user = await me();
   initAuthNav(user);
 
+  // Dispatch custom event to notify other components of initial auth state
+  window.dispatchEvent(new CustomEvent('auth-state-changed', { detail: { user } }));
+
   // --- Cross-tab auth state synchronization ---
   // Listen for storage events to detect logout in other tabs
   window.addEventListener('storage', async event => {
@@ -417,6 +423,8 @@
       }
       const currentUser = await me();
       initAuthNav(currentUser);
+      // Dispatch event for cross-component sync
+      window.dispatchEvent(new CustomEvent('auth-state-changed', { detail: { user: currentUser } }));
     }
   });
 
@@ -432,6 +440,8 @@
     }
     lastKnownAuthState = currentUser;
     initAuthNav(currentUser);
+    // Dispatch event for cross-component sync
+    window.dispatchEvent(new CustomEvent('auth-state-changed', { detail: { user: currentUser } }));
   };
 
   setInterval(async () => {
