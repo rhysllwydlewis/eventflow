@@ -302,35 +302,51 @@ function renderPackageFallback(container, items) {
     .join('');
 }
 
-// Helper to detect development environment
-// Checks for localhost, 127.0.0.1, .local domains, and private/link-local IP ranges
+/**
+ * Detect if running in a development environment
+ * @returns {boolean} true if hostname matches common development patterns, false otherwise
+ *
+ * Development environments include:
+ * - localhost and loopback addresses (127.0.0.1, ::1)
+ * - mDNS .local domains
+ * - Private IP ranges (10.x, 172.16-31.x, 192.168.x)
+ * - Link-local addresses (169.254.x)
+ */
 function isDevelopmentEnvironment() {
   const hostname = window.location.hostname;
-  return (
+
+  // Quick checks for common cases
+  if (
     hostname === 'localhost' ||
     hostname === '127.0.0.1' ||
-    hostname === '::1' || // IPv6 localhost
-    hostname.endsWith('.local') ||
-    hostname.startsWith('192.168.') || // Private IP range
-    hostname.startsWith('10.') || // Private IP range
-    hostname.startsWith('172.16.') || // Private IP range (172.16.0.0/12)
-    hostname.startsWith('172.17.') ||
-    hostname.startsWith('172.18.') ||
-    hostname.startsWith('172.19.') ||
-    hostname.startsWith('172.20.') ||
-    hostname.startsWith('172.21.') ||
-    hostname.startsWith('172.22.') ||
-    hostname.startsWith('172.23.') ||
-    hostname.startsWith('172.24.') ||
-    hostname.startsWith('172.25.') ||
-    hostname.startsWith('172.26.') ||
-    hostname.startsWith('172.27.') ||
-    hostname.startsWith('172.28.') ||
-    hostname.startsWith('172.29.') ||
-    hostname.startsWith('172.30.') ||
-    hostname.startsWith('172.31.') ||
-    hostname.startsWith('169.254.') // Link-local address range
-  );
+    hostname === '::1' ||
+    hostname.endsWith('.local')
+  ) {
+    return true;
+  }
+
+  // Private IP ranges
+  if (hostname.startsWith('192.168.') || hostname.startsWith('10.')) {
+    return true;
+  }
+
+  // 172.16.0.0/12 range (172.16.x.x to 172.31.x.x)
+  if (hostname.startsWith('172.')) {
+    const parts = hostname.split('.');
+    if (parts.length >= 2) {
+      const secondOctet = parseInt(parts[1], 10);
+      if (secondOctet >= 16 && secondOctet <= 31) {
+        return true;
+      }
+    }
+  }
+
+  // Link-local address range
+  if (hostname.startsWith('169.254.')) {
+    return true;
+  }
+
+  return false;
 }
 
 async function loadHeroCollageImages() {
