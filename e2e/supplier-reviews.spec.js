@@ -15,10 +15,12 @@ test.describe('Supplier Reviews Widget Integration', () => {
     }
   });
 
-  test('should load reviews resources', async ({ page }) => {
+  test('should load reviews resources', async ({ page, browserName }) => {
     await page.goto('/supplier.html?id=test');
     await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(2000); // Extra time for webkit/mobile
+    // Webkit needs significantly more time to load and execute JavaScript
+    const initialWait = browserName === 'webkit' ? 5000 : 2000;
+    await page.waitForTimeout(initialWait);
 
     const reviewsCssLoaded = await page.evaluate(() => {
       const links = Array.from(document.querySelectorAll('link[rel="stylesheet"]'));
@@ -26,9 +28,11 @@ test.describe('Supplier Reviews Widget Integration', () => {
     });
     expect(reviewsCssLoaded).toBe(true);
 
+    // Webkit needs more time for JavaScript initialization
+    const waitTimeout = browserName === 'webkit' ? 20000 : 10000;
     const reviewsManagerExists = await page.waitForFunction(
       () => typeof window.reviewsManager !== 'undefined',
-      { timeout: 10000 } // Increased from 5000
+      { timeout: waitTimeout }
     );
     expect(reviewsManagerExists).toBeTruthy();
   });

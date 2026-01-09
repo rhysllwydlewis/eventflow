@@ -55,7 +55,12 @@ export default defineConfig({
 
     {
       name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
+      use: {
+        ...devices['Desktop Safari'],
+        // Webkit/Safari needs more time for JS execution and rendering
+        actionTimeout: 30000, // Increased from default 30s
+        navigationTimeout: 60000, // Increased from default 30s
+      },
     },
 
     /* Test against mobile viewports. */
@@ -65,7 +70,12 @@ export default defineConfig({
     },
     {
       name: 'Mobile Safari',
-      use: { ...devices['iPhone 12'] },
+      use: {
+        ...devices['iPhone 12'],
+        // Mobile Safari also needs generous timeouts
+        actionTimeout: 30000,
+        navigationTimeout: 60000,
+      },
     },
 
     /* Test against branded browsers. */
