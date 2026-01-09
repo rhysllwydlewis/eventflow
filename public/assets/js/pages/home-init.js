@@ -305,9 +305,15 @@ function renderPackageFallback(container, items) {
 async function loadHeroCollageImages() {
   // First, check if Pexels collage is enabled
   try {
-    const settingsResponse = await fetch('/api/public/homepage-settings').catch(() => null);
+    const settingsResponse = await fetch('/api/public/homepage-settings').catch(err => {
+      // Log network errors in development mode only
+      if (window.location.hostname === 'localhost') {
+        console.warn('Network error fetching homepage settings:', err.message);
+      }
+      return null;
+    });
 
-    // Silently handle network errors or fetch failures
+    // If fetch failed (network error), continue to static images
     if (!settingsResponse) {
       // Continue to load static images (no console output)
     } else if (settingsResponse.status === 404 || settingsResponse.status === 403) {
@@ -326,7 +332,10 @@ async function loadHeroCollageImages() {
     }
     // If non-200 and non-404/403, just continue to static images
   } catch (error) {
-    // Network error or other exception - continue to static images silently
+    // JSON parsing or other error - continue to static images silently
+    if (window.location.hostname === 'localhost') {
+      console.warn('Error processing homepage settings:', error.message);
+    }
   }
 
   // If Pexels is not enabled or failed, load static images
@@ -808,9 +817,15 @@ async function fetchTestimonials() {
   }
 
   try {
-    const response = await fetch('/api/reviews?limit=6&approved=true&sort=rating').catch(() => null);
+    const response = await fetch('/api/reviews?limit=6&approved=true&sort=rating').catch(err => {
+      // Log network errors in development mode only
+      if (window.location.hostname === 'localhost') {
+        console.warn('Network error fetching reviews:', err.message);
+      }
+      return null;
+    });
 
-    // Silently handle network errors or fetch failures
+    // If fetch failed (network error), hide section
     if (!response) {
       section.style.display = 'none';
       return;
