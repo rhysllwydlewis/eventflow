@@ -509,24 +509,29 @@
       // Initialize DOM references
       initElements();
 
-      // Initialize features
+      // Initialize features immediately (don't wait for auth)
       initMobileMenu();
       initScrollBehavior();
       initKeyboardNav();
       initNotificationSync();
       setCurrentPage();
 
-      // Fetch CSRF token
-      await initCsrfToken();
+      // Fetch CSRF token (don't wait for it)
+      initCsrfToken().catch(err => console.warn('CSRF token fetch failed:', err));
 
-      // Setup auth state listener
+      // Setup auth state listener asynchronously (don't block)
       const authState = getAuthState();
       if (authState) {
         // Wait for auth state to initialize before setting up listener
-        await authState.init();
-        
-        // Setup listener - this will call updateAuthUI immediately with current state
-        authState.onchange(updateAuthUI);
+        authState.init()
+          .then(() => {
+            // Setup listener - this will call updateAuthUI immediately with current state
+            authState.onchange(updateAuthUI);
+          })
+          .catch(err => {
+            console.warn('EventFlow navbar: Auth state init failed, using fallback', err);
+            updateAuthUI(null);
+          });
       } else {
         // Fallback: If auth state manager not available, assume logged out
         console.warn('EventFlow navbar: Auth state manager not found, using fallback');
