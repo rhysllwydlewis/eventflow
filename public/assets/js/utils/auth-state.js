@@ -226,6 +226,38 @@
     }
 
     /**
+     * Subscribe to auth state changes and call immediately with current state
+     * Alias for subscribe that calls the callback immediately
+     * @param {Function} callback - Callback function (receives user object)
+     * @returns {Function} Unsubscribe function
+     */
+    onchange(callback) {
+      // Wrap the callback to extract user from state object
+      const wrappedCallback = stateObj => {
+        const user =
+          stateObj && typeof stateObj === 'object' && 'user' in stateObj ? stateObj.user : stateObj;
+        callback(user);
+      };
+
+      // Call immediately with current user state
+      try {
+        wrappedCallback({ state: this.state, user: this.user });
+      } catch (e) {
+        if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+          console.error('Error in auth state onchange callback:', e);
+        }
+      }
+
+      // Subscribe for future changes
+      this.listeners.push(wrappedCallback);
+
+      // Return unsubscribe function
+      return () => {
+        this.listeners = this.listeners.filter(l => l !== wrappedCallback);
+      };
+    }
+
+    /**
      * Refresh auth state (e.g., after login/logout)
      * @returns {Promise<Object>}
      */
@@ -242,11 +274,52 @@
       this._clearAuthState();
       this._setState(AUTH_STATES.UNAUTHENTICATED, null);
     }
+
+    /**
+     * Set user directly (for compatibility)
+     */
+    setUser(user) {
+      if (user) {
+        this._setState(AUTH_STATES.AUTHENTICATED, user);
+      } else {
+        this._setState(AUTH_STATES.UNAUTHENTICATED, null);
+      }
+    }
   }
 
   // Export as singleton
   if (typeof window !== 'undefined') {
-    window.AuthStateManager = new AuthStateManager();
+    const authManager = new AuthStateManager();
+    window.AuthStateManager = authManager;
     window.AUTH_STATES = AUTH_STATES;
+    // Also expose as __authState for compatibility
+    window.__authState = authManager;
+
+    // Initialize on DOM ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => {
+        authManager.init();
+      });
+    } else {
+      authManager.init();
+    }
+
+    // Listen for legacy auth-state-changed event
+    window.addEventListener('auth-state-changed', event => {
+      if (event.detail && event.detail.user !== undefined) {
+        authManager.setUser(event.detail.user);
+      }
+    });
+
+    // Dispatch __auth-state-updated for compatibility
+    const originalNotify = authManager._notifyListeners.bind(authManager);
+    authManager._notifyListeners = function () {
+      originalNotify();
+      window.dispatchEvent(
+        new CustomEvent('__auth-state-updated', {
+          detail: { user: this.user },
+        })
+      );
+    };
   }
 })();

@@ -19,13 +19,15 @@
   // ==========================================
 
   const state = {
-    user: null,
     csrfToken: null,
     isInitialized: false,
     scrollDirection: null,
     lastScrollY: 0,
     scrollThreshold: 5,
   };
+
+  // Get centralized auth state manager
+  const getAuthState = () => window.__authState || window.AuthStateManager;
 
   // ==========================================
   // CSRF TOKEN
@@ -48,25 +50,9 @@
   // AUTH MANAGEMENT
   // ==========================================
 
-  async function fetchCurrentUser() {
-    try {
-      const response = await fetch('/api/auth/me', {
-        credentials: 'include',
-        headers: { 'Cache-Control': 'no-cache' },
-      });
-
-      if (!response.ok) {
-        return null;
-      }
-
-      const data = await response.json();
-      return data.user || null;
-    } catch (error) {
-      return null;
-    }
-  }
-
   async function logout() {
+    const authState = getAuthState();
+    
     // Clear local state
     try {
       localStorage.removeItem('eventflow_onboarding_new');
@@ -89,9 +75,12 @@
       }
     }
 
-    // Notify components and reload
-    state.user = null;
-    dispatchAuthChange(null);
+    // Update centralized auth state
+    if (authState) {
+      authState.logout();
+    }
+    
+    // Reload page
     window.location.href = `/?t=${Date.now()}`;
   }
 
@@ -104,7 +93,7 @@
   }
 
   // ==========================================
-  // MOBILE MENU
+  // MOBILE MENU - GOLD STANDARD REBUILD
   // ==========================================
 
   function initMobileMenu() {
@@ -112,11 +101,13 @@
     const navMenu = document.querySelector('.nav-menu');
 
     if (!burger || !navMenu) {
+      console.warn('Burger or nav-menu not found');
       return;
     }
 
     // Prevent duplicate initialization
     if (burger.dataset.navInitialized === 'true') {
+      console.log('Burger already initialized');
       return;
     }
     burger.dataset.navInitialized = 'true';
@@ -128,62 +119,60 @@
     burger.setAttribute('aria-controls', navMenu.id);
     burger.setAttribute('aria-expanded', 'false');
 
-    // Toggle function
-    const toggle = () => {
-      const isOpen = document.body.classList.contains('nav-open');
+    // Simple state variable
+    let isMenuOpen = false;
 
-      if (isOpen) {
-        // Close menu
-        document.body.classList.remove('nav-open');
-        navMenu.classList.remove(
-          'nav-menu--open',
-          'is-open',
-          'nav-menu--from-top',
-          'nav-menu--from-bottom'
-        );
-        burger.setAttribute('aria-expanded', 'false');
-        document.body.style.overflow = '';
-      } else {
-        // Open menu
-        document.body.classList.add('nav-open');
-        navMenu.classList.add('nav-menu--open', 'is-open', 'nav-menu--from-top');
-        burger.setAttribute('aria-expanded', 'true');
-        document.body.style.overflow = 'hidden';
+    // Toggle function - simplified and bulletproof
+    const toggleMenu = (event) => {
+      if (event) {
+        event.preventDefault();
+        event.stopPropagation();
       }
+
+      isMenuOpen = !isMenuOpen;
+
+      // Update DOM
+      burger.setAttribute('aria-expanded', String(isMenuOpen));
+      document.body.classList.toggle('nav-open', isMenuOpen);
+      navMenu.classList.toggle('nav-menu--open', isMenuOpen);
+      navMenu.classList.toggle('is-open', isMenuOpen);
+      document.body.style.overflow = isMenuOpen ? 'hidden' : '';
+
+      console.log('Menu toggled:', isMenuOpen);
     };
 
-    // Event listeners
-    burger.addEventListener('click', toggle);
+    // Event listeners - use once to prevent duplicates
+    burger.addEventListener('click', toggleMenu, { once: false });
 
     burger.addEventListener('keydown', event => {
       if (event.key === 'Enter' || event.key === ' ') {
         event.preventDefault();
-        toggle();
+        toggleMenu(event);
       }
     });
 
     // Close on link click
     navMenu.addEventListener('click', event => {
-      if (event.target.tagName === 'A') {
-        toggle();
+      if (event.target.tagName === 'A' && isMenuOpen) {
+        toggleMenu();
       }
     });
 
     // Close on ESC key
     document.addEventListener('keydown', event => {
-      if (event.key === 'Escape' && document.body.classList.contains('nav-open')) {
-        toggle();
+      if (event.key === 'Escape' && isMenuOpen) {
+        toggleMenu();
       }
     });
 
     // Close when clicking outside
     document.addEventListener('click', event => {
-      if (document.body.classList.contains('nav-open')) {
-        if (!burger.contains(event.target) && !navMenu.contains(event.target)) {
-          toggle();
-        }
+      if (isMenuOpen && !burger.contains(event.target) && !navMenu.contains(event.target)) {
+        toggleMenu();
       }
     });
+
+    console.log('Burger menu initialized successfully');
   }
 
   // ==========================================
@@ -518,12 +507,12 @@
     // Fetch CSRF token
     await initCsrfToken();
 
-    // Fetch current user and update UI
-    state.user = await fetchCurrentUser();
-    updateAuthUI(state.user);
-
-    // Dispatch initial auth state
-    dispatchAuthChange(state.user);
+    // Wait for auth state manager to be ready
+    const authState = getAuthState();
+    if (authState) {
+      // Subscribe to auth state changes
+      authState.onchange(updateAuthUI);
+    }
 
     // Expose logout globally
     window.__eventflow_logout = logout;
@@ -532,32 +521,11 @@
     // Watch for auth changes in other tabs
     window.addEventListener('storage', async event => {
       if (event.key === 'user' && event.newValue === null) {
-        state.user = await fetchCurrentUser();
-        updateAuthUI(state.user);
-        dispatchAuthChange(state.user);
-      }
-    });
-
-    // Periodic auth verification
-    setInterval(async () => {
-      const currentUser = await fetchCurrentUser();
-      const wasLoggedIn = !!state.user;
-      const isLoggedIn = !!currentUser;
-
-      // Check if auth state changed
-      if (wasLoggedIn !== isLoggedIn) {
-        state.user = currentUser;
-        updateAuthUI(currentUser);
-        dispatchAuthChange(currentUser);
-      } else if (currentUser && state.user) {
-        // Check if role changed (edge case)
-        if (currentUser.role !== state.user.role) {
-          state.user = currentUser;
-          updateAuthUI(currentUser);
-          dispatchAuthChange(currentUser);
+        if (authState) {
+          await authState.refresh();
         }
       }
-    }, 30000);
+    });
   }
 
   // Start initialization

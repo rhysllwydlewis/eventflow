@@ -781,6 +781,36 @@
       </div>
     </footer>
 
+    <!-- Footer Navigation (always in DOM, shown on mobile via CSS) -->
+    <nav class="footer-nav footer-nav--mobile-only" role="navigation" aria-label="Mobile Navigation">
+      <div class="footer-nav-content">
+        <div class="footer-nav-links">
+          <a href="/start.html" class="footer-nav-link">Plan</a>
+          <a href="/suppliers.html" class="footer-nav-link">Suppliers</a>
+          <a href="/blog.html" class="footer-nav-link">Guides</a>
+          
+          <!-- Dashboard link - shown only when logged in -->
+          <a href="/dashboard-customer.html" class="footer-nav-link footer-nav-dashboard" style="display: none;">Dashboard</a>
+          
+          <!-- Notification bell - shown only when logged in -->
+          <button id="footer-notification-bell" class="footer-nav-icon-button" type="button" aria-label="Notifications" style="display: none;">
+            <span class="notification-icon">🔔</span>
+            <span class="footer-notification-badge" style="display: none;">0</span>
+          </button>
+          
+          <!-- Auth link - toggles between Login and Logout -->
+          <a href="/auth.html" class="footer-nav-link footer-nav-auth">Log in</a>
+          
+          <!-- Burger menu button -->
+          <button id="footer-burger" class="footer-nav-burger" type="button" aria-label="Toggle navigation" aria-expanded="false">
+            <span class="footer-nav-burger-bar"></span>
+            <span class="footer-nav-burger-bar"></span>
+            <span class="footer-nav-burger-bar"></span>
+          </button>
+        </div>
+      </div>
+    </nav>
+
     <!-- Load core utilities -->
     <script src="/assets/js/components/ErrorBoundary.js" defer></script>
     <script src="/assets/js/utils/keyboard-nav.js" defer></script>
