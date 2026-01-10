@@ -478,7 +478,7 @@
   background: rgba(255, 255, 255, 0.98);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
-  z-index: 999;
+  z-index: 1001;
   opacity: 0;
   visibility: hidden;
   transform: translateY(-30px);

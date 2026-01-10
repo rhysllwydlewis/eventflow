@@ -510,7 +510,8 @@
       initElements();
 
       // Initialize features
-      initMobileMenu();
+      // NOTE: Mobile menu is now handled by burger-menu.js
+      // initMobileMenu(); // DISABLED - using standalone burger-menu.js instead
       initScrollBehavior();
       initKeyboardNav();
       initNotificationSync();
