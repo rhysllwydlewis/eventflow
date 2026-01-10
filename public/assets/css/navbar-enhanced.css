@@ -587,8 +587,6 @@ body.has-footer-nav {
    FOOTER NAV - RESPONSIVE (VISIBLE ON ALL SCREEN SIZES)
    =================================================================== */
 
-/* Footer nav visible on all screen sizes - always shown */
-
 @media (max-width: 480px) {
   .footer-nav-link {
     padding: 6px 12px;
