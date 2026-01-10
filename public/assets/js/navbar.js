@@ -265,10 +265,11 @@
         elements.authLink.href = '#';
         elements.authLink.classList.remove('ef-btn-primary');
         elements.authLink.classList.add('ef-btn-secondary');
+        // Remove old click handlers and add new one
         const newAuthLink = elements.authLink.cloneNode(true);
         elements.authLink.parentNode.replaceChild(newAuthLink, elements.authLink);
         elements.authLink = newAuthLink;
-        newAuthLink.addEventListener('click', (e) => {
+        elements.authLink.addEventListener('click', (e) => {
           e.preventDefault();
           logout();
         });
@@ -295,10 +296,11 @@
       // Show mobile logout
       if (elements.mobileLogout) {
         elements.mobileLogout.style.display = '';
+        // Remove old click handlers and add new one
         const newMobileLogout = elements.mobileLogout.cloneNode(true);
         elements.mobileLogout.parentNode.replaceChild(newMobileLogout, elements.mobileLogout);
         elements.mobileLogout = newMobileLogout;
-        newMobileLogout.addEventListener('click', (e) => {
+        elements.mobileLogout.addEventListener('click', (e) => {
           e.preventDefault();
           logout();
         });
@@ -507,7 +509,14 @@
     // Setup auth state listener
     const authState = getAuthState();
     if (authState) {
+      // Wait for auth state to initialize before setting up listener
+      await authState.init();
+      
+      // Setup listener - this will call updateAuthUI immediately with current state
       authState.onchange(updateAuthUI);
+    } else {
+      // Fallback: If auth state manager not available, assume logged out
+      updateAuthUI(null);
     }
 
     // Expose logout globally
