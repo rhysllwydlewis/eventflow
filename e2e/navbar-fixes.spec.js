@@ -43,7 +43,7 @@ test.describe('Navbar Fixes', () => {
     await page.setViewportSize({ width: 375, height: 812 });
     await page.waitForTimeout(500);
 
-    const footerNav = page.locator('.footer-nav');
+    const footerNav = page.locator('.ef-bottom-nav');
 
     // Debug: Check computed styles
     const displayValue = await footerNav.evaluate(el => window.getComputedStyle(el).display);
@@ -63,9 +63,9 @@ test.describe('Navbar Fixes', () => {
     await page.setViewportSize({ width: 1024, height: 768 });
     await page.waitForTimeout(500);
 
-    const footerNav = page.locator('.footer-nav');
-    // Footer nav should now be visible on desktop per user requirements
-    await expect(footerNav).toBeVisible();
+    const footerNav = page.locator('.ef-bottom-nav');
+    // Footer nav should be HIDDEN on desktop (mobile-only)
+    await expect(footerNav).not.toBeVisible();
   });
 
   test('dashboard link shows when logged in', async ({ page }) => {
@@ -86,7 +86,7 @@ test.describe('Navbar Fixes', () => {
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(2000);
 
-    const dashboardLink = page.locator('.footer-nav-dashboard');
+    const dashboardLink = page.locator('#ef-bottom-dashboard');
     await expect(dashboardLink).toBeVisible();
   });
 
@@ -94,8 +94,8 @@ test.describe('Navbar Fixes', () => {
     await page.setViewportSize({ width: 375, height: 812 });
     await page.waitForTimeout(500);
 
-    const burger = page.locator('#burger');
-    const navMenu = page.locator('.nav-menu');
+    const burger = page.locator('#ef-mobile-toggle');
+    const navMenu = page.locator('#ef-mobile-menu');
 
     // Verify menu is initially not visible (closed)
     const isInitiallyVisible = await navMenu.isVisible();
@@ -107,9 +107,7 @@ test.describe('Navbar Fixes', () => {
     await expect(navMenu).toBeVisible();
 
     // Check menu has open class
-    const hasOpenClass = await navMenu.evaluate(
-      el => el.classList.contains('nav-menu--open') || el.classList.contains('is-open')
-    );
+    const hasOpenClass = await navMenu.evaluate(el => el.classList.contains('open'));
     expect(hasOpenClass).toBe(true);
 
     // Verify menu appears in viewport (not off-screen)
@@ -126,8 +124,8 @@ test.describe('Navbar Fixes', () => {
     await page.setViewportSize({ width: 375, height: 812 });
     await page.waitForTimeout(500);
 
-    const headerBurger = page.locator('#burger');
-    const footerBurger = page.locator('#footer-burger');
+    const headerBurger = page.locator('#ef-mobile-toggle');
+    const footerBurger = page.locator('#ef-bottom-menu');
 
     // Ensure menu is initially closed
     const initialState = await headerBurger.getAttribute('aria-expanded');
@@ -162,12 +160,12 @@ test.describe('Navbar Fixes', () => {
       await page.setViewportSize(viewport);
       await page.waitForTimeout(500);
 
-      const footerNav = page.locator('.footer-nav');
+      const footerNav = page.locator('.ef-bottom-nav');
       await expect(footerNav).toBeVisible();
     }
   });
 
-  test('desktop viewports (768px+) - footer nav visible', async ({ page }) => {
+  test('desktop viewports (768px+) - footer nav hidden', async ({ page }) => {
     const viewports = [
       { width: 768, height: 1024 },
       { width: 1024, height: 768 },
@@ -178,9 +176,9 @@ test.describe('Navbar Fixes', () => {
       await page.setViewportSize(viewport);
       await page.waitForTimeout(500);
 
-      const footerNav = page.locator('.footer-nav');
-      // Footer nav should be visible on all screen sizes
-      await expect(footerNav).toBeVisible();
+      const footerNav = page.locator('.ef-bottom-nav');
+      // Footer nav should be HIDDEN on desktop (mobile-only)
+      await expect(footerNav).not.toBeVisible();
     }
   });
 
@@ -197,7 +195,7 @@ test.describe('Navbar Fixes', () => {
     await page.waitForTimeout(2000);
 
     // Open burger menu
-    const burger = page.locator('#burger');
+    const burger = page.locator('#ef-mobile-toggle');
     await burger.click();
     await page.waitForTimeout(500);
 
@@ -235,12 +233,16 @@ test.describe('Navbar Fixes', () => {
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(2000);
 
-    // Check footer nav shows logged-in state
-    const footerAuthLink = page.locator('.footer-nav-auth');
-    await expect(footerAuthLink).toContainText(/Log out/i);
+    // Check mobile menu shows logged-in state
+    const burger = page.locator('#ef-mobile-toggle');
+    await burger.click();
+    await page.waitForTimeout(500);
 
-    // Check dashboard link is visible
-    const dashboardLink = page.locator('.footer-nav-dashboard');
+    const mobileLogout = page.locator('#ef-mobile-logout');
+    await expect(mobileLogout).toBeVisible();
+
+    // Check dashboard link is visible in bottom nav
+    const dashboardLink = page.locator('#ef-bottom-dashboard');
     await expect(dashboardLink).toBeVisible();
   });
 
@@ -248,9 +250,9 @@ test.describe('Navbar Fixes', () => {
     await page.setViewportSize({ width: 375, height: 812 });
     await page.waitForTimeout(500);
 
-    const burger = page.locator('#burger');
-    const navMenu = page.locator('.nav-menu');
-    const header = page.locator('.header');
+    const burger = page.locator('#ef-mobile-toggle');
+    const navMenu = page.locator('#ef-mobile-menu');
+    const header = page.locator('.ef-header');
 
     await burger.click();
     await page.waitForTimeout(500);

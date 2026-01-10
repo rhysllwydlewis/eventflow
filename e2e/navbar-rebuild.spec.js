@@ -39,7 +39,7 @@ test.describe('Navbar Complete Rebuild - PR #241', () => {
     }
 
     // Check burger button exists and is visible
-    const burger = page.locator('#burger');
+    const burger = page.locator('#ef-mobile-toggle');
     await expect(burger).toBeVisible();
 
     // Click burger to open menu
@@ -47,30 +47,30 @@ test.describe('Navbar Complete Rebuild - PR #241', () => {
     await page.waitForTimeout(500);
 
     // Check menu is visible
-    const navMenu = page.locator('.nav-menu');
+    const navMenu = page.locator('#ef-mobile-menu');
     await expect(navMenu).toBeVisible();
 
     // Check menu has proper classes
-    const hasOpenClass = await navMenu.evaluate(
-      el => el.classList.contains('nav-menu--open') || el.classList.contains('is-open')
-    );
+    const hasOpenClass = await navMenu.evaluate(el => el.classList.contains('open'));
     expect(hasOpenClass).toBe(true);
 
     // Check body has nav-open class
-    const bodyHasNavOpen = await page.evaluate(() => document.body.classList.contains('nav-open'));
+    const bodyHasNavOpen = await page.evaluate(() =>
+      document.body.classList.contains('ef-menu-open')
+    );
     expect(bodyHasNavOpen).toBe(true);
 
-    // Verify z-index stacking (header > menu > backdrop)
+    // Verify z-index stacking (header > menu)
     const headerZIndex = await page
-      .locator('.header')
+      .locator('.ef-header')
       .evaluate(el => parseInt(window.getComputedStyle(el).zIndex, 10));
     const menuZIndex = await navMenu.evaluate(el =>
       parseInt(window.getComputedStyle(el).zIndex, 10)
     );
 
-    expect(headerZIndex).toBeGreaterThanOrEqual(2000);
-    expect(menuZIndex).toBeGreaterThanOrEqual(1999);
-    expect(menuZIndex).toBeLessThan(headerZIndex);
+    expect(headerZIndex).toBeGreaterThanOrEqual(1000);
+    expect(menuZIndex).toBeGreaterThanOrEqual(999);
+    expect(headerZIndex).toBeGreaterThan(menuZIndex);
   });
 
   test('2. Auth state syncs between top and footer navbars', async ({ page }) => {
