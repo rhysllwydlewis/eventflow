@@ -2,20 +2,24 @@
  * Footer Navigation
  * Manages mobile bottom navigation bar
  */
-(function() {
+(function () {
   'use strict';
 
   function init() {
     const authState = window.AuthStateManager || window.__authState;
-    
+
     if (!authState) {
       console.error('Auth state manager not found');
       return;
     }
 
     // Watch auth state and update UI
-    authState.onchange(updateAuthUI);
-    
+    try {
+      authState.onchange(updateAuthUI);
+    } catch (error) {
+      console.error('Failed to register auth state listener:', error);
+    }
+
     // Sync burger with header burger
     initBurgerSync();
   }
@@ -25,19 +29,22 @@
     const footerDashboard = document.querySelector('.footer-nav-dashboard');
     const footerBell = document.getElementById('footer-notification-bell');
 
-    if (!footerAuth) return; // Footer nav doesn't exist
+    if (!footerAuth) {
+      return;
+    } // Footer nav doesn't exist
 
     if (user) {
       // Logged in
-      const dashboardUrl = user.role === 'admin'
-        ? '/admin.html'
-        : user.role === 'supplier'
-          ? '/dashboard-supplier.html'
-          : '/dashboard-customer.html';
+      const dashboardUrl =
+        user.role === 'admin'
+          ? '/admin.html'
+          : user.role === 'supplier'
+            ? '/dashboard-supplier.html'
+            : '/dashboard-customer.html';
 
       footerAuth.textContent = 'Log out';
       footerAuth.href = '#';
-      footerAuth.onclick = (e) => {
+      footerAuth.onclick = e => {
         e.preventDefault();
         handleLogout();
       };
@@ -71,7 +78,7 @@
       await fetch('/api/auth/logout', {
         method: 'POST',
         headers: { 'X-CSRF-Token': window.__CSRF_TOKEN__ || '' },
-        credentials: 'include'
+        credentials: 'include',
       });
     } catch (error) {
       console.error('Logout failed:', error);
@@ -82,14 +89,16 @@
       authState.logout();
     }
 
-    window.location.href = '/?t=' + Date.now();
+    window.location.href = `/?t=${Date.now()}`;
   }
 
   function initBurgerSync() {
     const headerBurger = document.getElementById('burger');
     const footerBurger = document.getElementById('footer-burger');
 
-    if (!headerBurger || !footerBurger) return;
+    if (!headerBurger || !footerBurger) {
+      return;
+    }
 
     // Footer burger clicks header burger
     footerBurger.addEventListener('click', () => {
@@ -105,7 +114,7 @@
 
     observer.observe(headerBurger, {
       attributes: true,
-      attributeFilter: ['aria-expanded']
+      attributeFilter: ['aria-expanded'],
     });
   }
 

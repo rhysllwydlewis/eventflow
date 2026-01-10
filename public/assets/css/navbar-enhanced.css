@@ -254,11 +254,6 @@ body.nav-open::after {
   to { opacity: 1; }
 }
 
-/* Ensure header z-index is higher than everything */
-.header {
-  z-index: 1000 !important;
-}
-
 /* ===================================================================
    SEARCH INPUT - ENHANCED STYLING (if exists)
    =================================================================== */
