@@ -627,33 +627,31 @@ body.has-footer-nav {
 }
 
 /* ===================================================================
-   DARK MODE SUPPORT (if implemented)
+   DARK MODE SUPPORT (uses site theme, not system preference)
    =================================================================== */
 
-@media (prefers-color-scheme: dark) {
-  .footer-nav {
-    background: rgba(17, 24, 39, 0.96);
-    border-top-color: rgba(255, 255, 255, 0.08);
-  }
+html[data-theme="dark"] .footer-nav {
+  background: rgba(17, 24, 39, 0.96);
+  border-top-color: rgba(255, 255, 255, 0.08);
+}
 
-  .footer-nav-link,
-  .footer-nav-icon-button {
-    color: #9ca3af;
-  }
+html[data-theme="dark"] .footer-nav-link,
+html[data-theme="dark"] .footer-nav-icon-button {
+  color: #9ca3af;
+}
 
-  .footer-nav-link:hover,
-  .footer-nav-icon-button:hover {
-    background: rgba(11, 128, 115, 0.16);
-    color: #13B6A2;
-  }
+html[data-theme="dark"] .footer-nav-link:hover,
+html[data-theme="dark"] .footer-nav-icon-button:hover {
+  background: rgba(11, 128, 115, 0.16);
+  color: #13B6A2;
+}
 
-  .footer-nav-burger-bar {
-    background: #9ca3af;
-  }
+html[data-theme="dark"] .footer-nav-burger-bar {
+  background: #9ca3af;
+}
 
-  .footer-nav-burger:hover .footer-nav-burger-bar {
-    background: #13B6A2;
-  }
+html[data-theme="dark"] .footer-nav-burger:hover .footer-nav-burger-bar {
+  background: #13B6A2;
 }
 
 /* ===================================================================
@@ -1007,53 +1005,51 @@ body.has-footer-nav {
   outline-offset: 2px;
 }
 
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  .notification-dropdown {
-    background: #1e293b;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-  }
+/* Dark mode support (uses site theme) */
+html[data-theme="dark"] .notification-dropdown {
+  background: #1e293b;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
 
-  .notification-header,
-  .notification-footer,
-  .notification-item {
-    border-color: rgba(255, 255, 255, 0.08);
-  }
+html[data-theme="dark"] .notification-header,
+html[data-theme="dark"] .notification-footer,
+html[data-theme="dark"] .notification-item {
+  border-color: rgba(255, 255, 255, 0.08);
+}
 
-  .notification-header h3,
-  .notification-item-title {
-    color: #f1f5f9;
-  }
+html[data-theme="dark"] .notification-header h3,
+html[data-theme="dark"] .notification-item-title {
+  color: #f1f5f9;
+}
 
-  .notification-item-message {
-    color: #cbd5e1;
-  }
+html[data-theme="dark"] .notification-item-message {
+  color: #cbd5e1;
+}
 
-  .notification-item-time {
-    color: #94a3b8;
-  }
+html[data-theme="dark"] .notification-item-time {
+  color: #94a3b8;
+}
 
-  .notification-item:hover {
-    background: rgba(11, 128, 115, 0.12);
-  }
+html[data-theme="dark"] .notification-item:hover {
+  background: rgba(11, 128, 115, 0.12);
+}
 
-  .notification-item--unread {
-    background: rgba(11, 128, 115, 0.15);
-  }
+html[data-theme="dark"] .notification-item--unread {
+  background: rgba(11, 128, 115, 0.15);
+}
 
-  .notification-toast {
-    background: #1e293b;
-  }
+html[data-theme="dark"] .notification-toast {
+  background: #1e293b;
+}
 
-  .notification-toast-title {
-    color: #f1f5f9;
-  }
+html[data-theme="dark"] .notification-toast-title {
+  color: #f1f5f9;
+}
 
-  .notification-toast-message {
-    color: #cbd5e1;
-  }
+html[data-theme="dark"] .notification-toast-message {
+  color: #cbd5e1;
+}
 
-  .notification-empty {
-    color: #64748b;
-  }
+html[data-theme="dark"] .notification-empty {
+  color: #64748b;
 }

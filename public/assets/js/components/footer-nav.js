@@ -59,21 +59,22 @@
 
     if (user) {
       // Logged in
-      const dashboardUrl = user.role === 'admin'
-        ? '/admin.html'
-        : user.role === 'supplier'
-          ? '/dashboard-supplier.html'
-          : '/dashboard-customer.html';
+      const dashboardUrl =
+        user.role === 'admin'
+          ? '/admin.html'
+          : user.role === 'supplier'
+            ? '/dashboard-supplier.html'
+            : '/dashboard-customer.html';
 
       // Update auth link to logout
       footerAuth.textContent = 'Log out';
       footerAuth.href = '#';
-      
+
       // Remove old event listeners by cloning
       const newAuth = footerAuth.cloneNode(true);
       footerAuth.parentNode.replaceChild(newAuth, footerAuth);
-      
-      newAuth.addEventListener('click', async (e) => {
+
+      newAuth.addEventListener('click', async e => {
         e.preventDefault();
         if (window.__eventflow_logout) {
           window.__eventflow_logout();
@@ -96,7 +97,7 @@
       // Logged out
       footerAuth.textContent = 'Log in';
       footerAuth.href = '/auth.html';
-      
+
       // Remove old event listeners by cloning
       const newAuth = footerAuth.cloneNode(true);
       footerAuth.parentNode.replaceChild(newAuth, footerAuth);
@@ -126,7 +127,8 @@
     // Wait for top burger initialization
     const setupSync = () => {
       const topBurger = document.getElementById('burger');
-      if (!topBurger) {
+      const navMenu = document.querySelector('.nav-menu');
+      if (!topBurger || !navMenu) {
         return false;
       }
 
@@ -136,10 +138,18 @@
         footerBurger.classList.toggle('footer-nav-burger--open', isExpanded);
       };
 
-      // Click handler - trigger top burger
+      // Click handler - Add direction class and trigger top burger
       footerBurger.addEventListener('click', e => {
         e.preventDefault();
         e.stopPropagation();
+
+        // Switch direction class when opening from bottom
+        if (!navMenu.classList.contains('nav-menu--open')) {
+          // Ensure we have a clean state
+          navMenu.classList.remove('nav-menu--from-top');
+          navMenu.classList.add('nav-menu--from-bottom');
+        }
+
         topBurger.click();
       });
 
@@ -147,6 +157,14 @@
       const observer = new MutationObserver(() => {
         const isExpanded = topBurger.getAttribute('aria-expanded') === 'true';
         syncState(isExpanded);
+
+        // Reset to from-top when menu closes (ensure consistent state)
+        if (!isExpanded) {
+          navMenu.classList.remove('nav-menu--from-bottom');
+          if (!navMenu.classList.contains('nav-menu--from-top')) {
+            navMenu.classList.add('nav-menu--from-top');
+          }
+        }
       });
 
       observer.observe(topBurger, {

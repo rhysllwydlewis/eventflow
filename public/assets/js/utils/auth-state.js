@@ -63,16 +63,10 @@
      * @private
      */
     async _initializeAuthState() {
-      // Check if we have a session cookie
-      const hasSessionCookie = this._hasSessionCookie();
-
-      if (!hasSessionCookie) {
-        // No session cookie means definitely not authenticated
-        this._setState(AUTH_STATES.UNAUTHENTICATED, null);
-        return { state: this.state, user: null };
-      }
-
-      // We have a session cookie, check with server
+      // Always check with server - don't rely on client-side cookie detection
+      // since HttpOnly cookies (which are more secure) can't be read by JavaScript.
+      // Note: This makes an API call on every initialization for security,
+      // trading a small performance cost for proper HttpOnly cookie support.
       try {
         const response = await fetch('/api/auth/me', {
           credentials: 'include',
