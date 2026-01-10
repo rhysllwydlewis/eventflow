@@ -404,6 +404,11 @@ input[placeholder*="search" i]:focus {
   box-shadow: 0 -2px 12px rgba(15, 23, 42, 0.08);
   padding: 8px 0;
   transition: box-shadow 200ms ease-out;
+  /* Override ui-ux-fixes.css - always visible, no transforms */
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: none !important;
+  pointer-events: auto !important;
 }
 
 /* Mobile-only visibility - always shown on mobile */

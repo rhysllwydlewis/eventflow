@@ -232,9 +232,16 @@
      * @returns {Function} Unsubscribe function
      */
     onchange(callback) {
+      // Wrap the callback to extract user from state object
+      const wrappedCallback = stateObj => {
+        const user =
+          stateObj && typeof stateObj === 'object' && 'user' in stateObj ? stateObj.user : stateObj;
+        callback(user);
+      };
+
       // Call immediately with current user state
       try {
-        callback(this.user);
+        wrappedCallback({ state: this.state, user: this.user });
       } catch (e) {
         if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
           console.error('Error in auth state onchange callback:', e);
@@ -242,7 +249,6 @@
       }
 
       // Subscribe for future changes
-      const wrappedCallback = ({ user }) => callback(user);
       this.listeners.push(wrappedCallback);
 
       // Return unsubscribe function
@@ -283,34 +289,37 @@
 
   // Export as singleton
   if (typeof window !== 'undefined') {
-    window.AuthStateManager = new AuthStateManager();
+    const authManager = new AuthStateManager();
+    window.AuthStateManager = authManager;
     window.AUTH_STATES = AUTH_STATES;
     // Also expose as __authState for compatibility
-    window.__authState = window.AuthStateManager;
+    window.__authState = authManager;
 
     // Initialize on DOM ready
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', () => {
-        window.AuthStateManager.init();
+        authManager.init();
       });
     } else {
-      window.AuthStateManager.init();
+      authManager.init();
     }
 
     // Listen for legacy auth-state-changed event
-    window.addEventListener('auth-state-changed', (event) => {
+    window.addEventListener('auth-state-changed', event => {
       if (event.detail && event.detail.user !== undefined) {
-        window.AuthStateManager.setUser(event.detail.user);
+        authManager.setUser(event.detail.user);
       }
     });
 
     // Dispatch __auth-state-updated for compatibility
-    const originalNotify = AuthStateManager.prototype._notifyListeners;
-    AuthStateManager.prototype._notifyListeners = function() {
-      originalNotify.call(this);
-      window.dispatchEvent(new CustomEvent('__auth-state-updated', {
-        detail: { user: this.user }
-      }));
+    const originalNotify = authManager._notifyListeners.bind(authManager);
+    authManager._notifyListeners = function () {
+      originalNotify();
+      window.dispatchEvent(
+        new CustomEvent('__auth-state-updated', {
+          detail: { user: this.user },
+        })
+      );
     };
   }
 })();

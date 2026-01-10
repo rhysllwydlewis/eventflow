@@ -44,6 +44,18 @@ test.describe('Navbar Fixes', () => {
     await page.waitForTimeout(500);
 
     const footerNav = page.locator('.footer-nav');
+
+    // Debug: Check computed styles
+    const displayValue = await footerNav.evaluate(el => window.getComputedStyle(el).display);
+    const visibilityValue = await footerNav.evaluate(el => window.getComputedStyle(el).visibility);
+    const opacityValue = await footerNav.evaluate(el => window.getComputedStyle(el).opacity);
+
+    console.log('Footer nav computed styles:', {
+      display: displayValue,
+      visibility: visibilityValue,
+      opacity: opacityValue,
+    });
+
     await expect(footerNav).toBeVisible();
   });
 
