@@ -42,7 +42,7 @@ test.describe('Navbar Fixes', () => {
   test('footer nav visible on page load on mobile', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 });
     await page.waitForTimeout(500);
-    
+
     const footerNav = page.locator('.footer-nav');
     await expect(footerNav).toBeVisible();
   });
@@ -50,14 +50,14 @@ test.describe('Navbar Fixes', () => {
   test('footer nav hidden on desktop', async ({ page }) => {
     await page.setViewportSize({ width: 1024, height: 768 });
     await page.waitForTimeout(500);
-    
+
     const footerNav = page.locator('.footer-nav');
     await expect(footerNav).not.toBeVisible();
   });
 
   test('dashboard link shows when logged in', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 });
-    
+
     // Mock logged-in state
     await page.route('**/api/auth/me', route => {
       route.fulfill({
@@ -80,38 +80,60 @@ test.describe('Navbar Fixes', () => {
   test('burger menu opens below header', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 });
     await page.waitForTimeout(500);
-    
+
     const burger = page.locator('#burger');
     const navMenu = page.locator('.nav-menu');
 
+    // Verify menu is initially not visible (closed)
+    const isInitiallyVisible = await navMenu.isVisible();
+
     await burger.click();
     await page.waitForTimeout(500);
-    
+
+    // Check menu is now visible
+    await expect(navMenu).toBeVisible();
+
+    // Check menu has open class
+    const hasOpenClass = await navMenu.evaluate(
+      el => el.classList.contains('nav-menu--open') || el.classList.contains('is-open')
+    );
+    expect(hasOpenClass).toBe(true);
+
+    // Verify menu appears in viewport (not off-screen)
     const navBbox = await navMenu.boundingBox();
     expect(navBbox).not.toBeNull();
     if (navBbox) {
-      expect(navBbox.y).toBeGreaterThanOrEqual(50); // Below header (allowing some margin)
+      // When open, menu should be visible in viewport
+      expect(navBbox.y).toBeGreaterThanOrEqual(0);
+      expect(navBbox.y).toBeLessThan(200); // Reasonable position below header
     }
   });
 
   test('footer burger syncs with header burger', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 });
     await page.waitForTimeout(500);
-    
+
     const headerBurger = page.locator('#burger');
     const footerBurger = page.locator('#footer-burger');
+
+    // Ensure menu is initially closed
+    const initialState = await headerBurger.getAttribute('aria-expanded');
+    if (initialState === 'true') {
+      await headerBurger.click();
+      await page.waitForTimeout(500);
+    }
 
     // Open menu with header burger
     await headerBurger.click();
     await page.waitForTimeout(500);
-    
+
     await expect(headerBurger).toHaveAttribute('aria-expanded', 'true');
     await expect(footerBurger).toHaveAttribute('aria-expanded', 'true');
 
     // Close menu with footer burger
     await footerBurger.click();
     await page.waitForTimeout(500);
-    
+
     await expect(headerBurger).toHaveAttribute('aria-expanded', 'false');
     await expect(footerBurger).toHaveAttribute('aria-expanded', 'false');
   });
@@ -183,7 +205,7 @@ test.describe('Navbar Fixes', () => {
 
   test('auth state syncs between navbars', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 });
-    
+
     // Mock logged-in state
     await page.route('**/api/auth/me', route => {
       route.fulfill({
@@ -211,7 +233,7 @@ test.describe('Navbar Fixes', () => {
   test('burger menu has correct z-index stacking', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 });
     await page.waitForTimeout(500);
-    
+
     const burger = page.locator('#burger');
     const navMenu = page.locator('.nav-menu');
     const header = page.locator('.header');

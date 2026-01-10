@@ -581,7 +581,7 @@ body.has-footer-nav {
    FOOTER NAV - RESPONSIVE
    =================================================================== */
 
-/* Hide on desktop */
+/* Hide on desktop - important to override other styles */
 @media (min-width: 769px) {
   .footer-nav {
     display: none !important;
@@ -592,10 +592,10 @@ body.has-footer-nav {
   }
 }
 
-/* Show on mobile from page load */
+/* Show on mobile from page load - important to override other styles */
 @media (max-width: 768px) {
   .footer-nav {
-    display: block !important;
+    display: flex !important;
   }
 
   body.has-footer-nav {
