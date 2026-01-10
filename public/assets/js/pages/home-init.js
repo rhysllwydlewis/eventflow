@@ -385,7 +385,7 @@ async function loadHeroCollageImages() {
 
   // If Pexels is not enabled or failed, load static images
   try {
-    const response = await fetch('/api/public/homepage/hero-images');
+    const response = await fetch('/api/admin/homepage/hero-images-public');
     if (!response.ok) {
       // Silently use defaults if endpoint not available
       return;

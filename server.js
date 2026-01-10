@@ -2165,37 +2165,6 @@ app.get('/api/public/stats', async (_req, res) => {
   }
 });
 
-/**
- * GET /api/public/homepage/hero-images
- * Public endpoint for homepage hero collage images
- * Returns URLs for the hero collage images with 5-minute cache
- */
-app.get('/api/public/homepage/hero-images', async (_req, res) => {
-  try {
-    // Set cache headers (5 minutes)
-    res.set('Cache-Control', 'public, max-age=300');
-
-    const settings = (await dbUnified.read('settings')) || {};
-    const heroImages = settings.heroImages || {
-      venues: '/assets/images/collage-venue.jpg',
-      catering: '/assets/images/collage-catering.jpg',
-      entertainment: '/assets/images/collage-entertainment.jpg',
-      photography: '/assets/images/collage-photography.jpg',
-    };
-    res.json(heroImages);
-  } catch (error) {
-    logger.error('Error fetching hero images from settings for public homepage:', error);
-    sentry.captureException(error);
-    // Return default images on error
-    res.status(200).json({
-      venues: '/assets/images/collage-venue.jpg',
-      catering: '/assets/images/collage-catering.jpg',
-      entertainment: '/assets/images/collage-entertainment.jpg',
-      photography: '/assets/images/collage-photography.jpg',
-    });
-  }
-});
-
 // Admin: Update category hero image
 app.post(
   '/api/admin/categories/:id/hero-image',

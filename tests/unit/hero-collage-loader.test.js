@@ -65,7 +65,7 @@ describe('Hero Collage Image Loader', () => {
     // Define the function to test (inline version for testing)
     loadHeroCollageImages = async function () {
       try {
-        const response = await mockFetch('/api/public/homepage/hero-images');
+        const response = await mockFetch('/api/admin/homepage/hero-images-public');
         if (!response.ok) {
           mockConsole.warn('Failed to load hero collage images from settings, using defaults');
           return;
