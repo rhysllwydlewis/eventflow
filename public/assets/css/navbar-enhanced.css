@@ -426,6 +426,7 @@ input[placeholder*="search" i]:focus {
   max-width: 1280px;
   margin: 0 auto;
   padding: 0 16px;
+  width: 100%;
 }
 
 .footer-nav-links {
