@@ -241,6 +241,9 @@
 
   function updateAuthUI(user) {
     state.user = user;
+    
+    // Get bottom nav element
+    const bottomNav = document.querySelector('.ef-bottom-nav');
 
     if (user) {
       // User is logged in
@@ -251,10 +254,17 @@
             ? '/dashboard-supplier.html'
             : '/dashboard-customer.html';
 
+      // Add logged-in class to bottom nav for compact styling
+      if (bottomNav) {
+        bottomNav.classList.add('logged-in');
+      }
+
       // Update desktop auth link to logout
       if (elements.authLink) {
         elements.authLink.textContent = 'Log out';
         elements.authLink.href = '#';
+        elements.authLink.classList.remove('ef-btn-primary');
+        elements.authLink.classList.add('ef-btn-secondary');
         const newAuthLink = elements.authLink.cloneNode(true);
         elements.authLink.parentNode.replaceChild(newAuthLink, elements.authLink);
         elements.authLink = newAuthLink;
@@ -300,7 +310,7 @@
         elements.bottomDashboard.style.display = 'flex';
       }
 
-      // Show notification buttons
+      // Show notification buttons ONLY when logged in
       if (elements.notificationBtn) {
         elements.notificationBtn.style.display = 'flex';
       }
@@ -309,10 +319,18 @@
       }
     } else {
       // User is logged out
+      
+      // Remove logged-in class from bottom nav
+      if (bottomNav) {
+        bottomNav.classList.remove('logged-in');
+      }
+      
       // Update desktop auth link
       if (elements.authLink) {
         elements.authLink.textContent = 'Log in';
         elements.authLink.href = '/auth.html';
+        elements.authLink.classList.remove('ef-btn-secondary');
+        elements.authLink.classList.add('ef-btn-primary');
         const newAuthLink = elements.authLink.cloneNode(true);
         elements.authLink.parentNode.replaceChild(newAuthLink, elements.authLink);
         elements.authLink = newAuthLink;
