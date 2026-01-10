@@ -119,6 +119,9 @@
     burger.setAttribute('aria-controls', navMenu.id);
     burger.setAttribute('aria-expanded', 'false');
 
+    // Add direction class for animation (from top for header burger)
+    navMenu.classList.add('nav-menu--from-top');
+
     // Simple state variable
     let isMenuOpen = false;
 

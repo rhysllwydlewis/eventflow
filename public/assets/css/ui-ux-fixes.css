@@ -1566,10 +1566,12 @@ body.has-footer-nav {
   }
   
   .footer-nav-link {
-    font-size: 12px;
-    padding: 6px 8px;
+    font-size: 11px;
+    padding: 6px 4px;
     min-width: 44px;
-    max-width: 50px;
+    /* Removed max-width: 50px to prevent text wrapping */
+    flex: 1;
+    max-width: 80px;
   }
   
   .footer-nav-icon-button {

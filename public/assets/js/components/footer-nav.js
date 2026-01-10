@@ -126,7 +126,8 @@
     // Wait for top burger initialization
     const setupSync = () => {
       const topBurger = document.getElementById('burger');
-      if (!topBurger) {
+      const navMenu = document.querySelector('.nav-menu');
+      if (!topBurger || !navMenu) {
         return false;
       }
 
@@ -136,10 +137,17 @@
         footerBurger.classList.toggle('footer-nav-burger--open', isExpanded);
       };
 
-      // Click handler - trigger top burger
+      // Click handler - Add direction class and trigger top burger
       footerBurger.addEventListener('click', e => {
         e.preventDefault();
         e.stopPropagation();
+        
+        // Switch direction class when opening from bottom
+        if (!navMenu.classList.contains('nav-menu--open')) {
+          navMenu.classList.remove('nav-menu--from-top');
+          navMenu.classList.add('nav-menu--from-bottom');
+        }
+        
         topBurger.click();
       });
 
@@ -147,6 +155,12 @@
       const observer = new MutationObserver(() => {
         const isExpanded = topBurger.getAttribute('aria-expanded') === 'true';
         syncState(isExpanded);
+        
+        // Reset to from-top when menu closes
+        if (!isExpanded) {
+          navMenu.classList.remove('nav-menu--from-bottom');
+          navMenu.classList.add('nav-menu--from-top');
+        }
       });
 
       observer.observe(topBurger, {
