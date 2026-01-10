@@ -87,11 +87,21 @@
 
 .ef-brand:hover .ef-logo-inner {
   animation: logo-spin 3s ease-in-out;
+  box-shadow: 0 6px 16px rgba(11, 128, 115, 0.5),
+              inset 0 1px 2px rgba(255, 255, 255, 0.4),
+              inset 0 -1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .ef-brand:focus-visible {
   outline: 2px solid var(--ef-primary);
   outline-offset: 2px;
+}
+
+/* On mobile, reduce gap when text is hidden */
+@media (max-width: 767px) {
+  .ef-brand {
+    gap: 0;
+  }
 }
 
 .ef-logo {
@@ -163,6 +173,7 @@
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  color: var(--ef-primary); /* Fallback for browsers that don't support background-clip */
   white-space: nowrap;
   overflow: hidden;
   transition: all 0.3s ease-out;
@@ -174,7 +185,7 @@
     max-width: 0;
     opacity: 0;
     margin-left: 0;
-    animation: text-disappear 0.4s ease-out;
+    animation: text-disappear 0.4s ease-out forwards;
   }
 }
 
@@ -703,12 +714,14 @@ body.ef-menu-open {
 /* Logged-in state adjustments for bottom nav */
 .ef-bottom-nav.logged-in {
   padding: 8px 4px 10px;
+  transition: padding 0.3s ease;
 }
 
 .ef-bottom-nav.logged-in .ef-bottom-link {
   min-width: 56px;
   padding: 6px 8px;
   gap: 3px;
+  transition: all 0.3s ease;
 }
 
 .ef-bottom-nav.logged-in .ef-bottom-icon {
