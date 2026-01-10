@@ -711,6 +711,12 @@ body.ef-menu-open {
   line-height: 1.2;
 }
 
+/* Menu button specific styles - narrower than other buttons */
+#ef-bottom-menu {
+  min-width: 20px;
+  padding: 6px 4px;
+}
+
 /* Logged-in state adjustments for bottom nav */
 .ef-bottom-nav.logged-in {
   padding: 8px 4px 10px;
@@ -722,6 +728,11 @@ body.ef-menu-open {
   padding: 6px 8px;
   gap: 3px;
   transition: all 0.3s ease;
+}
+
+.ef-bottom-nav.logged-in #ef-bottom-menu {
+  min-width: 20px;
+  padding: 6px 4px;
 }
 
 .ef-bottom-nav.logged-in .ef-bottom-icon {

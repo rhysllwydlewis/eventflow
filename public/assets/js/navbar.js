@@ -136,6 +136,13 @@
     // Bottom menu button
     if (elements.bottomMenu) {
       elements.bottomMenu.addEventListener('click', toggleMobileMenu);
+      
+      elements.bottomMenu.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          toggleMobileMenu();
+        }
+      });
     }
 
     // Close on link click
