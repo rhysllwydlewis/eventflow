@@ -404,11 +404,6 @@ input[placeholder*="search" i]:focus {
   box-shadow: 0 -2px 12px rgba(15, 23, 42, 0.08);
   padding: 8px 0;
   transition: box-shadow 200ms ease-out;
-  /* Override ui-ux-fixes.css - always visible, no transforms */
-  opacity: 1 !important;
-  visibility: visible !important;
-  transform: none !important;
-  pointer-events: auto !important;
 }
 
 /* Mobile-only visibility - always shown on mobile */
@@ -590,6 +585,9 @@ body.has-footer-nav {
 @media (min-width: 769px) {
   .footer-nav {
     display: none !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
   }
   
   body.has-footer-nav {
@@ -601,6 +599,9 @@ body.has-footer-nav {
 @media (max-width: 768px) {
   .footer-nav {
     display: flex !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
   }
 
   body.has-footer-nav {
