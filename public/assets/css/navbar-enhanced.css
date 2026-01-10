@@ -584,19 +584,10 @@ body.has-footer-nav {
 }
 
 /* ===================================================================
-   FOOTER NAV - RESPONSIVE (DESKTOP HIDING)
+   FOOTER NAV - RESPONSIVE (VISIBLE ON ALL SCREEN SIZES)
    =================================================================== */
 
-/* Hide on desktop (min-width: 769px) */
-@media (min-width: 769px) {
-  .footer-nav {
-    display: none !important;
-  }
-  
-  body.has-footer-nav {
-    padding-bottom: 0;
-  }
-}
+/* Footer nav visible on all screen sizes - always shown */
 
 @media (max-width: 480px) {
   .footer-nav-link {
