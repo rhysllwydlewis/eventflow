@@ -118,7 +118,6 @@
     <link rel="stylesheet" href="/assets/css/animations.css" />
     <link rel="stylesheet" href="/assets/css/mobile-optimizations.css" />
     <link rel="stylesheet" href="/assets/css/ui-ux-fixes.css" />
-    <link rel="stylesheet" href="/assets/css/navbar-enhanced.css" />
     <link rel="icon" href="/favicon.svg" />
     
     <!-- Pexels Collage Crossfade Animations -->
@@ -150,60 +149,10 @@
     </style>
   </head>
   <body>
-    <header class="header" role="banner">
-      <div class="container header-inner">
-        <a class="brand" href="/" aria-label="EventFlow home">
-          <span class="logo" aria-hidden="true"></span>
-          <span class="brand-text">EventFlow</span>
-        </a>
-        <div class="header-actions">
-          <nav class="nav nav-inline" aria-label="Quick navigation">
-            <a href="/start.html" class="nav-link nav-main">Plan</a>
-            <a href="/suppliers.html" class="nav-link nav-main">Suppliers</a>
-            <a href="/pricing.html" class="nav-link nav-main">Pricing</a>
-            <a href="/blog.html" class="nav-link nav-main">Blog</a>
-            <a href="/auth.html" class="nav-link nav-main nav-main-login">Log in</a>
-          </nav>
-          <button
-            id="notification-bell"
-            class="icon-button"
-            type="button"
-            aria-label="Notifications"
-            style="display: none"
-          >
-            <span class="notification-icon">🔔</span>
-            <span class="notification-badge" style="display: none">0</span>
-          </button>
-          <button
-            id="burger"
-            class="nav-toggle"
-            type="button"
-            aria-label="Toggle navigation"
-            aria-expanded="false"
-          >
-            <span class="nav-toggle-bar"></span>
-            <span class="nav-toggle-bar"></span>
-            <span class="nav-toggle-bar"></span>
-          </button>
-        </div>
-      </div>
-      <nav class="nav nav-menu" aria-label="Primary navigation">
-        <a href="/start.html">Plan an Event</a>
-        <a href="/suppliers.html">Suppliers</a>
-        <a href="/plan.html">My Plan</a>
-        <a href="/pricing.html">Pricing</a>
-        <a href="/blog.html">Blog</a>
-        <a href="/for-suppliers.html">For Suppliers</a>
-        <a href="/faq.html">FAQ</a>
-        <a href="/settings.html">Settings</a>
-        <a href="/auth.html" id="nav-auth">Log in</a>
-        <a href="#" id="nav-dashboard" style="display: none">Dashboard</a>
-        <a href="#" id="nav-signout" style="display: none">Sign out</a>
-      </nav>
-    </header>
+    <!-- TOP NAVBAR - NEW BUILD PLACEHOLDER -->
+    
     <!-- Load auth state manager first -->
     <script src="/assets/js/utils/auth-state.js" defer></script>
-    <script src="/assets/js/auth-nav.js" defer></script>
     <script src="/assets/js/components.js" defer></script>
     <script src="/assets/js/animations.js" defer></script>
     <script src="/assets/js/notifications.js" defer></script>
@@ -781,35 +730,7 @@
       </div>
     </footer>
 
-    <!-- Footer Navigation (always in DOM, shown on mobile via CSS) -->
-    <nav class="footer-nav footer-nav--mobile-only" role="navigation" aria-label="Mobile Navigation">
-      <div class="footer-nav-content">
-        <div class="footer-nav-links">
-          <a href="/start.html" class="footer-nav-link">Plan</a>
-          <a href="/suppliers.html" class="footer-nav-link">Suppliers</a>
-          <a href="/blog.html" class="footer-nav-link">Guides</a>
-          
-          <!-- Dashboard link - shown only when logged in -->
-          <a href="/dashboard-customer.html" class="footer-nav-link footer-nav-dashboard" style="display: none;">Dashboard</a>
-          
-          <!-- Notification bell - shown only when logged in -->
-          <button id="footer-notification-bell" class="footer-nav-icon-button" type="button" aria-label="Notifications" style="display: none;">
-            <span class="notification-icon">🔔</span>
-            <span class="footer-notification-badge" style="display: none;">0</span>
-          </button>
-          
-          <!-- Auth link - toggles between Login and Logout -->
-          <a href="/auth.html" class="footer-nav-link footer-nav-auth">Log in</a>
-          
-          <!-- Burger menu button -->
-          <button id="footer-burger" class="footer-nav-burger" type="button" aria-label="Toggle navigation" aria-expanded="false">
-            <span class="footer-nav-burger-bar"></span>
-            <span class="footer-nav-burger-bar"></span>
-            <span class="footer-nav-burger-bar"></span>
-          </button>
-        </div>
-      </div>
-    </nav>
+    <!-- BOTTOM NAVBAR - NEW BUILD PLACEHOLDER -->
 
     <!-- Load core utilities -->
     <script src="/assets/js/components/ErrorBoundary.js" defer></script>
@@ -826,7 +747,6 @@
     <!-- Carousel must load before home-init.js -->
     <script src="/assets/js/components/carousel.js" defer></script>
     <script src="/assets/js/pages/home-init.js" defer></script>
-    <script src="/assets/js/components/footer-nav.js" defer></script>
     <script src="/assets/js/cookie-consent.js" defer></script>
     <script defer>
       // Initialize core utilities
