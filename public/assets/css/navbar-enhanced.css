@@ -578,35 +578,19 @@ body.has-footer-nav {
 }
 
 /* ===================================================================
-   FOOTER NAV - RESPONSIVE
+   FOOTER NAV - RESPONSIVE (VISIBLE ON ALL SCREEN SIZES)
    =================================================================== */
 
-/* Hide on desktop - important to override other styles */
-@media (min-width: 769px) {
-  .footer-nav {
-    display: none !important;
-    opacity: 0 !important;
-    visibility: hidden !important;
-    pointer-events: none !important;
-  }
-  
-  body.has-footer-nav {
-    padding-bottom: 0;
-  }
+/* Always visible on all screen sizes - gold standard */
+.footer-nav {
+  display: flex !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
 }
 
-/* Show on mobile from page load - important to override other styles */
-@media (max-width: 768px) {
-  .footer-nav {
-    display: flex !important;
-    opacity: 1 !important;
-    visibility: visible !important;
-    pointer-events: auto !important;
-  }
-
-  body.has-footer-nav {
-    padding-bottom: 72px;
-  }
+body.has-footer-nav {
+  padding-bottom: 72px;
 }
 
 @media (max-width: 480px) {

@@ -59,12 +59,13 @@ test.describe('Navbar Fixes', () => {
     await expect(footerNav).toBeVisible();
   });
 
-  test('footer nav hidden on desktop', async ({ page }) => {
+  test('footer nav visible on desktop', async ({ page }) => {
     await page.setViewportSize({ width: 1024, height: 768 });
     await page.waitForTimeout(500);
 
     const footerNav = page.locator('.footer-nav');
-    await expect(footerNav).not.toBeVisible();
+    // Footer nav should now be visible on desktop per user requirements
+    await expect(footerNav).toBeVisible();
   });
 
   test('dashboard link shows when logged in', async ({ page }) => {
@@ -166,7 +167,7 @@ test.describe('Navbar Fixes', () => {
     }
   });
 
-  test('desktop viewports (768px+)', async ({ page }) => {
+  test('desktop viewports (768px+) - footer nav visible', async ({ page }) => {
     const viewports = [
       { width: 768, height: 1024 },
       { width: 1024, height: 768 },
@@ -178,7 +179,8 @@ test.describe('Navbar Fixes', () => {
       await page.waitForTimeout(500);
 
       const footerNav = page.locator('.footer-nav');
-      await expect(footerNav).not.toBeVisible();
+      // Footer nav should be visible on all screen sizes
+      await expect(footerNav).toBeVisible();
     }
   });
 

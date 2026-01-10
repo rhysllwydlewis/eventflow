@@ -93,7 +93,7 @@
   }
 
   // ==========================================
-  // MOBILE MENU
+  // MOBILE MENU - GOLD STANDARD REBUILD
   // ==========================================
 
   function initMobileMenu() {
@@ -101,11 +101,13 @@
     const navMenu = document.querySelector('.nav-menu');
 
     if (!burger || !navMenu) {
+      console.warn('Burger or nav-menu not found');
       return;
     }
 
     // Prevent duplicate initialization
     if (burger.dataset.navInitialized === 'true') {
+      console.log('Burger already initialized');
       return;
     }
     burger.dataset.navInitialized = 'true';
@@ -117,62 +119,60 @@
     burger.setAttribute('aria-controls', navMenu.id);
     burger.setAttribute('aria-expanded', 'false');
 
-    // Toggle function
-    const toggle = () => {
-      const isOpen = document.body.classList.contains('nav-open');
+    // Simple state variable
+    let isMenuOpen = false;
 
-      if (isOpen) {
-        // Close menu
-        document.body.classList.remove('nav-open');
-        navMenu.classList.remove(
-          'nav-menu--open',
-          'is-open',
-          'nav-menu--from-top',
-          'nav-menu--from-bottom'
-        );
-        burger.setAttribute('aria-expanded', 'false');
-        document.body.style.overflow = '';
-      } else {
-        // Open menu
-        document.body.classList.add('nav-open');
-        navMenu.classList.add('nav-menu--open', 'is-open', 'nav-menu--from-top');
-        burger.setAttribute('aria-expanded', 'true');
-        document.body.style.overflow = 'hidden';
+    // Toggle function - simplified and bulletproof
+    const toggleMenu = (event) => {
+      if (event) {
+        event.preventDefault();
+        event.stopPropagation();
       }
+
+      isMenuOpen = !isMenuOpen;
+
+      // Update DOM
+      burger.setAttribute('aria-expanded', String(isMenuOpen));
+      document.body.classList.toggle('nav-open', isMenuOpen);
+      navMenu.classList.toggle('nav-menu--open', isMenuOpen);
+      navMenu.classList.toggle('is-open', isMenuOpen);
+      document.body.style.overflow = isMenuOpen ? 'hidden' : '';
+
+      console.log('Menu toggled:', isMenuOpen);
     };
 
-    // Event listeners
-    burger.addEventListener('click', toggle);
+    // Event listeners - use once to prevent duplicates
+    burger.addEventListener('click', toggleMenu, { once: false });
 
     burger.addEventListener('keydown', event => {
       if (event.key === 'Enter' || event.key === ' ') {
         event.preventDefault();
-        toggle();
+        toggleMenu(event);
       }
     });
 
     // Close on link click
     navMenu.addEventListener('click', event => {
-      if (event.target.tagName === 'A') {
-        toggle();
+      if (event.target.tagName === 'A' && isMenuOpen) {
+        toggleMenu();
       }
     });
 
     // Close on ESC key
     document.addEventListener('keydown', event => {
-      if (event.key === 'Escape' && document.body.classList.contains('nav-open')) {
-        toggle();
+      if (event.key === 'Escape' && isMenuOpen) {
+        toggleMenu();
       }
     });
 
     // Close when clicking outside
     document.addEventListener('click', event => {
-      if (document.body.classList.contains('nav-open')) {
-        if (!burger.contains(event.target) && !navMenu.contains(event.target)) {
-          toggle();
-        }
+      if (isMenuOpen && !burger.contains(event.target) && !navMenu.contains(event.target)) {
+        toggleMenu();
       }
     });
+
+    console.log('Burger menu initialized successfully');
   }
 
   // ==========================================
