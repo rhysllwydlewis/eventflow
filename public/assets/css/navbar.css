@@ -656,7 +656,7 @@ body.ef-menu-open {
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  padding: 8px 10px;
+  padding: 6px 8px;
   color: var(--ef-text-gray);
   text-decoration: none;
   border-radius: var(--ef-radius);
@@ -664,7 +664,7 @@ body.ef-menu-open {
   cursor: pointer;
   border: none;
   background: transparent;
-  min-width: 64px;
+  min-width: 44px;
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -699,8 +699,8 @@ body.ef-menu-open {
 }
 
 .ef-bottom-icon {
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   stroke-width: 2;
 }
 
@@ -791,13 +791,13 @@ body {
   }
 
   .ef-bottom-link {
-    padding: 6px 8px;
-    min-width: 50px;
+    padding: 6px 6px;
+    min-width: 40px;
   }
 
   .ef-bottom-icon {
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
   }
 
   .ef-bottom-label {
