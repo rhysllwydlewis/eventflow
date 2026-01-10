@@ -95,8 +95,8 @@
 }
 
 .ef-logo {
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   flex-shrink: 0;
   position: relative;
   display: flex;
@@ -107,7 +107,7 @@
 .ef-logo-inner {
   width: 100%;
   height: 100%;
-  border-radius: 10px;
+  border-radius: 12px;
   background: conic-gradient(
     from 180deg at 50% 50%,
     #9be7d9 0deg,
@@ -116,22 +116,35 @@
     #0B1220 270deg,
     #9be7d9 360deg
   );
-  box-shadow: 0 2px 8px rgba(11, 128, 115, 0.3),
-              inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 12px rgba(11, 128, 115, 0.4),
+              inset 0 1px 2px rgba(255, 255, 255, 0.4),
+              inset 0 -1px 2px rgba(0, 0, 0, 0.2);
   transition: var(--ef-transition);
+  position: relative;
 }
 
 .ef-logo-inner::before {
   content: '';
   position: absolute;
-  inset: 3px;
+  inset: 4px;
   background: radial-gradient(
-    circle at 30% 30%,
-    rgba(255, 255, 255, 0.4),
-    transparent 70%
+    ellipse at 25% 25%,
+    rgba(255, 255, 255, 0.5),
+    transparent 60%
   );
-  border-radius: 8px;
+  border-radius: 10px;
   pointer-events: none;
+}
+
+.ef-logo-inner::after {
+  content: '✨';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 18px;
+  opacity: 0.9;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
 }
 
 @keyframes logo-spin {
@@ -150,6 +163,32 @@
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: all 0.3s ease-out;
+}
+
+/* Hide EventFlow text on mobile to save space */
+@media (max-width: 767px) {
+  .ef-brand-text {
+    max-width: 0;
+    opacity: 0;
+    margin-left: 0;
+    animation: text-disappear 0.4s ease-out;
+  }
+}
+
+@keyframes text-disappear {
+  0% {
+    max-width: 100px;
+    opacity: 1;
+    margin-left: 12px;
+  }
+  100% {
+    max-width: 0;
+    opacity: 0;
+    margin-left: 0;
+  }
 }
 
 /* ========================================

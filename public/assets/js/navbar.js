@@ -42,12 +42,12 @@
       mobileDashboard: document.getElementById('ef-mobile-dashboard'),
       mobileLogout: document.getElementById('ef-mobile-logout'),
       bottomDashboard: document.getElementById('ef-bottom-dashboard'),
+      bottomAlerts: document.getElementById('ef-bottom-alerts'),
       
       // Notifications
       notificationBtn: document.getElementById('ef-notification-btn'),
       notificationBadge: document.getElementById('ef-notification-badge'),
-      bottomNotification: document.getElementById('ef-bottom-notification'),
-      bottomBadge: document.getElementById('ef-bottom-badge'),
+      bottomDashboardBadge: document.getElementById('ef-bottom-dashboard-badge'),
     };
   }
 
@@ -304,18 +304,20 @@
         });
       }
 
-      // Show bottom dashboard
+      // Show bottom dashboard with badge (replaces alerts)
       if (elements.bottomDashboard) {
         elements.bottomDashboard.href = dashboardUrl;
         elements.bottomDashboard.style.display = 'flex';
       }
+      
+      // Hide bottom alerts button when logged in
+      if (elements.bottomAlerts) {
+        elements.bottomAlerts.style.display = 'none';
+      }
 
-      // Show notification buttons ONLY when logged in
+      // Show notification bell ONLY when logged in (desktop)
       if (elements.notificationBtn) {
         elements.notificationBtn.style.display = 'flex';
-      }
-      if (elements.bottomNotification) {
-        elements.bottomNotification.style.display = 'flex';
       }
     } else {
       // User is logged out
@@ -360,13 +362,15 @@
       if (elements.bottomDashboard) {
         elements.bottomDashboard.style.display = 'none';
       }
+      
+      // Show bottom alerts button when logged out
+      if (elements.bottomAlerts) {
+        elements.bottomAlerts.style.display = 'flex';
+      }
 
-      // Hide notification buttons
+      // Hide notification bell
       if (elements.notificationBtn) {
         elements.notificationBtn.style.display = 'none';
-      }
-      if (elements.bottomNotification) {
-        elements.bottomNotification.style.display = 'none';
       }
     }
   }
@@ -432,33 +436,47 @@
   // ==========================================
 
   function initNotificationSync() {
-    if (elements.notificationBtn && elements.bottomNotification) {
-      // Sync click handlers
-      const handleNotificationClick = () => {
+    // Sync click handler for desktop notification bell
+    if (elements.notificationBtn) {
+      elements.notificationBtn.addEventListener('click', () => {
         const dashboardUrl = state.user?.role === 'admin'
           ? '/admin.html'
           : state.user?.role === 'supplier'
             ? '/dashboard-supplier.html'
             : '/dashboard-customer.html';
         window.location.href = `${dashboardUrl}#notifications`;
-      };
-
-      elements.notificationBtn.addEventListener('click', handleNotificationClick);
-      elements.bottomNotification.addEventListener('click', handleNotificationClick);
+      });
+    }
+    
+    // Sync click handler for bottom dashboard button
+    if (elements.bottomDashboard) {
+      elements.bottomDashboard.addEventListener('click', (e) => {
+        if (state.user) {
+          e.preventDefault();
+          const dashboardUrl = state.user.role === 'admin'
+            ? '/admin.html'
+            : state.user.role === 'supplier'
+              ? '/dashboard-supplier.html'
+              : '/dashboard-customer.html';
+          window.location.href = `${dashboardUrl}#notifications`;
+        }
+      });
     }
 
     // Listen for notification updates from other components
     window.addEventListener('notifications-updated', (e) => {
       const count = e.detail?.count || 0;
       
+      // Update desktop notification badge
       if (elements.notificationBadge) {
         elements.notificationBadge.textContent = count;
         elements.notificationBadge.style.display = count > 0 ? 'flex' : 'none';
       }
       
-      if (elements.bottomBadge) {
-        elements.bottomBadge.textContent = count;
-        elements.bottomBadge.style.display = count > 0 ? 'flex' : 'none';
+      // Update bottom dashboard badge
+      if (elements.bottomDashboardBadge) {
+        elements.bottomDashboardBadge.textContent = count;
+        elements.bottomDashboardBadge.style.display = count > 0 ? 'flex' : 'none';
       }
     });
   }
