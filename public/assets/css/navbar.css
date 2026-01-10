@@ -711,12 +711,12 @@ body.ef-menu-open {
   line-height: 1.2;
 }
 
-/* Menu button specific styles - narrower than other buttons */
+/* Menu button specific styles - compact but usable */
 #ef-bottom-menu {
-  min-width: 20px !important;
-  max-width: 50px !important;
-  padding: 6px 4px !important;
-  flex-shrink: 0;
+  min-width: 56px;
+  max-width: 64px;
+  padding: 6px 8px;
+  flex-shrink: 1;
 }
 
 /* Logged-in state adjustments for bottom nav */
@@ -733,9 +733,9 @@ body.ef-menu-open {
 }
 
 .ef-bottom-nav.logged-in #ef-bottom-menu {
-  min-width: 20px !important;
-  max-width: 50px !important;
-  padding: 6px 4px !important;
+  min-width: 52px;
+  max-width: 60px;
+  padding: 6px 6px;
 }
 
 .ef-bottom-nav.logged-in .ef-bottom-icon {
@@ -805,8 +805,9 @@ body {
   }
 
   .ef-bottom-link {
-    padding: 6px 6px;
-    min-width: 40px;
+    padding: 6px 4px;
+    min-width: 44px;
+    gap: 3px;
   }
 
   .ef-bottom-icon {
@@ -816,6 +817,69 @@ body {
 
   .ef-bottom-label {
     font-size: 10px;
+  }
+  
+  /* Adjust menu button for smaller screens */
+  #ef-bottom-menu {
+    min-width: 52px;
+    max-width: 58px;
+    padding: 6px 6px;
+  }
+}
+
+/* Mobile - Extra Small (e.g., iPhone SE, older phones) */
+@media (max-width: 375px) {
+  .ef-bottom-nav {
+    padding: 8px 4px 10px;
+  }
+  
+  .ef-bottom-link {
+    padding: 6px 3px;
+    min-width: 40px;
+    gap: 2px;
+  }
+  
+  .ef-bottom-icon {
+    width: 17px;
+    height: 17px;
+  }
+  
+  .ef-bottom-label {
+    font-size: 9.5px;
+  }
+  
+  #ef-bottom-menu {
+    min-width: 48px;
+    max-width: 54px;
+    padding: 6px 5px;
+  }
+}
+
+/* Mobile - Ultra Small (e.g., very old devices) */
+@media (max-width: 320px) {
+  .ef-bottom-nav {
+    padding: 6px 2px 8px;
+  }
+  
+  .ef-bottom-link {
+    padding: 5px 2px;
+    min-width: 36px;
+    gap: 2px;
+  }
+  
+  .ef-bottom-icon {
+    width: 16px;
+    height: 16px;
+  }
+  
+  .ef-bottom-label {
+    font-size: 9px;
+  }
+  
+  #ef-bottom-menu {
+    min-width: 44px;
+    max-width: 50px;
+    padding: 5px 4px;
   }
 }
 
