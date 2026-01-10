@@ -1,0 +1,499 @@
+/**
+ * EventFlow Navigation - Gold Standard JavaScript
+ * Completely rebuilt from scratch with modern, accessible interactions
+ */
+
+(function () {
+  'use strict';
+
+  // ==========================================
+  // STATE MANAGEMENT
+  // ==========================================
+
+  const state = {
+    isInitialized: false,
+    isMobileMenuOpen: false,
+    csrfToken: null,
+    user: null,
+    lastScrollY: 0,
+    scrollThreshold: 10,
+  };
+
+  // ==========================================
+  // DOM REFERENCES
+  // ==========================================
+
+  let elements = {};
+
+  function initElements() {
+    elements = {
+      // Header
+      header: document.querySelector('.ef-header'),
+      
+      // Mobile toggle
+      mobileToggle: document.getElementById('ef-mobile-toggle'),
+      mobileMenu: document.getElementById('ef-mobile-menu'),
+      bottomMenu: document.getElementById('ef-bottom-menu'),
+      
+      // Auth elements
+      authLink: document.getElementById('ef-auth-link'),
+      dashboardLink: document.getElementById('ef-dashboard-link'),
+      mobileAuth: document.getElementById('ef-mobile-auth'),
+      mobileDashboard: document.getElementById('ef-mobile-dashboard'),
+      mobileLogout: document.getElementById('ef-mobile-logout'),
+      bottomDashboard: document.getElementById('ef-bottom-dashboard'),
+      
+      // Notifications
+      notificationBtn: document.getElementById('ef-notification-btn'),
+      notificationBadge: document.getElementById('ef-notification-badge'),
+      bottomNotification: document.getElementById('ef-bottom-notification'),
+      bottomBadge: document.getElementById('ef-bottom-badge'),
+    };
+  }
+
+  // ==========================================
+  // CSRF TOKEN
+  // ==========================================
+
+  async function initCsrfToken() {
+    try {
+      const response = await fetch('/api/csrf-token', { credentials: 'include' });
+      if (response.ok) {
+        const data = await response.json();
+        state.csrfToken = data.csrfToken;
+        window.__CSRF_TOKEN__ = data.csrfToken;
+      }
+    } catch (error) {
+      console.warn('Failed to fetch CSRF token:', error);
+    }
+  }
+
+  // ==========================================
+  // MOBILE MENU
+  // ==========================================
+
+  function openMobileMenu() {
+    if (!elements.mobileMenu) return;
+    
+    state.isMobileMenuOpen = true;
+    elements.mobileMenu.classList.add('open');
+    document.body.classList.add('ef-menu-open');
+    
+    if (elements.mobileToggle) {
+      elements.mobileToggle.setAttribute('aria-expanded', 'true');
+    }
+    if (elements.bottomMenu) {
+      elements.bottomMenu.setAttribute('aria-expanded', 'true');
+    }
+  }
+
+  function closeMobileMenu() {
+    if (!elements.mobileMenu) return;
+    
+    state.isMobileMenuOpen = false;
+    elements.mobileMenu.classList.remove('open');
+    document.body.classList.remove('ef-menu-open');
+    
+    if (elements.mobileToggle) {
+      elements.mobileToggle.setAttribute('aria-expanded', 'false');
+    }
+    if (elements.bottomMenu) {
+      elements.bottomMenu.setAttribute('aria-expanded', 'false');
+    }
+  }
+
+  function toggleMobileMenu(event) {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    
+    if (state.isMobileMenuOpen) {
+      closeMobileMenu();
+    } else {
+      openMobileMenu();
+    }
+  }
+
+  function initMobileMenu() {
+    // Top mobile toggle
+    if (elements.mobileToggle) {
+      elements.mobileToggle.addEventListener('click', toggleMobileMenu);
+      
+      elements.mobileToggle.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          toggleMobileMenu();
+        }
+      });
+    }
+
+    // Bottom menu button
+    if (elements.bottomMenu) {
+      elements.bottomMenu.addEventListener('click', toggleMobileMenu);
+    }
+
+    // Close on link click
+    if (elements.mobileMenu) {
+      elements.mobileMenu.addEventListener('click', (e) => {
+        if (e.target.tagName === 'A' && e.target.href && !e.target.href.includes('#')) {
+          closeMobileMenu();
+        }
+      });
+    }
+
+    // Close on Escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && state.isMobileMenuOpen) {
+        closeMobileMenu();
+        if (elements.mobileToggle) {
+          elements.mobileToggle.focus();
+        }
+      }
+    });
+
+    // Close on backdrop click
+    document.addEventListener('click', (e) => {
+      if (state.isMobileMenuOpen && 
+          !elements.mobileMenu.contains(e.target) &&
+          !elements.mobileToggle?.contains(e.target) &&
+          !elements.bottomMenu?.contains(e.target)) {
+        closeMobileMenu();
+      }
+    });
+  }
+
+  // ==========================================
+  // SCROLL BEHAVIOR
+  // ==========================================
+
+  function initScrollBehavior() {
+    if (!elements.header) return;
+
+    let ticking = false;
+
+    const updateHeaderOnScroll = () => {
+      const currentScrollY = window.scrollY;
+
+      if (currentScrollY > 50) {
+        elements.header.classList.add('scrolled');
+      } else {
+        elements.header.classList.remove('scrolled');
+      }
+
+      state.lastScrollY = currentScrollY;
+      ticking = false;
+    };
+
+    window.addEventListener('scroll', () => {
+      if (!ticking) {
+        window.requestAnimationFrame(updateHeaderOnScroll);
+        ticking = true;
+      }
+    }, { passive: true });
+
+    // Initial check
+    updateHeaderOnScroll();
+  }
+
+  // ==========================================
+  // AUTH STATE MANAGEMENT
+  // ==========================================
+
+  function getAuthState() {
+    return window.__authState || window.AuthStateManager;
+  }
+
+  async function logout() {
+    // Clear local storage
+    try {
+      localStorage.removeItem('user');
+      localStorage.removeItem('eventflow_onboarding_new');
+      sessionStorage.clear();
+    } catch (error) {
+      console.warn('Failed to clear storage:', error);
+    }
+
+    // Call logout API
+    if (state.csrfToken) {
+      try {
+        await fetch('/api/auth/logout', {
+          method: 'POST',
+          headers: {
+            'X-CSRF-Token': state.csrfToken,
+          },
+          credentials: 'include',
+        });
+      } catch (error) {
+        console.warn('Logout API failed:', error);
+      }
+    }
+
+    // Update centralized auth state
+    const authState = getAuthState();
+    if (authState) {
+      authState.logout();
+    }
+
+    // Redirect to home
+    window.location.href = `/?t=${Date.now()}`;
+  }
+
+  function updateAuthUI(user) {
+    state.user = user;
+
+    if (user) {
+      // User is logged in
+      const dashboardUrl =
+        user.role === 'admin'
+          ? '/admin.html'
+          : user.role === 'supplier'
+            ? '/dashboard-supplier.html'
+            : '/dashboard-customer.html';
+
+      // Update desktop auth link to logout
+      if (elements.authLink) {
+        elements.authLink.textContent = 'Log out';
+        elements.authLink.href = '#';
+        const newAuthLink = elements.authLink.cloneNode(true);
+        elements.authLink.parentNode.replaceChild(newAuthLink, elements.authLink);
+        elements.authLink = newAuthLink;
+        newAuthLink.addEventListener('click', (e) => {
+          e.preventDefault();
+          logout();
+        });
+      }
+
+      // Show dashboard link
+      if (elements.dashboardLink) {
+        elements.dashboardLink.href = dashboardUrl;
+        elements.dashboardLink.style.display = '';
+      }
+
+      // Update mobile auth to logout
+      if (elements.mobileAuth) {
+        elements.mobileAuth.textContent = 'Log in';
+        elements.mobileAuth.style.display = 'none';
+      }
+
+      // Show mobile dashboard
+      if (elements.mobileDashboard) {
+        elements.mobileDashboard.href = dashboardUrl;
+        elements.mobileDashboard.style.display = '';
+      }
+
+      // Show mobile logout
+      if (elements.mobileLogout) {
+        elements.mobileLogout.style.display = '';
+        const newMobileLogout = elements.mobileLogout.cloneNode(true);
+        elements.mobileLogout.parentNode.replaceChild(newMobileLogout, elements.mobileLogout);
+        elements.mobileLogout = newMobileLogout;
+        newMobileLogout.addEventListener('click', (e) => {
+          e.preventDefault();
+          logout();
+        });
+      }
+
+      // Show bottom dashboard
+      if (elements.bottomDashboard) {
+        elements.bottomDashboard.href = dashboardUrl;
+        elements.bottomDashboard.style.display = 'flex';
+      }
+
+      // Show notification buttons
+      if (elements.notificationBtn) {
+        elements.notificationBtn.style.display = 'flex';
+      }
+      if (elements.bottomNotification) {
+        elements.bottomNotification.style.display = 'flex';
+      }
+    } else {
+      // User is logged out
+      // Update desktop auth link
+      if (elements.authLink) {
+        elements.authLink.textContent = 'Log in';
+        elements.authLink.href = '/auth.html';
+        const newAuthLink = elements.authLink.cloneNode(true);
+        elements.authLink.parentNode.replaceChild(newAuthLink, elements.authLink);
+        elements.authLink = newAuthLink;
+      }
+
+      // Hide dashboard link
+      if (elements.dashboardLink) {
+        elements.dashboardLink.style.display = 'none';
+      }
+
+      // Show mobile auth
+      if (elements.mobileAuth) {
+        elements.mobileAuth.textContent = 'Log in';
+        elements.mobileAuth.href = '/auth.html';
+        elements.mobileAuth.style.display = '';
+      }
+
+      // Hide mobile dashboard and logout
+      if (elements.mobileDashboard) {
+        elements.mobileDashboard.style.display = 'none';
+      }
+      if (elements.mobileLogout) {
+        elements.mobileLogout.style.display = 'none';
+      }
+
+      // Hide bottom dashboard
+      if (elements.bottomDashboard) {
+        elements.bottomDashboard.style.display = 'none';
+      }
+
+      // Hide notification buttons
+      if (elements.notificationBtn) {
+        elements.notificationBtn.style.display = 'none';
+      }
+      if (elements.bottomNotification) {
+        elements.bottomNotification.style.display = 'none';
+      }
+    }
+  }
+
+  // ==========================================
+  // CURRENT PAGE INDICATOR
+  // ==========================================
+
+  function setCurrentPage() {
+    const currentPath = window.location.pathname;
+
+    // Desktop nav
+    const desktopLinks = document.querySelectorAll('.ef-nav-link');
+    desktopLinks.forEach((link) => {
+      const linkPath = new URL(link.href).pathname;
+      if (linkPath === currentPath) {
+        link.setAttribute('aria-current', 'page');
+      }
+    });
+
+    // Mobile nav
+    const mobileLinks = document.querySelectorAll('.ef-mobile-link');
+    mobileLinks.forEach((link) => {
+      if (link.href) {
+        const linkPath = new URL(link.href).pathname;
+        if (linkPath === currentPath) {
+          link.setAttribute('aria-current', 'page');
+        }
+      }
+    });
+
+    // Bottom nav
+    const bottomLinks = document.querySelectorAll('.ef-bottom-link');
+    bottomLinks.forEach((link) => {
+      if (link.href) {
+        const linkPath = new URL(link.href).pathname;
+        if (linkPath === currentPath) {
+          link.setAttribute('aria-current', 'page');
+        }
+      }
+    });
+  }
+
+  // ==========================================
+  // KEYBOARD NAVIGATION
+  // ==========================================
+
+  function initKeyboardNav() {
+    // Track if user is using keyboard
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Tab') {
+        document.body.classList.add('keyboard-nav');
+      }
+    });
+
+    document.addEventListener('mousedown', () => {
+      document.body.classList.remove('keyboard-nav');
+    });
+  }
+
+  // ==========================================
+  // NOTIFICATION SYNC
+  // ==========================================
+
+  function initNotificationSync() {
+    if (elements.notificationBtn && elements.bottomNotification) {
+      // Sync click handlers
+      const handleNotificationClick = () => {
+        const dashboardUrl = state.user?.role === 'admin'
+          ? '/admin.html'
+          : state.user?.role === 'supplier'
+            ? '/dashboard-supplier.html'
+            : '/dashboard-customer.html';
+        window.location.href = `${dashboardUrl}#notifications`;
+      };
+
+      elements.notificationBtn.addEventListener('click', handleNotificationClick);
+      elements.bottomNotification.addEventListener('click', handleNotificationClick);
+    }
+
+    // Listen for notification updates from other components
+    window.addEventListener('notifications-updated', (e) => {
+      const count = e.detail?.count || 0;
+      
+      if (elements.notificationBadge) {
+        elements.notificationBadge.textContent = count;
+        elements.notificationBadge.style.display = count > 0 ? 'flex' : 'none';
+      }
+      
+      if (elements.bottomBadge) {
+        elements.bottomBadge.textContent = count;
+        elements.bottomBadge.style.display = count > 0 ? 'flex' : 'none';
+      }
+    });
+  }
+
+  // ==========================================
+  // INITIALIZATION
+  // ==========================================
+
+  async function init() {
+    if (state.isInitialized) {
+      return;
+    }
+    state.isInitialized = true;
+
+    // Initialize DOM references
+    initElements();
+
+    // Initialize features
+    initMobileMenu();
+    initScrollBehavior();
+    initKeyboardNav();
+    initNotificationSync();
+    setCurrentPage();
+
+    // Fetch CSRF token
+    await initCsrfToken();
+
+    // Setup auth state listener
+    const authState = getAuthState();
+    if (authState) {
+      authState.onchange(updateAuthUI);
+    }
+
+    // Expose logout globally
+    window.__eventflow_logout = logout;
+    window.addEventListener('logout-requested', logout);
+
+    // Watch for auth changes in other tabs
+    window.addEventListener('storage', async (event) => {
+      if (event.key === 'user') {
+        if (authState) {
+          await authState.refresh();
+        }
+      }
+    });
+
+    console.log('EventFlow Navigation initialized');
+  }
+
+  // Start initialization
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();

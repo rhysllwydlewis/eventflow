@@ -118,6 +118,7 @@
     <link rel="stylesheet" href="/assets/css/animations.css" />
     <link rel="stylesheet" href="/assets/css/mobile-optimizations.css" />
     <link rel="stylesheet" href="/assets/css/ui-ux-fixes.css" />
+    <link rel="stylesheet" href="/assets/css/navbar.css" />
     <link rel="icon" href="/favicon.svg" />
     
     <!-- Pexels Collage Crossfade Animations -->
@@ -149,10 +150,97 @@
     </style>
   </head>
   <body>
-    <!-- TOP NAVBAR - NEW BUILD PLACEHOLDER -->
+    <!-- TOP NAVBAR - GOLD STANDARD REBUILD -->
+    <header class="ef-header" role="banner">
+      <div class="ef-container">
+        <div class="ef-header-content">
+          <!-- Brand Logo -->
+          <a href="/" class="ef-brand" aria-label="EventFlow - Return to homepage">
+            <svg class="ef-logo" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <rect width="32" height="32" rx="8" fill="url(#logoGradient)"/>
+              <path d="M16 8L22 14L16 20L10 14L16 8Z" fill="white" opacity="0.9"/>
+              <defs>
+                <linearGradient id="logoGradient" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+                  <stop offset="0%" stop-color="#13B6A2"/>
+                  <stop offset="100%" stop-color="#0B8073"/>
+                </linearGradient>
+              </defs>
+            </svg>
+            <span class="ef-brand-text">EventFlow</span>
+          </a>
+
+          <!-- Desktop Navigation -->
+          <nav class="ef-nav-desktop" aria-label="Main navigation">
+            <a href="/start.html" class="ef-nav-link">Plan</a>
+            <a href="/suppliers.html" class="ef-nav-link">Suppliers</a>
+            <a href="/pricing.html" class="ef-nav-link">Pricing</a>
+            <a href="/blog.html" class="ef-nav-link">Blog</a>
+          </nav>
+
+          <!-- Actions -->
+          <div class="ef-header-actions">
+            <!-- Notification Bell (hidden by default, shown when logged in) -->
+            <button 
+              id="ef-notification-btn" 
+              class="ef-icon-btn" 
+              type="button" 
+              aria-label="View notifications"
+              style="display: none;"
+            >
+              <svg class="ef-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+              </svg>
+              <span id="ef-notification-badge" class="ef-badge" style="display: none;">0</span>
+            </button>
+
+            <!-- Auth Button (Desktop) -->
+            <a href="/auth.html" id="ef-auth-link" class="ef-btn ef-btn-primary">
+              Log in
+            </a>
+
+            <!-- Dashboard Link (Desktop, hidden by default) -->
+            <a href="#" id="ef-dashboard-link" class="ef-nav-link" style="display: none;">
+              Dashboard
+            </a>
+
+            <!-- Mobile Menu Toggle -->
+            <button 
+              id="ef-mobile-toggle" 
+              class="ef-mobile-toggle" 
+              type="button"
+              aria-label="Toggle menu"
+              aria-expanded="false"
+              aria-controls="ef-mobile-menu"
+            >
+              <span class="ef-toggle-line"></span>
+              <span class="ef-toggle-line"></span>
+              <span class="ef-toggle-line"></span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mobile Menu -->
+      <div id="ef-mobile-menu" class="ef-mobile-menu" role="dialog" aria-modal="true" aria-label="Mobile navigation">
+        <nav class="ef-mobile-nav" aria-label="Primary navigation">
+          <a href="/start.html" class="ef-mobile-link">Plan an Event</a>
+          <a href="/suppliers.html" class="ef-mobile-link">Browse Suppliers</a>
+          <a href="/pricing.html" class="ef-mobile-link">Pricing</a>
+          <a href="/blog.html" class="ef-mobile-link">Blog & Guides</a>
+          <a href="/for-suppliers.html" class="ef-mobile-link">For Suppliers</a>
+          <a href="/faq.html" class="ef-mobile-link">FAQ</a>
+          <div class="ef-mobile-divider"></div>
+          <a href="/auth.html" id="ef-mobile-auth" class="ef-mobile-link ef-mobile-primary">Log in</a>
+          <a href="#" id="ef-mobile-dashboard" class="ef-mobile-link" style="display: none;">Dashboard</a>
+          <a href="#" id="ef-mobile-logout" class="ef-mobile-link" style="display: none;">Log out</a>
+        </nav>
+      </div>
+    </header>
     
     <!-- Load auth state manager first -->
     <script src="/assets/js/utils/auth-state.js" defer></script>
+    <script src="/assets/js/navbar.js" defer></script>
     <script src="/assets/js/components.js" defer></script>
     <script src="/assets/js/animations.js" defer></script>
     <script src="/assets/js/notifications.js" defer></script>
@@ -730,7 +818,73 @@
       </div>
     </footer>
 
-    <!-- BOTTOM NAVBAR - NEW BUILD PLACEHOLDER -->
+    <!-- BOTTOM NAVBAR - GOLD STANDARD REBUILD (Mobile Only) -->
+    <nav class="ef-bottom-nav" role="navigation" aria-label="Mobile bottom navigation">
+      <a href="/start.html" class="ef-bottom-link" aria-label="Plan your event">
+        <svg class="ef-bottom-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 20h9"/>
+          <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+        </svg>
+        <span class="ef-bottom-label">Plan</span>
+      </a>
+      
+      <a href="/suppliers.html" class="ef-bottom-link" aria-label="Browse suppliers">
+        <svg class="ef-bottom-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/>
+          <path d="m21 21-4.35-4.35"/>
+        </svg>
+        <span class="ef-bottom-label">Suppliers</span>
+      </a>
+      
+      <a href="/blog.html" class="ef-bottom-link" aria-label="View guides">
+        <svg class="ef-bottom-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+        </svg>
+        <span class="ef-bottom-label">Guides</span>
+      </a>
+      
+      <button 
+        id="ef-bottom-notification" 
+        class="ef-bottom-link" 
+        type="button"
+        aria-label="View notifications"
+        style="display: none;"
+      >
+        <svg class="ef-bottom-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+          <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+        </svg>
+        <span class="ef-bottom-label">Alerts</span>
+        <span id="ef-bottom-badge" class="ef-badge" style="display: none;">0</span>
+      </button>
+      
+      <a href="#" id="ef-bottom-dashboard" class="ef-bottom-link" style="display: none;" aria-label="Go to dashboard">
+        <svg class="ef-bottom-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="3" y="3" width="7" height="7"/>
+          <rect x="14" y="3" width="7" height="7"/>
+          <rect x="14" y="14" width="7" height="7"/>
+          <rect x="3" y="14" width="7" height="7"/>
+        </svg>
+        <span class="ef-bottom-label">Dashboard</span>
+      </a>
+      
+      <button 
+        id="ef-bottom-menu" 
+        class="ef-bottom-link" 
+        type="button"
+        aria-label="Open menu"
+        aria-expanded="false"
+        aria-controls="ef-mobile-menu"
+      >
+        <svg class="ef-bottom-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="3" y1="12" x2="21" y2="12"/>
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+        <span class="ef-bottom-label">Menu</span>
+      </button>
+    </nav>
 
     <!-- Load core utilities -->
     <script src="/assets/js/components/ErrorBoundary.js" defer></script>
