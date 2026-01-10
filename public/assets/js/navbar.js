@@ -509,29 +509,25 @@
       // Initialize DOM references
       initElements();
 
-      // Initialize features immediately (don't wait for auth)
-      initMobileMenu();
+      // Initialize features
+      // NOTE: Mobile menu is now handled by burger-menu.js
+      // initMobileMenu(); // DISABLED - using standalone burger-menu.js instead
       initScrollBehavior();
       initKeyboardNav();
       initNotificationSync();
       setCurrentPage();
 
-      // Fetch CSRF token (don't wait for it)
-      initCsrfToken().catch(err => console.warn('CSRF token fetch failed:', err));
+      // Fetch CSRF token
+      await initCsrfToken();
 
-      // Setup auth state listener asynchronously (don't block)
+      // Setup auth state listener
       const authState = getAuthState();
       if (authState) {
         // Wait for auth state to initialize before setting up listener
-        authState.init()
-          .then(() => {
-            // Setup listener - this will call updateAuthUI immediately with current state
-            authState.onchange(updateAuthUI);
-          })
-          .catch(err => {
-            console.warn('EventFlow navbar: Auth state init failed, using fallback', err);
-            updateAuthUI(null);
-          });
+        await authState.init();
+        
+        // Setup listener - this will call updateAuthUI immediately with current state
+        authState.onchange(updateAuthUI);
       } else {
         // Fallback: If auth state manager not available, assume logged out
         console.warn('EventFlow navbar: Auth state manager not found, using fallback');
