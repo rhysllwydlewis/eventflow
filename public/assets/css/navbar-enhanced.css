@@ -234,6 +234,12 @@ body.nav-open::after {
   background: rgba(0, 0, 0, 0.5);
   z-index: 998;
   animation: fade-in 250ms ease-out;
+  pointer-events: auto;
+}
+
+/* Ensure header stays clickable */
+.header {
+  pointer-events: auto;
 }
 
 @keyframes fade-in {
@@ -241,12 +247,9 @@ body.nav-open::after {
   to { opacity: 1; }
 }
 
-/* Header stays on top */
+/* Ensure header z-index is higher than everything */
 .header {
-  position: sticky;
-  top: 0;
-  z-index: 1000;
-  background: white;
+  z-index: 1000 !important;
 }
 
 /* ===================================================================
