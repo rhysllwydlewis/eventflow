@@ -28,7 +28,7 @@
     }
     state.isInitialized = true;
 
-    // Mark body as having footer nav
+    // Add body class immediately so CSS knows footer nav exists
     document.body.classList.add('has-footer-nav');
 
     // Initialize components
