@@ -49,6 +49,11 @@
       notificationBadge: document.getElementById('ef-notification-badge'),
       bottomDashboardBadge: document.getElementById('ef-bottom-dashboard-badge'),
     };
+    
+    // Log warning if critical elements are missing
+    if (!elements.header) {
+      console.warn('EventFlow navbar: .ef-header element not found');
+    }
   }
 
   // ==========================================
@@ -493,46 +498,53 @@
     }
     state.isInitialized = true;
 
-    // Initialize DOM references
-    initElements();
+    try {
+      // Initialize DOM references
+      initElements();
 
-    // Initialize features
-    initMobileMenu();
-    initScrollBehavior();
-    initKeyboardNav();
-    initNotificationSync();
-    setCurrentPage();
+      // Initialize features
+      initMobileMenu();
+      initScrollBehavior();
+      initKeyboardNav();
+      initNotificationSync();
+      setCurrentPage();
 
-    // Fetch CSRF token
-    await initCsrfToken();
+      // Fetch CSRF token
+      await initCsrfToken();
 
-    // Setup auth state listener
-    const authState = getAuthState();
-    if (authState) {
-      // Wait for auth state to initialize before setting up listener
-      await authState.init();
-      
-      // Setup listener - this will call updateAuthUI immediately with current state
-      authState.onchange(updateAuthUI);
-    } else {
-      // Fallback: If auth state manager not available, assume logged out
+      // Setup auth state listener
+      const authState = getAuthState();
+      if (authState) {
+        // Wait for auth state to initialize before setting up listener
+        await authState.init();
+        
+        // Setup listener - this will call updateAuthUI immediately with current state
+        authState.onchange(updateAuthUI);
+      } else {
+        // Fallback: If auth state manager not available, assume logged out
+        console.warn('EventFlow navbar: Auth state manager not found, using fallback');
+        updateAuthUI(null);
+      }
+
+      // Expose logout globally
+      window.__eventflow_logout = logout;
+      window.addEventListener('logout-requested', logout);
+
+      // Watch for auth changes in other tabs
+      window.addEventListener('storage', async (event) => {
+        if (event.key === 'user') {
+          if (authState) {
+            await authState.refresh();
+          }
+        }
+      });
+
+      console.log('EventFlow Navigation initialized');
+    } catch (error) {
+      console.error('EventFlow navbar initialization failed:', error);
+      // Still try to show basic navbar even if auth fails
       updateAuthUI(null);
     }
-
-    // Expose logout globally
-    window.__eventflow_logout = logout;
-    window.addEventListener('logout-requested', logout);
-
-    // Watch for auth changes in other tabs
-    window.addEventListener('storage', async (event) => {
-      if (event.key === 'user') {
-        if (authState) {
-          await authState.refresh();
-        }
-      }
-    });
-
-    console.log('EventFlow Navigation initialized');
   }
 
   // Start initialization
