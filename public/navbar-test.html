@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Navbar Test</title>
+    <style>
+        /* Include navbar-enhanced.css styles inline for testing */
+        .footer-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 900;
+            background: rgba(255, 255, 255, 0.96);
+            border-top: 1px solid rgba(15, 23, 42, 0.08);
+            box-shadow: 0 -2px 12px rgba(15, 23, 42, 0.08);
+            padding: 8px 0;
+            display: flex !important;
+            opacity: 1 !important;
+            visibility: visible !important;
+            pointer-events: auto !important;
+        }
+        
+        body.has-footer-nav {
+            padding-bottom: 72px;
+        }
+        
+        .footer-nav-content {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 0 16px;
+            width: 100%;
+        }
+        
+        .footer-nav-links {
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            gap: 8px;
+        }
+        
+        .footer-nav-link {
+            padding: 8px 16px;
+            border-radius: 12px;
+            color: #6b7280;
+            font-size: 12px;
+            font-weight: 500;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        
+        .nav-menu {
+            position: fixed;
+            top: 60px;
+            left: 0;
+            right: 0;
+            z-index: 999;
+            background: rgba(255, 255, 255, 0.96);
+            max-height: calc(100vh - 60px);
+            overflow-y: auto;
+            transform: scaleY(0);
+            transform-origin: top center;
+            transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .nav-menu.nav-menu--open {
+            transform: scaleY(1);
+        }
+        
+        .header {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            background: white;
+            padding: 16px;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        #burger {
+            padding: 8px;
+            background: #0B8073;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .nav-menu a {
+            display: block;
+            padding: 12px 16px;
+            text-decoration: none;
+            color: #333;
+        }
+        
+        body.nav-open {
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body class="has-footer-nav">
+    <header class="header">
+        <button id="burger" aria-expanded="false">☰ Menu</button>
+    </header>
+    
+    <nav class="nav-menu" id="primary-nav-menu">
+        <a href="#">Link 1</a>
+        <a href="#">Link 2</a>
+        <a href="#">Link 3</a>
+    </nav>
+    
+    <main style="padding: 20px; min-height: 100vh;">
+        <h1>Navbar Test Page</h1>
+        <p>Testing footer nav visibility on all screen sizes and burger menu functionality.</p>
+        <p>Resize window to test responsive behavior.</p>
+        <div style="margin-top: 20px;">
+            <p><strong>Window width:</strong> <span id="width"></span>px</p>
+            <p><strong>Footer nav visible:</strong> <span id="footer-visible"></span></p>
+            <p><strong>Menu open:</strong> <span id="menu-open"></span></p>
+        </div>
+    </main>
+    
+    <nav class="footer-nav footer-nav--mobile-only">
+        <div class="footer-nav-content">
+            <div class="footer-nav-links">
+                <a href="#" class="footer-nav-link">Plan</a>
+                <a href="#" class="footer-nav-link">Suppliers</a>
+                <a href="#" class="footer-nav-link">Guides</a>
+            </div>
+        </div>
+    </nav>
+    
+    <script>
+        // Simplified burger menu code
+        const burger = document.getElementById('burger');
+        const navMenu = document.querySelector('.nav-menu');
+        let isMenuOpen = false;
+        
+        burger.dataset.navInitialized = 'true';
+        
+        const toggleMenu = (event) => {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            
+            isMenuOpen = !isMenuOpen;
+            
+            burger.setAttribute('aria-expanded', String(isMenuOpen));
+            document.body.classList.toggle('nav-open', isMenuOpen);
+            navMenu.classList.toggle('nav-menu--open', isMenuOpen);
+            document.body.style.overflow = isMenuOpen ? 'hidden' : '';
+            
+            console.log('Menu toggled:', isMenuOpen);
+            updateStatus();
+        };
+        
+        burger.addEventListener('click', toggleMenu);
+        
+        // Close on ESC
+        document.addEventListener('keydown', event => {
+            if (event.key === 'Escape' && isMenuOpen) {
+                toggleMenu();
+            }
+        });
+        
+        // Update status display
+        function updateStatus() {
+            document.getElementById('width').textContent = window.innerWidth;
+            const footerNav = document.querySelector('.footer-nav');
+            const styles = window.getComputedStyle(footerNav);
+            document.getElementById('footer-visible').textContent = styles.display !== 'none' ? 'YES' : 'NO';
+            document.getElementById('menu-open').textContent = isMenuOpen ? 'YES' : 'NO';
+        }
+        
+        window.addEventListener('resize', updateStatus);
+        updateStatus();
+        
+        console.log('Test page loaded. Click burger to test menu toggle.');
+    </script>
+</body>
+</html>
