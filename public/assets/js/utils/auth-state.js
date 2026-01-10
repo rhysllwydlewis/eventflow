@@ -64,7 +64,9 @@
      */
     async _initializeAuthState() {
       // Always check with server - don't rely on client-side cookie detection
-      // since HttpOnly cookies (which are more secure) can't be read by JavaScript
+      // since HttpOnly cookies (which are more secure) can't be read by JavaScript.
+      // Note: This makes an API call on every initialization for security,
+      // trading a small performance cost for proper HttpOnly cookie support.
       try {
         const response = await fetch('/api/auth/me', {
           credentials: 'include',

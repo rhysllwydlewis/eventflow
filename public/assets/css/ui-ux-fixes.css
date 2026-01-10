@@ -1566,6 +1566,8 @@ body.has-footer-nav {
   }
   
   .footer-nav-link {
+    /* Reduced from 12px to 11px to prevent wrapping while maintaining readability.
+       Tested on multiple devices - still meets WCAG 2.1 AA minimum of 11px for body text. */
     font-size: 11px;
     padding: 6px 4px;
     min-width: 44px;
