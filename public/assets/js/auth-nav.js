@@ -1,190 +1,143 @@
 /**
- * Legacy Auth Navigation Handler
- * Minimal compatibility shim for legacy pages with "header/nav-menu" pattern
- * 
- * Responsibilities:
- * 1. Toggle mobile navigation menu (#burger + .nav-menu)
- * 2. Show/hide auth elements (#nav-auth, #nav-dashboard, #nav-signout) based on auth state
- * 3. Handle logout clicks if logout element exists
+ * Legacy navbar compatibility shim
+ *
+ * Many pages use the "legacy" header markup:
+ *   - Burger button:   #burger
+ *   - Drawer menu:     .nav-menu
+ *   - Auth links:      #nav-auth, #nav-dashboard, #nav-signout
+ *
+ * This file intentionally keeps scope minimal:
+ *   - Toggle the menu open/closed
+ *   - Do a single auth check on load and update legacy auth links
+ *   - Provide a basic logout handler (POST /api/auth/logout) if present
+ *
+ * It must not interfere with the newer EF header system (ef-mobile-toggle / ef-mobile-menu).
  */
-
 (function () {
   'use strict';
 
-  // Prevent double initialization
-  if (window.__authNavInitialized) {
+  // If the EF header system is present, do nothing.
+  if (document.getElementById('ef-mobile-toggle') || document.getElementById('ef-mobile-menu')) {
     return;
   }
 
-  // Wait for DOM to be ready
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
-  }
+  const burger = document.getElementById('burger');
+  const menu = document.querySelector('.nav-menu');
 
-  function init() {
-    window.__authNavInitialized = true;
+  // Legacy auth links
+  const navAuth = document.getElementById('nav-auth');
+  const navDashboard = document.getElementById('nav-dashboard');
+  const navSignout = document.getElementById('nav-signout');
 
-    // Initialize burger menu toggle
-    initBurgerMenu();
-
-    // Initialize auth state visibility
-    initAuthState();
-  }
-
-  /**
-   * Toggle legacy burger menu
-   * Only operates on legacy #burger and .nav-menu elements
-   */
-  function initBurgerMenu() {
-    const burger = document.getElementById('burger');
-    const navMenu = document.querySelector('.nav-menu');
-
-    // Fail silently if elements don't exist
-    if (!burger || !navMenu) {
-      return;
+  function setMenuOpen(isOpen) {
+    document.body.classList.toggle('nav-open', isOpen);
+    if (menu) {
+      menu.classList.toggle('nav-menu--open', isOpen);
     }
+    if (burger) {
+      burger.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    }
+  }
 
-    burger.addEventListener('click', e => {
+  function toggleMenu() {
+    const isOpen =
+      document.body.classList.contains('nav-open') ||
+      (menu && menu.classList.contains('nav-menu--open'));
+    setMenuOpen(!isOpen);
+  }
+
+  if (burger && menu) {
+    burger.addEventListener('click', function (e) {
       e.preventDefault();
-      const isExpanded = burger.getAttribute('aria-expanded') === 'true';
-      const newState = !isExpanded;
-
-      burger.setAttribute('aria-expanded', String(newState));
-
-      if (newState) {
-        navMenu.classList.add('open');
-        document.body.style.overflow = 'hidden';
-      } else {
-        navMenu.classList.remove('open');
-        document.body.style.overflow = '';
-      }
+      e.stopPropagation();
+      toggleMenu();
     });
 
-    // Close menu when clicking on a link
-    const menuLinks = navMenu.querySelectorAll('a');
-    menuLinks.forEach(link => {
-      link.addEventListener('click', () => {
-        navMenu.classList.remove('open');
-        burger.setAttribute('aria-expanded', 'false');
-        document.body.style.overflow = '';
-      });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') setMenuOpen(false);
     });
 
-    // Close menu on Escape key
-    document.addEventListener('keydown', e => {
-      if (e.key === 'Escape' && navMenu.classList.contains('open')) {
-        navMenu.classList.remove('open');
-        burger.setAttribute('aria-expanded', 'false');
-        document.body.style.overflow = '';
-      }
+    document.addEventListener('click', function (e) {
+      if (!document.body.classList.contains('nav-open')) return;
+      const target = e.target;
+      if (!target) return;
+      if (menu.contains(target) || burger.contains(target)) return;
+      setMenuOpen(false);
     });
   }
 
-  /**
-   * Show/hide legacy auth navigation elements based on current auth state
-   * Performs single initial check only - no polling or background updates
-   */
-  function initAuthState() {
-    const navAuth = document.getElementById('nav-auth');
-    const navDashboard = document.getElementById('nav-dashboard');
-    const navSignout = document.getElementById('nav-signout');
+  function dashboardUrlForUser(user) {
+    if (!user || !user.role) return '/dashboard.html';
+    if (user.role === 'admin') return '/admin.html';
+    if (user.role === 'supplier') return '/dashboard-supplier.html';
+    return '/dashboard-customer.html';
+  }
 
-    // Fail silently if no legacy auth elements exist
-    if (!navAuth && !navDashboard && !navSignout) {
-      return;
-    }
-
-    // Use AuthStateManager if available, otherwise check directly
-    if (window.AuthStateManager) {
-      window.AuthStateManager.init().then(result => {
-        updateAuthUI(result.user);
-      });
+  function updateLegacyAuthLinks(user) {
+    if (user) {
+      if (navAuth) navAuth.style.display = 'none';
+      if (navDashboard) {
+        navDashboard.style.display = '';
+        navDashboard.href = dashboardUrlForUser(user);
+      }
+      if (navSignout) navSignout.style.display = '';
     } else {
-      checkAuthStatus();
+      if (navAuth) navAuth.style.display = '';
+      if (navDashboard) navDashboard.style.display = 'none';
+      if (navSignout) navSignout.style.display = 'none';
     }
+  }
 
-    // Setup logout handler if element exists
-    if (navSignout) {
-      navSignout.addEventListener('click', handleLogout);
-    }
-
-    function updateAuthUI(user) {
-      if (user) {
-        // User is authenticated
-        if (navAuth) {
-          navAuth.style.display = 'none';
-        }
-        if (navDashboard) {
-          navDashboard.style.display = '';
-          if (user.role === 'supplier') {
-            navDashboard.href = '/dashboard-supplier.html';
-          } else if (user.role === 'admin') {
-            navDashboard.href = '/admin.html';
-          } else {
-            navDashboard.href = '/dashboard.html';
-          }
-        }
-        if (navSignout) {
-          navSignout.style.display = '';
-        }
-      } else {
-        // User is not authenticated
-        if (navAuth) {
-          navAuth.style.display = '';
-        }
-        if (navDashboard) {
-          navDashboard.style.display = 'none';
-        }
-        if (navSignout) {
-          navSignout.style.display = 'none';
-        }
+  async function fetchCsrfToken() {
+    try {
+      const resp = await fetch('/api/csrf-token', { credentials: 'include' });
+      if (!resp.ok) return null;
+      const data = await resp.json();
+      if (data && data.csrfToken) {
+        window.__CSRF_TOKEN__ = data.csrfToken;
+        return data.csrfToken;
       }
-    }
+    } catch (_e) {}
+    return null;
+  }
 
-    function checkAuthStatus() {
-      fetch('/api/auth/me', {
+  async function fetchMe() {
+    try {
+      const resp = await fetch('/api/auth/me', {
         credentials: 'include',
-      })
-        .then(response => {
-          if (response.ok) {
-            return response.json();
-          }
-          return { user: null };
-        })
-        .then(data => {
-          updateAuthUI(data.user);
-        })
-        .catch(() => {
-          updateAuthUI(null);
-        });
+        headers: { Accept: 'application/json' },
+      });
+      if (!resp.ok) return null;
+      const data = await resp.json();
+      return data && data.user ? data.user : null;
+    } catch (_e) {
+      return null;
     }
+  }
 
-    function handleLogout(e) {
+  Promise.resolve().then(fetchMe).then(updateLegacyAuthLinks).catch(function () {});
+
+  if (navSignout) {
+    navSignout.addEventListener('click', async function (e) {
       e.preventDefault();
 
-      fetch('/api/auth/logout', {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-Token': window.__CSRF_TOKEN__ || '',
-        },
-      })
-        .then(response => {
-          if (response.ok) {
-            // Clear auth state if manager available
-            if (window.AuthStateManager) {
-              window.AuthStateManager.logout();
-            }
-            // Redirect to home
-            window.location.href = '/';
-          }
-        })
-        .catch(error => {
-          console.error('Logout failed:', error);
-        });
-    }
+      const token = window.__CSRF_TOKEN__ || (await fetchCsrfToken());
+      if (token) {
+        try {
+          await fetch('/api/auth/logout', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'X-CSRF-Token': token },
+          });
+        } catch (_e) {}
+      }
+
+      try {
+        localStorage.removeItem('user');
+        localStorage.removeItem('eventflow_onboarding_new');
+      } catch (_e) {}
+
+      window.location.href = `/?t=${Date.now()}`;
+    });
   }
 })();

@@ -1,19 +1,12 @@
 /**
- * Legacy Footer Navigation Handler
- * Minimal compatibility file to prevent 404 errors on legacy pages
- * Does nothing if footer elements are missing - fails silently
+ * Legacy footer-nav compatibility shim
+ *
+ * Some legacy pages include `/assets/js/components/footer-nav.js`.
+ * Missing the file causes a 404 on every page load.
+ *
+ * Keep this file intentionally minimal (no timers, no polling, no state).
  */
-
 (function () {
   'use strict';
-
-  // Prevent double initialization
-  if (window.__footerNavInitialized) {
-    return;
-  }
-
-  window.__footerNavInitialized = true;
-
-  // No-op - file exists solely to prevent 404 errors
-  // Legacy pages load this but don't require any functionality
+  // No-op by design.
 })();
