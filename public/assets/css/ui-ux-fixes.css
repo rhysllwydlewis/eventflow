@@ -39,30 +39,32 @@ html {
 
 /* Mobile safety override for hero search form - prevent overlap on very small screens */
 @media (max-width: 520px) {
-  .hero-search-form {
-    position: static !important;
+  .hero-search .hero-search-form {
+    position: static;
     display: flex;
     flex-direction: column;
     gap: 12px;
   }
   
-  .hero-search-input {
+  .hero-search .hero-search-input {
     padding: 12px 16px;
   }
   
-  .hero-search-button {
-    position: static !important;
-    transform: none !important;
+  .hero-search .hero-search-button {
+    position: static;
+    transform: none;
     width: 100%;
     align-self: stretch;
+    right: auto; /* Override any absolute positioning 'right' value */
+    top: auto; /* Override any absolute positioning 'top' value */
   }
   
-  .hero-search-button:hover {
-    transform: scale(1.05) !important;
+  .hero-search .hero-search-button:hover {
+    transform: scale(1.05);
   }
   
-  .hero-search-button:active {
-    transform: scale(0.98) !important;
+  .hero-search .hero-search-button:active {
+    transform: scale(0.98);
   }
 }
 
