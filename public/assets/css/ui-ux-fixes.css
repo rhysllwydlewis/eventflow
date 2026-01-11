@@ -1263,8 +1263,8 @@ html[data-theme="dark"] .hero-search-results {
   .hero-search-form {
     display: grid;
     grid-template-columns: 1fr auto;
-    gap: 10px;
     position: static;
+    gap: 10px;
   }
 
   .hero-search-input {
