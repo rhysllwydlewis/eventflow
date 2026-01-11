@@ -1253,16 +1253,18 @@ html[data-theme="dark"] .hero-search-results {
 /*
   Mobile safety override: prevent button/input overlap.
   For very small screens and/or increased text sizes, the "button over input"
-  pattern can still cause visual overlap. On <=520px we disable absolute
-  positioning and let flexbox place the button in-flow.
+  pattern can still cause visual overlap. On <=520px we use a grid layout
+  to place the button next to the input without overlap.
   
   This MUST come after all other hero-search breakpoints to ensure it wins
   in the CSS cascade.
 */
 @media (max-width: 520px) {
   .hero-search-form {
-    position: static;
+    display: grid;
+    grid-template-columns: 1fr auto;
     gap: 10px;
+    position: static;
   }
 
   .hero-search-input {
@@ -1275,6 +1277,9 @@ html[data-theme="dark"] .hero-search-results {
     right: auto;
     transform: none;
     margin: 0;
+    width: auto; /* Ensure button is not stretched by grid */
+    min-width: 44px;
+    max-width: 52px;
   }
 }
 
