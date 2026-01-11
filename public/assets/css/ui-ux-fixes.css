@@ -37,31 +37,6 @@ html {
   }
 }
 
-/*
-  Mobile safety override: prevent button/input overlap.
-  For very small screens and/or increased text sizes, the "button over input"
-  pattern can still cause visual overlap. On <=520px we disable absolute
-  positioning and let flexbox place the button in-flow.
-*/
-@media (max-width: 520px) {
-  .hero-search-form {
-    position: static;
-    gap: 10px;
-  }
-
-  .hero-search-input {
-    padding-right: 18px; /* remove reserved space for the absolute button */
-  }
-
-  .hero-search-button {
-    position: static;
-    top: auto;
-    right: auto;
-    transform: none;
-    margin: 0;
-  }
-}
-
 @media (min-width: 1440px) {
   html {
     font-size: 17px;
@@ -1272,6 +1247,34 @@ html[data-theme="dark"] .hero-search-results {
     min-width: 36px;
     min-height: 32px;
     font-size: 14px;
+  }
+}
+
+/*
+  Mobile safety override: prevent button/input overlap.
+  For very small screens and/or increased text sizes, the "button over input"
+  pattern can still cause visual overlap. On <=520px we disable absolute
+  positioning and let flexbox place the button in-flow.
+  
+  This MUST come after all other hero-search breakpoints to ensure it wins
+  in the CSS cascade.
+*/
+@media (max-width: 520px) {
+  .hero-search-form {
+    position: static;
+    gap: 10px;
+  }
+
+  .hero-search-input {
+    padding-right: 18px; /* remove reserved space for the absolute button */
+  }
+
+  .hero-search-button {
+    position: static;
+    top: auto;
+    right: auto;
+    transform: none;
+    margin: 0;
   }
 }
 
