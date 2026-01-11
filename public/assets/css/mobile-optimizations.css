@@ -90,9 +90,8 @@
   }
   
   /* Dropdown menu improvements - proper fixed positioning */
-  /* Support both old (.nav-menu) and Gold Standard (.ef-mobile-menu) navbars */
-  .nav-menu,
-  .ef-mobile-menu {
+  /* Support old (.nav-menu) navbar only - EF header uses Gold Standard navbar.css */
+  .nav-menu {
     position: fixed;
     top: var(--ef-header-height, 64px); /* Below the fixed header, with fallback */
     left: 0;
@@ -113,8 +112,7 @@
   }
   
   .nav-menu.is-open,
-  .nav-menu.nav-menu--open,
-  .ef-mobile-menu.open {
+  .nav-menu.nav-menu--open {
     display: flex;
   }
   
@@ -136,9 +134,8 @@
   }
   
   /* Backdrop overlay for nav menu - proper z-index using ::before pseudo-element */
-  /* Support both old (.nav-open) and Gold Standard (.ef-menu-open) classes */
-  body.nav-open::before,
-  body.ef-menu-open::before {
+  /* Support old (.nav-open) class only - EF header uses Gold Standard navbar.css */
+  body.nav-open::before {
     content: '';
     position: fixed;
     top: 0;
@@ -160,7 +157,7 @@
 
 @media (max-width: 768px) {
   /* Full-width buttons on mobile */
-  .cta, .btn, button[type="submit"], input[type="submit"] {
+  .cta, .btn, button[type="submit"]:not(.hero-search-button), input[type="submit"] {
     width: 100%;
     min-height: 48px;
     font-size: 16px;
