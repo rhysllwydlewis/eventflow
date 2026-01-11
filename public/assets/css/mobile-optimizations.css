@@ -49,7 +49,9 @@
 @media (max-width: 768px) {
   /* Header fixed positioning - always on top */
   /* Z-index hierarchy: header (2000) > nav-menu (1999) > backdrop (1998) > content (default) */
-  .header {
+  /* Support both old (.header) and Gold Standard (.ef-header) navbars */
+  .header,
+  .ef-header {
     position: fixed;
     top: 0;
     left: 0;
@@ -88,9 +90,11 @@
   }
   
   /* Dropdown menu improvements - proper fixed positioning */
-  .nav-menu {
+  /* Support both old (.nav-menu) and Gold Standard (.ef-mobile-menu) navbars */
+  .nav-menu,
+  .ef-mobile-menu {
     position: fixed;
-    top: 0;
+    top: 64px; /* Below the fixed header */
     left: 0;
     right: 0;
     z-index: 1999; /* Below header, above backdrop and content */
@@ -99,17 +103,18 @@
     -webkit-backdrop-filter: blur(10px);
     border-bottom: 1px solid var(--border);
     padding: 16px;
-    padding-top: 70px; /* Account for fixed header height */
+    padding-top: 16px; /* Consistent padding */
     display: none;
     flex-direction: column;
     gap: 8px;
-    max-height: 100vh;
+    max-height: calc(100vh - 64px); /* Account for header height */
     overflow-y: auto;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   }
   
   .nav-menu.is-open,
-  .nav-menu.nav-menu--open {
+  .nav-menu.nav-menu--open,
+  .ef-mobile-menu.open {
     display: flex;
   }
   
@@ -131,7 +136,9 @@
   }
   
   /* Backdrop overlay for nav menu - proper z-index using ::before pseudo-element */
-  body.nav-open::before {
+  /* Support both old (.nav-open) and Gold Standard (.ef-menu-open) classes */
+  body.nav-open::before,
+  body.ef-menu-open::before {
     content: '';
     position: fixed;
     top: 0;
