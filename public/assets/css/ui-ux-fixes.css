@@ -55,8 +55,6 @@ html {
     transform: none;
     width: 100%;
     align-self: stretch;
-    right: auto; /* Override any absolute positioning 'right' value */
-    top: auto; /* Override any absolute positioning 'top' value */
   }
   
   .hero-search .hero-search-button:hover {
