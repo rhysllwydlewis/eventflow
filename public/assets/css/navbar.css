@@ -24,6 +24,7 @@
   --ef-radius: 12px;
   --ef-radius-sm: 8px;
   --ef-transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --ef-header-height: 64px;  /* Header height for consistent spacing */
 }
 
 /* ========================================
@@ -772,7 +773,7 @@ body {
   /* Mobile menu below header but above everything else */
   .ef-mobile-menu {
     z-index: 1999 !important;
-    top: 64px !important;
+    top: var(--ef-header-height) !important;
   }
   
   /* Ensure open state is properly visible */
@@ -804,7 +805,7 @@ body {
   
   /* Add body padding for fixed header on start page */
   body:has(.ef-header) {
-    padding-top: 64px;
+    padding-top: var(--ef-header-height);
   }
   
   /* Fallback for browsers without :has() support */
