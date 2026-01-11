@@ -47,12 +47,12 @@
 
     // If auth state manager is available, use it
     if (window.AuthStateManager) {
-      window.AuthStateManager.init().then(function (result) {
+      window.AuthStateManager.init().then(result => {
         updateBottomNavUI(result.user);
       });
 
       // Subscribe to auth state changes
-      window.AuthStateManager.subscribe(function (state) {
+      window.AuthStateManager.subscribe(state => {
         updateBottomNavUI(state.user);
       });
     } else {
@@ -89,16 +89,16 @@
           'Cache-Control': 'no-cache',
         },
       })
-        .then(function (response) {
+        .then(response => {
           if (response.ok) {
             return response.json();
           }
           return { user: null };
         })
-        .then(function (data) {
+        .then(data => {
           updateBottomNavUI(data.user);
         })
-        .catch(function () {
+        .catch(() => {
           updateBottomNavUI(null);
         });
     }
