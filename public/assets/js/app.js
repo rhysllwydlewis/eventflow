@@ -3554,18 +3554,64 @@ document.addEventListener('DOMContentLoaded', () => {
             const plan = urlParams.get('plan');
 
             if (redirect) {
-              // Preserve plan parameter if it exists
-              let redirectUrl = redirect;
-              if (plan && !redirect.includes('plan=')) {
-                const separator = redirect.includes('?') ? '&' : '?';
-                redirectUrl = `${redirect}${separator}plan=${encodeURIComponent(plan)}`;
+              // Validate redirect is safe: same-origin and allowlisted for user's role
+              const user = data.user || {};
+              const isValidRedirect = validateRedirectForRole(redirect, user.role);
+              if (isValidRedirect) {
+                // Preserve plan parameter if it exists
+                let redirectUrl = redirect;
+                if (plan && !redirect.includes('plan=')) {
+                  const separator = redirect.includes('?') ? '&' : '?';
+                  redirectUrl = `${redirect}${separator}plan=${encodeURIComponent(plan)}`;
+                }
+                if (regStatus) {
+                  regStatus.textContent = 'Account created! Redirecting...';
+                }
+                setTimeout(() => {
+                  window.location.href = redirectUrl;
+                }, 1000);
+              } else {
+                console.warn(
+                  `Ignoring untrusted redirect param: ${redirect} for role: ${user.role}`
+                );
+                // Don't redirect - fall through to show verification message
+                if (regStatus) {
+                  regStatus.innerHTML =
+                    'Account created. Check your email to verify your account, then you can sign in. ' +
+                    '<button type="button" id="resend-verify-btn" class="link-button" style="text-decoration:underline;margin-left:4px;">Resend email</button>';
+
+                  // Add resend handler
+                  const resendBtn = document.getElementById('resend-verify-btn');
+                  if (resendBtn) {
+                    resendBtn.addEventListener('click', async () => {
+                      resendBtn.disabled = true;
+                      resendBtn.textContent = 'Sending...';
+                      try {
+                        const resendResp = await fetch('/api/auth/resend-verification', {
+                          method: 'POST',
+                          headers: getHeadersWithCsrf({ 'Content-Type': 'application/json' }),
+                          credentials: 'include',
+                          body: JSON.stringify({ email }),
+                        });
+                        const resendData = await resendResp.json();
+                        if (resendResp.ok) {
+                          showNetworkError(
+                            resendData.message || 'Verification email sent!',
+                            'success'
+                          );
+                        } else {
+                          showNetworkError(resendData.error || 'Failed to send email', 'error');
+                        }
+                      } catch (err) {
+                        showNetworkError('Network error - please try again', 'error');
+                      } finally {
+                        resendBtn.disabled = false;
+                        resendBtn.textContent = 'Resend email';
+                      }
+                    });
+                  }
+                }
               }
-              if (regStatus) {
-                regStatus.textContent = 'Account created! Redirecting...';
-              }
-              setTimeout(() => {
-                window.location.href = redirectUrl;
-              }, 1000);
             } else {
               if (regStatus) {
                 regStatus.innerHTML =
