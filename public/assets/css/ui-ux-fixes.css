@@ -1233,48 +1233,42 @@ html[data-theme="dark"] .hero-search-results {
   }
 }
 
+/* Note: Breakpoints below 520px inherit the vertical stacked layout from the 520px breakpoint above.
+   These breakpoints only adjust sizing, not positioning, to maintain the mobile-safe vertical layout. */
+
 /* Critical breakpoint for ~423px where overlap was occurring */
 @media (max-width: 450px) {
   .hero-search-input {
-    padding: 12px 70px 12px 14px;
+    padding: 12px 14px;
     font-size: 16px;
   }
   
   .hero-search-button {
-    right: 8px;
-    padding: 7px 11px;
-    min-width: 40px;
-    min-height: 36px;
+    padding: 10px 14px;
     font-size: 16px;
   }
 }
 
 @media (max-width: 375px) {
   .hero-search-input {
-    padding: 11px 70px 11px 13px;
+    padding: 11px 13px;
     font-size: 16px;
   }
   
   .hero-search-button {
-    right: 7px;
-    padding: 7px 10px;
-    min-width: 38px;
-    min-height: 34px;
+    padding: 9px 12px;
     font-size: 15px;
   }
 }
 
 @media (max-width: 320px) {
   .hero-search-input {
-    padding: 10px 68px 10px 12px;
+    padding: 10px 12px;
     font-size: 16px;
   }
   
   .hero-search-button {
-    right: 6px;
-    padding: 6px 9px;
-    min-width: 36px;
-    min-height: 32px;
+    padding: 8px 10px;
     font-size: 14px;
   }
 }
