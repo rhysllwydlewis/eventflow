@@ -160,9 +160,8 @@
             navDashboard.href = '/dashboard.html';
           }
         }
-        const signoutLink = document.getElementById('nav-signout');
-        if (signoutLink) {
-          signoutLink.style.display = '';
+        if (navSignout) {
+          navSignout.style.display = '';
         }
       } else {
         // User is not authenticated
@@ -172,9 +171,8 @@
         if (navDashboard) {
           navDashboard.style.display = 'none';
         }
-        const signoutLink = document.getElementById('nav-signout');
-        if (signoutLink) {
-          signoutLink.style.display = 'none';
+        if (navSignout) {
+          navSignout.style.display = 'none';
         }
       }
     }
