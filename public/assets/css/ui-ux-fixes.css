@@ -50,7 +50,8 @@ html {
 /* Ensure body doesn't scroll when mobile menu is open */
 /* Using !important here is necessary to override any inline styles or other conflicting rules */
 /* that may be applied dynamically by JavaScript or third-party scripts */
-body.nav-open {
+body.nav-open,
+body.ef-menu-open {
   overflow: hidden !important;
   position: fixed;
   width: 100%;
@@ -1190,7 +1191,7 @@ html[data-theme="dark"] .hero-search-results {
   }
   
   .hero-search-input {
-    padding: 13px 68px 13px 16px;
+    padding: 13px 70px 13px 16px;
     font-size: 16px; /* Prevent iOS zoom */
   }
   
@@ -1206,7 +1207,7 @@ html[data-theme="dark"] .hero-search-results {
 /* Critical breakpoint for ~423px where overlap was occurring */
 @media (max-width: 450px) {
   .hero-search-input {
-    padding: 12px 64px 12px 14px;
+    padding: 12px 70px 12px 14px;
     font-size: 16px;
   }
   
@@ -1221,7 +1222,7 @@ html[data-theme="dark"] .hero-search-results {
 
 @media (max-width: 375px) {
   .hero-search-input {
-    padding: 11px 62px 11px 13px;
+    padding: 11px 70px 11px 13px;
     font-size: 16px;
   }
   
@@ -1236,7 +1237,7 @@ html[data-theme="dark"] .hero-search-results {
 
 @media (max-width: 320px) {
   .hero-search-input {
-    padding: 10px 60px 10px 12px;
+    padding: 10px 68px 10px 12px;
     font-size: 16px;
   }
   
