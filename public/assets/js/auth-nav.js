@@ -1,7 +1,11 @@
 /**
  * Legacy Auth Navigation Handler
- * Provides burger menu toggle and auth state management for legacy pages
- * that use the "header/nav-menu" pattern
+ * Minimal compatibility shim for legacy pages with "header/nav-menu" pattern
+ * 
+ * Responsibilities:
+ * 1. Toggle mobile navigation menu (#burger + .nav-menu)
+ * 2. Show/hide auth elements (#nav-auth, #nav-dashboard, #nav-signout) based on auth state
+ * 3. Handle logout clicks if logout element exists
  */
 
 (function () {
@@ -19,47 +23,25 @@
     init();
   }
 
-  // Cache current user state
-  let currentUser = null;
-
   function init() {
     window.__authNavInitialized = true;
 
-    // Initialize burger menu
+    // Initialize burger menu toggle
     initBurgerMenu();
 
-    // Initialize auth state management
+    // Initialize auth state visibility
     initAuthState();
-
-    // Periodic auth state validation (every 30 seconds)
-    setInterval(() => {
-      checkAuthStatus(true);
-    }, 30000);
-
-    // Cross-tab auth state synchronization
-    window.addEventListener('storage', e => {
-      if (e.key === 'ef_logout_event') {
-        // Logout detected in another tab
-        if (window.AuthStateManager) {
-          window.AuthStateManager.logout();
-        }
-        updateAuthState(null);
-        // Redirect to home after a short delay
-        setTimeout(() => {
-          window.location.href = `/?t=${Date.now()}`;
-        }, 500);
-      }
-    });
   }
 
   /**
-   * Burger Menu Toggle
-   * Handles mobile navigation menu open/close
+   * Toggle legacy burger menu
+   * Only operates on legacy #burger and .nav-menu elements
    */
   function initBurgerMenu() {
     const burger = document.getElementById('burger');
     const navMenu = document.querySelector('.nav-menu');
 
+    // Fail silently if elements don't exist
     if (!burger || !navMenu) {
       return;
     }
@@ -69,13 +51,11 @@
       const isExpanded = burger.getAttribute('aria-expanded') === 'true';
       const newState = !isExpanded;
 
-      // Toggle aria-expanded
       burger.setAttribute('aria-expanded', String(newState));
 
-      // Toggle menu visibility
       if (newState) {
         navMenu.classList.add('open');
-        document.body.style.overflow = 'hidden'; // Prevent background scroll
+        document.body.style.overflow = 'hidden';
       } else {
         navMenu.classList.remove('open');
         document.body.style.overflow = '';
@@ -103,47 +83,34 @@
   }
 
   /**
-   * Auth State Management
-   * Updates navigation links based on authentication status
+   * Show/hide legacy auth navigation elements based on current auth state
+   * Performs single initial check only - no polling or background updates
    */
   function initAuthState() {
     const navAuth = document.getElementById('nav-auth');
     const navDashboard = document.getElementById('nav-dashboard');
     const navSignout = document.getElementById('nav-signout');
 
-    // If auth state manager is available, use it
+    // Fail silently if no legacy auth elements exist
+    if (!navAuth && !navDashboard && !navSignout) {
+      return;
+    }
+
+    // Use AuthStateManager if available, otherwise check directly
     if (window.AuthStateManager) {
       window.AuthStateManager.init().then(result => {
-        currentUser = result.user;
-        updateAuthState(result.user);
-      });
-
-      // Subscribe to auth state changes
-      window.AuthStateManager.subscribe(state => {
-        // Auth state changed - check if user actually changed
-        const newUser = state.user;
-        if (JSON.stringify(newUser) !== JSON.stringify(currentUser)) {
-          currentUser = newUser;
-          updateAuthState(newUser);
-        }
+        updateAuthUI(result.user);
       });
     } else {
-      // Fallback: check auth status directly
       checkAuthStatus();
     }
 
-    // Setup signout handler using cloneNode to prevent duplicate handlers
+    // Setup logout handler if element exists
     if (navSignout) {
-      const newSignout = navSignout.cloneNode(true);
-      navSignout.parentNode.replaceChild(newSignout, navSignout);
-      newSignout.addEventListener('click', handleLogout);
+      navSignout.addEventListener('click', handleLogout);
     }
 
-    function updateAuthState(user) {
-      if (!navAuth) {
-        return;
-      }
-
+    function updateAuthUI(user) {
       if (user) {
         // User is authenticated
         if (navAuth) {
@@ -151,7 +118,6 @@
         }
         if (navDashboard) {
           navDashboard.style.display = '';
-          // Set dashboard link based on user role
           if (user.role === 'supplier') {
             navDashboard.href = '/dashboard-supplier.html';
           } else if (user.role === 'admin') {
@@ -177,111 +143,48 @@
       }
     }
 
-    async function checkAuthStatus(isPeriodicCheck = false) {
-      // Add cache-busting to /api/auth/me calls
-      const timestamp = Date.now();
-      try {
-        const response = await fetch(`/api/auth/me?t=${timestamp}`, {
-          credentials: 'include',
-          headers: {
-            'Cache-Control': 'no-cache',
-          },
-        });
-
-        let newUser = null;
-        if (response.ok) {
-          const data = await response.json();
-          newUser = data.user || null;
-        }
-
-        // If this is a periodic check and user changed, update state
-        if (isPeriodicCheck && JSON.stringify(newUser) !== JSON.stringify(currentUser)) {
-          currentUser = newUser;
-          updateAuthState(newUser);
-        } else if (!isPeriodicCheck) {
-          currentUser = newUser;
-          updateAuthState(newUser);
-        }
-      } catch (error) {
-        if (!isPeriodicCheck) {
-          updateAuthState(null);
-        }
-      }
-    }
-
-    async function me() {
-      const timestamp = Date.now();
-      const response = await fetch(`/api/auth/me?t=${timestamp}`, {
+    function checkAuthStatus() {
+      fetch('/api/auth/me', {
         credentials: 'include',
-        headers: {
-          'Cache-Control': 'no-cache',
-        },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        return data.user || null;
-      }
-      return null;
+      })
+        .then(response => {
+          if (response.ok) {
+            return response.json();
+          }
+          return { user: null };
+        })
+        .then(data => {
+          updateAuthUI(data.user);
+        })
+        .catch(() => {
+          updateAuthUI(null);
+        });
     }
 
-    async function handleLogout(e) {
+    function handleLogout(e) {
       e.preventDefault();
 
-      try {
-        // Call logout API
-        const response = await fetch('/api/auth/logout', {
-          method: 'POST',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-Token': window.__CSRF_TOKEN__ || '',
-          },
-        });
-
-        if (response.ok) {
-          // Update navbar immediately to show logged-out state
-          initAuthNav(null);
-
-          // Clear auth state
-          if (window.AuthStateManager) {
-            window.AuthStateManager.logout();
-          }
-
-          // Notify other tabs about logout
-          try {
-            localStorage.setItem('ef_logout_event', String(Date.now()));
-            localStorage.removeItem('ef_logout_event');
-          } catch (err) {
-            // Ignore localStorage errors
-          }
-
-          // Re-check auth state to verify logout completed
-          let retries = 0;
-          const maxRetries = 3;
-          let logoutVerified = false;
-
-          while (retries < maxRetries && !logoutVerified) {
-            await new Promise(resolve => setTimeout(resolve, 200));
-            const currentUser = await me();
-            if (!currentUser) {
-              logoutVerified = true;
-            } else {
-              console.warn('Logout verification failed, retrying...');
-              retries++;
+      fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': window.__CSRF_TOKEN__ || '',
+        },
+      })
+        .then(response => {
+          if (response.ok) {
+            // Clear auth state if manager available
+            if (window.AuthStateManager) {
+              window.AuthStateManager.logout();
             }
+            // Redirect to home
+            window.location.href = '/';
           }
-
-          // Redirect with cache-busting
-          window.location.href = `/?t=${Date.now()}`;
-        }
-      } catch (error) {
-        console.error('Logout failed:', error);
-      }
-    }
-
-    // Helper function to update navbar (used by handleLogout)
-    function initAuthNav(user) {
-      updateAuthState(user);
+        })
+        .catch(error => {
+          console.error('Logout failed:', error);
+        });
     }
   }
 })();
