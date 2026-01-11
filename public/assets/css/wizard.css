@@ -262,8 +262,33 @@
 
 /* Mobile responsiveness */
 @media (max-width: 768px) {
-  .wizard-sidebar {
-    display: none;
+  /* Force start page flex container to column layout */
+  /* Override inline styles with !important */
+  #main-content > .container,
+  .section > .container[style*="display: flex"],
+  main.section > .container {
+    flex-direction: column !important;
+    gap: 1rem !important;
+  }
+  
+  /* Ensure sidebar is completely hidden with proper specificity */
+  #plan-summary,
+  .wizard-sidebar,
+  aside#plan-summary {
+    display: none !important;
+    width: 0 !important;
+    min-width: 0 !important;
+    max-width: 0 !important;
+    overflow: hidden !important;
+  }
+  
+  /* Ensure main content takes full width */
+  #main-content > .container > div:first-child,
+  main.section > .container > div:first-child,
+  .section > .container > div[style*="flex: 1"] {
+    width: 100% !important;
+    min-width: 100% !important;
+    flex: 1 1 100% !important;
   }
 
   .wizard-card {
