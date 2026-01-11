@@ -24,6 +24,7 @@
   --ef-radius: 12px;
   --ef-radius-sm: 8px;
   --ef-transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --ef-header-height: 64px;  /* Header height for consistent spacing */
 }
 
 /* ========================================
@@ -757,6 +758,62 @@ body {
 /* ========================================
    RESPONSIVE DESIGN
    ======================================== */
+
+/* Mobile - Z-index and visibility fixes */
+@media (max-width: 768px) {
+  /* Ensure Gold Standard header stays on top */
+  .ef-header {
+    z-index: 2000 !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+  }
+  
+  /* Mobile menu below header but above everything else */
+  .ef-mobile-menu {
+    z-index: 1999 !important;
+    top: var(--ef-header-height) !important;
+  }
+  
+  /* Ensure open state is properly visible */
+  .ef-mobile-menu.open {
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+    transform: translateY(0) !important;
+  }
+  
+  /* Backdrop for menu */
+  body.ef-menu-open::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1998 !important;
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+  }
+  
+  /* Prevent body scroll when menu is open */
+  body.ef-menu-open {
+    overflow: hidden !important;
+  }
+  
+  /* Add body padding for fixed header on start page */
+  body:has(.ef-header) {
+    padding-top: var(--ef-header-height);
+  }
+  
+  /* Fallback for browsers without :has() support */
+  .ef-header ~ main,
+  .ef-header + main {
+    margin-top: 0;
+  }
+}
 
 /* Tablet and Desktop */
 @media (min-width: 768px) {
