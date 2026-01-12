@@ -76,12 +76,33 @@ async function startServer(env = 'development') {
     // Wait for server to be ready
     const startTime = Date.now();
     let serverReady = false;
-    
+    let serverExited = false;
+    let serverExitCode = null;
+
+    // Track if server exits early
+    serverProcess.on('exit', (code) => {
+      serverExited = true;
+      serverExitCode = code;
+    });
+
     while (Date.now() - startTime < STARTUP_TIMEOUT) {
-      // Check if process exited early (port already in use)
-      if (serverProcess.exitCode !== null) {
-        console.log(`${colors.yellow}Port ${tryPort} unavailable, trying next port...${colors.reset}`);
-        break;
+      // Check if process exited early
+      if (serverExited) {
+        // Check if it's EADDRINUSE (port in use)
+        const isPortInUse = serverOutput.includes('EADDRINUSE') || 
+                            serverOutput.includes('address already in use') ||
+                            serverOutput.includes('port is already allocated');
+        
+        if (isPortInUse) {
+          console.log(`${colors.yellow}Port ${tryPort} unavailable, trying next port...${colors.reset}`);
+          break; // Try next port
+        } else {
+          // Real error - fail fast with captured output
+          console.error(`${colors.red}✗ Server crashed on startup (exit code: ${serverExitCode})${colors.reset}`);
+          console.error(`${colors.red}Server output:${colors.reset}`);
+          console.error(serverOutput || '(no output captured)');
+          throw new Error(`Server failed to start. Exit code: ${serverExitCode}. Check output above for details.`);
+        }
       }
       
       try {
@@ -111,9 +132,11 @@ async function startServer(env = 'development') {
       await sleep(RETRY_INTERVAL);
     }
 
-    // If we got here, either timeout or process exited
+    // If we got here, either timeout or process exited (due to port in use)
     if (!serverReady) {
-      serverProcess.kill();
+      if (!serverExited) {
+        serverProcess.kill();
+      }
       
       // If this was the last port to try, throw error
       if (portOffset === MAX_PORT_TRIES - 1) {
@@ -121,7 +144,7 @@ async function startServer(env = 'development') {
         console.error('Server output:', serverOutput);
         throw new Error('Server startup failed on all attempted ports');
       }
-      // Otherwise, continue to next port
+      // Otherwise, continue to next port (loop continues)
     }
   }
   
@@ -366,6 +389,16 @@ async function testMode(mode) {
  * Main execution
  */
 async function main() {
+  // Check Node.js version compatibility
+  const nodeMajorVersion = parseInt(process.version.slice(1).split('.')[0], 10);
+  if (nodeMajorVersion >= 22) {
+    console.error(`${colors.red}✗ Unsupported Node.js version: ${process.version}${colors.reset}`);
+    console.error(`${colors.red}  This project requires Node.js 20.x LTS.${colors.reset}`);
+    console.error(`${colors.red}  Node 22+ may cause "Bus error" crashes due to sharp compatibility.${colors.reset}`);
+    console.error(`${colors.red}  Please install Node 20 LTS: nvm install 20 && nvm use 20${colors.reset}`);
+    process.exit(1);
+  }
+
   console.log(`${'='.repeat(70)}`);
   console.log(`${colors.blue}Security Headers Verification${colors.reset}`);
   console.log(`${'='.repeat(70)}`);
