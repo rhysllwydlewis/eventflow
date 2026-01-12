@@ -648,11 +648,11 @@
             body: data,
           });
           
-          // safeAction will show success toast
+          // safeAction will show success toast, we add status message
           updateFeatureFlagsStatus('saved', 'Feature flags saved successfully');
           setTimeout(() => updateFeatureFlagsStatus('hidden'), STATUS_HIDE_DELAY_MS);
           
-          await loadFeatureFlags(); // Reload to get updated timestamp
+          await loadFeatureFlags(); // Reload to get updated timestamp (also re-enables checkboxes and button)
           return result;
         },
         {
@@ -662,14 +662,10 @@
         }
       );
     } catch (error) {
-      // safeAction already showed error toast
+      // safeAction already showed error toast and restored button state
+      // We only need to update our status UI and re-enable checkboxes
       updateFeatureFlagsStatus('error', 'Error saving feature flags');
       setFeatureFlagsEnabled(true);
-      
-      // Re-enable save button to allow retry
-      if (saveBtn) {
-        saveBtn.disabled = false;
-      }
     }
   });
   
