@@ -111,17 +111,17 @@ function generateRobotsTxt(baseUrl) {
 User-agent: *
 Allow: /
 
-# Disallow admin and dashboard pages
-Disallow: /admin*
-Disallow: /dashboard*
-
-# Disallow API endpoints and temporary files
+# Disallow API endpoints and temporary files only
+# Note: We don't Disallow HTML pages (auth, dashboard, etc.) because:
+# - They use X-Robots-Tag: noindex, nofollow headers
+# - Google needs to crawl them to see the noindex directive
+# - Disallow prevents crawling and can leave URLs indexed by reference
 Disallow: /api/
 Disallow: /uploads/temp/
 Disallow: /*.json$
 
 # Sitemap
-Sitemap: https://event-flow.co.uk/sitemap.xml
+Sitemap: ${baseUrl}/sitemap.xml
 
 # Crawl-delay for specific bots
 User-agent: Googlebot

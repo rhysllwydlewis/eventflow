@@ -87,4 +87,15 @@ test.describe('SEO Canonicals', () => {
     // Should end up at /marketplace
     expect(page.url()).toContain('/marketplace');
   });
+
+  test('index.html should redirect to /', async ({ page }) => {
+    const response = await page.goto('/index.html');
+    
+    // Should get a redirect response
+    expect(response?.status()).toBe(301);
+    
+    // Should end up at root
+    const finalUrl = page.url();
+    expect(finalUrl.endsWith('/') || finalUrl === page.context()._options.baseURL).toBe(true);
+  });
 });

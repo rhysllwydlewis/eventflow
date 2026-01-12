@@ -420,6 +420,11 @@ app.get('/robots.txt', (req, res) => {
   }
 });
 
+// Redirect non-canonical index URL to canonical
+app.get('/index.html', (req, res) => {
+  res.redirect(301, '/');
+});
+
 // Serve marketplace page
 app.get('/marketplace', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'marketplace.html'));
