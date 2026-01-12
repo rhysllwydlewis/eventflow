@@ -550,7 +550,7 @@ router.get('/metrics', authRequired, roleRequired('admin'), (_req, res) => {
  * POST /api/admin/reset-demo
  * Reset demo data by clearing all collections and re-seeding
  */
-router.post('/reset-demo', authRequired, roleRequired('admin'), (req, res) => {
+router.post('/reset-demo', authRequired, roleRequired('admin'), csrfProtection, (req, res) => {
   try {
     // Clear key collections and rerun seeding
     const collections = [
@@ -624,7 +624,7 @@ router.get('/suppliers/:id', authRequired, roleRequired('admin'), async (req, re
  * POST /api/admin/suppliers/:id/approve
  * Approve or reject a supplier
  */
-router.post('/suppliers/:id/approve', authRequired, roleRequired('admin'), async (req, res) => {
+router.post('/suppliers/:id/approve', authRequired, roleRequired('admin'), csrfProtection, async (req, res) => {
   try {
     const all = await dbUnified.read('suppliers');
     const i = all.findIndex(s => s.id === req.params.id);
@@ -644,7 +644,7 @@ router.post('/suppliers/:id/approve', authRequired, roleRequired('admin'), async
  * POST /api/admin/suppliers/:id/pro
  * Manage supplier Pro subscription
  */
-router.post('/suppliers/:id/pro', authRequired, roleRequired('admin'), async (req, res) => {
+router.post('/suppliers/:id/pro', authRequired, roleRequired('admin'), csrfProtection, async (req, res) => {
   try {
     const { mode, duration } = req.body || {};
     const all = await dbUnified.read('suppliers');
@@ -854,7 +854,7 @@ function generateSlug(title) {
  * POST /api/admin/packages
  * Create a new package
  */
-router.post('/packages', authRequired, roleRequired('admin'), async (req, res) => {
+router.post('/packages', authRequired, roleRequired('admin'), csrfProtection, async (req, res) => {
   try {
     const { supplierId, title, description, price_display, image, approved, featured } = req.body;
 
@@ -930,7 +930,7 @@ router.post('/packages', authRequired, roleRequired('admin'), async (req, res) =
  * POST /api/admin/packages/:id/approve
  * Approve or reject a package
  */
-router.post('/packages/:id/approve', authRequired, roleRequired('admin'), (req, res) => {
+router.post('/packages/:id/approve', authRequired, roleRequired('admin'), csrfProtection, (req, res) => {
   const all = read('packages');
   const i = all.findIndex(p => p.id === req.params.id);
   if (i < 0) {
@@ -945,7 +945,7 @@ router.post('/packages/:id/approve', authRequired, roleRequired('admin'), (req, 
  * POST /api/admin/packages/:id/feature
  * Feature or unfeature a package
  */
-router.post('/packages/:id/feature', authRequired, roleRequired('admin'), (req, res) => {
+router.post('/packages/:id/feature', authRequired, roleRequired('admin'), csrfProtection, (req, res) => {
   const all = read('packages');
   const i = all.findIndex(p => p.id === req.params.id);
   if (i < 0) {
@@ -1134,7 +1134,7 @@ router.post(
  * Suspend or unsuspend a user account
  * Body: { suspended: boolean, reason: string, duration: string }
  */
-router.post('/users/:id/suspend', authRequired, roleRequired('admin'), (req, res) => {
+router.post('/users/:id/suspend', authRequired, roleRequired('admin'), csrfProtection, (req, res) => {
   const { suspended, reason, duration } = req.body;
   const users = read('users');
   const userIndex = users.findIndex(u => u.id === req.params.id);
@@ -1198,7 +1198,7 @@ router.post('/users/:id/suspend', authRequired, roleRequired('admin'), (req, res
  * Ban or unban a user permanently
  * Body: { banned: boolean, reason: string }
  */
-router.post('/users/:id/ban', authRequired, roleRequired('admin'), (req, res) => {
+router.post('/users/:id/ban', authRequired, roleRequired('admin'), csrfProtection, (req, res) => {
   const { banned, reason } = req.body;
   const users = read('users');
   const userIndex = users.findIndex(u => u.id === req.params.id);
@@ -1249,7 +1249,7 @@ router.post('/users/:id/ban', authRequired, roleRequired('admin'), (req, res) =>
  * POST /api/admin/users/:id/verify
  * Manually verify a user's email
  */
-router.post('/users/:id/verify', authRequired, roleRequired('admin'), (req, res) => {
+router.post('/users/:id/verify', authRequired, roleRequired('admin'), csrfProtection, (req, res) => {
   const users = read('users');
   const userIndex = users.findIndex(u => u.id === req.params.id);
 
@@ -1297,7 +1297,7 @@ router.post('/users/:id/verify', authRequired, roleRequired('admin'), (req, res)
  * POST /api/admin/users/:id/force-reset
  * Force a password reset for a user
  */
-router.post('/users/:id/force-reset', authRequired, roleRequired('admin'), async (req, res) => {
+router.post('/users/:id/force-reset', authRequired, roleRequired('admin'), csrfProtection, async (req, res) => {
   const users = read('users');
   const userIndex = users.findIndex(u => u.id === req.params.id);
 
@@ -1527,7 +1527,7 @@ function parseDuration(duration) {
  * Verify a supplier account
  * Body: { verified: boolean, verificationNotes: string }
  */
-router.post('/suppliers/:id/verify', authRequired, roleRequired('admin'), async (req, res) => {
+router.post('/suppliers/:id/verify', authRequired, roleRequired('admin'), csrfProtection, async (req, res) => {
   try {
     const { verified, verificationNotes } = req.body;
     const suppliers = await dbUnified.read('suppliers');
@@ -1584,6 +1584,7 @@ router.post(
   '/suppliers/:id/subscription',
   authRequired,
   roleRequired('admin'),
+  csrfProtection,
   async (req, res) => {
     try {
       const { tier, days } = req.body;
@@ -1664,6 +1665,7 @@ router.delete(
   '/suppliers/:id/subscription',
   authRequired,
   roleRequired('admin'),
+  csrfProtection,
   async (req, res) => {
     try {
       const suppliers = await dbUnified.read('suppliers');
@@ -1758,7 +1760,7 @@ router.get(
  * Bulk approve suppliers
  * Body: { supplierIds: string[] }
  */
-router.post('/suppliers/bulk-approve', authRequired, roleRequired('admin'), async (req, res) => {
+router.post('/suppliers/bulk-approve', authRequired, roleRequired('admin'), csrfProtection, async (req, res) => {
   try {
     const { supplierIds } = req.body;
 
@@ -1809,7 +1811,7 @@ router.post('/suppliers/bulk-approve', authRequired, roleRequired('admin'), asyn
  * Bulk reject suppliers
  * Body: { supplierIds: string[] }
  */
-router.post('/suppliers/bulk-reject', authRequired, roleRequired('admin'), async (req, res) => {
+router.post('/suppliers/bulk-reject', authRequired, roleRequired('admin'), csrfProtection, async (req, res) => {
   try {
     const { supplierIds } = req.body;
 
@@ -1861,7 +1863,7 @@ router.post('/suppliers/bulk-reject', authRequired, roleRequired('admin'), async
  * Bulk delete suppliers
  * Body: { supplierIds: string[] }
  */
-router.post('/suppliers/bulk-delete', authRequired, roleRequired('admin'), async (req, res) => {
+router.post('/suppliers/bulk-delete', authRequired, roleRequired('admin'), csrfProtection, async (req, res) => {
   try {
     const { supplierIds } = req.body;
 
@@ -1912,7 +1914,7 @@ router.post('/suppliers/bulk-delete', authRequired, roleRequired('admin'), async
  * PUT /api/admin/packages/:id
  * Edit package details (admin only)
  */
-router.put('/packages/:id', authRequired, roleRequired('admin'), (req, res) => {
+router.put('/packages/:id', authRequired, roleRequired('admin'), csrfProtection, (req, res) => {
   const { id } = req.params;
   const {
     title,
@@ -2017,7 +2019,7 @@ router.put('/packages/:id', authRequired, roleRequired('admin'), (req, res) => {
  * PUT /api/admin/suppliers/:id
  * Edit supplier profile (admin only)
  */
-router.put('/suppliers/:id', authRequired, roleRequired('admin'), async (req, res) => {
+router.put('/suppliers/:id', authRequired, roleRequired('admin'), csrfProtection, async (req, res) => {
   try {
     const { id } = req.params;
     const { name, description, contact, categories, amenities, location, serviceAreas } = req.body;
@@ -2091,7 +2093,7 @@ router.put('/suppliers/:id', authRequired, roleRequired('admin'), async (req, re
  * PUT /api/admin/users/:id
  * Edit user profile (admin only)
  */
-router.put('/users/:id', authRequired, roleRequired('admin'), (req, res) => {
+router.put('/users/:id', authRequired, roleRequired('admin'), csrfProtection, (req, res) => {
   const { id } = req.params;
   const { name, email, role, verified, marketingOptIn } = req.body;
 
@@ -2165,7 +2167,7 @@ router.put('/users/:id', authRequired, roleRequired('admin'), (req, res) => {
  * DELETE /api/admin/users/:id
  * Delete a user account (admin only)
  */
-router.delete('/users/:id', authRequired, roleRequired('admin'), (req, res) => {
+router.delete('/users/:id', authRequired, roleRequired('admin'), csrfProtection, (req, res) => {
   const { id } = req.params;
   const users = read('users');
   const userIndex = users.findIndex(u => u.id === id);
@@ -2207,7 +2209,7 @@ router.delete('/users/:id', authRequired, roleRequired('admin'), (req, res) => {
  * DELETE /api/admin/suppliers/:id
  * Delete a supplier (admin only)
  */
-router.delete('/suppliers/:id', authRequired, roleRequired('admin'), async (req, res) => {
+router.delete('/suppliers/:id', authRequired, roleRequired('admin'), csrfProtection, async (req, res) => {
   try {
     const { id } = req.params;
     const suppliers = await dbUnified.read('suppliers');
@@ -2251,7 +2253,7 @@ router.delete('/suppliers/:id', authRequired, roleRequired('admin'), async (req,
  * DELETE /api/admin/packages/:id
  * Delete a package (admin only)
  */
-router.delete('/packages/:id', authRequired, roleRequired('admin'), (req, res) => {
+router.delete('/packages/:id', authRequired, roleRequired('admin'), csrfProtection, (req, res) => {
   const { id } = req.params;
   const packages = read('packages');
   const packageIndex = packages.findIndex(p => p.id === id);
@@ -2283,7 +2285,7 @@ router.delete('/packages/:id', authRequired, roleRequired('admin'), (req, res) =
  * POST /api/admin/users/:id/grant-admin
  * Grant admin privileges to a user
  */
-router.post('/users/:id/grant-admin', authRequired, roleRequired('admin'), (req, res) => {
+router.post('/users/:id/grant-admin', authRequired, roleRequired('admin'), csrfProtection, (req, res) => {
   const { id } = req.params;
   const users = read('users');
   const userIndex = users.findIndex(u => u.id === id);
@@ -2339,7 +2341,7 @@ router.post('/users/:id/grant-admin', authRequired, roleRequired('admin'), (req,
  * POST /api/admin/users/:id/revoke-admin
  * Revoke admin privileges from a user
  */
-router.post('/users/:id/revoke-admin', authRequired, roleRequired('admin'), (req, res) => {
+router.post('/users/:id/revoke-admin', authRequired, roleRequired('admin'), csrfProtection, (req, res) => {
   const { id } = req.params;
   const { newRole = 'customer' } = req.body;
   const users = read('users');
@@ -2440,7 +2442,7 @@ router.get('/photos/pending', authRequired, roleRequired('admin'), async (req, r
  * POST /api/admin/photos/:id/approve
  * Approve a photo
  */
-router.post('/photos/:id/approve', authRequired, roleRequired('admin'), async (req, res) => {
+router.post('/photos/:id/approve', authRequired, roleRequired('admin'), csrfProtection, async (req, res) => {
   try {
     const { id } = req.params;
     const photos = await dbUnified.read('photos');
@@ -2496,7 +2498,7 @@ router.post('/photos/:id/approve', authRequired, roleRequired('admin'), async (r
  * POST /api/admin/photos/:id/reject
  * Reject a photo
  */
-router.post('/photos/:id/reject', authRequired, roleRequired('admin'), async (req, res) => {
+router.post('/photos/:id/reject', authRequired, roleRequired('admin'), csrfProtection, async (req, res) => {
   try {
     const { id } = req.params;
     const { reason } = req.body;
@@ -2556,7 +2558,7 @@ router.post('/photos/:id/reject', authRequired, roleRequired('admin'), async (re
  * 4. Limits each supplier to 10 tags maximum to avoid overwhelming the system
  * 5. Creates an audit log entry tracking how many suppliers were tagged
  */
-router.post('/suppliers/smart-tags', authRequired, roleRequired('admin'), async (req, res) => {
+router.post('/suppliers/smart-tags', authRequired, roleRequired('admin'), csrfProtection, async (req, res) => {
   try {
     const suppliers = await dbUnified.read('suppliers');
     let taggedCount = 0;
@@ -2749,7 +2751,7 @@ router.get('/users/:id', authRequired, roleRequired('admin'), (req, res) => {
  * POST /api/admin/users/:id/reset-password
  * Send password reset email to user
  */
-router.post('/users/:id/reset-password', authRequired, roleRequired('admin'), async (req, res) => {
+router.post('/users/:id/reset-password', authRequired, roleRequired('admin'), csrfProtection, async (req, res) => {
   const users = read('users');
   const userIndex = users.findIndex(u => u.id === req.params.id);
 
@@ -2811,7 +2813,7 @@ router.post('/users/:id/reset-password', authRequired, roleRequired('admin'), as
  * POST /api/admin/users/:id/unsuspend
  * Unsuspend a user
  */
-router.post('/users/:id/unsuspend', authRequired, roleRequired('admin'), (req, res) => {
+router.post('/users/:id/unsuspend', authRequired, roleRequired('admin'), csrfProtection, (req, res) => {
   const users = read('users');
   const userIndex = users.findIndex(u => u.id === req.params.id);
 
@@ -2858,7 +2860,7 @@ router.get('/content/homepage', authRequired, roleRequired('admin'), (req, res) 
  * PUT /api/admin/content/homepage
  * Update homepage hero content
  */
-router.put('/content/homepage', authRequired, roleRequired('admin'), (req, res) => {
+router.put('/content/homepage', authRequired, roleRequired('admin'), csrfProtection, (req, res) => {
   const { title, subtitle, ctaText } = req.body;
 
   const content = read('content') || {};
@@ -2898,7 +2900,7 @@ router.get('/content/announcements', authRequired, roleRequired('admin'), (req, 
  * POST /api/admin/content/announcements
  * Create a new announcement
  */
-router.post('/content/announcements', authRequired, roleRequired('admin'), (req, res) => {
+router.post('/content/announcements', authRequired, roleRequired('admin'), csrfProtection, (req, res) => {
   const { message, type, active } = req.body;
 
   if (!message) {
@@ -2954,7 +2956,7 @@ router.get('/content/announcements/:id', authRequired, roleRequired('admin'), (r
  * PUT /api/admin/content/announcements/:id
  * Update an announcement
  */
-router.put('/content/announcements/:id', authRequired, roleRequired('admin'), (req, res) => {
+router.put('/content/announcements/:id', authRequired, roleRequired('admin'), csrfProtection, (req, res) => {
   const { message, type, active } = req.body;
 
   const content = read('content') || {};
@@ -2994,7 +2996,7 @@ router.put('/content/announcements/:id', authRequired, roleRequired('admin'), (r
  * DELETE /api/admin/content/announcements/:id
  * Delete an announcement
  */
-router.delete('/content/announcements/:id', authRequired, roleRequired('admin'), (req, res) => {
+router.delete('/content/announcements/:id', authRequired, roleRequired('admin'), csrfProtection, (req, res) => {
   const content = read('content') || {};
   if (!content.announcements) {
     return res.status(404).json({ error: 'Announcement not found' });
@@ -3034,7 +3036,7 @@ router.get('/content/faqs', authRequired, roleRequired('admin'), (req, res) => {
  * POST /api/admin/content/faqs
  * Create a new FAQ
  */
-router.post('/content/faqs', authRequired, roleRequired('admin'), (req, res) => {
+router.post('/content/faqs', authRequired, roleRequired('admin'), csrfProtection, (req, res) => {
   const { question, answer, category } = req.body;
 
   if (!question || !answer) {
@@ -3090,7 +3092,7 @@ router.get('/content/faqs/:id', authRequired, roleRequired('admin'), (req, res) 
  * PUT /api/admin/content/faqs/:id
  * Update a FAQ
  */
-router.put('/content/faqs/:id', authRequired, roleRequired('admin'), (req, res) => {
+router.put('/content/faqs/:id', authRequired, roleRequired('admin'), csrfProtection, (req, res) => {
   const { question, answer, category } = req.body;
 
   const content = read('content') || {};
@@ -3130,7 +3132,7 @@ router.put('/content/faqs/:id', authRequired, roleRequired('admin'), (req, res) 
  * DELETE /api/admin/content/faqs/:id
  * Delete a FAQ
  */
-router.delete('/content/faqs/:id', authRequired, roleRequired('admin'), (req, res) => {
+router.delete('/content/faqs/:id', authRequired, roleRequired('admin'), csrfProtection, (req, res) => {
   const content = read('content') || {};
   if (!content.faqs) {
     return res.status(404).json({ error: 'FAQ not found' });
@@ -3182,7 +3184,7 @@ router.get('/settings/site', authRequired, roleRequired('admin'), async (req, re
  * PUT /api/admin/settings/site
  * Update site configuration
  */
-router.put('/settings/site', authRequired, roleRequired('admin'), async (req, res) => {
+router.put('/settings/site', authRequired, roleRequired('admin'), csrfProtection, async (req, res) => {
   try {
     const { name, tagline, contactEmail, supportEmail } = req.body;
 
@@ -3240,7 +3242,7 @@ router.get('/settings/features', authRequired, roleRequired('admin'), async (req
  * PUT /api/admin/settings/features
  * Update feature flags
  */
-router.put('/settings/features', authRequired, roleRequired('admin'), async (req, res) => {
+router.put('/settings/features', authRequired, roleRequired('admin'), csrfProtection, async (req, res) => {
   try {
     const {
       registration,
@@ -3303,7 +3305,7 @@ router.get('/settings/maintenance', authRequired, roleRequired('admin'), async (
  * PUT /api/admin/settings/maintenance
  * Update maintenance mode settings
  */
-router.put('/settings/maintenance', authRequired, roleRequired('admin'), async (req, res) => {
+router.put('/settings/maintenance', authRequired, roleRequired('admin'), csrfProtection, async (req, res) => {
   try {
     const { enabled, message, duration } = req.body;
 
@@ -3397,6 +3399,7 @@ router.put(
   '/settings/email-templates/:name',
   authRequired,
   roleRequired('admin'),
+  csrfProtection,
   async (req, res) => {
     try {
       const { subject, body } = req.body;
@@ -3444,6 +3447,7 @@ router.post(
   '/settings/email-templates/:name/reset',
   authRequired,
   roleRequired('admin'),
+  csrfProtection,
   async (req, res) => {
     try {
       const settings = (await dbUnified.read('settings')) || {};
@@ -3562,7 +3566,7 @@ router.get('/tickets/:id', authRequired, roleRequired('admin'), (req, res) => {
  * PUT /api/admin/tickets/:id
  * Update ticket (status, priority, assigned)
  */
-router.put('/tickets/:id', authRequired, roleRequired('admin'), (req, res) => {
+router.put('/tickets/:id', authRequired, roleRequired('admin'), csrfProtection, (req, res) => {
   const tickets = read('tickets');
   const index = tickets.findIndex(t => t.id === req.params.id);
 
@@ -3596,7 +3600,7 @@ router.put('/tickets/:id', authRequired, roleRequired('admin'), (req, res) => {
  * POST /api/admin/tickets/:id/reply
  * Add a reply to a ticket
  */
-router.post('/tickets/:id/reply', authRequired, roleRequired('admin'), (req, res) => {
+router.post('/tickets/:id/reply', authRequired, roleRequired('admin'), csrfProtection, (req, res) => {
   const tickets = read('tickets');
   const index = tickets.findIndex(t => t.id === req.params.id);
 
@@ -3740,6 +3744,7 @@ router.post(
   '/users/:userId/resend-verification',
   authRequired,
   roleRequired('admin'),
+  csrfProtection,
   auditMiddleware(AUDIT_ACTIONS.RESEND_VERIFICATION, req => ({
     targetType: 'user',
     targetId: req.params.userId,
@@ -4167,7 +4172,7 @@ router.delete(
  * Grant or update subscription for a user
  * Body: { tier: 'pro' | 'pro_plus', duration: '7d' | '30d' | '90d' | '1y' | 'lifetime', reason: string }
  */
-router.post('/users/:id/subscription', authRequired, roleRequired('admin'), async (req, res) => {
+router.post('/users/:id/subscription', authRequired, roleRequired('admin'), csrfProtection, async (req, res) => {
   try {
     const { id } = req.params;
     const { tier, duration, reason } = req.body;
@@ -4281,7 +4286,7 @@ router.post('/users/:id/subscription', authRequired, roleRequired('admin'), asyn
  * Remove subscription from a user
  * Body: { reason: string }
  */
-router.delete('/users/:id/subscription', authRequired, roleRequired('admin'), async (req, res) => {
+router.delete('/users/:id/subscription', authRequired, roleRequired('admin'), csrfProtection, async (req, res) => {
   try {
     const { id } = req.params;
     const { reason } = req.body;
@@ -4388,7 +4393,7 @@ router.get('/users/:id/subscription-history', authRequired, roleRequired('admin'
  * Bulk grant subscriptions to multiple users
  * Body: { userIds: string[], tier: string, duration: string, reason: string }
  */
-router.post('/bulk/subscriptions', authRequired, roleRequired('admin'), async (req, res) => {
+router.post('/bulk/subscriptions', authRequired, roleRequired('admin'), csrfProtection, async (req, res) => {
   try {
     const { userIds, tier, duration, reason } = req.body;
 

@@ -7,6 +7,7 @@
 
 const express = require('express');
 const { authRequired } = require('../middleware/auth');
+const { csrfProtection } = require('../middleware/csrf');
 const { writeLimiter } = require('../middleware/rateLimit');
 const { featureRequired } = require('../middleware/features');
 const { auditLog } = require('../middleware/audit');
@@ -19,7 +20,7 @@ const router = express.Router();
  * POST /api/tickets
  * Create a new support ticket
  */
-router.post('/', featureRequired('supportTickets'), authRequired, writeLimiter, async (req, res) => {
+router.post('/', featureRequired('supportTickets'), authRequired, csrfProtection, writeLimiter, async (req, res) => {
   try {
     const userId = req.user.id;
     const {
@@ -158,7 +159,7 @@ router.get('/:id', authRequired, async (req, res) => {
  * PUT /api/tickets/:id
  * Update a ticket (status, add responses)
  */
-router.put('/:id', authRequired, writeLimiter, async (req, res) => {
+router.put('/:id', authRequired, csrfProtection, writeLimiter, async (req, res) => {
   try {
     const userId = req.user.id;
     const userRole = req.user.role;
@@ -232,7 +233,7 @@ router.put('/:id', authRequired, writeLimiter, async (req, res) => {
  * DELETE /api/tickets/:id
  * Delete a ticket (admins only)
  */
-router.delete('/:id', authRequired, writeLimiter, async (req, res) => {
+router.delete('/:id', authRequired, csrfProtection, writeLimiter, async (req, res) => {
   try {
     const userRole = req.user.role;
     const { id } = req.params;

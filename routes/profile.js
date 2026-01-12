@@ -10,6 +10,7 @@ const validator = require('validator');
 
 const dbUnified = require('../db-unified');
 const { authRequired } = require('../middleware/auth');
+const { csrfProtection } = require('../middleware/csrf');
 const photoUpload = require('../photo-upload');
 
 const router = express.Router();
@@ -59,7 +60,7 @@ router.get('/', authRequired, async (req, res) => {
  * PUT /api/profile
  * Update current user's profile
  */
-router.put('/', authRequired, async (req, res) => {
+router.put('/', authRequired, csrfProtection, async (req, res) => {
   if (!req.user || !req.user.id) {
     return res.status(401).json({ error: 'Authentication required' });
   }
@@ -189,7 +190,7 @@ router.put('/', authRequired, async (req, res) => {
  * Upload or replace user avatar
  * Uses hardened upload pipeline with magic-byte validation and metadata stripping
  */
-router.post('/avatar', authRequired, (req, res) => {
+router.post('/avatar', authRequired, csrfProtection, (req, res) => {
   if (!req.user || !req.user.id) {
     return res.status(401).json({ error: 'Authentication required' });
   }
@@ -258,7 +259,7 @@ router.post('/avatar', authRequired, (req, res) => {
  * DELETE /api/profile/avatar
  * Delete user avatar
  */
-router.delete('/avatar', authRequired, async (req, res) => {
+router.delete('/avatar', authRequired, csrfProtection, async (req, res) => {
   if (!req.user || !req.user.id) {
     return res.status(401).json({ error: 'Authentication required' });
   }
