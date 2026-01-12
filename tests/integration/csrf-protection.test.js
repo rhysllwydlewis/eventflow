@@ -74,10 +74,12 @@ describe('CSRF Protection', () => {
       // Should check header
       expect(csrfMiddlewareContent).toContain("req.headers['x-csrf-token']");
 
-      // Should validate they match
+      // Should store values in variables
       expect(csrfMiddlewareContent).toContain('tokenFromHeader');
       expect(csrfMiddlewareContent).toContain('tokenFromCookie');
-      expect(csrfMiddlewareContent).toMatch(/tokenFromHeader.*!==.*tokenFromCookie|tokenFromCookie.*!==.*tokenFromHeader/);
+      
+      // Should compare them with !== operator
+      expect(csrfMiddlewareContent).toContain('tokenFromHeader !== tokenFromCookie');
     });
 
     it('csrfProtection should return 403 JSON with "CSRF token missing" when token is missing', () => {

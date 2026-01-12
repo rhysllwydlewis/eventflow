@@ -82,6 +82,9 @@ function getToken(req, res) {
   // Set the CSRF cookie
   // NOT HttpOnly - client needs to read it to send in header
   // SameSite=Lax for better compatibility while still providing CSRF protection
+  // Note: SameSite=Strict would provide stronger protection but may break
+  // legitimate cross-site navigation (e.g., external links to admin panel)
+  // SameSite=Lax blocks CSRF on state-changing requests while allowing navigation
   // Secure only in production (HTTPS)
   const isProduction = process.env.NODE_ENV === 'production';
 
