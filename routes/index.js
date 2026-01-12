@@ -10,6 +10,7 @@ const router = express.Router();
 
 // Import route modules
 const systemRoutes = require('./system');
+const publicRoutes = require('./public');
 const authRoutes = require('./auth');
 const adminRoutes = require('./admin');
 const messagesRoutes = require('./messages');
@@ -31,6 +32,9 @@ function mountRoutes(app, deps) {
     systemRoutes.initializeDependencies(deps);
   }
   app.use('/api', systemRoutes);
+
+  // Public routes (no auth required) - mount early to avoid auth middleware
+  app.use('/api/public', publicRoutes);
 
   // Auth routes (registration, login, logout, etc.)
   app.use('/api/auth', authRoutes);
