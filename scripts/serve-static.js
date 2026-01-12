@@ -29,6 +29,7 @@ app.get('/api/health', (req, res) => {
 app.use(express.static(PUBLIC_DIR));
 
 // Fallback to index.html for client-side routing
+// Note: No rate-limiting needed - this is only used for E2E testing, not production
 app.get('*', (req, res) => {
   res.sendFile(path.join(PUBLIC_DIR, 'index.html'));
 });
