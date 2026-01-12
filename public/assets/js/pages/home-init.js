@@ -368,29 +368,43 @@ function isDevelopmentEnvironment() {
 }
 
 async function loadHeroCollageImages() {
-  // NOTE: Pexels collage feature disabled until /api/public/homepage-settings endpoint is deployed
-  // When the backend endpoint is ready, uncomment the code below to enable dynamic collage
-
-  /* DISABLED - Pexels collage check
+  // Check if Pexels collage feature is enabled via /api/public/homepage-settings endpoint
+  // Guard against double initialization
+  if (window.__pexelsCollageInitialized) {
+    return;
+  }
+  
   try {
-    const settingsResponse = await fetch('/api/public/homepage-settings').catch(() => {
-      return null;
+    // Add AbortController with 2 second timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 2000);
+    
+    const settingsResponse = await fetch('/api/public/homepage-settings', {
+      signal: controller.signal
     });
+    
+    clearTimeout(timeoutId);
 
     if (settingsResponse?.ok) {
       const settings = await settingsResponse.json();
-      if (settings.pexelsCollageEnabled) {
-        if (isDevelopmentEnvironment()) {
+      
+      // Validate JSON structure
+      if (settings && typeof settings === 'object' && settings.pexelsCollageEnabled === true) {
+        if (window.DEBUG) {
           console.log('Pexels collage enabled, initializing dynamic collage');
         }
+        window.__pexelsCollageInitialized = true;
         await initPexelsCollage(settings.pexelsCollageSettings);
         return; // Skip static image loading
       }
     }
   } catch (error) {
-    // Continue to static images
+    // Fall back to static images on error, timeout, or invalid JSON
+    // Only log in debug mode to avoid console spam
+    if (window.DEBUG) {
+      console.log('Pexels collage check failed, falling back to static images');
+    }
   }
-  */
 
   // If Pexels is not enabled or failed, load static images
   try {

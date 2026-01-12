@@ -17,6 +17,31 @@
 <link rel='icon' href='/favicon.svg'>
 <script src="/assets/js/admin-navbar.js" defer></script>
   <link rel="stylesheet" href="/assets/css/mobile-optimizations.css"><link rel="stylesheet" href="/assets/css/ui-ux-fixes.css">
+<style>
+  /* Feature flags status styles */
+  .feature-flags-status {
+    margin-bottom: 1rem;
+    padding: 0.75rem;
+    border-radius: 4px;
+    font-size: 0.9rem;
+  }
+  .feature-flags-status-loading {
+    background: #f3f4f6;
+    color: #6b7280;
+  }
+  .feature-flags-status-saving {
+    background: #dbeafe;
+    color: #1e40af;
+  }
+  .feature-flags-status-saved {
+    background: #d1fae5;
+    color: #065f46;
+  }
+  .feature-flags-status-error {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+</style>
 </head>
 <body class="has-admin-navbar">
 <a href="#main-content" class="skip-link">Skip to main content</a>
@@ -180,6 +205,10 @@
       <h2>Feature Flags</h2>
       <p class="small">Enable or disable features across the platform.</p>
       
+      <div id="featureFlagsStatus" class="feature-flags-status" style="display: none;">
+        <strong>Status:</strong> <span id="featureFlagsStatusText">Loading...</span>
+      </div>
+      
       <div id="featureFlags">
         <div class="feature-item">
           <div>
@@ -252,7 +281,7 @@
         <strong>Last updated:</strong> <span id="featureUpdatedTime">-</span> by <span id="featureUpdatedBy">-</span>
       </div>
       
-      <button class="btn btn-primary mt-1" id="saveFeatureFlags">Save Feature Flags</button>
+      <button class="btn btn-primary mt-1" id="saveFeatureFlags" disabled>Save Feature Flags</button>
     </div>
     
     <!-- Audit Log Viewer -->
@@ -493,18 +522,109 @@
     );
   });
   
+  // Constants
+  const STATUS_HIDE_DELAY_MS = 3000;
+  
+  // State management for feature flags
+  let featureFlagsLoaded = false;
+  let originalFeatureFlags = {};
+  let isSavingFeatureFlags = false;
+  
+  // Update feature flags status UI
+  function updateFeatureFlagsStatus(status, text) {
+    const statusEl = document.getElementById('featureFlagsStatus');
+    const statusTextEl = document.getElementById('featureFlagsStatusText');
+    
+    if (statusEl && statusTextEl) {
+      statusEl.style.display = status === 'hidden' ? 'none' : 'block';
+      statusTextEl.textContent = text || '';
+      
+      // Update colors based on status
+      statusEl.className = `feature-flags-status feature-flags-status-${status}`;
+    }
+  }
+  
+  // Enable or disable feature flag checkboxes
+  function setFeatureFlagsEnabled(enabled) {
+    const checkboxes = [
+      'featureRegistration',
+      'featureSupplierApply',
+      'featureReviews',
+      'featurePhotoUploads',
+      'featureSupportTickets',
+      'featurePexelsCollage'
+    ];
+    
+    checkboxes.forEach(id => {
+      const checkbox = document.getElementById(id);
+      if (checkbox) {
+        checkbox.disabled = !enabled;
+      }
+    });
+  }
+  
+  // Check if feature flags have been modified (dirty state)
+  function hasFeatureFlagsChanged() {
+    if (!featureFlagsLoaded) return false;
+    
+    const current = {
+      registration: document.getElementById('featureRegistration').checked,
+      supplierApplications: document.getElementById('featureSupplierApply').checked,
+      reviews: document.getElementById('featureReviews').checked,
+      photoUploads: document.getElementById('featurePhotoUploads').checked,
+      supportTickets: document.getElementById('featureSupportTickets').checked,
+      pexelsCollage: document.getElementById('featurePexelsCollage').checked,
+    };
+    
+    return JSON.stringify(current) !== JSON.stringify(originalFeatureFlags);
+  }
+  
+  // Update save button state based on conditions
+  function updateSaveButtonState() {
+    const saveBtn = document.getElementById('saveFeatureFlags');
+    if (!saveBtn) return;
+    
+    // Enable only if:
+    // 1. Flags are loaded
+    // 2. CSRF token is available
+    // 3. User has made changes
+    // 4. Not currently saving
+    const canSave = featureFlagsLoaded && 
+                    window.__CSRF_TOKEN__ && 
+                    hasFeatureFlagsChanged() && 
+                    !isSavingFeatureFlags;
+    
+    saveBtn.disabled = !canSave;
+  }
+  
   // Load feature flags
   async function loadFeatureFlags() {
     try {
+      updateFeatureFlagsStatus('loading', 'Loading feature flags...');
+      setFeatureFlagsEnabled(false);
+      featureFlagsLoaded = false;
+      
       const flags = await AdminShared.adminFetch('/api/admin/settings/features', {
         method: 'GET',
       });
-      document.getElementById('featureRegistration').checked = flags.registration !== false;
-      document.getElementById('featureSupplierApply').checked = flags.supplierApplications !== false;
-      document.getElementById('featureReviews').checked = flags.reviews !== false;
-      document.getElementById('featurePhotoUploads').checked = flags.photoUploads !== false;
-      document.getElementById('featureSupportTickets').checked = flags.supportTickets !== false;
-      document.getElementById('featurePexelsCollage').checked = flags.pexelsCollage === true;
+      
+      // Store original values
+      originalFeatureFlags = {
+        registration: flags.registration !== false,
+        supplierApplications: flags.supplierApplications !== false,
+        reviews: flags.reviews !== false,
+        photoUploads: flags.photoUploads !== false,
+        supportTickets: flags.supportTickets !== false,
+        pexelsCollage: flags.pexelsCollage === true,
+      };
+      
+      // Set checkbox values
+      document.getElementById('featureRegistration').checked = originalFeatureFlags.registration;
+      document.getElementById('featureSupplierApply').checked = originalFeatureFlags.supplierApplications;
+      document.getElementById('featureReviews').checked = originalFeatureFlags.reviews;
+      document.getElementById('featurePhotoUploads').checked = originalFeatureFlags.photoUploads;
+      document.getElementById('featureSupportTickets').checked = originalFeatureFlags.supportTickets;
+      document.getElementById('featurePexelsCollage').checked = originalFeatureFlags.pexelsCollage;
       
       // Display last updated info
       if (flags.updatedAt && flags.updatedBy) {
@@ -512,14 +632,52 @@
         document.getElementById('featureUpdatedTime').textContent = updatedDate.toLocaleString();
         document.getElementById('featureUpdatedBy').textContent = flags.updatedBy;
         document.getElementById('featureFlagsLastUpdated').style.display = 'block';
+      } else {
+        document.getElementById('featureUpdatedTime').textContent = 'unknown';
+        document.getElementById('featureUpdatedBy').textContent = 'unknown';
+        document.getElementById('featureFlagsLastUpdated').style.display = 'block';
       }
+      
+      updateFeatureFlagsStatus('hidden');
+      setFeatureFlagsEnabled(true);
+      featureFlagsLoaded = true;
+      
+      // Update save button state
+      updateSaveButtonState();
     } catch (err) {
       AdminShared.debugError('Failed to load feature flags:', err);
+      updateFeatureFlagsStatus('error', 'Error loading feature flags');
+      setFeatureFlagsEnabled(false);
+      featureFlagsLoaded = false;
     }
+  }
+  
+  // Add change listeners to all feature flag checkboxes
+  function initFeatureFlagChangeListeners() {
+    const checkboxIds = [
+      'featureRegistration',
+      'featureSupplierApply',
+      'featureReviews',
+      'featurePhotoUploads',
+      'featureSupportTickets',
+      'featurePexelsCollage'
+    ];
+    
+    checkboxIds.forEach(id => {
+      const checkbox = document.getElementById(id);
+      if (checkbox) {
+        checkbox.addEventListener('change', updateSaveButtonState);
+      }
+    });
   }
   
   // Save feature flags with confirmation for critical toggles
   document.getElementById('saveFeatureFlags').addEventListener('click', async () => {
+    // Prevent double-submit
+    if (isSavingFeatureFlags) {
+      return;
+    }
+    
     const registrationChecked = document.getElementById('featureRegistration').checked;
     const reviewsChecked = document.getElementById('featureReviews').checked;
     
@@ -555,22 +713,51 @@
       pexelsCollage: document.getElementById('featurePexelsCollage').checked,
     };
     
-    await AdminShared.safeAction(
-      saveBtn,
-      async () => {
-        const result = await AdminShared.adminFetch('/api/admin/settings/features', {
-          method: 'PUT',
-          body: data,
-        });
-        await loadFeatureFlags(); // Reload to get updated timestamp
-        return result;
-      },
-      {
-        loadingText: 'Saving...',
-        successMessage: 'Feature flags updated',
-        errorMessage: 'Failed to save feature flags',
+    // Set saving state
+    isSavingFeatureFlags = true;
+    setFeatureFlagsEnabled(false);
+    updateFeatureFlagsStatus('saving', 'Saving feature flags...');
+    updateSaveButtonState();
+    
+    try {
+      await AdminShared.safeAction(
+        saveBtn,
+        async () => {
+          const result = await AdminShared.adminFetch('/api/admin/settings/features', {
+            method: 'PUT',
+            body: data,
+          });
+          
+          // safeAction will show success toast, we add status message
+          updateFeatureFlagsStatus('saved', 'Feature flags saved successfully');
+          setTimeout(() => updateFeatureFlagsStatus('hidden'), STATUS_HIDE_DELAY_MS);
+          
+          // Re-fetch flags from server (single source of truth)
+          await loadFeatureFlags();
+          return result;
+        },
+        {
+          loadingText: 'Saving...',
+          successMessage: 'Feature flags updated',
+          errorMessage: 'Failed to save feature flags',
+        }
+      );
+    } catch (error) {
+      // safeAction already showed error toast and restored button state
+      // Show detailed error message with status and response
+      let errorDetail = 'Error saving feature flags';
+      if (error.message) {
+        errorDetail += ': ' + error.message;
       }
-    );
+      updateFeatureFlagsStatus('error', errorDetail);
+      setFeatureFlagsEnabled(true);
+      
+      // Keep user's current toggles (don't revert)
+      AdminShared.debugError('Feature flags save error:', error);
+    } finally {
+      isSavingFeatureFlags = false;
+      updateSaveButtonState();
+    }
   });
   
   // Load maintenance mode
@@ -1081,12 +1268,25 @@
   });
   
   // Initial load
-  loadSiteConfig();
-  loadFeatureFlags();
-  loadMaintenanceMode();
-  loadSystemInfo();
-  loadAuditLogs();
-  loadDatabaseHealth();
+  async function initializeSettings() {
+    // Fetch CSRF token first
+    await AdminShared.fetchCSRFToken();
+    
+    // Initialize change listeners for feature flags
+    initFeatureFlagChangeListeners();
+    
+    // Now load settings in parallel
+    await Promise.all([
+      loadSiteConfig(),
+      loadFeatureFlags(),
+      loadMaintenanceMode(),
+      loadSystemInfo(),
+      loadAuditLogs(),
+      loadDatabaseHealth(),
+    ]);
+  }
+  
+  initializeSettings();
   
   // Refresh database health every 30 seconds
   setInterval(loadDatabaseHealth, 30000);
