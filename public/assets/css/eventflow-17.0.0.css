@@ -124,8 +124,13 @@ html[data-theme="dark"] .theme-icon-moon {
   transform: scale(1);
 }
 
+/* ========================================
+   LEGACY NAV TOGGLE - FOR LEGACY PAGES ONLY
+   EF header uses .ef-mobile-toggle in navbar.css
+   ======================================== */
+
 /* 3) Burger button – visible on desktop AND mobile (per user requirement) */
-.nav-toggle {
+.legacy-nav-toggle {
   display: inline-flex;
   width: 34px;
   height: 34px;
@@ -139,30 +144,30 @@ html[data-theme="dark"] .theme-icon-moon {
   transition: background 140ms ease-out, transform 120ms ease-out, box-shadow 160ms ease-out;
 }
 
-.nav-toggle:hover {
+.legacy-nav-toggle:hover {
   background: rgba(15,23,42,.06);
   transform: translateY(-1px);
 }
 
 /* Use the ☰ glyph so it's always visible */
-.nav-toggle::before {
+.legacy-nav-toggle::before {
   content: '☰';
   font-size: 18px;
   line-height: 1;
 }
 
 /* Hide internal bars */
-.nav-toggle-bar {
+.legacy-nav-toggle-bar {
   display: none;
 }
 
 /* Dark mode support for burger */
-html[data-theme="dark"] .nav-toggle {
+html[data-theme="dark"] .legacy-nav-toggle {
   background: rgba(31,41,55,.9);
   border-color: rgba(255,255,255,.16);
 }
 
-html[data-theme="dark"] .nav-toggle:hover {
+html[data-theme="dark"] .legacy-nav-toggle:hover {
   background: rgba(55,65,81,.9);
 }
 

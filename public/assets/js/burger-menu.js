@@ -12,7 +12,9 @@
 
   // Prevent double initialization
   if (window.__burgerMenuInitialized) {
-    if (DEBUG) console.log('🍔 Burger menu already initialized, skipping...');
+    if (DEBUG) {
+      console.log('🍔 Burger menu already initialized, skipping...');
+    }
     return;
   }
 
@@ -24,7 +26,9 @@
   }
 
   function initBurgerMenu() {
-    if (DEBUG) console.log('🍔 Initializing burger menu...');
+    if (DEBUG) {
+      console.log('🍔 Initializing burger menu...');
+    }
 
     // Get DOM elements
     const mobileToggle = document.getElementById('ef-mobile-toggle');
@@ -33,11 +37,15 @@
     const mainContent = document.querySelector('main');
 
     if (!mobileToggle || !mobileMenu) {
-      if (DEBUG) console.warn('Burger menu elements not found');
+      if (DEBUG) {
+        console.warn('Burger menu elements not found');
+      }
       return;
     }
 
-    if (DEBUG) console.log('✅ Burger menu elements found');
+    if (DEBUG) {
+      console.log('✅ Burger menu elements found');
+    }
 
     // Mark as initialized
     window.__burgerMenuInitialized = true;
@@ -45,6 +53,16 @@
     // State
     let isOpen = false;
     let lastFocusedElement = null;
+
+    // Create backdrop element for click-outside detection
+    let backdrop = document.getElementById('ef-menu-backdrop');
+    if (!backdrop) {
+      backdrop = document.createElement('div');
+      backdrop.id = 'ef-menu-backdrop';
+      backdrop.className = 'ef-menu-backdrop';
+      backdrop.style.cssText = 'display: none;';
+      document.body.appendChild(backdrop);
+    }
 
     // Get all focusable elements within the menu
     function getFocusableElements() {
@@ -55,10 +73,14 @@
 
     // Focus trap handler
     function handleFocusTrap(event) {
-      if (!isOpen) return;
+      if (!isOpen) {
+        return;
+      }
 
       const focusableElements = getFocusableElements();
-      if (focusableElements.length === 0) return;
+      if (focusableElements.length === 0) {
+        return;
+      }
 
       const firstElement = focusableElements[0];
       const lastElement = focusableElements[focusableElements.length - 1];
@@ -71,7 +93,7 @@
             event.preventDefault();
             lastElement.focus();
           }
-        } 
+        }
         // Tab (forwards)
         else {
           if (document.activeElement === lastElement) {
@@ -91,7 +113,9 @@
 
       isOpen = !isOpen;
 
-      if (DEBUG) console.log(`🔄 Menu ${isOpen ? 'opening' : 'closing'}...`);
+      if (DEBUG) {
+        console.log(`🔄 Menu ${isOpen ? 'opening' : 'closing'}...`);
+      }
 
       if (isOpen) {
         // Store the element that had focus before opening
@@ -102,7 +126,10 @@
         mobileToggle.setAttribute('aria-expanded', 'true');
         mobileMenu.setAttribute('aria-hidden', 'false');
         document.body.classList.add('ef-menu-open');
-        
+
+        // Show backdrop
+        backdrop.style.display = 'block';
+
         if (bottomMenuBtn) {
           bottomMenuBtn.setAttribute('aria-expanded', 'true');
         }
@@ -116,13 +143,15 @@
           }
         }
 
-        // Focus first menu link
+        // Focus first menu link using requestAnimationFrame for better timing
         const focusableElements = getFocusableElements();
         if (focusableElements.length > 0) {
-          // Small delay to ensure menu is visible
-          setTimeout(() => {
-            focusableElements[0].focus();
-          }, 100);
+          // Use requestAnimationFrame to ensure DOM is fully updated
+          requestAnimationFrame(() => {
+            setTimeout(() => {
+              focusableElements[0].focus();
+            }, 100);
+          });
         }
 
         // Add focus trap listener
@@ -133,7 +162,10 @@
         mobileToggle.setAttribute('aria-expanded', 'false');
         mobileMenu.setAttribute('aria-hidden', 'true');
         document.body.classList.remove('ef-menu-open');
-        
+
+        // Hide backdrop
+        backdrop.style.display = 'none';
+
         if (bottomMenuBtn) {
           bottomMenuBtn.setAttribute('aria-expanded', 'false');
         }
@@ -161,11 +193,15 @@
 
     // Attach click handlers
     mobileToggle.addEventListener('click', toggleMenu);
-    if (DEBUG) console.log('✅ Click handler attached to mobile toggle');
+    if (DEBUG) {
+      console.log('✅ Click handler attached to mobile toggle');
+    }
 
     if (bottomMenuBtn) {
       bottomMenuBtn.addEventListener('click', toggleMenu);
-      if (DEBUG) console.log('✅ Click handler attached to bottom menu button');
+      if (DEBUG) {
+        console.log('✅ Click handler attached to bottom menu button');
+      }
     }
 
     // Close menu when clicking on links
@@ -173,33 +209,60 @@
     menuLinks.forEach(link => {
       link.addEventListener('click', () => {
         if (isOpen && link.getAttribute('href') && link.getAttribute('href') !== '#') {
-          if (DEBUG) console.log('📍 Closing menu after link click');
+          if (DEBUG) {
+            console.log('📍 Closing menu after link click');
+          }
           toggleMenu();
         }
       });
     });
 
-    // Close on Escape key
+    // Close on Escape key and return focus
     document.addEventListener('keydown', e => {
       if (e.key === 'Escape' && isOpen) {
-        if (DEBUG) console.log('⎋ Closing menu with Escape key');
+        if (DEBUG) {
+          console.log('⎋ Closing menu with Escape key');
+        }
+        toggleMenu();
+        // Return focus to the element that opened the menu
+        if (lastFocusedElement && typeof lastFocusedElement.focus === 'function') {
+          requestAnimationFrame(() => {
+            lastFocusedElement.focus();
+          });
+        }
+      }
+    });
+
+    // Close when clicking on backdrop
+    backdrop.addEventListener('click', e => {
+      if (isOpen) {
+        if (DEBUG) {
+          console.log('🖱️ Closing menu - clicked on backdrop');
+        }
+        e.preventDefault();
+        e.stopPropagation();
         toggleMenu();
       }
     });
 
-    // Close when clicking outside
+    // Close when clicking outside (keep as fallback)
     document.addEventListener('click', e => {
       if (
         isOpen &&
         !mobileMenu.contains(e.target) &&
         !mobileToggle.contains(e.target) &&
-        (!bottomMenuBtn || !bottomMenuBtn.contains(e.target))
+        (!bottomMenuBtn || !bottomMenuBtn.contains(e.target)) &&
+        e.target !== backdrop
       ) {
-        if (DEBUG) console.log('🖱️ Closing menu - clicked outside');
+        if (DEBUG) {
+          console.log('🖱️ Closing menu - clicked outside');
+        }
         toggleMenu();
       }
     });
 
-    if (DEBUG) console.log('🎉 Burger menu initialization complete!');
+    if (DEBUG) {
+      console.log('🎉 Burger menu initialization complete!');
+    }
   }
 })();

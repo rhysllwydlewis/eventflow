@@ -393,6 +393,35 @@ app.get('/marketplace', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'marketplace.html'));
 });
 
+// Redirect non-canonical marketplace URL to canonical
+app.get('/marketplace.html', (req, res) => {
+  res.redirect(301, '/marketplace');
+});
+
+// Block test/dev pages in production
+if (process.env.NODE_ENV === 'production') {
+  const testPages = [
+    '/navbar-test.html',
+    '/navbar-test-visual.html',
+    '/modal-test.html',
+    '/test-avatar-positioning.html',
+    '/test-burger-menu.html',
+    '/test-footer-nav.html',
+    '/test-hero-search.html',
+    '/test-jadeassist.html',
+    '/test-jadeassist-real.html',
+    '/test-responsive.html',
+    '/test-ui-fixes.html',
+    '/test-widget-positioning.html',
+  ];
+  
+  testPages.forEach(page => {
+    app.get(page, (req, res) => {
+      res.status(404).send('Page not found');
+    });
+  });
+}
+
 app.use(express.static(path.join(__dirname, 'public')));
 // Far-future caching for user uploads (they have unique filenames)
 app.use(
