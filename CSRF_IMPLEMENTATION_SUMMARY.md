@@ -66,7 +66,7 @@ We implemented the **Double-Submit Cookie pattern**, a stateless CSRF protection
 
 ## Files Modified
 
-### Backend (5 files)
+### Backend (8 files)
 
 1. **`middleware/csrf.js`** (Complete rewrite)
    - Removed global `tokenStore` Map
@@ -81,12 +81,12 @@ We implemented the **Double-Submit Cookie pattern**, a stateless CSRF protection
 
 3. **`routes/admin.js`**
    - Added `csrfProtection` import
-   - Added `csrfProtection` middleware to **36+ write routes**:
+   - Added `csrfProtection` middleware to **41+ write routes**:
      - FAQ management (create/update/delete)
      - Settings updates (site/features/maintenance)
      - Email template updates
-     - User management (suspend/ban/verify/etc.)
-     - Supplier management (approve/verify/update/delete)
+     - User management (suspend/ban/verify/resend-verification/etc.)
+     - Supplier management (approve/verify/update/delete/subscription)
      - Package management (create/update/delete/approve/feature)
      - Photo moderation (approve/reject)
      - Ticket management (update/reply)
@@ -104,6 +104,31 @@ We implemented the **Double-Submit Cookie pattern**, a stateless CSRF protection
    - Added `csrfProtection` import
    - Added `csrfProtection` to `POST /api/payments/create-checkout-session`
 
+6. **`routes/messages.js`** (NEW - User-facing routes)
+   - Added `csrfProtection` import
+   - Added `csrfProtection` to **9 write routes**:
+     - Create thread (POST /threads)
+     - Send message (POST /threads/:threadId/messages)
+     - Mark as read/unread
+     - Add reactions
+     - Archive/unarchive threads
+     - Delete messages
+     - Update messages
+
+7. **`routes/profile.js`** (NEW - User-facing routes)
+   - Added `csrfProtection` import
+   - Added `csrfProtection` to **3 write routes**:
+     - Update profile (PUT /)
+     - Upload avatar (POST /avatar)
+     - Delete avatar (DELETE /avatar)
+
+8. **`routes/tickets.js`** (NEW - User-facing routes)
+   - Added `csrfProtection` import
+   - Added `csrfProtection` to **3 write routes**:
+     - Create ticket (POST /)
+     - Update ticket (PUT /:id)
+     - Delete ticket (DELETE /:id)
+
 ### Frontend (1 file)
 
 6. **`public/assets/js/checkout.js`**
@@ -120,14 +145,14 @@ We implemented the **Double-Submit Cookie pattern**, a stateless CSRF protection
 ### Testing (1 file)
 
 7. **`tests/integration/csrf-protection.test.js`** (New file)
-   - 25 comprehensive integration tests
+   - **31 comprehensive integration tests**
    - Tests middleware implementation
    - Tests cookie configuration
-   - Tests route protection
+   - Tests route protection (admin + user-facing)
    - Tests client-side integration
    - All tests passing ✅
 
-### Documentation (1 file)
+### Documentation (2 files)
 
 8. **`docs/CSRF_TESTING_GUIDE.md`** (New file)
    - Manual testing procedures
@@ -137,18 +162,24 @@ We implemented the **Double-Submit Cookie pattern**, a stateless CSRF protection
    - Production deployment checklist
    - Troubleshooting section
 
+9. **`CSRF_IMPLEMENTATION_SUMMARY.md`** (This file)
+   - Complete implementation documentation
+   - Security analysis
+   - Testing results
+   - Production deployment guide
+
 ## Testing Results
 
 ### Automated Testing
 
 **CSRF Protection Tests:**
-- ✅ 25/25 tests passing
+- ✅ **31/31 tests passing** (originally 25, added 6 for user-facing routes)
 - Coverage includes:
   - Middleware implementation
   - Cookie configuration (SameSite, Secure, HttpOnly, maxAge)
   - Token validation logic
   - Error responses (403 for missing/invalid tokens)
-  - Route protection enforcement (admin, auth, payments)
+  - Route protection enforcement (admin, auth, payments, messages, profile, tickets)
   - Client-side integration (admin-shared.js, checkout.js)
 
 **Existing Test Suite:**
