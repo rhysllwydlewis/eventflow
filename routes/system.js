@@ -99,10 +99,10 @@ router.get('/config', applyAuthLimiter, async (req, res) => {
   if (!APP_VERSION) {
     return res.status(503).json({ error: 'Configuration service not initialized' });
   }
-  
+
   // Set public caching headers (this endpoint is safe to cache)
   res.setHeader('Cache-Control', 'public, max-age=300'); // 5 minutes
-  
+
   res.json({
     googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || '',
     version: APP_VERSION,
@@ -117,6 +117,10 @@ router.get('/meta', async (_req, res) => {
   if (!APP_VERSION) {
     return res.status(503).json({ error: 'Metadata service not initialized' });
   }
+
+  // Set public caching headers (this endpoint is safe to cache)
+  res.setHeader('Cache-Control', 'public, max-age=300'); // 5 minutes
+
   res.json({
     ok: true,
     version: APP_VERSION,
@@ -139,6 +143,9 @@ router.get('/health', applyHealthCheckLimiter, async (_req, res) => {
       error: 'Health check service dependencies not initialized',
     });
   }
+
+  // Set public caching headers (health status is safe to cache briefly)
+  res.setHeader('Cache-Control', 'public, max-age=10'); // 10 seconds
 
   // Server is always "ok" if it's running and accepting requests
   // Database status is reported as a service status, not overall health
@@ -298,6 +305,9 @@ router.get('/ready', applyHealthCheckLimiter, async (_req, res) => {
  * Used to verify performance optimizations are active
  */
 router.get('/performance', applyHealthCheckLimiter, async (req, res) => {
+  // Set public caching headers (performance info is safe to cache)
+  res.setHeader('Cache-Control', 'public, max-age=60'); // 1 minute
+
   const timestamp = new Date().toISOString();
 
   // Check compression support
