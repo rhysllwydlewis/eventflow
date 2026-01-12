@@ -103,36 +103,82 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // Network-first strategy for API requests
+  // API requests - secure caching strategy
   if (url.pathname.startsWith('/api/')) {
+    // Allowlist of safe public endpoints that may be cached
+    const SAFE_API_ENDPOINTS = [
+      '/api/config',
+      '/api/meta',
+      '/api/health',
+      '/api/performance',
+    ];
+
+    // Check if this is a safe endpoint
+    const isSafeEndpoint = SAFE_API_ENDPOINTS.some(safe => url.pathname === safe);
+
+    // Check if endpoint starts with /api/public/ (if such endpoints exist)
+    const isPublicEndpoint = url.pathname.startsWith('/api/public/');
+
     event.respondWith(
       fetch(request)
         .then(response => {
-          // Clone response and cache it
-          const responseClone = response.clone();
-          caches.open(DYNAMIC_CACHE).then(cache => {
-            cache.put(request, responseClone);
-            limitCacheSize(DYNAMIC_CACHE, MAX_DYNAMIC_CACHE_SIZE);
-          });
+          // Check Cache-Control header
+          const cacheControl = response.headers.get('Cache-Control') || '';
+          const hasNoStore = cacheControl.includes('no-store');
+          const hasPrivate = cacheControl.includes('private');
+          const hasNoCache = cacheControl.includes('no-cache');
+
+          // Never cache if Cache-Control indicates no caching
+          const shouldNeverCache = hasNoStore || hasPrivate || hasNoCache;
+
+          // Only cache if:
+          // 1. Endpoint is on allowlist OR is a public endpoint
+          // 2. Response doesn't have no-store/private/no-cache headers
+          // 3. Request doesn't have credentials (cookies/auth) unless explicitly safe
+          const canCache = (isSafeEndpoint || isPublicEndpoint) && !shouldNeverCache;
+
+          if (canCache) {
+            // Clone response and cache it
+            const responseClone = response.clone();
+            caches.open(DYNAMIC_CACHE).then(cache => {
+              cache.put(request, responseClone);
+              limitCacheSize(DYNAMIC_CACHE, MAX_DYNAMIC_CACHE_SIZE);
+            });
+          }
+
           return response;
         })
         .catch(() => {
-          // Fallback to cache if network fails
-          return caches.match(request).then(response => {
-            return (
-              response ||
-              new Response(
-                JSON.stringify({
-                  error: 'Offline',
-                  message: 'You are currently offline',
-                }),
-                {
-                  status: 503,
-                  headers: { 'Content-Type': 'application/json' },
-                }
-              )
-            );
-          });
+          // Network failed - check if we have cached version (only for safe endpoints)
+          if (isSafeEndpoint || isPublicEndpoint) {
+            return caches.match(request).then(response => {
+              return (
+                response ||
+                new Response(
+                  JSON.stringify({
+                    error: 'Offline',
+                    message: 'You are currently offline',
+                  }),
+                  {
+                    status: 503,
+                    headers: { 'Content-Type': 'application/json' },
+                  }
+                )
+              );
+            });
+          }
+
+          // For all other API endpoints, fail closed - return 503
+          return new Response(
+            JSON.stringify({
+              error: 'Offline',
+              message: 'This resource is not available offline',
+            }),
+            {
+              status: 503,
+              headers: { 'Content-Type': 'application/json' },
+            }
+          );
         })
     );
     return;

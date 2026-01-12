@@ -93,11 +93,16 @@ router.get('/csrf-token', applyAuthLimiter, async (req, res) => {
  * GET /api/config
  * Client config endpoint - provides public configuration values
  * Apply rate limiting to prevent abuse of API key exposure
+ * This endpoint is cacheable as it contains only public configuration
  */
 router.get('/config', applyAuthLimiter, async (req, res) => {
   if (!APP_VERSION) {
     return res.status(503).json({ error: 'Configuration service not initialized' });
   }
+  
+  // Set public caching headers (this endpoint is safe to cache)
+  res.setHeader('Cache-Control', 'public, max-age=300'); // 5 minutes
+  
   res.json({
     googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || '',
     version: APP_VERSION,
