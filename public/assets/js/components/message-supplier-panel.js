@@ -332,14 +332,18 @@ class MessageSupplierPanel {
     if (createAccountBtn) {
       createAccountBtn.addEventListener('click', () => {
         this.savePendingMessage();
-        window.location.href = `/auth.html?mode=register&return=${encodeURIComponent(window.location.href)}`;
+        // Use relative path instead of full URL for security
+        const returnPath = window.location.pathname + window.location.search + window.location.hash;
+        window.location.href = `/auth.html?mode=register&return=${encodeURIComponent(returnPath)}`;
       });
     }
 
     if (loginBtn) {
       loginBtn.addEventListener('click', () => {
         this.savePendingMessage();
-        window.location.href = `/auth.html?redirect=${encodeURIComponent(window.location.href)}`;
+        // Use relative path instead of full URL for security
+        const returnPath = window.location.pathname + window.location.search + window.location.hash;
+        window.location.href = `/auth.html?redirect=${encodeURIComponent(returnPath)}`;
       });
     }
 
