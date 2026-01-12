@@ -5,6 +5,18 @@
  */
 
 /* ========================================
+   NAV DESIGN TOKENS
+   Single source of truth for EF header z-index and dimensions
+   ======================================== */
+
+:root {
+  --ef-header-height: 64px;
+  --ef-z-header: 2000;
+  --ef-z-menu: 2001;
+  --ef-z-backdrop: 1998;
+}
+
+/* ========================================
    CSS VARIABLES
    ======================================== */
 
@@ -24,7 +36,6 @@
   --ef-radius: 12px;
   --ef-radius-sm: 8px;
   --ef-transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  --ef-header-height: 64px;  /* Header height for consistent spacing */
 }
 
 /* ========================================
@@ -60,7 +71,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 64px;
+  height: var(--ef-header-height);
   gap: 16px;
 }
 
@@ -472,7 +483,7 @@
 
 .ef-mobile-menu {
   position: fixed;
-  top: 64px;
+  top: var(--ef-header-height);
   left: 0;
   right: 0;
   bottom: 0;
@@ -615,7 +626,7 @@ body.ef-menu-open::before {
   right: 0;
   bottom: 0;
   background: rgba(0, 0, 0, 0.4);
-  z-index: 998;
+  z-index: var(--ef-z-backdrop);
   animation: ef-backdrop-fade 0.3s ease-out;
 }
 
@@ -763,7 +774,7 @@ body {
 @media (max-width: 768px) {
   /* Ensure Gold Standard header stays on top */
   .ef-header {
-    z-index: 2000 !important;
+    z-index: var(--ef-z-header) !important;
     position: fixed !important;
     top: 0 !important;
     left: 0 !important;
@@ -793,7 +804,7 @@ body {
     right: 0;
     bottom: 0;
     background: rgba(0, 0, 0, 0.5);
-    z-index: 1998 !important;
+    z-index: var(--ef-z-backdrop) !important;
     backdrop-filter: blur(2px);
     -webkit-backdrop-filter: blur(2px);
   }
@@ -1021,17 +1032,14 @@ body {
     opacity: 1 !important;
     visibility: visible !important;
     pointer-events: auto !important;
-    z-index: 2001 !important; /* Above overlay (1998) and header (2000) */
+    z-index: var(--ef-z-menu) !important; /* Above overlay and header */
     position: fixed !important;
-    top: 64px !important;
     top: var(--ef-header-height, 64px) !important;
     left: 0 !important;
     right: 0 !important;
     bottom: 0 !important;
     width: 100% !important;
-    height: calc(100vh - 64px) !important;
     height: calc(100vh - var(--ef-header-height, 64px)) !important;
-    max-height: calc(100vh - 64px) !important;
     max-height: calc(100vh - var(--ef-header-height, 64px)) !important;
     overflow-y: auto !important;
     transform: none !important;
@@ -1040,7 +1048,7 @@ body {
   
   /* Ensure backdrop is below menu */
   body.ef-menu-open::before {
-    z-index: 1998 !important;
+    z-index: var(--ef-z-backdrop) !important;
   }
 }
 

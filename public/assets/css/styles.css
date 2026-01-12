@@ -601,7 +601,13 @@ html[data-theme="dark"] .theme-icon::after{
   transform:scale(1);
 }
 
-.nav-toggle{
+/* ========================================
+   LEGACY NAV STYLES - FOR LEGACY PAGES ONLY
+   DO NOT USE - EF header system uses navbar.css
+   ======================================== */
+
+/* Legacy .nav-toggle - only for pages not using EF header */
+.legacy-nav-toggle{
   width:34px;
   height:34px;
   border-radius:999px;
@@ -614,33 +620,33 @@ html[data-theme="dark"] .theme-icon::after{
   cursor:pointer;
   transition:background 140ms ease-out, transform 120ms ease-out, box-shadow 160ms ease-out;
 }
-.nav-toggle:hover{
+.legacy-nav-toggle:hover{
   background:#fff;
   box-shadow:0 2px 8px rgba(15,23,42,.12);
 }
-.nav-toggle:focus-visible{
+.legacy-nav-toggle:focus-visible{
   outline:2px solid #0B8073;
   outline-offset:2px;
 }
-.nav-toggle-bar{
+.legacy-nav-toggle-bar{
   width:16px;
   height:2px;
   border-radius:999px;
   background:#0F172A;
   transition:transform 160ms ease, opacity 160ms ease;
 }
-body.nav-open .nav-toggle-bar:nth-child(1){
+body.legacy-nav-open .legacy-nav-toggle-bar:nth-child(1){
   transform:translateY(4px) rotate(45deg);
 }
-body.nav-open .nav-toggle-bar:nth-child(2){
+body.legacy-nav-open .legacy-nav-toggle-bar:nth-child(2){
   opacity:0;
 }
-body.nav-open .nav-toggle-bar:nth-child(3){
+body.legacy-nav-open .legacy-nav-toggle-bar:nth-child(3){
   transform:translateY(-4px) rotate(-45deg);
 }
 
-/* Main nav menu (desktop + mobile drawer) */
-.nav-menu{
+/* Legacy nav menu - only for pages not using EF header */
+.legacy-nav-menu{
   display:flex;
   position:fixed;
   top:50%;
@@ -662,30 +668,30 @@ body.nav-open .nav-toggle-bar:nth-child(3){
   z-index:1000;
 }
 /* Animate from top when opened from top burger */
-.nav-menu.nav-menu--from-top{
+.legacy-nav-menu.legacy-nav-menu--from-top{
   transform:translate(-50%, -50%) translateY(-20px);
 }
-.nav-menu.nav-menu--from-top.nav-menu--open{
+.legacy-nav-menu.legacy-nav-menu--from-top.legacy-nav-menu--open{
   opacity:1;
   transform:translate(-50%, -50%);
   pointer-events:auto;
 }
 /* Animate from bottom when opened from bottom burger */
-.nav-menu.nav-menu--from-bottom{
+.legacy-nav-menu.legacy-nav-menu--from-bottom{
   transform:translate(-50%, -50%) translateY(20px);
 }
-.nav-menu.nav-menu--from-bottom.nav-menu--open{
+.legacy-nav-menu.legacy-nav-menu--from-bottom.legacy-nav-menu--open{
   opacity:1;
   transform:translate(-50%, -50%);
   pointer-events:auto;
 }
-/* Legacy support for body.nav-open */
-body.nav-open .nav-menu{
+/* Legacy support for body.legacy-nav-open */
+body.legacy-nav-open .legacy-nav-menu{
   opacity:1;
   transform:translate(-50%, -50%);
   pointer-events:auto;
 }
-.nav-menu a{
+.legacy-nav-menu a{
   padding:8px 12px;
   width:100%;
   white-space:nowrap;
@@ -707,8 +713,8 @@ body.nav-open .nav-menu{
   .nav-inline{
     display:none;
   }
-  /* Show burger menu on tablets and smaller */
-  .nav-toggle{
+  /* Show legacy burger menu on tablets and smaller (legacy pages only) */
+  .legacy-nav-toggle{
     display:inline-flex;
   }
 }
@@ -717,74 +723,16 @@ body.nav-open .nav-menu{
   .nav-inline{
     display:none;
   }
-  .nav-menu{
-    display:flex;
-    position:fixed;
-    top:50%;
-    left:50%;
-    transform:translate(-50%, -50%);
-    width:min(400px, calc(100vw - 24px));
-    max-width:calc(100vw - 24px);
-    border-radius:16px;
-    background:rgba(255,255,255,.98);
-    box-shadow:0 24px 70px rgba(15,23,42,.35);
-    flex-direction:column;
-    align-items:stretch;
-    padding:10px 12px 14px;
-    max-height:70vh;
-    overflow:auto;
-    opacity:0;
-    pointer-events:none;
-    transition:opacity 160ms ease-out, transform 160ms ease-out;
-    z-index:1000;
-  }
-  /* Animate from top when opened from top burger */
-  .nav-menu.nav-menu--from-top{
-    transform:translate(-50%, -50%) translateY(-20px);
-  }
-  .nav-menu.nav-menu--from-top.nav-menu--open{
-    display:flex;
-    opacity:1;
-    transform:translate(-50%, -50%);
-    pointer-events:auto;
-  }
-  /* Animate from bottom when opened from bottom burger */
-  .nav-menu.nav-menu--from-bottom{
-    transform:translate(-50%, -50%) translateY(20px);
-  }
-  .nav-menu.nav-menu--from-bottom.nav-menu--open{
-    display:flex;
-    opacity:1;
-    transform:translate(-50%, -50%);
-    pointer-events:auto;
-  }
-  /* Legacy support for body.nav-open */
-  body.nav-open .nav-menu{
-    opacity:1;
-    transform:translate(-50%, -50%);
-    pointer-events:auto;
-  }
-  .nav-menu a{
-    width:100%;
-    border-radius:10px;
-    transition:background 140ms ease-out, transform 100ms ease-out;
-  }
-  .nav-menu a:hover{
-    background:rgba(11,128,115,.08);
-    transform:translateX(2px);
-  }
-  .nav-menu a:focus-visible{
-    outline:2px solid var(--ink, #0B8073);
-    outline-offset:2px;
-  }
+  /* Legacy nav menu styles removed - use navbar.css for EF header */
+  /* Legacy pages can use .legacy-nav-menu classes defined above */
   .nav{
     flex-wrap:nowrap;
   }
-  .nav-toggle{
+  .legacy-nav-toggle{
     display:inline-flex;
   }
   /* Hide large nav menu by default on mobile header row */
-  .header .nav.nav-menu{
+  .header .nav.legacy-nav-menu{
     border-top:1px solid rgba(15,23,42,.06);
   }
 }

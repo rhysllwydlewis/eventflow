@@ -48,16 +48,13 @@ html {
    ============================================ */
 
 /* Ensure body doesn't scroll when mobile menu is open */
+/* navbar.css is the single source of truth for body.ef-menu-open behavior */
 /* Using !important here is necessary to override any inline styles or other conflicting rules */
 /* that may be applied dynamically by JavaScript or third-party scripts */
 
 /* Legacy body.nav-open removed - all pages now use body.ef-menu-open */
 
-/* EF menu uses overflow-only scroll lock (navbar.css handles the rest) */
-body.ef-menu-open {
-  overflow: hidden !important;
-  /* DO NOT use position: fixed - it breaks the fixed-position menu panel */
-}
+/* EF menu scroll lock is handled by navbar.css */
 
 /* Legacy .nav-backdrop removed - EF header uses its own backdrop in navbar.css */
 
