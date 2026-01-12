@@ -6,6 +6,28 @@
 const AdminShared = (function () {
   'use strict';
 
+  // Debug flag - set to true to enable console logging
+  // In production, set to false to reduce console spam
+  const DEBUG = localStorage.getItem('ADMIN_DEBUG') === 'true';
+
+  // Debug logging wrapper
+  function debugLog(...args) {
+    if (DEBUG) {
+      console.log('[Admin]', ...args);
+    }
+  }
+
+  function debugWarn(...args) {
+    if (DEBUG) {
+      console.warn('[Admin]', ...args);
+    }
+  }
+
+  // Error logging (always show real errors)
+  function debugError(...args) {
+    console.error('[Admin]', ...args);
+  }
+
   // HTML escaping to prevent XSS
   function escapeHtml(unsafe) {
     if (!unsafe) {
@@ -99,7 +121,8 @@ const AdminShared = (function () {
             const currentPath = window.location.pathname;
             if (currentPath !== '/auth.html') {
               // Use relative path instead of full URL for security
-              const returnPath = window.location.pathname + window.location.search + window.location.hash;
+              const returnPath =
+                window.location.pathname + window.location.search + window.location.hash;
               const loginUrl = `/auth.html?redirect=${encodeURIComponent(returnPath)}`;
               // Ensure the redirect is to the same origin
               if (loginUrl.startsWith('/')) {
@@ -129,6 +152,106 @@ const AdminShared = (function () {
       } catch (e) {
         return { message: text };
       }
+    }
+  }
+
+  /**
+   * adminFetch - Enhanced fetch wrapper specifically for admin API calls
+   * Handles auth failures, errors, and console logging consistently
+   * @param {string} url - API endpoint URL
+   * @param {Object} options - fetch options (method, body, etc.)
+   * @returns {Promise<any>} Response data
+   */
+  async function adminFetch(url, options = {}) {
+    const method = options.method || 'GET';
+    const isWriteOperation = ['POST', 'PUT', 'DELETE', 'PATCH'].includes(method.toUpperCase());
+
+    debugLog(`${method} ${url}`, options.body ? { body: options.body } : '');
+
+    try {
+      const opts = {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          ...options.headers,
+        },
+        credentials: 'include',
+      };
+
+      // Add CSRF token for write operations
+      if (isWriteOperation) {
+        if (window.__CSRF_TOKEN__) {
+          opts.headers['X-CSRF-Token'] = window.__CSRF_TOKEN__;
+        } else {
+          debugWarn(`CSRF token missing for ${method} ${url} - request may be rejected by server`);
+        }
+      }
+
+      if (options.body) {
+        opts.body = typeof options.body === 'string' ? options.body : JSON.stringify(options.body);
+      }
+
+      const response = await fetch(url, opts);
+      const contentType = response.headers.get('content-type');
+      const isJson = contentType && contentType.includes('application/json');
+
+      // Handle auth failures
+      if (response.status === 401) {
+        debugWarn('401 Unauthorized - redirecting to login');
+        const currentPath = window.location.pathname;
+        const redirectUrl = `/auth.html?redirect=${encodeURIComponent(currentPath)}`;
+        window.location.href = redirectUrl;
+        throw new Error('Authentication required');
+      }
+
+      if (response.status === 403) {
+        debugWarn('403 Forbidden - insufficient permissions');
+        showToast('You do not have permission to perform this action', 'error');
+        throw new Error('Forbidden: Insufficient permissions');
+      }
+
+      // Parse response
+      let data;
+      if (isJson) {
+        data = await response.json();
+      } else {
+        const text = await response.text();
+        try {
+          data = JSON.parse(text);
+        } catch {
+          data = { message: text };
+        }
+      }
+
+      // Handle non-OK responses
+      if (!response.ok) {
+        const errorMessage =
+          data.error || data.message || `Request failed with status ${response.status}`;
+
+        // Log error based on status
+        if (response.status >= 500) {
+          debugError(`Server error (${response.status}):`, errorMessage);
+        } else if (response.status === 404) {
+          // 404s are often expected (e.g., checking if resource exists)
+          debugLog(`Resource not found (404): ${url}`);
+        } else {
+          debugWarn(`Request failed (${response.status}):`, errorMessage);
+        }
+
+        throw new Error(errorMessage);
+      }
+
+      debugLog(`${method} ${url} - Success`, data);
+      return data;
+    } catch (error) {
+      // Only log if not already logged above
+      if (
+        !error.message.includes('Authentication required') &&
+        !error.message.includes('Forbidden')
+      ) {
+        debugError(`${method} ${url} - Error:`, error.message);
+      }
+      throw error;
     }
   }
 
@@ -185,7 +308,172 @@ const AdminShared = (function () {
     }, 3000);
   }
 
-  // Confirm dialog
+  /**
+   * Show confirmation modal (better than browser confirm)
+   * @param {Object} options - Configuration object
+   * @param {string} options.title - Modal title
+   * @param {string} options.message - Modal message
+   * @param {string} options.confirmText - Confirm button text (default: 'Confirm')
+   * @param {string} options.cancelText - Cancel button text (default: 'Cancel')
+   * @param {string} options.type - Modal type: 'danger', 'warning', 'info' (default: 'info')
+   * @returns {Promise<boolean>} Resolves to true if confirmed, false if cancelled
+   */
+  function showConfirmModal(options = {}) {
+    const {
+      title = 'Confirm Action',
+      message = 'Are you sure you want to proceed?',
+      confirmText = 'Confirm',
+      cancelText = 'Cancel',
+      type = 'info',
+    } = options;
+
+    return new Promise(resolve => {
+      // Create modal overlay
+      const overlay = document.createElement('div');
+      overlay.className = 'admin-modal-overlay';
+      overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10001;
+        animation: fadeIn 0.2s ease;
+      `;
+
+      // Create modal dialog
+      const dialog = document.createElement('div');
+      dialog.className = 'admin-modal-dialog';
+      dialog.style.cssText = `
+        background: white;
+        border-radius: 8px;
+        padding: 1.5rem;
+        max-width: 500px;
+        width: 90%;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        animation: slideUp 0.3s ease;
+      `;
+
+      // Icon and color based on type
+      const typeConfig = {
+        danger: { icon: '⚠️', color: '#ef4444' },
+        warning: { icon: '⚠️', color: '#f59e0b' },
+        info: { icon: 'ℹ️', color: '#3b82f6' },
+      };
+      const config = typeConfig[type] || typeConfig.info;
+
+      dialog.innerHTML = `
+        <div style="display: flex; align-items: flex-start; gap: 1rem; margin-bottom: 1.5rem;">
+          <div style="font-size: 2rem; flex-shrink: 0;">${config.icon}</div>
+          <div style="flex: 1;">
+            <h3 style="margin: 0 0 0.5rem 0; font-size: 1.25rem; font-weight: 600; color: #1f2937;">
+              ${escapeHtml(title)}
+            </h3>
+            <p style="margin: 0; color: #6b7280; line-height: 1.5;">
+              ${escapeHtml(message)}
+            </p>
+          </div>
+        </div>
+        <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+          <button class="admin-modal-cancel" style="
+            padding: 0.5rem 1rem;
+            border: 1px solid #d1d5db;
+            background: white;
+            color: #374151;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s;
+          ">
+            ${escapeHtml(cancelText)}
+          </button>
+          <button class="admin-modal-confirm" style="
+            padding: 0.5rem 1rem;
+            border: none;
+            background: ${config.color};
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s;
+          ">
+            ${escapeHtml(confirmText)}
+          </button>
+        </div>
+      `;
+
+      overlay.appendChild(dialog);
+      document.body.appendChild(overlay);
+
+      // Add animations
+      const style = document.createElement('style');
+      style.textContent = `
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes slideUp {
+          from { transform: translateY(20px); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
+        }
+        .admin-modal-cancel:hover {
+          background: #f3f4f6 !important;
+        }
+        .admin-modal-confirm:hover {
+          opacity: 0.9;
+        }
+      `;
+      document.head.appendChild(style);
+
+      // Handle button clicks
+      const confirmBtn = dialog.querySelector('.admin-modal-confirm');
+      const cancelBtn = dialog.querySelector('.admin-modal-cancel');
+
+      const cleanup = () => {
+        overlay.style.animation = 'fadeOut 0.2s ease';
+        setTimeout(() => {
+          overlay.remove();
+          style.remove();
+        }, 200);
+      };
+
+      confirmBtn.addEventListener('click', () => {
+        cleanup();
+        resolve(true);
+      });
+
+      cancelBtn.addEventListener('click', () => {
+        cleanup();
+        resolve(false);
+      });
+
+      // Close on overlay click
+      overlay.addEventListener('click', e => {
+        if (e.target === overlay) {
+          cleanup();
+          resolve(false);
+        }
+      });
+
+      // Close on Escape key
+      const handleEscape = e => {
+        if (e.key === 'Escape') {
+          cleanup();
+          resolve(false);
+          document.removeEventListener('keydown', handleEscape);
+        }
+      };
+      document.addEventListener('keydown', handleEscape);
+    });
+  }
+
+  // Simple confirm dialog (fallback/legacy)
   function confirm(message) {
     return window.confirm(message);
   }
@@ -608,6 +896,280 @@ const AdminShared = (function () {
     }
   }
 
+  /**
+   * List State Management Utilities
+   * Helpers for consistent loading/error/empty states across admin list pages
+   */
+
+  /**
+   * Show loading state in a container
+   * @param {string|HTMLElement} container - Container selector or element
+   * @param {Object} options - Configuration options
+   * @param {number} options.rows - Number of skeleton rows (default: 5)
+   * @param {number} options.cols - Number of skeleton columns (default: 6)
+   * @param {string} options.message - Loading message (default: 'Loading...')
+   */
+  function showLoadingState(container, options = {}) {
+    const { rows = 5, cols = 6, message = 'Loading...' } = options;
+    const element = typeof container === 'string' ? document.querySelector(container) : container;
+
+    if (!element) {
+      debugWarn('showLoadingState: container not found');
+      return;
+    }
+
+    // Create skeleton table rows
+    const skeletonRows = Array.from({ length: rows }, () => {
+      const cells = Array.from(
+        { length: cols },
+        () => '<td><div class="skeleton-line"></div></td>'
+      ).join('');
+      return `<tr>${cells}</tr>`;
+    }).join('');
+
+    element.innerHTML = `
+      <tr>
+        <td colspan="${cols}" style="text-align: center; padding: 20px;">
+          <div class="loading-spinner"></div>
+          <div style="margin-top: 10px; color: #6b7280;">${escapeHtml(message)}</div>
+        </td>
+      </tr>
+      ${skeletonRows}
+    `;
+
+    // Add styles if not already present
+    if (!document.getElementById('admin-list-states-styles')) {
+      const style = document.createElement('style');
+      style.id = 'admin-list-states-styles';
+      style.textContent = `
+        .skeleton-line {
+          height: 16px;
+          background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+          background-size: 200% 100%;
+          animation: skeleton-loading 1.5s infinite;
+          border-radius: 4px;
+        }
+        @keyframes skeleton-loading {
+          0% { background-position: 200% 0; }
+          100% { background-position: -200% 0; }
+        }
+        .loading-spinner {
+          width: 40px;
+          height: 40px;
+          margin: 0 auto;
+          border: 4px solid #f3f4f6;
+          border-top-color: #3b82f6;
+          border-radius: 50%;
+          animation: spinner-rotate 0.8s linear infinite;
+        }
+        @keyframes spinner-rotate {
+          to { transform: rotate(360deg); }
+        }
+        .error-state, .empty-state {
+          text-align: center;
+          padding: 60px 20px;
+        }
+        .error-state-icon, .empty-state-icon {
+          font-size: 48px;
+          margin-bottom: 16px;
+        }
+        .error-state-title, .empty-state-title {
+          font-size: 20px;
+          font-weight: 600;
+          color: #1f2937;
+          margin-bottom: 8px;
+        }
+        .error-state-message, .empty-state-message {
+          color: #6b7280;
+          margin-bottom: 20px;
+        }
+      `;
+      document.head.appendChild(style);
+    }
+  }
+
+  /**
+   * Show error state in a container
+   * @param {string|HTMLElement} container - Container selector or element
+   * @param {Object} options - Configuration options
+   * @param {string} options.message - Error message
+   * @param {Function} options.onRetry - Retry callback function
+   * @param {number} options.colspan - Number of columns to span (default: 6)
+   */
+  function showErrorState(container, options = {}) {
+    const {
+      message = 'Failed to load data. Please try again.',
+      onRetry = null,
+      colspan = 6,
+    } = options;
+    const element = typeof container === 'string' ? document.querySelector(container) : container;
+
+    if (!element) {
+      debugWarn('showErrorState: container not found');
+      return;
+    }
+
+    const retryButtonHtml = onRetry
+      ? `<button class="btn btn-primary" id="retry-btn" style="margin-top: 12px;">🔄 Retry</button>`
+      : '';
+
+    element.innerHTML = `
+      <tr>
+        <td colspan="${colspan}">
+          <div class="error-state">
+            <div class="error-state-icon">⚠️</div>
+            <div class="error-state-title">Error Loading Data</div>
+            <div class="error-state-message">${escapeHtml(message)}</div>
+            ${retryButtonHtml}
+          </div>
+        </td>
+      </tr>
+    `;
+
+    if (onRetry) {
+      const retryBtn = element.querySelector('#retry-btn');
+      if (retryBtn) {
+        retryBtn.addEventListener('click', async () => {
+          retryBtn.disabled = true;
+          retryBtn.textContent = 'Retrying...';
+          try {
+            await onRetry();
+          } catch (error) {
+            debugError('Retry failed:', error);
+            retryBtn.disabled = false;
+            retryBtn.textContent = '🔄 Retry';
+          }
+        });
+      }
+    }
+  }
+
+  /**
+   * Show empty state in a container
+   * @param {string|HTMLElement} container - Container selector or element
+   * @param {Object} options - Configuration options
+   * @param {string} options.message - Empty state message
+   * @param {string} options.icon - Icon to display (default: '📭')
+   * @param {string} options.actionLabel - Optional action button label
+   * @param {Function} options.onAction - Optional action button callback
+   * @param {number} options.colspan - Number of columns to span (default: 6)
+   */
+  function showEmptyState(container, options = {}) {
+    const {
+      message = 'No items found',
+      icon = '📭',
+      actionLabel = null,
+      onAction = null,
+      colspan = 6,
+    } = options;
+    const element = typeof container === 'string' ? document.querySelector(container) : container;
+
+    if (!element) {
+      debugWarn('showEmptyState: container not found');
+      return;
+    }
+
+    const actionButtonHtml =
+      actionLabel && onAction
+        ? `<button class="btn btn-primary" id="empty-action-btn" style="margin-top: 12px;">${escapeHtml(actionLabel)}</button>`
+        : '';
+
+    element.innerHTML = `
+      <tr>
+        <td colspan="${colspan}">
+          <div class="empty-state">
+            <div class="empty-state-icon">${icon}</div>
+            <div class="empty-state-title">No Results</div>
+            <div class="empty-state-message">${escapeHtml(message)}</div>
+            ${actionButtonHtml}
+          </div>
+        </td>
+      </tr>
+    `;
+
+    if (actionLabel && onAction) {
+      const actionBtn = element.querySelector('#empty-action-btn');
+      if (actionBtn) {
+        actionBtn.addEventListener('click', onAction);
+      }
+    }
+  }
+
+  /**
+   * Disable a button and show loading state
+   * @param {HTMLElement} button - Button element
+   * @param {string} loadingText - Text to show while loading (default: 'Loading...')
+   * @returns {Function} Function to re-enable the button
+   */
+  function disableButton(button, loadingText = 'Loading...') {
+    if (!button) {
+      debugWarn('disableButton: button not found');
+      return () => {};
+    }
+
+    const originalText = button.textContent;
+    const originalDisabled = button.disabled;
+
+    button.disabled = true;
+    button.textContent = loadingText;
+    button.style.opacity = '0.6';
+    button.style.cursor = 'not-allowed';
+
+    // Return a function to re-enable
+    return () => {
+      button.disabled = originalDisabled;
+      button.textContent = originalText;
+      button.style.opacity = '';
+      button.style.cursor = '';
+    };
+  }
+
+  /**
+   * Safe action wrapper - prevents double-clicks and shows loading state
+   * @param {HTMLElement} button - Button element
+   * @param {Function} action - Async action to perform
+   * @param {Object} options - Configuration options
+   * @param {string} options.loadingText - Loading button text
+   * @param {string} options.successMessage - Success toast message
+   * @param {string} options.errorMessage - Error toast message prefix
+   */
+  async function safeAction(button, action, options = {}) {
+    const {
+      loadingText = 'Processing...',
+      successMessage = null,
+      errorMessage = 'Action failed',
+    } = options;
+
+    if (!button) {
+      debugWarn('safeAction: button not found');
+      return;
+    }
+
+    // Prevent double-clicks
+    if (button.disabled) {
+      return;
+    }
+
+    const restore = disableButton(button, loadingText);
+
+    try {
+      const result = await action();
+
+      if (successMessage) {
+        showToast(successMessage, 'success');
+      }
+
+      return result;
+    } catch (error) {
+      debugError('Action failed:', error);
+      const errorMsg = error.message || errorMessage;
+      showToast(errorMsg, 'error');
+      throw error;
+    } finally {
+      restore();
+    }
+  }
+
   // Initialize admin page
   function init() {
     fetchCSRFToken();
@@ -622,24 +1184,45 @@ const AdminShared = (function () {
 
   // Public API
   return {
+    // Debug utilities
+    DEBUG,
+    debugLog,
+    debugWarn,
+    debugError,
+    // Core utilities
     escapeHtml,
     formatDate,
     formatTimestamp,
     formatFileSize,
+    // API wrappers
     api,
+    adminFetch,
     fetchCSRFToken,
+    // UI utilities
     showToast,
     showEnhancedToast,
+    showConfirmModal,
     confirm,
+    // List state management
+    showLoadingState,
+    showErrorState,
+    showEmptyState,
+    disableButton,
+    safeAction,
+    // Data loading
     loadBadgeCounts,
+    // Navigation
     highlightActivePage,
     initSidebarToggle,
+    // Helpers
     generateId,
     debounce,
     animateCounter,
+    // Keyboard shortcuts
     initKeyboardShortcuts,
     openCommandPalette,
     closeModals,
+    // Initialization
     init,
   };
 })();
