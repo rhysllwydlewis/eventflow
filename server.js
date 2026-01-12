@@ -426,18 +426,42 @@ if (process.env.NODE_ENV === 'production') {
 // CRITICAL: This middleware MUST come before express.static()
 // Protects all admin HTML pages from unauthorized access at the server level
 // Client-side dashboard-guard.js remains as a fallback, but server is primary enforcement
+
+// Allowlist of valid admin pages (for security - no regex matching)
+const ADMIN_PAGES = [
+  '/admin.html',
+  '/admin-audit.html',
+  '/admin-content.html',
+  '/admin-homepage.html',
+  '/admin-marketplace.html',
+  '/admin-packages.html',
+  '/admin-payments.html',
+  '/admin-pexels.html',
+  '/admin-photos.html',
+  '/admin-reports.html',
+  '/admin-settings.html',
+  '/admin-supplier-detail.html',
+  '/admin-suppliers.html',
+  '/admin-tickets.html',
+  '/admin-user-detail.html',
+  '/admin-users.html',
+];
+
 app.use((req, res, next) => {
-  // Check if requesting an admin HTML page
-  if (req.path === '/admin.html' || req.path.match(/^\/admin-[^/]+\.html$/)) {
+  // Check if requesting an admin HTML page (using allowlist for security)
+  if (ADMIN_PAGES.includes(req.path)) {
     const user = getUserFromCookie(req);
 
-    // Not authenticated - redirect to login with return path
+    // Not authenticated - redirect to login with sanitized return path
     if (!user) {
       logger.info(`Admin page access denied (not authenticated): ${req.path}`, {
         ip: req.ip,
         userAgent: req.get('user-agent'),
       });
-      return res.redirect(`/auth.html?redirect=${encodeURIComponent(req.path)}`);
+      // Validate redirect path to prevent open redirect attacks
+      // Only allow paths in the ADMIN_PAGES list (safe by definition)
+      const safeRedirect = ADMIN_PAGES.includes(req.path) ? req.path : '/admin.html';
+      return res.redirect(`/auth.html?redirect=${encodeURIComponent(safeRedirect)}`);
     }
 
     // Authenticated but not admin - redirect to dashboard with message

@@ -179,8 +179,12 @@ const AdminShared = (function () {
       };
 
       // Add CSRF token for write operations
-      if (isWriteOperation && window.__CSRF_TOKEN__) {
-        opts.headers['X-CSRF-Token'] = window.__CSRF_TOKEN__;
+      if (isWriteOperation) {
+        if (window.__CSRF_TOKEN__) {
+          opts.headers['X-CSRF-Token'] = window.__CSRF_TOKEN__;
+        } else {
+          debugWarn(`CSRF token missing for ${method} ${url} - request may be rejected by server`);
+        }
       }
 
       if (options.body) {
