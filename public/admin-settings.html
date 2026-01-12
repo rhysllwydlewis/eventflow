@@ -525,6 +525,11 @@
   // Constants
   const STATUS_HIDE_DELAY_MS = 3000;
   
+  // State management for feature flags
+  let featureFlagsLoaded = false;
+  let originalFeatureFlags = {};
+  let isSavingFeatureFlags = false;
+  
   // Update feature flags status UI
   function updateFeatureFlagsStatus(status, text) {
     const statusEl = document.getElementById('featureFlagsStatus');
@@ -558,22 +563,68 @@
     });
   }
   
+  // Check if feature flags have been modified (dirty state)
+  function hasFeatureFlagsChanged() {
+    if (!featureFlagsLoaded) return false;
+    
+    const current = {
+      registration: document.getElementById('featureRegistration').checked,
+      supplierApplications: document.getElementById('featureSupplierApply').checked,
+      reviews: document.getElementById('featureReviews').checked,
+      photoUploads: document.getElementById('featurePhotoUploads').checked,
+      supportTickets: document.getElementById('featureSupportTickets').checked,
+      pexelsCollage: document.getElementById('featurePexelsCollage').checked,
+    };
+    
+    return JSON.stringify(current) !== JSON.stringify(originalFeatureFlags);
+  }
+  
+  // Update save button state based on conditions
+  function updateSaveButtonState() {
+    const saveBtn = document.getElementById('saveFeatureFlags');
+    if (!saveBtn) return;
+    
+    // Enable only if:
+    // 1. Flags are loaded
+    // 2. CSRF token is available
+    // 3. User has made changes
+    // 4. Not currently saving
+    const canSave = featureFlagsLoaded && 
+                    window.__CSRF_TOKEN__ && 
+                    hasFeatureFlagsChanged() && 
+                    !isSavingFeatureFlags;
+    
+    saveBtn.disabled = !canSave;
+  }
+  
   // Load feature flags
   async function loadFeatureFlags() {
     try {
       updateFeatureFlagsStatus('loading', 'Loading feature flags...');
       setFeatureFlagsEnabled(false);
+      featureFlagsLoaded = false;
       
       const flags = await AdminShared.adminFetch('/api/admin/settings/features', {
         method: 'GET',
       });
       
-      document.getElementById('featureRegistration').checked = flags.registration !== false;
-      document.getElementById('featureSupplierApply').checked = flags.supplierApplications !== false;
-      document.getElementById('featureReviews').checked = flags.reviews !== false;
-      document.getElementById('featurePhotoUploads').checked = flags.photoUploads !== false;
-      document.getElementById('featureSupportTickets').checked = flags.supportTickets !== false;
-      document.getElementById('featurePexelsCollage').checked = flags.pexelsCollage === true;
+      // Store original values
+      originalFeatureFlags = {
+        registration: flags.registration !== false,
+        supplierApplications: flags.supplierApplications !== false,
+        reviews: flags.reviews !== false,
+        photoUploads: flags.photoUploads !== false,
+        supportTickets: flags.supportTickets !== false,
+        pexelsCollage: flags.pexelsCollage === true,
+      };
+      
+      // Set checkbox values
+      document.getElementById('featureRegistration').checked = originalFeatureFlags.registration;
+      document.getElementById('featureSupplierApply').checked = originalFeatureFlags.supplierApplications;
+      document.getElementById('featureReviews').checked = originalFeatureFlags.reviews;
+      document.getElementById('featurePhotoUploads').checked = originalFeatureFlags.photoUploads;
+      document.getElementById('featureSupportTickets').checked = originalFeatureFlags.supportTickets;
+      document.getElementById('featurePexelsCollage').checked = originalFeatureFlags.pexelsCollage;
       
       // Display last updated info
       if (flags.updatedAt && flags.updatedBy) {
@@ -581,25 +632,52 @@
         document.getElementById('featureUpdatedTime').textContent = updatedDate.toLocaleString();
         document.getElementById('featureUpdatedBy').textContent = flags.updatedBy;
         document.getElementById('featureFlagsLastUpdated').style.display = 'block';
+      } else {
+        document.getElementById('featureUpdatedTime').textContent = 'unknown';
+        document.getElementById('featureUpdatedBy').textContent = 'unknown';
+        document.getElementById('featureFlagsLastUpdated').style.display = 'block';
       }
       
       updateFeatureFlagsStatus('hidden');
       setFeatureFlagsEnabled(true);
+      featureFlagsLoaded = true;
       
-      // Enable save button if CSRF token is also available
-      const saveBtn = document.getElementById('saveFeatureFlags');
-      if (saveBtn && window.__CSRF_TOKEN__) {
-        saveBtn.disabled = false;
-      }
+      // Update save button state
+      updateSaveButtonState();
     } catch (err) {
       AdminShared.debugError('Failed to load feature flags:', err);
       updateFeatureFlagsStatus('error', 'Error loading feature flags');
       setFeatureFlagsEnabled(false);
+      featureFlagsLoaded = false;
     }
+  }
+  
+  // Add change listeners to all feature flag checkboxes
+  function initFeatureFlagChangeListeners() {
+    const checkboxIds = [
+      'featureRegistration',
+      'featureSupplierApply',
+      'featureReviews',
+      'featurePhotoUploads',
+      'featureSupportTickets',
+      'featurePexelsCollage'
+    ];
+    
+    checkboxIds.forEach(id => {
+      const checkbox = document.getElementById(id);
+      if (checkbox) {
+        checkbox.addEventListener('change', updateSaveButtonState);
+      }
+    });
   }
   
   // Save feature flags with confirmation for critical toggles
   document.getElementById('saveFeatureFlags').addEventListener('click', async () => {
+    // Prevent double-submit
+    if (isSavingFeatureFlags) {
+      return;
+    }
+    
     const registrationChecked = document.getElementById('featureRegistration').checked;
     const reviewsChecked = document.getElementById('featureReviews').checked;
     
@@ -635,9 +713,11 @@
       pexelsCollage: document.getElementById('featurePexelsCollage').checked,
     };
     
-    // Disable checkboxes while saving
+    // Set saving state
+    isSavingFeatureFlags = true;
     setFeatureFlagsEnabled(false);
     updateFeatureFlagsStatus('saving', 'Saving feature flags...');
+    updateSaveButtonState();
     
     try {
       await AdminShared.safeAction(
@@ -652,7 +732,8 @@
           updateFeatureFlagsStatus('saved', 'Feature flags saved successfully');
           setTimeout(() => updateFeatureFlagsStatus('hidden'), STATUS_HIDE_DELAY_MS);
           
-          await loadFeatureFlags(); // Reload to get updated timestamp (also re-enables checkboxes and button)
+          // Re-fetch flags from server (single source of truth)
+          await loadFeatureFlags();
           return result;
         },
         {
@@ -663,9 +744,19 @@
       );
     } catch (error) {
       // safeAction already showed error toast and restored button state
-      // We only need to update our status UI and re-enable checkboxes
-      updateFeatureFlagsStatus('error', 'Error saving feature flags');
+      // Show detailed error message with status and response
+      let errorDetail = 'Error saving feature flags';
+      if (error.message) {
+        errorDetail += ': ' + error.message;
+      }
+      updateFeatureFlagsStatus('error', errorDetail);
       setFeatureFlagsEnabled(true);
+      
+      // Keep user's current toggles (don't revert)
+      AdminShared.debugError('Feature flags save error:', error);
+    } finally {
+      isSavingFeatureFlags = false;
+      updateSaveButtonState();
     }
   });
   
@@ -1180,6 +1271,9 @@
   async function initializeSettings() {
     // Fetch CSRF token first
     await AdminShared.fetchCSRFToken();
+    
+    // Initialize change listeners for feature flags
+    initFeatureFlagChangeListeners();
     
     // Now load settings in parallel
     await Promise.all([
