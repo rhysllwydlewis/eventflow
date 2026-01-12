@@ -3501,13 +3501,14 @@ router.get('/public/features', async (req, res) => {
   try {
     const settings = (await dbUnified.read('settings')) || {};
     const features = settings.features || {};
-    
+
     res.json({
       registration: features.registration !== false,
       supplierApplications: features.supplierApplications !== false,
       reviews: features.reviews !== false,
       photoUploads: features.photoUploads !== false,
       supportTickets: features.supportTickets !== false,
+      pexelsCollage: features.pexelsCollage === true,
     });
   } catch (error) {
     console.error('Error reading feature flags:', error);
@@ -3518,6 +3519,7 @@ router.get('/public/features', async (req, res) => {
       reviews: true,
       photoUploads: true,
       supportTickets: true,
+      pexelsCollage: false,
     });
   }
 });
