@@ -3,7 +3,7 @@
 A production-ready, feature-rich platform connecting event service suppliers (photographers, venues, caterers, entertainment, etc.) with customers planning events. Built with Node.js, Express, MongoDB, and modern web technologies.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Node.js Version](https://img.shields.io/badge/node-%3E%3D16.0.0-brightgreen)](https://nodejs.org/)
+[![Node.js Version](https://img.shields.io/badge/node-20.x%20LTS-brightgreen)](https://nodejs.org/)
 [![MongoDB](https://img.shields.io/badge/MongoDB-6.0%2B-green)](https://www.mongodb.com/)
 
 ---
@@ -14,7 +14,7 @@ A production-ready, feature-rich platform connecting event service suppliers (ph
 
 ### Prerequisites
 
-- ✅ Node.js 16+
+- ✅ Node.js 20 LTS (v20.x) — **Node 22+ is not supported** (sharp may crash with "Bus error")
 - ✅ **MongoDB Atlas account (free tier available)** ← Most important!
 - ✅ Deployment platform account (Railway, Heroku, etc.)
 
@@ -262,7 +262,7 @@ See `docs/CLOUDFLARE_SETUP.md` for setup instructions (coming soon).
 
 ### Prerequisites
 
-- Node.js 16+ and npm
+- Node.js 20 LTS (v20.x) and npm — Node 22+ is not supported due to sharp compatibility
 - **Optional:** MongoDB 6.0+ (local or Atlas) for production deployments
 
 **Note:** EventFlow uses file-based JSON storage by default for zero-configuration setup. MongoDB is available for production use - see [MONGODB_SETUP.md](.github/docs/MONGODB_SETUP.md).

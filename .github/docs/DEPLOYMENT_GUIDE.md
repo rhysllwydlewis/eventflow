@@ -14,7 +14,7 @@
 
 ### Prerequisites
 
-- **Node.js** v16.0.0 or higher
+- **Node.js** v20.x LTS (Node 22+ not supported due to sharp compatibility)
 - **npm** v8.0.0 or higher
 - **MongoDB** v6.0 or higher (optional - can use MongoDB Atlas)
 - **Git** for version control
