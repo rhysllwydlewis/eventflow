@@ -93,11 +93,16 @@ router.get('/csrf-token', applyAuthLimiter, async (req, res) => {
  * GET /api/config
  * Client config endpoint - provides public configuration values
  * Apply rate limiting to prevent abuse of API key exposure
+ * This endpoint is cacheable as it contains only public configuration
  */
 router.get('/config', applyAuthLimiter, async (req, res) => {
   if (!APP_VERSION) {
     return res.status(503).json({ error: 'Configuration service not initialized' });
   }
+
+  // Set public caching headers (this endpoint is safe to cache)
+  res.setHeader('Cache-Control', 'public, max-age=300'); // 5 minutes
+
   res.json({
     googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || '',
     version: APP_VERSION,
@@ -112,6 +117,10 @@ router.get('/meta', async (_req, res) => {
   if (!APP_VERSION) {
     return res.status(503).json({ error: 'Metadata service not initialized' });
   }
+
+  // Set public caching headers (this endpoint is safe to cache)
+  res.setHeader('Cache-Control', 'public, max-age=300'); // 5 minutes
+
   res.json({
     ok: true,
     version: APP_VERSION,
@@ -124,6 +133,7 @@ router.get('/meta', async (_req, res) => {
  * GET /api/health
  * Health check endpoint for monitoring
  * Returns 200 if server is running, with service status details
+ * NOTE: Contains internal debug info - should NOT be cached
  */
 router.get('/health', applyHealthCheckLimiter, async (_req, res) => {
   // Check if dependencies are initialized
@@ -134,6 +144,9 @@ router.get('/health', applyHealthCheckLimiter, async (_req, res) => {
       error: 'Health check service dependencies not initialized',
     });
   }
+
+  // Do NOT cache - contains internal debug information
+  res.setHeader('Cache-Control', 'no-store, private');
 
   // Server is always "ok" if it's running and accepting requests
   // Database status is reported as a service status, not overall health
@@ -224,6 +237,7 @@ router.get('/health', applyHealthCheckLimiter, async (_req, res) => {
  * GET /api/ready
  * Readiness probe for Kubernetes/Railway
  * Returns 200 only if MongoDB is connected
+ * NOTE: Contains internal debug info - should NOT be cached
  */
 router.get('/ready', applyHealthCheckLimiter, async (_req, res) => {
   // Check if dependencies are initialized
@@ -234,6 +248,9 @@ router.get('/ready', applyHealthCheckLimiter, async (_req, res) => {
       error: 'Readiness probe dependencies not initialized',
     });
   }
+
+  // Do NOT cache - contains internal debug information
+  res.setHeader('Cache-Control', 'no-store, private');
 
   const timestamp = new Date().toISOString();
 
@@ -291,8 +308,12 @@ router.get('/ready', applyHealthCheckLimiter, async (_req, res) => {
  * Performance verification endpoint
  * Returns information about compression and caching configuration
  * Used to verify performance optimizations are active
+ * NOTE: Contains internal config details - should NOT be cached
  */
 router.get('/performance', applyHealthCheckLimiter, async (req, res) => {
+  // Do NOT cache - contains internal configuration details
+  res.setHeader('Cache-Control', 'no-store, private');
+
   const timestamp = new Date().toISOString();
 
   // Check compression support

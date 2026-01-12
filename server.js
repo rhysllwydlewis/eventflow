@@ -316,6 +316,32 @@ app.use((req, res, next) => {
 const maintenanceMode = require('./middleware/maintenance');
 app.use(maintenanceMode);
 
+// ---------- API Cache Control Middleware ----------
+// SECURITY: Prevent service worker and intermediaries from caching sensitive API responses
+// This middleware sets Cache-Control headers for API endpoints to prevent stale security risks
+app.use('/api', (req, res, next) => {
+  // Allowlist of safe cacheable API endpoints (public, non-sensitive data)
+  // NOTE: Only endpoints returning truly public data should be here
+  // Health/ready/performance endpoints expose internal config and should NOT be cached
+  const SAFE_CACHEABLE_ENDPOINTS = [
+    '/api/config',      // Public config (Google Maps key, version)
+    '/api/meta',        // App metadata (version, node version, env)
+  ];
+
+  // Check if this is a safe cacheable endpoint
+  const isSafeCacheable = SAFE_CACHEABLE_ENDPOINTS.includes(req.path);
+
+  // For safe endpoints, allow downstream handlers to set their own cache headers
+  // For all other API endpoints, set no-store to prevent caching
+  if (!isSafeCacheable) {
+    // Set default no-store header for sensitive endpoints
+    // This prevents caching by browsers, service workers, and intermediaries
+    res.setHeader('Cache-Control', 'no-store, private');
+  }
+
+  next();
+});
+
 // ---------- Static File Serving ----------
 // Serve static files early in the middleware chain (before API routes)
 // This ensures files like verify.html are served before any route handlers
@@ -3920,8 +3946,6 @@ app.delete(
     res.json({ ok: true, message: 'Package deleted successfully' });
   }
 );
-
-
 
 // ---------- Protected HTML routes ----------
 const sendHTML = (res, file) => res.sendFile(path.join(__dirname, 'public', file));
