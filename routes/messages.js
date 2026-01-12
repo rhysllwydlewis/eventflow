@@ -7,6 +7,7 @@
 
 const express = require('express');
 const { authRequired } = require('../middleware/auth');
+const { csrfProtection } = require('../middleware/csrf');
 const { auditLog } = require('../middleware/audit');
 const dbUnified = require('../db-unified');
 const { uid } = require('../store');
@@ -132,7 +133,7 @@ router.get('/threads/:threadId', authRequired, async (req, res) => {
  * Create a new conversation thread
  * Body: { supplierId, packageId?, subject?, eventType?, eventDate?, eventLocation?, guests? }
  */
-router.post('/threads', authRequired, async (req, res) => {
+router.post('/threads', authRequired, csrfProtection, async (req, res) => {
   try {
     const userId = req.user.id;
     const userRole = req.user.role;
@@ -257,7 +258,7 @@ router.get('/threads/:threadId/messages', authRequired, async (req, res) => {
  * Send a new message in a thread
  * Body: { text, isDraft? }
  */
-router.post('/threads/:threadId/messages', authRequired, async (req, res) => {
+router.post('/threads/:threadId/messages', authRequired, csrfProtection, async (req, res) => {
   try {
     const userId = req.user.id;
     const userRole = req.user.role;
@@ -377,7 +378,7 @@ router.post('/threads/:threadId/messages', authRequired, async (req, res) => {
  * Update a message (for editing drafts)
  * Body: { text, isDraft? }
  */
-router.put('/:messageId', authRequired, async (req, res) => {
+router.put('/:messageId', authRequired, csrfProtection, async (req, res) => {
   try {
     const userId = req.user.id;
     const { messageId } = req.params;
@@ -450,7 +451,7 @@ router.put('/:messageId', authRequired, async (req, res) => {
  * POST /api/messages/threads/:threadId/mark-read
  * Mark all messages in a thread as read for the current user
  */
-router.post('/threads/:threadId/mark-read', authRequired, async (req, res) => {
+router.post('/threads/:threadId/mark-read', authRequired, csrfProtection, async (req, res) => {
   try {
     const userId = req.user.id;
     const userRole = req.user.role;
@@ -512,7 +513,7 @@ router.post('/threads/:threadId/mark-read', authRequired, async (req, res) => {
  * POST /api/messages/threads/:threadId/mark-unread
  * Mark a thread as unread for the current user
  */
-router.post('/threads/:threadId/mark-unread', authRequired, async (req, res) => {
+router.post('/threads/:threadId/mark-unread', authRequired, csrfProtection, async (req, res) => {
   try {
     const userId = req.user.id;
     const userRole = req.user.role;
@@ -605,7 +606,7 @@ router.get('/sent', authRequired, async (req, res) => {
  * DELETE /api/messages/:messageId
  * Delete a draft message
  */
-router.delete('/:messageId', authRequired, async (req, res) => {
+router.delete('/:messageId', authRequired, csrfProtection, async (req, res) => {
   try {
     const userId = req.user.id;
     const { messageId } = req.params;
@@ -643,7 +644,7 @@ router.delete('/:messageId', authRequired, async (req, res) => {
  * POST /api/messages/:messageId/reactions
  * Toggle a reaction on a message
  */
-router.post('/:messageId/reactions', authRequired, async (req, res) => {
+router.post('/:messageId/reactions', authRequired, csrfProtection, async (req, res) => {
   try {
     const userId = req.user.id;
     const { messageId } = req.params;
@@ -698,7 +699,7 @@ router.post('/:messageId/reactions', authRequired, async (req, res) => {
  * POST /api/messages/threads/:threadId/archive
  * Archive a thread
  */
-router.post('/threads/:threadId/archive', authRequired, async (req, res) => {
+router.post('/threads/:threadId/archive', authRequired, csrfProtection, async (req, res) => {
   try {
     const userId = req.user.id;
     const userRole = req.user.role;
@@ -737,7 +738,7 @@ router.post('/threads/:threadId/archive', authRequired, async (req, res) => {
  * POST /api/messages/threads/:threadId/unarchive
  * Unarchive a thread
  */
-router.post('/threads/:threadId/unarchive', authRequired, async (req, res) => {
+router.post('/threads/:threadId/unarchive', authRequired, csrfProtection, async (req, res) => {
   try {
     const userId = req.user.id;
     const userRole = req.user.role;
@@ -886,7 +887,7 @@ router.get('/:conversationId', authRequired, async (req, res) => {
  * POST /api/messages/:conversationId
  * Send a message in a conversation
  */
-router.post('/:conversationId', authRequired, async (req, res) => {
+router.post('/:conversationId', authRequired, csrfProtection, async (req, res) => {
   try {
     const userId = req.user.id;
     const userRole = req.user.role;

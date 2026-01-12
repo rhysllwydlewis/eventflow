@@ -1584,6 +1584,7 @@ router.post(
   '/suppliers/:id/subscription',
   authRequired,
   roleRequired('admin'),
+  csrfProtection,
   async (req, res) => {
     try {
       const { tier, days } = req.body;
@@ -1664,6 +1665,7 @@ router.delete(
   '/suppliers/:id/subscription',
   authRequired,
   roleRequired('admin'),
+  csrfProtection,
   async (req, res) => {
     try {
       const suppliers = await dbUnified.read('suppliers');
@@ -3397,6 +3399,7 @@ router.put(
   '/settings/email-templates/:name',
   authRequired,
   roleRequired('admin'),
+  csrfProtection,
   async (req, res) => {
     try {
       const { subject, body } = req.body;
@@ -3444,6 +3447,7 @@ router.post(
   '/settings/email-templates/:name/reset',
   authRequired,
   roleRequired('admin'),
+  csrfProtection,
   async (req, res) => {
     try {
       const settings = (await dbUnified.read('settings')) || {};
@@ -3740,6 +3744,7 @@ router.post(
   '/users/:userId/resend-verification',
   authRequired,
   roleRequired('admin'),
+  csrfProtection,
   auditMiddleware(AUDIT_ACTIONS.RESEND_VERIFICATION, req => ({
     targetType: 'user',
     targetId: req.params.userId,

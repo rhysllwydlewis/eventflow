@@ -256,4 +256,64 @@ describe('CSRF Protection', () => {
       expect(paymentFetch[0]).toContain("credentials: 'include'");
     });
   });
+
+  describe('User-Facing Routes - CSRF Protection', () => {
+    let messagesRoutesContent;
+    let profileRoutesContent;
+    let ticketsRoutesContent;
+
+    beforeAll(() => {
+      messagesRoutesContent = fs.readFileSync(
+        path.join(__dirname, '../../routes/messages.js'),
+        'utf8'
+      );
+      profileRoutesContent = fs.readFileSync(
+        path.join(__dirname, '../../routes/profile.js'),
+        'utf8'
+      );
+      ticketsRoutesContent = fs.readFileSync(
+        path.join(__dirname, '../../routes/tickets.js'),
+        'utf8'
+      );
+    });
+
+    it('messages routes should import csrfProtection', () => {
+      expect(messagesRoutesContent).toContain("require('../middleware/csrf')");
+      expect(messagesRoutesContent).toContain('csrfProtection');
+    });
+
+    it('messages POST /threads should have csrfProtection', () => {
+      const threadCreateRoute = messagesRoutesContent.match(
+        /router\.post\('\/threads'[\s\S]*?\(req, res\)/
+      );
+      expect(threadCreateRoute).toBeTruthy();
+      expect(threadCreateRoute[0]).toContain('csrfProtection');
+    });
+
+    it('profile routes should import csrfProtection', () => {
+      expect(profileRoutesContent).toContain("require('../middleware/csrf')");
+      expect(profileRoutesContent).toContain('csrfProtection');
+    });
+
+    it('profile PUT / should have csrfProtection', () => {
+      const profileUpdateRoute = profileRoutesContent.match(
+        /router\.put\('\/'[\s\S]*?\(req, res\)/
+      );
+      expect(profileUpdateRoute).toBeTruthy();
+      expect(profileUpdateRoute[0]).toContain('csrfProtection');
+    });
+
+    it('tickets routes should import csrfProtection', () => {
+      expect(ticketsRoutesContent).toContain("require('../middleware/csrf')");
+      expect(ticketsRoutesContent).toContain('csrfProtection');
+    });
+
+    it('tickets POST / should have csrfProtection', () => {
+      const ticketCreateRoute = ticketsRoutesContent.match(
+        /router\.post\('\/'[\s\S]*?\(req, res\)/
+      );
+      expect(ticketCreateRoute).toBeTruthy();
+      expect(ticketCreateRoute[0]).toContain('csrfProtection');
+    });
+  });
 });
