@@ -168,7 +168,17 @@ async function loadPackagesCarousel({ endpoint, containerId, emptyMessage }) {
     clearTimeout(timeoutId);
 
     if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
+      // Silently handle 404s (endpoint not available in static/dev mode)
+      if (response.status === 404) {
+        container.innerHTML = `<p class="small">${emptyMessage}</p>`;
+        return;
+      }
+      // Log other errors only in development
+      if (isDevelopmentEnvironment()) {
+        console.error(`Failed to load packages from ${endpoint} (HTTP ${response.status})`);
+      }
+      container.innerHTML = `<p class="small">${emptyMessage}</p>`;
+      return;
     }
 
     const data = await response.json();
@@ -205,11 +215,13 @@ async function loadPackagesCarousel({ endpoint, containerId, emptyMessage }) {
     }
   } catch (error) {
     clearTimeout(timeoutId);
-    if (isDevelopmentEnvironment()) {
+    
+    // Only log timeout errors and network errors, not expected 404s
+    if (isDevelopmentEnvironment() && error.name !== 'AbortError') {
       console.error(`Failed to load packages from ${endpoint}:`, error);
     }
 
-    // Show error with retry button
+    // Show error with retry button for timeout/network errors
     const errorMessage =
       error.name === 'AbortError' ? 'Request timed out' : 'Unable to load packages';
     container.innerHTML = `
@@ -684,7 +696,15 @@ async function fetchPublicStats() {
   try {
     const response = await fetch('/api/public/stats');
     if (!response.ok) {
-      throw new Error('Stats fetch failed');
+      // Silently handle 404s (endpoint not available in static/dev mode)
+      if (response.status === 404) {
+        return;
+      }
+      // Log other errors only in development
+      if (isDevelopmentEnvironment()) {
+        console.error(`Failed to load public stats (HTTP ${response.status})`);
+      }
+      return;
     }
 
     const stats = await response.json();
@@ -709,7 +729,8 @@ async function fetchPublicStats() {
       });
     }
   } catch (error) {
-    if (isDevelopmentEnvironment()) {
+    // Only log network errors and parse errors, not 404s
+    if (isDevelopmentEnvironment() && error.name !== 'AbortError') {
       console.error('Failed to load public stats:', error);
     }
     // Graceful fallback: Use copy-only approach
@@ -738,7 +759,17 @@ async function fetchMarketplacePreview() {
   try {
     const response = await fetch(`/api/marketplace/listings?limit=${MARKETPLACE_PREVIEW_LIMIT}`);
     if (!response.ok) {
-      throw new Error('Marketplace fetch failed');
+      // Silently handle 404s (endpoint not available in static/dev mode)
+      if (response.status === 404) {
+        container.innerHTML = '<p class="small">Marketplace not available yet.</p>';
+        return;
+      }
+      // Log other errors only in development
+      if (isDevelopmentEnvironment()) {
+        console.error(`Failed to load marketplace preview (HTTP ${response.status})`);
+      }
+      container.innerHTML = '<p class="small">Unable to load marketplace items.</p>';
+      return;
     }
 
     const data = await response.json();
@@ -784,7 +815,8 @@ async function fetchMarketplacePreview() {
       </div>
     `;
   } catch (error) {
-    if (isDevelopmentEnvironment()) {
+    // Only log network errors and parse errors, not expected 404s
+    if (isDevelopmentEnvironment() && error.name !== 'AbortError') {
       console.error('Failed to load marketplace preview:', error);
     }
     // Hide the entire section gracefully
@@ -813,7 +845,17 @@ async function fetchGuides() {
   try {
     const response = await fetch('/assets/data/guides.json');
     if (!response.ok) {
-      throw new Error('Guides fetch failed');
+      // Silently handle 404s (guides.json not available)
+      if (response.status === 404) {
+        section.style.display = 'none';
+        return;
+      }
+      // Log other errors only in development
+      if (isDevelopmentEnvironment()) {
+        console.error(`Failed to load guides (HTTP ${response.status})`);
+      }
+      section.style.display = 'none';
+      return;
     }
 
     const guides = await response.json();
@@ -855,7 +897,8 @@ async function fetchGuides() {
     // Show the section
     section.style.display = 'block';
   } catch (error) {
-    if (isDevelopmentEnvironment()) {
+    // Only log parse errors and network errors, not expected 404s
+    if (isDevelopmentEnvironment() && error.name !== 'AbortError') {
       console.error('Failed to load guides:', error);
     }
     // Hide the entire section gracefully
