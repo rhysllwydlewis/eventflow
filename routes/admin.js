@@ -3437,7 +3437,12 @@ router.put(
         updatedBy: req.user.email,
       };
 
-      await dbUnified.write('settings', settings);
+      const writeSuccess = await dbUnified.write('settings', settings);
+
+      if (!writeSuccess) {
+        console.error('Failed to persist feature flags to database');
+        return res.status(500).json({ error: 'Failed to persist settings to database' });
+      }
 
       auditLog({
         adminId: req.user.id,

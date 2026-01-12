@@ -31,7 +31,9 @@ function ensure() {
   }
   for (const k of Object.keys(files)) {
     if (!fs.existsSync(files[k])) {
-      fs.writeFileSync(files[k], '[]', 'utf8');
+      // Settings should be initialized as an object, not an array
+      const initialValue = k === 'settings' ? '{}' : '[]';
+      fs.writeFileSync(files[k], initialValue, 'utf8');
     }
   }
 }

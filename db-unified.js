@@ -201,11 +201,12 @@ async function write(collectionName, data) {
 
       // Special handling for settings collection (stored as single object)
       if (collectionName === 'settings') {
-        await collection.deleteMany({});
-        if (data && typeof data === 'object' && !Array.isArray(data)) {
-          // Store settings as a single document with a fixed ID
-          await collection.insertOne({ id: 'system', ...data });
+        if (!data || typeof data !== 'object' || Array.isArray(data)) {
+          throw new Error('Settings data must be a non-null object');
         }
+        await collection.deleteMany({});
+        // Store settings as a single document with a fixed ID
+        await collection.insertOne({ id: 'system', ...data });
         return true;
       }
 
