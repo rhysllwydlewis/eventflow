@@ -1864,6 +1864,30 @@ tbody tr.selected td {
   transform: translateX(24px);
 }
 
+/* Feature Item - Toggle Switch Container */
+.feature-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.feature-item:last-child {
+  border-bottom: none;
+}
+
+.feature-item > div:first-child {
+  flex: 1;
+}
+
+.feature-item strong {
+  display: block;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 0.25rem;
+}
+
 /* Stat Cards with Animations */
 .stat-card {
   position: relative;
