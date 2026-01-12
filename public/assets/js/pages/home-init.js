@@ -368,10 +368,7 @@ function isDevelopmentEnvironment() {
 }
 
 async function loadHeroCollageImages() {
-  // NOTE: Pexels collage feature disabled until /api/public/homepage-settings endpoint is deployed
-  // When the backend endpoint is ready, uncomment the code below to enable dynamic collage
-
-  /* DISABLED - Pexels collage check
+  // Check if Pexels collage feature is enabled via /api/public/homepage-settings endpoint
   try {
     const settingsResponse = await fetch('/api/public/homepage-settings').catch(() => {
       return null;
@@ -388,9 +385,11 @@ async function loadHeroCollageImages() {
       }
     }
   } catch (error) {
-    // Continue to static images
+    // Continue to static images on error
+    if (isDevelopmentEnvironment()) {
+      console.log('Pexels collage check failed, falling back to static images:', error);
+    }
   }
-  */
 
   // If Pexels is not enabled or failed, load static images
   try {

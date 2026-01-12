@@ -4003,6 +4003,9 @@ router.get('/homepage/hero-images-public', async (req, res) => {
  */
 router.get('/public/homepage-settings', async (req, res) => {
   try {
+    // Add caching headers - cache for 60 seconds
+    res.set('Cache-Control', 'public, max-age=60');
+    
     const settings = (await dbUnified.read('settings')) || {};
     const features = settings.features || {};
     const pexelsCollageSettings = settings.pexelsCollageSettings || {
