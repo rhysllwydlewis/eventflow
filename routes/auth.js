@@ -19,6 +19,7 @@ const {
 } = require('../middleware/auth');
 const { passwordOk } = require('../middleware/validation');
 const { authLimiter } = require('../middleware/rateLimit');
+const { featureRequired, getFeatureFlags } = require('../middleware/features');
 const postmark = require('../utils/postmark');
 const tokenUtils = require('../utils/token');
 const { validateToken } = require('../middleware/token');
@@ -60,166 +61,186 @@ function updateLastLogin(userId) {
  * POST /api/auth/register
  * Register a new user account
  */
-router.post('/register', authLimiter, async (req, res) => {
-  const {
-    firstName,
-    lastName,
-    name,
-    email,
-    password,
-    role,
-    location,
-    postcode,
-    company,
-    jobTitle,
-    website,
-    socials,
-  } = req.body || {};
-
-  // Support both new (firstName/lastName) and legacy (name) formats
-  const userFirstName = firstName || '';
-  const userLastName = lastName || '';
-  const userFullName =
-    firstName && lastName ? `${firstName.trim()} ${lastName.trim()}`.trim() : (name || '').trim();
-
-  // Required fields validation
-  if (!userFullName || !email || !password) {
-    return res.status(400).json({
-      error: 'Missing required fields (name or firstName/lastName, email, and password required)',
-    });
-  }
-  if (!firstName || !lastName) {
-    return res.status(400).json({ error: 'First name and last name are required' });
-  }
-  if (!validator.isEmail(String(email))) {
-    return res.status(400).json({ error: 'Invalid email' });
-  }
-  if (!passwordOk(password)) {
-    return res.status(400).json({ error: 'Weak password' });
-  }
-
-  const roleFinal = role === 'supplier' || role === 'customer' ? role : 'customer';
-
-  // Role-specific required field validation
-  if (!location) {
-    return res.status(400).json({ error: 'Location is required' });
-  }
-  if (roleFinal === 'supplier' && !company) {
-    return res.status(400).json({ error: 'Company name is required for suppliers' });
-  }
-
-  const users = read('users');
-  if (users.find(u => u.email.toLowerCase() === String(email).toLowerCase())) {
-    return res.status(409).json({ error: 'Email already registered' });
-  }
-
-  // Sanitize and validate optional URLs
-  const sanitizeUrl = url => {
-    if (!url) {
-      return undefined;
-    }
-    const trimmed = String(url).trim();
-    if (!trimmed) {
-      return undefined;
-    }
-    // Basic URL validation
-    if (!validator.isURL(trimmed, { require_protocol: false })) {
-      return undefined;
-    }
-    return trimmed;
-  };
-
-  // Parse socials object
-  const socialsParsed = socials
-    ? {
-        instagram: sanitizeUrl(socials.instagram),
-        facebook: sanitizeUrl(socials.facebook),
-        twitter: sanitizeUrl(socials.twitter),
-        linkedin: sanitizeUrl(socials.linkedin),
+router.post(
+  '/register',
+  async (req, res, next) => {
+    // Check supplier application feature flag if registering as supplier
+    if (req.body.role === 'supplier') {
+      const features = await getFeatureFlags();
+      if (!features.supplierApplications) {
+        return res.status(503).json({
+          error: 'Feature temporarily unavailable',
+          message: 'Supplier applications are currently disabled. Please try again later.',
+          feature: 'supplierApplications',
+        });
       }
-    : {};
+    }
+    // Check registration feature flag for all registrations
+    next();
+  },
+  featureRequired('registration'),
+  authLimiter,
+  async (req, res) => {
+    const {
+      firstName,
+      lastName,
+      name,
+      email,
+      password,
+      role,
+      location,
+      postcode,
+      company,
+      jobTitle,
+      website,
+      socials,
+    } = req.body || {};
 
-  // Determine founder badge eligibility
-  const founderLaunchTs = process.env.FOUNDER_LAUNCH_TS || '2026-01-01T00:00:00Z';
-  const founderLaunchDate = new Date(founderLaunchTs);
-  const founderEndDate = new Date(founderLaunchDate);
-  founderEndDate.setMonth(founderEndDate.getMonth() + 6); // 6 months from launch
+    // Support both new (firstName/lastName) and legacy (name) formats
+    const userFirstName = firstName || '';
+    const userLastName = lastName || '';
+    const userFullName =
+      firstName && lastName ? `${firstName.trim()} ${lastName.trim()}`.trim() : (name || '').trim();
 
-  const now = new Date();
-  const badges = [];
-  if (now <= founderEndDate) {
-    badges.push('founder');
-    console.log(`🏆 Founder badge awarded to ${email} (registered within 6 months of launch)`);
-  }
+    // Required fields validation
+    if (!userFullName || !email || !password) {
+      return res.status(400).json({
+        error: 'Missing required fields (name or firstName/lastName, email, and password required)',
+      });
+    }
+    if (!firstName || !lastName) {
+      return res.status(400).json({ error: 'First name and last name are required' });
+    }
+    if (!validator.isEmail(String(email))) {
+      return res.status(400).json({ error: 'Invalid email' });
+    }
+    if (!passwordOk(password)) {
+      return res.status(400).json({ error: 'Weak password' });
+    }
 
-  // Create user object first (needed for JWT token generation)
-  const user = {
-    id: uid('usr'),
-    name: String(userFullName).slice(0, 80),
-    firstName: String(userFirstName).trim().slice(0, 40),
-    lastName: String(userLastName).trim().slice(0, 40),
-    email: String(email).toLowerCase(),
-    role: roleFinal,
-    passwordHash: bcrypt.hashSync(password, 10),
-    location: String(location).trim().slice(0, 100),
-    postcode: postcode ? String(postcode).trim().slice(0, 10) : undefined,
-    company: company ? String(company).trim().slice(0, 100) : undefined,
-    jobTitle: jobTitle ? String(jobTitle).trim().slice(0, 100) : undefined,
-    website: sanitizeUrl(website),
-    socials: socialsParsed,
-    badges,
-    notify: true, // Deprecated, kept for backward compatibility
-    notify_account: true, // Transactional emails enabled by default
-    notify_marketing: !!(req.body && req.body.marketingOptIn), // Marketing emails opt-in
-    marketingOptIn: !!(req.body && req.body.marketingOptIn), // Deprecated, kept for backward compatibility
-    verified: false,
-    createdAt: new Date().toISOString(),
-  };
+    const roleFinal = role === 'supplier' || role === 'customer' ? role : 'customer';
 
-  // Generate JWT verification token
-  const verificationToken = tokenUtils.generateVerificationToken(user, {
-    expiresInHours: 24,
-  });
+    // Role-specific required field validation
+    if (!location) {
+      return res.status(400).json({ error: 'Location is required' });
+    }
+    if (roleFinal === 'supplier' && !company) {
+      return res.status(400).json({ error: 'Company name is required for suppliers' });
+    }
 
-  // Store token info for legacy compatibility
-  user.verificationToken = verificationToken;
-  user.verificationTokenExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+    const users = read('users');
+    if (users.find(u => u.email.toLowerCase() === String(email).toLowerCase())) {
+      return res.status(409).json({ error: 'Email already registered' });
+    }
 
-  // Send verification email via Postmark BEFORE saving user
-  // This ensures we only create accounts when email can be sent
-  try {
-    console.log(`📧 Attempting to send verification email to ${user.email}`);
-    await postmark.sendVerificationEmail(user, verificationToken);
-    console.log(`✅ Verification email sent successfully to ${user.email}`);
-  } catch (emailError) {
-    console.error('❌ Failed to send verification email:', emailError.message);
+    // Sanitize and validate optional URLs
+    const sanitizeUrl = url => {
+      if (!url) {
+        return undefined;
+      }
+      const trimmed = String(url).trim();
+      if (!trimmed) {
+        return undefined;
+      }
+      // Basic URL validation
+      if (!validator.isURL(trimmed, { require_protocol: false })) {
+        return undefined;
+      }
+      return trimmed;
+    };
 
-    // If email sending fails, don't create the user account
-    // This prevents orphaned unverified accounts
-    return res.status(500).json({
-      error: 'Failed to send verification email. Please try again later.',
-      details: process.env.NODE_ENV === 'development' ? emailError.message : undefined,
+    // Parse socials object
+    const socialsParsed = socials
+      ? {
+          instagram: sanitizeUrl(socials.instagram),
+          facebook: sanitizeUrl(socials.facebook),
+          twitter: sanitizeUrl(socials.twitter),
+          linkedin: sanitizeUrl(socials.linkedin),
+        }
+      : {};
+
+    // Determine founder badge eligibility
+    const founderLaunchTs = process.env.FOUNDER_LAUNCH_TS || '2026-01-01T00:00:00Z';
+    const founderLaunchDate = new Date(founderLaunchTs);
+    const founderEndDate = new Date(founderLaunchDate);
+    founderEndDate.setMonth(founderEndDate.getMonth() + 6); // 6 months from launch
+
+    const now = new Date();
+    const badges = [];
+    if (now <= founderEndDate) {
+      badges.push('founder');
+      console.log(`🏆 Founder badge awarded to ${email} (registered within 6 months of launch)`);
+    }
+
+    // Create user object first (needed for JWT token generation)
+    const user = {
+      id: uid('usr'),
+      name: String(userFullName).slice(0, 80),
+      firstName: String(userFirstName).trim().slice(0, 40),
+      lastName: String(userLastName).trim().slice(0, 40),
+      email: String(email).toLowerCase(),
+      role: roleFinal,
+      passwordHash: bcrypt.hashSync(password, 10),
+      location: String(location).trim().slice(0, 100),
+      postcode: postcode ? String(postcode).trim().slice(0, 10) : undefined,
+      company: company ? String(company).trim().slice(0, 100) : undefined,
+      jobTitle: jobTitle ? String(jobTitle).trim().slice(0, 100) : undefined,
+      website: sanitizeUrl(website),
+      socials: socialsParsed,
+      badges,
+      notify: true, // Deprecated, kept for backward compatibility
+      notify_account: true, // Transactional emails enabled by default
+      notify_marketing: !!(req.body && req.body.marketingOptIn), // Marketing emails opt-in
+      marketingOptIn: !!(req.body && req.body.marketingOptIn), // Deprecated, kept for backward compatibility
+      verified: false,
+      createdAt: new Date().toISOString(),
+    };
+
+    // Generate JWT verification token
+    const verificationToken = tokenUtils.generateVerificationToken(user, {
+      expiresInHours: 24,
+    });
+
+    // Store token info for legacy compatibility
+    user.verificationToken = verificationToken;
+    user.verificationTokenExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+
+    // Send verification email via Postmark BEFORE saving user
+    // This ensures we only create accounts when email can be sent
+    try {
+      console.log(`📧 Attempting to send verification email to ${user.email}`);
+      await postmark.sendVerificationEmail(user, verificationToken);
+      console.log(`✅ Verification email sent successfully to ${user.email}`);
+    } catch (emailError) {
+      console.error('❌ Failed to send verification email:', emailError.message);
+
+      // If email sending fails, don't create the user account
+      // This prevents orphaned unverified accounts
+      return res.status(500).json({
+        error: 'Failed to send verification email. Please try again later.',
+        details: process.env.NODE_ENV === 'development' ? emailError.message : undefined,
+      });
+    }
+
+    // Only save user after email is successfully sent
+    users.push(user);
+    write('users', users);
+
+    // Update last login timestamp (non-blocking)
+    updateLastLogin(user.id);
+
+    const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, {
+      expiresIn: '7d',
+    });
+    // Default to remember=true for registration to provide better UX
+    setAuthCookie(res, token, { remember: true });
+
+    res.json({
+      ok: true,
+      user: { id: user.id, name: user.name, email: user.email, role: user.role },
     });
   }
-
-  // Only save user after email is successfully sent
-  users.push(user);
-  write('users', users);
-
-  // Update last login timestamp (non-blocking)
-  updateLastLogin(user.id);
-
-  const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, {
-    expiresIn: '7d',
-  });
-  // Default to remember=true for registration to provide better UX
-  setAuthCookie(res, token, { remember: true });
-
-  res.json({
-    ok: true,
-    user: { id: user.id, name: user.name, email: user.email, role: user.role },
-  });
-});
+);
 
 /**
  * POST /api/auth/login

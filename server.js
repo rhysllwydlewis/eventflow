@@ -45,6 +45,7 @@ const {
   getUserFromCookie,
   clearAuthCookie,
 } = require('./middleware/auth');
+const { featureRequired } = require('./middleware/features');
 
 // Utility modules
 const validators = require('./utils/validators');
@@ -4109,7 +4110,7 @@ function saveImageBase64(base64, ownerType, ownerId) {
 }
 
 // Supplier image upload
-app.post('/api/me/suppliers/:id/photos', authRequired, csrfProtection, async (req, res) => {
+app.post('/api/me/suppliers/:id/photos', featureRequired('photoUploads'), authRequired, csrfProtection, async (req, res) => {
   const { image } = req.body || {};
   if (!image) {
     return res.status(400).json({ error: 'Missing image' });
@@ -4132,7 +4133,7 @@ app.post('/api/me/suppliers/:id/photos', authRequired, csrfProtection, async (re
 });
 
 // Package image upload
-app.post('/api/me/packages/:id/photos', authRequired, csrfProtection, async (req, res) => {
+app.post('/api/me/packages/:id/photos', featureRequired('photoUploads'), authRequired, csrfProtection, async (req, res) => {
   const { image } = req.body || {};
   if (!image) {
     return res.status(400).json({ error: 'Missing image' });
@@ -4331,7 +4332,7 @@ app.get('/api/search/amenities', async (req, res) => {
  * POST /api/suppliers/:supplierId/reviews
  * Body: { rating, title, comment, recommend, eventType, eventDate, photos }
  */
-app.post('/api/suppliers/:supplierId/reviews', authRequired, csrfProtection, async (req, res) => {
+app.post('/api/suppliers/:supplierId/reviews', featureRequired('reviews'), authRequired, csrfProtection, async (req, res) => {
   try {
     const { supplierId } = req.params;
     const { rating, title, comment, recommend, eventType, eventDate, photos } = req.body;
@@ -4392,7 +4393,7 @@ app.post('/api/suppliers/:supplierId/reviews', authRequired, csrfProtection, asy
  * POST /api/reviews
  * Body: { supplierId, rating, comment, eventType, eventDate }
  */
-app.post('/api/reviews', authRequired, csrfProtection, async (req, res) => {
+app.post('/api/reviews', featureRequired('reviews'), authRequired, csrfProtection, async (req, res) => {
   try {
     const { supplierId, rating, comment, eventType, eventDate } = req.body;
 
@@ -4823,6 +4824,7 @@ app.delete('/api/reviews/:reviewId', authRequired, csrfProtection, async (req, r
  */
 app.post(
   '/api/photos/upload',
+  featureRequired('photoUploads'),
   authRequired,
   photoUpload.upload.array('files', 5), // Support up to 5 files for marketplace
   csrfProtection,

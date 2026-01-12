@@ -248,7 +248,76 @@
         </div>
       </div>
       
-      <button class="btn btn-primary" id="saveFeatureFlags" class="mt-1">Save Feature Flags</button>
+      <div id="featureFlagsLastUpdated" style="margin-top: 1rem; padding: 0.75rem; background: #f8f9fa; border-radius: 4px; font-size: 0.9rem; color: #666; display: none;">
+        <strong>Last updated:</strong> <span id="featureUpdatedTime">-</span> by <span id="featureUpdatedBy">-</span>
+      </div>
+      
+      <button class="btn btn-primary mt-1" id="saveFeatureFlags">Save Feature Flags</button>
+    </div>
+    
+    <!-- Audit Log Viewer -->
+    <div class="card">
+      <h2>Recent Audit Log</h2>
+      <p class="small">Shows the last 20 settings-related changes</p>
+      
+      <div id="auditLogContainer" style="max-height: 400px; overflow-y: auto;">
+        <div style="padding: 2rem; text-align: center; color: #999;">
+          Loading audit logs...
+        </div>
+      </div>
+      
+      <div style="margin-top: 1rem;">
+        <a href="/admin-audit.html" class="btn">View Full Audit Log</a>
+      </div>
+    </div>
+    
+    <!-- Database Health Check -->
+    <div class="card">
+      <h2>Database Health</h2>
+      <p class="small">Current database status and connectivity</p>
+      
+      <div class="feature-item">
+        <div>
+          <strong>Connection Status</strong>
+          <div class="small" id="dbConnectionStatus">Checking...</div>
+        </div>
+        <div id="dbStatusIndicator" style="width: 16px; height: 16px; border-radius: 50%; background: #ccc;"></div>
+      </div>
+      
+      <div class="feature-item">
+        <div>
+          <strong>Active Backend</strong>
+          <div class="small" id="dbBackendType">-</div>
+        </div>
+      </div>
+      
+      <div class="feature-item">
+        <div>
+          <strong>Last Operation</strong>
+          <div class="small" id="dbLastOperation">-</div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Settings Export/Import -->
+    <div class="card">
+      <h2>Settings Backup</h2>
+      <p class="small">Export and import system settings</p>
+      
+      <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+        <button class="btn btn-secondary" id="exportSettings">
+          📥 Export Settings
+        </button>
+        <button class="btn btn-secondary" id="importSettings">
+          📤 Import Settings
+        </button>
+      </div>
+      
+      <input type="file" id="importFileInput" accept=".json" style="display: none;">
+      
+      <div class="warning-banner" style="margin-top: 1rem;">
+        <strong>⚠️ Warning:</strong> Importing settings will overwrite current configuration. Make sure to export a backup first.
+      </div>
     </div>
     
     <!-- Maintenance Mode -->
@@ -382,15 +451,29 @@
     }
   }
   
-  // Save site configuration
+  // Save site configuration with email validation
   document.getElementById('siteConfigForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     
+    const contactEmail = document.getElementById('contactEmail').value.trim();
+    const supportEmail = document.getElementById('supportEmail').value.trim();
+    
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (contactEmail && !emailRegex.test(contactEmail)) {
+      AdminShared.showToast('Invalid contact email address', 'error');
+      return;
+    }
+    if (supportEmail && !emailRegex.test(supportEmail)) {
+      AdminShared.showToast('Invalid support email address', 'error');
+      return;
+    }
+    
     const data = {
-      name: document.getElementById('siteName').value,
-      tagline: document.getElementById('siteTagline').value,
-      contactEmail: document.getElementById('contactEmail').value,
-      supportEmail: document.getElementById('supportEmail').value,
+      name: document.getElementById('siteName').value.trim(),
+      tagline: document.getElementById('siteTagline').value.trim(),
+      contactEmail: contactEmail,
+      supportEmail: supportEmail,
     };
     
     try {
@@ -411,17 +494,46 @@
       document.getElementById('featurePhotoUploads').checked = flags.photoUploads !== false;
       document.getElementById('featureSupportTickets').checked = flags.supportTickets !== false;
       document.getElementById('featurePexelsCollage').checked = flags.pexelsCollage === true;
+      
+      // Display last updated info
+      if (flags.updatedAt && flags.updatedBy) {
+        const updatedDate = new Date(flags.updatedAt);
+        document.getElementById('featureUpdatedTime').textContent = updatedDate.toLocaleString();
+        document.getElementById('featureUpdatedBy').textContent = flags.updatedBy;
+        document.getElementById('featureFlagsLastUpdated').style.display = 'block';
+      }
     } catch (err) {
       console.error('Failed to load feature flags:', err);
     }
   }
   
-  // Save feature flags
+  // Save feature flags with confirmation for critical toggles
   document.getElementById('saveFeatureFlags').addEventListener('click', async () => {
+    const registrationChecked = document.getElementById('featureRegistration').checked;
+    const reviewsChecked = document.getElementById('featureReviews').checked;
+    
+    // Confirmation dialog for disabling critical features
+    if (!registrationChecked || !reviewsChecked) {
+      const disabledFeatures = [];
+      if (!registrationChecked) disabledFeatures.push('User Registration');
+      if (!reviewsChecked) disabledFeatures.push('Package Reviews');
+      
+      const confirmMessage = `⚠️ You are about to disable: ${disabledFeatures.join(', ')}.\n\nThis will prevent users from using these features.\n\nAre you sure you want to continue?`;
+      
+      if (!confirm(confirmMessage)) {
+        return;
+      }
+    }
+    
+    const saveBtn = document.getElementById('saveFeatureFlags');
+    const originalText = saveBtn.textContent;
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Saving...';
+    
     const data = {
-      registration: document.getElementById('featureRegistration').checked,
+      registration: registrationChecked,
       supplierApplications: document.getElementById('featureSupplierApply').checked,
-      reviews: document.getElementById('featureReviews').checked,
+      reviews: reviewsChecked,
       photoUploads: document.getElementById('featurePhotoUploads').checked,
       supportTickets: document.getElementById('featureSupportTickets').checked,
       pexelsCollage: document.getElementById('featurePexelsCollage').checked,
@@ -430,8 +542,12 @@
     try {
       await AdminShared.api('/api/admin/settings/features', 'PUT', data);
       AdminShared.showToast('Feature flags updated', 'success');
+      await loadFeatureFlags(); // Reload to get updated timestamp
     } catch (err) {
       AdminShared.showToast(`Failed to save: ${err.message}`, 'error');
+    } finally {
+      saveBtn.disabled = false;
+      saveBtn.textContent = originalText;
     }
   });
   
@@ -688,11 +804,157 @@
     }
   }
   
+  // Load audit logs
+  async function loadAuditLogs() {
+    try {
+      const response = await AdminShared.api('/api/admin/audit-logs?limit=20&targetType=features,settings,maintenance');
+      const logs = response.logs || [];
+      
+      const container = document.getElementById('auditLogContainer');
+      
+      if (logs.length === 0) {
+        container.innerHTML = '<div style="padding: 2rem; text-align: center; color: #999;">No audit logs found</div>';
+        return;
+      }
+      
+      container.innerHTML = logs.map(log => {
+        const date = new Date(log.timestamp || log.createdAt);
+        const actionLabel = log.action.replace(/_/g, ' ').toLowerCase();
+        return `
+          <div style="padding: 0.75rem; border-bottom: 1px solid #eee; font-size: 0.9rem;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
+              <strong>${actionLabel}</strong>
+              <span style="color: #999;">${date.toLocaleString()}</span>
+            </div>
+            <div style="color: #666;">
+              by ${log.adminEmail || 'Unknown'}
+            </div>
+            ${log.details ? `<div style="color: #999; font-size: 0.85rem; margin-top: 0.25rem;">
+              ${JSON.stringify(log.details).substring(0, 100)}...
+            </div>` : ''}
+          </div>
+        `;
+      }).join('');
+    } catch (err) {
+      console.error('Failed to load audit logs:', err);
+      document.getElementById('auditLogContainer').innerHTML = '<div style="padding: 2rem; text-align: center; color: #e74c3c;">Failed to load audit logs</div>';
+    }
+  }
+  
+  // Load database health
+  async function loadDatabaseHealth() {
+    try {
+      const status = await AdminShared.api('/api/admin/db-status');
+      
+      const statusEl = document.getElementById('dbConnectionStatus');
+      const indicatorEl = document.getElementById('dbStatusIndicator');
+      const backendEl = document.getElementById('dbBackendType');
+      const lastOpEl = document.getElementById('dbLastOperation');
+      
+      if (status.initialized && status.state === 'completed') {
+        statusEl.textContent = 'Connected';
+        indicatorEl.style.background = '#27ae60';
+      } else {
+        statusEl.textContent = 'Disconnected or initializing';
+        indicatorEl.style.background = '#e74c3c';
+      }
+      
+      backendEl.textContent = status.dbType === 'mongodb' ? 'MongoDB (Primary)' : 'Local Files (Fallback)';
+      lastOpEl.textContent = new Date().toLocaleString();
+    } catch (err) {
+      console.error('Failed to load database health:', err);
+      document.getElementById('dbConnectionStatus').textContent = 'Error checking status';
+      document.getElementById('dbStatusIndicator').style.background = '#e74c3c';
+    }
+  }
+  
+  // Export settings
+  document.getElementById('exportSettings').addEventListener('click', async () => {
+    try {
+      const settings = await AdminShared.api('/api/admin/settings/site');
+      const features = await AdminShared.api('/api/admin/settings/features');
+      const maintenance = await AdminShared.api('/api/admin/settings/maintenance');
+      
+      const exportData = {
+        exported: new Date().toISOString(),
+        site: settings,
+        features: features,
+        maintenance: maintenance,
+      };
+      
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `eventflow-settings-${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      
+      AdminShared.showToast('Settings exported successfully', 'success');
+    } catch (err) {
+      console.error('Failed to export settings:', err);
+      AdminShared.showToast('Failed to export settings', 'error');
+    }
+  });
+  
+  // Import settings
+  document.getElementById('importSettings').addEventListener('click', () => {
+    document.getElementById('importFileInput').click();
+  });
+  
+  document.getElementById('importFileInput').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+      
+      if (!confirm('⚠️ This will overwrite your current settings. Are you sure you want to continue?')) {
+        e.target.value = '';
+        return;
+      }
+      
+      // Import site settings
+      if (data.site) {
+        await AdminShared.api('/api/admin/settings/site', 'PUT', data.site);
+      }
+      
+      // Import feature flags
+      if (data.features) {
+        await AdminShared.api('/api/admin/settings/features', 'PUT', data.features);
+      }
+      
+      // Import maintenance settings (only if not currently enabled)
+      if (data.maintenance && !data.maintenance.enabled) {
+        await AdminShared.api('/api/admin/settings/maintenance', 'PUT', data.maintenance);
+      }
+      
+      AdminShared.showToast('Settings imported successfully', 'success');
+      
+      // Reload all settings
+      loadSiteConfig();
+      loadFeatureFlags();
+      loadMaintenanceMode();
+      
+      e.target.value = '';
+    } catch (err) {
+      console.error('Failed to import settings:', err);
+      AdminShared.showToast('Failed to import settings: ' + err.message, 'error');
+      e.target.value = '';
+    }
+  });
+  
   // Initial load
   loadSiteConfig();
   loadFeatureFlags();
   loadMaintenanceMode();
   loadSystemInfo();
+  loadAuditLogs();
+  loadDatabaseHealth();
+  
+  // Refresh database health every 30 seconds
+  setInterval(loadDatabaseHealth, 30000);
 })();
 </script>
 <script src="/assets/js/cookie-consent.js" defer></script>

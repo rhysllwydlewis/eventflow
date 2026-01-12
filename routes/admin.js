@@ -3490,6 +3490,40 @@ router.get('/settings/system-info', authRequired, roleRequired('admin'), (req, r
   });
 });
 
+// ---------- Public API Endpoints ----------
+
+/**
+ * GET /api/public/features
+ * Get feature flags status (public endpoint, no auth required)
+ * Returns which features are enabled/disabled for frontend UI
+ */
+router.get('/public/features', async (req, res) => {
+  try {
+    const settings = (await dbUnified.read('settings')) || {};
+    const features = settings.features || {};
+
+    res.json({
+      registration: features.registration !== false,
+      supplierApplications: features.supplierApplications !== false,
+      reviews: features.reviews !== false,
+      photoUploads: features.photoUploads !== false,
+      supportTickets: features.supportTickets !== false,
+      pexelsCollage: features.pexelsCollage === true,
+    });
+  } catch (error) {
+    console.error('Error reading feature flags:', error);
+    // Return all features enabled as fallback
+    res.json({
+      registration: true,
+      supplierApplications: true,
+      reviews: true,
+      photoUploads: true,
+      supportTickets: true,
+      pexelsCollage: false,
+    });
+  }
+});
+
 // ---------- Tickets Management ----------
 
 /**
