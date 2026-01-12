@@ -1070,14 +1070,7 @@
             placeholder: 'customer',
             initialValue: 'customer',
             required: true,
-            validateFn: value => {
-              // Only customer or supplier allowed when revoking admin
-              const allowedRoles = ['customer', 'supplier'];
-              if (!allowedRoles.includes(value.toLowerCase().trim())) {
-                return 'Role must be either "customer" or "supplier"';
-              }
-              return true;
-            },
+            validateFn: value => window.AdminShared.validateRole(value, ['customer', 'supplier']),
           }).then(result => {
             if (!result.confirmed) {
               return;

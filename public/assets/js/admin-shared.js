@@ -117,13 +117,19 @@ const AdminShared = (function () {
   // Validate role (customer, supplier, admin)
   const VALID_ROLES = ['customer', 'supplier', 'admin'];
 
-  function validateRole(role) {
+  /**
+   * Validate user role
+   * @param {string} role - The role to validate
+   * @param {Array<string>} allowedRoles - Optional array of allowed roles (defaults to VALID_ROLES)
+   * @returns {boolean|string} - true if valid, error message if invalid
+   */
+  function validateRole(role, allowedRoles = VALID_ROLES) {
     if (!role || typeof role !== 'string') {
       return 'Role is required';
     }
     const normalizedRole = role.toLowerCase().trim();
-    if (!VALID_ROLES.includes(normalizedRole)) {
-      return `Role must be one of: ${VALID_ROLES.join(', ')}`;
+    if (!allowedRoles.includes(normalizedRole)) {
+      return `Role must be one of: ${allowedRoles.join(', ')}`;
     }
     return true;
   }
