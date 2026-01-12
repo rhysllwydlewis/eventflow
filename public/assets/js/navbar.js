@@ -6,6 +6,9 @@
 (function () {
   'use strict';
 
+  // Debug flag - set to false to disable console logs
+  const DEBUG = false;
+
   // ==========================================
   // STATE MANAGEMENT
   // ==========================================
@@ -52,7 +55,7 @@
     
     // Log warning if critical elements are missing
     if (!elements.header) {
-      console.warn('EventFlow navbar: .ef-header element not found');
+      if (DEBUG) console.warn('EventFlow navbar: .ef-header element not found');
     }
   }
 
@@ -69,7 +72,7 @@
         window.__CSRF_TOKEN__ = data.csrfToken;
       }
     } catch (error) {
-      console.warn('Failed to fetch CSRF token:', error);
+      if (DEBUG) console.warn('Failed to fetch CSRF token:', error);
     }
   }
 
@@ -223,7 +226,7 @@
       localStorage.removeItem('eventflow_onboarding_new');
       sessionStorage.clear();
     } catch (error) {
-      console.warn('Failed to clear storage:', error);
+      if (DEBUG) console.warn('Failed to clear storage:', error);
     }
 
     // Call logout API
@@ -237,7 +240,7 @@
           credentials: 'include',
         });
       } catch (error) {
-        console.warn('Logout API failed:', error);
+        if (DEBUG) console.warn('Logout API failed:', error);
       }
     }
 
@@ -547,7 +550,7 @@
         }
       });
 
-      console.log('EventFlow Navigation initialized');
+      if (DEBUG) console.log('EventFlow Navigation initialized');
     } catch (error) {
       console.error('EventFlow navbar initialization failed:', error);
       // Still try to show basic navbar even if auth fails
