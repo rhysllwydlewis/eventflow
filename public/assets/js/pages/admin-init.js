@@ -908,26 +908,65 @@
       });
       modal.show();
     } else {
-      // Fallback to prompt
-      const name = prompt('Enter new name:', user.name || '');
-      if (name === null) {
-        return;
-      }
+      // Fallback using AdminShared.showInputModal if available
+      if (window.AdminShared && window.AdminShared.showInputModal) {
+        window.AdminShared
+          .showInputModal({
+            title: 'Edit User Name',
+            message: 'Enter new name for this user',
+            label: 'Name',
+            initialValue: user.name || '',
+            required: true,
+          })
+          .then(nameResult => {
+            if (!nameResult.confirmed) {
+              return;
+            }
 
-      const email = prompt('Enter new email:', user.email || '');
-      if (email === null) {
-        return;
-      }
+            return window.AdminShared.showInputModal({
+              title: 'Edit User Email',
+              message: 'Enter new email for this user',
+              label: 'Email',
+              initialValue: user.email || '',
+              required: true,
+              validateFn: value => {
+                // Basic email validation
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(value)) {
+                  return 'Please enter a valid email address';
+                }
+                return true;
+              },
+            }).then(emailResult => {
+              if (!emailResult.confirmed) {
+                return;
+              }
 
-      api(`/api/admin/users/${id}`, 'PUT', { name: name, email: email })
-        .then(() => {
-          alert('User updated successfully.');
-          loadAll();
-        })
-        .catch(err => {
-          console.error('editUser failed', err);
-          alert(`Failed to update user: ${err.message}`);
-        });
+              return api(`/api/admin/users/${id}`, 'PUT', {
+                name: nameResult.value,
+                email: emailResult.value,
+              })
+                .then(() => {
+                  if (window.AdminShared && window.AdminShared.showToast) {
+                    window.AdminShared.showToast('User updated successfully.', 'success');
+                  } else {
+                    alert('User updated successfully.');
+                  }
+                  loadAll();
+                })
+                .catch(err => {
+                  console.error('editUser failed', err);
+                  if (window.AdminShared && window.AdminShared.showToast) {
+                    window.AdminShared.showToast(`Failed to update user: ${err.message}`, 'error');
+                  } else {
+                    alert(`Failed to update user: ${err.message}`);
+                  }
+                });
+            });
+          });
+      } else {
+        alert('User editing requires the Modal component. Please reload the page.');
+      }
     }
   };
 
@@ -1016,23 +1055,62 @@
       });
       modal.show();
     } else {
-      if (!confirm('Revoke admin privileges from this user?')) {
-        return;
-      }
-      const newRole = prompt('Enter new role (customer or supplier):', 'customer');
-      if (!newRole) {
-        return;
-      }
+      // Fallback using AdminShared.showConfirmModal and showInputModal if available
+      if (window.AdminShared && window.AdminShared.showConfirmModal && window.AdminShared.showInputModal) {
+        window.AdminShared
+          .showConfirmModal({
+            title: 'Revoke Admin Privileges',
+            message: 'Revoke admin privileges from this user?',
+            confirmText: 'Continue',
+            cancelText: 'Cancel',
+            type: 'warning',
+          })
+          .then(confirmed => {
+            if (!confirmed) {
+              return;
+            }
 
-      api(`/api/admin/users/${id}/revoke-admin`, 'POST', { newRole: newRole })
-        .then(() => {
-          alert('Admin privileges revoked successfully.');
-          loadAll();
-        })
-        .catch(err => {
-          console.error('revokeAdmin failed', err);
-          alert(`Failed to revoke admin privileges: ${err.message}`);
-        });
+            return window.AdminShared.showInputModal({
+              title: 'Select New Role',
+              message: 'Choose the new role for this user after revoking admin privileges',
+              label: 'New Role',
+              placeholder: 'customer',
+              initialValue: 'customer',
+              required: true,
+              validateFn: value => {
+                const validRoles = ['customer', 'supplier'];
+                if (!validRoles.includes(value.toLowerCase())) {
+                  return 'Role must be either "customer" or "supplier"';
+                }
+                return true;
+              },
+            }).then(result => {
+              if (!result.confirmed) {
+                return;
+              }
+
+              return api(`/api/admin/users/${id}/revoke-admin`, 'POST', { newRole: result.value })
+                .then(() => {
+                  if (window.AdminShared && window.AdminShared.showToast) {
+                    window.AdminShared.showToast('Admin privileges revoked successfully.', 'success');
+                  } else {
+                    alert('Admin privileges revoked successfully.');
+                  }
+                  loadAll();
+                })
+                .catch(err => {
+                  console.error('revokeAdmin failed', err);
+                  if (window.AdminShared && window.AdminShared.showToast) {
+                    window.AdminShared.showToast(`Failed to revoke admin privileges: ${err.message}`, 'error');
+                  } else {
+                    alert(`Failed to revoke admin privileges: ${err.message}`);
+                  }
+                });
+            });
+          });
+      } else {
+        alert('Admin management requires AdminShared utilities. Please reload the page.');
+      }
     }
   };
 
@@ -1676,36 +1754,94 @@
       });
       modal.show();
     } else {
-      // Fallback to prompt
-      const name = prompt('Enter user name:');
-      if (!name) {
-        return;
-      }
+      // Fallback using AdminShared.showInputModal if available
+      if (window.AdminShared && window.AdminShared.showInputModal) {
+        window.AdminShared
+          .showInputModal({
+            title: 'Create New User - Step 1/3',
+            message: 'Enter the name for the new user',
+            label: 'Name',
+            required: true,
+          })
+          .then(nameResult => {
+            if (!nameResult.confirmed) {
+              return;
+            }
 
-      const email = prompt('Enter user email:');
-      if (!email) {
-        return;
-      }
+            return window.AdminShared
+              .showInputModal({
+                title: 'Create New User - Step 2/3',
+                message: 'Enter the email for the new user',
+                label: 'Email',
+                required: true,
+                validateFn: value => {
+                  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                  if (!emailRegex.test(value)) {
+                    return 'Please enter a valid email address';
+                  }
+                  return true;
+                },
+              })
+              .then(emailResult => {
+                if (!emailResult.confirmed) {
+                  return;
+                }
 
-      const password = prompt('Enter user password:');
-      if (!password) {
-        return;
-      }
+                return window.AdminShared
+                  .showInputModal({
+                    title: 'Create New User - Step 3/3',
+                    message: 'Enter password (min 8 chars with uppercase, lowercase, and number)',
+                    label: 'Password',
+                    required: true,
+                    validateFn: value => {
+                      if (value.length < 8) {
+                        return 'Password must be at least 8 characters long';
+                      }
+                      if (!/[A-Z]/.test(value)) {
+                        return 'Password must contain at least one uppercase letter';
+                      }
+                      if (!/[a-z]/.test(value)) {
+                        return 'Password must contain at least one lowercase letter';
+                      }
+                      if (!/[0-9]/.test(value)) {
+                        return 'Password must contain at least one number';
+                      }
+                      return true;
+                    },
+                  })
+                  .then(passwordResult => {
+                    if (!passwordResult.confirmed) {
+                      return;
+                    }
 
-      api('/api/admin/users', 'POST', {
-        name: name,
-        email: email,
-        password: password,
-        role: 'customer',
-      })
-        .then(() => {
-          alert('User created successfully.');
-          loadAll();
-        })
-        .catch(err => {
-          console.error('createUser failed', err);
-          alert(`Failed to create user: ${err.message}`);
-        });
+                    return api('/api/admin/users', 'POST', {
+                      name: nameResult.value,
+                      email: emailResult.value,
+                      password: passwordResult.value,
+                      role: 'customer',
+                    })
+                      .then(() => {
+                        if (window.AdminShared && window.AdminShared.showToast) {
+                          window.AdminShared.showToast('User created successfully.', 'success');
+                        } else {
+                          alert('User created successfully.');
+                        }
+                        loadAll();
+                      })
+                      .catch(err => {
+                        console.error('createUser failed', err);
+                        if (window.AdminShared && window.AdminShared.showToast) {
+                          window.AdminShared.showToast(`Failed to create user: ${err.message}`, 'error');
+                        } else {
+                          alert(`Failed to create user: ${err.message}`);
+                        }
+                      });
+                  });
+              });
+          });
+      } else {
+        alert('User creation requires AdminShared utilities. Please reload the page.');
+      }
     }
   };
 

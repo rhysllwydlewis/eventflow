@@ -473,6 +473,257 @@ const AdminShared = (function () {
     });
   }
 
+  /**
+   * Show input modal for collecting user input (better than browser prompt)
+   * @param {Object} options - Configuration object
+   * @param {string} options.title - Modal title
+   * @param {string} options.message - Modal message/description
+   * @param {string} options.label - Input field label
+   * @param {string} options.placeholder - Input placeholder text
+   * @param {string} options.initialValue - Initial input value (default: '')
+   * @param {boolean} options.required - Whether input is required (default: true)
+   * @param {Function} options.validateFn - Custom validation function (value) => boolean|string
+   * @param {string} options.confirmText - Confirm button text (default: 'Confirm')
+   * @param {string} options.cancelText - Cancel button text (default: 'Cancel')
+   * @param {string} options.type - Input type: 'text' or 'textarea' (default: 'text')
+   * @returns {Promise<{confirmed: boolean, value: string|null}>} Resolves with confirmation status and value
+   */
+  function showInputModal(options = {}) {
+    const {
+      title = 'Input Required',
+      message = '',
+      label = '',
+      placeholder = '',
+      initialValue = '',
+      required = true,
+      validateFn = null,
+      confirmText = 'Confirm',
+      cancelText = 'Cancel',
+      type = 'text',
+    } = options;
+
+    return new Promise(resolve => {
+      // Create modal overlay
+      const overlay = document.createElement('div');
+      overlay.className = 'admin-modal-overlay';
+      overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10001;
+        animation: fadeIn 0.2s ease;
+      `;
+
+      // Create modal dialog
+      const dialog = document.createElement('div');
+      dialog.className = 'admin-modal-dialog';
+      dialog.style.cssText = `
+        background: white;
+        border-radius: 8px;
+        padding: 1.5rem;
+        max-width: 500px;
+        width: 90%;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        animation: slideUp 0.3s ease;
+      `;
+
+      // Build modal content
+      const messageHtml = message
+        ? `<p style="margin: 0 0 1rem 0; color: #6b7280; line-height: 1.5;">${escapeHtml(message)}</p>`
+        : '';
+      const labelHtml = label
+        ? `<label for="admin-input-field" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #374151;">${escapeHtml(label)}</label>`
+        : '';
+
+      const inputElement =
+        type === 'textarea'
+          ? `<textarea id="admin-input-field" rows="4" placeholder="${escapeHtml(placeholder)}" style="
+              width: 100%;
+              padding: 0.5rem;
+              border: 1px solid #d1d5db;
+              border-radius: 6px;
+              font-size: 0.875rem;
+              font-family: inherit;
+              resize: vertical;
+            ">${escapeHtml(initialValue)}</textarea>`
+          : `<input type="text" id="admin-input-field" value="${escapeHtml(initialValue)}" placeholder="${escapeHtml(placeholder)}" style="
+              width: 100%;
+              padding: 0.5rem;
+              border: 1px solid #d1d5db;
+              border-radius: 6px;
+              font-size: 0.875rem;
+            ">`;
+
+      dialog.innerHTML = `
+        <div style="margin-bottom: 1.5rem;">
+          <h3 style="margin: 0 0 0.5rem 0; font-size: 1.25rem; font-weight: 600; color: #1f2937;">
+            ${escapeHtml(title)}
+          </h3>
+          ${messageHtml}
+        </div>
+        <div style="margin-bottom: 1rem;">
+          ${labelHtml}
+          ${inputElement}
+          <div id="input-error" style="margin-top: 0.5rem; color: #ef4444; font-size: 0.875rem; display: none;"></div>
+        </div>
+        <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+          <button class="admin-modal-cancel" style="
+            padding: 0.5rem 1rem;
+            border: 1px solid #d1d5db;
+            background: white;
+            color: #374151;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s;
+          ">
+            ${escapeHtml(cancelText)}
+          </button>
+          <button class="admin-modal-confirm" style="
+            padding: 0.5rem 1rem;
+            border: none;
+            background: #3b82f6;
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s;
+          ">
+            ${escapeHtml(confirmText)}
+          </button>
+        </div>
+      `;
+
+      overlay.appendChild(dialog);
+      document.body.appendChild(overlay);
+
+      // Add animations
+      const style = document.createElement('style');
+      style.textContent = `
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes slideUp {
+          from { transform: translateY(20px); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
+        }
+        .admin-modal-cancel:hover {
+          background: #f3f4f6 !important;
+        }
+        .admin-modal-confirm:hover {
+          opacity: 0.9;
+        }
+        .admin-modal-confirm:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+      `;
+      document.head.appendChild(style);
+
+      // Get elements
+      const inputField = dialog.querySelector('#admin-input-field');
+      const errorDiv = dialog.querySelector('#input-error');
+      const confirmBtn = dialog.querySelector('.admin-modal-confirm');
+      const cancelBtn = dialog.querySelector('.admin-modal-cancel');
+
+      // Focus input field
+      setTimeout(() => inputField.focus(), 100);
+
+      // Validation function
+      const validateInput = () => {
+        const value = inputField.value.trim();
+
+        // Check required
+        if (required && !value) {
+          errorDiv.textContent = 'This field is required';
+          errorDiv.style.display = 'block';
+          confirmBtn.disabled = true;
+          return false;
+        }
+
+        // Custom validation
+        if (validateFn) {
+          const validationResult = validateFn(value);
+          if (validationResult !== true) {
+            errorDiv.textContent = typeof validationResult === 'string' ? validationResult : 'Invalid input';
+            errorDiv.style.display = 'block';
+            confirmBtn.disabled = true;
+            return false;
+          }
+        }
+
+        // Valid
+        errorDiv.style.display = 'none';
+        confirmBtn.disabled = false;
+        return true;
+      };
+
+      // Validate on input
+      inputField.addEventListener('input', validateInput);
+
+      // Initial validation
+      if (required || validateFn) {
+        validateInput();
+      }
+
+      const cleanup = () => {
+        overlay.style.animation = 'fadeOut 0.2s ease';
+        setTimeout(() => {
+          overlay.remove();
+          style.remove();
+        }, 200);
+      };
+
+      // Handle confirm
+      const handleConfirm = () => {
+        if (validateInput()) {
+          const value = inputField.value.trim();
+          cleanup();
+          resolve({ confirmed: true, value });
+        }
+      };
+
+      confirmBtn.addEventListener('click', handleConfirm);
+
+      // Handle cancel
+      cancelBtn.addEventListener('click', () => {
+        cleanup();
+        resolve({ confirmed: false, value: null });
+      });
+
+      // Close on overlay click
+      overlay.addEventListener('click', e => {
+        if (e.target === overlay) {
+          cleanup();
+          resolve({ confirmed: false, value: null });
+        }
+      });
+
+      // Close on Escape key
+      const handleEscape = e => {
+        if (e.key === 'Escape') {
+          cleanup();
+          resolve({ confirmed: false, value: null });
+          document.removeEventListener('keydown', handleEscape);
+        } else if (e.key === 'Enter' && !e.shiftKey && type === 'text') {
+          // Submit on Enter for text inputs (but not textarea)
+          e.preventDefault();
+          handleConfirm();
+        }
+      };
+      document.addEventListener('keydown', handleEscape);
+    });
+  }
+
   // Simple confirm dialog (fallback/legacy)
   function confirm(message) {
     return window.confirm(message);
@@ -1202,6 +1453,7 @@ const AdminShared = (function () {
     showToast,
     showEnhancedToast,
     showConfirmModal,
+    showInputModal,
     confirm,
     // List state management
     showLoadingState,

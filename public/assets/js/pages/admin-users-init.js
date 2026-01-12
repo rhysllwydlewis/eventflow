@@ -505,8 +505,16 @@
           return;
         }
 
-        const reason = prompt('Reason for removing subscription:');
-        if (reason === null) {
+        const reasonResult = await AdminShared.showInputModal({
+          title: 'Removal Reason',
+          message: 'Please provide a reason for removing this subscription',
+          label: 'Reason',
+          placeholder: 'e.g., Requested by user, Payment issue, etc.',
+          required: false,
+          type: 'textarea',
+        });
+
+        if (!reasonResult.confirmed) {
           return; // Cancelled
         }
 
@@ -517,7 +525,7 @@
               `/api/admin/users/${currentSubscriptionUserId}/subscription`,
               {
                 method: 'DELETE',
-                body: { reason: reason || 'Manual admin removal' },
+                body: { reason: reasonResult.value || 'Manual admin removal' },
               }
             );
             closeSubscriptionModal();
