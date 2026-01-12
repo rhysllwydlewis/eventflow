@@ -1029,8 +1029,8 @@ body {
     right: 0 !important;
     bottom: 0 !important;
     width: 100% !important;
-    height: auto !important;
-    min-height: 100px !important;
+    height: calc(100vh - 64px) !important;
+    height: calc(100vh - var(--ef-header-height, 64px)) !important;
     max-height: calc(100vh - 64px) !important;
     max-height: calc(100vh - var(--ef-header-height, 64px)) !important;
     overflow-y: auto !important;
