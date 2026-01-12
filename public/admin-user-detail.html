@@ -353,12 +353,21 @@
   }
   
   async function deleteUser() {
-    const confirmText = prompt('Are you sure you want to DELETE this user? Type "YES" to confirm:');
+    const confirmResult = await AdminShared.showInputModal({
+      title: 'Delete User - DANGER',
+      message: 'This action is IRREVERSIBLE. All user data will be permanently deleted.',
+      label: 'Type "YES" to confirm deletion',
+      placeholder: 'YES',
+      required: true,
+      validateFn: value => {
+        if (value !== 'YES') {
+          return 'You must type YES (all caps) to confirm deletion';
+        }
+        return true;
+      },
+    });
     
-    if (confirmText !== 'YES') {
-      if (confirmText !== null) {
-        AdminShared.showToast('Delete cancelled - you must type YES to confirm', 'info');
-      }
+    if (!confirmResult.confirmed) {
       return;
     }
     

@@ -551,13 +551,21 @@
   });
 
   document.getElementById('verifySupplierBtn')?.addEventListener('click', async () => {
-    const notes = prompt('Enter verification notes (optional):');
-    if (notes === null) return; // User cancelled
+    const notesResult = await AdminShared.showInputModal({
+      title: 'Verify Supplier',
+      message: 'Add any notes about this verification (optional)',
+      label: 'Verification Notes',
+      placeholder: 'e.g., Documents checked, identity confirmed, etc.',
+      required: false,
+      type: 'textarea',
+    });
+    
+    if (!notesResult.confirmed) return; // User cancelled
     
     try {
       await AdminShared.api(`/api/admin/suppliers/${supplierId}/verify`, 'POST', {
         verified: true,
-        verificationNotes: notes || 'Manual verification by admin'
+        verificationNotes: notesResult.value || 'Manual verification by admin'
       });
       AdminShared.showToast('Supplier verified successfully', 'success');
       loadSupplier();

@@ -28,6 +28,44 @@ const AdminShared = (function () {
     console.error('[Admin]', ...args);
   }
 
+  /**
+   * Ensure modal styles are added to the document (only once)
+   */
+  function ensureModalStyles() {
+    // Check if styles already exist
+    if (document.getElementById('admin-modal-styles')) {
+      return;
+    }
+
+    const style = document.createElement('style');
+    style.id = 'admin-modal-styles';
+    style.textContent = `
+      @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+      @keyframes fadeOut {
+        from { opacity: 1; }
+        to { opacity: 0; }
+      }
+      @keyframes slideUp {
+        from { transform: translateY(20px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+      }
+      .admin-modal-cancel:hover {
+        background: #f3f4f6 !important;
+      }
+      .admin-modal-confirm:hover {
+        opacity: 0.9;
+      }
+      .admin-modal-confirm:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
   // HTML escaping to prevent XSS
   function escapeHtml(unsafe) {
     if (!unsafe) {
@@ -36,6 +74,64 @@ const AdminShared = (function () {
     const div = document.createElement('div');
     div.textContent = String(unsafe);
     return div.innerHTML;
+  }
+
+  /**
+   * Validation helpers
+   */
+
+  // Email validation regex (basic but comprehensive)
+  const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  // Validate email format
+  function validateEmail(email) {
+    if (!email || typeof email !== 'string') {
+      return 'Email is required';
+    }
+    if (!EMAIL_REGEX.test(email.trim())) {
+      return 'Please enter a valid email address';
+    }
+    return true;
+  }
+
+  // Validate password strength
+  function validatePassword(password) {
+    if (!password || typeof password !== 'string') {
+      return 'Password is required';
+    }
+    if (password.length < 8) {
+      return 'Password must be at least 8 characters long';
+    }
+    if (!/[A-Z]/.test(password)) {
+      return 'Password must contain at least one uppercase letter';
+    }
+    if (!/[a-z]/.test(password)) {
+      return 'Password must contain at least one lowercase letter';
+    }
+    if (!/[0-9]/.test(password)) {
+      return 'Password must contain at least one number';
+    }
+    return true;
+  }
+
+  // Validate role (customer, supplier, admin)
+  const VALID_ROLES = ['customer', 'supplier', 'admin'];
+
+  /**
+   * Validate user role
+   * @param {string} role - The role to validate
+   * @param {Array<string>} allowedRoles - Optional array of allowed roles (defaults to VALID_ROLES)
+   * @returns {boolean|string} - true if valid, error message if invalid
+   */
+  function validateRole(role, allowedRoles = VALID_ROLES) {
+    if (!role || typeof role !== 'string') {
+      return 'Role is required';
+    }
+    const normalizedRole = role.toLowerCase().trim();
+    if (!allowedRoles.includes(normalizedRole)) {
+      return `Role must be one of: ${allowedRoles.join(', ')}`;
+    }
+    return true;
   }
 
   // Format dates consistently
@@ -328,9 +424,24 @@ const AdminShared = (function () {
     } = options;
 
     return new Promise(resolve => {
+      // Store previously focused element for focus return
+      const previouslyFocused = document.activeElement;
+
+      // Lock body scroll
+      const originalOverflow = document.body.style.overflow;
+      const originalPaddingRight = document.body.style.paddingRight;
+      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+      document.body.style.overflow = 'hidden';
+      if (scrollbarWidth > 0) {
+        document.body.style.paddingRight = `${scrollbarWidth}px`;
+      }
+
       // Create modal overlay
       const overlay = document.createElement('div');
       overlay.className = 'admin-modal-overlay';
+      overlay.setAttribute('role', 'dialog');
+      overlay.setAttribute('aria-modal', 'true');
+      overlay.setAttribute('aria-labelledby', 'modal-title');
       overlay.style.cssText = `
         position: fixed;
         top: 0;
@@ -370,7 +481,7 @@ const AdminShared = (function () {
         <div style="display: flex; align-items: flex-start; gap: 1rem; margin-bottom: 1.5rem;">
           <div style="font-size: 2rem; flex-shrink: 0;">${config.icon}</div>
           <div style="flex: 1;">
-            <h3 style="margin: 0 0 0.5rem 0; font-size: 1.25rem; font-weight: 600; color: #1f2937;">
+            <h3 id="modal-title" style="margin: 0 0 0.5rem 0; font-size: 1.25rem; font-weight: 600; color: #1f2937;">
               ${escapeHtml(title)}
             </h3>
             <p style="margin: 0; color: #6b7280; line-height: 1.5;">
@@ -411,35 +522,48 @@ const AdminShared = (function () {
       overlay.appendChild(dialog);
       document.body.appendChild(overlay);
 
-      // Add animations
-      const style = document.createElement('style');
-      style.textContent = `
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        @keyframes slideUp {
-          from { transform: translateY(20px); opacity: 0; }
-          to { transform: translateY(0); opacity: 1; }
-        }
-        .admin-modal-cancel:hover {
-          background: #f3f4f6 !important;
-        }
-        .admin-modal-confirm:hover {
-          opacity: 0.9;
-        }
-      `;
-      document.head.appendChild(style);
+      // Ensure modal styles are loaded
+      ensureModalStyles();
 
       // Handle button clicks
       const confirmBtn = dialog.querySelector('.admin-modal-confirm');
       const cancelBtn = dialog.querySelector('.admin-modal-cancel');
 
+      // Focus first interactive element
+      setTimeout(() => cancelBtn.focus(), 100);
+
+      // Focus trap
+      const focusableElements = dialog.querySelectorAll(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      const firstFocusable = focusableElements[0];
+      const lastFocusable = focusableElements[focusableElements.length - 1];
+
+      const trapFocus = e => {
+        if (e.key === 'Tab') {
+          if (e.shiftKey && document.activeElement === firstFocusable) {
+            e.preventDefault();
+            lastFocusable.focus();
+          } else if (!e.shiftKey && document.activeElement === lastFocusable) {
+            e.preventDefault();
+            firstFocusable.focus();
+          }
+        }
+      };
+
+      dialog.addEventListener('keydown', trapFocus);
+
       const cleanup = () => {
         overlay.style.animation = 'fadeOut 0.2s ease';
         setTimeout(() => {
           overlay.remove();
-          style.remove();
+          // Restore body scroll
+          document.body.style.overflow = originalOverflow;
+          document.body.style.paddingRight = originalPaddingRight;
+          // Return focus
+          if (previouslyFocused && typeof previouslyFocused.focus === 'function') {
+            previouslyFocused.focus();
+          }
         }, 200);
       };
 
@@ -467,6 +591,279 @@ const AdminShared = (function () {
           cleanup();
           resolve(false);
           document.removeEventListener('keydown', handleEscape);
+        }
+      };
+      document.addEventListener('keydown', handleEscape);
+    });
+  }
+
+  /**
+   * Show input modal for collecting user input (better than browser prompt)
+   * @param {Object} options - Configuration object
+   * @param {string} options.title - Modal title
+   * @param {string} options.message - Modal message/description
+   * @param {string} options.label - Input field label
+   * @param {string} options.placeholder - Input placeholder text
+   * @param {string} options.initialValue - Initial input value (default: '')
+   * @param {boolean} options.required - Whether input is required (default: true)
+   * @param {Function} options.validateFn - Custom validation function (value) => boolean|string
+   * @param {string} options.confirmText - Confirm button text (default: 'Confirm')
+   * @param {string} options.cancelText - Cancel button text (default: 'Cancel')
+   * @param {string} options.type - Input type: 'text' or 'textarea' (default: 'text')
+   * @returns {Promise<{confirmed: boolean, value: string|null}>} Resolves with confirmation status and value
+   */
+  function showInputModal(options = {}) {
+    const {
+      title = 'Input Required',
+      message = '',
+      label = '',
+      placeholder = '',
+      initialValue = '',
+      required = true,
+      validateFn = null,
+      confirmText = 'Confirm',
+      cancelText = 'Cancel',
+      type = 'text',
+    } = options;
+
+    return new Promise(resolve => {
+      // Store previously focused element for focus return
+      const previouslyFocused = document.activeElement;
+
+      // Lock body scroll
+      const originalOverflow = document.body.style.overflow;
+      const originalPaddingRight = document.body.style.paddingRight;
+      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+      document.body.style.overflow = 'hidden';
+      if (scrollbarWidth > 0) {
+        document.body.style.paddingRight = `${scrollbarWidth}px`;
+      }
+
+      // Create modal overlay
+      const overlay = document.createElement('div');
+      overlay.className = 'admin-modal-overlay';
+      overlay.setAttribute('role', 'dialog');
+      overlay.setAttribute('aria-modal', 'true');
+      overlay.setAttribute('aria-labelledby', 'modal-input-title');
+      overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10001;
+        animation: fadeIn 0.2s ease;
+      `;
+
+      // Create modal dialog
+      const dialog = document.createElement('div');
+      dialog.className = 'admin-modal-dialog';
+      dialog.style.cssText = `
+        background: white;
+        border-radius: 8px;
+        padding: 1.5rem;
+        max-width: 500px;
+        width: 90%;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        animation: slideUp 0.3s ease;
+      `;
+
+      // Build modal content
+      const messageHtml = message
+        ? `<p style="margin: 0 0 1rem 0; color: #6b7280; line-height: 1.5;">${escapeHtml(message)}</p>`
+        : '';
+      const labelHtml = label
+        ? `<label for="admin-input-field" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #374151;">${escapeHtml(label)}</label>`
+        : '';
+
+      const inputElement =
+        type === 'textarea'
+          ? `<textarea id="admin-input-field" rows="4" placeholder="${escapeHtml(placeholder)}" style="
+              width: 100%;
+              padding: 0.5rem;
+              border: 1px solid #d1d5db;
+              border-radius: 6px;
+              font-size: 0.875rem;
+              font-family: inherit;
+              resize: vertical;
+            ">${escapeHtml(initialValue)}</textarea>`
+          : `<input type="text" id="admin-input-field" value="${escapeHtml(initialValue)}" placeholder="${escapeHtml(placeholder)}" style="
+              width: 100%;
+              padding: 0.5rem;
+              border: 1px solid #d1d5db;
+              border-radius: 6px;
+              font-size: 0.875rem;
+            ">`;
+
+      dialog.innerHTML = `
+        <div style="margin-bottom: 1.5rem;">
+          <h3 id="modal-input-title" style="margin: 0 0 0.5rem 0; font-size: 1.25rem; font-weight: 600; color: #1f2937;">
+            ${escapeHtml(title)}
+          </h3>
+          ${messageHtml}
+        </div>
+        <div style="margin-bottom: 1rem;">
+          ${labelHtml}
+          ${inputElement}
+          <div id="input-error" style="margin-top: 0.5rem; color: #ef4444; font-size: 0.875rem; display: none;"></div>
+        </div>
+        <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+          <button class="admin-modal-cancel" style="
+            padding: 0.5rem 1rem;
+            border: 1px solid #d1d5db;
+            background: white;
+            color: #374151;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s;
+          ">
+            ${escapeHtml(cancelText)}
+          </button>
+          <button class="admin-modal-confirm" style="
+            padding: 0.5rem 1rem;
+            border: none;
+            background: #3b82f6;
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s;
+          ">
+            ${escapeHtml(confirmText)}
+          </button>
+        </div>
+      `;
+
+      overlay.appendChild(dialog);
+      document.body.appendChild(overlay);
+
+      // Ensure modal styles are loaded
+      ensureModalStyles();
+
+      // Get elements
+      const inputField = dialog.querySelector('#admin-input-field');
+      const errorDiv = dialog.querySelector('#input-error');
+      const confirmBtn = dialog.querySelector('.admin-modal-confirm');
+      const cancelBtn = dialog.querySelector('.admin-modal-cancel');
+
+      // Focus input field
+      setTimeout(() => inputField.focus(), 100);
+
+      // Focus trap
+      const focusableElements = dialog.querySelectorAll(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      const firstFocusable = focusableElements[0];
+      const lastFocusable = focusableElements[focusableElements.length - 1];
+
+      const trapFocus = e => {
+        if (e.key === 'Tab') {
+          if (e.shiftKey && document.activeElement === firstFocusable) {
+            e.preventDefault();
+            lastFocusable.focus();
+          } else if (!e.shiftKey && document.activeElement === lastFocusable) {
+            e.preventDefault();
+            firstFocusable.focus();
+          }
+        }
+      };
+
+      dialog.addEventListener('keydown', trapFocus);
+
+      // Validation function
+      const validateInput = () => {
+        const value = inputField.value.trim();
+
+        // Check required
+        if (required && !value) {
+          errorDiv.textContent = 'This field is required';
+          errorDiv.style.display = 'block';
+          confirmBtn.disabled = true;
+          return false;
+        }
+
+        // Custom validation
+        if (validateFn) {
+          const validationResult = validateFn(value);
+          if (validationResult !== true) {
+            errorDiv.textContent =
+              typeof validationResult === 'string' ? validationResult : 'Invalid input';
+            errorDiv.style.display = 'block';
+            confirmBtn.disabled = true;
+            return false;
+          }
+        }
+
+        // Valid
+        errorDiv.style.display = 'none';
+        confirmBtn.disabled = false;
+        return true;
+      };
+
+      // Validate on input
+      inputField.addEventListener('input', validateInput);
+
+      // Initial validation
+      if (required || validateFn) {
+        validateInput();
+      }
+
+      const cleanup = () => {
+        overlay.style.animation = 'fadeOut 0.2s ease';
+        setTimeout(() => {
+          overlay.remove();
+          // Restore body scroll
+          document.body.style.overflow = originalOverflow;
+          document.body.style.paddingRight = originalPaddingRight;
+          // Return focus
+          if (previouslyFocused && typeof previouslyFocused.focus === 'function') {
+            previouslyFocused.focus();
+          }
+        }, 200);
+      };
+
+      // Handle confirm
+      const handleConfirm = () => {
+        if (validateInput()) {
+          const value = inputField.value.trim();
+          cleanup();
+          resolve({ confirmed: true, value });
+        }
+      };
+
+      confirmBtn.addEventListener('click', handleConfirm);
+
+      // Handle cancel
+      cancelBtn.addEventListener('click', () => {
+        cleanup();
+        resolve({ confirmed: false, value: null });
+      });
+
+      // Close on overlay click
+      overlay.addEventListener('click', e => {
+        if (e.target === overlay) {
+          cleanup();
+          resolve({ confirmed: false, value: null });
+        }
+      });
+
+      // Close on Escape key
+      const handleEscape = e => {
+        if (e.key === 'Escape') {
+          cleanup();
+          resolve({ confirmed: false, value: null });
+          document.removeEventListener('keydown', handleEscape);
+        } else if (e.key === 'Enter' && !e.shiftKey && type === 'text') {
+          // Submit on Enter for text inputs (but not textarea)
+          e.preventDefault();
+          handleConfirm();
         }
       };
       document.addEventListener('keydown', handleEscape);
@@ -1194,6 +1591,11 @@ const AdminShared = (function () {
     formatDate,
     formatTimestamp,
     formatFileSize,
+    // Validation helpers
+    validateEmail,
+    validatePassword,
+    validateRole,
+    VALID_ROLES,
     // API wrappers
     api,
     adminFetch,
@@ -1202,6 +1604,7 @@ const AdminShared = (function () {
     showToast,
     showEnhancedToast,
     showConfirmModal,
+    showInputModal,
     confirm,
     // List state management
     showLoadingState,
