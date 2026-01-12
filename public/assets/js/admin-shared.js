@@ -424,9 +424,24 @@ const AdminShared = (function () {
     } = options;
 
     return new Promise(resolve => {
+      // Store previously focused element for focus return
+      const previouslyFocused = document.activeElement;
+
+      // Lock body scroll
+      const originalOverflow = document.body.style.overflow;
+      const originalPaddingRight = document.body.style.paddingRight;
+      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+      document.body.style.overflow = 'hidden';
+      if (scrollbarWidth > 0) {
+        document.body.style.paddingRight = `${scrollbarWidth}px`;
+      }
+
       // Create modal overlay
       const overlay = document.createElement('div');
       overlay.className = 'admin-modal-overlay';
+      overlay.setAttribute('role', 'dialog');
+      overlay.setAttribute('aria-modal', 'true');
+      overlay.setAttribute('aria-labelledby', 'modal-title');
       overlay.style.cssText = `
         position: fixed;
         top: 0;
@@ -466,7 +481,7 @@ const AdminShared = (function () {
         <div style="display: flex; align-items: flex-start; gap: 1rem; margin-bottom: 1.5rem;">
           <div style="font-size: 2rem; flex-shrink: 0;">${config.icon}</div>
           <div style="flex: 1;">
-            <h3 style="margin: 0 0 0.5rem 0; font-size: 1.25rem; font-weight: 600; color: #1f2937;">
+            <h3 id="modal-title" style="margin: 0 0 0.5rem 0; font-size: 1.25rem; font-weight: 600; color: #1f2937;">
               ${escapeHtml(title)}
             </h3>
             <p style="margin: 0; color: #6b7280; line-height: 1.5;">
@@ -514,10 +529,41 @@ const AdminShared = (function () {
       const confirmBtn = dialog.querySelector('.admin-modal-confirm');
       const cancelBtn = dialog.querySelector('.admin-modal-cancel');
 
+      // Focus first interactive element
+      setTimeout(() => cancelBtn.focus(), 100);
+
+      // Focus trap
+      const focusableElements = dialog.querySelectorAll(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      const firstFocusable = focusableElements[0];
+      const lastFocusable = focusableElements[focusableElements.length - 1];
+
+      const trapFocus = e => {
+        if (e.key === 'Tab') {
+          if (e.shiftKey && document.activeElement === firstFocusable) {
+            e.preventDefault();
+            lastFocusable.focus();
+          } else if (!e.shiftKey && document.activeElement === lastFocusable) {
+            e.preventDefault();
+            firstFocusable.focus();
+          }
+        }
+      };
+
+      dialog.addEventListener('keydown', trapFocus);
+
       const cleanup = () => {
         overlay.style.animation = 'fadeOut 0.2s ease';
         setTimeout(() => {
           overlay.remove();
+          // Restore body scroll
+          document.body.style.overflow = originalOverflow;
+          document.body.style.paddingRight = originalPaddingRight;
+          // Return focus
+          if (previouslyFocused && typeof previouslyFocused.focus === 'function') {
+            previouslyFocused.focus();
+          }
         }, 200);
       };
 
@@ -581,9 +627,24 @@ const AdminShared = (function () {
     } = options;
 
     return new Promise(resolve => {
+      // Store previously focused element for focus return
+      const previouslyFocused = document.activeElement;
+
+      // Lock body scroll
+      const originalOverflow = document.body.style.overflow;
+      const originalPaddingRight = document.body.style.paddingRight;
+      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+      document.body.style.overflow = 'hidden';
+      if (scrollbarWidth > 0) {
+        document.body.style.paddingRight = `${scrollbarWidth}px`;
+      }
+
       // Create modal overlay
       const overlay = document.createElement('div');
       overlay.className = 'admin-modal-overlay';
+      overlay.setAttribute('role', 'dialog');
+      overlay.setAttribute('aria-modal', 'true');
+      overlay.setAttribute('aria-labelledby', 'modal-input-title');
       overlay.style.cssText = `
         position: fixed;
         top: 0;
@@ -640,7 +701,7 @@ const AdminShared = (function () {
 
       dialog.innerHTML = `
         <div style="margin-bottom: 1.5rem;">
-          <h3 style="margin: 0 0 0.5rem 0; font-size: 1.25rem; font-weight: 600; color: #1f2937;">
+          <h3 id="modal-input-title" style="margin: 0 0 0.5rem 0; font-size: 1.25rem; font-weight: 600; color: #1f2937;">
             ${escapeHtml(title)}
           </h3>
           ${messageHtml}
@@ -695,6 +756,27 @@ const AdminShared = (function () {
       // Focus input field
       setTimeout(() => inputField.focus(), 100);
 
+      // Focus trap
+      const focusableElements = dialog.querySelectorAll(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      const firstFocusable = focusableElements[0];
+      const lastFocusable = focusableElements[focusableElements.length - 1];
+
+      const trapFocus = e => {
+        if (e.key === 'Tab') {
+          if (e.shiftKey && document.activeElement === firstFocusable) {
+            e.preventDefault();
+            lastFocusable.focus();
+          } else if (!e.shiftKey && document.activeElement === lastFocusable) {
+            e.preventDefault();
+            firstFocusable.focus();
+          }
+        }
+      };
+
+      dialog.addEventListener('keydown', trapFocus);
+
       // Validation function
       const validateInput = () => {
         const value = inputField.value.trim();
@@ -737,6 +819,13 @@ const AdminShared = (function () {
         overlay.style.animation = 'fadeOut 0.2s ease';
         setTimeout(() => {
           overlay.remove();
+          // Restore body scroll
+          document.body.style.overflow = originalOverflow;
+          document.body.style.paddingRight = originalPaddingRight;
+          // Return focus
+          if (previouslyFocused && typeof previouslyFocused.focus === 'function') {
+            previouslyFocused.focus();
+          }
         }, 200);
       };
 

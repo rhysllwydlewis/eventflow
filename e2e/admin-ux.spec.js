@@ -253,10 +253,7 @@ test.describe('Admin UX - Input Modal Functionality', () => {
     await expect(editButton).toBeVisible({ timeout: 5000 });
     await editButton.click();
 
-    // Wait for modal to appear
-    await page.waitForTimeout(500);
-
-    // Modal should be visible (the existing Modal component or our fallback)
+    // Wait for modal to appear using expect
     const modal = page.locator('.admin-modal-overlay, .modal-overlay').first();
     await expect(modal).toBeVisible({ timeout: 3000 });
 
@@ -276,17 +273,18 @@ test.describe('Admin UX - Input Modal Functionality', () => {
     await confirmBtn.click();
 
     // If using fallback sequential modals, handle email modal
-    await page.waitForTimeout(500);
+    // Use waitForSelector with timeout instead of fixed wait
     const emailModal = page.locator('.admin-modal-overlay').first();
-    if (await emailModal.isVisible()) {
+    const isEmailModalVisible = await emailModal.isVisible().catch(() => false);
+    if (isEmailModalVisible) {
       const emailInput = emailModal.locator('input#admin-input-field').first();
       await emailInput.fill('updated@example.com');
       const emailConfirm = emailModal.locator('.admin-modal-confirm').first();
       await emailConfirm.click();
     }
 
-    // Modal should close
-    await page.waitForTimeout(1000);
+    // Modal should close - wait for it to be hidden
+    await expect(modal).toBeHidden({ timeout: 2000 });
   });
 
   test('input modal should validate required fields', async ({ page, browserName }) => {
