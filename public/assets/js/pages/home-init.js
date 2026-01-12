@@ -58,10 +58,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Initialize WebSocket connection for real-time notifications (only when logged in)
       if (user && typeof WebSocketClient !== 'undefined') {
-        // eslint-disable-next-line no-unused-vars
-        const wsClient = new WebSocketClient({
-          // eslint-disable-next-line no-unused-vars
-          onNotification: notification => {
+        // WebSocket client is initialized here for real-time notification updates
+        const _wsClient = new WebSocketClient({
+          onNotification: _notification => {
             // Update notification badge
             const badge = document.querySelector('.notification-badge');
             if (badge) {
@@ -71,6 +70,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
           },
         });
+        // Store reference if needed for cleanup
+        window.__notificationWsClient = _wsClient;
       }
     });
   }
@@ -357,7 +358,7 @@ function isDevelopmentEnvironment() {
 async function loadHeroCollageImages() {
   // NOTE: Pexels collage feature disabled until /api/public/homepage-settings endpoint is deployed
   // When the backend endpoint is ready, uncomment the code below to enable dynamic collage
-  
+
   /* DISABLED - Pexels collage check
   try {
     const settingsResponse = await fetch('/api/public/homepage-settings').catch(() => {
@@ -725,18 +726,17 @@ async function fetchMarketplacePreview() {
     return;
   }
 
+  const MARKETPLACE_PREVIEW_LIMIT = 4;
+
   // Show loading skeleton
   container.innerHTML = `
     <div class="skeleton-carousel">
-      <div class="skeleton-card"></div>
-      <div class="skeleton-card"></div>
-      <div class="skeleton-card"></div>
-      <div class="skeleton-card"></div>
+      ${Array(MARKETPLACE_PREVIEW_LIMIT).fill('<div class="skeleton-card"></div>').join('')}
     </div>
   `;
 
   try {
-    const response = await fetch('/api/marketplace/listings?limit=4');
+    const response = await fetch(`/api/marketplace/listings?limit=${MARKETPLACE_PREVIEW_LIMIT}`);
     if (!response.ok) {
       throw new Error('Marketplace fetch failed');
     }
@@ -807,7 +807,8 @@ async function fetchGuides() {
   }
 
   // Show loading placeholder
-  container.innerHTML = '<p class="small" style="text-align: center; padding: 2rem;">Loading guides...</p>';
+  container.innerHTML =
+    '<p class="small" style="text-align: center; padding: 2rem;">Loading guides...</p>';
 
   try {
     const response = await fetch('/assets/data/guides.json');
@@ -873,7 +874,7 @@ async function fetchTestimonials() {
   // NOTE: Reviews endpoint not yet deployed - hiding section until /api/reviews is available
   // When the backend endpoint is ready, uncomment the code below to enable testimonials
   section.style.display = 'none';
-  
+
   /* DISABLED - Reviews/testimonials fetch
   try {
     const response = await fetch('/api/reviews?limit=6&approved=true&sort=rating').catch(() => {
