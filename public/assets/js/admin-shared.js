@@ -6,6 +6,28 @@
 const AdminShared = (function () {
   'use strict';
 
+  // Debug flag - set to true to enable console logging
+  // In production, set to false to reduce console spam
+  const DEBUG = localStorage.getItem('ADMIN_DEBUG') === 'true' || false;
+
+  // Debug logging wrapper
+  function debugLog(...args) {
+    if (DEBUG) {
+      console.log('[Admin]', ...args);
+    }
+  }
+
+  function debugWarn(...args) {
+    if (DEBUG) {
+      console.warn('[Admin]', ...args);
+    }
+  }
+
+  // Error logging (always show real errors)
+  function debugError(...args) {
+    console.error('[Admin]', ...args);
+  }
+
   // HTML escaping to prevent XSS
   function escapeHtml(unsafe) {
     if (!unsafe) {
@@ -99,7 +121,8 @@ const AdminShared = (function () {
             const currentPath = window.location.pathname;
             if (currentPath !== '/auth.html') {
               // Use relative path instead of full URL for security
-              const returnPath = window.location.pathname + window.location.search + window.location.hash;
+              const returnPath =
+                window.location.pathname + window.location.search + window.location.hash;
               const loginUrl = `/auth.html?redirect=${encodeURIComponent(returnPath)}`;
               // Ensure the redirect is to the same origin
               if (loginUrl.startsWith('/')) {
@@ -129,6 +152,102 @@ const AdminShared = (function () {
       } catch (e) {
         return { message: text };
       }
+    }
+  }
+
+  /**
+   * adminFetch - Enhanced fetch wrapper specifically for admin API calls
+   * Handles auth failures, errors, and console logging consistently
+   * @param {string} url - API endpoint URL
+   * @param {Object} options - fetch options (method, body, etc.)
+   * @returns {Promise<any>} Response data
+   */
+  async function adminFetch(url, options = {}) {
+    const method = options.method || 'GET';
+    const isWriteOperation = ['POST', 'PUT', 'DELETE', 'PATCH'].includes(method.toUpperCase());
+
+    debugLog(`${method} ${url}`, options.body ? { body: options.body } : '');
+
+    try {
+      const opts = {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          ...options.headers,
+        },
+        credentials: 'include',
+      };
+
+      // Add CSRF token for write operations
+      if (isWriteOperation && window.__CSRF_TOKEN__) {
+        opts.headers['X-CSRF-Token'] = window.__CSRF_TOKEN__;
+      }
+
+      if (options.body) {
+        opts.body = typeof options.body === 'string' ? options.body : JSON.stringify(options.body);
+      }
+
+      const response = await fetch(url, opts);
+      const contentType = response.headers.get('content-type');
+      const isJson = contentType && contentType.includes('application/json');
+
+      // Handle auth failures
+      if (response.status === 401) {
+        debugWarn('401 Unauthorized - redirecting to login');
+        const currentPath = window.location.pathname;
+        const redirectUrl = `/auth.html?redirect=${encodeURIComponent(currentPath)}`;
+        window.location.href = redirectUrl;
+        throw new Error('Authentication required');
+      }
+
+      if (response.status === 403) {
+        debugWarn('403 Forbidden - insufficient permissions');
+        showToast('You do not have permission to perform this action', 'error');
+        throw new Error('Forbidden: Insufficient permissions');
+      }
+
+      // Parse response
+      let data;
+      if (isJson) {
+        data = await response.json();
+      } else {
+        const text = await response.text();
+        try {
+          data = JSON.parse(text);
+        } catch {
+          data = { message: text };
+        }
+      }
+
+      // Handle non-OK responses
+      if (!response.ok) {
+        const errorMessage =
+          data.error || data.message || `Request failed with status ${response.status}`;
+
+        // Log error based on status
+        if (response.status >= 500) {
+          debugError(`Server error (${response.status}):`, errorMessage);
+        } else if (response.status === 404) {
+          // 404s are often expected (e.g., checking if resource exists)
+          debugLog(`Resource not found (404): ${url}`);
+        } else {
+          debugWarn(`Request failed (${response.status}):`, errorMessage);
+        }
+
+        throw new Error(errorMessage);
+      }
+
+      debugLog(`${method} ${url} - Success`, data);
+      return data;
+    } catch (error) {
+      // Only log if not already logged above
+      if (
+        !error.message.includes('Authentication required') &&
+        !error.message.includes('Forbidden')
+      ) {
+        debugError(`${method} ${url} - Error:`, error.message);
+      }
+      throw error;
     }
   }
 
@@ -185,7 +304,172 @@ const AdminShared = (function () {
     }, 3000);
   }
 
-  // Confirm dialog
+  /**
+   * Show confirmation modal (better than browser confirm)
+   * @param {Object} options - Configuration object
+   * @param {string} options.title - Modal title
+   * @param {string} options.message - Modal message
+   * @param {string} options.confirmText - Confirm button text (default: 'Confirm')
+   * @param {string} options.cancelText - Cancel button text (default: 'Cancel')
+   * @param {string} options.type - Modal type: 'danger', 'warning', 'info' (default: 'info')
+   * @returns {Promise<boolean>} Resolves to true if confirmed, false if cancelled
+   */
+  function showConfirmModal(options = {}) {
+    const {
+      title = 'Confirm Action',
+      message = 'Are you sure you want to proceed?',
+      confirmText = 'Confirm',
+      cancelText = 'Cancel',
+      type = 'info',
+    } = options;
+
+    return new Promise(resolve => {
+      // Create modal overlay
+      const overlay = document.createElement('div');
+      overlay.className = 'admin-modal-overlay';
+      overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10001;
+        animation: fadeIn 0.2s ease;
+      `;
+
+      // Create modal dialog
+      const dialog = document.createElement('div');
+      dialog.className = 'admin-modal-dialog';
+      dialog.style.cssText = `
+        background: white;
+        border-radius: 8px;
+        padding: 1.5rem;
+        max-width: 500px;
+        width: 90%;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        animation: slideUp 0.3s ease;
+      `;
+
+      // Icon and color based on type
+      const typeConfig = {
+        danger: { icon: '⚠️', color: '#ef4444' },
+        warning: { icon: '⚠️', color: '#f59e0b' },
+        info: { icon: 'ℹ️', color: '#3b82f6' },
+      };
+      const config = typeConfig[type] || typeConfig.info;
+
+      dialog.innerHTML = `
+        <div style="display: flex; align-items: flex-start; gap: 1rem; margin-bottom: 1.5rem;">
+          <div style="font-size: 2rem; flex-shrink: 0;">${config.icon}</div>
+          <div style="flex: 1;">
+            <h3 style="margin: 0 0 0.5rem 0; font-size: 1.25rem; font-weight: 600; color: #1f2937;">
+              ${escapeHtml(title)}
+            </h3>
+            <p style="margin: 0; color: #6b7280; line-height: 1.5;">
+              ${escapeHtml(message)}
+            </p>
+          </div>
+        </div>
+        <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+          <button class="admin-modal-cancel" style="
+            padding: 0.5rem 1rem;
+            border: 1px solid #d1d5db;
+            background: white;
+            color: #374151;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s;
+          ">
+            ${escapeHtml(cancelText)}
+          </button>
+          <button class="admin-modal-confirm" style="
+            padding: 0.5rem 1rem;
+            border: none;
+            background: ${config.color};
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s;
+          ">
+            ${escapeHtml(confirmText)}
+          </button>
+        </div>
+      `;
+
+      overlay.appendChild(dialog);
+      document.body.appendChild(overlay);
+
+      // Add animations
+      const style = document.createElement('style');
+      style.textContent = `
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes slideUp {
+          from { transform: translateY(20px); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
+        }
+        .admin-modal-cancel:hover {
+          background: #f3f4f6 !important;
+        }
+        .admin-modal-confirm:hover {
+          opacity: 0.9;
+        }
+      `;
+      document.head.appendChild(style);
+
+      // Handle button clicks
+      const confirmBtn = dialog.querySelector('.admin-modal-confirm');
+      const cancelBtn = dialog.querySelector('.admin-modal-cancel');
+
+      const cleanup = () => {
+        overlay.style.animation = 'fadeOut 0.2s ease';
+        setTimeout(() => {
+          overlay.remove();
+          style.remove();
+        }, 200);
+      };
+
+      confirmBtn.addEventListener('click', () => {
+        cleanup();
+        resolve(true);
+      });
+
+      cancelBtn.addEventListener('click', () => {
+        cleanup();
+        resolve(false);
+      });
+
+      // Close on overlay click
+      overlay.addEventListener('click', e => {
+        if (e.target === overlay) {
+          cleanup();
+          resolve(false);
+        }
+      });
+
+      // Close on Escape key
+      const handleEscape = e => {
+        if (e.key === 'Escape') {
+          cleanup();
+          resolve(false);
+          document.removeEventListener('keydown', handleEscape);
+        }
+      };
+      document.addEventListener('keydown', handleEscape);
+    });
+  }
+
+  // Simple confirm dialog (fallback/legacy)
   function confirm(message) {
     return window.confirm(message);
   }
@@ -622,24 +906,39 @@ const AdminShared = (function () {
 
   // Public API
   return {
+    // Debug utilities
+    DEBUG,
+    debugLog,
+    debugWarn,
+    debugError,
+    // Core utilities
     escapeHtml,
     formatDate,
     formatTimestamp,
     formatFileSize,
+    // API wrappers
     api,
+    adminFetch,
     fetchCSRFToken,
+    // UI utilities
     showToast,
     showEnhancedToast,
+    showConfirmModal,
     confirm,
+    // Data loading
     loadBadgeCounts,
+    // Navigation
     highlightActivePage,
     initSidebarToggle,
+    // Helpers
     generateId,
     debounce,
     animateCounter,
+    // Keyboard shortcuts
     initKeyboardShortcuts,
     openCommandPalette,
     closeModals,
+    // Initialization
     init,
   };
 })();

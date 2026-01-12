@@ -414,13 +414,50 @@ if (process.env.NODE_ENV === 'production') {
     '/test-ui-fixes.html',
     '/test-widget-positioning.html',
   ];
-  
+
   testPages.forEach(page => {
     app.get(page, (req, res) => {
       res.status(404).send('Page not found');
     });
   });
 }
+
+// ---------- Admin HTML Page Protection ----------
+// CRITICAL: This middleware MUST come before express.static()
+// Protects all admin HTML pages from unauthorized access at the server level
+// Client-side dashboard-guard.js remains as a fallback, but server is primary enforcement
+app.use((req, res, next) => {
+  // Check if requesting an admin HTML page
+  if (req.path === '/admin.html' || req.path.match(/^\/admin-[^/]+\.html$/)) {
+    const user = getUserFromCookie(req);
+
+    // Not authenticated - redirect to login with return path
+    if (!user) {
+      logger.info(`Admin page access denied (not authenticated): ${req.path}`, {
+        ip: req.ip,
+        userAgent: req.get('user-agent'),
+      });
+      return res.redirect(`/auth.html?redirect=${encodeURIComponent(req.path)}`);
+    }
+
+    // Authenticated but not admin - redirect to dashboard with message
+    if (user.role !== 'admin') {
+      logger.warn(`Admin page access denied (insufficient role): ${req.path}`, {
+        userId: user.id,
+        userRole: user.role,
+        ip: req.ip,
+      });
+      return res.redirect('/dashboard.html?msg=admin_required');
+    }
+
+    // Admin user - allow access
+    logger.info(`Admin page access granted: ${req.path}`, {
+      userId: user.id,
+      userRole: user.role,
+    });
+  }
+  next();
+});
 
 app.use(express.static(path.join(__dirname, 'public')));
 // Far-future caching for user uploads (they have unique filenames)
@@ -4139,55 +4176,67 @@ function saveImageBase64(base64, ownerType, ownerId) {
 }
 
 // Supplier image upload
-app.post('/api/me/suppliers/:id/photos', featureRequired('photoUploads'), authRequired, csrfProtection, async (req, res) => {
-  const { image } = req.body || {};
-  if (!image) {
-    return res.status(400).json({ error: 'Missing image' });
+app.post(
+  '/api/me/suppliers/:id/photos',
+  featureRequired('photoUploads'),
+  authRequired,
+  csrfProtection,
+  async (req, res) => {
+    const { image } = req.body || {};
+    if (!image) {
+      return res.status(400).json({ error: 'Missing image' });
+    }
+    const suppliers = await dbUnified.read('suppliers');
+    const s = suppliers.find(x => x.id === req.params.id && x.ownerUserId === req.userId);
+    if (!s) {
+      return res.status(403).json({ error: 'Not owner' });
+    }
+    const url = saveImageBase64(image, 'suppliers', req.params.id);
+    if (!url) {
+      return res.status(400).json({ error: 'Invalid image' });
+    }
+    if (!s.photosGallery) {
+      s.photosGallery = [];
+    }
+    s.photosGallery.push({ url, approved: false, uploadedAt: Date.now() });
+    await dbUnified.write('suppliers', suppliers);
+    res.json({ ok: true, url });
   }
-  const suppliers = await dbUnified.read('suppliers');
-  const s = suppliers.find(x => x.id === req.params.id && x.ownerUserId === req.userId);
-  if (!s) {
-    return res.status(403).json({ error: 'Not owner' });
-  }
-  const url = saveImageBase64(image, 'suppliers', req.params.id);
-  if (!url) {
-    return res.status(400).json({ error: 'Invalid image' });
-  }
-  if (!s.photosGallery) {
-    s.photosGallery = [];
-  }
-  s.photosGallery.push({ url, approved: false, uploadedAt: Date.now() });
-  await dbUnified.write('suppliers', suppliers);
-  res.json({ ok: true, url });
-});
+);
 
 // Package image upload
-app.post('/api/me/packages/:id/photos', featureRequired('photoUploads'), authRequired, csrfProtection, async (req, res) => {
-  const { image } = req.body || {};
-  if (!image) {
-    return res.status(400).json({ error: 'Missing image' });
+app.post(
+  '/api/me/packages/:id/photos',
+  featureRequired('photoUploads'),
+  authRequired,
+  csrfProtection,
+  async (req, res) => {
+    const { image } = req.body || {};
+    if (!image) {
+      return res.status(400).json({ error: 'Missing image' });
+    }
+    const pkgs = await dbUnified.read('packages');
+    const p = pkgs.find(x => x.id === req.params.id);
+    if (!p) {
+      return res.status(404).json({ error: 'Not found' });
+    }
+    const suppliers = await dbUnified.read('suppliers');
+    const own = suppliers.find(x => x.id === p.supplierId && x.ownerUserId === req.userId);
+    if (!own) {
+      return res.status(403).json({ error: 'Not owner' });
+    }
+    const url = saveImageBase64(image, 'packages', req.params.id);
+    if (!url) {
+      return res.status(400).json({ error: 'Invalid image' });
+    }
+    if (!p.gallery) {
+      p.gallery = [];
+    }
+    p.gallery.push({ url, approved: false, uploadedAt: Date.now() });
+    await dbUnified.write('packages', pkgs);
+    res.json({ ok: true, url });
   }
-  const pkgs = await dbUnified.read('packages');
-  const p = pkgs.find(x => x.id === req.params.id);
-  if (!p) {
-    return res.status(404).json({ error: 'Not found' });
-  }
-  const suppliers = await dbUnified.read('suppliers');
-  const own = suppliers.find(x => x.id === p.supplierId && x.ownerUserId === req.userId);
-  if (!own) {
-    return res.status(403).json({ error: 'Not owner' });
-  }
-  const url = saveImageBase64(image, 'packages', req.params.id);
-  if (!url) {
-    return res.status(400).json({ error: 'Invalid image' });
-  }
-  if (!p.gallery) {
-    p.gallery = [];
-  }
-  p.gallery.push({ url, approved: false, uploadedAt: Date.now() });
-  await dbUnified.write('packages', pkgs);
-  res.json({ ok: true, url });
-});
+);
 
 // ---------- Advanced Search & Discovery ----------
 
@@ -4361,116 +4410,128 @@ app.get('/api/search/amenities', async (req, res) => {
  * POST /api/suppliers/:supplierId/reviews
  * Body: { rating, title, comment, recommend, eventType, eventDate, photos }
  */
-app.post('/api/suppliers/:supplierId/reviews', featureRequired('reviews'), authRequired, csrfProtection, async (req, res) => {
-  try {
-    const { supplierId } = req.params;
-    const { rating, title, comment, recommend, eventType, eventDate, photos } = req.body;
+app.post(
+  '/api/suppliers/:supplierId/reviews',
+  featureRequired('reviews'),
+  authRequired,
+  csrfProtection,
+  async (req, res) => {
+    try {
+      const { supplierId } = req.params;
+      const { rating, title, comment, recommend, eventType, eventDate, photos } = req.body;
 
-    // Check if supplier exists
-    const suppliers = await dbUnified.read('suppliers');
-    const supplier = suppliers.find(s => s.id === supplierId);
-    if (!supplier) {
-      return res.status(404).json({ error: 'Supplier not found' });
-    }
-
-    // Get user info
-    const users = await dbUnified.read('users');
-    const user = users.find(u => u.id === req.user.id);
-
-    // Create review with full validation and anti-abuse checks
-    const review = await reviewsSystem.createReview(
-      {
-        supplierId,
-        userId: req.user.id,
-        userName: user?.name || user?.firstName || 'Anonymous',
-        rating: Number(rating),
-        title: title || '',
-        comment: comment || '',
-        recommend: recommend === true || recommend === 'true',
-        eventType: eventType || '',
-        eventDate: eventDate || '',
-        photos: photos || [],
-      },
-      {
-        ipAddress: req.ip || req.connection?.remoteAddress,
-        userAgent: req.get('user-agent'),
+      // Check if supplier exists
+      const suppliers = await dbUnified.read('suppliers');
+      const supplier = suppliers.find(s => s.id === supplierId);
+      if (!supplier) {
+        return res.status(404).json({ error: 'Supplier not found' });
       }
-    );
 
-    // Determine message based on review status
-    let message = 'Review submitted successfully!';
-    if (review.flagged) {
-      message = 'Review submitted and is pending moderation.';
-    } else if (!review.verified) {
-      message =
-        'Review submitted successfully! Note: Verified badge requires message history with supplier.';
+      // Get user info
+      const users = await dbUnified.read('users');
+      const user = users.find(u => u.id === req.user.id);
+
+      // Create review with full validation and anti-abuse checks
+      const review = await reviewsSystem.createReview(
+        {
+          supplierId,
+          userId: req.user.id,
+          userName: user?.name || user?.firstName || 'Anonymous',
+          rating: Number(rating),
+          title: title || '',
+          comment: comment || '',
+          recommend: recommend === true || recommend === 'true',
+          eventType: eventType || '',
+          eventDate: eventDate || '',
+          photos: photos || [],
+        },
+        {
+          ipAddress: req.ip || req.connection?.remoteAddress,
+          userAgent: req.get('user-agent'),
+        }
+      );
+
+      // Determine message based on review status
+      let message = 'Review submitted successfully!';
+      if (review.flagged) {
+        message = 'Review submitted and is pending moderation.';
+      } else if (!review.verified) {
+        message =
+          'Review submitted successfully! Note: Verified badge requires message history with supplier.';
+      }
+
+      res.json({
+        success: true,
+        review,
+        message,
+      });
+    } catch (error) {
+      console.error('Create review error:', error);
+      res.status(400).json({ error: error.message });
     }
-
-    res.json({
-      success: true,
-      review,
-      message,
-    });
-  } catch (error) {
-    console.error('Create review error:', error);
-    res.status(400).json({ error: error.message });
   }
-});
+);
 
 /**
  * Create a review for a supplier (Legacy endpoint)
  * POST /api/reviews
  * Body: { supplierId, rating, comment, eventType, eventDate }
  */
-app.post('/api/reviews', featureRequired('reviews'), authRequired, csrfProtection, async (req, res) => {
-  try {
-    const { supplierId, rating, comment, eventType, eventDate } = req.body;
+app.post(
+  '/api/reviews',
+  featureRequired('reviews'),
+  authRequired,
+  csrfProtection,
+  async (req, res) => {
+    try {
+      const { supplierId, rating, comment, eventType, eventDate } = req.body;
 
-    // Validate input
-    if (!supplierId || !rating || rating < 1 || rating > 5) {
-      return res.status(400).json({ error: 'Invalid input. Rating must be between 1 and 5.' });
-    }
-
-    // Check if supplier exists
-    const suppliers = await dbUnified.read('suppliers');
-    const supplier = suppliers.find(s => s.id === supplierId);
-    if (!supplier) {
-      return res.status(404).json({ error: 'Supplier not found' });
-    }
-
-    // Get user info
-    const users = await dbUnified.read('users');
-    const user = users.find(u => u.id === req.user.id);
-
-    // Create review using enhanced system
-    const review = await reviewsSystem.createReview(
-      {
-        supplierId,
-        userId: req.user.id,
-        userName: user?.name || user?.firstName || 'Anonymous',
-        rating: Number(rating),
-        comment: comment || '',
-        eventType: eventType || '',
-        eventDate: eventDate || '',
-      },
-      {
-        ipAddress: req.ip || req.connection?.remoteAddress,
-        userAgent: req.get('user-agent'),
+      // Validate input
+      if (!supplierId || !rating || rating < 1 || rating > 5) {
+        return res.status(400).json({ error: 'Invalid input. Rating must be between 1 and 5.' });
       }
-    );
 
-    res.json({
-      success: true,
-      review,
-      message: review.flagged
-        ? 'Review submitted and is pending moderation.'
-        : 'Review submitted successfully.',
-    });
-  } catch (error) {
-    console.error('Create review error:', error);
-    res.status(400).json({ error: error.message });
+      // Check if supplier exists
+      const suppliers = await dbUnified.read('suppliers');
+      const supplier = suppliers.find(s => s.id === supplierId);
+      if (!supplier) {
+        return res.status(404).json({ error: 'Supplier not found' });
+      }
+
+      // Get user info
+      const users = await dbUnified.read('users');
+      const user = users.find(u => u.id === req.user.id);
+
+      // Create review using enhanced system
+      const review = await reviewsSystem.createReview(
+        {
+          supplierId,
+          userId: req.user.id,
+          userName: user?.name || user?.firstName || 'Anonymous',
+          rating: Number(rating),
+          comment: comment || '',
+          eventType: eventType || '',
+          eventDate: eventDate || '',
+        },
+        {
+          ipAddress: req.ip || req.connection?.remoteAddress,
+          userAgent: req.get('user-agent'),
+        }
+      );
+
+      res.json({
+        success: true,
+        review,
+        message: review.flagged
+          ? 'Review submitted and is pending moderation.'
+          : 'Review submitted successfully.',
+      });
+    } catch (error) {
+      console.error('Create review error:', error);
+      res.status(400).json({ error: error.message });
+    }
   }
-});
+);
 
 /**
  * Get reviews for a supplier with pagination and filtering
