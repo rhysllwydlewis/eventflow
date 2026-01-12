@@ -28,6 +28,44 @@ const AdminShared = (function () {
     console.error('[Admin]', ...args);
   }
 
+  /**
+   * Ensure modal styles are added to the document (only once)
+   */
+  function ensureModalStyles() {
+    // Check if styles already exist
+    if (document.getElementById('admin-modal-styles')) {
+      return;
+    }
+
+    const style = document.createElement('style');
+    style.id = 'admin-modal-styles';
+    style.textContent = `
+      @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+      @keyframes fadeOut {
+        from { opacity: 1; }
+        to { opacity: 0; }
+      }
+      @keyframes slideUp {
+        from { transform: translateY(20px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+      }
+      .admin-modal-cancel:hover {
+        background: #f3f4f6 !important;
+      }
+      .admin-modal-confirm:hover {
+        opacity: 0.9;
+      }
+      .admin-modal-confirm:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
   // HTML escaping to prevent XSS
   function escapeHtml(unsafe) {
     if (!unsafe) {
@@ -463,29 +501,8 @@ const AdminShared = (function () {
       overlay.appendChild(dialog);
       document.body.appendChild(overlay);
 
-      // Add animations
-      const style = document.createElement('style');
-      style.textContent = `
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        @keyframes fadeOut {
-          from { opacity: 1; }
-          to { opacity: 0; }
-        }
-        @keyframes slideUp {
-          from { transform: translateY(20px); opacity: 0; }
-          to { transform: translateY(0); opacity: 1; }
-        }
-        .admin-modal-cancel:hover {
-          background: #f3f4f6 !important;
-        }
-        .admin-modal-confirm:hover {
-          opacity: 0.9;
-        }
-      `;
-      document.head.appendChild(style);
+      // Ensure modal styles are loaded
+      ensureModalStyles();
 
       // Handle button clicks
       const confirmBtn = dialog.querySelector('.admin-modal-confirm');
@@ -495,7 +512,6 @@ const AdminShared = (function () {
         overlay.style.animation = 'fadeOut 0.2s ease';
         setTimeout(() => {
           overlay.remove();
-          style.remove();
         }, 200);
       };
 
@@ -661,33 +677,8 @@ const AdminShared = (function () {
       overlay.appendChild(dialog);
       document.body.appendChild(overlay);
 
-      // Add animations
-      const style = document.createElement('style');
-      style.textContent = `
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        @keyframes fadeOut {
-          from { opacity: 1; }
-          to { opacity: 0; }
-        }
-        @keyframes slideUp {
-          from { transform: translateY(20px); opacity: 0; }
-          to { transform: translateY(0); opacity: 1; }
-        }
-        .admin-modal-cancel:hover {
-          background: #f3f4f6 !important;
-        }
-        .admin-modal-confirm:hover {
-          opacity: 0.9;
-        }
-        .admin-modal-confirm:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-      `;
-      document.head.appendChild(style);
+      // Ensure modal styles are loaded
+      ensureModalStyles();
 
       // Get elements
       const inputField = dialog.querySelector('#admin-input-field');
@@ -740,7 +731,6 @@ const AdminShared = (function () {
         overlay.style.animation = 'fadeOut 0.2s ease';
         setTimeout(() => {
           overlay.remove();
-          style.remove();
         }, 200);
       };
 

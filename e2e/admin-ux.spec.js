@@ -14,8 +14,10 @@
 import { test, expect } from '@playwright/test';
 
 // Browser-specific timeouts
-const WEBKIT_WAIT = 3000;
-const DEFAULT_WAIT = 1500;
+// WebKit (Safari) requires longer waits due to slower JavaScript execution
+// and different event loop timing compared to Chromium and Firefox
+const WEBKIT_WAIT = 3000; // 3s for WebKit to ensure JS has fully executed
+const DEFAULT_WAIT = 1500; // 1.5s for Chromium/Firefox is usually sufficient
 
 test.describe('Admin UX - No Native Dialogs', () => {
   test.beforeEach(async ({ page }) => {
