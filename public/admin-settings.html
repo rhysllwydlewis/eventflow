@@ -623,29 +623,33 @@
     setFeatureFlagsEnabled(false);
     updateFeatureFlagsStatus('saving', 'Saving feature flags...');
     
-    await AdminShared.safeAction(
-      saveBtn,
-      async () => {
-        const result = await AdminShared.adminFetch('/api/admin/settings/features', {
-          method: 'PUT',
-          body: data,
-        });
-        
-        updateFeatureFlagsStatus('saved', 'Feature flags saved successfully');
-        setTimeout(() => updateFeatureFlagsStatus('hidden'), 3000);
-        
-        await loadFeatureFlags(); // Reload to get updated timestamp
-        return result;
-      },
-      {
-        loadingText: 'Saving...',
-        successMessage: 'Feature flags updated',
-        errorMessage: 'Failed to save feature flags',
-      }
-    ).catch(() => {
+    try {
+      await AdminShared.safeAction(
+        saveBtn,
+        async () => {
+          const result = await AdminShared.adminFetch('/api/admin/settings/features', {
+            method: 'PUT',
+            body: data,
+          });
+          
+          // safeAction will show success toast
+          updateFeatureFlagsStatus('saved', 'Feature flags saved successfully');
+          setTimeout(() => updateFeatureFlagsStatus('hidden'), 3000);
+          
+          await loadFeatureFlags(); // Reload to get updated timestamp
+          return result;
+        },
+        {
+          loadingText: 'Saving...',
+          successMessage: 'Feature flags updated',
+          errorMessage: 'Failed to save feature flags',
+        }
+      );
+    } catch (error) {
+      // safeAction already showed error toast
       updateFeatureFlagsStatus('error', 'Error saving feature flags');
       setFeatureFlagsEnabled(true);
-    });
+    }
   });
   
   // Load maintenance mode
