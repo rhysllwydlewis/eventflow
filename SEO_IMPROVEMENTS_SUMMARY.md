@@ -173,6 +173,37 @@ Or run full E2E suite:
 npm run test:e2e
 ```
 
+## PR Feedback Addressed
+
+### Additional Changes (Commit 46dfbe3)
+
+Following PR review feedback from @rhysllwydlewis:
+
+1. **Added /index.html redirect**
+   - `GET /index.html` → `301 /` redirect added to server.js
+   - Prevents duplicate indexing of homepage
+   - Test added to `e2e/seo-canonicals.spec.js`
+
+2. **Created sitemap content tests**
+   - New file: `e2e/seo-sitemap.spec.js`
+   - Tests that sitemap includes `/marketplace`
+   - Tests that sitemap does NOT include `/index.html` or `/auth.html`
+   - Tests sitemap excludes dashboard pages
+   - Validates XML structure and content type
+
+3. **Fixed robots.txt Disallow rules**
+   - **Removed** `Disallow: /admin*` and `Disallow: /dashboard*`
+   - **Rationale:** These pages now use `X-Robots-Tag: noindex, nofollow` headers
+   - Google needs to crawl them to see the noindex directive
+   - `Disallow` blocks crawling and can leave URLs indexed by reference
+   - **Kept** `Disallow` for `/api/`, `/uploads/temp/`, `*.json$` (non-HTML resources)
+   - Added explanatory comment in robots.txt
+
+4. **Made sitemap URL dynamic**
+   - Changed from hardcoded `https://event-flow.co.uk/sitemap.xml`
+   - Now uses `${baseUrl}/sitemap.xml` template
+   - Works correctly in preview/staging environments
+
 ## Constraints Met
 
 ✅ **Minimal/Surgical Changes:** Only modified necessary files, no redesign
