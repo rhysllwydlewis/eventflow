@@ -41,7 +41,7 @@ test.describe('Security Headers @backend', () => {
     expect(permissionsPolicy).toBeTruthy();
 
     // Check that geolocation, camera, and microphone are disabled by default
-    // Helmet formats these as: geolocation=(), camera=(), microphone=()
+    // Our custom middleware formats these as: geolocation=(), camera=(), microphone=()
     expect(permissionsPolicy).toContain('geolocation=()');
     expect(permissionsPolicy).toContain('camera=()');
     expect(permissionsPolicy).toContain('microphone=()');
