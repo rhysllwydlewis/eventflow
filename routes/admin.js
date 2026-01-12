@@ -624,96 +624,108 @@ router.get('/suppliers/:id', authRequired, roleRequired('admin'), async (req, re
  * POST /api/admin/suppliers/:id/approve
  * Approve or reject a supplier
  */
-router.post('/suppliers/:id/approve', authRequired, roleRequired('admin'), csrfProtection, async (req, res) => {
-  try {
-    const all = await dbUnified.read('suppliers');
-    const i = all.findIndex(s => s.id === req.params.id);
-    if (i < 0) {
-      return res.status(404).json({ error: 'Not found' });
+router.post(
+  '/suppliers/:id/approve',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    try {
+      const all = await dbUnified.read('suppliers');
+      const i = all.findIndex(s => s.id === req.params.id);
+      if (i < 0) {
+        return res.status(404).json({ error: 'Not found' });
+      }
+      all[i].approved = !!(req.body && req.body.approved);
+      await dbUnified.write('suppliers', all);
+      res.json({ ok: true, supplier: all[i] });
+    } catch (error) {
+      console.error('Error approving supplier:', error);
+      res.status(500).json({ error: 'Failed to approve supplier' });
     }
-    all[i].approved = !!(req.body && req.body.approved);
-    await dbUnified.write('suppliers', all);
-    res.json({ ok: true, supplier: all[i] });
-  } catch (error) {
-    console.error('Error approving supplier:', error);
-    res.status(500).json({ error: 'Failed to approve supplier' });
   }
-});
+);
 
 /**
  * POST /api/admin/suppliers/:id/pro
  * Manage supplier Pro subscription
  */
-router.post('/suppliers/:id/pro', authRequired, roleRequired('admin'), csrfProtection, async (req, res) => {
-  try {
-    const { mode, duration } = req.body || {};
-    const all = await dbUnified.read('suppliers');
-    const i = all.findIndex(s => s.id === req.params.id);
-    if (i < 0) {
-      return res.status(404).json({ error: 'Not found' });
-    }
-
-    const s = all[i];
-    const now = Date.now();
-
-    if (mode === 'cancel') {
-      s.isPro = false;
-      s.proExpiresAt = null;
-    } else if (mode === 'duration') {
-      let ms = 0;
-      switch (duration) {
-        case '1d':
-          ms = 1 * 24 * 60 * 60 * 1000;
-          break;
-        case '7d':
-          ms = 7 * 24 * 60 * 60 * 1000;
-          break;
-        case '1m':
-          ms = 30 * 24 * 60 * 60 * 1000;
-          break;
-        case '1y':
-          ms = 365 * 24 * 60 * 60 * 1000;
-          break;
-        default:
-          return res.status(400).json({ error: 'Invalid duration' });
-      }
-      s.isPro = true;
-      s.proExpiresAt = new Date(now + ms).toISOString();
-    } else {
-      return res.status(400).json({ error: 'Invalid mode' });
-    }
-
-    // Optionally mirror Pro flag to the owning user, if present.
+router.post(
+  '/suppliers/:id/pro',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
     try {
-      if (s.ownerUserId) {
-        const users = await dbUnified.read('users');
-        const u = users.find(u => u.id === s.ownerUserId);
-        if (u) {
-          u.isPro = !!s.isPro;
-          await dbUnified.write('users', users);
-        }
+      const { mode, duration } = req.body || {};
+      const all = await dbUnified.read('suppliers');
+      const i = all.findIndex(s => s.id === req.params.id);
+      if (i < 0) {
+        return res.status(404).json({ error: 'Not found' });
       }
-    } catch (_e) {
-      // ignore errors from user store
+
+      const s = all[i];
+      const now = Date.now();
+
+      if (mode === 'cancel') {
+        s.isPro = false;
+        s.proExpiresAt = null;
+      } else if (mode === 'duration') {
+        let ms = 0;
+        switch (duration) {
+          case '1d':
+            ms = 1 * 24 * 60 * 60 * 1000;
+            break;
+          case '7d':
+            ms = 7 * 24 * 60 * 60 * 1000;
+            break;
+          case '1m':
+            ms = 30 * 24 * 60 * 60 * 1000;
+            break;
+          case '1y':
+            ms = 365 * 24 * 60 * 60 * 1000;
+            break;
+          default:
+            return res.status(400).json({ error: 'Invalid duration' });
+        }
+        s.isPro = true;
+        s.proExpiresAt = new Date(now + ms).toISOString();
+      } else {
+        return res.status(400).json({ error: 'Invalid mode' });
+      }
+
+      // Optionally mirror Pro flag to the owning user, if present.
+      try {
+        if (s.ownerUserId) {
+          const users = await dbUnified.read('users');
+          const u = users.find(u => u.id === s.ownerUserId);
+          if (u) {
+            u.isPro = !!s.isPro;
+            await dbUnified.write('users', users);
+          }
+        }
+      } catch (_e) {
+        // ignore errors from user store
+      }
+
+      all[i] = s;
+      await dbUnified.write('suppliers', all);
+
+      const active = supplierIsProActiveFn ? supplierIsProActiveFn(s) : s.isPro;
+      res.json({
+        ok: true,
+        supplier: {
+          ...s,
+          isPro: active,
+          proExpiresAt: s.proExpiresAt || null,
+        },
+      });
+    } catch (error) {
+      console.error('Error updating supplier Pro status:', error);
+      res.status(500).json({ error: 'Failed to update supplier Pro status' });
     }
-
-    all[i] = s;
-    await dbUnified.write('suppliers', all);
-
-    const active = supplierIsProActiveFn ? supplierIsProActiveFn(s) : s.isPro;
-    res.json({
-      ok: true,
-      supplier: {
-        ...s,
-        isPro: active,
-        proExpiresAt: s.proExpiresAt || null,
-      },
-    });
-  } catch (error) {
-    console.error('Error updating supplier Pro status:', error);
-    res.status(500).json({ error: 'Failed to update supplier Pro status' });
   }
-});
+);
 
 /**
  * POST /api/admin/suppliers/import-demo
@@ -930,31 +942,43 @@ router.post('/packages', authRequired, roleRequired('admin'), csrfProtection, as
  * POST /api/admin/packages/:id/approve
  * Approve or reject a package
  */
-router.post('/packages/:id/approve', authRequired, roleRequired('admin'), csrfProtection, (req, res) => {
-  const all = read('packages');
-  const i = all.findIndex(p => p.id === req.params.id);
-  if (i < 0) {
-    return res.status(404).json({ error: 'Not found' });
+router.post(
+  '/packages/:id/approve',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  (req, res) => {
+    const all = read('packages');
+    const i = all.findIndex(p => p.id === req.params.id);
+    if (i < 0) {
+      return res.status(404).json({ error: 'Not found' });
+    }
+    all[i].approved = !!(req.body && req.body.approved);
+    write('packages', all);
+    res.json({ ok: true, package: all[i] });
   }
-  all[i].approved = !!(req.body && req.body.approved);
-  write('packages', all);
-  res.json({ ok: true, package: all[i] });
-});
+);
 
 /**
  * POST /api/admin/packages/:id/feature
  * Feature or unfeature a package
  */
-router.post('/packages/:id/feature', authRequired, roleRequired('admin'), csrfProtection, (req, res) => {
-  const all = read('packages');
-  const i = all.findIndex(p => p.id === req.params.id);
-  if (i < 0) {
-    return res.status(404).json({ error: 'Not found' });
+router.post(
+  '/packages/:id/feature',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  (req, res) => {
+    const all = read('packages');
+    const i = all.findIndex(p => p.id === req.params.id);
+    if (i < 0) {
+      return res.status(404).json({ error: 'Not found' });
+    }
+    all[i].featured = !!(req.body && req.body.featured);
+    write('packages', all);
+    res.json({ ok: true, package: all[i] });
   }
-  all[i].featured = !!(req.body && req.body.featured);
-  write('packages', all);
-  res.json({ ok: true, package: all[i] });
-});
+);
 
 /**
  * POST /api/admin/packages/bulk-approve
@@ -1134,64 +1158,70 @@ router.post(
  * Suspend or unsuspend a user account
  * Body: { suspended: boolean, reason: string, duration: string }
  */
-router.post('/users/:id/suspend', authRequired, roleRequired('admin'), csrfProtection, (req, res) => {
-  const { suspended, reason, duration } = req.body;
-  const users = read('users');
-  const userIndex = users.findIndex(u => u.id === req.params.id);
+router.post(
+  '/users/:id/suspend',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  (req, res) => {
+    const { suspended, reason, duration } = req.body;
+    const users = read('users');
+    const userIndex = users.findIndex(u => u.id === req.params.id);
 
-  if (userIndex < 0) {
-    return res.status(404).json({ error: 'User not found' });
-  }
-
-  const user = users[userIndex];
-  const now = new Date().toISOString();
-
-  // Prevent admins from suspending themselves
-  if (user.id === req.user.id) {
-    return res.status(400).json({ error: 'You cannot suspend your own account' });
-  }
-
-  user.suspended = !!suspended;
-  user.suspendedAt = suspended ? now : null;
-  user.suspendedBy = suspended ? req.user.id : null;
-  user.suspensionReason = suspended ? reason || 'No reason provided' : null;
-  user.suspensionDuration = suspended ? duration : null;
-  user.updatedAt = now;
-
-  // Calculate expiry if duration is provided
-  if (suspended && duration) {
-    const durationMs = parseDuration(duration);
-    if (durationMs > 0) {
-      const expiryDate = new Date(Date.now() + durationMs);
-      user.suspensionExpiresAt = expiryDate.toISOString();
+    if (userIndex < 0) {
+      return res.status(404).json({ error: 'User not found' });
     }
-  } else {
-    user.suspensionExpiresAt = null;
+
+    const user = users[userIndex];
+    const now = new Date().toISOString();
+
+    // Prevent admins from suspending themselves
+    if (user.id === req.user.id) {
+      return res.status(400).json({ error: 'You cannot suspend your own account' });
+    }
+
+    user.suspended = !!suspended;
+    user.suspendedAt = suspended ? now : null;
+    user.suspendedBy = suspended ? req.user.id : null;
+    user.suspensionReason = suspended ? reason || 'No reason provided' : null;
+    user.suspensionDuration = suspended ? duration : null;
+    user.updatedAt = now;
+
+    // Calculate expiry if duration is provided
+    if (suspended && duration) {
+      const durationMs = parseDuration(duration);
+      if (durationMs > 0) {
+        const expiryDate = new Date(Date.now() + durationMs);
+        user.suspensionExpiresAt = expiryDate.toISOString();
+      }
+    } else {
+      user.suspensionExpiresAt = null;
+    }
+
+    users[userIndex] = user;
+    write('users', users);
+
+    // Create audit log (requiring audit.js)
+    auditLog({
+      adminId: req.user.id,
+      adminEmail: req.user.email,
+      action: suspended ? AUDIT_ACTIONS.USER_SUSPENDED : AUDIT_ACTIONS.USER_UNSUSPENDED,
+      targetType: 'user',
+      targetId: user.id,
+      details: { reason, duration, email: user.email },
+    });
+
+    res.json({
+      message: suspended ? 'User suspended successfully' : 'User unsuspended successfully',
+      user: {
+        id: user.id,
+        email: user.email,
+        suspended: user.suspended,
+        suspensionReason: user.suspensionReason,
+      },
+    });
   }
-
-  users[userIndex] = user;
-  write('users', users);
-
-  // Create audit log (requiring audit.js)
-  auditLog({
-    adminId: req.user.id,
-    adminEmail: req.user.email,
-    action: suspended ? AUDIT_ACTIONS.USER_SUSPENDED : AUDIT_ACTIONS.USER_UNSUSPENDED,
-    targetType: 'user',
-    targetId: user.id,
-    details: { reason, duration, email: user.email },
-  });
-
-  res.json({
-    message: suspended ? 'User suspended successfully' : 'User unsuspended successfully',
-    user: {
-      id: user.id,
-      email: user.email,
-      suspended: user.suspended,
-      suspensionReason: user.suspensionReason,
-    },
-  });
-});
+);
 
 /**
  * POST /api/admin/users/:id/ban
@@ -1249,112 +1279,124 @@ router.post('/users/:id/ban', authRequired, roleRequired('admin'), csrfProtectio
  * POST /api/admin/users/:id/verify
  * Manually verify a user's email
  */
-router.post('/users/:id/verify', authRequired, roleRequired('admin'), csrfProtection, (req, res) => {
-  const users = read('users');
-  const userIndex = users.findIndex(u => u.id === req.params.id);
+router.post(
+  '/users/:id/verify',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  (req, res) => {
+    const users = read('users');
+    const userIndex = users.findIndex(u => u.id === req.params.id);
 
-  if (userIndex < 0) {
-    return res.status(404).json({ error: 'User not found' });
+    if (userIndex < 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const user = users[userIndex];
+    const now = new Date().toISOString();
+
+    if (user.verified) {
+      return res.status(400).json({ error: 'User is already verified' });
+    }
+
+    user.verified = true;
+    user.verifiedAt = now;
+    user.verifiedBy = req.user.id;
+    user.verificationToken = null; // Clear verification token
+    user.updatedAt = now;
+
+    users[userIndex] = user;
+    write('users', users);
+
+    // Create audit log
+    auditLog({
+      adminId: req.user.id,
+      adminEmail: req.user.email,
+      action: AUDIT_ACTIONS.USER_VERIFIED,
+      targetType: 'user',
+      targetId: user.id,
+      details: { email: user.email },
+    });
+
+    res.json({
+      message: 'User verified successfully',
+      user: {
+        id: user.id,
+        email: user.email,
+        verified: user.verified,
+      },
+    });
   }
-
-  const user = users[userIndex];
-  const now = new Date().toISOString();
-
-  if (user.verified) {
-    return res.status(400).json({ error: 'User is already verified' });
-  }
-
-  user.verified = true;
-  user.verifiedAt = now;
-  user.verifiedBy = req.user.id;
-  user.verificationToken = null; // Clear verification token
-  user.updatedAt = now;
-
-  users[userIndex] = user;
-  write('users', users);
-
-  // Create audit log
-  auditLog({
-    adminId: req.user.id,
-    adminEmail: req.user.email,
-    action: AUDIT_ACTIONS.USER_VERIFIED,
-    targetType: 'user',
-    targetId: user.id,
-    details: { email: user.email },
-  });
-
-  res.json({
-    message: 'User verified successfully',
-    user: {
-      id: user.id,
-      email: user.email,
-      verified: user.verified,
-    },
-  });
-});
+);
 
 /**
  * POST /api/admin/users/:id/force-reset
  * Force a password reset for a user
  */
-router.post('/users/:id/force-reset', authRequired, roleRequired('admin'), csrfProtection, async (req, res) => {
-  const users = read('users');
-  const userIndex = users.findIndex(u => u.id === req.params.id);
+router.post(
+  '/users/:id/force-reset',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    const users = read('users');
+    const userIndex = users.findIndex(u => u.id === req.params.id);
 
-  if (userIndex < 0) {
-    return res.status(404).json({ error: 'User not found' });
-  }
+    if (userIndex < 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
 
-  const user = users[userIndex];
-  const now = new Date().toISOString();
+    const user = users[userIndex];
+    const now = new Date().toISOString();
 
-  // Generate reset token
-  const crypto = require('crypto');
-  const resetToken = crypto.randomBytes(32).toString('hex');
-  const resetTokenExpiresAt = new Date(Date.now() + 3600000).toISOString(); // 1 hour
+    // Generate reset token
+    const crypto = require('crypto');
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetTokenExpiresAt = new Date(Date.now() + 3600000).toISOString(); // 1 hour
 
-  // Send password reset email via Postmark BEFORE saving changes
-  try {
-    console.log(`📧 Admin ${req.user.email} initiating password reset for ${user.email}`);
-    await postmark.sendPasswordResetEmail(user, resetToken);
-    console.log(`✅ Password reset email sent to ${user.email}`);
-  } catch (emailError) {
-    console.error('❌ Failed to send password reset email:', emailError.message);
+    // Send password reset email via Postmark BEFORE saving changes
+    try {
+      console.log(`📧 Admin ${req.user.email} initiating password reset for ${user.email}`);
+      await postmark.sendPasswordResetEmail(user, resetToken);
+      console.log(`✅ Password reset email sent to ${user.email}`);
+    } catch (emailError) {
+      console.error('❌ Failed to send password reset email:', emailError.message);
 
-    // If email fails, don't update user record
-    return res.status(500).json({
-      error: 'Failed to send password reset email',
-      details: process.env.NODE_ENV === 'development' ? emailError.message : undefined,
+      // If email fails, don't update user record
+      return res.status(500).json({
+        error: 'Failed to send password reset email',
+        details: process.env.NODE_ENV === 'development' ? emailError.message : undefined,
+      });
+    }
+
+    // Only save changes after email is successfully sent
+    user.resetToken = resetToken;
+    user.resetTokenExpiresAt = resetTokenExpiresAt;
+    user.passwordResetRequired = true;
+    user.updatedAt = now;
+
+    users[userIndex] = user;
+    write('users', users);
+
+    // Create audit log
+    auditLog({
+      adminId: req.user.id,
+      adminEmail: req.user.email,
+      action: AUDIT_ACTIONS.USER_PASSWORD_RESET,
+      targetType: 'user',
+      targetId: user.id,
+      details: { email: user.email, forced: true, emailSent: true },
+    });
+
+    res.json({
+      message: 'Password reset email sent successfully',
+      user: {
+        id: user.id,
+        email: user.email,
+      },
     });
   }
-
-  // Only save changes after email is successfully sent
-  user.resetToken = resetToken;
-  user.resetTokenExpiresAt = resetTokenExpiresAt;
-  user.passwordResetRequired = true;
-  user.updatedAt = now;
-
-  users[userIndex] = user;
-  write('users', users);
-
-  // Create audit log
-  auditLog({
-    adminId: req.user.id,
-    adminEmail: req.user.email,
-    action: AUDIT_ACTIONS.USER_PASSWORD_RESET,
-    targetType: 'user',
-    targetId: user.id,
-    details: { email: user.email, forced: true, emailSent: true },
-  });
-
-  res.json({
-    message: 'Password reset email sent successfully',
-    user: {
-      id: user.id,
-      email: user.email,
-    },
-  });
-});
+);
 
 /**
  * POST /api/admin/users/bulk-verify
@@ -1527,53 +1569,59 @@ function parseDuration(duration) {
  * Verify a supplier account
  * Body: { verified: boolean, verificationNotes: string }
  */
-router.post('/suppliers/:id/verify', authRequired, roleRequired('admin'), csrfProtection, async (req, res) => {
-  try {
-    const { verified, verificationNotes } = req.body;
-    const suppliers = await dbUnified.read('suppliers');
-    const supplierIndex = suppliers.findIndex(s => s.id === req.params.id);
+router.post(
+  '/suppliers/:id/verify',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    try {
+      const { verified, verificationNotes } = req.body;
+      const suppliers = await dbUnified.read('suppliers');
+      const supplierIndex = suppliers.findIndex(s => s.id === req.params.id);
 
-    if (supplierIndex < 0) {
-      return res.status(404).json({ error: 'Supplier not found' });
+      if (supplierIndex < 0) {
+        return res.status(404).json({ error: 'Supplier not found' });
+      }
+
+      const supplier = suppliers[supplierIndex];
+      const now = new Date().toISOString();
+
+      supplier.verified = !!verified;
+      supplier.verifiedAt = verified ? now : null;
+      supplier.verifiedBy = verified ? req.user.id : null;
+      supplier.verificationNotes = verificationNotes || '';
+      supplier.verificationStatus = verified ? 'verified' : 'rejected';
+      supplier.updatedAt = now;
+
+      suppliers[supplierIndex] = supplier;
+      await dbUnified.write('suppliers', suppliers);
+
+      // Create audit log
+      auditLog({
+        adminId: req.user.id,
+        adminEmail: req.user.email,
+        action: verified ? AUDIT_ACTIONS.SUPPLIER_VERIFIED : AUDIT_ACTIONS.SUPPLIER_REJECTED,
+        targetType: 'supplier',
+        targetId: supplier.id,
+        details: { name: supplier.name, notes: verificationNotes },
+      });
+
+      res.json({
+        message: verified ? 'Supplier verified successfully' : 'Supplier verification rejected',
+        supplier: {
+          id: supplier.id,
+          name: supplier.name,
+          verified: supplier.verified,
+          verificationStatus: supplier.verificationStatus,
+        },
+      });
+    } catch (error) {
+      console.error('Error verifying supplier:', error);
+      res.status(500).json({ error: 'Failed to verify supplier' });
     }
-
-    const supplier = suppliers[supplierIndex];
-    const now = new Date().toISOString();
-
-    supplier.verified = !!verified;
-    supplier.verifiedAt = verified ? now : null;
-    supplier.verifiedBy = verified ? req.user.id : null;
-    supplier.verificationNotes = verificationNotes || '';
-    supplier.verificationStatus = verified ? 'verified' : 'rejected';
-    supplier.updatedAt = now;
-
-    suppliers[supplierIndex] = supplier;
-    await dbUnified.write('suppliers', suppliers);
-
-    // Create audit log
-    auditLog({
-      adminId: req.user.id,
-      adminEmail: req.user.email,
-      action: verified ? AUDIT_ACTIONS.SUPPLIER_VERIFIED : AUDIT_ACTIONS.SUPPLIER_REJECTED,
-      targetType: 'supplier',
-      targetId: supplier.id,
-      details: { name: supplier.name, notes: verificationNotes },
-    });
-
-    res.json({
-      message: verified ? 'Supplier verified successfully' : 'Supplier verification rejected',
-      supplier: {
-        id: supplier.id,
-        name: supplier.name,
-        verified: supplier.verified,
-        verificationStatus: supplier.verificationStatus,
-      },
-    });
-  } catch (error) {
-    console.error('Error verifying supplier:', error);
-    res.status(500).json({ error: 'Failed to verify supplier' });
   }
-});
+);
 
 /**
  * POST /api/admin/suppliers/:id/subscription
@@ -1760,155 +1808,173 @@ router.get(
  * Bulk approve suppliers
  * Body: { supplierIds: string[] }
  */
-router.post('/suppliers/bulk-approve', authRequired, roleRequired('admin'), csrfProtection, async (req, res) => {
-  try {
-    const { supplierIds } = req.body;
+router.post(
+  '/suppliers/bulk-approve',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    try {
+      const { supplierIds } = req.body;
 
-    if (!Array.isArray(supplierIds) || supplierIds.length === 0) {
-      return res.status(400).json({ error: 'supplierIds must be a non-empty array' });
-    }
-
-    const suppliers = await dbUnified.read('suppliers');
-    let updatedCount = 0;
-
-    supplierIds.forEach(supplierId => {
-      const index = suppliers.findIndex(s => s.id === supplierId);
-      if (index >= 0) {
-        suppliers[index].approved = true;
-        suppliers[index].updatedAt = new Date().toISOString();
-        suppliers[index].approvedBy = req.user.id;
-        updatedCount++;
+      if (!Array.isArray(supplierIds) || supplierIds.length === 0) {
+        return res.status(400).json({ error: 'supplierIds must be a non-empty array' });
       }
-    });
 
-    if (updatedCount > 0) {
-      await dbUnified.write('suppliers', suppliers);
+      const suppliers = await dbUnified.read('suppliers');
+      let updatedCount = 0;
+
+      supplierIds.forEach(supplierId => {
+        const index = suppliers.findIndex(s => s.id === supplierId);
+        if (index >= 0) {
+          suppliers[index].approved = true;
+          suppliers[index].updatedAt = new Date().toISOString();
+          suppliers[index].approvedBy = req.user.id;
+          updatedCount++;
+        }
+      });
+
+      if (updatedCount > 0) {
+        await dbUnified.write('suppliers', suppliers);
+      }
+
+      // Create audit log
+      auditLog({
+        adminId: req.user.id,
+        adminEmail: req.user.email,
+        action: 'BULK_SUPPLIERS_APPROVED',
+        targetType: 'suppliers',
+        targetId: 'bulk',
+        details: { supplierIds, count: updatedCount },
+      });
+
+      res.json({
+        success: true,
+        message: `Successfully approved ${updatedCount} supplier(s)`,
+        updatedCount,
+      });
+    } catch (error) {
+      console.error('Error bulk approving suppliers:', error);
+      res.status(500).json({ error: 'Failed to bulk approve suppliers' });
     }
-
-    // Create audit log
-    auditLog({
-      adminId: req.user.id,
-      adminEmail: req.user.email,
-      action: 'BULK_SUPPLIERS_APPROVED',
-      targetType: 'suppliers',
-      targetId: 'bulk',
-      details: { supplierIds, count: updatedCount },
-    });
-
-    res.json({
-      success: true,
-      message: `Successfully approved ${updatedCount} supplier(s)`,
-      updatedCount,
-    });
-  } catch (error) {
-    console.error('Error bulk approving suppliers:', error);
-    res.status(500).json({ error: 'Failed to bulk approve suppliers' });
   }
-});
+);
 
 /**
  * POST /api/admin/suppliers/bulk-reject
  * Bulk reject suppliers
  * Body: { supplierIds: string[] }
  */
-router.post('/suppliers/bulk-reject', authRequired, roleRequired('admin'), csrfProtection, async (req, res) => {
-  try {
-    const { supplierIds } = req.body;
+router.post(
+  '/suppliers/bulk-reject',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    try {
+      const { supplierIds } = req.body;
 
-    if (!Array.isArray(supplierIds) || supplierIds.length === 0) {
-      return res.status(400).json({ error: 'supplierIds must be a non-empty array' });
-    }
-
-    const suppliers = await dbUnified.read('suppliers');
-    let updatedCount = 0;
-
-    supplierIds.forEach(supplierId => {
-      const index = suppliers.findIndex(s => s.id === supplierId);
-      if (index >= 0) {
-        suppliers[index].approved = false;
-        suppliers[index].rejected = true;
-        suppliers[index].updatedAt = new Date().toISOString();
-        suppliers[index].rejectedBy = req.user.id;
-        updatedCount++;
+      if (!Array.isArray(supplierIds) || supplierIds.length === 0) {
+        return res.status(400).json({ error: 'supplierIds must be a non-empty array' });
       }
-    });
 
-    if (updatedCount > 0) {
-      await dbUnified.write('suppliers', suppliers);
+      const suppliers = await dbUnified.read('suppliers');
+      let updatedCount = 0;
+
+      supplierIds.forEach(supplierId => {
+        const index = suppliers.findIndex(s => s.id === supplierId);
+        if (index >= 0) {
+          suppliers[index].approved = false;
+          suppliers[index].rejected = true;
+          suppliers[index].updatedAt = new Date().toISOString();
+          suppliers[index].rejectedBy = req.user.id;
+          updatedCount++;
+        }
+      });
+
+      if (updatedCount > 0) {
+        await dbUnified.write('suppliers', suppliers);
+      }
+
+      // Create audit log
+      auditLog({
+        adminId: req.user.id,
+        adminEmail: req.user.email,
+        action: 'BULK_SUPPLIERS_REJECTED',
+        targetType: 'suppliers',
+        targetId: 'bulk',
+        details: { supplierIds, count: updatedCount },
+      });
+
+      res.json({
+        success: true,
+        message: `Successfully rejected ${updatedCount} supplier(s)`,
+        updatedCount,
+      });
+    } catch (error) {
+      console.error('Error bulk rejecting suppliers:', error);
+      res.status(500).json({ error: 'Failed to bulk reject suppliers' });
     }
-
-    // Create audit log
-    auditLog({
-      adminId: req.user.id,
-      adminEmail: req.user.email,
-      action: 'BULK_SUPPLIERS_REJECTED',
-      targetType: 'suppliers',
-      targetId: 'bulk',
-      details: { supplierIds, count: updatedCount },
-    });
-
-    res.json({
-      success: true,
-      message: `Successfully rejected ${updatedCount} supplier(s)`,
-      updatedCount,
-    });
-  } catch (error) {
-    console.error('Error bulk rejecting suppliers:', error);
-    res.status(500).json({ error: 'Failed to bulk reject suppliers' });
   }
-});
+);
 
 /**
  * POST /api/admin/suppliers/bulk-delete
  * Bulk delete suppliers
  * Body: { supplierIds: string[] }
  */
-router.post('/suppliers/bulk-delete', authRequired, roleRequired('admin'), csrfProtection, async (req, res) => {
-  try {
-    const { supplierIds } = req.body;
+router.post(
+  '/suppliers/bulk-delete',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    try {
+      const { supplierIds } = req.body;
 
-    if (!Array.isArray(supplierIds) || supplierIds.length === 0) {
-      return res.status(400).json({ error: 'supplierIds must be a non-empty array' });
-    }
-
-    const suppliers = await dbUnified.read('suppliers');
-    const initialCount = suppliers.length;
-
-    // Filter out suppliers to delete
-    const remainingSuppliers = suppliers.filter(s => !supplierIds.includes(s.id));
-    const deletedCount = initialCount - remainingSuppliers.length;
-
-    if (deletedCount > 0) {
-      await dbUnified.write('suppliers', remainingSuppliers);
-
-      // Also delete associated packages
-      const packages = await dbUnified.read('packages');
-      const remainingPackages = packages.filter(p => !supplierIds.includes(p.supplierId));
-      if (remainingPackages.length < packages.length) {
-        await dbUnified.write('packages', remainingPackages);
+      if (!Array.isArray(supplierIds) || supplierIds.length === 0) {
+        return res.status(400).json({ error: 'supplierIds must be a non-empty array' });
       }
+
+      const suppliers = await dbUnified.read('suppliers');
+      const initialCount = suppliers.length;
+
+      // Filter out suppliers to delete
+      const remainingSuppliers = suppliers.filter(s => !supplierIds.includes(s.id));
+      const deletedCount = initialCount - remainingSuppliers.length;
+
+      if (deletedCount > 0) {
+        await dbUnified.write('suppliers', remainingSuppliers);
+
+        // Also delete associated packages
+        const packages = await dbUnified.read('packages');
+        const remainingPackages = packages.filter(p => !supplierIds.includes(p.supplierId));
+        if (remainingPackages.length < packages.length) {
+          await dbUnified.write('packages', remainingPackages);
+        }
+      }
+
+      // Create audit log
+      auditLog({
+        adminId: req.user.id,
+        adminEmail: req.user.email,
+        action: 'BULK_SUPPLIERS_DELETED',
+        targetType: 'suppliers',
+        targetId: 'bulk',
+        details: { supplierIds, count: deletedCount },
+      });
+
+      res.json({
+        success: true,
+        message: `Successfully deleted ${deletedCount} supplier(s) and their associated packages`,
+        deletedCount,
+      });
+    } catch (error) {
+      console.error('Error bulk deleting suppliers:', error);
+      res.status(500).json({ error: 'Failed to bulk delete suppliers' });
     }
-
-    // Create audit log
-    auditLog({
-      adminId: req.user.id,
-      adminEmail: req.user.email,
-      action: 'BULK_SUPPLIERS_DELETED',
-      targetType: 'suppliers',
-      targetId: 'bulk',
-      details: { supplierIds, count: deletedCount },
-    });
-
-    res.json({
-      success: true,
-      message: `Successfully deleted ${deletedCount} supplier(s) and their associated packages`,
-      deletedCount,
-    });
-  } catch (error) {
-    console.error('Error bulk deleting suppliers:', error);
-    res.status(500).json({ error: 'Failed to bulk delete suppliers' });
   }
-});
+);
 
 /**
  * PUT /api/admin/packages/:id
@@ -2019,75 +2085,82 @@ router.put('/packages/:id', authRequired, roleRequired('admin'), csrfProtection,
  * PUT /api/admin/suppliers/:id
  * Edit supplier profile (admin only)
  */
-router.put('/suppliers/:id', authRequired, roleRequired('admin'), csrfProtection, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { name, description, contact, categories, amenities, location, serviceAreas } = req.body;
+router.put(
+  '/suppliers/:id',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { name, description, contact, categories, amenities, location, serviceAreas } =
+        req.body;
 
-    const suppliers = await dbUnified.read('suppliers');
-    const supplierIndex = suppliers.findIndex(s => s.id === id);
+      const suppliers = await dbUnified.read('suppliers');
+      const supplierIndex = suppliers.findIndex(s => s.id === id);
 
-    if (supplierIndex === -1) {
-      return res.status(404).json({ error: 'Supplier not found' });
-    }
+      if (supplierIndex === -1) {
+        return res.status(404).json({ error: 'Supplier not found' });
+      }
 
-    const supplier = suppliers[supplierIndex];
+      const supplier = suppliers[supplierIndex];
 
-    // Store previous version for history
-    if (!supplier.versionHistory) {
-      supplier.versionHistory = [];
-    }
-    supplier.versionHistory.push({
-      timestamp: new Date().toISOString(),
-      editedBy: req.user.id,
-      previousState: { ...supplier },
-    });
+      // Store previous version for history
+      if (!supplier.versionHistory) {
+        supplier.versionHistory = [];
+      }
+      supplier.versionHistory.push({
+        timestamp: new Date().toISOString(),
+        editedBy: req.user.id,
+        previousState: { ...supplier },
+      });
 
-    // Update fields if provided
-    if (name !== undefined) {
-      supplier.name = name;
-    }
-    if (description !== undefined) {
-      supplier.description = description;
-    }
-    if (contact !== undefined) {
-      supplier.contact = contact;
-    }
-    if (categories !== undefined) {
-      supplier.categories = categories;
-    }
-    if (amenities !== undefined) {
-      supplier.amenities = amenities;
-    }
-    if (location !== undefined) {
-      supplier.location = location;
-    }
-    if (serviceAreas !== undefined) {
-      supplier.serviceAreas = serviceAreas;
-    }
+      // Update fields if provided
+      if (name !== undefined) {
+        supplier.name = name;
+      }
+      if (description !== undefined) {
+        supplier.description = description;
+      }
+      if (contact !== undefined) {
+        supplier.contact = contact;
+      }
+      if (categories !== undefined) {
+        supplier.categories = categories;
+      }
+      if (amenities !== undefined) {
+        supplier.amenities = amenities;
+      }
+      if (location !== undefined) {
+        supplier.location = location;
+      }
+      if (serviceAreas !== undefined) {
+        supplier.serviceAreas = serviceAreas;
+      }
 
-    supplier.updatedAt = new Date().toISOString();
-    supplier.lastEditedBy = req.user.id;
+      supplier.updatedAt = new Date().toISOString();
+      supplier.lastEditedBy = req.user.id;
 
-    suppliers[supplierIndex] = supplier;
-    await dbUnified.write('suppliers', suppliers);
+      suppliers[supplierIndex] = supplier;
+      await dbUnified.write('suppliers', suppliers);
 
-    // Create audit log
-    auditLog({
-      adminId: req.user.id,
-      adminEmail: req.user.email,
-      action: AUDIT_ACTIONS.SUPPLIER_EDITED,
-      targetType: 'supplier',
-      targetId: id,
-      details: { supplierName: supplier.name, changes: req.body },
-    });
+      // Create audit log
+      auditLog({
+        adminId: req.user.id,
+        adminEmail: req.user.email,
+        action: AUDIT_ACTIONS.SUPPLIER_EDITED,
+        targetType: 'supplier',
+        targetId: id,
+        details: { supplierName: supplier.name, changes: req.body },
+      });
 
-    res.json({ success: true, supplier });
-  } catch (error) {
-    console.error('Error updating supplier:', error);
-    res.status(500).json({ error: 'Failed to update supplier' });
+      res.json({ success: true, supplier });
+    } catch (error) {
+      console.error('Error updating supplier:', error);
+      res.status(500).json({ error: 'Failed to update supplier' });
+    }
   }
-});
+);
 
 /**
  * PUT /api/admin/users/:id
@@ -2209,45 +2282,51 @@ router.delete('/users/:id', authRequired, roleRequired('admin'), csrfProtection,
  * DELETE /api/admin/suppliers/:id
  * Delete a supplier (admin only)
  */
-router.delete('/suppliers/:id', authRequired, roleRequired('admin'), csrfProtection, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const suppliers = await dbUnified.read('suppliers');
-    const supplierIndex = suppliers.findIndex(s => s.id === id);
+router.delete(
+  '/suppliers/:id',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      const suppliers = await dbUnified.read('suppliers');
+      const supplierIndex = suppliers.findIndex(s => s.id === id);
 
-    if (supplierIndex === -1) {
-      return res.status(404).json({ error: 'Supplier not found' });
+      if (supplierIndex === -1) {
+        return res.status(404).json({ error: 'Supplier not found' });
+      }
+
+      const supplier = suppliers[supplierIndex];
+
+      // Remove the supplier
+      suppliers.splice(supplierIndex, 1);
+      await dbUnified.write('suppliers', suppliers);
+
+      // Also delete associated packages
+      const packages = await dbUnified.read('packages');
+      const updatedPackages = packages.filter(p => p.supplierId !== id);
+      if (updatedPackages.length < packages.length) {
+        await dbUnified.write('packages', updatedPackages);
+      }
+
+      // Create audit log
+      auditLog({
+        adminId: req.user.id,
+        adminEmail: req.user.email,
+        action: 'supplier_deleted',
+        targetType: 'supplier',
+        targetId: supplier.id,
+        details: { name: supplier.name },
+      });
+
+      res.json({ success: true, message: 'Supplier and associated packages deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting supplier:', error);
+      res.status(500).json({ error: 'Failed to delete supplier' });
     }
-
-    const supplier = suppliers[supplierIndex];
-
-    // Remove the supplier
-    suppliers.splice(supplierIndex, 1);
-    await dbUnified.write('suppliers', suppliers);
-
-    // Also delete associated packages
-    const packages = await dbUnified.read('packages');
-    const updatedPackages = packages.filter(p => p.supplierId !== id);
-    if (updatedPackages.length < packages.length) {
-      await dbUnified.write('packages', updatedPackages);
-    }
-
-    // Create audit log
-    auditLog({
-      adminId: req.user.id,
-      adminEmail: req.user.email,
-      action: 'supplier_deleted',
-      targetType: 'supplier',
-      targetId: supplier.id,
-      details: { name: supplier.name },
-    });
-
-    res.json({ success: true, message: 'Supplier and associated packages deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting supplier:', error);
-    res.status(500).json({ error: 'Failed to delete supplier' });
   }
-});
+);
 
 /**
  * DELETE /api/admin/packages/:id
@@ -2285,129 +2364,143 @@ router.delete('/packages/:id', authRequired, roleRequired('admin'), csrfProtecti
  * POST /api/admin/users/:id/grant-admin
  * Grant admin privileges to a user
  */
-router.post('/users/:id/grant-admin', authRequired, roleRequired('admin'), csrfProtection, (req, res) => {
-  const { id } = req.params;
-  const users = read('users');
-  const userIndex = users.findIndex(u => u.id === id);
+router.post(
+  '/users/:id/grant-admin',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  (req, res) => {
+    const { id } = req.params;
+    const users = read('users');
+    const userIndex = users.findIndex(u => u.id === id);
 
-  if (userIndex === -1) {
-    return res.status(404).json({ error: 'User not found' });
+    if (userIndex === -1) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const user = users[userIndex];
+    const now = new Date().toISOString();
+
+    // Check if user already has admin role
+    if (user.role === 'admin') {
+      return res.status(400).json({ error: 'User already has admin privileges' });
+    }
+
+    // Store previous role
+    user.previousRole = user.role;
+    user.role = 'admin';
+    user.adminGrantedAt = now;
+    user.adminGrantedBy = req.user.id;
+    user.updatedAt = now;
+
+    users[userIndex] = user;
+    write('users', users);
+
+    // Create audit log
+    auditLog({
+      adminId: req.user.id,
+      adminEmail: req.user.email,
+      action: AUDIT_ACTIONS.USER_ROLE_CHANGED,
+      targetType: 'user',
+      targetId: user.id,
+      details: {
+        email: user.email,
+        previousRole: user.previousRole,
+        newRole: 'admin',
+      },
+    });
+
+    res.json({
+      success: true,
+      message: 'Admin privileges granted successfully',
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+      },
+    });
   }
-
-  const user = users[userIndex];
-  const now = new Date().toISOString();
-
-  // Check if user already has admin role
-  if (user.role === 'admin') {
-    return res.status(400).json({ error: 'User already has admin privileges' });
-  }
-
-  // Store previous role
-  user.previousRole = user.role;
-  user.role = 'admin';
-  user.adminGrantedAt = now;
-  user.adminGrantedBy = req.user.id;
-  user.updatedAt = now;
-
-  users[userIndex] = user;
-  write('users', users);
-
-  // Create audit log
-  auditLog({
-    adminId: req.user.id,
-    adminEmail: req.user.email,
-    action: AUDIT_ACTIONS.USER_ROLE_CHANGED,
-    targetType: 'user',
-    targetId: user.id,
-    details: {
-      email: user.email,
-      previousRole: user.previousRole,
-      newRole: 'admin',
-    },
-  });
-
-  res.json({
-    success: true,
-    message: 'Admin privileges granted successfully',
-    user: {
-      id: user.id,
-      email: user.email,
-      role: user.role,
-    },
-  });
-});
+);
 
 /**
  * POST /api/admin/users/:id/revoke-admin
  * Revoke admin privileges from a user
  */
-router.post('/users/:id/revoke-admin', authRequired, roleRequired('admin'), csrfProtection, (req, res) => {
-  const { id } = req.params;
-  const { newRole = 'customer' } = req.body;
-  const users = read('users');
-  const userIndex = users.findIndex(u => u.id === id);
+router.post(
+  '/users/:id/revoke-admin',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  (req, res) => {
+    const { id } = req.params;
+    const { newRole = 'customer' } = req.body;
+    const users = read('users');
+    const userIndex = users.findIndex(u => u.id === id);
 
-  if (userIndex === -1) {
-    return res.status(404).json({ error: 'User not found' });
+    if (userIndex === -1) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const user = users[userIndex];
+    const now = new Date().toISOString();
+
+    // Check if user has admin role
+    if (user.role !== 'admin') {
+      return res.status(400).json({ error: 'User does not have admin privileges' });
+    }
+
+    // Prevent revoking own admin privileges
+    if (user.id === req.user.id) {
+      return res.status(400).json({ error: 'You cannot revoke your own admin privileges' });
+    }
+
+    // Prevent revoking owner's admin privileges
+    if (user.email === 'admin@event-flow.co.uk' || user.isOwner) {
+      return res
+        .status(403)
+        .json({ error: 'Cannot revoke admin privileges from the owner account' });
+    }
+
+    // Validate newRole
+    if (!['customer', 'supplier'].includes(newRole)) {
+      return res.status(400).json({ error: 'Invalid role. Must be customer or supplier' });
+    }
+
+    // Store previous role
+    user.previousRole = user.role;
+    user.role = newRole;
+    user.adminRevokedAt = now;
+    user.adminRevokedBy = req.user.id;
+    user.updatedAt = now;
+
+    users[userIndex] = user;
+    write('users', users);
+
+    // Create audit log
+    auditLog({
+      adminId: req.user.id,
+      adminEmail: req.user.email,
+      action: AUDIT_ACTIONS.USER_ROLE_CHANGED,
+      targetType: 'user',
+      targetId: user.id,
+      details: {
+        email: user.email,
+        previousRole: 'admin',
+        newRole: newRole,
+      },
+    });
+
+    res.json({
+      success: true,
+      message: 'Admin privileges revoked successfully',
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+      },
+    });
   }
-
-  const user = users[userIndex];
-  const now = new Date().toISOString();
-
-  // Check if user has admin role
-  if (user.role !== 'admin') {
-    return res.status(400).json({ error: 'User does not have admin privileges' });
-  }
-
-  // Prevent revoking own admin privileges
-  if (user.id === req.user.id) {
-    return res.status(400).json({ error: 'You cannot revoke your own admin privileges' });
-  }
-
-  // Prevent revoking owner's admin privileges
-  if (user.email === 'admin@event-flow.co.uk' || user.isOwner) {
-    return res.status(403).json({ error: 'Cannot revoke admin privileges from the owner account' });
-  }
-
-  // Validate newRole
-  if (!['customer', 'supplier'].includes(newRole)) {
-    return res.status(400).json({ error: 'Invalid role. Must be customer or supplier' });
-  }
-
-  // Store previous role
-  user.previousRole = user.role;
-  user.role = newRole;
-  user.adminRevokedAt = now;
-  user.adminRevokedBy = req.user.id;
-  user.updatedAt = now;
-
-  users[userIndex] = user;
-  write('users', users);
-
-  // Create audit log
-  auditLog({
-    adminId: req.user.id,
-    adminEmail: req.user.email,
-    action: AUDIT_ACTIONS.USER_ROLE_CHANGED,
-    targetType: 'user',
-    targetId: user.id,
-    details: {
-      email: user.email,
-      previousRole: 'admin',
-      newRole: newRole,
-    },
-  });
-
-  res.json({
-    success: true,
-    message: 'Admin privileges revoked successfully',
-    user: {
-      id: user.id,
-      email: user.email,
-      role: user.role,
-    },
-  });
-});
+);
 
 // ---------- Photo Moderation ----------
 
@@ -2442,105 +2535,117 @@ router.get('/photos/pending', authRequired, roleRequired('admin'), async (req, r
  * POST /api/admin/photos/:id/approve
  * Approve a photo
  */
-router.post('/photos/:id/approve', authRequired, roleRequired('admin'), csrfProtection, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const photos = await dbUnified.read('photos');
-    const photoIndex = photos.findIndex(p => p.id === id);
+router.post(
+  '/photos/:id/approve',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      const photos = await dbUnified.read('photos');
+      const photoIndex = photos.findIndex(p => p.id === id);
 
-    if (photoIndex === -1) {
-      return res.status(404).json({ error: 'Photo not found' });
-    }
-
-    const photo = photos[photoIndex];
-    const now = new Date().toISOString();
-
-    // Update photo status
-    photo.status = 'approved';
-    photo.approvedAt = now;
-    photo.approvedBy = req.user.id;
-
-    photos[photoIndex] = photo;
-    await dbUnified.write('photos', photos);
-
-    // Add photo to supplier's photos array if not already there
-    const suppliers = await dbUnified.read('suppliers');
-    const supplierIndex = suppliers.findIndex(s => s.id === photo.supplierId);
-
-    if (supplierIndex !== -1) {
-      if (!suppliers[supplierIndex].photos) {
-        suppliers[supplierIndex].photos = [];
+      if (photoIndex === -1) {
+        return res.status(404).json({ error: 'Photo not found' });
       }
-      if (!suppliers[supplierIndex].photos.includes(photo.url)) {
-        suppliers[supplierIndex].photos.push(photo.url);
-        await dbUnified.write('suppliers', suppliers);
+
+      const photo = photos[photoIndex];
+      const now = new Date().toISOString();
+
+      // Update photo status
+      photo.status = 'approved';
+      photo.approvedAt = now;
+      photo.approvedBy = req.user.id;
+
+      photos[photoIndex] = photo;
+      await dbUnified.write('photos', photos);
+
+      // Add photo to supplier's photos array if not already there
+      const suppliers = await dbUnified.read('suppliers');
+      const supplierIndex = suppliers.findIndex(s => s.id === photo.supplierId);
+
+      if (supplierIndex !== -1) {
+        if (!suppliers[supplierIndex].photos) {
+          suppliers[supplierIndex].photos = [];
+        }
+        if (!suppliers[supplierIndex].photos.includes(photo.url)) {
+          suppliers[supplierIndex].photos.push(photo.url);
+          await dbUnified.write('suppliers', suppliers);
+        }
       }
+
+      // Create audit log
+      auditLog({
+        adminId: req.user.id,
+        adminEmail: req.user.email,
+        action: AUDIT_ACTIONS.CONTENT_APPROVED,
+        targetType: 'photo',
+        targetId: photo.id,
+        details: { supplierId: photo.supplierId, url: photo.url },
+      });
+
+      res.json({ success: true, message: 'Photo approved successfully', photo });
+    } catch (error) {
+      console.error('Error approving photo:', error);
+      res.status(500).json({ error: 'Failed to approve photo' });
     }
-
-    // Create audit log
-    auditLog({
-      adminId: req.user.id,
-      adminEmail: req.user.email,
-      action: AUDIT_ACTIONS.CONTENT_APPROVED,
-      targetType: 'photo',
-      targetId: photo.id,
-      details: { supplierId: photo.supplierId, url: photo.url },
-    });
-
-    res.json({ success: true, message: 'Photo approved successfully', photo });
-  } catch (error) {
-    console.error('Error approving photo:', error);
-    res.status(500).json({ error: 'Failed to approve photo' });
   }
-});
+);
 
 /**
  * POST /api/admin/photos/:id/reject
  * Reject a photo
  */
-router.post('/photos/:id/reject', authRequired, roleRequired('admin'), csrfProtection, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { reason } = req.body;
-    const photos = await dbUnified.read('photos');
-    const photoIndex = photos.findIndex(p => p.id === id);
+router.post(
+  '/photos/:id/reject',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { reason } = req.body;
+      const photos = await dbUnified.read('photos');
+      const photoIndex = photos.findIndex(p => p.id === id);
 
-    if (photoIndex === -1) {
-      return res.status(404).json({ error: 'Photo not found' });
+      if (photoIndex === -1) {
+        return res.status(404).json({ error: 'Photo not found' });
+      }
+
+      const photo = photos[photoIndex];
+      const now = new Date().toISOString();
+
+      // Update photo status
+      photo.status = 'rejected';
+      photo.rejectedAt = now;
+      photo.rejectedBy = req.user.id;
+      photo.rejectionReason = reason || 'No reason provided';
+
+      photos[photoIndex] = photo;
+      await dbUnified.write('photos', photos);
+
+      // Create audit log
+      auditLog({
+        adminId: req.user.id,
+        adminEmail: req.user.email,
+        action: AUDIT_ACTIONS.CONTENT_REJECTED,
+        targetType: 'photo',
+        targetId: photo.id,
+        details: {
+          supplierId: photo.supplierId,
+          url: photo.url,
+          reason: photo.rejectionReason,
+        },
+      });
+
+      res.json({ success: true, message: 'Photo rejected successfully', photo });
+    } catch (error) {
+      console.error('Error rejecting photo:', error);
+      res.status(500).json({ error: 'Failed to reject photo' });
     }
-
-    const photo = photos[photoIndex];
-    const now = new Date().toISOString();
-
-    // Update photo status
-    photo.status = 'rejected';
-    photo.rejectedAt = now;
-    photo.rejectedBy = req.user.id;
-    photo.rejectionReason = reason || 'No reason provided';
-
-    photos[photoIndex] = photo;
-    await dbUnified.write('photos', photos);
-
-    // Create audit log
-    auditLog({
-      adminId: req.user.id,
-      adminEmail: req.user.email,
-      action: AUDIT_ACTIONS.CONTENT_REJECTED,
-      targetType: 'photo',
-      targetId: photo.id,
-      details: {
-        supplierId: photo.supplierId,
-        url: photo.url,
-        reason: photo.rejectionReason,
-      },
-    });
-
-    res.json({ success: true, message: 'Photo rejected successfully', photo });
-  } catch (error) {
-    console.error('Error rejecting photo:', error);
-    res.status(500).json({ error: 'Failed to reject photo' });
   }
-});
+);
 
 // ---------- Smart Tagging ----------
 
@@ -2558,110 +2663,116 @@ router.post('/photos/:id/reject', authRequired, roleRequired('admin'), csrfProte
  * 4. Limits each supplier to 10 tags maximum to avoid overwhelming the system
  * 5. Creates an audit log entry tracking how many suppliers were tagged
  */
-router.post('/suppliers/smart-tags', authRequired, roleRequired('admin'), csrfProtection, async (req, res) => {
-  try {
-    const suppliers = await dbUnified.read('suppliers');
-    let taggedCount = 0;
+router.post(
+  '/suppliers/smart-tags',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    try {
+      const suppliers = await dbUnified.read('suppliers');
+      let taggedCount = 0;
 
-    // Common wedding/event industry tags mapped to supplier categories
-    // These tags are automatically applied based on the supplier's category field
-    const tagMapping = {
-      venues: ['venue', 'location', 'space', 'ceremony', 'reception'],
-      catering: ['food', 'catering', 'menu', 'dining', 'buffet', 'meal'],
-      photography: ['photo', 'photography', 'photographer', 'camera', 'pictures'],
-      entertainment: ['music', 'band', 'dj', 'entertainment', 'performance'],
-      flowers: ['flowers', 'floral', 'bouquet', 'decoration', 'decor'],
-      transport: ['transport', 'car', 'vehicle', 'limousine', 'travel'],
-      extras: ['extras', 'accessories', 'favors', 'gifts'],
-    };
+      // Common wedding/event industry tags mapped to supplier categories
+      // These tags are automatically applied based on the supplier's category field
+      const tagMapping = {
+        venues: ['venue', 'location', 'space', 'ceremony', 'reception'],
+        catering: ['food', 'catering', 'menu', 'dining', 'buffet', 'meal'],
+        photography: ['photo', 'photography', 'photographer', 'camera', 'pictures'],
+        entertainment: ['music', 'band', 'dj', 'entertainment', 'performance'],
+        flowers: ['flowers', 'floral', 'bouquet', 'decoration', 'decor'],
+        transport: ['transport', 'car', 'vehicle', 'limousine', 'travel'],
+        extras: ['extras', 'accessories', 'favors', 'gifts'],
+      };
 
-    // Context-based tags that are applied when keywords are found in supplier text
-    // Key = tag to add, Value = array of keywords that trigger the tag
-    const contextTags = {
-      wedding: ['wedding', 'bride', 'groom', 'marriage', 'nuptial'],
-      outdoor: ['outdoor', 'garden', 'countryside', 'open-air'],
-      indoor: ['indoor', 'barn', 'hall', 'ballroom'],
-      luxury: ['luxury', 'premium', 'exclusive', 'upscale'],
-      rustic: ['rustic', 'countryside', 'barn', 'rural'],
-      modern: ['modern', 'contemporary', 'stylish'],
-      traditional: ['traditional', 'classic', 'formal'],
-      budget: ['affordable', 'budget', 'value'],
-    };
+      // Context-based tags that are applied when keywords are found in supplier text
+      // Key = tag to add, Value = array of keywords that trigger the tag
+      const contextTags = {
+        wedding: ['wedding', 'bride', 'groom', 'marriage', 'nuptial'],
+        outdoor: ['outdoor', 'garden', 'countryside', 'open-air'],
+        indoor: ['indoor', 'barn', 'hall', 'ballroom'],
+        luxury: ['luxury', 'premium', 'exclusive', 'upscale'],
+        rustic: ['rustic', 'countryside', 'barn', 'rural'],
+        modern: ['modern', 'contemporary', 'stylish'],
+        traditional: ['traditional', 'classic', 'formal'],
+        budget: ['affordable', 'budget', 'value'],
+      };
 
-    suppliers.forEach((supplier, index) => {
-      // Skip unapproved suppliers - only tag suppliers that are live on the platform
-      if (!supplier.approved) {
-        return;
-      }
+      suppliers.forEach((supplier, index) => {
+        // Skip unapproved suppliers - only tag suppliers that are live on the platform
+        if (!supplier.approved) {
+          return;
+        }
 
-      const tags = new Set(); // Use Set to automatically handle duplicates
+        const tags = new Set(); // Use Set to automatically handle duplicates
 
-      // Combine all searchable text from supplier profile
-      const text = [
-        supplier.name || '',
-        supplier.description_short || '',
-        supplier.description_long || '',
-        supplier.category || '',
-        ...(supplier.amenities || []),
-      ]
-        .join(' ')
-        .toLowerCase();
+        // Combine all searchable text from supplier profile
+        const text = [
+          supplier.name || '',
+          supplier.description_short || '',
+          supplier.description_long || '',
+          supplier.category || '',
+          ...(supplier.amenities || []),
+        ]
+          .join(' ')
+          .toLowerCase();
 
-      // Step 1: Add category-based tags
-      // Normalize category name (remove spaces/special chars) to match mapping keys
-      const categoryKey = (supplier.category || '').toLowerCase().replace(/[^a-z]/g, '');
-      if (tagMapping[categoryKey]) {
-        tagMapping[categoryKey].forEach(tag => tags.add(tag));
-      }
+        // Step 1: Add category-based tags
+        // Normalize category name (remove spaces/special chars) to match mapping keys
+        const categoryKey = (supplier.category || '').toLowerCase().replace(/[^a-z]/g, '');
+        if (tagMapping[categoryKey]) {
+          tagMapping[categoryKey].forEach(tag => tags.add(tag));
+        }
 
-      // Step 2: Add context-based tags by scanning text for keywords
-      Object.entries(contextTags).forEach(([tag, keywords]) => {
-        // If ANY keyword is found in the text, add the tag
-        if (keywords.some(keyword => text.includes(keyword))) {
-          tags.add(tag);
+        // Step 2: Add context-based tags by scanning text for keywords
+        Object.entries(contextTags).forEach(([tag, keywords]) => {
+          // If ANY keyword is found in the text, add the tag
+          if (keywords.some(keyword => text.includes(keyword))) {
+            tags.add(tag);
+          }
+        });
+
+        // Step 3: Add location-based tags
+        // Extract meaningful words from location (min 4 chars to avoid "UK", "NY", etc.)
+        if (supplier.location) {
+          const locationWords = supplier.location.toLowerCase().split(/[,\s]+/);
+          locationWords.forEach(word => {
+            if (word.length > 3) {
+              tags.add(word);
+            }
+          });
+        }
+
+        // Only update supplier if we generated at least one tag
+        if (tags.size > 0) {
+          suppliers[index].tags = Array.from(tags).slice(0, 10); // Limit to 10 tags per supplier
+          taggedCount++;
         }
       });
 
-      // Step 3: Add location-based tags
-      // Extract meaningful words from location (min 4 chars to avoid "UK", "NY", etc.)
-      if (supplier.location) {
-        const locationWords = supplier.location.toLowerCase().split(/[,\s]+/);
-        locationWords.forEach(word => {
-          if (word.length > 3) {
-            tags.add(word);
-          }
-        });
-      }
+      await dbUnified.write('suppliers', suppliers);
 
-      // Only update supplier if we generated at least one tag
-      if (tags.size > 0) {
-        suppliers[index].tags = Array.from(tags).slice(0, 10); // Limit to 10 tags per supplier
-        taggedCount++;
-      }
-    });
+      // Create audit log for tracking when tags were generated
+      auditLog({
+        adminId: req.user.id,
+        adminEmail: req.user.email,
+        action: 'SMART_TAGS_GENERATED',
+        targetType: 'suppliers',
+        targetId: null,
+        details: { suppliersTagged: taggedCount },
+      });
 
-    await dbUnified.write('suppliers', suppliers);
-
-    // Create audit log for tracking when tags were generated
-    auditLog({
-      adminId: req.user.id,
-      adminEmail: req.user.email,
-      action: 'SMART_TAGS_GENERATED',
-      targetType: 'suppliers',
-      targetId: null,
-      details: { suppliersTagged: taggedCount },
-    });
-
-    res.json({
-      success: true,
-      message: `Smart tags generated for ${taggedCount} suppliers`,
-      taggedCount,
-    });
-  } catch (error) {
-    console.error('Error generating smart tags:', error);
-    res.status(500).json({ error: 'Failed to generate smart tags', details: error.message });
+      res.json({
+        success: true,
+        message: `Smart tags generated for ${taggedCount} suppliers`,
+        taggedCount,
+      });
+    } catch (error) {
+      console.error('Error generating smart tags:', error);
+      res.status(500).json({ error: 'Failed to generate smart tags', details: error.message });
+    }
   }
-});
+);
 
 // ---------- Badge Counts ----------
 
@@ -2751,94 +2862,106 @@ router.get('/users/:id', authRequired, roleRequired('admin'), (req, res) => {
  * POST /api/admin/users/:id/reset-password
  * Send password reset email to user
  */
-router.post('/users/:id/reset-password', authRequired, roleRequired('admin'), csrfProtection, async (req, res) => {
-  const users = read('users');
-  const userIndex = users.findIndex(u => u.id === req.params.id);
+router.post(
+  '/users/:id/reset-password',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    const users = read('users');
+    const userIndex = users.findIndex(u => u.id === req.params.id);
 
-  if (userIndex === -1) {
-    return res.status(404).json({ error: 'User not found' });
-  }
+    if (userIndex === -1) {
+      return res.status(404).json({ error: 'User not found' });
+    }
 
-  const user = users[userIndex];
+    const user = users[userIndex];
 
-  // Generate reset token
-  const token = uid('reset');
-  const expires = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // 1 hour
+    // Generate reset token
+    const token = uid('reset');
+    const expires = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // 1 hour
 
-  // Send password reset email via Postmark BEFORE saving token
-  try {
-    console.log(`📧 Admin ${req.user.email} sending password reset to ${user.email}`);
-    await postmark.sendPasswordResetEmail(user, token);
-    console.log(`✅ Password reset email sent to ${user.email}`);
-  } catch (emailError) {
-    console.error('❌ Failed to send password reset email:', emailError.message);
+    // Send password reset email via Postmark BEFORE saving token
+    try {
+      console.log(`📧 Admin ${req.user.email} sending password reset to ${user.email}`);
+      await postmark.sendPasswordResetEmail(user, token);
+      console.log(`✅ Password reset email sent to ${user.email}`);
+    } catch (emailError) {
+      console.error('❌ Failed to send password reset email:', emailError.message);
 
-    // Log the failure in audit log
+      // Log the failure in audit log
+      auditLog({
+        adminId: req.user.id,
+        adminEmail: req.user.email,
+        action: AUDIT_ACTIONS.USER_PASSWORD_RESET,
+        targetType: 'user',
+        targetId: user.id,
+        details: { userEmail: user.email, emailSent: false, error: emailError.message },
+      });
+
+      return res.status(500).json({
+        error: 'Failed to send password reset email',
+        details: process.env.NODE_ENV === 'development' ? emailError.message : undefined,
+      });
+    }
+
+    // Only save reset token after email is successfully sent
+    users[userIndex].resetToken = token;
+    users[userIndex].resetTokenExpiresAt = expires;
+    write('users', users);
+
     auditLog({
       adminId: req.user.id,
       adminEmail: req.user.email,
       action: AUDIT_ACTIONS.USER_PASSWORD_RESET,
       targetType: 'user',
       targetId: user.id,
-      details: { userEmail: user.email, emailSent: false, error: emailError.message },
+      details: { userEmail: user.email, emailSent: true },
     });
 
-    return res.status(500).json({
-      error: 'Failed to send password reset email',
-      details: process.env.NODE_ENV === 'development' ? emailError.message : undefined,
+    res.json({
+      success: true,
+      message: 'Password reset email sent successfully',
     });
   }
-
-  // Only save reset token after email is successfully sent
-  users[userIndex].resetToken = token;
-  users[userIndex].resetTokenExpiresAt = expires;
-  write('users', users);
-
-  auditLog({
-    adminId: req.user.id,
-    adminEmail: req.user.email,
-    action: AUDIT_ACTIONS.USER_PASSWORD_RESET,
-    targetType: 'user',
-    targetId: user.id,
-    details: { userEmail: user.email, emailSent: true },
-  });
-
-  res.json({
-    success: true,
-    message: 'Password reset email sent successfully',
-  });
-});
+);
 
 /**
  * POST /api/admin/users/:id/unsuspend
  * Unsuspend a user
  */
-router.post('/users/:id/unsuspend', authRequired, roleRequired('admin'), csrfProtection, (req, res) => {
-  const users = read('users');
-  const userIndex = users.findIndex(u => u.id === req.params.id);
+router.post(
+  '/users/:id/unsuspend',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  (req, res) => {
+    const users = read('users');
+    const userIndex = users.findIndex(u => u.id === req.params.id);
 
-  if (userIndex === -1) {
-    return res.status(404).json({ error: 'User not found' });
+    if (userIndex === -1) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    users[userIndex].suspended = false;
+    users[userIndex].suspendedAt = null;
+    users[userIndex].suspendedBy = null;
+    users[userIndex].suspendedReason = null;
+
+    write('users', users);
+
+    auditLog({
+      adminId: req.user.id,
+      adminEmail: req.user.email,
+      action: 'USER_UNSUSPENDED',
+      targetType: 'user',
+      targetId: req.params.id,
+      details: { userEmail: users[userIndex].email },
+    });
+
+    res.json({ success: true, message: 'User unsuspended', user: users[userIndex] });
   }
-
-  users[userIndex].suspended = false;
-  users[userIndex].suspendedAt = null;
-  users[userIndex].suspendedBy = null;
-  users[userIndex].suspendedReason = null;
-
-  write('users', users);
-
-  auditLog({
-    adminId: req.user.id,
-    adminEmail: req.user.email,
-    action: 'USER_UNSUSPENDED',
-    targetType: 'user',
-    targetId: req.params.id,
-    details: { userEmail: users[userIndex].email },
-  });
-
-  res.json({ success: true, message: 'User unsuspended', user: users[userIndex] });
-});
+);
 
 // ---------- Content Management ----------
 
@@ -2900,41 +3023,47 @@ router.get('/content/announcements', authRequired, roleRequired('admin'), (req, 
  * POST /api/admin/content/announcements
  * Create a new announcement
  */
-router.post('/content/announcements', authRequired, roleRequired('admin'), csrfProtection, (req, res) => {
-  const { message, type, active } = req.body;
+router.post(
+  '/content/announcements',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  (req, res) => {
+    const { message, type, active } = req.body;
 
-  if (!message) {
-    return res.status(400).json({ error: 'Message is required' });
+    if (!message) {
+      return res.status(400).json({ error: 'Message is required' });
+    }
+
+    const content = read('content') || {};
+    if (!content.announcements) {
+      content.announcements = [];
+    }
+
+    const announcement = {
+      id: generateUniqueId('announcement'),
+      message,
+      type: type || 'info',
+      active: active !== false,
+      createdAt: new Date().toISOString(),
+      createdBy: req.user.email,
+    };
+
+    content.announcements.push(announcement);
+    write('content', content);
+
+    auditLog({
+      adminId: req.user.id,
+      adminEmail: req.user.email,
+      action: 'ANNOUNCEMENT_CREATED',
+      targetType: 'announcement',
+      targetId: announcement.id,
+      details: { message, type },
+    });
+
+    res.json({ success: true, announcement });
   }
-
-  const content = read('content') || {};
-  if (!content.announcements) {
-    content.announcements = [];
-  }
-
-  const announcement = {
-    id: generateUniqueId('announcement'),
-    message,
-    type: type || 'info',
-    active: active !== false,
-    createdAt: new Date().toISOString(),
-    createdBy: req.user.email,
-  };
-
-  content.announcements.push(announcement);
-  write('content', content);
-
-  auditLog({
-    adminId: req.user.id,
-    adminEmail: req.user.email,
-    action: 'ANNOUNCEMENT_CREATED',
-    targetType: 'announcement',
-    targetId: announcement.id,
-    details: { message, type },
-  });
-
-  res.json({ success: true, announcement });
-});
+);
 
 /**
  * GET /api/admin/content/announcements/:id
@@ -2956,71 +3085,83 @@ router.get('/content/announcements/:id', authRequired, roleRequired('admin'), (r
  * PUT /api/admin/content/announcements/:id
  * Update an announcement
  */
-router.put('/content/announcements/:id', authRequired, roleRequired('admin'), csrfProtection, (req, res) => {
-  const { message, type, active } = req.body;
+router.put(
+  '/content/announcements/:id',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  (req, res) => {
+    const { message, type, active } = req.body;
 
-  const content = read('content') || {};
-  if (!content.announcements) {
-    return res.status(404).json({ error: 'Announcement not found' });
+    const content = read('content') || {};
+    if (!content.announcements) {
+      return res.status(404).json({ error: 'Announcement not found' });
+    }
+
+    const announcementIndex = content.announcements.findIndex(a => a.id === req.params.id);
+    if (announcementIndex === -1) {
+      return res.status(404).json({ error: 'Announcement not found' });
+    }
+
+    content.announcements[announcementIndex] = {
+      ...content.announcements[announcementIndex],
+      message: message || content.announcements[announcementIndex].message,
+      type: type || content.announcements[announcementIndex].type,
+      active: active !== undefined ? active : content.announcements[announcementIndex].active,
+      updatedAt: new Date().toISOString(),
+      updatedBy: req.user.email,
+    };
+
+    write('content', content);
+
+    auditLog({
+      adminId: req.user.id,
+      adminEmail: req.user.email,
+      action: 'ANNOUNCEMENT_UPDATED',
+      targetType: 'announcement',
+      targetId: req.params.id,
+      details: { message, type, active },
+    });
+
+    res.json({ success: true, announcement: content.announcements[announcementIndex] });
   }
-
-  const announcementIndex = content.announcements.findIndex(a => a.id === req.params.id);
-  if (announcementIndex === -1) {
-    return res.status(404).json({ error: 'Announcement not found' });
-  }
-
-  content.announcements[announcementIndex] = {
-    ...content.announcements[announcementIndex],
-    message: message || content.announcements[announcementIndex].message,
-    type: type || content.announcements[announcementIndex].type,
-    active: active !== undefined ? active : content.announcements[announcementIndex].active,
-    updatedAt: new Date().toISOString(),
-    updatedBy: req.user.email,
-  };
-
-  write('content', content);
-
-  auditLog({
-    adminId: req.user.id,
-    adminEmail: req.user.email,
-    action: 'ANNOUNCEMENT_UPDATED',
-    targetType: 'announcement',
-    targetId: req.params.id,
-    details: { message, type, active },
-  });
-
-  res.json({ success: true, announcement: content.announcements[announcementIndex] });
-});
+);
 
 /**
  * DELETE /api/admin/content/announcements/:id
  * Delete an announcement
  */
-router.delete('/content/announcements/:id', authRequired, roleRequired('admin'), csrfProtection, (req, res) => {
-  const content = read('content') || {};
-  if (!content.announcements) {
-    return res.status(404).json({ error: 'Announcement not found' });
+router.delete(
+  '/content/announcements/:id',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  (req, res) => {
+    const content = read('content') || {};
+    if (!content.announcements) {
+      return res.status(404).json({ error: 'Announcement not found' });
+    }
+
+    const announcementIndex = content.announcements.findIndex(a => a.id === req.params.id);
+    if (announcementIndex === -1) {
+      return res.status(404).json({ error: 'Announcement not found' });
+    }
+
+    const deleted = content.announcements.splice(announcementIndex, 1)[0];
+    write('content', content);
+
+    auditLog({
+      adminId: req.user.id,
+      adminEmail: req.user.email,
+      action: 'ANNOUNCEMENT_DELETED',
+      targetType: 'announcement',
+      targetId: req.params.id,
+      details: { message: deleted.message },
+    });
+
+    res.json({ success: true, message: 'Announcement deleted' });
   }
-
-  const announcementIndex = content.announcements.findIndex(a => a.id === req.params.id);
-  if (announcementIndex === -1) {
-    return res.status(404).json({ error: 'Announcement not found' });
-  }
-
-  const deleted = content.announcements.splice(announcementIndex, 1)[0];
-  write('content', content);
-
-  auditLog({
-    adminId: req.user.id,
-    adminEmail: req.user.email,
-    action: 'ANNOUNCEMENT_DELETED',
-    targetType: 'announcement',
-    targetId: req.params.id,
-    details: { message: deleted.message },
-  });
-
-  res.json({ success: true, message: 'Announcement deleted' });
-});
+);
 
 /**
  * GET /api/admin/content/faqs
@@ -3132,31 +3273,37 @@ router.put('/content/faqs/:id', authRequired, roleRequired('admin'), csrfProtect
  * DELETE /api/admin/content/faqs/:id
  * Delete a FAQ
  */
-router.delete('/content/faqs/:id', authRequired, roleRequired('admin'), csrfProtection, (req, res) => {
-  const content = read('content') || {};
-  if (!content.faqs) {
-    return res.status(404).json({ error: 'FAQ not found' });
+router.delete(
+  '/content/faqs/:id',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  (req, res) => {
+    const content = read('content') || {};
+    if (!content.faqs) {
+      return res.status(404).json({ error: 'FAQ not found' });
+    }
+
+    const faqIndex = content.faqs.findIndex(f => f.id === req.params.id);
+    if (faqIndex === -1) {
+      return res.status(404).json({ error: 'FAQ not found' });
+    }
+
+    const deleted = content.faqs.splice(faqIndex, 1)[0];
+    write('content', content);
+
+    auditLog({
+      adminId: req.user.id,
+      adminEmail: req.user.email,
+      action: 'FAQ_DELETED',
+      targetType: 'faq',
+      targetId: req.params.id,
+      details: { question: deleted.question },
+    });
+
+    res.json({ success: true, message: 'FAQ deleted' });
   }
-
-  const faqIndex = content.faqs.findIndex(f => f.id === req.params.id);
-  if (faqIndex === -1) {
-    return res.status(404).json({ error: 'FAQ not found' });
-  }
-
-  const deleted = content.faqs.splice(faqIndex, 1)[0];
-  write('content', content);
-
-  auditLog({
-    adminId: req.user.id,
-    adminEmail: req.user.email,
-    action: 'FAQ_DELETED',
-    targetType: 'faq',
-    targetId: req.params.id,
-    details: { question: deleted.question },
-  });
-
-  res.json({ success: true, message: 'FAQ deleted' });
-});
+);
 
 // ---------- System Settings ----------
 
@@ -3184,37 +3331,43 @@ router.get('/settings/site', authRequired, roleRequired('admin'), async (req, re
  * PUT /api/admin/settings/site
  * Update site configuration
  */
-router.put('/settings/site', authRequired, roleRequired('admin'), csrfProtection, async (req, res) => {
-  try {
-    const { name, tagline, contactEmail, supportEmail } = req.body;
+router.put(
+  '/settings/site',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    try {
+      const { name, tagline, contactEmail, supportEmail } = req.body;
 
-    const settings = (await dbUnified.read('settings')) || {};
-    settings.site = {
-      name: name || 'EventFlow',
-      tagline: tagline || 'Event planning made simple',
-      contactEmail: contactEmail || 'hello@eventflow.com',
-      supportEmail: supportEmail || 'support@eventflow.com',
-      updatedAt: new Date().toISOString(),
-      updatedBy: req.user.email,
-    };
+      const settings = (await dbUnified.read('settings')) || {};
+      settings.site = {
+        name: name || 'EventFlow',
+        tagline: tagline || 'Event planning made simple',
+        contactEmail: contactEmail || 'hello@eventflow.com',
+        supportEmail: supportEmail || 'support@eventflow.com',
+        updatedAt: new Date().toISOString(),
+        updatedBy: req.user.email,
+      };
 
-    await dbUnified.write('settings', settings);
+      await dbUnified.write('settings', settings);
 
-    auditLog({
-      adminId: req.user.id,
-      adminEmail: req.user.email,
-      action: 'SETTINGS_UPDATED',
-      targetType: 'site',
-      targetId: null,
-      details: { name, tagline },
-    });
+      auditLog({
+        adminId: req.user.id,
+        adminEmail: req.user.email,
+        action: 'SETTINGS_UPDATED',
+        targetType: 'site',
+        targetId: null,
+        details: { name, tagline },
+      });
 
-    res.json({ success: true, site: settings.site });
-  } catch (error) {
-    console.error('Error updating site settings:', error);
-    res.status(500).json({ error: 'Failed to update settings' });
+      res.json({ success: true, site: settings.site });
+    } catch (error) {
+      console.error('Error updating site settings:', error);
+      res.status(500).json({ error: 'Failed to update settings' });
+    }
   }
-});
+);
 
 /**
  * GET /api/admin/settings/features
@@ -3231,7 +3384,21 @@ router.get('/settings/features', authRequired, roleRequired('admin'), async (req
       supportTickets: true,
       pexelsCollage: false,
     };
-    res.json(features);
+
+    // Ensure metadata fields are included in response
+    // If they don't exist (older data), keep them undefined so frontend can handle gracefully
+    const response = {
+      registration: features.registration !== false,
+      supplierApplications: features.supplierApplications !== false,
+      reviews: features.reviews !== false,
+      photoUploads: features.photoUploads !== false,
+      supportTickets: features.supportTickets !== false,
+      pexelsCollage: features.pexelsCollage === true,
+      updatedAt: features.updatedAt,
+      updatedBy: features.updatedBy,
+    };
+
+    res.json(response);
   } catch (error) {
     console.error('Error reading feature settings:', error);
     res.status(500).json({ error: 'Failed to read settings' });
@@ -3242,46 +3409,52 @@ router.get('/settings/features', authRequired, roleRequired('admin'), async (req
  * PUT /api/admin/settings/features
  * Update feature flags
  */
-router.put('/settings/features', authRequired, roleRequired('admin'), csrfProtection, async (req, res) => {
-  try {
-    const {
-      registration,
-      supplierApplications,
-      reviews,
-      photoUploads,
-      supportTickets,
-      pexelsCollage,
-    } = req.body;
+router.put(
+  '/settings/features',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    try {
+      const {
+        registration,
+        supplierApplications,
+        reviews,
+        photoUploads,
+        supportTickets,
+        pexelsCollage,
+      } = req.body;
 
-    const settings = (await dbUnified.read('settings')) || {};
-    settings.features = {
-      registration: registration !== false,
-      supplierApplications: supplierApplications !== false,
-      reviews: reviews !== false,
-      photoUploads: photoUploads !== false,
-      supportTickets: supportTickets !== false,
-      pexelsCollage: pexelsCollage === true,
-      updatedAt: new Date().toISOString(),
-      updatedBy: req.user.email,
-    };
+      const settings = (await dbUnified.read('settings')) || {};
+      settings.features = {
+        registration: registration !== false,
+        supplierApplications: supplierApplications !== false,
+        reviews: reviews !== false,
+        photoUploads: photoUploads !== false,
+        supportTickets: supportTickets !== false,
+        pexelsCollage: pexelsCollage === true,
+        updatedAt: new Date().toISOString(),
+        updatedBy: req.user.email,
+      };
 
-    await dbUnified.write('settings', settings);
+      await dbUnified.write('settings', settings);
 
-    auditLog({
-      adminId: req.user.id,
-      adminEmail: req.user.email,
-      action: 'FEATURES_UPDATED',
-      targetType: 'features',
-      targetId: null,
-      details: settings.features,
-    });
+      auditLog({
+        adminId: req.user.id,
+        adminEmail: req.user.email,
+        action: 'FEATURES_UPDATED',
+        targetType: 'features',
+        targetId: null,
+        details: settings.features,
+      });
 
-    res.json({ success: true, features: settings.features });
-  } catch (error) {
-    console.error('Error updating feature settings:', error);
-    res.status(500).json({ error: 'Failed to update settings' });
+      res.json({ success: true, features: settings.features });
+    } catch (error) {
+      console.error('Error updating feature settings:', error);
+      res.status(500).json({ error: 'Failed to update settings' });
+    }
   }
-});
+);
 
 /**
  * GET /api/admin/settings/maintenance
@@ -3305,45 +3478,51 @@ router.get('/settings/maintenance', authRequired, roleRequired('admin'), async (
  * PUT /api/admin/settings/maintenance
  * Update maintenance mode settings
  */
-router.put('/settings/maintenance', authRequired, roleRequired('admin'), csrfProtection, async (req, res) => {
-  try {
-    const { enabled, message, duration } = req.body;
+router.put(
+  '/settings/maintenance',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    try {
+      const { enabled, message, duration } = req.body;
 
-    const settings = (await dbUnified.read('settings')) || {};
+      const settings = (await dbUnified.read('settings')) || {};
 
-    // Calculate expiration time if duration is provided and maintenance is being enabled
-    let expiresAt = null;
-    if (enabled && duration && Number(duration) > 0) {
-      const durationMs = Number(duration) * 60 * 1000; // duration is in minutes
-      expiresAt = new Date(Date.now() + durationMs).toISOString();
+      // Calculate expiration time if duration is provided and maintenance is being enabled
+      let expiresAt = null;
+      if (enabled && duration && Number(duration) > 0) {
+        const durationMs = Number(duration) * 60 * 1000; // duration is in minutes
+        expiresAt = new Date(Date.now() + durationMs).toISOString();
+      }
+
+      settings.maintenance = {
+        enabled: enabled === true,
+        message: message || "We're performing scheduled maintenance. We'll be back soon!",
+        duration: duration ? Number(duration) : null, // Store duration in minutes
+        expiresAt: expiresAt,
+        updatedAt: new Date().toISOString(),
+        updatedBy: req.user.email,
+      };
+
+      await dbUnified.write('settings', settings);
+
+      auditLog({
+        adminId: req.user.id,
+        adminEmail: req.user.email,
+        action: 'MAINTENANCE_UPDATED',
+        targetType: 'maintenance',
+        targetId: null,
+        details: { enabled, message, duration, expiresAt },
+      });
+
+      res.json({ success: true, maintenance: settings.maintenance });
+    } catch (error) {
+      console.error('Error updating maintenance settings:', error);
+      res.status(500).json({ error: 'Failed to update settings' });
     }
-
-    settings.maintenance = {
-      enabled: enabled === true,
-      message: message || "We're performing scheduled maintenance. We'll be back soon!",
-      duration: duration ? Number(duration) : null, // Store duration in minutes
-      expiresAt: expiresAt,
-      updatedAt: new Date().toISOString(),
-      updatedBy: req.user.email,
-    };
-
-    await dbUnified.write('settings', settings);
-
-    auditLog({
-      adminId: req.user.id,
-      adminEmail: req.user.email,
-      action: 'MAINTENANCE_UPDATED',
-      targetType: 'maintenance',
-      targetId: null,
-      details: { enabled, message, duration, expiresAt },
-    });
-
-    res.json({ success: true, maintenance: settings.maintenance });
-  } catch (error) {
-    console.error('Error updating maintenance settings:', error);
-    res.status(500).json({ error: 'Failed to update settings' });
   }
-});
+);
 
 /**
  * GET /api/admin/settings/email-templates/:name
@@ -3600,39 +3779,45 @@ router.put('/tickets/:id', authRequired, roleRequired('admin'), csrfProtection, 
  * POST /api/admin/tickets/:id/reply
  * Add a reply to a ticket
  */
-router.post('/tickets/:id/reply', authRequired, roleRequired('admin'), csrfProtection, (req, res) => {
-  const tickets = read('tickets');
-  const index = tickets.findIndex(t => t.id === req.params.id);
+router.post(
+  '/tickets/:id/reply',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  (req, res) => {
+    const tickets = read('tickets');
+    const index = tickets.findIndex(t => t.id === req.params.id);
 
-  if (index < 0) {
-    return res.status(404).json({ error: 'Ticket not found' });
+    if (index < 0) {
+      return res.status(404).json({ error: 'Ticket not found' });
+    }
+
+    const { message } = req.body;
+    if (!message) {
+      return res.status(400).json({ error: 'Message is required' });
+    }
+
+    const ticket = tickets[index];
+    const reply = {
+      id: uid('reply'),
+      message,
+      authorId: req.user.id,
+      authorEmail: req.user.email,
+      createdAt: new Date().toISOString(),
+    };
+
+    if (!ticket.replies) {
+      ticket.replies = [];
+    }
+    ticket.replies.push(reply);
+    ticket.updatedAt = new Date().toISOString();
+
+    tickets[index] = ticket;
+    write('tickets', tickets);
+
+    res.json({ ticket });
   }
-
-  const { message } = req.body;
-  if (!message) {
-    return res.status(400).json({ error: 'Message is required' });
-  }
-
-  const ticket = tickets[index];
-  const reply = {
-    id: uid('reply'),
-    message,
-    authorId: req.user.id,
-    authorEmail: req.user.email,
-    createdAt: new Date().toISOString(),
-  };
-
-  if (!ticket.replies) {
-    ticket.replies = [];
-  }
-  ticket.replies.push(reply);
-  ticket.updatedAt = new Date().toISOString();
-
-  tickets[index] = ticket;
-  write('tickets', tickets);
-
-  res.json({ ticket });
-});
+);
 
 // ---------- Payments ----------
 
@@ -4138,193 +4323,205 @@ router.delete(
  * Grant or update subscription for a user
  * Body: { tier: 'pro' | 'pro_plus', duration: '7d' | '30d' | '90d' | '1y' | 'lifetime', reason: string }
  */
-router.post('/users/:id/subscription', authRequired, roleRequired('admin'), csrfProtection, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { tier, duration, reason } = req.body;
+router.post(
+  '/users/:id/subscription',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { tier, duration, reason } = req.body;
 
-    // Validate tier
-    const validTiers = ['pro', 'pro_plus'];
-    if (!validTiers.includes(tier)) {
-      return res.status(400).json({ error: 'Invalid tier. Must be "pro" or "pro_plus"' });
-    }
+      // Validate tier
+      const validTiers = ['pro', 'pro_plus'];
+      if (!validTiers.includes(tier)) {
+        return res.status(400).json({ error: 'Invalid tier. Must be "pro" or "pro_plus"' });
+      }
 
-    // Validate duration
-    const validDurations = ['7d', '30d', '90d', '1y', 'lifetime'];
-    if (!validDurations.includes(duration)) {
-      return res
-        .status(400)
-        .json({ error: 'Invalid duration. Must be 7d, 30d, 90d, 1y, or lifetime' });
-    }
+      // Validate duration
+      const validDurations = ['7d', '30d', '90d', '1y', 'lifetime'];
+      if (!validDurations.includes(duration)) {
+        return res
+          .status(400)
+          .json({ error: 'Invalid duration. Must be 7d, 30d, 90d, 1y, or lifetime' });
+      }
 
-    const users = read('users');
-    const userIndex = users.findIndex(u => u.id === id);
+      const users = read('users');
+      const userIndex = users.findIndex(u => u.id === id);
 
-    if (userIndex < 0) {
-      return res.status(404).json({ error: 'User not found' });
-    }
+      if (userIndex < 0) {
+        return res.status(404).json({ error: 'User not found' });
+      }
 
-    const user = users[userIndex];
-    const now = new Date();
-    const startDate = now.toISOString();
-    let endDate = null;
+      const user = users[userIndex];
+      const now = new Date();
+      const startDate = now.toISOString();
+      let endDate = null;
 
-    // Calculate end date based on duration
-    if (duration !== 'lifetime') {
-      const durationMap = {
-        '7d': 7,
-        '30d': 30,
-        '90d': 90,
-        '1y': 365,
+      // Calculate end date based on duration
+      if (duration !== 'lifetime') {
+        const durationMap = {
+          '7d': 7,
+          '30d': 30,
+          '90d': 90,
+          '1y': 365,
+        };
+        const days = durationMap[duration];
+        const end = new Date(now);
+        end.setDate(end.getDate() + days);
+        endDate = end.toISOString();
+      }
+
+      // Store previous subscription info for history
+      const previousTier = user.subscription?.tier || 'free';
+      const action =
+        !user.subscription || user.subscription.tier === 'free'
+          ? 'granted'
+          : tier !== previousTier
+            ? 'upgraded'
+            : 'renewed';
+
+      // Update user subscription
+      user.subscription = {
+        tier,
+        status: 'active',
+        startDate,
+        endDate,
+        grantedBy: req.user.id,
+        grantedAt: startDate,
+        reason: reason || 'Manual admin grant',
+        autoRenew: false,
       };
-      const days = durationMap[duration];
-      const end = new Date(now);
-      end.setDate(end.getDate() + days);
-      endDate = end.toISOString();
+
+      // Initialize subscription history if it doesn't exist
+      if (!user.subscriptionHistory) {
+        user.subscriptionHistory = [];
+      }
+
+      // Add to subscription history
+      user.subscriptionHistory.push({
+        tier,
+        action,
+        date: startDate,
+        adminId: req.user.id,
+        adminEmail: req.user.email,
+        reason: reason || 'Manual admin grant',
+        previousTier,
+        duration,
+        endDate,
+      });
+
+      // Save updated user
+      users[userIndex] = user;
+      write('users', users);
+
+      // Log to audit
+      auditLog({
+        adminId: req.user.id,
+        adminEmail: req.user.email,
+        action: 'USER_SUBSCRIPTION_GRANTED',
+        targetType: 'user',
+        targetId: id,
+        details: { tier, duration, reason, endDate },
+      });
+
+      res.json({
+        success: true,
+        message: 'Subscription granted successfully',
+        subscription: user.subscription,
+      });
+    } catch (error) {
+      console.error('Error granting subscription:', error);
+      res.status(500).json({ error: 'Failed to grant subscription' });
     }
-
-    // Store previous subscription info for history
-    const previousTier = user.subscription?.tier || 'free';
-    const action =
-      !user.subscription || user.subscription.tier === 'free'
-        ? 'granted'
-        : tier !== previousTier
-          ? 'upgraded'
-          : 'renewed';
-
-    // Update user subscription
-    user.subscription = {
-      tier,
-      status: 'active',
-      startDate,
-      endDate,
-      grantedBy: req.user.id,
-      grantedAt: startDate,
-      reason: reason || 'Manual admin grant',
-      autoRenew: false,
-    };
-
-    // Initialize subscription history if it doesn't exist
-    if (!user.subscriptionHistory) {
-      user.subscriptionHistory = [];
-    }
-
-    // Add to subscription history
-    user.subscriptionHistory.push({
-      tier,
-      action,
-      date: startDate,
-      adminId: req.user.id,
-      adminEmail: req.user.email,
-      reason: reason || 'Manual admin grant',
-      previousTier,
-      duration,
-      endDate,
-    });
-
-    // Save updated user
-    users[userIndex] = user;
-    write('users', users);
-
-    // Log to audit
-    auditLog({
-      adminId: req.user.id,
-      adminEmail: req.user.email,
-      action: 'USER_SUBSCRIPTION_GRANTED',
-      targetType: 'user',
-      targetId: id,
-      details: { tier, duration, reason, endDate },
-    });
-
-    res.json({
-      success: true,
-      message: 'Subscription granted successfully',
-      subscription: user.subscription,
-    });
-  } catch (error) {
-    console.error('Error granting subscription:', error);
-    res.status(500).json({ error: 'Failed to grant subscription' });
   }
-});
+);
 
 /**
  * DELETE /api/admin/users/:id/subscription
  * Remove subscription from a user
  * Body: { reason: string }
  */
-router.delete('/users/:id/subscription', authRequired, roleRequired('admin'), csrfProtection, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { reason } = req.body;
+router.delete(
+  '/users/:id/subscription',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { reason } = req.body;
 
-    const users = read('users');
-    const userIndex = users.findIndex(u => u.id === id);
+      const users = read('users');
+      const userIndex = users.findIndex(u => u.id === id);
 
-    if (userIndex < 0) {
-      return res.status(404).json({ error: 'User not found' });
+      if (userIndex < 0) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      const user = users[userIndex];
+
+      if (!user.subscription || user.subscription.tier === 'free') {
+        return res.status(400).json({ error: 'User has no active subscription to remove' });
+      }
+
+      const previousTier = user.subscription.tier;
+
+      // Update subscription to cancelled/free
+      user.subscription = {
+        tier: 'free',
+        status: 'cancelled',
+        startDate: new Date().toISOString(),
+        endDate: null,
+        grantedBy: req.user.id,
+        grantedAt: new Date().toISOString(),
+        reason: reason || 'Manual admin removal',
+        autoRenew: false,
+      };
+
+      // Initialize subscription history if it doesn't exist
+      if (!user.subscriptionHistory) {
+        user.subscriptionHistory = [];
+      }
+
+      // Add to subscription history
+      user.subscriptionHistory.push({
+        tier: 'free',
+        action: 'cancelled',
+        date: new Date().toISOString(),
+        adminId: req.user.id,
+        adminEmail: req.user.email,
+        reason: reason || 'Manual admin removal',
+        previousTier,
+        duration: null,
+        endDate: null,
+      });
+
+      // Save updated user
+      users[userIndex] = user;
+      write('users', users);
+
+      // Log to audit
+      auditLog({
+        adminId: req.user.id,
+        adminEmail: req.user.email,
+        action: 'USER_SUBSCRIPTION_REMOVED',
+        targetType: 'user',
+        targetId: id,
+        details: { previousTier, reason },
+      });
+
+      res.json({
+        success: true,
+        message: 'Subscription removed successfully',
+      });
+    } catch (error) {
+      console.error('Error removing subscription:', error);
+      res.status(500).json({ error: 'Failed to remove subscription' });
     }
-
-    const user = users[userIndex];
-
-    if (!user.subscription || user.subscription.tier === 'free') {
-      return res.status(400).json({ error: 'User has no active subscription to remove' });
-    }
-
-    const previousTier = user.subscription.tier;
-
-    // Update subscription to cancelled/free
-    user.subscription = {
-      tier: 'free',
-      status: 'cancelled',
-      startDate: new Date().toISOString(),
-      endDate: null,
-      grantedBy: req.user.id,
-      grantedAt: new Date().toISOString(),
-      reason: reason || 'Manual admin removal',
-      autoRenew: false,
-    };
-
-    // Initialize subscription history if it doesn't exist
-    if (!user.subscriptionHistory) {
-      user.subscriptionHistory = [];
-    }
-
-    // Add to subscription history
-    user.subscriptionHistory.push({
-      tier: 'free',
-      action: 'cancelled',
-      date: new Date().toISOString(),
-      adminId: req.user.id,
-      adminEmail: req.user.email,
-      reason: reason || 'Manual admin removal',
-      previousTier,
-      duration: null,
-      endDate: null,
-    });
-
-    // Save updated user
-    users[userIndex] = user;
-    write('users', users);
-
-    // Log to audit
-    auditLog({
-      adminId: req.user.id,
-      adminEmail: req.user.email,
-      action: 'USER_SUBSCRIPTION_REMOVED',
-      targetType: 'user',
-      targetId: id,
-      details: { previousTier, reason },
-    });
-
-    res.json({
-      success: true,
-      message: 'Subscription removed successfully',
-    });
-  } catch (error) {
-    console.error('Error removing subscription:', error);
-    res.status(500).json({ error: 'Failed to remove subscription' });
   }
-});
+);
 
 /**
  * GET /api/admin/users/:id/subscription-history
@@ -4359,133 +4556,139 @@ router.get('/users/:id/subscription-history', authRequired, roleRequired('admin'
  * Bulk grant subscriptions to multiple users
  * Body: { userIds: string[], tier: string, duration: string, reason: string }
  */
-router.post('/bulk/subscriptions', authRequired, roleRequired('admin'), csrfProtection, async (req, res) => {
-  try {
-    const { userIds, tier, duration, reason } = req.body;
+router.post(
+  '/bulk/subscriptions',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    try {
+      const { userIds, tier, duration, reason } = req.body;
 
-    // Validate input
-    if (!Array.isArray(userIds) || userIds.length === 0) {
-      return res.status(400).json({ error: 'userIds must be a non-empty array' });
-    }
-
-    const validTiers = ['pro', 'pro_plus'];
-    if (!validTiers.includes(tier)) {
-      return res.status(400).json({ error: 'Invalid tier. Must be "pro" or "pro_plus"' });
-    }
-
-    const validDurations = ['7d', '30d', '90d', '1y', 'lifetime'];
-    if (!validDurations.includes(duration)) {
-      return res
-        .status(400)
-        .json({ error: 'Invalid duration. Must be 7d, 30d, 90d, 1y, or lifetime' });
-    }
-
-    const users = read('users');
-    const now = new Date();
-    const startDate = now.toISOString();
-    let endDate = null;
-
-    // Calculate end date based on duration
-    if (duration !== 'lifetime') {
-      const durationMap = {
-        '7d': 7,
-        '30d': 30,
-        '90d': 90,
-        '1y': 365,
-      };
-      const days = durationMap[duration];
-      const end = new Date(now);
-      end.setDate(end.getDate() + days);
-      endDate = end.toISOString();
-    }
-
-    const successfulUserIds = [];
-    const failedUserIds = [];
-
-    userIds.forEach(userId => {
-      const userIndex = users.findIndex(u => u.id === userId);
-
-      if (userIndex < 0) {
-        failedUserIds.push(userId);
-        return;
+      // Validate input
+      if (!Array.isArray(userIds) || userIds.length === 0) {
+        return res.status(400).json({ error: 'userIds must be a non-empty array' });
       }
 
-      const user = users[userIndex];
-      const previousTier = user.subscription?.tier || 'free';
-      const action =
-        !user.subscription || user.subscription.tier === 'free'
-          ? 'granted'
-          : tier !== previousTier
-            ? 'upgraded'
-            : 'renewed';
-
-      // Update user subscription
-      user.subscription = {
-        tier,
-        status: 'active',
-        startDate,
-        endDate,
-        grantedBy: req.user.id,
-        grantedAt: startDate,
-        reason: reason || 'Bulk admin grant',
-        autoRenew: false,
-      };
-
-      // Initialize subscription history if it doesn't exist
-      if (!user.subscriptionHistory) {
-        user.subscriptionHistory = [];
+      const validTiers = ['pro', 'pro_plus'];
+      if (!validTiers.includes(tier)) {
+        return res.status(400).json({ error: 'Invalid tier. Must be "pro" or "pro_plus"' });
       }
 
-      // Add to subscription history
-      user.subscriptionHistory.push({
-        tier,
-        action,
-        date: startDate,
-        adminId: req.user.id,
-        adminEmail: req.user.email,
-        reason: reason || 'Bulk admin grant',
-        previousTier,
-        duration,
-        endDate,
+      const validDurations = ['7d', '30d', '90d', '1y', 'lifetime'];
+      if (!validDurations.includes(duration)) {
+        return res
+          .status(400)
+          .json({ error: 'Invalid duration. Must be 7d, 30d, 90d, 1y, or lifetime' });
+      }
+
+      const users = read('users');
+      const now = new Date();
+      const startDate = now.toISOString();
+      let endDate = null;
+
+      // Calculate end date based on duration
+      if (duration !== 'lifetime') {
+        const durationMap = {
+          '7d': 7,
+          '30d': 30,
+          '90d': 90,
+          '1y': 365,
+        };
+        const days = durationMap[duration];
+        const end = new Date(now);
+        end.setDate(end.getDate() + days);
+        endDate = end.toISOString();
+      }
+
+      const successfulUserIds = [];
+      const failedUserIds = [];
+
+      userIds.forEach(userId => {
+        const userIndex = users.findIndex(u => u.id === userId);
+
+        if (userIndex < 0) {
+          failedUserIds.push(userId);
+          return;
+        }
+
+        const user = users[userIndex];
+        const previousTier = user.subscription?.tier || 'free';
+        const action =
+          !user.subscription || user.subscription.tier === 'free'
+            ? 'granted'
+            : tier !== previousTier
+              ? 'upgraded'
+              : 'renewed';
+
+        // Update user subscription
+        user.subscription = {
+          tier,
+          status: 'active',
+          startDate,
+          endDate,
+          grantedBy: req.user.id,
+          grantedAt: startDate,
+          reason: reason || 'Bulk admin grant',
+          autoRenew: false,
+        };
+
+        // Initialize subscription history if it doesn't exist
+        if (!user.subscriptionHistory) {
+          user.subscriptionHistory = [];
+        }
+
+        // Add to subscription history
+        user.subscriptionHistory.push({
+          tier,
+          action,
+          date: startDate,
+          adminId: req.user.id,
+          adminEmail: req.user.email,
+          reason: reason || 'Bulk admin grant',
+          previousTier,
+          duration,
+          endDate,
+        });
+
+        users[userIndex] = user;
+        successfulUserIds.push(userId);
       });
 
-      users[userIndex] = user;
-      successfulUserIds.push(userId);
-    });
+      // Save all updated users
+      write('users', users);
 
-    // Save all updated users
-    write('users', users);
+      // Log to audit
+      auditLog({
+        adminId: req.user.id,
+        adminEmail: req.user.email,
+        action: 'BULK_SUBSCRIPTIONS_GRANTED',
+        targetType: 'users',
+        targetId: 'bulk',
+        details: {
+          tier,
+          duration,
+          reason,
+          successCount: successfulUserIds.length,
+          failedCount: failedUserIds.length,
+          userIds: successfulUserIds,
+        },
+      });
 
-    // Log to audit
-    auditLog({
-      adminId: req.user.id,
-      adminEmail: req.user.email,
-      action: 'BULK_SUBSCRIPTIONS_GRANTED',
-      targetType: 'users',
-      targetId: 'bulk',
-      details: {
-        tier,
-        duration,
-        reason,
+      res.json({
+        success: true,
+        message: `Successfully granted subscriptions to ${successfulUserIds.length} user(s)`,
         successCount: successfulUserIds.length,
         failedCount: failedUserIds.length,
-        userIds: successfulUserIds,
-      },
-    });
-
-    res.json({
-      success: true,
-      message: `Successfully granted subscriptions to ${successfulUserIds.length} user(s)`,
-      successCount: successfulUserIds.length,
-      failedCount: failedUserIds.length,
-      successfulUserIds,
-      failedUserIds,
-    });
-  } catch (error) {
-    console.error('Error granting bulk subscriptions:', error);
-    res.status(500).json({ error: 'Failed to grant bulk subscriptions' });
+        successfulUserIds,
+        failedUserIds,
+      });
+    } catch (error) {
+      console.error('Error granting bulk subscriptions:', error);
+      res.status(500).json({ error: 'Failed to grant bulk subscriptions' });
+    }
   }
-});
+);
 
 /**
  * GET /api/maintenance/message (PUBLIC - no auth required)
