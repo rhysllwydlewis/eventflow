@@ -17,6 +17,31 @@
 <link rel='icon' href='/favicon.svg'>
 <script src="/assets/js/admin-navbar.js" defer></script>
   <link rel="stylesheet" href="/assets/css/mobile-optimizations.css"><link rel="stylesheet" href="/assets/css/ui-ux-fixes.css">
+<style>
+  /* Feature flags status styles */
+  .feature-flags-status {
+    margin-bottom: 1rem;
+    padding: 0.75rem;
+    border-radius: 4px;
+    font-size: 0.9rem;
+  }
+  .feature-flags-status-loading {
+    background: #f3f4f6;
+    color: #6b7280;
+  }
+  .feature-flags-status-saving {
+    background: #dbeafe;
+    color: #1e40af;
+  }
+  .feature-flags-status-saved {
+    background: #d1fae5;
+    color: #065f46;
+  }
+  .feature-flags-status-error {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+</style>
 </head>
 <body class="has-admin-navbar">
 <a href="#main-content" class="skip-link">Skip to main content</a>
@@ -180,7 +205,7 @@
       <h2>Feature Flags</h2>
       <p class="small">Enable or disable features across the platform.</p>
       
-      <div id="featureFlagsStatus" style="margin-bottom: 1rem; padding: 0.75rem; background: #f8f9fa; border-radius: 4px; font-size: 0.9rem; color: #666; display: none;">
+      <div id="featureFlagsStatus" class="feature-flags-status" style="display: none;">
         <strong>Status:</strong> <span id="featureFlagsStatusText">Loading...</span>
       </div>
       
@@ -497,6 +522,9 @@
     );
   });
   
+  // Constants
+  const STATUS_HIDE_DELAY_MS = 3000;
+  
   // Update feature flags status UI
   function updateFeatureFlagsStatus(status, text) {
     const statusEl = document.getElementById('featureFlagsStatus');
@@ -507,19 +535,7 @@
       statusTextEl.textContent = text || '';
       
       // Update colors based on status
-      if (status === 'loading') {
-        statusEl.style.background = '#f3f4f6';
-        statusEl.style.color = '#6b7280';
-      } else if (status === 'saving') {
-        statusEl.style.background = '#dbeafe';
-        statusEl.style.color = '#1e40af';
-      } else if (status === 'saved') {
-        statusEl.style.background = '#d1fae5';
-        statusEl.style.color = '#065f46';
-      } else if (status === 'error') {
-        statusEl.style.background = '#fee2e2';
-        statusEl.style.color = '#991b1b';
-      }
+      statusEl.className = `feature-flags-status feature-flags-status-${status}`;
     }
   }
   
@@ -634,7 +650,7 @@
           
           // safeAction will show success toast
           updateFeatureFlagsStatus('saved', 'Feature flags saved successfully');
-          setTimeout(() => updateFeatureFlagsStatus('hidden'), 3000);
+          setTimeout(() => updateFeatureFlagsStatus('hidden'), STATUS_HIDE_DELAY_MS);
           
           await loadFeatureFlags(); // Reload to get updated timestamp
           return result;
@@ -649,6 +665,11 @@
       // safeAction already showed error toast
       updateFeatureFlagsStatus('error', 'Error saving feature flags');
       setFeatureFlagsEnabled(true);
+      
+      // Re-enable save button to allow retry
+      if (saveBtn) {
+        saveBtn.disabled = false;
+      }
     }
   });
   
