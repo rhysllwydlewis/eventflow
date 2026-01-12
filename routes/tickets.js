@@ -8,6 +8,7 @@
 const express = require('express');
 const { authRequired } = require('../middleware/auth');
 const { writeLimiter } = require('../middleware/rateLimit');
+const { featureRequired } = require('../middleware/features');
 const { auditLog } = require('../middleware/audit');
 const dbUnified = require('../db-unified');
 const { uid } = require('../store');
@@ -18,7 +19,7 @@ const router = express.Router();
  * POST /api/tickets
  * Create a new support ticket
  */
-router.post('/', authRequired, writeLimiter, async (req, res) => {
+router.post('/', featureRequired('supportTickets'), authRequired, writeLimiter, async (req, res) => {
   try {
     const userId = req.user.id;
     const {

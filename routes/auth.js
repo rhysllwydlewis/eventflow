@@ -19,6 +19,7 @@ const {
 } = require('../middleware/auth');
 const { passwordOk } = require('../middleware/validation');
 const { authLimiter } = require('../middleware/rateLimit');
+const { featureRequired } = require('../middleware/features');
 const postmark = require('../utils/postmark');
 const tokenUtils = require('../utils/token');
 const { validateToken } = require('../middleware/token');
@@ -60,7 +61,22 @@ function updateLastLogin(userId) {
  * POST /api/auth/register
  * Register a new user account
  */
-router.post('/register', authLimiter, async (req, res) => {
+router.post('/register', async (req, res, next) => {
+  // Check supplier application feature flag if registering as supplier
+  if (req.body.role === 'supplier') {
+    const { getFeatureFlags } = require('../middleware/features');
+    const features = await getFeatureFlags();
+    if (!features.supplierApplications) {
+      return res.status(503).json({
+        error: 'Feature temporarily unavailable',
+        message: 'Supplier applications are currently disabled. Please try again later.',
+        feature: 'supplierApplications',
+      });
+    }
+  }
+  // Check registration feature flag for all registrations
+  next();
+}, featureRequired('registration'), authLimiter, async (req, res) => {
   const {
     firstName,
     lastName,
