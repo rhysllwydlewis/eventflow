@@ -1,202 +1,167 @@
-# Static E2E Mode Implementation - PROOF
+# CSS Consolidation - PROOF.md
 
-## Summary
-
-This PR implements a lightweight "static E2E mode" that allows Playwright tests to run without requiring MongoDB or the full backend server. This makes CI/CD faster, more reliable, and easier to maintain while still testing critical UI functionality.
+## Overview
+This document explains the changes made to consolidate EF header/menu CSS behavior into `navbar.css` as the single source of truth, eliminating CSS collisions and making z-index management consistent.
 
 ## Changes Made
 
-### Task A: Static E2E Mode (No Backend Required)
+### Task 1: Removed/Scoped Legacy Nav Collisions
 
-#### 1. Static Server (`scripts/serve-static.js`)
+#### 1. `public/assets/css/styles.css`
+**What was removed:**
+- Lines 604-690: Legacy `.nav-toggle`, `.nav-toggle-bar`, `.nav-menu` and `body.nav-open .nav-menu` rules that conflicted with EF header system
+- Lines 711-713: Duplicate `.nav-toggle` display rule in media query
+- Lines 720-790: Entire duplicate `.nav-menu` block in @media (max-width:720px) with conflicting z-index, positioning, and visibility rules
 
-- Created a lightweight Express-based static server
-- Serves files from the `/public` directory
-- Includes a stub `/api/health` endpoint for Playwright health checks
-- Disables caching for testing reliability
+**Why it was removed:**
+- These legacy selectors were for the old navigation system before the EF header migration
+- They caused CSS collisions: z-index conflicts, pointer-events conflicts, and visibility issues
+- The EF header system (in navbar.css) uses `.ef-mobile-toggle` and `#ef-mobile-menu` instead
+- Having two sets of nav rules made debugging impossible and caused the mobile menu collapse bug
 
-#### 2. Playwright Configuration (`playwright.config.js`)
+**What replaced it:**
+- Scoped all legacy classes to `.legacy-nav-toggle`, `.legacy-nav-menu`, etc. with clear comments indicating they're for legacy pages only
+- This preserves backward compatibility for any pages not yet migrated to EF header while preventing collisions
 
-- **Dynamic mode selection**: Automatically detects environment
-  - **CI (default)**: Uses static mode (port 4173)
-  - **Local**: Uses static mode by default, full mode with `E2E_MODE=full`
-- **Base URL**: Automatically set based on mode
-  - Static: `http://127.0.0.1:4173`
-  - Full: `http://localhost:3000`
+#### 2. `public/assets/css/eventflow-17.0.0.css`
+**What was removed:**
+- Lines 128-175: `.nav-toggle` styling rules including hover states, dark mode support, and the hamburger icon
 
-#### 3. Package.json Scripts
+**Why it was removed:**
+- Duplicate implementation of nav toggle that conflicts with navbar.css
+- EF header uses `.ef-mobile-toggle` as defined in navbar.css, not `.nav-toggle`
 
-```json
-"test:e2e:static": "playwright test --grep-invert @backend"
-"test:e2e:full": "E2E_MODE=full playwright test"
-```
+**What replaced it:**
+- Scoped to `.legacy-nav-toggle` with clear documentation
 
-#### 4. GitHub Actions Workflow (`.github/workflows/e2e.yml`)
+#### 3. `public/assets/css/mobile-optimizations.css`
+**What was removed:**
+- Lines 63-73: Duplicate `.ef-header` positioning and z-index rules
 
-- Updated to run `npm run test:e2e:static`
-- Removed MongoDB and backend environment variables
-- CI now uses `CI=true` which triggers static mode automatically
+**Why it was removed:**
+- These rules duplicated and potentially conflicted with navbar.css
+- navbar.css is the authoritative source for `.ef-header` positioning, z-index (2000), and backdrop properties
+- Having duplicate rules in multiple files makes it impossible to maintain consistent behavior
 
-### Task B: Backend Test Tagging
+**What replaced it:**
+- Comment indicating that header positioning defers to navbar.css
 
-Tagged the following test suites with `@backend` (excluded from static CI runs):
+#### 4. `public/assets/css/ui-ux-fixes.css`
+**What was removed:**
+- Lines 57-59: Duplicate `body.ef-menu-open { overflow: hidden !important; }` rule
 
-- `auth.spec.js` - Login with invalid credentials test
-- `auth-navbar-logout.spec.js` - All authentication flow tests
-- `supplier-reviews.spec.js` - Review widget integration tests
-- `packages.spec.js` - Package browsing and booking tests
-- `suppliers.spec.js` - Supplier search and filtering tests
+**Why it was removed:**
+- This exact rule is already defined in navbar.css at line 631 and lines 813-815
+- Having it in multiple places creates maintenance issues and potential conflicts
 
-**Tests that DO run in static mode:**
+**What replaced it:**
+- Comment indicating that scroll lock is handled by navbar.css
 
-- Mobile menu A11Y tests (focus trap, ARIA attributes)
-- Mobile navigation tests (burger menu, bottom nav)
-- Homepage production fixes
-- Navbar fixes and rebuild tests
-- Visual regression tests
+### Task 2: Created Nav Design Tokens
 
-### Task C: Console Noise Cleanup
+**What was added:**
+- New "NAV DESIGN TOKENS" section at the very top of navbar.css (before existing CSS variables)
+- Four CSS custom properties:
+  ```css
+  --ef-header-height: 64px;
+  --ef-z-header: 2000;
+  --ef-z-menu: 2001;
+  --ef-z-backdrop: 1998;
+  ```
 
-Updated JavaScript files to respect the `DEBUG` flag:
+**What was refactored:**
+- Replaced all hardcoded `z-index: 2000` with `var(--ef-z-header)`
+- Replaced all hardcoded `z-index: 2001` with `var(--ef-z-menu)`
+- Replaced all hardcoded `z-index: 1998` with `var(--ef-z-backdrop)`
+- Replaced hardcoded `64px` header height with `var(--ef-header-height)` in:
+  - `.ef-header-content` height
+  - `.ef-mobile-menu` top position
+  - All mobile menu height calculations
 
-#### `public/assets/js/burger-menu.js`
+**Why this matters:**
+- Single point of control: Change z-index hierarchy in one place
+- No more magic numbers scattered across the file
+- Easier to understand the stacking context at a glance
+- Future-proof: Can easily adjust values for different contexts
 
-- Wrapped the only unwrapped `console.warn` with `if (DEBUG)`
-- Already had `DEBUG = false` flag in place
-- All other console statements were already properly wrapped
+### Task 3: Made Menu Height Rule Robust
 
-#### `public/assets/js/navbar.js`
+**What was verified/added:**
+- Mobile menu already used `calc(100vh - var(--ef-header-height, 64px))` for both height and max-height ✓
+- Already had `overflow-y: auto` ✓
+- **Added:** `-webkit-overflow-scrolling: touch` for smooth iOS Safari scrolling
 
-- Wrapped one unwrapped `console.warn` with `if (DEBUG)`
-- Already had `DEBUG = false` flag in place
-- `console.error` intentionally left unwrapped for critical errors
+**Why this matters:**
+- Robust fallback: `var(--ef-header-height, 64px)` ensures a fallback value
+- iOS Safari compatibility: Prevents janky scrolling on mobile devices
+- Uses calc() for dynamic height based on viewport, not fragile top/bottom positioning
 
-**Result**: No console.log or console.warn output in production by default
+### Task 4: Added Regression Tests
 
-### Task D: Visual Regression Tests
+**What was created:**
+- New test file: `e2e/nav-css-regression.spec.js`
+- Four comprehensive tests:
+  1. Menu height > 200px when opened
+  2. At least 5 visible links
+  3. Correct z-index hierarchy (header: 2000, menu: 2001)
+  4. Proper height calculation with overflow-y: auto
+  5. Body scroll lock (overflow: hidden) when menu open
 
-Created `e2e/visual-regression.spec.js` with screenshot tests:
+**Why this matters:**
+- Prevents future CSS collisions from being introduced
+- Catches regressions in mobile menu behavior
+- Documents expected behavior in executable form
 
-1. **Mobile menu closed** (395×653 viewport)
-2. **Mobile menu open** (395×653 viewport)
-3. **Hero search button layout** (395×653 viewport)
-4. **Menu toggle stability** - Cross-browser consistency check
+## Impact
 
-**Features:**
+### Before (Problems):
+1. **CSS Collisions**: Multiple files defining nav behavior led to conflicts
+2. **Magic Numbers**: z-index values (2000, 2001, 1998, 1000, etc.) scattered throughout files
+3. **Maintenance Nightmare**: Changing nav behavior required editing 5+ files
+4. **Mobile Menu Collapse**: CSS conflicts caused menu to be invisible on mobile
+5. **Unclear Authority**: Which file is the source of truth?
 
-- Animations disabled for stable screenshots
-- Tagged with `@visual` for selective running
-- Screenshots stored in `e2e/visual-regression.spec.js-snapshots/`
+### After (Solutions):
+1. **Single Source of Truth**: navbar.css controls all EF header/menu behavior
+2. **Design Tokens**: All z-index and dimensions in one place at the top
+3. **Easy Maintenance**: Change one variable to affect entire system
+4. **No Collisions**: Legacy classes scoped with `.legacy-*` prefix
+5. **Clear Documentation**: Comments explain what's legacy vs. active
+6. **Regression Protection**: Tests prevent future breakage
 
-## How to Use
+## Files Modified
 
-### Running Static E2E Tests Locally
+1. ✅ `public/assets/css/navbar.css` - Added nav tokens, refactored z-index to use variables, added iOS Safari support
+2. ✅ `public/assets/css/styles.css` - Scoped legacy nav rules to `.legacy-*` classes
+3. ✅ `public/assets/css/eventflow-17.0.0.css` - Scoped legacy nav toggle to `.legacy-nav-toggle`
+4. ✅ `public/assets/css/mobile-optimizations.css` - Removed duplicate `.ef-header` rules
+5. ✅ `public/assets/css/ui-ux-fixes.css` - Removed duplicate `body.ef-menu-open` rule
 
+## Files Created
+
+1. ✅ `e2e/nav-css-regression.spec.js` - Regression tests for mobile menu behavior
+2. ✅ `PROOF.md` - This documentation
+3. ✅ `PROOF_STATIC_E2E.md` - Previous PROOF.md backed up
+
+## Testing
+
+Run the regression tests:
 ```bash
-# Run all static tests (excludes @backend tests)
-npm run test:e2e:static
-
-# Run with UI mode
-npm run test:e2e:static -- --ui
-
-# Run specific test file
-npm run test:e2e:static -- e2e/mobile-menu-a11y.spec.js
-
-# Run only visual regression tests
-npm run test:e2e:static -- --grep @visual
+npm run test:e2e -- nav-css-regression.spec.js
 ```
 
-### Running Full E2E Tests (with Backend)
-
+Run all e2e tests to ensure no regressions:
 ```bash
-# Start MongoDB first, then:
-npm run test:e2e:full
+npm run test:e2e
 ```
 
-### In CI/CD
+## Summary
 
-The GitHub Actions workflow automatically runs in static mode:
+navbar.css is now the **single, authoritative source** for:
+- EF header positioning and z-index
+- Mobile menu positioning, z-index, height, and visibility
+- Backdrop z-index and styling  
+- Body scroll locking when menu is open
+- All nav-related design tokens
 
-```bash
-npm run test:e2e:static
-```
-
-## Benefits
-
-1. **Faster CI**: No MongoDB setup, faster startup (~3s vs ~30s)
-2. **More Reliable**: Eliminates database-related flakiness
-3. **Easier Debugging**: Static HTML means consistent state
-4. **Cost Effective**: No need for database service in CI
-5. **Comprehensive Coverage**: Still tests all UI interactions, accessibility, and visual regressions
-
-## Test Coverage
-
-### Static Mode Tests (146 tests)
-
-- ✅ Mobile menu A11Y (90 tests across 5 pages × 2 viewports)
-- ✅ Mobile navigation and burger menu (17 tests)
-- ✅ Navbar fixes and layout (12 tests)
-- ✅ Homepage production fixes (13 tests)
-- ✅ Visual regression screenshots (4 tests)
-- ✅ Auth page UI tests (form display, validation UI)
-
-### Backend-Only Tests (Excluded in Static Mode)
-
-- ❌ Login/logout with real API calls
-- ❌ Package browsing with database data
-- ❌ Supplier search with database data
-- ❌ Review widget with API integration
-
-## Verification
-
-### Static Server Works
-
-```bash
-$ curl http://127.0.0.1:4173/api/health
-{"status":"ok","mode":"static"}
-```
-
-### Tests Pass in Static Mode
-
-```bash
-$ npm run test:e2e:static -- --project=chromium e2e/mobile-navigation.spec.js:22
-Running 1 test using 1 worker
-[1/1] › mobile-navigation.spec.js:22:7 › should display burger menu button on home page
-  1 passed (2.1s)
-```
-
-### Screenshots Generated
-
-```bash
-$ ls e2e/visual-regression.spec.js-snapshots/
-hero-search-layout-chromium-linux.png
-menu-toggle-stability-chromium-linux.png
-mobile-menu-closed-chromium-linux.png
-mobile-menu-open-chromium-linux.png
-```
-
-## Files Changed
-
-- ✅ `scripts/serve-static.js` (new)
-- ✅ `playwright.config.js` (updated)
-- ✅ `package.json` (added scripts)
-- ✅ `.github/workflows/e2e.yml` (simplified)
-- ✅ `e2e/visual-regression.spec.js` (new)
-- ✅ `e2e/auth.spec.js` (tagged @backend)
-- ✅ `e2e/auth-navbar-logout.spec.js` (tagged @backend)
-- ✅ `e2e/supplier-reviews.spec.js` (tagged @backend)
-- ✅ `e2e/packages.spec.js` (tagged @backend)
-- ✅ `e2e/suppliers.spec.js` (tagged @backend)
-- ✅ `public/assets/js/burger-menu.js` (console cleanup)
-- ✅ `public/assets/js/navbar.js` (console cleanup)
-
-## Next Steps
-
-This implementation provides a solid foundation for:
-
-1. Running E2E tests in CI without external dependencies
-2. Fast local development and testing
-3. Visual regression monitoring
-4. Accessibility compliance verification
-
-The `@backend` tag allows us to selectively run full integration tests when needed while keeping the majority of tests fast and reliable.
+All other CSS files have been cleaned up to defer to navbar.css, with legacy classes scoped for backward compatibility.
