@@ -441,13 +441,13 @@
   // Load site configuration
   async function loadSiteConfig() {
     try {
-      const config = await AdminShared.api('/api/admin/settings/site');
+      const config = await AdminShared.adminFetch('/api/admin/settings/site', { method: 'GET' });
       document.getElementById('siteName').value = config.name || '';
       document.getElementById('siteTagline').value = config.tagline || '';
       document.getElementById('contactEmail').value = config.contactEmail || '';
       document.getElementById('supportEmail').value = config.supportEmail || '';
     } catch (err) {
-      console.error('Failed to load site config:', err);
+      AdminShared.debugError('Failed to load site config:', err);
     }
   }
   
@@ -476,18 +476,29 @@
       supportEmail: supportEmail,
     };
     
-    try {
-      await AdminShared.api('/api/admin/settings/site', 'PUT', data);
-      AdminShared.showToast('Site configuration saved', 'success');
-    } catch (err) {
-      AdminShared.showToast(`Failed to save: ${err.message}`, 'error');
-    }
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    await AdminShared.safeAction(
+      submitBtn,
+      async () => {
+        return await AdminShared.adminFetch('/api/admin/settings/site', {
+          method: 'PUT',
+          body: data,
+        });
+      },
+      {
+        loadingText: 'Saving...',
+        successMessage: 'Site configuration saved',
+        errorMessage: 'Failed to save configuration',
+      }
+    );
   });
   
   // Load feature flags
   async function loadFeatureFlags() {
     try {
-      const flags = await AdminShared.api('/api/admin/settings/features');
+      const flags = await AdminShared.adminFetch('/api/admin/settings/features', {
+        method: 'GET',
+      });
       document.getElementById('featureRegistration').checked = flags.registration !== false;
       document.getElementById('featureSupplierApply').checked = flags.supplierApplications !== false;
       document.getElementById('featureReviews').checked = flags.reviews !== false;
@@ -503,7 +514,7 @@
         document.getElementById('featureFlagsLastUpdated').style.display = 'block';
       }
     } catch (err) {
-      console.error('Failed to load feature flags:', err);
+      AdminShared.debugError('Failed to load feature flags:', err);
     }
   }
   
@@ -518,17 +529,22 @@
       if (!registrationChecked) disabledFeatures.push('User Registration');
       if (!reviewsChecked) disabledFeatures.push('Package Reviews');
       
-      const confirmMessage = `⚠️ You are about to disable: ${disabledFeatures.join(', ')}.\n\nThis will prevent users from using these features.\n\nAre you sure you want to continue?`;
+      const confirmMessage = `You are about to disable: ${disabledFeatures.join(', ')}.\n\nThis will prevent users from using these features.\n\nAre you sure you want to continue?`;
       
-      if (!confirm(confirmMessage)) {
+      const confirmed = await AdminShared.showConfirmModal({
+        title: 'Disable Critical Features?',
+        message: confirmMessage,
+        confirmText: 'Yes, Disable',
+        cancelText: 'Cancel',
+        type: 'warning',
+      });
+      
+      if (!confirmed) {
         return;
       }
     }
     
     const saveBtn = document.getElementById('saveFeatureFlags');
-    const originalText = saveBtn.textContent;
-    saveBtn.disabled = true;
-    saveBtn.textContent = 'Saving...';
     
     const data = {
       registration: registrationChecked,
@@ -539,16 +555,22 @@
       pexelsCollage: document.getElementById('featurePexelsCollage').checked,
     };
     
-    try {
-      await AdminShared.api('/api/admin/settings/features', 'PUT', data);
-      AdminShared.showToast('Feature flags updated', 'success');
-      await loadFeatureFlags(); // Reload to get updated timestamp
-    } catch (err) {
-      AdminShared.showToast(`Failed to save: ${err.message}`, 'error');
-    } finally {
-      saveBtn.disabled = false;
-      saveBtn.textContent = originalText;
-    }
+    await AdminShared.safeAction(
+      saveBtn,
+      async () => {
+        const result = await AdminShared.adminFetch('/api/admin/settings/features', {
+          method: 'PUT',
+          body: data,
+        });
+        await loadFeatureFlags(); // Reload to get updated timestamp
+        return result;
+      },
+      {
+        loadingText: 'Saving...',
+        successMessage: 'Feature flags updated',
+        errorMessage: 'Failed to save feature flags',
+      }
+    );
   });
   
   // Load maintenance mode
@@ -556,7 +578,9 @@
   
   async function loadMaintenanceMode() {
     try {
-      const maintenance = await AdminShared.api('/api/admin/settings/maintenance');
+      const maintenance = await AdminShared.adminFetch('/api/admin/settings/maintenance', {
+        method: 'GET',
+      });
       const isEnabled = maintenance.enabled || false;
       document.getElementById('maintenanceMode').checked = isEnabled;
       document.getElementById('maintenanceMessage').value = maintenance.message || '';
@@ -572,7 +596,7 @@
         stopMaintenanceCountdown();
       }
     } catch (err) {
-      console.error('Failed to load maintenance mode:', err);
+      AdminShared.debugError('Failed to load maintenance mode:', err);
     }
   }
   
@@ -653,32 +677,52 @@
     const currentState = document.getElementById('maintenanceMode').checked;
     const newState = !currentState;
     
-    if (newState && !AdminShared.confirm('Enable maintenance mode? The site will be inaccessible to non-admin users.')) {
+    const confirmed = await AdminShared.showConfirmModal({
+      title: newState ? 'Enable Maintenance Mode?' : 'Disable Maintenance Mode?',
+      message: newState
+        ? 'The site will be inaccessible to non-admin users.'
+        : 'The site will become accessible to all users.',
+      confirmText: newState ? 'Enable' : 'Disable',
+      cancelText: 'Cancel',
+      type: newState ? 'warning' : 'info',
+    });
+    
+    if (!confirmed) {
       return;
     }
     
-    if (!newState && !AdminShared.confirm('Disable maintenance mode? The site will become accessible to all users.')) {
-      return;
-    }
-    
-    try {
-      const durationValue = document.getElementById('maintenanceDuration').value;
-      const data = {
-        enabled: newState,
-        message: document.getElementById('maintenanceMessage').value || "We're performing scheduled maintenance. We'll be back soon!",
-        duration: durationValue ? Number(durationValue) : null,
-      };
-      
-      await AdminShared.api('/api/admin/settings/maintenance', 'PUT', data);
-      document.getElementById('maintenanceMode').checked = newState;
-      updateMaintenanceButton(newState);
-      AdminShared.showToast(`Maintenance mode ${newState ? 'enabled' : 'disabled'}`, 'success');
-      
-      // Reload to update countdown
-      await loadMaintenanceMode();
-    } catch (err) {
-      AdminShared.showToast(`Failed to toggle: ${err.message}`, 'error');
-    }
+    const btn = document.getElementById('quickToggleMaintenance');
+    await AdminShared.safeAction(
+      btn,
+      async () => {
+        const durationValue = document.getElementById('maintenanceDuration').value;
+        const data = {
+          enabled: newState,
+          message:
+            document.getElementById('maintenanceMessage').value ||
+            "We're performing scheduled maintenance. We'll be back soon!",
+          duration: durationValue ? Number(durationValue) : null,
+        };
+
+        const result = await AdminShared.adminFetch('/api/admin/settings/maintenance', {
+          method: 'PUT',
+          body: data,
+        });
+        
+        document.getElementById('maintenanceMode').checked = newState;
+        updateMaintenanceButton(newState);
+        
+        // Reload to update countdown
+        await loadMaintenanceMode();
+        
+        return result;
+      },
+      {
+        loadingText: 'Updating...',
+        successMessage: `Maintenance mode ${newState ? 'enabled' : 'disabled'}`,
+        errorMessage: 'Failed to toggle maintenance mode',
+      }
+    );
   });
   
   // Save maintenance mode
@@ -690,20 +734,42 @@
       duration: durationValue ? Number(durationValue) : null,
     };
     
-    if (data.enabled && !AdminShared.confirm('Are you sure you want to enable maintenance mode? The site will be inaccessible to non-admin users.')) {
-      return;
+    if (data.enabled) {
+      const confirmed = await AdminShared.showConfirmModal({
+        title: 'Enable Maintenance Mode?',
+        message: 'Are you sure? The site will be inaccessible to non-admin users.',
+        confirmText: 'Enable',
+        cancelText: 'Cancel',
+        type: 'warning',
+      });
+      
+      if (!confirmed) {
+        return;
+      }
     }
     
-    try {
-      await AdminShared.api('/api/admin/settings/maintenance', 'PUT', data);
-      updateMaintenanceButton(data.enabled);
-      AdminShared.showToast('Maintenance mode updated', 'success');
-      
-      // Reload to update countdown
-      await loadMaintenanceMode();
-    } catch (err) {
-      AdminShared.showToast(`Failed to save: ${err.message}`, 'error');
-    }
+    const saveBtn = document.getElementById('saveMaintenanceMode');
+    await AdminShared.safeAction(
+      saveBtn,
+      async () => {
+        const result = await AdminShared.adminFetch('/api/admin/settings/maintenance', {
+          method: 'PUT',
+          body: data,
+        });
+        
+        updateMaintenanceButton(data.enabled);
+        
+        // Reload to update countdown
+        await loadMaintenanceMode();
+        
+        return result;
+      },
+      {
+        loadingText: 'Saving...',
+        successMessage: 'Maintenance mode updated',
+        errorMessage: 'Failed to update maintenance mode',
+      }
+    );
   });
   
   // Email template buttons
@@ -713,7 +779,10 @@
       currentEmailTemplate = templateName;
       
       try {
-        const template = await AdminShared.api(`/api/admin/settings/email-templates/${templateName}`);
+        const template = await AdminShared.adminFetch(
+          `/api/admin/settings/email-templates/${templateName}`,
+          { method: 'GET' }
+        );
         document.getElementById('emailSubject').value = template.subject || '';
         document.getElementById('emailBody').value = template.body || '';
         document.getElementById('emailTemplateEditor').style.display = 'block';
@@ -732,12 +801,24 @@
       body: document.getElementById('emailBody').value,
     };
     
-    try {
-      await AdminShared.api(`/api/admin/settings/email-templates/${currentEmailTemplate}`, 'PUT', data);
-      AdminShared.showToast('Email template saved', 'success');
-    } catch (err) {
-      AdminShared.showToast(`Failed to save: ${err.message}`, 'error');
-    }
+    const saveBtn = document.getElementById('saveEmailTemplate');
+    await AdminShared.safeAction(
+      saveBtn,
+      async () => {
+        return await AdminShared.adminFetch(
+          `/api/admin/settings/email-templates/${currentEmailTemplate}`,
+          {
+            method: 'PUT',
+            body: data,
+          }
+        );
+      },
+      {
+        loadingText: 'Saving...',
+        successMessage: 'Email template saved',
+        errorMessage: 'Failed to save template',
+      }
+    );
   });
   
   // Preview email
@@ -775,45 +856,74 @@
   document.getElementById('resetEmail').addEventListener('click', async () => {
     if (!currentEmailTemplate) return;
     
-    if (!AdminShared.confirm('Reset this template to default? Your changes will be lost.')) {
+    const confirmed = await AdminShared.showConfirmModal({
+      title: 'Reset Template?',
+      message: 'Reset this template to default? Your changes will be lost.',
+      confirmText: 'Reset',
+      cancelText: 'Cancel',
+      type: 'warning',
+    });
+    
+    if (!confirmed) {
       return;
     }
     
-    try {
-      await AdminShared.api(`/api/admin/settings/email-templates/${currentEmailTemplate}/reset`, 'POST');
-      AdminShared.showToast('Template reset to default', 'success');
-      // Reload template
-      const template = await AdminShared.api(`/api/admin/settings/email-templates/${currentEmailTemplate}`);
-      document.getElementById('emailSubject').value = template.subject || '';
-      document.getElementById('emailBody').value = template.body || '';
-    } catch (err) {
-      AdminShared.showToast(`Failed to reset: ${err.message}`, 'error');
-    }
+    const resetBtn = document.getElementById('resetEmail');
+    await AdminShared.safeAction(
+      resetBtn,
+      async () => {
+        await AdminShared.adminFetch(
+          `/api/admin/settings/email-templates/${currentEmailTemplate}/reset`,
+          { method: 'POST' }
+        );
+        
+        // Reload template
+        const template = await AdminShared.adminFetch(
+          `/api/admin/settings/email-templates/${currentEmailTemplate}`,
+          { method: 'GET' }
+        );
+        document.getElementById('emailSubject').value = template.subject || '';
+        document.getElementById('emailBody').value = template.body || '';
+        
+        return template;
+      },
+      {
+        loadingText: 'Resetting...',
+        successMessage: 'Template reset to default',
+        errorMessage: 'Failed to reset template',
+      }
+    );
   });
   
   // Load system info
   async function loadSystemInfo() {
     try {
-      const info = await AdminShared.api('/api/admin/settings/system-info');
+      const info = await AdminShared.adminFetch('/api/admin/settings/system-info', {
+        method: 'GET',
+      });
       document.getElementById('systemVersion').textContent = info.version || 'v17.0.0';
       document.getElementById('systemEnv').textContent = info.environment || 'Production';
       document.getElementById('systemDB').textContent = info.database || 'MongoDB';
       document.getElementById('systemUptime').textContent = info.uptime || '-';
     } catch (err) {
-      console.error('Failed to load system info:', err);
+      AdminShared.debugError('Failed to load system info:', err);
     }
   }
   
   // Load audit logs
   async function loadAuditLogs() {
     try {
-      const response = await AdminShared.api('/api/admin/audit-logs?limit=20&targetType=features,settings,maintenance');
+      const response = await AdminShared.adminFetch(
+        '/api/admin/audit-logs?limit=20&targetType=features,settings,maintenance',
+        { method: 'GET' }
+      );
       const logs = response.logs || [];
       
       const container = document.getElementById('auditLogContainer');
       
       if (logs.length === 0) {
-        container.innerHTML = '<div style="padding: 2rem; text-align: center; color: #999;">No audit logs found</div>';
+        container.innerHTML =
+          '<div style="padding: 2rem; text-align: center; color: #999;">No audit logs found</div>';
         return;
       }
       
@@ -836,15 +946,16 @@
         `;
       }).join('');
     } catch (err) {
-      console.error('Failed to load audit logs:', err);
-      document.getElementById('auditLogContainer').innerHTML = '<div style="padding: 2rem; text-align: center; color: #e74c3c;">Failed to load audit logs</div>';
+      AdminShared.debugError('Failed to load audit logs:', err);
+      document.getElementById('auditLogContainer').innerHTML =
+        '<div style="padding: 2rem; text-align: center; color: #e74c3c;">Failed to load audit logs</div>';
     }
   }
   
   // Load database health
   async function loadDatabaseHealth() {
     try {
-      const status = await AdminShared.api('/api/admin/db-status');
+      const status = await AdminShared.adminFetch('/api/admin/db-status', { method: 'GET' });
       
       const statusEl = document.getElementById('dbConnectionStatus');
       const indicatorEl = document.getElementById('dbStatusIndicator');
@@ -859,10 +970,11 @@
         indicatorEl.style.background = '#e74c3c';
       }
       
-      backendEl.textContent = status.dbType === 'mongodb' ? 'MongoDB (Primary)' : 'Local Files (Fallback)';
+      backendEl.textContent =
+        status.dbType === 'mongodb' ? 'MongoDB (Primary)' : 'Local Files (Fallback)';
       lastOpEl.textContent = new Date().toLocaleString();
     } catch (err) {
-      console.error('Failed to load database health:', err);
+      AdminShared.debugError('Failed to load database health:', err);
       document.getElementById('dbConnectionStatus').textContent = 'Error checking status';
       document.getElementById('dbStatusIndicator').style.background = '#e74c3c';
     }
@@ -871,9 +983,15 @@
   // Export settings
   document.getElementById('exportSettings').addEventListener('click', async () => {
     try {
-      const settings = await AdminShared.api('/api/admin/settings/site');
-      const features = await AdminShared.api('/api/admin/settings/features');
-      const maintenance = await AdminShared.api('/api/admin/settings/maintenance');
+      const settings = await AdminShared.adminFetch('/api/admin/settings/site', {
+        method: 'GET',
+      });
+      const features = await AdminShared.adminFetch('/api/admin/settings/features', {
+        method: 'GET',
+      });
+      const maintenance = await AdminShared.adminFetch('/api/admin/settings/maintenance', {
+        method: 'GET',
+      });
       
       const exportData = {
         exported: new Date().toISOString(),
@@ -892,7 +1010,7 @@
       
       AdminShared.showToast('Settings exported successfully', 'success');
     } catch (err) {
-      console.error('Failed to export settings:', err);
+      AdminShared.debugError('Failed to export settings:', err);
       AdminShared.showToast('Failed to export settings', 'error');
     }
   });
@@ -902,7 +1020,7 @@
     document.getElementById('importFileInput').click();
   });
   
-  document.getElementById('importFileInput').addEventListener('change', async (e) => {
+  document.getElementById('importFileInput').addEventListener('change', async e => {
     const file = e.target.files[0];
     if (!file) return;
     
@@ -910,24 +1028,41 @@
       const text = await file.text();
       const data = JSON.parse(text);
       
-      if (!confirm('⚠️ This will overwrite your current settings. Are you sure you want to continue?')) {
+      const confirmed = await AdminShared.showConfirmModal({
+        title: 'Import Settings?',
+        message: 'This will overwrite your current settings. Are you sure you want to continue?',
+        confirmText: 'Import',
+        cancelText: 'Cancel',
+        type: 'warning',
+      });
+      
+      if (!confirmed) {
         e.target.value = '';
         return;
       }
       
       // Import site settings
       if (data.site) {
-        await AdminShared.api('/api/admin/settings/site', 'PUT', data.site);
+        await AdminShared.adminFetch('/api/admin/settings/site', {
+          method: 'PUT',
+          body: data.site,
+        });
       }
       
       // Import feature flags
       if (data.features) {
-        await AdminShared.api('/api/admin/settings/features', 'PUT', data.features);
+        await AdminShared.adminFetch('/api/admin/settings/features', {
+          method: 'PUT',
+          body: data.features,
+        });
       }
       
       // Import maintenance settings (only if not currently enabled)
       if (data.maintenance && !data.maintenance.enabled) {
-        await AdminShared.api('/api/admin/settings/maintenance', 'PUT', data.maintenance);
+        await AdminShared.adminFetch('/api/admin/settings/maintenance', {
+          method: 'PUT',
+          body: data.maintenance,
+        });
       }
       
       AdminShared.showToast('Settings imported successfully', 'success');
@@ -939,7 +1074,7 @@
       
       e.target.value = '';
     } catch (err) {
-      console.error('Failed to import settings:', err);
+      AdminShared.debugError('Failed to import settings:', err);
       AdminShared.showToast('Failed to import settings: ' + err.message, 'error');
       e.target.value = '';
     }
