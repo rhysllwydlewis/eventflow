@@ -1,7 +1,7 @@
 /**
  * EventFlow Notification System - Client
  * Real-time notification handling with WebSocket and desktop notifications
- * 
+ *
  * Features:
  * - Real-time notifications via WebSocket
  * - Desktop notifications (with permission)
@@ -260,7 +260,9 @@
   }
 
   function showDesktopNotification(notification) {
-    if (!state.hasDesktopPermission) return;
+    if (!state.hasDesktopPermission) {
+      return;
+    }
 
     try {
       const desktopNotif = new Notification(notification.title, {
@@ -336,7 +338,9 @@
 
     // Add click handler for whole toast
     toast.addEventListener('click', e => {
-      if (e.target === closeBtn) return;
+      if (e.target === closeBtn) {
+        return;
+      }
 
       markAsRead(notification.id);
 
@@ -390,10 +394,14 @@
 
   function updateDropdown() {
     const dropdown = document.getElementById('notification-dropdown');
-    if (!dropdown) return;
+    if (!dropdown) {
+      return;
+    }
 
     const list = dropdown.querySelector('.notification-list');
-    if (!list) return;
+    if (!list) {
+      return;
+    }
 
     if (state.notifications.length === 0) {
       list.innerHTML = '<div class="notification-empty">No notifications</div>';
@@ -428,7 +436,9 @@
       const id = item.dataset.id;
 
       item.addEventListener('click', e => {
-        if (e.target.dataset.action) return; // Let button handlers deal with it
+        if (e.target.dataset.action) {
+          return;
+        } // Let button handlers deal with it
 
         const notification = state.notifications.find(n => n.id === id);
         if (notification) {
@@ -463,7 +473,9 @@
 
   function initDropdown() {
     const bell = document.getElementById('notification-bell');
-    if (!bell) return;
+    if (!bell) {
+      return;
+    }
 
     // Create dropdown if it doesn't exist
     let dropdown = document.getElementById('notification-dropdown');
@@ -530,6 +542,12 @@
   // ==========================================
 
   function getUserFromStorage() {
+    // Use centralized auth state if available
+    const authState = window.__authState || window.AuthStateManager;
+    if (authState && typeof authState.getUser === 'function') {
+      return authState.getUser();
+    }
+    // Fallback
     try {
       const userStr = localStorage.getItem('user');
       return userStr ? JSON.parse(userStr) : null;
@@ -549,10 +567,18 @@
     const now = new Date();
     const seconds = Math.floor((now - date) / 1000);
 
-    if (seconds < 60) return 'Just now';
-    if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
-    if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
-    if (seconds < 604800) return `${Math.floor(seconds / 86400)}d ago`;
+    if (seconds < 60) {
+      return 'Just now';
+    }
+    if (seconds < 3600) {
+      return `${Math.floor(seconds / 60)}m ago`;
+    }
+    if (seconds < 86400) {
+      return `${Math.floor(seconds / 3600)}h ago`;
+    }
+    if (seconds < 604800) {
+      return `${Math.floor(seconds / 86400)}d ago`;
+    }
     return date.toLocaleDateString();
   }
 
