@@ -896,6 +896,280 @@ const AdminShared = (function () {
     }
   }
 
+  /**
+   * List State Management Utilities
+   * Helpers for consistent loading/error/empty states across admin list pages
+   */
+
+  /**
+   * Show loading state in a container
+   * @param {string|HTMLElement} container - Container selector or element
+   * @param {Object} options - Configuration options
+   * @param {number} options.rows - Number of skeleton rows (default: 5)
+   * @param {number} options.cols - Number of skeleton columns (default: 6)
+   * @param {string} options.message - Loading message (default: 'Loading...')
+   */
+  function showLoadingState(container, options = {}) {
+    const { rows = 5, cols = 6, message = 'Loading...' } = options;
+    const element = typeof container === 'string' ? document.querySelector(container) : container;
+
+    if (!element) {
+      debugWarn('showLoadingState: container not found');
+      return;
+    }
+
+    // Create skeleton table rows
+    const skeletonRows = Array.from({ length: rows }, () => {
+      const cells = Array.from(
+        { length: cols },
+        () => '<td><div class="skeleton-line"></div></td>'
+      ).join('');
+      return `<tr>${cells}</tr>`;
+    }).join('');
+
+    element.innerHTML = `
+      <tr>
+        <td colspan="${cols}" style="text-align: center; padding: 20px;">
+          <div class="loading-spinner"></div>
+          <div style="margin-top: 10px; color: #6b7280;">${escapeHtml(message)}</div>
+        </td>
+      </tr>
+      ${skeletonRows}
+    `;
+
+    // Add styles if not already present
+    if (!document.getElementById('admin-list-states-styles')) {
+      const style = document.createElement('style');
+      style.id = 'admin-list-states-styles';
+      style.textContent = `
+        .skeleton-line {
+          height: 16px;
+          background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+          background-size: 200% 100%;
+          animation: skeleton-loading 1.5s infinite;
+          border-radius: 4px;
+        }
+        @keyframes skeleton-loading {
+          0% { background-position: 200% 0; }
+          100% { background-position: -200% 0; }
+        }
+        .loading-spinner {
+          width: 40px;
+          height: 40px;
+          margin: 0 auto;
+          border: 4px solid #f3f4f6;
+          border-top-color: #3b82f6;
+          border-radius: 50%;
+          animation: spinner-rotate 0.8s linear infinite;
+        }
+        @keyframes spinner-rotate {
+          to { transform: rotate(360deg); }
+        }
+        .error-state, .empty-state {
+          text-align: center;
+          padding: 60px 20px;
+        }
+        .error-state-icon, .empty-state-icon {
+          font-size: 48px;
+          margin-bottom: 16px;
+        }
+        .error-state-title, .empty-state-title {
+          font-size: 20px;
+          font-weight: 600;
+          color: #1f2937;
+          margin-bottom: 8px;
+        }
+        .error-state-message, .empty-state-message {
+          color: #6b7280;
+          margin-bottom: 20px;
+        }
+      `;
+      document.head.appendChild(style);
+    }
+  }
+
+  /**
+   * Show error state in a container
+   * @param {string|HTMLElement} container - Container selector or element
+   * @param {Object} options - Configuration options
+   * @param {string} options.message - Error message
+   * @param {Function} options.onRetry - Retry callback function
+   * @param {number} options.colspan - Number of columns to span (default: 6)
+   */
+  function showErrorState(container, options = {}) {
+    const {
+      message = 'Failed to load data. Please try again.',
+      onRetry = null,
+      colspan = 6,
+    } = options;
+    const element = typeof container === 'string' ? document.querySelector(container) : container;
+
+    if (!element) {
+      debugWarn('showErrorState: container not found');
+      return;
+    }
+
+    const retryButtonHtml = onRetry
+      ? `<button class="btn btn-primary" id="retry-btn" style="margin-top: 12px;">🔄 Retry</button>`
+      : '';
+
+    element.innerHTML = `
+      <tr>
+        <td colspan="${colspan}">
+          <div class="error-state">
+            <div class="error-state-icon">⚠️</div>
+            <div class="error-state-title">Error Loading Data</div>
+            <div class="error-state-message">${escapeHtml(message)}</div>
+            ${retryButtonHtml}
+          </div>
+        </td>
+      </tr>
+    `;
+
+    if (onRetry) {
+      const retryBtn = element.querySelector('#retry-btn');
+      if (retryBtn) {
+        retryBtn.addEventListener('click', async () => {
+          retryBtn.disabled = true;
+          retryBtn.textContent = 'Retrying...';
+          try {
+            await onRetry();
+          } catch (error) {
+            debugError('Retry failed:', error);
+            retryBtn.disabled = false;
+            retryBtn.textContent = '🔄 Retry';
+          }
+        });
+      }
+    }
+  }
+
+  /**
+   * Show empty state in a container
+   * @param {string|HTMLElement} container - Container selector or element
+   * @param {Object} options - Configuration options
+   * @param {string} options.message - Empty state message
+   * @param {string} options.icon - Icon to display (default: '📭')
+   * @param {string} options.actionLabel - Optional action button label
+   * @param {Function} options.onAction - Optional action button callback
+   * @param {number} options.colspan - Number of columns to span (default: 6)
+   */
+  function showEmptyState(container, options = {}) {
+    const {
+      message = 'No items found',
+      icon = '📭',
+      actionLabel = null,
+      onAction = null,
+      colspan = 6,
+    } = options;
+    const element = typeof container === 'string' ? document.querySelector(container) : container;
+
+    if (!element) {
+      debugWarn('showEmptyState: container not found');
+      return;
+    }
+
+    const actionButtonHtml =
+      actionLabel && onAction
+        ? `<button class="btn btn-primary" id="empty-action-btn" style="margin-top: 12px;">${escapeHtml(actionLabel)}</button>`
+        : '';
+
+    element.innerHTML = `
+      <tr>
+        <td colspan="${colspan}">
+          <div class="empty-state">
+            <div class="empty-state-icon">${icon}</div>
+            <div class="empty-state-title">No Results</div>
+            <div class="empty-state-message">${escapeHtml(message)}</div>
+            ${actionButtonHtml}
+          </div>
+        </td>
+      </tr>
+    `;
+
+    if (actionLabel && onAction) {
+      const actionBtn = element.querySelector('#empty-action-btn');
+      if (actionBtn) {
+        actionBtn.addEventListener('click', onAction);
+      }
+    }
+  }
+
+  /**
+   * Disable a button and show loading state
+   * @param {HTMLElement} button - Button element
+   * @param {string} loadingText - Text to show while loading (default: 'Loading...')
+   * @returns {Function} Function to re-enable the button
+   */
+  function disableButton(button, loadingText = 'Loading...') {
+    if (!button) {
+      debugWarn('disableButton: button not found');
+      return () => {};
+    }
+
+    const originalText = button.textContent;
+    const originalDisabled = button.disabled;
+
+    button.disabled = true;
+    button.textContent = loadingText;
+    button.style.opacity = '0.6';
+    button.style.cursor = 'not-allowed';
+
+    // Return a function to re-enable
+    return () => {
+      button.disabled = originalDisabled;
+      button.textContent = originalText;
+      button.style.opacity = '';
+      button.style.cursor = '';
+    };
+  }
+
+  /**
+   * Safe action wrapper - prevents double-clicks and shows loading state
+   * @param {HTMLElement} button - Button element
+   * @param {Function} action - Async action to perform
+   * @param {Object} options - Configuration options
+   * @param {string} options.loadingText - Loading button text
+   * @param {string} options.successMessage - Success toast message
+   * @param {string} options.errorMessage - Error toast message prefix
+   */
+  async function safeAction(button, action, options = {}) {
+    const {
+      loadingText = 'Processing...',
+      successMessage = null,
+      errorMessage = 'Action failed',
+    } = options;
+
+    if (!button) {
+      debugWarn('safeAction: button not found');
+      return;
+    }
+
+    // Prevent double-clicks
+    if (button.disabled) {
+      return;
+    }
+
+    const restore = disableButton(button, loadingText);
+
+    try {
+      const result = await action();
+
+      if (successMessage) {
+        showToast(successMessage, 'success');
+      }
+
+      return result;
+    } catch (error) {
+      debugError('Action failed:', error);
+      const errorMsg = error.message || errorMessage;
+      showToast(errorMsg, 'error');
+      throw error;
+    } finally {
+      restore();
+    }
+  }
+
   // Initialize admin page
   function init() {
     fetchCSRFToken();
@@ -929,6 +1203,12 @@ const AdminShared = (function () {
     showEnhancedToast,
     showConfirmModal,
     confirm,
+    // List state management
+    showLoadingState,
+    showErrorState,
+    showEmptyState,
+    disableButton,
+    safeAction,
     // Data loading
     loadBadgeCounts,
     // Navigation

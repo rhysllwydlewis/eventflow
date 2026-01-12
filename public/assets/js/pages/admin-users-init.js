@@ -28,17 +28,29 @@
 
     summary.textContent = 'Loading users…';
 
+    // Show loading state
+    AdminShared.showLoadingState(tbody, {
+      rows: 5,
+      cols: 9,
+      message: 'Loading users...',
+    });
+
     try {
-      // Use AdminShared.api for consistent error handling
-      const data = await AdminShared.api('/api/admin/users', 'GET');
+      // Use AdminShared.adminFetch for consistent error handling
+      const data = await AdminShared.adminFetch('/api/admin/users', { method: 'GET' });
       allUsers = (data && data.items) || [];
 
       renderUsers();
     } catch (e) {
-      console.error('Admin users load failed', e);
+      AdminShared.debugError('Admin users load failed', e);
       summary.textContent = 'Error loading users';
-      tbody.innerHTML =
-        '<tr><td colspan="8" class="small" style="color:#ef4444;">Failed to load users. Please make sure you are logged in as an admin.</td></tr>';
+
+      // Show error state with retry button
+      AdminShared.showErrorState(tbody, {
+        message: 'Failed to load users. Please try again.',
+        onRetry: loadAdminUsers,
+        colspan: 9,
+      });
     }
   }
 
@@ -92,8 +104,27 @@
       : 'No users match the filters.';
 
     if (!filtered.length) {
-      tbody.innerHTML =
-        '<tr><td colspan="9" class="small">No users found matching your filters.</td></tr>';
+      // Show empty state
+      AdminShared.showEmptyState(tbody, {
+        message: 'No users found matching your filters.',
+        icon: '👥',
+        actionLabel: 'Clear Filters',
+        onAction: () => {
+          // Clear all filters
+          const searchInput = document.getElementById('userSearch');
+          const roleFilter = document.getElementById('roleFilter');
+          const subscriptionFilter = document.getElementById('subscriptionFilter');
+          const verifiedFilter = document.getElementById('verifiedFilter');
+
+          if (searchInput) searchInput.value = '';
+          if (roleFilter) roleFilter.value = '';
+          if (subscriptionFilter) subscriptionFilter.value = '';
+          if (verifiedFilter) verifiedFilter.value = '';
+
+          renderUsers();
+        },
+        colspan: 9,
+      });
       return;
     }
 
@@ -153,28 +184,35 @@
           return;
         }
 
-        if (!confirm('Send a new verification email to this user?')) {
+        // Use showConfirmModal instead of browser confirm
+        const confirmed = await AdminShared.showConfirmModal({
+          title: 'Resend Verification Email',
+          message: 'Send a new verification email to this user?',
+          confirmText: 'Send Email',
+          cancelText: 'Cancel',
+          type: 'info',
+        });
+
+        if (!confirmed) {
           return;
         }
 
-        const originalText = btn.textContent;
-        btn.disabled = true;
-        btn.textContent = 'Sending...';
-
-        try {
-          const data = await AdminShared.api(
-            `/api/admin/users/${userId}/resend-verification`,
-            'POST'
-          );
-
-          AdminShared.showToast(data.message || 'Verification email sent successfully', 'success');
-        } catch (error) {
-          console.error('Error resending verification:', error);
-          AdminShared.showToast(error.message || 'Failed to send verification email', 'error');
-        } finally {
-          btn.disabled = false;
-          btn.textContent = originalText;
-        }
+        // Use safeAction for consistent button state management
+        await AdminShared.safeAction(
+          btn,
+          async () => {
+            const data = await AdminShared.adminFetch(
+              `/api/admin/users/${userId}/resend-verification`,
+              { method: 'POST' }
+            );
+            return data;
+          },
+          {
+            loadingText: 'Sending...',
+            successMessage: 'Verification email sent successfully',
+            errorMessage: 'Failed to send verification email',
+          }
+        );
       });
     });
   }
@@ -295,9 +333,11 @@
       </div>
     `;
 
-    // Load subscription history using AdminShared.api
+    // Load subscription history using AdminShared.adminFetch
     try {
-      const data = await AdminShared.api(`/api/admin/users/${userId}/subscription-history`, 'GET');
+      const data = await AdminShared.adminFetch(`/api/admin/users/${userId}/subscription-history`, {
+        method: 'GET',
+      });
       const history = data.history || [];
 
       if (history.length === 0) {
@@ -318,7 +358,7 @@
           .join('');
       }
     } catch (error) {
-      console.error('Error loading subscription history:', error);
+      AdminShared.debugError('Error loading subscription history:', error);
       historyDiv.innerHTML = '<p class="text-error">Failed to load subscription history</p>';
     }
   }
@@ -375,52 +415,71 @@
         const reason = document.getElementById('subscriptionReason').value;
 
         if (!userId) {
-          alert('No user selected');
+          AdminShared.showToast('No user selected', 'error');
           return;
         }
 
         // If tier is free, remove subscription instead
         if (tier === 'free') {
-          if (!confirm('This will remove the current subscription. Continue?')) {
+          const confirmed = await AdminShared.showConfirmModal({
+            title: 'Remove Subscription',
+            message: 'This will remove the current subscription. Continue?',
+            confirmText: 'Remove',
+            cancelText: 'Cancel',
+            type: 'warning',
+          });
+
+          if (!confirmed) {
             return;
           }
 
-          try {
-            const data = await AdminShared.api(
-              `/api/admin/users/${userId}/subscription`,
-              'DELETE',
-              { reason: reason || 'Admin set to free tier' }
-            );
-
-            AdminShared.showToast(data.message || 'Subscription removed successfully', 'success');
-            closeSubscriptionModal();
-            loadAdminUsers(); // Reload users
-          } catch (error) {
-            console.error('Error removing subscription:', error);
-            AdminShared.showToast(error.message || 'Failed to remove subscription', 'error');
-          }
+          const submitBtn = form.querySelector('button[type="submit"]');
+          await AdminShared.safeAction(
+            submitBtn,
+            async () => {
+              const data = await AdminShared.adminFetch(
+                `/api/admin/users/${userId}/subscription`,
+                {
+                  method: 'DELETE',
+                  body: { reason: reason || 'Admin set to free tier' },
+                }
+              );
+              closeSubscriptionModal();
+              loadAdminUsers(); // Reload users
+              return data;
+            },
+            {
+              loadingText: 'Removing...',
+              successMessage: 'Subscription removed successfully',
+              errorMessage: 'Failed to remove subscription',
+            }
+          );
           return;
         }
 
         if (!tier || !duration) {
-          alert('Please select both tier and duration');
+          AdminShared.showToast('Please select both tier and duration', 'error');
           return;
         }
 
-        try {
-          const data = await AdminShared.api(`/api/admin/users/${userId}/subscription`, 'POST', {
-            tier,
-            duration,
-            reason,
-          });
-
-          AdminShared.showToast(data.message || 'Subscription granted successfully', 'success');
-          closeSubscriptionModal();
-          loadAdminUsers(); // Reload users
-        } catch (error) {
-          console.error('Error granting subscription:', error);
-          AdminShared.showToast(error.message || 'Failed to grant subscription', 'error');
-        }
+        const submitBtn = form.querySelector('button[type="submit"]');
+        await AdminShared.safeAction(
+          submitBtn,
+          async () => {
+            const data = await AdminShared.adminFetch(`/api/admin/users/${userId}/subscription`, {
+              method: 'POST',
+              body: { tier, duration, reason },
+            });
+            closeSubscriptionModal();
+            loadAdminUsers(); // Reload users
+            return data;
+          },
+          {
+            loadingText: 'Granting...',
+            successMessage: 'Subscription granted successfully',
+            errorMessage: 'Failed to grant subscription',
+          }
+        );
       });
     }
 
@@ -428,7 +487,21 @@
     if (removeBtn) {
       removeBtn.addEventListener('click', async () => {
         if (!currentSubscriptionUserId) {
-          alert('No user selected');
+          AdminShared.showToast('No user selected', 'error');
+          return;
+        }
+
+        // Use modal for reason input instead of prompt
+        const confirmed = await AdminShared.showConfirmModal({
+          title: 'Remove Subscription',
+          message:
+            'Are you sure you want to remove this subscription? This action cannot be undone.',
+          confirmText: 'Remove',
+          cancelText: 'Cancel',
+          type: 'danger',
+        });
+
+        if (!confirmed) {
           return;
         }
 
@@ -437,24 +510,26 @@
           return; // Cancelled
         }
 
-        if (!confirm('Are you sure you want to remove this subscription?')) {
-          return;
-        }
-
-        try {
-          const data = await AdminShared.api(
-            `/api/admin/users/${currentSubscriptionUserId}/subscription`,
-            'DELETE',
-            { reason: reason || 'Manual admin removal' }
-          );
-
-          AdminShared.showToast(data.message || 'Subscription removed successfully', 'success');
-          closeSubscriptionModal();
-          loadAdminUsers(); // Reload users
-        } catch (error) {
-          console.error('Error removing subscription:', error);
-          AdminShared.showToast(error.message || 'Failed to remove subscription', 'error');
-        }
+        await AdminShared.safeAction(
+          removeBtn,
+          async () => {
+            const data = await AdminShared.adminFetch(
+              `/api/admin/users/${currentSubscriptionUserId}/subscription`,
+              {
+                method: 'DELETE',
+                body: { reason: reason || 'Manual admin removal' },
+              }
+            );
+            closeSubscriptionModal();
+            loadAdminUsers(); // Reload users
+            return data;
+          },
+          {
+            loadingText: 'Removing...',
+            successMessage: 'Subscription removed successfully',
+            errorMessage: 'Failed to remove subscription',
+          }
+        );
       });
     }
   }
