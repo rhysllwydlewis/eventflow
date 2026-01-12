@@ -18,14 +18,15 @@ async function generateSitemap(baseUrl) {
   let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
   xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
 
-  // Static pages
+  // Static pages - only canonical, indexable URLs
   const staticPages = [
     { url: '/', priority: '1.0', changefreq: 'daily' },
-    { url: '/index.html', priority: '1.0', changefreq: 'daily' },
-    { url: '/auth.html', priority: '0.8', changefreq: 'weekly' },
     { url: '/suppliers.html', priority: '0.9', changefreq: 'daily' },
-    { url: '/packages.html', priority: '0.9', changefreq: 'daily' },
+    { url: '/marketplace', priority: '0.9', changefreq: 'daily' },
     { url: '/blog.html', priority: '0.7', changefreq: 'weekly' },
+    { url: '/start.html', priority: '0.8', changefreq: 'weekly' },
+    { url: '/pricing.html', priority: '0.7', changefreq: 'monthly' },
+    { url: '/for-suppliers.html', priority: '0.7', changefreq: 'monthly' },
     { url: '/contact.html', priority: '0.6', changefreq: 'monthly' },
     { url: '/faq.html', priority: '0.6', changefreq: 'monthly' },
     { url: '/privacy.html', priority: '0.5', changefreq: 'monthly' },
@@ -42,14 +43,14 @@ async function generateSitemap(baseUrl) {
   });
 
   try {
-    // Dynamic pages - Suppliers
+    // Dynamic pages - Suppliers (use canonical /supplier.html?id= route)
     const suppliers = await dbUnified.read('suppliers');
     if (Array.isArray(suppliers)) {
       suppliers
         .filter(s => s.approved)
         .forEach(supplier => {
           xml += '  <url>\n';
-          xml += `    <loc>${baseUrl}/supplier-detail.html?id=${supplier.id}</loc>\n`;
+          xml += `    <loc>${baseUrl}/supplier.html?id=${supplier.id}</loc>\n`;
           xml += `    <lastmod>${supplier.updatedAt || now}</lastmod>\n`;
           xml += `    <changefreq>weekly</changefreq>\n`;
           xml += `    <priority>0.8</priority>\n`;
@@ -57,12 +58,14 @@ async function generateSitemap(baseUrl) {
         });
     }
 
-    // Dynamic pages - Packages
+    // Dynamic pages - Packages (use canonical /package.html?slug= route)
     const packages = await dbUnified.read('packages');
     if (Array.isArray(packages)) {
       packages.forEach(pkg => {
+        // Use slug if available, fallback to id
+        const identifier = pkg.slug ? `slug=${pkg.slug}` : `id=${pkg.id}`;
         xml += '  <url>\n';
-        xml += `    <loc>${baseUrl}/package-detail.html?id=${pkg.id}</loc>\n`;
+        xml += `    <loc>${baseUrl}/package.html?${identifier}</loc>\n`;
         xml += `    <lastmod>${pkg.updatedAt || now}</lastmod>\n`;
         xml += `    <changefreq>weekly</changefreq>\n`;
         xml += `    <priority>0.7</priority>\n`;
@@ -70,24 +73,24 @@ async function generateSitemap(baseUrl) {
       });
     }
 
-    // Dynamic pages - Categories
-    const categories = [
-      'venues',
-      'catering',
-      'photography',
-      'videography',
-      'florists',
-      'entertainment',
-      'decorators',
-      'planners',
+    // Dynamic pages - Articles
+    const articles = [
+      'wedding-venue-selection-guide.html',
+      'wedding-catering-trends-2024.html',
+      'perfect-wedding-day-timeline-guide.html',
+      'event-photography-complete-guide.html',
+      'event-budget-management-guide.html',
+      'sustainable-event-planning-guide.html',
+      'corporate-event-planning-guide.html',
+      'birthday-party-planning-guide.html',
     ];
 
-    categories.forEach(category => {
+    articles.forEach(article => {
       xml += '  <url>\n';
-      xml += `    <loc>${baseUrl}/category.html?category=${category}</loc>\n`;
+      xml += `    <loc>${baseUrl}/articles/${article}</loc>\n`;
       xml += `    <lastmod>${now}</lastmod>\n`;
-      xml += `    <changefreq>daily</changefreq>\n`;
-      xml += `    <priority>0.8</priority>\n`;
+      xml += `    <changefreq>monthly</changefreq>\n`;
+      xml += `    <priority>0.6</priority>\n`;
       xml += '  </url>\n';
     });
   } catch (error) {
@@ -107,14 +110,18 @@ function generateRobotsTxt(baseUrl) {
   return `# EventFlow Robots.txt
 User-agent: *
 Allow: /
+
+# Disallow admin and dashboard pages
 Disallow: /admin*
 Disallow: /dashboard*
+
+# Disallow API endpoints and temporary files
 Disallow: /api/
 Disallow: /uploads/temp/
-Disallow: *.json$
+Disallow: /*.json$
 
 # Sitemap
-Sitemap: ${baseUrl}/sitemap.xml
+Sitemap: https://event-flow.co.uk/sitemap.xml
 
 # Crawl-delay for specific bots
 User-agent: Googlebot

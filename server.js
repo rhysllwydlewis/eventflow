@@ -319,6 +319,38 @@ app.use(maintenanceMode);
 // ---------- Static File Serving ----------
 // Serve static files early in the middleware chain (before API routes)
 // This ensures files like verify.html are served before any route handlers
+
+// ---------- SEO: Noindex Middleware for Non-Public Pages ----------
+// Add X-Robots-Tag header to prevent indexing of authenticated/private pages
+// This MUST come before express.static() so it intercepts HTML file requests
+app.use((req, res, next) => {
+  // List of non-public pages that should not be indexed
+  const noindexPaths = [
+    '/auth.html',
+    '/reset-password.html',
+    '/dashboard.html',
+    '/dashboard-customer.html',
+    '/dashboard-supplier.html',
+    '/messages.html',
+    '/guests.html',
+    '/checkout.html',
+    '/my-marketplace-listings.html',
+  ];
+
+  // Check if path matches a noindex page (exact match)
+  if (noindexPaths.includes(req.path)) {
+    res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+    logger.info(`X-Robots-Tag noindex applied to ${req.path}`);
+  }
+
+  // Also apply to admin pages (already blocked by middleware, but extra defense)
+  if (req.path.startsWith('/admin') && req.path.endsWith('.html')) {
+    res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+  }
+
+  next();
+});
+
 // Static assets with caching strategy (fixes poor cache headers)
 app.use((req, res, next) => {
   // Short-term caching for HTML pages (5 minutes)
@@ -3884,29 +3916,7 @@ app.delete(
   }
 );
 
-// ---------- Sitemap ----------
-app.get('/sitemap.xml', async (_req, res) => {
-  const base = `http://localhost:${PORT}`;
-  const suppliers = (await dbUnified.read('suppliers'))
-    .filter(s => s.approved)
-    .map(s => `${base}/supplier.html?id=${s.id}`);
-  const urls = [
-    `${base}/`,
-    `${base}/suppliers.html`,
-    `${base}/start.html`,
-    `${base}/plan.html`,
-    `${base}/auth.html`,
-    ...suppliers,
-  ];
-  const xml = [
-    '<?xml version="1.0" encoding="UTF-8"?>',
-    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
-    ...urls.map(u => `<url><loc>${u}</loc></url>`),
-    '</urlset>',
-  ].join('');
-  res.set('Content-Type', 'application/xml');
-  res.send(xml);
-});
+
 
 // ---------- Protected HTML routes ----------
 const sendHTML = (res, file) => res.sendFile(path.join(__dirname, 'public', file));
