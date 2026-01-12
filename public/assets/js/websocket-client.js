@@ -202,7 +202,12 @@ class WebSocketClient {
   }
 
   getCurrentUser() {
-    // Try to get user from localStorage or cookies
+    // Use centralized auth state if available
+    const authState = window.__authState || window.AuthStateManager;
+    if (authState && typeof authState.getUser === 'function') {
+      return authState.getUser();
+    }
+    // Fallback for backwards compatibility
     try {
       const userStr = localStorage.getItem('user');
       if (userStr) {

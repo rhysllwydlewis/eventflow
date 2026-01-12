@@ -226,12 +226,14 @@
 <script>
   // Show notification bell for logged-in users
   document.addEventListener('DOMContentLoaded', () => {
-    const user = localStorage.getItem('user');
-    if (user) {
-      const notificationBell = document.getElementById('notification-bell');
-      if (notificationBell) {
-        notificationBell.style.display = 'block';
-      }
+    const authState = window.__authState || window.AuthStateManager;
+    if (authState) {
+      authState.onchange(user => {
+        const notificationBell = document.getElementById('notification-bell');
+        if (notificationBell) {
+          notificationBell.style.display = user ? 'block' : 'none';
+        }
+      });
     }
   });
 

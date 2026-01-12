@@ -10,16 +10,27 @@ class AuthGate {
   }
 
   /**
-   * Load user from localStorage
+   * Load user from centralized auth state
    */
   loadUser() {
-    try {
-      const userData = localStorage.getItem('user');
-      if (userData) {
-        this.user = JSON.parse(userData);
+    // Use centralized auth state if available
+    const authState = window.__authState || window.AuthStateManager;
+    if (authState && typeof authState.getUser === 'function') {
+      this.user = authState.getUser();
+      // Subscribe to auth state changes
+      authState.onchange(user => {
+        this.user = user;
+      });
+    } else {
+      // Fallback to localStorage for backwards compatibility
+      try {
+        const userData = localStorage.getItem('user');
+        if (userData) {
+          this.user = JSON.parse(userData);
+        }
+      } catch (e) {
+        /* Ignore errors */
       }
-    } catch (e) {
-      /* Ignore errors */
     }
   }
 

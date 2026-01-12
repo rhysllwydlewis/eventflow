@@ -334,7 +334,7 @@ class MessageSupplierPanel {
         this.savePendingMessage();
         // Use relative path instead of full URL for security
         const returnPath = window.location.pathname + window.location.search + window.location.hash;
-        window.location.href = `/auth.html?mode=register&return=${encodeURIComponent(returnPath)}`;
+        window.location.href = `/auth.html?mode=register&redirect=${encodeURIComponent(returnPath)}`;
       });
     }
 
