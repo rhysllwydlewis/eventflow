@@ -8,7 +8,7 @@ const AdminShared = (function () {
 
   // Debug flag - set to true to enable console logging
   // In production, set to false to reduce console spam
-  const DEBUG = localStorage.getItem('ADMIN_DEBUG') === 'true' || false;
+  const DEBUG = localStorage.getItem('ADMIN_DEBUG') === 'true';
 
   // Debug logging wrapper
   function debugLog(...args) {

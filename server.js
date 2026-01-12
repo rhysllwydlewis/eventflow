@@ -458,10 +458,8 @@ app.use((req, res, next) => {
         ip: req.ip,
         userAgent: req.get('user-agent'),
       });
-      // Validate redirect path to prevent open redirect attacks
-      // Only allow paths in the ADMIN_PAGES list (safe by definition)
-      const safeRedirect = ADMIN_PAGES.includes(req.path) ? req.path : '/admin.html';
-      return res.redirect(`/auth.html?redirect=${encodeURIComponent(safeRedirect)}`);
+      // Redirect path is already validated by allowlist check above
+      return res.redirect(`/auth.html?redirect=${encodeURIComponent(req.path)}`);
     }
 
     // Authenticated but not admin - redirect to dashboard with message

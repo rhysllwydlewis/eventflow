@@ -13,6 +13,9 @@ import { test, expect } from '@playwright/test';
 const WEBKIT_WAIT = 3000;
 const DEFAULT_WAIT = 1500;
 
+// Viewport overflow tolerance (allows for minor rounding differences)
+const OVERFLOW_TOLERANCE_PX = 5;
+
 // Admin pages to test
 const ADMIN_PAGES = [
   '/admin.html',
@@ -348,7 +351,7 @@ test.describe('Admin Pages - Mobile/Tablet Responsiveness', () => {
     // Check no horizontal scroll
     const bodyWidth = await page.evaluate(() => document.body.scrollWidth);
     const windowWidth = await page.evaluate(() => window.innerWidth);
-    expect(bodyWidth).toBeLessThanOrEqual(windowWidth + 5); // Allow 5px tolerance
+    expect(bodyWidth).toBeLessThanOrEqual(windowWidth + OVERFLOW_TOLERANCE_PX);
 
     // Admin navbar should be visible
     const navbar = page.locator('.admin-top-navbar, .admin-navbar');
@@ -368,7 +371,7 @@ test.describe('Admin Pages - Mobile/Tablet Responsiveness', () => {
     // Check no horizontal scroll
     const bodyWidth = await page.evaluate(() => document.body.scrollWidth);
     const windowWidth = await page.evaluate(() => window.innerWidth);
-    expect(bodyWidth).toBeLessThanOrEqual(windowWidth + 5); // Allow 5px tolerance
+    expect(bodyWidth).toBeLessThanOrEqual(windowWidth + OVERFLOW_TOLERANCE_PX);
 
     // Admin navbar should be visible (or hamburger menu on mobile)
     const navbar = page.locator('.admin-top-navbar, .admin-navbar, .admin-hamburger');
