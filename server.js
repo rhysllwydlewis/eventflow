@@ -330,8 +330,7 @@ app.use('/api', (req, res, next) => {
   ];
 
   // Check if this is a safe cacheable endpoint
-  const isSafeCacheable = SAFE_CACHEABLE_ENDPOINTS.includes(req.path) ||
-                          SAFE_CACHEABLE_ENDPOINTS.some(safe => req.path === safe.replace('/api', ''));
+  const isSafeCacheable = SAFE_CACHEABLE_ENDPOINTS.includes(req.path);
 
   // For safe endpoints, allow downstream handlers to set their own cache headers
   // For all other API endpoints, set no-store to prevent caching
@@ -3948,8 +3947,6 @@ app.delete(
     res.json({ ok: true, message: 'Package deleted successfully' });
   }
 );
-
-
 
 // ---------- Protected HTML routes ----------
 const sendHTML = (res, file) => res.sendFile(path.join(__dirname, 'public', file));

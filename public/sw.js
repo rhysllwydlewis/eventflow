@@ -110,6 +110,7 @@ self.addEventListener('fetch', event => {
       '/api/config',
       '/api/meta',
       '/api/health',
+      '/api/ready',
       '/api/performance',
     ];
 

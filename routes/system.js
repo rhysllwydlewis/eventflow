@@ -247,6 +247,9 @@ router.get('/ready', applyHealthCheckLimiter, async (_req, res) => {
     });
   }
 
+  // Set public caching headers (readiness status is safe to cache briefly)
+  res.setHeader('Cache-Control', 'public, max-age=10'); // 10 seconds
+
   const timestamp = new Date().toISOString();
 
   // Check if MongoDB is actually connected
