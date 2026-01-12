@@ -29,7 +29,17 @@ export default defineConfig({
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('/')`. */
-    baseURL: process.env.BASE_URL || 'http://localhost:3000',
+    baseURL: (() => {
+      const e2eMode = process.env.E2E_MODE || 'static';
+      const isCI = process.env.CI === 'true';
+      const useStaticMode = isCI || e2eMode === 'static';
+      
+      if (process.env.BASE_URL) {
+        return process.env.BASE_URL;
+      }
+      
+      return useStaticMode ? 'http://127.0.0.1:4173' : 'http://localhost:3000';
+    })(),
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
@@ -90,14 +100,34 @@ export default defineConfig({
   ],
 
   /* Run your local dev server before starting the tests */
-  webServer: {
-    command: 'npm start',
-    url: 'http://localhost:3000/api/health',
-    reuseExistingServer: !process.env.CI,
-    timeout: 120 * 1000,
-    env: {
-      NODE_ENV: 'test',
-      JWT_SECRET: 'test-secret-key-for-e2e-testing-only-min-32-chars',
-    },
-  },
+  webServer: (() => {
+    // Determine E2E mode: 'static' (default) or 'full' (backend)
+    const e2eMode = process.env.E2E_MODE || 'static';
+    const isCI = process.env.CI === 'true';
+    
+    // In CI, always use static mode
+    const useStaticMode = isCI || e2eMode === 'static';
+    
+    if (useStaticMode) {
+      // Static mode: lightweight server, no backend/database
+      return {
+        command: 'node scripts/serve-static.js',
+        url: 'http://127.0.0.1:4173/api/health',
+        reuseExistingServer: !isCI,
+        timeout: 30 * 1000,
+      };
+    } else {
+      // Full mode: backend with MongoDB
+      return {
+        command: 'npm start',
+        url: 'http://localhost:3000/api/health',
+        reuseExistingServer: true,
+        timeout: 120 * 1000,
+        env: {
+          NODE_ENV: 'test',
+          JWT_SECRET: 'test-secret-key-for-e2e-testing-only-min-32-chars',
+        },
+      };
+    }
+  })(),
 });

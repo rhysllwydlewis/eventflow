@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('Supplier Search and Filtering', () => {
+test.describe('Supplier Search and Filtering @backend', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
   });

@@ -33,7 +33,7 @@
     const mainContent = document.querySelector('main');
 
     if (!mobileToggle || !mobileMenu) {
-      console.warn('Burger menu elements not found');
+      if (DEBUG) console.warn('Burger menu elements not found');
       return;
     }
 

@@ -64,7 +64,7 @@ test.describe('Authentication Flow', () => {
     }
   });
 
-  test('should handle login with invalid credentials', async ({ page, browserName }) => {
+  test('should handle login with invalid credentials @backend', async ({ page, browserName }) => {
     await page.goto('/auth.html');
 
     // Wait for page to be fully loaded
