@@ -133,6 +133,7 @@ router.get('/meta', async (_req, res) => {
  * GET /api/health
  * Health check endpoint for monitoring
  * Returns 200 if server is running, with service status details
+ * NOTE: Contains internal debug info - should NOT be cached
  */
 router.get('/health', applyHealthCheckLimiter, async (_req, res) => {
   // Check if dependencies are initialized
@@ -144,8 +145,8 @@ router.get('/health', applyHealthCheckLimiter, async (_req, res) => {
     });
   }
 
-  // Set public caching headers (health status is safe to cache briefly)
-  res.setHeader('Cache-Control', 'public, max-age=10'); // 10 seconds
+  // Do NOT cache - contains internal debug information
+  res.setHeader('Cache-Control', 'no-store, private');
 
   // Server is always "ok" if it's running and accepting requests
   // Database status is reported as a service status, not overall health
@@ -236,6 +237,7 @@ router.get('/health', applyHealthCheckLimiter, async (_req, res) => {
  * GET /api/ready
  * Readiness probe for Kubernetes/Railway
  * Returns 200 only if MongoDB is connected
+ * NOTE: Contains internal debug info - should NOT be cached
  */
 router.get('/ready', applyHealthCheckLimiter, async (_req, res) => {
   // Check if dependencies are initialized
@@ -247,8 +249,8 @@ router.get('/ready', applyHealthCheckLimiter, async (_req, res) => {
     });
   }
 
-  // Set public caching headers (readiness status is safe to cache briefly)
-  res.setHeader('Cache-Control', 'public, max-age=10'); // 10 seconds
+  // Do NOT cache - contains internal debug information
+  res.setHeader('Cache-Control', 'no-store, private');
 
   const timestamp = new Date().toISOString();
 

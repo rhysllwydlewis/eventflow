@@ -19,10 +19,12 @@ This document summarizes the security improvements made to prevent sensitive API
 
 - `/api/config` - Public configuration (Google Maps API key, version)
 - `/api/meta` - Application metadata
-- `/api/health` - Health check endpoint
-- `/api/ready` - Readiness probe (MongoDB connection status)
 - `/api/performance` - Performance metrics
 - `/api/public/*` - Any future public API endpoints
+
+**Removed from allowlist (contain debug info):**
+- `/api/health` - Exposes database errors and internal state
+- `/api/ready` - Exposes connection details and debug messages
 
 **Behavior:**
 
@@ -40,9 +42,9 @@ Added `/api` middleware that sets `Cache-Control: no-store, private` by default 
 
 - `/api/config`
 - `/api/meta`
-- `/api/health`
-- `/api/ready`
 - `/api/performance`
+
+**Note:** `/api/health` and `/api/ready` were removed from the allowlist because they expose internal debug information (database errors, connection states) that should not be cached or made public.
 
 **Defense in Depth:**
 
@@ -56,8 +58,8 @@ Added `/api` middleware that sets `Cache-Control: no-store, private` by default 
 
 - `/api/config` → `public, max-age=300` (5 minutes)
 - `/api/meta` → `public, max-age=300` (5 minutes)
-- `/api/health` → `public, max-age=10` (10 seconds)
-- `/api/ready` → `public, max-age=10` (10 seconds)
+- `/api/health` → `no-store, private` (contains debug info)
+- `/api/ready` → `no-store, private` (contains debug info)
 - `/api/performance` → `public, max-age=60` (1 minute)
 
 ### 4. E2E Tests (`e2e/sw-api-caching.spec.js`)

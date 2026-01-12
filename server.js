@@ -321,12 +321,12 @@ app.use(maintenanceMode);
 // This middleware sets Cache-Control headers for API endpoints to prevent stale security risks
 app.use('/api', (req, res, next) => {
   // Allowlist of safe cacheable API endpoints (public, non-sensitive data)
+  // NOTE: Only endpoints returning truly public data should be here
+  // Health/ready endpoints expose internal debug info and should NOT be cached
   const SAFE_CACHEABLE_ENDPOINTS = [
-    '/api/config',
-    '/api/meta',
-    '/api/health',
-    '/api/ready',
-    '/api/performance',
+    '/api/config',      // Public config (Google Maps key, version)
+    '/api/meta',        // App metadata (version, node version, env)
+    '/api/performance', // Performance metrics (no sensitive data)
   ];
 
   // Check if this is a safe cacheable endpoint
