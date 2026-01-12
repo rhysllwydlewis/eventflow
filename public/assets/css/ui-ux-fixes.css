@@ -51,13 +51,7 @@ html {
 /* Using !important here is necessary to override any inline styles or other conflicting rules */
 /* that may be applied dynamically by JavaScript or third-party scripts */
 
-/* Only apply scroll-lock to legacy nav-open, not EF menu which handles its own scroll lock */
-body.nav-open {
-  overflow: hidden !important;
-  position: fixed;
-  width: 100%;
-  height: 100%;
-}
+/* Legacy body.nav-open removed - all pages now use body.ef-menu-open */
 
 /* EF menu uses overflow-only scroll lock (navbar.css handles the rest) */
 body.ef-menu-open {
@@ -65,37 +59,11 @@ body.ef-menu-open {
   /* DO NOT use position: fixed - it breaks the fixed-position menu panel */
 }
 
-/* Mobile menu backdrop - ensure proper stacking and interaction */
-.nav-backdrop {
-  display: none;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.3);
-  z-index: 1998; /* Below nav-menu (1999), above content */
-  backdrop-filter: blur(2px);
-  -webkit-backdrop-filter: blur(2px);
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
+/* Legacy .nav-backdrop removed - EF header uses its own backdrop in navbar.css */
 
-body.nav-open .nav-backdrop {
-  display: block;
-}
+/* Legacy body.nav-open .nav-backdrop removed */
 
-/* Touch optimization for mobile menu */
-@media (pointer: coarse) {
-  .nav-menu {
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior: contain;
-  }
-  
-  .nav-menu a {
-    -webkit-tap-highlight-color: rgba(11, 128, 115, 0.1);
-  }
-}
+/* Legacy .nav-menu touch optimization removed - EF header has its own optimizations */
 
 /* ============================================
    BUTTON FIXES
