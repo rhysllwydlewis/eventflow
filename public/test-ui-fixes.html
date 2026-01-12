@@ -12,30 +12,95 @@
   <link rel="stylesheet" href="/assets/css/animations.css">
   <link rel="stylesheet" href="/assets/css/mobile-optimizations.css">
   <link rel="stylesheet" href="/assets/css/ui-ux-fixes.css">
+    <link rel="stylesheet" href="/assets/css/navbar.css" />
 </head>
 <body>
 <a href="#main-content" class="skip-link">Skip to main content</a>
-<header class="header" role="banner">
-  <div class="container header-inner">
-    <a class="brand" href="/" aria-label="EventFlow home">
-      <span class="logo" aria-hidden="true"></span>
-      <span class="brand-text">EventFlow</span>
-    </a>
-    <div class="header-actions">
-      <nav class="nav nav-inline" aria-label="Quick navigation">
-        <a href="/start.html" class="nav-link nav-main">Plan</a>
-        <a href="/suppliers.html" class="nav-link nav-main">Suppliers</a>
-        <a href="/blog.html" class="nav-link nav-main">Blog</a>
-        <a href="/auth.html" class="nav-link nav-main nav-main-login">Log in</a>
+<!-- TOP NAVBAR - GOLD STANDARD REBUILD -->
+<header class="ef-header" role="banner">
+  <div class="ef-container">
+    <div class="ef-header-content">
+      <!-- Brand Logo - Enhanced Animated -->
+      <a href="/" class="ef-brand" aria-label="EventFlow - Return to homepage">
+        <div class="ef-logo" aria-hidden="true">
+          <div class="ef-logo-inner"></div>
+        </div>
+        <span class="ef-brand-text">EventFlow</span>
+      </a>
+
+      <!-- Desktop Navigation -->
+      <nav class="ef-nav-desktop" aria-label="Main navigation">
+        <a href="/start.html" class="ef-nav-link">Plan</a>
+        <a href="/suppliers.html" class="ef-nav-link">Suppliers</a>
+        <a href="/pricing.html" class="ef-nav-link">Pricing</a>
+        <a href="/blog.html" class="ef-nav-link">Blog</a>
       </nav>
-      <button id="burger" class="nav-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false">
-        <span class="nav-toggle-bar"></span>
-        <span class="nav-toggle-bar"></span>
-        <span class="nav-toggle-bar"></span>
-      </button>
+
+      <!-- Actions -->
+      <div class="ef-header-actions">
+        <!-- Notification Bell (hidden by default, shown when logged in) -->
+        <button 
+          id="ef-notification-btn" 
+          class="ef-icon-btn" 
+          type="button" 
+          aria-label="View notifications"
+          style="display: none;"
+        >
+          <svg class="ef-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+          </svg>
+          <span id="ef-notification-badge" class="ef-badge" style="display: none;">0</span>
+        </button>
+
+        <!-- Auth Button (Desktop) -->
+        <a href="/auth.html" id="ef-auth-link" class="ef-btn ef-btn-primary">
+          Log in
+        </a>
+
+        <!-- Dashboard Link (Desktop, hidden by default) -->
+        <a href="#" id="ef-dashboard-link" class="ef-nav-link" style="display: none;">
+          Dashboard
+        </a>
+
+        <!-- Mobile Menu Toggle -->
+        <button 
+          id="ef-mobile-toggle" 
+          class="ef-mobile-toggle" 
+          type="button"
+          aria-label="Toggle menu"
+          aria-expanded="false"
+          aria-controls="ef-mobile-menu"
+        >
+          <span class="ef-toggle-line"></span>
+          <span class="ef-toggle-line"></span>
+          <span class="ef-toggle-line"></span>
+        </button>
+      </div>
     </div>
   </div>
+
+  <!-- Mobile Menu -->
+  <div id="ef-mobile-menu" class="ef-mobile-menu" role="dialog" aria-modal="true" aria-label="Mobile navigation">
+    <nav class="ef-mobile-nav" aria-label="Primary navigation">
+      <a href="/start.html" class="ef-mobile-link">Plan an Event</a>
+      <a href="/suppliers.html" class="ef-mobile-link">Browse Suppliers</a>
+      <a href="/pricing.html" class="ef-mobile-link">Pricing</a>
+      <a href="/blog.html" class="ef-mobile-link">Blog & Guides</a>
+      <a href="/for-suppliers.html" class="ef-mobile-link">For Suppliers</a>
+      <a href="/faq.html" class="ef-mobile-link">FAQ</a>
+      <div class="ef-mobile-divider"></div>
+      <a href="/auth.html" id="ef-mobile-auth" class="ef-mobile-link ef-mobile-primary">Log in</a>
+      <a href="#" id="ef-mobile-dashboard" class="ef-mobile-link" style="display: none;">Dashboard</a>
+      <a href="#" id="ef-mobile-logout" class="ef-mobile-link" style="display: none;">Log out</a>
+    </nav>
+  </div>
 </header>
+    <script src="/assets/js/utils/auth-state.js" defer></script>
+    <script src="/assets/js/burger-menu.js" defer></script>
+    <script src="/assets/js/navbar.js" defer></script>
+
+
 
 <main id="main-content" class="section">
   <div class="container">
@@ -257,9 +322,6 @@
     <p class="small">EventFlow UI/UX Fixes Test Page - All fixes have been applied</p>
   </div>
 </footer>
-
-<script src="/assets/js/auth-nav.js" defer></script>
-
 <!-- JadeAssist Chat Widget -->
 <script src="https://cdn.jsdelivr.net/gh/rhysllwydlewis/JadeAssist@abbf580487e0bcf7739a0857d4d940213fe2e176/packages/widget/dist/jade-widget.js" defer></script>
 <script src="/assets/js/jadeassist-init.v2.js" defer></script>

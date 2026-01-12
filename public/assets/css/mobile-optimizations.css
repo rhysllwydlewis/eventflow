@@ -59,8 +59,7 @@
 @media (max-width: 768px) {
   /* Header fixed positioning - always on top */
   /* Z-index hierarchy: header (2000) > nav-menu (1999) > backdrop (1998) > content (default) */
-  /* Support both old (.header) and Gold Standard (.ef-header) navbars */
-  .header,
+  /* Gold Standard EF header only - legacy .header removed after migration */
   .ef-header {
     position: fixed;
     top: 0;
@@ -73,10 +72,7 @@
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   }
   
-  .header-inner {
-    padding: 12px 0;
-    gap: 8px;
-  }
+  /* Legacy .header-inner removed - no longer used after migration to EF header */
   
   /* Brand optimization */
   .brand {
@@ -94,71 +90,11 @@
     display: none;
   }
   
-  /* Burger menu always visible on mobile */
-  .nav-toggle {
-    display: flex !important;
-  }
+  /* Legacy .nav-toggle removed - EF header uses .ef-mobile-toggle */
   
-  /* Dropdown menu improvements - proper fixed positioning */
-  /* Support old (.nav-menu) navbar only - EF header uses Gold Standard navbar.css */
-  .nav-menu {
-    position: fixed;
-    top: var(--ef-header-height, 64px); /* Below the fixed header, with fallback */
-    left: 0;
-    right: 0;
-    z-index: 1999; /* Below header, above backdrop and content */
-    background: rgba(255, 255, 255, 0.98);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border-bottom: 1px solid var(--border);
-    padding: 16px;
-    padding-top: 16px; /* Consistent padding */
-    display: none;
-    flex-direction: column;
-    gap: 8px;
-    max-height: calc(100vh - var(--ef-header-height, 64px)); /* Account for header height, with fallback */
-    overflow-y: auto;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  }
+  /* Legacy .nav-menu blocks removed - EF header uses #ef-mobile-menu styled in navbar.css */
   
-  .nav-menu.is-open,
-  .nav-menu.nav-menu--open {
-    display: flex;
-  }
-  
-  .nav-menu a {
-    padding: 14px 16px;
-    border-radius: 8px;
-    font-size: 16px;
-    font-weight: 500;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    text-align: left;
-    white-space: nowrap;
-  }
-  
-  .nav-menu a:hover, .nav-menu a:active {
-    background: var(--accent);
-    color: white;
-    text-decoration: none;
-  }
-  
-  /* Backdrop overlay for nav menu - proper z-index using ::before pseudo-element */
-  /* Support old (.nav-open) class only - EF header uses Gold Standard navbar.css */
-  body.nav-open::before {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.3);
-    z-index: 1998; /* Below nav-menu, above content */
-    backdrop-filter: blur(2px);
-    -webkit-backdrop-filter: blur(2px);
-    pointer-events: auto;
-    cursor: pointer;
-  }
+  /* Legacy body.nav-open::before removed - EF header uses body.ef-menu-open */
 }
 
 /* ============================================
@@ -701,9 +637,7 @@
     max-height: 85vh;
   }
   
-  .nav-menu {
-    max-height: calc(100vh - 50px);
-  }
+  /* Legacy .nav-menu removed - EF header uses #ef-mobile-menu */
 }
 
 /* ============================================
@@ -711,9 +645,7 @@
    ============================================ */
 
 @media (max-width: 768px) {
-  [data-theme="dark"] .nav-menu {
-    background: rgba(15, 23, 42, 0.98);
-  }
+  /* Legacy [data-theme="dark"] .nav-menu removed - EF header uses #ef-mobile-menu */
   
   [data-theme="dark"] .filters {
     background: #1F2937;
@@ -993,10 +925,7 @@ h4 {
     font-size: 14px;
   }
   
-  /* Stack navigation items */
-  .nav-menu {
-    gap: 4px;
-  }
+  /* Legacy .nav-menu gap removed - EF header uses #ef-mobile-menu */
   
   /* Smaller hero text on very small screens */
   .hero h1 {
