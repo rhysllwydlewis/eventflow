@@ -308,10 +308,11 @@ router.get('/ready', applyHealthCheckLimiter, async (_req, res) => {
  * Performance verification endpoint
  * Returns information about compression and caching configuration
  * Used to verify performance optimizations are active
+ * NOTE: Contains internal config details - should NOT be cached
  */
 router.get('/performance', applyHealthCheckLimiter, async (req, res) => {
-  // Set public caching headers (performance info is safe to cache)
-  res.setHeader('Cache-Control', 'public, max-age=60'); // 1 minute
+  // Do NOT cache - contains internal configuration details
+  res.setHeader('Cache-Control', 'no-store, private');
 
   const timestamp = new Date().toISOString();
 

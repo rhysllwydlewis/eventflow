@@ -18,13 +18,12 @@ This document summarizes the security improvements made to prevent sensitive API
 **Safe API Endpoints Allowlist:**
 
 - `/api/config` - Public configuration (Google Maps API key, version)
-- `/api/meta` - Application metadata
-- `/api/performance` - Performance metrics
-- `/api/public/*` - Any future public API endpoints
+- `/api/meta` - Application metadata (version, node version, environment)
 
-**Removed from allowlist (contain debug info):**
+**Removed from allowlist (contain internal info):**
 - `/api/health` - Exposes database errors and internal state
 - `/api/ready` - Exposes connection details and debug messages
+- `/api/performance` - Exposes internal configuration (compression levels, caching strategy)
 
 **Behavior:**
 
@@ -42,9 +41,10 @@ Added `/api` middleware that sets `Cache-Control: no-store, private` by default 
 
 - `/api/config`
 - `/api/meta`
-- `/api/performance`
 
-**Note:** `/api/health` and `/api/ready` were removed from the allowlist because they expose internal debug information (database errors, connection states) that should not be cached or made public.
+**Note:** `/api/health`, `/api/ready`, and `/api/performance` were removed from the allowlist because they expose internal information:
+- `/api/health` and `/api/ready`: database errors, connection states, debug messages
+- `/api/performance`: internal configuration details (compression levels, caching strategy) that could aid reconnaissance
 
 **Defense in Depth:**
 
@@ -60,7 +60,7 @@ Added `/api` middleware that sets `Cache-Control: no-store, private` by default 
 - `/api/meta` → `public, max-age=300` (5 minutes)
 - `/api/health` → `no-store, private` (contains debug info)
 - `/api/ready` → `no-store, private` (contains debug info)
-- `/api/performance` → `public, max-age=60` (1 minute)
+- `/api/performance` → `no-store, private` (contains internal config)
 
 ### 4. E2E Tests (`e2e/sw-api-caching.spec.js`)
 

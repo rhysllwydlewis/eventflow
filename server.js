@@ -322,11 +322,10 @@ app.use(maintenanceMode);
 app.use('/api', (req, res, next) => {
   // Allowlist of safe cacheable API endpoints (public, non-sensitive data)
   // NOTE: Only endpoints returning truly public data should be here
-  // Health/ready endpoints expose internal debug info and should NOT be cached
+  // Health/ready/performance endpoints expose internal config and should NOT be cached
   const SAFE_CACHEABLE_ENDPOINTS = [
     '/api/config',      // Public config (Google Maps key, version)
     '/api/meta',        // App metadata (version, node version, env)
-    '/api/performance', // Performance metrics (no sensitive data)
   ];
 
   // Check if this is a safe cacheable endpoint

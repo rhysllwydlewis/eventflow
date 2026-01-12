@@ -110,7 +110,6 @@ self.addEventListener('fetch', event => {
     const SAFE_API_ENDPOINTS = [
       '/api/config',   // Public config (Google Maps key, version)
       '/api/meta',     // App metadata (version, node version, env)
-      '/api/performance', // Performance metrics (no sensitive data)
     ];
 
     // Check if this is a safe endpoint
