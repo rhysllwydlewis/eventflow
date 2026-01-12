@@ -6,7 +6,7 @@ const WEBKIT_WAIT_TIMEOUT = 20000;
 const DEFAULT_INITIAL_WAIT = 2000;
 const DEFAULT_WAIT_TIMEOUT = 10000;
 
-test.describe('Supplier Reviews Widget Integration', () => {
+test.describe('Supplier Reviews Widget Integration @backend', () => {
   test('should display review widget on supplier profile page', async ({ page }) => {
     await page.goto('/suppliers.html');
     await page.waitForLoadState('networkidle');

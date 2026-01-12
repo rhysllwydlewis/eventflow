@@ -8,7 +8,7 @@ const DEFAULT_REDIRECT_WAIT = 4000;
 const DEFAULT_LOCALSTORAGE_WAIT = 3000;
 const DEFAULT_STORAGE_CLEAR_WAIT = 1000;
 
-test.describe('Authentication Navbar and Logout Flow', () => {
+test.describe('Authentication Navbar and Logout Flow @backend', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
   });
@@ -43,7 +43,7 @@ test.describe('Authentication Navbar and Logout Flow', () => {
   });
 });
 
-test.describe('Logout Flow (Simulated)', () => {
+test.describe('Logout Flow (Simulated) @backend', () => {
   test('logout should clear localStorage and redirect to home', async ({ page, browserName }) => {
     await page.goto('/');
 

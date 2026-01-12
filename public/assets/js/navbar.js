@@ -533,7 +533,7 @@
         authState.onchange(updateAuthUI);
       } else {
         // Fallback: If auth state manager not available, assume logged out
-        console.warn('EventFlow navbar: Auth state manager not found, using fallback');
+        if (DEBUG) console.warn('EventFlow navbar: Auth state manager not found, using fallback');
         updateAuthUI(null);
       }
 
