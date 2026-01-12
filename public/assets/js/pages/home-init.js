@@ -46,30 +46,33 @@ document.addEventListener('DOMContentLoaded', () => {
     emptyMessage: 'No spotlight packages available yet.',
   });
 
-  // Show notification bell for logged-in users
-  const user = localStorage.getItem('user');
-  if (user) {
-    const notificationBell = document.getElementById('notification-bell');
-    if (notificationBell) {
-      notificationBell.style.display = 'block';
-    }
+  // Show notification bell for logged-in users using AuthStateManager
+  const authState = window.__authState || window.AuthStateManager;
+  if (authState) {
+    // Subscribe to auth state changes
+    authState.onchange(user => {
+      const notificationBell = document.getElementById('notification-bell');
+      if (notificationBell) {
+        notificationBell.style.display = user ? 'block' : 'none';
+      }
 
-    // Initialize WebSocket connection for real-time notifications
-    if (typeof WebSocketClient !== 'undefined') {
-      // eslint-disable-next-line no-unused-vars
-      const wsClient = new WebSocketClient({
+      // Initialize WebSocket connection for real-time notifications (only when logged in)
+      if (user && typeof WebSocketClient !== 'undefined') {
         // eslint-disable-next-line no-unused-vars
-        onNotification: notification => {
-          // Update notification badge
-          const badge = document.querySelector('.notification-badge');
-          if (badge) {
-            badge.style.display = 'block';
-            const current = parseInt(badge.textContent) || 0;
-            badge.textContent = current + 1;
-          }
-        },
-      });
-    }
+        const wsClient = new WebSocketClient({
+          // eslint-disable-next-line no-unused-vars
+          onNotification: notification => {
+            // Update notification badge
+            const badge = document.querySelector('.notification-badge');
+            if (badge) {
+              badge.style.display = 'block';
+              const current = parseInt(badge.textContent) || 0;
+              badge.textContent = current + 1;
+            }
+          },
+        });
+      }
+    });
   }
 
   // Fetch and render public stats
@@ -352,24 +355,18 @@ function isDevelopmentEnvironment() {
 }
 
 async function loadHeroCollageImages() {
-  // First, check if Pexels collage is enabled
+  // NOTE: Pexels collage feature disabled until /api/public/homepage-settings endpoint is deployed
+  // When the backend endpoint is ready, uncomment the code below to enable dynamic collage
+  
+  /* DISABLED - Pexels collage check
   try {
     const settingsResponse = await fetch('/api/public/homepage-settings').catch(() => {
-      // Silent fail - network errors are expected when offline or endpoint not available
-      // No logging even in development to reduce console noise
       return null;
     });
 
-    // If fetch failed (network error), continue to static images
-    if (!settingsResponse) {
-      // Continue to load static images (silent)
-    } else if (settingsResponse.status === 404 || settingsResponse.status === 403) {
-      // Silently handle 404/403 - endpoint may not be deployed or configured yet
-      // Continue to load static images (silent)
-    } else if (settingsResponse.ok) {
+    if (settingsResponse?.ok) {
       const settings = await settingsResponse.json();
       if (settings.pexelsCollageEnabled) {
-        // Only log if in development mode
         if (isDevelopmentEnvironment()) {
           console.log('Pexels collage enabled, initializing dynamic collage');
         }
@@ -377,11 +374,10 @@ async function loadHeroCollageImages() {
         return; // Skip static image loading
       }
     }
-    // If non-200 and non-404/403, just continue to static images
   } catch (error) {
-    // JSON parsing or other error - continue to static images silently
-    // No logging to keep production console clean
+    // Continue to static images
   }
+  */
 
   // If Pexels is not enabled or failed, load static images
   try {
@@ -729,6 +725,16 @@ async function fetchMarketplacePreview() {
     return;
   }
 
+  // Show loading skeleton
+  container.innerHTML = `
+    <div class="skeleton-carousel">
+      <div class="skeleton-card"></div>
+      <div class="skeleton-card"></div>
+      <div class="skeleton-card"></div>
+      <div class="skeleton-card"></div>
+    </div>
+  `;
+
   try {
     const response = await fetch('/api/marketplace/listings?limit=4');
     if (!response.ok) {
@@ -800,6 +806,9 @@ async function fetchGuides() {
     return;
   }
 
+  // Show loading placeholder
+  container.innerHTML = '<p class="small" style="text-align: center; padding: 2rem;">Loading guides...</p>';
+
   try {
     const response = await fetch('/assets/data/guides.json');
     if (!response.ok) {
@@ -861,21 +870,17 @@ async function fetchTestimonials() {
     return;
   }
 
+  // NOTE: Reviews endpoint not yet deployed - hiding section until /api/reviews is available
+  // When the backend endpoint is ready, uncomment the code below to enable testimonials
+  section.style.display = 'none';
+  
+  /* DISABLED - Reviews/testimonials fetch
   try {
     const response = await fetch('/api/reviews?limit=6&approved=true&sort=rating').catch(() => {
-      // Silent fail - network errors don't need logging
-      // Reviews are optional content
       return null;
     });
 
-    // If fetch failed (network error), hide section
-    if (!response) {
-      section.style.display = 'none';
-      return;
-    }
-
-    // Silently handle 404, 403, and other non-200 responses - reviews endpoint may not be deployed yet
-    if (response.status === 404 || response.status === 403 || !response.ok) {
+    if (!response || response.status === 404 || response.status === 403 || !response.ok) {
       section.style.display = 'none';
       return;
     }
@@ -884,7 +889,6 @@ async function fetchTestimonials() {
     const reviews = data.reviews || [];
 
     if (reviews.length === 0) {
-      // Hide section if no reviews
       section.style.display = 'none';
       return;
     }
@@ -926,12 +930,11 @@ async function fetchTestimonials() {
       </div>
     `;
 
-    // Show the section
     section.style.display = 'block';
   } catch (error) {
-    // Silently handle errors and hide section - this is optional content
     section.style.display = 'none';
   }
+  */
 }
 
 /**
