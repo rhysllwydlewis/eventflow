@@ -1010,6 +1010,41 @@ body {
 }
 
 /* ========================================
+   MOBILE MENU VISIBILITY GUARANTEE
+   Added to ensure menu is visible above all overlays
+   ======================================== */
+
+@media (max-width: 768px) {
+  /* Force menu to be visible when open - highest specificity */
+  #ef-mobile-menu.open {
+    display: block !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+    z-index: 2001 !important; /* Above overlay (1998) and header (2000) */
+    position: fixed !important;
+    top: 64px !important;
+    top: var(--ef-header-height, 64px) !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    height: calc(100vh - 64px) !important;
+    height: calc(100vh - var(--ef-header-height, 64px)) !important;
+    max-height: calc(100vh - 64px) !important;
+    max-height: calc(100vh - var(--ef-header-height, 64px)) !important;
+    overflow-y: auto !important;
+    transform: none !important;
+    background: rgba(255, 255, 255, 0.98) !important;
+  }
+  
+  /* Ensure backdrop is below menu */
+  body.ef-menu-open::before {
+    z-index: 1998 !important;
+  }
+}
+
+/* ========================================
    PRINT STYLES
    ======================================== */
 
