@@ -289,11 +289,31 @@
       // Create Stripe checkout session
       const amount = Math.round(plan.price * 100); // Convert to pence/cents
 
+      // Fetch CSRF token if not already available
+      if (!window.__CSRF_TOKEN__) {
+        try {
+          const csrfResponse = await fetch('/api/csrf-token', { credentials: 'include' });
+          const csrfData = await csrfResponse.json();
+          if (csrfData && csrfData.csrfToken) {
+            window.__CSRF_TOKEN__ = csrfData.csrfToken;
+          }
+        } catch (err) {
+          console.warn('Could not fetch CSRF token:', err);
+        }
+      }
+
+      const headers = {
+        'Content-Type': 'application/json',
+      };
+
+      // Add CSRF token if available
+      if (window.__CSRF_TOKEN__) {
+        headers['X-CSRF-Token'] = window.__CSRF_TOKEN__;
+      }
+
       const response = await fetch('/api/payments/create-checkout-session', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: headers,
         credentials: 'include',
         body: JSON.stringify({
           type: 'one_time',

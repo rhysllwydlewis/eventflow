@@ -2,20 +2,20 @@ const crypto = require('crypto');
 
 /**
  * CSRF Protection Middleware
- * Generates and validates CSRF tokens for state-changing operations
+ * Implements the Double-Submit Cookie pattern for CSRF protection
  *
- * NOTE: This implementation uses in-memory storage for simplicity.
- * For production deployments:
- * - Use session-based storage (e.g., express-session)
- * - Use a shared store like Redis for multi-server deployments
- * - Consider using a library like csurf for battle-tested CSRF protection
+ * How it works:
+ * 1. Server generates a random CSRF token
+ * 2. Token is set as a cookie (NOT HttpOnly, so JavaScript can read it)
+ * 3. Client reads the cookie and includes it in the X-CSRF-Token header
+ * 4. Server validates that cookie value matches header value
+ *
+ * Security properties:
+ * - SameSite=Strict/Lax prevents cookie from being sent in cross-site requests
+ * - Secure flag ensures cookie only sent over HTTPS in production
+ * - No server-side storage required (stateless)
+ * - Attacker cannot read cookie from different origin (same-origin policy)
  */
-
-// Store tokens in memory (in production, use session storage or Redis)
-const tokenStore = new Map();
-
-// Token expiration time (1 hour)
-const TOKEN_EXPIRY = 60 * 60 * 1000;
 
 /**
  * Generate a CSRF token
@@ -26,8 +26,9 @@ function generateToken() {
 }
 
 /**
- * Middleware to generate and attach CSRF token to requests
- * Should be used before routes that need CSRF protection
+ * CSRF Protection Middleware
+ * Validates that the CSRF token in the request header matches the cookie
+ * Uses the Double-Submit Cookie pattern
  */
 function csrfProtection(req, res, next) {
   // Skip CSRF protection in test environment for easier testing
@@ -41,23 +42,22 @@ function csrfProtection(req, res, next) {
   }
 
   // Get token from header or body
-  const token = req.headers['x-csrf-token'] || req.body?._csrf;
+  const tokenFromHeader = req.headers['x-csrf-token'] || req.body?._csrf;
 
-  if (!token) {
+  if (!tokenFromHeader) {
     return res.status(403).json({ error: 'CSRF token missing' });
   }
 
-  // Validate token
-  const storedData = tokenStore.get(token);
+  // Get token from cookie
+  const tokenFromCookie = req.cookies?.csrf;
 
-  if (!storedData) {
-    return res.status(403).json({ error: 'Invalid CSRF token' });
+  if (!tokenFromCookie) {
+    return res.status(403).json({ error: 'CSRF token missing' });
   }
 
-  // Check if token has expired
-  if (Date.now() > storedData.expiresAt) {
-    tokenStore.delete(token);
-    return res.status(403).json({ error: 'CSRF token expired' });
+  // Validate that header token matches cookie token
+  if (tokenFromHeader !== tokenFromCookie) {
+    return res.status(403).json({ error: 'Invalid CSRF token' });
   }
 
   // Token is valid, proceed
@@ -65,38 +65,36 @@ function csrfProtection(req, res, next) {
 }
 
 /**
- * Get or create a CSRF token
+ * Get or create a CSRF token and set it as a cookie
  * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
  * @returns {string} The CSRF token
  */
-function getToken(_req) {
-  // In a session-based system, you would store this in req.session
-  // For now, we'll generate a new token each time
-  const token = generateToken();
-  const expiresAt = Date.now() + TOKEN_EXPIRY;
+function getToken(req, res) {
+  // Check if a token already exists in the cookie
+  let token = req.cookies?.csrf;
 
-  tokenStore.set(token, {
-    createdAt: Date.now(),
-    expiresAt: expiresAt,
+  // If no token exists, generate a new one
+  if (!token) {
+    token = generateToken();
+  }
+
+  // Set the CSRF cookie
+  // NOT HttpOnly - client needs to read it to send in header
+  // SameSite=Lax for better compatibility while still providing CSRF protection
+  // Secure only in production (HTTPS)
+  const isProduction = process.env.NODE_ENV === 'production';
+
+  res.cookie('csrf', token, {
+    httpOnly: false, // Client needs to read this cookie
+    secure: isProduction, // Only send over HTTPS in production
+    sameSite: 'lax', // Lax for compatibility, can use 'strict' for stronger protection
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    path: '/',
   });
 
   return token;
 }
-
-/**
- * Cleanup expired tokens periodically
- */
-function cleanupExpiredTokens() {
-  const now = Date.now();
-  for (const [token, data] of tokenStore.entries()) {
-    if (now > data.expiresAt) {
-      tokenStore.delete(token);
-    }
-  }
-}
-
-// Run cleanup every 15 minutes
-setInterval(cleanupExpiredTokens, 15 * 60 * 1000);
 
 module.exports = {
   csrfProtection,

@@ -19,6 +19,7 @@ const {
 } = require('../middleware/auth');
 const { passwordOk } = require('../middleware/validation');
 const { authLimiter } = require('../middleware/rateLimit');
+const { csrfProtection } = require('../middleware/csrf');
 const { featureRequired, getFeatureFlags } = require('../middleware/features');
 const postmark = require('../utils/postmark');
 const tokenUtils = require('../utils/token');
@@ -654,7 +655,7 @@ router.post('/reset-password', authLimiter, async (req, res) => {
  * POST /api/auth/logout
  * Log out current user
  */
-router.post('/logout', authLimiter, (_req, res) => {
+router.post('/logout', authLimiter, csrfProtection, (_req, res) => {
   // Set cache control headers to prevent caching of logout response
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
   res.setHeader('Pragma', 'no-cache');

@@ -8,6 +8,7 @@
 const express = require('express');
 const { authRequired } = require('../middleware/auth');
 const { writeLimiter } = require('../middleware/rateLimit');
+const { csrfProtection } = require('../middleware/csrf');
 const dbUnified = require('../db-unified');
 const { uid } = require('../store');
 
@@ -148,6 +149,7 @@ router.post(
   '/create-checkout-session',
   authRequired,
   writeLimiter,
+  csrfProtection,
   ensureStripeEnabled,
   async (req, res) => {
     try {

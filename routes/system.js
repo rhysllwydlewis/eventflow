@@ -79,12 +79,13 @@ function applyHealthCheckLimiter(req, res, next) {
 /**
  * GET /api/csrf-token
  * Get CSRF token for form submissions
+ * Sets CSRF cookie and returns token in response
  */
 router.get('/csrf-token', applyAuthLimiter, async (req, res) => {
   if (!getToken) {
     return res.status(503).json({ error: 'CSRF token service not initialized' });
   }
-  const token = getToken(req);
+  const token = getToken(req, res);
   res.json({ csrfToken: token });
 });
 
