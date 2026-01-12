@@ -2,10 +2,10 @@
 
 /**
  * Security Headers Verification Script
- * 
+ *
  * Verifies that all required security headers are properly configured
  * in both development and production modes without requiring Playwright.
- * 
+ *
  * This script:
  * - Starts the Express server as a child process
  * - Tests headers on multiple endpoints (/, /api/config, 404)
@@ -41,23 +41,23 @@ const colors = {
  * Tries multiple ports if the preferred port is in use
  */
 async function startServer(env = 'development') {
-  const isProduction = env === 'production';
-  
   // Try multiple ports until we find one that works
   for (let portOffset = 0; portOffset < MAX_PORT_TRIES; portOffset++) {
     const tryPort = BASE_PORT + portOffset;
-    
+
     const serverEnv = {
       ...process.env,
       NODE_ENV: env,
       PORT: tryPort.toString(),
       JWT_SECRET,
       // Only set BASE_URL if not already defined, to avoid redirect loops
-      ...((!process.env.BASE_URL) && { BASE_URL: `http://localhost:${tryPort}` }),
+      ...(!process.env.BASE_URL && { BASE_URL: `http://localhost:${tryPort}` }),
     };
 
-    console.log(`${colors.blue}Starting server in ${env} mode on port ${tryPort}...${colors.reset}`);
-    
+    console.log(
+      `${colors.blue}Starting server in ${env} mode on port ${tryPort}...${colors.reset}`
+    );
+
     const serverProcess = spawn('node', ['server.js'], {
       cwd: process.cwd(),
       env: serverEnv,
@@ -66,10 +66,10 @@ async function startServer(env = 'development') {
 
     // Capture server output for debugging if needed
     let serverOutput = '';
-    serverProcess.stdout.on('data', (data) => {
+    serverProcess.stdout.on('data', data => {
       serverOutput += data.toString();
     });
-    serverProcess.stderr.on('data', (data) => {
+    serverProcess.stderr.on('data', data => {
       serverOutput += data.toString();
     });
 
@@ -80,7 +80,7 @@ async function startServer(env = 'development') {
     let serverExitCode = null;
 
     // Track if server exits early
-    serverProcess.on('exit', (code) => {
+    serverProcess.on('exit', code => {
       serverExited = true;
       serverExitCode = code;
     });
@@ -89,22 +89,29 @@ async function startServer(env = 'development') {
       // Check if process exited early
       if (serverExited) {
         // Check if it's EADDRINUSE (port in use)
-        const isPortInUse = serverOutput.includes('EADDRINUSE') || 
-                            serverOutput.includes('address already in use') ||
-                            serverOutput.includes('port is already allocated');
-        
+        const isPortInUse =
+          serverOutput.includes('EADDRINUSE') ||
+          serverOutput.includes('address already in use') ||
+          serverOutput.includes('port is already allocated');
+
         if (isPortInUse) {
-          console.log(`${colors.yellow}Port ${tryPort} unavailable, trying next port...${colors.reset}`);
+          console.log(
+            `${colors.yellow}Port ${tryPort} unavailable, trying next port...${colors.reset}`
+          );
           break; // Try next port
         } else {
           // Real error - fail fast with captured output
-          console.error(`${colors.red}✗ Server crashed on startup (exit code: ${serverExitCode})${colors.reset}`);
+          console.error(
+            `${colors.red}✗ Server crashed on startup (exit code: ${serverExitCode})${colors.reset}`
+          );
           console.error(`${colors.red}Server output:${colors.reset}`);
           console.error(serverOutput || '(no output captured)');
-          throw new Error(`Server failed to start. Exit code: ${serverExitCode}. Check output above for details.`);
+          throw new Error(
+            `Server failed to start. Exit code: ${serverExitCode}. Check output above for details.`
+          );
         }
       }
-      
+
       try {
         // Try /api/config first (more stable than /api/health)
         let response;
@@ -118,10 +125,12 @@ async function startServer(env = 'development') {
             signal: AbortSignal.timeout(2000),
           });
         }
-        
+
         if (response.ok || response.status === 404) {
           // Server is responding
-          console.log(`${colors.green}✓ Server started successfully on port ${tryPort}${colors.reset}`);
+          console.log(
+            `${colors.green}✓ Server started successfully on port ${tryPort}${colors.reset}`
+          );
           currentPort = tryPort;
           serverReady = true;
           return { process: serverProcess, output: serverOutput, port: tryPort };
@@ -137,17 +146,19 @@ async function startServer(env = 'development') {
       if (!serverExited) {
         serverProcess.kill();
       }
-      
+
       // If this was the last port to try, throw error
       if (portOffset === MAX_PORT_TRIES - 1) {
-        console.error(`${colors.red}✗ Server failed to start on any port (${BASE_PORT}-${BASE_PORT + MAX_PORT_TRIES - 1})${colors.reset}`);
+        console.error(
+          `${colors.red}✗ Server failed to start on any port (${BASE_PORT}-${BASE_PORT + MAX_PORT_TRIES - 1})${colors.reset}`
+        );
         console.error('Server output:', serverOutput);
         throw new Error('Server startup failed on all attempted ports');
       }
       // Otherwise, continue to next port (loop continues)
     }
   }
-  
+
   throw new Error('Unexpected: loop exited without starting server or throwing error');
 }
 
@@ -172,17 +183,17 @@ async function fetchHeaders(path) {
       redirect: 'follow', // Follow redirects to get final headers
       signal: AbortSignal.timeout(5000),
     });
-    
+
     // Convert headers to object for easier access
     const headers = {};
     response.headers.forEach((value, key) => {
       headers[key.toLowerCase()] = value;
     });
-    
+
     // Determine if the final response is HTTPS
     const finalUrl = new URL(response.url);
     const isHttps = finalUrl.protocol === 'https:';
-    
+
     return {
       status: response.status,
       headers,
@@ -200,26 +211,28 @@ async function fetchHeaders(path) {
  */
 function verifyHeader(headers, headerName, expectedValue, checkType = 'exact') {
   const actualValue = headers[headerName.toLowerCase()];
-  
+
   if (checkType === 'absent') {
     if (actualValue !== undefined) {
       throw new Error(`Header '${headerName}' should be absent but found: ${actualValue}`);
     }
     return true;
   }
-  
+
   if (!actualValue) {
     throw new Error(`Header '${headerName}' is missing`);
   }
-  
+
   if (checkType === 'exact' && actualValue !== expectedValue) {
     throw new Error(`Header '${headerName}' expected '${expectedValue}' but got '${actualValue}'`);
   }
-  
+
   if (checkType === 'contains' && !actualValue.includes(expectedValue)) {
-    throw new Error(`Header '${headerName}' should contain '${expectedValue}' but got '${actualValue}'`);
+    throw new Error(
+      `Header '${headerName}' should contain '${expectedValue}' but got '${actualValue}'`
+    );
   }
-  
+
   return true;
 }
 
@@ -228,12 +241,12 @@ function verifyHeader(headers, headerName, expectedValue, checkType = 'exact') {
  */
 async function testEndpoint(path, mode = 'development') {
   console.log(`\n${colors.blue}Testing ${path}...${colors.reset}`);
-  
+
   const result = await fetchHeaders(path);
   const { headers, isHttps } = result;
-  
+
   const checks = [];
-  
+
   // Check X-Content-Type-Options
   try {
     verifyHeader(headers, 'x-content-type-options', 'nosniff', 'exact');
@@ -241,7 +254,7 @@ async function testEndpoint(path, mode = 'development') {
   } catch (err) {
     checks.push({ name: 'X-Content-Type-Options', status: 'fail', error: err.message });
   }
-  
+
   // Check Referrer-Policy
   try {
     verifyHeader(headers, 'referrer-policy', 'strict-origin-when-cross-origin', 'contains');
@@ -249,7 +262,7 @@ async function testEndpoint(path, mode = 'development') {
   } catch (err) {
     checks.push({ name: 'Referrer-Policy', status: 'fail', error: err.message });
   }
-  
+
   // Check Permissions-Policy
   try {
     const permPolicy = headers['permissions-policy'];
@@ -269,15 +282,15 @@ async function testEndpoint(path, mode = 'development') {
   } catch (err) {
     checks.push({ name: 'Permissions-Policy', status: 'fail', error: err.message });
   }
-  
+
   // Check Clickjacking Protection (CSP frame-ancestors OR X-Frame-Options)
   try {
     const csp = headers['content-security-policy'];
     const xFrameOptions = headers['x-frame-options'];
-    
+
     const hasCspFrameAncestors = csp && csp.includes("frame-ancestors 'none'");
     const hasXFrameOptions = xFrameOptions && xFrameOptions.toUpperCase() === 'DENY';
-    
+
     if (!hasCspFrameAncestors && !hasXFrameOptions) {
       throw new Error('Neither CSP frame-ancestors nor X-Frame-Options is set');
     }
@@ -285,7 +298,7 @@ async function testEndpoint(path, mode = 'development') {
   } catch (err) {
     checks.push({ name: 'Clickjacking Protection', status: 'fail', error: err.message });
   }
-  
+
   // Check X-Powered-By is absent
   try {
     verifyHeader(headers, 'x-powered-by', null, 'absent');
@@ -293,7 +306,7 @@ async function testEndpoint(path, mode = 'development') {
   } catch (err) {
     checks.push({ name: 'X-Powered-By Removal', status: 'fail', error: err.message });
   }
-  
+
   // Check HSTS based on mode and protocol
   if (mode === 'production') {
     if (isHttps) {
@@ -315,9 +328,15 @@ async function testEndpoint(path, mode = 'development') {
       }
     } else {
       // HTTP response - HSTS check is skipped, but document it
-      console.log(`  ${colors.yellow}⚠${colors.reset} HSTS check skipped (HTTP response, not HTTPS)`);
-      console.log(`  ${colors.yellow}  To verify HSTS in production, test against HTTPS endpoint:${colors.reset}`);
-      console.log(`  ${colors.yellow}  curl -I https://event-flow.co.uk/ | grep -i strict-transport-security${colors.reset}`);
+      console.log(
+        `  ${colors.yellow}⚠${colors.reset} HSTS check skipped (HTTP response, not HTTPS)`
+      );
+      console.log(
+        `  ${colors.yellow}  To verify HSTS in production, test against HTTPS endpoint:${colors.reset}`
+      );
+      console.log(
+        `  ${colors.yellow}  curl -I https://event-flow.co.uk/ | grep -i strict-transport-security${colors.reset}`
+      );
       checks.push({ name: 'HSTS (Production - Skipped)', status: 'pass' });
     }
   } else {
@@ -329,7 +348,7 @@ async function testEndpoint(path, mode = 'development') {
       checks.push({ name: 'HSTS (Dev - Absent)', status: 'fail', error: err.message });
     }
   }
-  
+
   // Print results
   let allPassed = true;
   checks.forEach(check => {
@@ -340,7 +359,7 @@ async function testEndpoint(path, mode = 'development') {
       allPassed = false;
     }
   });
-  
+
   return allPassed;
 }
 
@@ -351,24 +370,20 @@ async function testMode(mode) {
   console.log(`\n${'='.repeat(70)}`);
   console.log(`${colors.yellow}Testing ${mode.toUpperCase()} Mode${colors.reset}`);
   console.log(`${'='.repeat(70)}`);
-  
+
   let server = null;
   try {
     server = await startServer(mode);
-    
+
     // Test multiple endpoints
-    const endpoints = [
-      '/',
-      '/api/config',
-      '/this-page-should-404',
-    ];
-    
+    const endpoints = ['/', '/api/config', '/this-page-should-404'];
+
     let allPassed = true;
     for (const endpoint of endpoints) {
       const passed = await testEndpoint(endpoint, mode);
       allPassed = allPassed && passed;
     }
-    
+
     if (allPassed) {
       console.log(`\n${colors.green}✓ All ${mode} mode tests passed${colors.reset}`);
       return true;
@@ -394,22 +409,26 @@ async function main() {
   if (nodeMajorVersion >= 22) {
     console.error(`${colors.red}✗ Unsupported Node.js version: ${process.version}${colors.reset}`);
     console.error(`${colors.red}  This project requires Node.js 20.x LTS.${colors.reset}`);
-    console.error(`${colors.red}  Node 22+ may cause "Bus error" crashes due to sharp compatibility.${colors.reset}`);
-    console.error(`${colors.red}  Please install Node 20 LTS: nvm install 20 && nvm use 20${colors.reset}`);
+    console.error(
+      `${colors.red}  Node 22+ may cause "Bus error" crashes due to sharp compatibility.${colors.reset}`
+    );
+    console.error(
+      `${colors.red}  Please install Node 20 LTS: nvm install 20 && nvm use 20${colors.reset}`
+    );
     process.exit(1);
   }
 
   console.log(`${'='.repeat(70)}`);
   console.log(`${colors.blue}Security Headers Verification${colors.reset}`);
   console.log(`${'='.repeat(70)}`);
-  
+
   try {
     // Test development mode
     const devPassed = await testMode('development');
-    
+
     // Test production mode
     const prodPassed = await testMode('production');
-    
+
     // Final results
     console.log(`\n${'='.repeat(70)}`);
     if (devPassed && prodPassed) {
