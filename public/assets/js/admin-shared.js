@@ -38,6 +38,58 @@ const AdminShared = (function () {
     return div.innerHTML;
   }
 
+  /**
+   * Validation helpers
+   */
+
+  // Email validation regex (basic but comprehensive)
+  const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  // Validate email format
+  function validateEmail(email) {
+    if (!email || typeof email !== 'string') {
+      return 'Email is required';
+    }
+    if (!EMAIL_REGEX.test(email.trim())) {
+      return 'Please enter a valid email address';
+    }
+    return true;
+  }
+
+  // Validate password strength
+  function validatePassword(password) {
+    if (!password || typeof password !== 'string') {
+      return 'Password is required';
+    }
+    if (password.length < 8) {
+      return 'Password must be at least 8 characters long';
+    }
+    if (!/[A-Z]/.test(password)) {
+      return 'Password must contain at least one uppercase letter';
+    }
+    if (!/[a-z]/.test(password)) {
+      return 'Password must contain at least one lowercase letter';
+    }
+    if (!/[0-9]/.test(password)) {
+      return 'Password must contain at least one number';
+    }
+    return true;
+  }
+
+  // Validate role (customer, supplier, admin)
+  const VALID_ROLES = ['customer', 'supplier', 'admin'];
+
+  function validateRole(role) {
+    if (!role || typeof role !== 'string') {
+      return 'Role is required';
+    }
+    const normalizedRole = role.toLowerCase().trim();
+    if (!VALID_ROLES.includes(normalizedRole)) {
+      return `Role must be one of: ${VALID_ROLES.join(', ')}`;
+    }
+    return true;
+  }
+
   // Format dates consistently
   function formatDate(dateStr) {
     if (!dateStr) {
@@ -418,6 +470,10 @@ const AdminShared = (function () {
           from { opacity: 0; }
           to { opacity: 1; }
         }
+        @keyframes fadeOut {
+          from { opacity: 1; }
+          to { opacity: 0; }
+        }
         @keyframes slideUp {
           from { transform: translateY(20px); opacity: 0; }
           to { transform: translateY(0); opacity: 1; }
@@ -612,6 +668,10 @@ const AdminShared = (function () {
           from { opacity: 0; }
           to { opacity: 1; }
         }
+        @keyframes fadeOut {
+          from { opacity: 1; }
+          to { opacity: 0; }
+        }
         @keyframes slideUp {
           from { transform: translateY(20px); opacity: 0; }
           to { transform: translateY(0); opacity: 1; }
@@ -654,7 +714,8 @@ const AdminShared = (function () {
         if (validateFn) {
           const validationResult = validateFn(value);
           if (validationResult !== true) {
-            errorDiv.textContent = typeof validationResult === 'string' ? validationResult : 'Invalid input';
+            errorDiv.textContent =
+              typeof validationResult === 'string' ? validationResult : 'Invalid input';
             errorDiv.style.display = 'block';
             confirmBtn.disabled = true;
             return false;
@@ -1445,6 +1506,11 @@ const AdminShared = (function () {
     formatDate,
     formatTimestamp,
     formatFileSize,
+    // Validation helpers
+    validateEmail,
+    validatePassword,
+    validateRole,
+    VALID_ROLES,
     // API wrappers
     api,
     adminFetch,
