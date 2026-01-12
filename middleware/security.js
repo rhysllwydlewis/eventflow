@@ -14,9 +14,10 @@ const logger = require('../utils/logger');
 
 /**
  * Configure Helmet with Content Security Policy
+ * @param {boolean} isProduction - Whether running in production
  * @returns {Function} Helmet middleware
  */
-function configureHelmet() {
+function configureHelmet(isProduction = false) {
   return helmet({
     contentSecurityPolicy: {
       directives: {
@@ -88,21 +89,41 @@ function configureHelmet() {
           'https://js.stripe.com',
           'https://hooks.stripe.com',
         ],
+        // Clickjacking protection: prefer frame-ancestors over X-Frame-Options
+        frameAncestors: ["'none'"],
         objectSrc: ["'none'"],
         upgradeInsecureRequests: [],
         reportUri: '/api/csp-report',
       },
     },
-    hsts: {
-      maxAge: 31536000, // 1 year
-      includeSubDomains: true,
-      preload: false, // Don't enable preload yet (requires all subdomains on HTTPS)
-    },
+    // HSTS only in production - do NOT set for localhost/dev/test
+    hsts: isProduction
+      ? {
+          maxAge: 31536000, // 1 year
+          includeSubDomains: true,
+          preload: false, // Don't enable preload unless explicitly verified
+        }
+      : false,
+    // Fallback clickjacking protection (CSP frame-ancestors is preferred)
     xFrameOptions: { action: 'deny' },
     xContentTypeOptions: 'nosniff',
     xDnsPrefetchControl: { allow: false },
     referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
   });
+}
+
+/**
+ * Configure Permissions-Policy header middleware
+ * Restricts browser features (geolocation, camera, microphone) by default
+ * @returns {Function} Express middleware
+ */
+function configurePermissionsPolicy() {
+  return (req, res, next) => {
+    // Disable geolocation, camera, and microphone by default
+    // Only enable these permissions if truly needed for specific features
+    res.setHeader('Permissions-Policy', 'geolocation=(), camera=(), microphone=()');
+    next();
+  };
 }
 
 /**
@@ -272,6 +293,7 @@ function configureHTTPSRedirect(isProduction = false) {
 
 module.exports = {
   configureHelmet,
+  configurePermissionsPolicy,
   configureCORS,
   createRateLimiters,
   configureHTTPSRedirect,

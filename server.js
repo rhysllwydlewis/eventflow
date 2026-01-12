@@ -236,7 +236,8 @@ app.disable('x-powered-by');
 
 // Apply security middleware
 app.use(security.configureHTTPSRedirect(isProduction));
-app.use(security.configureHelmet());
+app.use(security.configureHelmet(isProduction));
+app.use(security.configurePermissionsPolicy());
 app.use(require('cors')(security.configureCORS(isProduction)));
 
 // Sentry request and tracing handlers
@@ -324,8 +325,8 @@ app.use('/api', (req, res, next) => {
   // NOTE: Only endpoints returning truly public data should be here
   // Health/ready/performance endpoints expose internal config and should NOT be cached
   const SAFE_CACHEABLE_ENDPOINTS = [
-    '/api/config',      // Public config (Google Maps key, version)
-    '/api/meta',        // App metadata (version, node version, env)
+    '/api/config', // Public config (Google Maps key, version)
+    '/api/meta', // App metadata (version, node version, env)
   ];
 
   // Check if this is a safe cacheable endpoint
