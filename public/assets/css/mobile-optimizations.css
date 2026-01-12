@@ -9,9 +9,19 @@
    ============================================ */
 
 /* Improve tap targets on mobile (WCAG 2.1 AA - 44x44px minimum) */
+/* Scoped to content areas to avoid breaking navigation and header elements */
 @media (max-width: 768px) {
-  /* Ensure all interactive elements meet minimum size */
-  a, button, input[type="submit"], input[type="button"], input[type="checkbox"], input[type="radio"], select {
+  /* Ensure interactive elements in main content areas meet minimum size */
+  /* Excludes navigation, header, and specific UI components */
+  main a:not(.ef-nav-link):not(.ef-mobile-link):not(.ef-bottom-link),
+  main button:not(.ef-icon-btn):not(.ef-mobile-toggle):not(.ef-btn):not(.hero-search-button),
+  .section a:not(.ef-nav-link):not(.ef-mobile-link):not(.ef-bottom-link),
+  .card a:not(.ef-nav-link),
+  .form-row input[type="submit"],
+  .form-row input[type="button"],
+  .form-row input[type="checkbox"],
+  .form-row input[type="radio"],
+  .form-row select {
     min-height: 44px;
     min-width: 44px;
   }
