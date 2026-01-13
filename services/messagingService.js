@@ -167,6 +167,13 @@ class MessagingService {
       throw error;
     }
   }
+
+  /**
+   * Get messages in a thread
+   * @param {string} threadId - Thread ID
+   * @param {Object} options - Query options (limit, skip, before)
+   * @returns {Promise<Array>} Array of messages
+   */
   async getThreadMessages(threadId, options = {}) {
     try {
       const {
