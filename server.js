@@ -5689,6 +5689,10 @@ app.use('/api', reportsRoutes);
 const messagesRoutes = require('./routes/messages');
 app.use('/api/messages', messagesRoutes);
 
+// ---------- Messages v2 Routes (Real-time Messaging System) ----------
+const messagingV2Routes = require('./routes/messaging-v2');
+app.use('/api/v2/messages', messagingV2Routes);
+
 // ---------- Tickets Routes ----------
 const ticketsRoutes = require('./routes/tickets');
 app.use('/api/tickets', ticketsRoutes);
@@ -5947,13 +5951,37 @@ app.use((req, res) => {
 const http = require('http');
 const server = http.createServer(app);
 
-// Initialize WebSocket server
+// Initialize WebSocket server (v1 - legacy)
 const WebSocketServer = require('./websocket-server');
 const wsServer = new WebSocketServer(server);
 
 // Make wsServer available globally for notification routes
 global.wsServer = wsServer;
 app.set('wsServer', wsServer);
+
+// Initialize WebSocket server v2 (real-time messaging)
+const WebSocketServerV2 = require('./websocket-server-v2');
+let wsServerV2;
+
+// Will be initialized after MongoDB is connected
+function initializeWebSocketV2(db) {
+  if (!wsServerV2 && db) {
+    const MessagingService = require('./services/messagingService');
+    const { NotificationService } = require('./services/notificationService');
+    
+    const messagingService = new MessagingService(db);
+    const notificationService = new NotificationService(db, wsServer);
+    
+    wsServerV2 = new WebSocketServerV2(server, messagingService, notificationService);
+    
+    global.wsServerV2 = wsServerV2;
+    app.set('wsServerV2', wsServerV2);
+    app.locals.db = db;
+    
+    console.log('✅ WebSocket Server v2 initialized for real-time messaging');
+  }
+}
+
 
 /**
  * Initialize all services and start the server
@@ -6117,6 +6145,14 @@ async function startServer() {
         await dbUnified.initializeDatabase();
         console.log('   ✅ Database connection successful');
 
+        // Initialize WebSocket v2 with MongoDB
+        try {
+          const db = await mongoDb.getDb();
+          initializeWebSocketV2(db);
+        } catch (error) {
+          console.warn('   ⚠️  WebSocket v2 initialization deferred (MongoDB not available yet)');
+        }
+
         // 4a. Seed database with initial data
         console.log('');
         console.log('📊 Seeding database...');
@@ -6244,6 +6280,12 @@ process.on('uncaughtException', error => {
 // Graceful shutdown
 process.on('SIGTERM', async () => {
   console.log('SIGTERM signal received: closing HTTP server');
+  
+  // Shutdown WebSocket servers gracefully
+  if (wsServerV2) {
+    await wsServerV2.shutdown();
+  }
+  
   await sentry.flush(2000);
   await cache.close();
   process.exit(0);
@@ -6251,6 +6293,12 @@ process.on('SIGTERM', async () => {
 
 process.on('SIGINT', async () => {
   console.log('SIGINT signal received: closing HTTP server');
+  
+  // Shutdown WebSocket servers gracefully
+  if (wsServerV2) {
+    await wsServerV2.shutdown();
+  }
+  
   await sentry.flush(2000);
   await cache.close();
   process.exit(0);
