@@ -151,8 +151,20 @@ class MessagingService {
   }
 
   /**
-   * Get messages in a thread
+   * Get a single message by ID
    */
+  async getMessage(messageId) {
+    try {
+      const message = await this.messagesCollection.findOne({
+        _id: typeof messageId === 'string' ? new ObjectId(messageId) : messageId,
+      });
+
+      return message;
+    } catch (error) {
+      logger.error('Error getting message', { messageId, error: error.message });
+      throw error;
+    }
+  }
   async getThreadMessages(threadId, options = {}) {
     try {
       const {

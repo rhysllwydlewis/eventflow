@@ -363,7 +363,7 @@ class WebSocketServerV2 {
       await this.messagingService.markMessageAsRead(messageId, socket.userId);
 
       // Notify sender about read receipt
-      const message = await this.messagingService.getThreadMessages(messageId);
+      const message = await this.messagingService.getMessage(messageId);
       if (message && message.senderId) {
         this.io.to(`user:${message.senderId}`).emit('message:read', {
           messageId,
