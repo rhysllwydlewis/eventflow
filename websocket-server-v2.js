@@ -6,7 +6,9 @@
 'use strict';
 
 const { Server } = require('socket.io');
+// eslint-disable-next-line node/no-unpublished-require, node/no-missing-require
 const logger = require('../utils/logger');
+// eslint-disable-next-line node/no-unpublished-require, node/no-missing-require
 const { PresenceService } = require('../services/presenceService');
 
 // Try to load Redis adapter for clustering (optional)
