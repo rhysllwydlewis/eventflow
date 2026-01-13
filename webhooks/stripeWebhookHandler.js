@@ -45,8 +45,8 @@ async function handleInvoiceCreated(invoice) {
     dueDate: invoice.due_date ? new Date(invoice.due_date * 1000).toISOString() : null,
     lineItems,
     subtotal: invoice.subtotal / 100,
-    tax: invoice.tax / 100 || 0,
-    discount: invoice.discount / 100 || 0,
+    tax: (invoice.tax ?? 0) / 100,
+    discount: (invoice.discount ?? 0) / 100,
     attemptCount: 0,
     metadata: {
       stripeInvoiceNumber: invoice.number || '',

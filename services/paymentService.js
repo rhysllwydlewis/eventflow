@@ -255,8 +255,10 @@ async function getPaymentByStripeId(stripePaymentId) {
  * @returns {Promise<void>}
  */
 async function handleFailedPayment(subscriptionId, invoice) {
-  // Update subscription status to past_due
+  // Avoid circular dependency by lazy loading
   const subscriptionService = require('./subscriptionService');
+
+  // Update subscription status to past_due
   await subscriptionService.updateSubscription(subscriptionId, {
     status: 'past_due',
   });

@@ -587,26 +587,26 @@ router.get('/invoices/:id/download', authRequired, async (req, res) => {
     doc.fontSize(10);
 
     invoice.lineItems.forEach(item => {
-      doc.text(
-        `${item.name} x ${item.quantity} @ ${invoice.currency} ${item.unitPrice.toFixed(2)}`
-      );
-      doc.text(`  Total: ${invoice.currency} ${item.amount.toFixed(2)}`);
+      const currencyUpper = invoice.currency.toUpperCase();
+      doc.text(`${item.name} x ${item.quantity} @ ${currencyUpper} ${item.unitPrice.toFixed(2)}`);
+      doc.text(`  Total: ${currencyUpper} ${item.amount.toFixed(2)}`);
       doc.moveDown(0.5);
     });
 
     // Totals
     doc.moveDown();
     doc.fontSize(12);
-    doc.text(`Subtotal: ${invoice.currency} ${invoice.subtotal.toFixed(2)}`, { align: 'right' });
+    const currencyUpper = invoice.currency.toUpperCase();
+    doc.text(`Subtotal: ${currencyUpper} ${invoice.subtotal.toFixed(2)}`, { align: 'right' });
     if (invoice.tax > 0) {
-      doc.text(`Tax: ${invoice.currency} ${invoice.tax.toFixed(2)}`, { align: 'right' });
+      doc.text(`Tax: ${currencyUpper} ${invoice.tax.toFixed(2)}`, { align: 'right' });
     }
     if (invoice.discount > 0) {
-      doc.text(`Discount: -${invoice.currency} ${invoice.discount.toFixed(2)}`, { align: 'right' });
+      doc.text(`Discount: -${currencyUpper} ${invoice.discount.toFixed(2)}`, { align: 'right' });
     }
     doc
       .fontSize(14)
-      .text(`Total: ${invoice.currency} ${invoice.amount.toFixed(2)}`, { align: 'right' });
+      .text(`Total: ${currencyUpper} ${invoice.amount.toFixed(2)}`, { align: 'right' });
 
     if (invoice.paidAt) {
       doc.moveDown();
@@ -648,9 +648,11 @@ router.get('/admin/subscriptions', authRequired, roleRequired('admin'), async (r
 
     const subscriptions = await subscriptionService.listSubscriptions(filters);
 
-    // Pagination
-    const startIndex = (page - 1) * limit;
-    const endIndex = startIndex + parseInt(limit);
+    // Pagination with proper integer parsing
+    const pageNum = parseInt(page, 10);
+    const limitNum = parseInt(limit, 10);
+    const startIndex = (pageNum - 1) * limitNum;
+    const endIndex = startIndex + limitNum;
     const paginatedSubscriptions = subscriptions.slice(startIndex, endIndex);
 
     res.json({
@@ -658,9 +660,9 @@ router.get('/admin/subscriptions', authRequired, roleRequired('admin'), async (r
       subscriptions: paginatedSubscriptions,
       pagination: {
         total: subscriptions.length,
-        page: parseInt(page),
-        limit: parseInt(limit),
-        pages: Math.ceil(subscriptions.length / limit),
+        page: pageNum,
+        limit: limitNum,
+        pages: Math.ceil(subscriptions.length / limitNum),
       },
     });
   } catch (error) {
