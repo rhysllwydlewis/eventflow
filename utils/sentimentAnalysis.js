@@ -14,6 +14,13 @@
 
 'use strict';
 
+// Configuration constants
+const SENTIMENT_AMPLIFIER = 5; // Multiplier for sentiment signal amplification
+const MAX_CONFIDENCE_MULTIPLIER = 1.2; // Maximum confidence boost for sentiment detection
+const SPAM_THRESHOLD = 0.5; // Score above which content is considered spam
+const POSITIVE_SENTIMENT_THRESHOLD = 0.25; // Threshold for positive sentiment classification
+const NEGATIVE_SENTIMENT_THRESHOLD = -0.25; // Threshold for negative sentiment classification
+
 // Sentiment keyword dictionaries with weighted scores
 const POSITIVE_KEYWORDS = {
   // Excellent (0.9-1.0)
@@ -182,16 +189,16 @@ function analyzeSentiment(text) {
     const rawScore = (avgPositive - avgNegative);
     // Apply confidence weighting based on sentiment word density
     // Amplify the signal with higher multiplier for better detection
-    finalScore = rawScore * Math.min(sentimentRatio * 5, 1.2);
+    finalScore = rawScore * Math.min(sentimentRatio * SENTIMENT_AMPLIFIER, MAX_CONFIDENCE_MULTIPLIER);
   }
   
   // Determine label
   let label = 'neutral';
   let confidence = Math.abs(finalScore);
   
-  if (finalScore >= 0.25) {
+  if (finalScore >= POSITIVE_SENTIMENT_THRESHOLD) {
     label = 'positive';
-  } else if (finalScore <= -0.25) {
+  } else if (finalScore <= NEGATIVE_SENTIMENT_THRESHOLD) {
     label = 'negative';
   }
   
@@ -319,7 +326,7 @@ function detectSpam(text) {
   }
   
   return {
-    isSpam: spamScore >= 0.5, // Threshold for spam detection
+    isSpam: spamScore >= SPAM_THRESHOLD, // Threshold for spam detection
     spamScore: Number(Math.min(spamScore, 1).toFixed(2)),
     indicators,
   };

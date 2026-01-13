@@ -8,6 +8,10 @@
 
 const ReviewModel = require('../models/Review');
 
+// Configuration constants
+const EDIT_WINDOW_DAYS = 7; // Days after approval that reviews can be edited
+const EDIT_WINDOW_MS = EDIT_WINDOW_DAYS * 24 * 60 * 60 * 1000; // Edit window in milliseconds
+
 /**
  * Check if user can moderate reviews (admin only)
  * @param {Object} req - Express request
@@ -138,7 +142,7 @@ function canEdit(review, userId) {
   }
   
   if (review.moderation?.state === ReviewModel.MODERATION_STATES.APPROVED) {
-    const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+    const sevenDaysMs = EDIT_WINDOW_MS;
     const approvedAt = new Date(review.moderation.moderatedAt).getTime();
     const now = Date.now();
     

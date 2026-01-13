@@ -8,6 +8,10 @@
 
 'use strict';
 
+// Configuration constants
+const POSITIVE_SENTIMENT_THRESHOLD = 0.3; // Threshold for positive sentiment classification
+const NEGATIVE_SENTIMENT_THRESHOLD = -0.3; // Threshold for negative sentiment classification
+
 /**
  * Calculate basic review metrics
  * @param {Array<Object>} reviews - Array of reviews
@@ -87,9 +91,9 @@ function calculateSentimentMetrics(reviews) {
     const score = review.sentiment?.score || 0;
     totalScore += score;
     
-    if (score > 0.3) {
+    if (score > POSITIVE_SENTIMENT_THRESHOLD) {
       positive++;
-    } else if (score < -0.3) {
+    } else if (score < NEGATIVE_SENTIMENT_THRESHOLD) {
       negative++;
     } else {
       neutral++;

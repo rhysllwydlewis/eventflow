@@ -16,6 +16,10 @@ const { authRequired, roleRequired } = require('../middleware/auth');
 const { csrfProtection } = require('../middleware/csrf');
 const reviewModeration = require('../middleware/reviewModeration');
 
+// Validation constants
+const MIN_REASON_LENGTH = 10; // Minimum characters for moderation/rejection reasons
+const MIN_DISPUTE_REASON_LENGTH = 20; // Minimum characters for dispute reasons
+
 // ============================================================================
 // Review Creation & Management
 // ============================================================================
@@ -434,9 +438,9 @@ router.post(
       const { id } = req.params;
       const { reason } = req.body;
       
-      if (!reason || reason.trim().length < 10) {
+      if (!reason || reason.trim().length < MIN_REASON_LENGTH) {
         return res.status(400).json({
-          error: 'Rejection reason is required (minimum 10 characters)',
+          error: 'Rejection reason is required (minimum ' + MIN_REASON_LENGTH + ' characters)',
         });
       }
       
@@ -476,9 +480,9 @@ router.post(
       const { id } = req.params;
       const { reason } = req.body;
       
-      if (!reason || reason.trim().length < 10) {
+      if (!reason || reason.trim().length < MIN_REASON_LENGTH) {
         return res.status(400).json({
-          error: 'Change request reason is required (minimum 10 characters)',
+          error: 'Change request reason is required (minimum ' + MIN_REASON_LENGTH + ' characters)',
         });
       }
       
@@ -548,9 +552,9 @@ router.post(
       const { id } = req.params;
       const { reason, evidence } = req.body;
       
-      if (!reason || reason.trim().length < 20) {
+      if (!reason || reason.trim().length < MIN_DISPUTE_REASON_LENGTH) {
         return res.status(400).json({
-          error: 'Dispute reason is required (minimum 20 characters)',
+          error: 'Dispute reason is required (minimum ' + MIN_DISPUTE_REASON_LENGTH + ' characters)',
         });
       }
       
@@ -631,9 +635,9 @@ router.post(
         });
       }
       
-      if (!reason || reason.trim().length < 10) {
+      if (!reason || reason.trim().length < MIN_REASON_LENGTH) {
         return res.status(400).json({
-          error: 'Resolution reason is required (minimum 10 characters)',
+          error: 'Resolution reason is required (minimum ' + MIN_REASON_LENGTH + ' characters)',
         });
       }
       

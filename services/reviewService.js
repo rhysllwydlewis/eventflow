@@ -13,9 +13,12 @@ const sentimentAnalysis = require('../utils/sentimentAnalysis');
 const ReviewModel = require('../models/Review');
 const ReviewAnalytics = require('../models/ReviewAnalytics');
 
-// Constants
-const REVIEW_COOLDOWN_DAYS = 30;
-const MAX_REVIEWS_PER_HOUR = 5;
+// Configuration constants
+const REVIEW_COOLDOWN_DAYS = 30; // Days before user can review same supplier again
+const MAX_REVIEWS_PER_HOUR = 5; // Maximum reviews per user per hour
+const AUTO_APPROVE_SENTIMENT_THRESHOLD = -0.3; // Minimum sentiment score for auto-approval
+const MIN_RESPONSE_LENGTH = 10; // Minimum characters for supplier response
+const MAX_RESPONSE_LENGTH = 2000; // Maximum characters for supplier response
 
 /**
  * Check if user is eligible to review supplier
@@ -132,7 +135,7 @@ async function createReview(reviewData, userId, metadata = {}) {
   const autoApprove = 
     verificationStatus === ReviewModel.VERIFICATION_TYPES.VERIFIED_BOOKING &&
     !analysis.spam.isSpam &&
-    analysis.sentiment.score >= -0.3;
+    analysis.sentiment.score >= AUTO_APPROVE_SENTIMENT_THRESHOLD;
   
   // Create review object
   const review = ReviewModel.createReview({
@@ -350,12 +353,12 @@ async function addSupplierResponse(reviewId, supplierId, text, userId) {
   }
   
   // Validate text
-  if (!text || text.length < 10) {
-    throw new Error('Response must be at least 10 characters');
+  if (!text || text.length < MIN_RESPONSE_LENGTH) {
+    throw new Error(`Response must be at least ${MIN_RESPONSE_LENGTH} characters`);
   }
   
-  if (text.length > 2000) {
-    throw new Error('Response cannot exceed 2000 characters');
+  if (text.length > MAX_RESPONSE_LENGTH) {
+    throw new Error(`Response cannot exceed ${MAX_RESPONSE_LENGTH} characters`);
   }
   
   ReviewModel.addResponse(review, supplierId, text);
