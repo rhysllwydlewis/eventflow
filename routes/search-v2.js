@@ -21,11 +21,7 @@ const validator = require('validator');
 
 // Generate session ID for anonymous users
 function getSessionId(req) {
-  return (
-    req.sessionID ||
-    req.cookies?.sessionId ||
-    `anon_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-  );
+  return req.sessionID || req.cookies?.sessionId || `anon_${Date.now()}_${crypto.randomUUID()}`;
 }
 
 // ========================================
