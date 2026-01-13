@@ -36,8 +36,6 @@ function getSessionId(req) {
  * Advanced supplier search with weighted relevance
  */
 router.get('/suppliers', searchCacheMiddleware({ fixedTtl: null }), async (req, res) => {
-  const startTime = Date.now();
-
   try {
     const query = {
       q: req.query.q ? String(req.query.q).trim() : '',

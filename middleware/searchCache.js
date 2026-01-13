@@ -143,11 +143,7 @@ async function updateQueryPopularity(queryText) {
  * @returns {Function} Express middleware
  */
 function searchCacheMiddleware(options = {}) {
-  const {
-    enabled = true,
-    fixedTtl = null, // Override dynamic TTL
-    keyPrefix = 'search:v2',
-  } = options;
+  const { enabled = true, fixedTtl = null } = options;
 
   return async (req, res, next) => {
     // Only cache GET requests
@@ -156,7 +152,6 @@ function searchCacheMiddleware(options = {}) {
     }
 
     const cacheKey = generateCacheKey(req);
-    const startTime = Date.now();
 
     try {
       // Try to get from cache

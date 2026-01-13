@@ -28,13 +28,6 @@ describe('Search Weighting Utilities', () => {
     });
 
     it('should calculate higher score for better field matches', () => {
-      const item = {
-        name: 'Elegant Wedding Venue',
-        description_short: 'Beautiful venue for weddings',
-        category: 'Venues',
-      };
-
-      // Item with query in name should score higher than in description only
       const nameMatchItem = {
         name: 'Wedding Photography',
         description_short: 'Professional services',

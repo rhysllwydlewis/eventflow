@@ -487,10 +487,9 @@ function sortPackageResults(results, sortBy) {
 /**
  * Calculate facets for filtering
  * @param {Array} allSuppliers - All suppliers
- * @param {Object} currentQuery - Current query
  * @returns {Object} Facets
  */
-function calculateFacets(allSuppliers, currentQuery) {
+function calculateFacets(allSuppliers) {
   // Category facets
   const categoryCounts = {};
   allSuppliers.forEach(s => {
