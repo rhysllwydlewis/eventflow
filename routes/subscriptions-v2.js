@@ -1,0 +1,753 @@
+/**
+ * Subscription and Payment Routes (v2)
+ * REST API endpoints for subscription management, invoicing, and admin analytics
+ */
+
+'use strict';
+
+const express = require('express');
+const PDFDocument = require('pdfkit');
+const { authRequired, roleRequired } = require('../middleware/auth');
+const { writeLimiter } = require('../middleware/rateLimit');
+const subscriptionService = require('../services/subscriptionService');
+const paymentService = require('../services/paymentService');
+const { processWebhookEvent } = require('../webhooks/stripeWebhookHandler');
+const dbUnified = require('../db-unified');
+const { formatInvoice } = require('../models/Invoice');
+
+const router = express.Router();
+
+// Initialize Stripe only if configured
+let stripe = null;
+let STRIPE_ENABLED = false;
+
+try {
+  const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+  if (stripeSecretKey) {
+    // eslint-disable-next-line global-require
+    const stripeLib = require('stripe');
+    stripe = stripeLib(stripeSecretKey);
+    STRIPE_ENABLED = true;
+  }
+} catch (err) {
+  console.error('Failed to initialize Stripe:', err.message);
+}
+
+const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
+
+/**
+ * Helper: Ensure Stripe is enabled
+ */
+function ensureStripeEnabled(req, res, next) {
+  if (!STRIPE_ENABLED || !stripe) {
+    return res.status(503).json({
+      error: 'Payment processing is not available',
+      message: 'Stripe is not configured. Please contact support.',
+    });
+  }
+  next();
+}
+
+/**
+ * @swagger
+ * /api/v2/subscriptions/plans:
+ *   get:
+ *     summary: List all available subscription plans
+ *     tags: [Subscriptions]
+ *     responses:
+ *       200:
+ *         description: List of plans
+ */
+router.get('/plans', async (req, res) => {
+  try {
+    const plans = subscriptionService.getAllPlans();
+    res.json({
+      success: true,
+      plans,
+    });
+  } catch (error) {
+    console.error('Error fetching plans:', error);
+    res.status(500).json({
+      error: 'Failed to fetch plans',
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /api/v2/subscriptions:
+ *   post:
+ *     summary: Subscribe to a plan
+ *     tags: [Subscriptions]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - plan
+ *               - priceId
+ *             properties:
+ *               plan:
+ *                 type: string
+ *                 enum: [free, basic, pro, enterprise]
+ *               priceId:
+ *                 type: string
+ *               trialDays:
+ *                 type: number
+ *     responses:
+ *       200:
+ *         description: Subscription created
+ */
+router.post('/', authRequired, writeLimiter, ensureStripeEnabled, async (req, res) => {
+  try {
+    const { plan, priceId, trialDays } = req.body;
+
+    if (!plan || !priceId) {
+      return res.status(400).json({
+        error: 'Missing required fields',
+        message: 'plan and priceId are required',
+      });
+    }
+
+    // Check if user already has an active subscription
+    const existingSub = await subscriptionService.getSubscriptionByUserId(req.user.id);
+    if (existingSub && existingSub.status !== 'canceled') {
+      return res.status(400).json({
+        error: 'Subscription already exists',
+        message: 'You already have an active subscription',
+      });
+    }
+
+    // Create or retrieve Stripe customer
+    const customer = await paymentService.getOrCreateStripeCustomer(req.user);
+
+    // Create Stripe subscription
+    const stripeSubscription = await paymentService.createStripeSubscription({
+      customerId: customer.id,
+      priceId,
+      metadata: {
+        userId: req.user.id,
+        planName: plan,
+      },
+      trialPeriodDays: trialDays || null,
+    });
+
+    // Create subscription record in database
+    const trialEnd = trialDays ? new Date(Date.now() + trialDays * 24 * 60 * 60 * 1000) : null;
+    const subscription = await subscriptionService.createSubscription({
+      userId: req.user.id,
+      plan,
+      stripeSubscriptionId: stripeSubscription.id,
+      stripeCustomerId: customer.id,
+      trialEnd,
+    });
+
+    res.json({
+      success: true,
+      subscription,
+      clientSecret: stripeSubscription.latest_invoice?.payment_intent?.client_secret,
+    });
+  } catch (error) {
+    console.error('Error creating subscription:', error);
+    res.status(500).json({
+      error: 'Failed to create subscription',
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /api/v2/subscriptions/:id/upgrade:
+ *   post:
+ *     summary: Upgrade to a higher plan
+ *     tags: [Subscriptions]
+ *     security:
+ *       - bearerAuth: []
+ */
+router.post('/:id/upgrade', authRequired, writeLimiter, ensureStripeEnabled, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { newPlan, newPriceId } = req.body;
+
+    if (!newPlan || !newPriceId) {
+      return res.status(400).json({
+        error: 'Missing required fields',
+        message: 'newPlan and newPriceId are required',
+      });
+    }
+
+    const subscription = await subscriptionService.getSubscription(id);
+
+    if (!subscription) {
+      return res.status(404).json({
+        error: 'Subscription not found',
+      });
+    }
+
+    // Verify ownership
+    if (subscription.userId !== req.user.id) {
+      return res.status(403).json({
+        error: 'Unauthorized',
+      });
+    }
+
+    // Update Stripe subscription
+    if (subscription.stripeSubscriptionId) {
+      const stripeSubscription = await stripe.subscriptions.retrieve(
+        subscription.stripeSubscriptionId
+      );
+      await stripe.subscriptions.update(subscription.stripeSubscriptionId, {
+        items: [
+          {
+            id: stripeSubscription.items.data[0].id,
+            price: newPriceId,
+          },
+        ],
+        proration_behavior: 'create_prorations',
+        metadata: {
+          planName: newPlan,
+        },
+      });
+    }
+
+    // Upgrade in database
+    const updatedSubscription = await subscriptionService.upgradeSubscription(id, newPlan);
+
+    res.json({
+      success: true,
+      subscription: updatedSubscription,
+    });
+  } catch (error) {
+    console.error('Error upgrading subscription:', error);
+    res.status(500).json({
+      error: 'Failed to upgrade subscription',
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /api/v2/subscriptions/:id/downgrade:
+ *   post:
+ *     summary: Downgrade to a lower plan
+ *     tags: [Subscriptions]
+ *     security:
+ *       - bearerAuth: []
+ */
+router.post('/:id/downgrade', authRequired, writeLimiter, ensureStripeEnabled, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { newPlan } = req.body;
+
+    if (!newPlan) {
+      return res.status(400).json({
+        error: 'Missing required field',
+        message: 'newPlan is required',
+      });
+    }
+
+    const subscription = await subscriptionService.getSubscription(id);
+
+    if (!subscription) {
+      return res.status(404).json({
+        error: 'Subscription not found',
+      });
+    }
+
+    // Verify ownership
+    if (subscription.userId !== req.user.id) {
+      return res.status(403).json({
+        error: 'Unauthorized',
+      });
+    }
+
+    // Schedule downgrade at period end in Stripe
+    if (subscription.stripeSubscriptionId) {
+      await stripe.subscriptions.update(subscription.stripeSubscriptionId, {
+        cancel_at_period_end: true,
+        metadata: {
+          downgrade_to: newPlan,
+        },
+      });
+    }
+
+    // Downgrade in database (scheduled at period end)
+    const updatedSubscription = await subscriptionService.downgradeSubscription(id, newPlan);
+
+    res.json({
+      success: true,
+      subscription: updatedSubscription,
+      message: 'Downgrade scheduled for end of billing period',
+    });
+  } catch (error) {
+    console.error('Error downgrading subscription:', error);
+    res.status(500).json({
+      error: 'Failed to downgrade subscription',
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /api/v2/subscriptions/:id/cancel:
+ *   post:
+ *     summary: Cancel subscription
+ *     tags: [Subscriptions]
+ *     security:
+ *       - bearerAuth: []
+ */
+router.post('/:id/cancel', authRequired, writeLimiter, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { reason, immediately } = req.body;
+
+    const subscription = await subscriptionService.getSubscription(id);
+
+    if (!subscription) {
+      return res.status(404).json({
+        error: 'Subscription not found',
+      });
+    }
+
+    // Verify ownership
+    if (subscription.userId !== req.user.id) {
+      return res.status(403).json({
+        error: 'Unauthorized',
+      });
+    }
+
+    // Cancel in Stripe if applicable
+    if (subscription.stripeSubscriptionId && STRIPE_ENABLED) {
+      await paymentService.cancelStripeSubscription(subscription.stripeSubscriptionId, immediately);
+    }
+
+    // Cancel in database
+    const updatedSubscription = await subscriptionService.cancelSubscription(
+      id,
+      reason,
+      immediately
+    );
+
+    res.json({
+      success: true,
+      subscription: updatedSubscription,
+      message: immediately
+        ? 'Subscription canceled immediately'
+        : 'Subscription will cancel at period end',
+    });
+  } catch (error) {
+    console.error('Error canceling subscription:', error);
+    res.status(500).json({
+      error: 'Failed to cancel subscription',
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /api/v2/subscriptions/:id/status:
+ *   get:
+ *     summary: Get subscription status
+ *     tags: [Subscriptions]
+ *     security:
+ *       - bearerAuth: []
+ */
+router.get('/:id/status', authRequired, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const subscription = await subscriptionService.getSubscription(id);
+
+    if (!subscription) {
+      return res.status(404).json({
+        error: 'Subscription not found',
+      });
+    }
+
+    // Verify ownership or admin
+    if (subscription.userId !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({
+        error: 'Unauthorized',
+      });
+    }
+
+    res.json({
+      success: true,
+      subscription: {
+        id: subscription.id,
+        plan: subscription.plan,
+        status: subscription.status,
+        currentPeriodEnd: subscription.currentPeriodEnd,
+        nextBillingDate: subscription.nextBillingDate,
+        cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
+        inTrial: subscriptionService.isInTrial(subscription),
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching subscription status:', error);
+    res.status(500).json({
+      error: 'Failed to fetch subscription status',
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /api/v2/subscriptions/:id/features:
+ *   get:
+ *     summary: Get features for subscription
+ *     tags: [Subscriptions]
+ *     security:
+ *       - bearerAuth: []
+ */
+router.get('/:id/features', authRequired, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const subscription = await subscriptionService.getSubscription(id);
+
+    if (!subscription) {
+      return res.status(404).json({
+        error: 'Subscription not found',
+      });
+    }
+
+    // Verify ownership or admin
+    if (subscription.userId !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({
+        error: 'Unauthorized',
+      });
+    }
+
+    const features = await subscriptionService.getUserFeatures(subscription.userId);
+
+    res.json({
+      success: true,
+      plan: subscription.plan,
+      features: features.features,
+    });
+  } catch (error) {
+    console.error('Error fetching features:', error);
+    res.status(500).json({
+      error: 'Failed to fetch features',
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /api/v2/invoices:
+ *   get:
+ *     summary: List invoices for user
+ *     tags: [Invoices]
+ *     security:
+ *       - bearerAuth: []
+ */
+router.get('/invoices', authRequired, async (req, res) => {
+  try {
+    const invoices = await dbUnified.read('invoices');
+    const userInvoices = invoices
+      .filter(inv => inv.userId === req.user.id)
+      .map(formatInvoice)
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    res.json({
+      success: true,
+      invoices: userInvoices,
+    });
+  } catch (error) {
+    console.error('Error fetching invoices:', error);
+    res.status(500).json({
+      error: 'Failed to fetch invoices',
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /api/v2/invoices/:id/pay:
+ *   post:
+ *     summary: Retry payment for unpaid invoice
+ *     tags: [Invoices]
+ *     security:
+ *       - bearerAuth: []
+ */
+router.post(
+  '/invoices/:id/pay',
+  authRequired,
+  writeLimiter,
+  ensureStripeEnabled,
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      const invoices = await dbUnified.read('invoices');
+      const invoice = invoices.find(inv => inv.id === id);
+
+      if (!invoice) {
+        return res.status(404).json({
+          error: 'Invoice not found',
+        });
+      }
+
+      // Verify ownership
+      if (invoice.userId !== req.user.id) {
+        return res.status(403).json({
+          error: 'Unauthorized',
+        });
+      }
+
+      if (invoice.status === 'paid') {
+        return res.status(400).json({
+          error: 'Invoice already paid',
+        });
+      }
+
+      // Retry payment in Stripe
+      const stripeInvoice = await paymentService.retryInvoicePayment(invoice.stripeInvoiceId);
+
+      // Update invoice status
+      invoice.status = stripeInvoice.status === 'paid' ? 'paid' : invoice.status;
+      invoice.updatedAt = new Date().toISOString();
+      if (stripeInvoice.status === 'paid') {
+        invoice.paidAt = new Date().toISOString();
+      }
+      await dbUnified.write('invoices', invoices);
+
+      res.json({
+        success: true,
+        invoice: formatInvoice(invoice),
+      });
+    } catch (error) {
+      console.error('Error retrying invoice payment:', error);
+      res.status(500).json({
+        error: 'Failed to retry payment',
+        message: error.message,
+      });
+    }
+  }
+);
+
+/**
+ * @swagger
+ * /api/v2/invoices/:id/download:
+ *   get:
+ *     summary: Download invoice as PDF
+ *     tags: [Invoices]
+ *     security:
+ *       - bearerAuth: []
+ */
+router.get('/invoices/:id/download', authRequired, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const invoices = await dbUnified.read('invoices');
+    const invoice = invoices.find(inv => inv.id === id);
+
+    if (!invoice) {
+      return res.status(404).json({
+        error: 'Invoice not found',
+      });
+    }
+
+    // Verify ownership or admin
+    if (invoice.userId !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({
+        error: 'Unauthorized',
+      });
+    }
+
+    // Create PDF
+    const doc = new PDFDocument({ margin: 50 });
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=invoice-${invoice.id}.pdf`);
+
+    doc.pipe(res);
+
+    // Header
+    doc.fontSize(20).text('INVOICE', { align: 'center' });
+    doc.moveDown();
+    doc.fontSize(12).text(`Invoice ID: ${invoice.id}`);
+    doc.text(`Date: ${new Date(invoice.createdAt).toLocaleDateString()}`);
+    doc.text(`Status: ${invoice.status.toUpperCase()}`);
+    doc.moveDown();
+
+    // Line items
+    doc.fontSize(14).text('Line Items:', { underline: true });
+    doc.moveDown(0.5);
+    doc.fontSize(10);
+
+    invoice.lineItems.forEach(item => {
+      doc.text(
+        `${item.name} x ${item.quantity} @ ${invoice.currency} ${item.unitPrice.toFixed(2)}`
+      );
+      doc.text(`  Total: ${invoice.currency} ${item.amount.toFixed(2)}`);
+      doc.moveDown(0.5);
+    });
+
+    // Totals
+    doc.moveDown();
+    doc.fontSize(12);
+    doc.text(`Subtotal: ${invoice.currency} ${invoice.subtotal.toFixed(2)}`, { align: 'right' });
+    if (invoice.tax > 0) {
+      doc.text(`Tax: ${invoice.currency} ${invoice.tax.toFixed(2)}`, { align: 'right' });
+    }
+    if (invoice.discount > 0) {
+      doc.text(`Discount: -${invoice.currency} ${invoice.discount.toFixed(2)}`, { align: 'right' });
+    }
+    doc
+      .fontSize(14)
+      .text(`Total: ${invoice.currency} ${invoice.amount.toFixed(2)}`, { align: 'right' });
+
+    if (invoice.paidAt) {
+      doc.moveDown();
+      doc
+        .fontSize(10)
+        .text(`Paid on: ${new Date(invoice.paidAt).toLocaleDateString()}`, { align: 'right' });
+    }
+
+    doc.end();
+  } catch (error) {
+    console.error('Error downloading invoice:', error);
+    res.status(500).json({
+      error: 'Failed to download invoice',
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /api/v2/admin/subscriptions:
+ *   get:
+ *     summary: List all subscriptions (admin only)
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ */
+router.get('/admin/subscriptions', authRequired, roleRequired('admin'), async (req, res) => {
+  try {
+    const { status, plan, page = 1, limit = 50 } = req.query;
+
+    const filters = {};
+    if (status) {
+      filters.status = status;
+    }
+    if (plan) {
+      filters.plan = plan;
+    }
+
+    const subscriptions = await subscriptionService.listSubscriptions(filters);
+
+    // Pagination
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + parseInt(limit);
+    const paginatedSubscriptions = subscriptions.slice(startIndex, endIndex);
+
+    res.json({
+      success: true,
+      subscriptions: paginatedSubscriptions,
+      pagination: {
+        total: subscriptions.length,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        pages: Math.ceil(subscriptions.length / limit),
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching subscriptions:', error);
+    res.status(500).json({
+      error: 'Failed to fetch subscriptions',
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /api/v2/admin/revenue:
+ *   get:
+ *     summary: Get revenue analytics (admin only)
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ */
+router.get('/admin/revenue', authRequired, roleRequired('admin'), async (req, res) => {
+  try {
+    const [mrr, churnRate, stats] = await Promise.all([
+      paymentService.calculateMRR(),
+      paymentService.calculateChurnRate(30),
+      subscriptionService.getSubscriptionStats(),
+    ]);
+
+    res.json({
+      success: true,
+      revenue: {
+        mrr: mrr.totalMRR,
+        mrrByPlan: mrr.byPlan,
+        activeSubscriptions: mrr.activeSubscriptions,
+      },
+      churn: churnRate,
+      subscriptionStats: stats,
+    });
+  } catch (error) {
+    console.error('Error fetching revenue analytics:', error);
+    res.status(500).json({
+      error: 'Failed to fetch revenue analytics',
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /api/v2/webhooks/stripe:
+ *   post:
+ *     summary: Stripe webhook endpoint
+ *     tags: [Webhooks]
+ *     description: Handles Stripe webhook events
+ */
+router.post('/webhooks/stripe', express.raw({ type: 'application/json' }), async (req, res) => {
+  const sig = req.headers['stripe-signature'];
+
+  let event;
+
+  if (STRIPE_WEBHOOK_SECRET && STRIPE_ENABLED) {
+    try {
+      event = stripe.webhooks.constructEvent(req.body, sig, STRIPE_WEBHOOK_SECRET);
+    } catch (err) {
+      console.error('Webhook signature verification failed:', err.message);
+      return res.status(400).send(`Webhook Error: ${err.message}`);
+    }
+  } else {
+    // In development without webhook secret, parse body directly
+    try {
+      event = JSON.parse(req.body.toString());
+    } catch (err) {
+      console.error('Failed to parse webhook body:', err.message);
+      return res.status(400).send('Invalid request body');
+    }
+  }
+
+  try {
+    await processWebhookEvent(event);
+    res.json({ received: true });
+  } catch (error) {
+    console.error('Error processing webhook:', error);
+    res.status(500).json({
+      error: 'Webhook processing failed',
+      message: error.message,
+    });
+  }
+});
+
+module.exports = router;
