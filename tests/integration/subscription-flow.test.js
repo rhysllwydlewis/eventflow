@@ -290,7 +290,7 @@ describe('Complete Subscription Flow Integration', () => {
       const userId = 'usr-test-001';
       const otherUserId = 'usr-other';
 
-      const subscription = await subscriptionService.createSubscription({
+      await subscriptionService.createSubscription({
         userId,
         plan: 'pro',
         stripeSubscriptionId: 'sub_security_123',

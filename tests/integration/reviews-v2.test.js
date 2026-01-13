@@ -6,7 +6,6 @@
 
 const reviewService = require('../../services/reviewService');
 const dbUnified = require('../../db-unified');
-const { uid } = require('../../store');
 
 // Mock database
 jest.mock('../../db-unified');
@@ -16,7 +15,7 @@ describe('Review Service Integration Tests', () => {
   let mockUsers;
   let mockSuppliers;
   let mockThreads;
-  
+
   beforeEach(() => {
     mockReviews = [];
     mockUsers = [
@@ -42,8 +41,8 @@ describe('Review Service Integration Tests', () => {
         supplierId: 'sup-1',
       },
     ];
-    
-    dbUnified.read.mockImplementation(async (collection) => {
+
+    dbUnified.read.mockImplementation(async collection => {
       switch (collection) {
         case 'reviews':
           return [...mockReviews];
@@ -57,7 +56,7 @@ describe('Review Service Integration Tests', () => {
           return [];
       }
     });
-    
+
     dbUnified.write.mockImplementation(async (collection, data) => {
       switch (collection) {
         case 'reviews':
@@ -65,23 +64,23 @@ describe('Review Service Integration Tests', () => {
           break;
       }
     });
-    
+
     // Mock uid to return predictable IDs
     jest.spyOn(require('../../store'), 'uid').mockReturnValue('rev-test-123');
   });
-  
+
   afterEach(() => {
     jest.restoreAllMocks();
   });
-  
+
   describe('checkReviewEligibility', () => {
     it('should allow eligible user to review', async () => {
       const result = await reviewService.checkReviewEligibility('usr-1', 'sup-1');
-      
+
       expect(result.eligible).toBe(true);
       expect(result.bookingVerified).toBe(true); // Has thread with supplier
     });
-    
+
     it('should prevent duplicate reviews within cooldown period', async () => {
       // Add existing review
       mockReviews.push({
@@ -92,13 +91,13 @@ describe('Review Service Integration Tests', () => {
         createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
         moderation: { state: 'approved' },
       });
-      
+
       const result = await reviewService.checkReviewEligibility('usr-1', 'sup-1');
-      
+
       expect(result.eligible).toBe(false);
       expect(result.reason).toContain('already reviewed');
     });
-    
+
     it('should enforce rate limiting', async () => {
       // Add 5 recent reviews from same user (different suppliers)
       const now = Date.now();
@@ -112,14 +111,14 @@ describe('Review Service Integration Tests', () => {
           moderation: { state: 'approved' },
         });
       }
-      
+
       const result = await reviewService.checkReviewEligibility('usr-1', 'sup-new');
-      
+
       expect(result.eligible).toBe(false);
       expect(result.reason).toContain('too many reviews');
     });
   });
-  
+
   describe('createReview', () => {
     it('should create a verified review with positive sentiment', async () => {
       const reviewData = {
@@ -133,23 +132,23 @@ describe('Review Service Integration Tests', () => {
           type: 'wedding',
         },
       };
-      
+
       const result = await reviewService.createReview(reviewData, 'usr-1', {
         ipAddress: '127.0.0.1',
         userAgent: 'test-agent',
       });
-      
+
       expect(result.reviewId).toBe('rev-test-123');
       expect(result.status).toBe('approved'); // Auto-approved
       expect(result.sentiment.label).toBe('positive');
       expect(mockReviews.length).toBe(1);
-      
+
       const savedReview = mockReviews[0];
       expect(savedReview.verification.status).toBe('verified_booking');
       expect(savedReview.moderation.state).toBe('approved');
       expect(savedReview.moderation.autoApproved).toBe(true);
     });
-    
+
     it('should flag spam reviews for moderation', async () => {
       const reviewData = {
         supplierId: 'sup-1',
@@ -157,17 +156,17 @@ describe('Review Service Integration Tests', () => {
         title: 'CHECK OUT OUR WEBSITE',
         text: 'Visit https://spam.com for amazing deals! Call now at 555-1234 for more info!!!',
       };
-      
+
       const result = await reviewService.createReview(reviewData, 'usr-1');
-      
+
       expect(result.status).toBe('pending');
       expect(result.message).toContain('pending moderation');
-      
+
       const savedReview = mockReviews[0];
       expect(savedReview.moderation.state).toBe('pending');
       expect(savedReview.sentiment.spamScore).toBeGreaterThan(0.5);
     });
-    
+
     it('should flag negative reviews for moderation', async () => {
       const reviewData = {
         supplierId: 'sup-1',
@@ -175,29 +174,29 @@ describe('Review Service Integration Tests', () => {
         title: 'Terrible experience',
         text: 'Awful service, terrible quality, very disappointing. Would not recommend to anyone.',
       };
-      
+
       const result = await reviewService.createReview(reviewData, 'usr-1');
-      
+
       expect(result.status).toBe('pending');
-      
+
       const savedReview = mockReviews[0];
       expect(savedReview.sentiment.label).toBe('negative');
       expect(savedReview.moderation.state).toBe('pending');
     });
-    
+
     it('should reject invalid review data', async () => {
       const reviewData = {
         supplierId: 'sup-1',
         rating: 10, // Invalid rating
         text: 'Too short', // Too short
       };
-      
-      await expect(
-        reviewService.createReview(reviewData, 'usr-1')
-      ).rejects.toThrow('Validation failed');
+
+      await expect(reviewService.createReview(reviewData, 'usr-1')).rejects.toThrow(
+        'Validation failed'
+      );
     });
   });
-  
+
   describe('moderateReview', () => {
     beforeEach(() => {
       mockReviews.push({
@@ -217,7 +216,7 @@ describe('Review Service Integration Tests', () => {
         updatedAt: new Date().toISOString(),
       });
     });
-    
+
     it('should approve a review', async () => {
       const review = await reviewService.moderateReview(
         'rev-1',
@@ -225,12 +224,12 @@ describe('Review Service Integration Tests', () => {
         'admin-1',
         'Looks good'
       );
-      
+
       expect(review.moderation.state).toBe('approved');
       expect(review.moderation.moderatorId).toBe('admin-1');
       expect(review.moderation.reason).toBe('Looks good');
     });
-    
+
     it('should reject a review', async () => {
       const review = await reviewService.moderateReview(
         'rev-1',
@@ -238,18 +237,18 @@ describe('Review Service Integration Tests', () => {
         'admin-1',
         'Contains spam'
       );
-      
+
       expect(review.moderation.state).toBe('rejected');
       expect(review.moderation.reason).toBe('Contains spam');
     });
-    
+
     it('should throw error for non-existent review', async () => {
       await expect(
         reviewService.moderateReview('rev-nonexistent', 'approve', 'admin-1', 'test')
       ).rejects.toThrow('Review not found');
     });
   });
-  
+
   describe('addSupplierResponse', () => {
     beforeEach(() => {
       mockReviews.push({
@@ -266,7 +265,7 @@ describe('Review Service Integration Tests', () => {
         updatedAt: new Date().toISOString(),
       });
     });
-    
+
     it('should add supplier response', async () => {
       const review = await reviewService.addSupplierResponse(
         'rev-1',
@@ -274,27 +273,27 @@ describe('Review Service Integration Tests', () => {
         'Thank you so much for the kind words! It was a pleasure working with you.',
         'usr-supplier'
       );
-      
+
       expect(review.response).toBeDefined();
       expect(review.response.text).toContain('Thank you');
       expect(review.response.supplierId).toBe('sup-1');
     });
-    
+
     it('should reject short responses', async () => {
       await expect(
         reviewService.addSupplierResponse('rev-1', 'sup-1', 'Thanks', 'usr-supplier')
       ).rejects.toThrow('at least 10 characters');
     });
-    
+
     it('should reject long responses', async () => {
       const longText = 'a'.repeat(2001);
-      
+
       await expect(
         reviewService.addSupplierResponse('rev-1', 'sup-1', longText, 'usr-supplier')
       ).rejects.toThrow('cannot exceed 2000 characters');
     });
   });
-  
+
   describe('voteOnReview', () => {
     beforeEach(() => {
       mockReviews.push({
@@ -312,30 +311,30 @@ describe('Review Service Integration Tests', () => {
         updatedAt: new Date().toISOString(),
       });
     });
-    
+
     it('should record helpful vote', async () => {
       const review = await reviewService.voteOnReview('rev-1', 'usr-2', true);
-      
+
       expect(review.votes.helpful).toBe(1);
       expect(review.votes.voters).toContain('usr-2');
     });
-    
+
     it('should record unhelpful vote', async () => {
       const review = await reviewService.voteOnReview('rev-1', 'usr-2', false);
-      
+
       expect(review.votes.unhelpful).toBe(1);
       expect(review.votes.voters).toContain('usr-2');
     });
-    
+
     it('should prevent duplicate votes', async () => {
       await reviewService.voteOnReview('rev-1', 'usr-2', true);
-      
-      await expect(
-        reviewService.voteOnReview('rev-1', 'usr-2', false)
-      ).rejects.toThrow('already voted');
+
+      await expect(reviewService.voteOnReview('rev-1', 'usr-2', false)).rejects.toThrow(
+        'already voted'
+      );
     });
   });
-  
+
   describe('fileDispute', () => {
     beforeEach(() => {
       mockReviews.push({
@@ -350,7 +349,7 @@ describe('Review Service Integration Tests', () => {
         updatedAt: new Date().toISOString(),
       });
     });
-    
+
     it('should file a dispute', async () => {
       const result = await reviewService.fileDispute(
         'rev-1',
@@ -358,16 +357,16 @@ describe('Review Service Integration Tests', () => {
         'This review contains false information about our services.',
         'Evidence: booking confirmation shows different details'
       );
-      
+
       expect(result.disputeId).toBe('rev-1');
       expect(result.status).toBe('disputed');
-      
+
       const review = mockReviews[0];
       expect(review.dispute.filed).toBe(true);
       expect(review.dispute.filedBy).toBe('usr-supplier');
       expect(review.moderation.state).toBe('disputed');
     });
-    
+
     it('should prevent duplicate disputes', async () => {
       await reviewService.fileDispute(
         'rev-1',
@@ -375,13 +374,13 @@ describe('Review Service Integration Tests', () => {
         'This review contains false information',
         'evidence'
       );
-      
+
       await expect(
         reviewService.fileDispute('rev-1', 'usr-supplier', 'Another dispute', 'more evidence')
       ).rejects.toThrow('already been filed');
     });
   });
-  
+
   describe('getSupplierReviews', () => {
     beforeEach(() => {
       // Add multiple reviews
@@ -404,49 +403,49 @@ describe('Review Service Integration Tests', () => {
         });
       }
     });
-    
+
     it('should return paginated reviews', async () => {
       const result = await reviewService.getSupplierReviews('sup-1', {
         page: 1,
         limit: 10,
       });
-      
+
       expect(result.reviews.length).toBe(10);
       expect(result.pagination.total).toBe(15);
       expect(result.pagination.pages).toBe(2);
     });
-    
+
     it('should sort by recent', async () => {
       const result = await reviewService.getSupplierReviews('sup-1', {
         sortBy: 'recent',
       });
-      
+
       // First review should be most recent (smallest i)
       expect(result.reviews[0]._id).toBe('rev-0');
     });
-    
+
     it('should sort by helpful votes', async () => {
       const result = await reviewService.getSupplierReviews('sup-1', {
         sortBy: 'helpful',
       });
-      
+
       // First review should have most helpful votes
       expect(result.reviews[0].votes.helpful).toBeGreaterThanOrEqual(
         result.reviews[1].votes.helpful
       );
     });
-    
+
     it('should filter verified reviews', async () => {
       const result = await reviewService.getSupplierReviews('sup-1', {
         filter: 'verified',
       });
-      
+
       result.reviews.forEach(review => {
         expect(review.verification.status).not.toBe('unverified');
       });
     });
   });
-  
+
   describe('getSupplierAnalytics', () => {
     beforeEach(() => {
       // Add sample reviews with varying ratings and sentiment
@@ -473,10 +472,10 @@ describe('Review Service Integration Tests', () => {
         }
       );
     });
-    
+
     it('should calculate analytics correctly', async () => {
       const analytics = await reviewService.getSupplierAnalytics('sup-1');
-      
+
       expect(analytics.metrics.totalReviews).toBe(2);
       expect(analytics.metrics.averageRating).toBe(4.5);
       expect(analytics.metrics.verifiedReviews).toBe(1);

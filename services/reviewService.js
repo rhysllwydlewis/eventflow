@@ -91,7 +91,7 @@ async function checkReviewEligibility(userId, supplierId, bookingId = null) {
  * @param {Object} metadata - Request metadata (IP, user agent)
  * @returns {Promise<Object>} Created review with moderation status
  */
-async function createReview(reviewData, userId, metadata = {}) {
+async function createReview(reviewData, userId, _metadata = {}) {
   // Validate input
   const validation = ReviewModel.validateReview({
     ...reviewData,
@@ -332,7 +332,7 @@ async function requestChanges(reviewId, moderatorId, reason) {
  * @param {string} userId - User ID of supplier
  * @returns {Promise<Object>} Updated review
  */
-async function addSupplierResponse(reviewId, supplierId, text, userId) {
+async function addSupplierResponse(reviewId, supplierId, text, _userId) {
   const reviews = await dbUnified.read('reviews');
   const review = reviews.find(r => r._id === reviewId);
 
@@ -560,10 +560,10 @@ async function getSupplierAnalytics(supplierId) {
 
 /**
  * Get platform-wide analytics
- * @param {string} timeRange - Time range for trends ('1w', '1m', '3m', '1y')
+ * @param {string} _timeRange - Time range for trends ('1w', '1m', '3m', '1y')
  * @returns {Promise<Object>} Platform analytics
  */
-async function getPlatformAnalytics(timeRange = '1m') {
+async function getPlatformAnalytics(_timeRange = '1m') {
   const reviews = await dbUnified.read('reviews');
 
   return ReviewAnalytics.generatePlatformAnalytics(reviews);

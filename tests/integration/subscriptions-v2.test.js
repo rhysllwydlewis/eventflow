@@ -6,7 +6,6 @@
 
 const subscriptionService = require('../../services/subscriptionService');
 const dbUnified = require('../../db-unified');
-const { uid } = require('../../store');
 
 // Mock database
 jest.mock('../../db-unified');
@@ -14,7 +13,6 @@ jest.mock('../../db-unified');
 describe('Subscription Service Integration Tests', () => {
   let mockSubscriptions;
   let mockUsers;
-  let uidMock;
 
   beforeEach(() => {
     mockSubscriptions = [];

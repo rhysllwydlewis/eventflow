@@ -131,62 +131,7 @@
     }
   }
 
-  function initMobileMenu() {
-    // Top mobile toggle
-    if (elements.mobileToggle) {
-      elements.mobileToggle.addEventListener('click', toggleMobileMenu);
-
-      elements.mobileToggle.addEventListener('keydown', e => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          toggleMobileMenu();
-        }
-      });
-    }
-
-    // Bottom menu button
-    if (elements.bottomMenu) {
-      elements.bottomMenu.addEventListener('click', toggleMobileMenu);
-
-      elements.bottomMenu.addEventListener('keydown', e => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          toggleMobileMenu();
-        }
-      });
-    }
-
-    // Close on link click
-    if (elements.mobileMenu) {
-      elements.mobileMenu.addEventListener('click', e => {
-        if (e.target.tagName === 'A' && e.target.href && !e.target.href.includes('#')) {
-          closeMobileMenu();
-        }
-      });
-    }
-
-    // Close on Escape key
-    document.addEventListener('keydown', e => {
-      if (e.key === 'Escape' && state.isMobileMenuOpen) {
-        closeMobileMenu();
-        if (elements.mobileToggle) {
-          elements.mobileToggle.focus();
-        }
-      }
-    });
-
-    // Close on backdrop click
-    document.addEventListener('click', e => {
-      if (
-        state.isMobileMenuOpen &&
-        !elements.mobileMenu.contains(e.target) &&
-        !elements.mobileToggle?.contains(e.target) &&
-        !elements.bottomMenu?.contains(e.target)
-      ) {
-        closeMobileMenu();
-      }
-    });
-  }
+  // MOBILE MENU DISABLED - using standalone burger-menu.js instead
 
   // ==========================================
   // SCROLL BEHAVIOR

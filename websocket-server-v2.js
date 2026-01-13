@@ -443,7 +443,7 @@ class WebSocketServerV2 {
   /**
    * Handle presence update (heartbeat)
    */
-  async handlePresenceUpdate(socket, data) {
+  async handlePresenceUpdate(socket, _data) {
     try {
       if (!socket.userId) {
         return;
@@ -598,7 +598,6 @@ class WebSocketServerV2 {
   cleanup() {
     try {
       // Clean up typing indicators
-      const now = Date.now();
       for (const [threadId, users] of this.typingUsers.entries()) {
         if (users.size === 0) {
           this.typingUsers.delete(threadId);
