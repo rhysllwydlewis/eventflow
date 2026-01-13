@@ -20,6 +20,7 @@ const profileRoutes = require('./profile');
 const reportsRoutes = require('./reports');
 const ticketsRoutes = require('./tickets');
 const webhooksRoutes = require('./webhooks');
+const searchV2Routes = require('./search-v2');
 
 /**
  * Mount all route modules
@@ -62,6 +63,9 @@ function mountRoutes(app, deps) {
 
   // Webhook routes
   app.use('/api/webhooks', webhooksRoutes);
+
+  // Search V2 routes (advanced search with caching and analytics)
+  app.use('/api/v2/search', searchV2Routes);
 }
 
 module.exports = {
