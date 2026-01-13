@@ -12,7 +12,7 @@
 const express = require('express');
 const router = express.Router();
 const reviewService = require('../services/reviewService');
-const { authRequired, roleRequired } = require('../middleware/auth');
+const { authRequired } = require('../middleware/auth');
 const { csrfProtection } = require('../middleware/csrf');
 const reviewModeration = require('../middleware/reviewModeration');
 

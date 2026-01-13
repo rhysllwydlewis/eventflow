@@ -153,12 +153,7 @@ async function getDetailedMetrics() {
       return acc;
     }, {});
 
-    // Package metrics
-    const packagesBySupplier = packages.reduce((acc, pkg) => {
-      acc[pkg.supplierId] = (acc[pkg.supplierId] || 0) + 1;
-      return acc;
-    }, {});
-
+    // Package metrics - count packages per supplier
     const avgPackagesPerSupplier = suppliers.length > 0 ? packages.length / suppliers.length : 0;
 
     // Review metrics
