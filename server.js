@@ -5831,6 +5831,11 @@ app.post('/api/csp-report', express.json({ type: 'application/csp-report' }), (r
   res.status(204).end();
 });
 
+// ---------- Subscription and Payment v2 Routes ----------
+const subscriptionsV2Routes = require('./routes/subscriptions-v2');
+app.use('/api/v2/subscriptions', subscriptionsV2Routes);
+app.use('/api/v2', subscriptionsV2Routes); // For /api/v2/invoices, /api/v2/admin, and /api/v2/webhooks/stripe
+
 // ---------- Reviews v2 Routes ----------
 const reviewsV2Routes = require('./routes/reviews-v2');
 app.use('/api/v2/reviews', reviewsV2Routes);
@@ -5968,20 +5973,19 @@ function initializeWebSocketV2(db) {
   if (!wsServerV2 && db) {
     const MessagingService = require('./services/messagingService');
     const { NotificationService } = require('./services/notificationService');
-    
+
     const messagingService = new MessagingService(db);
     const notificationService = new NotificationService(db, wsServer);
-    
+
     wsServerV2 = new WebSocketServerV2(server, messagingService, notificationService);
-    
+
     global.wsServerV2 = wsServerV2;
     app.set('wsServerV2', wsServerV2);
     app.locals.db = db;
-    
+
     console.log('✅ WebSocket Server v2 initialized for real-time messaging');
   }
 }
-
 
 /**
  * Initialize all services and start the server
@@ -6280,12 +6284,12 @@ process.on('uncaughtException', error => {
 // Graceful shutdown
 process.on('SIGTERM', async () => {
   console.log('SIGTERM signal received: closing HTTP server');
-  
+
   // Shutdown WebSocket servers gracefully
   if (wsServerV2) {
     await wsServerV2.shutdown();
   }
-  
+
   await sentry.flush(2000);
   await cache.close();
   process.exit(0);
@@ -6293,12 +6297,12 @@ process.on('SIGTERM', async () => {
 
 process.on('SIGINT', async () => {
   console.log('SIGINT signal received: closing HTTP server');
-  
+
   // Shutdown WebSocket servers gracefully
   if (wsServerV2) {
     await wsServerV2.shutdown();
   }
-  
+
   await sentry.flush(2000);
   await cache.close();
   process.exit(0);

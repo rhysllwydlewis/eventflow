@@ -5,6 +5,10 @@
 
 'use strict';
 
+// Import subscription and invoice schemas
+const { subscriptionSchema } = require('./Subscription');
+const { invoiceSchema } = require('./Invoice');
+
 // Schema definitions don't need direct collection access
 
 /**
@@ -65,6 +69,10 @@ const userSchema = {
         resetToken: { bsonType: 'string', description: 'Password reset token' },
         resetTokenExpiresAt: { bsonType: 'string', description: 'Reset token expiration' },
         isPro: { bsonType: 'bool', description: 'Pro subscription status' },
+        subscriptionId: {
+          bsonType: 'string',
+          description: 'Reference to active subscription ID',
+        },
         createdAt: { bsonType: 'string', description: 'Account creation timestamp' },
         lastLoginAt: { bsonType: 'string', description: 'Last login timestamp' },
         badges: {
@@ -724,6 +732,8 @@ async function initializeCollections(db) {
     events: eventSchema,
     badges: badgeSchema,
     payments: paymentSchema,
+    subscriptions: subscriptionSchema,
+    invoices: invoiceSchema,
     reviews: reviewSchema,
     reviewVotes: reviewVoteSchema,
     supplierAnalytics: supplierAnalyticsSchema,
@@ -833,6 +843,26 @@ async function createIndexes(db) {
     await db.collection('payments').createIndex({ stripeSubscriptionId: 1 }, { sparse: true });
     await db.collection('payments').createIndex({ status: 1 });
     await db.collection('payments').createIndex({ createdAt: 1 });
+
+    // Subscription indexes
+    await db.collection('subscriptions').createIndex({ id: 1 }, { unique: true });
+    await db.collection('subscriptions').createIndex({ userId: 1 });
+    await db.collection('subscriptions').createIndex({ status: 1 });
+    await db.collection('subscriptions').createIndex({ plan: 1 });
+    await db
+      .collection('subscriptions')
+      .createIndex({ stripeSubscriptionId: 1 }, { sparse: true, unique: true });
+    await db.collection('subscriptions').createIndex({ nextBillingDate: 1 }, { sparse: true });
+
+    // Invoice indexes
+    await db.collection('invoices').createIndex({ id: 1 }, { unique: true });
+    await db.collection('invoices').createIndex({ userId: 1 });
+    await db.collection('invoices').createIndex({ subscriptionId: 1 }, { sparse: true });
+    await db.collection('invoices').createIndex({ status: 1 });
+    await db
+      .collection('invoices')
+      .createIndex({ stripeInvoiceId: 1 }, { sparse: true, unique: true });
+    await db.collection('invoices').createIndex({ dueDate: 1 }, { sparse: true });
 
     // Review indexes
     await db.collection('reviews').createIndex({ id: 1 }, { unique: true });

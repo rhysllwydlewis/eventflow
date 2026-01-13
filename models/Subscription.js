@@ -1,0 +1,228 @@
+/**
+ * Subscription Model
+ * MongoDB schema and methods for user subscriptions
+ */
+
+'use strict';
+
+/**
+ * Subscription Schema Definition
+ * Tracks user subscriptions, billing cycles, and payment history
+ */
+const subscriptionSchema = {
+  validator: {
+    $jsonSchema: {
+      bsonType: 'object',
+      required: ['id', 'userId', 'plan', 'status'],
+      properties: {
+        id: {
+          bsonType: 'string',
+          description: 'Unique subscription identifier',
+        },
+        userId: {
+          bsonType: 'string',
+          description: 'User ID who owns this subscription',
+        },
+        stripeSubscriptionId: {
+          bsonType: 'string',
+          description: 'Stripe subscription ID for payment tracking',
+        },
+        stripeCustomerId: {
+          bsonType: 'string',
+          description: 'Stripe customer ID',
+        },
+        plan: {
+          enum: ['free', 'basic', 'pro', 'enterprise'],
+          description: 'Subscription plan tier',
+        },
+        status: {
+          enum: ['active', 'trialing', 'past_due', 'canceled', 'unpaid'],
+          description: 'Current subscription status',
+        },
+        trialStart: {
+          bsonType: 'string',
+          description: 'Trial period start date (ISO 8601)',
+        },
+        trialEnd: {
+          bsonType: 'string',
+          description: 'Trial period end date (ISO 8601)',
+        },
+        currentPeriodStart: {
+          bsonType: 'string',
+          description: 'Current billing period start date',
+        },
+        currentPeriodEnd: {
+          bsonType: 'string',
+          description: 'Current billing period end date',
+        },
+        nextBillingDate: {
+          bsonType: 'string',
+          description: 'Next billing date (ISO 8601)',
+        },
+        cancelAtPeriodEnd: {
+          bsonType: 'bool',
+          description: 'Whether subscription will cancel at period end',
+        },
+        canceledAt: {
+          bsonType: 'string',
+          description: 'When subscription was canceled (ISO 8601)',
+        },
+        cancelReason: {
+          bsonType: 'string',
+          description: 'Reason for cancellation',
+        },
+        billingHistory: {
+          bsonType: 'array',
+          description: 'Historical billing records',
+          items: {
+            bsonType: 'object',
+            properties: {
+              invoiceId: {
+                bsonType: 'string',
+                description: 'Invoice identifier',
+              },
+              amount: {
+                bsonType: 'number',
+                description: 'Billing amount',
+              },
+              currency: {
+                bsonType: 'string',
+                description: 'Currency code (USD, GBP, etc.)',
+              },
+              paid: {
+                bsonType: 'bool',
+                description: 'Payment status',
+              },
+              date: {
+                bsonType: 'string',
+                description: 'Billing date (ISO 8601)',
+              },
+            },
+          },
+        },
+        metadata: {
+          bsonType: 'object',
+          description: 'Additional metadata from Stripe or custom fields',
+        },
+        createdAt: {
+          bsonType: 'string',
+          description: 'Subscription creation timestamp (ISO 8601)',
+        },
+        updatedAt: {
+          bsonType: 'string',
+          description: 'Last update timestamp (ISO 8601)',
+        },
+      },
+    },
+  },
+};
+
+/**
+ * Plan feature definitions
+ * Maps plan tiers to available features
+ */
+const PLAN_FEATURES = {
+  free: {
+    name: 'Free',
+    price: 0,
+    interval: 'month',
+    features: {
+      maxSuppliers: 1,
+      maxPackages: 5,
+      maxPhotos: 10,
+      messaging: true,
+      analytics: false,
+      prioritySupport: false,
+      customBranding: false,
+      apiAccess: false,
+      advancedReporting: false,
+    },
+  },
+  basic: {
+    name: 'Basic',
+    price: 9.99,
+    interval: 'month',
+    features: {
+      maxSuppliers: 3,
+      maxPackages: 20,
+      maxPhotos: 50,
+      messaging: true,
+      analytics: true,
+      prioritySupport: false,
+      customBranding: false,
+      apiAccess: false,
+      advancedReporting: false,
+    },
+  },
+  pro: {
+    name: 'Professional',
+    price: 29.99,
+    interval: 'month',
+    features: {
+      maxSuppliers: 10,
+      maxPackages: 100,
+      maxPhotos: 500,
+      messaging: true,
+      analytics: true,
+      prioritySupport: true,
+      customBranding: true,
+      apiAccess: true,
+      advancedReporting: true,
+    },
+  },
+  enterprise: {
+    name: 'Enterprise',
+    price: 99.99,
+    interval: 'month',
+    features: {
+      maxSuppliers: -1, // unlimited
+      maxPackages: -1, // unlimited
+      maxPhotos: -1, // unlimited
+      messaging: true,
+      analytics: true,
+      prioritySupport: true,
+      customBranding: true,
+      apiAccess: true,
+      advancedReporting: true,
+    },
+  },
+};
+
+/**
+ * Get feature configuration for a plan
+ * @param {string} plan - Plan tier (free, basic, pro, enterprise)
+ * @returns {Object} Feature configuration
+ */
+function getPlanFeatures(plan) {
+  return PLAN_FEATURES[plan] || PLAN_FEATURES.free;
+}
+
+/**
+ * Check if a feature is enabled for a plan
+ * @param {string} plan - Plan tier
+ * @param {string} feature - Feature name
+ * @returns {boolean} Whether feature is enabled
+ */
+function hasFeature(plan, feature) {
+  const planConfig = getPlanFeatures(plan);
+  return planConfig.features[feature] || false;
+}
+
+/**
+ * Get all available plans
+ * @returns {Array} Array of plan configurations
+ */
+function getAllPlans() {
+  return Object.entries(PLAN_FEATURES).map(([key, value]) => ({
+    id: key,
+    ...value,
+  }));
+}
+
+module.exports = {
+  subscriptionSchema,
+  PLAN_FEATURES,
+  getPlanFeatures,
+  hasFeature,
+  getAllPlans,
+};
