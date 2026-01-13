@@ -152,6 +152,8 @@ class MessagingService {
 
   /**
    * Get a single message by ID
+   * @param {string|ObjectId} messageId - Message ID
+   * @returns {Promise<Object>} Message object
    */
   async getMessage(messageId) {
     try {

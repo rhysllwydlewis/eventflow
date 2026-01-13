@@ -288,9 +288,10 @@ class NotificationService {
    */
   async markAsRead(notificationId, userId) {
     try {
+      const { ObjectId } = require('mongodb');
       const result = await this.notificationsCollection.updateOne(
         {
-          _id: notificationId,
+          _id: typeof notificationId === 'string' ? new ObjectId(notificationId) : notificationId,
           userId,
         },
         {
@@ -365,8 +366,9 @@ class NotificationService {
    */
   async deleteNotification(notificationId, userId) {
     try {
+      const { ObjectId } = require('mongodb');
       const result = await this.notificationsCollection.deleteOne({
-        _id: notificationId,
+        _id: typeof notificationId === 'string' ? new ObjectId(notificationId) : notificationId,
         userId,
       });
 
