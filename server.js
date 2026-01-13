@@ -5677,6 +5677,10 @@ app.use('/api/webhooks', webhookRoutes);
 const adminRoutes = require('./routes/admin');
 app.use('/api/admin', adminRoutes);
 
+// ---------- Admin v2 Routes (RBAC with granular permissions) ----------
+const adminV2Routes = require('./routes/admin-v2');
+app.use('/api/v2/admin', adminV2Routes);
+
 // ---------- Content Reporting System ----------
 const reportsRoutes = require('./routes/reports');
 app.use('/api', reportsRoutes);
