@@ -131,7 +131,8 @@
     }
   }
 
-  // MOBILE MENU DISABLED - using standalone burger-menu.js instead
+  // NOTE: Mobile menu functionality moved to burger-menu.js
+  // Legacy mobile menu code removed - now handled by standalone burger-menu.js component
 
   // ==========================================
   // SCROLL BEHAVIOR

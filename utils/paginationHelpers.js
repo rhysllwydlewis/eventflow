@@ -41,7 +41,10 @@ function paginatedResponse(data, options) {
 /**
  * Express middleware to parse pagination parameters from query string
  * Adds parsed values to req.pagination
- * @param {Object} defaults - Default values for pagination
+ * @param {Object} [defaults={}] - Default values for pagination
+ * @param {number} [defaults.page=1] - Default page number
+ * @param {number} [defaults.limit=30] - Default items per page
+ * @param {number} [defaults.maxLimit=100] - Maximum allowed items per page
  * @returns {Function} Express middleware
  */
 function parsePaginationQuery(defaults = {}) {
@@ -50,7 +53,10 @@ function parsePaginationQuery(defaults = {}) {
   const maxLimit = defaults.maxLimit || 100;
 
   return (req, res, next) => {
-    const page = Math.max(1, parseInt(req.query.page, 10) || defaultPage);
+    const page = Math.max(
+      1,
+      Math.min(Number.MAX_SAFE_INTEGER, parseInt(req.query.page, 10) || defaultPage)
+    );
     const limit = Math.min(maxLimit, Math.max(1, parseInt(req.query.limit, 10) || defaultLimit));
     const skip = (page - 1) * limit;
 

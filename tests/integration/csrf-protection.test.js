@@ -211,7 +211,7 @@ describe('CSRF Protection', () => {
   describe('Client-Side - Admin Shared JS', () => {
     it('adminFetch should include X-CSRF-Token header for write operations', () => {
       expect(adminSharedContent).toContain('async function adminFetch');
-      const adminFetchFn = adminSharedContent.match(/async function adminFetch[\s\S]*?^\s\s}/m);
+      const adminFetchFn = adminSharedContent.match(/async function adminFetch[\s\S]*?^\s*}/m);
       expect(adminFetchFn).toBeTruthy();
 
       // Should check for write operations
@@ -223,7 +223,7 @@ describe('CSRF Protection', () => {
     });
 
     it('adminFetch should include credentials: include', () => {
-      const adminFetchFn = adminSharedContent.match(/async function adminFetch[\s\S]*?^\s\s}/m);
+      const adminFetchFn = adminSharedContent.match(/async function adminFetch[\s\S]*?^\s*}/m);
       expect(adminFetchFn).toBeTruthy();
       expect(adminFetchFn[0]).toContain("credentials: 'include'");
     });
