@@ -13,6 +13,7 @@ const { PresenceService } = require('../services/presenceService');
 let RedisAdapter;
 let redisClient;
 try {
+  // eslint-disable-next-line node/no-missing-require
   const { createAdapter } = require('@socket.io/redis-adapter');
   const Redis = require('ioredis');
   RedisAdapter = createAdapter;

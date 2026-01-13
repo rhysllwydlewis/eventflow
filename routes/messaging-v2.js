@@ -11,7 +11,7 @@ const { csrfProtection } = require('../middleware/csrf');
 const logger = require('../utils/logger');
 const MessagingService = require('../services/messagingService');
 const { NotificationService } = require('../services/notificationService');
-const { PresenceService, PRESENCE_STATES } = require('../services/presenceService');
+const { PresenceService } = require('../services/presenceService');
 
 const router = express.Router();
 

@@ -188,7 +188,7 @@ class NotificationService {
    * Note: This is a placeholder - actual push implementation depends on
    * mobile app setup (Firebase, Apple Push Notification service, etc.)
    */
-  async deliverPush(userId, notification) {
+  async deliverPush(userId, _notification) {
     try {
       // TODO: Implement push notification delivery
       // This would typically involve:
