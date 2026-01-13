@@ -7,9 +7,9 @@
 
 const { Server } = require('socket.io');
 // eslint-disable-next-line node/no-unpublished-require, node/no-missing-require
-const logger = require('../utils/logger');
+const logger = require('./utils/logger');
 // eslint-disable-next-line node/no-unpublished-require, node/no-missing-require
-const { PresenceService } = require('../services/presenceService');
+const { PresenceService } = require('./services/presenceService');
 
 // Try to load Redis adapter for clustering (optional)
 let RedisAdapter;
@@ -19,7 +19,7 @@ try {
   const { createAdapter } = require('@socket.io/redis-adapter');
   const Redis = require('ioredis');
   RedisAdapter = createAdapter;
-  
+
   // Initialize Redis if REDIS_URL is set
   if (process.env.REDIS_URL) {
     redisClient = new Redis(process.env.REDIS_URL);
@@ -46,14 +46,14 @@ class WebSocketServerV2 {
 
     this.messagingService = messagingService;
     this.notificationService = notificationService;
-    
+
     // Initialize presence service with Redis if available
     this.presenceService = new PresenceService(redisClient);
 
     // Tracking maps
     this.userSockets = new Map(); // userId -> Set of socket IDs
     this.socketUsers = new Map(); // socketId -> userId
-    
+
     // Typing indicators tracking
     this.typingUsers = new Map(); // threadId -> Set of userIds
 
@@ -281,10 +281,14 @@ class WebSocketServerV2 {
    */
   handleTypingStart(socket, data) {
     try {
-      if (!socket.userId) return;
+      if (!socket.userId) {
+        return;
+      }
 
       const { threadId, recipientId } = data;
-      if (!threadId) return;
+      if (!threadId) {
+        return;
+      }
 
       // Track typing user
       if (!this.typingUsers.has(threadId)) {
@@ -317,10 +321,14 @@ class WebSocketServerV2 {
    */
   handleTypingStop(socket, data) {
     try {
-      if (!socket.userId) return;
+      if (!socket.userId) {
+        return;
+      }
 
       const { threadId, recipientId } = data;
-      if (!threadId) return;
+      if (!threadId) {
+        return;
+      }
 
       // Remove from typing users
       if (this.typingUsers.has(threadId)) {
@@ -355,10 +363,14 @@ class WebSocketServerV2 {
    */
   async handleMessageRead(socket, data) {
     try {
-      if (!socket.userId || !this.messagingService) return;
+      if (!socket.userId || !this.messagingService) {
+        return;
+      }
 
       const { messageId } = data;
-      if (!messageId) return;
+      if (!messageId) {
+        return;
+      }
 
       await this.messagingService.markMessageAsRead(messageId, socket.userId);
 
@@ -383,10 +395,14 @@ class WebSocketServerV2 {
    */
   async handleThreadRead(socket, data) {
     try {
-      if (!socket.userId || !this.messagingService) return;
+      if (!socket.userId || !this.messagingService) {
+        return;
+      }
 
       const { threadId } = data;
-      if (!threadId) return;
+      if (!threadId) {
+        return;
+      }
 
       await this.messagingService.markThreadAsRead(threadId, socket.userId);
 
@@ -401,10 +417,14 @@ class WebSocketServerV2 {
    */
   async handleReactionSend(socket, data) {
     try {
-      if (!socket.userId || !this.messagingService) return;
+      if (!socket.userId || !this.messagingService) {
+        return;
+      }
 
       const { messageId, emoji } = data;
-      if (!messageId || !emoji) return;
+      if (!messageId || !emoji) {
+        return;
+      }
 
       const message = await this.messagingService.addReaction(messageId, socket.userId, emoji);
 
@@ -425,7 +445,9 @@ class WebSocketServerV2 {
    */
   async handlePresenceUpdate(socket, data) {
     try {
-      if (!socket.userId) return;
+      if (!socket.userId) {
+        return;
+      }
 
       await this.presenceService.heartbeat(socket.userId);
 
@@ -440,10 +462,14 @@ class WebSocketServerV2 {
    */
   async handlePresenceSync(socket, data) {
     try {
-      if (!socket.userId) return;
+      if (!socket.userId) {
+        return;
+      }
 
       const { userIds } = data;
-      if (!userIds || !Array.isArray(userIds)) return;
+      if (!userIds || !Array.isArray(userIds)) {
+        return;
+      }
 
       const presence = await this.presenceService.getBulkPresence(userIds);
 
@@ -591,16 +617,16 @@ class WebSocketServerV2 {
   async shutdown() {
     try {
       logger.info('Shutting down WebSocket server...');
-      
+
       // Disconnect all clients
       this.io.disconnectSockets();
-      
+
       // Cleanup presence service
       this.presenceService.destroy();
-      
+
       // Close server
       this.io.close();
-      
+
       logger.info('WebSocket server shut down successfully');
     } catch (error) {
       logger.error('Shutdown error', { error: error.message });
