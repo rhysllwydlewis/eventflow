@@ -31,10 +31,68 @@ const HIGH_RATING_THRESHOLD = 4.5;
 
 /**
  * Calculate relevance score for a search result
- * @param {Object} item - Supplier or package object
- * @param {string} query - Search query
- * @param {Object} filters - Applied filters
- * @returns {number} Relevance score
+ *
+ * This function implements a weighted full-text search algorithm with the following components:
+ *
+ * 1. Field Scoring: Different fields have different weights
+ *    - supplierName: 10 (highest - exact business name matches)
+ *    - packageTitle: 8 (package/service titles)
+ *    - tags: 5 (tagged keywords)
+ *    - category: 4 (category classifications)
+ *    - description: 3 (full description text)
+ *    - location: 3 (geographic location)
+ *    - amenities: 2 (available amenities/features)
+ *
+ * 2. Match Quality: Scores vary based on match type
+ *    - Exact field match: weight × 3
+ *    - Starts with query: weight × 2
+ *    - Whole word match: weight × 1.5
+ *    - Contains query: weight × 1
+ *    - Partial word matches: weight × 0.5 (proportional)
+ *
+ * 3. Proximity Bonus: +5 points if query words appear close together (within 50 chars)
+ *
+ * 4. Boost Factors (multipliers applied to base score):
+ *    - Featured: 1.5× (50% boost)
+ *    - New (<30 days): 1.3× (30% boost)
+ *    - High rating (≥4.5): 1.4× (40% boost)
+ *    - Verified: 1.2× (20% boost)
+ *    - Pro/Premium: 1.1× (10% boost)
+ *
+ * 5. Filter Match Bonuses:
+ *    - Exact category match: +10%
+ *    - Location match: +10%
+ *    - Amenity matches: +5% per amenity
+ *
+ * 6. Freshness Factor (recency decay):
+ *    - 0-7 days: 1.0×
+ *    - 8-30 days: 0.95×
+ *    - 31-90 days: 0.9×
+ *    - 91-180 days: 0.85×
+ *    - 181-365 days: 0.8×
+ *    - 365+ days: 0.75×
+ *
+ * Final Score = ((field_matches × field_weights + proximity_bonus) × boosts × filter_bonuses) × freshness
+ *
+ * @param {Object} item - Supplier or package object to score
+ * @param {string} item.name - Item name/title
+ * @param {string} [item.description_short] - Short description
+ * @param {string} [item.description_long] - Long description
+ * @param {string} [item.category] - Category classification
+ * @param {string} [item.location] - Geographic location
+ * @param {Array<string>} [item.tags] - Tagged keywords
+ * @param {Array<string>} [item.amenities] - Available amenities
+ * @param {boolean} [item.featured] - Whether item is featured
+ * @param {boolean} [item.verified] - Whether supplier is verified
+ * @param {boolean} [item.isPro] - Whether has premium subscription
+ * @param {number} [item.averageRating] - Average rating (0-5)
+ * @param {string} [item.createdAt] - Creation date (ISO 8601)
+ * @param {string} query - Search query text
+ * @param {Object} [filters={}] - Applied search filters
+ * @param {string} [filters.category] - Category filter
+ * @param {string} [filters.location] - Location filter
+ * @param {Array<string>} [filters.amenities] - Required amenities
+ * @returns {number} Relevance score (0+, rounded to 2 decimal places). Higher scores indicate better matches.
  */
 function calculateRelevanceScore(item, query, filters = {}) {
   let score = 0;

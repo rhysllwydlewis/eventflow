@@ -5,6 +5,7 @@
 
 'use strict';
 
+const crypto = require('crypto');
 const dbUnified = require('../db-unified');
 const cache = require('../cache');
 
@@ -29,7 +30,7 @@ async function trackSearch(searchData) {
     const searchHistory = (await dbUnified.read('searchHistory')) || [];
 
     const historyEntry = {
-      id: `search_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      id: `search_${Date.now()}_${crypto.randomUUID()}`,
       userId: searchData.userId || null,
       sessionId: searchData.sessionId || null,
       queryText: searchData.queryText || '',
@@ -104,7 +105,7 @@ async function updatePopularSearches(queryText) {
     popularEntry.lastSearched = new Date().toISOString();
   } else {
     popularEntry = {
-      id: `popular_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      id: `popular_${Date.now()}_${crypto.randomUUID()}`,
       queryText,
       normalizedQuery,
       searchCount: 1,

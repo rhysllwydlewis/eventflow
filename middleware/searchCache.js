@@ -267,7 +267,15 @@ function invalidateSearchCacheMiddleware(options = {}) {
  */
 async function getCacheStats() {
   try {
-    const stats = cache.getStats();
+    const stats = cache.getStats
+      ? cache.getStats()
+      : {
+          hits: 0,
+          misses: 0,
+          sets: 0,
+          deletes: 0,
+          errors: 0,
+        };
 
     // Calculate hit rate
     const totalRequests = stats.hits + stats.misses;

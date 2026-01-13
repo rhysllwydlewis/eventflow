@@ -5,6 +5,7 @@
 
 'use strict';
 
+const crypto = require('crypto');
 const express = require('express');
 const router = express.Router();
 const dbUnified = require('../db-unified');
@@ -232,7 +233,7 @@ router.post('/saved', authRequired, async (req, res) => {
     const savedSearches = (await dbUnified.read('savedSearches')) || [];
 
     const savedSearch = {
-      id: `saved_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      id: `saved_${Date.now()}_${crypto.randomUUID()}`,
       userId: req.user.id,
       name: validator.escape(name),
       description: description ? validator.escape(description) : '',

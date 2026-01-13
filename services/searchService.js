@@ -15,7 +15,26 @@ const {
 /**
  * Search suppliers with weighted relevance scoring
  * @param {Object} query - Search parameters
+ * @param {string} [query.q] - Search query text (max 200 chars)
+ * @param {string} [query.category] - Filter by category
+ * @param {string} [query.location] - Filter by location (partial match)
+ * @param {number} [query.minPrice] - Minimum price level (1-4)
+ * @param {number} [query.maxPrice] - Maximum price level (1-4)
+ * @param {number} [query.minRating] - Minimum average rating (0-5)
+ * @param {string|Array<string>} [query.amenities] - Required amenities
+ * @param {number} [query.minGuests] - Minimum guest capacity
+ * @param {boolean|string} [query.proOnly] - Filter to pro suppliers only
+ * @param {boolean|string} [query.featuredOnly] - Filter to featured only
+ * @param {boolean|string} [query.verifiedOnly] - Filter to verified only
+ * @param {string} [query.sortBy='relevance'] - Sort order: relevance, rating, reviews, name, newest, priceAsc, priceDesc
+ * @param {number} [query.page=1] - Page number (1-indexed)
+ * @param {number} [query.limit=20] - Results per page (max 100)
  * @returns {Promise<Object>} Search results with scores
+ * @returns {Promise<Object>} result - Search results object
+ * @returns {Array<Object>} result.results - Array of suppliers with relevance scores and match info
+ * @returns {Object} result.pagination - Pagination metadata (total, page, limit, pages)
+ * @returns {Object} result.facets - Faceted search data (categories, ratings, priceRanges, amenities)
+ * @returns {number} result.durationMs - Search execution time in milliseconds
  */
 async function searchSuppliers(query) {
   const startTime = Date.now();
