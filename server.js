@@ -5827,6 +5827,10 @@ app.post('/api/csp-report', express.json({ type: 'application/csp-report' }), (r
   res.status(204).end();
 });
 
+// ---------- Reviews v2 Routes ----------
+const reviewsV2Routes = require('./routes/reviews-v2');
+app.use('/api/v2/reviews', reviewsV2Routes);
+
 // ---------- Mount Modular Routes ----------
 // Mount all modular routes from routes/index.js
 const { mountRoutes } = require('./routes/index');
