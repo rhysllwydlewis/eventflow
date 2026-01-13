@@ -1,6 +1,6 @@
 /**
  * Review Service
- * 
+ *
  * Core business logic for the enhanced review system.
  * Handles review creation, moderation, responses, disputes, and analytics.
  */
@@ -31,55 +31,52 @@ async function checkReviewEligibility(userId, supplierId, bookingId = null) {
   const reviews = await dbUnified.read('reviews');
   const now = Date.now();
   const cooldownMs = REVIEW_COOLDOWN_DAYS * 24 * 60 * 60 * 1000;
-  
+
   // Check if user already reviewed this supplier recently
-  const existingReview = reviews.find(r => 
-    r.authorId === userId && 
-    r.supplierId === supplierId &&
-    now - new Date(r.createdAt).getTime() < cooldownMs
+  const existingReview = reviews.find(
+    r =>
+      r.authorId === userId &&
+      r.supplierId === supplierId &&
+      now - new Date(r.createdAt).getTime() < cooldownMs
   );
-  
+
   if (existingReview) {
     const daysRemaining = Math.ceil(
       (cooldownMs - (now - new Date(existingReview.createdAt).getTime())) / (24 * 60 * 60 * 1000)
     );
-    
+
     return {
       eligible: false,
       reason: `You have already reviewed this supplier. Please wait ${daysRemaining} days before submitting another review.`,
     };
   }
-  
+
   // Check rate limiting (5 reviews per hour)
-  const oneHourAgo = now - (60 * 60 * 1000);
-  const recentReviews = reviews.filter(r => 
-    r.authorId === userId &&
-    new Date(r.createdAt).getTime() > oneHourAgo
+  const oneHourAgo = now - 60 * 60 * 1000;
+  const recentReviews = reviews.filter(
+    r => r.authorId === userId && new Date(r.createdAt).getTime() > oneHourAgo
   );
-  
+
   if (recentReviews.length >= MAX_REVIEWS_PER_HOUR) {
     return {
       eligible: false,
       reason: 'You have submitted too many reviews recently. Please try again later.',
     };
   }
-  
+
   // Check booking verification if bookingId provided
   let bookingVerified = false;
   if (bookingId) {
     // Check if booking exists and belongs to user
     // For now, we'll check message threads as a proxy
     const threads = await dbUnified.read('threads');
-    const thread = threads.find(t => 
-      t.customerId === userId && 
-      t.supplierId === supplierId
-    );
-    
+    const thread = threads.find(t => t.customerId === userId && t.supplierId === supplierId);
+
     bookingVerified = !!thread;
   }
-  
+
   const deadline = new Date(now + cooldownMs).toISOString();
-  
+
   return {
     eligible: true,
     bookingVerified,
@@ -100,43 +97,40 @@ async function createReview(reviewData, userId, metadata = {}) {
     ...reviewData,
     authorId: userId,
   });
-  
+
   if (!validation.valid) {
     throw new Error(`Validation failed: ${validation.errors.join(', ')}`);
   }
-  
+
   // Check eligibility
   const eligibility = await checkReviewEligibility(
     userId,
     reviewData.supplierId,
     reviewData.bookingId
   );
-  
+
   if (!eligibility.eligible) {
     throw new Error(eligibility.reason);
   }
-  
+
   // Perform sentiment analysis
-  const analysis = sentimentAnalysis.analyzeReview(
-    reviewData.title || '',
-    reviewData.text || ''
-  );
-  
+  const analysis = sentimentAnalysis.analyzeReview(reviewData.title || '', reviewData.text || '');
+
   // Determine verification status
   let verificationStatus = ReviewModel.VERIFICATION_TYPES.UNVERIFIED;
   if (reviewData.bookingId && eligibility.bookingVerified) {
     verificationStatus = ReviewModel.VERIFICATION_TYPES.VERIFIED_BOOKING;
   }
-  
+
   // Auto-approve logic:
   // - Verified booking + no spam + positive/neutral sentiment = auto-approve
   // - Spam detected = pending moderation
   // - Negative sentiment = pending moderation
-  const autoApprove = 
+  const autoApprove =
     verificationStatus === ReviewModel.VERIFICATION_TYPES.VERIFIED_BOOKING &&
     !analysis.spam.isSpam &&
     analysis.sentiment.score >= AUTO_APPROVE_SENTIMENT_THRESHOLD;
-  
+
   // Create review object
   const review = ReviewModel.createReview({
     _id: uid('rev'),
@@ -150,9 +144,10 @@ async function createReview(reviewData, userId, metadata = {}) {
       status: verificationStatus,
       bookingDate: reviewData.eventDetails?.date || null,
       eventType: reviewData.eventDetails?.type || null,
-      verifiedAt: verificationStatus !== ReviewModel.VERIFICATION_TYPES.UNVERIFIED 
-        ? new Date().toISOString() 
-        : null,
+      verifiedAt:
+        verificationStatus !== ReviewModel.VERIFICATION_TYPES.UNVERIFIED
+          ? new Date().toISOString()
+          : null,
     },
     sentiment: {
       score: analysis.sentiment.score,
@@ -162,26 +157,26 @@ async function createReview(reviewData, userId, metadata = {}) {
       analyzedAt: analysis.analyzedAt,
     },
     moderation: {
-      state: autoApprove 
-        ? ReviewModel.MODERATION_STATES.APPROVED 
+      state: autoApprove
+        ? ReviewModel.MODERATION_STATES.APPROVED
         : ReviewModel.MODERATION_STATES.PENDING,
       autoApproved: autoApprove,
       moderatorId: autoApprove ? 'system' : null,
       moderatedAt: autoApprove ? new Date().toISOString() : null,
-      reason: autoApprove 
-        ? 'Auto-approved: verified booking, no spam, positive sentiment' 
-        : analysis.spam.isSpam 
+      reason: autoApprove
+        ? 'Auto-approved: verified booking, no spam, positive sentiment'
+        : analysis.spam.isSpam
           ? `Pending moderation: ${analysis.spam.indicators.join(', ')}`
           : 'Pending manual moderation',
       previousStates: [],
     },
   });
-  
+
   // Save review
   const reviews = await dbUnified.read('reviews');
   reviews.push(review);
   await dbUnified.write('reviews', reviews);
-  
+
   return {
     reviewId: review._id,
     status: review.moderation.state,
@@ -193,8 +188,8 @@ async function createReview(reviewData, userId, metadata = {}) {
       state: review.moderation.state,
       reason: review.moderation.reason,
     },
-    message: autoApprove 
-      ? 'Review published successfully.' 
+    message: autoApprove
+      ? 'Review published successfully.'
       : 'Review submitted and pending moderation.',
   };
 }
@@ -213,28 +208,26 @@ async function getSupplierReviews(supplierId, options = {}) {
     filter = null, // 'verified', 'disputed'
     approvedOnly = true,
   } = options;
-  
+
   const reviews = await dbUnified.read('reviews');
-  
+
   // Filter by supplier
   let filtered = reviews.filter(r => r.supplierId === supplierId);
-  
+
   // Filter by approval status
   if (approvedOnly) {
-    filtered = filtered.filter(r => 
-      r.moderation?.state === ReviewModel.MODERATION_STATES.APPROVED
-    );
+    filtered = filtered.filter(r => r.moderation?.state === ReviewModel.MODERATION_STATES.APPROVED);
   }
-  
+
   // Apply additional filters
   if (filter === 'verified') {
-    filtered = filtered.filter(r => 
-      r.verification?.status !== ReviewModel.VERIFICATION_TYPES.UNVERIFIED
+    filtered = filtered.filter(
+      r => r.verification?.status !== ReviewModel.VERIFICATION_TYPES.UNVERIFIED
     );
   } else if (filter === 'disputed') {
     filtered = filtered.filter(r => r.dispute && r.dispute.filed);
   }
-  
+
   // Sort reviews
   switch (sortBy) {
     case 'helpful':
@@ -245,23 +238,21 @@ async function getSupplierReviews(supplierId, options = {}) {
       break;
     case 'recent':
     default:
-      filtered.sort((a, b) => 
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      );
+      filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }
-  
+
   // Pagination
   const total = filtered.length;
   const pages = Math.ceil(total / limit);
   const start = (page - 1) * limit;
   const end = start + limit;
   const paginatedReviews = filtered.slice(start, end);
-  
+
   // Get analytics for supplier
   const analytics = ReviewAnalytics.generateSupplierAnalytics(
     reviews.filter(r => r.supplierId === supplierId)
   );
-  
+
   return {
     reviews: paginatedReviews,
     pagination: {
@@ -289,19 +280,20 @@ async function getSupplierReviews(supplierId, options = {}) {
 async function moderateReview(reviewId, action, moderatorId, reason) {
   const reviews = await dbUnified.read('reviews');
   const review = reviews.find(r => r._id === reviewId);
-  
+
   if (!review) {
     throw new Error('Review not found');
   }
-  
-  const newState = action === 'approve' 
-    ? ReviewModel.MODERATION_STATES.APPROVED 
-    : ReviewModel.MODERATION_STATES.REJECTED;
-  
+
+  const newState =
+    action === 'approve'
+      ? ReviewModel.MODERATION_STATES.APPROVED
+      : ReviewModel.MODERATION_STATES.REJECTED;
+
   ReviewModel.updateModerationState(review, newState, moderatorId, reason);
-  
+
   await dbUnified.write('reviews', reviews);
-  
+
   return review;
 }
 
@@ -315,20 +307,20 @@ async function moderateReview(reviewId, action, moderatorId, reason) {
 async function requestChanges(reviewId, moderatorId, reason) {
   const reviews = await dbUnified.read('reviews');
   const review = reviews.find(r => r._id === reviewId);
-  
+
   if (!review) {
     throw new Error('Review not found');
   }
-  
+
   ReviewModel.updateModerationState(
     review,
     ReviewModel.MODERATION_STATES.CHANGES_REQUESTED,
     moderatorId,
     reason
   );
-  
+
   await dbUnified.write('reviews', reviews);
-  
+
   return review;
 }
 
@@ -343,28 +335,28 @@ async function requestChanges(reviewId, moderatorId, reason) {
 async function addSupplierResponse(reviewId, supplierId, text, userId) {
   const reviews = await dbUnified.read('reviews');
   const review = reviews.find(r => r._id === reviewId);
-  
+
   if (!review) {
     throw new Error('Review not found');
   }
-  
+
   if (review.supplierId !== supplierId) {
     throw new Error('Supplier ID mismatch');
   }
-  
+
   // Validate text
   if (!text || text.length < MIN_RESPONSE_LENGTH) {
     throw new Error(`Response must be at least ${MIN_RESPONSE_LENGTH} characters`);
   }
-  
+
   if (text.length > MAX_RESPONSE_LENGTH) {
     throw new Error(`Response cannot exceed ${MAX_RESPONSE_LENGTH} characters`);
   }
-  
+
   ReviewModel.addResponse(review, supplierId, text);
-  
+
   await dbUnified.write('reviews', reviews);
-  
+
   return review;
 }
 
@@ -378,18 +370,14 @@ async function addSupplierResponse(reviewId, supplierId, text, userId) {
 async function voteOnReview(reviewId, userId, helpful) {
   const reviews = await dbUnified.read('reviews');
   const review = reviews.find(r => r._id === reviewId);
-  
+
   if (!review) {
     throw new Error('Review not found');
   }
-  
-  try {
-    ReviewModel.addVote(review, userId, helpful);
-    await dbUnified.write('reviews', reviews);
-    return review;
-  } catch (error) {
-    throw error;
-  }
+
+  ReviewModel.addVote(review, userId, helpful);
+  await dbUnified.write('reviews', reviews);
+  return review;
 }
 
 /**
@@ -403,19 +391,19 @@ async function voteOnReview(reviewId, userId, helpful) {
 async function fileDispute(reviewId, userId, reason, evidence) {
   const reviews = await dbUnified.read('reviews');
   const review = reviews.find(r => r._id === reviewId);
-  
+
   if (!review) {
     throw new Error('Review not found');
   }
-  
+
   if (review.dispute && review.dispute.filed) {
     throw new Error('A dispute has already been filed for this review');
   }
-  
+
   ReviewModel.fileDispute(review, userId, reason, evidence);
-  
+
   await dbUnified.write('reviews', reviews);
-  
+
   return {
     disputeId: review._id,
     status: review.moderation.state,
@@ -434,19 +422,19 @@ async function fileDispute(reviewId, userId, reason, evidence) {
 async function resolveDispute(reviewId, resolution, adminId, reason) {
   const reviews = await dbUnified.read('reviews');
   const review = reviews.find(r => r._id === reviewId);
-  
+
   if (!review) {
     throw new Error('Review not found');
   }
-  
+
   if (!review.dispute || !review.dispute.filed) {
     throw new Error('No dispute found for this review');
   }
-  
+
   ReviewModel.resolveDispute(review, resolution, adminId, reason);
-  
+
   await dbUnified.write('reviews', reviews);
-  
+
   return review;
 }
 
@@ -462,11 +450,11 @@ async function getModerationQueue(options = {}) {
     sortBy = 'date', // 'date', 'sentiment', 'priority'
     filter = 'pending', // 'pending', 'disputed'
   } = options;
-  
+
   const reviews = await dbUnified.read('reviews');
-  
+
   // Filter by moderation state
-  let filtered = reviews.filter(r => {
+  const filtered = reviews.filter(r => {
     if (filter === 'pending') {
       return r.moderation?.state === ReviewModel.MODERATION_STATES.PENDING;
     } else if (filter === 'disputed') {
@@ -474,7 +462,7 @@ async function getModerationQueue(options = {}) {
     }
     return false;
   });
-  
+
   // Sort
   switch (sortBy) {
     case 'sentiment':
@@ -483,11 +471,11 @@ async function getModerationQueue(options = {}) {
     case 'priority':
       // Priority: disputed > negative sentiment > spam
       filtered.sort((a, b) => {
-        const aScore = 
+        const aScore =
           (a.moderation.state === ReviewModel.MODERATION_STATES.DISPUTED ? 100 : 0) +
           (a.sentiment.score < -0.5 ? 50 : 0) +
           (a.sentiment.spamScore > 0.5 ? 25 : 0);
-        const bScore = 
+        const bScore =
           (b.moderation.state === ReviewModel.MODERATION_STATES.DISPUTED ? 100 : 0) +
           (b.sentiment.score < -0.5 ? 50 : 0) +
           (b.sentiment.spamScore > 0.5 ? 25 : 0);
@@ -496,18 +484,16 @@ async function getModerationQueue(options = {}) {
       break;
     case 'date':
     default:
-      filtered.sort((a, b) => 
-        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-      );
+      filtered.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
   }
-  
+
   // Pagination
   const total = filtered.length;
   const pages = Math.ceil(total / limit);
   const start = (page - 1) * limit;
   const end = start + limit;
   const paginatedReviews = filtered.slice(start, end);
-  
+
   return {
     reviews: paginatedReviews,
     pagination: {
@@ -525,14 +511,14 @@ async function getModerationQueue(options = {}) {
  */
 async function getModerationStats() {
   const reviews = await dbUnified.read('reviews');
-  
-  const pending = reviews.filter(r => 
-    r.moderation?.state === ReviewModel.MODERATION_STATES.PENDING
+
+  const pending = reviews.filter(
+    r => r.moderation?.state === ReviewModel.MODERATION_STATES.PENDING
   );
-  const disputed = reviews.filter(r => 
-    r.moderation?.state === ReviewModel.MODERATION_STATES.DISPUTED
+  const disputed = reviews.filter(
+    r => r.moderation?.state === ReviewModel.MODERATION_STATES.DISPUTED
   );
-  
+
   // Calculate average age of pending reviews
   const now = Date.now();
   let avgAge = 0;
@@ -542,20 +528,21 @@ async function getModerationStats() {
     }, 0);
     avgAge = totalAge / pending.length;
   }
-  
+
   const avgAgeHours = avgAge / (1000 * 60 * 60);
-  
+
   return {
     pendingCount: pending.length,
     disputedCount: disputed.length,
     avgAgeHours: Number(avgAgeHours.toFixed(1)),
-    oldestPending: pending.length > 0 
-      ? pending.reduce((oldest, r) => {
-          return new Date(r.createdAt).getTime() < new Date(oldest.createdAt).getTime() 
-            ? r 
-            : oldest;
-        }).createdAt
-      : null,
+    oldestPending:
+      pending.length > 0
+        ? pending.reduce((oldest, r) => {
+            return new Date(r.createdAt).getTime() < new Date(oldest.createdAt).getTime()
+              ? r
+              : oldest;
+          }).createdAt
+        : null,
   };
 }
 
@@ -567,7 +554,7 @@ async function getModerationStats() {
 async function getSupplierAnalytics(supplierId) {
   const reviews = await dbUnified.read('reviews');
   const supplierReviews = reviews.filter(r => r.supplierId === supplierId);
-  
+
   return ReviewAnalytics.generateSupplierAnalytics(supplierReviews);
 }
 
@@ -578,7 +565,7 @@ async function getSupplierAnalytics(supplierId) {
  */
 async function getPlatformAnalytics(timeRange = '1m') {
   const reviews = await dbUnified.read('reviews');
-  
+
   return ReviewAnalytics.generatePlatformAnalytics(reviews);
 }
 
@@ -590,14 +577,14 @@ async function getPlatformAnalytics(timeRange = '1m') {
 async function getVerifiedCount(supplierId) {
   const reviews = await dbUnified.read('reviews');
   const supplierReviews = reviews.filter(r => r.supplierId === supplierId);
-  
-  const verified = supplierReviews.filter(r => 
-    r.verification?.status !== ReviewModel.VERIFICATION_TYPES.UNVERIFIED
+
+  const verified = supplierReviews.filter(
+    r => r.verification?.status !== ReviewModel.VERIFICATION_TYPES.UNVERIFIED
   ).length;
-  
+
   const total = supplierReviews.length;
   const percentage = total > 0 ? Number(((verified / total) * 100).toFixed(1)) : 0;
-  
+
   return {
     verifiedCount: verified,
     totalCount: total,

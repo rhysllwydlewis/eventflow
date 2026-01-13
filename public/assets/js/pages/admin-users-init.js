@@ -116,10 +116,18 @@
           const subscriptionFilter = document.getElementById('subscriptionFilter');
           const verifiedFilter = document.getElementById('verifiedFilter');
 
-          if (searchInput) searchInput.value = '';
-          if (roleFilter) roleFilter.value = '';
-          if (subscriptionFilter) subscriptionFilter.value = '';
-          if (verifiedFilter) verifiedFilter.value = '';
+          if (searchInput) {
+            searchInput.value = '';
+          }
+          if (roleFilter) {
+            roleFilter.value = '';
+          }
+          if (subscriptionFilter) {
+            subscriptionFilter.value = '';
+          }
+          if (verifiedFilter) {
+            verifiedFilter.value = '';
+          }
 
           renderUsers();
         },
@@ -437,13 +445,10 @@
           await AdminShared.safeAction(
             submitBtn,
             async () => {
-              const data = await AdminShared.adminFetch(
-                `/api/admin/users/${userId}/subscription`,
-                {
-                  method: 'DELETE',
-                  body: { reason: reason || 'Admin set to free tier' },
-                }
-              );
+              const data = await AdminShared.adminFetch(`/api/admin/users/${userId}/subscription`, {
+                method: 'DELETE',
+                body: { reason: reason || 'Admin set to free tier' },
+              });
               closeSubscriptionModal();
               loadAdminUsers(); // Reload users
               return data;

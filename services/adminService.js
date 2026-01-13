@@ -97,9 +97,8 @@ async function getDashboardOverview() {
         },
         activity: {
           recentActions: recentActivity,
-          totalActionsLast7Days: auditLogs.filter(
-            log => new Date(log.timestamp) >= last7Days
-          ).length,
+          totalActionsLast7Days: auditLogs.filter(log => new Date(log.timestamp) >= last7Days)
+            .length,
         },
       },
       timestamp: new Date().toISOString(),
@@ -139,7 +138,9 @@ async function getDetailedMetrics() {
 
     last12Months.forEach(month => {
       userSignupsByMonth[month] = users.filter(u => {
-        if (!u.createdAt) return false;
+        if (!u.createdAt) {
+          return false;
+        }
         const userMonth = u.createdAt.substring(0, 7);
         return userMonth === month;
       }).length;
@@ -158,8 +159,7 @@ async function getDetailedMetrics() {
       return acc;
     }, {});
 
-    const avgPackagesPerSupplier =
-      suppliers.length > 0 ? packages.length / suppliers.length : 0;
+    const avgPackagesPerSupplier = suppliers.length > 0 ? packages.length / suppliers.length : 0;
 
     // Review metrics
     const avgReviewsPerSupplier = suppliers.length > 0 ? reviews.length / suppliers.length : 0;

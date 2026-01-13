@@ -6,7 +6,10 @@
 
 'use strict';
 
-const { v4: uuidv4 } = require('uuid');
+const crypto = require('crypto');
+
+// Use crypto.randomUUID() instead of uuid package
+const uuidv4 = () => crypto.randomUUID();
 
 class NotificationService {
   constructor(db, websocketServer) {
@@ -106,13 +109,7 @@ class NotificationService {
    * @returns {Promise<Object>} Notifications and metadata
    */
   async getForUser(userId, options = {}) {
-    const {
-      limit = 50,
-      skip = 0,
-      unreadOnly = false,
-      type = null,
-      priority = null,
-    } = options;
+    const { limit = 50, skip = 0, unreadOnly = false, type = null, priority = null } = options;
 
     const query = { userId };
 
@@ -133,12 +130,7 @@ class NotificationService {
     query.$or = [{ expiresAt: null }, { expiresAt: { $gt: now } }];
 
     const [notifications, total, unreadCount] = await Promise.all([
-      this.collection
-        .find(query)
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .toArray(),
+      this.collection.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit).toArray(),
       this.collection.countDocuments(query),
       this.collection.countDocuments({ userId, isRead: false }),
     ]);

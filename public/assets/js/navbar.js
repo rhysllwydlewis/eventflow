@@ -32,12 +32,12 @@
     elements = {
       // Header
       header: document.querySelector('.ef-header'),
-      
+
       // Mobile toggle
       mobileToggle: document.getElementById('ef-mobile-toggle'),
       mobileMenu: document.getElementById('ef-mobile-menu'),
       bottomMenu: document.getElementById('ef-bottom-menu'),
-      
+
       // Auth elements
       authLink: document.getElementById('ef-auth-link'),
       dashboardLink: document.getElementById('ef-dashboard-link'),
@@ -46,16 +46,18 @@
       mobileLogout: document.getElementById('ef-mobile-logout'),
       bottomDashboard: document.getElementById('ef-bottom-dashboard'),
       bottomAlerts: document.getElementById('ef-bottom-alerts'),
-      
+
       // Notifications
       notificationBtn: document.getElementById('ef-notification-btn'),
       notificationBadge: document.getElementById('ef-notification-badge'),
       bottomDashboardBadge: document.getElementById('ef-bottom-dashboard-badge'),
     };
-    
+
     // Log warning if critical elements are missing
     if (!elements.header) {
-      if (DEBUG) console.warn('EventFlow navbar: .ef-header element not found');
+      if (DEBUG) {
+        console.warn('EventFlow navbar: .ef-header element not found');
+      }
     }
   }
 
@@ -72,7 +74,9 @@
         window.__CSRF_TOKEN__ = data.csrfToken;
       }
     } catch (error) {
-      if (DEBUG) console.warn('Failed to fetch CSRF token:', error);
+      if (DEBUG) {
+        console.warn('Failed to fetch CSRF token:', error);
+      }
     }
   }
 
@@ -81,12 +85,14 @@
   // ==========================================
 
   function openMobileMenu() {
-    if (!elements.mobileMenu) return;
-    
+    if (!elements.mobileMenu) {
+      return;
+    }
+
     state.isMobileMenuOpen = true;
     elements.mobileMenu.classList.add('open');
     document.body.classList.add('ef-menu-open');
-    
+
     if (elements.mobileToggle) {
       elements.mobileToggle.setAttribute('aria-expanded', 'true');
     }
@@ -96,12 +102,14 @@
   }
 
   function closeMobileMenu() {
-    if (!elements.mobileMenu) return;
-    
+    if (!elements.mobileMenu) {
+      return;
+    }
+
     state.isMobileMenuOpen = false;
     elements.mobileMenu.classList.remove('open');
     document.body.classList.remove('ef-menu-open');
-    
+
     if (elements.mobileToggle) {
       elements.mobileToggle.setAttribute('aria-expanded', 'false');
     }
@@ -115,7 +123,7 @@
       event.preventDefault();
       event.stopPropagation();
     }
-    
+
     if (state.isMobileMenuOpen) {
       closeMobileMenu();
     } else {
@@ -127,8 +135,8 @@
     // Top mobile toggle
     if (elements.mobileToggle) {
       elements.mobileToggle.addEventListener('click', toggleMobileMenu);
-      
-      elements.mobileToggle.addEventListener('keydown', (e) => {
+
+      elements.mobileToggle.addEventListener('keydown', e => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
           toggleMobileMenu();
@@ -139,8 +147,8 @@
     // Bottom menu button
     if (elements.bottomMenu) {
       elements.bottomMenu.addEventListener('click', toggleMobileMenu);
-      
-      elements.bottomMenu.addEventListener('keydown', (e) => {
+
+      elements.bottomMenu.addEventListener('keydown', e => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
           toggleMobileMenu();
@@ -150,7 +158,7 @@
 
     // Close on link click
     if (elements.mobileMenu) {
-      elements.mobileMenu.addEventListener('click', (e) => {
+      elements.mobileMenu.addEventListener('click', e => {
         if (e.target.tagName === 'A' && e.target.href && !e.target.href.includes('#')) {
           closeMobileMenu();
         }
@@ -158,7 +166,7 @@
     }
 
     // Close on Escape key
-    document.addEventListener('keydown', (e) => {
+    document.addEventListener('keydown', e => {
       if (e.key === 'Escape' && state.isMobileMenuOpen) {
         closeMobileMenu();
         if (elements.mobileToggle) {
@@ -168,11 +176,13 @@
     });
 
     // Close on backdrop click
-    document.addEventListener('click', (e) => {
-      if (state.isMobileMenuOpen && 
-          !elements.mobileMenu.contains(e.target) &&
-          !elements.mobileToggle?.contains(e.target) &&
-          !elements.bottomMenu?.contains(e.target)) {
+    document.addEventListener('click', e => {
+      if (
+        state.isMobileMenuOpen &&
+        !elements.mobileMenu.contains(e.target) &&
+        !elements.mobileToggle?.contains(e.target) &&
+        !elements.bottomMenu?.contains(e.target)
+      ) {
         closeMobileMenu();
       }
     });
@@ -183,7 +193,9 @@
   // ==========================================
 
   function initScrollBehavior() {
-    if (!elements.header) return;
+    if (!elements.header) {
+      return;
+    }
 
     let ticking = false;
 
@@ -200,12 +212,16 @@
       ticking = false;
     };
 
-    window.addEventListener('scroll', () => {
-      if (!ticking) {
-        window.requestAnimationFrame(updateHeaderOnScroll);
-        ticking = true;
-      }
-    }, { passive: true });
+    window.addEventListener(
+      'scroll',
+      () => {
+        if (!ticking) {
+          window.requestAnimationFrame(updateHeaderOnScroll);
+          ticking = true;
+        }
+      },
+      { passive: true }
+    );
 
     // Initial check
     updateHeaderOnScroll();
@@ -226,7 +242,9 @@
       localStorage.removeItem('eventflow_onboarding_new');
       sessionStorage.clear();
     } catch (error) {
-      if (DEBUG) console.warn('Failed to clear storage:', error);
+      if (DEBUG) {
+        console.warn('Failed to clear storage:', error);
+      }
     }
 
     // Call logout API
@@ -240,7 +258,9 @@
           credentials: 'include',
         });
       } catch (error) {
-        if (DEBUG) console.warn('Logout API failed:', error);
+        if (DEBUG) {
+          console.warn('Logout API failed:', error);
+        }
       }
     }
 
@@ -256,7 +276,7 @@
 
   function updateAuthUI(user) {
     state.user = user;
-    
+
     // Get bottom nav element
     const bottomNav = document.querySelector('.ef-bottom-nav');
 
@@ -284,7 +304,7 @@
         const newAuthLink = elements.authLink.cloneNode(true);
         elements.authLink.parentNode.replaceChild(newAuthLink, elements.authLink);
         elements.authLink = newAuthLink;
-        elements.authLink.addEventListener('click', (e) => {
+        elements.authLink.addEventListener('click', e => {
           e.preventDefault();
           logout();
         });
@@ -315,7 +335,7 @@
         const newMobileLogout = elements.mobileLogout.cloneNode(true);
         elements.mobileLogout.parentNode.replaceChild(newMobileLogout, elements.mobileLogout);
         elements.mobileLogout = newMobileLogout;
-        elements.mobileLogout.addEventListener('click', (e) => {
+        elements.mobileLogout.addEventListener('click', e => {
           e.preventDefault();
           logout();
         });
@@ -326,7 +346,7 @@
         elements.bottomDashboard.href = dashboardUrl;
         elements.bottomDashboard.style.display = 'flex';
       }
-      
+
       // Hide bottom alerts button when logged in
       if (elements.bottomAlerts) {
         elements.bottomAlerts.style.display = 'none';
@@ -338,12 +358,12 @@
       }
     } else {
       // User is logged out
-      
+
       // Remove logged-in class from bottom nav
       if (bottomNav) {
         bottomNav.classList.remove('logged-in');
       }
-      
+
       // Update desktop auth link
       if (elements.authLink) {
         elements.authLink.textContent = 'Log in';
@@ -379,7 +399,7 @@
       if (elements.bottomDashboard) {
         elements.bottomDashboard.style.display = 'none';
       }
-      
+
       // Show bottom alerts button when logged out
       if (elements.bottomAlerts) {
         elements.bottomAlerts.style.display = 'flex';
@@ -401,7 +421,7 @@
 
     // Desktop nav
     const desktopLinks = document.querySelectorAll('.ef-nav-link');
-    desktopLinks.forEach((link) => {
+    desktopLinks.forEach(link => {
       const linkPath = new URL(link.href).pathname;
       if (linkPath === currentPath) {
         link.setAttribute('aria-current', 'page');
@@ -410,7 +430,7 @@
 
     // Mobile nav
     const mobileLinks = document.querySelectorAll('.ef-mobile-link');
-    mobileLinks.forEach((link) => {
+    mobileLinks.forEach(link => {
       if (link.href) {
         const linkPath = new URL(link.href).pathname;
         if (linkPath === currentPath) {
@@ -421,7 +441,7 @@
 
     // Bottom nav
     const bottomLinks = document.querySelectorAll('.ef-bottom-link');
-    bottomLinks.forEach((link) => {
+    bottomLinks.forEach(link => {
       if (link.href) {
         const linkPath = new URL(link.href).pathname;
         if (linkPath === currentPath) {
@@ -437,7 +457,7 @@
 
   function initKeyboardNav() {
     // Track if user is using keyboard
-    document.addEventListener('keydown', (e) => {
+    document.addEventListener('keydown', e => {
       if (e.key === 'Tab') {
         document.body.classList.add('keyboard-nav');
       }
@@ -456,40 +476,42 @@
     // Sync click handler for desktop notification bell
     if (elements.notificationBtn) {
       elements.notificationBtn.addEventListener('click', () => {
-        const dashboardUrl = state.user?.role === 'admin'
-          ? '/admin.html'
-          : state.user?.role === 'supplier'
-            ? '/dashboard-supplier.html'
-            : '/dashboard-customer.html';
+        const dashboardUrl =
+          state.user?.role === 'admin'
+            ? '/admin.html'
+            : state.user?.role === 'supplier'
+              ? '/dashboard-supplier.html'
+              : '/dashboard-customer.html';
         window.location.href = `${dashboardUrl}#notifications`;
       });
     }
-    
+
     // Sync click handler for bottom dashboard button
     if (elements.bottomDashboard) {
-      elements.bottomDashboard.addEventListener('click', (e) => {
+      elements.bottomDashboard.addEventListener('click', e => {
         if (state.user) {
           e.preventDefault();
-          const dashboardUrl = state.user.role === 'admin'
-            ? '/admin.html'
-            : state.user.role === 'supplier'
-              ? '/dashboard-supplier.html'
-              : '/dashboard-customer.html';
+          const dashboardUrl =
+            state.user.role === 'admin'
+              ? '/admin.html'
+              : state.user.role === 'supplier'
+                ? '/dashboard-supplier.html'
+                : '/dashboard-customer.html';
           window.location.href = `${dashboardUrl}#notifications`;
         }
       });
     }
 
     // Listen for notification updates from other components
-    window.addEventListener('notifications-updated', (e) => {
+    window.addEventListener('notifications-updated', e => {
       const count = e.detail?.count || 0;
-      
+
       // Update desktop notification badge
       if (elements.notificationBadge) {
         elements.notificationBadge.textContent = count;
         elements.notificationBadge.style.display = count > 0 ? 'flex' : 'none';
       }
-      
+
       // Update bottom dashboard badge
       if (elements.bottomDashboardBadge) {
         elements.bottomDashboardBadge.textContent = count;
@@ -528,12 +550,14 @@
       if (authState) {
         // Wait for auth state to initialize before setting up listener
         await authState.init();
-        
+
         // Setup listener - this will call updateAuthUI immediately with current state
         authState.onchange(updateAuthUI);
       } else {
         // Fallback: If auth state manager not available, assume logged out
-        if (DEBUG) console.warn('EventFlow navbar: Auth state manager not found, using fallback');
+        if (DEBUG) {
+          console.warn('EventFlow navbar: Auth state manager not found, using fallback');
+        }
         updateAuthUI(null);
       }
 
@@ -542,7 +566,7 @@
       window.addEventListener('logout-requested', logout);
 
       // Watch for auth changes in other tabs
-      window.addEventListener('storage', async (event) => {
+      window.addEventListener('storage', async event => {
         if (event.key === 'user') {
           if (authState) {
             await authState.refresh();
@@ -550,7 +574,9 @@
         }
       });
 
-      if (DEBUG) console.log('EventFlow Navigation initialized');
+      if (DEBUG) {
+        console.log('EventFlow Navigation initialized');
+      }
     } catch (error) {
       console.error('EventFlow navbar initialization failed:', error);
       // Still try to show basic navbar even if auth fails
