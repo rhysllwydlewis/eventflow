@@ -85,7 +85,7 @@ const NEGATIVE_KEYWORDS = {
 const SPAM_PATTERNS = [
   /https?:\/\//gi, // URLs
   /www\./gi, // Web addresses
-  /@[\w-]+\.[\w-]+/gi, // Email addresses
+  /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, // Email addresses
   /\b\d{3}[-.\s]?\d{3}[-.\s]?\d{4}\b/g, // Phone numbers
   /click\s+here/gi,
   /buy\s+now/gi,
@@ -181,16 +181,17 @@ function analyzeSentiment(text) {
   if (sentimentWordCount > 0) {
     const rawScore = (avgPositive - avgNegative);
     // Apply confidence weighting based on sentiment word density
-    finalScore = rawScore * Math.min(sentimentRatio * 3, 1);
+    // Amplify the signal with higher multiplier for better detection
+    finalScore = rawScore * Math.min(sentimentRatio * 5, 1.2);
   }
   
   // Determine label
   let label = 'neutral';
   let confidence = Math.abs(finalScore);
   
-  if (finalScore > 0.3) {
+  if (finalScore >= 0.25) {
     label = 'positive';
-  } else if (finalScore < -0.3) {
+  } else if (finalScore <= -0.25) {
     label = 'negative';
   }
   
