@@ -5720,8 +5720,17 @@ const notificationRoutes = require('./routes/notifications');
 // WebSocket server will be passed when available (after server starts)
 let notificationRouter;
 app.use('/api/notifications', (req, res, next) => {
-  // Support both v1 (wsServer) and v2 (wsServerV2) WebSocket servers
-  const webSocketServer = global.wsServerV2 || global.wsServer;
+  // Determine which WebSocket server to use based on WEBSOCKET_MODE
+  // Check environment variable directly since WEBSOCKET_MODE const is defined later
+  const wsMode = (process.env.WEBSOCKET_MODE || 'v2').toLowerCase();
+  
+  let webSocketServer = null;
+  if (wsMode === 'v2') {
+    webSocketServer = global.wsServerV2;
+  } else if (wsMode === 'v1') {
+    webSocketServer = global.wsServer;
+  }
+  // wsMode === 'off' will result in webSocketServer === null
   
   if (!notificationRouter && webSocketServer) {
     notificationRouter = notificationRoutes(mongoDb.db, webSocketServer);
