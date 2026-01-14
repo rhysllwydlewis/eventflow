@@ -998,6 +998,14 @@ router.post(
         return res.status(400).json({ error: 'packageIds must be a non-empty array' });
       }
 
+      // Limit batch size to prevent overload
+      const MAX_BATCH_SIZE = 100;
+      if (packageIds.length > MAX_BATCH_SIZE) {
+        return res.status(400).json({
+          error: `Batch size cannot exceed ${MAX_BATCH_SIZE} items`,
+        });
+      }
+
       const packages = await dbUnified.read('packages');
       let updatedCount = 0;
 
@@ -1114,6 +1122,14 @@ router.post(
 
       if (!Array.isArray(packageIds) || packageIds.length === 0) {
         return res.status(400).json({ error: 'packageIds must be a non-empty array' });
+      }
+
+      // Limit batch size to prevent overload
+      const MAX_BATCH_SIZE = 100;
+      if (packageIds.length > MAX_BATCH_SIZE) {
+        return res.status(400).json({
+          error: `Batch size cannot exceed ${MAX_BATCH_SIZE} items`,
+        });
       }
 
       const packages = await dbUnified.read('packages');
@@ -1821,6 +1837,14 @@ router.post(
         return res.status(400).json({ error: 'supplierIds must be a non-empty array' });
       }
 
+      // Limit batch size to prevent overload
+      const MAX_BATCH_SIZE = 100;
+      if (supplierIds.length > MAX_BATCH_SIZE) {
+        return res.status(400).json({
+          error: `Batch size cannot exceed ${MAX_BATCH_SIZE} items`,
+        });
+      }
+
       const suppliers = await dbUnified.read('suppliers');
       let updatedCount = 0;
 
@@ -1876,6 +1900,14 @@ router.post(
 
       if (!Array.isArray(supplierIds) || supplierIds.length === 0) {
         return res.status(400).json({ error: 'supplierIds must be a non-empty array' });
+      }
+
+      // Limit batch size to prevent overload
+      const MAX_BATCH_SIZE = 100;
+      if (supplierIds.length > MAX_BATCH_SIZE) {
+        return res.status(400).json({
+          error: `Batch size cannot exceed ${MAX_BATCH_SIZE} items`,
+        });
       }
 
       const suppliers = await dbUnified.read('suppliers');
@@ -1934,6 +1966,14 @@ router.post(
 
       if (!Array.isArray(supplierIds) || supplierIds.length === 0) {
         return res.status(400).json({ error: 'supplierIds must be a non-empty array' });
+      }
+
+      // Limit batch size to prevent overload
+      const MAX_BATCH_SIZE = 100;
+      if (supplierIds.length > MAX_BATCH_SIZE) {
+        return res.status(400).json({
+          error: `Batch size cannot exceed ${MAX_BATCH_SIZE} items`,
+        });
       }
 
       const suppliers = await dbUnified.read('suppliers');

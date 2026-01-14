@@ -1150,6 +1150,17 @@ router.post(
         });
       }
 
+      // Limit batch size to prevent overload
+      const MAX_BATCH_SIZE = 100;
+      if (ids.length > MAX_BATCH_SIZE) {
+        return res.status(400).json({
+          success: false,
+          error: `Batch size cannot exceed ${MAX_BATCH_SIZE} items`,
+          code: 'BATCH_SIZE_EXCEEDED',
+          timestamp: new Date().toISOString(),
+        });
+      }
+
       const result = await batchApprove({
         type: 'packages',
         ids,
@@ -1440,6 +1451,17 @@ router.post(
           success: false,
           error: 'Action and photos array are required',
           code: 'INVALID_INPUT',
+          timestamp: new Date().toISOString(),
+        });
+      }
+
+      // Limit batch size to prevent overload
+      const MAX_BATCH_SIZE = 100;
+      if (photos.length > MAX_BATCH_SIZE) {
+        return res.status(400).json({
+          success: false,
+          error: `Batch size cannot exceed ${MAX_BATCH_SIZE} items`,
+          code: 'BATCH_SIZE_EXCEEDED',
           timestamp: new Date().toISOString(),
         });
       }
@@ -1758,6 +1780,28 @@ router.post(
           success: false,
           error: 'Action, type, and ids are required',
           code: 'INVALID_INPUT',
+          timestamp: new Date().toISOString(),
+        });
+      }
+
+      // Limit batch size to prevent overload
+      const MAX_BATCH_SIZE = 100;
+      if (ids.length > MAX_BATCH_SIZE) {
+        return res.status(400).json({
+          success: false,
+          error: `Batch size cannot exceed ${MAX_BATCH_SIZE} items`,
+          code: 'BATCH_SIZE_EXCEEDED',
+          timestamp: new Date().toISOString(),
+        });
+      }
+
+      // Validate type
+      const validTypes = ['packages', 'suppliers', 'reviews', 'users'];
+      if (!validTypes.includes(type)) {
+        return res.status(400).json({
+          success: false,
+          error: `Invalid type. Must be one of: ${validTypes.join(', ')}`,
+          code: 'INVALID_TYPE',
           timestamp: new Date().toISOString(),
         });
       }
