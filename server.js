@@ -6314,6 +6314,17 @@ async function startServer() {
         console.log('   ℹ️  OpenAI: Not configured (optional)');
       }
 
+      // Check Pexels API configuration
+      const { getPexelsService } = require('./utils/pexels-service');
+      const pexels = getPexelsService();
+      if (pexels.isConfigured()) {
+        console.log('   ✅ Pexels API: Configured');
+        console.log('   Use admin settings to test connection and enable dynamic collage');
+      } else {
+        console.log('   ℹ️  Pexels API: Not configured (optional)');
+        console.log('   Set PEXELS_API_KEY to enable stock photo integration');
+      }
+
       console.log('');
       console.log('🎉 Background initialization complete!');
     })();

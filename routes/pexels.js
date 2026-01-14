@@ -156,4 +156,38 @@ router.get('/status', authRequired, roleRequired('admin'), (req, res) => {
   });
 });
 
+/**
+ * GET /api/pexels/test
+ * Test Pexels API connection and validate API key
+ * Requires admin authentication
+ * Returns detailed status including connection test results
+ */
+router.get('/test', authRequired, roleRequired('admin'), async (req, res) => {
+  try {
+    const pexels = getPexelsService();
+
+    console.log('🔍 Admin testing Pexels API connection...');
+    const testResult = await pexels.testConnection();
+
+    // Return appropriate HTTP status based on result
+    // 200 = Success, 424 = Failed Dependency (configured but not working)
+    const statusCode = testResult.success ? 200 : 424;
+
+    res.status(statusCode).json({
+      ...testResult,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error('Pexels test error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to test Pexels API connection',
+      details: {
+        error: error.message,
+      },
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
 module.exports = router;

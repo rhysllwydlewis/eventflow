@@ -202,6 +202,9 @@
 
       // Update save button state
       updateSaveButtonState();
+      
+      // Update Pexels test section visibility
+      updatePexelsTestSection();
     } catch (err) {
       AdminShared.debugError('Failed to load feature flags:', err);
       updateFeatureFlagsStatus('error', 'Error loading feature flags');
@@ -295,9 +298,12 @@
       await AdminShared.safeAction(
         saveBtn,
         async () => {
-          const result = await AdminShared.adminFetch('/api/admin/settings/features', {
+          // Use new adminFetchWithTimeout with 10 second timeout and 2 retries
+          const result = await AdminShared.adminFetchWithTimeout('/api/admin/settings/features', {
             method: 'PUT',
             body: data,
+            timeout: 10000, // 10 second timeout
+            retries: 2, // Retry up to 2 times
           });
 
           // safeAction will show success toast, we add status message
@@ -318,9 +324,16 @@
       // safeAction already showed error toast and restored button state
       // Show detailed error message with status and response
       let errorDetail = 'Error saving feature flags';
-      if (error.message) {
+      
+      if (error.message.includes('timed out')) {
+        errorDetail = 'Request timed out after 10 seconds. Database may be slow or unavailable.';
+        AdminShared.showToast(errorDetail, 'error');
+      } else if (error.status === 504) {
+        errorDetail = 'Gateway timeout. Please try again in a moment.';
+      } else if (error.message) {
         errorDetail += `: ${error.message}`;
       }
+      
       updateFeatureFlagsStatus('error', errorDetail);
 
       // Keep user's current toggles (don't revert)
@@ -330,6 +343,96 @@
       isSavingFeatureFlags = false;
       setFeatureFlagsEnabled(true);
       updateSaveButtonState();
+    }
+  });
+
+  // Show/hide Pexels test section based on feature flag
+  function updatePexelsTestSection() {
+    const pexelsCheckbox = document.getElementById('featurePexelsCollage');
+    const testSection = document.getElementById('pexelsTestSection');
+    
+    if (pexelsCheckbox && testSection) {
+      testSection.style.display = pexelsCheckbox.checked ? 'block' : 'none';
+    }
+  }
+
+  // Add listener to Pexels checkbox
+  const pexelsCheckbox = document.getElementById('featurePexelsCollage');
+  if (pexelsCheckbox) {
+    pexelsCheckbox.addEventListener('change', updatePexelsTestSection);
+  }
+
+  // Test Pexels Connection button
+  document.getElementById('testPexelsBtn')?.addEventListener('click', async () => {
+    const btn = document.getElementById('testPexelsBtn');
+    const resultDiv = document.getElementById('pexelsTestResult');
+    
+    if (!btn || !resultDiv) {
+      return;
+    }
+
+    // Disable button and show loading state
+    btn.disabled = true;
+    btn.textContent = 'Testing...';
+    resultDiv.style.display = 'block';
+    resultDiv.innerHTML = '<div style="color: #6b7280;">🔄 Testing Pexels API connection...</div>';
+
+    try {
+      const result = await AdminShared.adminFetchWithTimeout('/api/pexels/test', {
+        method: 'GET',
+        timeout: 15000, // 15 second timeout for API test
+      });
+
+      if (result.success) {
+        resultDiv.style.background = '#d1fae5';
+        resultDiv.style.color = '#065f46';
+        resultDiv.innerHTML = `
+          <div style="font-weight: 600; margin-bottom: 0.5rem;">✅ ${AdminShared.escapeHtml(result.message)}</div>
+          ${result.details ? `
+            <div style="font-size: 0.85rem; opacity: 0.9;">
+              Response time: ${result.details.responseTime}ms<br>
+              API version: ${result.details.apiVersion || 'v1'}<br>
+              Sample results available: ${result.details.totalResults ? 'Yes' : 'No'}
+            </div>
+          ` : ''}
+        `;
+        AdminShared.showToast('Pexels API connection successful', 'success');
+      } else {
+        resultDiv.style.background = '#fee2e2';
+        resultDiv.style.color = '#991b1b';
+        resultDiv.innerHTML = `
+          <div style="font-weight: 600; margin-bottom: 0.5rem;">❌ ${AdminShared.escapeHtml(result.message)}</div>
+          ${result.details ? `
+            <div style="font-size: 0.85rem; opacity: 0.9;">
+              ${result.details.errorType ? `Error type: ${result.details.errorType}<br>` : ''}
+              ${result.details.error ? `Details: ${AdminShared.escapeHtml(result.details.error)}` : ''}
+            </div>
+          ` : ''}
+        `;
+        AdminShared.showToast('Pexels API test failed', 'error');
+      }
+    } catch (error) {
+      resultDiv.style.background = '#fee2e2';
+      resultDiv.style.color = '#991b1b';
+      
+      let errorMessage = 'Connection test failed';
+      if (error.message.includes('timed out')) {
+        errorMessage = 'Test timed out after 15 seconds';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      resultDiv.innerHTML = `
+        <div style="font-weight: 600; margin-bottom: 0.5rem;">❌ ${AdminShared.escapeHtml(errorMessage)}</div>
+        <div style="font-size: 0.85rem; opacity: 0.9;">
+          Please check your PEXELS_API_KEY environment variable and ensure the API is accessible.
+        </div>
+      `;
+      AdminShared.showToast('Failed to test Pexels connection', 'error');
+      AdminShared.debugError('Pexels test error:', error);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Test Connection';
     }
   });
 

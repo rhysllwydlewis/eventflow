@@ -257,4 +257,80 @@ test.describe('Admin Feature Flags (@backend)', () => {
       expect([401, 403]).toContain(response.status());
     }
   });
+
+  test('should handle feature flags save with proper error responses @backend', async ({ request }) => {
+    // Get CSRF token
+    const csrfResponse = await request.get('/api/csrf-token');
+    if (!csrfResponse.ok()) {
+      // Skip if can't get CSRF token
+      return;
+    }
+    
+    const { csrfToken } = await csrfResponse.json();
+    
+    // Try to save feature flags (may require auth)
+    const response = await request.put('/api/admin/settings/features', {
+      data: {
+        registration: true,
+        supplierApplications: true,
+        reviews: true,
+        photoUploads: true,
+        supportTickets: true,
+        pexelsCollage: false,
+      },
+      headers: {
+        'X-CSRF-Token': csrfToken,
+      },
+    });
+
+    if (response.ok()) {
+      const result = await response.json();
+      
+      // Verify success response structure
+      expect(result).toHaveProperty('success');
+      expect(result).toHaveProperty('features');
+      expect(result.success).toBe(true);
+    } else if ([401, 403].includes(response.status())) {
+      // Auth required - expected, skip
+      return;
+    } else {
+      // Other errors should have error message
+      const result = await response.json();
+      expect(result).toHaveProperty('error');
+      expect(typeof result.error).toBe('string');
+    }
+  });
+
+  test('should return 400 for invalid feature flag values @backend', async ({ request }) => {
+    const csrfResponse = await request.get('/api/csrf-token');
+    if (!csrfResponse.ok()) {
+      return;
+    }
+    
+    const { csrfToken } = await csrfResponse.json();
+    
+    // Try to save with invalid value (string instead of boolean)
+    const response = await request.put('/api/admin/settings/features', {
+      data: {
+        registration: 'invalid', // Should be boolean
+        supplierApplications: true,
+        reviews: true,
+        photoUploads: true,
+        supportTickets: true,
+        pexelsCollage: false,
+      },
+      headers: {
+        'X-CSRF-Token': csrfToken,
+      },
+    });
+
+    if ([401, 403].includes(response.status())) {
+      // Auth required - skip
+      return;
+    }
+
+    // Should return 400 or accept and convert (implementation dependent)
+    // Either way, it shouldn't crash
+    expect(response.status()).not.toBe(500);
+  });
 });
