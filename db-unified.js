@@ -233,10 +233,10 @@ async function write(collectionName, data) {
         // Return true because data was saved to fallback, but log the MongoDB failure
         return true;
       } catch (fallbackError) {
-        console.error(`Critical: Both MongoDB and local storage failed for ${collectionName}:`, {
-          mongoError: error.message,
-          localError: fallbackError.message,
-        });
+        console.error(
+          `Critical: Both MongoDB and local storage failed for ${collectionName}. ` +
+            `MongoDB error: ${error.message}, Local storage error: ${fallbackError.message}`
+        );
         return false;
       }
     }
