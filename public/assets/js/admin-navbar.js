@@ -170,8 +170,8 @@
   }
 
   function updateBadgeCounts() {
-    // Fetch metrics to get counts
-    fetch('/api/admin/metrics', {
+    // Fetch badge counts from dedicated endpoint
+    fetch('/api/admin/badge-counts', {
       credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
@@ -179,30 +179,91 @@
     })
       .then(response => {
         if (!response.ok) {
-          throw new Error('Failed to fetch metrics');
+          throw new Error(`HTTP ${response.status}: Failed to fetch badge counts`);
         }
         return response.json();
       })
       .then(data => {
-        // Update badge counts if elements exist
-        const counts = data.counts || {};
-
-        // Users badge
-        const usersBadge = document.getElementById('navBadgeUsers');
-        if (usersBadge && counts.usersTotal > 0) {
-          usersBadge.textContent = counts.usersTotal;
-          usersBadge.style.display = 'flex';
+        // Check for error in response
+        if (data.error) {
+          throw new Error(data.error);
         }
 
-        // Packages badge
+        // Update badge counts if elements exist
+        const pending = data.pending || {};
+
+        // Suppliers badge (pending approvals)
+        const suppliersBadge = document.getElementById('navBadgeSuppliers');
+        if (suppliersBadge) {
+          const count = pending.suppliers || 0;
+          if (count > 0) {
+            suppliersBadge.textContent = count;
+            suppliersBadge.style.display = 'flex';
+          } else {
+            suppliersBadge.style.display = 'none';
+          }
+        }
+
+        // Packages badge (pending approvals)
         const packagesBadge = document.getElementById('navBadgePackages');
-        if (packagesBadge && counts.packagesTotal > 0) {
-          packagesBadge.textContent = counts.packagesTotal;
-          packagesBadge.style.display = 'flex';
+        if (packagesBadge) {
+          const count = pending.packages || 0;
+          if (count > 0) {
+            packagesBadge.textContent = count;
+            packagesBadge.style.display = 'flex';
+          } else {
+            packagesBadge.style.display = 'none';
+          }
+        }
+
+        // Photos badge (pending approvals)
+        const photosBadge = document.getElementById('navBadgePhotos');
+        if (photosBadge) {
+          const count = pending.photos || 0;
+          if (count > 0) {
+            photosBadge.textContent = count;
+            photosBadge.style.display = 'flex';
+          } else {
+            photosBadge.style.display = 'none';
+          }
+        }
+
+        // Reviews badge (pending/flagged)
+        const reviewsBadge = document.getElementById('navBadgeReviews');
+        if (reviewsBadge) {
+          const count = pending.reviews || 0;
+          if (count > 0) {
+            reviewsBadge.textContent = count;
+            reviewsBadge.style.display = 'flex';
+          } else {
+            reviewsBadge.style.display = 'none';
+          }
+        }
+
+        // Reports badge (pending)
+        const reportsBadge = document.getElementById('navBadgeReports');
+        if (reportsBadge) {
+          const count = pending.reports || 0;
+          if (count > 0) {
+            reportsBadge.textContent = count;
+            reportsBadge.style.display = 'flex';
+          } else {
+            reportsBadge.style.display = 'none';
+          }
         }
       })
       .catch(error => {
         console.error('Failed to fetch badge counts:', error);
+        // Display error to user
+        const errorContainer = document.getElementById('navErrorContainer');
+        if (errorContainer) {
+          errorContainer.textContent = 'Failed to load badge counts';
+          errorContainer.style.display = 'block';
+          // Hide error after 5 seconds
+          setTimeout(() => {
+            errorContainer.style.display = 'none';
+          }, 5000);
+        }
       });
   }
 

@@ -2835,45 +2835,77 @@ function generateUniqueId(prefix) {
 
 /**
  * GET /api/admin/badge-counts
- * Get counts for sidebar badges (new users, pending photos, open tickets)
+ * Get counts for sidebar badges (pending items for admin review)
+ * Returns: pending suppliers, packages, photos, reviews, reports, and totals
  */
-router.get('/badge-counts', authRequired, roleRequired('admin'), (req, res) => {
+router.get('/badge-counts', authRequired, roleRequired('admin'), async (req, res) => {
   try {
-    // Ensure we have arrays even if store.read returns undefined
-    const users = read('users') || [];
-    const photos = read('photos') || [];
-    const tickets = read('tickets') || [];
+    // Fetch all necessary data in parallel
+    const [suppliers, packages, reviews, reports] = await Promise.all([
+      dbUnified.read('suppliers'),
+      dbUnified.read('packages'),
+      dbUnified.read('reviews'),
+      dbUnified.read('reports'),
+    ]);
 
-    // Count users created in last 7 days
-    const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-    const newUsers = users.filter(u => {
-      if (!u.createdAt) {
-        return false;
+    // Count pending items
+    const pendingSuppliers = suppliers.filter(s => !s.approved).length;
+    const pendingPackages = packages.filter(p => !p.approved).length;
+    
+    // Count pending photos from suppliers' photo galleries
+    let pendingPhotos = 0;
+    suppliers.forEach(supplier => {
+      if (supplier.photosGallery && Array.isArray(supplier.photosGallery)) {
+        pendingPhotos += supplier.photosGallery.filter(p => !p.approved).length;
       }
-      return new Date(u.createdAt).getTime() > sevenDaysAgo;
-    }).length;
+    });
+    
+    // Count pending photos from packages
+    packages.forEach(pkg => {
+      if (pkg.gallery && Array.isArray(pkg.gallery)) {
+        pendingPhotos += pkg.gallery.filter(p => !p.approved).length;
+      }
+    });
 
-    // Count pending photos
-    const pendingPhotos = photos.filter(p => !p.approved && !p.rejected).length;
+    const pendingReviews = reviews.filter(r => r.status === 'pending' || r.flagged).length;
+    const pendingReports = reports.filter(r => r.status === 'pending').length;
 
-    // Count open tickets
-    const openTickets = tickets.filter(
-      t => t.status === 'open' || t.status === 'in_progress'
-    ).length;
+    // Totals for overall counts
+    const totals = {
+      suppliers: suppliers.length,
+      packages: packages.length,
+      reviews: reviews.length,
+      reports: reports.length,
+    };
 
     res.json({
-      newUsers,
-      pendingPhotos,
-      openTickets,
+      pending: {
+        suppliers: pendingSuppliers,
+        packages: pendingPackages,
+        photos: pendingPhotos,
+        reviews: pendingReviews,
+        reports: pendingReports,
+      },
+      totals,
     });
   } catch (error) {
     console.error('Error fetching badge counts:', error);
     // Return zeroed counts instead of crashing
     res.status(500).json({
       error: 'Failed to fetch badge counts',
-      newUsers: 0,
-      pendingPhotos: 0,
-      openTickets: 0,
+      pending: {
+        suppliers: 0,
+        packages: 0,
+        photos: 0,
+        reviews: 0,
+        reports: 0,
+      },
+      totals: {
+        suppliers: 0,
+        packages: 0,
+        reviews: 0,
+        reports: 0,
+      },
     });
   }
 });
