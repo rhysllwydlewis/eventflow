@@ -3,11 +3,17 @@
  * Integrates Pexels stock photo API for EventFlow
  * Used for category images, hero banners, and other site content
  * Suppliers still upload their own profile and package photos
+ * 
+ * Features smart fallback system:
+ * - Primary: Fetch from Pexels API (user collections)
+ * - Fallback: Use hardcoded curated URLs when API unavailable
+ * - Graceful degradation with no broken images
  */
 
 'use strict';
 
 const https = require('https');
+const { getRandomFallbackPhotos, getRandomFallbackVideos } = require('../config/pexels-fallback');
 
 class PexelsService {
   constructor(apiKey) {
@@ -689,6 +695,112 @@ class PexelsService {
       { category: 'Transport', query: 'luxury car wedding transport', icon: '🚗' },
       { category: 'Extras & add-ons', query: 'event planning decoration details', icon: '✨' },
     ];
+  }
+
+  /**
+   * Smart fetch photos with automatic fallback
+   * Tries API first, falls back to hardcoded URLs if API fails
+   * @param {number} count - Number of photos to fetch
+   * @returns {Promise<{photos: Array, mode: string, fromCache: boolean}>}
+   */
+  async getPhotosWithFallback(count = 15) {
+    // Try API if configured
+    if (this.isConfigured()) {
+      try {
+        console.log('🔍 Attempting to fetch photos from Pexels API...');
+        const result = await this.searchPhotos('wedding', count, 1);
+        console.log(`✅ Successfully fetched ${result.photos.length} photos from API`);
+        return {
+          photos: result.photos,
+          mode: 'api',
+          fromCache: false,
+        };
+      } catch (error) {
+        console.warn(`⚠️  Pexels API failed: ${error.message}, falling back to hardcoded URLs`);
+      }
+    } else {
+      console.log('ℹ️  Pexels API not configured, using fallback URLs');
+    }
+
+    // Fallback to hardcoded URLs
+    const fallbackPhotos = getRandomFallbackPhotos(count);
+    console.log(`📦 Using ${fallbackPhotos.length} fallback photos`);
+    return {
+      photos: fallbackPhotos,
+      mode: 'fallback',
+      fromCache: false,
+    };
+  }
+
+  /**
+   * Smart fetch videos with automatic fallback
+   * Tries API first, falls back to hardcoded URLs if API fails
+   * @param {number} count - Number of videos to fetch
+   * @returns {Promise<{videos: Array, mode: string, fromCache: boolean}>}
+   */
+  async getVideosWithFallback(count = 8) {
+    // Try API if configured
+    if (this.isConfigured()) {
+      try {
+        console.log('🔍 Attempting to fetch videos from Pexels API...');
+        const result = await this.searchVideos('wedding', count, 1);
+        console.log(`✅ Successfully fetched ${result.videos.length} videos from API`);
+        return {
+          videos: result.videos,
+          mode: 'api',
+          fromCache: false,
+        };
+      } catch (error) {
+        console.warn(`⚠️  Pexels API failed: ${error.message}, falling back to hardcoded URLs`);
+      }
+    } else {
+      console.log('ℹ️  Pexels API not configured, using fallback URLs');
+    }
+
+    // Fallback to hardcoded URLs
+    const fallbackVideos = getRandomFallbackVideos(count);
+    console.log(`📦 Using ${fallbackVideos.length} fallback videos`);
+    return {
+      videos: fallbackVideos,
+      mode: 'fallback',
+      fromCache: false,
+    };
+  }
+
+  /**
+   * Get photos from user's collection with fallback
+   * @param {string} collectionId - Collection ID (e.g., 'xkpfayt')
+   * @param {number} count - Number of photos to fetch
+   * @returns {Promise<{photos: Array, mode: string}>}
+   */
+  async getCollectionPhotosWithFallback(collectionId, count = 15) {
+    // Try API if configured
+    if (this.isConfigured()) {
+      try {
+        console.log(`🔍 Attempting to fetch photos from collection ${collectionId}...`);
+        const result = await this.getCollectionMedia(collectionId, count, 1, 'photos');
+        const photos = result.media.filter(item => item.type === 'Photo');
+        console.log(`✅ Successfully fetched ${photos.length} photos from collection`);
+        return {
+          photos,
+          mode: 'api',
+          collectionId,
+        };
+      } catch (error) {
+        console.warn(
+          `⚠️  Failed to fetch collection ${collectionId}: ${error.message}, using fallback`
+        );
+      }
+    }
+
+    // Fallback to hardcoded URLs
+    const fallbackPhotos = getRandomFallbackPhotos(count);
+    console.log(`📦 Using ${fallbackPhotos.length} fallback photos (collection unavailable)`);
+    return {
+      photos: fallbackPhotos,
+      mode: 'fallback',
+      collectionId,
+    };
   }
 }
 

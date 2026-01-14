@@ -288,11 +288,21 @@
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
           <div>
             <strong style="color: #1f2937;">🔌 Pexels API Connection</strong>
-            <div class="small" style="color: #6b7280; margin-top: 0.25rem;">Test your Pexels API key configuration</div>
+            <div class="small" style="color: #6b7280; margin-top: 0.25rem;">
+              Test your Pexels API key configuration and check fallback availability
+            </div>
           </div>
           <button class="btn btn-secondary" id="testPexelsBtn" style="padding: 0.5rem 1rem;">
             Test Connection
           </button>
+        </div>
+        
+        <div style="margin-bottom: 0.75rem; padding: 0.75rem; background: white; border-radius: 6px; font-size: 0.85rem; color: #6b7280;">
+          <strong style="color: #1f2937;">Status Indicators:</strong><br>
+          <span style="display: block; margin-top: 0.25rem;">✅ <strong>API Connected</strong> - Live Pexels API is working</span>
+          <span style="display: block; margin-top: 0.25rem;">⚠️ <strong>Using Fallback</strong> - API unavailable, using curated URLs</span>
+          <span style="display: block; margin-top: 0.25rem;">📷 <strong>Custom Collage</strong> - Pexels feature disabled (see checkbox above)</span>
+          <span style="display: block; margin-top: 0.25rem;">❌ <strong>Unavailable</strong> - Both API and fallback failed</span>
         </div>
         
         <div id="pexelsTestResult" style="display: none; padding: 0.75rem; border-radius: 6px; font-size: 0.9rem;">

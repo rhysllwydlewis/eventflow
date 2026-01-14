@@ -1651,7 +1651,8 @@ const AdminShared = (function () {
 
         const response = await fetchWithTimeout(url, opts, timeoutMs);
         const contentType = response.headers.get('content-type');
-        const isJson = contentType && contentType.includes('application/json');
+        // Add null/undefined check before calling indexOf/includes
+        const isJson = contentType && typeof contentType === 'string' && contentType.includes('application/json');
 
         // Handle auth failures
         if (response.status === 401) {
@@ -1683,6 +1684,14 @@ const AdminShared = (function () {
 
         // Handle non-OK responses
         if (!response.ok) {
+          // Special case: 424 Failed Dependency is used by some endpoints
+          // (e.g., Pexels test) to indicate a valid response about unavailable dependencies
+          // Return the data instead of throwing an error
+          if (response.status === 424 && data && typeof data === 'object') {
+            debugLog(`Failed dependency (424): ${url}`, data);
+            return data;
+          }
+
           const errorMessage =
             data.error || data.message || `Request failed with status ${response.status}`;
 
