@@ -694,11 +694,25 @@ class PexelsService {
 
 // Create singleton instance
 let pexelsInstance = null;
+let wasCreatedWithoutKey = false; // Track if instance was created without a key
 
 function getPexelsService(apiKey) {
+  const currentKey = apiKey || process.env.PEXELS_API_KEY;
+
+  // If no instance exists, create one
   if (!pexelsInstance) {
-    pexelsInstance = new PexelsService(apiKey);
+    pexelsInstance = new PexelsService(currentKey);
+    wasCreatedWithoutKey = !currentKey;
+    return pexelsInstance;
   }
+
+  // If instance was created without a key but a key is now available, recreate
+  if (wasCreatedWithoutKey && currentKey) {
+    console.log('🔄 Recreating Pexels service with newly available API key');
+    pexelsInstance = new PexelsService(currentKey);
+    wasCreatedWithoutKey = false;
+  }
+
   return pexelsInstance;
 }
 

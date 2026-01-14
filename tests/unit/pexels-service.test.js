@@ -2,7 +2,7 @@
  * Unit tests for Pexels service
  */
 
-const { PexelsService } = require('../../utils/pexels-service');
+const { PexelsService, getPexelsService } = require('../../utils/pexels-service');
 
 describe('PexelsService', () => {
   describe('Constructor and Configuration', () => {
@@ -271,6 +271,102 @@ describe('PexelsService', () => {
         // Expected to fail due to network, but filters were accepted
         expect(error.message).toBeTruthy();
       }
+    });
+  });
+
+  describe('getPexelsService Singleton', () => {
+    let originalKey;
+
+    beforeEach(() => {
+      originalKey = process.env.PEXELS_API_KEY;
+      // Reset the singleton by requiring a fresh module
+      jest.resetModules();
+    });
+
+    afterEach(() => {
+      process.env.PEXELS_API_KEY = originalKey;
+      jest.resetModules();
+    });
+
+    it('should create singleton instance on first call', () => {
+      const { getPexelsService } = require('../../utils/pexels-service');
+      process.env.PEXELS_API_KEY = 'test-key';
+
+      const instance1 = getPexelsService();
+      const instance2 = getPexelsService();
+
+      expect(instance1).toBe(instance2); // Same instance
+      expect(instance1.isConfigured()).toBe(true);
+    });
+
+    it('should recreate singleton when key becomes available', () => {
+      const { getPexelsService } = require('../../utils/pexels-service');
+
+      // Start without key
+      delete process.env.PEXELS_API_KEY;
+      const instance1 = getPexelsService();
+      expect(instance1.isConfigured()).toBe(false);
+
+      // Now set the key
+      process.env.PEXELS_API_KEY = 'newly-available-key';
+      const instance2 = getPexelsService();
+
+      // Should have recreated the instance
+      expect(instance2.isConfigured()).toBe(true);
+      expect(instance2.getApiKey()).toBe('newly-available-key');
+      expect(instance1).not.toBe(instance2); // Different instance
+    });
+
+    it('should not recreate singleton if key was already present', () => {
+      const { getPexelsService } = require('../../utils/pexels-service');
+      process.env.PEXELS_API_KEY = 'original-key';
+
+      const instance1 = getPexelsService();
+      expect(instance1.getApiKey()).toBe('original-key');
+
+      // Call again with same env key
+      const instance2 = getPexelsService();
+      expect(instance1).toBe(instance2); // Same instance
+    });
+
+    it('should use provided API key over environment variable on first call', () => {
+      const { getPexelsService } = require('../../utils/pexels-service');
+      process.env.PEXELS_API_KEY = 'env-key';
+
+      const instance = getPexelsService('explicit-key');
+      expect(instance.getApiKey()).toBe('explicit-key');
+    });
+
+    it('should recreate singleton with explicit key if initial instance had no key', () => {
+      const { getPexelsService } = require('../../utils/pexels-service');
+
+      // Start without key
+      delete process.env.PEXELS_API_KEY;
+      const instance1 = getPexelsService();
+      expect(instance1.isConfigured()).toBe(false);
+
+      // Now call with explicit key
+      const instance2 = getPexelsService('explicit-key');
+      expect(instance2.isConfigured()).toBe(true);
+      expect(instance2.getApiKey()).toBe('explicit-key');
+      expect(instance1).not.toBe(instance2); // Different instance
+    });
+
+    it('should handle timing issue: instance created before env var available', () => {
+      const { getPexelsService } = require('../../utils/pexels-service');
+
+      // Simulate server startup: no key yet
+      delete process.env.PEXELS_API_KEY;
+      const instanceAtStartup = getPexelsService();
+      expect(instanceAtStartup.isConfigured()).toBe(false);
+
+      // Simulate env var becoming available (e.g., after deployment/restart)
+      process.env.PEXELS_API_KEY = 'deployed-key';
+
+      // Next call should detect and recreate
+      const instanceAfterDeploy = getPexelsService();
+      expect(instanceAfterDeploy.isConfigured()).toBe(true);
+      expect(instanceAfterDeploy.getApiKey()).toBe('deployed-key');
     });
   });
 });
