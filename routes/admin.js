@@ -2841,12 +2841,18 @@ function generateUniqueId(prefix) {
 router.get('/badge-counts', authRequired, roleRequired('admin'), async (req, res) => {
   try {
     // Fetch all necessary data in parallel
-    const [suppliers, packages, reviews, reports] = await Promise.all([
+    const [suppliersRaw, packagesRaw, reviewsRaw, reportsRaw] = await Promise.all([
       dbUnified.read('suppliers'),
       dbUnified.read('packages'),
       dbUnified.read('reviews'),
       dbUnified.read('reports'),
     ]);
+
+    // Ensure arrays even if dbUnified returns null/undefined
+    const suppliers = suppliersRaw || [];
+    const packages = packagesRaw || [];
+    const reviews = reviewsRaw || [];
+    const reports = reportsRaw || [];
 
     // Count pending items
     const pendingSuppliers = suppliers.filter(s => !s.approved).length;
