@@ -179,33 +179,83 @@ router.get('/status', authRequired, roleRequired('admin'), (req, res) => {
  * GET /api/pexels/test
  * Test Pexels API connection and validate API key
  * Requires admin authentication
- * Returns detailed status including connection test results
+ * Returns detailed status including connection test results and fallback availability
  */
 router.get('/test', authRequired, roleRequired('admin'), async (req, res) => {
   try {
     const pexels = getPexelsService();
+    const { getFallbackPhotos, getFallbackVideos } = require('../config/pexels-fallback');
 
     console.log('🔍 Admin testing Pexels API connection...');
     const testResult = await pexels.testConnection();
 
-    // Return appropriate HTTP status based on result
-    // 200 = Success, 424 = Failed Dependency (configured but not working)
-    const statusCode = testResult.success ? 200 : 424;
+    // Add fallback information
+    const fallbackPhotosCount = getFallbackPhotos().length;
+    const fallbackVideosCount = getFallbackVideos().length;
+    const hasFallback = fallbackPhotosCount > 0 || fallbackVideosCount > 0;
 
-    res.status(statusCode).json({
+    // Determine current mode
+    let mode = 'unavailable';
+    if (testResult.success) {
+      mode = 'api'; // API is working
+    } else if (hasFallback) {
+      mode = 'fallback'; // API not working but fallback available
+    }
+
+    // Enhanced response with fallback info
+    const enhancedResult = {
       ...testResult,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (error) {
-    console.error('Pexels test error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to test Pexels API connection',
-      details: {
-        error: error.message,
+      mode,
+      fallback: {
+        available: hasFallback,
+        photosCount: fallbackPhotosCount,
+        videosCount: fallbackVideosCount,
       },
       timestamp: new Date().toISOString(),
-    });
+    };
+
+    // Return appropriate HTTP status based on result
+    // 200 = Success (API working)
+    // 424 = Failed Dependency (API not working but fallback available)
+    const statusCode = testResult.success ? 200 : 424;
+
+    res.status(statusCode).json(enhancedResult);
+  } catch (error) {
+    console.error('Pexels test error:', error);
+    
+    // Even on error, check if fallback is available
+    try {
+      const { getFallbackPhotos, getFallbackVideos } = require('../config/pexels-fallback');
+      const fallbackPhotosCount = getFallbackPhotos().length;
+      const fallbackVideosCount = getFallbackVideos().length;
+      const hasFallback = fallbackPhotosCount > 0 || fallbackVideosCount > 0;
+
+      res.status(500).json({
+        success: false,
+        message: 'Failed to test Pexels API connection',
+        mode: hasFallback ? 'fallback' : 'unavailable',
+        fallback: {
+          available: hasFallback,
+          photosCount: fallbackPhotosCount,
+          videosCount: fallbackVideosCount,
+        },
+        details: {
+          error: error.message,
+        },
+        timestamp: new Date().toISOString(),
+      });
+    } catch (fallbackError) {
+      // Fallback check also failed
+      res.status(500).json({
+        success: false,
+        message: 'Failed to test Pexels API connection',
+        mode: 'unavailable',
+        details: {
+          error: error.message,
+        },
+        timestamp: new Date().toISOString(),
+      });
+    }
   }
 });
 

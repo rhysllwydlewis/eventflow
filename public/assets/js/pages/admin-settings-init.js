@@ -383,13 +383,16 @@
         timeout: 15000, // 15 second timeout for API test
       });
 
-      if (result.success) {
+      // Determine status display based on mode
+      if (result.mode === 'api' && result.success) {
+        // ✅ API Connected
         resultDiv.style.background = '#d1fae5';
         resultDiv.style.color = '#065f46';
         resultDiv.innerHTML = `
           <div style="font-weight: 600; margin-bottom: 0.5rem;">✅ ${AdminShared.escapeHtml(result.message)}</div>
           ${result.details ? `
             <div style="font-size: 0.85rem; opacity: 0.9;">
+              <strong>Mode:</strong> API Connected<br>
               Response time: ${result.details.responseTime}ms<br>
               API version: ${result.details.apiVersion || 'v1'}<br>
               Sample results available: ${result.details.totalResults ? 'Yes' : 'No'}
@@ -397,7 +400,27 @@
           ` : ''}
         `;
         AdminShared.showToast('Pexels API connection successful', 'success');
+      } else if (result.mode === 'fallback') {
+        // ⚠️ Using URL Fallback
+        resultDiv.style.background = '#fef3c7';
+        resultDiv.style.color = '#92400e';
+        resultDiv.innerHTML = `
+          <div style="font-weight: 600; margin-bottom: 0.5rem;">⚠️ Using URL Fallback</div>
+          <div style="font-size: 0.85rem; opacity: 0.9;">
+            <strong>Mode:</strong> Fallback URLs<br>
+            ${AdminShared.escapeHtml(result.message)}<br>
+            ${result.fallback ? `
+              Fallback photos: ${result.fallback.photosCount}<br>
+              Fallback videos: ${result.fallback.videosCount}
+            ` : ''}
+          </div>
+          <div style="margin-top: 0.5rem; font-size: 0.85rem; opacity: 0.8;">
+            Hardcoded URLs will be used. Configure PEXELS_API_KEY to use live API.
+          </div>
+        `;
+        AdminShared.showToast('Using fallback mode', 'warning');
       } else {
+        // ❌ Pexels Unavailable
         resultDiv.style.background = '#fee2e2';
         resultDiv.style.color = '#991b1b';
         resultDiv.innerHTML = `
@@ -408,6 +431,9 @@
               ${result.details.error ? `Details: ${AdminShared.escapeHtml(result.details.error)}` : ''}
             </div>
           ` : ''}
+          <div style="margin-top: 0.5rem; font-size: 0.85rem; opacity: 0.8;">
+            Please check your PEXELS_API_KEY environment variable and ensure the API is accessible.
+          </div>
         `;
         AdminShared.showToast('Pexels API test failed', 'error');
       }
@@ -416,7 +442,7 @@
       resultDiv.style.color = '#991b1b';
       
       let errorMessage = 'Connection test failed';
-      if (error.message.includes('timed out')) {
+      if (error.message && error.message.includes('timed out')) {
         errorMessage = 'Test timed out after 15 seconds';
       } else if (error.message) {
         errorMessage = error.message;
