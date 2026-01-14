@@ -5721,7 +5721,7 @@ const notificationRoutes = require('./routes/notifications');
 let notificationRouter;
 app.use('/api/notifications', (req, res, next) => {
   // Determine which WebSocket server to use based on WEBSOCKET_MODE
-  // Check environment variable directly since WEBSOCKET_MODE const is defined later
+  // Check environment variable directly (WEBSOCKET_MODE variable is defined later in the file)
   const wsMode = (process.env.WEBSOCKET_MODE || 'v2').toLowerCase();
   
   let webSocketServer = null;
