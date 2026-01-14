@@ -202,7 +202,7 @@
 
       // Update save button state
       updateSaveButtonState();
-      
+
       // Update Pexels test section visibility
       updatePexelsTestSection();
     } catch (err) {
@@ -294,52 +294,77 @@
     updateFeatureFlagsStatus('saving', 'Saving feature flags...');
     updateSaveButtonState();
 
+    // Create a hard 15-second timeout wrapper to guarantee operation completes
+    let timeoutId;
+    const hardTimeoutPromise = new Promise((_, reject) => {
+      timeoutId = setTimeout(() => {
+        reject(new Error('Operation timed out after 15 seconds'));
+      }, 15000); // 15 second hard timeout
+    });
+
     try {
-      await AdminShared.safeAction(
-        saveBtn,
-        async () => {
-          // Use new adminFetchWithTimeout with 10 second timeout and 2 retries
-          const result = await AdminShared.adminFetchWithTimeout('/api/admin/settings/features', {
-            method: 'PUT',
-            body: data,
-            timeout: 10000, // 10 second timeout
-            retries: 2, // Retry up to 2 times
-          });
+      // Race the save operation against the hard timeout
+      await Promise.race([
+        (async () => {
+          await AdminShared.safeAction(
+            saveBtn,
+            async () => {
+              // Use new adminFetchWithTimeout with 10 second timeout and 2 retries
+              const result = await AdminShared.adminFetchWithTimeout(
+                '/api/admin/settings/features',
+                {
+                  method: 'PUT',
+                  body: data,
+                  timeout: 10000, // 10 second timeout
+                  retries: 2, // Retry up to 2 times
+                }
+              );
 
-          // safeAction will show success toast, we add status message
-          updateFeatureFlagsStatus('saved', 'Feature flags saved successfully');
-          setTimeout(() => updateFeatureFlagsStatus('hidden'), STATUS_HIDE_DELAY_MS);
+              // safeAction will show success toast, we add status message
+              updateFeatureFlagsStatus('saved', 'Feature flags saved successfully');
+              setTimeout(() => updateFeatureFlagsStatus('hidden'), STATUS_HIDE_DELAY_MS);
 
-          // Re-fetch flags from server (single source of truth)
-          await loadFeatureFlags();
-          return result;
-        },
-        {
-          loadingText: 'Saving...',
-          successMessage: 'Feature flags updated',
-          errorMessage: 'Failed to save feature flags',
-        }
-      );
+              // Re-fetch flags from server (single source of truth)
+              await loadFeatureFlags();
+              return result;
+            },
+            {
+              loadingText: 'Saving...',
+              successMessage: 'Feature flags updated',
+              errorMessage: 'Failed to save feature flags',
+            }
+          );
+        })(),
+        hardTimeoutPromise,
+      ]);
+
+      // Clear timeout on success
+      clearTimeout(timeoutId);
     } catch (error) {
+      // Clear timeout on error
+      clearTimeout(timeoutId);
+
       // safeAction already showed error toast and restored button state
       // Show detailed error message with status and response
       let errorDetail = 'Error saving feature flags';
-      
+
       if (error.message.includes('timed out')) {
-        errorDetail = 'Request timed out after 10 seconds. Database may be slow or unavailable.';
+        errorDetail = error.message.includes('15 seconds')
+          ? 'Request timed out after 15 seconds. Database may be slow or unavailable.'
+          : 'Request timed out after 10 seconds. Database may be slow or unavailable.';
         AdminShared.showToast(errorDetail, 'error');
       } else if (error.status === 504) {
         errorDetail = 'Gateway timeout. Please try again in a moment.';
       } else if (error.message) {
         errorDetail += `: ${error.message}`;
       }
-      
+
       updateFeatureFlagsStatus('error', errorDetail);
 
       // Keep user's current toggles (don't revert)
       AdminShared.debugError('Feature flags save error:', error);
     } finally {
-      // Always reset state and re-enable checkboxes
+      // Always reset state and re-enable checkboxes - GUARANTEED to execute
       isSavingFeatureFlags = false;
       setFeatureFlagsEnabled(true);
       updateSaveButtonState();
@@ -350,7 +375,7 @@
   function updatePexelsTestSection() {
     const pexelsCheckbox = document.getElementById('featurePexelsCollage');
     const testSection = document.getElementById('pexelsTestSection');
-    
+
     if (pexelsCheckbox && testSection) {
       testSection.style.display = pexelsCheckbox.checked ? 'block' : 'none';
     }
@@ -366,7 +391,7 @@
   document.getElementById('testPexelsBtn')?.addEventListener('click', async () => {
     const btn = document.getElementById('testPexelsBtn');
     const resultDiv = document.getElementById('pexelsTestResult');
-    
+
     if (!btn || !resultDiv) {
       return;
     }
@@ -390,14 +415,18 @@
         resultDiv.style.color = '#065f46';
         resultDiv.innerHTML = `
           <div style="font-weight: 600; margin-bottom: 0.5rem;">✅ ${AdminShared.escapeHtml(result.message)}</div>
-          ${result.details ? `
+          ${
+            result.details
+              ? `
             <div style="font-size: 0.85rem; opacity: 0.9;">
               <strong>Mode:</strong> API Connected<br>
               Response time: ${result.details.responseTime}ms<br>
               API version: ${result.details.apiVersion || 'v1'}<br>
               Sample results available: ${result.details.totalResults ? 'Yes' : 'No'}
             </div>
-          ` : ''}
+          `
+              : ''
+          }
         `;
         AdminShared.showToast('Pexels API connection successful', 'success');
       } else if (result.mode === 'fallback') {
@@ -409,10 +438,14 @@
           <div style="font-size: 0.85rem; opacity: 0.9;">
             <strong>Mode:</strong> Fallback URLs<br>
             ${AdminShared.escapeHtml(result.message)}<br>
-            ${result.fallback ? `
+            ${
+              result.fallback
+                ? `
               Fallback photos: ${result.fallback.photosCount}<br>
               Fallback videos: ${result.fallback.videosCount}
-            ` : ''}
+            `
+                : ''
+            }
           </div>
           <div style="margin-top: 0.5rem; font-size: 0.85rem; opacity: 0.8;">
             Hardcoded URLs will be used. Configure PEXELS_API_KEY to use live API.
@@ -425,12 +458,16 @@
         resultDiv.style.color = '#991b1b';
         resultDiv.innerHTML = `
           <div style="font-weight: 600; margin-bottom: 0.5rem;">❌ ${AdminShared.escapeHtml(result.message)}</div>
-          ${result.details ? `
+          ${
+            result.details
+              ? `
             <div style="font-size: 0.85rem; opacity: 0.9;">
               ${result.details.errorType ? `Error type: ${result.details.errorType}<br>` : ''}
               ${result.details.error ? `Details: ${AdminShared.escapeHtml(result.details.error)}` : ''}
             </div>
-          ` : ''}
+          `
+              : ''
+          }
           <div style="margin-top: 0.5rem; font-size: 0.85rem; opacity: 0.8;">
             Please check your PEXELS_API_KEY environment variable and ensure the API is accessible.
           </div>
@@ -440,14 +477,14 @@
     } catch (error) {
       resultDiv.style.background = '#fee2e2';
       resultDiv.style.color = '#991b1b';
-      
+
       let errorMessage = 'Connection test failed';
       if (error.message && error.message.includes('timed out')) {
         errorMessage = 'Test timed out after 15 seconds';
       } else if (error.message) {
         errorMessage = error.message;
       }
-      
+
       resultDiv.innerHTML = `
         <div style="font-weight: 600; margin-bottom: 0.5rem;">❌ ${AdminShared.escapeHtml(errorMessage)}</div>
         <div style="font-size: 0.85rem; opacity: 0.9;">

@@ -2859,7 +2859,7 @@ router.get('/badge-counts', authRequired, roleRequired('admin'), async (req, res
     // Count pending items
     const pendingSuppliers = suppliers.filter(s => !s.approved).length;
     const pendingPackages = packages.filter(p => !p.approved).length;
-    
+
     // Count pending photos from suppliers' photo galleries
     let pendingPhotos = 0;
     suppliers.forEach(supplier => {
@@ -2867,7 +2867,7 @@ router.get('/badge-counts', authRequired, roleRequired('admin'), async (req, res
         pendingPhotos += supplier.photosGallery.filter(p => !p.approved).length;
       }
     });
-    
+
     // Count pending photos from packages
     packages.forEach(pkg => {
       if (pkg.gallery && Array.isArray(pkg.gallery)) {
@@ -3431,7 +3431,7 @@ router.put(
       };
 
       const writeSuccess = await dbUnified.write('settings', settings);
-      
+
       if (!writeSuccess) {
         console.error('Failed to persist site settings to database');
         return res.status(500).json({ error: 'Failed to persist settings to database' });
@@ -3502,9 +3502,9 @@ router.put(
   async (req, res) => {
     const startTime = Date.now();
     const requestId = `features-${Date.now()}-${Math.random().toString(36).substring(7)}`;
-    
+
     console.log(`[${requestId}] Starting feature flags update by ${req.user.email}`);
-    
+
     try {
       const {
         registration,
@@ -3541,14 +3541,14 @@ router.put(
         'supportTickets',
         'pexelsCollage',
       ];
-      
+
       for (const flag of featureFlags) {
         const value = req.body[flag];
         if (value !== undefined && typeof value !== 'boolean') {
           console.error(`[${requestId}] Invalid ${flag} value:`, value);
-          return res.status(400).json({ 
+          return res.status(400).json({
             error: `Invalid feature flag value: ${flag} must be boolean`,
-            field: flag
+            field: flag,
           });
         }
       }
@@ -3578,19 +3578,23 @@ router.put(
         createTimeout(5000, 'Write operation'),
       ]);
 
-      console.log(`[${requestId}] Database write completed in ${Date.now() - writeStart}ms, success: ${writeSuccess}`);
+      console.log(
+        `[${requestId}] Database write completed in ${Date.now() - writeStart}ms, success: ${writeSuccess}`
+      );
 
       if (!writeSuccess) {
         console.error(`[${requestId}] Failed to persist feature flags to database`);
-        return res.status(500).json({ 
+        return res.status(500).json({
           error: 'Failed to persist settings to database',
-          details: 'Database write returned false'
+          details: 'Database write returned false',
         });
       }
 
       // Log Pexels feature flag changes specifically
       if (pexelsCollage !== undefined) {
-        console.log(`[${requestId}] Pexels collage feature flag ${pexelsCollage ? 'ENABLED' : 'DISABLED'} by ${req.user.email}`);
+        console.log(
+          `[${requestId}] Pexels collage feature flag ${pexelsCollage ? 'ENABLED' : 'DISABLED'} by ${req.user.email}`
+        );
       }
 
       auditLog({
@@ -3608,22 +3612,25 @@ router.put(
       res.json({ success: true, features: settings.features });
     } catch (error) {
       const totalTime = Date.now() - startTime;
-      console.error(`[${requestId}] Error updating feature settings after ${totalTime}ms:`, error.message);
+      console.error(
+        `[${requestId}] Error updating feature settings after ${totalTime}ms:`,
+        error.message
+      );
       console.error(`[${requestId}] Stack trace:`, error.stack);
-      
+
       // Provide detailed error message based on error type
       if (error.message.includes('timed out')) {
-        return res.status(504).json({ 
+        return res.status(504).json({
           error: 'Request timed out',
           details: 'Database operation took too long to complete. Please try again.',
-          duration: totalTime
+          duration: totalTime,
         });
       }
-      
-      res.status(500).json({ 
+
+      res.status(500).json({
         error: 'Failed to update settings',
         details: process.env.NODE_ENV === 'development' ? error.message : undefined,
-        duration: totalTime
+        duration: totalTime,
       });
     }
   }
@@ -3679,7 +3686,7 @@ router.put(
       };
 
       const writeSuccess = await dbUnified.write('settings', settings);
-      
+
       if (!writeSuccess) {
         console.error('Failed to persist maintenance settings to database');
         return res.status(500).json({ error: 'Failed to persist settings to database' });
@@ -3778,7 +3785,7 @@ router.put(
       };
 
       const writeSuccess = await dbUnified.write('settings', settings);
-      
+
       if (!writeSuccess) {
         console.error('Failed to persist email template to database');
         return res.status(500).json({ error: 'Failed to persist template to database' });
@@ -4904,7 +4911,7 @@ router.get('/maintenance/message', async (req, res) => {
 /**
  * GET /api/public/pexels-collage
  * Public endpoint to fetch Pexels images for homepage collage
- * Uses Pexels API on behalf of public users when feature is enabled
+ * Uses Pexels API when configured, falls back to curated fallback URLs when API unavailable
  */
 router.get('/public/pexels-collage', async (req, res) => {
   try {
@@ -4914,6 +4921,17 @@ router.get('/public/pexels-collage', async (req, res) => {
 
     if (features.pexelsCollage !== true) {
       return res.status(404).json({ error: 'Pexels collage feature is not enabled' });
+    }
+
+    const { category } = req.query;
+
+    if (!category) {
+      return res.status(400).json({ error: 'Category parameter required' });
+    }
+
+    const validCategories = ['venues', 'catering', 'entertainment', 'photography'];
+    if (!validCategories.includes(category)) {
+      return res.status(400).json({ error: 'Invalid category' });
     }
 
     const pexelsCollageSettings = settings.pexelsCollageSettings || {
@@ -4929,32 +4947,53 @@ router.get('/public/pexels-collage', async (req, res) => {
     const { getPexelsService } = require('../utils/pexels-service');
     const pexels = getPexelsService();
 
-    if (!pexels.isConfigured()) {
-      return res.status(503).json({
-        error: 'Pexels API not configured',
-        message: 'Please configure PEXELS_API_KEY in environment variables',
-      });
+    // Try to use Pexels API first
+    if (pexels.isConfigured()) {
+      try {
+        const query = pexelsCollageSettings.queries[category] || category;
+        const results = await pexels.searchPhotos(query, 8, 1);
+
+        return res.json({
+          success: true,
+          category,
+          query,
+          photos: results.photos,
+          usingFallback: false,
+        });
+      } catch (apiError) {
+        console.warn(
+          `Pexels API failed for ${category}, falling back to curated URLs:`,
+          apiError.message
+        );
+        // Fall through to fallback logic below
+      }
     }
 
-    const { category } = req.query;
+    // If API not configured or failed, use fallback URLs from config
+    const { getRandomFallbackPhotos } = require('../config/pexels-fallback');
+    const fallbackPhotos = getRandomFallbackPhotos(8);
 
-    if (!category) {
-      return res.status(400).json({ error: 'Category parameter required' });
-    }
-
-    const validCategories = ['venues', 'catering', 'entertainment', 'photography'];
-    if (!validCategories.includes(category)) {
-      return res.status(400).json({ error: 'Invalid category' });
-    }
-
-    const query = pexelsCollageSettings.queries[category] || category;
-    const results = await pexels.searchPhotos(query, 8, 1);
+    // Convert fallback photo format to match Pexels API format
+    const photos = fallbackPhotos.map(photo => ({
+      id: photo.id,
+      url: photo.url,
+      photographer: photo.photographer,
+      photographer_url: photo.photographer_url || 'https://www.pexels.com',
+      src: {
+        original: photo.src.original,
+        large: photo.src.large,
+        medium: photo.src.medium,
+        small: photo.src.small,
+      },
+      alt: photo.alt,
+    }));
 
     res.json({
       success: true,
       category,
-      query,
-      photos: results.photos,
+      photos,
+      usingFallback: true,
+      message: 'Using curated fallback photos from Pexels collection',
     });
   } catch (error) {
     console.error('Error fetching Pexels collage images:', error);

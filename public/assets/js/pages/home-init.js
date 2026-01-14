@@ -584,6 +584,11 @@ async function initPexelsCollage(settings) {
 
         const data = await response.json();
 
+        // Log if using fallback mode (only in development)
+        if (isDevelopmentEnvironment() && data.usingFallback) {
+          console.log(`Using fallback photos for ${category} (Pexels API not configured)`);
+        }
+
         if (data.photos && data.photos.length > 0) {
           imageCache[category] = data.photos.map(photo => ({
             url: photo.src.large || photo.src.original,
