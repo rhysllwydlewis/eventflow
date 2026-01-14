@@ -14,7 +14,9 @@ const { authRequired, roleRequired } = require('../middleware/auth');
 /**
  * GET /api/pexels/search
  * Search for stock photos by query
- * Query params: q (search term), page (page number), perPage (results per page)
+ * Query params: q (search term), page (page number), perPage (results per page),
+ *               orientation (portrait/landscape/square), size (large/medium/small),
+ *               color (e.g., red, orange, yellow), locale (e.g., en-US, pt-BR)
  * Requires admin authentication
  */
 router.get('/search', authRequired, roleRequired('admin'), async (req, res) => {
@@ -28,7 +30,7 @@ router.get('/search', authRequired, roleRequired('admin'), async (req, res) => {
       });
     }
 
-    const { q, page = 1, perPage = 15 } = req.query;
+    const { q, page = 1, perPage = 15, orientation, size, color, locale } = req.query;
 
     if (!q) {
       return res.status(400).json({
@@ -37,11 +39,28 @@ router.get('/search', authRequired, roleRequired('admin'), async (req, res) => {
       });
     }
 
-    const results = await pexels.searchPhotos(q, parseInt(perPage), parseInt(page));
+    // Build filters object
+    const filters = {};
+    if (orientation) {
+      filters.orientation = orientation;
+    }
+    if (size) {
+      filters.size = size;
+    }
+    if (color) {
+      filters.color = color;
+    }
+    if (locale) {
+      filters.locale = locale;
+    }
+
+    console.log(`🔍 Admin searching photos: "${q}" with filters:`, filters);
+    const results = await pexels.searchPhotos(q, parseInt(perPage), parseInt(page), filters);
 
     res.json({
       success: true,
       query: q,
+      filters,
       ...results,
     });
   } catch (error) {
@@ -186,6 +205,244 @@ router.get('/test', authRequired, roleRequired('admin'), async (req, res) => {
         error: error.message,
       },
       timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/**
+ * GET /api/pexels/videos/search
+ * Search for videos by query
+ * Query params: q (search term), page, perPage, orientation, size, locale
+ * Requires admin authentication
+ */
+router.get('/videos/search', authRequired, roleRequired('admin'), async (req, res) => {
+  try {
+    const pexels = getPexelsService();
+
+    if (!pexels.isConfigured()) {
+      return res.status(503).json({
+        error: 'Pexels API not configured',
+        message: 'Please configure PEXELS_API_KEY in your environment variables',
+      });
+    }
+
+    const { q, page = 1, perPage = 15, orientation, size, locale } = req.query;
+
+    if (!q) {
+      return res.status(400).json({
+        error: 'Missing query parameter',
+        message: 'Query parameter "q" is required',
+      });
+    }
+
+    // Build filters object
+    const filters = {};
+    if (orientation) {
+      filters.orientation = orientation;
+    }
+    if (size) {
+      filters.size = size;
+    }
+    if (locale) {
+      filters.locale = locale;
+    }
+
+    console.log(`🎥 Admin searching videos: "${q}" with filters:`, filters);
+    const results = await pexels.searchVideos(q, parseInt(perPage), parseInt(page), filters);
+
+    res.json({
+      success: true,
+      query: q,
+      filters,
+      ...results,
+    });
+  } catch (error) {
+    console.error('Pexels video search error:', error);
+    res.status(500).json({
+      error: 'Failed to search videos',
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * GET /api/pexels/videos/popular
+ * Get popular videos
+ * Query params: page, perPage
+ * Requires admin authentication
+ */
+router.get('/videos/popular', authRequired, roleRequired('admin'), async (req, res) => {
+  try {
+    const pexels = getPexelsService();
+
+    if (!pexels.isConfigured()) {
+      return res.status(503).json({
+        error: 'Pexels API not configured',
+        message: 'Please configure PEXELS_API_KEY in your environment variables',
+      });
+    }
+
+    const { page = 1, perPage = 15 } = req.query;
+
+    console.log(`🎥 Admin fetching popular videos`);
+    const results = await pexels.getPopularVideos(parseInt(perPage), parseInt(page));
+
+    res.json({
+      success: true,
+      ...results,
+    });
+  } catch (error) {
+    console.error('Pexels popular videos error:', error);
+    res.status(500).json({
+      error: 'Failed to fetch popular videos',
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * GET /api/pexels/videos/:id
+ * Get specific video by ID
+ * Requires admin authentication
+ */
+router.get('/videos/:id', authRequired, roleRequired('admin'), async (req, res) => {
+  try {
+    const pexels = getPexelsService();
+
+    if (!pexels.isConfigured()) {
+      return res.status(503).json({
+        error: 'Pexels API not configured',
+        message: 'Please configure PEXELS_API_KEY in your environment variables',
+      });
+    }
+
+    const { id } = req.params;
+
+    if (!id || isNaN(id)) {
+      return res.status(400).json({
+        error: 'Invalid video ID',
+        message: 'Video ID must be a number',
+      });
+    }
+
+    console.log(`🎥 Admin fetching video: ${id}`);
+    const video = await pexels.getVideoById(parseInt(id));
+
+    res.json({
+      success: true,
+      video,
+    });
+  } catch (error) {
+    console.error('Pexels video error:', error);
+    res.status(500).json({
+      error: 'Failed to fetch video',
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * GET /api/pexels/collections/featured
+ * Get featured collections
+ * Query params: page, perPage
+ * Requires admin authentication
+ */
+router.get('/collections/featured', authRequired, roleRequired('admin'), async (req, res) => {
+  try {
+    const pexels = getPexelsService();
+
+    if (!pexels.isConfigured()) {
+      return res.status(503).json({
+        error: 'Pexels API not configured',
+        message: 'Please configure PEXELS_API_KEY in your environment variables',
+      });
+    }
+
+    const { page = 1, perPage = 15 } = req.query;
+
+    console.log(`📚 Admin fetching featured collections`);
+    const results = await pexels.getFeaturedCollections(parseInt(perPage), parseInt(page));
+
+    res.json({
+      success: true,
+      ...results,
+    });
+  } catch (error) {
+    console.error('Pexels featured collections error:', error);
+    res.status(500).json({
+      error: 'Failed to fetch featured collections',
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * GET /api/pexels/collections
+ * Get user collections
+ * Query params: page, perPage
+ * Requires admin authentication
+ */
+router.get('/collections', authRequired, roleRequired('admin'), async (req, res) => {
+  try {
+    const pexels = getPexelsService();
+
+    if (!pexels.isConfigured()) {
+      return res.status(503).json({
+        error: 'Pexels API not configured',
+        message: 'Please configure PEXELS_API_KEY in your environment variables',
+      });
+    }
+
+    const { page = 1, perPage = 15 } = req.query;
+
+    console.log(`📚 Admin fetching user collections`);
+    const results = await pexels.getUserCollections(parseInt(perPage), parseInt(page));
+
+    res.json({
+      success: true,
+      ...results,
+    });
+  } catch (error) {
+    console.error('Pexels user collections error:', error);
+    res.status(500).json({
+      error: 'Failed to fetch user collections',
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * GET /api/pexels/collections/:id
+ * Get media from a collection
+ * Query params: page, perPage, type (photos/videos)
+ * Requires admin authentication
+ */
+router.get('/collections/:id', authRequired, roleRequired('admin'), async (req, res) => {
+  try {
+    const pexels = getPexelsService();
+
+    if (!pexels.isConfigured()) {
+      return res.status(503).json({
+        error: 'Pexels API not configured',
+        message: 'Please configure PEXELS_API_KEY in your environment variables',
+      });
+    }
+
+    const { id } = req.params;
+    const { page = 1, perPage = 15, type } = req.query;
+
+    console.log(`📚 Admin fetching collection media: ${id}`);
+    const results = await pexels.getCollectionMedia(id, parseInt(perPage), parseInt(page), type);
+
+    res.json({
+      success: true,
+      ...results,
+    });
+  } catch (error) {
+    console.error('Pexels collection media error:', error);
+    res.status(500).json({
+      error: 'Failed to fetch collection media',
+      message: error.message,
     });
   }
 });
