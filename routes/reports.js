@@ -9,6 +9,7 @@ const express = require('express');
 const { read, write, uid } = require('../store');
 const { authRequired, roleRequired } = require('../middleware/auth');
 const { auditLog, AUDIT_ACTIONS } = require('../middleware/audit');
+const { csrfProtection } = require('../middleware/csrf');
 const rateLimit = require('express-rate-limit');
 
 const router = express.Router();
@@ -227,7 +228,12 @@ router.get('/admin/reports/:id', authRequired, roleRequired('admin'), (req, res)
  * resolution: 'valid', 'invalid', 'duplicate'
  * action: 'content_removed', 'user_warned', 'user_suspended', 'no_action'
  */
-router.post('/admin/reports/:id/resolve', authRequired, roleRequired('admin'), (req, res) => {
+router.post(
+  '/admin/reports/:id/resolve',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  (req, res) => {
   const { id } = req.params;
   const { resolution, action, notes } = req.body;
 
@@ -297,7 +303,12 @@ router.post('/admin/reports/:id/resolve', authRequired, roleRequired('admin'), (
  * POST /api/admin/reports/:id/dismiss
  * Dismiss a report without action (admin only)
  */
-router.post('/admin/reports/:id/dismiss', authRequired, roleRequired('admin'), (req, res) => {
+router.post(
+  '/admin/reports/:id/dismiss',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  (req, res) => {
   const { id } = req.params;
   const { notes } = req.body;
 
