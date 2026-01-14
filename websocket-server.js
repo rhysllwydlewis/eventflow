@@ -7,12 +7,13 @@
 
 const { Server } = require('socket.io');
 
-// Use Symbol for private flag to avoid naming conflicts
-const WS_SERVER_INITIALIZED = Symbol('wsServerInitialized');
+// Shared symbol for preventing duplicate Socket.IO servers across v1 and v2
+// This prevents the "server.handleUpgrade() was called more than once" error
+const WS_SERVER_INITIALIZED = Symbol.for('eventflow.wsServerInitialized');
 
 class WebSocketServer {
   constructor(httpServer) {
-    // Guard against multiple instantiations on the same server
+    // Guard against multiple instantiations on the same server (v1 or v2)
     if (httpServer[WS_SERVER_INITIALIZED]) {
       console.warn('⚠️  WebSocket Server already initialized for this HTTP server');
       throw new Error('WebSocket Server already initialized for this HTTP server');
@@ -30,7 +31,7 @@ class WebSocketServer {
       transports: ['websocket', 'polling'],
     });
 
-    // Mark server as having WebSocket initialized
+    // Mark server as having WebSocket initialized (shared guard with v2)
     httpServer[WS_SERVER_INITIALIZED] = true;
 
     // NOTE: In-memory Map for tracking user sockets
