@@ -5720,8 +5720,11 @@ const notificationRoutes = require('./routes/notifications');
 // WebSocket server will be passed when available (after server starts)
 let notificationRouter;
 app.use('/api/notifications', (req, res, next) => {
-  if (!notificationRouter && global.wsServer) {
-    notificationRouter = notificationRoutes(mongoDb.db, global.wsServer);
+  // Support both v1 (wsServer) and v2 (wsServerV2) WebSocket servers
+  const webSocketServer = global.wsServerV2 || global.wsServer;
+  
+  if (!notificationRouter && webSocketServer) {
+    notificationRouter = notificationRoutes(mongoDb.db, webSocketServer);
   }
   if (notificationRouter) {
     notificationRouter(req, res, next);
@@ -5967,7 +5970,7 @@ const server = http.createServer(app);
 // - 'v2': Modern WebSocket server with real-time messaging (default, recommended)
 // - 'v1': Legacy WebSocket server for backwards compatibility
 // - 'off': Disable WebSocket servers (not recommended - disables real-time features)
-const WEBSOCKET_MODE = (process.env.WEBSOCKET_MODE || 'v2').toLowerCase();
+let WEBSOCKET_MODE = (process.env.WEBSOCKET_MODE || 'v2').toLowerCase();
 const WEBSOCKET_PATH = process.env.WEBSOCKET_PATH || '/socket.io';
 const VALID_WEBSOCKET_MODES = ['v1', 'v2', 'off'];
 
@@ -5976,7 +5979,7 @@ if (!VALID_WEBSOCKET_MODES.includes(WEBSOCKET_MODE)) {
     `❌ Invalid WEBSOCKET_MODE: ${WEBSOCKET_MODE}. Must be one of: ${VALID_WEBSOCKET_MODES.join(', ')}`
   );
   logger.error('   Defaulting to v2 (recommended)');
-  process.env.WEBSOCKET_MODE = 'v2';
+  WEBSOCKET_MODE = 'v2'; // Update the constant, not just process.env
 }
 
 logger.info(`🔌 WebSocket Configuration:`);
@@ -6042,13 +6045,6 @@ function initializeWebSocketV2(db) {
     logger.warn('⚠️  WebSocket servers disabled (WEBSOCKET_MODE=off)');
     logger.warn('   Real-time features will not be available');
   }
-}
-
-// Make wsServer available for notification routes (v1 compatibility)
-// In v2 mode, notification routes should use wsServerV2 instead
-if (wsServer) {
-  global.wsServer = wsServer;
-  app.set('wsServer', wsServer);
 }
 
 /**
