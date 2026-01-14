@@ -3530,10 +3530,25 @@ router.put(
 
       console.log(`[${requestId}] Current settings read in ${Date.now() - startTime}ms`);
 
-      // Validate request data
-      if (typeof registration !== 'boolean' && registration !== undefined) {
-        console.error(`[${requestId}] Invalid registration value:`, registration);
-        return res.status(400).json({ error: 'Invalid feature flag value: registration must be boolean' });
+      // Validate all request data (all should be boolean or undefined)
+      const featureFlags = [
+        'registration',
+        'supplierApplications',
+        'reviews',
+        'photoUploads',
+        'supportTickets',
+        'pexelsCollage',
+      ];
+      
+      for (const flag of featureFlags) {
+        const value = req.body[flag];
+        if (value !== undefined && typeof value !== 'boolean') {
+          console.error(`[${requestId}] Invalid ${flag} value:`, value);
+          return res.status(400).json({ 
+            error: `Invalid feature flag value: ${flag} must be boolean`,
+            field: flag
+          });
+        }
       }
 
       const newFeatures = {

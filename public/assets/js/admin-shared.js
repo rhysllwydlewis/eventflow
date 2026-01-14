@@ -1606,13 +1606,22 @@ const AdminShared = (function () {
     const timeoutMs = options.timeout || 10000; // Default 10 second timeout
     const maxRetries = options.retries || 0; // Default no retries
     
+    // Retry configuration constants
+    const RETRY_BASE_DELAY_MS = 1000; // 1 second base delay
+    const RETRY_BACKOFF_FACTOR = 2; // Exponential backoff factor
+    const RETRY_MAX_DELAY_MS = 5000; // Max 5 second delay between retries
+    
     let lastError;
     
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       if (attempt > 0) {
         debugLog(`Retry attempt ${attempt}/${maxRetries} for ${method} ${url}`);
-        // Wait before retry (exponential backoff)
-        await new Promise(resolve => setTimeout(resolve, Math.min(1000 * Math.pow(2, attempt - 1), 5000)));
+        // Wait before retry (exponential backoff with cap)
+        const delay = Math.min(
+          RETRY_BASE_DELAY_MS * Math.pow(RETRY_BACKOFF_FACTOR, attempt - 1),
+          RETRY_MAX_DELAY_MS
+        );
+        await new Promise(resolve => setTimeout(resolve, delay));
       }
       
       try {

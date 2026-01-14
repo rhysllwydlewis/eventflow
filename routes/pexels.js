@@ -170,7 +170,8 @@ router.get('/test', authRequired, roleRequired('admin'), async (req, res) => {
     const testResult = await pexels.testConnection();
 
     // Return appropriate HTTP status based on result
-    const statusCode = testResult.success ? 200 : 503;
+    // 200 = Success, 424 = Failed Dependency (configured but not working)
+    const statusCode = testResult.success ? 200 : 424;
 
     res.status(statusCode).json({
       ...testResult,

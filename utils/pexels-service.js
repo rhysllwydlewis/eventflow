@@ -212,7 +212,8 @@ class PexelsService {
       const startTime = Date.now();
       
       // Make a minimal request to test the API key
-      const testResult = await this.searchPhotos('test', 1, 1);
+      // Use a common search term that's likely to have results
+      const testResult = await this.searchPhotos('nature', 1, 1);
       
       const duration = Date.now() - startTime;
       console.log(`✅ Pexels API connection successful (${duration}ms)`);
