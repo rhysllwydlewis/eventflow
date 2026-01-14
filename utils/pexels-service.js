@@ -702,7 +702,8 @@ function getPexelsService(apiKey) {
   // If no instance exists, create one
   if (!pexelsInstance) {
     pexelsInstance = new PexelsService(currentKey);
-    wasCreatedWithoutKey = !currentKey;
+    // Track if we created without any key (neither explicit nor env var)
+    wasCreatedWithoutKey = !apiKey && !process.env.PEXELS_API_KEY;
     return pexelsInstance;
   }
 
