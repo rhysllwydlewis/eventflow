@@ -11,19 +11,28 @@ const https = require('https');
 
 class PexelsService {
   constructor(apiKey) {
-    this.apiKey = apiKey || process.env.PEXELS_API_KEY;
+    // Store explicit API key if provided, otherwise read dynamically from env
+    this.explicitApiKey = apiKey;
     this.baseUrl = 'api.pexels.com';
 
-    if (!this.apiKey) {
+    if (!this.getApiKey()) {
       console.warn('⚠️  Pexels API key not configured. Stock photo features will be disabled.');
     }
+  }
+
+  /**
+   * Get API key - reads dynamically from environment if not explicitly set
+   * This allows the API key to be updated without restarting the application
+   */
+  getApiKey() {
+    return this.explicitApiKey || process.env.PEXELS_API_KEY;
   }
 
   /**
    * Check if Pexels API is configured
    */
   isConfigured() {
-    return !!this.apiKey;
+    return !!this.getApiKey();
   }
 
   /**
@@ -36,7 +45,7 @@ class PexelsService {
         path: path,
         method: 'GET',
         headers: {
-          Authorization: this.apiKey,
+          Authorization: this.getApiKey(),
           'User-Agent': 'EventFlow/5.2.0 (https://github.com/rhysllwydlewis/eventflow)',
         },
         timeout: 10000, // 10 second timeout
@@ -305,7 +314,7 @@ class PexelsService {
     }
 
     // Build query parameters
-    let path = `/videos/search?query=${encodeURIComponent(query)}&per_page=${perPage}&page=${page}`;
+    let path = `/v1/videos/search?query=${encodeURIComponent(query)}&per_page=${perPage}&page=${page}`;
 
     // Add optional filters
     if (filters.orientation) {
@@ -369,7 +378,7 @@ class PexelsService {
       throw new Error('Pexels API key not configured');
     }
 
-    const path = `/videos/popular?per_page=${perPage}&page=${page}`;
+    const path = `/v1/videos/popular?per_page=${perPage}&page=${page}`;
     const response = await this.makeRequest(path);
     const data = response.data;
 
@@ -424,7 +433,7 @@ class PexelsService {
       throw new Error('Invalid video ID: must be a positive number');
     }
 
-    const path = `/videos/videos/${id}`;
+    const path = `/v1/videos/${id}`;
     const response = await this.makeRequest(path);
     const video = response.data;
 
