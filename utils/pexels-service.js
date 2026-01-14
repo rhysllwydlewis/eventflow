@@ -192,6 +192,75 @@ class PexelsService {
   }
 
   /**
+   * Test Pexels API connection and validate API key
+   * @returns {Promise<{success: boolean, message: string, details?: Object}>}
+   */
+  async testConnection() {
+    if (!this.isConfigured()) {
+      return {
+        success: false,
+        message: 'Pexels API key not configured',
+        details: {
+          configured: false,
+          error: 'PEXELS_API_KEY environment variable not set',
+        },
+      };
+    }
+
+    try {
+      console.log('🔍 Testing Pexels API connection...');
+      const startTime = Date.now();
+      
+      // Make a minimal request to test the API key
+      const testResult = await this.searchPhotos('test', 1, 1);
+      
+      const duration = Date.now() - startTime;
+      console.log(`✅ Pexels API connection successful (${duration}ms)`);
+      
+      return {
+        success: true,
+        message: 'Pexels API is configured and working',
+        details: {
+          configured: true,
+          responseTime: duration,
+          totalResults: testResult.totalResults,
+          apiVersion: 'v1',
+        },
+      };
+    } catch (error) {
+      console.error('❌ Pexels API connection failed:', error.message);
+      
+      // Parse error to provide helpful feedback
+      let message = 'Pexels API connection failed';
+      let errorType = 'unknown';
+      
+      if (error.message.includes('401') || error.message.includes('403')) {
+        message = 'Invalid API key. Please check your PEXELS_API_KEY';
+        errorType = 'authentication';
+      } else if (error.message.includes('429')) {
+        message = 'Rate limit exceeded. Please try again later';
+        errorType = 'rate_limit';
+      } else if (error.message.includes('timeout') || error.message.includes('ETIMEDOUT')) {
+        message = 'Connection timeout. Pexels API may be unreachable';
+        errorType = 'timeout';
+      } else if (error.message.includes('ENOTFOUND') || error.message.includes('ECONNREFUSED')) {
+        message = 'Cannot reach Pexels API. Check network connection';
+        errorType = 'network';
+      }
+      
+      return {
+        success: false,
+        message,
+        details: {
+          configured: true,
+          error: error.message,
+          errorType,
+        },
+      };
+    }
+  }
+
+  /**
    * Get suggested category search queries
    * @returns {Array<Object>} Category suggestions with search terms
    */

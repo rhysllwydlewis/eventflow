@@ -236,6 +236,15 @@ router.get('/health', applyHealthCheckLimiter, async (_req, res) => {
   // Add email service status
   response.services.email = emailStatus;
 
+  // Add Pexels API status (fast check, no I/O)
+  try {
+    const { getPexelsService } = require('../utils/pexels-service');
+    const pexels = getPexelsService();
+    response.services.pexels = pexels.isConfigured() ? 'configured' : 'not_configured';
+  } catch (error) {
+    response.services.pexels = 'unavailable';
+  }
+
   // Add response time for monitoring
   response.responseTime = Date.now() - startTime;
 
