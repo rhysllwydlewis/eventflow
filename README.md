@@ -700,10 +700,21 @@ eventflow/
 ├── photo-upload.js   # Photo upload utilities
 ├── reviews.js        # Reviews system module
 ├── search.js         # Search & discovery module
-├── websocket-server.js # Real-time WebSocket server
+├── websocket-server.js    # Real-time WebSocket server (v1 - legacy)
+├── websocket-server-v2.js # Real-time WebSocket server (v2 - modern)
 ├── server.js         # Main application server
 └── package.json      # Dependencies and scripts
 ```
+
+**WebSocket Server Modes:**
+
+EventFlow includes two WebSocket servers for real-time features. Only ONE can run at a time (configured via `WEBSOCKET_MODE` environment variable):
+
+- **v2** (default, recommended): Modern WebSocket server with real-time messaging, presence tracking, typing indicators, read receipts, and emoji reactions
+- **v1** (legacy): Basic WebSocket server for real-time notifications only (backwards compatibility)
+- **off**: Disables WebSocket (not recommended - disables all real-time features)
+
+⚠️ **Important**: Running both v1 and v2 simultaneously will cause crashes with "server.handleUpgrade() was called more than once" errors. The `WEBSOCKET_MODE` environment variable ensures only one WebSocket server attaches to the HTTP server.
 
 ## 🗄️ Database Schema
 
