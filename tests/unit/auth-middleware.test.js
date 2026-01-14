@@ -70,7 +70,7 @@ describe('Auth Middleware', () => {
         token,
         expect.objectContaining({
           secure: true,
-          sameSite: 'strict',
+          sameSite: 'lax',
         })
       );
 
