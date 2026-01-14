@@ -103,13 +103,19 @@
       return false;
     }
 
+    // Safely get checkbox values with null checks
+    const getCheckboxValue = id => {
+      const el = document.getElementById(id);
+      return el ? el.checked : false;
+    };
+
     const current = {
-      registration: document.getElementById('featureRegistration').checked,
-      supplierApplications: document.getElementById('featureSupplierApply').checked,
-      reviews: document.getElementById('featureReviews').checked,
-      photoUploads: document.getElementById('featurePhotoUploads').checked,
-      supportTickets: document.getElementById('featureSupportTickets').checked,
-      pexelsCollage: document.getElementById('featurePexelsCollage').checked,
+      registration: getCheckboxValue('featureRegistration'),
+      supplierApplications: getCheckboxValue('featureSupplierApply'),
+      reviews: getCheckboxValue('featureReviews'),
+      photoUploads: getCheckboxValue('featurePhotoUploads'),
+      supportTickets: getCheckboxValue('featureSupportTickets'),
+      pexelsCollage: getCheckboxValue('featurePexelsCollage'),
     };
 
     return JSON.stringify(current) !== JSON.stringify(originalFeatureFlags);
@@ -157,26 +163,37 @@
         pexelsCollage: flags.pexelsCollage === true,
       };
 
-      // Set checkbox values
-      document.getElementById('featureRegistration').checked = originalFeatureFlags.registration;
-      document.getElementById('featureSupplierApply').checked =
-        originalFeatureFlags.supplierApplications;
-      document.getElementById('featureReviews').checked = originalFeatureFlags.reviews;
-      document.getElementById('featurePhotoUploads').checked = originalFeatureFlags.photoUploads;
-      document.getElementById('featureSupportTickets').checked =
-        originalFeatureFlags.supportTickets;
-      document.getElementById('featurePexelsCollage').checked = originalFeatureFlags.pexelsCollage;
+      // Set checkbox values with null checks
+      const setCheckboxValue = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.checked = value;
+        }
+      };
+
+      setCheckboxValue('featureRegistration', originalFeatureFlags.registration);
+      setCheckboxValue('featureSupplierApply', originalFeatureFlags.supplierApplications);
+      setCheckboxValue('featureReviews', originalFeatureFlags.reviews);
+      setCheckboxValue('featurePhotoUploads', originalFeatureFlags.photoUploads);
+      setCheckboxValue('featureSupportTickets', originalFeatureFlags.supportTickets);
+      setCheckboxValue('featurePexelsCollage', originalFeatureFlags.pexelsCollage);
 
       // Display last updated info
-      if (flags.updatedAt && flags.updatedBy) {
-        const updatedDate = new Date(flags.updatedAt);
-        document.getElementById('featureUpdatedTime').textContent = updatedDate.toLocaleString();
-        document.getElementById('featureUpdatedBy').textContent = flags.updatedBy;
-        document.getElementById('featureFlagsLastUpdated').style.display = 'block';
-      } else {
-        document.getElementById('featureUpdatedTime').textContent = 'unknown';
-        document.getElementById('featureUpdatedBy').textContent = 'unknown';
-        document.getElementById('featureFlagsLastUpdated').style.display = 'block';
+      const updatedTimeEl = document.getElementById('featureUpdatedTime');
+      const updatedByEl = document.getElementById('featureUpdatedBy');
+      const lastUpdatedEl = document.getElementById('featureFlagsLastUpdated');
+
+      if (updatedTimeEl && updatedByEl && lastUpdatedEl) {
+        if (flags.updatedAt && flags.updatedBy) {
+          const updatedDate = new Date(flags.updatedAt);
+          updatedTimeEl.textContent = updatedDate.toLocaleString();
+          updatedByEl.textContent = flags.updatedBy;
+          lastUpdatedEl.style.display = 'block';
+        } else {
+          updatedTimeEl.textContent = 'unknown';
+          updatedByEl.textContent = 'unknown';
+          lastUpdatedEl.style.display = 'block';
+        }
       }
 
       updateFeatureFlagsStatus('hidden');
@@ -219,8 +236,14 @@
       return;
     }
 
-    const registrationChecked = document.getElementById('featureRegistration').checked;
-    const reviewsChecked = document.getElementById('featureReviews').checked;
+    // Helper to safely get checkbox value
+    const getCheckboxValue = id => {
+      const el = document.getElementById(id);
+      return el ? el.checked : false;
+    };
+
+    const registrationChecked = getCheckboxValue('featureRegistration');
+    const reviewsChecked = getCheckboxValue('featureReviews');
 
     // Confirmation dialog for disabling critical features
     if (!registrationChecked || !reviewsChecked) {
@@ -248,14 +271,18 @@
     }
 
     const saveBtn = document.getElementById('saveFeatureFlags');
+    if (!saveBtn) {
+      AdminShared.showToast('Save button not found', 'error');
+      return;
+    }
 
     const data = {
       registration: registrationChecked,
-      supplierApplications: document.getElementById('featureSupplierApply').checked,
+      supplierApplications: getCheckboxValue('featureSupplierApply'),
       reviews: reviewsChecked,
-      photoUploads: document.getElementById('featurePhotoUploads').checked,
-      supportTickets: document.getElementById('featureSupportTickets').checked,
-      pexelsCollage: document.getElementById('featurePexelsCollage').checked,
+      photoUploads: getCheckboxValue('featurePhotoUploads'),
+      supportTickets: getCheckboxValue('featureSupportTickets'),
+      pexelsCollage: getCheckboxValue('featurePexelsCollage'),
     };
 
     // Set saving state
@@ -295,12 +322,13 @@
         errorDetail += `: ${error.message}`;
       }
       updateFeatureFlagsStatus('error', errorDetail);
-      setFeatureFlagsEnabled(true);
 
       // Keep user's current toggles (don't revert)
       AdminShared.debugError('Feature flags save error:', error);
     } finally {
+      // Always reset state and re-enable checkboxes
       isSavingFeatureFlags = false;
+      setFeatureFlagsEnabled(true);
       updateSaveButtonState();
     }
   });
@@ -707,11 +735,24 @@
       const backendEl = document.getElementById('dbBackendType');
       const lastOpEl = document.getElementById('dbLastOperation');
 
-      if (status.initialized && status.state === 'completed') {
+      // Check if all required elements exist
+      if (!statusEl || !indicatorEl || !backendEl || !lastOpEl) {
+        console.warn('Database health UI elements not found');
+        return;
+      }
+
+      // Check if database is connected (state must be 'completed')
+      if (status.state === 'completed') {
         statusEl.textContent = 'Connected';
         indicatorEl.style.background = '#27ae60';
+      } else if (status.state === 'initializing') {
+        statusEl.textContent = 'Initializing...';
+        indicatorEl.style.background = '#f39c12';
+      } else if (status.state === 'error') {
+        statusEl.textContent = 'Error';
+        indicatorEl.style.background = '#e74c3c';
       } else {
-        statusEl.textContent = 'Disconnected or initializing';
+        statusEl.textContent = 'Disconnected';
         indicatorEl.style.background = '#e74c3c';
       }
 
@@ -720,8 +761,14 @@
       lastOpEl.textContent = new Date().toLocaleString();
     } catch (err) {
       AdminShared.debugError('Failed to load database health:', err);
-      document.getElementById('dbConnectionStatus').textContent = 'Error checking status';
-      document.getElementById('dbStatusIndicator').style.background = '#e74c3c';
+      const statusEl = document.getElementById('dbConnectionStatus');
+      const indicatorEl = document.getElementById('dbStatusIndicator');
+      if (statusEl) {
+        statusEl.textContent = 'Error checking status';
+      }
+      if (indicatorEl) {
+        indicatorEl.style.background = '#e74c3c';
+      }
     }
   }
 
@@ -804,7 +851,7 @@
         });
       }
 
-      // Import maintenance settings (only if not currently enabled)
+      // Import maintenance settings (only if import data has maintenance disabled)
       if (data.maintenance && !data.maintenance.enabled) {
         await AdminShared.adminFetch('/api/admin/settings/maintenance', {
           method: 'PUT',
