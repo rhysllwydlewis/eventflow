@@ -82,14 +82,20 @@ let openaiClient = null;
 let AI_ENABLED = false;
 try {
   const apiKey = process.env.OPENAI_API_KEY;
-  if (apiKey) {
+  if (apiKey && apiKey.trim() !== '') {
     // eslint-disable-next-line global-require, node/no-missing-require
     const OpenAI = require('openai');
     openaiClient = new OpenAI({ apiKey });
     AI_ENABLED = true;
+    logger.info('✅ OpenAI service configured');
+  } else {
+    logger.info('ℹ️  OpenAI not configured (optional) - AI features will be disabled');
   }
 } catch (err) {
-  logger.warn('OpenAI is not configured:', err.message);
+  logger.warn('⚠️  OpenAI configuration failed - AI features will be disabled', {
+    error: err.message,
+  });
+  logger.info('   To enable AI features, install openai package and set OPENAI_API_KEY');
 }
 
 // HTTP client for external API calls
@@ -5958,11 +5964,21 @@ const server = http.createServer(app);
 
 // Initialize WebSocket server (v1 - legacy)
 const WebSocketServer = require('./websocket-server');
-const wsServer = new WebSocketServer(server);
+let wsServer;
+try {
+  wsServer = new WebSocketServer(server);
+  logger.info('✅ WebSocket Server (v1) initialized');
+} catch (error) {
+  logger.error('❌ Failed to initialize WebSocket Server (v1)', { error: error.message });
+  logger.error('   Real-time notifications will not be available');
+  // Continue without WebSocket - server can still function
+}
 
 // Make wsServer available globally for notification routes
-global.wsServer = wsServer;
-app.set('wsServer', wsServer);
+if (wsServer) {
+  global.wsServer = wsServer;
+  app.set('wsServer', wsServer);
+}
 
 // Initialize WebSocket server v2 (real-time messaging)
 const WebSocketServerV2 = require('./websocket-server-v2');
@@ -5971,19 +5987,25 @@ let wsServerV2;
 // Will be initialized after MongoDB is connected
 function initializeWebSocketV2(db) {
   if (!wsServerV2 && db) {
-    const MessagingService = require('./services/messagingService');
-    const { NotificationService } = require('./services/notificationService');
+    try {
+      const MessagingService = require('./services/messagingService');
+      const { NotificationService } = require('./services/notificationService');
 
-    const messagingService = new MessagingService(db);
-    const notificationService = new NotificationService(db, wsServer);
+      const messagingService = new MessagingService(db);
+      const notificationService = new NotificationService(db, wsServer);
 
-    wsServerV2 = new WebSocketServerV2(server, messagingService, notificationService);
+      wsServerV2 = new WebSocketServerV2(server, messagingService, notificationService);
 
-    global.wsServerV2 = wsServerV2;
-    app.set('wsServerV2', wsServerV2);
-    app.locals.db = db;
+      global.wsServerV2 = wsServerV2;
+      app.set('wsServerV2', wsServerV2);
+      app.locals.db = db;
 
-    console.log('✅ WebSocket Server v2 initialized for real-time messaging');
+      logger.info('✅ WebSocket Server v2 initialized for real-time messaging');
+    } catch (error) {
+      logger.error('❌ Failed to initialize WebSocket Server v2', { error: error.message });
+      logger.error('   Real-time messaging will not be available');
+      // Continue without WebSocket v2 - server can still function
+    }
   }
 }
 
@@ -6135,7 +6157,11 @@ async function startServer() {
       console.log(`   Docs:   ${baseUrl}/api-docs`);
       console.log('='.repeat(60));
       console.log('');
-      console.log('WebSocket server initialized for real-time features');
+      if (wsServer) {
+        console.log('✅ WebSocket server initialized for real-time features');
+      } else {
+        console.log('⚠️  WebSocket server not available - real-time features disabled');
+      }
       console.log('Server is now accepting requests');
       console.log('');
       console.log('🔌 Database initialization running in background...');

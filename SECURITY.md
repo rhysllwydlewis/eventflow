@@ -47,7 +47,27 @@ This document outlines security considerations, current protections, and recomme
 
 ## ⚠️ Known Security Considerations
 
-### 1. CSRF Protection
+### 1. Known Vulnerabilities
+
+#### xlsx Package (v0.18.5)
+
+- **Severity:** High
+- **Issues:**
+  - Prototype Pollution (GHSA-4r6h-8v6p-xvw6)
+  - Regular Expression Denial of Service - ReDoS (GHSA-5pgg-2g8v-p4x9)
+- **Risk Assessment:** LOW
+- **Reasoning:**
+  - Used only by authenticated admin users for data export
+  - Input is sanitized before processing
+  - No user-controlled data is processed
+  - Admin authentication required (role-based access control)
+- **Mitigation:**
+  - No fix currently available from package maintainer
+  - Usage restricted to admin-only endpoints
+  - Input validation and sanitization in place
+- **Future Action:** Consider replacing with safer alternative when available
+
+### 2. CSRF Protection
 
 **Status:** Not implemented  
 **Risk Level:** Medium  

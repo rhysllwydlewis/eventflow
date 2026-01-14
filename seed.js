@@ -298,7 +298,7 @@ async function seed(options = {}) {
   if (seedSuppliers) {
     const existingSuppliers = await dbUnified.read('suppliers');
     if (skipIfExists && existingSuppliers.length > 0) {
-      console.log('Suppliers already exist, skipping supplier seed');
+      console.log(`Supplier seed skipped (production mode): ${existingSuppliers.length} suppliers exist`);
     } else if (!Array.isArray(existingSuppliers) || existingSuppliers.length === 0) {
       // Generate seed batch identifier for this seeding run (shared with packages)
       const seedBatch = `seed_${Date.now()}`;
@@ -571,7 +571,7 @@ async function seedBadges() {
   const existingBadges = await dbUnified.read('badges');
 
   if (existingBadges.length > 0) {
-    console.log('Badges already exist, skipping badge seeding');
+    console.log(`Badge seed skipped: ${existingBadges.length} badges already exist`);
     return;
   }
 

@@ -58,6 +58,19 @@
     "workbox-webpack-plugin": "^7.3.0",
     "xlsx": "^0.18.5"
   },
+  "vulnerabilities": {
+    "xlsx": {
+      "version": "0.18.5",
+      "severity": "high",
+      "issues": [
+        "Prototype Pollution (GHSA-4r6h-8v6p-xvw6)",
+        "Regular Expression Denial of Service (GHSA-5pgg-2g8v-p4x9)"
+      ],
+      "risk": "LOW - Used only by authenticated admin users for data export. Input is sanitized and no user-controlled data is processed.",
+      "mitigation": "No fix available. Consider replacing with safer alternative in future.",
+      "documentation": "See SECURITY.md for more details"
+    }
+  },
   "devDependencies": {
     "@playwright/test": "^1.49.1",
     "@sentry/browser": "^8.0.0",
