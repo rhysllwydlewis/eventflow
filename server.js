@@ -6015,9 +6015,16 @@ function initializeWebSocketV2(db) {
       const { NotificationService } = require('./services/notificationService');
 
       const messagingService = new MessagingService(db);
-      const notificationService = new NotificationService(db, null);
 
-      wsServerV2 = new WebSocketServerV2(server, messagingService, notificationService);
+      // Create WebSocket v2 instance first
+      wsServerV2 = new WebSocketServerV2(server, messagingService, null);
+
+      // Then create notification service with v2 WebSocket server
+      // In v2 mode, notifications go through the v2 server's sendNotification method
+      const notificationService = new NotificationService(db, wsServerV2);
+
+      // Set the notification service on the v2 server
+      wsServerV2.notificationService = notificationService;
 
       global.wsServerV2 = wsServerV2;
       app.set('wsServerV2', wsServerV2);
@@ -6192,7 +6199,7 @@ async function startServer() {
       console.log(`   Docs:   ${baseUrl}/api-docs`);
       console.log('='.repeat(60));
       console.log('');
-      
+
       // Log WebSocket status based on mode
       if (WEBSOCKET_MODE === 'v1' && wsServer) {
         console.log('✅ WebSocket v1 (legacy) initialized for real-time notifications');
@@ -6203,7 +6210,7 @@ async function startServer() {
       } else {
         console.log('⚠️  WebSocket server not available - real-time features disabled');
       }
-      
+
       console.log('Server is now accepting requests');
       console.log('');
       console.log('🔌 Database initialization running in background...');
