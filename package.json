@@ -58,6 +58,7 @@
     "workbox-webpack-plugin": "^7.3.0",
     "xlsx": "^0.18.5"
   },
+  "comment_xlsx_security": "NOTE: xlsx has known vulnerabilities (Prototype Pollution, ReDoS) but is used only by authenticated admin users for data export. Input is sanitized and no user-controlled data is processed. Consider replacing with a safer alternative in future.",
   "devDependencies": {
     "@playwright/test": "^1.49.1",
     "@sentry/browser": "^8.0.0",

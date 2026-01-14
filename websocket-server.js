@@ -9,6 +9,12 @@ const { Server } = require('socket.io');
 
 class WebSocketServer {
   constructor(httpServer) {
+    // Guard against multiple instantiations on the same server
+    if (httpServer._wsServerInitialized) {
+      console.warn('⚠️  WebSocket Server already initialized for this HTTP server');
+      throw new Error('WebSocket Server already initialized for this HTTP server');
+    }
+
     this.io = new Server(httpServer, {
       cors: {
         origin: process.env.BASE_URL || 'http://localhost:3000',
@@ -17,7 +23,12 @@ class WebSocketServer {
       },
       pingTimeout: 60000,
       pingInterval: 25000,
+      // Explicitly configure allowed transports
+      transports: ['websocket', 'polling'],
     });
+
+    // Mark server as having WebSocket initialized
+    httpServer._wsServerInitialized = true;
 
     // NOTE: In-memory Map for tracking user sockets
     // This will be cleared on server restart. For production environments
@@ -30,6 +41,11 @@ class WebSocketServer {
   init() {
     this.io.on('connection', socket => {
       console.log(`WebSocket connected: ${socket.id}`);
+
+      // Handle connection errors
+      socket.on('error', error => {
+        console.error(`WebSocket error on socket ${socket.id}:`, error.message);
+      });
 
       // Handle user authentication
       socket.on('auth', data => {

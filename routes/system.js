@@ -134,14 +134,18 @@ router.get('/meta', async (_req, res) => {
  * Health check endpoint for monitoring
  * Returns 200 if server is running, with service status details
  * NOTE: Contains internal debug info - should NOT be cached
+ * Optimized for fast response time (<100ms)
  */
 router.get('/health', applyHealthCheckLimiter, async (_req, res) => {
+  const startTime = Date.now();
+
   // Check if dependencies are initialized
   if (!mongoDb || !dbUnified || !postmark) {
     return res.status(503).json({
       status: 'error',
       timestamp: new Date().toISOString(),
       error: 'Health check service dependencies not initialized',
+      responseTime: Date.now() - startTime,
     });
   }
 
@@ -152,7 +156,7 @@ router.get('/health', applyHealthCheckLimiter, async (_req, res) => {
   // Database status is reported as a service status, not overall health
   const timestamp = new Date().toISOString();
 
-  // Determine email status
+  // Determine email status (fast, no I/O)
   let emailStatus = 'disabled';
   if (EMAIL_ENABLED) {
     emailStatus = postmark.isPostmarkEnabled() ? 'postmark' : 'disabled';
@@ -167,7 +171,7 @@ router.get('/health', applyHealthCheckLimiter, async (_req, res) => {
     },
   };
 
-  // Check MongoDB connection status (non-blocking)
+  // Check MongoDB connection status (non-blocking, uses cached state)
   try {
     const mongoState = mongoDb.getConnectionState ? mongoDb.getConnectionState() : null;
     const mongoError = mongoDb.getConnectionError ? mongoDb.getConnectionError() : null;
@@ -184,7 +188,6 @@ router.get('/health', applyHealthCheckLimiter, async (_req, res) => {
         response.status = 'degraded';
         if (mongoError) {
           response.services.mongodbError = mongoError;
-          response.services.lastConnectionError = mongoError; // For debugging
         }
       } else {
         response.services.mongodb = 'disconnected';
@@ -197,11 +200,10 @@ router.get('/health', applyHealthCheckLimiter, async (_req, res) => {
     // If MongoDB check fails, report it but still return healthy
     response.services.mongodb = 'unknown';
     response.services.mongodbError = error.message;
-    response.services.lastConnectionError = error.message;
     response.status = 'degraded';
   }
 
-  // Check database status from unified layer and determine active backend
+  // Check database status from unified layer (fast, uses cached state)
   try {
     const dbStatus = dbUnified.getDatabaseStatus ? dbUnified.getDatabaseStatus() : null;
 
@@ -214,11 +216,6 @@ router.get('/health', applyHealthCheckLimiter, async (_req, res) => {
         response.status = 'degraded';
         response.services.databaseInitializationError = dbStatus.initializationError;
       }
-
-      // Add query metrics if available
-      if (dbStatus.queryMetrics) {
-        response.services.queryMetrics = dbStatus.queryMetrics;
-      }
     }
   } catch (error) {
     // If status check fails, report it but still return healthy
@@ -228,6 +225,9 @@ router.get('/health', applyHealthCheckLimiter, async (_req, res) => {
 
   // Add email service status
   response.services.email = emailStatus;
+
+  // Add response time for monitoring
+  response.responseTime = Date.now() - startTime;
 
   // Return health status (always 200, degraded state is informational)
   res.status(200).json(response);
