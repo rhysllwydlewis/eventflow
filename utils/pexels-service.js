@@ -433,7 +433,7 @@ class PexelsService {
       throw new Error('Invalid video ID: must be a positive number');
     }
 
-    const path = `/v1/videos/videos/${id}`;
+    const path = `/v1/videos/${id}`;
     const response = await this.makeRequest(path);
     const video = response.data;
 
