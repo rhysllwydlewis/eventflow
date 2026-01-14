@@ -7,10 +7,13 @@
 
 const { Server } = require('socket.io');
 
+// Use Symbol for private flag to avoid naming conflicts
+const WS_SERVER_INITIALIZED = Symbol('wsServerInitialized');
+
 class WebSocketServer {
   constructor(httpServer) {
     // Guard against multiple instantiations on the same server
-    if (httpServer._wsServerInitialized) {
+    if (httpServer[WS_SERVER_INITIALIZED]) {
       console.warn('⚠️  WebSocket Server already initialized for this HTTP server');
       throw new Error('WebSocket Server already initialized for this HTTP server');
     }
@@ -28,7 +31,7 @@ class WebSocketServer {
     });
 
     // Mark server as having WebSocket initialized
-    httpServer._wsServerInitialized = true;
+    httpServer[WS_SERVER_INITIALIZED] = true;
 
     // NOTE: In-memory Map for tracking user sockets
     // This will be cleared on server restart. For production environments

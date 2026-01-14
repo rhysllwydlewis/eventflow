@@ -11,6 +11,9 @@ const logger = require('./utils/logger');
 // eslint-disable-next-line node/no-unpublished-require, node/no-missing-require
 const { PresenceService } = require('./services/presenceService');
 
+// Use Symbol for private flag to avoid naming conflicts
+const WS_SERVER_V2_INITIALIZED = Symbol('wsServerV2Initialized');
+
 // Try to load Redis adapter for clustering (optional)
 let RedisAdapter;
 let redisClient;
@@ -34,7 +37,7 @@ try {
 class WebSocketServerV2 {
   constructor(httpServer, messagingService = null, notificationService = null) {
     // Guard against multiple instantiations on the same server
-    if (httpServer._wsServerV2Initialized) {
+    if (httpServer[WS_SERVER_V2_INITIALIZED]) {
       logger.warn('WebSocket Server v2 already initialized for this HTTP server');
       throw new Error('WebSocket Server v2 already initialized for this HTTP server');
     }
@@ -51,7 +54,7 @@ class WebSocketServerV2 {
     });
 
     // Mark server as having WebSocket v2 initialized
-    httpServer._wsServerV2Initialized = true;
+    httpServer[WS_SERVER_V2_INITIALIZED] = true;
 
     this.messagingService = messagingService;
     this.notificationService = notificationService;

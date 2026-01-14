@@ -185,9 +185,9 @@ function configureCORS(isProduction = false) {
       } else {
         // In production, reject disallowed origins with detailed error
         if (isProduction) {
-          logger.warn(`CORS request rejected from non-configured origin: ${origin}`, {
+          // Log at debug level to avoid information leakage
+          logger.debug(`CORS request rejected from non-configured origin`, {
             origin,
-            allowedOrigins: allowedOrigins.slice(0, 3), // Log first 3 for debugging
           });
           const error = new Error('Not allowed by CORS - origin not in allowed list');
           error.statusCode = 403;
@@ -195,7 +195,9 @@ function configureCORS(isProduction = false) {
         } else {
           // In development, allow but warn
           callback(null, true);
-          logger.warn(`CORS request from non-configured origin (allowed in development): ${origin}`);
+          logger.warn(
+            `CORS request from non-configured origin (allowed in development): ${origin}`
+          );
         }
       }
     },

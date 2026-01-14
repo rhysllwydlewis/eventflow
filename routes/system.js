@@ -187,7 +187,12 @@ router.get('/health', applyHealthCheckLimiter, async (_req, res) => {
         response.services.mongodb = 'disconnected';
         response.status = 'degraded';
         if (mongoError) {
-          response.services.mongodbError = mongoError;
+          // Sanitize error message in production to avoid leaking connection details
+          if (process.env.NODE_ENV === 'production') {
+            response.services.mongodbError = 'Database connection error';
+          } else {
+            response.services.mongodbError = mongoError;
+          }
         }
       } else {
         response.services.mongodb = 'disconnected';
@@ -199,7 +204,12 @@ router.get('/health', applyHealthCheckLimiter, async (_req, res) => {
   } catch (error) {
     // If MongoDB check fails, report it but still return healthy
     response.services.mongodb = 'unknown';
-    response.services.mongodbError = error.message;
+    // Sanitize error in production
+    if (process.env.NODE_ENV === 'production') {
+      response.services.mongodbError = 'Database status check failed';
+    } else {
+      response.services.mongodbError = error.message;
+    }
     response.status = 'degraded';
   }
 
