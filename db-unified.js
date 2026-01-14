@@ -224,9 +224,21 @@ async function write(collectionName, data) {
     console.error(`Error writing to ${collectionName}:`, error.message);
     // Fallback to local storage on error
     if (dbType !== 'local') {
-      console.log(`Falling back to local storage for ${collectionName}`);
-      store.write(collectionName, data);
-      return true;
+      console.warn(
+        `⚠️  MongoDB write failed for ${collectionName}, falling back to local storage. ` +
+          `Data is saved locally but may not be replicated. Error: ${error.message}`
+      );
+      try {
+        store.write(collectionName, data);
+        // Return true because data was saved to fallback, but log the MongoDB failure
+        return true;
+      } catch (fallbackError) {
+        console.error(`Critical: Both MongoDB and local storage failed for ${collectionName}:`, {
+          mongoError: error.message,
+          localError: fallbackError.message,
+        });
+        return false;
+      }
     }
     return false;
   }

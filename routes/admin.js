@@ -79,8 +79,10 @@ router.get('/db-status', authRequired, roleRequired('admin'), (_req, res) => {
   const status = dbUnified.getDatabaseStatus();
   res.json({
     dbType: status.type,
-    initialized: status.initialized,
+    initialized: status.state === 'completed',
     state: status.state,
+    connected: status.connected,
+    error: status.error,
   });
 });
 
