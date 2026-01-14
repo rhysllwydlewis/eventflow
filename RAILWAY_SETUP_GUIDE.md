@@ -39,6 +39,11 @@ NODE_ENV=production
 PORT=3000
 BASE_URL=https://event-flow.co.uk
 
+# WebSocket Configuration (REQUIRED for Production)
+# Controls which WebSocket server mode to use
+# CRITICAL: Only ONE WebSocket server can run at a time to prevent crashes
+WEBSOCKET_MODE=v2  # Options: v2 (default, recommended), v1 (legacy), or off
+
 # Trust Proxy for Railway (RECOMMENDED)
 # Enables proper IP detection for rate limiting behind Railway's proxy
 # Automatically enabled on Railway, but can be set explicitly
@@ -274,9 +279,12 @@ Or to disable email warnings, set `EMAIL_ENABLED=false`
 
 1. Railway logs for exact error message
 2. `/api/health` endpoint response
-3. All required variables are set (JWT_SECRET, BASE_URL, database config)
+3. All required variables are set (JWT_SECRET, BASE_URL, database config, WEBSOCKET_MODE)
 4. No duplicate variables
 5. MongoDB Atlas allows Railway IP addresses (set to allow all: `0.0.0.0/0`)
+6. **WebSocket configuration**: Ensure `WEBSOCKET_MODE=v2` is set (or not set, defaults to v2)
+   - Do NOT use `v1` and `v2` together - only one can run at a time
+   - If seeing "server.handleUpgrade() was called more than once" errors, this means both WebSocket servers tried to attach to the same HTTP server
 
 ## 📞 Quick Reference
 
@@ -285,7 +293,16 @@ Or to disable email warnings, set `EMAIL_ENABLED=false`
 - `JWT_SECRET` ✓ (REQUIRED)
 - `NODE_ENV=production` ✓ (REQUIRED)
 - `BASE_URL=https://event-flow.co.uk` ✓ (REQUIRED)
+- `WEBSOCKET_MODE=v2` ✓ (REQUIRED - prevents WebSocket crashes)
 - `MONGODB_URI` (cloud) OR `FIREBASE_PROJECT_ID` ✓ (REQUIRED)
+
+**WebSocket Modes:**
+
+- `v2` (default, recommended): Modern WebSocket server with real-time messaging, presence tracking, typing indicators, read receipts
+- `v1` (legacy): Basic real-time notifications only (backwards compatibility)
+- `off`: Disables WebSocket servers (not recommended - disables real-time features)
+
+**Important**: Only ONE WebSocket server can attach to the HTTP server. Setting `WEBSOCKET_MODE` prevents the "server.handleUpgrade() was called more than once" error that causes 502 Bad Gateway errors in production.
 
 **Optional (recommended for full functionality):**
 

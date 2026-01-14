@@ -5720,8 +5720,20 @@ const notificationRoutes = require('./routes/notifications');
 // WebSocket server will be passed when available (after server starts)
 let notificationRouter;
 app.use('/api/notifications', (req, res, next) => {
-  if (!notificationRouter && global.wsServer) {
-    notificationRouter = notificationRoutes(mongoDb.db, global.wsServer);
+  // Determine which WebSocket server to use based on WEBSOCKET_MODE
+  // Check environment variable directly (WEBSOCKET_MODE variable is defined later in the file)
+  const wsMode = (process.env.WEBSOCKET_MODE || 'v2').toLowerCase();
+  
+  let webSocketServer = null;
+  if (wsMode === 'v2') {
+    webSocketServer = global.wsServerV2;
+  } else if (wsMode === 'v1') {
+    webSocketServer = global.wsServer;
+  }
+  // wsMode === 'off' will result in webSocketServer === null
+  
+  if (!notificationRouter && webSocketServer) {
+    notificationRouter = notificationRoutes(mongoDb.db, webSocketServer);
   }
   if (notificationRouter) {
     notificationRouter(req, res, next);
@@ -5962,50 +5974,85 @@ app.use((req, res) => {
 const http = require('http');
 const server = http.createServer(app);
 
-// Initialize WebSocket server (v1 - legacy)
+// Validate and configure WebSocket mode
+// WEBSOCKET_MODE determines which WebSocket server to use:
+// - 'v2': Modern WebSocket server with real-time messaging (default, recommended)
+// - 'v1': Legacy WebSocket server for backwards compatibility
+// - 'off': Disable WebSocket servers (not recommended - disables real-time features)
+let WEBSOCKET_MODE = (process.env.WEBSOCKET_MODE || 'v2').toLowerCase();
+const WEBSOCKET_PATH = process.env.WEBSOCKET_PATH || '/socket.io';
+const VALID_WEBSOCKET_MODES = ['v1', 'v2', 'off'];
+
+if (!VALID_WEBSOCKET_MODES.includes(WEBSOCKET_MODE)) {
+  logger.error(
+    `❌ Invalid WEBSOCKET_MODE: ${WEBSOCKET_MODE}. Must be one of: ${VALID_WEBSOCKET_MODES.join(', ')}`
+  );
+  logger.error('   Defaulting to v2 (recommended)');
+  WEBSOCKET_MODE = 'v2'; // Update the constant, not just process.env
+}
+
+logger.info(`🔌 WebSocket Configuration:`);
+logger.info(`   Mode: ${WEBSOCKET_MODE}`);
+logger.info(`   Path: ${WEBSOCKET_PATH}`);
+
+// Initialize WebSocket servers based on WEBSOCKET_MODE
+// CRITICAL: Only ONE Socket.IO server can be attached to the HTTP server
+// to prevent "server.handleUpgrade() was called more than once" errors
 const WebSocketServer = require('./websocket-server');
-let wsServer;
-try {
-  wsServer = new WebSocketServer(server);
-  logger.info('✅ WebSocket Server (v1) initialized');
-} catch (error) {
-  logger.error('❌ Failed to initialize WebSocket Server (v1)', { error: error.message });
-  logger.error('   Real-time notifications will not be available');
-  // Continue without WebSocket - server can still function
-}
-
-// Make wsServer available globally for notification routes
-if (wsServer) {
-  global.wsServer = wsServer;
-  app.set('wsServer', wsServer);
-}
-
-// Initialize WebSocket server v2 (real-time messaging)
 const WebSocketServerV2 = require('./websocket-server-v2');
+let wsServer;
 let wsServerV2;
 
-// Will be initialized after MongoDB is connected
+// Initialize v1 WebSocket Server (legacy notifications)
+if (WEBSOCKET_MODE === 'v1') {
+  try {
+    wsServer = new WebSocketServer(server);
+    global.wsServer = wsServer;
+    app.set('wsServer', wsServer);
+    logger.info('✅ WebSocket Server v1 initialized (legacy mode)');
+    logger.info('   Real-time notifications enabled');
+    logger.info('   ℹ️  Consider migrating to v2 for enhanced features');
+  } catch (error) {
+    logger.error('❌ Failed to initialize WebSocket Server v1', { error: error.message });
+    logger.error('   Real-time notifications will not be available');
+  }
+}
+
+// Will be initialized after MongoDB is connected (only in v2 mode)
 function initializeWebSocketV2(db) {
-  if (!wsServerV2 && db) {
+  // Only initialize v2 if mode is v2 and not already initialized
+  if (WEBSOCKET_MODE === 'v2' && !wsServerV2 && db) {
     try {
       const MessagingService = require('./services/messagingService');
       const { NotificationService } = require('./services/notificationService');
 
       const messagingService = new MessagingService(db);
-      const notificationService = new NotificationService(db, wsServer);
 
-      wsServerV2 = new WebSocketServerV2(server, messagingService, notificationService);
+      // Create WebSocket v2 instance first
+      wsServerV2 = new WebSocketServerV2(server, messagingService, null);
+
+      // Then create notification service with v2 WebSocket server
+      // In v2 mode, notifications go through the v2 server's sendNotification method
+      const notificationService = new NotificationService(db, wsServerV2);
+
+      // Set the notification service on the v2 server
+      wsServerV2.notificationService = notificationService;
 
       global.wsServerV2 = wsServerV2;
       app.set('wsServerV2', wsServerV2);
       app.locals.db = db;
 
-      logger.info('✅ WebSocket Server v2 initialized for real-time messaging');
+      logger.info('✅ WebSocket Server v2 initialized (modern mode)');
+      logger.info('   Real-time messaging and notifications enabled');
+      logger.info('   Enhanced features: presence tracking, typing indicators, read receipts');
     } catch (error) {
       logger.error('❌ Failed to initialize WebSocket Server v2', { error: error.message });
       logger.error('   Real-time messaging will not be available');
-      // Continue without WebSocket v2 - server can still function
+      logger.error('   Server will continue running with reduced functionality');
     }
+  } else if (WEBSOCKET_MODE === 'off') {
+    logger.warn('⚠️  WebSocket servers disabled (WEBSOCKET_MODE=off)');
+    logger.warn('   Real-time features will not be available');
   }
 }
 
@@ -6157,11 +6204,18 @@ async function startServer() {
       console.log(`   Docs:   ${baseUrl}/api-docs`);
       console.log('='.repeat(60));
       console.log('');
-      if (wsServer) {
-        console.log('✅ WebSocket server initialized for real-time features');
+
+      // Log WebSocket status based on mode
+      if (WEBSOCKET_MODE === 'v1' && wsServer) {
+        console.log('✅ WebSocket v1 (legacy) initialized for real-time notifications');
+      } else if (WEBSOCKET_MODE === 'v2') {
+        console.log('✅ WebSocket v2 (modern) will initialize after database connection');
+      } else if (WEBSOCKET_MODE === 'off') {
+        console.log('⚠️  WebSocket disabled (WEBSOCKET_MODE=off) - real-time features unavailable');
       } else {
         console.log('⚠️  WebSocket server not available - real-time features disabled');
       }
+
       console.log('Server is now accepting requests');
       console.log('');
       console.log('🔌 Database initialization running in background...');

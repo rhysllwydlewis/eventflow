@@ -106,7 +106,9 @@ function configureHelmet(isProduction = false) {
       : false,
     // Fallback clickjacking protection (CSP frame-ancestors is preferred)
     xFrameOptions: { action: 'deny' },
-    xContentTypeOptions: 'nosniff',
+    // X-Content-Type-Options: nosniff (enabled by default, no options needed)
+    // Helmet warns if you pass options to xContentTypeOptions - it only accepts true/false
+    xContentTypeOptions: true,
     xDnsPrefetchControl: { allow: false },
     referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
   });

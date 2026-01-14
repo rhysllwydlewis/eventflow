@@ -11,8 +11,9 @@ const logger = require('./utils/logger');
 // eslint-disable-next-line node/no-unpublished-require, node/no-missing-require
 const { PresenceService } = require('./services/presenceService');
 
-// Use Symbol for private flag to avoid naming conflicts
-const WS_SERVER_V2_INITIALIZED = Symbol('wsServerV2Initialized');
+// Shared symbol for preventing duplicate Socket.IO servers across v1 and v2
+// This prevents the "server.handleUpgrade() was called more than once" error
+const WS_SERVER_INITIALIZED = Symbol.for('eventflow.wsServerInitialized');
 
 // Try to load Redis adapter for clustering (optional)
 let RedisAdapter;
@@ -36,8 +37,8 @@ try {
 
 class WebSocketServerV2 {
   constructor(httpServer, messagingService = null, notificationService = null) {
-    // Guard against multiple instantiations on the same server
-    if (httpServer[WS_SERVER_V2_INITIALIZED]) {
+    // Guard against multiple instantiations on the same server (v1 or v2)
+    if (httpServer[WS_SERVER_INITIALIZED]) {
       logger.warn('WebSocket Server v2 already initialized for this HTTP server');
       throw new Error('WebSocket Server v2 already initialized for this HTTP server');
     }
@@ -53,8 +54,8 @@ class WebSocketServerV2 {
       transports: ['websocket', 'polling'],
     });
 
-    // Mark server as having WebSocket v2 initialized
-    httpServer[WS_SERVER_V2_INITIALIZED] = true;
+    // Mark server as having WebSocket initialized (shared guard with v1)
+    httpServer[WS_SERVER_INITIALIZED] = true;
 
     this.messagingService = messagingService;
     this.notificationService = notificationService;

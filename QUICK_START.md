@@ -155,6 +155,9 @@ MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/eventflow
 JWT_SECRET=your-secret-key-min-32-chars
 NODE_ENV=production
 BASE_URL=https://yourdomain.com
+
+# WebSocket Configuration (optional)
+WEBSOCKET_MODE=v2  # Options: v2 (default, recommended), v1 (legacy), or off
 ```
 
 **Recommended:**
@@ -170,6 +173,14 @@ CLOUDINARY_CLOUD_NAME=your-cloud
 CLOUDINARY_API_KEY=your-key
 CLOUDINARY_API_SECRET=your-secret
 ```
+
+**WebSocket Modes:**
+
+- `v2` (default): Modern WebSocket server with real-time messaging, presence tracking, typing indicators, and read receipts
+- `v1`: Legacy WebSocket server for basic real-time notifications (backwards compatibility only)
+- `off`: Disables WebSocket servers (not recommended - disables real-time features)
+
+⚠️ **Important**: Only ONE WebSocket server can run at a time. WEBSOCKET_MODE ensures that v1 and v2 don't both attach to the HTTP server, which would cause crashes.
 
 See `.env.example` for all options.
 
