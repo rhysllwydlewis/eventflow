@@ -1567,6 +1567,161 @@ const AdminShared = (function () {
     }
   }
 
+  /**
+   * Fetch with timeout protection
+   * @param {string} url - URL to fetch
+   * @param {Object} options - Fetch options
+   * @param {number} timeoutMs - Timeout in milliseconds (default: 10000)
+   * @returns {Promise} Response from fetch
+   */
+  async function fetchWithTimeout(url, options = {}, timeoutMs = 10000) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    
+    try {
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      return response;
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if (error.name === 'AbortError') {
+        throw new Error(`Request timed out after ${timeoutMs}ms`);
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Enhanced adminFetch with timeout and retry logic
+   * @param {string} url - API endpoint URL
+   * @param {Object} options - fetch options (method, body, timeout, retries)
+   * @returns {Promise<any>} Response data
+   */
+  async function adminFetchWithTimeout(url, options = {}) {
+    const method = options.method || 'GET';
+    const isWriteOperation = ['POST', 'PUT', 'DELETE', 'PATCH'].includes(method.toUpperCase());
+    const timeoutMs = options.timeout || 10000; // Default 10 second timeout
+    const maxRetries = options.retries || 0; // Default no retries
+    
+    let lastError;
+    
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      if (attempt > 0) {
+        debugLog(`Retry attempt ${attempt}/${maxRetries} for ${method} ${url}`);
+        // Wait before retry (exponential backoff)
+        await new Promise(resolve => setTimeout(resolve, Math.min(1000 * Math.pow(2, attempt - 1), 5000)));
+      }
+      
+      try {
+        debugLog(`${method} ${url}`, options.body ? { body: options.body } : '');
+
+        const opts = {
+          method,
+          headers: {
+            'Content-Type': 'application/json',
+            ...options.headers,
+          },
+          credentials: 'include',
+        };
+
+        // Add CSRF token for write operations
+        if (isWriteOperation) {
+          if (window.__CSRF_TOKEN__) {
+            opts.headers['X-CSRF-Token'] = window.__CSRF_TOKEN__;
+          } else {
+            debugWarn(`CSRF token missing for ${method} ${url} - request may be rejected by server`);
+          }
+        }
+
+        if (options.body) {
+          opts.body = typeof options.body === 'string' ? options.body : JSON.stringify(options.body);
+        }
+
+        const response = await fetchWithTimeout(url, opts, timeoutMs);
+        const contentType = response.headers.get('content-type');
+        const isJson = contentType && contentType.includes('application/json');
+
+        // Handle auth failures
+        if (response.status === 401) {
+          debugWarn('401 Unauthorized - redirecting to login');
+          const currentPath = window.location.pathname;
+          const redirectUrl = `/auth.html?redirect=${encodeURIComponent(currentPath)}`;
+          window.location.href = redirectUrl;
+          throw new Error('Authentication required');
+        }
+
+        if (response.status === 403) {
+          debugWarn('403 Forbidden - insufficient permissions');
+          showToast('You do not have permission to perform this action', 'error');
+          throw new Error('Forbidden: Insufficient permissions');
+        }
+
+        // Parse response
+        let data;
+        if (isJson) {
+          data = await response.json();
+        } else {
+          const text = await response.text();
+          try {
+            data = JSON.parse(text);
+          } catch {
+            data = { message: text };
+          }
+        }
+
+        // Handle non-OK responses
+        if (!response.ok) {
+          const errorMessage =
+            data.error || data.message || `Request failed with status ${response.status}`;
+
+          // Log error based on status
+          if (response.status >= 500) {
+            debugError(`Server error (${response.status}):`, errorMessage);
+          } else if (response.status === 404) {
+            debugLog(`Resource not found (404): ${url}`);
+          } else if (response.status === 504) {
+            debugError(`Gateway timeout (504):`, errorMessage);
+          } else {
+            debugWarn(`Request failed (${response.status}):`, errorMessage);
+          }
+
+          // Create detailed error with response data
+          const error = new Error(errorMessage);
+          error.status = response.status;
+          error.data = data;
+          throw error;
+        }
+
+        debugLog(`${method} ${url} - Success`, data);
+        return data;
+      } catch (error) {
+        lastError = error;
+        
+        // Don't retry on auth errors or client errors (4xx except 408 and 429)
+        if (
+          error.message.includes('Authentication required') ||
+          error.message.includes('Forbidden') ||
+          (error.status >= 400 && error.status < 500 && error.status !== 408 && error.status !== 429)
+        ) {
+          throw error;
+        }
+        
+        // If this is the last attempt or we're not retrying, throw
+        if (attempt === maxRetries) {
+          throw error;
+        }
+        
+        // Otherwise, continue to retry
+        debugWarn(`Request failed, will retry: ${error.message}`);
+      }
+    }
+    
+    throw lastError;
+  }
+
   // Initialize admin page
   function init() {
     fetchCSRFToken();
@@ -1599,6 +1754,8 @@ const AdminShared = (function () {
     // API wrappers
     api,
     adminFetch,
+    adminFetchWithTimeout,
+    fetchWithTimeout,
     fetchCSRFToken,
     // UI utilities
     showToast,

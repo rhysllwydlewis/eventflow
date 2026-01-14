@@ -295,9 +295,12 @@
       await AdminShared.safeAction(
         saveBtn,
         async () => {
-          const result = await AdminShared.adminFetch('/api/admin/settings/features', {
+          // Use new adminFetchWithTimeout with 10 second timeout and 2 retries
+          const result = await AdminShared.adminFetchWithTimeout('/api/admin/settings/features', {
             method: 'PUT',
             body: data,
+            timeout: 10000, // 10 second timeout
+            retries: 2, // Retry up to 2 times
           });
 
           // safeAction will show success toast, we add status message
@@ -318,9 +321,16 @@
       // safeAction already showed error toast and restored button state
       // Show detailed error message with status and response
       let errorDetail = 'Error saving feature flags';
-      if (error.message) {
+      
+      if (error.message.includes('timed out')) {
+        errorDetail = 'Request timed out after 10 seconds. Database may be slow or unavailable.';
+        AdminShared.showToast(errorDetail, 'error');
+      } else if (error.status === 504) {
+        errorDetail = 'Gateway timeout. Please try again in a moment.';
+      } else if (error.message) {
         errorDetail += `: ${error.message}`;
       }
+      
       updateFeatureFlagsStatus('error', errorDetail);
 
       // Keep user's current toggles (don't revert)
