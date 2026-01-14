@@ -294,39 +294,62 @@
     updateFeatureFlagsStatus('saving', 'Saving feature flags...');
     updateSaveButtonState();
 
+    // Create a hard 15-second timeout wrapper to guarantee operation completes
+    const hardTimeoutMs = 15000;
+    let timeoutId;
+    const hardTimeoutPromise = new Promise((_, reject) => {
+      timeoutId = setTimeout(() => {
+        reject(new Error('Operation timed out after 15 seconds'));
+      }, hardTimeoutMs);
+    });
+
     try {
-      await AdminShared.safeAction(
-        saveBtn,
-        async () => {
-          // Use new adminFetchWithTimeout with 10 second timeout and 2 retries
-          const result = await AdminShared.adminFetchWithTimeout('/api/admin/settings/features', {
-            method: 'PUT',
-            body: data,
-            timeout: 10000, // 10 second timeout
-            retries: 2, // Retry up to 2 times
-          });
+      // Race the save operation against the hard timeout
+      await Promise.race([
+        (async () => {
+          await AdminShared.safeAction(
+            saveBtn,
+            async () => {
+              // Use new adminFetchWithTimeout with 10 second timeout and 2 retries
+              const result = await AdminShared.adminFetchWithTimeout('/api/admin/settings/features', {
+                method: 'PUT',
+                body: data,
+                timeout: 10000, // 10 second timeout
+                retries: 2, // Retry up to 2 times
+              });
 
-          // safeAction will show success toast, we add status message
-          updateFeatureFlagsStatus('saved', 'Feature flags saved successfully');
-          setTimeout(() => updateFeatureFlagsStatus('hidden'), STATUS_HIDE_DELAY_MS);
+              // safeAction will show success toast, we add status message
+              updateFeatureFlagsStatus('saved', 'Feature flags saved successfully');
+              setTimeout(() => updateFeatureFlagsStatus('hidden'), STATUS_HIDE_DELAY_MS);
 
-          // Re-fetch flags from server (single source of truth)
-          await loadFeatureFlags();
-          return result;
-        },
-        {
-          loadingText: 'Saving...',
-          successMessage: 'Feature flags updated',
-          errorMessage: 'Failed to save feature flags',
-        }
-      );
+              // Re-fetch flags from server (single source of truth)
+              await loadFeatureFlags();
+              return result;
+            },
+            {
+              loadingText: 'Saving...',
+              successMessage: 'Feature flags updated',
+              errorMessage: 'Failed to save feature flags',
+            }
+          );
+        })(),
+        hardTimeoutPromise,
+      ]);
+
+      // Clear timeout on success
+      clearTimeout(timeoutId);
     } catch (error) {
+      // Clear timeout on error
+      clearTimeout(timeoutId);
+
       // safeAction already showed error toast and restored button state
       // Show detailed error message with status and response
       let errorDetail = 'Error saving feature flags';
       
       if (error.message.includes('timed out')) {
-        errorDetail = 'Request timed out after 10 seconds. Database may be slow or unavailable.';
+        errorDetail = error.message.includes('15 seconds')
+          ? 'Request timed out after 15 seconds. Database may be slow or unavailable.'
+          : 'Request timed out after 10 seconds. Database may be slow or unavailable.';
         AdminShared.showToast(errorDetail, 'error');
       } else if (error.status === 504) {
         errorDetail = 'Gateway timeout. Please try again in a moment.';
@@ -339,7 +362,7 @@
       // Keep user's current toggles (don't revert)
       AdminShared.debugError('Feature flags save error:', error);
     } finally {
-      // Always reset state and re-enable checkboxes
+      // Always reset state and re-enable checkboxes - GUARANTEED to execute
       isSavingFeatureFlags = false;
       setFeatureFlagsEnabled(true);
       updateSaveButtonState();

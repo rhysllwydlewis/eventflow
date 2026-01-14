@@ -4904,7 +4904,7 @@ router.get('/maintenance/message', async (req, res) => {
 /**
  * GET /api/public/pexels-collage
  * Public endpoint to fetch Pexels images for homepage collage
- * Uses Pexels API on behalf of public users when feature is enabled
+ * Uses Pexels API when configured, falls back to curated fallback URLs when API unavailable
  */
 router.get('/public/pexels-collage', async (req, res) => {
   try {
@@ -4914,6 +4914,17 @@ router.get('/public/pexels-collage', async (req, res) => {
 
     if (features.pexelsCollage !== true) {
       return res.status(404).json({ error: 'Pexels collage feature is not enabled' });
+    }
+
+    const { category } = req.query;
+
+    if (!category) {
+      return res.status(400).json({ error: 'Category parameter required' });
+    }
+
+    const validCategories = ['venues', 'catering', 'entertainment', 'photography'];
+    if (!validCategories.includes(category)) {
+      return res.status(400).json({ error: 'Invalid category' });
     }
 
     const pexelsCollageSettings = settings.pexelsCollageSettings || {
@@ -4929,32 +4940,50 @@ router.get('/public/pexels-collage', async (req, res) => {
     const { getPexelsService } = require('../utils/pexels-service');
     const pexels = getPexelsService();
 
-    if (!pexels.isConfigured()) {
-      return res.status(503).json({
-        error: 'Pexels API not configured',
-        message: 'Please configure PEXELS_API_KEY in environment variables',
-      });
+    // Try to use Pexels API first
+    if (pexels.isConfigured()) {
+      try {
+        const query = pexelsCollageSettings.queries[category] || category;
+        const results = await pexels.searchPhotos(query, 8, 1);
+
+        return res.json({
+          success: true,
+          category,
+          query,
+          photos: results.photos,
+          usingFallback: false,
+        });
+      } catch (apiError) {
+        console.warn(`Pexels API failed for ${category}, falling back to curated URLs:`, apiError.message);
+        // Fall through to fallback logic below
+      }
     }
 
-    const { category } = req.query;
+    // If API not configured or failed, use fallback URLs from config
+    const { getRandomFallbackPhotos } = require('../config/pexels-fallback');
+    const fallbackPhotos = getRandomFallbackPhotos(8);
 
-    if (!category) {
-      return res.status(400).json({ error: 'Category parameter required' });
-    }
-
-    const validCategories = ['venues', 'catering', 'entertainment', 'photography'];
-    if (!validCategories.includes(category)) {
-      return res.status(400).json({ error: 'Invalid category' });
-    }
-
-    const query = pexelsCollageSettings.queries[category] || category;
-    const results = await pexels.searchPhotos(query, 8, 1);
+    // Convert fallback photo format to match Pexels API format
+    const photos = fallbackPhotos.map(photo => ({
+      id: photo.id,
+      url: photo.url,
+      photographer: photo.photographer,
+      photographer_url: 'https://www.pexels.com',
+      src: {
+        original: photo.src.original,
+        large: photo.src.large,
+        medium: photo.src.medium,
+        small: photo.src.small,
+      },
+      alt: photo.alt,
+    }));
 
     res.json({
       success: true,
       category,
-      query,
-      photos: results.photos,
+      photos,
+      usingFallback: true,
+      message: 'Using curated fallback photos from Pexels collection',
     });
   } catch (error) {
     console.error('Error fetching Pexels collage images:', error);
