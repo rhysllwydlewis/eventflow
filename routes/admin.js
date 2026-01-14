@@ -3517,15 +3517,17 @@ router.put(
 
       console.log(`[${requestId}] Request body validated, reading current settings...`);
 
-      // Add timeout wrapper for database operations (5 seconds)
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Operation timed out after 5 seconds')), 5000);
-      });
+      // Helper function to create timeout promise
+      const createTimeout = (ms, operation) => {
+        return new Promise((_, reject) => {
+          setTimeout(() => reject(new Error(`${operation} timed out after ${ms}ms`)), ms);
+        });
+      };
 
       // Read current settings with timeout
       const settings = await Promise.race([
         dbUnified.read('settings'),
-        timeoutPromise,
+        createTimeout(5000, 'Read operation'),
       ]).then(result => result || {});
 
       console.log(`[${requestId}] Current settings read in ${Date.now() - startTime}ms`);
@@ -3569,11 +3571,11 @@ router.put(
         registration: newFeatures.registration,
       });
 
-      // Write with timeout protection
+      // Write with timeout protection (new timeout promise)
       const writeStart = Date.now();
       const writeSuccess = await Promise.race([
         dbUnified.write('settings', settings),
-        timeoutPromise,
+        createTimeout(5000, 'Write operation'),
       ]);
 
       console.log(`[${requestId}] Database write completed in ${Date.now() - writeStart}ms, success: ${writeSuccess}`);

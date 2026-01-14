@@ -38,6 +38,7 @@ class PexelsService {
         headers: {
           Authorization: this.apiKey,
         },
+        timeout: 10000, // 10 second timeout
       };
 
       const req = https.request(options, res => {
@@ -62,6 +63,11 @@ class PexelsService {
 
       req.on('error', error => {
         reject(error);
+      });
+
+      req.on('timeout', () => {
+        req.destroy();
+        reject(new Error('Request timeout'));
       });
 
       req.end();

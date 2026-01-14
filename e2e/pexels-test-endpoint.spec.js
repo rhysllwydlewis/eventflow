@@ -47,7 +47,7 @@ test.describe('Pexels Test Endpoint (@backend)', () => {
   test('should provide helpful error messages @backend', async ({ request }) => {
     const response = await request.get('/api/pexels/test');
     
-    if (response.ok() || response.status() === 503) {
+    if (response.ok() || response.status() === 424) {
       const result = await response.json();
       
       // Message should be helpful
