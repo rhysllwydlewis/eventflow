@@ -3492,7 +3492,7 @@ router.get('/settings/features', authRequired, roleRequired('admin'), async (req
 
 /**
  * PUT /api/admin/settings/features
- * Update feature flags
+ * Update feature flags with timeout protection
  */
 router.put(
   '/settings/features',
@@ -3500,6 +3500,11 @@ router.put(
   roleRequired('admin'),
   csrfProtection,
   async (req, res) => {
+    const startTime = Date.now();
+    const requestId = `features-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+    
+    console.log(`[${requestId}] Starting feature flags update by ${req.user.email}`);
+    
     try {
       const {
         registration,
@@ -3510,8 +3515,28 @@ router.put(
         pexelsCollage,
       } = req.body;
 
-      const settings = (await dbUnified.read('settings')) || {};
-      settings.features = {
+      console.log(`[${requestId}] Request body validated, reading current settings...`);
+
+      // Add timeout wrapper for database operations (5 seconds)
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Operation timed out after 5 seconds')), 5000);
+      });
+
+      // Read current settings with timeout
+      const settings = await Promise.race([
+        dbUnified.read('settings'),
+        timeoutPromise,
+      ]).then(result => result || {});
+
+      console.log(`[${requestId}] Current settings read in ${Date.now() - startTime}ms`);
+
+      // Validate request data
+      if (typeof registration !== 'boolean' && registration !== undefined) {
+        console.error(`[${requestId}] Invalid registration value:`, registration);
+        return res.status(400).json({ error: 'Invalid feature flag value: registration must be boolean' });
+      }
+
+      const newFeatures = {
         registration: registration !== false,
         supplierApplications: supplierApplications !== false,
         reviews: reviews !== false,
@@ -3522,11 +3547,33 @@ router.put(
         updatedBy: req.user.email,
       };
 
-      const writeSuccess = await dbUnified.write('settings', settings);
+      settings.features = newFeatures;
+
+      console.log(`[${requestId}] Writing new feature flags to database...`, {
+        pexelsCollage: newFeatures.pexelsCollage,
+        registration: newFeatures.registration,
+      });
+
+      // Write with timeout protection
+      const writeStart = Date.now();
+      const writeSuccess = await Promise.race([
+        dbUnified.write('settings', settings),
+        timeoutPromise,
+      ]);
+
+      console.log(`[${requestId}] Database write completed in ${Date.now() - writeStart}ms, success: ${writeSuccess}`);
 
       if (!writeSuccess) {
-        console.error('Failed to persist feature flags to database');
-        return res.status(500).json({ error: 'Failed to persist settings to database' });
+        console.error(`[${requestId}] Failed to persist feature flags to database`);
+        return res.status(500).json({ 
+          error: 'Failed to persist settings to database',
+          details: 'Database write returned false'
+        });
+      }
+
+      // Log Pexels feature flag changes specifically
+      if (pexelsCollage !== undefined) {
+        console.log(`[${requestId}] Pexels collage feature flag ${pexelsCollage ? 'ENABLED' : 'DISABLED'} by ${req.user.email}`);
       }
 
       auditLog({
@@ -3538,10 +3585,29 @@ router.put(
         details: settings.features,
       });
 
+      const totalTime = Date.now() - startTime;
+      console.log(`[${requestId}] Feature flags update completed successfully in ${totalTime}ms`);
+
       res.json({ success: true, features: settings.features });
     } catch (error) {
-      console.error('Error updating feature settings:', error);
-      res.status(500).json({ error: 'Failed to update settings' });
+      const totalTime = Date.now() - startTime;
+      console.error(`[${requestId}] Error updating feature settings after ${totalTime}ms:`, error.message);
+      console.error(`[${requestId}] Stack trace:`, error.stack);
+      
+      // Provide detailed error message based on error type
+      if (error.message.includes('timed out')) {
+        return res.status(504).json({ 
+          error: 'Request timed out',
+          details: 'Database operation took too long to complete. Please try again.',
+          duration: totalTime
+        });
+      }
+      
+      res.status(500).json({ 
+        error: 'Failed to update settings',
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined,
+        duration: totalTime
+      });
     }
   }
 );
