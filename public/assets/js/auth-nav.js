@@ -47,57 +47,85 @@
   }
 
   if (burger && menu) {
-    burger.addEventListener('click', function (e) {
+    burger.addEventListener('click', e => {
       e.preventDefault();
       e.stopPropagation();
       toggleMenu();
     });
 
-    document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape') setMenuOpen(false);
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') {
+        setMenuOpen(false);
+      }
     });
 
-    document.addEventListener('click', function (e) {
-      if (!document.body.classList.contains('nav-open')) return;
+    document.addEventListener('click', e => {
+      if (!document.body.classList.contains('nav-open')) {
+        return;
+      }
       const target = e.target;
-      if (!target) return;
-      if (menu.contains(target) || burger.contains(target)) return;
+      if (!target) {
+        return;
+      }
+      if (menu.contains(target) || burger.contains(target)) {
+        return;
+      }
       setMenuOpen(false);
     });
   }
 
   function dashboardUrlForUser(user) {
-    if (!user || !user.role) return '/dashboard.html';
-    if (user.role === 'admin') return '/admin.html';
-    if (user.role === 'supplier') return '/dashboard-supplier.html';
+    if (!user || !user.role) {
+      return '/dashboard.html';
+    }
+    if (user.role === 'admin') {
+      return '/admin.html';
+    }
+    if (user.role === 'supplier') {
+      return '/dashboard-supplier.html';
+    }
     return '/dashboard-customer.html';
   }
 
   function updateLegacyAuthLinks(user) {
     if (user) {
-      if (navAuth) navAuth.style.display = 'none';
+      if (navAuth) {
+        navAuth.style.display = 'none';
+      }
       if (navDashboard) {
         navDashboard.style.display = '';
         navDashboard.href = dashboardUrlForUser(user);
       }
-      if (navSignout) navSignout.style.display = '';
+      if (navSignout) {
+        navSignout.style.display = '';
+      }
     } else {
-      if (navAuth) navAuth.style.display = '';
-      if (navDashboard) navDashboard.style.display = 'none';
-      if (navSignout) navSignout.style.display = 'none';
+      if (navAuth) {
+        navAuth.style.display = '';
+      }
+      if (navDashboard) {
+        navDashboard.style.display = 'none';
+      }
+      if (navSignout) {
+        navSignout.style.display = 'none';
+      }
     }
   }
 
   async function fetchCsrfToken() {
     try {
       const resp = await fetch('/api/csrf-token', { credentials: 'include' });
-      if (!resp.ok) return null;
+      if (!resp.ok) {
+        return null;
+      }
       const data = await resp.json();
       if (data && data.csrfToken) {
         window.__CSRF_TOKEN__ = data.csrfToken;
         return data.csrfToken;
       }
-    } catch (_e) {}
+    } catch (_e) {
+      // Ignore CSRF fetch errors
+    }
     return null;
   }
 
@@ -107,7 +135,9 @@
         credentials: 'include',
         headers: { Accept: 'application/json' },
       });
-      if (!resp.ok) return null;
+      if (!resp.ok) {
+        return null;
+      }
       const data = await resp.json();
       return data && data.user ? data.user : null;
     } catch (_e) {
@@ -115,10 +145,13 @@
     }
   }
 
-  Promise.resolve().then(fetchMe).then(updateLegacyAuthLinks).catch(function () {});
+  Promise.resolve()
+    .then(fetchMe)
+    .then(updateLegacyAuthLinks)
+    .catch(() => {});
 
   if (navSignout) {
-    navSignout.addEventListener('click', async function (e) {
+    navSignout.addEventListener('click', async e => {
       e.preventDefault();
 
       const token = window.__CSRF_TOKEN__ || (await fetchCsrfToken());
@@ -129,13 +162,17 @@
             credentials: 'include',
             headers: { 'X-CSRF-Token': token },
           });
-        } catch (_e) {}
+        } catch (_e) {
+          // Ignore logout errors
+        }
       }
 
       try {
         localStorage.removeItem('user');
         localStorage.removeItem('eventflow_onboarding_new');
-      } catch (_e) {}
+      } catch (_e) {
+        // Ignore storage errors
+      }
 
       window.location.href = `/?t=${Date.now()}`;
     });

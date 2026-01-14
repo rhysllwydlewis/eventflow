@@ -1,9 +1,9 @@
 /**
  * Sentiment Analysis Utility
- * 
+ *
  * Provides sentiment detection, keyword extraction, and spam detection
  * for review content analysis.
- * 
+ *
  * Features:
  * - Sentiment scoring (-1.0 to +1.0 scale)
  * - Keyword extraction with frequency tracking
@@ -34,7 +34,7 @@ const POSITIVE_KEYWORDS = {
   fantastic: 0.9,
   brilliant: 0.9,
   superb: 0.9,
-  
+
   // Very Good (0.7-0.89)
   great: 0.8,
   awesome: 0.8,
@@ -46,7 +46,7 @@ const POSITIVE_KEYWORDS = {
   helpful: 0.75,
   friendly: 0.75,
   recommended: 0.8,
-  
+
   // Good (0.5-0.69)
   good: 0.6,
   nice: 0.6,
@@ -69,7 +69,7 @@ const NEGATIVE_KEYWORDS = {
   disgusting: -0.95,
   scam: -1.0,
   fraud: -1.0,
-  
+
   // Negative (-0.7 to -0.89)
   bad: -0.8,
   poor: -0.8,
@@ -78,7 +78,7 @@ const NEGATIVE_KEYWORDS = {
   rude: -0.85,
   late: -0.7,
   overpriced: -0.75,
-  
+
   // Moderately Negative (-0.5 to -0.69)
   mediocre: -0.6,
   average: -0.5,
@@ -109,16 +109,7 @@ const SUSPICIOUS_PATTERNS = {
 };
 
 // Profanity list (basic - should be expanded)
-const PROFANITY_LIST = [
-  'fuck',
-  'shit',
-  'damn',
-  'hell',
-  'bitch',
-  'ass',
-  'bastard',
-  'crap',
-];
+const PROFANITY_LIST = ['fuck', 'shit', 'damn', 'hell', 'bitch', 'ass', 'bastard', 'crap'];
 
 /**
  * Tokenize text into words
@@ -129,7 +120,7 @@ function tokenize(text) {
   if (!text || typeof text !== 'string') {
     return [];
   }
-  
+
   return text
     .toLowerCase()
     .replace(/[^\w\s]/g, ' ') // Remove punctuation
@@ -144,7 +135,7 @@ function tokenize(text) {
  */
 function analyzeSentiment(text) {
   const tokens = tokenize(text);
-  
+
   if (tokens.length === 0) {
     return {
       score: 0,
@@ -158,12 +149,12 @@ function analyzeSentiment(text) {
       },
     };
   }
-  
+
   let positiveScore = 0;
   let negativeScore = 0;
   let positiveCount = 0;
   let negativeCount = 0;
-  
+
   // Analyze each token
   tokens.forEach(token => {
     if (POSITIVE_KEYWORDS[token]) {
@@ -174,34 +165,35 @@ function analyzeSentiment(text) {
       negativeCount++;
     }
   });
-  
+
   // Calculate average scores
   const avgPositive = positiveCount > 0 ? positiveScore / positiveCount : 0;
   const avgNegative = negativeCount > 0 ? negativeScore / negativeCount : 0;
-  
+
   // Calculate final sentiment score (-1.0 to +1.0)
   // Weight by the proportion of sentiment words found
   const sentimentWordCount = positiveCount + negativeCount;
   const sentimentRatio = sentimentWordCount / tokens.length;
-  
+
   let finalScore = 0;
   if (sentimentWordCount > 0) {
-    const rawScore = (avgPositive - avgNegative);
+    const rawScore = avgPositive - avgNegative;
     // Apply confidence weighting based on sentiment word density
     // Amplify the signal with higher multiplier for better detection
-    finalScore = rawScore * Math.min(sentimentRatio * SENTIMENT_AMPLIFIER, MAX_CONFIDENCE_MULTIPLIER);
+    finalScore =
+      rawScore * Math.min(sentimentRatio * SENTIMENT_AMPLIFIER, MAX_CONFIDENCE_MULTIPLIER);
   }
-  
+
   // Determine label
   let label = 'neutral';
-  let confidence = Math.abs(finalScore);
-  
+  const confidence = Math.abs(finalScore);
+
   if (finalScore >= POSITIVE_SENTIMENT_THRESHOLD) {
     label = 'positive';
   } else if (finalScore <= NEGATIVE_SENTIMENT_THRESHOLD) {
     label = 'negative';
   }
-  
+
   return {
     score: Number(finalScore.toFixed(2)),
     label,
@@ -224,14 +216,14 @@ function extractKeywords(text) {
   const tokens = tokenize(text);
   const keywords = [];
   const frequency = {};
-  
+
   // Count frequency of sentiment keywords
   tokens.forEach(token => {
     if (POSITIVE_KEYWORDS[token] || NEGATIVE_KEYWORDS[token]) {
       frequency[token] = (frequency[token] || 0) + 1;
     }
   });
-  
+
   // Build keyword objects
   Object.entries(frequency).forEach(([word, count]) => {
     const sentiment = POSITIVE_KEYWORDS[word] || NEGATIVE_KEYWORDS[word];
@@ -242,10 +234,10 @@ function extractKeywords(text) {
       type: sentiment > 0 ? 'positive' : 'negative',
     });
   });
-  
+
   // Sort by frequency (descending)
   keywords.sort((a, b) => b.frequency - a.frequency);
-  
+
   return keywords;
 }
 
@@ -262,34 +254,34 @@ function detectSpam(text) {
       indicators: [],
     };
   }
-  
+
   const indicators = [];
   let spamScore = 0;
-  
+
   // Check for URLs
   if (SPAM_PATTERNS[0].test(text)) {
     indicators.push('Contains URLs');
     spamScore += 0.4;
   }
-  
+
   // Check for web addresses
   if (SPAM_PATTERNS[1].test(text)) {
     indicators.push('Contains web addresses');
     spamScore += 0.3;
   }
-  
+
   // Check for email addresses
   if (SPAM_PATTERNS[2].test(text)) {
     indicators.push('Contains email addresses');
     spamScore += 0.3;
   }
-  
+
   // Check for phone numbers
   if (SPAM_PATTERNS[3].test(text)) {
     indicators.push('Contains phone numbers');
     spamScore += 0.25;
   }
-  
+
   // Check for spam keywords
   for (let i = 4; i < SPAM_PATTERNS.length; i++) {
     if (SPAM_PATTERNS[i].test(text)) {
@@ -298,13 +290,13 @@ function detectSpam(text) {
       break; // Only count once
     }
   }
-  
+
   // Check for repeated characters
   if (SUSPICIOUS_PATTERNS.repeatedChars.test(text)) {
     indicators.push('Excessive repeated characters');
     spamScore += 0.2;
   }
-  
+
   // Check for all caps (if > 50% of text)
   const words = text.split(/\s+/);
   const capsWords = words.filter(w => SUSPICIOUS_PATTERNS.allCaps.test(w));
@@ -312,19 +304,19 @@ function detectSpam(text) {
     indicators.push('Excessive use of capital letters');
     spamScore += 0.15;
   }
-  
+
   // Check for excessive punctuation
   if (SUSPICIOUS_PATTERNS.excessivePunctuation.test(text)) {
     indicators.push('Excessive punctuation');
     spamScore += 0.1;
   }
-  
+
   // Check minimum length
   if (text.length < 20) {
     indicators.push('Text too short');
     spamScore += 0.15;
   }
-  
+
   return {
     isSpam: spamScore >= SPAM_THRESHOLD, // Threshold for spam detection
     spamScore: Number(Math.min(spamScore, 1).toFixed(2)),
@@ -344,16 +336,16 @@ function checkProfanity(text) {
       words: [],
     };
   }
-  
+
   const lowerText = text.toLowerCase();
   const foundWords = [];
-  
+
   PROFANITY_LIST.forEach(word => {
     if (lowerText.includes(word)) {
       foundWords.push(word);
     }
   });
-  
+
   return {
     hasProfanity: foundWords.length > 0,
     words: foundWords,
@@ -368,12 +360,12 @@ function checkProfanity(text) {
  */
 function analyzeReview(title, text) {
   const fullText = `${title} ${text}`;
-  
+
   const sentiment = analyzeSentiment(fullText);
   const keywords = extractKeywords(fullText);
   const spam = detectSpam(fullText);
   const profanity = checkProfanity(fullText);
-  
+
   return {
     sentiment,
     keywords,
@@ -397,16 +389,16 @@ function calculateSentimentTrend(reviews, timeRange = '1m') {
     '3m': 90 * 24 * 60 * 60 * 1000,
     '1y': 365 * 24 * 60 * 60 * 1000,
   };
-  
+
   const rangeMs = ranges[timeRange] || ranges['1m'];
   const cutoffDate = now - rangeMs;
-  
+
   // Filter reviews within time range
   const filteredReviews = reviews.filter(r => {
     const reviewDate = new Date(r.createdAt).getTime();
     return reviewDate >= cutoffDate;
   });
-  
+
   if (filteredReviews.length === 0) {
     return {
       averageSentiment: 0,
@@ -415,20 +407,20 @@ function calculateSentimentTrend(reviews, timeRange = '1m') {
       totalReviews: 0,
     };
   }
-  
+
   // Calculate distribution
   const distribution = {
     positive: 0,
     neutral: 0,
     negative: 0,
   };
-  
+
   let totalSentiment = 0;
-  
+
   filteredReviews.forEach(review => {
     const score = review.sentiment?.score || 0;
     totalSentiment += score;
-    
+
     if (score > 0.3) {
       distribution.positive++;
     } else if (score < -0.3) {
@@ -437,24 +429,26 @@ function calculateSentimentTrend(reviews, timeRange = '1m') {
       distribution.neutral++;
     }
   });
-  
+
   const averageSentiment = totalSentiment / filteredReviews.length;
-  
+
   // Determine trend (compare first half vs second half)
   const midpoint = Math.floor(filteredReviews.length / 2);
   const firstHalf = filteredReviews.slice(0, midpoint);
   const secondHalf = filteredReviews.slice(midpoint);
-  
-  const firstAvg = firstHalf.reduce((sum, r) => sum + (r.sentiment?.score || 0), 0) / firstHalf.length;
-  const secondAvg = secondHalf.reduce((sum, r) => sum + (r.sentiment?.score || 0), 0) / secondHalf.length;
-  
+
+  const firstAvg =
+    firstHalf.reduce((sum, r) => sum + (r.sentiment?.score || 0), 0) / firstHalf.length;
+  const secondAvg =
+    secondHalf.reduce((sum, r) => sum + (r.sentiment?.score || 0), 0) / secondHalf.length;
+
   let trend = 'stable';
   if (secondAvg - firstAvg > 0.1) {
     trend = 'improving';
   } else if (secondAvg - firstAvg < -0.1) {
     trend = 'declining';
   }
-  
+
   return {
     averageSentiment: Number(averageSentiment.toFixed(2)),
     trend,
@@ -470,7 +464,7 @@ module.exports = {
   checkProfanity,
   analyzeReview,
   calculateSentimentTrend,
-  
+
   // Export for testing
   tokenize,
   POSITIVE_KEYWORDS,

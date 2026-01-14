@@ -1,9 +1,9 @@
 /**
  * Reviews v2 API Routes
- * 
+ *
  * Comprehensive review system with verification, moderation,
  * sentiment analysis, and analytics.
- * 
+ *
  * All routes maintain backward compatibility with v1.
  */
 
@@ -12,7 +12,7 @@
 const express = require('express');
 const router = express.Router();
 const reviewService = require('../services/reviewService');
-const { authRequired, roleRequired } = require('../middleware/auth');
+const { authRequired } = require('../middleware/auth');
 const { csrfProtection } = require('../middleware/csrf');
 const reviewModeration = require('../middleware/reviewModeration');
 
@@ -29,50 +29,45 @@ const MIN_DISPUTE_REASON_LENGTH = 20; // Minimum characters for dispute reasons
  * POST /api/v2/reviews/with-verification
  * Body: { supplierId, bookingId, rating, title, text, eventDetails }
  */
-router.post(
-  '/with-verification',
-  authRequired,
-  csrfProtection,
-  async (req, res) => {
-    try {
-      const { supplierId, bookingId, rating, title, text, eventDetails } = req.body;
-      
-      // Validate required fields
-      if (!supplierId || !rating) {
-        return res.status(400).json({
-          error: 'Missing required fields: supplierId and rating are required',
-        });
-      }
-      
-      const result = await reviewService.createReview(
-        {
-          supplierId,
-          bookingId,
-          rating,
-          title,
-          text,
-          eventDetails,
-        },
-        req.user.id,
-        {
-          ipAddress: req.ip,
-          userAgent: req.get('user-agent'),
-        }
-      );
-      
-      res.json({
-        success: true,
-        data: result,
-        timestamp: new Date().toISOString(),
-      });
-    } catch (error) {
-      console.error('Create review error:', error);
-      res.status(400).json({
-        error: error.message,
+router.post('/with-verification', authRequired, csrfProtection, async (req, res) => {
+  try {
+    const { supplierId, bookingId, rating, title, text, eventDetails } = req.body;
+
+    // Validate required fields
+    if (!supplierId || !rating) {
+      return res.status(400).json({
+        error: 'Missing required fields: supplierId and rating are required',
       });
     }
+
+    const result = await reviewService.createReview(
+      {
+        supplierId,
+        bookingId,
+        rating,
+        title,
+        text,
+        eventDetails,
+      },
+      req.user.id,
+      {
+        ipAddress: req.ip,
+        userAgent: req.get('user-agent'),
+      }
+    );
+
+    res.json({
+      success: true,
+      data: result,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error('Create review error:', error);
+    res.status(400).json({
+      error: error.message,
+    });
   }
-);
+});
 
 /**
  * Get supplier reviews with pagination
@@ -83,7 +78,7 @@ router.get('/supplier/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const { page, limit, sortBy, filter } = req.query;
-    
+
     const result = await reviewService.getSupplierReviews(id, {
       page: parseInt(page, 10) || 1,
       limit: parseInt(limit, 10) || 10,
@@ -91,7 +86,7 @@ router.get('/supplier/:id', async (req, res) => {
       filter: filter || null,
       approvedOnly: true,
     });
-    
+
     res.json({
       success: true,
       data: result,
@@ -115,21 +110,21 @@ router.put('/:id', authRequired, csrfProtection, async (req, res) => {
   try {
     const { id } = req.params;
     const { title, text, rating } = req.body;
-    
+
     const dbUnified = require('../db-unified');
     const reviews = await dbUnified.read('reviews');
     const review = reviews.find(r => r._id === id);
-    
+
     if (!review) {
       return res.status(404).json({ error: 'Review not found' });
     }
-    
+
     // Check edit permissions
     const editCheck = reviewModeration.canEdit(review, req.user.id);
     if (!editCheck.canEdit) {
       return res.status(403).json({ error: editCheck.reason });
     }
-    
+
     // Update fields
     if (title !== undefined) {
       review.title = title;
@@ -140,11 +135,11 @@ router.put('/:id', authRequired, csrfProtection, async (req, res) => {
     if (rating !== undefined) {
       review.rating = parseInt(rating, 10);
     }
-    
+
     review.updatedAt = new Date().toISOString();
-    
+
     await dbUnified.write('reviews', reviews);
-    
+
     res.json({
       success: true,
       data: review,
@@ -166,25 +161,25 @@ router.put('/:id', authRequired, csrfProtection, async (req, res) => {
 router.delete('/:id', authRequired, csrfProtection, async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     const dbUnified = require('../db-unified');
     const reviews = await dbUnified.read('reviews');
     const reviewIndex = reviews.findIndex(r => r._id === id);
-    
+
     if (reviewIndex === -1) {
       return res.status(404).json({ error: 'Review not found' });
     }
-    
+
     const review = reviews[reviewIndex];
-    
+
     // Check permissions
     if (review.authorId !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({ error: 'Permission denied' });
     }
-    
+
     reviews.splice(reviewIndex, 1);
     await dbUnified.write('reviews', reviews);
-    
+
     res.json({
       success: true,
       message: 'Review deleted successfully',
@@ -207,13 +202,13 @@ router.post('/:id/helpful', authRequired, csrfProtection, async (req, res) => {
   try {
     const { id } = req.params;
     const { helpful } = req.body;
-    
+
     if (typeof helpful !== 'boolean') {
       return res.status(400).json({ error: 'helpful must be a boolean value' });
     }
-    
+
     const review = await reviewService.voteOnReview(id, req.user.id, helpful);
-    
+
     res.json({
       success: true,
       data: {
@@ -248,29 +243,24 @@ router.post(
     try {
       const { id } = req.params;
       const { text } = req.body;
-      
+
       if (!text) {
         return res.status(400).json({ error: 'Response text is required' });
       }
-      
+
       // Get supplier ID from user
       const dbUnified = require('../db-unified');
       const suppliers = await dbUnified.read('suppliers');
       const supplier = suppliers.find(s => s.ownerUserId === req.user.id);
-      
+
       if (!supplier && req.user.role !== 'admin') {
         return res.status(404).json({ error: 'Supplier profile not found' });
       }
-      
+
       const supplierId = supplier ? supplier.id : null;
-      
-      const review = await reviewService.addSupplierResponse(
-        id,
-        supplierId,
-        text,
-        req.user.id
-      );
-      
+
+      const review = await reviewService.addSupplierResponse(id, supplierId, text, req.user.id);
+
       res.json({
         success: true,
         data: review.response,
@@ -299,42 +289,42 @@ router.put(
     try {
       const { id } = req.params;
       const { text } = req.body;
-      
+
       if (!text) {
         return res.status(400).json({ error: 'Response text is required' });
       }
-      
+
       const dbUnified = require('../db-unified');
       const reviews = await dbUnified.read('reviews');
       const review = reviews.find(r => r._id === id);
-      
+
       if (!review) {
         return res.status(404).json({ error: 'Review not found' });
       }
-      
+
       if (!review.response) {
         return res.status(404).json({ error: 'No response exists to update' });
       }
-      
+
       // Get supplier ID
       const suppliers = await dbUnified.read('suppliers');
       const supplier = suppliers.find(s => s.ownerUserId === req.user.id);
-      
+
       if (!supplier && req.user.role !== 'admin') {
         return res.status(404).json({ error: 'Supplier profile not found' });
       }
-      
+
       // Check permission
       if (review.supplierId !== supplier?.id && req.user.role !== 'admin') {
         return res.status(403).json({ error: 'Permission denied' });
       }
-      
+
       review.response.text = text;
       review.response.updatedAt = new Date().toISOString();
       review.updatedAt = new Date().toISOString();
-      
+
       await dbUnified.write('reviews', reviews);
-      
+
       res.json({
         success: true,
         data: review.response,
@@ -366,14 +356,14 @@ router.get(
   async (req, res) => {
     try {
       const { sortBy, filter, page, limit } = req.query;
-      
+
       const result = await reviewService.getModerationQueue({
         sortBy: sortBy || 'date',
         filter: filter || 'pending',
         page: parseInt(page, 10) || 1,
         limit: parseInt(limit, 10) || 20,
       });
-      
+
       res.json({
         success: true,
         data: result,
@@ -401,14 +391,14 @@ router.post(
   async (req, res) => {
     try {
       const { id } = req.params;
-      
+
       const review = await reviewService.moderateReview(
         id,
         'approve',
         req.user.id,
         'Approved by moderator'
       );
-      
+
       res.json({
         success: true,
         data: review,
@@ -437,20 +427,15 @@ router.post(
     try {
       const { id } = req.params;
       const { reason } = req.body;
-      
+
       if (!reason || reason.trim().length < MIN_REASON_LENGTH) {
         return res.status(400).json({
-          error: 'Rejection reason is required (minimum ' + MIN_REASON_LENGTH + ' characters)',
+          error: `Rejection reason is required (minimum ${MIN_REASON_LENGTH} characters)`,
         });
       }
-      
-      const review = await reviewService.moderateReview(
-        id,
-        'reject',
-        req.user.id,
-        reason
-      );
-      
+
+      const review = await reviewService.moderateReview(id, 'reject', req.user.id, reason);
+
       res.json({
         success: true,
         data: review,
@@ -479,19 +464,15 @@ router.post(
     try {
       const { id } = req.params;
       const { reason } = req.body;
-      
+
       if (!reason || reason.trim().length < MIN_REASON_LENGTH) {
         return res.status(400).json({
-          error: 'Change request reason is required (minimum ' + MIN_REASON_LENGTH + ' characters)',
+          error: `Change request reason is required (minimum ${MIN_REASON_LENGTH} characters)`,
         });
       }
-      
-      const review = await reviewService.requestChanges(
-        id,
-        req.user.id,
-        reason
-      );
-      
+
+      const review = await reviewService.requestChanges(id, req.user.id, reason);
+
       res.json({
         success: true,
         data: review,
@@ -517,7 +498,7 @@ router.get(
   async (req, res) => {
     try {
       const stats = await reviewService.getModerationStats();
-      
+
       res.json({
         success: true,
         data: stats,
@@ -551,20 +532,15 @@ router.post(
     try {
       const { id } = req.params;
       const { reason, evidence } = req.body;
-      
+
       if (!reason || reason.trim().length < MIN_DISPUTE_REASON_LENGTH) {
         return res.status(400).json({
-          error: 'Dispute reason is required (minimum ' + MIN_DISPUTE_REASON_LENGTH + ' characters)',
+          error: `Dispute reason is required (minimum ${MIN_DISPUTE_REASON_LENGTH} characters)`,
         });
       }
-      
-      const result = await reviewService.fileDispute(
-        id,
-        req.user.id,
-        reason,
-        evidence || ''
-      );
-      
+
+      const result = await reviewService.fileDispute(id, req.user.id, reason, evidence || '');
+
       res.json({
         success: true,
         data: result,
@@ -584,35 +560,30 @@ router.post(
  * GET /api/v2/reviews/disputes
  * Query: page, limit, sortBy (priority, date)
  */
-router.get(
-  '/disputes',
-  authRequired,
-  reviewModeration.canModerateReviews,
-  async (req, res) => {
-    try {
-      const { page, limit, sortBy } = req.query;
-      
-      const result = await reviewService.getModerationQueue({
-        sortBy: sortBy || 'priority',
-        filter: 'disputed',
-        page: parseInt(page, 10) || 1,
-        limit: parseInt(limit, 10) || 20,
-      });
-      
-      res.json({
-        success: true,
-        data: result,
-        timestamp: new Date().toISOString(),
-      });
-    } catch (error) {
-      console.error('Get disputes error:', error);
-      res.status(500).json({
-        error: 'Failed to get disputes',
-        details: error.message,
-      });
-    }
+router.get('/disputes', authRequired, reviewModeration.canModerateReviews, async (req, res) => {
+  try {
+    const { page, limit, sortBy } = req.query;
+
+    const result = await reviewService.getModerationQueue({
+      sortBy: sortBy || 'priority',
+      filter: 'disputed',
+      page: parseInt(page, 10) || 1,
+      limit: parseInt(limit, 10) || 20,
+    });
+
+    res.json({
+      success: true,
+      data: result,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error('Get disputes error:', error);
+    res.status(500).json({
+      error: 'Failed to get disputes',
+      details: error.message,
+    });
   }
-);
+});
 
 /**
  * Resolve dispute
@@ -628,26 +599,21 @@ router.post(
     try {
       const { id } = req.params;
       const { resolution, reason } = req.body;
-      
+
       if (!reviewModeration.isValidDisputeResolution(resolution)) {
         return res.status(400).json({
           error: 'Invalid resolution. Must be approve, reject, or remove',
         });
       }
-      
+
       if (!reason || reason.trim().length < MIN_REASON_LENGTH) {
         return res.status(400).json({
-          error: 'Resolution reason is required (minimum ' + MIN_REASON_LENGTH + ' characters)',
+          error: `Resolution reason is required (minimum ${MIN_REASON_LENGTH} characters)`,
         });
       }
-      
-      const review = await reviewService.resolveDispute(
-        id,
-        resolution,
-        req.user.id,
-        reason
-      );
-      
+
+      const review = await reviewService.resolveDispute(id, resolution, req.user.id, reason);
+
       res.json({
         success: true,
         data: review,
@@ -673,9 +639,9 @@ router.post(
 router.get('/supplier/:id/analytics', async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     const analytics = await reviewService.getSupplierAnalytics(id);
-    
+
     res.json({
       success: true,
       data: analytics,
@@ -698,11 +664,9 @@ router.get('/supplier/:id/analytics', async (req, res) => {
 router.get('/analytics/trends', async (req, res) => {
   try {
     const { timeRange } = req.query;
-    
-    const analytics = await reviewService.getPlatformAnalytics(
-      timeRange || '1m'
-    );
-    
+
+    const analytics = await reviewService.getPlatformAnalytics(timeRange || '1m');
+
     res.json({
       success: true,
       data: analytics,
@@ -725,10 +689,10 @@ router.get('/analytics/trends', async (req, res) => {
 router.get('/analytics/sentiment', async (req, res) => {
   try {
     const { timeRange, supplierId } = req.query;
-    
+
     if (supplierId) {
       const analytics = await reviewService.getSupplierAnalytics(supplierId);
-      
+
       res.json({
         success: true,
         data: {
@@ -739,10 +703,8 @@ router.get('/analytics/sentiment', async (req, res) => {
         timestamp: new Date().toISOString(),
       });
     } else {
-      const analytics = await reviewService.getPlatformAnalytics(
-        timeRange || '1m'
-      );
-      
+      const analytics = await reviewService.getPlatformAnalytics(timeRange || '1m');
+
       res.json({
         success: true,
         data: {
@@ -769,11 +731,11 @@ router.get('/analytics/sentiment', async (req, res) => {
 router.get('/analytics/distribution', async (req, res) => {
   try {
     const { supplierId } = req.query;
-    
+
     const analytics = supplierId
       ? await reviewService.getSupplierAnalytics(supplierId)
       : await reviewService.getPlatformAnalytics();
-    
+
     res.json({
       success: true,
       data: {
@@ -804,17 +766,13 @@ router.get('/bookings/:bookingId/eligible', authRequired, async (req, res) => {
   try {
     const { bookingId } = req.params;
     const { supplierId } = req.query;
-    
+
     if (!supplierId) {
       return res.status(400).json({ error: 'supplierId query parameter is required' });
     }
-    
-    const result = await reviewService.checkReviewEligibility(
-      req.user.id,
-      supplierId,
-      bookingId
-    );
-    
+
+    const result = await reviewService.checkReviewEligibility(req.user.id, supplierId, bookingId);
+
     res.json({
       success: true,
       data: result,
@@ -836,9 +794,9 @@ router.get('/bookings/:bookingId/eligible', authRequired, async (req, res) => {
 router.get('/verified-count/:supplierId', async (req, res) => {
   try {
     const { supplierId } = req.params;
-    
+
     const result = await reviewService.getVerifiedCount(supplierId);
-    
+
     res.json({
       success: true,
       data: result,

@@ -66,7 +66,7 @@ describe('CSRF Protection', () => {
 
     it('csrfProtection should validate token from cookie matches header', () => {
       expect(csrfMiddlewareContent).toContain('function csrfProtection');
-      
+
       // Should check cookie
       expect(csrfMiddlewareContent).toContain('req.cookies');
       expect(csrfMiddlewareContent).toContain('csrf');
@@ -77,7 +77,7 @@ describe('CSRF Protection', () => {
       // Should store values in variables
       expect(csrfMiddlewareContent).toContain('tokenFromHeader');
       expect(csrfMiddlewareContent).toContain('tokenFromCookie');
-      
+
       // Should compare them with !== operator
       expect(csrfMiddlewareContent).toContain('tokenFromHeader !== tokenFromCookie');
     });
@@ -211,7 +211,7 @@ describe('CSRF Protection', () => {
   describe('Client-Side - Admin Shared JS', () => {
     it('adminFetch should include X-CSRF-Token header for write operations', () => {
       expect(adminSharedContent).toContain('async function adminFetch');
-      const adminFetchFn = adminSharedContent.match(/async function adminFetch[\s\S]*?^  }/m);
+      const adminFetchFn = adminSharedContent.match(/async function adminFetch[\s\S]*?^\s*}/m);
       expect(adminFetchFn).toBeTruthy();
 
       // Should check for write operations
@@ -223,7 +223,7 @@ describe('CSRF Protection', () => {
     });
 
     it('adminFetch should include credentials: include', () => {
-      const adminFetchFn = adminSharedContent.match(/async function adminFetch[\s\S]*?^  }/m);
+      const adminFetchFn = adminSharedContent.match(/async function adminFetch[\s\S]*?^\s*}/m);
       expect(adminFetchFn).toBeTruthy();
       expect(adminFetchFn[0]).toContain("credentials: 'include'");
     });
