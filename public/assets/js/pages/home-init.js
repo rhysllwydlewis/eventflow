@@ -471,14 +471,18 @@ async function loadHeroCollageImages() {
       }
 
       // Check if this is a custom uploaded image (not default)
-      const isCustomImage = !imageUrl.includes('/assets/images/collage-');
+      // Additional safety check before calling includes()
+      const isCustomImage = imageUrl && typeof imageUrl === 'string' && !imageUrl.includes('/assets/images/collage-');
 
       // Get the current image URL (without query params for comparison)
-      const currentImageUrl = imgElement.src.split('?')[0];
-      const normalizedImageUrl = imageUrl.split('?')[0];
+      const currentImageUrl = imgElement.src ? imgElement.src.split('?')[0] : '';
+      const normalizedImageUrl = imageUrl ? imageUrl.split('?')[0] : '';
 
       // Determine if we need to update based on URL comparison
-      const needsUpdate = !currentImageUrl.endsWith(normalizedImageUrl.split('/').pop());
+      // Add null checks before accessing string methods
+      const needsUpdate = normalizedImageUrl && currentImageUrl 
+        ? !currentImageUrl.endsWith((normalizedImageUrl.split('/').pop() ?? '') || '')
+        : false;
 
       // Skip update if URL matches and it's a default image
       if (!needsUpdate && !isCustomImage) {
@@ -501,6 +505,37 @@ async function loadHeroCollageImages() {
         // Update the image source
         imgElement.src = cacheBustedUrl;
         imgElement.alt = `${category.charAt(0).toUpperCase() + category.slice(1)} - ${isCustomImage ? 'custom uploaded' : 'default'} hero image`;
+        
+        // Add onerror handler to fallback gracefully if the image fails to load
+        imgElement.onerror = function() {
+          // Fallback to default image for this category
+          const defaultImages = {
+            venues: '/assets/images/collage-venue.jpg',
+            catering: '/assets/images/collage-catering.jpg',
+            entertainment: '/assets/images/collage-entertainment.jpg',
+            photography: '/assets/images/collage-photography.jpg',
+          };
+          
+          // Unique gradient colors per category (matching HTML onerror handlers)
+          const gradientFallbacks = {
+            venues: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            catering: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+            entertainment: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+            photography: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+          };
+          
+          // Only attempt fallback once to prevent infinite loop
+          // Use endsWith for more robust URL comparison
+          if (!this.src || !this.src.endsWith(defaultImages[category])) {
+            this.src = defaultImages[category];
+          } else {
+            // If even the default fails, show a gradient placeholder
+            this.style.background = gradientFallbacks[category] || gradientFallbacks.venues;
+            this.style.minHeight = '200px';
+            this.src = '';
+            this.onerror = null;
+          }
+        };
 
         // Handle <source> element for responsive images
         const sourceElement = pictureElement.querySelector('source');

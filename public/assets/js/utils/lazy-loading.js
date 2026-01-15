@@ -54,6 +54,14 @@
   }
 
   /**
+   * Mark an image as loaded and make it visible
+   */
+  function markImageAsLoaded(img) {
+    img.style.opacity = '1';
+    img.dataset.loaded = 'true';
+  }
+
+  /**
    * Load a single image with fade-in effect
    */
   function loadImage(img) {
@@ -80,12 +88,17 @@
       img.removeAttribute('data-src');
     }
 
+    // Check if image is already loaded (from cache or before script ran)
+    if (img.complete && img.naturalWidth > 0 && img.naturalHeight > 0) {
+      markImageAsLoaded(img);
+      return;
+    }
+
     // Fade in when loaded
     img.addEventListener(
       'load',
       () => {
-        img.style.opacity = '1';
-        img.dataset.loaded = 'true';
+        markImageAsLoaded(img);
       },
       { once: true }
     );
@@ -95,8 +108,7 @@
       'error',
       () => {
         console.warn('Failed to load image:', img.src);
-        img.style.opacity = '1';
-        img.dataset.loaded = 'true';
+        markImageAsLoaded(img);
       },
       { once: true }
     );
