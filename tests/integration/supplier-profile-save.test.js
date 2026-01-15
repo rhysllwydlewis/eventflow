@@ -74,6 +74,17 @@ describe('Supplier Profile Save Fixes', () => {
       // Frontend regex should match backend pattern (using \d instead of [0-9])
       expect(dashboardSupplierHtml).toContain('/^[A-Z]{1,2}\\d{1,2}[A-Z]?\\s*\\d[A-Z]{2}$/i');
     });
+
+    it('should have accessibility attributes on venue postcode field', () => {
+      expect(dashboardSupplierHtml).toContain('aria-describedby="venue-postcode-help venue-postcode-error"');
+      expect(dashboardSupplierHtml).toContain('aria-required=');
+      expect(dashboardSupplierHtml).toContain('role="alert"');
+      expect(dashboardSupplierHtml).toContain('aria-live="polite"');
+    });
+
+    it('should have smooth scrolling to error field', () => {
+      expect(dashboardSupplierHtml).toContain("scrollIntoView({ behavior: 'smooth'");
+    });
   });
 
   describe('Form Submission Logic in app.js', () => {
