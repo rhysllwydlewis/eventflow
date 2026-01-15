@@ -108,8 +108,8 @@ self.addEventListener('fetch', event => {
     // Allowlist of safe public endpoints that may be cached
     // NOTE: Only truly public endpoints with no sensitive data should be here
     const SAFE_API_ENDPOINTS = [
-      '/api/config',   // Public config (Google Maps key, version)
-      '/api/meta',     // App metadata (version, node version, env)
+      '/api/config', // Public config (Google Maps key, version)
+      '/api/meta', // App metadata (version, node version, env)
     ];
 
     // Check if this is a safe endpoint

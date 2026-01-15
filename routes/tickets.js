@@ -20,66 +20,73 @@ const router = express.Router();
  * POST /api/tickets
  * Create a new support ticket
  */
-router.post('/', featureRequired('supportTickets'), authRequired, csrfProtection, writeLimiter, async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const {
-      senderId,
-      senderType,
-      senderName,
-      senderEmail,
-      subject,
-      message,
-      priority = 'medium',
-    } = req.body;
+router.post(
+  '/',
+  featureRequired('supportTickets'),
+  authRequired,
+  csrfProtection,
+  writeLimiter,
+  async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const {
+        senderId,
+        senderType,
+        senderName,
+        senderEmail,
+        subject,
+        message,
+        priority = 'medium',
+      } = req.body;
 
-    // Validation
-    if (!subject || !message) {
-      return res.status(400).json({ error: 'Subject and message are required' });
+      // Validation
+      if (!subject || !message) {
+        return res.status(400).json({ error: 'Subject and message are required' });
+      }
+
+      if (!senderType || !['customer', 'supplier'].includes(senderType)) {
+        return res.status(400).json({ error: 'Invalid sender type' });
+      }
+
+      // Create ticket
+      const now = new Date().toISOString();
+      const tickets = await dbUnified.read('tickets');
+
+      const newTicket = {
+        id: uid(),
+        senderId: senderId || userId,
+        senderType: senderType,
+        senderName: senderName || req.user.name || req.user.email,
+        senderEmail: senderEmail || req.user.email,
+        subject: subject,
+        message: message,
+        status: 'open', // 'open' | 'in_progress' | 'resolved' | 'closed'
+        priority: priority, // 'low' | 'medium' | 'high'
+        responses: [],
+        createdAt: now,
+        updatedAt: now,
+      };
+
+      tickets.push(newTicket);
+      await dbUnified.write('tickets', tickets);
+
+      // Audit log
+      auditLog({
+        adminId: userId,
+        adminEmail: req.user.email,
+        action: 'TICKET_CREATED',
+        targetType: 'ticket',
+        targetId: newTicket.id,
+        details: { subject, priority },
+      });
+
+      res.status(201).json({ ticketId: newTicket.id, ticket: newTicket });
+    } catch (error) {
+      console.error('Error creating ticket:', error);
+      res.status(500).json({ error: 'Failed to create ticket', details: error.message });
     }
-
-    if (!senderType || !['customer', 'supplier'].includes(senderType)) {
-      return res.status(400).json({ error: 'Invalid sender type' });
-    }
-
-    // Create ticket
-    const now = new Date().toISOString();
-    const tickets = await dbUnified.read('tickets');
-
-    const newTicket = {
-      id: uid(),
-      senderId: senderId || userId,
-      senderType: senderType,
-      senderName: senderName || req.user.name || req.user.email,
-      senderEmail: senderEmail || req.user.email,
-      subject: subject,
-      message: message,
-      status: 'open', // 'open' | 'in_progress' | 'resolved' | 'closed'
-      priority: priority, // 'low' | 'medium' | 'high'
-      responses: [],
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    tickets.push(newTicket);
-    await dbUnified.write('tickets', tickets);
-
-    // Audit log
-    auditLog({
-      adminId: userId,
-      adminEmail: req.user.email,
-      action: 'TICKET_CREATED',
-      targetType: 'ticket',
-      targetId: newTicket.id,
-      details: { subject, priority },
-    });
-
-    res.status(201).json({ ticketId: newTicket.id, ticket: newTicket });
-  } catch (error) {
-    console.error('Error creating ticket:', error);
-    res.status(500).json({ error: 'Failed to create ticket', details: error.message });
   }
-});
+);
 
 /**
  * GET /api/tickets

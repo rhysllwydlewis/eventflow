@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 /**
  * SEO Canonicals E2E Tests
- * 
+ *
  * Tests that all public pages have:
  * - <link rel="canonical"> tag
  * - <meta property="og:url"> tag
@@ -35,7 +35,7 @@ test.describe('SEO Canonicals', () => {
     'birthday-party-planning-guide.html',
   ].map(article => ({
     path: `/articles/${article}`,
-    canonical: `https://event-flow.co.uk/articles/${article}`
+    canonical: `https://event-flow.co.uk/articles/${article}`,
   }));
 
   const allPages = [...publicPages, ...articlePages];
@@ -70,7 +70,9 @@ test.describe('SEO Canonicals', () => {
 
       // Get both values
       const canonicalHref = await browserPage.locator('link[rel="canonical"]').getAttribute('href');
-      const ogUrlContent = await browserPage.locator('meta[property="og:url"]').getAttribute('content');
+      const ogUrlContent = await browserPage
+        .locator('meta[property="og:url"]')
+        .getAttribute('content');
 
       // They must match exactly
       expect(canonicalHref).toBe(ogUrlContent);
@@ -80,20 +82,20 @@ test.describe('SEO Canonicals', () => {
 
   test('marketplace.html should redirect to /marketplace', async ({ page }) => {
     const response = await page.goto('/marketplace.html');
-    
+
     // Should get a redirect response
     expect(response?.status()).toBe(301);
-    
+
     // Should end up at /marketplace
     expect(page.url()).toContain('/marketplace');
   });
 
   test('index.html should redirect to /', async ({ page }) => {
     const response = await page.goto('/index.html');
-    
+
     // Should get a redirect response
     expect(response?.status()).toBe(301);
-    
+
     // Should end up at root
     const finalUrl = page.url();
     expect(finalUrl.endsWith('/') || finalUrl === page.context()._options.baseURL).toBe(true);

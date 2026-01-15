@@ -17,23 +17,24 @@ The implementation aligns with the official Pexels API v1 documentation availabl
 
 #### Validated Endpoints
 
-| Endpoint | Implementation | Status | Notes |
-|----------|---------------|--------|-------|
-| `GET /v1/search` | ✅ Implemented | Valid | Used in `searchPhotos()` |
-| `GET /v1/curated` | ✅ Implemented | Valid | Used in `getCuratedPhotos()` |
-| `GET /v1/photos/{id}` | ✅ Implemented | Valid | Used in `getPhotoById()` |
-| `GET /v1/videos/search` | ✅ Implemented | Valid | Used in `searchVideos()` |
-| `GET /v1/videos/popular` | ✅ Implemented | Valid | Used in `getPopularVideos()` |
-| `GET /v1/videos/{id}` | ✅ Implemented | Valid | Used in `getVideoById()` |
-| `GET /v1/collections/featured` | ✅ Implemented | Valid | Used in `getFeaturedCollections()` |
-| `GET /v1/collections` | ✅ Implemented | Valid | Used in `getUserCollections()` |
-| `GET /v1/collections/{id}` | ✅ Implemented | Valid | Used in `getCollectionMedia()` |
+| Endpoint                       | Implementation | Status | Notes                              |
+| ------------------------------ | -------------- | ------ | ---------------------------------- |
+| `GET /v1/search`               | ✅ Implemented | Valid  | Used in `searchPhotos()`           |
+| `GET /v1/curated`              | ✅ Implemented | Valid  | Used in `getCuratedPhotos()`       |
+| `GET /v1/photos/{id}`          | ✅ Implemented | Valid  | Used in `getPhotoById()`           |
+| `GET /v1/videos/search`        | ✅ Implemented | Valid  | Used in `searchVideos()`           |
+| `GET /v1/videos/popular`       | ✅ Implemented | Valid  | Used in `getPopularVideos()`       |
+| `GET /v1/videos/{id}`          | ✅ Implemented | Valid  | Used in `getVideoById()`           |
+| `GET /v1/collections/featured` | ✅ Implemented | Valid  | Used in `getFeaturedCollections()` |
+| `GET /v1/collections`          | ✅ Implemented | Valid  | Used in `getUserCollections()`     |
+| `GET /v1/collections/{id}`     | ✅ Implemented | Valid  | Used in `getCollectionMedia()`     |
 
 ### API Response Schema Validation
 
 The implementation correctly handles the following schema fields:
 
 **Photo Object:**
+
 ```javascript
 {
   id: number,
@@ -72,10 +73,12 @@ The fallback system provides 15 photo URLs and 8 video URLs as graceful degradat
 #### URL Format Analysis
 
 All fallback URLs follow the Pexels CDN pattern:
+
 - **Photos:** `https://images.pexels.com/photos/{id}/pexels-photo-{id}.jpeg`
 - **Videos:** `https://images.pexels.com/videos/{id}/free-video-{id}.jpg`
 
 **Query Parameters:**
+
 - `auto=compress` - Automatic compression
 - `cs=tinysrgb` - Color space (tiny sRGB)
 - `w={width}&h={height}` - Responsive sizing
@@ -107,6 +110,7 @@ const validCategories = ['venues', 'catering', 'entertainment', 'photography'];
 The system supports two modes for category handling:
 
 1. **Search-based (default):**
+
    ```javascript
    queries: {
      venues: 'wedding venue elegant ballroom',
@@ -131,10 +135,10 @@ The system supports two modes for category handling:
 
 ```javascript
 const categoryMapping = {
-  venues: 0,       // Frame index 0
-  catering: 1,     // Frame index 1
+  venues: 0, // Frame index 0
+  catering: 1, // Frame index 1
   entertainment: 2, // Frame index 2
-  photography: 3,  // Frame index 3
+  photography: 3, // Frame index 3
 };
 ```
 
@@ -148,24 +152,26 @@ const categoryMapping = {
 
 The following error types are now properly categorized:
 
-| Error Type | HTTP Status | User-Friendly Message | Action |
-|-----------|------------|----------------------|---------|
-| `authentication` | 401, 403 | API key invalid or lacks permissions | Check API key configuration |
-| `not_found` | 404 | Resource not found | Verify collection IDs |
-| `rate_limit` | 429 | Rate limit exceeded | Wait and retry, implement caching |
-| `server_error` | 5xx | Pexels API temporarily unavailable | Activate fallback mechanism |
-| `network` | - | Network connectivity issue | Check network/DNS |
-| `timeout` | - | Request timeout | Increase timeout or retry |
-| `validation` | 400 | Invalid input parameters | Fix client-side validation |
+| Error Type       | HTTP Status | User-Friendly Message                | Action                            |
+| ---------------- | ----------- | ------------------------------------ | --------------------------------- |
+| `authentication` | 401, 403    | API key invalid or lacks permissions | Check API key configuration       |
+| `not_found`      | 404         | Resource not found                   | Verify collection IDs             |
+| `rate_limit`     | 429         | Rate limit exceeded                  | Wait and retry, implement caching |
+| `server_error`   | 5xx         | Pexels API temporarily unavailable   | Activate fallback mechanism       |
+| `network`        | -           | Network connectivity issue           | Check network/DNS                 |
+| `timeout`        | -           | Request timeout                      | Increase timeout or retry         |
+| `validation`     | 400         | Invalid input parameters             | Fix client-side validation        |
 
 ### Debug Logging
 
 Debug mode can be enabled by setting:
+
 ```bash
 export PEXELS_DEBUG=true
 ```
 
 This will log:
+
 - API response structure
 - Schema validation details
 - Field availability checks
@@ -173,12 +179,14 @@ This will log:
 ### Error Messages
 
 **Before:**
+
 ```javascript
 error: 'Failed to search photos',
 message: error.message
 ```
 
 **After (Enhanced):**
+
 ```javascript
 error: 'Failed to search photos',
 message: error.userFriendlyMessage || error.message,
@@ -193,12 +201,14 @@ details: error.message
 ### Enhanced Frontend Logging (`home-init.js`)
 
 **Improvements:**
+
 1. Parse error responses for detailed logging
 2. Log error types in development mode
 3. Graceful fallback to static images
 4. User-friendly console messages
 
 **Example:**
+
 ```javascript
 if (!response.ok) {
   const errorData = await response.json();
@@ -295,6 +305,7 @@ The implementation is fully aligned with Pexels API v1 documentation:
 ## 10. Conclusion
 
 The Pexels API integration is well-architected with:
+
 - ✅ Proper API endpoint usage
 - ✅ Robust fallback mechanism
 - ✅ Enhanced error handling and logging

@@ -13,7 +13,7 @@ const { test, expect } = require('@playwright/test');
 test.describe('Hero Collage Images', () => {
   test('Collage images load without console errors', async ({ page }) => {
     const consoleErrors = [];
-    
+
     // Track console errors
     page.on('console', msg => {
       if (msg.type() === 'error') {
@@ -39,10 +39,10 @@ test.describe('Hero Collage Images', () => {
     const imageErrors = consoleErrors.filter(
       err => err.includes('indexOf') || err.includes('Cannot read properties of undefined')
     );
-    
+
     expect(imageErrors).toHaveLength(0);
     console.log('✓ No indexOf or undefined property errors');
-    
+
     if (consoleErrors.length > 0) {
       console.log('Other console errors (not image-related):', consoleErrors);
     }
@@ -59,7 +59,7 @@ test.describe('Hero Collage Images', () => {
 
   test('Collage images have src attributes', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
-    
+
     // Wait for images to potentially load
     await page.waitForTimeout(1500);
 
@@ -92,7 +92,7 @@ test.describe('Hero Collage Images', () => {
 
   test('Collage images display or show fallback', async ({ page }) => {
     await page.goto('/', { waitUntil: 'networkidle' });
-    
+
     // Wait for images to load or fail
     await page.waitForTimeout(2000);
 
@@ -101,18 +101,18 @@ test.describe('Hero Collage Images', () => {
 
     for (let i = 0; i < frames.length; i++) {
       const img = frames[i].locator('img');
-      
+
       // Check if image is visible or has fallback styling
       const hasBackground = await img.evaluate(el => {
         const bg = window.getComputedStyle(el).background;
         return bg.includes('gradient') || bg.includes('linear-gradient');
       });
-      
+
       const hasSrc = await img.evaluate(el => el.src && el.src.length > 0);
-      
+
       // Either has a valid src OR shows gradient fallback
       expect(hasSrc || hasBackground).toBe(true);
-      
+
       console.log(`✓ Frame ${i + 1}: ${hasSrc ? 'image loaded' : 'showing fallback'}`);
     }
   });
@@ -132,7 +132,7 @@ test.describe('Hero Collage Images', () => {
     });
 
     await page.goto('/', { waitUntil: 'networkidle' });
-    
+
     // Wait for all images to load or fail
     await page.waitForTimeout(2000);
 
@@ -144,14 +144,14 @@ test.describe('Hero Collage Images', () => {
   test('Visual regression: Collage displays on desktop (1920x1080)', async ({ page }) => {
     await page.setViewportSize({ width: 1920, height: 1080 });
     await page.goto('/', { waitUntil: 'networkidle' });
-    
+
     // Wait for images
     await page.waitForTimeout(2000);
 
     // Take screenshot of collage section
     const collage = page.locator('.collage');
     await expect(collage).toBeVisible();
-    
+
     await page.screenshot({
       path: '/tmp/hero-collage-desktop.png',
       fullPage: false,
@@ -163,14 +163,14 @@ test.describe('Hero Collage Images', () => {
   test('Visual regression: Collage displays on mobile (375x667)', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 667 });
     await page.goto('/', { waitUntil: 'networkidle' });
-    
+
     // Wait for images
     await page.waitForTimeout(2000);
 
     // Take screenshot
     const collage = page.locator('.collage');
     await expect(collage).toBeVisible();
-    
+
     await page.screenshot({
       path: '/tmp/hero-collage-mobile.png',
       fullPage: false,

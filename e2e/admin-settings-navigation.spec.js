@@ -46,13 +46,15 @@ test.describe('Admin Settings Navigation', () => {
     await page.goto('/admin.html');
 
     // Click the admin dropdown button to open menu
-    const dropdownButton = page.locator('button.admin-user-dropdown, button[id*="dropdown"], button:has-text("Admin")').first();
+    const dropdownButton = page
+      .locator('button.admin-user-dropdown, button[id*="dropdown"], button:has-text("Admin")')
+      .first();
     await dropdownButton.click();
 
     // Find and click the settings link in dropdown
     const settingsLink = page.locator('a.admin-dropdown-item:has-text("Settings")');
     await expect(settingsLink).toBeVisible();
-    
+
     // Verify the link has correct href
     const href = await settingsLink.getAttribute('href');
     expect(href).toBe('/admin-settings.html');
@@ -90,13 +92,15 @@ test.describe('Admin Settings Navigation', () => {
     await page.goto('/admin-users.html');
 
     // Click the admin dropdown button to open menu
-    const dropdownButton = page.locator('button.admin-user-dropdown, button[id*="dropdown"], button:has-text("Admin")').first();
+    const dropdownButton = page
+      .locator('button.admin-user-dropdown, button[id*="dropdown"], button:has-text("Admin")')
+      .first();
     await dropdownButton.click();
 
     // Find the settings link in dropdown
     const settingsLink = page.locator('a.admin-dropdown-item:has-text("Settings")');
     await expect(settingsLink).toBeVisible();
-    
+
     // Verify the link has correct href (should be admin-settings, not settings)
     const href = await settingsLink.getAttribute('href');
     expect(href).toBe('/admin-settings.html');
@@ -107,13 +111,15 @@ test.describe('Admin Settings Navigation', () => {
     await page.goto('/admin-packages.html');
 
     // Click the admin dropdown button to open menu
-    const dropdownButton = page.locator('button.admin-user-dropdown, button[id*="dropdown"], button:has-text("Admin")').first();
+    const dropdownButton = page
+      .locator('button.admin-user-dropdown, button[id*="dropdown"], button:has-text("Admin")')
+      .first();
     await dropdownButton.click();
 
     // Find the settings link in dropdown
     const settingsLink = page.locator('a.admin-dropdown-item:has-text("Settings")');
     await expect(settingsLink).toBeVisible();
-    
+
     // Verify the link has correct href (should be admin-settings, not settings)
     const href = await settingsLink.getAttribute('href');
     expect(href).toBe('/admin-settings.html');

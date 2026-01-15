@@ -36,10 +36,7 @@ describe('Admin v2 API Integration Tests', () => {
 
   describe('Route Registration', () => {
     it('should register admin-v2 routes in server.js', () => {
-      const serverContent = fs.readFileSync(
-        path.join(__dirname, '../../server.js'),
-        'utf8'
-      );
+      const serverContent = fs.readFileSync(path.join(__dirname, '../../server.js'), 'utf8');
 
       expect(serverContent).toContain("require('./routes/admin-v2')");
       expect(serverContent).toContain("app.use('/api/v2/admin'");
@@ -73,7 +70,7 @@ describe('Admin v2 API Integration Tests', () => {
         'utf8'
       );
 
-      expect(routeContent).toContain("router.post");
+      expect(routeContent).toContain('router.post');
       expect(routeContent).toContain("'/users/:id/permissions'");
       expect(routeContent).toContain('grantPermission');
     });
@@ -84,7 +81,7 @@ describe('Admin v2 API Integration Tests', () => {
         'utf8'
       );
 
-      expect(routeContent).toContain("router.delete");
+      expect(routeContent).toContain('router.delete');
       expect(routeContent).toContain("'/users/:id/permissions/:permission'");
       expect(routeContent).toContain('revokePermission');
     });
@@ -97,7 +94,7 @@ describe('Admin v2 API Integration Tests', () => {
         'utf8'
       );
 
-      expect(routeContent).toContain("router.get");
+      expect(routeContent).toContain('router.get');
       expect(routeContent).toContain("'/users'");
       expect(routeContent).toContain('pagination');
     });
@@ -118,7 +115,7 @@ describe('Admin v2 API Integration Tests', () => {
         'utf8'
       );
 
-      expect(routeContent).toContain("router.put");
+      expect(routeContent).toContain('router.put');
       expect(routeContent).toContain("'/users/:id'");
       expect(routeContent).toContain('USER_UPDATED');
     });
@@ -129,7 +126,7 @@ describe('Admin v2 API Integration Tests', () => {
         'utf8'
       );
 
-      expect(routeContent).toContain("router.delete");
+      expect(routeContent).toContain('router.delete');
       expect(routeContent).toContain("'/users/:id'");
       expect(routeContent).toContain('USER_DELETED');
     });
@@ -182,7 +179,7 @@ describe('Admin v2 API Integration Tests', () => {
         'utf8'
       );
 
-      expect(routeContent).toContain("router.delete");
+      expect(routeContent).toContain('router.delete');
       expect(routeContent).toContain("'/suppliers/:id'");
       expect(routeContent).toContain('SUPPLIER_DELETED');
     });
@@ -225,7 +222,7 @@ describe('Admin v2 API Integration Tests', () => {
         'utf8'
       );
 
-      expect(routeContent).toContain("router.delete");
+      expect(routeContent).toContain('router.delete');
       expect(routeContent).toContain("'/packages/:id'");
       expect(routeContent).toContain('PACKAGE_DELETED');
     });
@@ -467,7 +464,7 @@ describe('Admin v2 API Integration Tests', () => {
         'utf8'
       );
 
-      expect(routeContent).toContain("logger.error");
+      expect(routeContent).toContain('logger.error');
     });
 
     it('should handle 404 errors', () => {
@@ -624,10 +621,7 @@ describe('Admin v2 API Integration Tests', () => {
     });
 
     it('should mount admin-v2 on separate path', () => {
-      const serverContent = fs.readFileSync(
-        path.join(__dirname, '../../server.js'),
-        'utf8'
-      );
+      const serverContent = fs.readFileSync(path.join(__dirname, '../../server.js'), 'utf8');
 
       expect(serverContent).toContain("app.use('/api/admin'");
       expect(serverContent).toContain("app.use('/api/v2/admin'");

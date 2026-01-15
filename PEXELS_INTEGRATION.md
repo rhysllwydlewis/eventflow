@@ -109,6 +109,7 @@ GET /api/pexels/collections/:id?page=1&perPage=15&type=photos
 ```
 
 Retrieves all media (photos and/or videos) from a specific collection.
+
 - `type` parameter (optional): Filter by media type ('photos' or 'videos')
 
 #### Get Category Suggestions
@@ -132,6 +133,7 @@ GET /api/pexels/metrics
 ```
 
 Returns service metrics including:
+
 - Total/successful/failed requests
 - Success rate
 - Cache hit rate
@@ -153,12 +155,14 @@ GET /api/pexels/test
 ```
 
 Tests the Pexels API connection and validates the API key. Returns detailed status including:
+
 - Connection success/failure
 - Response time
 - Error categorization (authentication, rate limit, timeout, network)
 - API version information
 
 **Example Response (Success):**
+
 ```json
 {
   "success": true,
@@ -174,6 +178,7 @@ Tests the Pexels API connection and validates the API key. Returns detailed stat
 ```
 
 **Example Response (Failure):**
+
 ```json
 {
   "success": false,
@@ -208,6 +213,7 @@ After enabling the Pexels feature flag, you can test the API connection directly
 - **Red (Error)**: Shows specific error type and troubleshooting details
 
 Error types:
+
 - `authentication`: Invalid API key
 - `rate_limit`: Too many requests
 - `timeout`: Connection timeout
@@ -222,11 +228,12 @@ GET /api/health
 ```
 
 Response includes:
+
 ```json
 {
   "status": "ok",
   "services": {
-    "pexels": "configured"  // or "not_configured" or "unavailable"
+    "pexels": "configured" // or "not_configured" or "unavailable"
   }
 }
 ```
@@ -242,6 +249,7 @@ When the server starts, it automatically checks Pexels configuration:
 ```
 
 Or if not configured:
+
 ```
    ℹ️  Pexels API: Not configured (optional)
    Set PEXELS_API_KEY to enable stock photo integration
@@ -319,18 +327,22 @@ The easiest way to verify your Pexels API key:
 ### Common Error Types
 
 #### Authentication Error
+
 - **Cause**: Invalid or missing API key
 - **Solution**: Verify `PEXELS_API_KEY` in environment variables, get a new key from pexels.com/api
 
 #### Rate Limit Error
+
 - **Cause**: Exceeded 200 requests/hour or 20,000 requests/month
 - **Solution**: Wait for rate limit to reset, or upgrade your Pexels plan
 
 #### Timeout Error
+
 - **Cause**: Slow network or Pexels API is slow to respond
 - **Solution**: Check network connection, try again in a moment
 
 #### Network Error
+
 - **Cause**: Cannot reach Pexels API (firewall, DNS issues)
 - **Solution**: Check firewall settings, verify DNS resolution for api.pexels.com
 

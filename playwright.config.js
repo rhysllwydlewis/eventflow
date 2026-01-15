@@ -33,11 +33,11 @@ export default defineConfig({
       const e2eMode = process.env.E2E_MODE || 'static';
       const isCI = process.env.CI === 'true';
       const useStaticMode = isCI || e2eMode === 'static';
-      
+
       if (process.env.BASE_URL) {
         return process.env.BASE_URL;
       }
-      
+
       return useStaticMode ? 'http://127.0.0.1:4173' : 'http://localhost:3000';
     })(),
 
@@ -104,10 +104,10 @@ export default defineConfig({
     // Determine E2E mode: 'static' (default) or 'full' (backend)
     const e2eMode = process.env.E2E_MODE || 'static';
     const isCI = process.env.CI === 'true';
-    
+
     // In CI, always use static mode
     const useStaticMode = isCI || e2eMode === 'static';
-    
+
     if (useStaticMode) {
       // Static mode: lightweight server, no backend/database
       return {

@@ -10,7 +10,7 @@ test.describe('Admin Endpoints - Security & Functionality', () => {
     test('should require authentication for admin endpoints', async ({ request }) => {
       // Try to access admin endpoint without auth
       const response = await request.get('/api/admin/badge-counts');
-      
+
       // Should redirect to login or return 401/403
       expect([401, 403, 302]).toContain(response.status());
     });
@@ -27,7 +27,7 @@ test.describe('Admin Endpoints - Security & Functionality', () => {
     test('should return badge counts with correct structure', async ({ page }) => {
       // Login as admin (assuming login flow exists)
       // This is a placeholder - actual implementation depends on auth setup
-      
+
       // Mock the response for testing
       await page.route('/api/admin/badge-counts', async route => {
         await route.fulfill({
@@ -52,11 +52,11 @@ test.describe('Admin Endpoints - Security & Functionality', () => {
       });
 
       await page.goto('/admin-homepage.html');
-      
+
       // Verify the endpoint is called
       const response = await page.waitForResponse('/api/admin/badge-counts');
       expect(response.status()).toBe(200);
-      
+
       const data = await response.json();
       expect(data).toHaveProperty('pending');
       expect(data).toHaveProperty('totals');
@@ -72,7 +72,7 @@ test.describe('Admin Endpoints - Security & Functionality', () => {
     test('should reject POST requests without CSRF token', async ({ page, context }) => {
       // Mock admin auth
       await context.addCookies([
-        { name: 'token', value: 'test-jwt-token', domain: 'localhost', path: '/' }
+        { name: 'token', value: 'test-jwt-token', domain: 'localhost', path: '/' },
       ]);
 
       // Try to resolve a report without CSRF token
@@ -105,12 +105,14 @@ test.describe('Admin Endpoints - Security & Functionality', () => {
       // Mock admin auth
       await context.addCookies([
         { name: 'token', value: 'test-jwt-token', domain: 'localhost', path: '/' },
-        { name: 'csrf', value: 'test-csrf-token', domain: 'localhost', path: '/' }
+        { name: 'csrf', value: 'test-csrf-token', domain: 'localhost', path: '/' },
       ]);
 
       // Try to approve more than 100 packages
       const response = await page.evaluate(async () => {
-        const largeArray = Array(101).fill(0).map((_, i) => `pkg_${i}`);
+        const largeArray = Array(101)
+          .fill(0)
+          .map((_, i) => `pkg_${i}`);
         const res = await fetch('/api/admin/packages/bulk-approve', {
           method: 'POST',
           headers: {
@@ -137,7 +139,7 @@ test.describe('Admin Endpoints - Security & Functionality', () => {
       // Mock admin auth
       await context.addCookies([
         { name: 'token', value: 'test-jwt-token', domain: 'localhost', path: '/' },
-        { name: 'csrf', value: 'test-csrf-token', domain: 'localhost', path: '/' }
+        { name: 'csrf', value: 'test-csrf-token', domain: 'localhost', path: '/' },
       ]);
 
       const response = await page.evaluate(async () => {
@@ -166,13 +168,13 @@ test.describe('Admin Endpoints - Security & Functionality', () => {
     test('should have resolve endpoint with proper validation', async ({ page, context }) => {
       // This is a structure test - actual API test would require database setup
       await page.goto('/admin-homepage.html');
-      
+
       // Verify the routes file has the endpoint
       const routesContent = await page.evaluate(async () => {
         const res = await fetch('/routes/reports.js');
         return res.ok;
       });
-      
+
       // If route file is accessible, this would be true
       // In production, route files aren't directly accessible
       // This is more of a structural verification
@@ -193,10 +195,10 @@ test.describe('Admin Endpoints - Security & Functionality', () => {
       });
 
       await page.goto('/admin-homepage.html');
-      
+
       // Wait for error to appear
       await page.waitForTimeout(1000);
-      
+
       // Check if error is logged to console
       const errors = [];
       page.on('console', msg => {
@@ -213,7 +215,7 @@ test.describe('Admin Endpoints - Security & Functionality', () => {
       });
 
       await page.waitForTimeout(1000);
-      
+
       // Should have logged an error
       expect(errors.length).toBeGreaterThan(0);
     });
@@ -223,7 +225,7 @@ test.describe('Admin Endpoints - Security & Functionality', () => {
     test('should have dashboard overview endpoint', async ({ request }) => {
       // Structure test - verify endpoint exists in routing
       // Actual test would require proper auth setup
-      
+
       // This is documented as existing in admin-v2.js
       expect(true).toBe(true);
     });

@@ -24,11 +24,13 @@ The EventFlow application now uses the **Double-Submit Cookie pattern** for CSRF
 ### Test 1: GET CSRF Token
 
 **Request:**
+
 ```bash
 curl -i -X GET http://localhost:3000/api/csrf-token
 ```
 
 **Expected Response:**
+
 - Status: 200
 - Headers should include `Set-Cookie: csrf=<token>; ...`
 - Body: `{"csrfToken":"<token>"}`
@@ -37,6 +39,7 @@ curl -i -X GET http://localhost:3000/api/csrf-token
 ### Test 2: POST Without CSRF Token (Should Fail)
 
 **Request:**
+
 ```bash
 curl -i -X POST http://localhost:3000/api/auth/logout \
   -H "Content-Type: application/json" \
@@ -44,12 +47,14 @@ curl -i -X POST http://localhost:3000/api/auth/logout \
 ```
 
 **Expected Response:**
+
 - Status: 403
 - Body: `{"error":"CSRF token missing"}`
 
 ### Test 3: POST With Wrong CSRF Token (Should Fail)
 
 **Request:**
+
 ```bash
 curl -i -X POST http://localhost:3000/api/auth/logout \
   -H "Content-Type: application/json" \
@@ -58,12 +63,14 @@ curl -i -X POST http://localhost:3000/api/auth/logout \
 ```
 
 **Expected Response:**
+
 - Status: 403
 - Body: `{"error":"Invalid CSRF token"}`
 
 ### Test 4: POST With Correct CSRF Token (Should Succeed)
 
 **Request:**
+
 ```bash
 # First, get a CSRF token
 TOKEN=$(curl -s http://localhost:3000/api/csrf-token | jq -r '.csrfToken')
@@ -76,12 +83,14 @@ curl -i -X POST http://localhost:3000/api/auth/logout \
 ```
 
 **Expected Response:**
+
 - Status: 200
 - Body: `{"ok":true}`
 
 ### Test 5: Admin Route CSRF Protection
 
 **Request:**
+
 ```bash
 # Get CSRF token and auth token
 TOKEN=$(curl -s -c cookies.txt http://localhost:3000/api/csrf-token | jq -r '.csrfToken')
@@ -94,10 +103,12 @@ curl -i -X POST http://localhost:3000/api/admin/content/faqs \
 ```
 
 **Expected Response:**
+
 - Status: 403
 - Body: `{"error":"CSRF token missing"}`
 
 **With CSRF Token:**
+
 ```bash
 curl -i -X POST http://localhost:3000/api/admin/content/faqs \
   -H "Content-Type: application/json" \
@@ -107,6 +118,7 @@ curl -i -X POST http://localhost:3000/api/admin/content/faqs \
 ```
 
 **Expected Response:**
+
 - Status: 200 or 201
 - Body: Success response with created FAQ
 
@@ -120,17 +132,20 @@ curl -i -X POST http://localhost:3000/api/admin/content/faqs \
 4. Observe the following:
 
 **On Page Load:**
+
 - Request to `/api/csrf-token`
 - Response sets `csrf` cookie
 - Cookie visible in Application tab → Cookies
 
 **On Admin Action (e.g., Create FAQ):**
+
 - POST request to `/api/admin/content/faqs`
 - Request headers include `X-CSRF-Token: <token>`
 - Request cookies include `csrf=<token>`
 - Both values should match
 
 **On Logout:**
+
 - POST request to `/api/auth/logout`
 - Request includes both CSRF cookie and header
 - Response clears auth cookie
@@ -146,24 +161,26 @@ To verify CSRF protection works, try to make a request from a different origin:
    - Even if it did, attacker can't read the cookie to put in header (Same-Origin Policy)
 
 **Example Malicious HTML:**
+
 ```html
 <!DOCTYPE html>
 <html>
-<body>
-<script>
-// This will fail - no CSRF token
-fetch('http://localhost:3000/api/admin/content/faqs', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  credentials: 'include',
-  body: JSON.stringify({question:'Evil?',answer:'Evil'})
-});
-</script>
-</body>
+  <body>
+    <script>
+      // This will fail - no CSRF token
+      fetch('http://localhost:3000/api/admin/content/faqs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ question: 'Evil?', answer: 'Evil' }),
+      });
+    </script>
+  </body>
 </html>
 ```
 
 **Result:**
+
 - Request fails with 403 "CSRF token missing"
 - Even if attacker had valid auth cookie, they can't get/set CSRF token
 
@@ -176,6 +193,7 @@ npm test -- tests/integration/csrf-protection.test.js
 ```
 
 All 25 tests should pass, verifying:
+
 - Middleware implementation
 - Cookie configuration
 - Route protection
@@ -200,6 +218,7 @@ Before deploying to production (Railway):
 **Cause**: Client not including CSRF token in request
 
 **Solutions**:
+
 - Check browser console for errors fetching CSRF token
 - Verify `window.__CSRF_TOKEN__` is set in browser console
 - Ensure `credentials: 'include'` in fetch requests
@@ -210,6 +229,7 @@ Before deploying to production (Railway):
 **Cause**: Cookie and header values don't match
 
 **Solutions**:
+
 - Clear cookies and refresh page
 - Check if multiple tabs/windows have different tokens
 - Verify token isn't being modified in transit
@@ -220,6 +240,7 @@ Before deploying to production (Railway):
 **Cause**: Cookie not being sent due to configuration
 
 **Solutions**:
+
 - Verify HTTPS is enabled (required for Secure flag)
 - Check `SameSite` attribute is set correctly
 - Ensure domain configuration is correct

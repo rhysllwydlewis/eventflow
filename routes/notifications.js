@@ -166,7 +166,11 @@ module.exports = (db, websocketServer) => {
     router.post('/test', authRequired, async (req, res) => {
       try {
         const userId = req.user.id;
-        const { type = 'system', title = 'Test Notification', message = 'This is a test' } = req.body;
+        const {
+          type = 'system',
+          title = 'Test Notification',
+          message = 'This is a test',
+        } = req.body;
 
         const notification = await notificationService.create({
           userId,

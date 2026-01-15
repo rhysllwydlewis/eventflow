@@ -16,12 +16,12 @@ EventFlow's real-time messaging and notifications system provides production-gra
 ```
 ┌──────────────────┐
 │   HTTP Routes    │
-│(messaging-v2.js) │  
+│(messaging-v2.js) │
 └────────┬─────────┘
          │
     ┌────▼──────────────────────┐
     │  WebSocket Interface      │
-    │(websocket-server-v2.js)   │  
+    │(websocket-server-v2.js)   │
     └────────────┬──────────────┘
                  │
     ┌────────────▼──────────────┐
@@ -43,12 +43,14 @@ EventFlow's real-time messaging and notifications system provides production-gra
 ### 1. WebSocket Server v2 (`websocket-server-v2.js`)
 
 Production-ready WebSocket server with:
+
 - Redis adapter support for horizontal scaling
 - JWT-based authentication
 - Event handlers for messages, typing, reactions, presence
 - Graceful shutdown and error handling
 
 **Key Events:**
+
 - `message:send` / `message:received` - Message exchange
 - `typing:start` / `typing:stop` - Typing indicators
 - `message:read` - Read receipts
@@ -58,6 +60,7 @@ Production-ready WebSocket server with:
 ### 2. Messaging Service (`services/messagingService.js`)
 
 Core business logic for messaging:
+
 - Thread creation and management
 - Message sending with validation
 - Read receipts and delivery tracking
@@ -68,6 +71,7 @@ Core business logic for messaging:
 ### 3. Presence Service (`services/presenceService.js`)
 
 User presence tracking:
+
 - Online/offline/away states
 - Heartbeat mechanism
 - Bulk presence queries
@@ -77,6 +81,7 @@ User presence tracking:
 ### 4. Notification Service (`services/notificationService.js`)
 
 Multi-channel notification delivery:
+
 - **In-app**: Real-time WebSocket delivery
 - **Email**: Digest emails for offline users
 - **Push**: Mobile notification infrastructure (requires setup)
@@ -88,12 +93,14 @@ Multi-channel notification delivery:
 RESTful endpoints at `/api/v2/messages/`:
 
 #### Thread Management
+
 - `POST /api/v2/messages/threads` - Create thread
 - `GET /api/v2/messages/threads` - List user's threads
 - `GET /api/v2/messages/threads/:id` - Get thread details
 - `DELETE /api/v2/messages/threads/:id` - Archive thread
 
 #### Messaging
+
 - `GET /api/v2/messages/:threadId` - Get message history
 - `POST /api/v2/messages/:threadId` - Send message
 - `POST /api/v2/messages/:id/reactions` - Add/remove reaction
@@ -101,10 +108,12 @@ RESTful endpoints at `/api/v2/messages/`:
 - `POST /api/v2/messages/threads/:threadId/read` - Mark thread as read
 
 #### User Presence
+
 - `GET /api/v2/presence/:userId` - Get user presence
 - `GET /api/v2/presence?userIds=...` - Bulk presence query
 
 #### Notifications
+
 - `GET /api/v2/notifications` - List notifications
 - `POST /api/v2/notifications` - Send notification (admin only)
 - `GET /api/v2/notifications/preferences` - Get preferences
@@ -113,6 +122,7 @@ RESTful endpoints at `/api/v2/messages/`:
 - `DELETE /api/v2/notifications/:id` - Delete notification
 
 #### Monitoring
+
 - `GET /api/v2/messaging/status` - Server health (admin only)
 
 ## Database Schema
@@ -176,18 +186,18 @@ RESTful endpoints at `/api/v2/messages/`:
 ```javascript
 // Connect to WebSocket
 const socket = io('wss://your-domain.com', {
-  transports: ['websocket', 'polling']
+  transports: ['websocket', 'polling'],
 });
 
 // Authenticate
 socket.emit('auth', { userId: 'user123' });
 
-socket.on('auth:success', (data) => {
+socket.on('auth:success', data => {
   console.log('Authenticated:', data.userId);
 });
 
 // Listen for messages
-socket.on('message:received', (data) => {
+socket.on('message:received', data => {
   console.log('New message:', data.message);
 });
 
@@ -195,7 +205,7 @@ socket.on('message:received', (data) => {
 socket.emit('message:send', {
   threadId: 'thread123',
   content: 'Hello!',
-  attachments: []
+  attachments: [],
 });
 
 // Typing indicators
@@ -211,12 +221,12 @@ const response = await fetch('/api/v2/messages/threads', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
-    'X-CSRF-Token': csrfToken
+    'X-CSRF-Token': csrfToken,
   },
   body: JSON.stringify({
     participants: ['user456'],
-    metadata: { subject: 'Project Discussion' }
-  })
+    metadata: { subject: 'Project Discussion' },
+  }),
 });
 
 // Get messages
@@ -227,12 +237,12 @@ await fetch(`/api/v2/messages/${threadId}`, {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
-    'X-CSRF-Token': csrfToken
+    'X-CSRF-Token': csrfToken,
   },
   body: JSON.stringify({
     content: 'Hello, World!',
-    attachments: []
-  })
+    attachments: [],
+  }),
 });
 
 // Add reaction
@@ -240,9 +250,9 @@ await fetch(`/api/v2/messages/${messageId}/reactions`, {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
-    'X-CSRF-Token': csrfToken
+    'X-CSRF-Token': csrfToken,
   },
-  body: JSON.stringify({ emoji: '👍' })
+  body: JSON.stringify({ emoji: '👍' }),
 });
 ```
 
@@ -311,29 +321,35 @@ npm run test:integration
 ## Performance Considerations
 
 ### WebSocket Connections
+
 - Recommended: 1000-5000 concurrent connections per server instance
 - Use Redis adapter for horizontal scaling beyond this
 
 ### Message Throughput
+
 - ~1000 messages/second per server instance
 - MongoDB indexes optimize message retrieval
 
 ### Presence Updates
+
 - Heartbeat every 30 seconds
 - Automatic cleanup of stale records every 60 seconds
 
 ## Security
 
 ### Authentication
+
 - JWT-based WebSocket authentication
 - HTTP-only cookies for REST API
 - CSRF protection on all POST/PUT/DELETE endpoints
 
 ### Rate Limiting
+
 - WebSocket: 100 events per minute per socket
 - REST API: Standard rate limits apply
 
 ### Input Validation
+
 - All message content sanitized
 - File attachments validated
 - Maximum message length: 10,000 characters
@@ -347,6 +363,7 @@ GET /api/v2/messaging/status
 ```
 
 Returns:
+
 ```json
 {
   "success": true,
@@ -364,6 +381,7 @@ Returns:
 ### Logging
 
 All components use Winston for structured logging:
+
 - Info: Connection/disconnection events
 - Debug: Message send/receive, presence updates
 - Error: Failed operations with stack traces
@@ -373,7 +391,8 @@ All components use Winston for structured logging:
 ### WebSocket Connection Issues
 
 **Problem**: Clients can't connect to WebSocket
-**Solution**: 
+**Solution**:
+
 - Check firewall allows WebSocket traffic
 - Verify `BASE_URL` is set correctly
 - Check server logs for connection errors
@@ -382,6 +401,7 @@ All components use Winston for structured logging:
 
 **Problem**: Messages not being delivered
 **Solution**:
+
 - Verify MongoDB connection
 - Check recipient is authenticated
 - Review server logs for errors
@@ -390,6 +410,7 @@ All components use Winston for structured logging:
 
 **Problem**: User status stuck as online/offline
 **Solution**:
+
 - Verify heartbeat mechanism is working
 - Check Redis connection (if using clustering)
 - Restart presence service
@@ -416,6 +437,7 @@ Clients can gradually migrate to v2 endpoints without downtime.
 ## Support
 
 For issues or questions:
+
 1. Check server logs: `tail -f logs/combined.log`
 2. Review health endpoint: `GET /api/v2/messaging/status`
 3. Check MongoDB connection status

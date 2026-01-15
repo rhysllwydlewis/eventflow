@@ -234,70 +234,71 @@ router.post(
   roleRequired('admin'),
   csrfProtection,
   (req, res) => {
-  const { id } = req.params;
-  const { resolution, action, notes } = req.body;
+    const { id } = req.params;
+    const { resolution, action, notes } = req.body;
 
-  if (!resolution) {
-    return res.status(400).json({ error: 'Resolution is required' });
-  }
+    if (!resolution) {
+      return res.status(400).json({ error: 'Resolution is required' });
+    }
 
-  const validResolutions = ['valid', 'invalid', 'duplicate'];
-  if (!validResolutions.includes(resolution)) {
-    return res.status(400).json({
-      error: `Invalid resolution. Must be one of: ${validResolutions.join(', ')}`,
+    const validResolutions = ['valid', 'invalid', 'duplicate'];
+    if (!validResolutions.includes(resolution)) {
+      return res.status(400).json({
+        error: `Invalid resolution. Must be one of: ${validResolutions.join(', ')}`,
+      });
+    }
+
+    const reports = read('reports');
+    const reportIndex = reports.findIndex(r => r.id === id);
+
+    if (reportIndex === -1) {
+      return res.status(404).json({ error: 'Report not found' });
+    }
+
+    const report = reports[reportIndex];
+
+    if (report.status === 'resolved' || report.status === 'dismissed') {
+      return res.status(400).json({ error: 'Report has already been resolved' });
+    }
+
+    // Update report
+    const now = new Date().toISOString();
+    report.status = 'resolved';
+    report.resolution = resolution;
+    report.action = action || 'no_action';
+    report.resolutionNotes = notes || '';
+    report.resolvedBy = req.user.id;
+    report.resolvedByEmail = req.user.email;
+    report.resolvedAt = now;
+    report.updatedAt = now;
+
+    reports[reportIndex] = report;
+    write('reports', reports);
+
+    // Create audit log
+    auditLog({
+      adminId: req.user.id,
+      adminEmail: req.user.email,
+      action: AUDIT_ACTIONS.REPORT_RESOLVED,
+      targetType: 'report',
+      targetId: id,
+      details: {
+        reportType: report.type,
+        targetId: report.targetId,
+        resolution,
+        action,
+        notes,
+      },
+    });
+
+    console.log(`Report ${id} resolved by ${req.user.email}: ${resolution}`);
+
+    res.json({
+      message: 'Report resolved successfully',
+      report,
     });
   }
-
-  const reports = read('reports');
-  const reportIndex = reports.findIndex(r => r.id === id);
-
-  if (reportIndex === -1) {
-    return res.status(404).json({ error: 'Report not found' });
-  }
-
-  const report = reports[reportIndex];
-
-  if (report.status === 'resolved' || report.status === 'dismissed') {
-    return res.status(400).json({ error: 'Report has already been resolved' });
-  }
-
-  // Update report
-  const now = new Date().toISOString();
-  report.status = 'resolved';
-  report.resolution = resolution;
-  report.action = action || 'no_action';
-  report.resolutionNotes = notes || '';
-  report.resolvedBy = req.user.id;
-  report.resolvedByEmail = req.user.email;
-  report.resolvedAt = now;
-  report.updatedAt = now;
-
-  reports[reportIndex] = report;
-  write('reports', reports);
-
-  // Create audit log
-  auditLog({
-    adminId: req.user.id,
-    adminEmail: req.user.email,
-    action: AUDIT_ACTIONS.REPORT_RESOLVED,
-    targetType: 'report',
-    targetId: id,
-    details: {
-      reportType: report.type,
-      targetId: report.targetId,
-      resolution,
-      action,
-      notes,
-    },
-  });
-
-  console.log(`Report ${id} resolved by ${req.user.email}: ${resolution}`);
-
-  res.json({
-    message: 'Report resolved successfully',
-    report,
-  });
-});
+);
 
 /**
  * POST /api/admin/reports/:id/dismiss
@@ -309,52 +310,53 @@ router.post(
   roleRequired('admin'),
   csrfProtection,
   (req, res) => {
-  const { id } = req.params;
-  const { notes } = req.body;
+    const { id } = req.params;
+    const { notes } = req.body;
 
-  const reports = read('reports');
-  const reportIndex = reports.findIndex(r => r.id === id);
+    const reports = read('reports');
+    const reportIndex = reports.findIndex(r => r.id === id);
 
-  if (reportIndex === -1) {
-    return res.status(404).json({ error: 'Report not found' });
+    if (reportIndex === -1) {
+      return res.status(404).json({ error: 'Report not found' });
+    }
+
+    const report = reports[reportIndex];
+
+    // Update report
+    const now = new Date().toISOString();
+    report.status = 'dismissed';
+    report.resolution = 'invalid';
+    report.action = 'no_action';
+    report.resolutionNotes = notes || 'Dismissed by admin';
+    report.resolvedBy = req.user.id;
+    report.resolvedByEmail = req.user.email;
+    report.resolvedAt = now;
+    report.updatedAt = now;
+
+    reports[reportIndex] = report;
+    write('reports', reports);
+
+    // Create audit log
+    auditLog({
+      adminId: req.user.id,
+      adminEmail: req.user.email,
+      action: AUDIT_ACTIONS.REPORT_DISMISSED,
+      targetType: 'report',
+      targetId: id,
+      details: {
+        reportType: report.type,
+        targetId: report.targetId,
+        notes,
+      },
+    });
+
+    console.log(`Report ${id} dismissed by ${req.user.email}`);
+
+    res.json({
+      message: 'Report dismissed successfully',
+      report,
+    });
   }
-
-  const report = reports[reportIndex];
-
-  // Update report
-  const now = new Date().toISOString();
-  report.status = 'dismissed';
-  report.resolution = 'invalid';
-  report.action = 'no_action';
-  report.resolutionNotes = notes || 'Dismissed by admin';
-  report.resolvedBy = req.user.id;
-  report.resolvedByEmail = req.user.email;
-  report.resolvedAt = now;
-  report.updatedAt = now;
-
-  reports[reportIndex] = report;
-  write('reports', reports);
-
-  // Create audit log
-  auditLog({
-    adminId: req.user.id,
-    adminEmail: req.user.email,
-    action: AUDIT_ACTIONS.REPORT_DISMISSED,
-    targetType: 'report',
-    targetId: id,
-    details: {
-      reportType: report.type,
-      targetId: report.targetId,
-      notes,
-    },
-  });
-
-  console.log(`Report ${id} dismissed by ${req.user.email}`);
-
-  res.json({
-    message: 'Report dismissed successfully',
-    report,
-  });
-});
+);
 
 module.exports = router;

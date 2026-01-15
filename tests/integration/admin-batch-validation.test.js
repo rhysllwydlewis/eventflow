@@ -250,7 +250,9 @@ describe('Admin Batch Operations - Validation', () => {
       ];
 
       bulkOperations.forEach(operation => {
-        const operationRegex = new RegExp(`router\\.post\\([^)]*${operation.replace(/\//g, '\\/')}[\\s\\S]*?\\);`);
+        const operationRegex = new RegExp(
+          `router\\.post\\([^)]*${operation.replace(/\//g, '\\/')}[\\s\\S]*?\\);`
+        );
         const match = adminRoutesContent.match(operationRegex);
         expect(match).toBeTruthy();
         expect(match[0]).toContain('csrfProtection');
@@ -258,14 +260,12 @@ describe('Admin Batch Operations - Validation', () => {
     });
 
     it('v2 batch operations should have csrfProtection', () => {
-      const batchOperations = [
-        '/packages/batch-approve',
-        '/photos/batch-action',
-        '/bulk-actions',
-      ];
+      const batchOperations = ['/packages/batch-approve', '/photos/batch-action', '/bulk-actions'];
 
       batchOperations.forEach(operation => {
-        const operationRegex = new RegExp(`router\\.post\\([^)]*${operation.replace(/\//g, '\\/')}[\\s\\S]*?\\);`);
+        const operationRegex = new RegExp(
+          `router\\.post\\([^)]*${operation.replace(/\//g, '\\/')}[\\s\\S]*?\\);`
+        );
         const match = adminV2RoutesContent.match(operationRegex);
         expect(match).toBeTruthy();
         expect(match[0]).toContain('csrfProtection');

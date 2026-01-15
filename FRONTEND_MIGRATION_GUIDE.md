@@ -73,6 +73,7 @@ const API_BASE_V2 = '/api/v2/admin';
 ### Response Format Change
 
 #### v1 Response Format
+
 ```javascript
 // Success
 { items: [...] }
@@ -82,6 +83,7 @@ const API_BASE_V2 = '/api/v2/admin';
 ```
 
 #### v2 Response Format
+
 ```javascript
 // Success
 {
@@ -102,6 +104,7 @@ const API_BASE_V2 = '/api/v2/admin';
 ### Permission Checks
 
 #### v1 Approach
+
 ```javascript
 // Simple role check
 if (user.role === 'admin') {
@@ -110,6 +113,7 @@ if (user.role === 'admin') {
 ```
 
 #### v2 Approach
+
 ```javascript
 // Granular permission check
 if (user.allPermissions?.includes('admin:users:delete')) {
@@ -502,19 +506,13 @@ export function AdminUserList({ currentUser }) {
       {/* Pagination */}
       {pagination && (
         <div className="pagination">
-          <button
-            disabled={!pagination.hasPrevPage}
-            onClick={() => setPage(page - 1)}
-          >
+          <button disabled={!pagination.hasPrevPage} onClick={() => setPage(page - 1)}>
             Previous
           </button>
           <span>
             Page {pagination.page} of {pagination.totalPages}
           </span>
-          <button
-            disabled={!pagination.hasNextPage}
-            onClick={() => setPage(page + 1)}
-          >
+          <button disabled={!pagination.hasNextPage} onClick={() => setPage(page + 1)}>
             Next
           </button>
         </div>
@@ -532,7 +530,7 @@ export function AdminUserList({ currentUser }) {
 // v1 Approach (slow)
 async function approvePackagesV1(packageIds) {
   const results = [];
-  
+
   for (const id of packageIds) {
     try {
       await fetch(`/api/admin/packages/${id}/approve`, {
@@ -544,7 +542,7 @@ async function approvePackagesV1(packageIds) {
       results.push({ id, success: false, error: error.message });
     }
   }
-  
+
   return results;
 }
 
@@ -600,6 +598,7 @@ async function approvePackagesV2(packageIds) {
 **Problem**: Getting 403 CSRF errors on POST/PUT/DELETE requests
 
 **Solution**: Ensure CSRF token is included in headers
+
 ```javascript
 const csrfToken = await getCsrfToken();
 headers['X-CSRF-Token'] = csrfToken;
@@ -609,7 +608,8 @@ headers['X-CSRF-Token'] = csrfToken;
 
 **Problem**: Getting permission denied errors after migration
 
-**Solution**: 
+**Solution**:
+
 1. Check user has correct permissions
 2. Verify permission constant matches backend
 3. Check if user needs to log out/in to refresh permissions
@@ -619,6 +619,7 @@ headers['X-CSRF-Token'] = csrfToken;
 **Problem**: Code expecting v1 format breaks with v2
 
 **Solution**: Update response handling
+
 ```javascript
 // Before (v1)
 const users = response.items;
@@ -632,6 +633,7 @@ const users = response.data;
 **Problem**: Pagination metadata different in v2
 
 **Solution**: Update pagination logic
+
 ```javascript
 // v1 used custom pagination
 // v2 uses standard pagination object
@@ -643,9 +645,10 @@ const { page, limit, total, totalPages, hasNextPage, hasPrevPage } = response.pa
 If issues occur:
 
 1. **Immediate Rollback**
+
    ```javascript
    // In .env or config
-   USE_ADMIN_V2=false
+   USE_ADMIN_V2 = false;
    ```
 
 2. **Partial Rollback**
@@ -686,12 +689,12 @@ Monitor these metrics before and after migration:
 
 ## Timeline
 
-| Week | Focus | Status |
-|------|-------|--------|
-| 1 | Preparation & planning | ✅ |
-| 2 | Read-only endpoint migration | ⏳ |
-| 3 | Write endpoint migration | ⏳ |
-| 4 | Testing & rollout | ⏳ |
+| Week | Focus                        | Status |
+| ---- | ---------------------------- | ------ |
+| 1    | Preparation & planning       | ✅     |
+| 2    | Read-only endpoint migration | ⏳     |
+| 3    | Write endpoint migration     | ⏳     |
+| 4    | Testing & rollout            | ⏳     |
 
 ## Conclusion
 

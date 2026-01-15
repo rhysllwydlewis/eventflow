@@ -1577,7 +1577,7 @@ const AdminShared = (function () {
   async function fetchWithTimeout(url, options = {}, timeoutMs = 10000) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-    
+
     try {
       const response = await fetch(url, {
         ...options,
@@ -1605,14 +1605,14 @@ const AdminShared = (function () {
     const isWriteOperation = ['POST', 'PUT', 'DELETE', 'PATCH'].includes(method.toUpperCase());
     const timeoutMs = options.timeout || 10000; // Default 10 second timeout
     const maxRetries = options.retries || 0; // Default no retries
-    
+
     // Retry configuration constants
     const RETRY_BASE_DELAY_MS = 1000; // 1 second base delay
     const RETRY_BACKOFF_FACTOR = 2; // Exponential backoff factor
     const RETRY_MAX_DELAY_MS = 5000; // Max 5 second delay between retries
-    
+
     let lastError;
-    
+
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       if (attempt > 0) {
         debugLog(`Retry attempt ${attempt}/${maxRetries} for ${method} ${url}`);
@@ -1623,7 +1623,7 @@ const AdminShared = (function () {
         );
         await new Promise(resolve => setTimeout(resolve, delay));
       }
-      
+
       try {
         debugLog(`${method} ${url}`, options.body ? { body: options.body } : '');
 
@@ -1641,18 +1641,24 @@ const AdminShared = (function () {
           if (window.__CSRF_TOKEN__) {
             opts.headers['X-CSRF-Token'] = window.__CSRF_TOKEN__;
           } else {
-            debugWarn(`CSRF token missing for ${method} ${url} - request may be rejected by server`);
+            debugWarn(
+              `CSRF token missing for ${method} ${url} - request may be rejected by server`
+            );
           }
         }
 
         if (options.body) {
-          opts.body = typeof options.body === 'string' ? options.body : JSON.stringify(options.body);
+          opts.body =
+            typeof options.body === 'string' ? options.body : JSON.stringify(options.body);
         }
 
         const response = await fetchWithTimeout(url, opts, timeoutMs);
         const contentType = response.headers.get('content-type');
         // Add null/undefined check before calling indexOf/includes
-        const isJson = contentType && typeof contentType === 'string' && contentType.includes('application/json');
+        const isJson =
+          contentType &&
+          typeof contentType === 'string' &&
+          contentType.includes('application/json');
 
         // Handle auth failures
         if (response.status === 401) {
@@ -1717,26 +1723,29 @@ const AdminShared = (function () {
         return data;
       } catch (error) {
         lastError = error;
-        
+
         // Don't retry on auth errors or client errors (4xx except 408 and 429)
         if (
           error.message.includes('Authentication required') ||
           error.message.includes('Forbidden') ||
-          (error.status >= 400 && error.status < 500 && error.status !== 408 && error.status !== 429)
+          (error.status >= 400 &&
+            error.status < 500 &&
+            error.status !== 408 &&
+            error.status !== 429)
         ) {
           throw error;
         }
-        
+
         // If this is the last attempt or we're not retrying, throw
         if (attempt === maxRetries) {
           throw error;
         }
-        
+
         // Otherwise, continue to retry
         debugWarn(`Request failed, will retry: ${error.message}`);
       }
     }
-    
+
     throw lastError;
   }
 

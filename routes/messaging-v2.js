@@ -34,18 +34,18 @@ function initializeServices(db, wsServer) {
 function ensureServices(req, res, next) {
   const db = req.app.locals.db || global.mongoDb?.db;
   const wsServer = req.app.get('wsServerV2') || global.wsServerV2;
-  
+
   if (db) {
     initializeServices(db, wsServer);
   }
-  
+
   if (!messagingService) {
     return res.status(503).json({
       error: 'Messaging service not available',
       message: 'Database connection required',
     });
   }
-  
+
   next();
 }
 
@@ -367,25 +367,31 @@ router.post('/:id/read', authRequired, csrfProtection, ensureServices, async (re
  * POST /api/v2/messages/threads/:threadId/read
  * Mark all messages in thread as read
  */
-router.post('/threads/:threadId/read', authRequired, csrfProtection, ensureServices, async (req, res) => {
-  try {
-    const { threadId } = req.params;
+router.post(
+  '/threads/:threadId/read',
+  authRequired,
+  csrfProtection,
+  ensureServices,
+  async (req, res) => {
+    try {
+      const { threadId } = req.params;
 
-    const count = await messagingService.markThreadAsRead(threadId, req.user.id);
+      const count = await messagingService.markThreadAsRead(threadId, req.user.id);
 
-    res.json({
-      success: true,
-      message: 'Thread marked as read',
-      markedCount: count,
-    });
-  } catch (error) {
-    logger.error('Mark thread as read error', { error: error.message, userId: req.user.id });
-    res.status(500).json({
-      error: 'Failed to mark thread as read',
-      message: error.message,
-    });
+      res.json({
+        success: true,
+        message: 'Thread marked as read',
+        markedCount: count,
+      });
+    } catch (error) {
+      logger.error('Mark thread as read error', { error: error.message, userId: req.user.id });
+      res.status(500).json({
+        error: 'Failed to mark thread as read',
+        message: error.message,
+      });
+    }
   }
-});
+);
 
 // =========================
 // User Presence
@@ -525,30 +531,36 @@ router.post(
  * POST /api/v2/notifications/preferences
  * Update notification preferences
  */
-router.post('/notifications/preferences', authRequired, csrfProtection, ensureServices, async (req, res) => {
-  try {
-    const { preferences } = req.body;
+router.post(
+  '/notifications/preferences',
+  authRequired,
+  csrfProtection,
+  ensureServices,
+  async (req, res) => {
+    try {
+      const { preferences } = req.body;
 
-    if (!preferences || typeof preferences !== 'object') {
-      return res.status(400).json({
-        error: 'preferences object required',
+      if (!preferences || typeof preferences !== 'object') {
+        return res.status(400).json({
+          error: 'preferences object required',
+        });
+      }
+
+      const updated = await notificationService.updateUserPreferences(req.user.id, preferences);
+
+      res.json({
+        success: true,
+        preferences: updated,
+      });
+    } catch (error) {
+      logger.error('Update preferences error', { error: error.message, userId: req.user.id });
+      res.status(500).json({
+        error: 'Failed to update preferences',
+        message: error.message,
       });
     }
-
-    const updated = await notificationService.updateUserPreferences(req.user.id, preferences);
-
-    res.json({
-      success: true,
-      preferences: updated,
-    });
-  } catch (error) {
-    logger.error('Update preferences error', { error: error.message, userId: req.user.id });
-    res.status(500).json({
-      error: 'Failed to update preferences',
-      message: error.message,
-    });
   }
-});
+);
 
 /**
  * GET /api/v2/notifications/preferences
@@ -575,55 +587,70 @@ router.get('/notifications/preferences', authRequired, ensureServices, async (re
  * POST /api/v2/notifications/:id/read
  * Mark notification as read
  */
-router.post('/notifications/:id/read', authRequired, csrfProtection, ensureServices, async (req, res) => {
-  try {
-    const { id } = req.params;
+router.post(
+  '/notifications/:id/read',
+  authRequired,
+  csrfProtection,
+  ensureServices,
+  async (req, res) => {
+    try {
+      const { id } = req.params;
 
-    const success = await notificationService.markAsRead(id, req.user.id);
+      const success = await notificationService.markAsRead(id, req.user.id);
 
-    if (!success) {
-      return res.status(404).json({ error: 'Notification not found' });
+      if (!success) {
+        return res.status(404).json({ error: 'Notification not found' });
+      }
+
+      res.json({
+        success: true,
+        message: 'Notification marked as read',
+      });
+    } catch (error) {
+      logger.error('Mark notification as read error', {
+        error: error.message,
+        userId: req.user.id,
+      });
+      res.status(500).json({
+        error: 'Failed to mark as read',
+        message: error.message,
+      });
     }
-
-    res.json({
-      success: true,
-      message: 'Notification marked as read',
-    });
-  } catch (error) {
-    logger.error('Mark notification as read error', { error: error.message, userId: req.user.id });
-    res.status(500).json({
-      error: 'Failed to mark as read',
-      message: error.message,
-    });
   }
-});
+);
 
 /**
  * DELETE /api/v2/notifications/:id
  * Delete notification
  */
-router.delete('/notifications/:id', authRequired, csrfProtection, ensureServices, async (req, res) => {
-  try {
-    const { id } = req.params;
+router.delete(
+  '/notifications/:id',
+  authRequired,
+  csrfProtection,
+  ensureServices,
+  async (req, res) => {
+    try {
+      const { id } = req.params;
 
-    const success = await notificationService.deleteNotification(id, req.user.id);
+      const success = await notificationService.deleteNotification(id, req.user.id);
 
-    if (!success) {
-      return res.status(404).json({ error: 'Notification not found' });
+      if (!success) {
+        return res.status(404).json({ error: 'Notification not found' });
+      }
+
+      res.json({
+        success: true,
+        message: 'Notification deleted',
+      });
+    } catch (error) {
+      logger.error('Delete notification error', { error: error.message, userId: req.user.id });
+      res.status(500).json({
+        error: 'Failed to delete notification',
+        message: error.message,
+      });
     }
-
-    res.json({
-      success: true,
-      message: 'Notification deleted',
-    });
-  } catch (error) {
-    logger.error('Delete notification error', { error: error.message, userId: req.user.id });
-    res.status(500).json({
-      error: 'Failed to delete notification',
-      message: error.message,
-    });
   }
-});
+);
 
 // =========================
 // Performance Monitoring

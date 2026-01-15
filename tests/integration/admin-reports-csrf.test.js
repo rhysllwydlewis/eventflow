@@ -9,10 +9,7 @@ describe('Admin Reports Endpoints - CSRF Protection', () => {
   let reportsRoutesContent;
 
   beforeAll(() => {
-    reportsRoutesContent = fs.readFileSync(
-      path.join(__dirname, '../../routes/reports.js'),
-      'utf8'
-    );
+    reportsRoutesContent = fs.readFileSync(path.join(__dirname, '../../routes/reports.js'), 'utf8');
   });
 
   describe('CSRF Import and Protection', () => {
@@ -44,11 +41,11 @@ describe('Admin Reports Endpoints - CSRF Protection', () => {
       // Check that the route validates the resolution input
       expect(reportsRoutesContent).toContain('if (!resolution)');
       expect(reportsRoutesContent).toContain("error: 'Resolution is required'");
-      
+
       // Check for resolution validation array
       const resolveSection = reportsRoutesContent.substring(
-        reportsRoutesContent.indexOf("POST /api/admin/reports/:id/resolve"),
-        reportsRoutesContent.indexOf("POST /api/admin/reports/:id/dismiss")
+        reportsRoutesContent.indexOf('POST /api/admin/reports/:id/resolve'),
+        reportsRoutesContent.indexOf('POST /api/admin/reports/:id/dismiss')
       );
       expect(resolveSection).toContain('resolution');
       expect(resolveSection).toContain("'valid'");

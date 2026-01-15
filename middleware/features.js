@@ -15,7 +15,7 @@ async function getFeatureFlags() {
   try {
     const settings = (await dbUnified.read('settings')) || {};
     const features = settings.features || {};
-    
+
     return {
       registration: features.registration !== false,
       supplierApplications: features.supplierApplications !== false,
@@ -48,7 +48,7 @@ function featureRequired(featureName) {
   return async (req, res, next) => {
     try {
       const features = await getFeatureFlags();
-      
+
       if (!features[featureName]) {
         return res.status(503).json({
           error: 'Feature temporarily unavailable',
@@ -56,7 +56,7 @@ function featureRequired(featureName) {
           feature: featureName,
         });
       }
-      
+
       next();
     } catch (error) {
       console.error(`Error checking feature flag '${featureName}':`, error);

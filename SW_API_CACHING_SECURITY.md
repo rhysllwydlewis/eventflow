@@ -21,6 +21,7 @@ This document summarizes the security improvements made to prevent sensitive API
 - `/api/meta` - Application metadata (version, node version, environment)
 
 **Removed from allowlist (contain internal info):**
+
 - `/api/health` - Exposes database errors and internal state
 - `/api/ready` - Exposes connection details and debug messages
 - `/api/performance` - Exposes internal configuration (compression levels, caching strategy)
@@ -43,6 +44,7 @@ Added `/api` middleware that sets `Cache-Control: no-store, private` by default 
 - `/api/meta`
 
 **Note:** `/api/health`, `/api/ready`, and `/api/performance` were removed from the allowlist because they expose internal information:
+
 - `/api/health` and `/api/ready`: database errors, connection states, debug messages
 - `/api/performance`: internal configuration details (compression levels, caching strategy) that could aid reconnaissance
 

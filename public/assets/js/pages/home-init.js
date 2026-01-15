@@ -215,7 +215,7 @@ async function loadPackagesCarousel({ endpoint, containerId, emptyMessage }) {
     }
   } catch (error) {
     clearTimeout(timeoutId);
-    
+
     // Only log timeout errors and network errors, not expected 404s
     if (isDevelopmentEnvironment() && error.name !== 'AbortError') {
       console.error(`Failed to load packages from ${endpoint}:`, error);
@@ -373,21 +373,21 @@ async function loadHeroCollageImages() {
   if (window.__pexelsCollageInitialized) {
     return;
   }
-  
+
   try {
     // Add AbortController with 2 second timeout
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 2000);
-    
+
     const settingsResponse = await fetch('/api/public/homepage-settings', {
-      signal: controller.signal
+      signal: controller.signal,
     });
-    
+
     clearTimeout(timeoutId);
 
     if (settingsResponse?.ok) {
       const settings = await settingsResponse.json();
-      
+
       // Validate JSON structure
       if (settings && typeof settings === 'object' && settings.pexelsCollageEnabled === true) {
         if (window.DEBUG) {
@@ -472,7 +472,8 @@ async function loadHeroCollageImages() {
 
       // Check if this is a custom uploaded image (not default)
       // Additional safety check before calling includes()
-      const isCustomImage = imageUrl && typeof imageUrl === 'string' && !imageUrl.includes('/assets/images/collage-');
+      const isCustomImage =
+        imageUrl && typeof imageUrl === 'string' && !imageUrl.includes('/assets/images/collage-');
 
       // Get the current image URL (without query params for comparison)
       const currentImageUrl = imgElement.src ? imgElement.src.split('?')[0] : '';
@@ -480,9 +481,10 @@ async function loadHeroCollageImages() {
 
       // Determine if we need to update based on URL comparison
       // Add null checks before accessing string methods
-      const needsUpdate = normalizedImageUrl && currentImageUrl 
-        ? !currentImageUrl.endsWith((normalizedImageUrl.split('/').pop() ?? '') || '')
-        : false;
+      const needsUpdate =
+        normalizedImageUrl && currentImageUrl
+          ? !currentImageUrl.endsWith((normalizedImageUrl.split('/').pop() ?? '') || '')
+          : false;
 
       // Skip update if URL matches and it's a default image
       if (!needsUpdate && !isCustomImage) {
@@ -505,9 +507,9 @@ async function loadHeroCollageImages() {
         // Update the image source
         imgElement.src = cacheBustedUrl;
         imgElement.alt = `${category.charAt(0).toUpperCase() + category.slice(1)} - ${isCustomImage ? 'custom uploaded' : 'default'} hero image`;
-        
+
         // Add onerror handler to fallback gracefully if the image fails to load
-        imgElement.onerror = function() {
+        imgElement.onerror = function () {
           // Fallback to default image for this category
           const defaultImages = {
             venues: '/assets/images/collage-venue.jpg',
@@ -515,7 +517,7 @@ async function loadHeroCollageImages() {
             entertainment: '/assets/images/collage-entertainment.jpg',
             photography: '/assets/images/collage-photography.jpg',
           };
-          
+
           // Unique gradient colors per category (matching HTML onerror handlers)
           const gradientFallbacks = {
             venues: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
@@ -523,7 +525,7 @@ async function loadHeroCollageImages() {
             entertainment: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
             photography: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
           };
-          
+
           // Only attempt fallback once to prevent infinite loop
           // Use endsWith for more robust URL comparison
           if (!this.src || !this.src.endsWith(defaultImages[category])) {
@@ -615,7 +617,7 @@ async function initPexelsCollage(settings) {
           try {
             const errorData = await response.json();
             errorInfo = errorData.message || errorData.error || errorInfo;
-            
+
             // Only warn in development mode
             if (isDevelopmentEnvironment()) {
               console.warn(`⚠️  Failed to fetch Pexels images for ${category}: ${errorInfo}`);
@@ -626,7 +628,9 @@ async function initPexelsCollage(settings) {
           } catch (e) {
             // Response wasn't JSON, use status text
             if (isDevelopmentEnvironment()) {
-              console.warn(`⚠️  Failed to fetch Pexels images for ${category}: ${response.statusText}`);
+              console.warn(
+                `⚠️  Failed to fetch Pexels images for ${category}: ${response.statusText}`
+              );
             }
           }
           continue;

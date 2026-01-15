@@ -33,16 +33,16 @@ function sanitizePexelsSettings(settings) {
   if (!settings || typeof settings !== 'object') {
     return DEFAULT_PEXELS_SETTINGS;
   }
-  
+
   const sanitized = {};
-  
+
   // Only copy whitelisted keys
   ALLOWED_PEXELS_KEYS.forEach(key => {
     if (settings[key] !== undefined) {
       sanitized[key] = settings[key];
     }
   });
-  
+
   // Validate and enforce bounds on numeric values
   if (sanitized.intervalSeconds !== undefined) {
     const interval = Number(sanitized.intervalSeconds);
@@ -54,12 +54,12 @@ function sanitizePexelsSettings(settings) {
   } else {
     sanitized.intervalSeconds = DEFAULT_PEXELS_SETTINGS.intervalSeconds;
   }
-  
+
   // Ensure queries object exists
   if (!sanitized.queries || typeof sanitized.queries !== 'object') {
     sanitized.queries = DEFAULT_PEXELS_SETTINGS.queries;
   }
-  
+
   // Support backwards compatibility: if 'interval' exists and 'intervalSeconds' doesn't, copy it over
   if (settings.interval && !sanitized.intervalSeconds) {
     const interval = Number(settings.interval);
@@ -67,7 +67,7 @@ function sanitizePexelsSettings(settings) {
       sanitized.intervalSeconds = interval;
     }
   }
-  
+
   return sanitized;
 }
 
@@ -75,7 +75,7 @@ function sanitizePexelsSettings(settings) {
  * GET /api/public/homepage-settings
  * Get homepage settings for public display (no auth required)
  * Returns Pexels collage feature status and configuration
- * 
+ *
  * Cache Policy: no-store (for immediate flag effect)
  * - Ensures feature flag changes take effect immediately
  * - Safer than caching for admin-controlled settings
@@ -84,10 +84,10 @@ router.get('/homepage-settings', async (req, res) => {
   try {
     // Use no-store for immediate feature flag effect
     res.set('Cache-Control', 'no-store, private');
-    
+
     const settings = (await dbUnified.read('settings')) || {};
     const features = settings.features || {};
-    
+
     // Sanitize and validate Pexels settings
     const pexelsCollageSettings = sanitizePexelsSettings(settings.pexelsCollageSettings);
 
