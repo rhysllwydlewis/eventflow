@@ -35,19 +35,20 @@ class SupplierPhotoUpload {
         throw new Error(`File too large. Maximum size is ${this.maxFileSize / (1024 * 1024)}MB.`);
       }
 
-      // Compress image if needed
-      const compressedFile = await this.compressImage(file);
+      // Compress image and convert to base64
+      const compressedBlob = await this.compressImage(file);
+      const base64Image = await this.blobToBase64(compressedBlob);
 
-      // Create FormData
-      const formData = new FormData();
-      formData.append('photo', compressedFile);
-      formData.append('supplierId', supplierId);
-
-      // Upload via API
-      const response = await fetch(`${this.apiBase}/suppliers/${supplierId}/photos`, {
+      // Upload via API with base64 image
+      const response = await fetch(`${this.apiBase}/me/suppliers/${supplierId}/photos`, {
         method: 'POST',
         credentials: 'include',
-        body: formData,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          image: base64Image,
+        }),
       });
 
       if (!response.ok) {
@@ -56,7 +57,7 @@ class SupplierPhotoUpload {
 
       const data = await response.json();
       const photoMetadata = {
-        id: data.photoId,
+        id: data.photoId || data.id || Date.now().toString(), // Fallback to timestamp if no ID
         url: data.url,
         filename: file.name,
         uploadedAt: new Date().toISOString(),
@@ -79,7 +80,7 @@ class SupplierPhotoUpload {
    */
   async deletePhoto(photoId, supplierId) {
     try {
-      const response = await fetch(`${this.apiBase}/suppliers/${supplierId}/photos/${photoId}`, {
+      const response = await fetch(`${this.apiBase}/me/suppliers/${supplierId}/photos/${photoId}`, {
         method: 'DELETE',
         credentials: 'include',
       });
@@ -103,7 +104,7 @@ class SupplierPhotoUpload {
    */
   async getSupplierPhotos(supplierId) {
     try {
-      const response = await fetch(`${this.apiBase}/suppliers/${supplierId}/photos`, {
+      const response = await fetch(`${this.apiBase}/me/suppliers/${supplierId}/photos`, {
         credentials: 'include',
       });
 
@@ -173,6 +174,20 @@ class SupplierPhotoUpload {
 
       reader.onerror = () => reject(new Error('Failed to read file'));
       reader.readAsDataURL(file);
+    });
+  }
+
+  /**
+   * Convert Blob to base64 string
+   * @param {Blob} blob - Blob to convert
+   * @returns {Promise<string>} Base64 string
+   */
+  async blobToBase64(blob) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
     });
   }
 
