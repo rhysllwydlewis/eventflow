@@ -260,19 +260,25 @@ export async function createPerformanceChart(containerId, viewsData, enquiriesDa
  */
 async function fetchAnalyticsData(days, supplierId = null) {
   try {
+    // Use a local variable to avoid reassigning the parameter
+    let resolvedSupplierId = supplierId;
+
     // Try to get supplier ID from page context if not provided
-    if (!supplierId) {
+    if (!resolvedSupplierId) {
       const supplierIdField = document.getElementById('sup-id');
       if (supplierIdField && supplierIdField.value) {
-        supplierId = supplierIdField.value;
+        resolvedSupplierId = supplierIdField.value;
       }
     }
 
     // If we have a supplier ID, fetch real data from API
-    if (supplierId) {
-      const response = await fetch(`/api/me/suppliers/${supplierId}/analytics?period=${days}`, {
-        credentials: 'include',
-      });
+    if (resolvedSupplierId) {
+      const response = await fetch(
+        `/api/me/suppliers/${resolvedSupplierId}/analytics?period=${days}`,
+        {
+          credentials: 'include',
+        }
+      );
 
       if (response.ok) {
         const data = await response.json();

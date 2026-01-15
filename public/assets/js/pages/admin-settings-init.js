@@ -907,8 +907,8 @@
         return;
       }
 
-      // Check if database is connected (state must be 'completed')
-      if (status.state === 'completed') {
+      // Check if database is connected (initialized or state is completed)
+      if (status.initialized || status.state === 'completed') {
         statusEl.textContent = 'Connected';
         indicatorEl.style.background = '#27ae60';
       } else if (status.state === 'initializing') {
