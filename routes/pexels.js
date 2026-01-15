@@ -222,7 +222,7 @@ router.get('/test', authRequired, roleRequired('admin'), async (req, res) => {
     res.status(statusCode).json(enhancedResult);
   } catch (error) {
     console.error('Pexels test error:', error);
-    
+
     // Even on error, check if fallback is available
     try {
       const { getFallbackPhotos, getFallbackVideos } = require('../config/pexels-fallback');
@@ -468,6 +468,42 @@ router.get('/collections', authRequired, roleRequired('admin'), async (req, res)
  * Requires admin authentication
  */
 router.get('/collections/:id', authRequired, roleRequired('admin'), async (req, res) => {
+  try {
+    const pexels = getPexelsService();
+
+    if (!pexels.isConfigured()) {
+      return res.status(503).json({
+        error: 'Pexels API not configured',
+        message: 'Please configure PEXELS_API_KEY in your environment variables',
+      });
+    }
+
+    const { id } = req.params;
+    const { page = 1, perPage = 15, type } = req.query;
+
+    console.log(`📚 Admin fetching collection media: ${id}`);
+    const results = await pexels.getCollectionMedia(id, parseInt(perPage), parseInt(page), type);
+
+    res.json({
+      success: true,
+      ...results,
+    });
+  } catch (error) {
+    console.error('Pexels collection media error:', error);
+    res.status(500).json({
+      error: 'Failed to fetch collection media',
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * GET /api/pexels/collection/:id/media
+ * Get media from a collection (alternative route for frontend convenience)
+ * Query params: page, perPage, type (photos/videos)
+ * Requires admin authentication
+ */
+router.get('/collection/:id/media', authRequired, roleRequired('admin'), async (req, res) => {
   try {
     const pexels = getPexelsService();
 

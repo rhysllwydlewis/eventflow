@@ -4950,16 +4950,39 @@ router.get('/public/pexels-collage', async (req, res) => {
     // Try to use Pexels API first
     if (pexels.isConfigured()) {
       try {
-        const query = pexelsCollageSettings.queries[category] || category;
-        const results = await pexels.searchPhotos(query, 8, 1);
+        // Check if collection ID is configured for this category or globally
+        const collectionId =
+          pexelsCollageSettings.collectionIds?.[category] || pexelsCollageSettings.collectionId;
 
-        return res.json({
-          success: true,
-          category,
-          query,
-          photos: results.photos,
-          usingFallback: false,
-        });
+        if (collectionId) {
+          // Use collection-based fetching
+          console.log(`📚 Fetching photos from collection ${collectionId} for ${category}`);
+          const results = await pexels.getCollectionMedia(collectionId, 8, 1, 'photos');
+          // Filter to only photos (type: 'Photo')
+          const photos = results.media.filter(item => item.type === 'Photo');
+
+          return res.json({
+            success: true,
+            category,
+            collectionId,
+            photos,
+            usingFallback: false,
+            source: 'collection',
+          });
+        } else {
+          // Use query-based searching (default behavior)
+          const query = pexelsCollageSettings.queries[category] || category;
+          const results = await pexels.searchPhotos(query, 8, 1);
+
+          return res.json({
+            success: true,
+            category,
+            query,
+            photos: results.photos,
+            usingFallback: false,
+            source: 'search',
+          });
+        }
       } catch (apiError) {
         console.warn(
           `Pexels API failed for ${category}, falling back to curated URLs:`,
