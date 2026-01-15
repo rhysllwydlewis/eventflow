@@ -676,6 +676,10 @@
       // Fetch supplier profiles to check completion
       let hasProfile = false;
       let hasPhotos = false;
+      let hasBanner = false;
+      let hasTagline = false;
+      let hasHighlights = false;
+      let hasSocialLinks = false;
       
       try {
         const suppliersResponse = await fetch('/api/me/suppliers', { credentials: 'include' });
@@ -683,8 +687,13 @@
           const suppliersData = await suppliersResponse.json();
           const suppliers = suppliersData.items || [];
           hasProfile = suppliers.length > 0;
-          if (hasProfile && suppliers[0].photos) {
-            hasPhotos = suppliers[0].photos.length >= 5;
+          if (hasProfile && suppliers[0]) {
+            const supplier = suppliers[0];
+            hasPhotos = supplier.photos && supplier.photos.length >= 5;
+            hasBanner = !!supplier.bannerUrl;
+            hasTagline = !!supplier.tagline;
+            hasHighlights = supplier.highlights && supplier.highlights.length >= 3;
+            hasSocialLinks = supplier.socialLinks && Object.keys(supplier.socialLinks).length >= 2;
           }
         }
       } catch (err) {
@@ -718,12 +727,16 @@
         console.error('Error checking email verification:', err);
       }
       
-      // Create profile completeness checklist
+      // Create profile completeness checklist with new fields
       createProfileChecklist({
         basicInfo: hasProfile,
         photos: hasPhotos,
         package: hasPackage,
         emailVerified: emailVerified,
+        banner: hasBanner,
+        tagline: hasTagline,
+        highlights: hasHighlights,
+        socialLinks: hasSocialLinks,
         firstReview: false, // Would check reviews API
       }, 'profile-completeness-widget');
       
