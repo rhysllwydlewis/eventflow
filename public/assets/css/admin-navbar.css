@@ -78,12 +78,12 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 13px;
+  padding: 6px 10px;
   background: transparent;
   border: 1px solid transparent;
   border-radius: 10px;
   color: #4b5563;
-  font-size: 11px;
+  font-size: 9px;
   font-weight: 500;
   text-decoration: none;
   white-space: nowrap;
@@ -105,8 +105,8 @@
 }
 
 .admin-nav-btn .nav-icon {
-  font-size: 14px;
-  width: 16px;
+  font-size: 11px;
+  width: 13px;
   text-align: center;
 }
 
@@ -389,8 +389,8 @@ body.has-admin-navbar {
   }
   
   .admin-nav-btn {
-    padding: 6px 10px;
-    font-size: 10px;
+    padding: 5px 8px;
+    font-size: 8px;
   }
 }
 
@@ -404,7 +404,7 @@ body.has-admin-navbar {
   }
   
   .admin-nav-btn {
-    padding: 8px;
+    padding: 6px;
   }
 }
 
@@ -444,7 +444,7 @@ body.has-admin-navbar {
   
   .admin-nav-btn {
     justify-content: flex-start;
-    padding: 10px 13px;
+    padding: 8px 10px;
   }
   
   .db-status-badge {

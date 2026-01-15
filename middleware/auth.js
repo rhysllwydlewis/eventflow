@@ -34,7 +34,9 @@ function setAuthCookie(res, token, options = {}) {
   const isProd = process.env.NODE_ENV === 'production';
   const cookieOptions = {
     httpOnly: true,
-    sameSite: isProd ? 'strict' : 'lax',
+    // Use 'lax' for better compatibility while still providing CSRF protection
+    // 'strict' can prevent cookies from being sent during same-site navigation in some browsers
+    sameSite: 'lax',
     secure: isProd,
   };
 
@@ -58,7 +60,7 @@ function clearAuthCookie(res) {
   // Clear cookie with same options used when setting it
   res.clearCookie('token', {
     httpOnly: true,
-    sameSite: isProd ? 'strict' : 'lax',
+    sameSite: 'lax',
     secure: isProd,
     path: '/',
   });
@@ -82,7 +84,7 @@ function clearAuthCookie(res) {
     domains.forEach(domain => {
       res.clearCookie('token', {
         httpOnly: true,
-        sameSite: 'strict',
+        sameSite: 'lax',
         secure: true,
         path: '/',
         domain: domain,
