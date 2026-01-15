@@ -240,7 +240,26 @@ router.get('/health', applyHealthCheckLimiter, async (_req, res) => {
   try {
     const { getPexelsService } = require('../utils/pexels-service');
     const pexels = getPexelsService();
-    response.services.pexels = pexels.isConfigured() ? 'configured' : 'not_configured';
+    const isConfigured = pexels.isConfigured();
+    response.services.pexels = isConfigured ? 'configured' : 'not_configured';
+
+    // Check if collection-based features are configured
+    if (isConfigured) {
+      try {
+        const settings = dbUnified ? await dbUnified.read('settings') : null;
+        const pexelsCollageSettings = settings?.pexelsCollageSettings;
+
+        if (pexelsCollageSettings) {
+          const hasCollectionId = !!(
+            pexelsCollageSettings.collectionId || pexelsCollageSettings.collectionIds
+          );
+          response.services.pexelsCollections = hasCollectionId ? 'configured' : 'not_configured';
+        }
+      } catch (settingsError) {
+        // Don't fail health check if settings read fails
+        response.services.pexelsCollections = 'unknown';
+      }
+    }
   } catch (error) {
     response.services.pexels = 'unavailable';
   }

@@ -75,6 +75,8 @@ describe('Pexels Collection Media Integration', () => {
     it('should return proper structure when collection ID is configured', async () => {
       // Set up collection ID in settings
       const settings = await dbUnified.read('settings');
+      settings.features = settings.features || {};
+      settings.features.pexelsCollage = true; // Ensure feature is enabled
       settings.pexelsCollageSettings = settings.pexelsCollageSettings || {};
       settings.pexelsCollageSettings.collectionId = 'test-collection-id';
       await dbUnified.write('settings', settings);
@@ -93,6 +95,8 @@ describe('Pexels Collection Media Integration', () => {
     it('should support category-specific collection IDs', async () => {
       // Set up category-specific collection IDs in settings
       const settings = await dbUnified.read('settings');
+      settings.features = settings.features || {};
+      settings.features.pexelsCollage = true; // Ensure feature is enabled
       settings.pexelsCollageSettings = settings.pexelsCollageSettings || {};
       settings.pexelsCollageSettings.collectionIds = {
         venues: 'venues-collection-id',
@@ -112,6 +116,8 @@ describe('Pexels Collection Media Integration', () => {
     it('should fallback to search when collection fetch fails', async () => {
       // Set up invalid collection ID
       const settings = await dbUnified.read('settings');
+      settings.features = settings.features || {};
+      settings.features.pexelsCollage = true; // Ensure feature is enabled
       settings.pexelsCollageSettings = settings.pexelsCollageSettings || {};
       settings.pexelsCollageSettings.collectionId = 'invalid-collection';
       await dbUnified.write('settings', settings);
@@ -129,6 +135,8 @@ describe('Pexels Collection Media Integration', () => {
     it('should handle missing collection gracefully', async () => {
       // Set up collection ID with API key (if available)
       const settings = await dbUnified.read('settings');
+      settings.features = settings.features || {};
+      settings.features.pexelsCollage = true; // Ensure feature is enabled
       settings.pexelsCollageSettings = settings.pexelsCollageSettings || {};
       settings.pexelsCollageSettings.collectionId = 'nonexistent-collection';
       await dbUnified.write('settings', settings);
