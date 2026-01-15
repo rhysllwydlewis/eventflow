@@ -186,45 +186,78 @@ class SupplierGalleryManager {
       const supplierIdField = document.getElementById('sup-id');
       let supplierId = supplierIdField ? supplierIdField.value : null;
 
-      // If no supplier ID, we need to create the supplier first to get an ID
-      if (!supplierId || supplierId.trim() === '') {
-        // Generate a temporary ID for new suppliers
-        supplierId = `sup_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-        if (supplierIdField) {
-          supplierIdField.value = supplierId;
-        }
-      }
-
-      // Upload pending photos
-      if (this.pendingUploads.length > 0) {
-        await this.uploadPendingPhotos(supplierId);
-      }
-
-      // Update the photos field in the form
-      const photosField = document.getElementById('sup-photos');
-      if (photosField) {
-        const allPhotoUrls = this.uploadedPhotos.map(p => p.url);
-        photosField.value = allPhotoUrls.join('\n');
-      }
-
-      // Now submit the form normally
+      // Prepare form data
       const formData = new FormData(form);
       const payload = {};
       formData.forEach((v, k) => (payload[k] = v));
 
       const id = (payload.id || '').toString().trim();
-      const path = id ? `/api/me/suppliers/${encodeURIComponent(id)}` : '/api/me/suppliers';
-      const method = id ? 'PATCH' : 'POST';
 
       try {
-        const response = await fetch(path, {
-          method,
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
+        // If no supplier ID, create the supplier first to get a valid ID from the server
+        if (!supplierId || supplierId.trim() === '') {
+          // Create new supplier
+          const response = await fetch('/api/me/suppliers', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
 
-        if (!response.ok) {
-          throw new Error('Failed to save supplier profile');
+          if (!response.ok) {
+            throw new Error('Failed to create supplier profile');
+          }
+
+          const data = await response.json();
+          supplierId = data.supplier?.id || data.id;
+
+          // Update the form field with the server-generated ID
+          if (supplierIdField && supplierId) {
+            supplierIdField.value = supplierId;
+          }
+
+          console.log('Supplier created with ID:', supplierId);
+        }
+
+        // Upload pending photos now that we have a valid supplier ID
+        if (this.pendingUploads.length > 0 && supplierId) {
+          await this.uploadPendingPhotos(supplierId);
+
+          // Update the photos field in the form with uploaded photo URLs
+          const photosField = document.getElementById('sup-photos');
+          if (photosField) {
+            const allPhotoUrls = this.uploadedPhotos.map(p => p.url);
+            photosField.value = allPhotoUrls.join('\n');
+
+            // Update the payload with photo URLs
+            payload.photos = allPhotoUrls.join('\n');
+          }
+        }
+
+        // Now update the supplier with photo URLs if this was a new supplier
+        if (!id && supplierId) {
+          const updateResponse = await fetch(
+            `/api/me/suppliers/${encodeURIComponent(supplierId)}`,
+            {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload),
+            }
+          );
+
+          if (!updateResponse.ok) {
+            throw new Error('Failed to update supplier profile with photos');
+          }
+        } else if (id) {
+          // If editing existing supplier, update it
+          const updateResponse = await fetch(`/api/me/suppliers/${encodeURIComponent(id)}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+
+          if (!updateResponse.ok) {
+            throw new Error('Failed to save supplier profile');
+          }
         }
 
         // Clear pending uploads

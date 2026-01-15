@@ -255,12 +255,38 @@ export async function createPerformanceChart(containerId, viewsData, enquiriesDa
 /**
  * Fetch analytics data for a specific period
  * @param {number} days - Number of days
+ * @param {string} supplierId - Supplier ID (optional, will be detected from page)
  * @returns {Promise<object>} Analytics data
  */
-async function fetchAnalyticsData(days) {
+async function fetchAnalyticsData(days, supplierId = null) {
   try {
-    // This would be replaced with actual API endpoint
-    // For now, return mock data
+    // Try to get supplier ID from page context if not provided
+    if (!supplierId) {
+      const supplierIdField = document.getElementById('sup-id');
+      if (supplierIdField && supplierIdField.value) {
+        supplierId = supplierIdField.value;
+      }
+    }
+
+    // If we have a supplier ID, fetch real data from API
+    if (supplierId) {
+      const response = await fetch(`/api/me/suppliers/${supplierId}/analytics?period=${days}`, {
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        return {
+          labels: data.labels,
+          views: data.views,
+          enquiries: data.enquiries,
+        };
+      } else {
+        console.warn('Failed to fetch analytics data, using mock data');
+      }
+    }
+
+    // Fallback to mock data if no supplier ID or API fails
     const labels = [];
     const views = [];
     const enquiries = [];

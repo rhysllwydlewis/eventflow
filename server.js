@@ -2534,6 +2534,107 @@ app.get('/api/me/suppliers', authRequired, roleRequired('supplier'), async (req,
   res.json({ items: list });
 });
 
+/**
+ * GET /api/me/suppliers/:id/analytics
+ * Get analytics data for a supplier
+ */
+app.get(
+  '/api/me/suppliers/:id/analytics',
+  authRequired,
+  roleRequired('supplier'),
+  async (req, res) => {
+    try {
+      const supplierId = req.params.id;
+      const period = parseInt(req.query.period) || 7; // Default 7 days
+
+      // Verify ownership
+      const suppliers = await dbUnified.read('suppliers');
+      const supplier = suppliers.find(s => s.id === supplierId && s.ownerUserId === req.user.id);
+      if (!supplier) {
+        return res.status(404).json({ error: 'Supplier not found' });
+      }
+
+      // Get analytics data from database
+      let analytics = await dbUnified.read('analytics');
+      if (!Array.isArray(analytics)) {
+        analytics = [];
+      }
+
+      // Filter analytics for this supplier within the period
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - period);
+
+      const supplierAnalytics = analytics.filter(
+        a =>
+          a.supplierId === supplierId &&
+          new Date(a.date) >= cutoffDate &&
+          new Date(a.date) <= new Date()
+      );
+
+      // Generate date labels for the period
+      const labels = [];
+      const views = [];
+      const enquiries = [];
+
+      for (let i = period - 1; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        const dateStr = date.toISOString().split('T')[0];
+        labels.push(date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }));
+
+        // Find analytics for this date
+        const dayAnalytics = supplierAnalytics.find(a => a.date === dateStr);
+        views.push(dayAnalytics ? dayAnalytics.views || 0 : 0);
+        enquiries.push(dayAnalytics ? dayAnalytics.enquiries || 0 : 0);
+      }
+
+      // Calculate totals
+      const totalViews = views.reduce((sum, v) => sum + v, 0);
+      const totalEnquiries = enquiries.reduce((sum, e) => sum + e, 0);
+
+      // Get messages for response rate calculation
+      const messages = await dbUnified.read('messages');
+      const supplierMessages = messages.filter(
+        m => m.supplierId === supplierId || m.recipientId === supplierId
+      );
+
+      // Calculate response rate (responded messages / received messages)
+      const receivedMessages = supplierMessages.filter(m => m.recipientId === supplierId);
+      const respondedMessages = receivedMessages.filter(m => m.responded);
+      const responseRate = receivedMessages.length > 0
+        ? Math.round((respondedMessages.length / receivedMessages.length) * 100)
+        : 0;
+
+      // Calculate average response time (in hours)
+      let avgResponseTime = 0;
+      if (respondedMessages.length > 0) {
+        const totalResponseTime = respondedMessages.reduce((sum, m) => {
+          if (m.respondedAt && m.createdAt) {
+            const diff = new Date(m.respondedAt) - new Date(m.createdAt);
+            return sum + diff / (1000 * 60 * 60); // Convert to hours
+          }
+          return sum;
+        }, 0);
+        avgResponseTime = Math.round(totalResponseTime / respondedMessages.length * 10) / 10;
+      }
+
+      res.json({
+        period,
+        labels,
+        views,
+        enquiries,
+        totalViews,
+        totalEnquiries,
+        responseRate,
+        avgResponseTime,
+      });
+    } catch (error) {
+      console.error('Error fetching supplier analytics:', error);
+      res.status(500).json({ error: 'Failed to fetch analytics' });
+    }
+  }
+);
+
 // Mark all suppliers owned by the current user as Pro
 app.post(
   '/api/me/subscription/upgrade',
