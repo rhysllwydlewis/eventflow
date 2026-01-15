@@ -80,6 +80,13 @@
       img.removeAttribute('data-src');
     }
 
+    // Check if image is already loaded (from cache or before script ran)
+    if (img.complete && img.naturalWidth > 0) {
+      img.style.opacity = '1';
+      img.dataset.loaded = 'true';
+      return;
+    }
+
     // Fade in when loaded
     img.addEventListener(
       'load',
