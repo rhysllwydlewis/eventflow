@@ -2601,9 +2601,10 @@ app.get(
       // Calculate response rate (responded messages / received messages)
       const receivedMessages = supplierMessages.filter(m => m.recipientId === supplierId);
       const respondedMessages = receivedMessages.filter(m => m.responded);
-      const responseRate = receivedMessages.length > 0
-        ? Math.round((respondedMessages.length / receivedMessages.length) * 100)
-        : 0;
+      const responseRate =
+        receivedMessages.length > 0
+          ? Math.round((respondedMessages.length / receivedMessages.length) * 100)
+          : 0;
 
       // Calculate average response time (in hours)
       let avgResponseTime = 0;
@@ -2615,7 +2616,7 @@ app.get(
           }
           return sum;
         }, 0);
-        avgResponseTime = Math.round(totalResponseTime / respondedMessages.length * 10) / 10;
+        avgResponseTime = Math.round((totalResponseTime / respondedMessages.length) * 10) / 10;
       }
 
       res.json({
@@ -2757,6 +2758,7 @@ app.patch(
   writeLimiter,
   authRequired,
   roleRequired('supplier'),
+  csrfProtection,
   async (req, res) => {
     const all = await dbUnified.read('suppliers');
     const i = all.findIndex(s => s.id === req.params.id && s.ownerUserId === req.user.id);
