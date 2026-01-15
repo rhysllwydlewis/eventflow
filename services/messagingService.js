@@ -52,9 +52,9 @@ class MessagingService {
       });
 
       await this.threadsCollection.insertOne(thread);
-      
+
       logger.info('Thread created', { threadId: thread._id, participants });
-      
+
       return thread;
     } catch (error) {
       logger.error('Error creating thread', { error: error.message });
@@ -67,11 +67,7 @@ class MessagingService {
    */
   async getUserThreads(userId, options = {}) {
     try {
-      const {
-        status = THREAD_STATUS.ACTIVE,
-        limit = 50,
-        skip = 0,
-      } = options;
+      const { status = THREAD_STATUS.ACTIVE, limit = 50, skip = 0 } = options;
 
       const query = {
         participants: userId,
@@ -251,10 +247,7 @@ class MessagingService {
         update.$set.status = MESSAGE_STATUS.READ;
       }
 
-      await this.messagesCollection.updateOne(
-        { _id: message._id },
-        update
-      );
+      await this.messagesCollection.updateOne({ _id: message._id }, update);
 
       // Update unread count in thread
       await this.updateThreadUnreadCount(message.threadId, userId);
@@ -305,7 +298,11 @@ class MessagingService {
         }
       );
 
-      logger.debug('Thread marked as read', { threadId, userId, messagesUpdated: result.modifiedCount });
+      logger.debug('Thread marked as read', {
+        threadId,
+        userId,
+        messagesUpdated: result.modifiedCount,
+      });
 
       return result.modifiedCount;
     } catch (error) {
@@ -519,7 +516,11 @@ class MessagingService {
         }
       );
     } catch (error) {
-      logger.error('Error updating thread unread count', { threadId, userId, error: error.message });
+      logger.error('Error updating thread unread count', {
+        threadId,
+        userId,
+        error: error.message,
+      });
     }
   }
 }

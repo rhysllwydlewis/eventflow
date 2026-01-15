@@ -1,21 +1,27 @@
 # SEO Canonicals and Indexing Improvements - Summary
 
 ## Overview
+
 This PR implements comprehensive SEO improvements to fix duplicate sitemap routes, add missing canonical tags, ensure proper noindex headers for private pages, and improve sitemap accuracy.
 
 ## Changes Made
 
 ### 1. Fixed Duplicate Sitemap Routing (server.js)
+
 **Problem:** Two `/sitemap.xml` routes existed:
+
 - Line 364: Correct route using BASE_URL and `generateSitemap()`
 - Line 3887-3909: Duplicate route hardcoding `localhost:${PORT}` with outdated URLs
 
 **Solution:**
+
 - ✅ Removed duplicate route (lines 3887-3909)
 - ✅ Kept original route at line 364 that properly uses BASE_URL
 
 ### 2. Updated sitemap.js - Canonical URLs Only
+
 **Changes:**
+
 - ✅ Removed `/index.html` (duplicate of `/`)
 - ✅ Removed `/auth.html` (login page, should not be indexed)
 - ✅ Removed `/packages.html` (doesn't exist)
@@ -26,11 +32,14 @@ This PR implements comprehensive SEO improvements to fix duplicate sitemap route
 - ✅ Removed category pages (not in requirements)
 
 ### 3. Added Canonical and og:url Tags to HTML Pages
+
 **All public pages now have:**
+
 - `<link rel="canonical" href="https://event-flow.co.uk/[page]">`
 - `<meta property="og:url" content="https://event-flow.co.uk/[page]">`
 
 **Updated pages:**
+
 - ✅ index.html (already had both)
 - ✅ blog.html (already had both)
 - ✅ marketplace.html (already had both)
@@ -45,15 +54,18 @@ This PR implements comprehensive SEO improvements to fix duplicate sitemap route
 - ✅ All 8 articles in `/articles/` (added both to all)
 
 ### 4. Added X-Robots-Tag Noindex Middleware (server.js)
+
 **Problem:** Private/authenticated pages could be indexed by search engines
 
 **Solution:**
 Created middleware (placed BEFORE `express.static()`) that sets:
+
 ```
 X-Robots-Tag: noindex, nofollow
 ```
 
 **Protected pages:**
+
 - /auth.html
 - /reset-password.html
 - /dashboard.html
@@ -63,15 +75,18 @@ X-Robots-Tag: noindex, nofollow
 - /guests.html
 - /checkout.html
 - /my-marketplace-listings.html
-- /admin*.html (all admin pages)
+- /admin\*.html (all admin pages)
 
 **Why X-Robots-Tag instead of Disallow?**
+
 - Google recommends using `noindex` for indexing control
 - `Disallow` in robots.txt can prevent crawlers from seeing `noindex` directives
 - X-Robots-Tag header is more reliable for preventing indexing
 
 ### 5. Updated robots.txt Generation
+
 **Changes:**
+
 - ✅ Sitemap URL: `https://event-flow.co.uk/sitemap.xml` (hardcoded production URL)
 - ✅ Removed `Disallow` for HTML pages (now using X-Robots-Tag)
 - ✅ Kept `Disallow: /admin*`, `/dashboard*`, `/api/`, `/uploads/temp/`, `/*.json$`
@@ -80,7 +95,9 @@ X-Robots-Tag: noindex, nofollow
 ### 6. Created E2E Tests
 
 #### `e2e/seo-canonicals.spec.js`
+
 Tests all public pages for:
+
 - ✅ Presence of `<link rel="canonical">` tag
 - ✅ Presence of `<meta property="og:url">` tag
 - ✅ Both tags match and use correct canonical URL
@@ -88,7 +105,9 @@ Tests all public pages for:
 - ✅ Verifies marketplace.html redirects to /marketplace
 
 #### `e2e/seo-noindex.spec.js`
+
 Tests private pages for:
+
 - ✅ X-Robots-Tag header contains "noindex, nofollow"
 - ✅ Tests 9 authenticated pages + 4 admin pages = 13 pages total
 - ✅ Verifies public pages do NOT have noindex header
@@ -96,6 +115,7 @@ Tests private pages for:
 ## Validation Results
 
 ### Manual Verification ✅
+
 - ✅ Only one sitemap route in server.js (line 396)
 - ✅ /index.html and /auth.html removed from sitemap
 - ✅ /marketplace added to sitemap
@@ -108,6 +128,7 @@ Tests private pages for:
 ### Impact Assessment
 
 **Before:**
+
 - 2 sitemap routes (duplicate, inconsistent)
 - Sitemap included non-canonical URLs (/index.html, /auth.html)
 - Sitemap referenced non-existent pages (/packages.html)
@@ -118,6 +139,7 @@ Tests private pages for:
 - robots.txt hardcoded localhost
 
 **After:**
+
 - ✅ 1 sitemap route (canonical, consistent)
 - ✅ Sitemap includes only canonical, indexable URLs
 - ✅ All routes match actual site structure
@@ -137,10 +159,12 @@ Tests private pages for:
 ## Files Changed
 
 ### Server Files (2)
+
 - `server.js` - Removed duplicate route, added noindex middleware
 - `sitemap.js` - Updated URLs, added articles, fixed robots.txt
 
 ### Public HTML Files (14)
+
 - `public/start.html`
 - `public/for-suppliers.html`
 - `public/faq.html`
@@ -157,18 +181,21 @@ Tests private pages for:
 - `public/articles/birthday-party-planning-guide.html`
 
 ### Test Files (2)
+
 - `e2e/seo-canonicals.spec.js` (new)
 - `e2e/seo-noindex.spec.js` (new)
 
 ## Testing
 
 Run E2E tests with:
+
 ```bash
 npm run test:e2e:static -- seo-canonicals.spec.js
 npm run test:e2e:static -- seo-noindex.spec.js
 ```
 
 Or run full E2E suite:
+
 ```bash
 npm run test:e2e
 ```

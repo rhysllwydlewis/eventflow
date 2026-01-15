@@ -83,7 +83,9 @@ describe('Hero Images API Integration', () => {
       const readSettings = await dbUnified.read('settings');
       expect(readSettings.heroImages.venues).toBe(partialCustom.venues);
       expect(readSettings.heroImages.catering).toBe(partialCustom.catering);
-      expect(readSettings.heroImages.entertainment).toBe('/assets/images/collage-entertainment.jpg');
+      expect(readSettings.heroImages.entertainment).toBe(
+        '/assets/images/collage-entertainment.jpg'
+      );
       expect(readSettings.heroImages.photography).toBe('/assets/images/collage-photography.jpg');
     });
   });

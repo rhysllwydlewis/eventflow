@@ -1,6 +1,6 @@
 /**
  * Review Moderation Middleware
- * 
+ *
  * Handles review moderation workflow, permissions, and state transitions.
  */
 
@@ -22,11 +22,11 @@ function canModerateReviews(req, res, next) {
   if (!req.user) {
     return res.status(401).json({ error: 'Authentication required' });
   }
-  
+
   if (req.user.role !== 'admin') {
     return res.status(403).json({ error: 'Admin access required' });
   }
-  
+
   next();
 }
 
@@ -40,11 +40,11 @@ async function canRespondToReview(req, res, next) {
   if (!req.user) {
     return res.status(401).json({ error: 'Authentication required' });
   }
-  
+
   if (req.user.role !== 'supplier' && req.user.role !== 'admin') {
     return res.status(403).json({ error: 'Supplier access required' });
   }
-  
+
   next();
 }
 
@@ -58,13 +58,13 @@ function canFileDispute(req, res, next) {
   if (!req.user) {
     return res.status(401).json({ error: 'Authentication required' });
   }
-  
+
   // Suppliers can dispute reviews about them
   // Review authors can dispute moderation decisions
   if (req.user.role !== 'supplier' && req.user.role !== 'customer') {
     return res.status(403).json({ error: 'Invalid user role for filing disputes' });
   }
-  
+
   next();
 }
 
@@ -100,14 +100,14 @@ function canModerate(review) {
     ReviewModel.MODERATION_STATES.DISPUTED,
     ReviewModel.MODERATION_STATES.CHANGES_REQUESTED,
   ];
-  
+
   if (!moderatableStates.includes(review.moderation?.state)) {
     return {
       canModerate: false,
       reason: `Review is in ${review.moderation?.state} state and cannot be moderated`,
     };
   }
-  
+
   return {
     canModerate: true,
   };
@@ -127,7 +127,7 @@ function canEdit(review, userId) {
       reason: 'Only the review author can edit this review',
     };
   }
-  
+
   // Can edit if:
   // - Still in pending state
   // - Changes requested
@@ -136,16 +136,16 @@ function canEdit(review, userId) {
     ReviewModel.MODERATION_STATES.PENDING,
     ReviewModel.MODERATION_STATES.CHANGES_REQUESTED,
   ];
-  
+
   if (editableStates.includes(review.moderation?.state)) {
     return { canEdit: true };
   }
-  
+
   if (review.moderation?.state === ReviewModel.MODERATION_STATES.APPROVED) {
     const sevenDaysMs = EDIT_WINDOW_MS;
     const approvedAt = new Date(review.moderation.moderatedAt).getTime();
     const now = Date.now();
-    
+
     if (now - approvedAt < sevenDaysMs) {
       return { canEdit: true };
     } else {
@@ -155,7 +155,7 @@ function canEdit(review, userId) {
       };
     }
   }
-  
+
   return {
     canEdit: false,
     reason: `Review is in ${review.moderation?.state} state and cannot be edited`,
@@ -176,7 +176,7 @@ function canRespond(review, supplierId) {
       reason: 'Review does not belong to this supplier',
     };
   }
-  
+
   // Can only respond to approved reviews
   if (review.moderation?.state !== ReviewModel.MODERATION_STATES.APPROVED) {
     return {
@@ -184,7 +184,7 @@ function canRespond(review, supplierId) {
       reason: 'Can only respond to approved reviews',
     };
   }
-  
+
   return {
     canRespond: true,
   };
@@ -201,14 +201,14 @@ function evaluateAutoApproval(review) {
   // 2. Spam score < 0.3
   // 3. Sentiment score >= -0.3 (not very negative)
   // 4. No profanity
-  
+
   const isVerified = review.verification?.status !== ReviewModel.VERIFICATION_TYPES.UNVERIFIED;
   const lowSpam = (review.sentiment?.spamScore || 0) < 0.3;
   const notNegative = (review.sentiment?.score || 0) >= -0.3;
-  const noProfanity = !(review.sentiment?.profanity?.hasProfanity);
-  
+  const noProfanity = !review.sentiment?.profanity?.hasProfanity;
+
   const shouldAutoApprove = isVerified && lowSpam && notNegative && noProfanity;
-  
+
   let reason = '';
   if (!isVerified) {
     reason = 'Unverified review requires manual moderation';
@@ -221,7 +221,7 @@ function evaluateAutoApproval(review) {
   } else {
     reason = 'Auto-approved: verified, low spam, positive sentiment';
   }
-  
+
   return {
     shouldAutoApprove,
     reason,
@@ -235,22 +235,22 @@ function evaluateAutoApproval(review) {
  */
 function calculateModerationPriority(review) {
   let priority = 0;
-  
+
   // Disputed reviews have highest priority
   if (review.moderation?.state === ReviewModel.MODERATION_STATES.DISPUTED) {
     priority += 100;
   }
-  
+
   // High spam score
   if (review.sentiment?.spamScore > 0.7) {
     priority += 50;
   }
-  
+
   // Very negative sentiment
   if (review.sentiment?.score < -0.7) {
     priority += 40;
   }
-  
+
   // Age (older reviews get higher priority)
   const ageHours = (Date.now() - new Date(review.createdAt).getTime()) / (1000 * 60 * 60);
   if (ageHours > 48) {
@@ -258,12 +258,15 @@ function calculateModerationPriority(review) {
   } else if (ageHours > 24) {
     priority += 15;
   }
-  
+
   // Unverified reviews with low ratings
-  if (review.verification?.status === ReviewModel.VERIFICATION_TYPES.UNVERIFIED && review.rating <= 2) {
+  if (
+    review.verification?.status === ReviewModel.VERIFICATION_TYPES.UNVERIFIED &&
+    review.rating <= 2
+  ) {
     priority += 25;
   }
-  
+
   return priority;
 }
 
@@ -278,11 +281,12 @@ function validateModerationReason(action, reason) {
     if (!reason || reason.trim().length < 10) {
       return {
         valid: false,
-        error: 'A detailed reason is required for rejection or change requests (minimum 10 characters)',
+        error:
+          'A detailed reason is required for rejection or change requests (minimum 10 characters)',
       };
     }
   }
-  
+
   return {
     valid: true,
   };

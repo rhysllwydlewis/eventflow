@@ -1,11 +1,11 @@
 /**
  * Service Worker API Caching Security Tests
- * 
+ *
  * These tests verify that:
  * 1. Sensitive API endpoints are NOT cached by the service worker
  * 2. Allowlisted public endpoints may be cached only if response headers allow it
  * 3. Responses with no-store/private/no-cache are never cached
- * 
+ *
  * This prevents stale security risks where sensitive user data could be served
  * from cache in offline/flaky network scenarios.
  */
@@ -19,12 +19,15 @@ const CACHE_NAME = 'eventflow-v18-dynamic';
  * Helper function to check if a URL is cached
  */
 async function isUrlCached(page, url) {
-  return await page.evaluate(async (args) => {
-    const { cacheName, url } = args;
-    const cache = await caches.open(cacheName);
-    const match = await cache.match(url);
-    return !!match;
-  }, { cacheName: CACHE_NAME, url });
+  return await page.evaluate(
+    async args => {
+      const { cacheName, url } = args;
+      const cache = await caches.open(cacheName);
+      const match = await cache.match(url);
+      return !!match;
+    },
+    { cacheName: CACHE_NAME, url }
+  );
 }
 
 /**
@@ -45,12 +48,12 @@ async function registerServiceWorker(page) {
     // Unregister any existing service workers first
     const registrations = await navigator.serviceWorker.getRegistrations();
     await Promise.all(registrations.map(reg => reg.unregister()));
-    
+
     // Register the service worker
     const registration = await navigator.serviceWorker.register('/sw.js');
-    
+
     // Wait for it to become active
-    await new Promise((resolve) => {
+    await new Promise(resolve => {
       if (registration.active) {
         resolve();
       } else {
@@ -77,15 +80,15 @@ test.describe('Service Worker API Caching Security', () => {
   test('Test A - Sensitive API endpoints are NOT cached', async ({ page }) => {
     // Navigate to homepage to ensure service worker context
     await page.goto('/');
-    
+
     // Register and wait for service worker
     await registerServiceWorker(page);
-    
+
     // Wait a bit for SW to fully initialize
     await page.waitForTimeout(1000);
 
     // Mock a sensitive endpoint response (e.g., /api/auth/me or /api/admin/users)
-    await page.route('**/api/auth/me', async (route) => {
+    await page.route('**/api/auth/me', async route => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -123,7 +126,7 @@ test.describe('Service Worker API Caching Security', () => {
     expect(isCached).toBe(false);
 
     // Test another sensitive endpoint: /api/admin/users
-    await page.route('**/api/admin/users', async (route) => {
+    await page.route('**/api/admin/users', async route => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -131,9 +134,7 @@ test.describe('Service Worker API Caching Security', () => {
           'Cache-Control': 'no-store, private',
         },
         body: JSON.stringify({
-          items: [
-            { id: 'usr_1', email: 'admin@example.com', role: 'admin' },
-          ],
+          items: [{ id: 'usr_1', email: 'admin@example.com', role: 'admin' }],
         }),
       });
     });
@@ -153,16 +154,18 @@ test.describe('Service Worker API Caching Security', () => {
     expect(isAdminCached).toBe(false);
   });
 
-  test('Test B - Allowlisted public API endpoint may cache with proper headers', async ({ page }) => {
+  test('Test B - Allowlisted public API endpoint may cache with proper headers', async ({
+    page,
+  }) => {
     // Navigate to homepage
     await page.goto('/');
-    
+
     // Register and wait for service worker
     await registerServiceWorker(page);
     await page.waitForTimeout(1000);
 
     // Mock /api/config with public cache headers
-    await page.route('**/api/config', async (route) => {
+    await page.route('**/api/config', async route => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -199,7 +202,7 @@ test.describe('Service Worker API Caching Security', () => {
     await page.unroute('**/api/config');
 
     // Simulate offline by making fetch fail for this URL
-    await page.route('**/api/config', async (route) => {
+    await page.route('**/api/config', async route => {
       await route.abort('failed');
     });
 
@@ -217,16 +220,18 @@ test.describe('Service Worker API Caching Security', () => {
     expect(response2.data.version).toBe('v17.0.0');
   });
 
-  test('Test C - Responses with no-store are never cached, even if allowlisted', async ({ page }) => {
+  test('Test C - Responses with no-store are never cached, even if allowlisted', async ({
+    page,
+  }) => {
     // Navigate to homepage
     await page.goto('/');
-    
+
     // Register and wait for service worker
     await registerServiceWorker(page);
     await page.waitForTimeout(1000);
 
     // Mock /api/config but with no-store header (overriding normal caching)
-    await page.route('**/api/config', async (route) => {
+    await page.route('**/api/config', async route => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -263,13 +268,13 @@ test.describe('Service Worker API Caching Security', () => {
   test('Test D - Non-allowlisted API endpoint returns 503 when offline', async ({ page }) => {
     // Navigate to homepage
     await page.goto('/');
-    
+
     // Register and wait for service worker
     await registerServiceWorker(page);
     await page.waitForTimeout(1000);
 
     // Mock a non-allowlisted endpoint that will fail
-    await page.route('**/api/suppliers', async (route) => {
+    await page.route('**/api/suppliers', async route => {
       await route.abort('failed');
     });
 
@@ -298,7 +303,7 @@ test.describe('Service Worker API Caching Security', () => {
     // Test sensitive endpoint has no-store header
     const authResponse = await page.goto('/api/auth/me');
     const authHeaders = authResponse?.headers();
-    
+
     // Should have no-store header (either from server or expect 401 for unauthenticated)
     if (authResponse?.status() === 200) {
       expect(authHeaders?.['cache-control']).toContain('no-store');

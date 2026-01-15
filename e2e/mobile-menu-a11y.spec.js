@@ -118,7 +118,9 @@ test.describe('Mobile Menu A11Y - Focus Trap & ARIA', () => {
           await expect(firstLink).toBeFocused();
         });
 
-        test(`${testPage.name}: should trap focus - Shift+Tab cycles backwards`, async ({ page }) => {
+        test(`${testPage.name}: should trap focus - Shift+Tab cycles backwards`, async ({
+          page,
+        }) => {
           await page.goto(testPage.path);
 
           const toggle = page.locator('#ef-mobile-toggle');
@@ -141,7 +143,9 @@ test.describe('Mobile Menu A11Y - Focus Trap & ARIA', () => {
           await expect(lastLink).toBeFocused();
         });
 
-        test(`${testPage.name}: should NOT allow focus outside menu when open`, async ({ page }) => {
+        test(`${testPage.name}: should NOT allow focus outside menu when open`, async ({
+          page,
+        }) => {
           await page.goto(testPage.path);
 
           const toggle = page.locator('#ef-mobile-toggle');
@@ -161,9 +165,11 @@ test.describe('Mobile Menu A11Y - Focus Trap & ARIA', () => {
           for (let i = 0; i < 3; i++) {
             await page.keyboard.press('Tab');
             await page.waitForTimeout(50);
-            
+
             // Get currently focused element
-            const focusedElement = await page.evaluate(() => document.activeElement?.closest('#ef-mobile-menu'));
+            const focusedElement = await page.evaluate(() =>
+              document.activeElement?.closest('#ef-mobile-menu')
+            );
             expect(focusedElement).not.toBeNull();
           }
         });
@@ -190,7 +196,9 @@ test.describe('Mobile Menu A11Y - Focus Trap & ARIA', () => {
           await expect(toggle).toBeFocused();
         });
 
-        test(`${testPage.name}: should close on backdrop click and return focus`, async ({ page }) => {
+        test(`${testPage.name}: should close on backdrop click and return focus`, async ({
+          page,
+        }) => {
           await page.goto(testPage.path);
 
           const toggle = page.locator('#ef-mobile-toggle');
@@ -212,7 +220,9 @@ test.describe('Mobile Menu A11Y - Focus Trap & ARIA', () => {
           await expect(toggle).toBeFocused();
         });
 
-        test(`${testPage.name}: should handle rapid open/close without breaking`, async ({ page }) => {
+        test(`${testPage.name}: should handle rapid open/close without breaking`, async ({
+          page,
+        }) => {
           await page.goto(testPage.path);
 
           const toggle = page.locator('#ef-mobile-toggle');
@@ -247,7 +257,7 @@ test.describe('Mobile Menu A11Y - ARIA Compliance Summary', () => {
     await expect(toggle).toHaveAttribute('aria-expanded');
     await expect(toggle).toHaveAttribute('aria-label');
     await expect(toggle).toHaveAttribute('aria-controls', 'ef-mobile-menu');
-    
+
     await expect(menu).toHaveAttribute('role', 'dialog');
     await expect(menu).toHaveAttribute('aria-modal', 'true');
     await expect(menu).toHaveAttribute('aria-label');

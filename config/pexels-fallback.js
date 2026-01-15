@@ -2,20 +2,20 @@
  * Pexels Fallback Configuration
  * Provides hardcoded URLs from curated wedding collections as fallback
  * when the Pexels API is unavailable or not configured.
- * 
+ *
  * These URLs are direct Pexels CDN links that don't require API authentication.
  * They provide a graceful degradation path for the homepage hero collage.
- * 
+ *
  * Collections:
  * - Photos: Wedding Standard Collection (curated wedding photos)
  * - Videos: Wedding Standard Videos Collection (curated wedding videos)
- * 
+ *
  * URL Validation:
  * - All URLs follow the Pexels CDN format: https://images.pexels.com/...
  * - Photo URLs support query parameters for responsive sizing (auto=compress, w=width, h=height)
  * - URLs are public and do not require authentication
  * - Run validation script: node /tmp/validate-fallback-urls.js (requires network access)
- * 
+ *
  * Note: These fallback URLs should be periodically validated to ensure they remain accessible.
  * If URLs become broken, they should be replaced with new curated photo/video URLs from Pexels.
  */
@@ -34,9 +34,12 @@ const FALLBACK_PHOTOS = [
     photographer: 'Pexels',
     src: {
       original: 'https://images.pexels.com/photos/169198/pexels-photo-169198.jpeg',
-      large: 'https://images.pexels.com/photos/169198/pexels-photo-169198.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
-      medium: 'https://images.pexels.com/photos/169198/pexels-photo-169198.jpeg?auto=compress&cs=tinysrgb&w=640&h=427',
-      small: 'https://images.pexels.com/photos/169198/pexels-photo-169198.jpeg?auto=compress&cs=tinysrgb&w=320&h=213',
+      large:
+        'https://images.pexels.com/photos/169198/pexels-photo-169198.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+      medium:
+        'https://images.pexels.com/photos/169198/pexels-photo-169198.jpeg?auto=compress&cs=tinysrgb&w=640&h=427',
+      small:
+        'https://images.pexels.com/photos/169198/pexels-photo-169198.jpeg?auto=compress&cs=tinysrgb&w=320&h=213',
     },
     alt: 'Wedding ceremony setup',
   },
@@ -46,9 +49,12 @@ const FALLBACK_PHOTOS = [
     photographer: 'Pexels',
     src: {
       original: 'https://images.pexels.com/photos/1024993/pexels-photo-1024993.jpeg',
-      large: 'https://images.pexels.com/photos/1024993/pexels-photo-1024993.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
-      medium: 'https://images.pexels.com/photos/1024993/pexels-photo-1024993.jpeg?auto=compress&cs=tinysrgb&w=640&h=427',
-      small: 'https://images.pexels.com/photos/1024993/pexels-photo-1024993.jpeg?auto=compress&cs=tinysrgb&w=320&h=213',
+      large:
+        'https://images.pexels.com/photos/1024993/pexels-photo-1024993.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+      medium:
+        'https://images.pexels.com/photos/1024993/pexels-photo-1024993.jpeg?auto=compress&cs=tinysrgb&w=640&h=427',
+      small:
+        'https://images.pexels.com/photos/1024993/pexels-photo-1024993.jpeg?auto=compress&cs=tinysrgb&w=320&h=213',
     },
     alt: 'Wedding bouquet',
   },
@@ -58,9 +64,12 @@ const FALLBACK_PHOTOS = [
     photographer: 'Pexels',
     src: {
       original: 'https://images.pexels.com/photos/1444442/pexels-photo-1444442.jpeg',
-      large: 'https://images.pexels.com/photos/1444442/pexels-photo-1444442.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
-      medium: 'https://images.pexels.com/photos/1444442/pexels-photo-1444442.jpeg?auto=compress&cs=tinysrgb&w=640&h=427',
-      small: 'https://images.pexels.com/photos/1444442/pexels-photo-1444442.jpeg?auto=compress&cs=tinysrgb&w=320&h=213',
+      large:
+        'https://images.pexels.com/photos/1444442/pexels-photo-1444442.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+      medium:
+        'https://images.pexels.com/photos/1444442/pexels-photo-1444442.jpeg?auto=compress&cs=tinysrgb&w=640&h=427',
+      small:
+        'https://images.pexels.com/photos/1444442/pexels-photo-1444442.jpeg?auto=compress&cs=tinysrgb&w=320&h=213',
     },
     alt: 'Wedding venue decoration',
   },
@@ -70,9 +79,12 @@ const FALLBACK_PHOTOS = [
     photographer: 'Pexels',
     src: {
       original: 'https://images.pexels.com/photos/2253870/pexels-photo-2253870.jpeg',
-      large: 'https://images.pexels.com/photos/2253870/pexels-photo-2253870.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
-      medium: 'https://images.pexels.com/photos/2253870/pexels-photo-2253870.jpeg?auto=compress&cs=tinysrgb&w=640&h=427',
-      small: 'https://images.pexels.com/photos/2253870/pexels-photo-2253870.jpeg?auto=compress&cs=tinysrgb&w=320&h=213',
+      large:
+        'https://images.pexels.com/photos/2253870/pexels-photo-2253870.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+      medium:
+        'https://images.pexels.com/photos/2253870/pexels-photo-2253870.jpeg?auto=compress&cs=tinysrgb&w=640&h=427',
+      small:
+        'https://images.pexels.com/photos/2253870/pexels-photo-2253870.jpeg?auto=compress&cs=tinysrgb&w=320&h=213',
     },
     alt: 'Wedding rings',
   },
@@ -82,9 +94,12 @@ const FALLBACK_PHOTOS = [
     photographer: 'Pexels',
     src: {
       original: 'https://images.pexels.com/photos/265722/pexels-photo-265722.jpeg',
-      large: 'https://images.pexels.com/photos/265722/pexels-photo-265722.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
-      medium: 'https://images.pexels.com/photos/265722/pexels-photo-265722.jpeg?auto=compress&cs=tinysrgb&w=640&h=427',
-      small: 'https://images.pexels.com/photos/265722/pexels-photo-265722.jpeg?auto=compress&cs=tinysrgb&w=320&h=213',
+      large:
+        'https://images.pexels.com/photos/265722/pexels-photo-265722.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+      medium:
+        'https://images.pexels.com/photos/265722/pexels-photo-265722.jpeg?auto=compress&cs=tinysrgb&w=640&h=427',
+      small:
+        'https://images.pexels.com/photos/265722/pexels-photo-265722.jpeg?auto=compress&cs=tinysrgb&w=320&h=213',
     },
     alt: 'Wedding table setting',
   },
@@ -94,9 +109,12 @@ const FALLBACK_PHOTOS = [
     photographer: 'Pexels',
     src: {
       original: 'https://images.pexels.com/photos/1779490/pexels-photo-1779490.jpeg',
-      large: 'https://images.pexels.com/photos/1779490/pexels-photo-1779490.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
-      medium: 'https://images.pexels.com/photos/1779490/pexels-photo-1779490.jpeg?auto=compress&cs=tinysrgb&w=640&h=427',
-      small: 'https://images.pexels.com/photos/1779490/pexels-photo-1779490.jpeg?auto=compress&cs=tinysrgb&w=320&h=213',
+      large:
+        'https://images.pexels.com/photos/1779490/pexels-photo-1779490.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+      medium:
+        'https://images.pexels.com/photos/1779490/pexels-photo-1779490.jpeg?auto=compress&cs=tinysrgb&w=640&h=427',
+      small:
+        'https://images.pexels.com/photos/1779490/pexels-photo-1779490.jpeg?auto=compress&cs=tinysrgb&w=320&h=213',
     },
     alt: 'Wedding cake',
   },
@@ -106,9 +124,12 @@ const FALLBACK_PHOTOS = [
     photographer: 'Pexels',
     src: {
       original: 'https://images.pexels.com/photos/1045541/pexels-photo-1045541.jpeg',
-      large: 'https://images.pexels.com/photos/1045541/pexels-photo-1045541.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
-      medium: 'https://images.pexels.com/photos/1045541/pexels-photo-1045541.jpeg?auto=compress&cs=tinysrgb&w=640&h=427',
-      small: 'https://images.pexels.com/photos/1045541/pexels-photo-1045541.jpeg?auto=compress&cs=tinysrgb&w=320&h=213',
+      large:
+        'https://images.pexels.com/photos/1045541/pexels-photo-1045541.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+      medium:
+        'https://images.pexels.com/photos/1045541/pexels-photo-1045541.jpeg?auto=compress&cs=tinysrgb&w=640&h=427',
+      small:
+        'https://images.pexels.com/photos/1045541/pexels-photo-1045541.jpeg?auto=compress&cs=tinysrgb&w=320&h=213',
     },
     alt: 'Wedding couple',
   },
@@ -118,9 +139,12 @@ const FALLBACK_PHOTOS = [
     photographer: 'Pexels',
     src: {
       original: 'https://images.pexels.com/photos/1616113/pexels-photo-1616113.jpeg',
-      large: 'https://images.pexels.com/photos/1616113/pexels-photo-1616113.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
-      medium: 'https://images.pexels.com/photos/1616113/pexels-photo-1616113.jpeg?auto=compress&cs=tinysrgb&w=640&h=427',
-      small: 'https://images.pexels.com/photos/1616113/pexels-photo-1616113.jpeg?auto=compress&cs=tinysrgb&w=320&h=213',
+      large:
+        'https://images.pexels.com/photos/1616113/pexels-photo-1616113.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+      medium:
+        'https://images.pexels.com/photos/1616113/pexels-photo-1616113.jpeg?auto=compress&cs=tinysrgb&w=640&h=427',
+      small:
+        'https://images.pexels.com/photos/1616113/pexels-photo-1616113.jpeg?auto=compress&cs=tinysrgb&w=320&h=213',
     },
     alt: 'Wedding celebration',
   },
@@ -130,9 +154,12 @@ const FALLBACK_PHOTOS = [
     photographer: 'Pexels',
     src: {
       original: 'https://images.pexels.com/photos/2788488/pexels-photo-2788488.jpeg',
-      large: 'https://images.pexels.com/photos/2788488/pexels-photo-2788488.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
-      medium: 'https://images.pexels.com/photos/2788488/pexels-photo-2788488.jpeg?auto=compress&cs=tinysrgb&w=640&h=427',
-      small: 'https://images.pexels.com/photos/2788488/pexels-photo-2788488.jpeg?auto=compress&cs=tinysrgb&w=320&h=213',
+      large:
+        'https://images.pexels.com/photos/2788488/pexels-photo-2788488.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+      medium:
+        'https://images.pexels.com/photos/2788488/pexels-photo-2788488.jpeg?auto=compress&cs=tinysrgb&w=640&h=427',
+      small:
+        'https://images.pexels.com/photos/2788488/pexels-photo-2788488.jpeg?auto=compress&cs=tinysrgb&w=320&h=213',
     },
     alt: 'Wedding dance',
   },
@@ -142,9 +169,12 @@ const FALLBACK_PHOTOS = [
     photographer: 'Pexels',
     src: {
       original: 'https://images.pexels.com/photos/1444424/pexels-photo-1444424.jpeg',
-      large: 'https://images.pexels.com/photos/1444424/pexels-photo-1444424.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
-      medium: 'https://images.pexels.com/photos/1444424/pexels-photo-1444424.jpeg?auto=compress&cs=tinysrgb&w=640&h=427',
-      small: 'https://images.pexels.com/photos/1444424/pexels-photo-1444424.jpeg?auto=compress&cs=tinysrgb&w=320&h=213',
+      large:
+        'https://images.pexels.com/photos/1444424/pexels-photo-1444424.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+      medium:
+        'https://images.pexels.com/photos/1444424/pexels-photo-1444424.jpeg?auto=compress&cs=tinysrgb&w=640&h=427',
+      small:
+        'https://images.pexels.com/photos/1444424/pexels-photo-1444424.jpeg?auto=compress&cs=tinysrgb&w=320&h=213',
     },
     alt: 'Wedding flowers',
   },
@@ -154,9 +184,12 @@ const FALLBACK_PHOTOS = [
     photographer: 'Pexels',
     src: {
       original: 'https://images.pexels.com/photos/2253842/pexels-photo-2253842.jpeg',
-      large: 'https://images.pexels.com/photos/2253842/pexels-photo-2253842.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
-      medium: 'https://images.pexels.com/photos/2253842/pexels-photo-2253842.jpeg?auto=compress&cs=tinysrgb&w=640&h=427',
-      small: 'https://images.pexels.com/photos/2253842/pexels-photo-2253842.jpeg?auto=compress&cs=tinysrgb&w=320&h=213',
+      large:
+        'https://images.pexels.com/photos/2253842/pexels-photo-2253842.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+      medium:
+        'https://images.pexels.com/photos/2253842/pexels-photo-2253842.jpeg?auto=compress&cs=tinysrgb&w=640&h=427',
+      small:
+        'https://images.pexels.com/photos/2253842/pexels-photo-2253842.jpeg?auto=compress&cs=tinysrgb&w=320&h=213',
     },
     alt: 'Wedding venue',
   },
@@ -166,9 +199,12 @@ const FALLBACK_PHOTOS = [
     photographer: 'Pexels',
     src: {
       original: 'https://images.pexels.com/photos/1043902/pexels-photo-1043902.jpeg',
-      large: 'https://images.pexels.com/photos/1043902/pexels-photo-1043902.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
-      medium: 'https://images.pexels.com/photos/1043902/pexels-photo-1043902.jpeg?auto=compress&cs=tinysrgb&w=640&h=427',
-      small: 'https://images.pexels.com/photos/1043902/pexels-photo-1043902.jpeg?auto=compress&cs=tinysrgb&w=320&h=213',
+      large:
+        'https://images.pexels.com/photos/1043902/pexels-photo-1043902.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+      medium:
+        'https://images.pexels.com/photos/1043902/pexels-photo-1043902.jpeg?auto=compress&cs=tinysrgb&w=640&h=427',
+      small:
+        'https://images.pexels.com/photos/1043902/pexels-photo-1043902.jpeg?auto=compress&cs=tinysrgb&w=320&h=213',
     },
     alt: 'Wedding invitation',
   },
@@ -178,9 +214,12 @@ const FALLBACK_PHOTOS = [
     photographer: 'Pexels',
     src: {
       original: 'https://images.pexels.com/photos/3014856/pexels-photo-3014856.jpeg',
-      large: 'https://images.pexels.com/photos/3014856/pexels-photo-3014856.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
-      medium: 'https://images.pexels.com/photos/3014856/pexels-photo-3014856.jpeg?auto=compress&cs=tinysrgb&w=640&h=427',
-      small: 'https://images.pexels.com/photos/3014856/pexels-photo-3014856.jpeg?auto=compress&cs=tinysrgb&w=320&h=213',
+      large:
+        'https://images.pexels.com/photos/3014856/pexels-photo-3014856.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+      medium:
+        'https://images.pexels.com/photos/3014856/pexels-photo-3014856.jpeg?auto=compress&cs=tinysrgb&w=640&h=427',
+      small:
+        'https://images.pexels.com/photos/3014856/pexels-photo-3014856.jpeg?auto=compress&cs=tinysrgb&w=320&h=213',
     },
     alt: 'Wedding photography',
   },
@@ -190,9 +229,12 @@ const FALLBACK_PHOTOS = [
     photographer: 'Pexels',
     src: {
       original: 'https://images.pexels.com/photos/2788792/pexels-photo-2788792.jpeg',
-      large: 'https://images.pexels.com/photos/2788792/pexels-photo-2788792.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
-      medium: 'https://images.pexels.com/photos/2788792/pexels-photo-2788792.jpeg?auto=compress&cs=tinysrgb&w=640&h=427',
-      small: 'https://images.pexels.com/photos/2788792/pexels-photo-2788792.jpeg?auto=compress&cs=tinysrgb&w=320&h=213',
+      large:
+        'https://images.pexels.com/photos/2788792/pexels-photo-2788792.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+      medium:
+        'https://images.pexels.com/photos/2788792/pexels-photo-2788792.jpeg?auto=compress&cs=tinysrgb&w=640&h=427',
+      small:
+        'https://images.pexels.com/photos/2788792/pexels-photo-2788792.jpeg?auto=compress&cs=tinysrgb&w=320&h=213',
     },
     alt: 'Wedding celebration moment',
   },
@@ -202,9 +244,12 @@ const FALLBACK_PHOTOS = [
     photographer: 'Pexels',
     src: {
       original: 'https://images.pexels.com/photos/1729797/pexels-photo-1729797.jpeg',
-      large: 'https://images.pexels.com/photos/1729797/pexels-photo-1729797.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
-      medium: 'https://images.pexels.com/photos/1729797/pexels-photo-1729797.jpeg?auto=compress&cs=tinysrgb&w=640&h=427',
-      small: 'https://images.pexels.com/photos/1729797/pexels-photo-1729797.jpeg?auto=compress&cs=tinysrgb&w=320&h=213',
+      large:
+        'https://images.pexels.com/photos/1729797/pexels-photo-1729797.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+      medium:
+        'https://images.pexels.com/photos/1729797/pexels-photo-1729797.jpeg?auto=compress&cs=tinysrgb&w=640&h=427',
+      small:
+        'https://images.pexels.com/photos/1729797/pexels-photo-1729797.jpeg?auto=compress&cs=tinysrgb&w=320&h=213',
     },
     alt: 'Wedding outdoor setup',
   },

@@ -4920,7 +4920,7 @@ router.get('/public/pexels-collage', async (req, res) => {
     const features = settings.features || {};
 
     if (features.pexelsCollage !== true) {
-      return res.status(404).json({ 
+      return res.status(404).json({
         error: 'Pexels collage feature is not enabled',
         errorType: 'feature_disabled',
       });
@@ -4929,7 +4929,7 @@ router.get('/public/pexels-collage', async (req, res) => {
     const { category } = req.query;
 
     if (!category) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'Category parameter required',
         errorType: 'validation',
       });
@@ -4937,7 +4937,7 @@ router.get('/public/pexels-collage', async (req, res) => {
 
     const validCategories = ['venues', 'catering', 'entertainment', 'photography'];
     if (!validCategories.includes(category)) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: `Invalid category. Must be one of: ${validCategories.join(', ')}`,
         errorType: 'validation',
         validCategories,
@@ -4972,7 +4972,9 @@ router.get('/public/pexels-collage', async (req, res) => {
           const photos = results.media.filter(item => item.type === 'Photo');
 
           if (photos.length === 0) {
-            console.warn(`⚠️  No photos found in collection ${collectionId}, falling back to search`);
+            console.warn(
+              `⚠️  No photos found in collection ${collectionId}, falling back to search`
+            );
             // Fall through to search-based approach
           } else {
             return res.json({
@@ -4985,7 +4987,7 @@ router.get('/public/pexels-collage', async (req, res) => {
             });
           }
         }
-        
+
         // Use query-based searching (default behavior or fallback from empty collection)
         const query = pexelsCollageSettings.queries[category] || category;
         console.log(`🔍 Searching photos with query: "${query}" for ${category}`);
@@ -5040,11 +5042,11 @@ router.get('/public/pexels-collage', async (req, res) => {
   } catch (error) {
     console.error('❌ Error fetching Pexels collage images:', error);
     console.error('🔖 Error type:', error.type || 'unknown');
-    
+
     // Return appropriate status code based on error type
     const statusCode = error.statusCode || 500;
-    
-    res.status(statusCode).json({ 
+
+    res.status(statusCode).json({
       error: 'Failed to fetch Pexels images',
       message: error.userFriendlyMessage || error.message,
       errorType: error.type || 'unknown',

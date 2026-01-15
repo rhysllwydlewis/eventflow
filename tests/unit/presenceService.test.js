@@ -60,7 +60,7 @@ describe('PresenceService', () => {
   describe('Heartbeat', () => {
     it('should update last seen on heartbeat', async () => {
       await presenceService.setOnline('user1', 'socket1');
-      
+
       const presence1 = await presenceService.getPresence('user1');
       const initialLastSeen = presence1.lastSeen;
 

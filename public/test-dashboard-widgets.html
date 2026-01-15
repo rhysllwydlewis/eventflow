@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard Widgets Test</title>
+    <link rel="stylesheet" href="/assets/css/styles.css" />
+    <link rel="stylesheet" href="/assets/css/skeleton.css" />
+    <link rel="stylesheet" href="/assets/css/dashboard-animations.css" />
+    <style>
+      body {
+        padding: 2rem;
+        background: #f9fafb;
+      }
+      .test-section {
+        margin-bottom: 3rem;
+        background: white;
+        padding: 2rem;
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      }
+      .test-section h2 {
+        margin-top: 0;
+        color: #0b1220;
+        border-bottom: 2px solid #0b8073;
+        padding-bottom: 0.5rem;
+      }
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1 style="text-align: center; color: #0b8073">Dashboard Widgets Demo</h1>
+
+      <!-- Statistics Grid Test -->
+      <div class="test-section">
+        <h2>Statistics Grid Widget</h2>
+        <div id="test-stats-grid"></div>
+      </div>
+
+      <!-- Budget Tracker Test -->
+      <div class="test-section">
+        <h2>Budget Tracker Widget</h2>
+        <div id="test-budget-tracker"></div>
+      </div>
+
+      <!-- Progress Ring Test -->
+      <div class="test-section">
+        <h2>Progress Ring Widget</h2>
+        <div id="test-progress-ring"></div>
+      </div>
+
+      <!-- Events Timeline Test -->
+      <div class="test-section">
+        <h2>Upcoming Events Timeline</h2>
+        <div id="test-events-timeline"></div>
+      </div>
+
+      <!-- Profile Checklist Test -->
+      <div class="test-section">
+        <h2>Profile Completeness Checklist</h2>
+        <div id="test-profile-checklist"></div>
+      </div>
+
+      <!-- Performance Chart Test -->
+      <div class="test-section">
+        <h2>Performance Analytics Chart</h2>
+        <div id="test-performance-chart"></div>
+      </div>
+    </div>
+
+    <script type="module">
+      import {
+        createStatsGrid,
+        createBudgetTracker,
+        createProgressRing,
+        createEventsTimeline,
+        createProfileChecklist,
+      } from '/assets/js/dashboard-widgets.js';
+      import { createPerformanceChart } from '/assets/js/supplier-analytics-chart.js';
+
+      // Test Stats Grid
+      createStatsGrid(
+        [
+          {
+            icon: '📋',
+            value: 5,
+            label: 'Active Plans',
+            format: 'number',
+            color: 'linear-gradient(135deg, #0B8073 0%, #13B6A2 100%)',
+          },
+          {
+            icon: '⭐',
+            value: 12,
+            label: 'Saved Suppliers',
+            format: 'number',
+            color: 'linear-gradient(135deg, #F59E0B 0%, #FBBF24 100%)',
+          },
+          {
+            icon: '📅',
+            value: 8,
+            label: 'Upcoming Tasks',
+            format: 'number',
+            color: 'linear-gradient(135deg, #3B82F6 0%, #60A5FA 100%)',
+          },
+          {
+            icon: '💬',
+            value: 3,
+            label: 'Messages',
+            format: 'number',
+            color: 'linear-gradient(135deg, #8B5CF6 0%, #A78BFA 100%)',
+            pulse: true,
+          },
+        ],
+        'test-stats-grid'
+      );
+
+      // Test Budget Tracker
+      createBudgetTracker(
+        {
+          spent: 3500,
+          total: 5000,
+        },
+        'test-budget-tracker'
+      );
+
+      // Test Progress Ring
+      createProgressRing(
+        {
+          percentage: 65,
+          label: 'Event Progress',
+          booked: 7,
+          pending: 3,
+        },
+        'test-progress-ring'
+      );
+
+      // Test Events Timeline
+      createEventsTimeline(
+        [
+          { name: 'Finalize venue booking', supplier: 'The Grand Hall', daysUntil: 1 },
+          { name: 'Menu tasting session', supplier: 'Gourmet Catering Co', daysUntil: 5 },
+          {
+            name: 'Photography consultation',
+            supplier: 'Perfect Moments Photography',
+            daysUntil: 14,
+          },
+          { name: 'Florist meeting', supplier: 'Bloom & Blossom', daysUntil: 21 },
+        ],
+        'test-events-timeline'
+      );
+
+      // Test Profile Checklist
+      createProfileChecklist(
+        {
+          basicInfo: true,
+          photos: true,
+          package: true,
+          emailVerified: false,
+          firstReview: false,
+        },
+        'test-profile-checklist'
+      );
+
+      // Test Performance Chart
+      const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+      const viewsData = [25, 30, 28, 35, 40, 38, 45];
+      const enquiriesData = [2, 3, 2, 4, 5, 4, 6];
+      createPerformanceChart('test-performance-chart', viewsData, enquiriesData, labels);
+    </script>
+  </body>
+</html>

@@ -25,10 +25,10 @@ class PresenceService {
     // Use Redis for cluster support, fallback to in-memory
     this.useRedis = !!redisClient;
     this.redis = redisClient;
-    
+
     // In-memory storage (used when Redis not available)
     this.presenceMap = new Map(); // userId -> { state, lastSeen, socketIds }
-    
+
     // Cleanup interval
     this.cleanupInterval = setInterval(() => this.cleanup(), 60000); // Every minute
 
@@ -41,7 +41,7 @@ class PresenceService {
   async setOnline(userId, socketId) {
     try {
       const now = Date.now();
-      
+
       if (this.useRedis) {
         // Store in Redis for cluster support
         const key = `presence:${userId}`;
@@ -78,10 +78,10 @@ class PresenceService {
       if (this.useRedis) {
         // Remove socket from set
         await this.redis.srem(`presence:${userId}:sockets`, socketId);
-        
+
         // Check if user has any other active sockets
         const socketCount = await this.redis.scard(`presence:${userId}:sockets`);
-        
+
         if (socketCount === 0) {
           // No more active sockets - mark as offline
           const key = `presence:${userId}`;
@@ -95,7 +95,7 @@ class PresenceService {
         const presence = this.presenceMap.get(userId);
         if (presence) {
           presence.socketIds.delete(socketId);
-          
+
           // If no more sockets, mark as offline
           if (presence.socketIds.size === 0) {
             presence.state = PRESENCE_STATES.OFFLINE;
@@ -116,7 +116,7 @@ class PresenceService {
   async heartbeat(userId) {
     try {
       const now = Date.now();
-      
+
       if (this.useRedis) {
         const key = `presence:${userId}`;
         await this.redis.hset(key, 'lastSeen', now);
@@ -144,11 +144,11 @@ class PresenceService {
       if (this.useRedis) {
         const key = `presence:${userId}`;
         const data = await this.redis.hgetall(key);
-        
+
         if (!data || !data.state) {
           return { state: PRESENCE_STATES.OFFLINE, lastSeen: null };
         }
-        
+
         return {
           state: data.state,
           lastSeen: parseInt(data.lastSeen, 10),
@@ -158,10 +158,10 @@ class PresenceService {
         if (!presence) {
           return { state: PRESENCE_STATES.OFFLINE, lastSeen: null };
         }
-        
+
         // Update state based on last seen
         this.updatePresenceState(presence);
-        
+
         return {
           state: presence.state,
           lastSeen: presence.lastSeen,
@@ -179,13 +179,13 @@ class PresenceService {
   async getBulkPresence(userIds) {
     try {
       const results = {};
-      
+
       await Promise.all(
         userIds.map(async userId => {
           results[userId] = await this.getPresence(userId);
         })
       );
-      
+
       return results;
     } catch (error) {
       logger.error('Error getting bulk presence', { error: error.message });
@@ -210,7 +210,7 @@ class PresenceService {
         // Get all presence keys from Redis
         const keys = await this.redis.keys('presence:*');
         const onlineUsers = [];
-        
+
         for (const key of keys) {
           if (!key.includes(':sockets')) {
             const data = await this.redis.hgetall(key);
@@ -220,18 +220,18 @@ class PresenceService {
             }
           }
         }
-        
+
         return onlineUsers;
       } else {
         const onlineUsers = [];
-        
+
         for (const [userId, presence] of this.presenceMap.entries()) {
           this.updatePresenceState(presence);
           if (presence.state === PRESENCE_STATES.ONLINE) {
             onlineUsers.push(userId);
           }
         }
-        
+
         return onlineUsers;
       }
     } catch (error) {
@@ -254,7 +254,7 @@ class PresenceService {
   updatePresenceState(presence) {
     const now = Date.now();
     const timeSinceLastSeen = now - presence.lastSeen;
-    
+
     if (timeSinceLastSeen > TIMEOUTS.OFFLINE) {
       presence.state = PRESENCE_STATES.OFFLINE;
     } else if (timeSinceLastSeen > TIMEOUTS.AWAY) {
@@ -269,10 +269,10 @@ class PresenceService {
     try {
       if (!this.useRedis) {
         const now = Date.now();
-        
+
         for (const [userId, presence] of this.presenceMap.entries()) {
           const timeSinceLastSeen = now - presence.lastSeen;
-          
+
           // Remove records older than 1 hour
           if (timeSinceLastSeen > 60 * 60 * 1000) {
             this.presenceMap.delete(userId);

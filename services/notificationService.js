@@ -195,7 +195,7 @@ class NotificationService {
       // 1. Get user's device tokens from database
       // 2. Send to FCM/APNS
       // 3. Handle delivery confirmations
-      
+
       logger.debug('Push notification delivery not implemented', { userId });
     } catch (error) {
       logger.error('Error delivering push notification', {
@@ -255,11 +255,7 @@ class NotificationService {
    */
   async getUserNotifications(userId, options = {}) {
     try {
-      const {
-        unreadOnly = false,
-        limit = 50,
-        skip = 0,
-      } = options;
+      const { unreadOnly = false, limit = 50, skip = 0 } = options;
 
       const query = { userId };
       if (unreadOnly) {

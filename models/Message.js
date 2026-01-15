@@ -116,7 +116,7 @@ async function createIndexes(db) {
   await threadsCollection.createIndex({ participants: 1 });
   await threadsCollection.createIndex({ lastMessageAt: -1 });
   await threadsCollection.createIndex({ status: 1 });
-  await threadsCollection.createIndex({ 'unreadCount': 1 });
+  await threadsCollection.createIndex({ unreadCount: 1 });
 
   console.log('✅ Message and Thread indexes created');
 }
@@ -161,7 +161,7 @@ function validateThread(data) {
  */
 function createMessage(data) {
   const now = new Date();
-  
+
   return {
     _id: new ObjectId(),
     threadId: data.threadId,
@@ -170,7 +170,7 @@ function createMessage(data) {
     content: data.content || '',
     attachments: data.attachments || [],
     reactions: data.reactions || [],
-    status: data.isDraft ? MESSAGE_STATUS.SENT : (data.status || MESSAGE_STATUS.SENT),
+    status: data.isDraft ? MESSAGE_STATUS.SENT : data.status || MESSAGE_STATUS.SENT,
     readBy: data.readBy || [],
     deliveredTo: data.deliveredTo || [],
     isDraft: data.isDraft || false,
@@ -187,7 +187,7 @@ function createMessage(data) {
  */
 function createThread(data) {
   const now = new Date();
-  
+
   return {
     _id: new ObjectId(),
     participants: data.participants || [],

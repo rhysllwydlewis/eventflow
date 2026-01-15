@@ -1,9 +1,9 @@
 /**
  * Review Model
- * 
+ *
  * Enhanced review schema with comprehensive moderation, sentiment analysis,
  * and verification features.
- * 
+ *
  * Schema includes:
  * - Review content (rating, title, text)
  * - Verification data (booking linkage)
@@ -41,7 +41,7 @@ const VERIFICATION_TYPES = {
 
 /**
  * Review schema definition
- * 
+ *
  * @typedef {Object} Review
  * @property {string} _id - Unique review identifier
  * @property {string} supplierId - Supplier being reviewed
@@ -67,7 +67,7 @@ const VERIFICATION_TYPES = {
  */
 function createReview(data) {
   const now = new Date().toISOString();
-  
+
   return {
     _id: data._id || data.id,
     supplierId: data.supplierId,
@@ -76,7 +76,7 @@ function createReview(data) {
     rating: parseInt(data.rating, 10),
     title: data.title || '',
     text: data.text || '',
-    
+
     // Verification data
     verification: {
       status: data.verification?.status || VERIFICATION_TYPES.UNVERIFIED,
@@ -84,7 +84,7 @@ function createReview(data) {
       eventType: data.verification?.eventType || null,
       verifiedAt: data.verification?.verifiedAt || null,
     },
-    
+
     // Sentiment analysis (populated by sentiment service)
     sentiment: {
       score: data.sentiment?.score || 0,
@@ -93,7 +93,7 @@ function createReview(data) {
       spamScore: data.sentiment?.spamScore || 0,
       analyzedAt: data.sentiment?.analyzedAt || null,
     },
-    
+
     // Moderation workflow
     moderation: {
       state: data.moderation?.state || MODERATION_STATES.PENDING,
@@ -103,34 +103,38 @@ function createReview(data) {
       reason: data.moderation?.reason || '',
       previousStates: data.moderation?.previousStates || [],
     },
-    
+
     // Supplier response
-    response: data.response ? {
-      supplierId: data.response.supplierId,
-      text: data.response.text,
-      respondedAt: data.response.respondedAt,
-      updatedAt: data.response.updatedAt || null,
-    } : null,
-    
+    response: data.response
+      ? {
+          supplierId: data.response.supplierId,
+          text: data.response.text,
+          respondedAt: data.response.respondedAt,
+          updatedAt: data.response.updatedAt || null,
+        }
+      : null,
+
     // Voting system
     votes: {
       helpful: data.votes?.helpful || 0,
       unhelpful: data.votes?.unhelpful || 0,
       voters: data.votes?.voters || [], // Array of user IDs who voted
     },
-    
+
     // Dispute system
-    dispute: data.dispute ? {
-      filed: true,
-      filedBy: data.dispute.filedBy,
-      reason: data.dispute.reason,
-      evidence: data.dispute.evidence || null,
-      filedAt: data.dispute.filedAt,
-      resolution: data.dispute.resolution || null,
-      resolvedAt: data.dispute.resolvedAt || null,
-      resolvedBy: data.dispute.resolvedBy || null,
-    } : null,
-    
+    dispute: data.dispute
+      ? {
+          filed: true,
+          filedBy: data.dispute.filedBy,
+          reason: data.dispute.reason,
+          evidence: data.dispute.evidence || null,
+          filedAt: data.dispute.filedAt,
+          resolution: data.dispute.resolution || null,
+          resolvedAt: data.dispute.resolvedAt || null,
+          resolvedBy: data.dispute.resolvedBy || null,
+        }
+      : null,
+
     createdAt: data.createdAt || now,
     updatedAt: data.updatedAt || now,
   };
@@ -143,7 +147,7 @@ function createReview(data) {
  */
 function validateReview(data) {
   const errors = [];
-  
+
   // Required fields
   if (!data.supplierId) {
     errors.push('supplierId is required');
@@ -154,13 +158,13 @@ function validateReview(data) {
   if (!data.rating) {
     errors.push('rating is required');
   }
-  
+
   // Rating validation
   const rating = parseInt(data.rating, 10);
   if (isNaN(rating) || rating < 1 || rating > 5) {
     errors.push('rating must be between 1 and 5');
   }
-  
+
   // Text validation
   if (data.text) {
     if (data.text.length < 10) {
@@ -170,12 +174,12 @@ function validateReview(data) {
       errors.push('review text cannot exceed 5000 characters');
     }
   }
-  
+
   // Title validation
   if (data.title && data.title.length > 200) {
     errors.push('review title cannot exceed 200 characters');
   }
-  
+
   return {
     valid: errors.length === 0,
     errors,
@@ -192,21 +196,21 @@ function validateReview(data) {
  */
 function updateModerationState(review, newState, moderatorId, reason) {
   const now = new Date().toISOString();
-  
+
   // Add current state to history
   review.moderation.previousStates.push({
     state: review.moderation.state,
     changedAt: now,
     changedBy: moderatorId,
   });
-  
+
   // Update to new state
   review.moderation.state = newState;
   review.moderation.moderatorId = moderatorId;
   review.moderation.moderatedAt = now;
   review.moderation.reason = reason;
   review.updatedAt = now;
-  
+
   return review;
 }
 
@@ -219,7 +223,7 @@ function updateModerationState(review, newState, moderatorId, reason) {
  */
 function addResponse(review, supplierId, text) {
   const now = new Date().toISOString();
-  
+
   review.response = {
     supplierId,
     text,
@@ -227,7 +231,7 @@ function addResponse(review, supplierId, text) {
     updatedAt: now,
   };
   review.updatedAt = now;
-  
+
   return review;
 }
 
@@ -243,17 +247,17 @@ function addVote(review, userId, helpful) {
   if (review.votes.voters.includes(userId)) {
     throw new Error('User has already voted on this review');
   }
-  
+
   // Add vote
   if (helpful) {
     review.votes.helpful++;
   } else {
     review.votes.unhelpful++;
   }
-  
+
   review.votes.voters.push(userId);
   review.updatedAt = new Date().toISOString();
-  
+
   return review;
 }
 
@@ -267,7 +271,7 @@ function addVote(review, userId, helpful) {
  */
 function fileDispute(review, filedBy, reason, evidence) {
   const now = new Date().toISOString();
-  
+
   review.dispute = {
     filed: true,
     filedBy,
@@ -278,11 +282,11 @@ function fileDispute(review, filedBy, reason, evidence) {
     resolvedAt: null,
     resolvedBy: null,
   };
-  
+
   // Update moderation state to disputed
   review.moderation.state = MODERATION_STATES.DISPUTED;
   review.updatedAt = now;
-  
+
   return review;
 }
 
@@ -296,27 +300,27 @@ function fileDispute(review, filedBy, reason, evidence) {
  */
 function resolveDispute(review, resolution, resolvedBy, reason) {
   const now = new Date().toISOString();
-  
+
   if (!review.dispute) {
     throw new Error('No dispute exists on this review');
   }
-  
+
   review.dispute.resolution = resolution;
   review.dispute.resolvedAt = now;
   review.dispute.resolvedBy = resolvedBy;
-  
+
   // Update moderation state based on resolution
   if (resolution === 'approve') {
     review.moderation.state = MODERATION_STATES.DISPUTE_APPROVED;
   } else {
     review.moderation.state = MODERATION_STATES.DISPUTE_REJECTED;
   }
-  
+
   review.moderation.moderatorId = resolvedBy;
   review.moderation.moderatedAt = now;
   review.moderation.reason = reason;
   review.updatedAt = now;
-  
+
   return review;
 }
 

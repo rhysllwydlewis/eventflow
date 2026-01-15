@@ -18,9 +18,9 @@ describe('Feature Flag Middleware', () => {
   describe('getFeatureFlags', () => {
     it('should return all features enabled by default', async () => {
       dbUnified.read.mockResolvedValue({});
-      
+
       const flags = await getFeatureFlags();
-      
+
       expect(flags).toEqual({
         registration: true,
         supplierApplications: true,
@@ -42,9 +42,9 @@ describe('Feature Flag Middleware', () => {
           pexelsCollage: true,
         },
       });
-      
+
       const flags = await getFeatureFlags();
-      
+
       expect(flags.registration).toBe(false);
       expect(flags.supplierApplications).toBe(true);
       expect(flags.reviews).toBe(false);
@@ -55,9 +55,9 @@ describe('Feature Flag Middleware', () => {
 
     it('should handle database errors gracefully', async () => {
       dbUnified.read.mockRejectedValue(new Error('Database error'));
-      
+
       const flags = await getFeatureFlags();
-      
+
       // Should return all features enabled as fallback
       expect(flags.registration).toBe(true);
       expect(flags.supplierApplications).toBe(true);
@@ -72,9 +72,9 @@ describe('Feature Flag Middleware', () => {
           registration: undefined,
         },
       });
-      
+
       const flags = await getFeatureFlags();
-      
+
       expect(flags.registration).toBe(true);
     });
 
@@ -84,9 +84,9 @@ describe('Feature Flag Middleware', () => {
           registration: null,
         },
       });
-      
+
       const flags = await getFeatureFlags();
-      
+
       expect(flags.registration).toBe(true);
     });
   });

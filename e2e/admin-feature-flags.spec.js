@@ -258,16 +258,18 @@ test.describe('Admin Feature Flags (@backend)', () => {
     }
   });
 
-  test('should handle feature flags save with proper error responses @backend', async ({ request }) => {
+  test('should handle feature flags save with proper error responses @backend', async ({
+    request,
+  }) => {
     // Get CSRF token
     const csrfResponse = await request.get('/api/csrf-token');
     if (!csrfResponse.ok()) {
       // Skip if can't get CSRF token
       return;
     }
-    
+
     const { csrfToken } = await csrfResponse.json();
-    
+
     // Try to save feature flags (may require auth)
     const response = await request.put('/api/admin/settings/features', {
       data: {
@@ -285,7 +287,7 @@ test.describe('Admin Feature Flags (@backend)', () => {
 
     if (response.ok()) {
       const result = await response.json();
-      
+
       // Verify success response structure
       expect(result).toHaveProperty('success');
       expect(result).toHaveProperty('features');
@@ -306,9 +308,9 @@ test.describe('Admin Feature Flags (@backend)', () => {
     if (!csrfResponse.ok()) {
       return;
     }
-    
+
     const { csrfToken } = await csrfResponse.json();
-    
+
     // Try to save with invalid value (string instead of boolean)
     const response = await request.put('/api/admin/settings/features', {
       data: {

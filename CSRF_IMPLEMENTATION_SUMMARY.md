@@ -12,6 +12,7 @@ This document summarizes the complete implementation of the Double-Submit Cookie
 
 **Problem:**
 EventFlow's original CSRF implementation had critical security vulnerabilities:
+
 1. Global in-memory token store that wasn't bound to user sessions
 2. Tokens could be reused across different users
 3. `/api/csrf-token` endpoint returned tokens not bound to specific sessions/browsers
@@ -52,6 +53,7 @@ We implemented the **Double-Submit Cookie pattern**, a stateless CSRF protection
 ### Security Properties
 
 **Why This Works:**
+
 - **Same-Origin Policy**: Attacker's site cannot read the CSRF cookie from EventFlow's domain
 - **SameSite Attribute**: Browser won't send cookie in cross-site POST/PUT/DELETE requests
 - **Double Validation**: Both cookie AND header must be present and match
@@ -59,6 +61,7 @@ We implemented the **Double-Submit Cookie pattern**, a stateless CSRF protection
 - **HTTPS Enforcement**: Secure flag in production prevents cookie transmission over HTTP
 
 **Attack Scenarios Prevented:**
+
 1. **Cross-Site Form Submission**: Browser won't send SameSite=Lax cookie with form POST from attacker site
 2. **XSS-based CSRF**: Even if attacker injects JavaScript, they can't read the cookie (Same-Origin Policy)
 3. **Token Reuse**: Each request validates that cookie matches header, preventing stolen token reuse
@@ -138,6 +141,7 @@ We implemented the **Double-Submit Cookie pattern**, a stateless CSRF protection
    - Uses `credentials: 'include'` to send cookies
 
 **Note:** `public/assets/js/admin-shared.js` already had proper CSRF support (no changes needed):
+
 - `fetchCSRFToken()` function exists
 - `adminFetch()` and `api()` already include `X-CSRF-Token` header for write operations
 - Already uses `credentials: 'include'`
@@ -173,6 +177,7 @@ We implemented the **Double-Submit Cookie pattern**, a stateless CSRF protection
 ### Automated Testing
 
 **CSRF Protection Tests:**
+
 - ✅ **31/31 tests passing** (originally 25, added 6 for user-facing routes)
 - Coverage includes:
   - Middleware implementation
@@ -183,11 +188,13 @@ We implemented the **Double-Submit Cookie pattern**, a stateless CSRF protection
   - Client-side integration (admin-shared.js, checkout.js)
 
 **Existing Test Suite:**
+
 - ✅ 130/138 tests passing
 - 8 pre-existing failures unrelated to this PR
 - No regressions introduced by CSRF changes
 
 **Syntax Validation:**
+
 - ✅ All modified files pass Node.js syntax check
 
 ### Manual Testing Required
@@ -230,10 +237,12 @@ See `docs/CSRF_TESTING_GUIDE.md` for detailed testing procedures.
 ### Configuration
 
 **Environment Variables:**
+
 - `NODE_ENV=production` - Enables Secure flag on cookies
 - HTTPS must be enabled (Railway provides this automatically)
 
 **Cookie Behavior in Production:**
+
 - `Secure: true` - Cookie only sent over HTTPS
 - `SameSite: Lax` - Allows normal navigation, blocks CSRF
 - `httpOnly: false` - Client can read cookie for header inclusion
@@ -255,17 +264,20 @@ See `docs/CSRF_TESTING_GUIDE.md` for detailed testing procedures.
 Watch for these log patterns after deployment:
 
 **Normal Operation:**
+
 ```
 ✅ CSRF token validated successfully
 ```
 
 **Potential Issues:**
+
 ```
 ⚠️ CSRF token missing in request
 ⚠️ CSRF token mismatch: cookie vs header
 ```
 
 If you see many CSRF errors:
+
 1. Check browser console for JavaScript errors
 2. Verify CSRF token is being fetched on page load
 3. Verify `credentials: 'include'` in all fetch requests

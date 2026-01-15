@@ -28,9 +28,9 @@ describe('Pexels Service Improvements', () => {
     it('should stop cache cleanup when stopCacheCleanup is called', () => {
       const intervalId = service.cleanupInterval;
       expect(intervalId).toBeDefined();
-      
+
       service.stopCacheCleanup();
-      
+
       expect(service.cleanupInterval).toBeNull();
     });
 

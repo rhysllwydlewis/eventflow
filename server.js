@@ -5723,7 +5723,7 @@ app.use('/api/notifications', (req, res, next) => {
   // Determine which WebSocket server to use based on WEBSOCKET_MODE
   // Check environment variable directly (WEBSOCKET_MODE variable is defined later in the file)
   const wsMode = (process.env.WEBSOCKET_MODE || 'v2').toLowerCase();
-  
+
   let webSocketServer = null;
   if (wsMode === 'v2') {
     webSocketServer = global.wsServerV2;
@@ -5731,7 +5731,7 @@ app.use('/api/notifications', (req, res, next) => {
     webSocketServer = global.wsServer;
   }
   // wsMode === 'off' will result in webSocketServer === null
-  
+
   if (!notificationRouter && webSocketServer) {
     notificationRouter = notificationRoutes(mongoDb.db, webSocketServer);
   }

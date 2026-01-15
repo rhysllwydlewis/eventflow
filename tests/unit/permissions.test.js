@@ -235,26 +235,20 @@ describe('RBAC Permission System', () => {
     });
 
     it('should return true if user has all permissions', () => {
-      expect(
-        hasAllPermissions(adminUser, [PERMISSIONS.USERS_READ, PERMISSIONS.USERS_UPDATE])
-      ).toBe(true);
+      expect(hasAllPermissions(adminUser, [PERMISSIONS.USERS_READ, PERMISSIONS.USERS_UPDATE])).toBe(
+        true
+      );
     });
 
     it('should return false if user is missing any permission', () => {
       expect(
-        hasAllPermissions(moderatorUser, [
-          PERMISSIONS.REVIEWS_READ,
-          PERMISSIONS.USERS_DELETE,
-        ])
+        hasAllPermissions(moderatorUser, [PERMISSIONS.REVIEWS_READ, PERMISSIONS.USERS_DELETE])
       ).toBe(false);
     });
 
     it('should always return true for owner', () => {
       expect(
-        hasAllPermissions(ownerUser, [
-          PERMISSIONS.USERS_DELETE,
-          PERMISSIONS.SUPPLIERS_DELETE,
-        ])
+        hasAllPermissions(ownerUser, [PERMISSIONS.USERS_DELETE, PERMISSIONS.SUPPLIERS_DELETE])
       ).toBe(true);
     });
   });

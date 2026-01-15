@@ -1,11 +1,13 @@
 # Hero Collage Images - Database Storage Documentation
 
 ## Overview
+
 The hero collage images on the homepage are managed through a database-backed system with graceful fallbacks to default static images.
 
 ## Database Schema
 
 ### Storage Location
+
 Hero images are stored in the `settings` collection/document under the `heroImages` key.
 
 ```javascript
@@ -34,11 +36,13 @@ If `heroImages` is not set in the database, the system falls back to these defau
 ## API Endpoints
 
 ### 1. Get Hero Images (Public)
+
 ```
 GET /api/admin/homepage/hero-images-public
 ```
 
 **Response:**
+
 ```json
 {
   "venues": "/assets/images/collage-venue.jpg",
@@ -49,11 +53,13 @@ GET /api/admin/homepage/hero-images-public
 ```
 
 **Behavior:**
+
 - Returns custom images if set in database
 - Returns default static images if not set
 - No authentication required (public endpoint)
 
 ### 2. Get Hero Images (Admin)
+
 ```
 GET /api/admin/homepage/hero-images
 ```
@@ -63,6 +69,7 @@ GET /api/admin/homepage/hero-images
 **Response:** Same as public endpoint
 
 ### 3. Upload Hero Image
+
 ```
 POST /api/admin/homepage/hero-images/:category
 ```
@@ -70,15 +77,18 @@ POST /api/admin/homepage/hero-images/:category
 **Authentication:** Required (Admin role)
 
 **Parameters:**
+
 - `category` (path): One of `venues`, `catering`, `entertainment`, `photography`
 - `image` (file): Image file to upload
 
 **Behavior:**
+
 - Uploads to Cloudinary with 800x600 transformation
 - Stores URL in database under `settings.heroImages[category]`
 - Initializes `heroImages` with defaults if not present
 
 ### 4. Reset Hero Image
+
 ```
 DELETE /api/admin/homepage/hero-images/:category
 ```
@@ -86,22 +96,28 @@ DELETE /api/admin/homepage/hero-images/:category
 **Authentication:** Required (Admin role)
 
 **Behavior:**
+
 - Resets specific category to default image path
 
 ## Frontend Loading Flow
 
 ### 1. Initial HTML Load
+
 ```html
-<img src="/assets/images/collage-venue.jpg" 
-     onerror="this.style.background='linear-gradient(...)'; this.src=''; this.onerror=null;">
+<img
+  src="/assets/images/collage-venue.jpg"
+  onerror="this.style.background='linear-gradient(...)'; this.src=''; this.onerror=null;"
+/>
 ```
 
 The HTML contains:
+
 - Default image paths as `src`
 - Inline `onerror` handlers for immediate fallback
 - Unique gradient colors per category
 
 ### 2. JavaScript Enhancement
+
 On DOMContentLoaded, `home-init.js`:
 
 ```javascript
@@ -124,11 +140,13 @@ const heroImages = await response.json();
 ### 3. Error Handling
 
 **Layer 1: HTML onerror (Immediate)**
+
 - Fires if initial src fails to load
 - Shows gradient placeholder
 - Prevents infinite loops with `this.onerror=null`
 
 **Layer 2: JavaScript onerror (Dynamic)**
+
 - Added programmatically after API fetch
 - Attempts fallback to default image
 - Shows gradient if default also fails
@@ -147,8 +165,9 @@ Gradient Placeholder (unique color per category)
 ## Database Operations
 
 ### Read Hero Images
+
 ```javascript
-const settings = await dbUnified.read('settings') || {};
+const settings = (await dbUnified.read('settings')) || {};
 const heroImages = settings.heroImages || {
   venues: '/assets/images/collage-venue.jpg',
   catering: '/assets/images/collage-catering.jpg',
@@ -158,10 +177,13 @@ const heroImages = settings.heroImages || {
 ```
 
 ### Write Hero Images
+
 ```javascript
-const settings = await dbUnified.read('settings') || {};
+const settings = (await dbUnified.read('settings')) || {};
 if (!settings.heroImages) {
-  settings.heroImages = { /* defaults */ };
+  settings.heroImages = {
+    /* defaults */
+  };
 }
 settings.heroImages[category] = newImageUrl;
 settings.heroImages.updatedAt = new Date().toISOString();
@@ -172,12 +194,15 @@ await dbUnified.write('settings', settings);
 ## Testing
 
 ### Unit Tests
+
 - `tests/unit/hero-collage-loader.test.js` - Tests image loading logic
 
-### Integration Tests  
+### Integration Tests
+
 - `tests/integration/hero-images-api.test.js` - Tests database storage and retrieval
 
 ### E2E Tests
+
 - `e2e/hero-collage-images.spec.js` - Tests full flow including visual regression
 
 ## Performance Considerations
@@ -192,11 +217,13 @@ await dbUnified.write('settings', settings);
 ### Images Not Displaying
 
 1. **Check API endpoint:**
+
    ```bash
    curl http://localhost:3000/api/admin/homepage/hero-images-public
    ```
 
 2. **Check database:**
+
    ```javascript
    const settings = await dbUnified.read('settings');
    console.log(settings.heroImages);
@@ -215,14 +242,17 @@ await dbUnified.write('settings', settings);
 ### Common Issues
 
 **TypeError: Cannot read properties of undefined (reading 'indexOf')**
+
 - Fixed: Added null checks before calling string methods
 - Location: `public/assets/js/pages/home-init.js`
 
 **Images showing blank/empty**
+
 - Fixed: Added onerror handlers for graceful fallback
 - Location: `public/index.html` and `public/assets/js/pages/home-init.js`
 
 **Database not returning images**
+
 - Check database connection
 - Verify settings document exists
 - API falls back to defaults automatically

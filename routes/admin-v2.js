@@ -235,77 +235,78 @@ router.delete(
  * GET /api/v2/admin/users
  * List users with filters and pagination
  */
-router.get(
-  '/users',
-  authRequired,
-  requirePermission(PERMISSIONS.USERS_READ),
-  async (req, res) => {
-    try {
-      const { role, verified, page = 1, limit = 50, sortBy = 'createdAt', sortOrder = 'desc' } =
-        req.query;
+router.get('/users', authRequired, requirePermission(PERMISSIONS.USERS_READ), async (req, res) => {
+  try {
+    const {
+      role,
+      verified,
+      page = 1,
+      limit = 50,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+    } = req.query;
 
-      let users = await dbUnified.read('users');
+    let users = await dbUnified.read('users');
 
-      // Apply filters
-      if (role) {
-        users = users.filter(u => u.role === role);
-      }
-      if (verified !== undefined) {
-        const isVerified = verified === 'true';
-        users = users.filter(u => u.verified === isVerified);
-      }
-
-      // Sort
-      users.sort((a, b) => {
-        const aValue = a[sortBy] || '';
-        const bValue = b[sortBy] || '';
-        if (sortOrder === 'asc') {
-          return aValue > bValue ? 1 : -1;
-        } else {
-          return aValue < bValue ? 1 : -1;
-        }
-      });
-
-      // Pagination
-      const total = users.length;
-      const totalPages = Math.ceil(total / limit);
-      const offset = (page - 1) * limit;
-      const paginatedUsers = users.slice(offset, offset + parseInt(limit));
-
-      // Remove sensitive data
-      const safeUsers = paginatedUsers.map(u => ({
-        id: u.id,
-        name: u.name,
-        email: u.email,
-        role: u.role,
-        verified: u.verified,
-        createdAt: u.createdAt,
-        lastLoginAt: u.lastLoginAt,
-        customPermissions: u.customPermissions || [],
-      }));
-
-      res.json({
-        success: true,
-        data: safeUsers,
-        pagination: {
-          page: parseInt(page),
-          limit: parseInt(limit),
-          total,
-          totalPages,
-        },
-        timestamp: new Date().toISOString(),
-      });
-    } catch (error) {
-      logger.error('Failed to list users', { error: error.message });
-      res.status(500).json({
-        success: false,
-        error: error.message,
-        code: 'LIST_USERS_FAILED',
-        timestamp: new Date().toISOString(),
-      });
+    // Apply filters
+    if (role) {
+      users = users.filter(u => u.role === role);
     }
+    if (verified !== undefined) {
+      const isVerified = verified === 'true';
+      users = users.filter(u => u.verified === isVerified);
+    }
+
+    // Sort
+    users.sort((a, b) => {
+      const aValue = a[sortBy] || '';
+      const bValue = b[sortBy] || '';
+      if (sortOrder === 'asc') {
+        return aValue > bValue ? 1 : -1;
+      } else {
+        return aValue < bValue ? 1 : -1;
+      }
+    });
+
+    // Pagination
+    const total = users.length;
+    const totalPages = Math.ceil(total / limit);
+    const offset = (page - 1) * limit;
+    const paginatedUsers = users.slice(offset, offset + parseInt(limit));
+
+    // Remove sensitive data
+    const safeUsers = paginatedUsers.map(u => ({
+      id: u.id,
+      name: u.name,
+      email: u.email,
+      role: u.role,
+      verified: u.verified,
+      createdAt: u.createdAt,
+      lastLoginAt: u.lastLoginAt,
+      customPermissions: u.customPermissions || [],
+    }));
+
+    res.json({
+      success: true,
+      data: safeUsers,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        totalPages,
+      },
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    logger.error('Failed to list users', { error: error.message });
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      code: 'LIST_USERS_FAILED',
+      timestamp: new Date().toISOString(),
+    });
   }
-);
+});
 
 /**
  * GET /api/v2/admin/users/:id
@@ -1849,29 +1850,24 @@ router.post(
  * GET /api/v2/admin/permission-cache/stats
  * Get permission cache statistics (for debugging)
  */
-router.get(
-  '/permission-cache/stats',
-  authRequired,
-  roleRequired('admin'),
-  async (req, res) => {
-    try {
-      const stats = getPermissionCacheStats();
-      res.json({
-        success: true,
-        data: stats,
-        timestamp: new Date().toISOString(),
-      });
-    } catch (error) {
-      logger.error('Failed to get cache stats', { error: error.message });
-      res.status(500).json({
-        success: false,
-        error: error.message,
-        code: 'GET_CACHE_STATS_FAILED',
-        timestamp: new Date().toISOString(),
-      });
-    }
+router.get('/permission-cache/stats', authRequired, roleRequired('admin'), async (req, res) => {
+  try {
+    const stats = getPermissionCacheStats();
+    res.json({
+      success: true,
+      data: stats,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    logger.error('Failed to get cache stats', { error: error.message });
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      code: 'GET_CACHE_STATS_FAILED',
+      timestamp: new Date().toISOString(),
+    });
   }
-);
+});
 
 /**
  * POST /api/v2/admin/permission-cache/clear
@@ -1889,9 +1885,7 @@ router.post(
 
       res.json({
         success: true,
-        message: userId
-          ? `Cache cleared for user ${userId}`
-          : 'All permission caches cleared',
+        message: userId ? `Cache cleared for user ${userId}` : 'All permission caches cleared',
         timestamp: new Date().toISOString(),
       });
     } catch (error) {

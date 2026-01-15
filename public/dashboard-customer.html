@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang='en-GB'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>Customer dashboard — EventFlow</title><link rel='stylesheet' href='/assets/css/styles.css?v=17.0.1'><link rel='stylesheet' href='/assets/css/mobile-optimizations.css'><link rel='stylesheet' href='/assets/css/ui-ux-fixes.css?v=17.0.1'><script src="/assets/js/dashboard-guard.js?v=17.0.2"></script>    <link rel="stylesheet" href="/assets/css/navbar.css" />
+<!DOCTYPE html><html lang='en-GB'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>Customer dashboard — EventFlow</title><link rel='stylesheet' href='/assets/css/styles.css?v=17.0.1'><link rel='stylesheet' href='/assets/css/mobile-optimizations.css'><link rel='stylesheet' href='/assets/css/ui-ux-fixes.css?v=17.0.1'><link rel='stylesheet' href='/assets/css/skeleton.css'><link rel='stylesheet' href='/assets/css/dashboard-animations.css'><script src="/assets/js/dashboard-guard.js?v=17.0.2"></script>    <link rel="stylesheet" href="/assets/css/navbar.css" />
   </head><body>
 <a href="#main-content" class="skip-link">Skip to main content</a>
 <!-- TOP NAVBAR - GOLD STANDARD REBUILD -->
@@ -107,13 +107,26 @@
   </div>
 </div>
 
+<!-- Statistics Widgets -->
+<div id="customer-stats-grid"></div>
+
+<!-- Budget Tracker and Progress Ring -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem;">
+  <div id="budget-tracker-widget"></div>
+  <div id="progress-ring-widget"></div>
+</div>
+
+<!-- Upcoming Events Timeline -->
+<div id="upcoming-events-timeline"></div>
+
 <div class="cards">
   <!-- Your Plans Card -->
   <div class="card">
     <h3 style="margin:0 0 0.5rem 0;font-size:1.25rem;color:#0B1220;">Your Plans</h3>
     <p class="small" style="color:#667085;margin:0 0 1rem 0;">Event plans created with the wizard.</p>
     <div id="customer-plans-list" style="margin-bottom:1rem;">
-      <p class="small" style="color:#667085;">Loading plans...</p>
+      <div class="skeleton skeleton-text skeleton-text-long"></div>
+      <div class="skeleton skeleton-text skeleton-text-medium"></div>
     </div>
     <a href="/start.html" class="cta secondary" style="text-decoration:none;width:100%;text-align:center;display:inline-block;">Create New Plan</a>
   </div>
@@ -141,7 +154,10 @@
       <h3 style="margin:0;font-size:1.25rem;color:#0B1220;">Support Tickets</h3>
       <button class="cta" id="createTicketBtn" style="padding:0.5rem 1rem;font-size:0.9rem;min-width:auto;white-space:nowrap;">Create Ticket</button>
     </div>
-    <div id="tickets-cust" class="section"><p class="small" style="color:#667085;">Loading…</p></div>
+    <div id="tickets-cust" class="section">
+      <div class="skeleton skeleton-text skeleton-text-long"></div>
+      <div class="skeleton skeleton-text skeleton-text-medium"></div>
+    </div>
   </div>
   
   <!-- Conversations Card -->
@@ -150,13 +166,157 @@
       <h3 style="margin:0;font-size:1.25rem;color:#0B1220;">Conversations</h3>
       <span id="unreadMessageBadge" class="badge badge-info" style="display:none;font-size:0.85rem;background:#DBEAFE;color:#1E40AF;padding:6px 12px;border-radius:12px;">0 unread</span>
     </div>
-    <div id="threads-cust" class="section"><p class="small" style="color:#667085;">Loading…</p></div>
+    <div id="threads-cust" class="section">
+      <div class="skeleton skeleton-text skeleton-text-long"></div>
+      <div class="skeleton skeleton-text skeleton-text-medium"></div>
+    </div>
   </div>
 </div>
 
 <script src="/assets/js/app.js?v=17.0.1"></script>
 <script type="module" src="/assets/js/customer-tickets.js?v=17.0.1"></script>
 <script type="module" src="/assets/js/customer-messages.js?v=17.0.1"></script>
+<script type="module">
+import { createStatsGrid, createBudgetTracker, createProgressRing, createEventsTimeline } from '/assets/js/dashboard-widgets.js';
+import { initCountUp } from '/assets/js/count-up-animation.js';
+
+// Initialize dashboard widgets after data loads
+async function initCustomerDashboardWidgets() {
+  try {
+    // Fetch customer data with fallback
+    let plans = [];
+    try {
+      const response = await fetch('/api/me/plans', { credentials: 'include' });
+      if (response.ok) {
+        const data = await response.json();
+        plans = data.plans || [];
+      }
+    } catch (err) {
+      console.error('Error fetching plans:', err);
+      // Continue with empty plans array
+    }
+    
+    // Count saved suppliers (from localStorage or API)
+    let savedSuppliers = [];
+    try {
+      savedSuppliers = JSON.parse(localStorage.getItem('eventflow_saved_suppliers') || '[]');
+    } catch (err) {
+      console.error('Error reading saved suppliers:', err);
+      savedSuppliers = [];
+    }
+    
+    // Count messages/conversations - will be updated by customer-messages.js
+    let unreadMessages = 0;
+    const unreadBadge = document.getElementById('unreadMessageBadge');
+    if (unreadBadge && unreadBadge.textContent) {
+      const match = unreadBadge.textContent.match(/(\d+)/);
+      if (match) unreadMessages = parseInt(match[1]);
+    }
+    
+    // Count upcoming tasks from plans (suppliers that need action)
+    const upcomingTasks = plans.length > 0 ? plans.length : 0;
+    
+    // Create statistics widgets
+    createStatsGrid([
+      {
+        icon: '📋',
+        value: plans.length,
+        label: 'Active Plans',
+        format: 'number',
+        color: 'linear-gradient(135deg, #0B8073 0%, #13B6A2 100%)',
+      },
+      {
+        icon: '⭐',
+        value: savedSuppliers.length,
+        label: 'Saved Suppliers',
+        format: 'number',
+        color: 'linear-gradient(135deg, #F59E0B 0%, #FBBF24 100%)',
+      },
+      {
+        icon: '📅',
+        value: upcomingTasks,
+        label: 'Upcoming Tasks',
+        format: 'number',
+        color: 'linear-gradient(135deg, #3B82F6 0%, #60A5FA 100%)',
+      },
+      {
+        icon: '💬',
+        value: unreadMessages,
+        label: 'Messages',
+        format: 'number',
+        color: 'linear-gradient(135deg, #8B5CF6 0%, #A78BFA 100%)',
+        pulse: unreadMessages > 0,
+      },
+    ], 'customer-stats-grid');
+    
+    // Budget estimation configuration
+    const AVERAGE_PLAN_COST = 500; // Estimated average cost per supplier/plan in GBP
+    const DEFAULT_TOTAL_BUDGET = 5000; // Default budget for new event planners
+    const BUDGET_BUFFER_MULTIPLIER = 1.5; // Ensure total budget is 50% more than spent
+    
+    // Calculate budget from plans data (if available)
+    let totalBudget = DEFAULT_TOTAL_BUDGET;
+    let spentBudget = 0;
+    
+    // Calculate spent based on saved suppliers or plans
+    if (plans.length > 0) {
+      // Estimate spend: each plan represents approximately £500 committed
+      spentBudget = plans.length * AVERAGE_PLAN_COST;
+      totalBudget = Math.max(DEFAULT_TOTAL_BUDGET, spentBudget * BUDGET_BUFFER_MULTIPLIER);
+    }
+    
+    createBudgetTracker({
+      spent: spentBudget,
+      total: totalBudget,
+    }, 'budget-tracker-widget');
+    
+    // Calculate event progress
+    const totalSuppliers = 10; // Average suppliers for a complete event
+    const bookedSuppliers = savedSuppliers.length;
+    const pendingSuppliers = Math.max(0, totalSuppliers - bookedSuppliers);
+    const progressPercentage = Math.min(100, Math.round((bookedSuppliers / totalSuppliers) * 100));
+    
+    // Create progress ring
+    createProgressRing({
+      percentage: progressPercentage,
+      label: 'Event Progress',
+      booked: bookedSuppliers,
+      pending: pendingSuppliers,
+    }, 'progress-ring-widget');
+    
+    // Create upcoming events timeline based on plans
+    let upcomingEvents = [];
+    
+    if (plans.length > 0) {
+      // Generate contextual tasks based on actual plans
+      upcomingEvents = [
+        { name: 'Review plan details', supplier: 'Planning Dashboard', daysUntil: 2 },
+        { name: 'Confirm supplier bookings', supplier: `${plans.length} supplier${plans.length !== 1 ? 's' : ''}`, daysUntil: 7 },
+        { name: 'Finalize event details', supplier: 'Event Planning', daysUntil: 14 },
+      ];
+    } else {
+      // Show getting started tasks if no plans
+      upcomingEvents = [
+        { name: 'Create your first event plan', supplier: 'Getting Started', daysUntil: 0 },
+        { name: 'Browse suppliers', supplier: 'Marketplace', daysUntil: 1 },
+        { name: 'Save your favorites', supplier: 'Supplier Search', daysUntil: 3 },
+      ];
+    }
+    
+    createEventsTimeline(upcomingEvents, 'upcoming-events-timeline');
+    
+  } catch (error) {
+    console.error('Error initializing dashboard widgets:', error);
+  }
+}
+
+// Initialize widgets after page loads
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    initCustomerDashboardWidgets();
+  }, 500);
+});
+</script>
 <script>
 window.__EF_PAGE__='dash_customer';
 

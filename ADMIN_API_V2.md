@@ -28,6 +28,7 @@ X-CSRF-Token: <csrf_token>  # Required for POST, PUT, DELETE requests
 The system defines granular permissions organized by resource type:
 
 #### User Permissions
+
 - `admin:users:read` - View user details
 - `admin:users:create` - Create new users
 - `admin:users:update` - Update user information
@@ -37,33 +38,39 @@ The system defines granular permissions organized by resource type:
 - `admin:users:revoke-admin` - Revoke admin privileges
 
 #### Supplier Permissions
+
 - `admin:suppliers:read` - View supplier details
 - `admin:suppliers:update` - Update supplier information
 - `admin:suppliers:delete` - Delete suppliers
 - `admin:suppliers:verify` - Manually verify suppliers
 
 #### Package Permissions
+
 - `admin:packages:read` - View package details
 - `admin:packages:update` - Update package information
 - `admin:packages:delete` - Delete packages
 - `admin:packages:feature` - Feature/unfeature packages
 
 #### Review Permissions
+
 - `admin:reviews:read` - View reviews
 - `admin:reviews:approve` - Approve reviews
 - `admin:reviews:reject` - Reject reviews
 
 #### Photo Permissions
+
 - `admin:photos:read` - View photos
 - `admin:photos:approve` - Approve photos
 - `admin:photos:reject` - Reject photos
 
 #### System Permissions
+
 - `admin:system:audit-log` - View system audit logs
 - `admin:system:health` - View system health
 - `admin:system:metrics` - View system metrics
 
 #### Audit Permissions
+
 - `admin:audit:read` - View audit logs
 
 ### Roles
@@ -71,17 +78,20 @@ The system defines granular permissions organized by resource type:
 The system defines four roles with predefined permission sets:
 
 #### Owner
+
 - **Description**: Platform owner with all permissions
 - **Permissions**: All permissions
 - **Can Be Revoked**: No
 - **Identification**: User with email `admin@event-flow.co.uk` or `isOwner: true`
 
 #### Admin
+
 - **Description**: Full operational access to all features
 - **Permissions**: All permissions
 - **Can Be Revoked**: Yes
 
 #### Moderator
+
 - **Description**: Content moderation and review management
 - **Permissions**:
   - `admin:reviews:read`
@@ -95,6 +105,7 @@ The system defines four roles with predefined permission sets:
 - **Can Be Revoked**: Yes
 
 #### Support
+
 - **Description**: User support and read-only access
 - **Permissions**:
   - `admin:users:read`
@@ -153,6 +164,7 @@ Get all available permissions.
 **Required Permission**: `admin` role
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -174,6 +186,7 @@ Get all roles with their permissions.
 **Required Permission**: `admin` role
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -200,9 +213,11 @@ Get permissions for a specific role.
 **Required Permission**: `admin` role
 
 **Parameters**:
+
 - `role` (path) - Role ID (owner, admin, moderator, support)
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -228,9 +243,11 @@ Grant a specific permission to a user.
 **Required Permission**: `admin:users:grant-admin`
 
 **Parameters**:
+
 - `id` (path) - User ID
 
 **Request Body**:
+
 ```json
 {
   "permission": "admin:reviews:read"
@@ -238,15 +255,14 @@ Grant a specific permission to a user.
 ```
 
 **Response**:
+
 ```json
 {
   "success": true,
   "data": {
     "userId": "usr_123",
     "email": "user@example.com",
-    "customPermissions": [
-      "admin:reviews:read"
-    ]
+    "customPermissions": ["admin:reviews:read"]
   },
   "message": "Permission granted successfully",
   "timestamp": "2024-01-13T19:00:00Z"
@@ -262,10 +278,12 @@ Revoke a permission from a user.
 **Required Permission**: `admin:users:revoke-admin`
 
 **Parameters**:
+
 - `id` (path) - User ID
 - `permission` (path) - Permission to revoke
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -290,6 +308,7 @@ List users with filters and pagination.
 **Required Permission**: `admin:users:read`
 
 **Query Parameters**:
+
 - `role` (optional) - Filter by role (customer, supplier, admin)
 - `verified` (optional) - Filter by verification status (true, false)
 - `page` (optional) - Page number (default: 1)
@@ -298,6 +317,7 @@ List users with filters and pagination.
 - `sortOrder` (optional) - Sort order (asc, desc) (default: desc)
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -333,9 +353,11 @@ Get user details including all permissions.
 **Required Permission**: `admin:users:read`
 
 **Parameters**:
+
 - `id` (path) - User ID
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -368,9 +390,11 @@ Update user information.
 **Required Permission**: `admin:users:update`
 
 **Parameters**:
+
 - `id` (path) - User ID
 
 **Request Body**:
+
 ```json
 {
   "name": "Jane Doe",
@@ -380,6 +404,7 @@ Update user information.
 ```
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -403,9 +428,11 @@ Delete a user. Cannot delete own account.
 **Required Permission**: `admin:users:delete`
 
 **Parameters**:
+
 - `id` (path) - User ID
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -423,9 +450,11 @@ Ban a user from the platform.
 **Required Permission**: `admin:users:ban`
 
 **Parameters**:
+
 - `id` (path) - User ID
 
 **Request Body**:
+
 ```json
 {
   "reason": "Violation of terms of service"
@@ -433,6 +462,7 @@ Ban a user from the platform.
 ```
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -450,9 +480,11 @@ Unban a user.
 **Required Permission**: `admin:users:ban`
 
 **Parameters**:
+
 - `id` (path) - User ID
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -472,6 +504,7 @@ List suppliers with filters and pagination.
 **Required Permission**: `admin:suppliers:read`
 
 **Query Parameters**:
+
 - `approved` (optional) - Filter by approval status (true, false)
 - `category` (optional) - Filter by category
 - `page` (optional) - Page number (default: 1)
@@ -488,6 +521,7 @@ Update supplier information.
 **Required Permission**: `admin:suppliers:update`
 
 **Parameters**:
+
 - `id` (path) - Supplier ID
 
 **Request Body**: Supplier fields to update
@@ -519,6 +553,7 @@ List packages with filters and pagination.
 **Required Permission**: `admin:packages:read`
 
 **Query Parameters**:
+
 - `approved` (optional) - Filter by approval status
 - `featured` (optional) - Filter by featured status
 - `supplierId` (optional) - Filter by supplier ID
@@ -550,6 +585,7 @@ Approve multiple packages at once.
 **Required Permission**: `admin:packages:update`
 
 **Request Body**:
+
 ```json
 {
   "ids": ["pkg_123", "pkg_456", "pkg_789"]
@@ -557,6 +593,7 @@ Approve multiple packages at once.
 ```
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -580,6 +617,7 @@ Get all pending or flagged reviews.
 **Required Permission**: `admin:reviews:read`
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -606,6 +644,7 @@ Reject a review.
 **Required Permission**: `admin:reviews:reject`
 
 **Request Body**:
+
 ```json
 {
   "reason": "Review does not meet quality standards"
@@ -623,6 +662,7 @@ Get all pending photos awaiting approval.
 **Required Permission**: `admin:photos:read`
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -652,6 +692,7 @@ Bulk approve or reject photos.
 **Required Permission**: `admin:photos:approve`
 
 **Request Body**:
+
 ```json
 {
   "action": "approve",  // or "reject"
@@ -667,6 +708,7 @@ Bulk approve or reject photos.
 ```
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -691,6 +733,7 @@ Get dashboard overview with key metrics.
 **Required Permission**: `admin:system:metrics`
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -738,6 +781,7 @@ Get detailed metrics for analytics.
 **Required Permission**: `admin:system:metrics`
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -790,6 +834,7 @@ Get system health diagnostics.
 **Required Permission**: `admin:system:health`
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -829,6 +874,7 @@ Query audit logs with filters and pagination.
 **Required Permission**: `admin:audit:read`
 
 **Query Parameters**:
+
 - `actorId` (optional) - Filter by actor ID
 - `actorEmail` (optional) - Filter by actor email
 - `action` (optional) - Filter by action type
@@ -842,6 +888,7 @@ Query audit logs with filters and pagination.
 - `sortOrder` (optional) - Sort order (default: desc)
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -899,6 +946,7 @@ Get all audit logs for a specific user.
 **Required Permission**: `admin:audit:read`
 
 **Query Parameters**:
+
 - `page` (optional) - Page number
 - `limit` (optional) - Results per page
 
@@ -911,10 +959,12 @@ Get audit log statistics.
 **Required Permission**: `admin:audit:read`
 
 **Query Parameters**:
+
 - `startDate` (optional) - Start date for statistics
 - `endDate` (optional) - End date for statistics
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -958,16 +1008,18 @@ Perform batch operations on multiple items.
 **Required Permission**: `admin` role
 
 **Request Body**:
+
 ```json
 {
-  "action": "approve",  // or "reject", "delete"
-  "type": "packages",   // or "suppliers", "reviews", "users"
+  "action": "approve", // or "reject", "delete"
+  "type": "packages", // or "suppliers", "reviews", "users"
   "ids": ["pkg_123", "pkg_456", "pkg_789"],
   "reason": "Optional reason for reject action"
 }
 ```
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -991,6 +1043,7 @@ Get permission cache statistics (for debugging).
 **Required Permission**: `admin` role
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -1011,13 +1064,15 @@ Clear permission cache (all or specific user).
 **Required Permission**: `admin` role
 
 **Request Body**:
+
 ```json
 {
-  "userId": "usr_123"  // Optional: clear specific user's cache
+  "userId": "usr_123" // Optional: clear specific user's cache
 }
 ```
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -1030,26 +1085,26 @@ Clear permission cache (all or specific user).
 
 ## Error Codes
 
-| Code | Description |
-|------|-------------|
-| `AUTHENTICATION_REQUIRED` | User is not authenticated |
-| `PERMISSION_DENIED` | User lacks required permission |
-| `USER_NOT_FOUND` | User ID not found |
-| `SUPPLIER_NOT_FOUND` | Supplier ID not found |
-| `PACKAGE_NOT_FOUND` | Package ID not found |
-| `REVIEW_NOT_FOUND` | Review ID not found |
-| `ROLE_NOT_FOUND` | Role not found |
-| `INVALID_INPUT` | Invalid request parameters |
-| `INVALID_ACTION` | Invalid batch action |
-| `CANNOT_DELETE_SELF` | Cannot delete own account |
-| `GRANT_PERMISSION_FAILED` | Failed to grant permission |
-| `REVOKE_PERMISSION_FAILED` | Failed to revoke permission |
-| `LIST_USERS_FAILED` | Failed to list users |
-| `GET_USER_FAILED` | Failed to get user details |
-| `UPDATE_USER_FAILED` | Failed to update user |
-| `DELETE_USER_FAILED` | Failed to delete user |
-| `BAN_USER_FAILED` | Failed to ban user |
-| `UNBAN_USER_FAILED` | Failed to unban user |
+| Code                       | Description                    |
+| -------------------------- | ------------------------------ |
+| `AUTHENTICATION_REQUIRED`  | User is not authenticated      |
+| `PERMISSION_DENIED`        | User lacks required permission |
+| `USER_NOT_FOUND`           | User ID not found              |
+| `SUPPLIER_NOT_FOUND`       | Supplier ID not found          |
+| `PACKAGE_NOT_FOUND`        | Package ID not found           |
+| `REVIEW_NOT_FOUND`         | Review ID not found            |
+| `ROLE_NOT_FOUND`           | Role not found                 |
+| `INVALID_INPUT`            | Invalid request parameters     |
+| `INVALID_ACTION`           | Invalid batch action           |
+| `CANNOT_DELETE_SELF`       | Cannot delete own account      |
+| `GRANT_PERMISSION_FAILED`  | Failed to grant permission     |
+| `REVOKE_PERMISSION_FAILED` | Failed to revoke permission    |
+| `LIST_USERS_FAILED`        | Failed to list users           |
+| `GET_USER_FAILED`          | Failed to get user details     |
+| `UPDATE_USER_FAILED`       | Failed to update user          |
+| `DELETE_USER_FAILED`       | Failed to delete user          |
+| `BAN_USER_FAILED`          | Failed to ban user             |
+| `UNBAN_USER_FAILED`        | Failed to unban user           |
 
 ## Migration Guide
 
@@ -1091,5 +1146,6 @@ The Admin API v2 is designed to coexist with v1. No immediate migration is requi
 ## Support
 
 For issues or questions, please refer to:
+
 - [GitHub Issues](https://github.com/rhysllwydlewis/eventflow/issues)
 - [API Documentation](https://event-flow.co.uk/api-docs)
