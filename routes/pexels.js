@@ -563,4 +563,38 @@ router.get('/collection/:id/media', authRequired, roleRequired('admin'), async (
   }
 });
 
+/**
+ * GET /api/pexels/metrics
+ * Get Pexels API usage metrics
+ * Requires admin authentication
+ */
+router.get('/metrics', authRequired, roleRequired('admin'), (req, res) => {
+  const pexels = getPexelsService();
+
+  const metrics = pexels.getMetrics();
+
+  res.json({
+    success: true,
+    metrics,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/**
+ * POST /api/pexels/cache/clear
+ * Clear Pexels API response cache
+ * Requires admin authentication
+ */
+router.post('/cache/clear', authRequired, roleRequired('admin'), (req, res) => {
+  const pexels = getPexelsService();
+
+  pexels.clearCache();
+
+  res.json({
+    success: true,
+    message: 'Cache cleared successfully',
+    timestamp: new Date().toISOString(),
+  });
+});
+
 module.exports = router;

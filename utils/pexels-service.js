@@ -21,6 +21,29 @@ class PexelsService {
     this.explicitApiKey = apiKey;
     this.baseUrl = 'api.pexels.com';
 
+    // In-memory cache for responses
+    this.cache = new Map();
+    this.cacheTTL = 60 * 60 * 1000; // 1 hour in milliseconds
+
+    // Circuit breaker state
+    this.circuitBreaker = {
+      failures: 0,
+      threshold: 5, // Open circuit after 5 consecutive failures
+      timeout: 60000, // 1 minute cooldown
+      state: 'closed', // closed, open, half-open
+      nextRetry: null,
+    };
+
+    // Metrics tracking
+    this.metrics = {
+      totalRequests: 0,
+      successfulRequests: 0,
+      failedRequests: 0,
+      cacheHits: 0,
+      cacheMisses: 0,
+      totalResponseTime: 0,
+    };
+
     if (!this.getApiKey()) {
       console.warn('⚠️  Pexels API key not configured. Stock photo features will be disabled.');
     }
@@ -42,9 +65,190 @@ class PexelsService {
   }
 
   /**
-   * Make HTTPS request to Pexels API
+   * Get cached response if available and not expired
+   * @param {string} cacheKey - Cache key
+   * @returns {Object|null} Cached response or null
    */
-  async makeRequest(path) {
+  getCachedResponse(cacheKey) {
+    const cached = this.cache.get(cacheKey);
+    if (!cached) {
+      this.metrics.cacheMisses++;
+      return null;
+    }
+
+    const now = Date.now();
+    if (now > cached.expiresAt) {
+      // Expired, remove from cache
+      this.cache.delete(cacheKey);
+      this.metrics.cacheMisses++;
+      return null;
+    }
+
+    this.metrics.cacheHits++;
+    console.log(`💾 Cache hit for: ${cacheKey}`);
+    return cached.data;
+  }
+
+  /**
+   * Store response in cache
+   * @param {string} cacheKey - Cache key
+   * @param {Object} data - Response data
+   */
+  setCachedResponse(cacheKey, data) {
+    const now = Date.now();
+    this.cache.set(cacheKey, {
+      data,
+      expiresAt: now + this.cacheTTL,
+      createdAt: now,
+    });
+    console.log(`💾 Cached response for: ${cacheKey} (TTL: ${this.cacheTTL / 1000}s)`);
+  }
+
+  /**
+   * Clear all cached responses
+   */
+  clearCache() {
+    const size = this.cache.size;
+    this.cache.clear();
+    console.log(`🗑️  Cleared ${size} cached responses`);
+  }
+
+  /**
+   * Check circuit breaker state
+   * @returns {boolean} True if circuit is open
+   */
+  isCircuitOpen() {
+    if (this.circuitBreaker.state === 'open') {
+      const now = Date.now();
+      if (now > this.circuitBreaker.nextRetry) {
+        // Transition to half-open state
+        this.circuitBreaker.state = 'half-open';
+        console.log('🔄 Circuit breaker transitioning to half-open state');
+        return false;
+      }
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Record successful request
+   */
+  recordSuccess() {
+    this.metrics.successfulRequests++;
+    if (this.circuitBreaker.state === 'half-open') {
+      // Reset circuit breaker on success
+      this.circuitBreaker.state = 'closed';
+      this.circuitBreaker.failures = 0;
+      console.log('✅ Circuit breaker reset to closed state');
+    } else if (this.circuitBreaker.state === 'closed') {
+      // Decay failure count on success
+      this.circuitBreaker.failures = Math.max(0, this.circuitBreaker.failures - 1);
+    }
+  }
+
+  /**
+   * Record failed request
+   */
+  recordFailure() {
+    this.metrics.failedRequests++;
+    this.circuitBreaker.failures++;
+
+    if (this.circuitBreaker.failures >= this.circuitBreaker.threshold) {
+      // Open circuit breaker
+      this.circuitBreaker.state = 'open';
+      this.circuitBreaker.nextRetry = Date.now() + this.circuitBreaker.timeout;
+      console.error(
+        `🚨 Circuit breaker opened after ${this.circuitBreaker.failures} failures (cooldown: ${this.circuitBreaker.timeout / 1000}s)`
+      );
+    }
+  }
+
+  /**
+   * Get service metrics
+   * @returns {Object} Service metrics
+   */
+  getMetrics() {
+    const totalRequests = this.metrics.totalRequests || 1; // Avoid division by zero
+    const avgResponseTime =
+      this.metrics.successfulRequests > 0
+        ? Math.round(this.metrics.totalResponseTime / this.metrics.successfulRequests)
+        : 0;
+
+    return {
+      totalRequests: this.metrics.totalRequests,
+      successfulRequests: this.metrics.successfulRequests,
+      failedRequests: this.metrics.failedRequests,
+      successRate: ((this.metrics.successfulRequests / totalRequests) * 100).toFixed(2) + '%',
+      cacheHits: this.metrics.cacheHits,
+      cacheMisses: this.metrics.cacheMisses,
+      cacheHitRate:
+        this.metrics.cacheHits + this.metrics.cacheMisses > 0
+          ? (
+              (this.metrics.cacheHits / (this.metrics.cacheHits + this.metrics.cacheMisses)) *
+              100
+            ).toFixed(2) + '%'
+          : 'N/A',
+      avgResponseTime: avgResponseTime + 'ms',
+      circuitBreaker: {
+        state: this.circuitBreaker.state,
+        failures: this.circuitBreaker.failures,
+        threshold: this.circuitBreaker.threshold,
+      },
+    };
+  }
+
+  /**
+   * Validate response schema for photos
+   * @param {Object} photo - Photo object from API
+   * @returns {Object} Validation result
+   */
+  validatePhotoSchema(photo) {
+    const errors = [];
+    const required = ['id', 'width', 'height', 'url', 'photographer', 'src'];
+    const srcRequired = ['original', 'large', 'medium', 'small'];
+
+    // Check required fields
+    required.forEach(field => {
+      if (!(field in photo)) {
+        errors.push(`Missing required field: ${field}`);
+      }
+    });
+
+    // Check src fields
+    if (photo.src) {
+      srcRequired.forEach(field => {
+        if (!(field in photo.src)) {
+          errors.push(`Missing required src field: src.${field}`);
+        }
+      });
+    }
+
+    return {
+      valid: errors.length === 0,
+      errors,
+    };
+  }
+
+  /**
+   * Make HTTPS request to Pexels API with retry logic
+   * @param {string} path - API endpoint path
+   * @param {number} retryCount - Current retry attempt (default: 0)
+   * @param {number} maxRetries - Maximum retry attempts (default: 3)
+   */
+  async makeRequest(path, retryCount = 0, maxRetries = 3) {
+    this.metrics.totalRequests++;
+
+    // Check circuit breaker
+    if (this.isCircuitOpen()) {
+      const error = new Error('Circuit breaker is open - service temporarily unavailable');
+      error.type = 'circuit_breaker';
+      error.statusCode = 503;
+      error.userFriendlyMessage =
+        'Pexels API is temporarily unavailable due to repeated failures. Please try again later.';
+      throw error;
+    }
+
     return new Promise((resolve, reject) => {
       const options = {
         hostname: this.baseUrl,
@@ -57,12 +261,13 @@ class PexelsService {
         timeout: 10000, // 10 second timeout
       };
 
-      console.log(`🌐 Pexels API Request: GET ${path}`);
+      console.log(`🌐 Pexels API Request: GET ${path} (attempt ${retryCount + 1}/${maxRetries + 1})`);
       const startTime = Date.now();
 
       const req = https.request(options, res => {
         let data = '';
         const duration = Date.now() - startTime;
+        this.metrics.totalResponseTime += duration;
 
         // Parse rate limit headers
         const rateLimit = {
@@ -82,11 +287,11 @@ class PexelsService {
           data += chunk;
         });
 
-        res.on('end', () => {
+        res.on('end', async () => {
           if (res.statusCode === 200) {
             try {
               const parsedData = JSON.parse(data);
-              
+
               // Debug: Log response structure to track schema
               if (process.env.PEXELS_DEBUG === 'true') {
                 console.log('🔍 [DEBUG] Pexels API Response Structure:', {
@@ -94,12 +299,29 @@ class PexelsService {
                   hasPhotos: !!parsedData.photos,
                   hasMedia: !!parsedData.media,
                   hasVideos: !!parsedData.videos,
-                  sampleKeys: parsedData.photos?.[0] ? Object.keys(parsedData.photos[0]) : 
-                              parsedData.media?.[0] ? Object.keys(parsedData.media[0]) : 
-                              parsedData.videos?.[0] ? Object.keys(parsedData.videos[0]) : 'N/A'
+                  sampleKeys: parsedData.photos?.[0]
+                    ? Object.keys(parsedData.photos[0])
+                    : parsedData.media?.[0]
+                      ? Object.keys(parsedData.media[0])
+                      : parsedData.videos?.[0]
+                        ? Object.keys(parsedData.videos[0])
+                        : 'N/A',
                 });
+
+                // Validate schema for photos
+                if (parsedData.photos && parsedData.photos[0]) {
+                  const validation = this.validatePhotoSchema(parsedData.photos[0]);
+                  if (!validation.valid) {
+                    console.warn('⚠️  [DEBUG] Schema validation warnings:', validation.errors);
+                  } else {
+                    console.log('✅ [DEBUG] Schema validation passed');
+                  }
+                }
               }
-              
+
+              // Record success
+              this.recordSuccess();
+
               // Include rate limit info in response
               resolve({
                 data: parsedData,
@@ -108,7 +330,14 @@ class PexelsService {
             } catch (e) {
               console.error('❌ Failed to parse Pexels API response:', e.message);
               console.error('📝 Raw response data (first 200 chars):', data.substring(0, 200));
-              reject(new Error(`Failed to parse response: ${e.message}`));
+
+              this.recordFailure();
+
+              const error = new Error(`Failed to parse response: ${e.message}`);
+              error.type = 'parse_error';
+              error.userFriendlyMessage =
+                'Received invalid response from Pexels API. Please try again.';
+              reject(error);
             }
           } else {
             // Enhanced error messages based on status code with categorization
@@ -116,6 +345,7 @@ class PexelsService {
             let errorType = 'unknown';
             let errorDetails = data;
             let userFriendlyMessage = 'Unable to fetch images from Pexels. Please try again later.';
+            let shouldRetry = false;
 
             try {
               const errorData = JSON.parse(data);
@@ -127,38 +357,62 @@ class PexelsService {
             if (res.statusCode === 401) {
               errorType = 'authentication';
               errorMessage = 'Unauthorized: Invalid API key';
-              userFriendlyMessage = 'API authentication failed. Please check your API key configuration.';
+              userFriendlyMessage =
+                'API authentication failed. Please check your API key configuration.';
               console.error('❌ Pexels API: Invalid API key');
               console.error('💡 Hint: Verify PEXELS_API_KEY environment variable is set correctly');
             } else if (res.statusCode === 403) {
               errorType = 'authentication';
               errorMessage = 'Forbidden: API key lacks required permissions';
-              userFriendlyMessage = 'API key lacks necessary permissions. Please check your Pexels account settings.';
+              userFriendlyMessage =
+                'API key lacks necessary permissions. Please check your Pexels account settings.';
               console.error('❌ Pexels API: Insufficient permissions');
               console.error('💡 Hint: Check if your API key has access to collections endpoint');
             } else if (res.statusCode === 404) {
               errorType = 'not_found';
               errorMessage = 'Not Found: Resource does not exist';
-              userFriendlyMessage = 'The requested resource was not found. Please verify the collection ID or search query.';
+              userFriendlyMessage =
+                'The requested resource was not found. Please verify the collection ID or search query.';
               console.error('❌ Pexels API: Resource not found');
               console.error('💡 Hint: Verify collection IDs and ensure they exist in your Pexels account');
             } else if (res.statusCode === 429) {
               errorType = 'rate_limit';
               errorMessage = 'Rate Limit Exceeded: Too many requests';
               userFriendlyMessage = 'API rate limit exceeded. Please try again later.';
+              shouldRetry = true; // Retry on rate limit
               console.error(`❌ Pexels API: Rate limit exceeded (resets: ${rateLimit.reset})`);
               console.error('💡 Hint: Consider implementing caching or reducing API call frequency');
             } else if (res.statusCode >= 500) {
               errorType = 'server_error';
               errorMessage = 'Server Error: Pexels API is experiencing issues';
-              userFriendlyMessage = 'Pexels API is temporarily unavailable. Fallback images will be used.';
+              userFriendlyMessage =
+                'Pexels API is temporarily unavailable. Fallback images will be used.';
+              shouldRetry = true; // Retry on server errors
               console.error('❌ Pexels API: Server error');
               console.error('💡 Hint: This is a Pexels service issue, fallback mechanism should activate');
             }
 
             console.error(`📝 Error details: ${errorDetails}`);
             console.error(`🔖 Error type: ${errorType}`);
-            
+
+            this.recordFailure();
+
+            // Retry logic for transient errors
+            if (shouldRetry && retryCount < maxRetries) {
+              const backoffTime = Math.min(1000 * Math.pow(2, retryCount), 10000); // Exponential backoff, max 10s
+              console.log(`🔄 Retrying in ${backoffTime}ms...`);
+
+              setTimeout(async () => {
+                try {
+                  const result = await this.makeRequest(path, retryCount + 1, maxRetries);
+                  resolve(result);
+                } catch (retryError) {
+                  reject(retryError);
+                }
+              }, backoffTime);
+              return;
+            }
+
             const error = new Error(`${errorMessage} - ${errorDetails}`);
             error.type = errorType;
             error.statusCode = res.statusCode;
@@ -168,22 +422,67 @@ class PexelsService {
         });
       });
 
-      req.on('error', error => {
+      req.on('error', async error => {
         console.error('❌ Pexels API request error:', error.message);
         console.error('💡 Hint: Check network connectivity and DNS resolution');
-        
+
+        this.recordFailure();
+
+        // Retry on network errors
+        if (retryCount < maxRetries) {
+          const backoffTime = Math.min(1000 * Math.pow(2, retryCount), 10000);
+          console.log(`🔄 Retrying in ${backoffTime}ms...`);
+
+          setTimeout(async () => {
+            try {
+              const result = await this.makeRequest(path, retryCount + 1, maxRetries);
+              resolve(result);
+            } catch (retryError) {
+              const enhancedError = new Error(`Network error: ${error.message}`);
+              enhancedError.type = 'network';
+              enhancedError.originalError = error;
+              enhancedError.userFriendlyMessage =
+                'Unable to connect to Pexels API. Please check your network connection.';
+              reject(enhancedError);
+            }
+          }, backoffTime);
+          return;
+        }
+
         const enhancedError = new Error(`Network error: ${error.message}`);
         enhancedError.type = 'network';
         enhancedError.originalError = error;
-        enhancedError.userFriendlyMessage = 'Unable to connect to Pexels API. Please check your network connection.';
+        enhancedError.userFriendlyMessage =
+          'Unable to connect to Pexels API. Please check your network connection.';
         reject(enhancedError);
       });
 
-      req.on('timeout', () => {
+      req.on('timeout', async () => {
         req.destroy();
         console.error('❌ Pexels API request timeout (10s)');
         console.error('💡 Hint: Consider increasing timeout or checking API responsiveness');
-        
+
+        this.recordFailure();
+
+        // Retry on timeout
+        if (retryCount < maxRetries) {
+          const backoffTime = Math.min(1000 * Math.pow(2, retryCount), 10000);
+          console.log(`🔄 Retrying in ${backoffTime}ms...`);
+
+          setTimeout(async () => {
+            try {
+              const result = await this.makeRequest(path, retryCount + 1, maxRetries);
+              resolve(result);
+            } catch (retryError) {
+              const error = new Error('Request timeout after 10 seconds');
+              error.type = 'timeout';
+              error.userFriendlyMessage = 'Request to Pexels API timed out. Please try again.';
+              reject(error);
+            }
+          }, backoffTime);
+          return;
+        }
+
         const error = new Error('Request timeout after 10 seconds');
         error.type = 'timeout';
         error.userFriendlyMessage = 'Request to Pexels API timed out. Please try again.';
@@ -243,6 +542,15 @@ class PexelsService {
       throw new Error('Invalid query: must be a non-empty string');
     }
 
+    // Build cache key
+    const cacheKey = `search:${query}:${perPage}:${page}:${JSON.stringify(filters)}`;
+
+    // Check cache first
+    const cached = this.getCachedResponse(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
     // Build query parameters
     let path = `/v1/search?query=${encodeURIComponent(query)}&per_page=${perPage}&page=${page}`;
 
@@ -264,7 +572,7 @@ class PexelsService {
     const data = response.data;
 
     // Transform response to include only relevant fields
-    return {
+    const result = {
       page: data.page,
       perPage: data.per_page,
       totalResults: data.total_results,
@@ -292,6 +600,11 @@ class PexelsService {
       prevPage: data.prev_page,
       rateLimit: response.rateLimit,
     };
+
+    // Cache the result
+    this.setCachedResponse(cacheKey, result);
+
+    return result;
   }
 
   /**
