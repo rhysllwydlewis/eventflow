@@ -2376,6 +2376,16 @@ async function initDashSupplier() {
     if (supThemeColor) supThemeColor.value = supplier.themeColor || '#0B8073';
     if (supThemeColorHex) supThemeColorHex.value = supplier.themeColor || '#0B8073';
 
+    // Show existing banner image in preview if exists
+    if (supplier.bannerUrl) {
+      const bannerPreview = document.getElementById('sup-banner-preview');
+      if (bannerPreview) {
+        bannerPreview.innerHTML = `<div class="photo-preview-item">
+          <img src="${supplier.bannerUrl}" alt="Banner preview" style="width:100%;height:150px;object-fit:cover;border-radius:8px;">
+        </div>`;
+      }
+    }
+
     // Populate highlights
     if (supplier.highlights && Array.isArray(supplier.highlights)) {
       supplier.highlights.forEach((highlight, index) => {

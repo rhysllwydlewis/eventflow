@@ -181,28 +181,53 @@ async function calculateSupplierStats(supplierId) {
   try {
     const messages = await dbUnified.read('messages');
     const reviews = await dbUnified.read('reviews');
+    const threads = await dbUnified.read('threads');
     const suppliers = await dbUnified.read('suppliers');
 
     // Get supplier data
     const supplier = suppliers.find(s => s.id === supplierId);
 
-    // Calculate message stats
-    const supplierMessages = messages.filter(
-      m => m.supplierId === supplierId || m.recipientId === supplierId
-    );
-    const receivedMessages = supplierMessages.filter(m => m.recipientId === supplierId);
-    const respondedMessages = receivedMessages.filter(m => m.responded);
-
-    let avgResponseTime = 0;
-    if (respondedMessages.length > 0) {
-      const totalResponseTime = respondedMessages.reduce((sum, m) => {
-        if (m.respondedAt && m.createdAt) {
-          const diff = new Date(m.respondedAt) - new Date(m.createdAt);
-          return sum + diff / (1000 * 60 * 60); // Convert to hours
+    // Calculate message stats based on actual conversation flow
+    const supplierThreads = threads.filter(t => t.supplierId === supplierId);
+    let totalCustomerMessages = 0;
+    let respondedToCustomerMessages = 0;
+    let totalResponseTime = 0;
+    let responseCount = 0;
+    
+    for (const thread of supplierThreads) {
+      const threadMessages = messages
+        .filter(m => m.threadId === thread.id && !m.isDraft)
+        .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+      
+      // Track customer messages and supplier responses
+      for (let i = 0; i < threadMessages.length; i++) {
+        const msg = threadMessages[i];
+        
+        // If this is a customer message
+        if (msg.fromUserId === thread.customerId) {
+          totalCustomerMessages++;
+          
+          // Check if supplier responded to this message
+          const supplierResponse = threadMessages.find(
+            (m, idx) => idx > i && m.fromUserId !== thread.customerId
+          );
+          
+          if (supplierResponse) {
+            respondedToCustomerMessages++;
+            
+            // Calculate response time
+            const responseTime = new Date(supplierResponse.createdAt) - new Date(msg.createdAt);
+            totalResponseTime += responseTime;
+            responseCount++;
+          }
         }
-        return sum;
-      }, 0);
-      avgResponseTime = totalResponseTime / respondedMessages.length;
+      }
+    }
+
+    // Calculate average response time (in hours)
+    let avgResponseTime = 0;
+    if (responseCount > 0) {
+      avgResponseTime = totalResponseTime / responseCount / (1000 * 60 * 60);
     }
 
     // Calculate review stats
@@ -217,7 +242,7 @@ async function calculateSupplierStats(supplierId) {
     }
 
     return {
-      messages: supplierMessages.length,
+      messages: totalCustomerMessages,
       reviews: supplierReviews.length,
       avgResponseTime,
       avgRating,

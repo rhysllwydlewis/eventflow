@@ -97,29 +97,56 @@ async function getSupplierAnalytics(supplierId, days = 7) {
 
     // Get messages for response rate calculation
     const messages = await dbUnified.read('messages');
-    const supplierMessages = messages.filter(
-      m => m.supplierId === supplierId || m.recipientId === supplierId
-    );
+    const threads = await dbUnified.read('threads');
+    
+    // Calculate response rate based on actual message patterns
+    // For each thread, check if supplier replied to customer messages
+    const supplierThreads = threads.filter(t => t.supplierId === supplierId);
+    let totalCustomerMessages = 0;
+    let respondedToCustomerMessages = 0;
+    let totalResponseTime = 0;
+    let responseCount = 0;
+    
+    for (const thread of supplierThreads) {
+      const threadMessages = messages
+        .filter(m => m.threadId === thread.id && !m.isDraft)
+        .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+      
+      // Track customer messages and supplier responses
+      for (let i = 0; i < threadMessages.length; i++) {
+        const msg = threadMessages[i];
+        
+        // If this is a customer message
+        if (msg.fromUserId === thread.customerId) {
+          totalCustomerMessages++;
+          
+          // Check if supplier responded to this message
+          const supplierResponse = threadMessages.find(
+            (m, idx) => idx > i && m.fromUserId !== thread.customerId
+          );
+          
+          if (supplierResponse) {
+            respondedToCustomerMessages++;
+            
+            // Calculate response time
+            const responseTime = new Date(supplierResponse.createdAt) - new Date(msg.createdAt);
+            totalResponseTime += responseTime;
+            responseCount++;
+          }
+        }
+      }
+    }
 
-    // Calculate response rate (responded messages / received messages)
-    const receivedMessages = supplierMessages.filter(m => m.recipientId === supplierId);
-    const respondedMessages = receivedMessages.filter(m => m.responded);
+    // Calculate response rate
     const responseRate =
-      receivedMessages.length > 0
-        ? Math.round((respondedMessages.length / receivedMessages.length) * 100)
+      totalCustomerMessages > 0
+        ? Math.round((respondedToCustomerMessages / totalCustomerMessages) * 100)
         : 100; // Default to 100% if no messages
 
     // Calculate average response time (in hours)
     let avgResponseTime = 0;
-    if (respondedMessages.length > 0) {
-      const totalResponseTime = respondedMessages.reduce((sum, m) => {
-        if (m.respondedAt && m.createdAt) {
-          const diff = new Date(m.respondedAt) - new Date(m.createdAt);
-          return sum + diff / (1000 * 60 * 60); // Convert to hours
-        }
-        return sum;
-      }, 0);
-      avgResponseTime = Math.round((totalResponseTime / respondedMessages.length) * 10) / 10;
+    if (responseCount > 0) {
+      avgResponseTime = Math.round((totalResponseTime / responseCount / (1000 * 60 * 60)) * 10) / 10;
     }
 
     // Generate daily breakdown
