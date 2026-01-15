@@ -246,7 +246,7 @@ router.get('/health', applyHealthCheckLimiter, async (_req, res) => {
     // Check if collection-based features are configured
     if (isConfigured) {
       try {
-        const settings = dbUnified ? await dbUnified.read('settings') : null;
+        const settings = await dbUnified.read('settings');
         const pexelsCollageSettings = settings?.pexelsCollageSettings;
 
         if (pexelsCollageSettings) {
