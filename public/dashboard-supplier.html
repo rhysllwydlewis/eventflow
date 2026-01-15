@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang='en-GB'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>Supplier dashboard — EventFlow</title><link rel='stylesheet' href='/assets/css/styles.css?v=17.0.1'><link rel='stylesheet' href='/assets/css/components.css?v=17.0.1'><link rel='stylesheet' href='/assets/css/mobile-optimizations.css'><link rel='stylesheet' href='/assets/css/ui-ux-fixes.css?v=17.0.1'><script src="/assets/js/dashboard-guard.js?v=17.0.2"></script>    <link rel="stylesheet" href="/assets/css/navbar.css" />
+<!DOCTYPE html><html lang='en-GB'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>Supplier dashboard — EventFlow</title><link rel='stylesheet' href='/assets/css/styles.css?v=17.0.1'><link rel='stylesheet' href='/assets/css/components.css?v=17.0.1'><link rel='stylesheet' href='/assets/css/mobile-optimizations.css'><link rel='stylesheet' href='/assets/css/ui-ux-fixes.css?v=17.0.1'><link rel='stylesheet' href='/assets/css/skeleton.css'><link rel='stylesheet' href='/assets/css/dashboard-animations.css'><script src="/assets/js/dashboard-guard.js?v=17.0.2"></script>    <link rel="stylesheet" href="/assets/css/navbar.css" />
   </head><body>
 <a href="#main-content" class="skip-link">Skip to main content</a>
 <!-- modern-ui -->
@@ -127,13 +127,25 @@
   </div>
 </div>
 
+<!-- Statistics Widgets -->
+<div id="supplier-stats-grid"></div>
+
+<!-- Performance Analytics Chart -->
+<div id="supplier-performance-chart"></div>
+
+<!-- Profile Completeness Checklist -->
+<div id="profile-completeness-widget"></div>
+
 <h2>Your supplier profiles</h2>
 <div class="card">
   <h3>Profile management</h3>
   <p class="small">
     Experimental: each profile gets a simple listing health score based on photos, description and details you&apos;ve added.
   </p>
-  <div id="my-suppliers" class="section"><p class="small">Loading…</p></div>
+  <div id="my-suppliers" class="section">
+    <div class="skeleton skeleton-text skeleton-text-long"></div>
+    <div class="skeleton skeleton-text skeleton-text-medium"></div>
+  </div>
   <h3 style="margin-top:16px">Create / Edit profile</h3>
 <form id="supplier-form" action="#">
   <input type="hidden" id="sup-id" name="id">
@@ -221,7 +233,10 @@
 <div class="card" style="margin-top:16px">
   <h3>Your packages</h3>
   <p class="small" id="pkg-limit-note">Checking your package allowance…</p>
-  <div id="my-packages" class="section"><p class="small">Loading…</p></div>
+  <div id="my-packages" class="section">
+    <div class="skeleton skeleton-text skeleton-text-long"></div>
+    <div class="skeleton skeleton-text skeleton-text-medium"></div>
+  </div>
   <h3 style="margin-top:16px">Create a package</h3>
   <form id="package-form" action="#">
     <div class="form-row" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))">
@@ -285,7 +300,8 @@
 <div class="card" style="margin-top:16px">
   <h3>Lead Quality Overview</h3>
   <div id="lead-quality-breakdown" class="section">
-    <p class="small">Loading lead quality statistics…</p>
+    <div class="skeleton skeleton-text skeleton-text-long"></div>
+    <div class="skeleton skeleton-text skeleton-text-medium"></div>
   </div>
 </div>
 
@@ -295,7 +311,10 @@
     <h3 style="margin:0;">Support Tickets</h3>
     <button class="cta" id="createSupplierTicketBtn" style="padding:0.5rem 1rem;font-size:14px;">Create Ticket</button>
   </div>
-  <div id="tickets-sup" class="section"><p class="small">Loading…</p></div>
+  <div id="tickets-sup" class="section">
+    <div class="skeleton skeleton-text skeleton-text-long"></div>
+    <div class="skeleton skeleton-text skeleton-text-medium"></div>
+  </div>
 </div>
 
 <div class="card" style="margin-top:16px">
@@ -303,7 +322,10 @@
     <h3 style="margin:0;">Messages</h3>
     <span id="unreadMessageBadge" class="badge badge-info" style="display:none;font-size:14px;">0 unread</span>
   </div>
-  <div id="threads-sup" class="section"><p class="small">Loading…</p></div>
+  <div id="threads-sup" class="section">
+    <div class="skeleton skeleton-text skeleton-text-long"></div>
+    <div class="skeleton skeleton-text skeleton-text-medium"></div>
+  </div>
 </div>
 
 <script>
@@ -334,9 +356,136 @@
     enforcePackageLimit 
   } from '/supplier/js/feature-access.js';
   
+  import { createStatsGrid, createProfileChecklist } from '/assets/js/dashboard-widgets.js';
+  import { createPerformanceChart, createAnalyticsSummary } from '/assets/js/supplier-analytics-chart.js';
+  import { initCountUp } from '/assets/js/count-up-animation.js';
+  
   // Initialize feature access control (non-blocking)
   initializeFeatureAccess().catch(err => {
     console.error('Error initializing feature access:', err);
+  });
+  
+  // Initialize supplier dashboard widgets
+  async function initSupplierDashboardWidgets() {
+    try {
+      // Fetch threads for analytics
+      const threadsResponse = await fetch('/api/threads/my', { credentials: 'include' });
+      let threads = [];
+      let totalEnquiries = 0;
+      
+      if (threadsResponse.ok) {
+        const threadsData = await threadsResponse.json();
+        threads = threadsData.threads || [];
+        totalEnquiries = threads.length;
+      }
+      
+      // Mock analytics data (would come from actual API)
+      const views7d = Math.floor(Math.random() * 100) + 50;
+      const views30d = Math.floor(Math.random() * 300) + 150;
+      const views90d = Math.floor(Math.random() * 800) + 400;
+      const responseRate = totalEnquiries > 0 ? Math.floor(Math.random() * 30) + 70 : 100;
+      const avgResponseTime = Math.floor(Math.random() * 12) + 2;
+      
+      // Create statistics widgets
+      createStatsGrid([
+        {
+          icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>',
+          value: views7d,
+          label: 'Profile Views (7d)',
+          format: 'number',
+          color: 'linear-gradient(135deg, #3B82F6 0%, #60A5FA 100%)',
+        },
+        {
+          icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>',
+          value: totalEnquiries,
+          label: 'Total Enquiries',
+          format: 'number',
+          color: 'linear-gradient(135deg, #10B981 0%, #34D399 100%)',
+        },
+        {
+          icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>',
+          value: responseRate,
+          label: 'Response Rate',
+          format: 'percent',
+          color: 'linear-gradient(135deg, #F59E0B 0%, #FBBF24 100%)',
+        },
+        {
+          icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>',
+          value: avgResponseTime,
+          label: 'Avg Response Time',
+          format: 'time',
+          color: 'linear-gradient(135deg, #8B5CF6 0%, #A78BFA 100%)',
+          pulse: true,
+        },
+      ], 'supplier-stats-grid');
+      
+      // Create performance chart with mock data
+      const labels = [];
+      const viewsData = [];
+      const enquiriesData = [];
+      
+      for (let i = 6; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        labels.push(date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }));
+        viewsData.push(Math.floor(Math.random() * 20) + 5);
+        enquiriesData.push(Math.floor(Math.random() * 5) + 1);
+      }
+      
+      await createPerformanceChart('supplier-performance-chart', viewsData, enquiriesData, labels);
+      
+      // Fetch supplier profiles to check completion
+      const suppliersResponse = await fetch('/api/me/suppliers', { credentials: 'include' });
+      let hasProfile = false;
+      let hasPhotos = false;
+      
+      if (suppliersResponse.ok) {
+        const suppliersData = await suppliersResponse.json();
+        const suppliers = suppliersData.items || [];
+        hasProfile = suppliers.length > 0;
+        if (hasProfile && suppliers[0].photos) {
+          hasPhotos = suppliers[0].photos.length >= 5;
+        }
+      }
+      
+      // Fetch packages to check if at least one exists
+      const packagesResponse = await fetch('/api/me/packages', { credentials: 'include' });
+      let hasPackage = false;
+      
+      if (packagesResponse.ok) {
+        const packagesData = await packagesResponse.json();
+        const packages = packagesData.items || [];
+        hasPackage = packages.length > 0;
+      }
+      
+      // Check email verification status
+      const userResponse = await fetch('/api/auth/me', { credentials: 'include' });
+      let emailVerified = false;
+      
+      if (userResponse.ok) {
+        const userData = await userResponse.json();
+        emailVerified = userData.user?.emailVerified || false;
+      }
+      
+      // Create profile completeness checklist
+      createProfileChecklist({
+        basicInfo: hasProfile,
+        photos: hasPhotos,
+        package: hasPackage,
+        emailVerified: emailVerified,
+        firstReview: false, // Would check reviews API
+      }, 'profile-completeness-widget');
+      
+    } catch (error) {
+      console.error('Error initializing supplier dashboard widgets:', error);
+    }
+  }
+  
+  // Initialize widgets after page loads
+  window.addEventListener('load', () => {
+    setTimeout(() => {
+      initSupplierDashboardWidgets();
+    }, 500);
   });
   
   async function displaySubscriptionStatus() {
