@@ -435,36 +435,48 @@
       await createPerformanceChart('supplier-performance-chart', viewsData, enquiriesData, labels);
       
       // Fetch supplier profiles to check completion
-      const suppliersResponse = await fetch('/api/me/suppliers', { credentials: 'include' });
       let hasProfile = false;
       let hasPhotos = false;
       
-      if (suppliersResponse.ok) {
-        const suppliersData = await suppliersResponse.json();
-        const suppliers = suppliersData.items || [];
-        hasProfile = suppliers.length > 0;
-        if (hasProfile && suppliers[0].photos) {
-          hasPhotos = suppliers[0].photos.length >= 5;
+      try {
+        const suppliersResponse = await fetch('/api/me/suppliers', { credentials: 'include' });
+        if (suppliersResponse.ok) {
+          const suppliersData = await suppliersResponse.json();
+          const suppliers = suppliersData.items || [];
+          hasProfile = suppliers.length > 0;
+          if (hasProfile && suppliers[0].photos) {
+            hasPhotos = suppliers[0].photos.length >= 5;
+          }
         }
+      } catch (err) {
+        console.error('Error fetching suppliers:', err);
       }
       
       // Fetch packages to check if at least one exists
-      const packagesResponse = await fetch('/api/me/packages', { credentials: 'include' });
       let hasPackage = false;
       
-      if (packagesResponse.ok) {
-        const packagesData = await packagesResponse.json();
-        const packages = packagesData.items || [];
-        hasPackage = packages.length > 0;
+      try {
+        const packagesResponse = await fetch('/api/me/packages', { credentials: 'include' });
+        if (packagesResponse.ok) {
+          const packagesData = await packagesResponse.json();
+          const packages = packagesData.items || [];
+          hasPackage = packages.length > 0;
+        }
+      } catch (err) {
+        console.error('Error fetching packages:', err);
       }
       
       // Check email verification status
-      const userResponse = await fetch('/api/auth/me', { credentials: 'include' });
       let emailVerified = false;
       
-      if (userResponse.ok) {
-        const userData = await userResponse.json();
-        emailVerified = userData.user?.emailVerified || false;
+      try {
+        const userResponse = await fetch('/api/auth/me', { credentials: 'include' });
+        if (userResponse.ok) {
+          const userData = await userResponse.json();
+          emailVerified = userData.user?.emailVerified || false;
+        }
+      } catch (err) {
+        console.error('Error checking email verification:', err);
       }
       
       // Create profile completeness checklist

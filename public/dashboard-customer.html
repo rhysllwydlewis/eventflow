@@ -183,18 +183,27 @@ import { initCountUp } from '/assets/js/count-up-animation.js';
 // Initialize dashboard widgets after data loads
 async function initCustomerDashboardWidgets() {
   try {
-    // Fetch customer data
-    const response = await fetch('/api/me/plans', { credentials: 'include' });
-    if (!response.ok) {
-      console.error('Failed to fetch customer data');
-      return;
+    // Fetch customer data with fallback
+    let plans = [];
+    try {
+      const response = await fetch('/api/me/plans', { credentials: 'include' });
+      if (response.ok) {
+        const data = await response.json();
+        plans = data.plans || [];
+      }
+    } catch (err) {
+      console.error('Error fetching plans:', err);
+      // Continue with empty plans array
     }
     
-    const data = await response.json();
-    const plans = data.plans || [];
-    
     // Count saved suppliers (from localStorage or API)
-    const savedSuppliers = JSON.parse(localStorage.getItem('eventflow_saved_suppliers') || '[]');
+    let savedSuppliers = [];
+    try {
+      savedSuppliers = JSON.parse(localStorage.getItem('eventflow_saved_suppliers') || '[]');
+    } catch (err) {
+      console.error('Error reading saved suppliers:', err);
+      savedSuppliers = [];
+    }
     
     // Count messages/conversations - will be updated by customer-messages.js
     let unreadMessages = 0;
