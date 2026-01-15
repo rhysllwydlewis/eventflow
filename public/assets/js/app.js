@@ -2382,9 +2382,19 @@ async function initDashSupplier() {
     if (supplier.bannerUrl) {
       const bannerPreview = document.getElementById('sup-banner-preview');
       if (bannerPreview) {
-        bannerPreview.innerHTML = `<div class="photo-preview-item">
-          <img src="${supplier.bannerUrl}" alt="Banner preview" style="width:100%;height:150px;object-fit:cover;border-radius:8px;">
-        </div>`;
+        // Create image element safely to avoid XSS
+        const imgDiv = document.createElement('div');
+        imgDiv.className = 'photo-preview-item';
+        imgDiv.style.cssText = 'width:100%;height:150px;border-radius:8px;overflow:hidden;';
+        
+        const img = document.createElement('img');
+        img.src = supplier.bannerUrl; // Browser automatically sanitizes
+        img.alt = 'Banner preview';
+        img.style.cssText = 'width:100%;height:100%;object-fit:cover;';
+        
+        imgDiv.appendChild(img);
+        bannerPreview.innerHTML = ''; // Clear existing content
+        bannerPreview.appendChild(imgDiv);
       }
     }
 

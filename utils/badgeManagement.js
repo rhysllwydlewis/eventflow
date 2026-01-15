@@ -202,19 +202,17 @@ async function calculateSupplierStats(supplierId) {
       // Track customer messages and supplier responses
       for (let i = 0; i < threadMessages.length; i++) {
         const msg = threadMessages[i];
-        
+
         // If this is a customer message
         if (msg.fromUserId === thread.customerId) {
           totalCustomerMessages++;
-          
-          // Check if supplier responded to this message
-          const supplierResponse = threadMessages.find(
-            (m, idx) => idx > i && m.fromUserId !== thread.customerId
-          );
-          
+
+          // Check if supplier responded to this message (look for next non-customer message)
+          const supplierResponse = threadMessages.slice(i + 1).find(m => m.fromUserId !== thread.customerId);
+
           if (supplierResponse) {
             respondedToCustomerMessages++;
-            
+
             // Calculate response time
             const responseTime = new Date(supplierResponse.createdAt) - new Date(msg.createdAt);
             totalResponseTime += responseTime;
