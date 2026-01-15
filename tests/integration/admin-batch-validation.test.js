@@ -5,6 +5,10 @@
 const fs = require('fs');
 const path = require('path');
 
+function escapeForRegExp(str) {
+  return str.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+}
+
 const escapeForRegExp = str => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 describe('Admin Batch Operations - Validation', () => {
@@ -251,7 +255,7 @@ describe('Admin Batch Operations - Validation', () => {
         '/suppliers/bulk-delete',
       ];
 
-      bulkOperations.forEach(operation => {
+          `router\\.post\\([^)]*${escapeForRegExp(operation)}[\\s\\S]*?\\);`
         const escapedOperation = escapeForRegExp(operation);
         const operationRegex = new RegExp(
           `router\\.post\\([^)]*${escapedOperation}[\\s\\S]*?\\);`
@@ -264,7 +268,7 @@ describe('Admin Batch Operations - Validation', () => {
 
     it('v2 batch operations should have csrfProtection', () => {
       const batchOperations = ['/packages/batch-approve', '/photos/batch-action', '/bulk-actions'];
-
+          `router\\.post\\([^)]*${escapeForRegExp(operation)}[\\s\\S]*?\\);`
         const escapedOperation = escapeForRegExp(operation);
       batchOperations.forEach(operation => {
         const operationRegex = new RegExp(
