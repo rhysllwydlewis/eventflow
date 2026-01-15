@@ -18,7 +18,7 @@ class SupplierPhotoUpload {
   }
 
   /**
-   * Upload a photo to Cloudinary via MongoDB API
+   * Upload a photo to local storage via REST API
    * @param {File} file - The image file to upload
    * @param {string} supplierId - The supplier ID
    * @returns {Promise<Object>} Photo metadata with download URL
@@ -73,7 +73,7 @@ class SupplierPhotoUpload {
   }
 
   /**
-   * Delete a photo from Cloudinary via MongoDB API
+   * Delete a photo from local storage via REST API
    * @param {string} photoId - Photo ID
    * @param {string} supplierId - Supplier ID
    * @returns {Promise<void>}
@@ -98,7 +98,7 @@ class SupplierPhotoUpload {
   }
 
   /**
-   * Get all photos for a supplier via MongoDB API
+   * Get all photos for a supplier via REST API
    * @param {string} supplierId - Supplier ID
    * @returns {Promise<Array>} Array of photo metadata
    */
