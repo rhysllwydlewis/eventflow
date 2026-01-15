@@ -13,3 +13,4 @@ e2e
 playwright-report
 test-results
 public/assets/js/vendor/
+public/assets/vendor/

@@ -16,9 +16,16 @@ async function loadChartJS() {
 
   return new Promise((resolve, reject) => {
     const script = document.createElement('script');
-    script.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js';
+    script.src = '/assets/vendor/chart.umd.js';
     script.onload = resolve;
-    script.onerror = reject;
+    script.onerror = () => {
+      // Fallback to CDN if local file fails
+      const cdnScript = document.createElement('script');
+      cdnScript.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js';
+      cdnScript.onload = resolve;
+      cdnScript.onerror = reject;
+      document.head.appendChild(cdnScript);
+    };
     document.head.appendChild(script);
   });
 }
