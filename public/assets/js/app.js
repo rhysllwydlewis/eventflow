@@ -2058,6 +2058,26 @@ function efMaybeShowOnboarding(page) {
 
 async function initDashSupplier() {
   efMaybeShowOnboarding('dash_supplier');
+  
+  // Fetch CSRF token if not already available
+  async function ensureCsrfToken() {
+    if (!window.__CSRF_TOKEN__) {
+      try {
+        const resp = await fetch('/api/csrf-token', { credentials: 'include' });
+        if (resp.ok) {
+          const data = await resp.json();
+          window.__CSRF_TOKEN__ = data.csrfToken;
+        }
+      } catch (e) {
+        console.error('Failed to fetch CSRF token:', e);
+      }
+    }
+    return window.__CSRF_TOKEN__ || '';
+  }
+  
+  // Fetch CSRF token on init
+  await ensureCsrfToken();
+  
   // If returning from Stripe checkout with billing=success, mark this supplier account as Pro
   try {
     const params = new URLSearchParams(location.search);
@@ -2279,19 +2299,62 @@ async function initDashSupplier() {
   if (supForm) {
     supForm.addEventListener('submit', async e => {
       e.preventDefault();
-      const fd = new FormData(supForm);
-      const payload = {};
-      fd.forEach((v, k) => (payload[k] = v));
-      const id = (payload.id || '').toString().trim();
-      const path = id ? `/api/me/suppliers/${encodeURIComponent(id)}` : '/api/me/suppliers';
-      const method = id ? 'PATCH' : 'POST';
-      await api(path, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      await loadSuppliers();
-      alert('Saved supplier profile.');
+      
+      // Validate venue postcode if Venues category selected
+      if (typeof window.validateVenuePostcode === 'function') {
+        if (!window.validateVenuePostcode()) {
+          return; // Stop submission if validation fails
+        }
+      }
+      
+      const statusEl = document.getElementById('sup-status');
+      try {
+        // Ensure CSRF token is available
+        const csrfToken = await ensureCsrfToken();
+        
+        const fd = new FormData(supForm);
+        const payload = {};
+        fd.forEach((v, k) => (payload[k] = v));
+        
+        // Clean up payload - remove empty venuePostcode if not Venues category
+        if (payload.category !== 'Venues') {
+          delete payload.venuePostcode;
+        }
+        
+        const id = (payload.id || '').toString().trim();
+        const path = id ? `/api/me/suppliers/${encodeURIComponent(id)}` : '/api/me/suppliers';
+        const method = id ? 'PATCH' : 'POST';
+        
+        if (statusEl) {
+          statusEl.textContent = 'Saving...';
+          statusEl.style.color = '#667085';
+        }
+        
+        await api(path, {
+          method,
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': csrfToken,
+          },
+          body: JSON.stringify(payload),
+        });
+        
+        await loadSuppliers();
+        
+        if (statusEl) {
+          statusEl.textContent = '✓ Saved successfully';
+          statusEl.style.color = '#10b981';
+          setTimeout(() => {
+            statusEl.textContent = '';
+          }, 3000);
+        }
+      } catch (err) {
+        console.error('Error saving supplier:', err);
+        if (statusEl) {
+          statusEl.textContent = `Error: ${err.message || 'Please try again'}`;
+          statusEl.style.color = '#ef4444';
+        }
+      }
     });
   }
 

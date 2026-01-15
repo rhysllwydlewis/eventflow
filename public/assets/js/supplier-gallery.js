@@ -224,7 +224,8 @@ class SupplierGalleryManager {
           });
 
           if (!response.ok) {
-            throw new Error('Failed to create supplier profile');
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || 'Failed to create supplier profile');
           }
 
           const data = await response.json();
@@ -270,7 +271,8 @@ class SupplierGalleryManager {
           );
 
           if (!updateResponse.ok) {
-            throw new Error('Failed to update supplier profile with photos');
+            const errorData = await updateResponse.json().catch(() => ({}));
+            throw new Error(errorData.error || 'Failed to update supplier profile with photos');
           }
         } else if (id) {
           // If editing existing supplier, update it
@@ -286,7 +288,8 @@ class SupplierGalleryManager {
           });
 
           if (!updateResponse.ok) {
-            throw new Error('Failed to save supplier profile');
+            const errorData = await updateResponse.json().catch(() => ({}));
+            throw new Error(errorData.error || 'Failed to save supplier profile');
           }
         }
 
