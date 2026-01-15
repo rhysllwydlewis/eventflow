@@ -393,7 +393,10 @@
 /* Focus indicators */
 .ef-nav-link:focus-visible,
 .ef-mobile-link:focus-visible,
-.ef-bottom-link:focus-visible {
+.ef-bottom-link:focus-visible,
+.cta:focus-visible,
+button:focus-visible,
+.nav a:focus-visible {
   outline: 3px solid var(--ef-primary, #0B8073);
   outline-offset: 2px;
   border-radius: 8px;

@@ -185,7 +185,6 @@ h3 {
   transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
               box-shadow 0.4s cubic-bezier(0.4, 0, 0.2, 1),
               border-color 0.3s ease;
-  will-change: transform;
 }
 
 .collage .frame:hover {
@@ -295,46 +294,14 @@ h3 {
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Enhanced focus states for accessibility */
-.nav a:focus-visible,
-.ef-nav-link:focus-visible,
-.cta:focus-visible,
-button:focus-visible {
-  outline: 3px solid var(--ink, #0B8073);
-  outline-offset: 3px;
-  border-radius: var(--radius-sm, 8px);
-}
+/* Focus states are defined in navigation-enhancements.css */
 
 /* ========================================
    SUBTLE BACKGROUND GRADIENTS
-   Enhanced visual depth across sections
+   Enhanced visual depth (removed - caused layout issues)
    ======================================== */
 
-.section {
-  position: relative;
-  transition: background 0.3s ease;
-}
-
-.section::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: radial-gradient(
-    circle at top right,
-    rgba(11, 128, 115, 0.02) 0%,
-    transparent 50%
-  );
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.6s ease;
-}
-
-.section:hover::before {
-  opacity: 1;
-}
+/* Removed .section positioning and pseudo-elements to prevent layout conflicts */
 
 /* ========================================
    IMPROVED FORM ELEMENTS
@@ -425,11 +392,6 @@ a:hover {
   
   .collage .frame:hover {
     transform: scale(1.02) translateY(-2px);
-  }
-  
-  /* Reduce motion on smaller screens for better performance */
-  * {
-    animation-duration: 0.5s !important;
   }
 }
 
