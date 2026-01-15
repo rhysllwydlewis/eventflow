@@ -481,7 +481,7 @@ async function loadHeroCollageImages() {
       // Determine if we need to update based on URL comparison
       // Add null checks before accessing string methods
       const needsUpdate = normalizedImageUrl && currentImageUrl 
-        ? !currentImageUrl.endsWith(normalizedImageUrl.split('/').pop() || '')
+        ? !currentImageUrl.endsWith((normalizedImageUrl.split('/').pop() ?? '') || '')
         : false;
 
       // Skip update if URL matches and it's a default image
@@ -525,7 +525,8 @@ async function loadHeroCollageImages() {
           };
           
           // Only attempt fallback once to prevent infinite loop
-          if (this.src !== window.location.origin + defaultImages[category]) {
+          // Use endsWith for more robust URL comparison
+          if (!this.src || !this.src.endsWith(defaultImages[category])) {
             this.src = defaultImages[category];
           } else {
             // If even the default fails, show a gradient placeholder
