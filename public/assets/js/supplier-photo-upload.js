@@ -1,9 +1,9 @@
 /**
  * Supplier Photo Upload Module for EventFlow
- * Handles uploading supplier gallery photos to Cloudinary via MongoDB API
+ * Handles uploading supplier gallery photos via REST API
  *
- * NOTE: This module has been migrated from Firebase Storage to Cloudinary.
- * All operations now use the EventFlow REST API backed by Cloudinary.
+ * NOTE: Photos are stored locally in /uploads directory with metadata in MongoDB.
+ * The backend uses base64 encoding for image transfer and stores files on the filesystem.
  */
 
 class SupplierPhotoUpload {
