@@ -85,10 +85,12 @@ describe('Badge Management', () => {
       expect(stats).toHaveProperty('reviews');
       expect(stats).toHaveProperty('avgResponseTime');
       expect(stats).toHaveProperty('avgRating');
+      expect(stats).toHaveProperty('completedEvents');
       expect(typeof stats.messages).toBe('number');
       expect(typeof stats.reviews).toBe('number');
       expect(typeof stats.avgResponseTime).toBe('number');
       expect(typeof stats.avgRating).toBe('number');
+      expect(typeof stats.completedEvents).toBe('number');
     });
 
     it('should return zero stats for non-existent supplier', async () => {
@@ -99,6 +101,7 @@ describe('Badge Management', () => {
       expect(stats.reviews).toBe(0);
       expect(stats.avgResponseTime).toBe(0);
       expect(stats.avgRating).toBe(0);
+      expect(stats.completedEvents).toBe(0);
     });
   });
 

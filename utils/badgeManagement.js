@@ -181,6 +181,10 @@ async function calculateSupplierStats(supplierId) {
   try {
     const messages = await dbUnified.read('messages');
     const reviews = await dbUnified.read('reviews');
+    const suppliers = await dbUnified.read('suppliers');
+
+    // Get supplier data
+    const supplier = suppliers.find(s => s.id === supplierId);
 
     // Calculate message stats
     const supplierMessages = messages.filter(
@@ -217,6 +221,7 @@ async function calculateSupplierStats(supplierId) {
       reviews: supplierReviews.length,
       avgResponseTime,
       avgRating,
+      completedEvents: supplier?.completedEvents || 0, // Get from supplier record
     };
   } catch (error) {
     console.error('Error calculating supplier stats:', error);
@@ -225,6 +230,7 @@ async function calculateSupplierStats(supplierId) {
       reviews: 0,
       avgResponseTime: 0,
       avgRating: 0,
+      completedEvents: 0,
     };
   }
 }

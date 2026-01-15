@@ -2324,6 +2324,88 @@ async function initDashSupplier() {
     if (select) {
       select.innerHTML = items.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
     }
+
+    // Auto-populate form with first supplier's data if exists
+    if (items.length > 0) {
+      populateSupplierForm(items[0]);
+    }
+  }
+
+  /**
+   * Populate supplier form with existing supplier data
+   * @param {Object} supplier - Supplier data
+   */
+  function populateSupplierForm(supplier) {
+    if (!supplier) return;
+
+    // Basic fields
+    const supId = document.getElementById('sup-id');
+    const supName = document.getElementById('sup-name');
+    const supCategory = document.getElementById('sup-category');
+    const supLocation = document.getElementById('sup-location');
+    const supPrice = document.getElementById('sup-price');
+    const supShort = document.getElementById('sup-short');
+    const supLong = document.getElementById('sup-long');
+    const supWebsite = document.getElementById('sup-website');
+    const supLicense = document.getElementById('sup-license');
+    const supAmenities = document.getElementById('sup-amenities');
+    const supMax = document.getElementById('sup-max');
+    const supVenuePostcode = document.getElementById('sup-venue-postcode');
+
+    if (supId) supId.value = supplier.id || '';
+    if (supName) supName.value = supplier.name || '';
+    if (supCategory) supCategory.value = supplier.category || '';
+    if (supLocation) supLocation.value = supplier.location || '';
+    if (supPrice) supPrice.value = supplier.price_display || '';
+    if (supShort) supShort.value = supplier.description_short || '';
+    if (supLong) supLong.value = supplier.description_long || '';
+    if (supWebsite) supWebsite.value = supplier.website || '';
+    if (supLicense) supLicense.value = supplier.license || '';
+    if (supAmenities) supAmenities.value = (supplier.amenities || []).join(', ');
+    if (supMax) supMax.value = supplier.maxGuests || '';
+    if (supVenuePostcode) supVenuePostcode.value = supplier.venuePostcode || '';
+
+    // New customization fields
+    const supBanner = document.getElementById('sup-banner');
+    const supTagline = document.getElementById('sup-tagline');
+    const supThemeColor = document.getElementById('sup-theme-color');
+    const supThemeColorHex = document.getElementById('sup-theme-color-hex');
+
+    if (supBanner) supBanner.value = supplier.bannerUrl || '';
+    if (supTagline) supTagline.value = supplier.tagline || '';
+    if (supThemeColor) supThemeColor.value = supplier.themeColor || '#0B8073';
+    if (supThemeColorHex) supThemeColorHex.value = supplier.themeColor || '#0B8073';
+
+    // Populate highlights
+    if (supplier.highlights && Array.isArray(supplier.highlights)) {
+      supplier.highlights.forEach((highlight, index) => {
+        const highlightInput = document.getElementById(`sup-highlight-${index + 1}`);
+        if (highlightInput) highlightInput.value = highlight;
+      });
+    }
+
+    // Populate featured services
+    const supFeaturedServices = document.getElementById('sup-featured-services');
+    if (supFeaturedServices && supplier.featuredServices) {
+      supFeaturedServices.value = (supplier.featuredServices || []).join('\n');
+    }
+
+    // Populate social links
+    if (supplier.socialLinks) {
+      const platforms = ['facebook', 'instagram', 'twitter', 'linkedin', 'youtube', 'tiktok'];
+      platforms.forEach(platform => {
+        const input = document.getElementById(`sup-social-${platform}`);
+        if (input && supplier.socialLinks[platform]) {
+          input.value = supplier.socialLinks[platform];
+        }
+      });
+    }
+
+    // Show preview button if supplier has an ID
+    const previewBtn = document.getElementById('sup-preview');
+    if (previewBtn && supplier.id) {
+      previewBtn.style.display = 'inline-block';
+    }
   }
 
   async function loadPackages() {
