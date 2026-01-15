@@ -12,7 +12,9 @@ import { animateProgressBar, animateCircularProgress, initCountUp } from './coun
  */
 export function createStatsGrid(stats, containerId) {
   const container = document.getElementById(containerId);
-  if (!container) return;
+  if (!container) {
+    return;
+  }
 
   const gridHtml = `
     <div class="dashboard-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
@@ -51,7 +53,9 @@ export function createStatsGrid(stats, containerId) {
  */
 export function createBudgetTracker(budgetData, containerId) {
   const container = document.getElementById(containerId);
-  if (!container) return;
+  if (!container) {
+    return;
+  }
 
   const { spent = 0, total = 1000 } = budgetData;
   const remaining = Math.max(0, total - spent);
@@ -108,7 +112,9 @@ export function createBudgetTracker(budgetData, containerId) {
  */
 export function createProgressRing(data, containerId) {
   const container = document.getElementById(containerId);
-  if (!container) return;
+  if (!container) {
+    return;
+  }
 
   const { percentage = 0, label = 'Event Progress', booked = 0, pending = 0 } = data;
   const radius = 45;
@@ -183,7 +189,9 @@ export function createProgressRing(data, containerId) {
  */
 export function createEventsTimeline(events, containerId) {
   const container = document.getElementById(containerId);
-  if (!container) return;
+  if (!container) {
+    return;
+  }
 
   if (!events || events.length === 0) {
     container.innerHTML = `
@@ -240,9 +248,15 @@ function getBadgeStyle(daysUntil) {
 }
 
 function getDueBadgeText(daysUntil) {
-  if (daysUntil === 0) return 'Due Today';
-  if (daysUntil === 1) return 'Due Tomorrow';
-  if (daysUntil <= 7) return `In ${daysUntil} days`;
+  if (daysUntil === 0) {
+    return 'Due Today';
+  }
+  if (daysUntil === 1) {
+    return 'Due Tomorrow';
+  }
+  if (daysUntil <= 7) {
+    return `In ${daysUntil} days`;
+  }
   const weeks = Math.floor(daysUntil / 7);
   return `In ${weeks} week${weeks > 1 ? 's' : ''}`;
 }
@@ -254,7 +268,9 @@ function getDueBadgeText(daysUntil) {
  */
 export function createProfileChecklist(completionData, containerId) {
   const container = document.getElementById(containerId);
-  if (!container) return;
+  if (!container) {
+    return;
+  }
 
   const items = [
     {
@@ -306,7 +322,7 @@ export function createProfileChecklist(completionData, containerId) {
       <div style="display: flex; flex-direction: column; gap: 0.75rem;">
         ${items
           .map(
-            (item, index) => `
+            item => `
           <div class="checklist-item ${item.completed ? 'completed' : ''}" style="display: flex; align-items: center; gap: 0.75rem;">
             <div class="checklist-icon" style="width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; ${
               item.completed

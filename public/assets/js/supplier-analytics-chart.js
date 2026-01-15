@@ -140,7 +140,9 @@ export async function createAnalyticsChart(canvasId, data, options = {}) {
  */
 export async function createPerformanceChart(containerId, viewsData, enquiriesData, labels) {
   const container = document.getElementById(containerId);
-  if (!container) return null;
+  if (!container) {
+    return null;
+  }
 
   const canvasId = `${containerId}-canvas`;
 
@@ -279,16 +281,11 @@ async function fetchAnalyticsData(days) {
  */
 export function createAnalyticsSummary(containerId, stats) {
   const container = document.getElementById(containerId);
-  if (!container) return;
+  if (!container) {
+    return;
+  }
 
-  const {
-    views7d = 0,
-    views30d = 0,
-    views90d = 0,
-    totalEnquiries = 0,
-    responseRate = 0,
-    avgResponseTime = 0,
-  } = stats;
+  const { views7d = 0, totalEnquiries = 0, responseRate = 0, avgResponseTime = 0 } = stats;
 
   const html = `
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">

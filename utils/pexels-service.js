@@ -3,7 +3,7 @@
  * Integrates Pexels stock photo API for EventFlow
  * Used for category images, hero banners, and other site content
  * Suppliers still upload their own profile and package photos
- * 
+ *
  * Features smart fallback system:
  * - Primary: Fetch from Pexels API (user collections)
  * - Fallback: Use hardcoded curated URLs when API unavailable
@@ -61,9 +61,12 @@ class PexelsService {
    * Runs every 15 minutes to remove expired entries
    */
   startCacheCleanup() {
-    this.cleanupInterval = setInterval(() => {
-      this.cleanExpiredCache();
-    }, 15 * 60 * 1000); // Every 15 minutes
+    this.cleanupInterval = setInterval(
+      () => {
+        this.cleanExpiredCache();
+      },
+      15 * 60 * 1000
+    ); // Every 15 minutes
   }
 
   /**
@@ -238,18 +241,18 @@ class PexelsService {
       failedRequests: this.metrics.failedRequests,
       successRate:
         totalRequests > 0
-          ? ((this.metrics.successfulRequests / totalRequests) * 100).toFixed(2) + '%'
+          ? `${((this.metrics.successfulRequests / totalRequests) * 100).toFixed(2)}%`
           : 'N/A',
       cacheHits: this.metrics.cacheHits,
       cacheMisses: this.metrics.cacheMisses,
       cacheHitRate:
         this.metrics.cacheHits + this.metrics.cacheMisses > 0
-          ? (
+          ? `${(
               (this.metrics.cacheHits / (this.metrics.cacheHits + this.metrics.cacheMisses)) *
               100
-            ).toFixed(2) + '%'
+            ).toFixed(2)}%`
           : 'N/A',
-      avgResponseTime: avgResponseTime + 'ms',
+      avgResponseTime: `${avgResponseTime}ms`,
       circuitBreaker: {
         state: this.circuitBreaker.state,
         failures: this.circuitBreaker.failures,
@@ -329,7 +332,9 @@ class PexelsService {
         timeout: 10000, // 10 second timeout
       };
 
-      console.log(`🌐 Pexels API Request: GET ${path} (attempt ${retryCount + 1}/${maxRetries + 1})`);
+      console.log(
+        `🌐 Pexels API Request: GET ${path} (attempt ${retryCount + 1}/${maxRetries + 1})`
+      );
       const startTime = Date.now();
 
       const req = https.request(options, res => {
@@ -442,14 +447,18 @@ class PexelsService {
               userFriendlyMessage =
                 'The requested resource was not found. Please verify the collection ID or search query.';
               console.error('❌ Pexels API: Resource not found');
-              console.error('💡 Hint: Verify collection IDs and ensure they exist in your Pexels account');
+              console.error(
+                '💡 Hint: Verify collection IDs and ensure they exist in your Pexels account'
+              );
             } else if (res.statusCode === 429) {
               errorType = 'rate_limit';
               errorMessage = 'Rate Limit Exceeded: Too many requests';
               userFriendlyMessage = 'API rate limit exceeded. Please try again later.';
               shouldRetry = true; // Retry on rate limit
               console.error(`❌ Pexels API: Rate limit exceeded (resets: ${rateLimit.reset})`);
-              console.error('💡 Hint: Consider implementing caching or reducing API call frequency');
+              console.error(
+                '💡 Hint: Consider implementing caching or reducing API call frequency'
+              );
             } else if (res.statusCode >= 500) {
               errorType = 'server_error';
               errorMessage = 'Server Error: Pexels API is experiencing issues';
@@ -457,7 +466,9 @@ class PexelsService {
                 'Pexels API is temporarily unavailable. Fallback images will be used.';
               shouldRetry = true; // Retry on server errors
               console.error('❌ Pexels API: Server error');
-              console.error('💡 Hint: This is a Pexels service issue, fallback mechanism should activate');
+              console.error(
+                '💡 Hint: This is a Pexels service issue, fallback mechanism should activate'
+              );
             }
 
             console.error(`📝 Error details: ${errorDetails}`);
@@ -579,7 +590,7 @@ class PexelsService {
    * @param {number} page - Page number (default: 1)
    * @param {Object} filters - Optional filters (orientation, size, color, locale)
    * @returns {Promise<Object>} Search results with photos array
-   * 
+   *
    * Expected API Response Schema (from Pexels API v1):
    * {
    *   page: number,
@@ -1034,7 +1045,7 @@ class PexelsService {
    * @param {number} page - Page number (default: 1)
    * @param {string} type - Media type filter ('photos', 'videos', or undefined for all)
    * @returns {Promise<Object>} Collection media
-   * 
+   *
    * Expected API Response Schema (from Pexels API v1):
    * {
    *   page: number,
@@ -1111,7 +1122,7 @@ class PexelsService {
             videoPictures: item.video_pictures || [],
           };
         }
-        
+
         // Unknown type - log warning and return raw item
         console.warn(`⚠️  Unknown media type in collection: ${item.type}`);
         return item;

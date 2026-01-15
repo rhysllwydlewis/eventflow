@@ -59,12 +59,7 @@ export function animateNumber(
  * @param {object} options - Options for the animation
  */
 export function initCountUp(selector = '[data-target]', options = {}) {
-  const {
-    duration = 1500,
-    threshold = 0.5,
-    rootMargin = '0px',
-    formatter = null,
-  } = options;
+  const { duration = 1500, threshold = 0.5, rootMargin = '0px', formatter = null } = options;
 
   const elements = document.querySelectorAll(selector);
 
@@ -83,17 +78,16 @@ export function initCountUp(selector = '[data-target]', options = {}) {
           if (!formatterFn) {
             switch (format) {
               case 'percent':
-                formatterFn = n => Math.round(n) + '%';
+                formatterFn = n => `${Math.round(n)}%`;
                 break;
               case 'currency':
-                formatterFn = n =>
-                  '£' + Math.round(n).toLocaleString();
+                formatterFn = n => `£${Math.round(n).toLocaleString()}`;
                 break;
               case 'decimal':
                 formatterFn = n => n.toFixed(1);
                 break;
               case 'time':
-                formatterFn = n => Math.round(n) + 'h';
+                formatterFn = n => `${Math.round(n)}h`;
                 break;
               default:
                 formatterFn = n => Math.round(n).toLocaleString();
@@ -126,7 +120,7 @@ export function initCountUp(selector = '[data-target]', options = {}) {
  * @param {number} duration - Duration in milliseconds
  */
 export function animatePercentage(element, percent, duration = 1500) {
-  animateNumber(element, 0, percent, duration, n => Math.round(n) + '%');
+  animateNumber(element, 0, percent, duration, n => `${Math.round(n)}%`);
 }
 
 /**
@@ -144,17 +138,18 @@ export function animateCurrency(element, amount, currency = '£', duration = 150
  * Animate progress bar
  * @param {HTMLElement} progressBar - Progress bar element
  * @param {number} percent - Target percentage (0-100)
- * @param {number} duration - Duration in milliseconds
  */
-export function animateProgressBar(progressBar, percent, duration = 1000) {
-  if (!progressBar) return;
+export function animateProgressBar(progressBar, percent) {
+  if (!progressBar) {
+    return;
+  }
 
   // Clamp percentage between 0 and 100
   const clampedPercent = Math.max(0, Math.min(100, percent));
 
   // Set width with animation
   setTimeout(() => {
-    progressBar.style.width = clampedPercent + '%';
+    progressBar.style.width = `${clampedPercent}%`;
   }, 50);
 
   // Update color based on percentage if it has color classes
@@ -176,7 +171,9 @@ export function animateProgressBar(progressBar, percent, duration = 1000) {
  * @param {number} radius - Circle radius
  */
 export function animateCircularProgress(circle, percent, radius = 45) {
-  if (!circle) return;
+  if (!circle) {
+    return;
+  }
 
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - (percent / 100) * circumference;
