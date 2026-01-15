@@ -86,6 +86,20 @@ class PexelsService {
           if (res.statusCode === 200) {
             try {
               const parsedData = JSON.parse(data);
+              
+              // Debug: Log response structure to track schema
+              if (process.env.PEXELS_DEBUG === 'true') {
+                console.log('🔍 [DEBUG] Pexels API Response Structure:', {
+                  endpoint: path,
+                  hasPhotos: !!parsedData.photos,
+                  hasMedia: !!parsedData.media,
+                  hasVideos: !!parsedData.videos,
+                  sampleKeys: parsedData.photos?.[0] ? Object.keys(parsedData.photos[0]) : 
+                              parsedData.media?.[0] ? Object.keys(parsedData.media[0]) : 
+                              parsedData.videos?.[0] ? Object.keys(parsedData.videos[0]) : 'N/A'
+                });
+              }
+              
               // Include rate limit info in response
               resolve({
                 data: parsedData,
@@ -93,12 +107,15 @@ class PexelsService {
               });
             } catch (e) {
               console.error('❌ Failed to parse Pexels API response:', e.message);
-              reject(new Error('Failed to parse response'));
+              console.error('📝 Raw response data (first 200 chars):', data.substring(0, 200));
+              reject(new Error(`Failed to parse response: ${e.message}`));
             }
           } else {
-            // Enhanced error messages based on status code
+            // Enhanced error messages based on status code with categorization
             let errorMessage = `Pexels API error: ${res.statusCode}`;
+            let errorType = 'unknown';
             let errorDetails = data;
+            let userFriendlyMessage = 'Unable to fetch images from Pexels. Please try again later.';
 
             try {
               const errorData = JSON.parse(data);
@@ -108,37 +125,69 @@ class PexelsService {
             }
 
             if (res.statusCode === 401) {
+              errorType = 'authentication';
               errorMessage = 'Unauthorized: Invalid API key';
+              userFriendlyMessage = 'API authentication failed. Please check your API key configuration.';
               console.error('❌ Pexels API: Invalid API key');
+              console.error('💡 Hint: Verify PEXELS_API_KEY environment variable is set correctly');
             } else if (res.statusCode === 403) {
+              errorType = 'authentication';
               errorMessage = 'Forbidden: API key lacks required permissions';
+              userFriendlyMessage = 'API key lacks necessary permissions. Please check your Pexels account settings.';
               console.error('❌ Pexels API: Insufficient permissions');
+              console.error('💡 Hint: Check if your API key has access to collections endpoint');
             } else if (res.statusCode === 404) {
+              errorType = 'not_found';
               errorMessage = 'Not Found: Resource does not exist';
+              userFriendlyMessage = 'The requested resource was not found. Please verify the collection ID or search query.';
               console.error('❌ Pexels API: Resource not found');
+              console.error('💡 Hint: Verify collection IDs and ensure they exist in your Pexels account');
             } else if (res.statusCode === 429) {
+              errorType = 'rate_limit';
               errorMessage = 'Rate Limit Exceeded: Too many requests';
+              userFriendlyMessage = 'API rate limit exceeded. Please try again later.';
               console.error(`❌ Pexels API: Rate limit exceeded (resets: ${rateLimit.reset})`);
+              console.error('💡 Hint: Consider implementing caching or reducing API call frequency');
             } else if (res.statusCode >= 500) {
+              errorType = 'server_error';
               errorMessage = 'Server Error: Pexels API is experiencing issues';
+              userFriendlyMessage = 'Pexels API is temporarily unavailable. Fallback images will be used.';
               console.error('❌ Pexels API: Server error');
+              console.error('💡 Hint: This is a Pexels service issue, fallback mechanism should activate');
             }
 
             console.error(`📝 Error details: ${errorDetails}`);
-            reject(new Error(`${errorMessage} - ${errorDetails}`));
+            console.error(`🔖 Error type: ${errorType}`);
+            
+            const error = new Error(`${errorMessage} - ${errorDetails}`);
+            error.type = errorType;
+            error.statusCode = res.statusCode;
+            error.userFriendlyMessage = userFriendlyMessage;
+            reject(error);
           }
         });
       });
 
       req.on('error', error => {
         console.error('❌ Pexels API request error:', error.message);
-        reject(error);
+        console.error('💡 Hint: Check network connectivity and DNS resolution');
+        
+        const enhancedError = new Error(`Network error: ${error.message}`);
+        enhancedError.type = 'network';
+        enhancedError.originalError = error;
+        enhancedError.userFriendlyMessage = 'Unable to connect to Pexels API. Please check your network connection.';
+        reject(enhancedError);
       });
 
       req.on('timeout', () => {
         req.destroy();
-        console.error('❌ Pexels API request timeout');
-        reject(new Error('Request timeout'));
+        console.error('❌ Pexels API request timeout (10s)');
+        console.error('💡 Hint: Consider increasing timeout or checking API responsiveness');
+        
+        const error = new Error('Request timeout after 10 seconds');
+        error.type = 'timeout';
+        error.userFriendlyMessage = 'Request to Pexels API timed out. Please try again.';
+        reject(error);
       });
 
       req.end();
@@ -152,6 +201,37 @@ class PexelsService {
    * @param {number} page - Page number (default: 1)
    * @param {Object} filters - Optional filters (orientation, size, color, locale)
    * @returns {Promise<Object>} Search results with photos array
+   * 
+   * Expected API Response Schema (from Pexels API v1):
+   * {
+   *   page: number,
+   *   per_page: number,
+   *   photos: [{
+   *     id: number,
+   *     width: number,
+   *     height: number,
+   *     url: string,
+   *     photographer: string,
+   *     photographer_url: string,
+   *     photographer_id: number,
+   *     avg_color: string,
+   *     src: {
+   *       original: string,
+   *       large2x: string,
+   *       large: string,
+   *       medium: string,
+   *       small: string,
+   *       portrait: string,
+   *       landscape: string,
+   *       tiny: string
+   *     },
+   *     liked: boolean,
+   *     alt: string
+   *   }],
+   *   total_results: number,
+   *   next_page: string,
+   *   prev_page: string
+   * }
    */
   async searchPhotos(query, perPage = 15, page = 1, filters = {}) {
     if (!this.isConfigured()) {
@@ -547,6 +627,31 @@ class PexelsService {
    * @param {number} page - Page number (default: 1)
    * @param {string} type - Media type filter ('photos', 'videos', or undefined for all)
    * @returns {Promise<Object>} Collection media
+   * 
+   * Expected API Response Schema (from Pexels API v1):
+   * {
+   *   page: number,
+   *   per_page: number,
+   *   total_results: number,
+   *   id: string,
+   *   media: [{
+   *     type: 'Photo' | 'Video',
+   *     id: number,
+   *     width: number,
+   *     height: number,
+   *     url: string,
+   *     photographer: string (for photos),
+   *     photographer_url: string (for photos),
+   *     avg_color: string (for photos),
+   *     src: object (for photos),
+   *     alt: string (for photos),
+   *     user: object (for videos),
+   *     video_files: array (for videos),
+   *     video_pictures: array (for videos)
+   *   }],
+   *   next_page: string,
+   *   prev_page: string
+   * }
    */
   async getCollectionMedia(id, perPage = 15, page = 1, type) {
     if (!this.isConfigured()) {

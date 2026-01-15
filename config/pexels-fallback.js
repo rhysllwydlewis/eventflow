@@ -9,6 +9,15 @@
  * Collections:
  * - Photos: Wedding Standard Collection (curated wedding photos)
  * - Videos: Wedding Standard Videos Collection (curated wedding videos)
+ * 
+ * URL Validation:
+ * - All URLs follow the Pexels CDN format: https://images.pexels.com/...
+ * - Photo URLs support query parameters for responsive sizing (auto=compress, w=width, h=height)
+ * - URLs are public and do not require authentication
+ * - Run validation script: node /tmp/validate-fallback-urls.js (requires network access)
+ * 
+ * Note: These fallback URLs should be periodically validated to ensure they remain accessible.
+ * If URLs become broken, they should be replaced with new curated photo/video URLs from Pexels.
  */
 
 'use strict';
