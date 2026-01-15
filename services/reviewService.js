@@ -177,6 +177,16 @@ async function createReview(reviewData, userId, _metadata = {}) {
   reviews.push(review);
   await dbUnified.write('reviews', reviews);
 
+  // Track review received event
+  const supplierAnalytics = require('../utils/supplierAnalytics');
+  supplierAnalytics
+    .trackReviewReceived(reviewData.supplierId, userId, {
+      reviewId: review._id,
+      rating: reviewData.rating,
+      verified: verificationStatus !== ReviewModel.VERIFICATION_TYPES.UNVERIFIED,
+    })
+    .catch(err => console.error('Failed to track review received:', err));
+
   return {
     reviewId: review._id,
     status: review.moderation.state,
