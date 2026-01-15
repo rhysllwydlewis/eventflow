@@ -10,6 +10,7 @@ const express = require('express');
 const router = express.Router();
 const { getPexelsService } = require('../utils/pexels-service');
 const { authRequired, roleRequired } = require('../middleware/auth');
+const { csrfProtection } = require('../middleware/csrf');
 
 /**
  * GET /api/pexels/search
