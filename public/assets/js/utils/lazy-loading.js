@@ -218,7 +218,7 @@
         delayedScripts.forEach(script => {
           if (script.dataset.src) {
             script.src = script.dataset.src;
-            script.removeAttribute('data-src');
+            delete script.dataset.src;
           }
         });
       };
@@ -248,7 +248,8 @@
     const isDevelopment =
       window.location.hostname === 'localhost' ||
       window.location.hostname === '127.0.0.1' ||
-      window.location.port === '8080'; // Common dev ports
+      window.location.port === '8080' || // Common dev port (string comparison)
+      window.location.port === '3000';
 
     // Wait for DOM to be ready
     if (document.readyState === 'loading') {
