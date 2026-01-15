@@ -1586,6 +1586,7 @@
       setupNavButton('paymentsAnalyticsBtn', '/admin-payments.html');
       setupNavButton('reportsQueueBtn', '/admin-reports.html');
       setupNavButton('auditLogBtn', '/admin-audit.html');
+      setupNavButton('adminSettingsBtn', '/admin-settings.html');
 
       // Moderation queue buttons
       setupNavButton('reviewPhotosBtn', '/admin-photos.html');
