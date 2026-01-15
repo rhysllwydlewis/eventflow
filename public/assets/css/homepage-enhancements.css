@@ -294,7 +294,7 @@ h3 {
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Focus states are defined in navigation-enhancements.css */
+/* Focus states moved to navigation-enhancements.css for centralized management of all interactive elements (.nav a, .cta, button, etc.) */
 
 /* ========================================
    SUBTLE BACKGROUND GRADIENTS
