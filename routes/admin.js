@@ -4920,18 +4920,28 @@ router.get('/public/pexels-collage', async (req, res) => {
     const features = settings.features || {};
 
     if (features.pexelsCollage !== true) {
-      return res.status(404).json({ error: 'Pexels collage feature is not enabled' });
+      return res.status(404).json({ 
+        error: 'Pexels collage feature is not enabled',
+        errorType: 'feature_disabled',
+      });
     }
 
     const { category } = req.query;
 
     if (!category) {
-      return res.status(400).json({ error: 'Category parameter required' });
+      return res.status(400).json({ 
+        error: 'Category parameter required',
+        errorType: 'validation',
+      });
     }
 
     const validCategories = ['venues', 'catering', 'entertainment', 'photography'];
     if (!validCategories.includes(category)) {
-      return res.status(400).json({ error: 'Invalid category' });
+      return res.status(400).json({ 
+        error: `Invalid category. Must be one of: ${validCategories.join(', ')}`,
+        errorType: 'validation',
+        validCategories,
+      });
     }
 
     const pexelsCollageSettings = settings.pexelsCollageSettings || {
@@ -4961,35 +4971,43 @@ router.get('/public/pexels-collage', async (req, res) => {
           // Filter to only photos (type: 'Photo')
           const photos = results.media.filter(item => item.type === 'Photo');
 
-          return res.json({
-            success: true,
-            category,
-            collectionId,
-            photos,
-            usingFallback: false,
-            source: 'collection',
-          });
-        } else {
-          // Use query-based searching (default behavior)
-          const query = pexelsCollageSettings.queries[category] || category;
-          const results = await pexels.searchPhotos(query, 8, 1);
-
-          return res.json({
-            success: true,
-            category,
-            query,
-            photos: results.photos,
-            usingFallback: false,
-            source: 'search',
-          });
+          if (photos.length === 0) {
+            console.warn(`⚠️  No photos found in collection ${collectionId}, falling back to search`);
+            // Fall through to search-based approach
+          } else {
+            return res.json({
+              success: true,
+              category,
+              collectionId,
+              photos,
+              usingFallback: false,
+              source: 'collection',
+            });
+          }
         }
+        
+        // Use query-based searching (default behavior or fallback from empty collection)
+        const query = pexelsCollageSettings.queries[category] || category;
+        console.log(`🔍 Searching photos with query: "${query}" for ${category}`);
+        const results = await pexels.searchPhotos(query, 8, 1);
+
+        return res.json({
+          success: true,
+          category,
+          query,
+          photos: results.photos,
+          usingFallback: false,
+          source: 'search',
+        });
       } catch (apiError) {
         console.warn(
-          `Pexels API failed for ${category}, falling back to curated URLs:`,
-          apiError.message
+          `⚠️  Pexels API failed for ${category} (${apiError.type || 'unknown'}): ${apiError.message}`
         );
+        console.warn('💡 Falling back to curated URLs');
         // Fall through to fallback logic below
       }
+    } else {
+      console.log('ℹ️  Pexels API not configured, using fallback URLs');
     }
 
     // If API not configured or failed, use fallback URLs from config
@@ -5016,11 +5034,22 @@ router.get('/public/pexels-collage', async (req, res) => {
       category,
       photos,
       usingFallback: true,
+      source: 'fallback',
       message: 'Using curated fallback photos from Pexels collection',
     });
   } catch (error) {
-    console.error('Error fetching Pexels collage images:', error);
-    res.status(500).json({ error: 'Failed to fetch Pexels images' });
+    console.error('❌ Error fetching Pexels collage images:', error);
+    console.error('🔖 Error type:', error.type || 'unknown');
+    
+    // Return appropriate status code based on error type
+    const statusCode = error.statusCode || 500;
+    
+    res.status(statusCode).json({ 
+      error: 'Failed to fetch Pexels images',
+      message: error.userFriendlyMessage || error.message,
+      errorType: error.type || 'unknown',
+      details: error.message,
+    });
   }
 });
 

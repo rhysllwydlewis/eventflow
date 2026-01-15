@@ -575,9 +575,24 @@ async function initPexelsCollage(settings) {
         );
 
         if (!response.ok) {
-          // Only warn in development mode
-          if (isDevelopmentEnvironment()) {
-            console.warn(`Failed to fetch Pexels images for ${category}, falling back to static`);
+          // Parse error response for better logging
+          let errorInfo = `HTTP ${response.status}`;
+          try {
+            const errorData = await response.json();
+            errorInfo = errorData.message || errorData.error || errorInfo;
+            
+            // Only warn in development mode
+            if (isDevelopmentEnvironment()) {
+              console.warn(`⚠️  Failed to fetch Pexels images for ${category}: ${errorInfo}`);
+              if (errorData.errorType) {
+                console.warn(`   Error type: ${errorData.errorType}`);
+              }
+            }
+          } catch (e) {
+            // Response wasn't JSON, use status text
+            if (isDevelopmentEnvironment()) {
+              console.warn(`⚠️  Failed to fetch Pexels images for ${category}: ${response.statusText}`);
+            }
           }
           continue;
         }
@@ -586,7 +601,7 @@ async function initPexelsCollage(settings) {
 
         // Log if using fallback mode (only in development)
         if (isDevelopmentEnvironment() && data.usingFallback) {
-          console.log(`Using fallback photos for ${category} (Pexels API not configured)`);
+          console.log(`📦 Using fallback photos for ${category} (source: ${data.source})`);
         }
 
         if (data.photos && data.photos.length > 0) {
@@ -613,7 +628,7 @@ async function initPexelsCollage(settings) {
       } catch (error) {
         // Only log errors in development mode
         if (isDevelopmentEnvironment()) {
-          console.error(`Error fetching Pexels images for ${category}:`, error);
+          console.error(`❌ Error fetching Pexels images for ${category}:`, error);
         }
       }
     }

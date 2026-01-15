@@ -80,7 +80,8 @@ describe('Pexels Collage Fallback Integration', () => {
       const response = await request(app).get('/api/public/pexels-collage?category=invalid');
 
       expect(response.status).toBe(400);
-      expect(response.body.error).toBe('Invalid category');
+      expect(response.body.error).toContain('Invalid category');
+      expect(response.body.errorType).toBe('validation');
     });
 
     it('should work for all valid categories', async () => {

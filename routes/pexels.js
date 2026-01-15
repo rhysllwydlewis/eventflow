@@ -65,9 +65,12 @@ router.get('/search', authRequired, roleRequired('admin'), async (req, res) => {
     });
   } catch (error) {
     console.error('Pexels search error:', error);
-    res.status(500).json({
+    const statusCode = error.statusCode || 500;
+    res.status(statusCode).json({
       error: 'Failed to search photos',
-      message: error.message,
+      message: error.userFriendlyMessage || error.message,
+      errorType: error.type || 'unknown',
+      details: error.message,
     });
   }
 });
@@ -99,9 +102,12 @@ router.get('/curated', authRequired, roleRequired('admin'), async (req, res) => 
     });
   } catch (error) {
     console.error('Pexels curated error:', error);
-    res.status(500).json({
+    const statusCode = error.statusCode || 500;
+    res.status(statusCode).json({
       error: 'Failed to fetch curated photos',
-      message: error.message,
+      message: error.userFriendlyMessage || error.message,
+      errorType: error.type || 'unknown',
+      details: error.message,
     });
   }
 });
@@ -139,9 +145,12 @@ router.get('/photo/:id', authRequired, roleRequired('admin'), async (req, res) =
     });
   } catch (error) {
     console.error('Pexels photo error:', error);
-    res.status(500).json({
+    const statusCode = error.statusCode || 500;
+    res.status(statusCode).json({
       error: 'Failed to fetch photo',
-      message: error.message,
+      message: error.userFriendlyMessage || error.message,
+      errorType: error.type || 'unknown',
+      details: error.message,
     });
   }
 });
@@ -308,9 +317,12 @@ router.get('/videos/search', authRequired, roleRequired('admin'), async (req, re
     });
   } catch (error) {
     console.error('Pexels video search error:', error);
-    res.status(500).json({
+    const statusCode = error.statusCode || 500;
+    res.status(statusCode).json({
       error: 'Failed to search videos',
-      message: error.message,
+      message: error.userFriendlyMessage || error.message,
+      errorType: error.type || 'unknown',
+      details: error.message,
     });
   }
 });
@@ -343,9 +355,12 @@ router.get('/videos/popular', authRequired, roleRequired('admin'), async (req, r
     });
   } catch (error) {
     console.error('Pexels popular videos error:', error);
-    res.status(500).json({
+    const statusCode = error.statusCode || 500;
+    res.status(statusCode).json({
       error: 'Failed to fetch popular videos',
-      message: error.message,
+      message: error.userFriendlyMessage || error.message,
+      errorType: error.type || 'unknown',
+      details: error.message,
     });
   }
 });
@@ -384,9 +399,12 @@ router.get('/videos/:id', authRequired, roleRequired('admin'), async (req, res) 
     });
   } catch (error) {
     console.error('Pexels video error:', error);
-    res.status(500).json({
+    const statusCode = error.statusCode || 500;
+    res.status(statusCode).json({
       error: 'Failed to fetch video',
-      message: error.message,
+      message: error.userFriendlyMessage || error.message,
+      errorType: error.type || 'unknown',
+      details: error.message,
     });
   }
 });
@@ -419,9 +437,12 @@ router.get('/collections/featured', authRequired, roleRequired('admin'), async (
     });
   } catch (error) {
     console.error('Pexels featured collections error:', error);
-    res.status(500).json({
+    const statusCode = error.statusCode || 500;
+    res.status(statusCode).json({
       error: 'Failed to fetch featured collections',
-      message: error.message,
+      message: error.userFriendlyMessage || error.message,
+      errorType: error.type || 'unknown',
+      details: error.message,
     });
   }
 });
@@ -454,9 +475,12 @@ router.get('/collections', authRequired, roleRequired('admin'), async (req, res)
     });
   } catch (error) {
     console.error('Pexels user collections error:', error);
-    res.status(500).json({
+    const statusCode = error.statusCode || 500;
+    res.status(statusCode).json({
       error: 'Failed to fetch user collections',
-      message: error.message,
+      message: error.userFriendlyMessage || error.message,
+      errorType: error.type || 'unknown',
+      details: error.message,
     });
   }
 });
@@ -490,9 +514,12 @@ router.get('/collections/:id', authRequired, roleRequired('admin'), async (req, 
     });
   } catch (error) {
     console.error('Pexels collection media error:', error);
-    res.status(500).json({
+    const statusCode = error.statusCode || 500;
+    res.status(statusCode).json({
       error: 'Failed to fetch collection media',
-      message: error.message,
+      message: error.userFriendlyMessage || error.message,
+      errorType: error.type || 'unknown',
+      details: error.message,
     });
   }
 });
@@ -526,11 +553,48 @@ router.get('/collection/:id/media', authRequired, roleRequired('admin'), async (
     });
   } catch (error) {
     console.error('Pexels collection media error:', error);
-    res.status(500).json({
+    const statusCode = error.statusCode || 500;
+    res.status(statusCode).json({
       error: 'Failed to fetch collection media',
-      message: error.message,
+      message: error.userFriendlyMessage || error.message,
+      errorType: error.type || 'unknown',
+      details: error.message,
     });
   }
+});
+
+/**
+ * GET /api/pexels/metrics
+ * Get Pexels API usage metrics
+ * Requires admin authentication
+ */
+router.get('/metrics', authRequired, roleRequired('admin'), (req, res) => {
+  const pexels = getPexelsService();
+
+  const metrics = pexels.getMetrics();
+
+  res.json({
+    success: true,
+    metrics,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/**
+ * POST /api/pexels/cache/clear
+ * Clear Pexels API response cache
+ * Requires admin authentication and CSRF protection
+ */
+router.post('/cache/clear', csrfProtection, authRequired, roleRequired('admin'), (req, res) => {
+  const pexels = getPexelsService();
+
+  pexels.clearCache();
+
+  res.json({
+    success: true,
+    message: 'Cache cleared successfully',
+    timestamp: new Date().toISOString(),
+  });
 });
 
 module.exports = router;

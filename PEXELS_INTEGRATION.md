@@ -68,6 +68,49 @@ GET /api/pexels/curated?page=1&perPage=15
 GET /api/pexels/photo/:id
 ```
 
+#### Search Videos
+
+```
+GET /api/pexels/videos/search?q=wedding&page=1&perPage=15
+```
+
+#### Get Popular Videos
+
+```
+GET /api/pexels/videos/popular?page=1&perPage=15
+```
+
+#### Get Video by ID
+
+```
+GET /api/pexels/videos/:id
+```
+
+#### Get Featured Collections
+
+```
+GET /api/pexels/collections/featured?page=1&perPage=15
+```
+
+Returns a list of featured (curated) collections from Pexels.
+
+#### Get All Collections
+
+```
+GET /api/pexels/collections?page=1&perPage=15
+```
+
+Returns all available collections (requires authentication).
+
+#### Get Collection Media
+
+```
+GET /api/pexels/collections/:id?page=1&perPage=15&type=photos
+```
+
+Retrieves all media (photos and/or videos) from a specific collection.
+- `type` parameter (optional): Filter by media type ('photos' or 'videos')
+
 #### Get Category Suggestions
 
 ```
@@ -81,6 +124,27 @@ GET /api/pexels/status
 ```
 
 Returns whether Pexels API key is configured (but not the key itself).
+
+#### Get Service Metrics (NEW)
+
+```
+GET /api/pexels/metrics
+```
+
+Returns service metrics including:
+- Total/successful/failed requests
+- Success rate
+- Cache hit rate
+- Average response time
+- Circuit breaker state
+
+#### Clear Cache (NEW)
+
+```
+POST /api/pexels/cache/clear
+```
+
+Clears the response cache. Requires CSRF protection.
 
 #### Test API Connection (NEW)
 
