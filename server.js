@@ -2756,6 +2756,9 @@ app.patch(
       'license',
       'description_short',
       'description_long',
+      'bannerUrl',
+      'tagline',
+      'themeColor',
     ];
     for (const k of fields) {
       if (typeof b[k] === 'string') {
@@ -2763,12 +2766,50 @@ app.patch(
       }
     }
 
+    // Handle array fields
     if (b.amenities) {
       all[i].amenities = String(b.amenities)
         .split(',')
         .map(x => x.trim())
         .filter(Boolean);
     }
+
+    if (b.highlights && Array.isArray(b.highlights)) {
+      all[i].highlights = b.highlights
+        .map(x => String(x).trim())
+        .filter(Boolean)
+        .slice(0, 5); // Limit to 5 highlights
+    }
+
+    if (b.featuredServices && Array.isArray(b.featuredServices)) {
+      all[i].featuredServices = b.featuredServices
+        .map(x => String(x).trim())
+        .filter(Boolean)
+        .slice(0, 10); // Limit to 10 services
+    }
+
+    // Handle social links with validation
+    if (b.socialLinks && typeof b.socialLinks === 'object') {
+      all[i].socialLinks = {};
+      const allowedPlatforms = [
+        'facebook',
+        'instagram',
+        'twitter',
+        'linkedin',
+        'youtube',
+        'tiktok',
+      ];
+      for (const platform of allowedPlatforms) {
+        if (b.socialLinks[platform] && typeof b.socialLinks[platform] === 'string') {
+          const url = b.socialLinks[platform].trim();
+          // Basic URL validation
+          if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
+            all[i].socialLinks[platform] = url;
+          }
+        }
+      }
+    }
+
     // eslint-disable-next-line eqeqeq
     if (b.maxGuests != null) {
       all[i].maxGuests = parseInt(b.maxGuests, 10) || 0;

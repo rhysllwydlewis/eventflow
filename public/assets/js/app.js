@@ -2058,7 +2058,7 @@ function efMaybeShowOnboarding(page) {
 
 async function initDashSupplier() {
   efMaybeShowOnboarding('dash_supplier');
-  
+
   // Fetch CSRF token if not already available
   async function ensureCsrfToken() {
     if (!window.__CSRF_TOKEN__) {
@@ -2074,10 +2074,10 @@ async function initDashSupplier() {
     }
     return window.__CSRF_TOKEN__ || '';
   }
-  
+
   // Fetch CSRF token on init
   await ensureCsrfToken();
-  
+
   // If returning from Stripe checkout with billing=success, mark this supplier account as Pro
   try {
     const params = new URLSearchParams(location.search);
@@ -2299,37 +2299,81 @@ async function initDashSupplier() {
   if (supForm) {
     supForm.addEventListener('submit', async e => {
       e.preventDefault();
-      
+
       // Validate venue postcode if Venues category selected
       if (typeof window.validateVenuePostcode === 'function') {
         if (!window.validateVenuePostcode()) {
           return; // Stop submission if validation fails
         }
       }
-      
+
       const statusEl = document.getElementById('sup-status');
       try {
         // Ensure CSRF token is available
         const csrfToken = await ensureCsrfToken();
-        
+
         const fd = new FormData(supForm);
         const payload = {};
         fd.forEach((v, k) => (payload[k] = v));
-        
+
+        // Collect highlights from individual inputs
+        const highlights = [];
+        for (let i = 1; i <= 5; i++) {
+          const highlightInput = document.getElementById(`sup-highlight-${i}`);
+          if (highlightInput && highlightInput.value.trim()) {
+            highlights.push(highlightInput.value.trim());
+          }
+        }
+        if (highlights.length > 0) {
+          payload.highlights = highlights;
+        }
+
+        // Collect featured services from textarea
+        const featuredServicesInput = document.getElementById('sup-featured-services');
+        if (featuredServicesInput && featuredServicesInput.value.trim()) {
+          const services = featuredServicesInput.value
+            .split('\n')
+            .map(s => s.trim())
+            .filter(Boolean)
+            .slice(0, 10);
+          if (services.length > 0) {
+            payload.featuredServices = services;
+          }
+        }
+
+        // Collect social links
+        const socialLinks = {};
+        const platforms = ['facebook', 'instagram', 'twitter', 'linkedin', 'youtube', 'tiktok'];
+        for (const platform of platforms) {
+          const input = document.getElementById(`sup-social-${platform}`);
+          if (input && input.value.trim()) {
+            socialLinks[platform] = input.value.trim();
+          }
+        }
+        if (Object.keys(socialLinks).length > 0) {
+          payload.socialLinks = socialLinks;
+        }
+
+        // Get theme color from color picker
+        const themeColorInput = document.getElementById('sup-theme-color');
+        if (themeColorInput && themeColorInput.value) {
+          payload.themeColor = themeColorInput.value;
+        }
+
         // Clean up payload - remove empty venuePostcode if not Venues category
         if (payload.category !== 'Venues') {
           delete payload.venuePostcode;
         }
-        
+
         const id = (payload.id || '').toString().trim();
         const path = id ? `/api/me/suppliers/${encodeURIComponent(id)}` : '/api/me/suppliers';
         const method = id ? 'PATCH' : 'POST';
-        
+
         if (statusEl) {
           statusEl.textContent = 'Saving...';
           statusEl.style.color = '#667085';
         }
-        
+
         await api(path, {
           method,
           headers: {
@@ -2338,9 +2382,9 @@ async function initDashSupplier() {
           },
           body: JSON.stringify(payload),
         });
-        
+
         await loadSuppliers();
-        
+
         if (statusEl) {
           statusEl.textContent = '✓ Saved successfully';
           statusEl.style.color = '#10b981';
@@ -2419,6 +2463,15 @@ async function initDashSupplier() {
       .filter(Boolean);
     current.push(dataUrl);
     area.value = current.join('\n');
+  });
+
+  // Banner image upload
+  efSetupPhotoDropZone('sup-banner-drop', 'sup-banner-preview', dataUrl => {
+    const input = document.getElementById('sup-banner');
+    if (!input) {
+      return;
+    }
+    input.value = dataUrl;
   });
 
   efSetupPhotoDropZone('pkg-photo-drop', 'pkg-photo-preview', dataUrl => {

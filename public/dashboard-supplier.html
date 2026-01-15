@@ -230,11 +230,118 @@
     </p>
   </div>
 
+  <!-- Profile Customization Section -->
+  <div class="form-row" style="margin-top:2rem;padding-top:2rem;border-top:2px solid #e5e7eb;">
+    <h3 style="margin:0 0 1rem 0;font-size:1.1rem;color:#0B1220;">✨ Profile Customization <span class="badge" style="background:#10b981;color:white;font-size:0.75rem;">New</span></h3>
+    <p class="small" style="color:#667085;margin-bottom:1.5rem;">Enhance your profile with custom branding and highlights</p>
+  </div>
+
+  <div class="form-row">
+    <label>Banner Image <span class="small" style="color:#667085;font-weight:400;">(optional)</span></label>
+    <div id="sup-banner-drop" class="photo-drop-zone">
+      Drag &amp; drop a banner image here, or click to choose a file.
+    </div>
+    <div id="sup-banner-preview" class="photo-preview-grid"></div>
+    <input type="hidden" id="sup-banner" name="bannerUrl">
+    <p class="tiny" style="color:#667085;margin-top:0.25rem;">Add a custom banner image to make your profile stand out (recommended: 1200x400px)</p>
+  </div>
+
+  <div class="form-row">
+    <label>Tagline <span class="small" style="color:#667085;font-weight:400;">(optional)</span></label>
+    <input id="sup-tagline" name="tagline" placeholder="e.g. Creating magical moments for over 10 years" maxlength="100">
+    <p class="tiny" style="color:#667085;margin-top:0.25rem;">A catchy tagline that describes your business (max 100 characters)</p>
+  </div>
+
+  <div class="form-row">
+    <label>Key Highlights <span class="small" style="color:#667085;font-weight:400;">(optional)</span></label>
+    <div id="highlights-container" style="display:flex;flex-direction:column;gap:0.5rem;">
+      <input id="sup-highlight-1" class="highlight-input" placeholder="e.g. Award-winning service" maxlength="60">
+      <input id="sup-highlight-2" class="highlight-input" placeholder="e.g. Fully licensed and insured" maxlength="60">
+      <input id="sup-highlight-3" class="highlight-input" placeholder="e.g. 5-star reviews" maxlength="60">
+    </div>
+    <p class="tiny" style="color:#667085;margin-top:0.25rem;">Add up to 5 key highlights about your business</p>
+  </div>
+
+  <div class="form-row">
+    <label>Featured Services <span class="small" style="color:#667085;font-weight:400;">(optional)</span></label>
+    <textarea id="sup-featured-services" name="featuredServices" rows="3" placeholder="Enter each service on a new line&#10;e.g.:&#10;Wedding Photography&#10;Engagement Shoots&#10;Photo Albums"></textarea>
+    <p class="tiny" style="color:#667085;margin-top:0.25rem;">List your main services, one per line (max 10)</p>
+  </div>
+
+  <div class="form-row">
+    <label>Brand Theme Color <span class="small" style="color:#667085;font-weight:400;">(optional)</span></label>
+    <div style="display:flex;gap:1rem;align-items:center;">
+      <input type="color" id="sup-theme-color" name="themeColor" value="#0B8073" style="width:80px;height:40px;cursor:pointer;border:2px solid #e5e7eb;border-radius:4px;">
+      <input type="text" id="sup-theme-color-hex" placeholder="#0B8073" maxlength="7" style="width:120px;">
+      <button type="button" id="reset-theme-color" class="cta secondary" style="padding:0.5rem 1rem;">Reset to Default</button>
+    </div>
+    <p class="tiny" style="color:#667085;margin-top:0.25rem;">Choose a color that matches your brand</p>
+  </div>
+
+  <div class="form-row">
+    <label>Social Media Links <span class="small" style="color:#667085;font-weight:400;">(optional)</span></label>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:0.75rem;">
+      <div>
+        <label class="small" style="color:#667085;font-size:0.875rem;">📘 Facebook</label>
+        <input id="sup-social-facebook" class="social-input" placeholder="https://facebook.com/yourpage">
+      </div>
+      <div>
+        <label class="small" style="color:#667085;font-size:0.875rem;">📷 Instagram</label>
+        <input id="sup-social-instagram" class="social-input" placeholder="https://instagram.com/yourpage">
+      </div>
+      <div>
+        <label class="small" style="color:#667085;font-size:0.875rem;">🐦 Twitter</label>
+        <input id="sup-social-twitter" class="social-input" placeholder="https://twitter.com/yourpage">
+      </div>
+      <div>
+        <label class="small" style="color:#667085;font-size:0.875rem;">💼 LinkedIn</label>
+        <input id="sup-social-linkedin" class="social-input" placeholder="https://linkedin.com/company/yourpage">
+      </div>
+      <div>
+        <label class="small" style="color:#667085;font-size:0.875rem;">▶️ YouTube</label>
+        <input id="sup-social-youtube" class="social-input" placeholder="https://youtube.com/@yourpage">
+      </div>
+      <div>
+        <label class="small" style="color:#667085;font-size:0.875rem;">🎵 TikTok</label>
+        <input id="sup-social-tiktok" class="social-input" placeholder="https://tiktok.com/@yourpage">
+      </div>
+    </div>
+    <p class="tiny" style="color:#667085;margin-top:0.5rem;">Add links to your social media profiles to help customers connect with you</p>
+  </div>
+
   <div class="form-actions" style="margin-top:10px">
     <button class="cta" id="sup-create" type="submit">Save profile</button>
+    <button type="button" id="sup-preview" class="cta secondary" style="display:none;">👁️ Preview Profile</button>
     <span class="small" id="sup-status"></span>
   </div>
 </form>
+
+<script>
+// Theme color sync
+(function() {
+  const colorPicker = document.getElementById('sup-theme-color');
+  const colorHex = document.getElementById('sup-theme-color-hex');
+  const resetBtn = document.getElementById('reset-theme-color');
+
+  if (colorPicker && colorHex && resetBtn) {
+    colorPicker.addEventListener('input', function() {
+      colorHex.value = this.value;
+    });
+
+    colorHex.addEventListener('input', function() {
+      const hex = this.value.trim();
+      if (/^#[0-9A-F]{6}$/i.test(hex)) {
+        colorPicker.value = hex;
+      }
+    });
+
+    resetBtn.addEventListener('click', function() {
+      colorPicker.value = '#0B8073';
+      colorHex.value = '#0B8073';
+    });
+  }
+})();
+</script>
 
 <script>
 // Show/hide venue postcode field based on category selection

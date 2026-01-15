@@ -128,6 +128,32 @@ const supplierSchema = {
           },
           description: 'Photo gallery with approval status',
         },
+        // Profile customization fields
+        bannerUrl: { bsonType: 'string', description: 'Banner image URL' },
+        tagline: { bsonType: 'string', description: 'Supplier tagline/headline' },
+        highlights: {
+          bsonType: 'array',
+          items: { bsonType: 'string' },
+          description: 'Key features/highlights',
+        },
+        featuredServices: {
+          bsonType: 'array',
+          items: { bsonType: 'string' },
+          description: 'Featured services offered',
+        },
+        themeColor: { bsonType: 'string', description: 'Brand theme color (hex)' },
+        socialLinks: {
+          bsonType: 'object',
+          description: 'Social media links',
+          properties: {
+            facebook: { bsonType: 'string' },
+            instagram: { bsonType: 'string' },
+            twitter: { bsonType: 'string' },
+            linkedin: { bsonType: 'string' },
+            youtube: { bsonType: 'string' },
+            tiktok: { bsonType: 'string' },
+          },
+        },
         approved: { bsonType: 'bool', description: 'Admin approval status' },
         isPro: { bsonType: 'bool', description: 'Pro subscription status' },
         proExpiresAt: { bsonType: 'string', description: 'Pro subscription expiration' },
