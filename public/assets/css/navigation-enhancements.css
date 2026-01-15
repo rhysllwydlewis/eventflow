@@ -1,0 +1,413 @@
+/* Enhanced Navigation and CTA Improvements */
+
+/* ========================================
+   ENHANCED CTA BUTTONS
+   Better visibility and prominence
+   ======================================== */
+
+.hero-cta {
+  margin-top: 24px;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.hero-cta .cta {
+  font-size: 16px;
+  padding: 14px 24px;
+  min-width: 200px;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(11, 128, 115, 0.25);
+}
+
+.hero-cta .cta:hover {
+  box-shadow: 0 8px 20px rgba(11, 128, 115, 0.35);
+  transform: translateY(-3px);
+}
+
+.hero-cta .cta.secondary {
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+}
+
+.hero-cta .cta.secondary:hover {
+  box-shadow: 0 4px 16px rgba(11, 128, 115, 0.2);
+}
+
+/* ========================================
+   ENHANCED MOBILE NAVIGATION
+   Better mobile-first experience
+   ======================================== */
+
+/* Mobile menu enhancements */
+.ef-mobile-menu {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ef-mobile-link {
+  position: relative;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ef-mobile-link::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0;
+  height: 2px;
+  background: var(--ef-primary, #0B8073);
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ef-mobile-link:hover::before,
+.ef-mobile-link:focus::before {
+  width: 24px;
+}
+
+.ef-mobile-link:hover,
+.ef-mobile-link:focus {
+  padding-left: 32px;
+  color: var(--ef-primary, #0B8073);
+  background: rgba(11, 128, 115, 0.05);
+}
+
+.ef-mobile-primary {
+  background: linear-gradient(135deg, var(--ef-primary, #0B8073), var(--ef-primary-light, #13B6A2));
+  color: white !important;
+  font-weight: 600;
+  border-radius: 12px;
+  padding: 14px 20px;
+  text-align: center;
+}
+
+.ef-mobile-primary:hover {
+  background: linear-gradient(135deg, var(--ef-primary-hover, #0a7067), var(--ef-primary, #0B8073));
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(11, 128, 115, 0.3);
+}
+
+.ef-mobile-primary::before {
+  display: none;
+}
+
+/* ========================================
+   ENHANCED BOTTOM NAVIGATION
+   Better mobile navigation bar
+   ======================================== */
+
+.ef-bottom-nav {
+  box-shadow: 0 -2px 8px rgba(15, 23, 42, 0.08),
+              0 -1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.ef-bottom-link {
+  position: relative;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ef-bottom-link::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 3px;
+  background: var(--ef-primary, #0B8073);
+  border-radius: 999px 999px 0 0;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ef-bottom-link:hover::after,
+.ef-bottom-link:focus::after,
+.ef-bottom-link[aria-current="page"]::after {
+  width: 60%;
+}
+
+.ef-bottom-link:hover .ef-bottom-icon,
+.ef-bottom-link:focus .ef-bottom-icon {
+  transform: scale(1.1);
+  color: var(--ef-primary, #0B8073);
+}
+
+.ef-bottom-icon {
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+              color 0.25s ease;
+}
+
+/* Active state for bottom nav */
+.ef-bottom-link[aria-current="page"] {
+  color: var(--ef-primary, #0B8073);
+}
+
+.ef-bottom-link[aria-current="page"] .ef-bottom-icon {
+  color: var(--ef-primary, #0B8073);
+}
+
+/* ========================================
+   DESKTOP NAVIGATION ENHANCEMENTS
+   Better hierarchy and visual feedback
+   ======================================== */
+
+.ef-nav-desktop {
+  gap: 8px;
+}
+
+.ef-nav-link {
+  font-size: 15px;
+  padding: 8px 16px;
+}
+
+/* Active state for desktop nav */
+.ef-nav-link[aria-current="page"] {
+  background: rgba(11, 128, 115, 0.1);
+  color: var(--ef-primary, #0B8073);
+  font-weight: 600;
+}
+
+.ef-nav-link[aria-current="page"]::after {
+  width: 80%;
+}
+
+/* ========================================
+   SEARCH BAR IMPROVEMENTS
+   Better visibility and functionality
+   ======================================== */
+
+.hero-search {
+  position: relative;
+  z-index: 10;
+}
+
+.hero-search-form {
+  display: flex;
+  align-items: center;
+  background: white;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.hero-search-input {
+  flex: 1;
+  border: none;
+  padding: 16px 20px;
+  font-size: 16px;
+  background: transparent;
+}
+
+.hero-search-input::placeholder {
+  color: var(--ef-text-light, #9ca3af);
+  transition: color 0.2s ease;
+}
+
+.hero-search-input:focus::placeholder {
+  color: var(--ef-text-gray, #6b7280);
+}
+
+/* Search results dropdown */
+.hero-search-results {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  background: white;
+  border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.15);
+  max-height: 400px;
+  overflow-y: auto;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1000;
+}
+
+.hero-search-results.active {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.hero-search-result-item {
+  padding: 12px 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-bottom: 1px solid var(--ef-border, #e5e7eb);
+}
+
+.hero-search-result-item:last-child {
+  border-bottom: none;
+}
+
+.hero-search-result-item:hover {
+  background: rgba(11, 128, 115, 0.05);
+  padding-left: 24px;
+}
+
+/* ========================================
+   BREADCRUMB NAVIGATION
+   Better user journey tracking
+   ======================================== */
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 0;
+  font-size: 14px;
+  color: var(--ef-text-gray, #6b7280);
+  flex-wrap: wrap;
+}
+
+.breadcrumb a {
+  color: var(--ef-text-gray, #6b7280);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.breadcrumb a:hover {
+  color: var(--ef-primary, #0B8073);
+}
+
+.breadcrumb-separator {
+  color: var(--ef-text-light, #9ca3af);
+  user-select: none;
+}
+
+.breadcrumb-current {
+  color: var(--ef-text-dark, #1f2937);
+  font-weight: 500;
+}
+
+/* ========================================
+   FILTER OPTIONS
+   Quick access to categories and filters
+   ======================================== */
+
+.filter-bar {
+  display: flex;
+  gap: 8px;
+  padding: 16px 0;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--ef-border, #e5e7eb) transparent;
+}
+
+.filter-bar::-webkit-scrollbar {
+  height: 6px;
+}
+
+.filter-bar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.filter-bar::-webkit-scrollbar-thumb {
+  background: var(--ef-border, #e5e7eb);
+  border-radius: 999px;
+}
+
+.filter-chip {
+  padding: 8px 16px;
+  background: white;
+  border: 1px solid var(--ef-border, #e5e7eb);
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.filter-chip:hover {
+  background: rgba(11, 128, 115, 0.05);
+  border-color: var(--ef-primary, #0B8073);
+  transform: translateY(-1px);
+}
+
+.filter-chip.active {
+  background: var(--ef-primary, #0B8073);
+  color: white;
+  border-color: var(--ef-primary, #0B8073);
+}
+
+/* ========================================
+   RESPONSIVE ENHANCEMENTS
+   Better mobile experience
+   ======================================== */
+
+@media (max-width: 768px) {
+  .hero-cta {
+    flex-direction: column;
+  }
+  
+  .hero-cta .cta {
+    width: 100%;
+    min-width: auto;
+  }
+  
+  .hero-search-input {
+    font-size: 16px; /* Prevent zoom on iOS */
+  }
+  
+  .breadcrumb {
+    font-size: 13px;
+  }
+  
+  .filter-bar {
+    padding: 12px 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .hero-cta .cta {
+    padding: 12px 20px;
+    font-size: 15px;
+  }
+}
+
+/* ========================================
+   ACCESSIBILITY IMPROVEMENTS
+   Better keyboard and screen reader support
+   ======================================== */
+
+/* Skip to content link */
+.skip-to-content {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: var(--ef-primary, #0B8073);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 0 0 8px 0;
+  text-decoration: none;
+  z-index: 10000;
+  transition: top 0.2s ease;
+}
+
+.skip-to-content:focus {
+  top: 0;
+}
+
+/* Focus indicators */
+.ef-nav-link:focus-visible,
+.ef-mobile-link:focus-visible,
+.ef-bottom-link:focus-visible {
+  outline: 3px solid var(--ef-primary, #0B8073);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .ef-nav-link,
+  .ef-mobile-link,
+  .ef-bottom-link {
+    border: 2px solid currentColor;
+  }
+  
+  .filter-chip {
+    border-width: 2px;
+  }
+}
