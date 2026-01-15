@@ -2,6 +2,7 @@
  * Unit tests for Pexels service
  */
 
+// eslint-disable-next-line no-unused-vars -- Imported for type reference, singleton tests use fresh requires
 const { PexelsService, getPexelsService } = require('../../utils/pexels-service');
 
 describe('PexelsService', () => {
