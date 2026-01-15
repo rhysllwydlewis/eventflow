@@ -336,8 +336,16 @@
       previewBtn.addEventListener('click', handlePreview);
     }
 
-    // Initialize banner upload drop zone (will be handled by app.js photo upload logic)
-    // The app.js file already has photo upload handlers that should work here
+    // Initialize banner upload drop zone
+    // efSetupPhotoDropZone is defined in app.js which is loaded before this script
+    if (typeof window.efSetupPhotoDropZone === 'function') {
+      window.efSetupPhotoDropZone('sup-banner-drop', 'sup-banner-preview', dataUrl => {
+        const input = document.getElementById('sup-banner');
+        if (input) {
+          input.value = dataUrl;
+        }
+      });
+    }
   }
 
   // Run init when DOM is ready
