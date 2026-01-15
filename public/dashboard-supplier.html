@@ -369,14 +369,18 @@
   async function initSupplierDashboardWidgets() {
     try {
       // Fetch threads for analytics
-      const threadsResponse = await fetch('/api/threads/my', { credentials: 'include' });
       let threads = [];
       let totalEnquiries = 0;
       
-      if (threadsResponse.ok) {
-        const threadsData = await threadsResponse.json();
-        threads = threadsData.threads || [];
-        totalEnquiries = threads.length;
+      try {
+        const threadsResponse = await fetch('/api/threads/my', { credentials: 'include' });
+        if (threadsResponse.ok) {
+          const threadsData = await threadsResponse.json();
+          threads = threadsData.threads || [];
+          totalEnquiries = threads.length;
+        }
+      } catch (err) {
+        console.error('Error fetching threads:', err);
       }
       
       // Mock analytics data (would come from actual API)
