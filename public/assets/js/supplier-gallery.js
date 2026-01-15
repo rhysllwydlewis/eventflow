@@ -14,6 +14,21 @@ class SupplierGalleryManager {
     this.init();
   }
 
+  async ensureCsrfToken() {
+    if (!window.__CSRF_TOKEN__) {
+      try {
+        const resp = await fetch('/api/csrf-token', { credentials: 'include' });
+        if (resp.ok) {
+          const data = await resp.json();
+          window.__CSRF_TOKEN__ = data.csrfToken;
+        }
+      } catch (e) {
+        console.error('Failed to fetch CSRF token:', e);
+      }
+    }
+    return window.__CSRF_TOKEN__ || '';
+  }
+
   init() {
     // Wait for DOM to be ready
     if (document.readyState === 'loading') {
@@ -197,9 +212,14 @@ class SupplierGalleryManager {
         // If no supplier ID, create the supplier first to get a valid ID from the server
         if (!supplierId || supplierId.trim() === '') {
           // Create new supplier
+          const csrfToken = await this.ensureCsrfToken();
           const response = await fetch('/api/me/suppliers', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRF-Token': csrfToken,
+            },
             body: JSON.stringify(payload),
           });
 
@@ -235,11 +255,16 @@ class SupplierGalleryManager {
 
         // Now update the supplier with photo URLs if this was a new supplier
         if (!id && supplierId) {
+          const csrfToken = await this.ensureCsrfToken();
           const updateResponse = await fetch(
             `/api/me/suppliers/${encodeURIComponent(supplierId)}`,
             {
               method: 'PATCH',
-              headers: { 'Content-Type': 'application/json' },
+              credentials: 'include',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': csrfToken,
+              },
               body: JSON.stringify(payload),
             }
           );
@@ -249,9 +274,14 @@ class SupplierGalleryManager {
           }
         } else if (id) {
           // If editing existing supplier, update it
+          const csrfToken = await this.ensureCsrfToken();
           const updateResponse = await fetch(`/api/me/suppliers/${encodeURIComponent(id)}`, {
             method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRF-Token': csrfToken,
+            },
             body: JSON.stringify(payload),
           });
 

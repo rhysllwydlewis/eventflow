@@ -17,6 +17,21 @@ class SupplierPhotoUpload {
     this.apiBase = '/api';
   }
 
+  async ensureCsrfToken() {
+    if (!window.__CSRF_TOKEN__) {
+      try {
+        const resp = await fetch('/api/csrf-token', { credentials: 'include' });
+        if (resp.ok) {
+          const data = await resp.json();
+          window.__CSRF_TOKEN__ = data.csrfToken;
+        }
+      } catch (e) {
+        console.error('Failed to fetch CSRF token:', e);
+      }
+    }
+    return window.__CSRF_TOKEN__ || '';
+  }
+
   /**
    * Upload a photo to local storage via REST API
    * @param {File} file - The image file to upload
@@ -40,11 +55,13 @@ class SupplierPhotoUpload {
       const base64Image = await this.blobToBase64(compressedBlob);
 
       // Upload via API with base64 image
+      const csrfToken = await this.ensureCsrfToken();
       const response = await fetch(`${this.apiBase}/me/suppliers/${supplierId}/photos`, {
         method: 'POST',
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
+          'X-CSRF-Token': csrfToken,
         },
         body: JSON.stringify({
           image: base64Image,
@@ -80,9 +97,13 @@ class SupplierPhotoUpload {
    */
   async deletePhoto(photoId, supplierId) {
     try {
+      const csrfToken = await this.ensureCsrfToken();
       const response = await fetch(`${this.apiBase}/me/suppliers/${supplierId}/photos/${photoId}`, {
         method: 'DELETE',
         credentials: 'include',
+        headers: {
+          'X-CSRF-Token': csrfToken,
+        },
       });
 
       if (!response.ok) {
