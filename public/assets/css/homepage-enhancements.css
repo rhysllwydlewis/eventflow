@@ -1,0 +1,475 @@
+/* EventFlow Homepage Enhancements CSS - Modern aesthetics and improved UX */
+
+/* ========================================
+   ENHANCED TYPOGRAPHY
+   Improved readability and visual hierarchy
+   ======================================== */
+
+/* Better font rendering */
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Enhanced heading hierarchy */
+h1 {
+  font-weight: 900;
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+}
+
+h2 {
+  font-weight: 800;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  margin-top: 0;
+  margin-bottom: 1rem;
+}
+
+h3 {
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+}
+
+/* Improved paragraph spacing and readability */
+.lead {
+  line-height: 1.7;
+  letter-spacing: -0.01em;
+}
+
+/* Small text improvements */
+.small {
+  line-height: 1.5;
+  letter-spacing: 0.01em;
+}
+
+/* ========================================
+   ENHANCED HOVER EFFECTS & TRANSITIONS
+   Smoother interactions throughout the site
+   ======================================== */
+
+/* Enhanced card hover effects */
+.card,
+.pack,
+.featured-fallback-card {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 0.3s ease;
+}
+
+.card:hover,
+.pack:hover,
+.featured-fallback-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.16);
+  border-color: rgba(11, 128, 115, 0.2);
+}
+
+/* Enhanced CTA button effects */
+.cta {
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+              background 0.3s ease;
+}
+
+.cta::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: width 0.5s ease, height 0.5s ease;
+}
+
+.cta:hover::before {
+  width: 300px;
+  height: 300px;
+}
+
+.cta:active {
+  transform: translateY(-1px) scale(0.98);
+}
+
+/* Secondary CTA enhancements */
+.cta.secondary {
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.cta.secondary:hover {
+  background: linear-gradient(135deg, #EDF7F5 0%, #E0F5F1 100%);
+  border-color: var(--ink, #0B8073);
+}
+
+/* ========================================
+   ENHANCED HERO SECTION
+   Modern, engaging hero with better visual flow
+   ======================================== */
+
+/* Hero search bar enhancements */
+.hero-search {
+  margin-top: 24px;
+  margin-bottom: 20px;
+}
+
+.hero-search-form {
+  position: relative;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.08),
+              0 0 0 1px rgba(11, 128, 115, 0.1);
+  border-radius: 14px;
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+
+.hero-search-form:hover {
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12),
+              0 0 0 1px rgba(11, 128, 115, 0.2);
+  transform: translateY(-2px);
+}
+
+.hero-search-form:focus-within {
+  box-shadow: 0 12px 32px rgba(11, 128, 115, 0.15),
+              0 0 0 2px var(--ink, #0B8073);
+  transform: translateY(-2px);
+}
+
+.hero-search-input {
+  padding-right: 56px;
+  font-size: 15px;
+  transition: all 0.25s ease;
+}
+
+.hero-search-input:focus {
+  outline: none;
+}
+
+.hero-search-button {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: linear-gradient(135deg, var(--ink, #0B8073), var(--accent, #13B6A2));
+  border: none;
+  border-radius: 10px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  font-size: 18px;
+}
+
+.hero-search-button:hover {
+  transform: translateY(-50%) scale(1.05);
+  box-shadow: 0 4px 12px rgba(11, 128, 115, 0.3);
+}
+
+.hero-search-button:active {
+  transform: translateY(-50%) scale(0.95);
+}
+
+/* ========================================
+   ENHANCED COLLAGE SECTION
+   Better image presentation with smooth effects
+   ======================================== */
+
+.collage .frame {
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 0.3s ease;
+  will-change: transform;
+}
+
+.collage .frame:hover {
+  transform: scale(1.03) translateY(-4px);
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.2);
+  border-color: var(--ink, #0B8073);
+  z-index: 10;
+}
+
+.collage .frame img {
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.collage .frame:hover img {
+  transform: scale(1.05);
+}
+
+.collage .frame .tag {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.collage .frame:hover .tag {
+  background: rgba(11, 128, 115, 0.95);
+  color: white;
+  transform: scale(1.05);
+}
+
+/* ========================================
+   ENHANCED TRUST BADGES
+   Better visual hierarchy and engagement
+   ======================================== */
+
+.trust-badge {
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: default;
+}
+
+.trust-badge:hover {
+  transform: translateY(-6px) scale(1.02);
+  box-shadow: 0 12px 32px rgba(11, 128, 115, 0.15);
+}
+
+.trust-badge h3 {
+  transition: color 0.3s ease;
+}
+
+.trust-badge:hover h3 {
+  color: var(--accent, #13B6A2);
+}
+
+/* ========================================
+   ENHANCED STATS SECTION
+   More dynamic and engaging animations
+   ======================================== */
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 32px;
+}
+
+.stat-item {
+  text-align: center;
+  padding: 24px;
+  border-radius: var(--radius, 14px);
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.stat-item:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-4px) scale(1.02);
+}
+
+.stat-number {
+  font-size: 3rem;
+  font-weight: 900;
+  line-height: 1;
+  margin-bottom: 0.5rem;
+  background: linear-gradient(135deg, #ffffff, rgba(255, 255, 255, 0.8));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  transition: transform 0.3s ease;
+}
+
+.stat-item:hover .stat-number {
+  transform: scale(1.1);
+}
+
+.stat-label {
+  font-size: 1rem;
+  font-weight: 600;
+  opacity: 0.9;
+  letter-spacing: 0.02em;
+}
+
+/* ========================================
+   ENHANCED NAVIGATION LINKS
+   Better hover states and visual feedback
+   ======================================== */
+
+.nav a,
+.ef-nav-link {
+  position: relative;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Enhanced focus states for accessibility */
+.nav a:focus-visible,
+.ef-nav-link:focus-visible,
+.cta:focus-visible,
+button:focus-visible {
+  outline: 3px solid var(--ink, #0B8073);
+  outline-offset: 3px;
+  border-radius: var(--radius-sm, 8px);
+}
+
+/* ========================================
+   SUBTLE BACKGROUND GRADIENTS
+   Enhanced visual depth across sections
+   ======================================== */
+
+.section {
+  position: relative;
+  transition: background 0.3s ease;
+}
+
+.section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(
+    circle at top right,
+    rgba(11, 128, 115, 0.02) 0%,
+    transparent 50%
+  );
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+
+.section:hover::before {
+  opacity: 1;
+}
+
+/* ========================================
+   IMPROVED FORM ELEMENTS
+   Better visual feedback and polish
+   ======================================== */
+
+input,
+select,
+textarea {
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+input:hover,
+select:hover,
+textarea:hover {
+  border-color: rgba(11, 128, 115, 0.3);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--ink, #0B8073);
+  box-shadow: 0 0 0 3px rgba(11, 128, 115, 0.1);
+  outline: none;
+}
+
+/* ========================================
+   ENHANCED LINK STYLES
+   Better consistency and hover states
+   ======================================== */
+
+a {
+  transition: color 0.2s ease, text-decoration 0.2s ease;
+}
+
+a:hover {
+  color: var(--accent, #13B6A2);
+}
+
+/* Footer links with subtle underline effect */
+.footer a {
+  position: relative;
+  display: inline-block;
+}
+
+.footer a::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: var(--ink, #0B8073);
+  transition: width 0.3s ease;
+}
+
+.footer a:hover::after {
+  width: 100%;
+}
+
+/* ========================================
+   LOADING STATES & SKELETON IMPROVEMENTS
+   Better perceived performance
+   ======================================== */
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(148, 163, 184, 0.08) 0%,
+    rgba(148, 163, 184, 0.15) 50%,
+    rgba(148, 163, 184, 0.08) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.8s ease-in-out infinite;
+}
+
+/* ========================================
+   RESPONSIVE ENHANCEMENTS
+   Better mobile experience
+   ======================================== */
+
+@media (max-width: 768px) {
+  /* Adjust animations for mobile */
+  .card:hover,
+  .pack:hover {
+    transform: translateY(-3px);
+  }
+  
+  .collage .frame:hover {
+    transform: scale(1.02) translateY(-2px);
+  }
+  
+  /* Reduce motion on smaller screens for better performance */
+  * {
+    animation-duration: 0.5s !important;
+  }
+}
+
+/* ========================================
+   ACCESSIBILITY IMPROVEMENTS
+   Respect user preferences
+   ======================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  
+  .collage .frame:hover,
+  .card:hover,
+  .pack:hover {
+    transform: none;
+  }
+}
+
+/* ========================================
+   DARK MODE ENHANCEMENTS
+   Better contrast and visual appeal
+   ======================================== */
+
+html[data-theme="dark"] .card:hover,
+html[data-theme="dark"] .pack:hover {
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+}
+
+html[data-theme="dark"] .hero-search-form {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3),
+              0 0 0 1px rgba(94, 234, 212, 0.2);
+}
+
+html[data-theme="dark"] .hero-search-form:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4),
+              0 0 0 1px rgba(94, 234, 212, 0.3);
+}
