@@ -499,6 +499,30 @@ async function initResults() {
   render();
 }
 
+// Helper function to adjust color brightness
+function adjustColorBrightness(hex, percent) {
+  // Remove # if present
+  hex = hex.replace('#', '');
+
+  // Convert to RGB
+  let r = parseInt(hex.substring(0, 2), 16);
+  let g = parseInt(hex.substring(2, 4), 16);
+  let b = parseInt(hex.substring(4, 6), 16);
+
+  // Adjust brightness
+  r = Math.max(0, Math.min(255, r + (r * percent) / 100));
+  g = Math.max(0, Math.min(255, g + (g * percent) / 100));
+  b = Math.max(0, Math.min(255, b + (b * percent) / 100));
+
+  // Convert back to hex
+  const toHex = n => {
+    const hex = Math.round(n).toString(16);
+    return hex.length === 1 ? `0${hex}` : hex;
+  };
+
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+}
+
 async function initSupplier() {
   const user = await me();
   const params = new URLSearchParams(location.search);
@@ -543,6 +567,12 @@ async function initSupplier() {
   }
   const img = (s.photos && s.photos[0]) || '/assets/images/hero-venue.svg';
 
+  // Use custom banner if available, otherwise use first photo or default
+  const bannerImg = s.bannerUrl || img;
+  // Apply custom theme color if set
+  const themeColor = s.themeColor || '#0B8073';
+  const themeColorDark = s.themeColor ? adjustColorBrightness(s.themeColor, -10) : '#0a6d61';
+
   // Create lightbox gallery HTML for photos
   const galleryPhotos = s.photos || [];
   const gallery =
@@ -564,6 +594,68 @@ async function initSupplier() {
   const amenities = (s.amenities || [])
     .map(a => `<span class="badge">${escapeHtml(a)}</span>`)
     .join(' ');
+
+  // Render highlights if available
+  const highlightsHtml =
+    s.highlights && s.highlights.length > 0
+      ? `
+    <div style="margin: 20px 0; padding: 20px; background: linear-gradient(135deg, #F6FAF9 0%, #EBF5F4 100%); border-radius: 12px;">
+      <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 16px; color: #0B1220;">✨ Key Highlights</h3>
+      <div style="display: grid; gap: 12px;">
+        ${s.highlights
+          .map(
+            h => `
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="color: ${themeColor}; font-size: 18px;">✓</span>
+            <span style="font-size: 15px; color: #374151;">${escapeHtml(h)}</span>
+          </div>
+        `
+          )
+          .join('')}
+      </div>
+    </div>
+  `
+      : '';
+
+  // Render featured services if available
+  const featuredServicesHtml =
+    s.featuredServices && s.featuredServices.length > 0
+      ? `
+    <div style="margin: 20px 0;">
+      <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 16px; color: #0B1220;">⭐ Featured Services</h3>
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px;">
+        ${s.featuredServices
+          .map(
+            service => `
+          <div style="padding: 12px 16px; background: white; border: 2px solid #E7EAF0; border-radius: 8px; font-size: 14px; color: #374151; transition: all 0.2s;">
+            ${escapeHtml(service)}
+          </div>
+        `
+          )
+          .join('')}
+      </div>
+    </div>
+  `
+      : '';
+
+  // Render social links if available
+  const socialLinksHtml =
+    s.socialLinks && Object.keys(s.socialLinks).length > 0
+      ? `
+    <div style="margin: 20px 0; padding: 20px; background: white; border: 2px solid #E7EAF0; border-radius: 12px;">
+      <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 16px; color: #0B1220;">🔗 Connect With Us</h3>
+      <div style="display: flex; flex-wrap: wrap; gap: 12px;">
+        ${s.socialLinks.facebook ? `<a href="${escapeHtml(s.socialLinks.facebook)}" target="_blank" rel="noopener noreferrer" class="social-link" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; background: #1877F2; color: white; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 500; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">📘 Facebook</a>` : ''}
+        ${s.socialLinks.instagram ? `<a href="${escapeHtml(s.socialLinks.instagram)}" target="_blank" rel="noopener noreferrer" class="social-link" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; background: linear-gradient(45deg, #F58529, #DD2A7B, #8134AF); color: white; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 500; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">📷 Instagram</a>` : ''}
+        ${s.socialLinks.twitter ? `<a href="${escapeHtml(s.socialLinks.twitter)}" target="_blank" rel="noopener noreferrer" class="social-link" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; background: #1DA1F2; color: white; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 500; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">🐦 Twitter</a>` : ''}
+        ${s.socialLinks.linkedin ? `<a href="${escapeHtml(s.socialLinks.linkedin)}" target="_blank" rel="noopener noreferrer" class="social-link" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; background: #0A66C2; color: white; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 500; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">💼 LinkedIn</a>` : ''}
+        ${s.socialLinks.youtube ? `<a href="${escapeHtml(s.socialLinks.youtube)}" target="_blank" rel="noopener noreferrer" class="social-link" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; background: #FF0000; color: white; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 500; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">▶️ YouTube</a>` : ''}
+        ${s.socialLinks.tiktok ? `<a href="${escapeHtml(s.socialLinks.tiktok)}" target="_blank" rel="noopener noreferrer" class="social-link" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; background: #000000; color: white; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 500; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">🎵 TikTok</a>` : ''}
+      </div>
+    </div>
+  `
+      : '';
+
   const packagesHtml =
     (pkgs.items || [])
       .map(
@@ -696,16 +788,17 @@ async function initSupplier() {
   `;
 
   document.getElementById('supplier-container').innerHTML = `
-    <div class="card supplier-profile-card" style="background: linear-gradient(135deg, #0B8073 0%, #0a6d61 100%); color: white; padding: 0; overflow: hidden; animation: fadeInScale 0.5s ease-out;">
+    <div class="card supplier-profile-card" style="background: linear-gradient(135deg, ${themeColor} 0%, ${themeColorDark} 100%); color: white; padding: 0; overflow: hidden; animation: fadeInScale 0.5s ease-out;">
       <div style="position: relative; height: 200px; overflow: hidden;">
-        <img src="${escapeHtml(img)}" alt="${escapeHtml(s.name)} banner" style="width: 100%; height: 100%; object-fit: cover; opacity: 0.3;">
-        <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(to bottom, transparent 0%, rgba(11, 128, 115, 0.8) 100%);"></div>
+        <img src="${escapeHtml(bannerImg)}" alt="${escapeHtml(s.name)} banner" style="width: 100%; height: 100%; object-fit: cover; opacity: ${s.bannerUrl ? '1' : '0.3'};">
+        <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(to bottom, transparent 0%, ${themeColor}CC 100%);"></div>
       </div>
       <div style="padding: 24px; margin-top: -60px; position: relative;">
-        <div style="background: white; border-radius: 50%; width: 100px; height: 100px; display: flex; align-items: center; justify-content: center; font-size: 48px; font-weight: 700; color: var(--ink, #0B8073); box-shadow: 0 4px 12px rgba(0,0,0,0.15); margin-bottom: 16px;">
+        <div style="background: white; border-radius: 50%; width: 100px; height: 100px; display: flex; align-items: center; justify-content: center; font-size: 48px; font-weight: 700; color: ${themeColor}; box-shadow: 0 4px 12px rgba(0,0,0,0.15); margin-bottom: 16px;">
           ${s.name ? s.name.charAt(0).toUpperCase() : 'S'}
         </div>
         <h1 style="font-size: 32px; font-weight: 700; margin: 0 0 8px 0; color: white;">${escapeHtml(s.name)}</h1>
+        ${s.tagline ? `<p style="font-size: 18px; color: rgba(255,255,255,0.95); margin-bottom: 12px; font-style: italic;">"${escapeHtml(s.tagline)}"</p>` : ''}
         <div style="font-size: 16px; color: rgba(255,255,255,0.9); margin-bottom: 12px;">
           ${escapeHtml(s.location || '')} · <span class="badge" style="background: rgba(255,255,255,0.2); color: white;">${escapeHtml(s.category)}</span> ${s.price_display ? `· ${escapeHtml(s.price_display)}` : ''}
         </div>
@@ -715,11 +808,15 @@ async function initSupplier() {
 
     ${statsHtml}
     
+    ${highlightsHtml}
+    
     <div class="card" style="animation: fadeInUp 0.5s ease-out 0.1s backwards;">
       <h2 style="font-size: 20px; font-weight: 600; margin-bottom: 12px;">About</h2>
       ${facts}
       <div class="small" style="margin-top:12px">${amenities}</div>
       <p style="margin-top:16px; line-height: 1.6;">${escapeHtml(s.description_long || s.description_short || '')}</p>
+      ${featuredServicesHtml}
+      ${socialLinksHtml}
       ${trustHtml}
       <div class="form-actions" style="margin-top:20px; display: flex; gap: 12px; flex-wrap: wrap;">
         <button class="cta" id="add" style="flex: 1; min-width: 150px;">Add to My Plan</button>
@@ -2398,6 +2495,20 @@ async function initDashSupplier() {
           statusEl.textContent = `Error: ${err.message || 'Please try again'}`;
           statusEl.style.color = '#ef4444';
         }
+      }
+    });
+  }
+
+  // Preview button handler
+  const previewBtn = document.getElementById('sup-preview');
+  if (previewBtn) {
+    previewBtn.addEventListener('click', () => {
+      const supplierIdInput = document.getElementById('sup-id');
+      if (supplierIdInput && supplierIdInput.value) {
+        const supplierId = supplierIdInput.value;
+        window.open(`/supplier.html?id=${encodeURIComponent(supplierId)}&preview=true`, '_blank');
+      } else {
+        alert('Please save your profile first before previewing.');
       }
     });
   }
