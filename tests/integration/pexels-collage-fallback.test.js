@@ -108,6 +108,10 @@ describe('Pexels Collage Fallback Integration', () => {
 
       expect(response.status).toBe(404);
       expect(response.body.error).toBe('Pexels collage feature is not enabled');
+
+      // Clean up: re-enable feature flag for other tests
+      settings.features.pexelsCollage = true;
+      await dbUnified.write('settings', settings);
     });
   });
 });
