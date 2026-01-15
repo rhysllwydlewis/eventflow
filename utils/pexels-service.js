@@ -24,6 +24,7 @@ class PexelsService {
     // In-memory cache for responses
     this.cache = new Map();
     this.cacheTTL = 60 * 60 * 1000; // 1 hour in milliseconds
+    this.maxCacheSize = 500; // Maximum number of cache entries
 
     // Circuit breaker state
     this.circuitBreaker = {
@@ -44,8 +45,53 @@ class PexelsService {
       totalResponseTime: 0,
     };
 
+    // Request deduplication map (prevents cache stampede)
+    this.pendingRequests = new Map();
+
+    // Start periodic cache cleanup
+    this.startCacheCleanup();
+
     if (!this.getApiKey()) {
       console.warn('⚠️  Pexels API key not configured. Stock photo features will be disabled.');
+    }
+  }
+
+  /**
+   * Start periodic cache cleanup to prevent memory leaks
+   * Runs every 15 minutes to remove expired entries
+   */
+  startCacheCleanup() {
+    this.cleanupInterval = setInterval(() => {
+      this.cleanExpiredCache();
+    }, 15 * 60 * 1000); // Every 15 minutes
+  }
+
+  /**
+   * Clean expired cache entries
+   */
+  cleanExpiredCache() {
+    const now = Date.now();
+    let removedCount = 0;
+
+    for (const [key, value] of this.cache.entries()) {
+      if (now > value.expiresAt) {
+        this.cache.delete(key);
+        removedCount++;
+      }
+    }
+
+    if (removedCount > 0) {
+      console.log(`🗑️  Cleaned ${removedCount} expired cache entries`);
+    }
+  }
+
+  /**
+   * Stop cache cleanup (for testing/shutdown)
+   */
+  stopCacheCleanup() {
+    if (this.cleanupInterval) {
+      clearInterval(this.cleanupInterval);
+      this.cleanupInterval = null;
     }
   }
 
@@ -95,6 +141,16 @@ class PexelsService {
    * @param {Object} data - Response data
    */
   setCachedResponse(cacheKey, data) {
+    // Enforce max cache size (LRU-style eviction)
+    if (this.cache.size >= this.maxCacheSize) {
+      // Remove oldest entry (first one in Map)
+      const firstKey = this.cache.keys().next().value;
+      if (firstKey) {
+        this.cache.delete(firstKey);
+        console.log(`💾 Cache full, evicted oldest entry: ${firstKey}`);
+      }
+    }
+
     const now = Date.now();
     this.cache.set(cacheKey, {
       data,
@@ -110,6 +166,7 @@ class PexelsService {
   clearCache() {
     const size = this.cache.size;
     this.cache.clear();
+    this.pendingRequests.clear(); // Also clear pending requests
     console.log(`🗑️  Cleared ${size} cached responses`);
   }
 
@@ -137,13 +194,13 @@ class PexelsService {
   recordSuccess() {
     this.metrics.successfulRequests++;
     if (this.circuitBreaker.state === 'half-open') {
-      // Reset circuit breaker on success
+      // Reset circuit breaker on success in half-open state
       this.circuitBreaker.state = 'closed';
       this.circuitBreaker.failures = 0;
       console.log('✅ Circuit breaker reset to closed state');
     } else if (this.circuitBreaker.state === 'closed') {
-      // Decay failure count on success
-      this.circuitBreaker.failures = Math.max(0, this.circuitBreaker.failures - 1);
+      // Reset failure count completely on success
+      this.circuitBreaker.failures = 0;
     }
   }
 
@@ -234,12 +291,19 @@ class PexelsService {
   }
 
   /**
-   * Make HTTPS request to Pexels API with retry logic
+   * Make HTTPS request to Pexels API with retry logic and request deduplication
    * @param {string} path - API endpoint path
    * @param {number} retryCount - Current retry attempt (default: 0)
    * @param {number} maxRetries - Maximum retry attempts (default: 3)
+   * @param {string} cacheKey - Optional cache key for request deduplication
    */
-  async makeRequest(path, retryCount = 0, maxRetries = 3) {
+  async makeRequest(path, retryCount = 0, maxRetries = 3, cacheKey = null) {
+    // Request deduplication: if same request is in flight, wait for it
+    if (cacheKey && this.pendingRequests.has(cacheKey)) {
+      console.log(`⏳ Request already in flight, waiting: ${cacheKey}`);
+      return await this.pendingRequests.get(cacheKey);
+    }
+
     this.metrics.totalRequests++;
 
     // Check circuit breaker
@@ -252,7 +316,8 @@ class PexelsService {
       throw error;
     }
 
-    return new Promise((resolve, reject) => {
+    // Create request promise
+    const requestPromise = new Promise((resolve, reject) => {
       const options = {
         hostname: this.baseUrl,
         path: path,
@@ -490,6 +555,21 @@ class PexelsService {
 
       req.end();
     });
+
+    // Store pending request to prevent duplicate requests
+    if (cacheKey) {
+      this.pendingRequests.set(cacheKey, requestPromise);
+      requestPromise
+        .finally(() => {
+          // Remove from pending requests when done
+          this.pendingRequests.delete(cacheKey);
+        })
+        .catch(() => {
+          // Ignore errors here, they're handled by caller
+        });
+    }
+
+    return requestPromise;
   }
 
   /**
@@ -567,15 +647,15 @@ class PexelsService {
       path += `&locale=${encodeURIComponent(filters.locale)}`;
     }
 
-    const response = await this.makeRequest(path);
+    const response = await this.makeRequest(path, 0, 3, cacheKey);
     const data = response.data;
 
-    // Transform response to include only relevant fields
+    // Transform response to include only relevant fields with null safety
     const result = {
       page: data.page,
       perPage: data.per_page,
       totalResults: data.total_results,
-      photos: data.photos.map(photo => ({
+      photos: (data.photos || []).map(photo => ({
         id: photo.id,
         width: photo.width,
         height: photo.height,
@@ -584,14 +664,14 @@ class PexelsService {
         photographerUrl: photo.photographer_url,
         avgColor: photo.avg_color,
         src: {
-          original: photo.src.original,
-          large2x: photo.src.large2x,
-          large: photo.src.large,
-          medium: photo.src.medium,
-          small: photo.src.small,
-          portrait: photo.src.portrait,
-          landscape: photo.src.landscape,
-          tiny: photo.src.tiny,
+          original: photo.src?.original || '',
+          large2x: photo.src?.large2x || '',
+          large: photo.src?.large || '',
+          medium: photo.src?.medium || '',
+          small: photo.src?.small || '',
+          portrait: photo.src?.portrait || '',
+          landscape: photo.src?.landscape || '',
+          tiny: photo.src?.tiny || '',
         },
         alt: photo.alt || query,
       })),
@@ -617,15 +697,24 @@ class PexelsService {
       throw new Error('Pexels API key not configured');
     }
 
+    // Build cache key
+    const cacheKey = `curated:${perPage}:${page}`;
+
+    // Check cache first
+    const cached = this.getCachedResponse(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
     const path = `/v1/curated?per_page=${perPage}&page=${page}`;
-    const response = await this.makeRequest(path);
+    const response = await this.makeRequest(path, 0, 3, cacheKey);
     const data = response.data;
 
-    return {
+    const result = {
       page: data.page,
       perPage: data.per_page,
       totalResults: data.total_results,
-      photos: data.photos.map(photo => ({
+      photos: (data.photos || []).map(photo => ({
         id: photo.id,
         width: photo.width,
         height: photo.height,
@@ -634,14 +723,14 @@ class PexelsService {
         photographerUrl: photo.photographer_url,
         avgColor: photo.avg_color,
         src: {
-          original: photo.src.original,
-          large2x: photo.src.large2x,
-          large: photo.src.large,
-          medium: photo.src.medium,
-          small: photo.src.small,
-          portrait: photo.src.portrait,
-          landscape: photo.src.landscape,
-          tiny: photo.src.tiny,
+          original: photo.src?.original || '',
+          large2x: photo.src?.large2x || '',
+          large: photo.src?.large || '',
+          medium: photo.src?.medium || '',
+          small: photo.src?.small || '',
+          portrait: photo.src?.portrait || '',
+          landscape: photo.src?.landscape || '',
+          tiny: photo.src?.tiny || '',
         },
         alt: photo.alt || 'Curated photo',
       })),
@@ -649,6 +738,11 @@ class PexelsService {
       prevPage: data.prev_page,
       rateLimit: response.rateLimit,
     };
+
+    // Cache the result
+    this.setCachedResponse(cacheKey, result);
+
+    return result;
   }
 
   /**
@@ -661,9 +755,10 @@ class PexelsService {
       throw new Error('Pexels API key not configured');
     }
 
-    // Validate ID
-    if (!id || isNaN(id) || id <= 0) {
-      throw new Error('Invalid photo ID: must be a positive number');
+    // Validate ID - must be positive integer
+    const numId = Number(id);
+    if (!Number.isInteger(numId) || numId <= 0) {
+      throw new Error('Invalid photo ID: must be a positive integer');
     }
 
     const path = `/v1/photos/${id}`;
@@ -999,7 +1094,7 @@ class PexelsService {
             photographer: item.photographer,
             photographerUrl: item.photographer_url,
             avgColor: item.avg_color,
-            src: item.src,
+            src: item.src || {},
             alt: item.alt,
           };
         } else if (item.type === 'Video') {
@@ -1011,11 +1106,14 @@ class PexelsService {
             url: item.url,
             image: item.image,
             duration: item.duration,
-            user: item.user,
-            videoFiles: item.video_files,
-            videoPictures: item.video_pictures,
+            user: item.user || {},
+            videoFiles: item.video_files || [],
+            videoPictures: item.video_pictures || [],
           };
         }
+        
+        // Unknown type - log warning and return raw item
+        console.warn(`⚠️  Unknown media type in collection: ${item.type}`);
         return item;
       }),
       nextPage: data.next_page,
