@@ -71,8 +71,8 @@ describe('Supplier Profile Save Fixes', () => {
     });
 
     it('should use UK postcode regex matching backend', () => {
-      // Frontend regex should match backend pattern
-      expect(dashboardSupplierHtml).toContain('/^[A-Z]{1,2}[0-9]{1,2}[A-Z]?\\s?[0-9][A-Z]{2}$/i');
+      // Frontend regex should match backend pattern (using \d instead of [0-9])
+      expect(dashboardSupplierHtml).toContain('/^[A-Z]{1,2}\\d{1,2}[A-Z]?\\s*\\d[A-Z]{2}$/i');
     });
   });
 

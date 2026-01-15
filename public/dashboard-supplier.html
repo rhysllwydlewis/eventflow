@@ -249,7 +249,7 @@
   }
 
   // UK postcode validation regex (matches backend validation)
-  const ukPostcodeRegex = /^[A-Z]{1,2}[0-9]{1,2}[A-Z]?\s?[0-9][A-Z]{2}$/i;
+  const ukPostcodeRegex = /^[A-Z]{1,2}\d{1,2}[A-Z]?\s*\d[A-Z]{2}$/i;
 
   function validatePostcode(postcode) {
     if (!postcode || !postcode.trim()) {
