@@ -383,16 +383,28 @@
         console.error('Error fetching threads:', err);
       }
       
+      // Analytics calculation configuration
+      const VIEWS_PER_ENQUIRY_RATIO = 10; // Average views needed to generate one enquiry
+      const MIN_BASE_VIEWS = 10; // Minimum daily views for new suppliers
+      const MIN_RESPONSE_RATE = 75; // Minimum response rate percentage
+      const MAX_RESPONSE_RATE = 95; // Maximum response rate percentage
+      
       // Calculate analytics based on actual data
       // Use enquiries count as baseline for other metrics
-      const baseViews = totalEnquiries * 10; // Rough conversion rate: 10 views per enquiry
-      const views7d = baseViews > 0 ? baseViews + Math.floor(Math.random() * 20) : Math.floor(Math.random() * 30) + 10;
+      const baseViews = totalEnquiries * VIEWS_PER_ENQUIRY_RATIO;
+      const views7d = baseViews > 0 ? 
+        baseViews + Math.floor(Math.random() * 20) : 
+        Math.floor(Math.random() * 30) + MIN_BASE_VIEWS;
       
       // Response rate based on whether they have enquiries
-      const responseRate = totalEnquiries > 0 ? Math.min(95, 75 + Math.floor(Math.random() * 20)) : 100;
+      const responseRate = totalEnquiries > 0 ? 
+        Math.min(MAX_RESPONSE_RATE, MIN_RESPONSE_RATE + Math.floor(Math.random() * 20)) : 
+        100;
       
       // Response time in hours (lower if they're active)
-      const avgResponseTime = totalEnquiries > 5 ? Math.floor(Math.random() * 6) + 1 : Math.floor(Math.random() * 12) + 2;
+      const avgResponseTime = totalEnquiries > 5 ? 
+        Math.floor(Math.random() * 6) + 1 : 
+        Math.floor(Math.random() * 12) + 2;
       
       // Create statistics widgets
       createStatsGrid([
@@ -427,6 +439,11 @@
         },
       ], 'supplier-stats-grid');
       
+      // Chart data generation configuration
+      const VIEWS_PER_ENQUIRY = 8; // Average views required to generate an enquiry
+      const MIN_DAILY_VIEWS = 5; // Minimum daily views for new suppliers
+      const DAYS_TO_SHOW = 7; // Number of days to display in chart
+      
       // Create performance chart with data based on actual enquiries
       const labels = [];
       const viewsData = [];
@@ -434,9 +451,9 @@
       
       // Generate realistic trend based on total enquiries
       const avgDailyEnquiries = totalEnquiries > 0 ? Math.ceil(totalEnquiries / 30) : 0;
-      const avgDailyViews = avgDailyEnquiries * 8; // ~8 views per enquiry
+      const avgDailyViews = avgDailyEnquiries * VIEWS_PER_ENQUIRY;
       
-      for (let i = 6; i >= 0; i--) {
+      for (let i = DAYS_TO_SHOW - 1; i >= 0; i--) {
         const date = new Date();
         date.setDate(date.getDate() - i);
         labels.push(date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }));
@@ -444,7 +461,7 @@
         // Add some variation but keep it realistic
         const dailyViews = avgDailyViews > 0 ? 
           Math.max(0, avgDailyViews + Math.floor(Math.random() * 10) - 5) :
-          Math.floor(Math.random() * 15) + 5;
+          Math.floor(Math.random() * 15) + MIN_DAILY_VIEWS;
         const dailyEnquiries = avgDailyEnquiries > 0 ?
           Math.max(0, avgDailyEnquiries + Math.floor(Math.random() * 3) - 1) :
           Math.floor(Math.random() * 3);

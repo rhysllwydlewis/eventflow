@@ -249,15 +249,20 @@ async function initCustomerDashboardWidgets() {
       },
     ], 'customer-stats-grid');
     
+    // Budget estimation configuration
+    const AVERAGE_PLAN_COST = 500; // Estimated average cost per supplier/plan in GBP
+    const DEFAULT_TOTAL_BUDGET = 5000; // Default budget for new event planners
+    const BUDGET_BUFFER_MULTIPLIER = 1.5; // Ensure total budget is 50% more than spent
+    
     // Calculate budget from plans data (if available)
-    let totalBudget = 5000; // Default budget
+    let totalBudget = DEFAULT_TOTAL_BUDGET;
     let spentBudget = 0;
     
     // Calculate spent based on saved suppliers or plans
     if (plans.length > 0) {
-      // Estimate: assume each plan represents ~£500 committed
-      spentBudget = plans.length * 500;
-      totalBudget = Math.max(5000, spentBudget * 1.5); // Ensure total is reasonable
+      // Estimate spend: each plan represents approximately £500 committed
+      spentBudget = plans.length * AVERAGE_PLAN_COST;
+      totalBudget = Math.max(DEFAULT_TOTAL_BUDGET, spentBudget * BUDGET_BUFFER_MULTIPLIER);
     }
     
     createBudgetTracker({
