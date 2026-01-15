@@ -1,6 +1,20 @@
 /* EventFlow Homepage Enhancements CSS - Modern aesthetics and improved UX */
 
 /* ========================================
+   CSS CUSTOM PROPERTIES FOR PERFORMANCE
+   Centralized values for better maintainability
+   ======================================== */
+
+:root {
+  --ef-transition-fast: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --ef-transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --ef-transition-slow: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  --ef-shadow-hover: 0 20px 40px rgba(15, 23, 42, 0.16);
+  --ef-shadow-search: 0 4px 16px rgba(15, 23, 42, 0.08);
+  --ef-shadow-search-hover: 0 8px 24px rgba(15, 23, 42, 0.12);
+}
+
+/* ========================================
    ENHANCED TYPOGRAPHY
    Improved readability and visual hierarchy
    ======================================== */
@@ -54,16 +68,17 @@ h3 {
 .card,
 .pack,
 .featured-fallback-card {
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-              box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-              border-color 0.3s ease;
+  transition: transform var(--ef-transition-normal),
+              box-shadow var(--ef-transition-normal),
+              border-color var(--ef-transition-normal);
+  contain: layout style paint;
 }
 
 .card:hover,
 .pack:hover,
 .featured-fallback-card:hover {
   transform: translateY(-6px);
-  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.16);
+  box-shadow: var(--ef-shadow-hover);
   border-color: rgba(11, 128, 115, 0.2);
 }
 
@@ -71,9 +86,9 @@ h3 {
 .cta {
   position: relative;
   overflow: hidden;
-  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
-              box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1),
-              background 0.3s ease;
+  transition: transform var(--ef-transition-fast),
+              box-shadow var(--ef-transition-fast),
+              background var(--ef-transition-normal);
 }
 
 .cta::before {
@@ -87,6 +102,7 @@ h3 {
   border-radius: 50%;
   transform: translate(-50%, -50%);
   transition: width 0.5s ease, height 0.5s ease;
+  pointer-events: none;
 }
 
 .cta:hover::before {
@@ -100,7 +116,7 @@ h3 {
 
 /* Secondary CTA enhancements */
 .cta.secondary {
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all var(--ef-transition-fast);
 }
 
 .cta.secondary:hover {
@@ -121,14 +137,16 @@ h3 {
 
 .hero-search-form {
   position: relative;
-  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.08),
+  box-shadow: var(--ef-shadow-search),
               0 0 0 1px rgba(11, 128, 115, 0.1);
   border-radius: 14px;
-  transition: box-shadow 0.3s ease, transform 0.3s ease;
+  transition: box-shadow var(--ef-transition-normal), 
+              transform var(--ef-transition-normal);
+  contain: layout style;
 }
 
 .hero-search-form:hover {
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12),
+  box-shadow: var(--ef-shadow-search-hover),
               0 0 0 1px rgba(11, 128, 115, 0.2);
   transform: translateY(-2px);
 }
@@ -182,9 +200,10 @@ h3 {
    ======================================== */
 
 .collage .frame {
-  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-              box-shadow 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-              border-color 0.3s ease;
+  transition: transform var(--ef-transition-slow),
+              box-shadow var(--ef-transition-slow),
+              border-color var(--ef-transition-normal);
+  contain: layout style paint;
 }
 
 .collage .frame:hover {
@@ -203,7 +222,7 @@ h3 {
 }
 
 .collage .frame .tag {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all var(--ef-transition-normal);
 }
 
 .collage .frame:hover .tag {

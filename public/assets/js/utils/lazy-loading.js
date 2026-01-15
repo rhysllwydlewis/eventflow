@@ -43,9 +43,12 @@
     );
 
     lazyImages.forEach(img => {
-      // Add fade-in effect
-      img.style.opacity = '0';
-      img.style.transition = `opacity ${CONFIG.imageFadeInDuration}ms ease-in-out`;
+      // Add fade-in effect (use CSS class for better performance)
+      if (!img.classList.contains('lazy-image')) {
+        img.classList.add('lazy-image');
+        img.style.opacity = '0';
+        img.style.transition = `opacity ${CONFIG.imageFadeInDuration}ms ease-in-out`;
+      }
       imageObserver.observe(img);
     });
   }
