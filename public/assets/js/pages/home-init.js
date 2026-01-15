@@ -516,12 +516,20 @@ async function loadHeroCollageImages() {
             photography: '/assets/images/collage-photography.jpg',
           };
           
+          // Unique gradient colors per category (matching HTML onerror handlers)
+          const gradientFallbacks = {
+            venues: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            catering: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+            entertainment: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+            photography: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+          };
+          
           // Only attempt fallback once to prevent infinite loop
           if (this.src !== window.location.origin + defaultImages[category]) {
             this.src = defaultImages[category];
           } else {
             // If even the default fails, show a gradient placeholder
-            this.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+            this.style.background = gradientFallbacks[category] || gradientFallbacks.venues;
             this.style.minHeight = '200px';
             this.src = '';
             this.onerror = null;
