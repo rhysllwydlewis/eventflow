@@ -72,7 +72,8 @@ class TicketingSystem {
         throw new Error('Failed to fetch tickets');
       }
 
-      return await response.json();
+      const data = await response.json();
+      return data.tickets || [];
     } catch (error) {
       console.error('Error getting user tickets:', error);
       throw error;
@@ -266,6 +267,54 @@ class TicketingSystem {
   cleanup() {
     this.pollingIntervals.forEach(interval => clearInterval(interval));
     this.pollingIntervals = [];
+  }
+
+  /**
+   * Get CSS class for ticket status badge
+   * @param {string} status - Ticket status
+   * @returns {string} CSS class name
+   */
+  getStatusClass(status) {
+    const statusClasses = {
+      open: 'badge-open',
+      in_progress: 'badge-progress',
+      resolved: 'badge-resolved',
+      closed: 'badge-closed',
+    };
+    return statusClasses[status] || 'badge-default';
+  }
+
+  /**
+   * Get CSS class for ticket priority badge
+   * @param {string} priority - Ticket priority
+   * @returns {string} CSS class name
+   */
+  getPriorityClass(priority) {
+    const priorityClasses = {
+      low: 'badge-priority-low',
+      medium: 'badge-priority-medium',
+      high: 'badge-priority-high',
+    };
+    return priorityClasses[priority] || 'badge-priority-medium';
+  }
+
+  /**
+   * Format timestamp for display
+   * @param {string|Date} timestamp - Timestamp to format
+   * @returns {string} Formatted timestamp
+   */
+  formatTimestamp(timestamp) {
+    if (!timestamp) {
+      return '';
+    }
+    const date = new Date(timestamp);
+    return date.toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
   }
 }
 

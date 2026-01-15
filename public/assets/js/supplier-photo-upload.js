@@ -233,6 +233,38 @@ class SupplierPhotoUpload {
   }
 
   /**
+   * Upload multiple photos with per-photo callback
+   * This method provides compatibility with supplier-gallery.js callback signature
+   * @param {File[]} files - Array of image files
+   * @param {string} supplierId - Supplier ID
+   * @param {Function} progressCallback - Callback with signature (current, total, photoData, error)
+   * @returns {Promise<Array>} Array of upload results
+   */
+  async uploadMultiplePhotos(files, supplierId, progressCallback) {
+    const results = [];
+
+    for (let i = 0; i < files.length; i++) {
+      try {
+        const photoData = await this.uploadPhoto(files[i], supplierId);
+        results.push({ success: true, photo: photoData });
+
+        if (progressCallback) {
+          progressCallback(i + 1, files.length, photoData, null);
+        }
+      } catch (error) {
+        results.push({ success: false, error: error.message, file: files[i].name });
+        console.error(`Failed to upload ${files[i].name}:`, error);
+
+        if (progressCallback) {
+          progressCallback(i + 1, files.length, null, error);
+        }
+      }
+    }
+
+    return results;
+  }
+
+  /**
    * Clear uploaded photos cache
    */
   clearCache() {
