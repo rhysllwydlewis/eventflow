@@ -2885,9 +2885,17 @@ app.patch(
       for (const platform of allowedPlatforms) {
         if (b.socialLinks[platform] && typeof b.socialLinks[platform] === 'string') {
           const url = b.socialLinks[platform].trim();
-          // Basic URL validation
-          if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
-            all[i].socialLinks[platform] = url;
+          // Robust URL validation using URL constructor
+          try {
+            const parsedUrl = new URL(url);
+            // Only allow http and https protocols
+            if (parsedUrl.protocol === 'http:' || parsedUrl.protocol === 'https:') {
+              // Use the parsed URL to prevent XSS
+              all[i].socialLinks[platform] = parsedUrl.href;
+            }
+          } catch (err) {
+            // Invalid URL, skip it
+            console.warn(`Invalid social link URL for ${platform}: ${url}`);
           }
         }
       }

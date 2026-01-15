@@ -37,7 +37,7 @@ async function trackEvent(eventData) {
       return;
     }
 
-    const events = (await dbUnified.read('events')) || [];
+    let events = (await dbUnified.read('events')) || [];
 
     const event = {
       id: `event_${Date.now()}_${crypto.randomUUID()}`,
@@ -52,9 +52,9 @@ async function trackEvent(eventData) {
 
     events.push(event);
 
-    // Keep only last 50000 entries to prevent unbounded growth
+    // Keep only last 50000 entries to prevent unbounded growth (efficient slicing)
     if (events.length > 50000) {
-      events.splice(0, events.length - 50000);
+      events = events.slice(-50000);
     }
 
     await dbUnified.write('events', events);
