@@ -774,14 +774,14 @@ class PexelsService {
       photographerUrl: photo.photographer_url,
       avgColor: photo.avg_color,
       src: {
-        original: photo.src.original,
-        large2x: photo.src.large2x,
-        large: photo.src.large,
-        medium: photo.src.medium,
-        small: photo.src.small,
-        portrait: photo.src.portrait,
-        landscape: photo.src.landscape,
-        tiny: photo.src.tiny,
+        original: photo.src?.original || '',
+        large2x: photo.src?.large2x || '',
+        large: photo.src?.large || '',
+        medium: photo.src?.medium || '',
+        small: photo.src?.small || '',
+        portrait: photo.src?.portrait || '',
+        landscape: photo.src?.landscape || '',
+        tiny: photo.src?.tiny || '',
       },
       alt: photo.alt || 'Photo',
       rateLimit: response.rateLimit,
@@ -828,7 +828,7 @@ class PexelsService {
       page: data.page,
       perPage: data.per_page,
       totalResults: data.total_results,
-      videos: data.videos.map(video => ({
+      videos: (data.videos || []).map(video => ({
         id: video.id,
         width: video.width,
         height: video.height,
@@ -836,11 +836,11 @@ class PexelsService {
         image: video.image,
         duration: video.duration,
         user: {
-          id: video.user.id,
-          name: video.user.name,
-          url: video.user.url,
+          id: video.user?.id,
+          name: video.user?.name,
+          url: video.user?.url,
         },
-        videoFiles: video.video_files.map(file => ({
+        videoFiles: (video.video_files || []).map(file => ({
           id: file.id,
           quality: file.quality,
           fileType: file.file_type,
@@ -848,7 +848,7 @@ class PexelsService {
           height: file.height,
           link: file.link,
         })),
-        videoPictures: video.video_pictures.map(pic => ({
+        videoPictures: (video.video_pictures || []).map(pic => ({
           id: pic.id,
           picture: pic.picture,
           nr: pic.nr,
@@ -879,7 +879,7 @@ class PexelsService {
       page: data.page,
       perPage: data.per_page,
       totalResults: data.total_results,
-      videos: data.videos.map(video => ({
+      videos: (data.videos || []).map(video => ({
         id: video.id,
         width: video.width,
         height: video.height,
@@ -887,11 +887,11 @@ class PexelsService {
         image: video.image,
         duration: video.duration,
         user: {
-          id: video.user.id,
-          name: video.user.name,
-          url: video.user.url,
+          id: video.user?.id,
+          name: video.user?.name,
+          url: video.user?.url,
         },
-        videoFiles: video.video_files.map(file => ({
+        videoFiles: (video.video_files || []).map(file => ({
           id: file.id,
           quality: file.quality,
           fileType: file.file_type,
@@ -899,7 +899,7 @@ class PexelsService {
           height: file.height,
           link: file.link,
         })),
-        videoPictures: video.video_pictures.map(pic => ({
+        videoPictures: (video.video_pictures || []).map(pic => ({
           id: pic.id,
           picture: pic.picture,
           nr: pic.nr,
@@ -938,11 +938,11 @@ class PexelsService {
       image: video.image,
       duration: video.duration,
       user: {
-        id: video.user.id,
-        name: video.user.name,
-        url: video.user.url,
+        id: video.user?.id,
+        name: video.user?.name,
+        url: video.user?.url,
       },
-      videoFiles: video.video_files.map(file => ({
+      videoFiles: (video.video_files || []).map(file => ({
         id: file.id,
         quality: file.quality,
         fileType: file.file_type,
@@ -950,7 +950,7 @@ class PexelsService {
         height: file.height,
         link: file.link,
       })),
-      videoPictures: video.video_pictures.map(pic => ({
+      videoPictures: (video.video_pictures || []).map(pic => ({
         id: pic.id,
         picture: pic.picture,
         nr: pic.nr,
