@@ -583,9 +583,9 @@ router.get('/metrics', authRequired, roleRequired('admin'), (req, res) => {
 /**
  * POST /api/pexels/cache/clear
  * Clear Pexels API response cache
- * Requires admin authentication
+ * Requires admin authentication and CSRF protection
  */
-router.post('/cache/clear', authRequired, roleRequired('admin'), (req, res) => {
+router.post('/cache/clear', csrfProtection, authRequired, roleRequired('admin'), (req, res) => {
   const pexels = getPexelsService();
 
   pexels.clearCache();

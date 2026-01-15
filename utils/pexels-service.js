@@ -169,7 +169,7 @@ class PexelsService {
    * @returns {Object} Service metrics
    */
   getMetrics() {
-    const totalRequests = this.metrics.totalRequests || 1; // Avoid division by zero
+    const totalRequests = this.metrics.totalRequests;
     const avgResponseTime =
       this.metrics.successfulRequests > 0
         ? Math.round(this.metrics.totalResponseTime / this.metrics.successfulRequests)
@@ -179,7 +179,10 @@ class PexelsService {
       totalRequests: this.metrics.totalRequests,
       successfulRequests: this.metrics.successfulRequests,
       failedRequests: this.metrics.failedRequests,
-      successRate: ((this.metrics.successfulRequests / totalRequests) * 100).toFixed(2) + '%',
+      successRate:
+        totalRequests > 0
+          ? ((this.metrics.successfulRequests / totalRequests) * 100).toFixed(2) + '%'
+          : 'N/A',
       cacheHits: this.metrics.cacheHits,
       cacheMisses: this.metrics.cacheMisses,
       cacheHitRate:
@@ -267,7 +270,6 @@ class PexelsService {
       const req = https.request(options, res => {
         let data = '';
         const duration = Date.now() - startTime;
-        this.metrics.totalResponseTime += duration;
 
         // Parse rate limit headers
         const rateLimit = {
@@ -319,7 +321,8 @@ class PexelsService {
                 }
               }
 
-              // Record success
+              // Record success and response time (only for successful requests)
+              this.metrics.totalResponseTime += duration;
               this.recordSuccess();
 
               // Include rate limit info in response
@@ -438,17 +441,14 @@ class PexelsService {
               const result = await this.makeRequest(path, retryCount + 1, maxRetries);
               resolve(result);
             } catch (retryError) {
-              const enhancedError = new Error(`Network error: ${error.message}`);
-              enhancedError.type = 'network';
-              enhancedError.originalError = error;
-              enhancedError.userFriendlyMessage =
-                'Unable to connect to Pexels API. Please check your network connection.';
-              reject(enhancedError);
+              // On final retry failure, reject with the retry error
+              reject(retryError);
             }
           }, backoffTime);
           return;
         }
 
+        // Max retries exhausted, create final error
         const enhancedError = new Error(`Network error: ${error.message}`);
         enhancedError.type = 'network';
         enhancedError.originalError = error;
@@ -474,15 +474,14 @@ class PexelsService {
               const result = await this.makeRequest(path, retryCount + 1, maxRetries);
               resolve(result);
             } catch (retryError) {
-              const error = new Error('Request timeout after 10 seconds');
-              error.type = 'timeout';
-              error.userFriendlyMessage = 'Request to Pexels API timed out. Please try again.';
-              reject(error);
+              // On final retry failure, reject with the retry error
+              reject(retryError);
             }
           }, backoffTime);
           return;
         }
 
+        // Max retries exhausted, create final error
         const error = new Error('Request timeout after 10 seconds');
         error.type = 'timeout';
         error.userFriendlyMessage = 'Request to Pexels API timed out. Please try again.';
