@@ -187,6 +187,12 @@ async function createReview(reviewData, userId, _metadata = {}) {
     })
     .catch(err => console.error('Failed to track review received:', err));
 
+  // Trigger badge evaluation for supplier (async, non-blocking)
+  const badgeManagement = require('../utils/badgeManagement');
+  badgeManagement
+    .evaluateSupplierBadges(reviewData.supplierId)
+    .catch(err => console.error('Failed to evaluate supplier badges:', err));
+
   return {
     reviewId: review._id,
     status: review.moderation.state,

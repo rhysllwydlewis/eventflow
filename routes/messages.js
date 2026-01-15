@@ -354,6 +354,12 @@ router.post('/threads/:threadId/messages', authRequired, csrfProtection, async (
             messageId: newMessage.id,
           })
           .catch(err => console.error('Failed to track message reply:', err));
+
+        // Trigger badge evaluation for supplier (async, non-blocking)
+        const badgeManagement = require('../utils/badgeManagement');
+        badgeManagement
+          .evaluateSupplierBadges(thread.supplierId)
+          .catch(err => console.error('Failed to evaluate supplier badges:', err));
       }
 
       // Send email notification to recipient (async, non-blocking)

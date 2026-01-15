@@ -2590,6 +2590,89 @@ app.get(
   }
 );
 
+/**
+ * POST /api/admin/badges/evaluate
+ * Evaluate and award badges to all suppliers
+ */
+app.post(
+  '/api/admin/badges/evaluate',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    try {
+      const badgeManagement = require('./utils/badgeManagement');
+      const results = await badgeManagement.evaluateAllSupplierBadges();
+      res.json({
+        success: true,
+        message: 'Badge evaluation completed',
+        results,
+      });
+    } catch (error) {
+      console.error('Error evaluating badges:', error);
+      res.status(500).json({ error: 'Failed to evaluate badges' });
+    }
+  }
+);
+
+/**
+ * POST /api/admin/badges/init
+ * Initialize default badges in the database
+ */
+app.post(
+  '/api/admin/badges/init',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    try {
+      const badgeManagement = require('./utils/badgeManagement');
+      await badgeManagement.initializeDefaultBadges();
+      res.json({
+        success: true,
+        message: 'Default badges initialized',
+      });
+    } catch (error) {
+      console.error('Error initializing badges:', error);
+      res.status(500).json({ error: 'Failed to initialize badges' });
+    }
+  }
+);
+
+/**
+ * POST /api/me/suppliers/:id/badges/evaluate
+ * Evaluate and award badges to a specific supplier
+ */
+app.post(
+  '/api/me/suppliers/:id/badges/evaluate',
+  authRequired,
+  roleRequired('supplier'),
+  async (req, res) => {
+    try {
+      const supplierId = req.params.id;
+
+      // Verify ownership
+      const suppliers = await dbUnified.read('suppliers');
+      const supplier = suppliers.find(s => s.id === supplierId && s.ownerUserId === req.user.id);
+      if (!supplier) {
+        return res.status(404).json({ error: 'Supplier not found' });
+      }
+
+      const badgeManagement = require('./utils/badgeManagement');
+      const results = await badgeManagement.evaluateSupplierBadges(supplierId);
+
+      res.json({
+        success: true,
+        message: 'Badge evaluation completed',
+        results,
+      });
+    } catch (error) {
+      console.error('Error evaluating supplier badges:', error);
+      res.status(500).json({ error: 'Failed to evaluate badges' });
+    }
+  }
+);
+
 // Mark all suppliers owned by the current user as Pro
 app.post(
   '/api/me/subscription/upgrade',
