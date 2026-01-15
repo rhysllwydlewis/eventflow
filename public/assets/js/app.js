@@ -569,9 +569,11 @@ async function initSupplier() {
 
   // Use custom banner if available, otherwise use first photo or default
   const bannerImg = s.bannerUrl || img;
-  // Apply custom theme color if set
-  const themeColor = s.themeColor || '#0B8073';
-  const themeColorDark = s.themeColor ? adjustColorBrightness(s.themeColor, -10) : '#0a6d61';
+  // Apply custom theme color if set (with validation)
+  const hexColorRegex = /^#[0-9A-F]{6}$/i;
+  const themeColor =
+    s.themeColor && hexColorRegex.test(s.themeColor) ? s.themeColor : '#0B8073';
+  const themeColorDark = adjustColorBrightness(themeColor, -10);
 
   // Create lightbox gallery HTML for photos
   const galleryPhotos = s.photos || [];

@@ -2841,11 +2841,18 @@ app.patch(
       'description_long',
       'bannerUrl',
       'tagline',
-      'themeColor',
     ];
     for (const k of fields) {
       if (typeof b[k] === 'string') {
         all[i][k] = b[k];
+      }
+    }
+
+    // Validate and set theme color (must be valid hex color)
+    if (b.themeColor && typeof b.themeColor === 'string') {
+      const hexColorRegex = /^#[0-9A-F]{6}$/i;
+      if (hexColorRegex.test(b.themeColor.trim())) {
+        all[i].themeColor = b.themeColor.trim();
       }
     }
 
