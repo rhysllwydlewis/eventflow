@@ -376,7 +376,7 @@
         const threadsResponse = await fetch('/api/threads/my', { credentials: 'include' });
         if (threadsResponse.ok) {
           const threadsData = await threadsResponse.json();
-          threads = threadsData.threads || [];
+          threads = threadsData.items || []; // API returns 'items', not 'threads'
           totalEnquiries = threads.length;
         }
       } catch (err) {
@@ -631,7 +631,7 @@
         throw new Error("Failed to fetch threads");
       }
       const data = await response.json();
-      const threads = data.threads || [];
+      const threads = data.items || []; // API returns 'items', not 'threads'
 
       if (threads.length === 0) {
         container.innerHTML = "<p class=\"small\">No enquiries yet. Lead quality statistics will appear here when customers contact you.</p>";
