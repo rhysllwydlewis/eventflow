@@ -284,6 +284,30 @@ export function createProfileChecklist(completionData, containerId) {
       completed: completionData.photos || false,
     },
     {
+      id: 'banner',
+      label: 'Custom banner image',
+      completed: completionData.banner || false,
+      badge: completionData.banner ? '✨' : null,
+    },
+    {
+      id: 'tagline',
+      label: 'Profile tagline added',
+      completed: completionData.tagline || false,
+      badge: completionData.tagline ? '💬' : null,
+    },
+    {
+      id: 'highlights',
+      label: 'Key highlights (3+ added)',
+      completed: completionData.highlights || false,
+      badge: completionData.highlights ? '⭐' : null,
+    },
+    {
+      id: 'social',
+      label: 'Social links (2+ platforms)',
+      completed: completionData.socialLinks || false,
+      badge: completionData.socialLinks ? '🔗' : null,
+    },
+    {
       id: 'package',
       label: 'At least 1 package created',
       completed: completionData.package || false,

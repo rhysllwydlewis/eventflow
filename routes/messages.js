@@ -191,6 +191,16 @@ router.post('/threads', authRequired, csrfProtection, async (req, res) => {
     threads.push(newThread);
     await dbUnified.write('threads', threads);
 
+    // Track enquiry started event
+    const supplierAnalytics = require('../utils/supplierAnalytics');
+    supplierAnalytics
+      .trackEnquiryStarted(supplierId, userId, {
+        threadId: newThread.id,
+        packageId: packageId || null,
+        eventType: eventType || null,
+      })
+      .catch(err => console.error('Failed to track enquiry started:', err));
+
     // Audit log
     auditLog({
       adminId: userId,
@@ -323,6 +333,34 @@ router.post('/threads/:threadId/messages', authRequired, csrfProtection, async (
 
       threads[threadIndex] = thread;
       await dbUnified.write('threads', threads);
+
+      // Track analytics event
+      const supplierAnalytics = require('../utils/supplierAnalytics');
+      const threadMessages = messages.filter(m => m.threadId === threadId && !m.isDraft);
+
+      if (userRole === 'customer' && threadMessages.length === 1) {
+        // First message from customer - this is an enquiry sent
+        supplierAnalytics
+          .trackEnquirySent(thread.supplierId, userId, {
+            threadId,
+            messageId: newMessage.id,
+          })
+          .catch(err => console.error('Failed to track enquiry sent:', err));
+      } else if (userRole === 'supplier') {
+        // Supplier replied to a message
+        supplierAnalytics
+          .trackMessageReply(thread.supplierId, userId, {
+            threadId,
+            messageId: newMessage.id,
+          })
+          .catch(err => console.error('Failed to track message reply:', err));
+
+        // Trigger badge evaluation for supplier (async, non-blocking)
+        const badgeManagement = require('../utils/badgeManagement');
+        badgeManagement
+          .evaluateSupplierBadges(thread.supplierId)
+          .catch(err => console.error('Failed to evaluate supplier badges:', err));
+      }
 
       // Send email notification to recipient (async, non-blocking)
       setImmediate(async () => {

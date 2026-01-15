@@ -2140,6 +2140,16 @@ app.get('/api/suppliers/:id', async (req, res) => {
     proExpiresAt: sRaw.proExpiresAt || null,
   };
 
+  // Track profile view (unless preview mode)
+  const isPreview = req.query.preview === 'true';
+  const supplierAnalytics = require('./utils/supplierAnalytics');
+  const userId = req.user ? req.user.id : null;
+  const sessionId = req.session ? req.session.id : null;
+
+  supplierAnalytics
+    .trackProfileView(req.params.id, userId, sessionId, isPreview)
+    .catch(err => console.error('Failed to track profile view:', err));
+
   res.json(s);
 });
 
@@ -2536,7 +2546,7 @@ app.get('/api/me/suppliers', authRequired, roleRequired('supplier'), async (req,
 
 /**
  * GET /api/me/suppliers/:id/analytics
- * Get analytics data for a supplier
+ * Get analytics data for a supplier using real event tracking
  */
 app.get(
   '/api/me/suppliers/:id/analytics',
@@ -2554,84 +2564,111 @@ app.get(
         return res.status(404).json({ error: 'Supplier not found' });
       }
 
-      // Get analytics data from database
-      let analytics = await dbUnified.read('analytics');
-      if (!Array.isArray(analytics)) {
-        analytics = [];
-      }
+      // Get analytics from the supplier analytics utility
+      const supplierAnalytics = require('./utils/supplierAnalytics');
+      const analytics = await supplierAnalytics.getSupplierAnalytics(supplierId, period);
 
-      // Filter analytics for this supplier within the period
-      const cutoffDate = new Date();
-      cutoffDate.setDate(cutoffDate.getDate() - period);
-
-      const supplierAnalytics = analytics.filter(
-        a =>
-          a.supplierId === supplierId &&
-          new Date(a.date) >= cutoffDate &&
-          new Date(a.date) <= new Date()
-      );
-
-      // Generate date labels for the period
-      const labels = [];
-      const views = [];
-      const enquiries = [];
-
-      for (let i = period - 1; i >= 0; i--) {
-        const date = new Date();
-        date.setDate(date.getDate() - i);
-        const dateStr = date.toISOString().split('T')[0];
-        labels.push(date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }));
-
-        // Find analytics for this date
-        const dayAnalytics = supplierAnalytics.find(a => a.date === dateStr);
-        views.push(dayAnalytics ? dayAnalytics.views || 0 : 0);
-        enquiries.push(dayAnalytics ? dayAnalytics.enquiries || 0 : 0);
-      }
-
-      // Calculate totals
-      const totalViews = views.reduce((sum, v) => sum + v, 0);
-      const totalEnquiries = enquiries.reduce((sum, e) => sum + e, 0);
-
-      // Get messages for response rate calculation
-      const messages = await dbUnified.read('messages');
-      const supplierMessages = messages.filter(
-        m => m.supplierId === supplierId || m.recipientId === supplierId
-      );
-
-      // Calculate response rate (responded messages / received messages)
-      const receivedMessages = supplierMessages.filter(m => m.recipientId === supplierId);
-      const respondedMessages = receivedMessages.filter(m => m.responded);
-      const responseRate =
-        receivedMessages.length > 0
-          ? Math.round((respondedMessages.length / receivedMessages.length) * 100)
-          : 0;
-
-      // Calculate average response time (in hours)
-      let avgResponseTime = 0;
-      if (respondedMessages.length > 0) {
-        const totalResponseTime = respondedMessages.reduce((sum, m) => {
-          if (m.respondedAt && m.createdAt) {
-            const diff = new Date(m.respondedAt) - new Date(m.createdAt);
-            return sum + diff / (1000 * 60 * 60); // Convert to hours
-          }
-          return sum;
-        }, 0);
-        avgResponseTime = Math.round((totalResponseTime / respondedMessages.length) * 10) / 10;
-      }
+      // Format response to match expected structure
+      const labels = analytics.dailyData.map(d => d.label);
+      const views = analytics.dailyData.map(d => d.views);
+      const enquiries = analytics.dailyData.map(d => d.enquiries);
 
       res.json({
-        period,
+        period: analytics.period,
         labels,
         views,
         enquiries,
-        totalViews,
-        totalEnquiries,
-        responseRate,
-        avgResponseTime,
+        totalViews: analytics.totalViews,
+        totalEnquiries: analytics.totalEnquiries,
+        responseRate: analytics.responseRate,
+        avgResponseTime: analytics.avgResponseTime,
       });
     } catch (error) {
       console.error('Error fetching supplier analytics:', error);
       res.status(500).json({ error: 'Failed to fetch analytics' });
+    }
+  }
+);
+
+/**
+ * POST /api/admin/badges/evaluate
+ * Evaluate and award badges to all suppliers
+ */
+app.post(
+  '/api/admin/badges/evaluate',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    try {
+      const badgeManagement = require('./utils/badgeManagement');
+      const results = await badgeManagement.evaluateAllSupplierBadges();
+      res.json({
+        success: true,
+        message: 'Badge evaluation completed',
+        results,
+      });
+    } catch (error) {
+      console.error('Error evaluating badges:', error);
+      res.status(500).json({ error: 'Failed to evaluate badges' });
+    }
+  }
+);
+
+/**
+ * POST /api/admin/badges/init
+ * Initialize default badges in the database
+ */
+app.post(
+  '/api/admin/badges/init',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    try {
+      const badgeManagement = require('./utils/badgeManagement');
+      await badgeManagement.initializeDefaultBadges();
+      res.json({
+        success: true,
+        message: 'Default badges initialized',
+      });
+    } catch (error) {
+      console.error('Error initializing badges:', error);
+      res.status(500).json({ error: 'Failed to initialize badges' });
+    }
+  }
+);
+
+/**
+ * POST /api/me/suppliers/:id/badges/evaluate
+ * Evaluate and award badges to a specific supplier
+ */
+app.post(
+  '/api/me/suppliers/:id/badges/evaluate',
+  authRequired,
+  roleRequired('supplier'),
+  async (req, res) => {
+    try {
+      const supplierId = req.params.id;
+
+      // Verify ownership
+      const suppliers = await dbUnified.read('suppliers');
+      const supplier = suppliers.find(s => s.id === supplierId && s.ownerUserId === req.user.id);
+      if (!supplier) {
+        return res.status(404).json({ error: 'Supplier not found' });
+      }
+
+      const badgeManagement = require('./utils/badgeManagement');
+      const results = await badgeManagement.evaluateSupplierBadges(supplierId);
+
+      res.json({
+        success: true,
+        message: 'Badge evaluation completed',
+        results,
+      });
+    } catch (error) {
+      console.error('Error evaluating supplier badges:', error);
+      res.status(500).json({ error: 'Failed to evaluate badges' });
     }
   }
 );
@@ -2802,6 +2839,8 @@ app.patch(
       'license',
       'description_short',
       'description_long',
+      'bannerUrl',
+      'tagline',
     ];
     for (const k of fields) {
       if (typeof b[k] === 'string') {
@@ -2809,12 +2848,66 @@ app.patch(
       }
     }
 
+    // Validate and set theme color (must be valid hex color)
+    if (b.themeColor && typeof b.themeColor === 'string') {
+      const hexColorRegex = /^#[0-9A-F]{6}$/i;
+      if (hexColorRegex.test(b.themeColor.trim())) {
+        all[i].themeColor = b.themeColor.trim();
+      }
+    }
+
+    // Handle array fields
     if (b.amenities) {
       all[i].amenities = String(b.amenities)
         .split(',')
         .map(x => x.trim())
         .filter(Boolean);
     }
+
+    if (b.highlights && Array.isArray(b.highlights)) {
+      all[i].highlights = b.highlights
+        .map(x => String(x).trim())
+        .filter(Boolean)
+        .slice(0, 5); // Limit to 5 highlights
+    }
+
+    if (b.featuredServices && Array.isArray(b.featuredServices)) {
+      all[i].featuredServices = b.featuredServices
+        .map(x => String(x).trim())
+        .filter(Boolean)
+        .slice(0, 10); // Limit to 10 services
+    }
+
+    // Handle social links with validation
+    if (b.socialLinks && typeof b.socialLinks === 'object') {
+      all[i].socialLinks = {};
+      const allowedPlatforms = [
+        'facebook',
+        'instagram',
+        'twitter',
+        'linkedin',
+        'youtube',
+        'tiktok',
+      ];
+      for (const platform of allowedPlatforms) {
+        if (b.socialLinks[platform] && typeof b.socialLinks[platform] === 'string') {
+          const url = b.socialLinks[platform].trim();
+          // Robust URL validation using URL constructor
+          try {
+            const parsedUrl = new URL(url);
+            // Only allow http and https protocols
+            if (parsedUrl.protocol === 'http:' || parsedUrl.protocol === 'https:') {
+              // Use the parsed URL to prevent XSS
+              all[i].socialLinks[platform] = parsedUrl.href;
+            }
+          } catch (err) {
+            // Invalid URL, skip it
+            console.warn(`Invalid social link URL for ${platform}: ${url}`);
+          }
+        }
+      }
+    }
+
     // eslint-disable-next-line eqeqeq
     if (b.maxGuests != null) {
       all[i].maxGuests = parseInt(b.maxGuests, 10) || 0;
