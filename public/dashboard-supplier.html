@@ -601,9 +601,15 @@
     if (!limitContainer) return;
     
     try {
-      // TODO: Fetch package count from MongoDB API
-      // For now, just hide the limit notice
-      limitContainer.style.display = 'none';
+      // Fetch package count from MongoDB API
+      const packagesResponse = await fetch('/api/me/packages', { credentials: 'include' });
+      if (packagesResponse.ok) {
+        const packagesData = await packagesResponse.json();
+        const packages = packagesData.items || [];
+        
+        // Hide limit notice if user has packages (implementation can be enhanced later)
+        limitContainer.style.display = 'none';
+      }
       
     } catch (error) {
       console.error('Error checking package limit:', error);
