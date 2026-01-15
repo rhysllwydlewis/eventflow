@@ -160,7 +160,12 @@
         const lcpObserver = new PerformanceObserver(entryList => {
           const entries = entryList.getEntries();
           const lastEntry = entries[entries.length - 1];
-          console.log('LCP:', lastEntry.renderTime || lastEntry.loadTime);
+          if (
+            window.location.hostname === 'localhost' ||
+            window.location.hostname === '127.0.0.1'
+          ) {
+            console.log('LCP:', lastEntry.renderTime || lastEntry.loadTime);
+          }
         });
         lcpObserver.observe({ entryTypes: ['largest-contentful-paint'] });
 
@@ -168,7 +173,12 @@
         const fidObserver = new PerformanceObserver(entryList => {
           const entries = entryList.getEntries();
           entries.forEach(entry => {
-            console.log('FID:', entry.processingStart - entry.startTime);
+            if (
+              window.location.hostname === 'localhost' ||
+              window.location.hostname === '127.0.0.1'
+            ) {
+              console.log('FID:', entry.processingStart - entry.startTime);
+            }
           });
         });
         fidObserver.observe({ entryTypes: ['first-input'] });
@@ -179,14 +189,19 @@
           for (const entry of entryList.getEntries()) {
             if (!entry.hadRecentInput) {
               clsValue += entry.value;
-              console.log('CLS:', clsValue);
+              if (
+                window.location.hostname === 'localhost' ||
+                window.location.hostname === '127.0.0.1'
+              ) {
+                console.log('CLS:', clsValue);
+              }
             }
           }
         });
         clsObserver.observe({ entryTypes: ['layout-shift'] });
       } catch (e) {
-        // Silently fail if observer setup fails
-        console.debug('Performance monitoring not available');
+        // Warn if observer setup fails - may indicate browser compatibility issues
+        console.warn('Performance monitoring not available:', e.message);
       }
     }
   }
@@ -229,6 +244,12 @@
    * Initialize all optimizations
    */
   function init() {
+    // Check if we're in development environment
+    const isDevelopment =
+      window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1' ||
+      window.location.port === '8080'; // Common dev ports
+
     // Wait for DOM to be ready
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', () => {
@@ -238,7 +259,7 @@
         optimizeThirdPartyScripts();
 
         // Monitor performance only in development
-        if (window.location.hostname === 'localhost') {
+        if (isDevelopment) {
           monitorPerformance();
         }
       });
@@ -248,7 +269,7 @@
       deferNonCriticalCSS();
       optimizeThirdPartyScripts();
 
-      if (window.location.hostname === 'localhost') {
+      if (isDevelopment) {
         monitorPerformance();
       }
     }
