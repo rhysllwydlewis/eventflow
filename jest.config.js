@@ -2,6 +2,9 @@ module.exports = {
   // Test environment
   testEnvironment: 'node',
 
+  // Parallel test execution
+  maxWorkers: '50%',
+
   // Coverage configuration
   collectCoverage: true,
   coverageDirectory: 'coverage',

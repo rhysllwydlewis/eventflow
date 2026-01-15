@@ -26,8 +26,18 @@ jobs:
       - name: Install dependencies
         run: npm ci
       
+      - name: Cache Playwright browsers
+        id: cache-playwright
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            playwright-${{ runner.os }}-
+      
       - name: Install Playwright Browsers
-        run: npx playwright install --with-deps
+        if: steps.cache-playwright.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
       
       - name: Run E2E tests
         run: npm run test:e2e:static
@@ -70,8 +80,18 @@ jobs:
       - name: Install dependencies
         run: npm ci
       
+      - name: Cache Playwright browsers
+        id: cache-playwright
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            playwright-${{ runner.os }}-
+      
       - name: Install Playwright Browsers
-        run: npx playwright install --with-deps
+        if: steps.cache-playwright.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
       
       - name: Run visual regression tests
         run: npx playwright test --grep @visual
