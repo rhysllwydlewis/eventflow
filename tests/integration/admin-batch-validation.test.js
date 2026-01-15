@@ -5,6 +5,8 @@
 const fs = require('fs');
 const path = require('path');
 
+const escapeForRegExp = str => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 describe('Admin Batch Operations - Validation', () => {
   let adminRoutesContent;
   let adminV2RoutesContent;
@@ -250,8 +252,9 @@ describe('Admin Batch Operations - Validation', () => {
       ];
 
       bulkOperations.forEach(operation => {
+        const escapedOperation = escapeForRegExp(operation);
         const operationRegex = new RegExp(
-          `router\\.post\\([^)]*${operation.replace(/\//g, '\\/')}[\\s\\S]*?\\);`
+          `router\\.post\\([^)]*${escapedOperation}[\\s\\S]*?\\);`
         );
         const match = adminRoutesContent.match(operationRegex);
         expect(match).toBeTruthy();
@@ -262,9 +265,10 @@ describe('Admin Batch Operations - Validation', () => {
     it('v2 batch operations should have csrfProtection', () => {
       const batchOperations = ['/packages/batch-approve', '/photos/batch-action', '/bulk-actions'];
 
+        const escapedOperation = escapeForRegExp(operation);
       batchOperations.forEach(operation => {
         const operationRegex = new RegExp(
-          `router\\.post\\([^)]*${operation.replace(/\//g, '\\/')}[\\s\\S]*?\\);`
+          `router\\.post\\([^)]*${escapedOperation}[\\s\\S]*?\\);`
         );
         const match = adminV2RoutesContent.match(operationRegex);
         expect(match).toBeTruthy();
