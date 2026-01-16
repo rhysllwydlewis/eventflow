@@ -4381,6 +4381,12 @@ router.get('/homepage/collage-widget', authRequired, roleRequired('admin'), asyn
         entertainment: 'live band wedding party',
         photography: 'wedding photography professional',
       },
+      pexelsVideoQueries: {
+        venues: 'wedding venue video aerial',
+        catering: 'catering food preparation video',
+        entertainment: 'live band music performance video',
+        photography: 'wedding videography cinematic',
+      },
       uploadGallery: [],
       fallbackToPexels: true,
     };
@@ -4409,6 +4415,7 @@ router.put(
         mediaTypes,
         intervalSeconds,
         pexelsQueries,
+        pexelsVideoQueries,
         uploadGallery,
         fallbackToPexels,
       } = req.body;
@@ -4472,6 +4479,9 @@ router.put(
       }
       if (pexelsQueries) {
         settings.collageWidget.pexelsQueries = pexelsQueries;
+      }
+      if (pexelsVideoQueries) {
+        settings.collageWidget.pexelsVideoQueries = pexelsVideoQueries;
       }
       if (uploadGallery) {
         settings.collageWidget.uploadGallery = uploadGallery;
@@ -5077,6 +5087,8 @@ router.get('/public/pexels-collage', async (req, res) => {
         legacyPexelsEnabled: settings.features?.pexelsCollage,
         source,
         category: req.query.category,
+        photos: req.query.photos,
+        videos: req.query.videos,
       });
     }
 
@@ -5096,7 +5108,7 @@ router.get('/public/pexels-collage', async (req, res) => {
       });
     }
 
-    const { category } = req.query;
+    const { category, photos = 'true', videos = 'false' } = req.query;
 
     if (!category) {
       return res.status(400).json({
@@ -5123,12 +5135,26 @@ router.get('/public/pexels-collage', async (req, res) => {
         photography: 'wedding photography professional',
       };
 
+    // Get video queries if videos are enabled
+    const pexelsVideoQueries = collageWidget.pexelsVideoQueries || {
+      venues: 'wedding venue video aerial',
+      catering: 'catering food preparation video',
+      entertainment: 'live band music performance video',
+      photography: 'wedding videography cinematic',
+    };
+
     // Support legacy pexelsCollageSettings for collection IDs if configured
     const pexelsCollageSettings = settings.pexelsCollageSettings || {};
 
     // Import Pexels service
     const { getPexelsService } = require('../utils/pexels-service');
     const pexels = getPexelsService();
+
+    // Determine if we should fetch photos and/or videos
+    const shouldFetchPhotos = photos === 'true';
+    const shouldFetchVideos = videos === 'true';
+
+    let allMedia = [];
 
     // Try to use Pexels API first
     if (pexels.isConfigured()) {
@@ -5139,14 +5165,21 @@ router.get('/public/pexels-collage', async (req, res) => {
 
         if (collectionId) {
           // Use collection-based fetching
-          console.log(`📚 Fetching photos from collection ${collectionId} for ${category}`);
-          const results = await pexels.getCollectionMedia(collectionId, 8, 1, 'photos');
-          // Filter to only photos (type: 'Photo')
-          const photos = results.media.filter(item => item.type === 'Photo');
+          console.log(`📚 Fetching media from collection ${collectionId} for ${category}`);
+          const results = await pexels.getCollectionMedia(collectionId, 8, 1, 'all');
+          
+          // Filter based on media type settings
+          let media = results.media;
+          if (!shouldFetchPhotos) {
+            media = media.filter(item => item.type !== 'Photo');
+          }
+          if (!shouldFetchVideos) {
+            media = media.filter(item => item.type !== 'Video');
+          }
 
-          if (photos.length === 0) {
+          if (media.length === 0) {
             console.warn(
-              `⚠️  No photos found in collection ${collectionId}, falling back to search`
+              `⚠️  No media found in collection ${collectionId}, falling back to search`
             );
             // Fall through to search-based approach
           } else {
@@ -5154,7 +5187,8 @@ router.get('/public/pexels-collage', async (req, res) => {
               success: true,
               category,
               collectionId,
-              photos,
+              photos: media.filter(item => item.type === 'Photo'),
+              videos: media.filter(item => item.type === 'Video'),
               usingFallback: false,
               source: 'collection',
             });
@@ -5162,15 +5196,61 @@ router.get('/public/pexels-collage', async (req, res) => {
         }
 
         // Use query-based searching (default behavior or fallback from empty collection)
-        const query = pexelsQueries[category] || category;
-        console.log(`🔍 Searching photos with query: "${query}" for ${category}`);
-        const results = await pexels.searchPhotos(query, 8, 1);
+        const fetchPromises = [];
+
+        if (shouldFetchPhotos) {
+          const photoQuery = pexelsQueries[category] || category;
+          console.log(`🔍 Searching photos with query: "${photoQuery}" for ${category}`);
+          fetchPromises.push(
+            pexels.searchPhotos(photoQuery, 4, 1).then(results => ({
+              type: 'photos',
+              items: results.photos,
+            }))
+          );
+        }
+
+        if (shouldFetchVideos) {
+          const videoQuery = pexelsVideoQueries[category] || category;
+          console.log(`🎥 Searching videos with query: "${videoQuery}" for ${category}`);
+          fetchPromises.push(
+            pexels.searchVideos(videoQuery, 4, 1).then(results => ({
+              type: 'videos',
+              items: results.videos.map(video => {
+                // Get the best quality video file (prefer HD)
+                const videoFiles = video.videoFiles || [];
+                const hdFile = videoFiles.find(f => f.quality === 'hd') || videoFiles[0];
+
+                return {
+                  type: 'video',
+                  id: video.id,
+                  url: video.url,
+                  src: {
+                    large: hdFile?.link || '',
+                    original: hdFile?.link || '',
+                  },
+                  thumbnail: video.image,
+                  videographer: video.user?.name || 'Pexels',
+                  videographer_url: video.user?.url || 'https://www.pexels.com',
+                  duration: video.duration,
+                  width: video.width,
+                  height: video.height,
+                };
+              }),
+            }))
+          );
+        }
+
+        const results = await Promise.all(fetchPromises);
+        
+        // Separate photos and videos
+        const photosResult = results.find(r => r.type === 'photos');
+        const videosResult = results.find(r => r.type === 'videos');
 
         return res.json({
           success: true,
           category,
-          query,
-          photos: results.photos,
+          photos: photosResult?.items || [],
+          videos: videosResult?.items || [],
           usingFallback: false,
           source: 'search',
         });
@@ -5186,31 +5266,60 @@ router.get('/public/pexels-collage', async (req, res) => {
     }
 
     // If API not configured or failed, use fallback URLs from config
-    const { getRandomFallbackPhotos } = require('../config/pexels-fallback');
-    const fallbackPhotos = getRandomFallbackPhotos(8);
+    const { getRandomFallbackPhotos, getRandomFallbackVideos } = require('../config/pexels-fallback');
+    
+    let fallbackPhotos = [];
+    let fallbackVideos = [];
 
-    // Convert fallback photo format to match Pexels API format
-    const photos = fallbackPhotos.map(photo => ({
-      id: photo.id,
-      url: photo.url,
-      photographer: photo.photographer,
-      photographer_url: photo.photographer_url || 'https://www.pexels.com',
-      src: {
-        original: photo.src.original,
-        large: photo.src.large,
-        medium: photo.src.medium,
-        small: photo.src.small,
-      },
-      alt: photo.alt,
-    }));
+    if (shouldFetchPhotos) {
+      const rawPhotos = getRandomFallbackPhotos(4);
+      // Convert fallback photo format to match Pexels API format
+      fallbackPhotos = rawPhotos.map(photo => ({
+        id: photo.id,
+        url: photo.url,
+        photographer: photo.photographer,
+        photographer_url: photo.photographer_url || 'https://www.pexels.com',
+        src: {
+          original: photo.src.original,
+          large: photo.src.large,
+          medium: photo.src.medium,
+          small: photo.src.small,
+        },
+        alt: photo.alt,
+      }));
+    }
+
+    if (shouldFetchVideos) {
+      const rawVideos = getRandomFallbackVideos(4);
+      // Convert fallback video format to match expected format
+      fallbackVideos = rawVideos.map(video => {
+        const videoFile = video.videoFiles?.[0];
+        return {
+          type: 'video',
+          id: video.id,
+          url: video.url,
+          src: {
+            large: videoFile?.link || '',
+            original: videoFile?.link || '',
+          },
+          thumbnail: video.image,
+          videographer: 'Pexels',
+          videographer_url: 'https://www.pexels.com',
+          duration: video.duration,
+          width: videoFile?.width || 1920,
+          height: videoFile?.height || 1080,
+        };
+      });
+    }
 
     res.json({
       success: true,
       category,
-      photos,
+      photos: fallbackPhotos,
+      videos: fallbackVideos,
       usingFallback: true,
       source: 'fallback',
-      message: 'Using curated fallback photos from Pexels collection',
+      message: 'Using curated fallback media from Pexels collection',
     });
   } catch (error) {
     console.error('❌ Error fetching Pexels collage images:', error);

@@ -116,3 +116,66 @@ describe('Pexels Collage Fallback Integration', () => {
     });
   });
 });
+
+  describe('Video Support', () => {
+    it('should return videos when videos parameter is true', async () => {
+      const response = await request(app).get('/api/public/pexels-collage?category=venues&photos=true&videos=true');
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      expect(response.body.category).toBe('venues');
+      
+      // Should have both photos and videos arrays
+      expect(response.body.photos).toBeDefined();
+      expect(Array.isArray(response.body.photos)).toBe(true);
+      expect(response.body.videos).toBeDefined();
+      expect(Array.isArray(response.body.videos)).toBe(true);
+    });
+
+    it('should return only photos when videos parameter is false', async () => {
+      const response = await request(app).get('/api/public/pexels-collage?category=venues&photos=true&videos=false');
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      expect(response.body.photos).toBeDefined();
+      expect(Array.isArray(response.body.photos)).toBe(true);
+      expect(response.body.photos.length).toBeGreaterThan(0);
+      
+      // Videos should be empty array
+      expect(response.body.videos).toBeDefined();
+      expect(Array.isArray(response.body.videos)).toBe(true);
+      expect(response.body.videos.length).toBe(0);
+    });
+
+    it('should return only videos when photos parameter is false', async () => {
+      const response = await request(app).get('/api/public/pexels-collage?category=venues&photos=false&videos=true');
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      expect(response.body.videos).toBeDefined();
+      expect(Array.isArray(response.body.videos)).toBe(true);
+      expect(response.body.videos.length).toBeGreaterThan(0);
+      
+      // Photos should be empty array
+      expect(response.body.photos).toBeDefined();
+      expect(Array.isArray(response.body.photos)).toBe(true);
+      expect(response.body.photos.length).toBe(0);
+    });
+
+    it('should validate video structure', async () => {
+      const response = await request(app).get('/api/public/pexels-collage?category=venues&photos=false&videos=true');
+
+      expect(response.status).toBe(200);
+      
+      if (response.body.videos && response.body.videos.length > 0) {
+        const video = response.body.videos[0];
+        expect(video).toHaveProperty('type', 'video');
+        expect(video).toHaveProperty('id');
+        expect(video).toHaveProperty('src');
+        expect(video.src).toHaveProperty('large');
+        expect(video).toHaveProperty('thumbnail');
+        expect(video).toHaveProperty('videographer');
+        expect(video).toHaveProperty('videographer_url');
+      }
+    });
+  });

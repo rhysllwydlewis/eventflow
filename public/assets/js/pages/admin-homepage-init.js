@@ -73,12 +73,19 @@
     // Set interval
     document.getElementById('intervalSeconds').value = collageWidget.intervalSeconds || 2.5;
 
-    // Set Pexels queries
+    // Set Pexels photo queries
     const pexelsQueries = collageWidget.pexelsQueries || {};
     document.getElementById('pexelsQueryVenues').value = pexelsQueries.venues || '';
     document.getElementById('pexelsQueryCatering').value = pexelsQueries.catering || '';
     document.getElementById('pexelsQueryEntertainment').value = pexelsQueries.entertainment || '';
     document.getElementById('pexelsQueryPhotography').value = pexelsQueries.photography || '';
+
+    // Set Pexels video queries
+    const pexelsVideoQueries = collageWidget.pexelsVideoQueries || {};
+    document.getElementById('pexelsVideoQueryVenues').value = pexelsVideoQueries.venues || '';
+    document.getElementById('pexelsVideoQueryCatering').value = pexelsVideoQueries.catering || '';
+    document.getElementById('pexelsVideoQueryEntertainment').value = pexelsVideoQueries.entertainment || '';
+    document.getElementById('pexelsVideoQueryPhotography').value = pexelsVideoQueries.photography || '';
 
     // Set fallback checkbox
     document.getElementById('fallbackToPexels').checked =
@@ -98,15 +105,20 @@
 
   function updateSourcePanels() {
     const source = document.querySelector('input[name="collageSource"]:checked')?.value || 'pexels';
+    const videosEnabled = document.getElementById('mediaTypeVideos').checked;
 
     const pexelsPanel = document.getElementById('pexelsSettingsPanel');
+    const pexelsVideoPanel = document.getElementById('pexelsVideoQueriesPanel');
     const uploadsPanel = document.getElementById('uploadsGalleryPanel');
 
     if (source === 'pexels') {
       pexelsPanel.style.display = 'block';
+      // Show video queries panel only if videos checkbox is checked
+      pexelsVideoPanel.style.display = videosEnabled ? 'block' : 'none';
       uploadsPanel.style.display = 'none';
     } else {
       pexelsPanel.style.display = 'none';
+      pexelsVideoPanel.style.display = 'none';
       uploadsPanel.style.display = 'block';
     }
   }
@@ -147,6 +159,12 @@
         catering: document.getElementById('pexelsQueryCatering').value,
         entertainment: document.getElementById('pexelsQueryEntertainment').value,
         photography: document.getElementById('pexelsQueryPhotography').value,
+      };
+      const pexelsVideoQueries = {
+        venues: document.getElementById('pexelsVideoQueryVenues').value,
+        catering: document.getElementById('pexelsVideoQueryCatering').value,
+        entertainment: document.getElementById('pexelsVideoQueryEntertainment').value,
+        photography: document.getElementById('pexelsVideoQueryPhotography').value,
       };
       const fallbackToPexels = document.getElementById('fallbackToPexels').checked;
       
@@ -189,6 +207,7 @@
           mediaTypes,
           intervalSeconds,
           pexelsQueries,
+          pexelsVideoQueries,
           uploadGallery,
           fallbackToPexels,
         }),
@@ -675,6 +694,9 @@
       }
     });
   });
+
+  // Media type toggles - show/hide video queries panel
+  document.getElementById('mediaTypeVideos').addEventListener('change', updateSourcePanels);
 
   // Save button
   document.getElementById('saveCollageWidget').addEventListener('click', saveCollageWidget);
