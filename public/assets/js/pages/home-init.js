@@ -642,6 +642,25 @@ function displayPexelsImage(imgElement, frame, imageData, category) {
   addPhotographerCredit(frame, imageData);
 }
 
+/**
+ * Restore default image for a frame that failed to load Pexels image
+ * Helper function to avoid code duplication in error handling paths
+ * @param {HTMLElement} frame - Frame element
+ * @param {Object} categoryMapping - Mapping of categories to frame indices
+ * @param {string} category - Category name
+ */
+function restoreFrameDefault(collageFrames, categoryMapping, category) {
+  const frameIndex = categoryMapping[category];
+  const frame = collageFrames[frameIndex];
+  if (frame) {
+    const imgElement = frame.querySelector('img');
+    if (imgElement) {
+      restoreDefaultImage(imgElement);
+      frame.classList.remove('loading-pexels');
+    }
+  }
+}
+
 async function initPexelsCollage(settings) {
   // Use intervalSeconds from settings, fallback to old 'interval' property for backwards compatibility, default to 2.5 seconds
   const intervalSeconds = settings?.intervalSeconds ?? settings?.interval ?? 2.5;
@@ -730,15 +749,7 @@ async function initPexelsCollage(settings) {
             }
           }
           // Restore default for this category since fetch failed
-          const frameIndex = categoryMapping[category];
-          const frame = collageFrames[frameIndex];
-          if (frame) {
-            const imgElement = frame.querySelector('img');
-            if (imgElement) {
-              restoreDefaultImage(imgElement);
-              frame.classList.remove('loading-pexels');
-            }
-          }
+          restoreFrameDefault(collageFrames, categoryMapping, category);
           continue;
         }
 
@@ -750,15 +761,7 @@ async function initPexelsCollage(settings) {
             console.warn(`⚠️  Invalid response structure for ${category}`);
           }
           // Restore default for this category since response is invalid
-          const frameIndex = categoryMapping[category];
-          const frame = collageFrames[frameIndex];
-          if (frame) {
-            const imgElement = frame.querySelector('img');
-            if (imgElement) {
-              restoreDefaultImage(imgElement);
-              frame.classList.remove('loading-pexels');
-            }
-          }
+          restoreFrameDefault(collageFrames, categoryMapping, category);
           continue;
         }
 
@@ -791,15 +794,7 @@ async function initPexelsCollage(settings) {
               console.warn(`⚠️  No valid photos after filtering for ${category}`);
             }
             // Restore default for this category since no valid photos
-            const frameIndex = categoryMapping[category];
-            const frame = collageFrames[frameIndex];
-            if (frame) {
-              const imgElement = frame.querySelector('img');
-              if (imgElement) {
-                restoreDefaultImage(imgElement);
-                frame.classList.remove('loading-pexels');
-              }
-            }
+            restoreFrameDefault(collageFrames, categoryMapping, category);
             continue;
           }
 
@@ -848,22 +843,14 @@ async function initPexelsCollage(settings) {
           console.error(`❌ Error fetching Pexels images for ${category}:`, error);
         }
         // Restore default for this category since an error occurred
-        const frameIndex = categoryMapping[category];
-        const frame = collageFrames[frameIndex];
-        if (frame) {
-          const imgElement = frame.querySelector('img');
-          if (imgElement) {
-            restoreDefaultImage(imgElement);
-            frame.classList.remove('loading-pexels');
-          }
-        }
+        restoreFrameDefault(collageFrames, categoryMapping, category);
       }
     }
 
     // Note: We don't do a cleanup loop here because the preload operations above are async.
     // Each frame's loading state and opacity will be handled by its respective
     // onload/onerror/timeout handlers in the preload logic above.
-    
+
     // Start cycling images
     if (Object.keys(imageCache).length > 0) {
       // Clear any existing interval to prevent memory leaks
