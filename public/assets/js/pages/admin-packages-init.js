@@ -326,6 +326,7 @@
    * - All text fields (title, description, price, etc.)
    * - Image preview if package has an existing image
    * - Sets currentImageUrl to existing image for preservation
+   * - Shows supplier name as read-only (not editable)
    *
    * Note: When editing, if user doesn't upload a new image,
    * the existing currentImageUrl will be used to preserve the image.
@@ -341,7 +342,24 @@
 
     document.getElementById('formTitle').textContent = 'Edit Package';
     document.getElementById('packageId').value = pkg.id;
-    document.getElementById('packageSupplierId').value = pkg.supplierId || '';
+
+    // Hide the dropdown and show read-only supplier name
+    const supplierSelect = document.getElementById('packageSupplierId');
+    const supplierReadOnly = document.getElementById('supplierReadOnly');
+    const supplierReadOnlyName = document.getElementById('supplierReadOnlyName');
+    const supplierReadOnlyId = document.getElementById('supplierReadOnlyId');
+
+    supplierSelect.style.display = 'none';
+    supplierSelect.removeAttribute('required');
+
+    // Find the supplier name from allSuppliers
+    const supplier = allSuppliers.find(s => s.id === pkg.supplierId);
+    const supplierName = supplier ? supplier.name : 'Unknown Supplier';
+
+    supplierReadOnlyName.textContent = supplierName;
+    supplierReadOnlyId.value = pkg.supplierId || '';
+    supplierReadOnly.classList.remove('hidden');
+
     document.getElementById('packageTitle').value = pkg.title || '';
     document.getElementById('packageDescription').value = pkg.description || '';
     document.getElementById('packagePrice').value = pkg.price_display || '';
@@ -439,6 +457,14 @@
     currentImageFile = null;
     currentImageUrl = null;
 
+    // Show the dropdown and hide read-only supplier display
+    const supplierSelect = document.getElementById('packageSupplierId');
+    const supplierReadOnly = document.getElementById('supplierReadOnly');
+
+    supplierSelect.style.display = 'block';
+    supplierSelect.setAttribute('required', 'required');
+    supplierReadOnly.classList.add('hidden');
+
     // Reset image preview
     const placeholder = document.getElementById('uploadPlaceholder');
     const preview = document.getElementById('imagePreview');
@@ -480,7 +506,15 @@
     e.preventDefault();
 
     const id = document.getElementById('packageId').value;
-    const supplierId = document.getElementById('packageSupplierId').value;
+    const isEditing = !!id;
+
+    // Get supplierId - from dropdown when creating, from hidden input when editing
+    let supplierId;
+    if (isEditing) {
+      supplierId = document.getElementById('supplierReadOnlyId').value;
+    } else {
+      supplierId = document.getElementById('packageSupplierId').value;
+    }
 
     if (!supplierId) {
       if (typeof Toast !== 'undefined') {
