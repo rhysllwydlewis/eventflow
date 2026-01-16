@@ -5231,14 +5231,27 @@ router.get('/maintenance/message', async (req, res) => {
  */
 router.get('/public/pexels-collage', async (req, res) => {
   try {
-    // Check if Pexels collage is enabled
+    // Check if Pexels collage is enabled via new collageWidget configuration
     const settings = (await dbUnified.read('settings')) || {};
-    const features = settings.features || {};
+    const collageWidget = settings.collageWidget || {};
 
-    if (features.pexelsCollage !== true) {
+    // Check both new collageWidget format and legacy pexelsCollage feature flag for backward compatibility
+    const isEnabled = collageWidget.enabled === true || settings.features?.pexelsCollage === true;
+    const source = collageWidget.source || 'pexels';
+
+    if (!isEnabled) {
       return res.status(404).json({
         error: 'Pexels collage feature is not enabled',
         errorType: 'feature_disabled',
+      });
+    }
+
+    // If source is not 'pexels', return an error (uploads source should use upload gallery)
+    if (source !== 'pexels') {
+      return res.status(400).json({
+        error: 'This endpoint only supports Pexels source',
+        errorType: 'invalid_source',
+        message: 'Configure collage widget to use Pexels source or use upload gallery',
       });
     }
 
@@ -5260,14 +5273,16 @@ router.get('/public/pexels-collage', async (req, res) => {
       });
     }
 
-    const pexelsCollageSettings = settings.pexelsCollageSettings || {
-      queries: {
-        venues: 'wedding venue elegant ballroom',
-        catering: 'wedding catering food elegant',
-        entertainment: 'live band wedding party',
-        photography: 'wedding photography professional',
-      },
+    // Use new collageWidget.pexelsQueries, fallback to legacy pexelsCollageSettings for backward compatibility
+    const pexelsQueries = collageWidget.pexelsQueries || settings.pexelsCollageSettings?.queries || {
+      venues: 'wedding venue elegant ballroom',
+      catering: 'wedding catering food elegant',
+      entertainment: 'live band wedding party',
+      photography: 'wedding photography professional',
     };
+
+    // Support legacy pexelsCollageSettings for collection IDs if configured
+    const pexelsCollageSettings = settings.pexelsCollageSettings || {};
 
     // Import Pexels service
     const { getPexelsService } = require('../utils/pexels-service');
@@ -5305,7 +5320,7 @@ router.get('/public/pexels-collage', async (req, res) => {
         }
 
         // Use query-based searching (default behavior or fallback from empty collection)
-        const query = pexelsCollageSettings.queries[category] || category;
+        const query = pexelsQueries[category] || category;
         console.log(`🔍 Searching photos with query: "${query}" for ${category}`);
         const results = await pexels.searchPhotos(query, 8, 1);
 
