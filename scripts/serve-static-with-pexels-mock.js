@@ -29,15 +29,14 @@ app.use((req, res, next) => {
   next();
 });
 
-// Mock Pexels photos - using real Pexels image URLs for testing
+// Mock Pexels photos - using local test images to clearly show Pexels integration working
 const mockPexelsPhotos = {
   venues: [
     {
       id: 1615776,
       src: {
-        large:
-          'https://images.pexels.com/photos/1615776/pexels-photo-1615776.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
-        original: 'https://images.pexels.com/photos/1615776/pexels-photo-1615776.jpeg',
+        large: '/assets/images/test-pexels-venue-1.svg',
+        original: '/assets/images/test-pexels-venue-1.svg',
       },
       photographer: 'Craig Adderley',
       photographer_url: 'https://www.pexels.com/@thatguycraig000',
@@ -45,9 +44,8 @@ const mockPexelsPhotos = {
     {
       id: 169198,
       src: {
-        large:
-          'https://images.pexels.com/photos/169198/pexels-photo-169198.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
-        original: 'https://images.pexels.com/photos/169198/pexels-photo-169198.jpeg',
+        large: '/assets/images/test-pexels-venue-1.svg',
+        original: '/assets/images/test-pexels-venue-1.svg',
       },
       photographer: 'Pixabay',
       photographer_url: 'https://www.pexels.com/@pixabay',
@@ -57,9 +55,8 @@ const mockPexelsPhotos = {
     {
       id: 958545,
       src: {
-        large:
-          'https://images.pexels.com/photos/958545/pexels-photo-958545.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
-        original: 'https://images.pexels.com/photos/958545/pexels-photo-958545.jpeg',
+        large: '/assets/images/test-pexels-catering-1.svg',
+        original: '/assets/images/test-pexels-catering-1.svg',
       },
       photographer: 'Chan Walrus',
       photographer_url: 'https://www.pexels.com/@chanwalrus',
@@ -67,9 +64,8 @@ const mockPexelsPhotos = {
     {
       id: 1640777,
       src: {
-        large:
-          'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
-        original: 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg',
+        large: '/assets/images/test-pexels-catering-1.svg',
+        original: '/assets/images/test-pexels-catering-1.svg',
       },
       photographer: 'Ella Olsson',
       photographer_url: 'https://www.pexels.com/@ella-olsson-572949',
@@ -79,9 +75,8 @@ const mockPexelsPhotos = {
     {
       id: 1763075,
       src: {
-        large:
-          'https://images.pexels.com/photos/1763075/pexels-photo-1763075.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
-        original: 'https://images.pexels.com/photos/1763075/pexels-photo-1763075.jpeg',
+        large: '/assets/images/test-pexels-entertainment-1.svg',
+        original: '/assets/images/test-pexels-entertainment-1.svg',
       },
       photographer: 'Vishnu R Nair',
       photographer_url: 'https://www.pexels.com/@vishnurnair',
@@ -89,9 +84,8 @@ const mockPexelsPhotos = {
     {
       id: 1105666,
       src: {
-        large:
-          'https://images.pexels.com/photos/1105666/pexels-photo-1105666.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
-        original: 'https://images.pexels.com/photos/1105666/pexels-photo-1105666.jpeg',
+        large: '/assets/images/test-pexels-entertainment-1.svg',
+        original: '/assets/images/test-pexels-entertainment-1.svg',
       },
       photographer: 'Wendy Wei',
       photographer_url: 'https://www.pexels.com/@wendywei',
@@ -101,9 +95,8 @@ const mockPexelsPhotos = {
     {
       id: 1983037,
       src: {
-        large:
-          'https://images.pexels.com/photos/1983037/pexels-photo-1983037.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
-        original: 'https://images.pexels.com/photos/1983037/pexels-photo-1983037.jpeg',
+        large: '/assets/images/test-pexels-photography-1.svg',
+        original: '/assets/images/test-pexels-photography-1.svg',
       },
       photographer: 'Tuur Tisseghem',
       photographer_url: 'https://www.pexels.com/@tuur',
@@ -111,9 +104,8 @@ const mockPexelsPhotos = {
     {
       id: 1251832,
       src: {
-        large:
-          'https://images.pexels.com/photos/1251832/pexels-photo-1251832.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
-        original: 'https://images.pexels.com/photos/1251832/pexels-photo-1251832.jpeg',
+        large: '/assets/images/test-pexels-photography-1.svg',
+        original: '/assets/images/test-pexels-photography-1.svg',
       },
       photographer: 'Terje Sollie',
       photographer_url: 'https://www.pexels.com/@terje',
