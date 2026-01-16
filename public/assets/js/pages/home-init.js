@@ -607,6 +607,23 @@ function validatePexelsUrl(url) {
   return 'https://www.pexels.com';
 }
 
+/**
+ * Restore default image for a collage frame
+ * Sets opacity to 1 and restores original src if available
+ * @param {HTMLImageElement} imgElement - Image element to restore
+ */
+function restoreDefaultImage(imgElement) {
+  if (!imgElement) {
+    return;
+  }
+  // Restore default image from stored original src
+  if (imgElement.dataset.originalSrc) {
+    imgElement.src = imgElement.dataset.originalSrc;
+  }
+  // Restore full opacity
+  imgElement.style.opacity = '1';
+}
+
 async function initPexelsCollage(settings) {
   // Use intervalSeconds from settings, fallback to old 'interval' property for backwards compatibility, default to 2.5 seconds
   const intervalSeconds = settings?.intervalSeconds ?? settings?.interval ?? 2.5;
@@ -630,9 +647,19 @@ async function initPexelsCollage(settings) {
     return;
   }
 
-  // Add loading states to frames
+  // Add loading states to frames and clear default images
   collageFrames.forEach(frame => {
     frame.classList.add('loading-pexels');
+    // Hide default images immediately when switching to Pexels mode
+    const imgElement = frame.querySelector('img');
+    if (imgElement) {
+      // Store original src for fallback (only if it has a valid src)
+      if (!imgElement.dataset.originalSrc && imgElement.src) {
+        imgElement.dataset.originalSrc = imgElement.src;
+      }
+      // Clear the image to prevent default from showing under loading state
+      imgElement.style.opacity = '0';
+    }
   });
 
   // Cache for storing fetched images per category
@@ -729,6 +756,9 @@ async function initPexelsCollage(settings) {
             imgElement.src = imageCache[category][0].url;
             imgElement.alt = `${category.charAt(0).toUpperCase() + category.slice(1)} - Photo by ${imageCache[category][0].photographer}`;
 
+            // Restore opacity once Pexels image is set
+            imgElement.style.opacity = '1';
+
             // Remove loading state
             frame.classList.remove('loading-pexels');
 
@@ -747,6 +777,12 @@ async function initPexelsCollage(settings) {
     // Remove loading states from all frames
     collageFrames.forEach(frame => {
       frame.classList.remove('loading-pexels');
+      // Restore opacity for frames that didn't get Pexels images
+      const imgElement = frame.querySelector('img');
+      if (imgElement && (!imgElement.style.opacity || parseFloat(imgElement.style.opacity) === 0)) {
+        // Restore default image if Pexels didn't load
+        restoreDefaultImage(imgElement);
+      }
     });
 
     // Start cycling images
@@ -771,6 +807,13 @@ async function initPexelsCollage(settings) {
       if (isDevelopmentEnvironment()) {
         console.warn('No Pexels images loaded, falling back to static images');
       }
+      // Restore default images for all frames
+      collageFrames.forEach(frame => {
+        const imgElement = frame.querySelector('img');
+        if (imgElement) {
+          restoreDefaultImage(imgElement);
+        }
+      });
       // Fall back to loading static hero images
       await loadHeroCollageImages();
     }
@@ -778,6 +821,11 @@ async function initPexelsCollage(settings) {
     // Remove loading states from all frames on error
     collageFrames.forEach(frame => {
       frame.classList.remove('loading-pexels');
+      // Restore default images on error
+      const imgElement = frame.querySelector('img');
+      if (imgElement) {
+        restoreDefaultImage(imgElement);
+      }
     });
 
     // Only log errors in development mode
