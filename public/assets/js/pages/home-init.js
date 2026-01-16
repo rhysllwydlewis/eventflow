@@ -1005,6 +1005,7 @@ async function initCollageWidget(widgetConfig) {
       intervalSeconds,
       hasQueries: !!pexelsQueries,
       uploadGalleryCount: uploadGallery?.length || 0,
+      uploadGalleryUrls: uploadGallery || [],
       fallbackToPexels,
     });
   }
@@ -1040,8 +1041,9 @@ async function initCollageWidget(widgetConfig) {
     // Load media based on source
     if (source === 'uploads' && uploadGallery && uploadGallery.length > 0) {
       // Use uploaded media
-      if (isDevelopmentEnvironment()) {
-        console.log(`Loading ${uploadGallery.length} uploaded media files`);
+      if (isDebugEnabled()) {
+        console.log(`[Collage Widget] ✅ UPLOADS BRANCH EXECUTED: Loading ${uploadGallery.length} uploaded media files`);
+        console.log('[Collage Widget] Upload gallery URLs:', uploadGallery);
       }
 
       // Distribute media across categories
@@ -1058,9 +1060,14 @@ async function initCollageWidget(widgetConfig) {
               url,
               type: isVideo ? 'video' : 'photo',
               category,
+              // Note: no photographer field, so credits won't be added
             };
           });
         currentMediaIndex[category] = 0;
+        
+        if (isDebugEnabled()) {
+          console.log(`[Collage Widget] Category "${category}" assigned ${mediaCache[category].length} media items`);
+        }
       });
     } else if (source === 'pexels' || (fallbackToPexels && source === 'uploads')) {
       // Use Pexels API (fallback or primary)
@@ -1253,6 +1260,45 @@ async function initCollageWidget(widgetConfig) {
 }
 
 /**
+ * Remove <source> elements from parent <picture> element
+ * This is necessary to allow dynamic img.src changes to take effect
+ * The browser caches the <source> selection and ignores img.src changes
+ * @param {HTMLImageElement} imgElement - Image element
+ */
+function removePictureSourceElements(imgElement) {
+  if (!imgElement || !imgElement.parentElement) {
+    return;
+  }
+  
+  const parent = imgElement.parentElement;
+  if (parent.tagName === 'PICTURE') {
+    // Remove all <source> elements to allow img.src to take precedence
+    const sources = parent.querySelectorAll('source');
+    sources.forEach(source => source.remove());
+    
+    if (isDebugEnabled()) {
+      console.log('[Collage Widget] Removed <source> elements from <picture> to enable dynamic image switching');
+    }
+  }
+}
+
+/**
+ * Add cache-busting query parameter to URL
+ * Prevents browser from using cached static images when switching sources
+ * @param {string} url - Image URL
+ * @returns {string} URL with cache-busting parameter
+ */
+function addCacheBuster(url) {
+  if (!url) {
+    return url;
+  }
+  
+  // Use 'cb' (cache bust) parameter to avoid conflicts with existing 't' parameters
+  const separator = url.includes('?') ? '&' : '?';
+  return `${url}${separator}cb=${Date.now()}`;
+}
+
+/**
  * Load media (photo or video) into a collage frame
  * @param {HTMLElement} frame - Frame element
  * @param {HTMLElement} mediaElement - Current media element (img)
@@ -1306,9 +1352,12 @@ async function loadMediaIntoFrame(
         video.style.opacity = '1';
         frame.classList.remove('loading-pexels');
 
-        // Add credit if from Pexels
+        // Only add credit if from Pexels (has photographer field)
         if (media.photographer) {
           addPhotographerCredit(frame, media);
+        } else {
+          // Remove any existing credits when using uploaded videos
+          removePhotographerCredit(frame);
         }
 
         resolve();
@@ -1346,13 +1395,23 @@ async function loadMediaIntoFrame(
         if (isDebugEnabled()) {
           console.warn(`[Collage Widget] Image preload timeout for ${category}, displaying anyway`);
         }
-        mediaElement.src = media.url;
+        
+        // Fix picture element issue: Remove <source> elements before changing img.src
+        removePictureSourceElements(mediaElement);
+        
+        // Add cache busting to prevent browser from using cached static images
+        const cacheBustedUrl = addCacheBuster(media.url);
+        mediaElement.src = cacheBustedUrl;
         mediaElement.alt = `${category.charAt(0).toUpperCase() + category.slice(1)} - Photo`;
         mediaElement.style.opacity = '1';
         frame.classList.remove('loading-pexels');
 
+        // Only add photographer credit for Pexels images (not uploads)
         if (media.photographer) {
           addPhotographerCredit(frame, media);
+        } else {
+          // Remove any existing credits when using uploaded images
+          removePhotographerCredit(frame);
         }
 
         resolve();
@@ -1365,13 +1424,23 @@ async function loadMediaIntoFrame(
             `[Collage Widget] Image loaded successfully for ${category}, setting src and opacity=1`
           );
         }
-        mediaElement.src = media.url;
+        
+        // Fix picture element issue: Remove <source> elements before changing img.src
+        removePictureSourceElements(mediaElement);
+        
+        // Add cache busting to prevent browser from using cached static images
+        const cacheBustedUrl = addCacheBuster(media.url);
+        mediaElement.src = cacheBustedUrl;
         mediaElement.alt = `${category.charAt(0).toUpperCase() + category.slice(1)} - Photo`;
         mediaElement.style.opacity = '1';
         frame.classList.remove('loading-pexels');
 
+        // Only add photographer credit for Pexels images (not uploads)
         if (media.photographer) {
           addPhotographerCredit(frame, media);
+        } else {
+          // Remove any existing credits when using uploaded images
+          removePhotographerCredit(frame);
         }
 
         resolve();
@@ -1471,8 +1540,12 @@ function cycleWidgetMedia(
               video.style.opacity = '1';
             }
 
+            // Only add credit if from Pexels (has photographer field)
             if (nextMedia.photographer) {
               addPhotographerCredit(frame, nextMedia);
+            } else {
+              // Remove any existing credits when using uploaded videos
+              removePhotographerCredit(frame);
             }
           };
 
@@ -1517,7 +1590,12 @@ function cycleWidgetMedia(
               }
             } else {
               // Update existing img
-              currentElement.src = nextMedia.url;
+              // Fix picture element issue: Remove <source> elements before changing img.src
+              removePictureSourceElements(currentElement);
+              
+              // Add cache busting
+              const cacheBustedUrl = addCacheBuster(nextMedia.url);
+              currentElement.src = cacheBustedUrl;
               currentElement.alt = `${category.charAt(0).toUpperCase() + category.slice(1)} - Photo`;
               currentElement.classList.remove('fading');
               if (!prefersReducedMotion) {
@@ -1529,8 +1607,12 @@ function cycleWidgetMedia(
               }
             }
 
+            // Only add credit if from Pexels (has photographer field)
             if (nextMedia.photographer) {
               addPhotographerCredit(frame, nextMedia);
+            } else {
+              // Remove any existing credits when using uploaded images
+              removePhotographerCredit(frame);
             }
           };
 
@@ -1654,6 +1736,26 @@ function cyclePexelsImages(imageCache, currentImageIndex, collageFrames, categor
       // Don't recurse to avoid infinite loop - just skip this cycle
     };
   });
+}
+
+/**
+ * Remove photographer credit from collage frame
+ * Used when switching from Pexels to uploaded images
+ * @param {HTMLElement} frame - Frame element
+ */
+function removePhotographerCredit(frame) {
+  if (!frame) {
+    return;
+  }
+  
+  const existingCredit = frame.querySelector('.pexels-credit');
+  if (existingCredit) {
+    existingCredit.remove();
+    
+    if (isDebugEnabled()) {
+      console.log('[Collage Widget] Removed photographer credit');
+    }
+  }
 }
 
 /**
