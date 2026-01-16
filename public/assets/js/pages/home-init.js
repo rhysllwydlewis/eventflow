@@ -621,9 +621,9 @@ async function initPexelsCollage(settings) {
     const categories = Object.keys(categoryMapping);
     for (const category of categories) {
       try {
-        // Use the public Pexels collage endpoint
+        // Use the public Pexels collage endpoint (in admin routes but publicly accessible)
         const response = await fetch(
-          `/api/public/pexels-collage?category=${encodeURIComponent(category)}`
+          `/api/admin/public/pexels-collage?category=${encodeURIComponent(category)}`
         );
 
         if (!response.ok) {
