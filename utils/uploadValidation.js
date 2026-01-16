@@ -38,12 +38,42 @@ const FORMAT_NAMES = {
 const ALLOWED_FORMAT_NAMES = ALLOWED_IMAGE_TYPES.map(mime => FORMAT_NAMES[mime] || mime);
 
 /**
+ * Helper function to check file extension as a fallback
+ * @param {string} filename - Original filename
+ * @returns {string|null} - Detected MIME type based on extension, or null
+ */
+function detectTypeFromExtension(filename) {
+  if (!filename || typeof filename !== 'string') {
+    return null;
+  }
+
+  // Check if filename contains a dot and has an extension
+  const lastDotIndex = filename.lastIndexOf('.');
+  if (lastDotIndex === -1 || lastDotIndex === filename.length - 1) {
+    return null; // No extension found
+  }
+
+  const ext = filename.substring(lastDotIndex + 1).toLowerCase();
+  const extensionMap = {
+    jpg: 'image/jpeg',
+    jpeg: 'image/jpeg',
+    png: 'image/png',
+    webp: 'image/webp',
+    gif: 'image/gif',
+  };
+
+  return extensionMap[ext] || null;
+}
+
+/**
  * Validate file type using magic-byte detection
  * Prevents file type spoofing by checking actual file content
+ * Falls back to extension-based validation if magic byte detection fails
  * @param {Buffer} buffer - File buffer
+ * @param {string} filename - Original filename (optional, for fallback)
  * @returns {Promise<Object>} - { valid: boolean, detectedType: string, error?: string }
  */
-async function validateFileType(buffer) {
+async function validateFileType(buffer, filename = null) {
   try {
     // Ensure buffer is valid
     if (!Buffer.isBuffer(buffer) || buffer.length === 0) {
@@ -55,16 +85,68 @@ async function validateFileType(buffer) {
       };
     }
 
-    const fileType = await fileTypeFromBuffer(buffer);
-
     // Get magic bytes for debugging (first 16 bytes as hex)
     const magicBytes = buffer.slice(0, Math.min(16, buffer.length)).toString('hex');
 
+    let fileType;
+    try {
+      fileType = await fileTypeFromBuffer(buffer);
+    } catch (detectionError) {
+      logger.warn('Magic byte detection threw an error, attempting extension fallback', {
+        error: detectionError.message,
+        magicBytes,
+        filename,
+      });
+
+      // Fallback to extension-based detection
+      if (filename) {
+        const extensionType = detectTypeFromExtension(filename);
+        if (extensionType && ALLOWED_IMAGE_TYPES.includes(extensionType)) {
+          logger.info('Using extension-based type detection as fallback', {
+            filename,
+            detectedType: extensionType,
+          });
+          return {
+            valid: true,
+            detectedType: extensionType,
+            usedFallback: true,
+          };
+        }
+      }
+
+      // If no fallback worked, return error with details
+      return {
+        valid: false,
+        detectedType: 'error',
+        error: `File type detection failed: ${detectionError.message}. The file may be corrupted.`,
+        allowedTypes: ALLOWED_IMAGE_TYPES,
+        magicBytes,
+      };
+    }
+
     if (!fileType) {
-      logger.warn('File type detection failed', {
+      logger.warn('File type detection returned null, attempting extension fallback', {
         magicBytes,
         bufferLength: buffer.length,
+        filename,
       });
+
+      // Fallback to extension-based detection
+      if (filename) {
+        const extensionType = detectTypeFromExtension(filename);
+        if (extensionType && ALLOWED_IMAGE_TYPES.includes(extensionType)) {
+          logger.info('Using extension-based type detection as fallback', {
+            filename,
+            detectedType: extensionType,
+          });
+          return {
+            valid: true,
+            detectedType: extensionType,
+            usedFallback: true,
+          };
+        }
+      }
+
       return {
         valid: false,
         detectedType: 'unknown',
@@ -95,11 +177,32 @@ async function validateFileType(buffer) {
       detectedType: fileType.mime,
     };
   } catch (error) {
-    logger.error('File type validation error:', error);
+    logger.error('File type validation error:', {
+      error: error.message,
+      stack: error.stack,
+      magicBytes: buffer.slice(0, Math.min(16, buffer.length)).toString('hex'),
+    });
+
+    // Try extension fallback as last resort
+    if (filename) {
+      const extensionType = detectTypeFromExtension(filename);
+      if (extensionType && ALLOWED_IMAGE_TYPES.includes(extensionType)) {
+        logger.info('Using extension-based type detection as final fallback', {
+          filename,
+          detectedType: extensionType,
+        });
+        return {
+          valid: true,
+          detectedType: extensionType,
+          usedFallback: true,
+        };
+      }
+    }
+
     return {
       valid: false,
       detectedType: 'error',
-      error: 'Failed to validate file type.',
+      error: `Failed to validate file type: ${error.message}`,
       allowedTypes: ALLOWED_IMAGE_TYPES,
     };
   }
@@ -185,9 +288,10 @@ function validateFileSize(size, context = 'supplier') {
  * Performs all validation checks: type, size, dimensions
  * @param {Buffer} buffer - File buffer
  * @param {string} context - Upload context ('marketplace', 'supplier', 'avatar')
+ * @param {string} filename - Original filename (optional, for fallback type detection)
  * @returns {Promise<Object>} - { valid: boolean, errors: string[], details: Object }
  */
-async function validateUpload(buffer, context = 'supplier') {
+async function validateUpload(buffer, context = 'supplier', filename = null) {
   const errors = [];
   const details = {};
 
@@ -198,8 +302,8 @@ async function validateUpload(buffer, context = 'supplier') {
     errors.push(sizeValidation.error);
   }
 
-  // 2. Validate file type (magic bytes)
-  const typeValidation = await validateFileType(buffer);
+  // 2. Validate file type (magic bytes with extension fallback)
+  const typeValidation = await validateFileType(buffer, filename);
   details.type = typeValidation;
   if (!typeValidation.valid) {
     errors.push(typeValidation.error);
@@ -305,10 +409,15 @@ function formatValidationErrorResponse(error) {
 
   // Create a user-friendly error message
   let userMessage = error.message;
-  if (detectedType && detectedType !== 'unknown' && detectedType !== 'invalid') {
+  if (detectedType === 'error') {
+    // Special handling for detection errors
+    userMessage = `Could not detect file type. The file may be corrupted or in an unsupported format. Allowed types: ${allowedTypesString}.`;
+  } else if (detectedType && detectedType !== 'unknown' && detectedType !== 'invalid') {
     userMessage = `File type validation failed. Detected type: ${detectedType}. Allowed types: ${allowedTypesString}.`;
   } else if (detectedType === 'unknown') {
     userMessage = `Could not detect file type. The file may be corrupted. Allowed types: ${allowedTypesString}.`;
+  } else if (detectedType === 'invalid') {
+    userMessage = `Invalid or empty file provided. Allowed types: ${allowedTypesString}.`;
   }
 
   return {

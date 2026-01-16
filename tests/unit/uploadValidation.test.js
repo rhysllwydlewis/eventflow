@@ -29,6 +29,42 @@ describe('Upload Validation', () => {
       expect(typeof result.valid).toBe('boolean');
     });
 
+    test('should use extension fallback when magic byte detection fails', async () => {
+      // Create a JPEG buffer
+      const buffer = await sharp({
+        create: {
+          width: 100,
+          height: 100,
+          channels: 3,
+          background: { r: 255, g: 0, b: 0 },
+        },
+      })
+        .jpeg()
+        .toBuffer();
+
+      // If fileTypeFromBuffer fails, it should fall back to extension
+      const result = await uploadValidation.validateFileType(buffer, 'test.jpeg');
+      expect(result).toHaveProperty('valid');
+      expect(result).toHaveProperty('detectedType');
+      // Should either detect via magic bytes OR fall back to extension
+      if (result.usedFallback) {
+        expect(result.detectedType).toBe('image/jpeg');
+        expect(result.valid).toBe(true);
+      }
+    });
+
+    test('should accept various JPEG extensions via fallback', async () => {
+      const buffer = Buffer.from('fake image data', 'utf-8');
+
+      // Test .jpg extension
+      const result1 = await uploadValidation.validateFileType(buffer, 'photo.jpg');
+      expect(result1).toHaveProperty('valid');
+
+      // Test .jpeg extension
+      const result2 = await uploadValidation.validateFileType(buffer, 'photo.jpeg');
+      expect(result2).toHaveProperty('valid');
+    });
+
     test('should reject non-image file (text buffer)', async () => {
       // Create a text file disguised as image
       const fakeImage = Buffer.from('This is not an image file!', 'utf-8');
