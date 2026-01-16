@@ -1036,8 +1036,8 @@ async function initCollageWidget(widgetConfig) {
     } else if (source === 'pexels' || (fallbackToPexels && source === 'uploads')) {
       // Use Pexels API (fallback or primary)
       if (source === 'uploads' && fallbackToPexels) {
-        if (isDevelopmentEnvironment()) {
-          console.log('Upload gallery empty, falling back to Pexels');
+        if (isDebugEnabled()) {
+          console.log('[Collage Widget] Upload gallery empty, falling back to Pexels');
         }
       }
 
@@ -1096,8 +1096,8 @@ async function initCollageWidget(widgetConfig) {
       }
     } else {
       // No valid source, restore defaults
-      if (isDevelopmentEnvironment()) {
-        console.warn('No valid media source configured');
+      if (isDebugEnabled()) {
+        console.warn('[Collage Widget] No valid media source configured');
       }
       collageFrames.forEach(frame => {
         const imgElement = frame.querySelector('img');
@@ -1111,8 +1111,8 @@ async function initCollageWidget(widgetConfig) {
     // Initialize collage display
     const categories = Object.keys(mediaCache);
     if (categories.length === 0) {
-      if (isDevelopmentEnvironment()) {
-        console.warn('No media loaded, falling back to defaults');
+      if (isDebugEnabled()) {
+        console.warn('[Collage Widget] No media loaded, falling back to defaults');
       }
       collageFrames.forEach(frame => {
         const imgElement = frame.querySelector('img');
