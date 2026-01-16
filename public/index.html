@@ -124,18 +124,24 @@
     <link rel="stylesheet" href="/assets/css/navigation-enhancements.css" />
     <link rel="icon" href="/favicon.svg" />
     
-    <!-- Pexels Collage Crossfade Animations -->
+    <!-- Collage Widget Animations and Styles -->
     <style>
       .collage .frame {
         position: relative;
       }
-      .collage .frame img {
+      /* Support both img and video elements */
+      .collage .frame img,
+      .collage .frame video {
         transition: opacity 1s ease-in-out;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
       }
-      .collage .frame img.fading {
+      .collage .frame img.fading,
+      .collage .frame video.fading {
         opacity: 0;
       }
-      /* Loading state for Pexels images */
+      /* Loading state for collage media */
       .collage .frame.loading-pexels::after {
         content: '';
         position: absolute;
@@ -153,6 +159,7 @@
       @keyframes pexels-spin {
         to { transform: translate(-50%, -50%) rotate(360deg); }
       }
+      /* Media credit (for Pexels attribution) */
       .pexels-credit {
         position: absolute;
         bottom: 4px;
@@ -167,6 +174,16 @@
       .pexels-credit a {
         color: white;
         text-decoration: underline;
+      }
+      /* Reduced motion support */
+      @media (prefers-reduced-motion: reduce) {
+        .collage .frame img,
+        .collage .frame video {
+          transition: none;
+        }
+        .collage .frame video {
+          animation: none;
+        }
       }
     </style>
   </head>
