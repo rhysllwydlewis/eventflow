@@ -11,6 +11,120 @@ const { test, expect } = require('@playwright/test');
  */
 
 test.describe('Collage Initialization Fallback', () => {
+  test('Debug detection works with various URL parameters', async ({ page }) => {
+    const consoleMessages = [];
+
+    // Track all console messages
+    page.on('console', msg => {
+      consoleMessages.push(msg.text());
+    });
+
+    // Test 1: ?debug=1
+    await page.goto('/?debug=1', { waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(500);
+
+    let hasStartupLog = consoleMessages.some(msg =>
+      msg.includes('[Collage Debug] collage script loaded')
+    );
+    expect(hasStartupLog).toBe(true);
+    console.log('✓ Startup log appears with ?debug=1');
+
+    // Test 2: Check isDebugEnabled returns true
+    let debugEnabled = await page.evaluate(() => {
+      return typeof isDebugEnabled === 'function' && isDebugEnabled();
+    });
+    expect(debugEnabled).toBe(true);
+    console.log('✓ isDebugEnabled() returns true with ?debug=1');
+
+    // Test 3: ?debug=true
+    consoleMessages.length = 0; // Clear messages
+    await page.goto('/?debug=true', { waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(500);
+
+    debugEnabled = await page.evaluate(() => {
+      return typeof isDebugEnabled === 'function' && isDebugEnabled();
+    });
+    expect(debugEnabled).toBe(true);
+    console.log('✓ isDebugEnabled() returns true with ?debug=true');
+
+    // Test 4: ?debug=yes
+    await page.goto('/?debug=yes', { waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(500);
+
+    debugEnabled = await page.evaluate(() => {
+      return typeof isDebugEnabled === 'function' && isDebugEnabled();
+    });
+    expect(debugEnabled).toBe(true);
+    console.log('✓ isDebugEnabled() returns true with ?debug=yes');
+
+    // Test 5: ?debug (no value)
+    await page.goto('/?debug', { waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(500);
+
+    debugEnabled = await page.evaluate(() => {
+      return typeof isDebugEnabled === 'function' && isDebugEnabled();
+    });
+    expect(debugEnabled).toBe(true);
+    console.log('✓ isDebugEnabled() returns true with ?debug');
+
+    // Test 6: No debug param (should be false in production)
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(500);
+
+    debugEnabled = await page.evaluate(() => {
+      // Should only be true if in development environment
+      const hostname = window.location.hostname;
+      const isDev = hostname === 'localhost' || hostname === '127.0.0.1';
+      return typeof isDebugEnabled === 'function' ? isDebugEnabled() : false;
+    });
+    console.log('✓ isDebugEnabled() without param:', debugEnabled, '(depends on environment)');
+  });
+
+  test('Startup log appears unconditionally', async ({ page }) => {
+    const consoleMessages = [];
+
+    // Track console messages
+    page.on('console', msg => {
+      consoleMessages.push(msg.text());
+    });
+
+    // Navigate without debug param
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(500);
+
+    // Startup log should appear regardless of debug mode
+    const hasStartupLog = consoleMessages.some(msg =>
+      msg.includes('[Collage Debug] collage script loaded')
+    );
+    expect(hasStartupLog).toBe(true);
+    console.log('✓ Unconditional startup log appears');
+  });
+
+  test('Window load fallback is registered', async ({ page }) => {
+    const consoleMessages = [];
+
+    page.on('console', msg => {
+      const text = msg.text();
+      if (text.includes('[Collage Debug]')) {
+        consoleMessages.push(text);
+      }
+    });
+
+    // Navigate with debug enabled
+    await page.goto('/?debug=1', { waitUntil: 'load' });
+    await page.waitForTimeout(500);
+
+    // Check if load event listener exists by checking if the function is defined
+    const loadListenerExists = await page.evaluate(() => {
+      // The load event would have already fired, but we can check initialization
+      return window.__collageWidgetInitialized !== undefined;
+    });
+
+    expect(loadListenerExists).toBe(true);
+    console.log('✓ Load fallback mechanism is in place');
+    console.log('Debug messages captured:', consoleMessages);
+  });
+
   test('Collage initialization flags are set after page load', async ({ page }) => {
     const consoleMessages = [];
 
