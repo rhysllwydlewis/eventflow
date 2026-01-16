@@ -40,26 +40,42 @@ async function validateFileType(buffer) {
         valid: false,
         detectedType: 'invalid',
         error: 'Invalid or empty file buffer.',
+        allowedTypes: ALLOWED_IMAGE_TYPES,
       };
     }
 
     const fileType = await fileTypeFromBuffer(buffer);
 
+    // Get magic bytes for debugging (first 16 bytes as hex)
+    const magicBytes = buffer.slice(0, Math.min(16, buffer.length)).toString('hex');
+
     if (!fileType) {
+      logger.warn('File type detection failed', {
+        magicBytes,
+        bufferLength: buffer.length,
+      });
       return {
         valid: false,
         detectedType: 'unknown',
         error: 'Unable to detect file type. File may be corrupted or unsupported.',
+        allowedTypes: ALLOWED_IMAGE_TYPES,
+        magicBytes,
       };
     }
 
     const isAllowed = ALLOWED_IMAGE_TYPES.includes(fileType.mime);
 
     if (!isAllowed) {
+      logger.warn('File type not allowed', {
+        detectedType: fileType.mime,
+        magicBytes,
+        allowedTypes: ALLOWED_IMAGE_TYPES,
+      });
       return {
         valid: false,
         detectedType: fileType.mime,
         error: `File type ${fileType.mime} is not allowed. Only JPEG, PNG, WebP, and GIF images are supported.`,
+        allowedTypes: ALLOWED_IMAGE_TYPES,
       };
     }
 
@@ -73,6 +89,7 @@ async function validateFileType(buffer) {
       valid: false,
       detectedType: 'error',
       error: 'Failed to validate file type.',
+      allowedTypes: ALLOWED_IMAGE_TYPES,
     };
   }
 }
