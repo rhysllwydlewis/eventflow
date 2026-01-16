@@ -226,7 +226,8 @@ describe('Admin Package Image Upload Error Handling', () => {
       // Verify enhanced error messages
       expect(formatFunc).toContain('File type validation failed');
       expect(formatFunc).toContain('Could not detect file type');
-      expect(formatFunc).toContain('Allowed types: JPEG, PNG, WebP, GIF');
+      expect(formatFunc).toContain('Allowed types:');
+      expect(formatFunc).toContain('ALLOWED_FORMAT_NAMES');
     });
 
     it('should log magic bytes when file type validation fails', () => {

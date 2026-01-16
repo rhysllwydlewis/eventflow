@@ -26,6 +26,17 @@ const MAX_PIXEL_COUNT = parseInt(process.env.MAX_PIXEL_COUNT || '25000000', 10);
 // Allowed image types (magic bytes)
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 
+// Format name mapping for user-friendly display
+const FORMAT_NAMES = {
+  'image/jpeg': 'JPEG',
+  'image/png': 'PNG',
+  'image/webp': 'WebP',
+  'image/gif': 'GIF',
+};
+
+// Get user-friendly format names from MIME types
+const ALLOWED_FORMAT_NAMES = ALLOWED_IMAGE_TYPES.map(mime => FORMAT_NAMES[mime] || mime);
+
 /**
  * Validate file type using magic-byte detection
  * Prevents file type spoofing by checking actual file content
@@ -289,24 +300,16 @@ function formatValidationErrorResponse(error) {
   const detectedType = typeDetails.detectedType;
   const magicBytes = typeDetails.magicBytes;
 
+  // Format allowed types as comma-separated string
+  const allowedTypesString = ALLOWED_FORMAT_NAMES.join(', ');
+
   // Create a user-friendly error message
   let userMessage = error.message;
   if (detectedType && detectedType !== 'unknown' && detectedType !== 'invalid') {
-    userMessage = `File type validation failed. Detected type: ${detectedType}. Allowed types: JPEG, PNG, WebP, GIF.`;
+    userMessage = `File type validation failed. Detected type: ${detectedType}. Allowed types: ${allowedTypesString}.`;
   } else if (detectedType === 'unknown') {
-    userMessage = `Could not detect file type. The file may be corrupted. Allowed types: JPEG, PNG, WebP, GIF.`;
+    userMessage = `Could not detect file type. The file may be corrupted. Allowed types: ${allowedTypesString}.`;
   }
-
-  // Map MIME types to user-friendly format names
-  const formatNames = ALLOWED_IMAGE_TYPES.map(mime => {
-    const formats = {
-      'image/jpeg': 'JPEG',
-      'image/png': 'PNG',
-      'image/webp': 'WebP',
-      'image/gif': 'GIF',
-    };
-    return formats[mime] || mime;
-  });
 
   return {
     error: userMessage,
@@ -314,7 +317,7 @@ function formatValidationErrorResponse(error) {
       ...error.details,
       detectedType,
       allowedTypes: ALLOWED_IMAGE_TYPES,
-      allowedFormats: formatNames,
+      allowedFormats: ALLOWED_FORMAT_NAMES,
     },
     magicBytes,
   };
