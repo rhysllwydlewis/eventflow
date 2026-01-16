@@ -55,27 +55,54 @@
       sessionStorage.removeItem(REDIRECT_LOOP_KEY);
       sessionStorage.removeItem(REDIRECT_LOOP_PATH_KEY);
       console.error('Dashboard guard: Redirect loop detected. Stopping redirects.');
-      document.body.innerHTML = `
-        <div style="max-width: 600px; margin: 100px auto; padding: 20px; text-align: center; font-family: system-ui, -apple-system, sans-serif;">
-          <h1 style="color: #dc2626;">Access Error</h1>
-          <p style="color: #6b7280; margin: 20px 0;">
-            There appears to be an issue with your session. This usually happens when:
-          </p>
-          <ul style="text-align: left; color: #6b7280; line-height: 1.8;">
-            <li>Your session has expired</li>
-            <li>Your account role needs verification</li>
-            <li>There's a temporary authentication issue</li>
-          </ul>
-          <p style="margin: 30px 0;">
-            <a href="/auth.html" style="display: inline-block; padding: 12px 24px; background: #0b8073; color: white; text-decoration: none; border-radius: 6px;">
-              Return to Login
-            </a>
-          </p>
-          <p style="font-size: 0.9rem; color: #9ca3af; margin-top: 30px;">
-            If this problem persists, please contact support.
-          </p>
-        </div>
-      `;
+
+      // Safely create error page structure using DOM APIs
+      document.body.textContent = ''; // Clear body safely
+
+      const container = document.createElement('div');
+      container.style.cssText =
+        'max-width: 600px; margin: 100px auto; padding: 20px; text-align: center; font-family: system-ui, -apple-system, sans-serif;';
+
+      const heading = document.createElement('h1');
+      heading.style.color = '#dc2626';
+      heading.textContent = 'Access Error';
+      container.appendChild(heading);
+
+      const intro = document.createElement('p');
+      intro.style.cssText = 'color: #6b7280; margin: 20px 0;';
+      intro.textContent =
+        'There appears to be an issue with your session. This usually happens when:';
+      container.appendChild(intro);
+
+      const list = document.createElement('ul');
+      list.style.cssText = 'text-align: left; color: #6b7280; line-height: 1.8;';
+      [
+        'Your session has expired',
+        'Your account role needs verification',
+        "There's a temporary authentication issue",
+      ].forEach(text => {
+        const li = document.createElement('li');
+        li.textContent = text;
+        list.appendChild(li);
+      });
+      container.appendChild(list);
+
+      const linkPara = document.createElement('p');
+      linkPara.style.cssText = 'margin: 30px 0;';
+      const link = document.createElement('a');
+      link.href = '/auth.html';
+      link.style.cssText =
+        'display: inline-block; padding: 12px 24px; background: #0b8073; color: white; text-decoration: none; border-radius: 6px;';
+      link.textContent = 'Return to Login';
+      linkPara.appendChild(link);
+      container.appendChild(linkPara);
+
+      const footer = document.createElement('p');
+      footer.style.cssText = 'font-size: 0.9rem; color: #9ca3af; margin-top: 30px;';
+      footer.textContent = 'If this problem persists, please contact support.';
+      container.appendChild(footer);
+
+      document.body.appendChild(container);
       return;
     }
 

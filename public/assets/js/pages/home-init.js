@@ -682,11 +682,29 @@ async function initPexelsCollage(settings) {
                 photo.photographer
               );
             })
-            .map(photo => ({
-              url: photo.src.large || photo.src.original,
-              photographer: String(photo.photographer),
-              photographerUrl: photo.photographer_url || 'https://www.pexels.com',
-            }));
+            .map(photo => {
+              // Validate photographer URL
+              const validatePexelsUrl = url => {
+                if (!url || typeof url !== 'string') {
+                  return 'https://www.pexels.com';
+                }
+                try {
+                  const urlObj = new URL(url);
+                  if (urlObj.protocol === 'https:' && urlObj.hostname.endsWith('pexels.com')) {
+                    return url;
+                  }
+                } catch (e) {
+                  // Invalid URL
+                }
+                return 'https://www.pexels.com';
+              };
+
+              return {
+                url: photo.src.large || photo.src.original,
+                photographer: String(photo.photographer),
+                photographerUrl: validatePexelsUrl(photo.photographer_url),
+              };
+            });
 
           if (imageCache[category].length === 0) {
             if (isDevelopmentEnvironment()) {
@@ -875,6 +893,23 @@ function addPhotographerCredit(frame, photo) {
     existingCredit.remove();
   }
 
+  // Validate and sanitize photographer URL
+  const sanitizeUrl = url => {
+    if (!url || typeof url !== 'string') {
+      return 'https://www.pexels.com';
+    }
+    // Only allow https URLs from pexels.com domain
+    try {
+      const urlObj = new URL(url);
+      if (urlObj.protocol === 'https:' && urlObj.hostname.endsWith('pexels.com')) {
+        return url;
+      }
+    } catch (e) {
+      // Invalid URL
+    }
+    return 'https://www.pexels.com';
+  };
+
   // Create credit element safely
   const credit = document.createElement('div');
   credit.className = 'pexels-credit';
@@ -882,9 +917,9 @@ function addPhotographerCredit(frame, photo) {
   // Create text node for "Photo by "
   credit.appendChild(document.createTextNode('Photo by '));
 
-  // Create link element safely
+  // Create link element safely with validated URL
   const link = document.createElement('a');
-  link.href = photo.photographerUrl || 'https://www.pexels.com';
+  link.href = sanitizeUrl(photo.photographerUrl);
   link.target = '_blank';
   link.rel = 'noopener noreferrer';
   link.textContent = photo.photographer;
