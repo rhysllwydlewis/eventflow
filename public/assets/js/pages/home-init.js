@@ -419,11 +419,17 @@ async function loadHeroCollageImages() {
         });
       }
 
-      // Validate JSON structure - check both new and legacy formats
+      // Determine if collage should be enabled (matches backend logic)
+      // If collageWidget.enabled is explicitly set, use it; otherwise use legacy flag
+      const collageEnabled = collageWidget?.enabled !== undefined
+        ? collageWidget.enabled
+        : legacyEnabled;
+
+      // Validate JSON structure - check if collage is enabled
       if (
         settings &&
         typeof settings === 'object' &&
-        (collageWidget?.enabled === true || legacyEnabled)
+        collageEnabled === true
       ) {
         if (isDebugEnabled()) {
           console.log('[Collage Debug] Collage widget enabled, initializing dynamic collage');
