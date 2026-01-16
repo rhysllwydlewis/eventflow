@@ -571,8 +571,7 @@ async function initSupplier() {
   const bannerImg = s.bannerUrl || img;
   // Apply custom theme color if set (with validation)
   const hexColorRegex = /^#[0-9A-F]{6}$/i;
-  const themeColor =
-    s.themeColor && hexColorRegex.test(s.themeColor) ? s.themeColor : '#0B8073';
+  const themeColor = s.themeColor && hexColorRegex.test(s.themeColor) ? s.themeColor : '#0B8073';
   const themeColorDark = adjustColorBrightness(themeColor, -10);
 
   // Create lightbox gallery HTML for photos
@@ -2210,6 +2209,7 @@ async function initDashSupplier() {
   const select = document.getElementById('pkg-supplier');
   const proRibbon = document.getElementById('supplier-pro-ribbon');
   let currentIsPro = false;
+  let currentEditingSupplierId = null; // Track which supplier is being edited
 
   async function loadSuppliers() {
     const d = await api('/api/me/suppliers');
@@ -2327,9 +2327,21 @@ async function initDashSupplier() {
       select.innerHTML = items.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
     }
 
-    // Auto-populate form with first supplier's data if exists
+    // Auto-populate form with supplier's data
+    // If we're currently editing a supplier, restore that supplier's data
+    // Otherwise, populate with first supplier's data if exists
     if (items.length > 0) {
-      populateSupplierForm(items[0]);
+      let supplierToEdit = items[0];
+
+      // If we have a currently editing supplier ID, find it and use it
+      if (currentEditingSupplierId) {
+        const foundSupplier = items.find(s => s.id === currentEditingSupplierId);
+        if (foundSupplier) {
+          supplierToEdit = foundSupplier;
+        }
+      }
+
+      populateSupplierForm(supplierToEdit);
     }
   }
 
@@ -2338,7 +2350,12 @@ async function initDashSupplier() {
    * @param {Object} supplier - Supplier data
    */
   function populateSupplierForm(supplier) {
-    if (!supplier) return;
+    if (!supplier) {
+      return;
+    }
+
+    // Track which supplier is being edited
+    currentEditingSupplierId = supplier.id || null;
 
     // Basic fields
     const supId = document.getElementById('sup-id');
@@ -2354,18 +2371,42 @@ async function initDashSupplier() {
     const supMax = document.getElementById('sup-max');
     const supVenuePostcode = document.getElementById('sup-venue-postcode');
 
-    if (supId) supId.value = supplier.id || '';
-    if (supName) supName.value = supplier.name || '';
-    if (supCategory) supCategory.value = supplier.category || '';
-    if (supLocation) supLocation.value = supplier.location || '';
-    if (supPrice) supPrice.value = supplier.price_display || '';
-    if (supShort) supShort.value = supplier.description_short || '';
-    if (supLong) supLong.value = supplier.description_long || '';
-    if (supWebsite) supWebsite.value = supplier.website || '';
-    if (supLicense) supLicense.value = supplier.license || '';
-    if (supAmenities) supAmenities.value = (supplier.amenities || []).join(', ');
-    if (supMax) supMax.value = supplier.maxGuests || '';
-    if (supVenuePostcode) supVenuePostcode.value = supplier.venuePostcode || '';
+    if (supId) {
+      supId.value = supplier.id || '';
+    }
+    if (supName) {
+      supName.value = supplier.name || '';
+    }
+    if (supCategory) {
+      supCategory.value = supplier.category || '';
+    }
+    if (supLocation) {
+      supLocation.value = supplier.location || '';
+    }
+    if (supPrice) {
+      supPrice.value = supplier.price_display || '';
+    }
+    if (supShort) {
+      supShort.value = supplier.description_short || '';
+    }
+    if (supLong) {
+      supLong.value = supplier.description_long || '';
+    }
+    if (supWebsite) {
+      supWebsite.value = supplier.website || '';
+    }
+    if (supLicense) {
+      supLicense.value = supplier.license || '';
+    }
+    if (supAmenities) {
+      supAmenities.value = (supplier.amenities || []).join(', ');
+    }
+    if (supMax) {
+      supMax.value = supplier.maxGuests || '';
+    }
+    if (supVenuePostcode) {
+      supVenuePostcode.value = supplier.venuePostcode || '';
+    }
 
     // New customization fields
     const supBanner = document.getElementById('sup-banner');
@@ -2373,10 +2414,18 @@ async function initDashSupplier() {
     const supThemeColor = document.getElementById('sup-theme-color');
     const supThemeColorHex = document.getElementById('sup-theme-color-hex');
 
-    if (supBanner) supBanner.value = supplier.bannerUrl || '';
-    if (supTagline) supTagline.value = supplier.tagline || '';
-    if (supThemeColor) supThemeColor.value = supplier.themeColor || '#0B8073';
-    if (supThemeColorHex) supThemeColorHex.value = supplier.themeColor || '#0B8073';
+    if (supBanner) {
+      supBanner.value = supplier.bannerUrl || '';
+    }
+    if (supTagline) {
+      supTagline.value = supplier.tagline || '';
+    }
+    if (supThemeColor) {
+      supThemeColor.value = supplier.themeColor || '#0B8073';
+    }
+    if (supThemeColorHex) {
+      supThemeColorHex.value = supplier.themeColor || '#0B8073';
+    }
 
     // Show existing banner image in preview if exists
     if (supplier.bannerUrl) {
@@ -2386,12 +2435,12 @@ async function initDashSupplier() {
         const imgDiv = document.createElement('div');
         imgDiv.className = 'photo-preview-item';
         imgDiv.style.cssText = 'width:100%;height:150px;border-radius:8px;overflow:hidden;';
-        
+
         const img = document.createElement('img');
         img.src = supplier.bannerUrl; // Browser automatically sanitizes
         img.alt = 'Banner preview';
         img.style.cssText = 'width:100%;height:100%;object-fit:cover;';
-        
+
         imgDiv.appendChild(img);
         bannerPreview.innerHTML = ''; // Clear existing content
         bannerPreview.appendChild(imgDiv);
@@ -2402,7 +2451,9 @@ async function initDashSupplier() {
     if (supplier.highlights && Array.isArray(supplier.highlights)) {
       supplier.highlights.forEach((highlight, index) => {
         const highlightInput = document.getElementById(`sup-highlight-${index + 1}`);
-        if (highlightInput) highlightInput.value = highlight;
+        if (highlightInput) {
+          highlightInput.value = highlight;
+        }
       });
     }
 
@@ -2575,7 +2626,7 @@ async function initDashSupplier() {
           statusEl.style.color = '#667085';
         }
 
-        await api(path, {
+        const response = await api(path, {
           method,
           headers: {
             'Content-Type': 'application/json',
@@ -2583,6 +2634,14 @@ async function initDashSupplier() {
           },
           body: JSON.stringify(payload),
         });
+
+        // Update the currently editing supplier ID with the saved/created supplier ID
+        // This ensures we continue editing the same supplier after reload
+        if (response && response.supplier && response.supplier.id) {
+          currentEditingSupplierId = response.supplier.id;
+        } else if (id) {
+          currentEditingSupplierId = id;
+        }
 
         await loadSuppliers();
 
