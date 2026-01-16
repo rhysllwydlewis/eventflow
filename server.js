@@ -61,6 +61,7 @@ const postmark = require('./utils/postmark');
 
 // Photo upload utilities
 const photoUpload = storageConfig.photoUpload;
+const uploadValidation = require('./utils/uploadValidation');
 
 // Reviews and ratings system
 const reviewsSystem = require('./reviews');
@@ -2390,9 +2391,27 @@ app.post(
 
       // Handle validation errors with appropriate status codes and detailed feedback
       if (error.name === 'ValidationError') {
+        const errorResponse = uploadValidation.formatValidationErrorResponse(error);
+
+        // Guard against null response (should not happen but defensive coding)
+        if (!errorResponse) {
+          return res.status(400).json({
+            error: error.message,
+            details: error.details || {},
+          });
+        }
+
+        // Log debug info for troubleshooting
+        if (errorResponse.magicBytes) {
+          logger.warn('File type validation failed - magic bytes:', {
+            magicBytes: errorResponse.magicBytes,
+            detectedType: errorResponse.details.detectedType,
+          });
+        }
+
         return res.status(400).json({
-          error: error.message,
-          details: error.details,
+          error: errorResponse.error,
+          details: errorResponse.details,
         });
       }
 
@@ -2522,9 +2541,27 @@ app.post(
 
       // Handle validation errors with appropriate status codes and detailed feedback
       if (error.name === 'ValidationError') {
+        const errorResponse = uploadValidation.formatValidationErrorResponse(error);
+
+        // Guard against null response (should not happen but defensive coding)
+        if (!errorResponse) {
+          return res.status(400).json({
+            error: error.message,
+            details: error.details || {},
+          });
+        }
+
+        // Log debug info for troubleshooting
+        if (errorResponse.magicBytes) {
+          logger.warn('File type validation failed - magic bytes:', {
+            magicBytes: errorResponse.magicBytes,
+            detectedType: errorResponse.details.detectedType,
+          });
+        }
+
         return res.status(400).json({
-          error: error.message,
-          details: error.details,
+          error: errorResponse.error,
+          details: errorResponse.details,
         });
       }
 

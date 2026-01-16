@@ -26,6 +26,17 @@ const MAX_PIXEL_COUNT = parseInt(process.env.MAX_PIXEL_COUNT || '25000000', 10);
 // Allowed image types (magic bytes)
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 
+// Format name mapping for user-friendly display
+const FORMAT_NAMES = {
+  'image/jpeg': 'JPEG',
+  'image/png': 'PNG',
+  'image/webp': 'WebP',
+  'image/gif': 'GIF',
+};
+
+// Get user-friendly format names from MIME types
+const ALLOWED_FORMAT_NAMES = ALLOWED_IMAGE_TYPES.map(mime => FORMAT_NAMES[mime] || mime);
+
 /**
  * Validate file type using magic-byte detection
  * Prevents file type spoofing by checking actual file content
@@ -40,26 +51,42 @@ async function validateFileType(buffer) {
         valid: false,
         detectedType: 'invalid',
         error: 'Invalid or empty file buffer.',
+        allowedTypes: ALLOWED_IMAGE_TYPES,
       };
     }
 
     const fileType = await fileTypeFromBuffer(buffer);
 
+    // Get magic bytes for debugging (first 16 bytes as hex)
+    const magicBytes = buffer.slice(0, Math.min(16, buffer.length)).toString('hex');
+
     if (!fileType) {
+      logger.warn('File type detection failed', {
+        magicBytes,
+        bufferLength: buffer.length,
+      });
       return {
         valid: false,
         detectedType: 'unknown',
         error: 'Unable to detect file type. File may be corrupted or unsupported.',
+        allowedTypes: ALLOWED_IMAGE_TYPES,
+        magicBytes,
       };
     }
 
     const isAllowed = ALLOWED_IMAGE_TYPES.includes(fileType.mime);
 
     if (!isAllowed) {
+      logger.warn('File type not allowed', {
+        detectedType: fileType.mime,
+        magicBytes,
+        allowedTypes: ALLOWED_IMAGE_TYPES,
+      });
       return {
         valid: false,
         detectedType: fileType.mime,
         error: `File type ${fileType.mime} is not allowed. Only JPEG, PNG, WebP, and GIF images are supported.`,
+        allowedTypes: ALLOWED_IMAGE_TYPES,
       };
     }
 
@@ -73,6 +100,7 @@ async function validateFileType(buffer) {
       valid: false,
       detectedType: 'error',
       error: 'Failed to validate file type.',
+      allowedTypes: ALLOWED_IMAGE_TYPES,
     };
   }
 }
@@ -256,6 +284,45 @@ function getUploadLimits() {
   };
 }
 
+/**
+ * Format a user-friendly error response for validation errors
+ * Extracts detailed error information and creates clear error messages
+ * @param {Error} error - ValidationError from processAndSaveImage
+ * @returns {Object} - Formatted error response with user message and details
+ */
+function formatValidationErrorResponse(error) {
+  if (error.name !== 'ValidationError') {
+    return null;
+  }
+
+  // Extract file type information from validation details
+  const typeDetails = error.details?.type || {};
+  const detectedType = typeDetails.detectedType;
+  const magicBytes = typeDetails.magicBytes;
+
+  // Format allowed types as comma-separated string
+  const allowedTypesString = ALLOWED_FORMAT_NAMES.join(', ');
+
+  // Create a user-friendly error message
+  let userMessage = error.message;
+  if (detectedType && detectedType !== 'unknown' && detectedType !== 'invalid') {
+    userMessage = `File type validation failed. Detected type: ${detectedType}. Allowed types: ${allowedTypesString}.`;
+  } else if (detectedType === 'unknown') {
+    userMessage = `Could not detect file type. The file may be corrupted. Allowed types: ${allowedTypesString}.`;
+  }
+
+  return {
+    error: userMessage,
+    details: {
+      ...error.details,
+      detectedType,
+      allowedTypes: ALLOWED_IMAGE_TYPES,
+      allowedFormats: ALLOWED_FORMAT_NAMES,
+    },
+    magicBytes,
+  };
+}
+
 module.exports = {
   validateFileType,
   validateImageDimensions,
@@ -263,6 +330,7 @@ module.exports = {
   validateUpload,
   processWithMetadataStripping,
   getUploadLimits,
+  formatValidationErrorResponse,
   // Export constants for testing
   MAX_FILE_SIZE_MARKETPLACE,
   MAX_FILE_SIZE_SUPPLIER,
