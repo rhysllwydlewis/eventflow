@@ -2355,6 +2355,12 @@ app.post(
         return res.status(400).json({ error: 'No image file provided' });
       }
 
+      logger.info(`Processing category hero image upload for category ${categoryId}`, {
+        filename: req.file.originalname,
+        size: req.file.size,
+        mimetype: req.file.mimetype,
+      });
+
       // Process and save the image
       const imageData = await photoUpload.processAndSaveImage(
         req.file.buffer,
@@ -2367,14 +2373,50 @@ app.post(
 
       await dbUnified.write('categories', categories);
 
+      logger.info(`Category hero image uploaded successfully for category ${categoryId}`);
+
       res.json({
         ok: true,
         category: categories[categoryIndex],
         imageUrl: categories[categoryIndex].heroImage,
       });
     } catch (error) {
-      console.error('Error uploading category hero image:', error);
-      res.status(500).json({ error: 'Failed to upload image', details: error.message });
+      logger.error('Error uploading category hero image:', {
+        error: error.message,
+        name: error.name,
+        details: error.details,
+        ...(process.env.NODE_ENV !== 'production' && { stack: error.stack }),
+      });
+
+      // Handle validation errors with appropriate status codes and detailed feedback
+      if (error.name === 'ValidationError') {
+        return res.status(400).json({
+          error: error.message,
+          details: error.details,
+        });
+      }
+
+      // Handle Sharp processing errors
+      if (error.name === 'SharpProcessingError') {
+        return res.status(500).json({
+          error: 'Failed to process image',
+          details: 'Image processing library error. Please try a different image format or file.',
+        });
+      }
+
+      // Handle MongoDB/storage errors
+      if (error.name === 'MongoDBStorageError' || error.name === 'FilesystemError') {
+        return res.status(500).json({
+          error: 'Failed to save image',
+          details: 'Storage system error. Please try again later.',
+        });
+      }
+
+      // Generic error fallback
+      res.status(500).json({
+        error: 'Failed to upload image',
+        details: error.message || 'An unexpected error occurred',
+      });
     }
   }
 );
@@ -2444,6 +2486,12 @@ app.post(
         return res.status(400).json({ error: 'No image file provided' });
       }
 
+      logger.info(`Processing package image upload for package ${packageId}`, {
+        filename: req.file.originalname,
+        size: req.file.size,
+        mimetype: req.file.mimetype,
+      });
+
       // Process and save the image
       const imageData = await photoUpload.processAndSaveImage(
         req.file.buffer,
@@ -2457,14 +2505,50 @@ app.post(
 
       await dbUnified.write('packages', packages);
 
+      logger.info(`Package image uploaded successfully for package ${packageId}`);
+
       res.json({
         ok: true,
         package: packages[packageIndex],
         imageUrl: packages[packageIndex].image,
       });
     } catch (error) {
-      console.error('Error uploading package image:', error);
-      res.status(500).json({ error: 'Failed to upload image', details: error.message });
+      logger.error('Error uploading package image:', {
+        error: error.message,
+        name: error.name,
+        details: error.details,
+        ...(process.env.NODE_ENV !== 'production' && { stack: error.stack }),
+      });
+
+      // Handle validation errors with appropriate status codes and detailed feedback
+      if (error.name === 'ValidationError') {
+        return res.status(400).json({
+          error: error.message,
+          details: error.details,
+        });
+      }
+
+      // Handle Sharp processing errors
+      if (error.name === 'SharpProcessingError') {
+        return res.status(500).json({
+          error: 'Failed to process image',
+          details: 'Image processing library error. Please try a different image format or file.',
+        });
+      }
+
+      // Handle MongoDB/storage errors
+      if (error.name === 'MongoDBStorageError' || error.name === 'FilesystemError') {
+        return res.status(500).json({
+          error: 'Failed to save image',
+          details: 'Storage system error. Please try again later.',
+        });
+      }
+
+      // Generic error fallback
+      res.status(500).json({
+        error: 'Failed to upload image',
+        details: error.message || 'An unexpected error occurred',
+      });
     }
   }
 );
