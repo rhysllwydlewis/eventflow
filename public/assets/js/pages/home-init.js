@@ -132,6 +132,13 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   }
+
+  // Cleanup Pexels collage on page unload to prevent memory leaks
+  window.addEventListener('beforeunload', () => {
+    if (typeof cleanupPexelsCollage === 'function') {
+      cleanupPexelsCollage();
+    }
+  });
 });
 
 /**
@@ -573,6 +580,32 @@ async function loadHeroCollageImages() {
 
 // Crossfade transition duration (must match CSS transition in index.html)
 const PEXELS_TRANSITION_DURATION_MS = 1000;
+// Preload timeout to prevent hanging
+const PEXELS_PRELOAD_TIMEOUT_MS = 5000;
+
+// Store interval ID for cleanup
+let pexelsCollageIntervalId = null;
+
+/**
+ * Validate Pexels photographer URL
+ * Only allows HTTPS URLs from pexels.com domain for security
+ * @param {string} url - URL to validate
+ * @returns {string} Validated URL or fallback
+ */
+function validatePexelsUrl(url) {
+  if (!url || typeof url !== 'string') {
+    return 'https://www.pexels.com';
+  }
+  try {
+    const urlObj = new URL(url);
+    if (urlObj.protocol === 'https:' && urlObj.hostname.endsWith('pexels.com')) {
+      return url;
+    }
+  } catch (e) {
+    // Invalid URL
+  }
+  return 'https://www.pexels.com';
+}
 
 async function initPexelsCollage(settings) {
   // Use intervalSeconds from settings, fallback to old 'interval' property for backwards compatibility, default to 2.5 seconds
@@ -597,6 +630,11 @@ async function initPexelsCollage(settings) {
     return;
   }
 
+  // Add loading states to frames
+  collageFrames.forEach(frame => {
+    frame.classList.add('loading-pexels');
+  });
+
   // Cache for storing fetched images per category
   const imageCache = {};
   const currentImageIndex = {};
@@ -606,27 +644,30 @@ async function initPexelsCollage(settings) {
     const categories = Object.keys(categoryMapping);
     for (const category of categories) {
       try {
-        // Use the public Pexels collage endpoint
+        // Use the public Pexels collage endpoint (in admin routes but publicly accessible)
         const response = await fetch(
-          `/api/public/pexels-collage?category=${encodeURIComponent(category)}`
+          `/api/admin/public/pexels-collage?category=${encodeURIComponent(category)}`
         );
 
         if (!response.ok) {
-          // Parse error response for better logging
+          // Parse error response for better logging with safer error handling
           let errorInfo = `HTTP ${response.status}`;
           try {
             const errorData = await response.json();
-            errorInfo = errorData.message || errorData.error || errorInfo;
+            // Safely extract error info with validation
+            if (errorData && typeof errorData === 'object') {
+              errorInfo = String(errorData.message || errorData.error || errorInfo);
+            }
 
             // Only warn in development mode
             if (isDevelopmentEnvironment()) {
               console.warn(`⚠️  Failed to fetch Pexels images for ${category}: ${errorInfo}`);
               if (errorData.errorType) {
-                console.warn(`   Error type: ${errorData.errorType}`);
+                console.warn(`   Error type: ${String(errorData.errorType)}`);
               }
             }
           } catch (e) {
-            // Response wasn't JSON, use status text
+            // Response wasn't valid JSON, use status text
             if (isDevelopmentEnvironment()) {
               console.warn(
                 `⚠️  Failed to fetch Pexels images for ${category}: ${response.statusText}`
@@ -638,17 +679,45 @@ async function initPexelsCollage(settings) {
 
         const data = await response.json();
 
+        // Validate response structure
+        if (!data || typeof data !== 'object') {
+          if (isDevelopmentEnvironment()) {
+            console.warn(`⚠️  Invalid response structure for ${category}`);
+          }
+          continue;
+        }
+
         // Log if using fallback mode (only in development)
         if (isDevelopmentEnvironment() && data.usingFallback) {
           console.log(`📦 Using fallback photos for ${category} (source: ${data.source})`);
         }
 
-        if (data.photos && data.photos.length > 0) {
-          imageCache[category] = data.photos.map(photo => ({
-            url: photo.src.large || photo.src.original,
-            photographer: photo.photographer,
-            photographerUrl: photo.photographer_url,
-          }));
+        if (data.photos && Array.isArray(data.photos) && data.photos.length > 0) {
+          // Validate and map photo data with null safety
+          imageCache[category] = data.photos
+            .filter(photo => {
+              // Validate photo has required fields
+              return (
+                photo &&
+                typeof photo === 'object' &&
+                photo.src &&
+                (photo.src.large || photo.src.original) &&
+                photo.photographer
+              );
+            })
+            .map(photo => ({
+              url: photo.src.large || photo.src.original,
+              photographer: String(photo.photographer),
+              photographerUrl: validatePexelsUrl(photo.photographer_url),
+            }));
+
+          if (imageCache[category].length === 0) {
+            if (isDevelopmentEnvironment()) {
+              console.warn(`⚠️  No valid photos after filtering for ${category}`);
+            }
+            continue;
+          }
+
           currentImageIndex[category] = 0;
 
           // Set initial image
@@ -656,9 +725,12 @@ async function initPexelsCollage(settings) {
           const frame = collageFrames[frameIndex];
           const imgElement = frame.querySelector('img');
 
-          if (imgElement) {
+          if (imgElement && imageCache[category][0]) {
             imgElement.src = imageCache[category][0].url;
             imgElement.alt = `${category.charAt(0).toUpperCase() + category.slice(1)} - Photo by ${imageCache[category][0].photographer}`;
+
+            // Remove loading state
+            frame.classList.remove('loading-pexels');
 
             // Add photographer attribution
             addPhotographerCredit(frame, imageCache[category][0]);
@@ -672,9 +744,19 @@ async function initPexelsCollage(settings) {
       }
     }
 
+    // Remove loading states from all frames
+    collageFrames.forEach(frame => {
+      frame.classList.remove('loading-pexels');
+    });
+
     // Start cycling images
     if (Object.keys(imageCache).length > 0) {
-      setInterval(() => {
+      // Clear any existing interval to prevent memory leaks
+      if (pexelsCollageIntervalId) {
+        clearInterval(pexelsCollageIntervalId);
+      }
+
+      pexelsCollageIntervalId = setInterval(() => {
         cyclePexelsImages(imageCache, currentImageIndex, collageFrames, categoryMapping);
       }, intervalMs);
 
@@ -693,6 +775,11 @@ async function initPexelsCollage(settings) {
       await loadHeroCollageImages();
     }
   } catch (error) {
+    // Remove loading states from all frames on error
+    collageFrames.forEach(frame => {
+      frame.classList.remove('loading-pexels');
+    });
+
     // Only log errors in development mode
     if (isDevelopmentEnvironment()) {
       console.error('Error initializing Pexels collage:', error);
@@ -703,18 +790,40 @@ async function initPexelsCollage(settings) {
 }
 
 /**
+ * Cleanup function for Pexels collage (call on page unload or feature disable)
+ */
+function cleanupPexelsCollage() {
+  if (pexelsCollageIntervalId) {
+    clearInterval(pexelsCollageIntervalId);
+    pexelsCollageIntervalId = null;
+    if (isDevelopmentEnvironment()) {
+      console.log('Pexels collage interval cleared');
+    }
+  }
+}
+
+/**
  * Cycle through Pexels images with crossfade transition
+ * Handles preload failures gracefully by falling back to direct replacement
  */
 function cyclePexelsImages(imageCache, currentImageIndex, collageFrames, categoryMapping) {
   Object.keys(imageCache).forEach(category => {
     const images = imageCache[category];
-    if (!images || images.length === 0) {
+    if (!images || !Array.isArray(images) || images.length === 0) {
       return;
     }
 
     // Move to next image
     currentImageIndex[category] = (currentImageIndex[category] + 1) % images.length;
     const nextImage = images[currentImageIndex[category]];
+
+    // Validate next image has required data
+    if (!nextImage || !nextImage.url) {
+      if (isDevelopmentEnvironment()) {
+        console.warn(`⚠️  Invalid next image for ${category}, skipping cycle`);
+      }
+      return;
+    }
 
     const frameIndex = categoryMapping[category];
     const frame = collageFrames[frameIndex];
@@ -728,7 +837,21 @@ function cyclePexelsImages(imageCache, currentImageIndex, collageFrames, categor
     const nextImg = new Image();
     nextImg.src = nextImage.url;
 
+    // Set timeout for preload to prevent hanging
+    const preloadTimeout = setTimeout(() => {
+      // If preload takes too long, just swap directly without fade
+      if (isDevelopmentEnvironment()) {
+        console.warn(`⚠️  Image preload timeout for ${category}, swapping directly`);
+      }
+      imgElement.src = nextImage.url;
+      imgElement.alt = `${category.charAt(0).toUpperCase() + category.slice(1)} - Photo by ${nextImage.photographer}`;
+      addPhotographerCredit(frame, nextImage);
+    }, PEXELS_PRELOAD_TIMEOUT_MS);
+
     nextImg.onload = () => {
+      // Clear timeout since image loaded successfully
+      clearTimeout(preloadTimeout);
+
       // Add fading class for transition
       imgElement.classList.add('fading');
 
@@ -742,23 +865,54 @@ function cyclePexelsImages(imageCache, currentImageIndex, collageFrames, categor
         addPhotographerCredit(frame, nextImage);
       }, PEXELS_TRANSITION_DURATION_MS);
     };
+
+    nextImg.onerror = () => {
+      // Clear timeout on error
+      clearTimeout(preloadTimeout);
+
+      // Skip this image and move to next
+      if (isDevelopmentEnvironment()) {
+        console.warn(`⚠️  Failed to load image for ${category}: ${nextImage.url}`);
+      }
+
+      // Try next image in sequence
+      currentImageIndex[category] = (currentImageIndex[category] + 1) % images.length;
+      // Don't recurse to avoid infinite loop - just skip this cycle
+    };
   });
 }
 
 /**
  * Add photographer credit to collage frame
+ * Safely escapes HTML to prevent XSS
  */
 function addPhotographerCredit(frame, photo) {
+  // Validate inputs
+  if (!frame || !photo || !photo.photographer) {
+    return;
+  }
+
   // Remove existing credit if present
   const existingCredit = frame.querySelector('.pexels-credit');
   if (existingCredit) {
     existingCredit.remove();
   }
 
-  // Add new credit
+  // Create credit element safely
   const credit = document.createElement('div');
   credit.className = 'pexels-credit';
-  credit.innerHTML = `Photo by <a href="${photo.photographerUrl}" target="_blank" rel="noopener">${photo.photographer}</a>`;
+
+  // Create text node for "Photo by "
+  credit.appendChild(document.createTextNode('Photo by '));
+
+  // Create link element safely with validated URL
+  const link = document.createElement('a');
+  link.href = validatePexelsUrl(photo.photographerUrl);
+  link.target = '_blank';
+  link.rel = 'noopener noreferrer';
+  link.textContent = photo.photographer;
+
+  credit.appendChild(link);
   frame.appendChild(credit);
 }
 
