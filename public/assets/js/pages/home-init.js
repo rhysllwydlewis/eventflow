@@ -580,9 +580,32 @@ async function loadHeroCollageImages() {
 
 // Crossfade transition duration (must match CSS transition in index.html)
 const PEXELS_TRANSITION_DURATION_MS = 1000;
+// Preload timeout to prevent hanging
+const PEXELS_PRELOAD_TIMEOUT_MS = 5000;
 
 // Store interval ID for cleanup
 let pexelsCollageIntervalId = null;
+
+/**
+ * Validate Pexels photographer URL
+ * Only allows HTTPS URLs from pexels.com domain for security
+ * @param {string} url - URL to validate
+ * @returns {string} Validated URL or fallback
+ */
+function validatePexelsUrl(url) {
+  if (!url || typeof url !== 'string') {
+    return 'https://www.pexels.com';
+  }
+  try {
+    const urlObj = new URL(url);
+    if (urlObj.protocol === 'https:' && urlObj.hostname.endsWith('pexels.com')) {
+      return url;
+    }
+  } catch (e) {
+    // Invalid URL
+  }
+  return 'https://www.pexels.com';
+}
 
 async function initPexelsCollage(settings) {
   // Use intervalSeconds from settings, fallback to old 'interval' property for backwards compatibility, default to 2.5 seconds
@@ -682,29 +705,11 @@ async function initPexelsCollage(settings) {
                 photo.photographer
               );
             })
-            .map(photo => {
-              // Validate photographer URL
-              const validatePexelsUrl = url => {
-                if (!url || typeof url !== 'string') {
-                  return 'https://www.pexels.com';
-                }
-                try {
-                  const urlObj = new URL(url);
-                  if (urlObj.protocol === 'https:' && urlObj.hostname.endsWith('pexels.com')) {
-                    return url;
-                  }
-                } catch (e) {
-                  // Invalid URL
-                }
-                return 'https://www.pexels.com';
-              };
-
-              return {
-                url: photo.src.large || photo.src.original,
-                photographer: String(photo.photographer),
-                photographerUrl: validatePexelsUrl(photo.photographer_url),
-              };
-            });
+            .map(photo => ({
+              url: photo.src.large || photo.src.original,
+              photographer: String(photo.photographer),
+              photographerUrl: validatePexelsUrl(photo.photographer_url),
+            }));
 
           if (imageCache[category].length === 0) {
             if (isDevelopmentEnvironment()) {
@@ -841,7 +846,7 @@ function cyclePexelsImages(imageCache, currentImageIndex, collageFrames, categor
       imgElement.src = nextImage.url;
       imgElement.alt = `${category.charAt(0).toUpperCase() + category.slice(1)} - Photo by ${nextImage.photographer}`;
       addPhotographerCredit(frame, nextImage);
-    }, 5000); // 5 second timeout
+    }, PEXELS_PRELOAD_TIMEOUT_MS);
 
     nextImg.onload = () => {
       // Clear timeout since image loaded successfully
@@ -893,23 +898,6 @@ function addPhotographerCredit(frame, photo) {
     existingCredit.remove();
   }
 
-  // Validate and sanitize photographer URL
-  const sanitizeUrl = url => {
-    if (!url || typeof url !== 'string') {
-      return 'https://www.pexels.com';
-    }
-    // Only allow https URLs from pexels.com domain
-    try {
-      const urlObj = new URL(url);
-      if (urlObj.protocol === 'https:' && urlObj.hostname.endsWith('pexels.com')) {
-        return url;
-      }
-    } catch (e) {
-      // Invalid URL
-    }
-    return 'https://www.pexels.com';
-  };
-
   // Create credit element safely
   const credit = document.createElement('div');
   credit.className = 'pexels-credit';
@@ -919,7 +907,7 @@ function addPhotographerCredit(frame, photo) {
 
   // Create link element safely with validated URL
   const link = document.createElement('a');
-  link.href = sanitizeUrl(photo.photographerUrl);
+  link.href = validatePexelsUrl(photo.photographerUrl);
   link.target = '_blank';
   link.rel = 'noopener noreferrer';
   link.textContent = photo.photographer;

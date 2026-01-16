@@ -56,8 +56,10 @@
       sessionStorage.removeItem(REDIRECT_LOOP_PATH_KEY);
       console.error('Dashboard guard: Redirect loop detected. Stopping redirects.');
 
-      // Safely create error page structure using DOM APIs
-      document.body.textContent = ''; // Clear body safely
+      // Clear body safely and build error page
+      // Note: At this point authentication has failed multiple times,
+      // so clearing existing content is appropriate
+      document.body.textContent = ''; // Clear body safely (no innerHTML)
 
       const container = document.createElement('div');
       container.style.cssText =
