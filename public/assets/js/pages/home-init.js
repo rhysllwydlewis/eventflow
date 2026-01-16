@@ -1266,7 +1266,11 @@ async function initCollageWidget(widgetConfig) {
         frame.classList.add('loading-pexels');
 
         // Store original src for fallback (only if it has a valid src)
-        if (!imgElement.dataset.originalSrc && imgElement.src) {
+        if (
+          !imgElement.dataset.originalSrc &&
+          imgElement.src &&
+          imgElement.src.startsWith('http')
+        ) {
           imgElement.dataset.originalSrc = imgElement.src;
           if (isDebugEnabled()) {
             console.log(`[Collage Widget] Stored originalSrc for ${category}`);
@@ -1384,8 +1388,8 @@ async function loadMediaIntoFrame(frame, mediaElement, media, category, prefersR
       };
 
       const handleError = () => {
-        if (isDevelopmentEnvironment()) {
-          console.warn(`Failed to load video: ${media.url}`);
+        if (isDebugEnabled()) {
+          console.warn(`[Collage Widget] Failed to load video: ${media.url}`);
         }
         restoreDefaultImage(mediaElement);
         frame.classList.remove('loading-pexels');
@@ -1398,8 +1402,8 @@ async function loadMediaIntoFrame(frame, mediaElement, media, category, prefersR
       // Set timeout for video loading
       setTimeout(() => {
         if (frame.classList.contains('loading-pexels')) {
-          if (isDevelopmentEnvironment()) {
-            console.warn(`Video load timeout for ${category}`);
+          if (isDebugEnabled()) {
+            console.warn(`[Collage Widget] Video load timeout for ${category}`);
           }
           restoreDefaultImage(mediaElement);
           frame.classList.remove('loading-pexels');
