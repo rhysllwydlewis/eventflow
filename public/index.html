@@ -135,6 +135,24 @@
       .collage .frame img.fading {
         opacity: 0;
       }
+      /* Loading state for Pexels images */
+      .collage .frame.loading-pexels::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 40px;
+        height: 40px;
+        border: 3px solid rgba(255, 255, 255, 0.3);
+        border-top-color: rgba(255, 255, 255, 0.8);
+        border-radius: 50%;
+        animation: pexels-spin 0.8s linear infinite;
+        z-index: 15;
+      }
+      @keyframes pexels-spin {
+        to { transform: translate(-50%, -50%) rotate(360deg); }
+      }
       .pexels-credit {
         position: absolute;
         bottom: 4px;
