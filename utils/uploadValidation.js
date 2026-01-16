@@ -43,11 +43,17 @@ const ALLOWED_FORMAT_NAMES = ALLOWED_IMAGE_TYPES.map(mime => FORMAT_NAMES[mime] 
  * @returns {string|null} - Detected MIME type based on extension, or null
  */
 function detectTypeFromExtension(filename) {
-  if (!filename) {
+  if (!filename || typeof filename !== 'string') {
     return null;
   }
 
-  const ext = filename.toLowerCase().split('.').pop();
+  // Check if filename contains a dot and has an extension
+  const lastDotIndex = filename.lastIndexOf('.');
+  if (lastDotIndex === -1 || lastDotIndex === filename.length - 1) {
+    return null; // No extension found
+  }
+
+  const ext = filename.substring(lastDotIndex + 1).toLowerCase();
   const extensionMap = {
     jpg: 'image/jpeg',
     jpeg: 'image/jpeg',
