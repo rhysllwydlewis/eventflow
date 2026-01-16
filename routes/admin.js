@@ -4529,9 +4529,9 @@ const collageUpload = multer({
       cb(null, collageUploadDir);
     },
     filename: function (req, file, cb) {
-      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+      const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
       const ext = path.extname(file.originalname);
-      cb(null, 'collage-' + uniqueSuffix + ext);
+      cb(null, `collage-${uniqueSuffix}${ext}`);
     },
   }),
   limits: {
@@ -4569,7 +4569,7 @@ router.get('/homepage/collage-widget', authRequired, roleRequired('admin'), asyn
       uploadGallery: [],
       fallbackToPexels: true,
     };
-    
+
     res.json(collageWidget);
   } catch (error) {
     console.error('Error reading collage widget config:', error);
@@ -4622,7 +4622,9 @@ router.put(
         // Validate all items are non-empty strings
         const invalidItems = uploadGallery.filter(item => typeof item !== 'string' || !item.trim());
         if (invalidItems.length > 0) {
-          return res.status(400).json({ error: 'All uploadGallery items must be non-empty strings' });
+          return res
+            .status(400)
+            .json({ error: 'All uploadGallery items must be non-empty strings' });
         }
       }
 
@@ -4630,7 +4632,9 @@ router.put(
       if (enabled && source === 'uploads' && (!uploadGallery || uploadGallery.length === 0)) {
         return res
           .status(400)
-          .json({ error: 'Upload gallery cannot be empty when source is "uploads" and widget is enabled' });
+          .json({
+            error: 'Upload gallery cannot be empty when source is "uploads" and widget is enabled',
+          });
       }
 
       const settings = (await dbUnified.read('settings')) || {};
@@ -4639,14 +4643,27 @@ router.put(
       }
 
       // Update only provided fields
-      if (enabled !== undefined) settings.collageWidget.enabled = enabled;
-      if (source) settings.collageWidget.source = source;
-      if (mediaTypes) settings.collageWidget.mediaTypes = mediaTypes;
-      if (intervalSeconds !== undefined) settings.collageWidget.intervalSeconds = intervalSeconds;
-      if (pexelsQueries) settings.collageWidget.pexelsQueries = pexelsQueries;
-      if (uploadGallery) settings.collageWidget.uploadGallery = uploadGallery;
-      if (fallbackToPexels !== undefined)
+      if (enabled !== undefined) {
+        settings.collageWidget.enabled = enabled;
+      }
+      if (source) {
+        settings.collageWidget.source = source;
+      }
+      if (mediaTypes) {
+        settings.collageWidget.mediaTypes = mediaTypes;
+      }
+      if (intervalSeconds !== undefined) {
+        settings.collageWidget.intervalSeconds = intervalSeconds;
+      }
+      if (pexelsQueries) {
+        settings.collageWidget.pexelsQueries = pexelsQueries;
+      }
+      if (uploadGallery) {
+        settings.collageWidget.uploadGallery = uploadGallery;
+      }
+      if (fallbackToPexels !== undefined) {
         settings.collageWidget.fallbackToPexels = fallbackToPexels;
+      }
 
       settings.collageWidget.updatedAt = new Date().toISOString();
       settings.collageWidget.updatedBy = req.user.email;
@@ -4793,12 +4810,10 @@ router.delete(
       if (settings.collageWidget && settings.collageWidget.uploadGallery) {
         const fileUrl = `/uploads/homepage-collage/${filename}`;
         // Filter by comparing URLs without query parameters to handle cache busting
-        settings.collageWidget.uploadGallery = settings.collageWidget.uploadGallery.filter(
-          url => {
-            const urlWithoutParams = url.split('?')[0];
-            return urlWithoutParams !== fileUrl;
-          }
-        );
+        settings.collageWidget.uploadGallery = settings.collageWidget.uploadGallery.filter(url => {
+          const urlWithoutParams = url.split('?')[0];
+          return urlWithoutParams !== fileUrl;
+        });
         settings.collageWidget.updatedAt = new Date().toISOString();
         settings.collageWidget.updatedBy = req.user.email;
         await dbUnified.write('settings', settings);
@@ -5234,8 +5249,15 @@ router.get('/public/pexels-collage', async (req, res) => {
     // Check if Pexels collage is enabled
     const settings = (await dbUnified.read('settings')) || {};
     const features = settings.features || {};
+    const collageWidget = settings.collageWidget || {};
 
-    if (features.pexelsCollage !== true) {
+    // Check both new collageWidget.enabled and legacy features.pexelsCollage for backward compatibility
+    const isEnabled = collageWidget.enabled === true || features.pexelsCollage === true;
+
+    // If using collageWidget, also verify source is set to 'pexels'
+    const isPexelsSource = !collageWidget.enabled || collageWidget.source === 'pexels';
+
+    if (!isEnabled || !isPexelsSource) {
       return res.status(404).json({
         error: 'Pexels collage feature is not enabled',
         errorType: 'feature_disabled',
@@ -5260,13 +5282,17 @@ router.get('/public/pexels-collage', async (req, res) => {
       });
     }
 
-    const pexelsCollageSettings = settings.pexelsCollageSettings || {
-      queries: {
+    // Use pexelsQueries from collageWidget if available, otherwise fall back to pexelsCollageSettings
+    const pexelsQueries = collageWidget.pexelsQueries ||
+      settings.pexelsCollageSettings?.queries || {
         venues: 'wedding venue elegant ballroom',
         catering: 'wedding catering food elegant',
         entertainment: 'live band wedding party',
         photography: 'wedding photography professional',
-      },
+      };
+
+    const pexelsCollageSettings = settings.pexelsCollageSettings || {
+      queries: pexelsQueries,
     };
 
     // Import Pexels service
@@ -5305,7 +5331,8 @@ router.get('/public/pexels-collage', async (req, res) => {
         }
 
         // Use query-based searching (default behavior or fallback from empty collection)
-        const query = pexelsCollageSettings.queries[category] || category;
+        const query =
+          pexelsQueries[category] || pexelsCollageSettings.queries[category] || category;
         console.log(`🔍 Searching photos with query: "${query}" for ${category}`);
         const results = await pexels.searchPhotos(query, 8, 1);
 

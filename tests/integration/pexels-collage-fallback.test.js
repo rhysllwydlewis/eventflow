@@ -114,5 +114,74 @@ describe('Pexels Collage Fallback Integration', () => {
       settings.features.pexelsCollage = true;
       await dbUnified.write('settings', settings);
     });
+
+    it('should work when collageWidget is enabled with pexels source', async () => {
+      // Enable collageWidget with pexels source
+      const settings = await dbUnified.read('settings');
+      settings.collageWidget = {
+        enabled: true,
+        source: 'pexels',
+        pexelsQueries: {
+          venues: 'wedding venue elegant',
+          catering: 'catering food',
+          entertainment: 'live band',
+          photography: 'photography professional',
+        },
+      };
+      await dbUnified.write('settings', settings);
+
+      const response = await request(app).get('/api/public/pexels-collage?category=venues');
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      expect(response.body.category).toBe('venues');
+      expect(response.body.photos).toBeDefined();
+      expect(Array.isArray(response.body.photos)).toBe(true);
+      expect(response.body.photos.length).toBeGreaterThan(0);
+    });
+
+    it('should return 404 when collageWidget is enabled but source is not pexels', async () => {
+      // Enable collageWidget but with uploads source
+      const settings = await dbUnified.read('settings');
+      settings.collageWidget = {
+        enabled: true,
+        source: 'uploads',
+      };
+      // Disable legacy flag to test collageWidget behavior
+      settings.features.pexelsCollage = false;
+      await dbUnified.write('settings', settings);
+
+      const response = await request(app).get('/api/public/pexels-collage?category=venues');
+
+      expect(response.status).toBe(404);
+      expect(response.body.error).toBe('Pexels collage feature is not enabled');
+
+      // Clean up
+      settings.features.pexelsCollage = true;
+      delete settings.collageWidget;
+      await dbUnified.write('settings', settings);
+    });
+
+    it('should return 404 when collageWidget is disabled', async () => {
+      // Disable collageWidget
+      const settings = await dbUnified.read('settings');
+      settings.collageWidget = {
+        enabled: false,
+        source: 'pexels',
+      };
+      // Also disable legacy flag
+      settings.features.pexelsCollage = false;
+      await dbUnified.write('settings', settings);
+
+      const response = await request(app).get('/api/public/pexels-collage?category=venues');
+
+      expect(response.status).toBe(404);
+      expect(response.body.error).toBe('Pexels collage feature is not enabled');
+
+      // Clean up
+      settings.features.pexelsCollage = true;
+      delete settings.collageWidget;
+      await dbUnified.write('settings', settings);
+    });
   });
 });
