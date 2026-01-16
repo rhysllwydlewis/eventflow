@@ -24,7 +24,7 @@ const router = express.Router();
  * @returns {boolean} True if debug logging should be enabled
  */
 function isCollageDebugEnabled() {
-  return isCollageDebugEnabled();
+  return process.env.NODE_ENV === 'development' || process.env.DEBUG_COLLAGE === 'true';
 }
 
 // Initialize Stripe if available
