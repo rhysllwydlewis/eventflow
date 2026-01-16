@@ -207,25 +207,26 @@ describe('Admin Package Image Upload Error Handling', () => {
       const nextEndpointStart = serverContent.indexOf('app.post(', packageImageStart + 100);
       const packageImageEndpoint = serverContent.substring(packageImageStart, nextEndpointStart);
 
-      // Verify error response includes both error message and details
-      expect(packageImageEndpoint).toContain('error: userMessage');
-      expect(packageImageEndpoint).toContain('detectedType');
-      expect(packageImageEndpoint).toContain('allowedTypes');
-      expect(packageImageEndpoint).toContain('allowedFormats');
+      // Verify error response uses formatValidationErrorResponse helper
+      expect(packageImageEndpoint).toContain('uploadValidation.formatValidationErrorResponse');
+      expect(packageImageEndpoint).toContain('errorResponse.error');
+      expect(packageImageEndpoint).toContain('errorResponse.details');
     });
 
     it('should include enhanced error details for file type validation', () => {
-      const serverContent = fs.readFileSync('server.js', 'utf8');
+      const uploadValidationContent = fs.readFileSync('utils/uploadValidation.js', 'utf8');
 
-      // Find the package image upload endpoint
-      const packageImageStart = serverContent.indexOf("'/api/admin/packages/:id/image'");
-      const nextEndpointStart = serverContent.indexOf('app.post(', packageImageStart + 100);
-      const packageImageEndpoint = serverContent.substring(packageImageStart, nextEndpointStart);
+      // Find the formatValidationErrorResponse function
+      const formatStart = uploadValidationContent.indexOf(
+        'function formatValidationErrorResponse('
+      );
+      const formatEnd = uploadValidationContent.indexOf('\n}\n', formatStart + 100);
+      const formatFunc = uploadValidationContent.substring(formatStart, formatEnd);
 
       // Verify enhanced error messages
-      expect(packageImageEndpoint).toContain('File type validation failed');
-      expect(packageImageEndpoint).toContain('Could not detect file type');
-      expect(packageImageEndpoint).toContain('Allowed types: JPEG, PNG, WebP, GIF');
+      expect(formatFunc).toContain('File type validation failed');
+      expect(formatFunc).toContain('Could not detect file type');
+      expect(formatFunc).toContain('Allowed types: JPEG, PNG, WebP, GIF');
     });
 
     it('should log magic bytes when file type validation fails', () => {
@@ -266,11 +267,10 @@ describe('Admin Package Image Upload Error Handling', () => {
       const nextEndpointStart = serverContent.indexOf('app.', categoryImageStart + 100);
       const categoryImageEndpoint = serverContent.substring(categoryImageStart, nextEndpointStart);
 
-      // Verify enhanced error handling exists
-      expect(categoryImageEndpoint).toContain('detectedType');
-      expect(categoryImageEndpoint).toContain('allowedTypes');
-      expect(categoryImageEndpoint).toContain('allowedFormats');
-      expect(categoryImageEndpoint).toContain('File type validation failed');
+      // Verify enhanced error handling uses helper function
+      expect(categoryImageEndpoint).toContain('uploadValidation.formatValidationErrorResponse');
+      expect(categoryImageEndpoint).toContain('errorResponse.error');
+      expect(categoryImageEndpoint).toContain('errorResponse.details');
       expect(categoryImageEndpoint).toContain('magicBytes');
     });
   });

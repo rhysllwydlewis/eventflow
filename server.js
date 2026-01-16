@@ -61,6 +61,7 @@ const postmark = require('./utils/postmark');
 
 // Photo upload utilities
 const photoUpload = storageConfig.photoUpload;
+const uploadValidation = require('./utils/uploadValidation');
 
 // Reviews and ratings system
 const reviewsSystem = require('./reviews');
@@ -2390,32 +2391,19 @@ app.post(
 
       // Handle validation errors with appropriate status codes and detailed feedback
       if (error.name === 'ValidationError') {
-        // Extract file type information from validation details
-        const typeDetails = error.details?.type || {};
-        const detectedType = typeDetails.detectedType;
-        const magicBytes = typeDetails.magicBytes;
-
-        // Create a user-friendly error message
-        let userMessage = error.message;
-        if (detectedType && detectedType !== 'unknown' && detectedType !== 'invalid') {
-          userMessage = `File type validation failed. Detected type: ${detectedType}. Allowed types: JPEG, PNG, WebP, GIF.`;
-        } else if (detectedType === 'unknown') {
-          userMessage = `Could not detect file type. The file may be corrupted. Allowed types: JPEG, PNG, WebP, GIF.`;
-        }
+        const errorResponse = uploadValidation.formatValidationErrorResponse(error);
 
         // Log debug info for troubleshooting
-        if (magicBytes) {
-          logger.warn('File type validation failed - magic bytes:', { magicBytes, detectedType });
+        if (errorResponse.magicBytes) {
+          logger.warn('File type validation failed - magic bytes:', {
+            magicBytes: errorResponse.magicBytes,
+            detectedType: errorResponse.details.detectedType,
+          });
         }
 
         return res.status(400).json({
-          error: userMessage,
-          details: {
-            ...error.details,
-            detectedType,
-            allowedTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif'],
-            allowedFormats: ['JPEG', 'PNG', 'WebP', 'GIF'],
-          },
+          error: errorResponse.error,
+          details: errorResponse.details,
         });
       }
 
@@ -2545,32 +2533,19 @@ app.post(
 
       // Handle validation errors with appropriate status codes and detailed feedback
       if (error.name === 'ValidationError') {
-        // Extract file type information from validation details
-        const typeDetails = error.details?.type || {};
-        const detectedType = typeDetails.detectedType;
-        const magicBytes = typeDetails.magicBytes;
-
-        // Create a user-friendly error message
-        let userMessage = error.message;
-        if (detectedType && detectedType !== 'unknown' && detectedType !== 'invalid') {
-          userMessage = `File type validation failed. Detected type: ${detectedType}. Allowed types: JPEG, PNG, WebP, GIF.`;
-        } else if (detectedType === 'unknown') {
-          userMessage = `Could not detect file type. The file may be corrupted. Allowed types: JPEG, PNG, WebP, GIF.`;
-        }
+        const errorResponse = uploadValidation.formatValidationErrorResponse(error);
 
         // Log debug info for troubleshooting
-        if (magicBytes) {
-          logger.warn('File type validation failed - magic bytes:', { magicBytes, detectedType });
+        if (errorResponse.magicBytes) {
+          logger.warn('File type validation failed - magic bytes:', {
+            magicBytes: errorResponse.magicBytes,
+            detectedType: errorResponse.details.detectedType,
+          });
         }
 
         return res.status(400).json({
-          error: userMessage,
-          details: {
-            ...error.details,
-            detectedType,
-            allowedTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif'],
-            allowedFormats: ['JPEG', 'PNG', 'WebP', 'GIF'],
-          },
+          error: errorResponse.error,
+          details: errorResponse.details,
         });
       }
 

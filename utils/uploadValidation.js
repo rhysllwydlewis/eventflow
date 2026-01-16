@@ -273,6 +273,53 @@ function getUploadLimits() {
   };
 }
 
+/**
+ * Format a user-friendly error response for validation errors
+ * Extracts detailed error information and creates clear error messages
+ * @param {Error} error - ValidationError from processAndSaveImage
+ * @returns {Object} - Formatted error response with user message and details
+ */
+function formatValidationErrorResponse(error) {
+  if (error.name !== 'ValidationError') {
+    return null;
+  }
+
+  // Extract file type information from validation details
+  const typeDetails = error.details?.type || {};
+  const detectedType = typeDetails.detectedType;
+  const magicBytes = typeDetails.magicBytes;
+
+  // Create a user-friendly error message
+  let userMessage = error.message;
+  if (detectedType && detectedType !== 'unknown' && detectedType !== 'invalid') {
+    userMessage = `File type validation failed. Detected type: ${detectedType}. Allowed types: JPEG, PNG, WebP, GIF.`;
+  } else if (detectedType === 'unknown') {
+    userMessage = `Could not detect file type. The file may be corrupted. Allowed types: JPEG, PNG, WebP, GIF.`;
+  }
+
+  // Map MIME types to user-friendly format names
+  const formatNames = ALLOWED_IMAGE_TYPES.map(mime => {
+    const formats = {
+      'image/jpeg': 'JPEG',
+      'image/png': 'PNG',
+      'image/webp': 'WebP',
+      'image/gif': 'GIF',
+    };
+    return formats[mime] || mime;
+  });
+
+  return {
+    error: userMessage,
+    details: {
+      ...error.details,
+      detectedType,
+      allowedTypes: ALLOWED_IMAGE_TYPES,
+      allowedFormats: formatNames,
+    },
+    magicBytes,
+  };
+}
+
 module.exports = {
   validateFileType,
   validateImageDimensions,
@@ -280,6 +327,7 @@ module.exports = {
   validateUpload,
   processWithMetadataStripping,
   getUploadLimits,
+  formatValidationErrorResponse,
   // Export constants for testing
   MAX_FILE_SIZE_MARKETPLACE,
   MAX_FILE_SIZE_SUPPLIER,
