@@ -18,6 +18,8 @@
   // State for both sections
   let categories = [];
   let heroImages = {};
+  let collageWidget = null;
+  let collageMedia = [];
 
   const categoryListElement = document.getElementById('categoryList');
   const heroImageListElement = document.getElementById('heroImageList');
@@ -41,6 +43,380 @@
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#039;');
+  }
+
+  // ============================================
+  // COLLAGE WIDGET SECTION
+  // ============================================
+
+  async function loadCollageWidget() {
+    try {
+      const response = await fetch('/api/admin/homepage/collage-widget', {
+        credentials: 'include',
+      });
+      if (response.ok) {
+        collageWidget = await response.json();
+        renderCollageWidget();
+      } else {
+        showCollageWidgetError('Failed to load collage widget configuration');
+      }
+    } catch (err) {
+      console.error('Error loading collage widget:', err);
+      showCollageWidgetError('Failed to load collage widget configuration');
+    }
+  }
+
+  function renderCollageWidget() {
+    // Set enabled checkbox
+    document.getElementById('collageWidgetEnabled').checked = collageWidget.enabled || false;
+
+    // Set source radio buttons
+    const source = collageWidget.source || 'pexels';
+    document.getElementById('sourcePexels').checked = source === 'pexels';
+    document.getElementById('sourceUploads').checked = source === 'uploads';
+
+    // Set media type checkboxes
+    const mediaTypes = collageWidget.mediaTypes || { photos: true, videos: false };
+    document.getElementById('mediaTypePhotos').checked = mediaTypes.photos || false;
+    document.getElementById('mediaTypeVideos').checked = mediaTypes.videos || false;
+
+    // Set interval
+    document.getElementById('intervalSeconds').value = collageWidget.intervalSeconds || 2.5;
+
+    // Set Pexels queries
+    const pexelsQueries = collageWidget.pexelsQueries || {};
+    document.getElementById('pexelsQueryVenues').value = pexelsQueries.venues || '';
+    document.getElementById('pexelsQueryCatering').value = pexelsQueries.catering || '';
+    document.getElementById('pexelsQueryEntertainment').value = pexelsQueries.entertainment || '';
+    document.getElementById('pexelsQueryPhotography').value = pexelsQueries.photography || '';
+
+    // Set fallback checkbox
+    document.getElementById('fallbackToPexels').checked =
+      collageWidget.fallbackToPexels !== false;
+
+    // Show/hide panels based on source
+    updateSourcePanels();
+
+    // Enable/disable settings based on enabled state
+    updateWidgetEnabledState();
+
+    // Load collage media if source is uploads
+    if (source === 'uploads') {
+      loadCollageMedia();
+    }
+  }
+
+  function updateSourcePanels() {
+    const source = document.querySelector('input[name="collageSource"]:checked')?.value || 'pexels';
+
+    const pexelsPanel = document.getElementById('pexelsSettingsPanel');
+    const uploadsPanel = document.getElementById('uploadsGalleryPanel');
+
+    if (source === 'pexels') {
+      pexelsPanel.style.display = 'block';
+      uploadsPanel.style.display = 'none';
+    } else {
+      pexelsPanel.style.display = 'none';
+      uploadsPanel.style.display = 'block';
+    }
+  }
+
+  function updateWidgetEnabledState() {
+    const enabled = document.getElementById('collageWidgetEnabled').checked;
+    const settingsDiv = document.getElementById('collageWidgetSettings');
+    const statusBanner = document.getElementById('widgetStatusBanner');
+
+    if (enabled) {
+      settingsDiv.classList.remove('disabled');
+      if (statusBanner) statusBanner.style.display = 'none';
+    } else {
+      settingsDiv.classList.add('disabled');
+      if (statusBanner) statusBanner.style.display = 'block';
+    }
+  }
+
+  async function saveCollageWidget() {
+    try {
+      // Get CSRF token
+      const csrfResponse = await fetch('/api/csrf-token', {
+        credentials: 'include',
+      });
+      const csrfData = await csrfResponse.json();
+
+      // Collect form data
+      const enabled = document.getElementById('collageWidgetEnabled').checked;
+      const source =
+        document.querySelector('input[name="collageSource"]:checked')?.value || 'pexels';
+      const mediaTypes = {
+        photos: document.getElementById('mediaTypePhotos').checked,
+        videos: document.getElementById('mediaTypeVideos').checked,
+      };
+      const intervalSeconds = parseFloat(document.getElementById('intervalSeconds').value);
+      const pexelsQueries = {
+        venues: document.getElementById('pexelsQueryVenues').value,
+        catering: document.getElementById('pexelsQueryCatering').value,
+        entertainment: document.getElementById('pexelsQueryEntertainment').value,
+        photography: document.getElementById('pexelsQueryPhotography').value,
+      };
+      const fallbackToPexels = document.getElementById('fallbackToPexels').checked;
+      
+      // Build uploadGallery from current media
+      const uploadGallery = collageMedia.map(m => m.url);
+
+      // Validation
+      if (!mediaTypes.photos && !mediaTypes.videos) {
+        showCollageWidgetError('Please select at least one media type');
+        return;
+      }
+
+      if (isNaN(intervalSeconds) || intervalSeconds < 1 || intervalSeconds > 60) {
+        showCollageWidgetError('Interval must be between 1 and 60 seconds');
+        return;
+      }
+
+      // Save configuration
+      const response = await fetch('/api/admin/homepage/collage-widget', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': csrfData.csrfToken,
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          enabled,
+          source,
+          mediaTypes,
+          intervalSeconds,
+          pexelsQueries,
+          uploadGallery,
+          fallbackToPexels,
+        }),
+      });
+
+      if (response.ok) {
+        showCollageWidgetSuccess('Configuration saved successfully!');
+        await loadCollageWidget(); // Reload to get updated data
+      } else {
+        const error = await response.json();
+        showCollageWidgetError(error.error || 'Failed to save configuration');
+      }
+    } catch (err) {
+      console.error('Error saving collage widget:', err);
+      showCollageWidgetError('Failed to save configuration');
+    }
+  }
+
+  function showCollageWidgetSuccess(message) {
+    const successEl = document.getElementById('collageWidgetSuccess');
+    const errorEl = document.getElementById('collageWidgetError');
+    errorEl.style.display = 'none';
+    successEl.textContent = '✅ ' + message;
+    successEl.style.display = 'block';
+    setTimeout(() => {
+      successEl.style.display = 'none';
+    }, 3000);
+  }
+
+  function showCollageWidgetError(message) {
+    const successEl = document.getElementById('collageWidgetSuccess');
+    const errorEl = document.getElementById('collageWidgetError');
+    successEl.style.display = 'none';
+    errorEl.textContent = '❌ ' + message;
+    errorEl.style.display = 'block';
+    setTimeout(() => {
+      errorEl.style.display = 'none';
+    }, 5000);
+  }
+
+  async function loadCollageMedia() {
+    try {
+      const response = await fetch('/api/admin/homepage/collage-media', {
+        credentials: 'include',
+      });
+      if (response.ok) {
+        const data = await response.json();
+        collageMedia = data.media || [];
+        renderCollageMedia();
+      } else {
+        renderCollageMedia([]);
+      }
+    } catch (err) {
+      console.error('Error loading collage media:', err);
+      renderCollageMedia([]);
+    }
+  }
+
+  function renderCollageMedia() {
+    const container = document.getElementById('uploadGalleryList');
+    if (!collageMedia || collageMedia.length === 0) {
+      container.innerHTML = `
+        <div class="card" style="padding: 20px; text-align: center; color: #9ca3af;">
+          <p>No media uploaded yet</p>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = collageMedia
+      .map(
+        item => `
+        <div class="gallery-item" data-filename="${escapeHtml(item.filename)}">
+          ${
+            item.type === 'video'
+              ? `<video src="${escapeHtml(item.url)}" muted loop playsinline></video>`
+              : `<img src="${escapeHtml(item.url)}" alt="Collage media">`
+          }
+          <div class="gallery-item-info">
+            <span class="gallery-item-type ${escapeHtml(item.type)}">${escapeHtml(item.type)}</span>
+            <p class="small" style="margin: 0; color: #6b7280;">${formatFileSize(item.size)}</p>
+          </div>
+          <button class="gallery-item-delete" data-filename="${escapeHtml(item.filename)}">🗑️ Delete</button>
+        </div>
+      `
+      )
+      .join('');
+
+    // Attach delete handlers
+    container.querySelectorAll('.gallery-item-delete').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const filename = btn.dataset.filename;
+        if (confirm('Delete this media file?')) {
+          await deleteCollageMedia(filename);
+        }
+      });
+    });
+  }
+
+  async function uploadCollageMedia(files) {
+    if (!files || files.length === 0) return;
+
+    // Validate file count
+    if (files.length > 10) {
+      showCollageWidgetError('Maximum 10 files can be uploaded at once. Please select fewer files.');
+      return;
+    }
+
+    // Validate file sizes and types
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    const validTypes = /^(image\/(jpeg|jpg|png|webp|gif)|video\/(mp4|webm|quicktime))$/i;
+    
+    for (const file of files) {
+      if (file.size > maxSize) {
+        showCollageWidgetError(`File "${file.name}" is too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Maximum size is 10MB.`);
+        return;
+      }
+      if (!validTypes.test(file.type)) {
+        showCollageWidgetError(`File "${file.name}" has unsupported format. Please use JPG, PNG, WebP, MP4, or WebM.`);
+        return;
+      }
+    }
+
+    try {
+      // Get CSRF token
+      const csrfResponse = await fetch('/api/csrf-token', {
+        credentials: 'include',
+      });
+      const csrfData = await csrfResponse.json();
+
+      // Create form data
+      const formData = new FormData();
+      for (const file of files) {
+        formData.append('media', file);
+      }
+
+      // Show progress
+      showUploadProgress(files.length);
+
+      const response = await fetch('/api/admin/homepage/collage-media', {
+        method: 'POST',
+        headers: {
+          'X-CSRF-Token': csrfData.csrfToken,
+        },
+        credentials: 'include',
+        body: formData,
+      });
+
+      hideUploadProgress();
+
+      if (response.ok) {
+        showCollageWidgetSuccess(`✅ Uploaded ${files.length} file(s) successfully!`);
+        await loadCollageMedia();
+      } else {
+        const error = await response.json();
+        showCollageWidgetError(error.error || 'Upload failed. Please check file types and sizes.');
+      }
+    } catch (err) {
+      hideUploadProgress();
+      console.error('Error uploading collage media:', err);
+      showCollageWidgetError('Network error during upload. Please check your connection and try again.');
+    }
+  }
+
+  async function deleteCollageMedia(filename) {
+    try {
+      // Get CSRF token
+      const csrfResponse = await fetch('/api/csrf-token', {
+        credentials: 'include',
+      });
+      const csrfData = await csrfResponse.json();
+
+      const response = await fetch(`/api/admin/homepage/collage-media/${encodeURIComponent(filename)}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': csrfData.csrfToken,
+        },
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        showCollageWidgetSuccess('Media deleted successfully!');
+        await loadCollageMedia();
+      } else {
+        const error = await response.json();
+        showCollageWidgetError(error.error || 'Failed to delete media');
+      }
+    } catch (err) {
+      console.error('Error deleting collage media:', err);
+      showCollageWidgetError('Failed to delete media');
+    }
+  }
+
+  function formatFileSize(bytes) {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
+  }
+
+  function showUploadProgress(fileCount) {
+    const progressDiv = document.createElement('div');
+    progressDiv.id = 'uploadProgressIndicator';
+    progressDiv.className = 'upload-progress';
+    progressDiv.innerHTML = `
+      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+        <svg width="20" height="20" style="animation: spin 1s linear infinite;">
+          <circle cx="10" cy="10" r="8" stroke="#0B8073" stroke-width="2" fill="none" stroke-dasharray="25 25" />
+        </svg>
+        <span style="font-weight: 600;">Uploading ${fileCount} file${fileCount > 1 ? 's' : ''}...</span>
+      </div>
+      <div class="upload-progress-bar">
+        <div class="upload-progress-fill" style="width: 75%; animation: pulse 1.5s ease-in-out infinite;"></div>
+      </div>
+      <p class="small" style="margin-top: 6px; color: #6b7280;">Please wait, this may take a moment...</p>
+    `;
+    document.body.appendChild(progressDiv);
+  }
+
+  function hideUploadProgress() {
+    const progressDiv = document.getElementById('uploadProgressIndicator');
+    if (progressDiv) {
+      // Fade out animation before removal
+      progressDiv.style.opacity = '0';
+      progressDiv.style.transition = 'opacity 0.3s';
+      setTimeout(() => progressDiv.remove(), 300);
+    }
   }
 
   // ============================================
@@ -485,12 +861,56 @@
     }
   }
 
-  // Load both sections on page load
-  await Promise.all([loadHeroImages(), loadCategories()]);
+  // Load all sections on page load
+  await Promise.all([loadCollageWidget(), loadHeroImages(), loadCategories()]);
+
+  // ============================================
+  // COLLAGE WIDGET EVENT LISTENERS
+  // ============================================
+
+  // Enable/disable toggle
+  document.getElementById('collageWidgetEnabled').addEventListener('change', updateWidgetEnabledState);
+
+  // Source selection
+  document.querySelectorAll('input[name="collageSource"]').forEach(radio => {
+    radio.addEventListener('change', () => {
+      updateSourcePanels();
+      const source = radio.value;
+      if (source === 'uploads') {
+        loadCollageMedia();
+      }
+    });
+  });
+
+  // Save button
+  document.getElementById('saveCollageWidget').addEventListener('click', saveCollageWidget);
+
+  // Reset button
+  document.getElementById('resetCollageWidget').addEventListener('click', async () => {
+    if (confirm('Reset collage widget to default settings?')) {
+      await loadCollageWidget();
+      showCollageWidgetSuccess('Configuration reset to defaults');
+    }
+  });
+
+  // Upload media button
+  document.getElementById('uploadMediaBtn').addEventListener('click', () => {
+    document.getElementById('mediaFileInput').click();
+  });
+
+  // File input change
+  document.getElementById('mediaFileInput').addEventListener('change', e => {
+    const files = Array.from(e.target.files);
+    if (files.length > 0) {
+      uploadCollageMedia(files);
+    }
+    // Reset file input
+    e.target.value = '';
+  });
 
   // Event listeners
   document.getElementById('refreshBtn').addEventListener('click', async () => {
-    await Promise.all([loadHeroImages(), loadCategories()]);
+    await Promise.all([loadCollageWidget(), loadHeroImages(), loadCategories()]);
   });
 
   document.getElementById('backToDashboard').addEventListener('click', () => {
