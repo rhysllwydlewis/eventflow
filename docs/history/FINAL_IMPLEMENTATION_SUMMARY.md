@@ -146,15 +146,13 @@ All 8 badge types now displayed across all views:
 
 **Features:**
 
-1. **Hero Collage Editor** (Top Section)
-   - Manage 4 prominent homepage hero images
-   - Categories: Venues, Catering, Entertainment, Photography
-   - Drag & drop file upload
-   - Reset to default functionality
-   - Stored in site settings (`heroImages` field)
-   - API: `/api/admin/homepage/hero-images/:category`
+1. **Collage Widget** (Dynamic Homepage Collage)
+   - Configure dynamic collage using Pexels photos/videos or uploaded media
+   - Choose media source, types, and display settings
+   - Replaces legacy "Pexels Dynamic Collage" feature flag
+   - API: `/api/admin/homepage/collage-widget`
 
-2. **Category Hero Images Editor** (Bottom Section)
+2. **Category Hero Images Editor** (Category Detail Pages)
    - Manage hero images for category detail pages
    - Used when viewing `/category.html?slug=venues`
    - Stored in category records (`heroImage` field)
@@ -173,10 +171,10 @@ All 8 badge types now displayed across all views:
 
 ## 📊 Image Priority & Fallback System
 
-### For Homepage Hero Collage:
+### For Homepage Collage:
 
 ```
-1. Admin Uploaded (via /admin-homepage.html hero section)  ← HIGHEST
+1. Collage Widget (Pexels or Uploaded Media)                ← DYNAMIC
 2. Default Images (/assets/images/collage-*.jpg)           ← FALLBACK
 ```
 
