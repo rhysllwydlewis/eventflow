@@ -2167,22 +2167,163 @@ app.get('/api/suppliers/:id/packages', async (req, res) => {
   res.json({ items: pkgs });
 });
 
+// Cache for featured packages
+let featuredPackagesCache = null;
+let featuredPackagesCacheTime = 0;
+const FEATURED_PACKAGES_CACHE_TTL = 60000; // 1 minute
+
 // Helper function to check if package is featured
 function isFeaturedPackage(pkg) {
   return pkg.featured === true || pkg.isFeatured === true;
 }
 
 app.get('/api/packages/featured', async (_req, res) => {
-  const packages = await dbUnified.read('packages');
-  const suppliers = await dbUnified.read('suppliers');
+  try {
+    const now = Date.now();
 
-  // Create a suppliers lookup map for O(1) access
-  const suppliersMap = new Map(suppliers.map(s => [s.id, s]));
+    // Return cached data if still valid
+    if (featuredPackagesCache && now - featuredPackagesCacheTime < FEATURED_PACKAGES_CACHE_TTL) {
+      return res.json(featuredPackagesCache);
+    }
 
-  const items = packages
-    .filter(p => p.approved && isFeaturedPackage(p))
-    .slice(0, 6)
-    .map(pkg => {
+    // Use efficient querying for MongoDB
+    const dbType = dbUnified.getDatabaseType();
+    let items;
+
+    if (dbType === 'mongodb') {
+      // For MongoDB, try to use findWithOptions for efficient query
+      // Get featured packages with approved=true and featured=true
+      const packages = await dbUnified.findWithOptions(
+        'packages',
+        {
+          approved: true,
+          $or: [{ featured: true }, { isFeatured: true }],
+        },
+        { limit: 6, sort: { createdAt: -1 } }
+      );
+
+      // Get supplier names for the packages
+      const supplierIds = [...new Set(packages.map(p => p.supplierId))];
+      const suppliers = await Promise.all(
+        supplierIds.map(id => dbUnified.findOne('suppliers', { id }))
+      );
+      const suppliersMap = new Map(suppliers.filter(Boolean).map(s => [s.id, s]));
+
+      items = packages.map(pkg => ({
+        ...pkg,
+        supplier_name: suppliersMap.get(pkg.supplierId)?.name || null,
+      }));
+    } else {
+      // Local storage fallback
+      const packages = await dbUnified.read('packages');
+      const suppliers = await dbUnified.read('suppliers');
+
+      // Create a suppliers lookup map for O(1) access
+      const suppliersMap = new Map(suppliers.map(s => [s.id, s]));
+
+      items = packages
+        .filter(p => p.approved && isFeaturedPackage(p))
+        .slice(0, 6)
+        .map(pkg => {
+          const supplier = suppliersMap.get(pkg.supplierId);
+          return {
+            ...pkg,
+            supplier_name: supplier ? supplier.name : null,
+          };
+        });
+    }
+
+    const result = { items };
+    featuredPackagesCache = result;
+    featuredPackagesCacheTime = now;
+
+    res.json(result);
+  } catch (error) {
+    logger.error('Error fetching featured packages:', error);
+    res.status(500).json({ items: [] });
+  }
+});
+
+// Cache for spotlight packages
+let spotlightPackagesCache = null;
+let spotlightPackagesCacheTime = 0;
+const SPOTLIGHT_PACKAGES_CACHE_TTL = 3600000; // 1 hour (they rotate hourly anyway)
+
+// Spotlight packages - randomly selected packages that rotate hourly
+app.get('/api/packages/spotlight', async (_req, res) => {
+  try {
+    const now = Date.now();
+
+    // Use current hour as cache key
+    const currentHour = Math.floor(now / SPOTLIGHT_PACKAGES_CACHE_TTL);
+    const cacheHour = Math.floor(spotlightPackagesCacheTime / SPOTLIGHT_PACKAGES_CACHE_TTL);
+
+    // Return cached data if still valid for current hour
+    if (spotlightPackagesCache && currentHour === cacheHour) {
+      return res.json(spotlightPackagesCache);
+    }
+
+    // Get approved packages
+    const dbType = dbUnified.getDatabaseType();
+    let approvedPackages;
+
+    if (dbType === 'mongodb') {
+      // For MongoDB, use findWithOptions to get only approved packages
+      approvedPackages = await dbUnified.findWithOptions(
+        'packages',
+        { approved: true },
+        { limit: 100 } // Get up to 100 to have a good pool for rotation
+      );
+    } else {
+      // Local storage fallback
+      const packages = await dbUnified.read('packages');
+      approvedPackages = packages.filter(p => p.approved);
+    }
+
+    // Use current hour as seed for consistent selection within the hour
+    // Encode date as integer: YYYYMMDD * 24 + HH (e.g., 20260116 * 24 + 14 = 486147854)
+    // This ensures same packages are shown for the entire hour
+    const dateNow = new Date();
+    const hourSeed =
+      dateNow.getUTCFullYear() * 10000 + // Year component (e.g., 2026 * 10000)
+      (dateNow.getUTCMonth() + 1) * 100 + // Month component (1-12)
+      dateNow.getUTCDate() * 24 + // Day * 24 (to account for hours)
+      dateNow.getUTCHours(); // Hour (0-23)
+
+    // Shuffle packages using the hour seed for deterministic randomness
+    // Using a Linear Congruential Generator (LCG) for seeded random number generation
+    // These constants are from Numerical Recipes (widely used LCG parameters)
+    // They provide good statistical properties: full period, minimal correlation, uniform distribution
+    const LCG_MULTIPLIER = 9301; // Multiplier 'a' - ensures good mixing
+    const LCG_INCREMENT = 49297; // Increment 'c' - helps avoid zero cycles
+    const LCG_MODULUS = 233280; // Modulus 'm' - determines the period
+
+    const shuffled = [...approvedPackages];
+    let seed = hourSeed;
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      // Generate next pseudo-random number using LCG formula
+      seed = (seed * LCG_MULTIPLIER + LCG_INCREMENT) % LCG_MODULUS;
+      const j = Math.floor((seed / LCG_MODULUS) * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+
+    // Get supplier names for the selected packages
+    const selectedPackages = shuffled.slice(0, 6);
+    const supplierIds = [...new Set(selectedPackages.map(p => p.supplierId))];
+
+    let suppliersMap;
+    if (dbType === 'mongodb') {
+      const suppliers = await Promise.all(
+        supplierIds.map(id => dbUnified.findOne('suppliers', { id }))
+      );
+      suppliersMap = new Map(suppliers.filter(Boolean).map(s => [s.id, s]));
+    } else {
+      const suppliers = await dbUnified.read('suppliers');
+      suppliersMap = new Map(suppliers.map(s => [s.id, s]));
+    }
+
+    // Select up to 6 spotlight packages
+    const items = selectedPackages.map(pkg => {
       const supplier = suppliersMap.get(pkg.supplierId);
       return {
         ...pkg,
@@ -2190,54 +2331,15 @@ app.get('/api/packages/featured', async (_req, res) => {
       };
     });
 
-  res.json({ items });
-});
+    const result = { items };
+    spotlightPackagesCache = result;
+    spotlightPackagesCacheTime = now;
 
-// Spotlight packages - randomly selected packages that rotate hourly
-app.get('/api/packages/spotlight', async (_req, res) => {
-  const packages = await dbUnified.read('packages');
-  const suppliers = await dbUnified.read('suppliers');
-
-  // Create a suppliers lookup map for O(1) access
-  const suppliersMap = new Map(suppliers.map(s => [s.id, s]));
-
-  // Get all approved packages
-  const approvedPackages = packages.filter(p => p.approved);
-
-  // Use current hour as seed for consistent selection within the hour
-  const now = new Date();
-  const hourSeed =
-    now.getUTCFullYear() * 10000 +
-    (now.getUTCMonth() + 1) * 100 +
-    now.getUTCDate() * 24 +
-    now.getUTCHours();
-
-  // Shuffle packages using the hour seed for deterministic randomness
-  // Using a Linear Congruential Generator (LCG) for seeded random number generation
-  // Constants from Numerical Recipes (widely used and tested LCG parameters)
-  const LCG_MULTIPLIER = 9301;
-  const LCG_INCREMENT = 49297;
-  const LCG_MODULUS = 233280;
-
-  const shuffled = [...approvedPackages];
-  let seed = hourSeed;
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    // Generate next pseudo-random number using LCG formula
-    seed = (seed * LCG_MULTIPLIER + LCG_INCREMENT) % LCG_MODULUS;
-    const j = Math.floor((seed / LCG_MODULUS) * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    res.json(result);
+  } catch (error) {
+    logger.error('Error fetching spotlight packages:', error);
+    res.status(500).json({ items: [] });
   }
-
-  // Select up to 6 spotlight packages
-  const items = shuffled.slice(0, 6).map(pkg => {
-    const supplier = suppliersMap.get(pkg.supplierId);
-    return {
-      ...pkg,
-      supplier_name: supplier ? supplier.name : null,
-    };
-  });
-
-  res.json({ items });
 });
 
 app.get('/api/packages/search', async (req, res) => {
@@ -2288,40 +2390,76 @@ app.get('/api/categories', async (_req, res) => {
   res.json({ items: sorted });
 });
 
+// Cache for public stats
+let publicStatsCache = null;
+let publicStatsCacheTime = 0;
+const PUBLIC_STATS_CACHE_TTL = 300000; // 5 minutes in milliseconds
+
 /**
  * GET /api/public/stats
  * Public endpoint for homepage statistics
- * Returns real counts with 5-minute cache
+ * Returns real counts with 5-minute cache (both server-side and client-side)
  */
 app.get('/api/public/stats', async (_req, res) => {
   try {
-    // Set cache headers (5 minutes)
-    res.set('Cache-Control', 'public, max-age=300');
+    const now = Date.now();
 
-    // Get suppliers count (approved/verified)
-    const suppliers = await dbUnified.read('suppliers');
-    const suppliersVerified = suppliers.filter(s => s.approved || s.verified).length;
+    // Return cached stats if still valid (server-side cache)
+    if (publicStatsCache && now - publicStatsCacheTime < PUBLIC_STATS_CACHE_TTL) {
+      // Set cache headers (5 minutes)
+      res.set('Cache-Control', 'public, max-age=300');
+      return res.json(publicStatsCache);
+    }
 
-    // Get packages count (approved)
-    const packages = await dbUnified.read('packages');
-    const packagesApproved = packages.filter(p => p.approved === true).length;
+    // Use efficient count operations instead of loading full collections
+    const dbType = dbUnified.getDatabaseType();
 
-    // Get marketplace listings count (approved and active)
-    const listings = await dbUnified.read('marketplace_listings');
-    const marketplaceListingsActive = listings.filter(
-      l => l.approved === true && l.status === 'active'
-    ).length;
+    let suppliersVerified, packagesApproved, marketplaceListingsActive, reviewsApproved;
 
-    // Get reviews count (approved)
-    const reviews = await dbUnified.read('reviews');
-    const reviewsApproved = reviews.filter(r => r.approved === true).length;
+    if (dbType === 'mongodb') {
+      // For MongoDB, use aggregation or multiple counts
+      // Note: For "approved OR verified" we need to load and filter, or use $or
+      [packagesApproved, marketplaceListingsActive, reviewsApproved] = await Promise.all([
+        dbUnified.count('packages', { approved: true }),
+        dbUnified.count('marketplace_listings', { approved: true, status: 'active' }),
+        dbUnified.count('reviews', { approved: true }),
+      ]);
 
-    res.json({
+      // For suppliers with OR condition (approved OR verified), use MongoDB $or
+      suppliersVerified = await dbUnified.count('suppliers', {
+        $or: [{ approved: true }, { verified: true }],
+      });
+    } else {
+      // Local storage fallback
+      const [suppliers, packages, listings, reviews] = await Promise.all([
+        dbUnified.read('suppliers'),
+        dbUnified.read('packages'),
+        dbUnified.read('marketplace_listings'),
+        dbUnified.read('reviews'),
+      ]);
+
+      suppliersVerified = suppliers.filter(s => s.approved || s.verified).length;
+      packagesApproved = packages.filter(p => p.approved === true).length;
+      marketplaceListingsActive = listings.filter(
+        l => l.approved === true && l.status === 'active'
+      ).length;
+      reviewsApproved = reviews.filter(r => r.approved === true).length;
+    }
+
+    const stats = {
       suppliersVerified,
       packagesApproved,
       marketplaceListingsActive,
       reviewsApproved,
-    });
+    };
+
+    // Update cache
+    publicStatsCache = stats;
+    publicStatsCacheTime = now;
+
+    // Set cache headers (5 minutes)
+    res.set('Cache-Control', 'public, max-age=300');
+    res.json(stats);
   } catch (error) {
     logger.error('Error fetching public stats:', error);
     sentry.captureException(error);
@@ -3397,56 +3535,107 @@ app.post(
 app.get('/api/marketplace/listings', async (req, res) => {
   try {
     const { category, condition, minPrice, maxPrice, search, sort, limit } = req.query;
-    let listings = await dbUnified.read('marketplace_listings');
 
-    // Filter by approved and active status
-    listings = listings.filter(l => l.approved && l.status === 'active');
+    // Build MongoDB-style filter
+    const filter = { approved: true, status: 'active' };
 
-    // Apply filters
+    // Apply category filter
     if (category) {
-      listings = listings.filter(l => l.category === category);
-    }
-    if (condition) {
-      listings = listings.filter(l => l.condition === condition);
-    }
-    if (minPrice) {
-      listings = listings.filter(l => l.price >= parseFloat(minPrice));
-    }
-    if (maxPrice) {
-      listings = listings.filter(l => l.price <= parseFloat(maxPrice));
-    }
-    if (search) {
-      const searchLower = search.toLowerCase();
-      listings = listings.filter(
-        l =>
-          l.title.toLowerCase().includes(searchLower) ||
-          l.description.toLowerCase().includes(searchLower)
-      );
+      filter.category = category;
     }
 
-    // Sort listings
+    // Apply condition filter
+    if (condition) {
+      filter.condition = condition;
+    }
+
+    // Apply price filters
+    if (minPrice || maxPrice) {
+      filter.price = {};
+      if (minPrice) {
+        filter.price.$gte = parseFloat(minPrice);
+      }
+      if (maxPrice) {
+        filter.price.$lte = parseFloat(maxPrice);
+      }
+    }
+
+    // Determine sort order
+    let sortOption = { createdAt: -1 }; // Default: most recent
     if (sort === 'price-low') {
-      listings.sort((a, b) => a.price - b.price);
+      sortOption = { price: 1 };
     } else if (sort === 'price-high') {
-      listings.sort((a, b) => b.price - a.price);
-    } else {
-      // Default: most recent
-      listings.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      sortOption = { price: -1 };
     }
 
     // Apply limit parameter (default 12, cap at 24)
-    let resultLimit = 12; // default
+    let resultLimit = 12;
     if (limit) {
       const parsedLimit = parseInt(limit, 10);
       if (!isNaN(parsedLimit) && parsedLimit > 0) {
-        resultLimit = Math.min(parsedLimit, 24); // cap at 24
+        resultLimit = Math.min(parsedLimit, 24);
       }
     }
-    listings = listings.slice(0, resultLimit);
+
+    const dbType = dbUnified.getDatabaseType();
+    let listings;
+
+    if (dbType === 'mongodb' && !search) {
+      // For MongoDB without search, use efficient findWithOptions
+      // Note: When search is present, we fall back to loading all data because:
+      // 1. MongoDB text search requires text indexes which may not be configured
+      // 2. The current implementation uses case-insensitive substring matching (not full-text search)
+      // 3. This ensures consistent behavior across MongoDB and local storage
+      listings = await dbUnified.findWithOptions('marketplace_listings', filter, {
+        limit: resultLimit,
+        sort: sortOption,
+      });
+    } else {
+      // For local storage or when search is needed, load and filter
+      let allListings = await dbUnified.read('marketplace_listings');
+
+      // Apply filters
+      allListings = allListings.filter(l => l.approved && l.status === 'active');
+
+      if (category) {
+        allListings = allListings.filter(l => l.category === category);
+      }
+      if (condition) {
+        allListings = allListings.filter(l => l.condition === condition);
+      }
+      if (minPrice) {
+        allListings = allListings.filter(l => l.price >= parseFloat(minPrice));
+      }
+      if (maxPrice) {
+        allListings = allListings.filter(l => l.price <= parseFloat(maxPrice));
+      }
+      if (search) {
+        const searchLower = search.toLowerCase();
+        allListings = allListings.filter(
+          l =>
+            l.title.toLowerCase().includes(searchLower) ||
+            l.description.toLowerCase().includes(searchLower)
+        );
+      }
+
+      // Sort listings
+      if (sort === 'price-low') {
+        allListings.sort((a, b) => a.price - b.price);
+      } else if (sort === 'price-high') {
+        allListings.sort((a, b) => b.price - a.price);
+      } else {
+        // Default: most recent
+        allListings.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      }
+
+      // Apply limit
+      listings = allListings.slice(0, resultLimit);
+    }
 
     logger.info('Marketplace listings fetched', {
       count: listings.length,
       filters: { category, condition, minPrice, maxPrice, search, sort, limit: resultLimit },
+      usedOptimizedQuery: dbType === 'mongodb' && !search,
     });
 
     res.json({ listings });

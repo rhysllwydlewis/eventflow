@@ -78,104 +78,236 @@ router.get('/db-status', authRequired, roleRequired('admin'), (_req, res) => {
   });
 });
 
+// Cache for dashboard stats
+let dashboardStatsCache = null;
+let dashboardStatsCacheTime = 0;
+const DASHBOARD_STATS_CACHE_TTL = 60000; // 60 seconds
+
+/**
+ * Calculate dashboard statistics using efficient counting
+ * @returns {Promise<Object>} Dashboard statistics
+ */
+async function calculateDashboardStats() {
+  // Use Promise.all with count operations instead of full reads
+  const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+  const [
+    totalUsers,
+    verifiedUsers,
+    unverifiedUsers,
+    suspendedUsers,
+    customerCount,
+    supplierCount,
+    adminCount,
+    totalSuppliers,
+    pendingSuppliers,
+    approvedSuppliers,
+    verifiedSuppliers,
+    proSuppliers,
+    featuredSuppliers,
+    totalPackages,
+    pendingPackages,
+    approvedPackages,
+    featuredPackages,
+    totalPhotos,
+    approvedPhotos,
+    rejectedPhotos,
+    totalTickets,
+    openTickets,
+    inProgressTickets,
+    closedTickets,
+    totalPlans,
+    activePlans,
+    totalMarketplace,
+  ] = await Promise.all([
+    dbUnified.count('users'),
+    dbUnified.count('users', { verified: true }),
+    dbUnified.count('users', { verified: false }),
+    dbUnified.count('users', { suspended: true }),
+    dbUnified.count('users', { role: 'customer' }),
+    dbUnified.count('users', { role: 'supplier' }),
+    dbUnified.count('users', { role: 'admin' }),
+    dbUnified.count('suppliers'),
+    dbUnified.count('suppliers', { approved: false }),
+    dbUnified.count('suppliers', { approved: true }),
+    dbUnified.count('suppliers', { verified: true }),
+    dbUnified.count('suppliers', { isPro: true }),
+    dbUnified.count('suppliers', { featured: true }),
+    dbUnified.count('packages'),
+    dbUnified.count('packages', { approved: false }),
+    dbUnified.count('packages', { approved: true }),
+    dbUnified.count('packages', { featured: true }),
+    dbUnified.count('photos'),
+    dbUnified.count('photos', { approved: true }),
+    dbUnified.count('photos', { rejected: true }),
+    dbUnified.count('tickets'),
+    dbUnified.count('tickets', { status: 'open' }),
+    dbUnified.count('tickets', { status: 'in-progress' }),
+    dbUnified.count('tickets', { status: 'closed' }),
+    dbUnified.count('plans'),
+    dbUnified.count('plans', { status: 'active' }),
+    dbUnified.count('marketplace_listings'),
+  ]);
+
+  // For complex filters (date comparisons, multiple conditions), we need to use MongoDB's query language
+  // For local storage fallback, we still need to load and filter
+  const dbType = dbUnified.getDatabaseType();
+  let recentSignups = 0;
+  let pendingPhotos = 0;
+  let highPriorityTickets = 0;
+  let pendingMarketplace = 0;
+  let activeMarketplace = 0;
+  let recentActivity24h = 0;
+  let recentActivity7d = 0;
+
+  if (dbType === 'mongodb') {
+    // Use MongoDB date queries for efficiency
+    const [
+      recentSignupsResult,
+      pendingPhotosResult,
+      highPriorityResult,
+      pendingMarketplaceResult,
+      activeMarketplaceResult,
+      recent24hResult,
+      recent7dResult,
+    ] = await Promise.all([
+      dbUnified.count('users', { createdAt: { $gte: dayAgo.toISOString() } }),
+      dbUnified.count('photos', { approved: false, rejected: false }),
+      dbUnified.count('tickets', { priority: 'high', status: { $ne: 'closed' } }),
+      dbUnified.count('marketplace_listings', { approved: false, status: 'pending' }),
+      dbUnified.count('marketplace_listings', { approved: true, status: 'active' }),
+      dbUnified.count('audit_logs', { timestamp: { $gte: dayAgo.toISOString() } }),
+      dbUnified.count('audit_logs', { timestamp: { $gte: weekAgo.toISOString() } }),
+    ]);
+
+    recentSignups = recentSignupsResult;
+    pendingPhotos = pendingPhotosResult;
+    highPriorityTickets = highPriorityResult;
+    pendingMarketplace = pendingMarketplaceResult;
+    activeMarketplace = activeMarketplaceResult;
+    recentActivity24h = recent24hResult;
+    recentActivity7d = recent7dResult;
+  } else {
+    // Fallback for local storage - need to load and filter
+    const [users, photos, tickets, marketplaceListings, auditLogs] = await Promise.all([
+      dbUnified.read('users'),
+      dbUnified.read('photos'),
+      dbUnified.read('tickets'),
+      dbUnified.read('marketplace_listings'),
+      dbUnified.read('audit_logs'),
+    ]);
+
+    recentSignups = users.filter(u => {
+      const createdAt = new Date(u.createdAt);
+      return createdAt > dayAgo;
+    }).length;
+
+    pendingPhotos = photos.filter(p => !p.approved && !p.rejected).length;
+
+    highPriorityTickets = tickets.filter(
+      t => t.priority === 'high' && t.status !== 'closed'
+    ).length;
+
+    pendingMarketplace = marketplaceListings.filter(
+      l => !l.approved && l.status === 'pending'
+    ).length;
+
+    activeMarketplace = marketplaceListings.filter(l => l.approved && l.status === 'active').length;
+
+    recentActivity24h = auditLogs.filter(log => {
+      const logTime = new Date(log.timestamp);
+      return logTime > dayAgo;
+    }).length;
+
+    recentActivity7d = auditLogs.filter(log => {
+      const logTime = new Date(log.timestamp);
+      return logTime > weekAgo;
+    }).length;
+  }
+
+  return {
+    users: {
+      total: totalUsers,
+      verified: verifiedUsers,
+      unverified: unverifiedUsers,
+      suspended: suspendedUsers,
+      customers: customerCount,
+      suppliers: supplierCount,
+      admins: adminCount,
+      recentSignups,
+    },
+    suppliers: {
+      total: totalSuppliers,
+      pending: pendingSuppliers,
+      approved: approvedSuppliers,
+      verified: verifiedSuppliers,
+      pro: proSuppliers,
+      featured: featuredSuppliers,
+    },
+    packages: {
+      total: totalPackages,
+      pending: pendingPackages,
+      approved: approvedPackages,
+      featured: featuredPackages,
+    },
+    photos: {
+      total: totalPhotos,
+      pending: pendingPhotos,
+      approved: approvedPhotos,
+      rejected: rejectedPhotos,
+    },
+    tickets: {
+      total: totalTickets,
+      open: openTickets,
+      inProgress: inProgressTickets,
+      closed: closedTickets,
+      highPriority: highPriorityTickets,
+    },
+    marketplace: {
+      total: totalMarketplace,
+      pending: pendingMarketplace,
+      active: activeMarketplace,
+    },
+    plans: {
+      total: totalPlans,
+      active: activePlans,
+    },
+    recentActivity: {
+      last24Hours: recentActivity24h,
+      last7Days: recentActivity7d,
+    },
+    pendingActions: {
+      totalPending: pendingSuppliers + pendingPackages + pendingPhotos + pendingMarketplace,
+      breakdown: {
+        suppliers: pendingSuppliers,
+        packages: pendingPackages,
+        photos: pendingPhotos,
+        marketplace: pendingMarketplace,
+      },
+    },
+  };
+}
+
 /**
  * GET /api/admin/dashboard/stats
  * Get comprehensive dashboard statistics for admin overview
  */
 router.get('/dashboard/stats', authRequired, roleRequired('admin'), async (req, res) => {
   try {
-    // Fetch all necessary data in parallel for performance
-    const [users, suppliers, packages, photos, tickets, plans, auditLogs, marketplaceListings] =
-      await Promise.all([
-        dbUnified.read('users'),
-        dbUnified.read('suppliers'),
-        dbUnified.read('packages'),
-        dbUnified.read('photos'),
-        dbUnified.read('tickets'),
-        dbUnified.read('plans'),
-        dbUnified.read('audit_logs'),
-        dbUnified.read('marketplace_listings'),
-      ]);
+    const now = Date.now();
 
-    // Calculate various stats
-    const stats = {
-      users: {
-        total: users.length,
-        verified: users.filter(u => u.verified).length,
-        unverified: users.filter(u => !u.verified).length,
-        suspended: users.filter(u => u.suspended).length,
-        customers: users.filter(u => u.role === 'customer').length,
-        suppliers: users.filter(u => u.role === 'supplier').length,
-        admins: users.filter(u => u.role === 'admin').length,
-        recentSignups: users.filter(u => {
-          const createdAt = new Date(u.createdAt);
-          const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-          return createdAt > dayAgo;
-        }).length,
-      },
-      suppliers: {
-        total: suppliers.length,
-        pending: suppliers.filter(s => !s.approved).length,
-        approved: suppliers.filter(s => s.approved).length,
-        verified: suppliers.filter(s => s.verified).length,
-        pro: suppliers.filter(s => s.isPro).length,
-        featured: suppliers.filter(s => s.featured).length,
-      },
-      packages: {
-        total: packages.length,
-        pending: packages.filter(p => !p.approved).length,
-        approved: packages.filter(p => p.approved).length,
-        featured: packages.filter(p => p.featured).length,
-      },
-      photos: {
-        total: photos.length,
-        pending: photos.filter(p => !p.approved && !p.rejected).length,
-        approved: photos.filter(p => p.approved).length,
-        rejected: photos.filter(p => p.rejected).length,
-      },
-      tickets: {
-        total: tickets.length,
-        open: tickets.filter(t => t.status === 'open').length,
-        inProgress: tickets.filter(t => t.status === 'in-progress').length,
-        closed: tickets.filter(t => t.status === 'closed').length,
-        highPriority: tickets.filter(t => t.priority === 'high' && t.status !== 'closed').length,
-      },
-      marketplace: {
-        total: marketplaceListings.length,
-        pending: marketplaceListings.filter(l => !l.approved && l.status === 'pending').length,
-        active: marketplaceListings.filter(l => l.approved && l.status === 'active').length,
-      },
-      plans: {
-        total: plans.length,
-        active: plans.filter(p => p.status === 'active').length,
-      },
-      recentActivity: {
-        last24Hours: auditLogs.filter(log => {
-          const logTime = new Date(log.timestamp);
-          const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-          return logTime > dayAgo;
-        }).length,
-        last7Days: auditLogs.filter(log => {
-          const logTime = new Date(log.timestamp);
-          const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-          return logTime > weekAgo;
-        }).length,
-      },
-      pendingActions: {
-        totalPending:
-          suppliers.filter(s => !s.approved).length +
-          packages.filter(p => !p.approved).length +
-          photos.filter(p => !p.approved && !p.rejected).length +
-          marketplaceListings.filter(l => !l.approved && l.status === 'pending').length,
-        breakdown: {
-          suppliers: suppliers.filter(s => !s.approved).length,
-          packages: packages.filter(p => !p.approved).length,
-          photos: photos.filter(p => !p.approved && !p.rejected).length,
-          marketplace: marketplaceListings.filter(l => !l.approved && l.status === 'pending')
-            .length,
-        },
-      },
-    };
+    // Return cached stats if still valid
+    if (dashboardStatsCache && now - dashboardStatsCacheTime < DASHBOARD_STATS_CACHE_TTL) {
+      return res.json(dashboardStatsCache);
+    }
+
+    // Calculate fresh stats using efficient counting
+    const stats = await calculateDashboardStats();
+
+    // Update cache
+    dashboardStatsCache = stats;
+    dashboardStatsCacheTime = now;
 
     res.json(stats);
   } catch (error) {
@@ -322,89 +454,159 @@ router.get('/users/search', authRequired, roleRequired('admin'), async (req, res
       offset = 0,
     } = req.query;
 
-    const allUsers = await dbUnified.read('users');
+    const dbType = dbUnified.getDatabaseType();
 
-    // Apply filters
-    let filteredUsers = allUsers;
+    // For MongoDB, build a filter and use findWithOptions for efficient query
+    if (dbType === 'mongodb') {
+      // Build MongoDB filter
+      const filter = {};
 
-    // Search term (email or name)
-    if (q && q.trim()) {
-      const searchTerm = q.trim().toLowerCase();
-      filteredUsers = filteredUsers.filter(
-        u =>
-          (u.email && u.email.toLowerCase().includes(searchTerm)) ||
-          (u.name && u.name.toLowerCase().includes(searchTerm))
-      );
-    }
+      if (role) {
+        filter.role = role;
+      }
+      if (verified !== undefined) {
+        filter.verified = verified === 'true';
+      }
+      if (suspended !== undefined) {
+        filter.suspended = suspended === 'true';
+      }
+      if (q && q.trim()) {
+        // Use MongoDB $or for text search
+        const searchTerm = q.trim();
+        filter.$or = [
+          { email: { $regex: searchTerm, $options: 'i' } },
+          { name: { $regex: searchTerm, $options: 'i' } },
+        ];
+      }
 
-    // Role filter
-    if (role) {
-      filteredUsers = filteredUsers.filter(u => u.role === role);
-    }
+      // Date range filters
+      if (startDate || endDate) {
+        filter.createdAt = {};
+        if (startDate) {
+          filter.createdAt.$gte = new Date(startDate).toISOString();
+        }
+        if (endDate) {
+          filter.createdAt.$lte = new Date(endDate).toISOString();
+        }
+      }
 
-    // Verified filter
-    if (verified !== undefined) {
-      const isVerified = verified === 'true' || verified === true;
-      filteredUsers = filteredUsers.filter(u => !!u.verified === isVerified);
-    }
+      // Get total count with filters
+      const total = await dbUnified.count('users', filter);
 
-    // Suspended filter
-    if (suspended !== undefined) {
-      const isSuspended = suspended === 'true' || suspended === true;
-      filteredUsers = filteredUsers.filter(u => !!u.suspended === isSuspended);
-    }
+      // Use findWithOptions with pagination and sorting
+      const users = await dbUnified.findWithOptions('users', filter, {
+        limit: parseInt(limit, 10),
+        skip: parseInt(offset, 10),
+        sort: { createdAt: -1 },
+      });
 
-    // Date range filter
-    if (startDate) {
-      const start = new Date(startDate);
-      filteredUsers = filteredUsers.filter(u => {
-        const createdAt = new Date(u.createdAt);
-        return createdAt >= start;
+      // Remove sensitive data
+      const sanitizedUsers = users.map(u => ({
+        id: u.id,
+        name: u.name,
+        email: u.email,
+        role: u.role,
+        verified: !!u.verified,
+        suspended: !!u.suspended,
+        marketingOptIn: !!u.marketingOptIn,
+        createdAt: u.createdAt,
+        lastLoginAt: u.lastLoginAt || null,
+        subscription: u.subscription || { tier: 'free', status: 'active' },
+      }));
+
+      res.json({
+        items: sanitizedUsers,
+        total,
+        limit: parseInt(limit, 10),
+        offset: parseInt(offset, 10),
+        hasMore: parseInt(offset, 10) + sanitizedUsers.length < total,
+      });
+    } else {
+      // Fallback for local storage - load and filter in memory
+      const allUsers = await dbUnified.read('users');
+
+      // Apply filters
+      let filteredUsers = allUsers;
+
+      // Search term (email or name)
+      if (q && q.trim()) {
+        const searchTerm = q.trim().toLowerCase();
+        filteredUsers = filteredUsers.filter(
+          u =>
+            (u.email && u.email.toLowerCase().includes(searchTerm)) ||
+            (u.name && u.name.toLowerCase().includes(searchTerm))
+        );
+      }
+
+      // Role filter
+      if (role) {
+        filteredUsers = filteredUsers.filter(u => u.role === role);
+      }
+
+      // Verified filter
+      if (verified !== undefined) {
+        const isVerified = verified === 'true' || verified === true;
+        filteredUsers = filteredUsers.filter(u => !!u.verified === isVerified);
+      }
+
+      // Suspended filter
+      if (suspended !== undefined) {
+        const isSuspended = suspended === 'true' || suspended === true;
+        filteredUsers = filteredUsers.filter(u => !!u.suspended === isSuspended);
+      }
+
+      // Date range filter
+      if (startDate) {
+        const start = new Date(startDate);
+        filteredUsers = filteredUsers.filter(u => {
+          const createdAt = new Date(u.createdAt);
+          return createdAt >= start;
+        });
+      }
+
+      if (endDate) {
+        const end = new Date(endDate);
+        filteredUsers = filteredUsers.filter(u => {
+          const createdAt = new Date(u.createdAt);
+          return createdAt <= end;
+        });
+      }
+
+      // Sort by createdAt descending
+      filteredUsers.sort((a, b) => {
+        const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return bTime - aTime;
+      });
+
+      // Apply pagination
+      const total = filteredUsers.length;
+      const startIndex = parseInt(offset, 10) || 0;
+      const endIndex = startIndex + (parseInt(limit, 10) || 50);
+      const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
+
+      // Remove sensitive data
+      const sanitizedUsers = paginatedUsers.map(u => ({
+        id: u.id,
+        name: u.name,
+        email: u.email,
+        role: u.role,
+        verified: !!u.verified,
+        suspended: !!u.suspended,
+        marketingOptIn: !!u.marketingOptIn,
+        createdAt: u.createdAt,
+        lastLoginAt: u.lastLoginAt || null,
+        subscription: u.subscription || { tier: 'free', status: 'active' },
+      }));
+
+      res.json({
+        items: sanitizedUsers,
+        total,
+        limit: parseInt(limit, 10) || 50,
+        offset: parseInt(offset, 10) || 0,
+        hasMore: endIndex < total,
       });
     }
-
-    if (endDate) {
-      const end = new Date(endDate);
-      filteredUsers = filteredUsers.filter(u => {
-        const createdAt = new Date(u.createdAt);
-        return createdAt <= end;
-      });
-    }
-
-    // Sort by createdAt descending
-    filteredUsers.sort((a, b) => {
-      const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-      const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-      return bTime - aTime;
-    });
-
-    // Apply pagination
-    const total = filteredUsers.length;
-    const startIndex = parseInt(offset, 10) || 0;
-    const endIndex = startIndex + (parseInt(limit, 10) || 50);
-    const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
-
-    // Remove sensitive data
-    const sanitizedUsers = paginatedUsers.map(u => ({
-      id: u.id,
-      name: u.name,
-      email: u.email,
-      role: u.role,
-      verified: !!u.verified,
-      suspended: !!u.suspended,
-      marketingOptIn: !!u.marketingOptIn,
-      createdAt: u.createdAt,
-      lastLoginAt: u.lastLoginAt || null,
-      subscription: u.subscription || { tier: 'free', status: 'active' },
-    }));
-
-    res.json({
-      items: sanitizedUsers,
-      total,
-      limit: parseInt(limit, 10) || 50,
-      offset: parseInt(offset, 10) || 0,
-      hasMore: endIndex < total,
-    });
   } catch (error) {
     console.error('Error searching users:', error);
     res.status(500).json({ error: 'Failed to search users' });
@@ -2834,49 +3036,66 @@ function generateUniqueId(prefix) {
  */
 router.get('/badge-counts', authRequired, roleRequired('admin'), async (req, res) => {
   try {
-    // Fetch all necessary data in parallel
-    const [suppliersRaw, packagesRaw, reviewsRaw, reportsRaw] = await Promise.all([
-      dbUnified.read('suppliers'),
-      dbUnified.read('packages'),
-      dbUnified.read('reviews'),
-      dbUnified.read('reports'),
+    // Use efficient counting instead of loading full collections
+    const [
+      pendingSuppliers,
+      pendingPackages,
+      pendingReviews,
+      pendingReports,
+      totalSuppliers,
+      totalPackages,
+      totalReviews,
+      totalReports,
+    ] = await Promise.all([
+      dbUnified.count('suppliers', { approved: false }),
+      dbUnified.count('packages', { approved: false }),
+      dbUnified.count('reviews', { status: 'pending' }),
+      dbUnified.count('reports', { status: 'pending' }),
+      dbUnified.count('suppliers'),
+      dbUnified.count('packages'),
+      dbUnified.count('reviews'),
+      dbUnified.count('reports'),
     ]);
 
-    // Ensure arrays even if dbUnified returns null/undefined
-    const suppliers = suppliersRaw || [];
-    const packages = packagesRaw || [];
-    const reviews = reviewsRaw || [];
-    const reports = reportsRaw || [];
-
-    // Count pending items
-    const pendingSuppliers = suppliers.filter(s => !s.approved).length;
-    const pendingPackages = packages.filter(p => !p.approved).length;
-
-    // Count pending photos from suppliers' photo galleries
+    // Note: pendingPhotos requires special handling since photos are nested
+    // in suppliers.photosGallery - need to load suppliers for this count
     let pendingPhotos = 0;
-    suppliers.forEach(supplier => {
-      if (supplier.photosGallery && Array.isArray(supplier.photosGallery)) {
-        pendingPhotos += supplier.photosGallery.filter(p => !p.approved).length;
-      }
-    });
+    const dbType = dbUnified.getDatabaseType();
 
-    // Count pending photos from packages
-    packages.forEach(pkg => {
-      if (pkg.gallery && Array.isArray(pkg.gallery)) {
-        pendingPhotos += pkg.gallery.filter(p => !p.approved).length;
-      }
-    });
+    if (dbType === 'mongodb') {
+      // For MongoDB, we could use aggregation, but for simplicity and to avoid
+      // complex aggregation logic for nested arrays, we'll keep loading suppliers
+      const suppliers = await dbUnified.read('suppliers');
+      const packages = await dbUnified.read('packages');
 
-    const pendingReviews = reviews.filter(r => r.status === 'pending' || r.flagged).length;
-    const pendingReports = reports.filter(r => r.status === 'pending').length;
+      suppliers.forEach(supplier => {
+        if (supplier.photosGallery && Array.isArray(supplier.photosGallery)) {
+          pendingPhotos += supplier.photosGallery.filter(p => !p.approved).length;
+        }
+      });
 
-    // Totals for overall counts
-    const totals = {
-      suppliers: suppliers.length,
-      packages: packages.length,
-      reviews: reviews.length,
-      reports: reports.length,
-    };
+      packages.forEach(pkg => {
+        if (pkg.gallery && Array.isArray(pkg.gallery)) {
+          pendingPhotos += pkg.gallery.filter(p => !p.approved).length;
+        }
+      });
+    } else {
+      // Local storage fallback
+      const suppliers = await dbUnified.read('suppliers');
+      const packages = await dbUnified.read('packages');
+
+      suppliers.forEach(supplier => {
+        if (supplier.photosGallery && Array.isArray(supplier.photosGallery)) {
+          pendingPhotos += supplier.photosGallery.filter(p => !p.approved).length;
+        }
+      });
+
+      packages.forEach(pkg => {
+        if (pkg.gallery && Array.isArray(pkg.gallery)) {
+          pendingPhotos += pkg.gallery.filter(p => !p.approved).length;
+        }
+      });
+    }
 
     res.json({
       pending: {
@@ -2886,7 +3105,12 @@ router.get('/badge-counts', authRequired, roleRequired('admin'), async (req, res
         reviews: pendingReviews,
         reports: pendingReports,
       },
-      totals,
+      totals: {
+        suppliers: totalSuppliers,
+        packages: totalPackages,
+        reviews: totalReviews,
+        reports: totalReports,
+      },
     });
   } catch (error) {
     console.error('Error fetching badge counts:', error);
@@ -4452,11 +4676,9 @@ router.put(
 
       // Mutual exclusivity check - only validate if source is uploads AND enabled is true
       if (enabled && source === 'uploads' && (!uploadGallery || uploadGallery.length === 0)) {
-        return res
-          .status(400)
-          .json({
-            error: 'Upload gallery cannot be empty when source is "uploads" and widget is enabled',
-          });
+        return res.status(400).json({
+          error: 'Upload gallery cannot be empty when source is "uploads" and widget is enabled',
+        });
       }
 
       const settings = (await dbUnified.read('settings')) || {};
@@ -5154,7 +5376,7 @@ router.get('/public/pexels-collage', async (req, res) => {
     const shouldFetchPhotos = photos === 'true';
     const shouldFetchVideos = videos === 'true';
 
-    let allMedia = [];
+    const allMedia = [];
 
     // Try to use Pexels API first
     if (pexels.isConfigured()) {
@@ -5167,7 +5389,7 @@ router.get('/public/pexels-collage', async (req, res) => {
           // Use collection-based fetching
           console.log(`📚 Fetching media from collection ${collectionId} for ${category}`);
           const results = await pexels.getCollectionMedia(collectionId, 8, 1, 'all');
-          
+
           // Filter based on media type settings
           let media = results.media;
           if (!shouldFetchPhotos) {
@@ -5241,7 +5463,7 @@ router.get('/public/pexels-collage', async (req, res) => {
         }
 
         const results = await Promise.all(fetchPromises);
-        
+
         // Separate photos and videos
         const photosResult = results.find(r => r.type === 'photos');
         const videosResult = results.find(r => r.type === 'videos');
@@ -5266,8 +5488,11 @@ router.get('/public/pexels-collage', async (req, res) => {
     }
 
     // If API not configured or failed, use fallback URLs from config
-    const { getRandomFallbackPhotos, getRandomFallbackVideos } = require('../config/pexels-fallback');
-    
+    const {
+      getRandomFallbackPhotos,
+      getRandomFallbackVideos,
+    } = require('../config/pexels-fallback');
+
     let fallbackPhotos = [];
     let fallbackVideos = [];
 
