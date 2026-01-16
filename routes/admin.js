@@ -120,7 +120,6 @@ async function calculateDashboardStats() {
     totalPlans,
     activePlans,
     totalMarketplace,
-    totalAuditLogs,
   ] = await Promise.all([
     dbUnified.count('users'),
     dbUnified.count('users', { verified: true }),
@@ -149,7 +148,6 @@ async function calculateDashboardStats() {
     dbUnified.count('plans'),
     dbUnified.count('plans', { status: 'active' }),
     dbUnified.count('marketplace_listings'),
-    dbUnified.count('audit_logs'),
   ]);
 
   // For complex filters (date comparisons, multiple conditions), we need to use MongoDB's query language
@@ -215,9 +213,7 @@ async function calculateDashboardStats() {
       l => !l.approved && l.status === 'pending'
     ).length;
 
-    activeMarketplace = marketplaceListings.filter(
-      l => l.approved && l.status === 'active'
-    ).length;
+    activeMarketplace = marketplaceListings.filter(l => l.approved && l.status === 'active').length;
 
     recentActivity24h = auditLogs.filter(log => {
       const logTime = new Date(log.timestamp);
@@ -4680,11 +4676,9 @@ router.put(
 
       // Mutual exclusivity check - only validate if source is uploads AND enabled is true
       if (enabled && source === 'uploads' && (!uploadGallery || uploadGallery.length === 0)) {
-        return res
-          .status(400)
-          .json({
-            error: 'Upload gallery cannot be empty when source is "uploads" and widget is enabled',
-          });
+        return res.status(400).json({
+          error: 'Upload gallery cannot be empty when source is "uploads" and widget is enabled',
+        });
       }
 
       const settings = (await dbUnified.read('settings')) || {};
@@ -5382,7 +5376,7 @@ router.get('/public/pexels-collage', async (req, res) => {
     const shouldFetchPhotos = photos === 'true';
     const shouldFetchVideos = videos === 'true';
 
-    let allMedia = [];
+    const allMedia = [];
 
     // Try to use Pexels API first
     if (pexels.isConfigured()) {
@@ -5395,7 +5389,7 @@ router.get('/public/pexels-collage', async (req, res) => {
           // Use collection-based fetching
           console.log(`📚 Fetching media from collection ${collectionId} for ${category}`);
           const results = await pexels.getCollectionMedia(collectionId, 8, 1, 'all');
-          
+
           // Filter based on media type settings
           let media = results.media;
           if (!shouldFetchPhotos) {
@@ -5469,7 +5463,7 @@ router.get('/public/pexels-collage', async (req, res) => {
         }
 
         const results = await Promise.all(fetchPromises);
-        
+
         // Separate photos and videos
         const photosResult = results.find(r => r.type === 'photos');
         const videosResult = results.find(r => r.type === 'videos');
@@ -5494,8 +5488,11 @@ router.get('/public/pexels-collage', async (req, res) => {
     }
 
     // If API not configured or failed, use fallback URLs from config
-    const { getRandomFallbackPhotos, getRandomFallbackVideos } = require('../config/pexels-fallback');
-    
+    const {
+      getRandomFallbackPhotos,
+      getRandomFallbackVideos,
+    } = require('../config/pexels-fallback');
+
     let fallbackPhotos = [];
     let fallbackVideos = [];
 
