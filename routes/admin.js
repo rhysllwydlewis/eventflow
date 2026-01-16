@@ -5246,8 +5246,8 @@ router.get('/public/pexels-collage', async (req, res) => {
       });
     }
 
-    // If source is not 'pexels', return an error (uploads source should use upload gallery)
-    if (source !== 'pexels') {
+    // If source is not 'pexels' (and not empty/undefined), return an error (uploads source should use upload gallery)
+    if (source && source !== 'pexels') {
       return res.status(400).json({
         error: 'This endpoint only supports Pexels source',
         errorType: 'invalid_source',
