@@ -588,6 +588,33 @@ const TRANSITION_RESTORE_DELAY_MS = 50;
 // Store interval ID for cleanup
 let pexelsCollageIntervalId = null;
 
+// Gradient fallback colors for collage frames
+const COLLAGE_FALLBACK_GRADIENTS = [
+  'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+  'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+  'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+  'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+];
+
+/**
+ * Validate upload URL
+ * Only allows HTTP/HTTPS URLs for security
+ * @param {string} url - URL to validate
+ * @returns {boolean} True if valid URL
+ */
+function validateUploadUrl(url) {
+  if (!url || typeof url !== 'string' || !url.trim()) {
+    return false;
+  }
+  try {
+    const urlObj = new URL(url);
+    return urlObj.protocol === 'http:' || urlObj.protocol === 'https:';
+  } catch (e) {
+    // Invalid URL format
+    return false;
+  }
+}
+
 /**
  * Validate Pexels photographer URL
  * Only allows HTTPS URLs from pexels.com domain for security
@@ -627,10 +654,12 @@ function restoreDefaultImage(imgElement, frame, uploadGallery = [], frameIndex =
     // Use modulo to cycle through upload gallery for different frames
     const imageIndex = frameIndex % uploadGallery.length;
     const uploadUrl = uploadGallery[imageIndex];
-    
-    if (uploadUrl && typeof uploadUrl === 'string') {
+
+    if (uploadUrl && validateUploadUrl(uploadUrl)) {
       if (isDebugEnabled()) {
-        console.log(`[Collage Fallback] Using uploaded image ${imageIndex + 1}/${uploadGallery.length} for frame ${frameIndex}`);
+        console.log(
+          `[Collage Fallback] Using uploaded image ${imageIndex + 1}/${uploadGallery.length} for frame ${frameIndex}`
+        );
       }
       imgElement.src = uploadUrl;
       imgElement.style.opacity = '1';
@@ -655,13 +684,7 @@ function restoreDefaultImage(imgElement, frame, uploadGallery = [], frameIndex =
     console.log(`[Collage Fallback] Using gradient placeholder for frame ${frameIndex}`);
   }
   // Set a gradient background and hide the img element
-  const gradients = [
-    'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-    'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-    'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
-  ];
-  const gradient = gradients[frameIndex % gradients.length];
+  const gradient = COLLAGE_FALLBACK_GRADIENTS[frameIndex % COLLAGE_FALLBACK_GRADIENTS.length];
   frame.style.background = gradient;
   imgElement.style.opacity = '0';
   frame.classList.remove('loading-pexels');
@@ -707,10 +730,10 @@ async function initPexelsCollage(settings) {
   // Use intervalSeconds from settings, fallback to old 'interval' property for backwards compatibility, default to 2.5 seconds
   const intervalSeconds = settings?.intervalSeconds ?? settings?.interval ?? 2.5;
   const intervalMs = intervalSeconds * 1000;
-  
+
   // Extract uploadGallery for fallback (if Pexels fails)
   const uploadGallery = settings?.uploadGallery || [];
-  
+
   if (isDebugEnabled()) {
     console.log('[Pexels Collage] Initializing with upload gallery fallback:', {
       uploadGalleryCount: uploadGallery.length,
@@ -929,7 +952,7 @@ async function initPexelsCollage(settings) {
     } else {
       // Only warn in development mode
       if (isDevelopmentEnvironment()) {
-        console.warn('No Pexels images loaded, falling back to upload gallery or static images');
+        console.warn('No Pexels images loaded, falling back to uploaded gallery or static images');
       }
       // Restore default images for all frames using upload gallery
       collageFrames.forEach((frame, index) => {
@@ -1124,7 +1147,9 @@ async function initCollageWidget(widgetConfig) {
     const categories = Object.keys(mediaCache);
     if (categories.length === 0) {
       if (isDebugEnabled()) {
-        console.warn('[Collage Widget] No media loaded, falling back to upload gallery or defaults');
+        console.warn(
+          '[Collage Widget] No media loaded, falling back to uploaded gallery or defaults'
+        );
       }
       collageFrames.forEach((frame, index) => {
         const imgElement = frame.querySelector('img');
@@ -1175,7 +1200,15 @@ async function initCollageWidget(widgetConfig) {
         }
 
         // Load first media item
-        await loadMediaIntoFrame(frame, imgElement, media[0], category, prefersReducedMotion, uploadGallery, frameIndex);
+        await loadMediaIntoFrame(
+          frame,
+          imgElement,
+          media[0],
+          category,
+          prefersReducedMotion,
+          uploadGallery,
+          frameIndex
+        );
       }
     }
 
@@ -1229,7 +1262,15 @@ async function initCollageWidget(widgetConfig) {
  * @param {Array} uploadGallery - Array of uploaded image URLs for fallback
  * @param {number} frameIndex - Index of the frame for fallback selection
  */
-async function loadMediaIntoFrame(frame, mediaElement, media, category, prefersReducedMotion, uploadGallery = [], frameIndex = 0) {
+async function loadMediaIntoFrame(
+  frame,
+  mediaElement,
+  media,
+  category,
+  prefersReducedMotion,
+  uploadGallery = [],
+  frameIndex = 0
+) {
   return new Promise(resolve => {
     const isVideo = media.type === 'video';
 
