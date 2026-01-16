@@ -2393,6 +2393,14 @@ app.post(
       if (error.name === 'ValidationError') {
         const errorResponse = uploadValidation.formatValidationErrorResponse(error);
 
+        // Guard against null response (should not happen but defensive coding)
+        if (!errorResponse) {
+          return res.status(400).json({
+            error: error.message,
+            details: error.details || {},
+          });
+        }
+
         // Log debug info for troubleshooting
         if (errorResponse.magicBytes) {
           logger.warn('File type validation failed - magic bytes:', {
@@ -2534,6 +2542,14 @@ app.post(
       // Handle validation errors with appropriate status codes and detailed feedback
       if (error.name === 'ValidationError') {
         const errorResponse = uploadValidation.formatValidationErrorResponse(error);
+
+        // Guard against null response (should not happen but defensive coding)
+        if (!errorResponse) {
+          return res.status(400).json({
+            error: error.message,
+            details: error.details || {},
+          });
+        }
 
         // Log debug info for troubleshooting
         if (errorResponse.magicBytes) {
