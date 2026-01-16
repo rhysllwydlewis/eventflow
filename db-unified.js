@@ -643,12 +643,14 @@ function matchesFilter(item, filter) {
           case '$in':
             return Array.isArray(operatorValue) && operatorValue.includes(itemValue);
           case '$regex': {
-            const regex = new RegExp(operatorValue, filterValue.$options || '');
+            const options = filterValue.$options || '';
+            const regex = new RegExp(operatorValue, options);
             return regex.test(itemValue);
           }
           default:
-            // Unknown operator, treat as strict equality
-            return itemValue === filterValue;
+            // Unknown operator - log warning and skip this condition
+            console.warn(`Unsupported MongoDB operator: ${operator}`);
+            return true; // Don't filter out items with unknown operators
         }
       });
     }
