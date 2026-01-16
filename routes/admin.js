@@ -4381,6 +4381,12 @@ router.get('/homepage/collage-widget', authRequired, roleRequired('admin'), asyn
         entertainment: 'live band wedding party',
         photography: 'wedding photography professional',
       },
+      pexelsVideoQueries: {
+        venues: 'wedding venue video aerial',
+        catering: 'catering food preparation video',
+        entertainment: 'live band music performance video',
+        photography: 'wedding videography cinematic',
+      },
       uploadGallery: [],
       fallbackToPexels: true,
     };
@@ -4409,6 +4415,7 @@ router.put(
         mediaTypes,
         intervalSeconds,
         pexelsQueries,
+        pexelsVideoQueries,
         uploadGallery,
         fallbackToPexels,
       } = req.body;
@@ -4472,6 +4479,9 @@ router.put(
       }
       if (pexelsQueries) {
         settings.collageWidget.pexelsQueries = pexelsQueries;
+      }
+      if (pexelsVideoQueries) {
+        settings.collageWidget.pexelsVideoQueries = pexelsVideoQueries;
       }
       if (uploadGallery) {
         settings.collageWidget.uploadGallery = uploadGallery;
