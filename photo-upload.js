@@ -128,19 +128,27 @@ const upload = multer({
 });
 
 /**
- * Process and optimize image
+ * Process image with metadata stripping
  * Automatically strips metadata (EXIF/GPS) for privacy
  * @param {Buffer} buffer - Image buffer
  * @param {Object} config - Processing configuration
  * @returns {Promise<Buffer>} Processed image buffer
  */
 async function processImage(buffer, config) {
-  return uploadValidation.processWithMetadataStripping(buffer, {
-    width: config.width,
-    height: config.height,
-    fit: config.fit || 'inside',
-    quality: config.quality || 85,
-  });
+  try {
+    return await uploadValidation.processWithMetadataStripping(buffer, {
+      width: config.width,
+      height: config.height,
+      fit: config.fit || 'inside',
+      quality: config.quality || 85,
+    });
+  } catch (error) {
+    // Add context to Sharp errors
+    const enhancedError = new Error(`Image processing failed: ${error.message}`);
+    enhancedError.name = 'SharpProcessingError';
+    enhancedError.originalError = error;
+    throw enhancedError;
+  }
 }
 
 /**
@@ -151,15 +159,26 @@ async function processImage(buffer, config) {
  * @returns {Promise<string>} Local file path
  */
 async function saveToLocal(buffer, filename, directory = 'original') {
-  const dir = UPLOAD_DIRS[directory];
+  try {
+    const dir = UPLOAD_DIRS[directory];
 
-  // Defensive check: Ensure directory exists before writing
-  // This protects against runtime deletion of directories or misconfiguration
-  await fs.mkdir(dir, { recursive: true });
+    // Defensive check: Ensure directory exists before writing
+    // This protects against runtime deletion of directories or misconfiguration
+    await fs.mkdir(dir, { recursive: true });
 
-  const filepath = path.join(dir, filename);
-  await fs.writeFile(filepath, buffer);
-  return filepath;
+    const filepath = path.join(dir, filename);
+    await fs.writeFile(filepath, buffer);
+    return filepath;
+  } catch (error) {
+    // Add context to filesystem errors
+    const enhancedError = new Error(
+      `Failed to save image to local filesystem (${directory}): ${error.message}`
+    );
+    enhancedError.name = 'FilesystemError';
+    enhancedError.directory = directory;
+    enhancedError.originalError = error;
+    throw enhancedError;
+  }
 }
 
 /**
@@ -187,8 +206,11 @@ async function saveToMongoDB(buffer, filename, type = 'optimized') {
     await collection.insertOne(photoDoc);
     return photoDoc._id;
   } catch (error) {
-    console.error('Error saving to MongoDB:', error);
-    throw error;
+    // Add context to MongoDB errors
+    const enhancedError = new Error(`Failed to save image to MongoDB: ${error.message}`);
+    enhancedError.name = 'MongoDBStorageError';
+    enhancedError.originalError = error;
+    throw enhancedError;
   }
 }
 
@@ -201,15 +223,26 @@ async function saveToMongoDB(buffer, filename, type = 'optimized') {
  * @returns {Promise<Object>} URLs/IDs for all image sizes
  */
 async function processAndSaveImage(buffer, originalFilename, context = 'supplier') {
+  // Log start of processing
+  console.log(
+    `Starting image processing: ${originalFilename}, context: ${context}, size: ${buffer.length} bytes`
+  );
+
   // Validate upload (type, size, dimensions)
   const validation = await uploadValidation.validateUpload(buffer, context);
 
   if (!validation.valid) {
+    console.error('Image validation failed:', {
+      errors: validation.errors,
+      details: validation.details,
+    });
     const error = new Error(validation.errors.join('; '));
     error.name = 'ValidationError';
     error.details = validation.details;
     throw error;
   }
+
+  console.log('Image validation passed');
 
   const filename = generateFilename(originalFilename);
   const baseFilename = filename.replace(path.extname(filename), '');
@@ -224,21 +257,26 @@ async function processAndSaveImage(buffer, originalFilename, context = 'supplier
   try {
     // For avatars, only generate one optimized square size
     if (context === 'avatar') {
+      console.log('Processing avatar image...');
       const avatarProcessed = await processImage(buffer, IMAGE_CONFIGS.avatar);
 
       if (STORAGE_TYPE === 'mongodb') {
+        console.log('Saving avatar to MongoDB...');
         const avatarId = await saveToMongoDB(avatarProcessed, `${baseFilename}.jpg`, 'avatar');
         results.optimized = `/api/photos/${avatarId}`;
       } else {
+        console.log('Saving avatar to local filesystem...');
         await saveToLocal(avatarProcessed, `${baseFilename}.jpg`, 'optimized');
         results.optimized = `/uploads/optimized/${baseFilename}.jpg`;
         await saveToLocal(avatarProcessed, `${baseFilename}.jpg`, 'public');
       }
 
+      console.log('Avatar image processed successfully');
       return results;
     }
 
     // Process each size (with automatic metadata stripping)
+    console.log('Processing image in multiple sizes...');
     const [originalProcessed, thumbnail, optimized, large] = await Promise.all([
       buffer, // Keep original as-is for backup
       processImage(buffer, IMAGE_CONFIGS.thumbnail),
@@ -246,8 +284,11 @@ async function processAndSaveImage(buffer, originalFilename, context = 'supplier
       processImage(buffer, IMAGE_CONFIGS.large),
     ]);
 
+    console.log('Image processing complete, saving to storage...');
+
     // Check storage type
     if (STORAGE_TYPE === 'mongodb') {
+      console.log('Saving images to MongoDB...');
       // Save to MongoDB
       const [originalId, thumbnailId, optimizedId, largeId] = await Promise.all([
         saveToMongoDB(originalProcessed, `${baseFilename}.jpg`, 'original'),
@@ -262,6 +303,7 @@ async function processAndSaveImage(buffer, originalFilename, context = 'supplier
       results.optimized = `/api/photos/${optimizedId}`;
       results.large = `/api/photos/${largeId}`;
     } else {
+      console.log('Saving images to local filesystem...');
       // Save to local filesystem (fallback)
       await Promise.all([
         saveToLocal(originalProcessed, `${baseFilename}.jpg`, 'original'),
@@ -281,10 +323,29 @@ async function processAndSaveImage(buffer, originalFilename, context = 'supplier
       await saveToLocal(optimized, `${baseFilename}-opt.jpg`, 'public');
     }
 
+    console.log('Image saved successfully:', results);
     return results;
   } catch (error) {
-    console.error('Error processing image:', error);
-    throw error;
+    console.error('Error processing/saving image:', {
+      message: error.message,
+      name: error.name,
+      stack: error.stack,
+    });
+
+    // Re-throw with additional context if needed
+    if (
+      error.name === 'SharpProcessingError' ||
+      error.name === 'MongoDBStorageError' ||
+      error.name === 'FilesystemError'
+    ) {
+      throw error;
+    }
+
+    // Wrap unknown errors
+    const wrappedError = new Error(`Image processing failed: ${error.message}`);
+    wrappedError.name = 'ImageProcessingError';
+    wrappedError.originalError = error;
+    throw wrappedError;
   }
 }
 

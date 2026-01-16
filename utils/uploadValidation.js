@@ -202,29 +202,42 @@ async function validateUpload(buffer, context = 'supplier') {
  * @returns {Promise<Buffer>} - Processed image buffer with metadata stripped
  */
 async function processWithMetadataStripping(buffer, options = {}) {
-  const { width, height, fit = 'inside', quality = 85 } = options;
+  try {
+    const { width, height, fit = 'inside', quality = 85 } = options;
 
-  let processor = sharp(buffer);
+    let processor = sharp(buffer);
 
-  // Resize if dimensions provided
-  if (width || height) {
-    processor = processor.resize({
-      width,
-      height,
-      fit,
-      withoutEnlargement: true,
+    // Resize if dimensions provided
+    if (width || height) {
+      processor = processor.resize({
+        width,
+        height,
+        fit,
+        withoutEnlargement: true,
+      });
+    }
+
+    // Convert to JPEG with quality settings
+    // Sharp automatically strips metadata when converting formats
+    processor = processor.jpeg({
+      quality,
+      progressive: true,
+      mozjpeg: true,
     });
+
+    return processor.toBuffer();
+  } catch (error) {
+    logger.error('Sharp processing error:', {
+      error: error.message,
+      stack: error.stack,
+    });
+
+    // Provide more context for Sharp errors
+    const enhancedError = new Error(`Failed to process image with Sharp: ${error.message}`);
+    enhancedError.name = 'SharpProcessingError';
+    enhancedError.originalError = error;
+    throw enhancedError;
   }
-
-  // Convert to JPEG with quality settings
-  // Sharp automatically strips metadata when converting formats
-  processor = processor.jpeg({
-    quality,
-    progressive: true,
-    mozjpeg: true,
-  });
-
-  return processor.toBuffer();
 }
 
 /**
