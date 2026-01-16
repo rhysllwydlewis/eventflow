@@ -292,7 +292,8 @@
     isSavingFeatureFlags = true;
     setFeatureFlagsEnabled(false);
     updateFeatureFlagsStatus('saving', 'Saving feature flags...');
-    updateSaveButtonState();
+    // Note: Don't call updateSaveButtonState() here - it disables the button before safeAction(),
+    // causing safeAction to exit early without making API calls due to race condition
 
     // Create a hard 15-second timeout wrapper to guarantee operation completes
     let timeoutId;
