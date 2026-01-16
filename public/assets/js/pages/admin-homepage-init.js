@@ -156,6 +156,9 @@
         photography: document.getElementById('pexelsQueryPhotography').value,
       };
       const fallbackToPexels = document.getElementById('fallbackToPexels').checked;
+      
+      // Build uploadGallery from current media
+      const uploadGallery = collageMedia.map(m => m.url);
 
       // Validation
       if (!mediaTypes.photos && !mediaTypes.videos) {
@@ -182,6 +185,7 @@
           mediaTypes,
           intervalSeconds,
           pexelsQueries,
+          uploadGallery,
           fallbackToPexels,
         }),
       });

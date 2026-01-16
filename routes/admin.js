@@ -4614,6 +4614,18 @@ router.put(
         }
       }
 
+      // Validate uploadGallery structure if provided
+      if (uploadGallery !== undefined) {
+        if (!Array.isArray(uploadGallery)) {
+          return res.status(400).json({ error: 'uploadGallery must be an array' });
+        }
+        // Validate all items are non-empty strings
+        const invalidItems = uploadGallery.filter(item => typeof item !== 'string' || !item.trim());
+        if (invalidItems.length > 0) {
+          return res.status(400).json({ error: 'All uploadGallery items must be non-empty strings' });
+        }
+      }
+
       // Mutual exclusivity check - only validate if source is uploads AND enabled is true
       if (enabled && source === 'uploads' && (!uploadGallery || uploadGallery.length === 0)) {
         return res
@@ -4780,8 +4792,12 @@ router.delete(
       const settings = (await dbUnified.read('settings')) || {};
       if (settings.collageWidget && settings.collageWidget.uploadGallery) {
         const fileUrl = `/uploads/homepage-collage/${filename}`;
+        // Filter by comparing URLs without query parameters to handle cache busting
         settings.collageWidget.uploadGallery = settings.collageWidget.uploadGallery.filter(
-          url => url !== fileUrl
+          url => {
+            const urlWithoutParams = url.split('?')[0];
+            return urlWithoutParams !== fileUrl;
+          }
         );
         settings.collageWidget.updatedAt = new Date().toISOString();
         settings.collageWidget.updatedBy = req.user.email;

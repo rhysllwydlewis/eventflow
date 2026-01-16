@@ -978,11 +978,16 @@ async function initCollageWidget(widgetConfig) {
         // Assign media to categories in a round-robin fashion
         mediaCache[category] = uploadGallery
           .filter((_, i) => i % categories.length === index)
-          .map(url => ({
-            url,
-            type: url.match(/\.(mp4|webm|mov)$/i) ? 'video' : 'photo',
-            category,
-          }));
+          .map(url => {
+            // Remove query parameters for extension detection
+            const urlWithoutParams = url.split('?')[0];
+            const isVideo = /\.(mp4|webm|mov)$/i.test(urlWithoutParams);
+            return {
+              url,
+              type: isVideo ? 'video' : 'photo',
+              category,
+            };
+          });
         currentMediaIndex[category] = 0;
       });
     } else if (source === 'pexels' || (fallbackToPexels && source === 'uploads')) {
@@ -1134,6 +1139,14 @@ async function loadMediaIntoFrame(frame, mediaElement, media, category, prefersR
     const isVideo = media.type === 'video';
 
     if (isVideo) {
+      // Clean up existing video if present
+      const existingVideo = frame.querySelector('video');
+      if (existingVideo) {
+        existingVideo.pause();
+        existingVideo.removeAttribute('src');
+        existingVideo.load();
+      }
+      
       // Replace img with video element
       const video = document.createElement('video');
       video.src = media.url;
@@ -1151,7 +1164,8 @@ async function loadMediaIntoFrame(frame, mediaElement, media, category, prefersR
         video.loop = false;
       }
 
-      video.addEventListener('loadeddata', () => {
+      // Use named functions for easier cleanup
+      const handleLoadedData = () => {
         mediaElement.replaceWith(video);
         video.style.opacity = '1';
         frame.classList.remove('loading-pexels');
@@ -1162,16 +1176,19 @@ async function loadMediaIntoFrame(frame, mediaElement, media, category, prefersR
         }
         
         resolve();
-      });
+      };
 
-      video.addEventListener('error', () => {
+      const handleError = () => {
         if (isDevelopmentEnvironment()) {
           console.warn(`Failed to load video: ${media.url}`);
         }
         restoreDefaultImage(mediaElement);
         frame.classList.remove('loading-pexels');
         resolve();
-      });
+      };
+
+      video.addEventListener('loadeddata', handleLoadedData, { once: true });
+      video.addEventListener('error', handleError, { once: true });
 
       // Set timeout for video loading
       setTimeout(() => {
@@ -1262,12 +1279,27 @@ function cycleWidgetMedia(mediaCache, currentMediaIndex, collageFrames, category
       return;
     }
 
+    // Clean up old video element if switching away from video
+    if (currentElement.tagName === 'VIDEO' && nextMedia.type !== 'video') {
+      currentElement.pause();
+      currentElement.removeAttribute('src');
+      currentElement.load();
+    }
+
     // Fade out current element
     if (!prefersReducedMotion) {
       currentElement.classList.add('fading');
     }
 
     setTimeout(async () => {
+      // Verify element still exists in DOM (safety check)
+      if (!document.body.contains(currentElement)) {
+        if (isDevelopmentEnvironment()) {
+          console.warn(`Element removed from DOM during transition for ${category}`);
+        }
+        return;
+      }
+
       // Create new element based on media type
       if (nextMedia.type === 'video') {
         const video = document.createElement('video');
@@ -1281,7 +1313,7 @@ function cycleWidgetMedia(mediaCache, currentMediaIndex, collageFrames, category
         video.style.opacity = '0';
         video.alt = `${category.charAt(0).toUpperCase() + category.slice(1)} - Video`;
 
-        video.addEventListener('loadeddata', () => {
+        const handleLoadedData = () => {
           currentElement.replaceWith(video);
           if (!prefersReducedMotion) {
             setTimeout(() => {
@@ -1294,15 +1326,18 @@ function cycleWidgetMedia(mediaCache, currentMediaIndex, collageFrames, category
           if (nextMedia.photographer) {
             addPhotographerCredit(frame, nextMedia);
           }
-        });
+        };
 
-        video.addEventListener('error', () => {
+        const handleError = () => {
           if (isDevelopmentEnvironment()) {
             console.warn(`Failed to load video: ${nextMedia.url}`);
           }
           currentElement.classList.remove('fading');
           currentElement.style.opacity = '1';
-        });
+        };
+
+        video.addEventListener('loadeddata', handleLoadedData, { once: true });
+        video.addEventListener('error', handleError, { once: true });
       } else {
         // Preload photo
         const img = new Image();
@@ -1310,6 +1345,11 @@ function cycleWidgetMedia(mediaCache, currentMediaIndex, collageFrames, category
 
         img.onload = () => {
           if (currentElement.tagName === 'VIDEO') {
+            // Clean up video before replacing
+            currentElement.pause();
+            currentElement.removeAttribute('src');
+            currentElement.load();
+            
             // Replace video with img
             const newImg = document.createElement('img');
             newImg.src = nextMedia.url;
@@ -1359,15 +1399,30 @@ function cycleWidgetMedia(mediaCache, currentMediaIndex, collageFrames, category
 }
 
 /**
- * Cleanup function for Pexels collage (call on page unload or feature disable)
+ * Cleanup function for collage widget (call on page unload or widget disable)
+ * Clears intervals and removes event listeners to prevent memory leaks
  */
 function cleanupPexelsCollage() {
   if (pexelsCollageIntervalId) {
     clearInterval(pexelsCollageIntervalId);
     pexelsCollageIntervalId = null;
     if (isDevelopmentEnvironment()) {
-      console.log('Pexels collage interval cleared');
+      console.log('Collage widget interval cleared');
     }
+  }
+  
+  // Clean up video elements to prevent memory leaks
+  const collageFrames = document.querySelectorAll('.collage .frame');
+  if (collageFrames) {
+    collageFrames.forEach(frame => {
+      const video = frame.querySelector('video');
+      if (video) {
+        // Pause video and remove source to free memory
+        video.pause();
+        video.removeAttribute('src');
+        video.load();
+      }
+    });
   }
 }
 
