@@ -233,8 +233,8 @@ async function processAndSaveImage(buffer, originalFilename, context = 'supplier
     size: buffer.length,
   });
 
-  // Validate upload (type, size, dimensions)
-  const validation = await uploadValidation.validateUpload(buffer, context);
+  // Validate upload (type, size, dimensions) - pass filename for fallback detection
+  const validation = await uploadValidation.validateUpload(buffer, context, originalFilename);
 
   if (!validation.valid) {
     logger.error('Image validation failed', {

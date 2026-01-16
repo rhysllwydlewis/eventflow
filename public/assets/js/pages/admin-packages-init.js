@@ -542,23 +542,30 @@
 
         if (!uploadResponse.ok) {
           const errorData = await uploadResponse.json();
-          
+
           // Enhanced error message with details if available
           let errorMessage = errorData.error || 'Failed to upload image';
-          
+
           // If we have validation details, show more specific information
           if (errorData.details) {
             const details = errorData.details;
-            if (details.detectedType && details.allowedFormats) {
+            // Check if detectedType and allowedFormats exist before using them
+            if (
+              details.detectedType &&
+              details.allowedFormats &&
+              Array.isArray(details.allowedFormats)
+            ) {
               // Format a clear message
               if (details.detectedType === 'unknown') {
                 errorMessage = `Could not detect file type. The file may be corrupted. Allowed formats: ${details.allowedFormats.join(', ')}`;
+              } else if (details.detectedType === 'error') {
+                errorMessage = `File type detection failed. The file may be corrupted or in an unsupported format. Allowed formats: ${details.allowedFormats.join(', ')}`;
               } else if (details.detectedType !== 'invalid') {
                 errorMessage = `Invalid file type. Detected: ${details.detectedType}. Allowed: ${details.allowedFormats.join(', ')}`;
               }
             }
           }
-          
+
           throw new Error(errorMessage);
         }
 
