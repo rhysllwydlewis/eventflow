@@ -26,6 +26,9 @@ const { uid } = require('./store');
 // Import validation utilities
 const uploadValidation = require('./utils/uploadValidation');
 
+// Import logger for consistent logging
+const logger = require('./utils/logger');
+
 // Storage type based on MongoDB availability
 let STORAGE_TYPE = 'local'; // 'mongodb' or 'local'
 
@@ -224,15 +227,17 @@ async function saveToMongoDB(buffer, filename, type = 'optimized') {
  */
 async function processAndSaveImage(buffer, originalFilename, context = 'supplier') {
   // Log start of processing
-  console.log(
-    `Starting image processing: ${originalFilename}, context: ${context}, size: ${buffer.length} bytes`
-  );
+  logger.info('Starting image processing', {
+    filename: originalFilename,
+    context,
+    size: buffer.length,
+  });
 
   // Validate upload (type, size, dimensions)
   const validation = await uploadValidation.validateUpload(buffer, context);
 
   if (!validation.valid) {
-    console.error('Image validation failed:', {
+    logger.error('Image validation failed', {
       errors: validation.errors,
       details: validation.details,
     });
@@ -242,7 +247,7 @@ async function processAndSaveImage(buffer, originalFilename, context = 'supplier
     throw error;
   }
 
-  console.log('Image validation passed');
+  logger.debug('Image validation passed');
 
   const filename = generateFilename(originalFilename);
   const baseFilename = filename.replace(path.extname(filename), '');
@@ -257,26 +262,26 @@ async function processAndSaveImage(buffer, originalFilename, context = 'supplier
   try {
     // For avatars, only generate one optimized square size
     if (context === 'avatar') {
-      console.log('Processing avatar image...');
+      logger.debug('Processing avatar image');
       const avatarProcessed = await processImage(buffer, IMAGE_CONFIGS.avatar);
 
       if (STORAGE_TYPE === 'mongodb') {
-        console.log('Saving avatar to MongoDB...');
+        logger.debug('Saving avatar to MongoDB');
         const avatarId = await saveToMongoDB(avatarProcessed, `${baseFilename}.jpg`, 'avatar');
         results.optimized = `/api/photos/${avatarId}`;
       } else {
-        console.log('Saving avatar to local filesystem...');
+        logger.debug('Saving avatar to local filesystem');
         await saveToLocal(avatarProcessed, `${baseFilename}.jpg`, 'optimized');
         results.optimized = `/uploads/optimized/${baseFilename}.jpg`;
         await saveToLocal(avatarProcessed, `${baseFilename}.jpg`, 'public');
       }
 
-      console.log('Avatar image processed successfully');
+      logger.info('Avatar image processed successfully');
       return results;
     }
 
     // Process each size (with automatic metadata stripping)
-    console.log('Processing image in multiple sizes...');
+    logger.debug('Processing image in multiple sizes');
     const [originalProcessed, thumbnail, optimized, large] = await Promise.all([
       buffer, // Keep original as-is for backup
       processImage(buffer, IMAGE_CONFIGS.thumbnail),
@@ -284,11 +289,11 @@ async function processAndSaveImage(buffer, originalFilename, context = 'supplier
       processImage(buffer, IMAGE_CONFIGS.large),
     ]);
 
-    console.log('Image processing complete, saving to storage...');
+    logger.debug('Image processing complete, saving to storage');
 
     // Check storage type
     if (STORAGE_TYPE === 'mongodb') {
-      console.log('Saving images to MongoDB...');
+      logger.debug('Saving images to MongoDB');
       // Save to MongoDB
       const [originalId, thumbnailId, optimizedId, largeId] = await Promise.all([
         saveToMongoDB(originalProcessed, `${baseFilename}.jpg`, 'original'),
@@ -303,7 +308,7 @@ async function processAndSaveImage(buffer, originalFilename, context = 'supplier
       results.optimized = `/api/photos/${optimizedId}`;
       results.large = `/api/photos/${largeId}`;
     } else {
-      console.log('Saving images to local filesystem...');
+      logger.debug('Saving images to local filesystem');
       // Save to local filesystem (fallback)
       await Promise.all([
         saveToLocal(originalProcessed, `${baseFilename}.jpg`, 'original'),
@@ -323,10 +328,10 @@ async function processAndSaveImage(buffer, originalFilename, context = 'supplier
       await saveToLocal(optimized, `${baseFilename}-opt.jpg`, 'public');
     }
 
-    console.log('Image saved successfully:', results);
+    logger.info('Image saved successfully', { results });
     return results;
   } catch (error) {
-    console.error('Error processing/saving image:', {
+    logger.error('Error processing/saving image', {
       message: error.message,
       name: error.name,
       stack: error.stack,

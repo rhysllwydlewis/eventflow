@@ -4,7 +4,6 @@
  */
 
 const fs = require('fs');
-const path = require('path');
 
 describe('Admin Package Image Upload Error Handling', () => {
   describe('Endpoint Structure Verification', () => {
@@ -96,7 +95,7 @@ describe('Admin Package Image Upload Error Handling', () => {
 
       // Verify enhanced error handling
       expect(photoUploadContent).toContain('ValidationError');
-      expect(photoUploadContent).toContain('console.log');
+      expect(photoUploadContent).toContain('logger.info');
       expect(photoUploadContent).toContain('Starting image processing');
       expect(photoUploadContent).toContain('Image validation passed');
     });
