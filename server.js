@@ -2397,7 +2397,7 @@ app.post(
       }
 
       // Handle Sharp processing errors
-      if (error.message && error.message.includes('sharp')) {
+      if (error.name === 'SharpProcessingError') {
         return res.status(500).json({
           error: 'Failed to process image',
           details: 'Image processing library error. Please try a different image format or file.',
@@ -2405,10 +2405,7 @@ app.post(
       }
 
       // Handle MongoDB/storage errors
-      if (
-        error.message &&
-        (error.message.includes('MongoDB') || error.message.includes('ENOENT'))
-      ) {
+      if (error.name === 'MongoDBStorageError' || error.name === 'FilesystemError') {
         return res.status(500).json({
           error: 'Failed to save image',
           details: 'Storage system error. Please try again later.',
@@ -2532,7 +2529,7 @@ app.post(
       }
 
       // Handle Sharp processing errors
-      if (error.message && error.message.includes('sharp')) {
+      if (error.name === 'SharpProcessingError') {
         return res.status(500).json({
           error: 'Failed to process image',
           details: 'Image processing library error. Please try a different image format or file.',
@@ -2540,10 +2537,7 @@ app.post(
       }
 
       // Handle MongoDB/storage errors
-      if (
-        error.message &&
-        (error.message.includes('MongoDB') || error.message.includes('ENOENT'))
-      ) {
+      if (error.name === 'MongoDBStorageError' || error.name === 'FilesystemError') {
         return res.status(500).json({
           error: 'Failed to save image',
           details: 'Storage system error. Please try again later.',

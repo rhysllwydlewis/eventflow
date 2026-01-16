@@ -39,7 +39,7 @@ describe('Admin Package Image Upload Error Handling', () => {
       const packageImageEndpoint = serverContent.substring(packageImageStart, nextEndpointStart);
 
       // Verify Sharp error handling exists
-      expect(packageImageEndpoint).toContain("error.message.includes('sharp')");
+      expect(packageImageEndpoint).toContain("error.name === 'SharpProcessingError'");
       expect(packageImageEndpoint).toContain('Failed to process image');
     });
 
@@ -52,7 +52,8 @@ describe('Admin Package Image Upload Error Handling', () => {
       const packageImageEndpoint = serverContent.substring(packageImageStart, nextEndpointStart);
 
       // Verify MongoDB/storage error handling exists
-      expect(packageImageEndpoint).toContain("error.message.includes('MongoDB')");
+      expect(packageImageEndpoint).toContain("error.name === 'MongoDBStorageError'");
+      expect(packageImageEndpoint).toContain("error.name === 'FilesystemError'");
       expect(packageImageEndpoint).toContain('Failed to save image');
     });
 
@@ -83,7 +84,7 @@ describe('Admin Package Image Upload Error Handling', () => {
       // Verify error handling exists
       expect(categoryImageEndpoint).toContain("error.name === 'ValidationError'");
       expect(categoryImageEndpoint).toContain('res.status(400).json');
-      expect(categoryImageEndpoint).toContain("error.message.includes('sharp')");
+      expect(categoryImageEndpoint).toContain("error.name === 'SharpProcessingError'");
       expect(categoryImageEndpoint).toContain('logger.info');
       expect(categoryImageEndpoint).toContain('logger.error');
     });
