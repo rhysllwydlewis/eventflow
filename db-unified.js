@@ -579,6 +579,158 @@ function validateDocument(collectionName, document) {
   };
 }
 
+/**
+ * Count documents in a collection (optionally with filter)
+ * Uses MongoDB countDocuments for efficiency - doesn't load data into memory
+ * @param {string} collectionName - Name of the collection
+ * @param {Object} filter - MongoDB filter object (default: {})
+ * @returns {Promise<number>} Count of documents matching the filter
+ */
+async function count(collectionName, filter = {}) {
+  await initializeDatabase();
+
+  try {
+    if (dbType === 'mongodb') {
+      const collection = mongodb.collection(collectionName);
+      return await collection.countDocuments(filter);
+    } else {
+      // Fallback for local storage
+      const all = store.read(collectionName);
+      if (Object.keys(filter).length === 0) {
+        return all.length;
+      }
+      return all.filter(item => {
+        return Object.keys(filter).every(key => item[key] === filter[key]);
+      }).length;
+    }
+  } catch (error) {
+    console.error(`Error counting in ${collectionName}:`, error.message);
+    return 0;
+  }
+}
+
+/**
+ * Run aggregation pipeline on a collection
+ * For local storage, falls back to loading and processing in memory
+ * @param {string} collectionName - Name of the collection
+ * @param {Array} pipeline - MongoDB aggregation pipeline
+ * @returns {Promise<Array>} Aggregation results
+ */
+async function aggregate(collectionName, pipeline) {
+  await initializeDatabase();
+
+  try {
+    if (dbType === 'mongodb') {
+      const collection = mongodb.collection(collectionName);
+      return await collection.aggregate(pipeline).toArray();
+    } else {
+      // Fallback: load all and process (less efficient but functional)
+      console.warn(`Aggregation on local storage for ${collectionName} - consider using MongoDB`);
+      const all = store.read(collectionName);
+      // Basic aggregation support for $match, $group, $count
+      // This is a simplified fallback
+      return processLocalAggregation(all, pipeline);
+    }
+  } catch (error) {
+    console.error(`Error aggregating ${collectionName}:`, error.message);
+    return [];
+  }
+}
+
+/**
+ * Process aggregation pipeline locally (simplified fallback for local storage)
+ * @param {Array} data - Array of documents
+ * @param {Array} pipeline - Aggregation pipeline
+ * @returns {Array} Processed results
+ */
+function processLocalAggregation(data, pipeline) {
+  let result = [...data];
+
+  for (const stage of pipeline) {
+    const stageType = Object.keys(stage)[0];
+
+    switch (stageType) {
+      case '$match': {
+        const filter = stage.$match;
+        result = result.filter(item => {
+          return Object.keys(filter).every(key => item[key] === filter[key]);
+        });
+        break;
+      }
+      case '$count': {
+        const fieldName = stage.$count;
+        result = [{ [fieldName]: result.length }];
+        break;
+      }
+      case '$group': {
+        // Basic grouping support
+        console.warn('$group aggregation on local storage has limited support');
+        break;
+      }
+      default:
+        console.warn(`Unsupported aggregation stage: ${stageType}`);
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Find documents with query options (limit, skip, sort)
+ * @param {string} collectionName - Name of the collection
+ * @param {Object} filter - Filter object (default: {})
+ * @param {Object} options - Query options (limit, skip, sort)
+ * @returns {Promise<Array>} Array of documents
+ */
+async function findWithOptions(collectionName, filter = {}, options = {}) {
+  await initializeDatabase();
+
+  const { limit = 50, skip = 0, sort = {} } = options;
+
+  try {
+    if (dbType === 'mongodb') {
+      const collection = mongodb.collection(collectionName);
+      let query = collection.find(filter);
+
+      if (Object.keys(sort).length > 0) {
+        query = query.sort(sort);
+      }
+
+      return await query.skip(skip).limit(limit).toArray();
+    } else {
+      // Fallback for local storage
+      let all = store.read(collectionName);
+
+      // Apply filter
+      if (Object.keys(filter).length > 0) {
+        all = all.filter(item => {
+          return Object.keys(filter).every(key => {
+            if (key === '$or' && Array.isArray(filter[key])) {
+              return filter[key].some(orFilter => {
+                return Object.keys(orFilter).every(orKey => {
+                  const value = orFilter[orKey];
+                  if (value && value.$regex) {
+                    const regex = new RegExp(value.$regex, value.$options || '');
+                    return regex.test(item[orKey]);
+                  }
+                  return item[orKey] === value;
+                });
+              });
+            }
+            return item[key] === filter[key];
+          });
+        });
+      }
+
+      // Apply skip and limit
+      return all.slice(skip, skip + limit);
+    }
+  } catch (error) {
+    console.error(`Error finding in ${collectionName}:`, error.message);
+    return [];
+  }
+}
+
 module.exports = {
   initializeDatabase,
   read,
@@ -595,4 +747,7 @@ module.exports = {
   resetQueryMetrics,
   validateDocument,
   withPerformanceTracking,
+  count,
+  aggregate,
+  findWithOptions,
 };
