@@ -9,7 +9,6 @@ const path = require('path');
 const fs = require('fs');
 const express = require('express');
 const multer = require('multer');
-const cloudinary = require('cloudinary').v2;
 const { read, write, uid } = require('../store');
 const { authRequired, roleRequired } = require('../middleware/auth');
 const { auditLog, auditMiddleware, AUDIT_ACTIONS } = require('../middleware/audit');
@@ -49,21 +48,6 @@ try {
 } catch (err) {
   console.error('Failed to initialize Stripe in admin routes:', err.message);
 }
-
-// Configure multer for memory storage (used for hero image uploads to Cloudinary)
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB limit
-  },
-  fileFilter: function (req, file, cb) {
-    if (!file.mimetype.startsWith('image/')) {
-      cb(new Error('Only image files are allowed'));
-      return;
-    }
-    cb(null, true);
-  },
-});
 
 // This will be set by the main server.js when mounting these routes
 let supplierIsProActiveFn = null;
@@ -4360,9 +4344,9 @@ const collageUpload = multer({
       cb(null, collageUploadDir);
     },
     filename: function (req, file, cb) {
-      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+      const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
       const ext = path.extname(file.originalname);
-      cb(null, 'collage-' + uniqueSuffix + ext);
+      cb(null, `collage-${uniqueSuffix}${ext}`);
     },
   }),
   limits: {
@@ -4400,7 +4384,7 @@ router.get('/homepage/collage-widget', authRequired, roleRequired('admin'), asyn
       uploadGallery: [],
       fallbackToPexels: true,
     };
-    
+
     res.json(collageWidget);
   } catch (error) {
     console.error('Error reading collage widget config:', error);
@@ -4453,7 +4437,9 @@ router.put(
         // Validate all items are non-empty strings
         const invalidItems = uploadGallery.filter(item => typeof item !== 'string' || !item.trim());
         if (invalidItems.length > 0) {
-          return res.status(400).json({ error: 'All uploadGallery items must be non-empty strings' });
+          return res
+            .status(400)
+            .json({ error: 'All uploadGallery items must be non-empty strings' });
         }
       }
 
@@ -4461,7 +4447,9 @@ router.put(
       if (enabled && source === 'uploads' && (!uploadGallery || uploadGallery.length === 0)) {
         return res
           .status(400)
-          .json({ error: 'Upload gallery cannot be empty when source is "uploads" and widget is enabled' });
+          .json({
+            error: 'Upload gallery cannot be empty when source is "uploads" and widget is enabled',
+          });
       }
 
       const settings = (await dbUnified.read('settings')) || {};
@@ -4470,14 +4458,27 @@ router.put(
       }
 
       // Update only provided fields
-      if (enabled !== undefined) settings.collageWidget.enabled = enabled;
-      if (source) settings.collageWidget.source = source;
-      if (mediaTypes) settings.collageWidget.mediaTypes = mediaTypes;
-      if (intervalSeconds !== undefined) settings.collageWidget.intervalSeconds = intervalSeconds;
-      if (pexelsQueries) settings.collageWidget.pexelsQueries = pexelsQueries;
-      if (uploadGallery) settings.collageWidget.uploadGallery = uploadGallery;
-      if (fallbackToPexels !== undefined)
+      if (enabled !== undefined) {
+        settings.collageWidget.enabled = enabled;
+      }
+      if (source) {
+        settings.collageWidget.source = source;
+      }
+      if (mediaTypes) {
+        settings.collageWidget.mediaTypes = mediaTypes;
+      }
+      if (intervalSeconds !== undefined) {
+        settings.collageWidget.intervalSeconds = intervalSeconds;
+      }
+      if (pexelsQueries) {
+        settings.collageWidget.pexelsQueries = pexelsQueries;
+      }
+      if (uploadGallery) {
+        settings.collageWidget.uploadGallery = uploadGallery;
+      }
+      if (fallbackToPexels !== undefined) {
         settings.collageWidget.fallbackToPexels = fallbackToPexels;
+      }
 
       settings.collageWidget.updatedAt = new Date().toISOString();
       settings.collageWidget.updatedBy = req.user.email;
@@ -4624,12 +4625,10 @@ router.delete(
       if (settings.collageWidget && settings.collageWidget.uploadGallery) {
         const fileUrl = `/uploads/homepage-collage/${filename}`;
         // Filter by comparing URLs without query parameters to handle cache busting
-        settings.collageWidget.uploadGallery = settings.collageWidget.uploadGallery.filter(
-          url => {
-            const urlWithoutParams = url.split('?')[0];
-            return urlWithoutParams !== fileUrl;
-          }
-        );
+        settings.collageWidget.uploadGallery = settings.collageWidget.uploadGallery.filter(url => {
+          const urlWithoutParams = url.split('?')[0];
+          return urlWithoutParams !== fileUrl;
+        });
         settings.collageWidget.updatedAt = new Date().toISOString();
         settings.collageWidget.updatedBy = req.user.email;
         await dbUnified.write('settings', settings);
@@ -5116,12 +5115,13 @@ router.get('/public/pexels-collage', async (req, res) => {
     }
 
     // Use new collageWidget.pexelsQueries, fallback to legacy pexelsCollageSettings for backward compatibility
-    const pexelsQueries = collageWidget.pexelsQueries || settings.pexelsCollageSettings?.queries || {
-      venues: 'wedding venue elegant ballroom',
-      catering: 'wedding catering food elegant',
-      entertainment: 'live band wedding party',
-      photography: 'wedding photography professional',
-    };
+    const pexelsQueries = collageWidget.pexelsQueries ||
+      settings.pexelsCollageSettings?.queries || {
+        venues: 'wedding venue elegant ballroom',
+        catering: 'wedding catering food elegant',
+        entertainment: 'live band wedding party',
+        photography: 'wedding photography professional',
+      };
 
     // Support legacy pexelsCollageSettings for collection IDs if configured
     const pexelsCollageSettings = settings.pexelsCollageSettings || {};
