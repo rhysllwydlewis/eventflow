@@ -124,11 +124,14 @@
   function updateWidgetEnabledState() {
     const enabled = document.getElementById('collageWidgetEnabled').checked;
     const settingsDiv = document.getElementById('collageWidgetSettings');
+    const statusBanner = document.getElementById('widgetStatusBanner');
 
     if (enabled) {
       settingsDiv.classList.remove('disabled');
+      if (statusBanner) statusBanner.style.display = 'none';
     } else {
       settingsDiv.classList.add('disabled');
+      if (statusBanner) statusBanner.style.display = 'block';
     }
   }
 
@@ -287,6 +290,27 @@
   async function uploadCollageMedia(files) {
     if (!files || files.length === 0) return;
 
+    // Validate file count
+    if (files.length > 10) {
+      showCollageWidgetError('Maximum 10 files can be uploaded at once. Please select fewer files.');
+      return;
+    }
+
+    // Validate file sizes and types
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    const validTypes = /^(image\/(jpeg|jpg|png|webp|gif)|video\/(mp4|webm|quicktime))$/i;
+    
+    for (const file of files) {
+      if (file.size > maxSize) {
+        showCollageWidgetError(`File "${file.name}" is too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Maximum size is 10MB.`);
+        return;
+      }
+      if (!validTypes.test(file.type)) {
+        showCollageWidgetError(`File "${file.name}" has unsupported format. Please use JPG, PNG, WebP, MP4, or WebM.`);
+        return;
+      }
+    }
+
     try {
       // Get CSRF token
       const csrfResponse = await fetch('/api/csrf-token', {
@@ -315,16 +339,16 @@
       hideUploadProgress();
 
       if (response.ok) {
-        showCollageWidgetSuccess(`Uploaded ${files.length} file(s) successfully!`);
+        showCollageWidgetSuccess(`✅ Uploaded ${files.length} file(s) successfully!`);
         await loadCollageMedia();
       } else {
         const error = await response.json();
-        showCollageWidgetError(error.error || 'Failed to upload media');
+        showCollageWidgetError(error.error || 'Upload failed. Please check file types and sizes.');
       }
     } catch (err) {
       hideUploadProgress();
       console.error('Error uploading collage media:', err);
-      showCollageWidgetError('Failed to upload media');
+      showCollageWidgetError('Network error during upload. Please check your connection and try again.');
     }
   }
 
@@ -371,10 +395,16 @@
     progressDiv.id = 'uploadProgressIndicator';
     progressDiv.className = 'upload-progress';
     progressDiv.innerHTML = `
-      <div style="font-weight: 600; margin-bottom: 4px;">Uploading ${fileCount} file(s)...</div>
-      <div class="upload-progress-bar">
-        <div class="upload-progress-fill" style="width: 50%;"></div>
+      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+        <svg width="20" height="20" style="animation: spin 1s linear infinite;">
+          <circle cx="10" cy="10" r="8" stroke="#0B8073" stroke-width="2" fill="none" stroke-dasharray="25 25" />
+        </svg>
+        <span style="font-weight: 600;">Uploading ${fileCount} file${fileCount > 1 ? 's' : ''}...</span>
       </div>
+      <div class="upload-progress-bar">
+        <div class="upload-progress-fill" style="width: 75%; animation: pulse 1.5s ease-in-out infinite;"></div>
+      </div>
+      <p class="small" style="margin-top: 6px; color: #6b7280;">Please wait, this may take a moment...</p>
     `;
     document.body.appendChild(progressDiv);
   }
@@ -382,7 +412,10 @@
   function hideUploadProgress() {
     const progressDiv = document.getElementById('uploadProgressIndicator');
     if (progressDiv) {
-      progressDiv.remove();
+      // Fade out animation before removal
+      progressDiv.style.opacity = '0';
+      progressDiv.style.transition = 'opacity 0.3s';
+      setTimeout(() => progressDiv.remove(), 300);
     }
   }
 
