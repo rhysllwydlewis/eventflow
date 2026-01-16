@@ -4614,11 +4614,11 @@ router.put(
         }
       }
 
-      // Mutual exclusivity check
-      if (source === 'uploads' && (!uploadGallery || uploadGallery.length === 0)) {
+      // Mutual exclusivity check - only validate if source is uploads AND enabled is true
+      if (enabled && source === 'uploads' && (!uploadGallery || uploadGallery.length === 0)) {
         return res
           .status(400)
-          .json({ error: 'Upload gallery cannot be empty when source is "uploads"' });
+          .json({ error: 'Upload gallery cannot be empty when source is "uploads" and widget is enabled' });
       }
 
       const settings = (await dbUnified.read('settings')) || {};
@@ -4773,7 +4773,8 @@ router.delete(
         return res.status(404).json({ error: 'File not found' });
       }
 
-      fs.unlinkSync(filePath);
+      // Use async file deletion
+      await fs.promises.unlink(filePath);
 
       // Update settings to remove from uploadGallery if present
       const settings = (await dbUnified.read('settings')) || {};
