@@ -8,6 +8,9 @@
 
 import { test, expect } from '@playwright/test';
 
+// Constants
+const TEST_CSRF_TOKEN = 'test-token-123';
+
 test.describe('Admin Feature Flags Save Button', () => {
   test.beforeEach(async ({ page }) => {
     // Mock auth endpoint to return admin user
@@ -26,7 +29,7 @@ test.describe('Admin Feature Flags Save Button', () => {
       route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ csrfToken: 'test-token-123' }),
+        body: JSON.stringify({ csrfToken: TEST_CSRF_TOKEN }),
       });
     });
 
@@ -135,17 +138,17 @@ test.describe('Admin Feature Flags Save Button', () => {
     await page.route('**/api/admin/settings/features', async route => {
       if (route.request().method() === 'PUT') {
         putRequestReceived = true;
-        
+
         // Verify CSRF token is present
         const headers = route.request().headers();
-        expect(headers['x-csrf-token']).toBe('test-token-123');
-        
+        expect(headers['x-csrf-token']).toBe(TEST_CSRF_TOKEN);
+
         // Get the request body
         const postData = route.request().postDataJSON();
         expect(postData).toBeDefined();
         expect(postData).toHaveProperty('registration');
         expect(postData).toHaveProperty('pexelsCollage');
-        
+
         // Respond with success
         route.fulfill({
           status: 200,
@@ -221,7 +224,7 @@ test.describe('Admin Feature Flags Save Button', () => {
       if (route.request().method() === 'PUT') {
         // Delay response to see loading state
         await new Promise(resolve => setTimeout(resolve, 1000));
-        
+
         route.fulfill({
           status: 200,
           contentType: 'application/json',
