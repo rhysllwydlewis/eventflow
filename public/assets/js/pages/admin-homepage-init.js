@@ -153,6 +153,17 @@
       // Build uploadGallery from current media
       const uploadGallery = collageMedia.map(m => m.url);
 
+      // Debug logging
+      console.log('[Admin] Saving collage widget configuration:', {
+        enabled,
+        source,
+        mediaTypes,
+        intervalSeconds,
+        uploadGalleryCount: uploadGallery.length,
+        uploadGalleryUrls: uploadGallery,
+        fallbackToPexels,
+      });
+
       // Validation
       if (!mediaTypes.photos && !mediaTypes.videos) {
         showCollageWidgetError('Please select at least one media type');
@@ -184,10 +195,13 @@
       });
 
       if (response.ok) {
+        const result = await response.json();
+        console.log('[Admin] Configuration saved successfully:', result.collageWidget);
         showCollageWidgetSuccess('Configuration saved successfully!');
         await loadCollageWidget(); // Reload to get updated data
       } else {
         const error = await response.json();
+        console.error('[Admin] Failed to save configuration:', error);
         showCollageWidgetError(error.error || 'Failed to save configuration');
       }
     } catch (err) {
