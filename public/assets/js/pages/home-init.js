@@ -197,6 +197,30 @@ window.addEventListener('load', () => {
   }
 });
 
+// Network status listener: Retry collage initialization when coming back online
+// This handles cases where the initial load happened while offline
+window.addEventListener('online', () => {
+  if (isDebugEnabled()) {
+    console.log('[Collage Debug] Browser came online, checking if collage needs initialization...');
+  }
+  // Only retry if collage is not initialized yet
+  if (!window.__collageWidgetInitialized) {
+    if (isDebugEnabled()) {
+      console.log('[Collage Debug] Retrying initialization after coming online...');
+    }
+    setTimeout(() => {
+      loadHeroCollageImages();
+    }, 500); // Small delay to ensure connection is stable
+  }
+});
+
+// Network status listener: Log when going offline (for debugging)
+window.addEventListener('offline', () => {
+  if (isDebugEnabled()) {
+    console.log('[Collage Debug] Browser went offline, collage updates will pause');
+  }
+});
+
 /**
  * Shared helper to load packages carousel with skeleton, timeout, and retry
  * @param {Object} options - Configuration options
@@ -434,13 +458,30 @@ async function loadHeroCollageImages() {
   // Check if collage widget is enabled via /api/public/homepage-settings endpoint
   // Guard against double initialization
   if (window.__collageWidgetInitialized) {
+    if (isDebugEnabled()) {
+      console.log('[Collage Debug] Already initialized, skipping');
+    }
+    return;
+  }
+
+  // Check if online (skip API calls if offline)
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+    if (isDebugEnabled()) {
+      console.log('[Collage Debug] Browser is offline, using default images');
+    }
+    // Load static images as fallback
+    await loadStaticHeroImages();
     return;
   }
 
   try {
-    // Add AbortController with 2 second timeout
+    // Add AbortController with 5 second timeout (increased from 2s for slower connections)
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 2000);
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+    if (isDebugEnabled()) {
+      console.log('[Collage Debug] Fetching homepage settings...');
+    }
 
     const settingsResponse = await fetch('/api/public/homepage-settings', {
       signal: controller.signal,
@@ -497,20 +538,47 @@ async function loadHeroCollageImages() {
           await initPexelsCollage(settings.pexelsCollageSettings);
         }
         return; // Skip static image loading
+      } else {
+        if (isDebugEnabled()) {
+          console.log('[Collage Debug] Collage widget disabled in settings, using static images');
+        }
+      }
+    } else {
+      if (isDebugEnabled()) {
+        console.log(`[Collage Debug] Settings API returned ${settingsResponse?.status}, using static images`);
       }
     }
   } catch (error) {
     // Fall back to static images on error, timeout, or invalid JSON
-    // Only log in debug mode to avoid console spam
-    if (window.DEBUG) {
-      console.log('Collage widget check failed, falling back to static images');
+    // Enhanced error logging in debug mode
+    if (isDebugEnabled()) {
+      if (error.name === 'AbortError') {
+        console.log('[Collage Debug] Settings API timeout (5s), falling back to static images');
+      } else {
+        console.log('[Collage Debug] Settings API error, falling back to static images:', error.message);
+      }
     }
   }
 
   // If collage widget is not enabled or failed, load static images
+  await loadStaticHeroImages();
+}
+
+/**
+ * Load static hero images from admin-uploaded category photos
+ * This is the fallback when collage widget is disabled or fails
+ */
+async function loadStaticHeroImages() {
   try {
+    if (isDebugEnabled()) {
+      console.log('[Collage Debug] Loading static hero images...');
+    }
+
     const response = await fetch('/api/admin/homepage/hero-images-public');
     if (!response.ok) {
+      if (isDebugEnabled()) {
+        console.log('[Collage Debug] Static images API returned', response.status);
+      }
       // Silently use defaults if endpoint not available
       return;
     }
@@ -827,8 +895,8 @@ async function initPexelsCollage(settings) {
               errorInfo = String(errorData.message || errorData.error || errorInfo);
             }
 
-            // Only warn in development mode
-            if (isDevelopmentEnvironment()) {
+            // Enhanced error logging in debug mode
+            if (isDebugEnabled()) {
               console.warn(`⚠️  Failed to fetch Pexels images for ${category}: ${errorInfo}`);
               if (errorData.errorType) {
                 console.warn(`   Error type: ${String(errorData.errorType)}`);
@@ -836,7 +904,7 @@ async function initPexelsCollage(settings) {
             }
           } catch (e) {
             // Response wasn't valid JSON, use status text
-            if (isDevelopmentEnvironment()) {
+            if (isDebugEnabled()) {
               console.warn(
                 `⚠️  Failed to fetch Pexels images for ${category}: ${response.statusText}`
               );
@@ -851,7 +919,7 @@ async function initPexelsCollage(settings) {
 
         // Validate response structure
         if (!data || typeof data !== 'object') {
-          if (isDevelopmentEnvironment()) {
+          if (isDebugEnabled()) {
             console.warn(`⚠️  Invalid response structure for ${category}`);
           }
           // Restore default for this category since response is invalid
@@ -859,8 +927,8 @@ async function initPexelsCollage(settings) {
           continue;
         }
 
-        // Log if using fallback mode (only in development)
-        if (isDevelopmentEnvironment() && data.usingFallback) {
+        // Log if using fallback mode (debug mode)
+        if (isDebugEnabled() && data.usingFallback) {
           console.log(`📦 Using fallback photos for ${category} (source: ${data.source})`);
         }
 
