@@ -334,7 +334,7 @@ async function processAndSaveImage(buffer, originalFilename, context = 'supplier
     logger.error('Error processing/saving image', {
       message: error.message,
       name: error.name,
-      stack: error.stack,
+      ...(process.env.NODE_ENV !== 'production' && { stack: error.stack }),
     });
 
     // Re-throw with additional context if needed

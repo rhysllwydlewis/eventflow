@@ -229,7 +229,7 @@ async function processWithMetadataStripping(buffer, options = {}) {
   } catch (error) {
     logger.error('Sharp processing error:', {
       error: error.message,
-      stack: error.stack,
+      ...(process.env.NODE_ENV !== 'production' && { stack: error.stack }),
     });
 
     // Provide more context for Sharp errors

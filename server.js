@@ -2383,9 +2383,9 @@ app.post(
     } catch (error) {
       logger.error('Error uploading category hero image:', {
         error: error.message,
-        stack: error.stack,
         name: error.name,
         details: error.details,
+        ...(process.env.NODE_ENV !== 'production' && { stack: error.stack }),
       });
 
       // Handle validation errors with appropriate status codes and detailed feedback
@@ -2518,9 +2518,9 @@ app.post(
     } catch (error) {
       logger.error('Error uploading package image:', {
         error: error.message,
-        stack: error.stack,
         name: error.name,
         details: error.details,
+        ...(process.env.NODE_ENV !== 'production' && { stack: error.stack }),
       });
 
       // Handle validation errors with appropriate status codes and detailed feedback
