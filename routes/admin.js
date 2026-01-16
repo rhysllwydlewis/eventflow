@@ -4630,11 +4630,9 @@ router.put(
 
       // Mutual exclusivity check - only validate if source is uploads AND enabled is true
       if (enabled && source === 'uploads' && (!uploadGallery || uploadGallery.length === 0)) {
-        return res
-          .status(400)
-          .json({
-            error: 'Upload gallery cannot be empty when source is "uploads" and widget is enabled',
-          });
+        return res.status(400).json({
+          error: 'Upload gallery cannot be empty when source is "uploads" and widget is enabled',
+        });
       }
 
       const settings = (await dbUnified.read('settings')) || {};
@@ -5291,6 +5289,7 @@ router.get('/public/pexels-collage', async (req, res) => {
         photography: 'wedding photography professional',
       };
 
+    // Still need pexelsCollageSettings for collectionId/collectionIds (not migrated to collageWidget yet)
     const pexelsCollageSettings = settings.pexelsCollageSettings || {
       queries: pexelsQueries,
     };
@@ -5331,8 +5330,7 @@ router.get('/public/pexels-collage', async (req, res) => {
         }
 
         // Use query-based searching (default behavior or fallback from empty collection)
-        const query =
-          pexelsQueries[category] || pexelsCollageSettings.queries[category] || category;
+        const query = pexelsQueries[category] || category;
         console.log(`🔍 Searching photos with query: "${query}" for ${category}`);
         const results = await pexels.searchPhotos(query, 8, 1);
 

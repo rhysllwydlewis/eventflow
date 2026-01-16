@@ -103,6 +103,10 @@ describe('Pexels Collage Fallback Integration', () => {
       // Disable Pexels collage feature
       const settings = await dbUnified.read('settings');
       settings.features.pexelsCollage = false;
+      // Also disable/remove collageWidget to ensure test isolation
+      if (settings.collageWidget) {
+        settings.collageWidget.enabled = false;
+      }
       await dbUnified.write('settings', settings);
 
       const response = await request(app).get('/api/public/pexels-collage?category=venues');
