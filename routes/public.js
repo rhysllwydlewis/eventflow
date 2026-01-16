@@ -116,6 +116,12 @@ router.get('/homepage-settings', async (req, res) => {
       mediaTypes: collageWidget.mediaTypes || { photos: true, videos: false },
       intervalSeconds: collageWidget.intervalSeconds || pexelsCollageSettings.intervalSeconds,
       pexelsQueries: collageWidget.pexelsQueries || pexelsCollageSettings.queries,
+      pexelsVideoQueries: collageWidget.pexelsVideoQueries || {
+        venues: 'wedding venue video aerial',
+        catering: 'catering food preparation video',
+        entertainment: 'live band music performance video',
+        photography: 'wedding videography cinematic',
+      },
       uploadGallery: collageWidget.uploadGallery || [],
       fallbackToPexels: collageWidget.fallbackToPexels !== undefined ? collageWidget.fallbackToPexels : true,
     };

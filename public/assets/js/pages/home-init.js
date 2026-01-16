@@ -1081,8 +1081,15 @@ async function initCollageWidget(widgetConfig) {
       const categories = Object.keys(categoryMapping);
       for (const category of categories) {
         try {
+          // Build query params with media types
+          const params = new URLSearchParams({
+            category: category,
+            photos: String(mediaTypes?.photos !== false),
+            videos: String(mediaTypes?.videos === true),
+          });
+          
           const response = await fetch(
-            `/api/admin/public/pexels-collage?category=${encodeURIComponent(category)}`
+            `/api/admin/public/pexels-collage?${params.toString()}`
           );
 
           if (!response.ok) {
@@ -1099,12 +1106,15 @@ async function initCollageWidget(widgetConfig) {
 
           if (isDebugEnabled()) {
             console.log(
-              `[Collage Widget] Fetched ${data.photos?.length || 0} photos for ${category} (source: ${data.source || 'unknown'})`
+              `[Collage Widget] Fetched ${data.photos?.length || 0} photos and ${data.videos?.length || 0} videos for ${category} (source: ${data.source || 'unknown'})`
             );
           }
 
+          // Combine photos and videos into media array
+          const allMedia = [];
+          
           if (data.photos && Array.isArray(data.photos) && data.photos.length > 0) {
-            mediaCache[category] = data.photos
+            const photos = data.photos
               .filter(photo => photo && photo.src && photo.photographer)
               .map(photo => ({
                 url: photo.src.large || photo.src.original,
@@ -1112,10 +1122,29 @@ async function initCollageWidget(widgetConfig) {
                 photographer: String(photo.photographer),
                 photographerUrl: validatePexelsUrl(photo.photographer_url),
               }));
+            allMedia.push(...photos);
+          }
+
+          if (data.videos && Array.isArray(data.videos) && data.videos.length > 0) {
+            const videos = data.videos
+              .filter(video => video && video.src && video.src.large)
+              .map(video => ({
+                url: video.src.large || video.src.original,
+                type: 'video',
+                thumbnail: video.thumbnail,
+                videographer: String(video.videographer || 'Pexels'),
+                videographerUrl: validatePexelsUrl(video.videographer_url || 'https://www.pexels.com'),
+                duration: video.duration,
+              }));
+            allMedia.push(...videos);
+          }
+
+          if (allMedia.length > 0) {
+            mediaCache[category] = allMedia;
 
             if (mediaCache[category].length === 0) {
               if (isDebugEnabled()) {
-                console.warn(`[Collage Widget] No valid photos after filtering for ${category}`);
+                console.warn(`[Collage Widget] No valid media after filtering for ${category}`);
               }
               restoreFrameDefault(collageFrames, categoryMapping, category, uploadGallery);
               continue;
@@ -1125,7 +1154,7 @@ async function initCollageWidget(widgetConfig) {
 
             if (isDebugEnabled()) {
               console.log(
-                `[Collage Widget] Cached ${mediaCache[category].length} valid photos for ${category}`
+                `[Collage Widget] Cached ${mediaCache[category].length} valid media items for ${category}`
               );
             }
           }
@@ -1352,12 +1381,12 @@ async function loadMediaIntoFrame(
         video.style.opacity = '1';
         frame.classList.remove('loading-pexels');
 
-        // Only add credit if from Pexels (has photographer field)
-        if (media.photographer) {
-          addPhotographerCredit(frame, media);
+        // Only add credit if from Pexels (has videographer field for videos)
+        if (media.videographer) {
+          addCreatorCredit(frame, media);
         } else {
           // Remove any existing credits when using uploaded videos
-          removePhotographerCredit(frame);
+          removeCreatorCredit(frame);
         }
 
         resolve();
@@ -1411,7 +1440,7 @@ async function loadMediaIntoFrame(
           addPhotographerCredit(frame, media);
         } else {
           // Remove any existing credits when using uploaded images
-          removePhotographerCredit(frame);
+          removeCreatorCredit(frame);
         }
 
         resolve();
@@ -1440,7 +1469,7 @@ async function loadMediaIntoFrame(
           addPhotographerCredit(frame, media);
         } else {
           // Remove any existing credits when using uploaded images
-          removePhotographerCredit(frame);
+          removeCreatorCredit(frame);
         }
 
         resolve();
@@ -1545,7 +1574,7 @@ function cycleWidgetMedia(
               addPhotographerCredit(frame, nextMedia);
             } else {
               // Remove any existing credits when using uploaded videos
-              removePhotographerCredit(frame);
+              removeCreatorCredit(frame);
             }
           };
 
@@ -1612,7 +1641,7 @@ function cycleWidgetMedia(
               addPhotographerCredit(frame, nextMedia);
             } else {
               // Remove any existing credits when using uploaded images
-              removePhotographerCredit(frame);
+              removeCreatorCredit(frame);
             }
           };
 
@@ -1743,7 +1772,7 @@ function cyclePexelsImages(imageCache, currentImageIndex, collageFrames, categor
  * Used when switching from Pexels to uploaded images
  * @param {HTMLElement} frame - Frame element
  */
-function removePhotographerCredit(frame) {
+function removeCreatorCredit(frame) {
   if (!frame) {
     return;
   }
@@ -1753,7 +1782,7 @@ function removePhotographerCredit(frame) {
     existingCredit.remove();
     
     if (isDebugEnabled()) {
-      console.log('[Collage Widget] Removed photographer credit');
+      console.log('[Collage Widget] Removed creator credit');
     }
   }
 }
@@ -1762,9 +1791,22 @@ function removePhotographerCredit(frame) {
  * Add photographer credit to collage frame
  * Safely escapes HTML to prevent XSS
  */
-function addPhotographerCredit(frame, photo) {
+/**
+ * Add creator credit (photographer or videographer) to collage frame
+ * @param {HTMLElement} frame - Frame element
+ * @param {Object} media - Media object with photographer/videographer info
+ */
+function addCreatorCredit(frame, media) {
   // Validate inputs
-  if (!frame || !photo || !photo.photographer) {
+  if (!frame || !media) {
+    return;
+  }
+
+  const isVideo = media.type === 'video';
+  const creatorName = isVideo ? media.videographer : media.photographer;
+  const creatorUrl = isVideo ? media.videographerUrl : media.photographerUrl;
+
+  if (!creatorName) {
     return;
   }
 
@@ -1778,15 +1820,16 @@ function addPhotographerCredit(frame, photo) {
   const credit = document.createElement('div');
   credit.className = 'pexels-credit';
 
-  // Create text node for "Photo by "
-  credit.appendChild(document.createTextNode('Photo by '));
+  // Create text node with appropriate prefix
+  const prefix = isVideo ? 'Video by ' : 'Photo by ';
+  credit.appendChild(document.createTextNode(prefix));
 
   // Create link element safely with validated URL
   const link = document.createElement('a');
-  link.href = validatePexelsUrl(photo.photographerUrl);
+  link.href = validatePexelsUrl(creatorUrl);
   link.target = '_blank';
   link.rel = 'noopener noreferrer';
-  link.textContent = photo.photographer;
+  link.textContent = creatorName;
 
   credit.appendChild(link);
   frame.appendChild(credit);
