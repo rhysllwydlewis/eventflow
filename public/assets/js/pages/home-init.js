@@ -703,7 +703,7 @@ function displayPexelsImage(imgElement, frame, imageData, category) {
   imgElement.alt = `${category.charAt(0).toUpperCase() + category.slice(1)} - Photo by ${imageData.photographer}`;
   imgElement.style.opacity = '1';
   frame.classList.remove('loading-pexels');
-  addPhotographerCredit(frame, imageData);
+  addCreatorCredit(frame, imageData);
 }
 
 /**
@@ -1435,9 +1435,9 @@ async function loadMediaIntoFrame(
         mediaElement.style.opacity = '1';
         frame.classList.remove('loading-pexels');
 
-        // Only add photographer credit for Pexels images (not uploads)
-        if (media.photographer) {
-          addPhotographerCredit(frame, media);
+        // Only add creator credit for Pexels images (not uploads)
+        if (media.photographer || media.videographer) {
+          addCreatorCredit(frame, media);
         } else {
           // Remove any existing credits when using uploaded images
           removeCreatorCredit(frame);
@@ -1464,9 +1464,9 @@ async function loadMediaIntoFrame(
         mediaElement.style.opacity = '1';
         frame.classList.remove('loading-pexels');
 
-        // Only add photographer credit for Pexels images (not uploads)
-        if (media.photographer) {
-          addPhotographerCredit(frame, media);
+        // Only add creator credit for Pexels images (not uploads)
+        if (media.photographer || media.videographer) {
+          addCreatorCredit(frame, media);
         } else {
           // Remove any existing credits when using uploaded images
           removeCreatorCredit(frame);
@@ -1569,11 +1569,11 @@ function cycleWidgetMedia(
               video.style.opacity = '1';
             }
 
-            // Only add credit if from Pexels (has photographer field)
-            if (nextMedia.photographer) {
-              addPhotographerCredit(frame, nextMedia);
+            // Only add credit if from Pexels (has photographer or videographer field)
+            if (nextMedia.photographer || nextMedia.videographer) {
+              addCreatorCredit(frame, nextMedia);
             } else {
-              // Remove any existing credits when using uploaded videos
+              // Remove any existing credits when using uploaded media
               removeCreatorCredit(frame);
             }
           };
@@ -1636,11 +1636,11 @@ function cycleWidgetMedia(
               }
             }
 
-            // Only add credit if from Pexels (has photographer field)
-            if (nextMedia.photographer) {
-              addPhotographerCredit(frame, nextMedia);
+            // Only add credit if from Pexels (has photographer or videographer field)
+            if (nextMedia.photographer || nextMedia.videographer) {
+              addCreatorCredit(frame, nextMedia);
             } else {
-              // Remove any existing credits when using uploaded images
+              // Remove any existing credits when using uploaded media
               removeCreatorCredit(frame);
             }
           };
@@ -1730,7 +1730,7 @@ function cyclePexelsImages(imageCache, currentImageIndex, collageFrames, categor
       }
       imgElement.src = nextImage.url;
       imgElement.alt = `${category.charAt(0).toUpperCase() + category.slice(1)} - Photo by ${nextImage.photographer}`;
-      addPhotographerCredit(frame, nextImage);
+      addCreatorCredit(frame, nextImage);
     }, PEXELS_PRELOAD_TIMEOUT_MS);
 
     nextImg.onload = () => {
@@ -1746,8 +1746,8 @@ function cyclePexelsImages(imageCache, currentImageIndex, collageFrames, categor
         imgElement.alt = `${category.charAt(0).toUpperCase() + category.slice(1)} - Photo by ${nextImage.photographer}`;
         imgElement.classList.remove('fading');
 
-        // Update photographer credit
-        addPhotographerCredit(frame, nextImage);
+        // Update creator credit
+        addCreatorCredit(frame, nextImage);
       }, PEXELS_TRANSITION_DURATION_MS);
     };
 
