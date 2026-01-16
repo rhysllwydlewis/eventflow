@@ -148,6 +148,19 @@ document.addEventListener('DOMContentLoaded', () => {
       cleanupPexelsCollage();
     }
   });
+
+  // Defensive fallback: Re-invoke collage initialization if it hasn't started
+  // This handles cases where the initial DOMContentLoaded call returned early
+  // or was skipped. The loadHeroCollageImages function is idempotent and will
+  // guard against double initialization via window.__collageWidgetInitialized
+  setTimeout(() => {
+    if (!window.__collageWidgetInitialized) {
+      if (isDebugEnabled()) {
+        console.log('[Collage Debug] Initial load did not initialize, retrying...');
+      }
+      loadHeroCollageImages();
+    }
+  }, 1000);
 });
 
 /**
@@ -421,16 +434,11 @@ async function loadHeroCollageImages() {
 
       // Determine if collage should be enabled (matches backend logic)
       // If collageWidget.enabled is explicitly set, use it; otherwise use legacy flag
-      const collageEnabled = collageWidget?.enabled !== undefined
-        ? collageWidget.enabled
-        : legacyEnabled;
+      const collageEnabled =
+        collageWidget?.enabled !== undefined ? collageWidget.enabled : legacyEnabled;
 
       // Validate JSON structure - check if collage is enabled
-      if (
-        settings &&
-        typeof settings === 'object' &&
-        collageEnabled === true
-      ) {
+      if (settings && typeof settings === 'object' && collageEnabled === true) {
         if (isDebugEnabled()) {
           console.log('[Collage Debug] Collage widget enabled, initializing dynamic collage');
         }
@@ -867,7 +875,9 @@ async function initPexelsCollage(settings) {
             const preloadTimeout = setTimeout(() => {
               // If preload takes too long, show the image anyway
               if (isDevelopmentEnvironment()) {
-                console.warn(`⚠️  Initial image preload timeout for ${category}, displaying anyway`);
+                console.warn(
+                  `⚠️  Initial image preload timeout for ${category}, displaying anyway`
+                );
               }
               displayPexelsImage(imgElement, frame, imageData, category);
             }, PEXELS_PRELOAD_TIMEOUT_MS);
@@ -882,7 +892,9 @@ async function initPexelsCollage(settings) {
               clearTimeout(preloadTimeout);
               // Failed to load Pexels image, restore default
               if (isDevelopmentEnvironment()) {
-                console.warn(`⚠️  Failed to load initial image for ${category}: ${imageCache[category][0].url}`);
+                console.warn(
+                  `⚠️  Failed to load initial image for ${category}: ${imageCache[category][0].url}`
+                );
               }
               restoreDefaultImage(imgElement);
               frame.classList.remove('loading-pexels');
@@ -913,6 +925,9 @@ async function initPexelsCollage(settings) {
       pexelsCollageIntervalId = setInterval(() => {
         cyclePexelsImages(imageCache, currentImageIndex, collageFrames, categoryMapping);
       }, intervalMs);
+
+      // Expose interval ID on window for debugging
+      window.pexelsCollageIntervalId = pexelsCollageIntervalId;
 
       // Only log in development mode
       if (isDevelopmentEnvironment()) {
@@ -963,14 +978,8 @@ async function initPexelsCollage(settings) {
  * @param {Object} widgetConfig - Configuration from backend
  */
 async function initCollageWidget(widgetConfig) {
-  const {
-    source,
-    mediaTypes,
-    intervalSeconds,
-    pexelsQueries,
-    uploadGallery,
-    fallbackToPexels,
-  } = widgetConfig;
+  const { source, mediaTypes, intervalSeconds, pexelsQueries, uploadGallery, fallbackToPexels } =
+    widgetConfig;
 
   const intervalMs = (intervalSeconds || 2.5) * 1000;
 
@@ -1011,8 +1020,8 @@ async function initCollageWidget(widgetConfig) {
   }
 
   try {
-    let mediaCache = {};
-    let currentMediaIndex = {};
+    const mediaCache = {};
+    const currentMediaIndex = {};
 
     // Load media based on source
     if (source === 'uploads' && uploadGallery && uploadGallery.length > 0) {
@@ -1057,7 +1066,9 @@ async function initCollageWidget(widgetConfig) {
 
           if (!response.ok) {
             if (isDebugEnabled()) {
-              console.warn(`[Collage Widget] Failed to fetch Pexels media for ${category}: ${response.status}`);
+              console.warn(
+                `[Collage Widget] Failed to fetch Pexels media for ${category}: ${response.status}`
+              );
             }
             restoreFrameDefault(collageFrames, categoryMapping, category);
             continue;
@@ -1066,7 +1077,9 @@ async function initCollageWidget(widgetConfig) {
           const data = await response.json();
 
           if (isDebugEnabled()) {
-            console.log(`[Collage Widget] Fetched ${data.photos?.length || 0} photos for ${category} (source: ${data.source || 'unknown'})`);
+            console.log(
+              `[Collage Widget] Fetched ${data.photos?.length || 0} photos for ${category} (source: ${data.source || 'unknown'})`
+            );
           }
 
           if (data.photos && Array.isArray(data.photos) && data.photos.length > 0) {
@@ -1088,9 +1101,11 @@ async function initCollageWidget(widgetConfig) {
             }
 
             currentMediaIndex[category] = 0;
-            
+
             if (isDebugEnabled()) {
-              console.log(`[Collage Widget] Cached ${mediaCache[category].length} valid photos for ${category}`);
+              console.log(
+                `[Collage Widget] Cached ${mediaCache[category].length} valid photos for ${category}`
+              );
             }
           }
         } catch (error) {
@@ -1132,7 +1147,9 @@ async function initCollageWidget(widgetConfig) {
     // Set initial media for each category
     for (const category of categories) {
       const media = mediaCache[category];
-      if (!media || media.length === 0) continue;
+      if (!media || media.length === 0) {
+        continue;
+      }
 
       const frameIndex = categoryMapping[category];
       const frame = collageFrames[frameIndex];
@@ -1162,8 +1179,17 @@ async function initCollageWidget(widgetConfig) {
       }
 
       pexelsCollageIntervalId = setInterval(() => {
-        cycleWidgetMedia(mediaCache, currentMediaIndex, collageFrames, categoryMapping, prefersReducedMotion);
+        cycleWidgetMedia(
+          mediaCache,
+          currentMediaIndex,
+          collageFrames,
+          categoryMapping,
+          prefersReducedMotion
+        );
       }, intervalMs);
+
+      // Expose interval ID on window for debugging
+      window.pexelsCollageIntervalId = pexelsCollageIntervalId;
 
       if (isDevelopmentEnvironment()) {
         console.log(
@@ -1195,7 +1221,7 @@ async function initCollageWidget(widgetConfig) {
  * @param {boolean} prefersReducedMotion - User motion preference
  */
 async function loadMediaIntoFrame(frame, mediaElement, media, category, prefersReducedMotion) {
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     const isVideo = media.type === 'video';
 
     if (isVideo) {
@@ -1206,7 +1232,7 @@ async function loadMediaIntoFrame(frame, mediaElement, media, category, prefersR
         existingVideo.removeAttribute('src');
         existingVideo.load();
       }
-      
+
       // Replace img with video element
       const video = document.createElement('video');
       video.src = media.url;
@@ -1217,7 +1243,7 @@ async function loadMediaIntoFrame(frame, mediaElement, media, category, prefersR
       video.className = mediaElement.className;
       video.style.cssText = mediaElement.style.cssText;
       video.alt = `${category.charAt(0).toUpperCase() + category.slice(1)} - Video`;
-      
+
       // Accessibility: respect reduced motion
       if (prefersReducedMotion) {
         video.autoplay = false;
@@ -1229,12 +1255,12 @@ async function loadMediaIntoFrame(frame, mediaElement, media, category, prefersR
         mediaElement.replaceWith(video);
         video.style.opacity = '1';
         frame.classList.remove('loading-pexels');
-        
+
         // Add credit if from Pexels
         if (media.photographer) {
           addPhotographerCredit(frame, media);
         }
-        
+
         resolve();
       };
 
@@ -1274,11 +1300,11 @@ async function loadMediaIntoFrame(frame, mediaElement, media, category, prefersR
         mediaElement.alt = `${category.charAt(0).toUpperCase() + category.slice(1)} - Photo`;
         mediaElement.style.opacity = '1';
         frame.classList.remove('loading-pexels');
-        
+
         if (media.photographer) {
           addPhotographerCredit(frame, media);
         }
-        
+
         resolve();
       }, PEXELS_PRELOAD_TIMEOUT_MS);
 
@@ -1288,11 +1314,11 @@ async function loadMediaIntoFrame(frame, mediaElement, media, category, prefersR
         mediaElement.alt = `${category.charAt(0).toUpperCase() + category.slice(1)} - Photo`;
         mediaElement.style.opacity = '1';
         frame.classList.remove('loading-pexels');
-        
+
         if (media.photographer) {
           addPhotographerCredit(frame, media);
         }
-        
+
         resolve();
       };
 
@@ -1313,7 +1339,13 @@ async function loadMediaIntoFrame(frame, mediaElement, media, category, prefersR
  * Cycle through widget media with transitions
  * Supports both photos and videos
  */
-function cycleWidgetMedia(mediaCache, currentMediaIndex, collageFrames, categoryMapping, prefersReducedMotion) {
+function cycleWidgetMedia(
+  mediaCache,
+  currentMediaIndex,
+  collageFrames,
+  categoryMapping,
+  prefersReducedMotion
+) {
   Object.keys(mediaCache).forEach(category => {
     const mediaList = mediaCache[category];
     if (!mediaList || !Array.isArray(mediaList) || mediaList.length === 0) {
@@ -1351,110 +1383,113 @@ function cycleWidgetMedia(mediaCache, currentMediaIndex, collageFrames, category
       currentElement.classList.add('fading');
     }
 
-    setTimeout(async () => {
-      // Verify element still exists in DOM (safety check)
-      if (!document.body.contains(currentElement)) {
-        if (isDevelopmentEnvironment()) {
-          console.warn(`Element removed from DOM during transition for ${category}`);
+    setTimeout(
+      async () => {
+        // Verify element still exists in DOM (safety check)
+        if (!document.body.contains(currentElement)) {
+          if (isDevelopmentEnvironment()) {
+            console.warn(`Element removed from DOM during transition for ${category}`);
+          }
+          return;
         }
-        return;
-      }
 
-      // Create new element based on media type
-      if (nextMedia.type === 'video') {
-        const video = document.createElement('video');
-        video.src = nextMedia.url;
-        video.muted = true;
-        video.loop = true;
-        video.playsInline = true;
-        video.autoplay = !prefersReducedMotion;
-        video.className = currentElement.className.replace('fading', '');
-        video.style.cssText = currentElement.style.cssText;
-        video.style.opacity = '0';
-        video.alt = `${category.charAt(0).toUpperCase() + category.slice(1)} - Video`;
+        // Create new element based on media type
+        if (nextMedia.type === 'video') {
+          const video = document.createElement('video');
+          video.src = nextMedia.url;
+          video.muted = true;
+          video.loop = true;
+          video.playsInline = true;
+          video.autoplay = !prefersReducedMotion;
+          video.className = currentElement.className.replace('fading', '');
+          video.style.cssText = currentElement.style.cssText;
+          video.style.opacity = '0';
+          video.alt = `${category.charAt(0).toUpperCase() + category.slice(1)} - Video`;
 
-        const handleLoadedData = () => {
-          currentElement.replaceWith(video);
-          if (!prefersReducedMotion) {
-            setTimeout(() => {
+          const handleLoadedData = () => {
+            currentElement.replaceWith(video);
+            if (!prefersReducedMotion) {
+              setTimeout(() => {
+                video.style.opacity = '1';
+              }, 50);
+            } else {
               video.style.opacity = '1';
-            }, 50);
-          } else {
-            video.style.opacity = '1';
-          }
-          
-          if (nextMedia.photographer) {
-            addPhotographerCredit(frame, nextMedia);
-          }
-        };
-
-        const handleError = () => {
-          if (isDevelopmentEnvironment()) {
-            console.warn(`Failed to load video: ${nextMedia.url}`);
-          }
-          currentElement.classList.remove('fading');
-          currentElement.style.opacity = '1';
-        };
-
-        video.addEventListener('loadeddata', handleLoadedData, { once: true });
-        video.addEventListener('error', handleError, { once: true });
-      } else {
-        // Preload photo
-        const img = new Image();
-        img.src = nextMedia.url;
-
-        img.onload = () => {
-          if (currentElement.tagName === 'VIDEO') {
-            // Clean up video before replacing
-            currentElement.pause();
-            currentElement.removeAttribute('src');
-            currentElement.load();
-            
-            // Replace video with img
-            const newImg = document.createElement('img');
-            newImg.src = nextMedia.url;
-            newImg.className = currentElement.className.replace('fading', '');
-            newImg.style.cssText = currentElement.style.cssText;
-            newImg.style.opacity = '0';
-            newImg.alt = `${category.charAt(0).toUpperCase() + category.slice(1)} - Photo`;
-            
-            currentElement.replaceWith(newImg);
-            
-            if (!prefersReducedMotion) {
-              setTimeout(() => {
-                newImg.style.opacity = '1';
-              }, 50);
-            } else {
-              newImg.style.opacity = '1';
             }
-          } else {
-            // Update existing img
-            currentElement.src = nextMedia.url;
-            currentElement.alt = `${category.charAt(0).toUpperCase() + category.slice(1)} - Photo`;
+
+            if (nextMedia.photographer) {
+              addPhotographerCredit(frame, nextMedia);
+            }
+          };
+
+          const handleError = () => {
+            if (isDevelopmentEnvironment()) {
+              console.warn(`Failed to load video: ${nextMedia.url}`);
+            }
             currentElement.classList.remove('fading');
-            if (!prefersReducedMotion) {
-              setTimeout(() => {
-                currentElement.style.opacity = '1';
-              }, 50);
-            } else {
-              currentElement.style.opacity = '1';
-            }
-          }
-          
-          if (nextMedia.photographer) {
-            addPhotographerCredit(frame, nextMedia);
-          }
-        };
+            currentElement.style.opacity = '1';
+          };
 
-        img.onerror = () => {
-          if (isDevelopmentEnvironment()) {
-            console.warn(`Failed to load image: ${nextMedia.url}`);
-          }
-          currentElement.classList.remove('fading');
-          currentElement.style.opacity = '1';
-        };
-      }
-    }, prefersReducedMotion ? 0 : PEXELS_TRANSITION_DURATION_MS);
+          video.addEventListener('loadeddata', handleLoadedData, { once: true });
+          video.addEventListener('error', handleError, { once: true });
+        } else {
+          // Preload photo
+          const img = new Image();
+          img.src = nextMedia.url;
+
+          img.onload = () => {
+            if (currentElement.tagName === 'VIDEO') {
+              // Clean up video before replacing
+              currentElement.pause();
+              currentElement.removeAttribute('src');
+              currentElement.load();
+
+              // Replace video with img
+              const newImg = document.createElement('img');
+              newImg.src = nextMedia.url;
+              newImg.className = currentElement.className.replace('fading', '');
+              newImg.style.cssText = currentElement.style.cssText;
+              newImg.style.opacity = '0';
+              newImg.alt = `${category.charAt(0).toUpperCase() + category.slice(1)} - Photo`;
+
+              currentElement.replaceWith(newImg);
+
+              if (!prefersReducedMotion) {
+                setTimeout(() => {
+                  newImg.style.opacity = '1';
+                }, 50);
+              } else {
+                newImg.style.opacity = '1';
+              }
+            } else {
+              // Update existing img
+              currentElement.src = nextMedia.url;
+              currentElement.alt = `${category.charAt(0).toUpperCase() + category.slice(1)} - Photo`;
+              currentElement.classList.remove('fading');
+              if (!prefersReducedMotion) {
+                setTimeout(() => {
+                  currentElement.style.opacity = '1';
+                }, 50);
+              } else {
+                currentElement.style.opacity = '1';
+              }
+            }
+
+            if (nextMedia.photographer) {
+              addPhotographerCredit(frame, nextMedia);
+            }
+          };
+
+          img.onerror = () => {
+            if (isDevelopmentEnvironment()) {
+              console.warn(`Failed to load image: ${nextMedia.url}`);
+            }
+            currentElement.classList.remove('fading');
+            currentElement.style.opacity = '1';
+          };
+        }
+      },
+      prefersReducedMotion ? 0 : PEXELS_TRANSITION_DURATION_MS
+    );
   });
 }
 
@@ -1470,7 +1505,7 @@ function cleanupPexelsCollage() {
       console.log('Collage widget interval cleared');
     }
   }
-  
+
   // Clean up video elements to prevent memory leaks
   const collageFrames = document.querySelectorAll('.collage .frame');
   if (collageFrames) {
