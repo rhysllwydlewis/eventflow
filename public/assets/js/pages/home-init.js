@@ -8,12 +8,35 @@ window.__EF_PAGE__ = 'home';
 
 /**
  * Check if debug logging is enabled
- * Checks both explicit window.DEBUG flag and development environment
+ * Checks:
+ * 1. Explicit window.DEBUG flag
+ * 2. URL param ?debug=1, ?debug=true, ?debug=yes, or ?debug (case-insensitive)
+ * 3. Development environment
  * @returns {boolean} True if debug logging should be enabled
  */
 function isDebugEnabled() {
-  return window.DEBUG || isDevelopmentEnvironment();
+  // Check window.DEBUG first
+  if (window.DEBUG) {
+    return true;
+  }
+
+  // Check URL parameters for debug mode
+  const urlParams = new URLSearchParams(window.location.search);
+  const debugParam = urlParams.get('debug');
+  if (debugParam !== null) {
+    // Allow: ?debug, ?debug=1, ?debug=true, ?debug=yes (case-insensitive)
+    const debugValue = debugParam.toLowerCase();
+    if (debugValue === '' || debugValue === '1' || debugValue === 'true' || debugValue === 'yes') {
+      return true;
+    }
+  }
+
+  // Check if in development environment
+  return isDevelopmentEnvironment();
 }
+
+// Unconditional startup log to confirm collage script execution
+console.log('[Collage Debug] collage script loaded');
 
 // Initialize homepage components on DOM ready
 document.addEventListener('DOMContentLoaded', () => {
@@ -161,6 +184,18 @@ document.addEventListener('DOMContentLoaded', () => {
       loadHeroCollageImages();
     }
   }, 1000);
+});
+
+// Window load fallback: Retry collage initialization if it hasn't started by window load
+// This handles edge cases where DOMContentLoaded fired but collage failed to initialize
+// due to timing issues, script loading delays, or API failures
+window.addEventListener('load', () => {
+  if (!window.__collageWidgetInitialized) {
+    if (isDebugEnabled()) {
+      console.log('[Collage Debug] load fallback retrying...');
+    }
+    loadHeroCollageImages();
+  }
 });
 
 /**
