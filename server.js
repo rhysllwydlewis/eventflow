@@ -2393,7 +2393,6 @@ app.post(
         // Extract file type information from validation details
         const typeDetails = error.details?.type || {};
         const detectedType = typeDetails.detectedType;
-        const allowedTypes = typeDetails.allowedTypes || [];
         const magicBytes = typeDetails.magicBytes;
 
         // Create a user-friendly error message
@@ -2549,7 +2548,6 @@ app.post(
         // Extract file type information from validation details
         const typeDetails = error.details?.type || {};
         const detectedType = typeDetails.detectedType;
-        const allowedTypes = typeDetails.allowedTypes || [];
         const magicBytes = typeDetails.magicBytes;
 
         // Create a user-friendly error message
