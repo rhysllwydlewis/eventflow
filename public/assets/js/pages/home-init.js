@@ -46,11 +46,10 @@ document.addEventListener('DOMContentLoaded', () => {
     categoryGrid.loadCategories();
   }
 
-  // Hide version label unless ?debug=1 is present
+  // Hide version label unless debug mode is enabled
   const versionContainer = document.querySelector('.version');
   if (versionContainer) {
-    const urlParams = new URLSearchParams(window.location.search);
-    if (!urlParams.has('debug') || urlParams.get('debug') !== '1') {
+    if (!isDebugEnabled()) {
       versionContainer.style.display = 'none';
     } else {
       // If debug mode, show version
