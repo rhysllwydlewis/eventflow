@@ -582,6 +582,8 @@ async function loadHeroCollageImages() {
 const PEXELS_TRANSITION_DURATION_MS = 1000;
 // Preload timeout to prevent hanging
 const PEXELS_PRELOAD_TIMEOUT_MS = 5000;
+// Delay before restoring transition after instant hide (allows time for reflow)
+const TRANSITION_RESTORE_DELAY_MS = 50;
 
 // Store interval ID for cleanup
 let pexelsCollageIntervalId = null;
@@ -624,6 +626,41 @@ function restoreDefaultImage(imgElement) {
   imgElement.style.opacity = '1';
 }
 
+/**
+ * Display a Pexels image in a collage frame
+ * Helper function to avoid code duplication in preload success/timeout handlers
+ * @param {HTMLImageElement} imgElement - Image element to update
+ * @param {HTMLElement} frame - Frame element containing the image
+ * @param {Object} imageData - Image data with url and photographer
+ * @param {string} category - Category name for alt text
+ */
+function displayPexelsImage(imgElement, frame, imageData, category) {
+  imgElement.src = imageData.url;
+  imgElement.alt = `${category.charAt(0).toUpperCase() + category.slice(1)} - Photo by ${imageData.photographer}`;
+  imgElement.style.opacity = '1';
+  frame.classList.remove('loading-pexels');
+  addPhotographerCredit(frame, imageData);
+}
+
+/**
+ * Restore default image for a frame that failed to load Pexels image
+ * Helper function to avoid code duplication in error handling paths
+ * @param {HTMLElement} frame - Frame element
+ * @param {Object} categoryMapping - Mapping of categories to frame indices
+ * @param {string} category - Category name
+ */
+function restoreFrameDefault(collageFrames, categoryMapping, category) {
+  const frameIndex = categoryMapping[category];
+  const frame = collageFrames[frameIndex];
+  if (frame) {
+    const imgElement = frame.querySelector('img');
+    if (imgElement) {
+      restoreDefaultImage(imgElement);
+      frame.classList.remove('loading-pexels');
+    }
+  }
+}
+
 async function initPexelsCollage(settings) {
   // Use intervalSeconds from settings, fallback to old 'interval' property for backwards compatibility, default to 2.5 seconds
   const intervalSeconds = settings?.intervalSeconds ?? settings?.interval ?? 2.5;
@@ -657,8 +694,18 @@ async function initPexelsCollage(settings) {
       if (!imgElement.dataset.originalSrc && imgElement.src) {
         imgElement.dataset.originalSrc = imgElement.src;
       }
+      // Disable transition temporarily for instant hide
+      const originalTransition = imgElement.style.transition;
+      imgElement.style.transition = 'none';
       // Clear the image to prevent default from showing under loading state
       imgElement.style.opacity = '0';
+      // Force reflow to ensure transition:none is applied before opacity changes
+      // This prevents the CSS transition from affecting the opacity change
+      void imgElement.offsetHeight;
+      // Restore transition after a brief delay
+      setTimeout(() => {
+        imgElement.style.transition = originalTransition;
+      }, TRANSITION_RESTORE_DELAY_MS);
     }
   });
 
@@ -701,6 +748,8 @@ async function initPexelsCollage(settings) {
               );
             }
           }
+          // Restore default for this category since fetch failed
+          restoreFrameDefault(collageFrames, categoryMapping, category);
           continue;
         }
 
@@ -711,6 +760,8 @@ async function initPexelsCollage(settings) {
           if (isDevelopmentEnvironment()) {
             console.warn(`⚠️  Invalid response structure for ${category}`);
           }
+          // Restore default for this category since response is invalid
+          restoreFrameDefault(collageFrames, categoryMapping, category);
           continue;
         }
 
@@ -742,6 +793,8 @@ async function initPexelsCollage(settings) {
             if (isDevelopmentEnvironment()) {
               console.warn(`⚠️  No valid photos after filtering for ${category}`);
             }
+            // Restore default for this category since no valid photos
+            restoreFrameDefault(collageFrames, categoryMapping, category);
             continue;
           }
 
@@ -753,17 +806,35 @@ async function initPexelsCollage(settings) {
           const imgElement = frame.querySelector('img');
 
           if (imgElement && imageCache[category][0]) {
-            imgElement.src = imageCache[category][0].url;
-            imgElement.alt = `${category.charAt(0).toUpperCase() + category.slice(1)} - Photo by ${imageCache[category][0].photographer}`;
+            // Preload the first image before displaying it to prevent default image flash
+            const firstImage = new Image();
+            const imageData = imageCache[category][0];
+            firstImage.src = imageData.url;
 
-            // Restore opacity once Pexels image is set
-            imgElement.style.opacity = '1';
+            // Set timeout for preload to prevent hanging
+            const preloadTimeout = setTimeout(() => {
+              // If preload takes too long, show the image anyway
+              if (isDevelopmentEnvironment()) {
+                console.warn(`⚠️  Initial image preload timeout for ${category}, displaying anyway`);
+              }
+              displayPexelsImage(imgElement, frame, imageData, category);
+            }, PEXELS_PRELOAD_TIMEOUT_MS);
 
-            // Remove loading state
-            frame.classList.remove('loading-pexels');
+            firstImage.onload = () => {
+              clearTimeout(preloadTimeout);
+              // Image is preloaded, now set it and make visible
+              displayPexelsImage(imgElement, frame, imageData, category);
+            };
 
-            // Add photographer attribution
-            addPhotographerCredit(frame, imageCache[category][0]);
+            firstImage.onerror = () => {
+              clearTimeout(preloadTimeout);
+              // Failed to load Pexels image, restore default
+              if (isDevelopmentEnvironment()) {
+                console.warn(`⚠️  Failed to load initial image for ${category}: ${imageCache[category][0].url}`);
+              }
+              restoreDefaultImage(imgElement);
+              frame.classList.remove('loading-pexels');
+            };
           }
         }
       } catch (error) {
@@ -771,19 +842,14 @@ async function initPexelsCollage(settings) {
         if (isDevelopmentEnvironment()) {
           console.error(`❌ Error fetching Pexels images for ${category}:`, error);
         }
+        // Restore default for this category since an error occurred
+        restoreFrameDefault(collageFrames, categoryMapping, category);
       }
     }
 
-    // Remove loading states from all frames
-    collageFrames.forEach(frame => {
-      frame.classList.remove('loading-pexels');
-      // Restore opacity for frames that didn't get Pexels images
-      const imgElement = frame.querySelector('img');
-      if (imgElement && (!imgElement.style.opacity || parseFloat(imgElement.style.opacity) === 0)) {
-        // Restore default image if Pexels didn't load
-        restoreDefaultImage(imgElement);
-      }
-    });
+    // Note: We don't do a cleanup loop here because the preload operations above are async.
+    // Each frame's loading state and opacity will be handled by its respective
+    // onload/onerror/timeout handlers in the preload logic above.
 
     // Start cycling images
     if (Object.keys(imageCache).length > 0) {
@@ -814,8 +880,9 @@ async function initPexelsCollage(settings) {
           restoreDefaultImage(imgElement);
         }
       });
-      // Fall back to loading static hero images
-      await loadHeroCollageImages();
+      // Note: Default images are now showing. We don't recursively call
+      // loadHeroCollageImages() here to avoid the initialization guard issue.
+      // The defaults are sufficient fallback.
     }
   } catch (error) {
     // Remove loading states from all frames on error
@@ -832,8 +899,9 @@ async function initPexelsCollage(settings) {
     if (isDevelopmentEnvironment()) {
       console.error('Error initializing Pexels collage:', error);
     }
-    // Fall back to loading static hero images
-    await loadHeroCollageImages();
+    // Note: Default images are now showing. We don't recursively call
+    // loadHeroCollageImages() here to avoid the initialization guard issue.
+    // The defaults are sufficient fallback.
   }
 }
 
