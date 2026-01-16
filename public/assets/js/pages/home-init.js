@@ -545,7 +545,9 @@ async function loadHeroCollageImages() {
       }
     } else {
       if (isDebugEnabled()) {
-        console.log(`[Collage Debug] Settings API returned ${settingsResponse?.status}, using static images`);
+        console.log(
+          `[Collage Debug] Settings API returned ${settingsResponse?.status}, using static images`
+        );
       }
     }
   } catch (error) {
@@ -555,7 +557,10 @@ async function loadHeroCollageImages() {
       if (error.name === 'AbortError') {
         console.log('[Collage Debug] Settings API timeout (5s), falling back to static images');
       } else {
-        console.log('[Collage Debug] Settings API error, falling back to static images:', error.message);
+        console.log(
+          '[Collage Debug] Settings API error, falling back to static images:',
+          error.message
+        );
       }
     }
   }
@@ -1260,6 +1265,18 @@ async function initCollageWidget(widgetConfig) {
       if (imgElement && media[0]) {
         frame.classList.add('loading-pexels');
 
+        // Store original src for fallback (only if it has a valid src)
+        if (
+          !imgElement.dataset.originalSrc &&
+          imgElement.src &&
+          imgElement.src.startsWith('http')
+        ) {
+          imgElement.dataset.originalSrc = imgElement.src;
+          if (isDebugEnabled()) {
+            console.log(`[Collage Widget] Stored originalSrc for ${category}`);
+          }
+        }
+
         // Hide default image
         const originalTransition = imgElement.style.transition;
         imgElement.style.transition = 'none';
@@ -1268,6 +1285,10 @@ async function initCollageWidget(widgetConfig) {
         setTimeout(() => {
           imgElement.style.transition = originalTransition;
         }, TRANSITION_RESTORE_DELAY_MS);
+
+        if (isDebugEnabled()) {
+          console.log(`[Collage Widget] Loading first media for ${category}`, media[0]);
+        }
 
         // Load first media item
         await loadMediaIntoFrame(frame, imgElement, media[0], category, prefersReducedMotion);
@@ -1367,8 +1388,8 @@ async function loadMediaIntoFrame(frame, mediaElement, media, category, prefersR
       };
 
       const handleError = () => {
-        if (isDevelopmentEnvironment()) {
-          console.warn(`Failed to load video: ${media.url}`);
+        if (isDebugEnabled()) {
+          console.warn(`[Collage Widget] Failed to load video: ${media.url}`);
         }
         restoreDefaultImage(mediaElement);
         frame.classList.remove('loading-pexels');
@@ -1381,8 +1402,8 @@ async function loadMediaIntoFrame(frame, mediaElement, media, category, prefersR
       // Set timeout for video loading
       setTimeout(() => {
         if (frame.classList.contains('loading-pexels')) {
-          if (isDevelopmentEnvironment()) {
-            console.warn(`Video load timeout for ${category}`);
+          if (isDebugEnabled()) {
+            console.warn(`[Collage Widget] Video load timeout for ${category}`);
           }
           restoreDefaultImage(mediaElement);
           frame.classList.remove('loading-pexels');
@@ -1395,8 +1416,8 @@ async function loadMediaIntoFrame(frame, mediaElement, media, category, prefersR
       img.src = media.url;
 
       const preloadTimeout = setTimeout(() => {
-        if (isDevelopmentEnvironment()) {
-          console.warn(`Image preload timeout for ${category}`);
+        if (isDebugEnabled()) {
+          console.warn(`[Collage Widget] Image preload timeout for ${category}, displaying anyway`);
         }
         mediaElement.src = media.url;
         mediaElement.alt = `${category.charAt(0).toUpperCase() + category.slice(1)} - Photo`;
@@ -1412,6 +1433,11 @@ async function loadMediaIntoFrame(frame, mediaElement, media, category, prefersR
 
       img.onload = () => {
         clearTimeout(preloadTimeout);
+        if (isDebugEnabled()) {
+          console.log(
+            `[Collage Widget] Image loaded successfully for ${category}, setting src and opacity=1`
+          );
+        }
         mediaElement.src = media.url;
         mediaElement.alt = `${category.charAt(0).toUpperCase() + category.slice(1)} - Photo`;
         mediaElement.style.opacity = '1';
@@ -1426,8 +1452,8 @@ async function loadMediaIntoFrame(frame, mediaElement, media, category, prefersR
 
       img.onerror = () => {
         clearTimeout(preloadTimeout);
-        if (isDevelopmentEnvironment()) {
-          console.warn(`Failed to load image: ${media.url}`);
+        if (isDebugEnabled()) {
+          console.warn(`[Collage Widget] Failed to load image: ${media.url}`);
         }
         restoreDefaultImage(mediaElement);
         frame.classList.remove('loading-pexels');
