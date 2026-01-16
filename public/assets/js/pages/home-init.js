@@ -532,9 +532,15 @@ async function loadHeroCollageImages() {
               hasSettings: !!settings.pexelsCollageSettings,
               queries: settings.pexelsCollageSettings?.queries,
               intervalSeconds: settings.pexelsCollageSettings?.intervalSeconds,
+              hasUploadGallery: !!collageWidget?.uploadGallery?.length,
             });
           }
-          await initPexelsCollage(settings.pexelsCollageSettings);
+          // Merge legacy settings with uploadGallery from collageWidget
+          const legacySettings = {
+            ...settings.pexelsCollageSettings,
+            uploadGallery: collageWidget?.uploadGallery || [],
+          };
+          await initPexelsCollage(legacySettings);
         }
         return; // Skip static image loading
       } else {
@@ -605,19 +611,60 @@ function validatePexelsUrl(url) {
 
 /**
  * Restore default image for a collage frame
- * Sets opacity to 1 and restores original src if available
+ * Falls back to uploadGallery images if available, then to original src, then to gradient
  * @param {HTMLImageElement} imgElement - Image element to restore
+ * @param {HTMLElement} frame - Frame element containing the image
+ * @param {Array} uploadGallery - Array of uploaded image URLs from widget config
+ * @param {number} frameIndex - Index of the frame (0-3) for selecting upload image
  */
-function restoreDefaultImage(imgElement) {
-  if (!imgElement) {
+function restoreDefaultImage(imgElement, frame, uploadGallery = [], frameIndex = 0) {
+  if (!imgElement || !frame) {
     return;
   }
-  // Restore default image from stored original src
-  if (imgElement.dataset.originalSrc) {
-    imgElement.src = imgElement.dataset.originalSrc;
+
+  // Priority 1: Try uploadGallery images first
+  if (uploadGallery && Array.isArray(uploadGallery) && uploadGallery.length > 0) {
+    // Use modulo to cycle through upload gallery for different frames
+    const imageIndex = frameIndex % uploadGallery.length;
+    const uploadUrl = uploadGallery[imageIndex];
+    
+    if (uploadUrl && typeof uploadUrl === 'string') {
+      if (isDebugEnabled()) {
+        console.log(`[Collage Fallback] Using uploaded image ${imageIndex + 1}/${uploadGallery.length} for frame ${frameIndex}`);
+      }
+      imgElement.src = uploadUrl;
+      imgElement.style.opacity = '1';
+      frame.classList.remove('loading-pexels');
+      return;
+    }
   }
-  // Restore full opacity
-  imgElement.style.opacity = '1';
+
+  // Priority 2: Try original src from HTML (static images)
+  if (imgElement.dataset.originalSrc) {
+    if (isDebugEnabled()) {
+      console.log(`[Collage Fallback] Using original static image for frame ${frameIndex}`);
+    }
+    imgElement.src = imgElement.dataset.originalSrc;
+    imgElement.style.opacity = '1';
+    frame.classList.remove('loading-pexels');
+    return;
+  }
+
+  // Priority 3: Show gradient placeholder (graceful degradation)
+  if (isDebugEnabled()) {
+    console.log(`[Collage Fallback] Using gradient placeholder for frame ${frameIndex}`);
+  }
+  // Set a gradient background and hide the img element
+  const gradients = [
+    'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+    'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+    'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+  ];
+  const gradient = gradients[frameIndex % gradients.length];
+  frame.style.background = gradient;
+  imgElement.style.opacity = '0';
+  frame.classList.remove('loading-pexels');
 }
 
 /**
@@ -639,17 +686,18 @@ function displayPexelsImage(imgElement, frame, imageData, category) {
 /**
  * Restore default image for a frame that failed to load Pexels image
  * Helper function to avoid code duplication in error handling paths
- * @param {HTMLElement} frame - Frame element
+ * @param {NodeList} collageFrames - All collage frame elements
  * @param {Object} categoryMapping - Mapping of categories to frame indices
  * @param {string} category - Category name
+ * @param {Array} uploadGallery - Array of uploaded image URLs from widget config
  */
-function restoreFrameDefault(collageFrames, categoryMapping, category) {
+function restoreFrameDefault(collageFrames, categoryMapping, category, uploadGallery = []) {
   const frameIndex = categoryMapping[category];
   const frame = collageFrames[frameIndex];
   if (frame) {
     const imgElement = frame.querySelector('img');
     if (imgElement) {
-      restoreDefaultImage(imgElement);
+      restoreDefaultImage(imgElement, frame, uploadGallery, frameIndex);
       frame.classList.remove('loading-pexels');
     }
   }
@@ -659,6 +707,15 @@ async function initPexelsCollage(settings) {
   // Use intervalSeconds from settings, fallback to old 'interval' property for backwards compatibility, default to 2.5 seconds
   const intervalSeconds = settings?.intervalSeconds ?? settings?.interval ?? 2.5;
   const intervalMs = intervalSeconds * 1000;
+  
+  // Extract uploadGallery for fallback (if Pexels fails)
+  const uploadGallery = settings?.uploadGallery || [];
+  
+  if (isDebugEnabled()) {
+    console.log('[Pexels Collage] Initializing with upload gallery fallback:', {
+      uploadGalleryCount: uploadGallery.length,
+    });
+  }
 
   // Map category keys to their collage frame elements
   const categoryMapping = {
@@ -743,7 +800,7 @@ async function initPexelsCollage(settings) {
             }
           }
           // Restore default for this category since fetch failed
-          restoreFrameDefault(collageFrames, categoryMapping, category);
+          restoreFrameDefault(collageFrames, categoryMapping, category, uploadGallery);
           continue;
         }
 
@@ -755,7 +812,7 @@ async function initPexelsCollage(settings) {
             console.warn(`⚠️  Invalid response structure for ${category}`);
           }
           // Restore default for this category since response is invalid
-          restoreFrameDefault(collageFrames, categoryMapping, category);
+          restoreFrameDefault(collageFrames, categoryMapping, category, uploadGallery);
           continue;
         }
 
@@ -788,7 +845,7 @@ async function initPexelsCollage(settings) {
               console.warn(`⚠️  No valid photos after filtering for ${category}`);
             }
             // Restore default for this category since no valid photos
-            restoreFrameDefault(collageFrames, categoryMapping, category);
+            restoreFrameDefault(collageFrames, categoryMapping, category, uploadGallery);
             continue;
           }
 
@@ -830,7 +887,7 @@ async function initPexelsCollage(settings) {
                   `⚠️  Failed to load initial image for ${category}: ${imageCache[category][0].url}`
                 );
               }
-              restoreDefaultImage(imgElement);
+              restoreDefaultImage(imgElement, frame, uploadGallery, frameIndex);
               frame.classList.remove('loading-pexels');
             };
           }
@@ -841,7 +898,7 @@ async function initPexelsCollage(settings) {
           console.error(`❌ Error fetching Pexels images for ${category}:`, error);
         }
         // Restore default for this category since an error occurred
-        restoreFrameDefault(collageFrames, categoryMapping, category);
+        restoreFrameDefault(collageFrames, categoryMapping, category, uploadGallery);
       }
     }
 
@@ -872,13 +929,13 @@ async function initPexelsCollage(settings) {
     } else {
       // Only warn in development mode
       if (isDevelopmentEnvironment()) {
-        console.warn('No Pexels images loaded, falling back to static images');
+        console.warn('No Pexels images loaded, falling back to upload gallery or static images');
       }
-      // Restore default images for all frames
-      collageFrames.forEach(frame => {
+      // Restore default images for all frames using upload gallery
+      collageFrames.forEach((frame, index) => {
         const imgElement = frame.querySelector('img');
         if (imgElement) {
-          restoreDefaultImage(imgElement);
+          restoreDefaultImage(imgElement, frame, uploadGallery, index);
         }
       });
       // Note: Default images are now showing. We don't recursively call
@@ -887,12 +944,12 @@ async function initPexelsCollage(settings) {
     }
   } catch (error) {
     // Remove loading states from all frames on error
-    collageFrames.forEach(frame => {
+    collageFrames.forEach((frame, index) => {
       frame.classList.remove('loading-pexels');
-      // Restore default images on error
+      // Restore default images on error using upload gallery
       const imgElement = frame.querySelector('img');
       if (imgElement) {
-        restoreDefaultImage(imgElement);
+        restoreDefaultImage(imgElement, frame, uploadGallery, index);
       }
     });
 
@@ -1004,7 +1061,7 @@ async function initCollageWidget(widgetConfig) {
                 `[Collage Widget] Failed to fetch Pexels media for ${category}: ${response.status}`
               );
             }
-            restoreFrameDefault(collageFrames, categoryMapping, category);
+            restoreFrameDefault(collageFrames, categoryMapping, category, uploadGallery);
             continue;
           }
 
@@ -1030,7 +1087,7 @@ async function initCollageWidget(widgetConfig) {
               if (isDebugEnabled()) {
                 console.warn(`[Collage Widget] No valid photos after filtering for ${category}`);
               }
-              restoreFrameDefault(collageFrames, categoryMapping, category);
+              restoreFrameDefault(collageFrames, categoryMapping, category, uploadGallery);
               continue;
             }
 
@@ -1046,7 +1103,7 @@ async function initCollageWidget(widgetConfig) {
           if (isDebugEnabled()) {
             console.error(`[Collage Widget] Error fetching Pexels media for ${category}:`, error);
           }
-          restoreFrameDefault(collageFrames, categoryMapping, category);
+          restoreFrameDefault(collageFrames, categoryMapping, category, uploadGallery);
         }
       }
     } else {
@@ -1054,10 +1111,10 @@ async function initCollageWidget(widgetConfig) {
       if (isDebugEnabled()) {
         console.warn('[Collage Widget] No valid media source configured');
       }
-      collageFrames.forEach(frame => {
+      collageFrames.forEach((frame, index) => {
         const imgElement = frame.querySelector('img');
         if (imgElement) {
-          restoreDefaultImage(imgElement);
+          restoreDefaultImage(imgElement, frame, uploadGallery, index);
         }
       });
       return;
@@ -1067,12 +1124,12 @@ async function initCollageWidget(widgetConfig) {
     const categories = Object.keys(mediaCache);
     if (categories.length === 0) {
       if (isDebugEnabled()) {
-        console.warn('[Collage Widget] No media loaded, falling back to defaults');
+        console.warn('[Collage Widget] No media loaded, falling back to upload gallery or defaults');
       }
-      collageFrames.forEach(frame => {
+      collageFrames.forEach((frame, index) => {
         const imgElement = frame.querySelector('img');
         if (imgElement) {
-          restoreDefaultImage(imgElement);
+          restoreDefaultImage(imgElement, frame, uploadGallery, index);
         }
       });
       return;
@@ -1118,7 +1175,7 @@ async function initCollageWidget(widgetConfig) {
         }
 
         // Load first media item
-        await loadMediaIntoFrame(frame, imgElement, media[0], category, prefersReducedMotion);
+        await loadMediaIntoFrame(frame, imgElement, media[0], category, prefersReducedMotion, uploadGallery, frameIndex);
       }
     }
 
@@ -1151,12 +1208,12 @@ async function initCollageWidget(widgetConfig) {
     if (isDevelopmentEnvironment()) {
       console.error('Error initializing collage widget:', error);
     }
-    // Restore defaults on error
-    collageFrames.forEach(frame => {
+    // Restore defaults on error using upload gallery
+    collageFrames.forEach((frame, index) => {
       frame.classList.remove('loading-pexels');
       const imgElement = frame.querySelector('img');
       if (imgElement) {
-        restoreDefaultImage(imgElement);
+        restoreDefaultImage(imgElement, frame, uploadGallery, index);
       }
     });
   }
@@ -1169,8 +1226,10 @@ async function initCollageWidget(widgetConfig) {
  * @param {Object} media - Media object with url, type, etc.
  * @param {string} category - Category name
  * @param {boolean} prefersReducedMotion - User motion preference
+ * @param {Array} uploadGallery - Array of uploaded image URLs for fallback
+ * @param {number} frameIndex - Index of the frame for fallback selection
  */
-async function loadMediaIntoFrame(frame, mediaElement, media, category, prefersReducedMotion) {
+async function loadMediaIntoFrame(frame, mediaElement, media, category, prefersReducedMotion, uploadGallery = [], frameIndex = 0) {
   return new Promise(resolve => {
     const isVideo = media.type === 'video';
 
@@ -1218,7 +1277,7 @@ async function loadMediaIntoFrame(frame, mediaElement, media, category, prefersR
         if (isDebugEnabled()) {
           console.warn(`[Collage Widget] Failed to load video: ${media.url}`);
         }
-        restoreDefaultImage(mediaElement);
+        restoreDefaultImage(mediaElement, frame, uploadGallery, frameIndex);
         frame.classList.remove('loading-pexels');
         resolve();
       };
@@ -1232,7 +1291,7 @@ async function loadMediaIntoFrame(frame, mediaElement, media, category, prefersR
           if (isDebugEnabled()) {
             console.warn(`[Collage Widget] Video load timeout for ${category}`);
           }
-          restoreDefaultImage(mediaElement);
+          restoreDefaultImage(mediaElement, frame, uploadGallery, frameIndex);
           frame.classList.remove('loading-pexels');
           resolve();
         }
@@ -1282,7 +1341,7 @@ async function loadMediaIntoFrame(frame, mediaElement, media, category, prefersR
         if (isDebugEnabled()) {
           console.warn(`[Collage Widget] Failed to load image: ${media.url}`);
         }
-        restoreDefaultImage(mediaElement);
+        restoreDefaultImage(mediaElement, frame, uploadGallery, frameIndex);
         frame.classList.remove('loading-pexels');
         resolve();
       };
