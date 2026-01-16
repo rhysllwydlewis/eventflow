@@ -112,6 +112,18 @@ router.get('/homepage-settings', async (req, res) => {
       fallbackToPexels: collageWidget.fallbackToPexels !== undefined ? collageWidget.fallbackToPexels : true,
     };
 
+    // Debug logging
+    if (process.env.NODE_ENV === 'development' || process.env.DEBUG_COLLAGE === 'true') {
+      console.log('[Homepage Settings] Returning collage config:', {
+        collageEnabled,
+        collageWidgetEnabled: collageWidget.enabled,
+        legacyPexelsEnabled,
+        source: collageWidgetResponse.source,
+        hasQueries: !!collageWidgetResponse.pexelsQueries,
+        uploadGalleryCount: collageWidgetResponse.uploadGallery.length,
+      });
+    }
+
     // Return response with both new and legacy formats for backward compatibility
     res.json({
       // New format

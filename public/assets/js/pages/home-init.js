@@ -431,7 +431,11 @@ async function loadHeroCollageImages() {
         } else {
           // Legacy Pexels format
           if (window.DEBUG || isDevelopmentEnvironment()) {
-            console.log('[Collage Debug] Using legacy Pexels format');
+            console.log('[Collage Debug] Using legacy Pexels format', {
+              hasSettings: !!settings.pexelsCollageSettings,
+              queries: settings.pexelsCollageSettings?.queries,
+              intervalSeconds: settings.pexelsCollageSettings?.intervalSeconds,
+            });
           }
           await initPexelsCollage(settings.pexelsCollageSettings);
         }

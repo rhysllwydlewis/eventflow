@@ -5239,6 +5239,17 @@ router.get('/public/pexels-collage', async (req, res) => {
     const isEnabled = collageWidget.enabled === true || settings.features?.pexelsCollage === true;
     const source = collageWidget.source || 'pexels';
 
+    // Debug logging to help diagnose configuration issues
+    if (process.env.NODE_ENV === 'development' || process.env.DEBUG_COLLAGE === 'true') {
+      console.log('[Pexels Collage Endpoint] Configuration check:', {
+        isEnabled,
+        collageWidgetEnabled: collageWidget.enabled,
+        legacyPexelsEnabled: settings.features?.pexelsCollage,
+        source,
+        category: req.query.category,
+      });
+    }
+
     if (!isEnabled) {
       return res.status(404).json({
         error: 'Pexels collage feature is not enabled',
