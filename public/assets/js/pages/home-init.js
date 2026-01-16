@@ -657,8 +657,17 @@ async function initPexelsCollage(settings) {
       if (!imgElement.dataset.originalSrc && imgElement.src) {
         imgElement.dataset.originalSrc = imgElement.src;
       }
+      // Disable transition temporarily for instant hide
+      const originalTransition = imgElement.style.transition;
+      imgElement.style.transition = 'none';
       // Clear the image to prevent default from showing under loading state
       imgElement.style.opacity = '0';
+      // Force reflow to ensure transition is disabled before opacity change
+      void imgElement.offsetHeight;
+      // Restore transition after a brief delay
+      setTimeout(() => {
+        imgElement.style.transition = originalTransition;
+      }, 50);
     }
   });
 
@@ -753,17 +762,48 @@ async function initPexelsCollage(settings) {
           const imgElement = frame.querySelector('img');
 
           if (imgElement && imageCache[category][0]) {
-            imgElement.src = imageCache[category][0].url;
-            imgElement.alt = `${category.charAt(0).toUpperCase() + category.slice(1)} - Photo by ${imageCache[category][0].photographer}`;
+            // Preload the first image before displaying it to prevent default image flash
+            const firstImage = new Image();
+            firstImage.src = imageCache[category][0].url;
 
-            // Restore opacity once Pexels image is set
-            imgElement.style.opacity = '1';
+            // Set timeout for preload to prevent hanging
+            const preloadTimeout = setTimeout(() => {
+              // If preload takes too long, show the image anyway
+              if (isDevelopmentEnvironment()) {
+                console.warn(`⚠️  Initial image preload timeout for ${category}, displaying anyway`);
+              }
+              imgElement.src = imageCache[category][0].url;
+              imgElement.alt = `${category.charAt(0).toUpperCase() + category.slice(1)} - Photo by ${imageCache[category][0].photographer}`;
+              imgElement.style.opacity = '1';
+              frame.classList.remove('loading-pexels');
+              addPhotographerCredit(frame, imageCache[category][0]);
+            }, PEXELS_PRELOAD_TIMEOUT_MS);
 
-            // Remove loading state
-            frame.classList.remove('loading-pexels');
+            firstImage.onload = () => {
+              clearTimeout(preloadTimeout);
+              // Image is preloaded, now set it and make visible
+              imgElement.src = imageCache[category][0].url;
+              imgElement.alt = `${category.charAt(0).toUpperCase() + category.slice(1)} - Photo by ${imageCache[category][0].photographer}`;
 
-            // Add photographer attribution
-            addPhotographerCredit(frame, imageCache[category][0]);
+              // Restore opacity once Pexels image is fully loaded
+              imgElement.style.opacity = '1';
+
+              // Remove loading state
+              frame.classList.remove('loading-pexels');
+
+              // Add photographer attribution
+              addPhotographerCredit(frame, imageCache[category][0]);
+            };
+
+            firstImage.onerror = () => {
+              clearTimeout(preloadTimeout);
+              // Failed to load Pexels image, restore default
+              if (isDevelopmentEnvironment()) {
+                console.warn(`⚠️  Failed to load initial image for ${category}: ${imageCache[category][0].url}`);
+              }
+              restoreDefaultImage(imgElement);
+              frame.classList.remove('loading-pexels');
+            };
           }
         }
       } catch (error) {
