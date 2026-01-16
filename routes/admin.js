@@ -19,6 +19,14 @@ const dbUnified = require('../db-unified');
 
 const router = express.Router();
 
+/**
+ * Check if collage debug logging is enabled
+ * @returns {boolean} True if debug logging should be enabled
+ */
+function isCollageDebugEnabled() {
+  return isCollageDebugEnabled();
+}
+
 // Initialize Stripe if available
 let stripe = null;
 let STRIPE_ENABLED = false;
@@ -5240,7 +5248,7 @@ router.get('/public/pexels-collage', async (req, res) => {
     const source = collageWidget.source || 'pexels';
 
     // Debug logging to help diagnose configuration issues
-    if (process.env.NODE_ENV === 'development' || process.env.DEBUG_COLLAGE === 'true') {
+    if (isCollageDebugEnabled()) {
       console.log('[Pexels Collage Endpoint] Configuration check:', {
         isEnabled,
         collageWidgetEnabled: collageWidget.enabled,

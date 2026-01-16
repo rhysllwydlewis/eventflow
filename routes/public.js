@@ -10,6 +10,14 @@ const express = require('express');
 const router = express.Router();
 const dbUnified = require('../db-unified');
 
+/**
+ * Check if collage debug logging is enabled
+ * @returns {boolean} True if debug logging should be enabled
+ */
+function isCollageDebugEnabled() {
+  return isCollageDebugEnabled();
+}
+
 // Whitelist of allowed Pexels collage setting keys
 const ALLOWED_PEXELS_KEYS = ['intervalSeconds', 'queries', 'perPage', 'orientation', 'tags'];
 
@@ -113,7 +121,7 @@ router.get('/homepage-settings', async (req, res) => {
     };
 
     // Debug logging
-    if (process.env.NODE_ENV === 'development' || process.env.DEBUG_COLLAGE === 'true') {
+    if (isCollageDebugEnabled()) {
       console.log('[Homepage Settings] Returning collage config:', {
         collageEnabled,
         collageWidgetEnabled: collageWidget.enabled,

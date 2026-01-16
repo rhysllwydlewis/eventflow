@@ -6,6 +6,15 @@
 // Set page identifier
 window.__EF_PAGE__ = 'home';
 
+/**
+ * Check if debug logging is enabled
+ * Checks both explicit window.DEBUG flag and development environment
+ * @returns {boolean} True if debug logging should be enabled
+ */
+function isDebugEnabled() {
+  return window.DEBUG || isDevelopmentEnvironment();
+}
+
 // Initialize homepage components on DOM ready
 document.addEventListener('DOMContentLoaded', () => {
   // Initialize category grid
@@ -400,7 +409,7 @@ async function loadHeroCollageImages() {
       const legacyEnabled = settings.pexelsCollageEnabled === true;
 
       // Debug logging to help diagnose issues
-      if (window.DEBUG || isDevelopmentEnvironment()) {
+      if (isDebugEnabled()) {
         console.log('[Collage Debug] Settings received:', {
           collageWidgetEnabled: collageWidget?.enabled,
           legacyEnabled: legacyEnabled,
@@ -416,7 +425,7 @@ async function loadHeroCollageImages() {
         typeof settings === 'object' &&
         (collageWidget?.enabled === true || legacyEnabled)
       ) {
-        if (window.DEBUG || isDevelopmentEnvironment()) {
+        if (isDebugEnabled()) {
           console.log('[Collage Debug] Collage widget enabled, initializing dynamic collage');
         }
         window.__collageWidgetInitialized = true;
@@ -424,13 +433,13 @@ async function loadHeroCollageImages() {
         // Initialize collage with new widget format or legacy format
         // Use collageWidget if it's explicitly enabled, otherwise use legacy
         if (collageWidget?.enabled === true) {
-          if (window.DEBUG || isDevelopmentEnvironment()) {
+          if (isDebugEnabled()) {
             console.log('[Collage Debug] Using new collageWidget format');
           }
           await initCollageWidget(collageWidget);
         } else {
           // Legacy Pexels format
-          if (window.DEBUG || isDevelopmentEnvironment()) {
+          if (isDebugEnabled()) {
             console.log('[Collage Debug] Using legacy Pexels format', {
               hasSettings: !!settings.pexelsCollageSettings,
               queries: settings.pexelsCollageSettings?.queries,
@@ -960,7 +969,7 @@ async function initCollageWidget(widgetConfig) {
   const intervalMs = (intervalSeconds || 2.5) * 1000;
 
   // Debug logging
-  if (isDevelopmentEnvironment() || window.DEBUG) {
+  if (isDebugEnabled()) {
     console.log('[Collage Widget] Initializing with config:', {
       source,
       hasMediaTypes: !!mediaTypes,
@@ -1041,7 +1050,7 @@ async function initCollageWidget(widgetConfig) {
           );
 
           if (!response.ok) {
-            if (isDevelopmentEnvironment() || window.DEBUG) {
+            if (isDebugEnabled()) {
               console.warn(`[Collage Widget] Failed to fetch Pexels media for ${category}: ${response.status}`);
             }
             restoreFrameDefault(collageFrames, categoryMapping, category);
@@ -1050,7 +1059,7 @@ async function initCollageWidget(widgetConfig) {
 
           const data = await response.json();
 
-          if (isDevelopmentEnvironment() || window.DEBUG) {
+          if (isDebugEnabled()) {
             console.log(`[Collage Widget] Fetched ${data.photos?.length || 0} photos for ${category} (source: ${data.source || 'unknown'})`);
           }
 
@@ -1065,7 +1074,7 @@ async function initCollageWidget(widgetConfig) {
               }));
 
             if (mediaCache[category].length === 0) {
-              if (isDevelopmentEnvironment() || window.DEBUG) {
+              if (isDebugEnabled()) {
                 console.warn(`[Collage Widget] No valid photos after filtering for ${category}`);
               }
               restoreFrameDefault(collageFrames, categoryMapping, category);
@@ -1074,12 +1083,12 @@ async function initCollageWidget(widgetConfig) {
 
             currentMediaIndex[category] = 0;
             
-            if (isDevelopmentEnvironment() || window.DEBUG) {
+            if (isDebugEnabled()) {
               console.log(`[Collage Widget] Cached ${mediaCache[category].length} valid photos for ${category}`);
             }
           }
         } catch (error) {
-          if (isDevelopmentEnvironment() || window.DEBUG) {
+          if (isDebugEnabled()) {
             console.error(`[Collage Widget] Error fetching Pexels media for ${category}:`, error);
           }
           restoreFrameDefault(collageFrames, categoryMapping, category);
