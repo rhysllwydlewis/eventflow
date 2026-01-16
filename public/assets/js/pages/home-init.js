@@ -729,6 +729,16 @@ async function initPexelsCollage(settings) {
               );
             }
           }
+          // Restore default for this category since fetch failed
+          const frameIndex = categoryMapping[category];
+          const frame = collageFrames[frameIndex];
+          if (frame) {
+            const imgElement = frame.querySelector('img');
+            if (imgElement) {
+              restoreDefaultImage(imgElement);
+              frame.classList.remove('loading-pexels');
+            }
+          }
           continue;
         }
 
@@ -738,6 +748,16 @@ async function initPexelsCollage(settings) {
         if (!data || typeof data !== 'object') {
           if (isDevelopmentEnvironment()) {
             console.warn(`⚠️  Invalid response structure for ${category}`);
+          }
+          // Restore default for this category since response is invalid
+          const frameIndex = categoryMapping[category];
+          const frame = collageFrames[frameIndex];
+          if (frame) {
+            const imgElement = frame.querySelector('img');
+            if (imgElement) {
+              restoreDefaultImage(imgElement);
+              frame.classList.remove('loading-pexels');
+            }
           }
           continue;
         }
@@ -769,6 +789,16 @@ async function initPexelsCollage(settings) {
           if (imageCache[category].length === 0) {
             if (isDevelopmentEnvironment()) {
               console.warn(`⚠️  No valid photos after filtering for ${category}`);
+            }
+            // Restore default for this category since no valid photos
+            const frameIndex = categoryMapping[category];
+            const frame = collageFrames[frameIndex];
+            if (frame) {
+              const imgElement = frame.querySelector('img');
+              if (imgElement) {
+                restoreDefaultImage(imgElement);
+                frame.classList.remove('loading-pexels');
+              }
             }
             continue;
           }
@@ -817,20 +847,23 @@ async function initPexelsCollage(settings) {
         if (isDevelopmentEnvironment()) {
           console.error(`❌ Error fetching Pexels images for ${category}:`, error);
         }
+        // Restore default for this category since an error occurred
+        const frameIndex = categoryMapping[category];
+        const frame = collageFrames[frameIndex];
+        if (frame) {
+          const imgElement = frame.querySelector('img');
+          if (imgElement) {
+            restoreDefaultImage(imgElement);
+            frame.classList.remove('loading-pexels');
+          }
+        }
       }
     }
 
-    // Remove loading states from all frames
-    collageFrames.forEach(frame => {
-      frame.classList.remove('loading-pexels');
-      // Restore opacity for frames that didn't get Pexels images
-      const imgElement = frame.querySelector('img');
-      if (imgElement && (!imgElement.style.opacity || parseFloat(imgElement.style.opacity) === 0)) {
-        // Restore default image if Pexels didn't load
-        restoreDefaultImage(imgElement);
-      }
-    });
-
+    // Note: We don't do a cleanup loop here because the preload operations above are async.
+    // Each frame's loading state and opacity will be handled by its respective
+    // onload/onerror/timeout handlers in the preload logic above.
+    
     // Start cycling images
     if (Object.keys(imageCache).length > 0) {
       // Clear any existing interval to prevent memory leaks
