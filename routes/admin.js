@@ -19,6 +19,14 @@ const dbUnified = require('../db-unified');
 
 const router = express.Router();
 
+/**
+ * Check if collage debug logging is enabled
+ * @returns {boolean} True if debug logging should be enabled
+ */
+function isCollageDebugEnabled() {
+  return process.env.NODE_ENV === 'development' || process.env.DEBUG_COLLAGE === 'true';
+}
+
 // Initialize Stripe if available
 let stripe = null;
 let STRIPE_ENABLED = false;
@@ -5238,6 +5246,17 @@ router.get('/public/pexels-collage', async (req, res) => {
     // Check both new collageWidget format and legacy pexelsCollage feature flag for backward compatibility
     const isEnabled = collageWidget.enabled === true || settings.features?.pexelsCollage === true;
     const source = collageWidget.source || 'pexels';
+
+    // Debug logging to help diagnose configuration issues
+    if (isCollageDebugEnabled()) {
+      console.log('[Pexels Collage Endpoint] Configuration check:', {
+        isEnabled,
+        collageWidgetEnabled: collageWidget.enabled,
+        legacyPexelsEnabled: settings.features?.pexelsCollage,
+        source,
+        category: req.query.category,
+      });
+    }
 
     if (!isEnabled) {
       return res.status(404).json({

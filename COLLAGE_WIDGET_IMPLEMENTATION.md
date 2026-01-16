@@ -5,17 +5,105 @@ This document describes the implementation of the configurable collage widget fo
 
 ## Status: Production Ready ✅
 
-**Version:** 1.0  
+**Version:** 1.1  
 **Last Updated:** 2026-01-16  
-**Total Commits:** 9
+**Total Commits:** 12
 
-### Recent Updates (v1.0)
+### Recent Updates (v1.1)
+- ✅ Added comprehensive debug logging for easier troubleshooting
+- ✅ Added UI deprecation notices for legacy Pexels toggle
+- ✅ Improved error visibility and diagnostics
+- ✅ Clarified relationship between new widget and legacy flag
+- ✅ Fixed condition check for strict equality
+- ✅ Added backend debug logging with environment variable control
+
+### Previous Updates (v1.0)
 - ✅ Fixed critical uploadGallery saving bug
 - ✅ Resolved memory leaks from video elements
 - ✅ Improved URL comparison for cache-busted media
 - ✅ Enhanced error messages and user feedback
 - ✅ Added comprehensive input validation
 - ✅ Polished UI with better help text and animations
+
+## Configuration Systems
+
+### ⚠️ Important: Two Configuration Methods
+
+EventFlow supports **two ways** to configure the homepage collage, for backward compatibility:
+
+#### 1. **Collage Widget** (Recommended - New System)
+- **Location**: `/admin-homepage.html` → "Collage Widget" section
+- **Storage**: `settings.collageWidget` object in database
+- **Features**: Full control over source (Pexels/uploads), media types, intervals, queries, upload gallery
+- **Recommended for**: All new configurations and advanced features
+
+#### 2. **Legacy Pexels Collage Flag** (Backward Compatibility)
+- **Location**: `/admin-settings.html` → "Feature Flags" → "Pexels Dynamic Collage"
+- **Storage**: `features.pexelsCollage` boolean in database
+- **Features**: Simple on/off toggle for Pexels collage with default settings
+- **Recommended for**: Existing installations that haven't migrated to new widget
+
+### Configuration Priority
+
+The system handles both configurations gracefully:
+
+1. **If `collageWidget.enabled` is explicitly set** (true or false):
+   - Uses `collageWidget` configuration
+   - Legacy flag is **ignored**
+
+2. **If `collageWidget.enabled` is undefined** (not configured):
+   - Falls back to legacy `features.pexelsCollage` flag
+   - Uses default Pexels settings from `pexelsCollageSettings`
+
+3. **If both are disabled or not configured**:
+   - Shows static hero images
+
+### Migration Path
+
+To migrate from legacy to new system:
+
+1. Note your current settings in `/admin-settings.html` (if Pexels collage is enabled)
+2. Go to `/admin-homepage.html`
+3. Enable "Collage Widget"
+4. Configure source as "Pexels API"
+5. Customize queries if needed
+6. Save configuration
+7. (Optional) Disable legacy flag in `/admin-settings.html`
+
+## Debugging & Troubleshooting
+
+### Enable Debug Logging
+
+#### Frontend (Browser Console)
+Add `?debug=1` to homepage URL or set:
+```javascript
+window.DEBUG = true;
+```
+
+#### Backend (Server Logs)
+Set environment variable:
+```bash
+DEBUG_COLLAGE=true node server.js
+# Or in .env file:
+DEBUG_COLLAGE=true
+```
+
+### Debug Output Examples
+
+**Frontend Console:**
+```
+[Collage Debug] Settings received: {collageWidgetEnabled: true, legacyEnabled: false, source: "pexels", ...}
+[Collage Debug] Using new collageWidget format
+[Collage Widget] Initializing with config: {source: "pexels", intervalSeconds: 2.5, ...}
+[Collage Widget] Fetched 8 photos for venues (source: search)
+[Collage Widget] Cached 8 valid photos for venues
+```
+
+**Backend Logs:**
+```
+[Homepage Settings] Returning collage config: {collageEnabled: true, source: "pexels", ...}
+[Pexels Collage Endpoint] Configuration check: {isEnabled: true, source: "pexels", category: "venues"}
+```
 
 ## Features
 
@@ -391,6 +479,75 @@ Example: `collage-1705410000000-123456789.jpg`
 2. Check JavaScript console for errors
 3. Ensure multiple media items exist
 4. Test with different interval values
+
+### Widget Shows Static Images When Enabled
+
+**Symptom**: Collage widget is enabled but homepage still shows static/default images
+
+**Common Causes & Solutions**:
+
+1. **Legacy flag conflicts**
+   - Check if legacy "Pexels Dynamic Collage" in `/admin-settings.html` is disabled
+   - If using new widget, legacy flag should match or be off
+   - See "Configuration Systems" section above for priority rules
+
+2. **Source misconfiguration**
+   - If source is "uploads" but `uploadGallery` is empty, widget falls back
+   - If source is "pexels" but API key not configured, uses fallback photos
+   - Check source setting matches your intended configuration
+
+3. **Silent API failures**
+   - Enable debug logging: `DEBUG_COLLAGE=true` on server
+   - Check browser console for error messages
+   - Look for 404 "feature_disabled" or 400 "invalid_source" errors
+
+4. **Configuration not saved**
+   - Ensure "Save Configuration" button was clicked in admin panel
+   - Check browser console for save errors
+   - Verify database has updated `settings.collageWidget` object
+
+5. **Cache issues**
+   - Clear browser cache and reload homepage
+   - Check that `/api/public/homepage-settings` returns correct config
+   - Verify `collageWidget.enabled: true` in API response
+
+**Debug Steps**:
+```bash
+# 1. Check backend logs with debug enabled
+DEBUG_COLLAGE=true node server.js
+
+# 2. Check frontend in browser console
+# Navigate to homepage with: http://localhost:3000/?debug=1
+
+# 3. Check API response directly
+curl http://localhost:3000/api/public/homepage-settings
+
+# 4. Check Pexels endpoint
+curl http://localhost:3000/api/admin/public/pexels-collage?category=venues
+```
+
+## Bug Fixes & Improvements (v1.1)
+
+### Enhancements
+
+**1. Debug Logging System**
+- **Feature**: Comprehensive logging for frontend and backend
+- **Controls**: `window.DEBUG`, `isDevelopmentEnvironment()`, `DEBUG_COLLAGE` env var
+- **Coverage**: Settings fetch, initialization, Pexels fetches, media caching
+- **Benefit**: Easier troubleshooting of configuration and API issues
+- **Commit**: f473bf8, e05ea32
+
+**2. UI Deprecation Notices**
+- **Feature**: Clear guidance about dual configuration systems
+- **Locations**: admin-settings.html (legacy toggle), admin-homepage.html (info banner)
+- **Benefit**: Reduces confusion, guides users to new system
+- **Commit**: f473bf8
+
+**3. Strict Equality Check**
+- **Issue**: Condition used truthy check instead of strict equality
+- **Fix**: Changed `if (collageWidget?.enabled)` to `if (collageWidget?.enabled === true)`
+- **Benefit**: Consistent behavior with initial validation
+- **Commit**: f473bf8
 
 ## Bug Fixes & Improvements (v1.0)
 

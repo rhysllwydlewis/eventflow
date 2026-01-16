@@ -6,6 +6,15 @@
 // Set page identifier
 window.__EF_PAGE__ = 'home';
 
+/**
+ * Check if debug logging is enabled
+ * Checks both explicit window.DEBUG flag and development environment
+ * @returns {boolean} True if debug logging should be enabled
+ */
+function isDebugEnabled() {
+  return window.DEBUG || isDevelopmentEnvironment();
+}
+
 // Initialize homepage components on DOM ready
 document.addEventListener('DOMContentLoaded', () => {
   // Initialize category grid
@@ -399,22 +408,50 @@ async function loadHeroCollageImages() {
       const collageWidget = settings.collageWidget;
       const legacyEnabled = settings.pexelsCollageEnabled === true;
 
-      // Validate JSON structure - check both new and legacy formats
+      // Debug logging to help diagnose issues
+      if (isDebugEnabled()) {
+        console.log('[Collage Debug] Settings received:', {
+          collageWidgetEnabled: collageWidget?.enabled,
+          legacyEnabled: legacyEnabled,
+          source: collageWidget?.source,
+          hasQueries: !!collageWidget?.pexelsQueries,
+          hasUploadGallery: !!collageWidget?.uploadGallery?.length,
+        });
+      }
+
+      // Determine if collage should be enabled (matches backend logic)
+      // If collageWidget.enabled is explicitly set, use it; otherwise use legacy flag
+      const collageEnabled = collageWidget?.enabled !== undefined
+        ? collageWidget.enabled
+        : legacyEnabled;
+
+      // Validate JSON structure - check if collage is enabled
       if (
         settings &&
         typeof settings === 'object' &&
-        (collageWidget?.enabled === true || legacyEnabled)
+        collageEnabled === true
       ) {
-        if (window.DEBUG) {
-          console.log('Collage widget enabled, initializing dynamic collage');
+        if (isDebugEnabled()) {
+          console.log('[Collage Debug] Collage widget enabled, initializing dynamic collage');
         }
         window.__collageWidgetInitialized = true;
 
         // Initialize collage with new widget format or legacy format
-        if (collageWidget?.enabled) {
+        // Use collageWidget if it's explicitly enabled, otherwise use legacy
+        if (collageWidget?.enabled === true) {
+          if (isDebugEnabled()) {
+            console.log('[Collage Debug] Using new collageWidget format');
+          }
           await initCollageWidget(collageWidget);
         } else {
           // Legacy Pexels format
+          if (isDebugEnabled()) {
+            console.log('[Collage Debug] Using legacy Pexels format', {
+              hasSettings: !!settings.pexelsCollageSettings,
+              queries: settings.pexelsCollageSettings?.queries,
+              intervalSeconds: settings.pexelsCollageSettings?.intervalSeconds,
+            });
+          }
           await initPexelsCollage(settings.pexelsCollageSettings);
         }
         return; // Skip static image loading
@@ -937,6 +974,18 @@ async function initCollageWidget(widgetConfig) {
 
   const intervalMs = (intervalSeconds || 2.5) * 1000;
 
+  // Debug logging
+  if (isDebugEnabled()) {
+    console.log('[Collage Widget] Initializing with config:', {
+      source,
+      hasMediaTypes: !!mediaTypes,
+      intervalSeconds,
+      hasQueries: !!pexelsQueries,
+      uploadGalleryCount: uploadGallery?.length || 0,
+      fallbackToPexels,
+    });
+  }
+
   // Map category keys to their collage frame elements
   const categoryMapping = {
     venues: 0,
@@ -993,8 +1042,8 @@ async function initCollageWidget(widgetConfig) {
     } else if (source === 'pexels' || (fallbackToPexels && source === 'uploads')) {
       // Use Pexels API (fallback or primary)
       if (source === 'uploads' && fallbackToPexels) {
-        if (isDevelopmentEnvironment()) {
-          console.log('Upload gallery empty, falling back to Pexels');
+        if (isDebugEnabled()) {
+          console.log('[Collage Widget] Upload gallery empty, falling back to Pexels');
         }
       }
 
@@ -1007,14 +1056,18 @@ async function initCollageWidget(widgetConfig) {
           );
 
           if (!response.ok) {
-            if (isDevelopmentEnvironment()) {
-              console.warn(`Failed to fetch Pexels media for ${category}`);
+            if (isDebugEnabled()) {
+              console.warn(`[Collage Widget] Failed to fetch Pexels media for ${category}: ${response.status}`);
             }
             restoreFrameDefault(collageFrames, categoryMapping, category);
             continue;
           }
 
           const data = await response.json();
+
+          if (isDebugEnabled()) {
+            console.log(`[Collage Widget] Fetched ${data.photos?.length || 0} photos for ${category} (source: ${data.source || 'unknown'})`);
+          }
 
           if (data.photos && Array.isArray(data.photos) && data.photos.length > 0) {
             mediaCache[category] = data.photos
@@ -1027,23 +1080,30 @@ async function initCollageWidget(widgetConfig) {
               }));
 
             if (mediaCache[category].length === 0) {
+              if (isDebugEnabled()) {
+                console.warn(`[Collage Widget] No valid photos after filtering for ${category}`);
+              }
               restoreFrameDefault(collageFrames, categoryMapping, category);
               continue;
             }
 
             currentMediaIndex[category] = 0;
+            
+            if (isDebugEnabled()) {
+              console.log(`[Collage Widget] Cached ${mediaCache[category].length} valid photos for ${category}`);
+            }
           }
         } catch (error) {
-          if (isDevelopmentEnvironment()) {
-            console.error(`Error fetching Pexels media for ${category}:`, error);
+          if (isDebugEnabled()) {
+            console.error(`[Collage Widget] Error fetching Pexels media for ${category}:`, error);
           }
           restoreFrameDefault(collageFrames, categoryMapping, category);
         }
       }
     } else {
       // No valid source, restore defaults
-      if (isDevelopmentEnvironment()) {
-        console.warn('No valid media source configured');
+      if (isDebugEnabled()) {
+        console.warn('[Collage Widget] No valid media source configured');
       }
       collageFrames.forEach(frame => {
         const imgElement = frame.querySelector('img');
@@ -1057,8 +1117,8 @@ async function initCollageWidget(widgetConfig) {
     // Initialize collage display
     const categories = Object.keys(mediaCache);
     if (categories.length === 0) {
-      if (isDevelopmentEnvironment()) {
-        console.warn('No media loaded, falling back to defaults');
+      if (isDebugEnabled()) {
+        console.warn('[Collage Widget] No media loaded, falling back to defaults');
       }
       collageFrames.forEach(frame => {
         const imgElement = frame.querySelector('img');
