@@ -854,8 +854,9 @@ async function initPexelsCollage(settings) {
           restoreDefaultImage(imgElement);
         }
       });
-      // Fall back to loading static hero images
-      await loadHeroCollageImages();
+      // Note: Default images are now showing. We don't recursively call
+      // loadHeroCollageImages() here to avoid the initialization guard issue.
+      // The defaults are sufficient fallback.
     }
   } catch (error) {
     // Remove loading states from all frames on error
@@ -872,8 +873,9 @@ async function initPexelsCollage(settings) {
     if (isDevelopmentEnvironment()) {
       console.error('Error initializing Pexels collage:', error);
     }
-    // Fall back to loading static hero images
-    await loadHeroCollageImages();
+    // Note: Default images are now showing. We don't recursively call
+    // loadHeroCollageImages() here to avoid the initialization guard issue.
+    // The defaults are sufficient fallback.
   }
 }
 
