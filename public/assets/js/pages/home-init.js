@@ -607,6 +607,23 @@ function validatePexelsUrl(url) {
   return 'https://www.pexels.com';
 }
 
+/**
+ * Restore default image for a collage frame
+ * Sets opacity to 1 and restores original src if available
+ * @param {HTMLImageElement} imgElement - Image element to restore
+ */
+function restoreDefaultImage(imgElement) {
+  if (!imgElement) {
+    return;
+  }
+  // Restore default image from stored original src
+  if (imgElement.dataset.originalSrc) {
+    imgElement.src = imgElement.dataset.originalSrc;
+  }
+  // Restore full opacity
+  imgElement.style.opacity = '1';
+}
+
 async function initPexelsCollage(settings) {
   // Use intervalSeconds from settings, fallback to old 'interval' property for backwards compatibility, default to 2.5 seconds
   const intervalSeconds = settings?.intervalSeconds ?? settings?.interval ?? 2.5;
@@ -636,8 +653,8 @@ async function initPexelsCollage(settings) {
     // Hide default images immediately when switching to Pexels mode
     const imgElement = frame.querySelector('img');
     if (imgElement) {
-      // Store original src for fallback
-      if (!imgElement.dataset.originalSrc) {
+      // Store original src for fallback (only if it has a valid src)
+      if (!imgElement.dataset.originalSrc && imgElement.src) {
         imgElement.dataset.originalSrc = imgElement.src;
       }
       // Clear the image to prevent default from showing under loading state
@@ -762,12 +779,9 @@ async function initPexelsCollage(settings) {
       frame.classList.remove('loading-pexels');
       // Restore opacity for frames that didn't get Pexels images
       const imgElement = frame.querySelector('img');
-      if (imgElement && imgElement.style.opacity === '0') {
+      if (imgElement && (!imgElement.style.opacity || parseFloat(imgElement.style.opacity) === 0)) {
         // Restore default image if Pexels didn't load
-        if (imgElement.dataset.originalSrc) {
-          imgElement.src = imgElement.dataset.originalSrc;
-        }
-        imgElement.style.opacity = '1';
+        restoreDefaultImage(imgElement);
       }
     });
 
@@ -797,10 +811,7 @@ async function initPexelsCollage(settings) {
       collageFrames.forEach(frame => {
         const imgElement = frame.querySelector('img');
         if (imgElement) {
-          if (imgElement.dataset.originalSrc) {
-            imgElement.src = imgElement.dataset.originalSrc;
-          }
-          imgElement.style.opacity = '1';
+          restoreDefaultImage(imgElement);
         }
       });
       // Fall back to loading static hero images
@@ -813,10 +824,7 @@ async function initPexelsCollage(settings) {
       // Restore default images on error
       const imgElement = frame.querySelector('img');
       if (imgElement) {
-        if (imgElement.dataset.originalSrc) {
-          imgElement.src = imgElement.dataset.originalSrc;
-        }
-        imgElement.style.opacity = '1';
+        restoreDefaultImage(imgElement);
       }
     });
 
