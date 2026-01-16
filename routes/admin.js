@@ -4508,6 +4508,305 @@ router.delete(
   }
 );
 
+// ============================================
+// COLLAGE WIDGET ENDPOINTS
+// ============================================
+
+/**
+ * Configure multer for local collage media storage
+ * Stores files in /public/uploads/homepage-collage/
+ */
+const collageUploadDir = path.join(__dirname, '../public/uploads/homepage-collage');
+
+// Ensure upload directory exists
+if (!fs.existsSync(collageUploadDir)) {
+  fs.mkdirSync(collageUploadDir, { recursive: true });
+}
+
+const collageUpload = multer({
+  storage: multer.diskStorage({
+    destination: function (req, file, cb) {
+      cb(null, collageUploadDir);
+    },
+    filename: function (req, file, cb) {
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+      const ext = path.extname(file.originalname);
+      cb(null, 'collage-' + uniqueSuffix + ext);
+    },
+  }),
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit for videos
+  },
+  fileFilter: function (req, file, cb) {
+    // Allow images and videos
+    const allowedTypes = /^(image|video)\//;
+    if (!allowedTypes.test(file.mimetype)) {
+      cb(new Error('Only image and video files are allowed'));
+      return;
+    }
+    cb(null, true);
+  },
+});
+
+/**
+ * GET /api/admin/homepage/collage-widget
+ * Get collage widget configuration
+ */
+router.get('/homepage/collage-widget', authRequired, roleRequired('admin'), async (req, res) => {
+  try {
+    const settings = (await dbUnified.read('settings')) || {};
+    const collageWidget = settings.collageWidget || {
+      enabled: false,
+      source: 'pexels',
+      mediaTypes: { photos: true, videos: false },
+      intervalSeconds: 2.5,
+      pexelsQueries: {
+        venues: 'wedding venue elegant ballroom',
+        catering: 'wedding catering food elegant',
+        entertainment: 'live band wedding party',
+        photography: 'wedding photography professional',
+      },
+      uploadGallery: [],
+      fallbackToPexels: true,
+    };
+    
+    res.json(collageWidget);
+  } catch (error) {
+    console.error('Error reading collage widget config:', error);
+    res.status(500).json({ error: 'Failed to read collage widget configuration' });
+  }
+});
+
+/**
+ * PUT /api/admin/homepage/collage-widget
+ * Update collage widget configuration
+ */
+router.put(
+  '/homepage/collage-widget',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    try {
+      const {
+        enabled,
+        source,
+        mediaTypes,
+        intervalSeconds,
+        pexelsQueries,
+        uploadGallery,
+        fallbackToPexels,
+      } = req.body;
+
+      // Validation
+      if (enabled !== undefined && typeof enabled !== 'boolean') {
+        return res.status(400).json({ error: 'enabled must be a boolean' });
+      }
+
+      if (source && !['pexels', 'uploads'].includes(source)) {
+        return res.status(400).json({ error: 'source must be "pexels" or "uploads"' });
+      }
+
+      if (intervalSeconds !== undefined) {
+        const interval = Number(intervalSeconds);
+        if (isNaN(interval) || interval < 1 || interval > 60) {
+          return res.status(400).json({ error: 'intervalSeconds must be between 1 and 60' });
+        }
+      }
+
+      // Mutual exclusivity check
+      if (source === 'uploads' && (!uploadGallery || uploadGallery.length === 0)) {
+        return res
+          .status(400)
+          .json({ error: 'Upload gallery cannot be empty when source is "uploads"' });
+      }
+
+      const settings = (await dbUnified.read('settings')) || {};
+      if (!settings.collageWidget) {
+        settings.collageWidget = {};
+      }
+
+      // Update only provided fields
+      if (enabled !== undefined) settings.collageWidget.enabled = enabled;
+      if (source) settings.collageWidget.source = source;
+      if (mediaTypes) settings.collageWidget.mediaTypes = mediaTypes;
+      if (intervalSeconds !== undefined) settings.collageWidget.intervalSeconds = intervalSeconds;
+      if (pexelsQueries) settings.collageWidget.pexelsQueries = pexelsQueries;
+      if (uploadGallery) settings.collageWidget.uploadGallery = uploadGallery;
+      if (fallbackToPexels !== undefined)
+        settings.collageWidget.fallbackToPexels = fallbackToPexels;
+
+      settings.collageWidget.updatedAt = new Date().toISOString();
+      settings.collageWidget.updatedBy = req.user.email;
+
+      await dbUnified.write('settings', settings);
+
+      auditLog({
+        adminId: req.user.id,
+        adminEmail: req.user.email,
+        action: 'COLLAGE_WIDGET_UPDATED',
+        targetType: 'homepage',
+        targetId: 'collage-widget',
+        details: { enabled, source, mediaTypes },
+      });
+
+      res.json({
+        success: true,
+        collageWidget: settings.collageWidget,
+      });
+    } catch (error) {
+      console.error('Error updating collage widget config:', error);
+      res.status(500).json({ error: 'Failed to update collage widget configuration' });
+    }
+  }
+);
+
+/**
+ * GET /api/admin/homepage/collage-media
+ * List all uploaded collage media files
+ */
+router.get('/homepage/collage-media', authRequired, roleRequired('admin'), async (req, res) => {
+  try {
+    if (!fs.existsSync(collageUploadDir)) {
+      return res.json({ media: [] });
+    }
+
+    const files = fs.readdirSync(collageUploadDir);
+    const media = files
+      .filter(file => {
+        const ext = path.extname(file).toLowerCase();
+        return ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.mp4', '.webm', '.mov'].includes(ext);
+      })
+      .map(file => {
+        const filePath = path.join(collageUploadDir, file);
+        const stats = fs.statSync(filePath);
+        const ext = path.extname(file).toLowerCase();
+        const isVideo = ['.mp4', '.webm', '.mov'].includes(ext);
+
+        return {
+          filename: file,
+          url: `/uploads/homepage-collage/${file}`,
+          type: isVideo ? 'video' : 'photo',
+          size: stats.size,
+          uploadedAt: stats.birthtime.toISOString(),
+        };
+      })
+      .sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
+
+    res.json({ media });
+  } catch (error) {
+    console.error('Error listing collage media:', error);
+    res.status(500).json({ error: 'Failed to list collage media' });
+  }
+});
+
+/**
+ * POST /api/admin/homepage/collage-media
+ * Upload new collage media (photo or video)
+ */
+router.post(
+  '/homepage/collage-media',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  collageUpload.array('media', 10), // Allow up to 10 files at once
+  async (req, res) => {
+    try {
+      if (!req.files || req.files.length === 0) {
+        return res.status(400).json({ error: 'No media files provided' });
+      }
+
+      const uploadedMedia = req.files.map(file => {
+        const ext = path.extname(file.filename).toLowerCase();
+        const isVideo = ['.mp4', '.webm', '.mov'].includes(ext);
+
+        return {
+          filename: file.filename,
+          url: `/uploads/homepage-collage/${file.filename}`,
+          type: isVideo ? 'video' : 'photo',
+          size: file.size,
+          uploadedAt: new Date().toISOString(),
+        };
+      });
+
+      auditLog({
+        adminId: req.user.id,
+        adminEmail: req.user.email,
+        action: 'COLLAGE_MEDIA_UPLOADED',
+        targetType: 'homepage',
+        targetId: 'collage-media',
+        details: { count: uploadedMedia.length, files: uploadedMedia.map(m => m.filename) },
+      });
+
+      res.json({
+        success: true,
+        media: uploadedMedia,
+      });
+    } catch (error) {
+      console.error('Error uploading collage media:', error);
+      res.status(500).json({ error: 'Failed to upload collage media' });
+    }
+  }
+);
+
+/**
+ * DELETE /api/admin/homepage/collage-media/:filename
+ * Delete a collage media file
+ */
+router.delete(
+  '/homepage/collage-media/:filename',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    try {
+      const { filename } = req.params;
+
+      // Security: prevent directory traversal
+      if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+        return res.status(400).json({ error: 'Invalid filename' });
+      }
+
+      const filePath = path.join(collageUploadDir, filename);
+
+      if (!fs.existsSync(filePath)) {
+        return res.status(404).json({ error: 'File not found' });
+      }
+
+      fs.unlinkSync(filePath);
+
+      // Update settings to remove from uploadGallery if present
+      const settings = (await dbUnified.read('settings')) || {};
+      if (settings.collageWidget && settings.collageWidget.uploadGallery) {
+        const fileUrl = `/uploads/homepage-collage/${filename}`;
+        settings.collageWidget.uploadGallery = settings.collageWidget.uploadGallery.filter(
+          url => url !== fileUrl
+        );
+        settings.collageWidget.updatedAt = new Date().toISOString();
+        settings.collageWidget.updatedBy = req.user.email;
+        await dbUnified.write('settings', settings);
+      }
+
+      auditLog({
+        adminId: req.user.id,
+        adminEmail: req.user.email,
+        action: 'COLLAGE_MEDIA_DELETED',
+        targetType: 'homepage',
+        targetId: 'collage-media',
+        details: { filename },
+      });
+
+      res.json({
+        success: true,
+        message: 'Media file deleted successfully',
+      });
+    } catch (error) {
+      console.error('Error deleting collage media:', error);
+      res.status(500).json({ error: 'Failed to delete collage media' });
+    }
+  }
+);
+
 /**
  * POST /api/admin/users/:id/subscription
  * Grant or update subscription for a user

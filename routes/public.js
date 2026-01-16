@@ -74,7 +74,7 @@ function sanitizePexelsSettings(settings) {
 /**
  * GET /api/public/homepage-settings
  * Get homepage settings for public display (no auth required)
- * Returns Pexels collage feature status and configuration
+ * Returns collage widget configuration (backward compatible with Pexels collage)
  *
  * Cache Policy: no-store (for immediate flag effect)
  * - Ensures feature flag changes take effect immediately
@@ -88,12 +88,37 @@ router.get('/homepage-settings', async (req, res) => {
     const settings = (await dbUnified.read('settings')) || {};
     const features = settings.features || {};
 
-    // Sanitize and validate Pexels settings
+    // Backward compatibility: Check both new collageWidget and old pexelsCollage feature flag
+    const collageWidget = settings.collageWidget || {};
+    const legacyPexelsEnabled = features.pexelsCollage === true;
+
+    // If collageWidget is configured, use it
+    // Otherwise fall back to legacy pexelsCollage behavior
+    const collageEnabled = collageWidget.enabled !== undefined 
+      ? collageWidget.enabled 
+      : legacyPexelsEnabled;
+
+    // Sanitize and validate Pexels settings for backward compatibility
     const pexelsCollageSettings = sanitizePexelsSettings(settings.pexelsCollageSettings);
 
-    // Return minimal response - only safe, validated data
+    // Build response with new collageWidget structure
+    const collageWidgetResponse = {
+      enabled: collageEnabled,
+      source: collageWidget.source || 'pexels',
+      mediaTypes: collageWidget.mediaTypes || { photos: true, videos: false },
+      intervalSeconds: collageWidget.intervalSeconds || pexelsCollageSettings.intervalSeconds,
+      pexelsQueries: collageWidget.pexelsQueries || pexelsCollageSettings.queries,
+      uploadGallery: collageWidget.uploadGallery || [],
+      fallbackToPexels: collageWidget.fallbackToPexels !== undefined ? collageWidget.fallbackToPexels : true,
+    };
+
+    // Return response with both new and legacy formats for backward compatibility
     res.json({
-      pexelsCollageEnabled: features.pexelsCollage === true,
+      // New format
+      collageWidget: collageWidgetResponse,
+      
+      // Legacy format (for backward compatibility)
+      pexelsCollageEnabled: legacyPexelsEnabled,
       pexelsCollageSettings,
     });
   } catch (error) {
