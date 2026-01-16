@@ -153,7 +153,7 @@
       // Build uploadGallery from current media
       const uploadGallery = collageMedia.map(m => m.url);
 
-      // Debug logging
+      // Debug logging (admin-only, always enabled for troubleshooting)
       console.log('[Admin] Saving collage widget configuration:', {
         enabled,
         source,
@@ -196,11 +196,13 @@
 
       if (response.ok) {
         const result = await response.json();
+        // Admin-only success log for troubleshooting
         console.log('[Admin] Configuration saved successfully:', result.collageWidget);
         showCollageWidgetSuccess('Configuration saved successfully!');
         await loadCollageWidget(); // Reload to get updated data
       } else {
         const error = await response.json();
+        // Always log errors for admin troubleshooting
         console.error('[Admin] Failed to save configuration:', error);
         showCollageWidgetError(error.error || 'Failed to save configuration');
       }

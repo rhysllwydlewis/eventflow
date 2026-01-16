@@ -1293,10 +1293,9 @@ function addCacheBuster(url) {
     return url;
   }
   
-  // Don't add cache buster if URL already has query parameters
-  // (to avoid breaking URLs with existing parameters)
+  // Use 'cb' (cache bust) parameter to avoid conflicts with existing 't' parameters
   const separator = url.includes('?') ? '&' : '?';
-  return `${url}${separator}t=${Date.now()}`;
+  return `${url}${separator}cb=${Date.now()}`;
 }
 
 /**
