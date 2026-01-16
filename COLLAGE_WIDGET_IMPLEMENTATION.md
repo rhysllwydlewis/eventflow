@@ -3,6 +3,20 @@
 ## Overview
 This document describes the implementation of the configurable collage widget for the EventFlow homepage. The widget allows administrators to display dynamic photo/video collages using either Pexels API or uploaded media.
 
+## Status: Production Ready ✅
+
+**Version:** 1.0  
+**Last Updated:** 2026-01-16  
+**Total Commits:** 9
+
+### Recent Updates (v1.0)
+- ✅ Fixed critical uploadGallery saving bug
+- ✅ Resolved memory leaks from video elements
+- ✅ Improved URL comparison for cache-busted media
+- ✅ Enhanced error messages and user feedback
+- ✅ Added comprehensive input validation
+- ✅ Polished UI with better help text and animations
+
 ## Features
 
 ### Core Functionality
@@ -18,13 +32,16 @@ This document describes the implementation of the configurable collage widget fo
 - **Proper Video Attributes**: Muted, playsinline for mobile compatibility
 - **Lazy Loading**: Progressive enhancement with timeout controls
 - **ARIA Labels**: Proper accessibility markup
+- **Status Indicators**: Clear visual feedback for widget state
 
-### Security
+### Security & Quality
 - **CSRF Protection**: All admin endpoints protected
-- **File Type Validation**: Only images and videos allowed
+- **File Type Validation**: Client and server-side validation
 - **Path Sanitization**: Prevention of directory traversal attacks
-- **Size Limits**: 10MB per file for videos, 5MB for images
+- **Size Limits**: 10MB per file with specific error messages
 - **Audit Logging**: All admin actions logged
+- **Memory Management**: Proper video cleanup prevents leaks
+- **Error Handling**: Graceful degradation at all levels
 
 ## API Endpoints
 
@@ -374,6 +391,69 @@ Example: `collage-1705410000000-123456789.jpg`
 2. Check JavaScript console for errors
 3. Ensure multiple media items exist
 4. Test with different interval values
+
+## Bug Fixes & Improvements (v1.0)
+
+### Critical Bugs Fixed
+
+**1. Missing uploadGallery in Save Configuration**
+- **Issue**: Upload gallery array wasn't included in save requests
+- **Impact**: Uploads source mode completely broken
+- **Fix**: Added uploadGallery to configuration save body
+- **Commit**: e108fa2
+
+**2. Memory Leaks from Video Elements**
+- **Issue**: Video elements and event listeners accumulated without cleanup
+- **Impact**: Performance degradation over time
+- **Fix**: Proper video.pause(), source clearing, `{ once: true }` listeners
+- **Commit**: e108fa2
+
+**3. File Deletion URL Comparison**
+- **Issue**: Cache-busted URLs (with ?t=timestamp) not matched during deletion
+- **Impact**: Orphaned references in uploadGallery
+- **Fix**: Strip query parameters before URL comparison
+- **Commit**: e108fa2
+
+**4. Missing uploadGallery Validation**
+- **Issue**: No validation of array structure or URL format
+- **Impact**: Malformed data could crash frontend
+- **Fix**: Validate array type and item formats
+- **Commit**: e108fa2
+
+**5. Media Type Detection with Query Params**
+- **Issue**: Extension detection failed with cache-busted URLs
+- **Impact**: Videos loaded as photos or vice versa
+- **Fix**: Strip query params before extension check
+- **Commit**: e108fa2
+
+### UX Improvements
+
+**Better Error Messages**
+- Specific file size errors: "File 'video.mp4' is too large (12.3MB)"
+- Network context: "Network error during upload. Please check your connection."
+- Validation errors with actionable advice
+- **Commit**: bd6783e
+
+**Enhanced Help Text**
+- Detailed file format requirements
+- Codec recommendations (H.264, VP8)
+- Dimension guidance (800x600px+)
+- Clearer option descriptions
+- **Commit**: bd6783e
+
+**Visual Feedback**
+- Status banner when widget disabled
+- Animated upload progress with spinner
+- Smooth fade transitions
+- Better loading states
+- **Commit**: bd6783e
+
+**Client-Side Validation**
+- Pre-upload file size checks
+- Type validation before server request
+- Max file count enforcement
+- Prevents unnecessary server load
+- **Commit**: bd6783e
 
 ## Future Enhancements
 
