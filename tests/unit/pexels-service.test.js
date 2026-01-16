@@ -97,13 +97,13 @@ describe('PexelsService', () => {
 
     it('should throw error for invalid photo ID', async () => {
       await expect(service.getPhotoById(0)).rejects.toThrow(
-        'Invalid photo ID: must be a positive number'
+        'Invalid photo ID: must be a positive integer'
       );
       await expect(service.getPhotoById(-1)).rejects.toThrow(
-        'Invalid photo ID: must be a positive number'
+        'Invalid photo ID: must be a positive integer'
       );
       await expect(service.getPhotoById('invalid')).rejects.toThrow(
-        'Invalid photo ID: must be a positive number'
+        'Invalid photo ID: must be a positive integer'
       );
     });
 
