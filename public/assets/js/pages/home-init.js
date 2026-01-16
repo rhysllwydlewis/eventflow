@@ -582,6 +582,8 @@ async function loadHeroCollageImages() {
 const PEXELS_TRANSITION_DURATION_MS = 1000;
 // Preload timeout to prevent hanging
 const PEXELS_PRELOAD_TIMEOUT_MS = 5000;
+// Delay before restoring transition after instant hide (allows time for reflow)
+const TRANSITION_RESTORE_DELAY_MS = 50;
 
 // Store interval ID for cleanup
 let pexelsCollageIntervalId = null;
@@ -624,6 +626,22 @@ function restoreDefaultImage(imgElement) {
   imgElement.style.opacity = '1';
 }
 
+/**
+ * Display a Pexels image in a collage frame
+ * Helper function to avoid code duplication in preload success/timeout handlers
+ * @param {HTMLImageElement} imgElement - Image element to update
+ * @param {HTMLElement} frame - Frame element containing the image
+ * @param {Object} imageData - Image data with url and photographer
+ * @param {string} category - Category name for alt text
+ */
+function displayPexelsImage(imgElement, frame, imageData, category) {
+  imgElement.src = imageData.url;
+  imgElement.alt = `${category.charAt(0).toUpperCase() + category.slice(1)} - Photo by ${imageData.photographer}`;
+  imgElement.style.opacity = '1';
+  frame.classList.remove('loading-pexels');
+  addPhotographerCredit(frame, imageData);
+}
+
 async function initPexelsCollage(settings) {
   // Use intervalSeconds from settings, fallback to old 'interval' property for backwards compatibility, default to 2.5 seconds
   const intervalSeconds = settings?.intervalSeconds ?? settings?.interval ?? 2.5;
@@ -662,12 +680,13 @@ async function initPexelsCollage(settings) {
       imgElement.style.transition = 'none';
       // Clear the image to prevent default from showing under loading state
       imgElement.style.opacity = '0';
-      // Force reflow to ensure transition is disabled before opacity change
+      // Force reflow to ensure transition:none is applied before opacity changes
+      // This prevents the CSS transition from affecting the opacity change
       void imgElement.offsetHeight;
       // Restore transition after a brief delay
       setTimeout(() => {
         imgElement.style.transition = originalTransition;
-      }, 50);
+      }, TRANSITION_RESTORE_DELAY_MS);
     }
   });
 
@@ -764,7 +783,8 @@ async function initPexelsCollage(settings) {
           if (imgElement && imageCache[category][0]) {
             // Preload the first image before displaying it to prevent default image flash
             const firstImage = new Image();
-            firstImage.src = imageCache[category][0].url;
+            const imageData = imageCache[category][0];
+            firstImage.src = imageData.url;
 
             // Set timeout for preload to prevent hanging
             const preloadTimeout = setTimeout(() => {
@@ -772,27 +792,13 @@ async function initPexelsCollage(settings) {
               if (isDevelopmentEnvironment()) {
                 console.warn(`⚠️  Initial image preload timeout for ${category}, displaying anyway`);
               }
-              imgElement.src = imageCache[category][0].url;
-              imgElement.alt = `${category.charAt(0).toUpperCase() + category.slice(1)} - Photo by ${imageCache[category][0].photographer}`;
-              imgElement.style.opacity = '1';
-              frame.classList.remove('loading-pexels');
-              addPhotographerCredit(frame, imageCache[category][0]);
+              displayPexelsImage(imgElement, frame, imageData, category);
             }, PEXELS_PRELOAD_TIMEOUT_MS);
 
             firstImage.onload = () => {
               clearTimeout(preloadTimeout);
               // Image is preloaded, now set it and make visible
-              imgElement.src = imageCache[category][0].url;
-              imgElement.alt = `${category.charAt(0).toUpperCase() + category.slice(1)} - Photo by ${imageCache[category][0].photographer}`;
-
-              // Restore opacity once Pexels image is fully loaded
-              imgElement.style.opacity = '1';
-
-              // Remove loading state
-              frame.classList.remove('loading-pexels');
-
-              // Add photographer attribution
-              addPhotographerCredit(frame, imageCache[category][0]);
+              displayPexelsImage(imgElement, frame, imageData, category);
             };
 
             firstImage.onerror = () => {
