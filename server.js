@@ -2281,19 +2281,22 @@ app.get('/api/packages/spotlight', async (_req, res) => {
     }
 
     // Use current hour as seed for consistent selection within the hour
+    // Encode date as integer: YYYYMMDD * 24 + HH (e.g., 20260116 * 24 + 14 = 486147854)
+    // This ensures same packages are shown for the entire hour
     const dateNow = new Date();
     const hourSeed =
-      dateNow.getUTCFullYear() * 10000 +
-      (dateNow.getUTCMonth() + 1) * 100 +
-      dateNow.getUTCDate() * 24 +
-      dateNow.getUTCHours();
+      dateNow.getUTCFullYear() * 10000 + // Year component (e.g., 2026 * 10000)
+      (dateNow.getUTCMonth() + 1) * 100 + // Month component (1-12)
+      dateNow.getUTCDate() * 24 + // Day * 24 (to account for hours)
+      dateNow.getUTCHours(); // Hour (0-23)
 
     // Shuffle packages using the hour seed for deterministic randomness
     // Using a Linear Congruential Generator (LCG) for seeded random number generation
-    // Constants from Numerical Recipes (widely used and tested LCG parameters)
-    const LCG_MULTIPLIER = 9301;
-    const LCG_INCREMENT = 49297;
-    const LCG_MODULUS = 233280;
+    // These constants are from Numerical Recipes (widely used LCG parameters)
+    // They provide good statistical properties: full period, minimal correlation, uniform distribution
+    const LCG_MULTIPLIER = 9301; // Multiplier 'a' - ensures good mixing
+    const LCG_INCREMENT = 49297; // Increment 'c' - helps avoid zero cycles
+    const LCG_MODULUS = 233280; // Modulus 'm' - determines the period
 
     const shuffled = [...approvedPackages];
     let seed = hourSeed;
@@ -3579,6 +3582,10 @@ app.get('/api/marketplace/listings', async (req, res) => {
 
     if (dbType === 'mongodb' && !search) {
       // For MongoDB without search, use efficient findWithOptions
+      // Note: When search is present, we fall back to loading all data because:
+      // 1. MongoDB text search requires text indexes which may not be configured
+      // 2. The current implementation uses case-insensitive substring matching (not full-text search)
+      // 3. This ensures consistent behavior across MongoDB and local storage
       listings = await dbUnified.findWithOptions('marketplace_listings', filter, {
         limit: resultLimit,
         sort: sortOption,
