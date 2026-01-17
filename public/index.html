@@ -111,6 +111,25 @@
     <link rel="preload" href="/assets/css/eventflow-17.0.0.css" as="style" />
     <link rel="preload" href="/assets/css/homepage-enhancements.css" as="style" />
 
+    <!-- Tailwind CSS (CDN for hero section) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      // Tailwind theme tweaks
+      tailwind.config = {
+        theme: {
+          extend: {
+            boxShadow: {
+              soft: "0 10px 30px rgba(2, 6, 23, 0.08)",
+              soft2: "0 18px 45px rgba(2, 6, 23, 0.10)",
+            }
+          }
+        }
+      };
+    </script>
+
+    <!-- Alpine.js for lightweight interactivity -->
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
     <!-- Stylesheets -->
     <link rel="stylesheet" href="/assets/css/styles.css" />
     <link rel="stylesheet" href="/assets/css/eventflow-17.0.0.css" />
@@ -122,6 +141,7 @@
     <link rel="stylesheet" href="/assets/css/navbar.css" />
     <link rel="stylesheet" href="/assets/css/homepage-enhancements.css" />
     <link rel="stylesheet" href="/assets/css/navigation-enhancements.css" />
+    <link rel="stylesheet" href="/assets/css/hero-modern.css" />
     <link rel="icon" href="/favicon.svg" />
     
     <!-- Collage Widget Animations and Styles -->
@@ -283,43 +303,152 @@
     <script src="/assets/js/websocket-client.js" defer></script>
 
     <main id="main-content">
-      <section class="hero">
+      <section class="hero hero-modern relative overflow-hidden" x-data="eventFlowHero()" x-init="init()">
+        <!-- Background -->
+        <div class="absolute inset-0 bg-gradient-to-b from-slate-50 via-slate-50 to-slate-100"></div>
+
+        <!-- Decorative blobs -->
+        <div class="pointer-events-none absolute -right-36 -top-32 h-80 w-80 rounded-full bg-emerald-200/45 blur-3xl ef-float"></div>
+        <div class="pointer-events-none absolute -left-36 -bottom-28 h-80 w-80 rounded-full bg-sky-200/40 blur-3xl ef-float slow"></div>
+
+        <!-- Subtle grid texture -->
+        <div
+          class="pointer-events-none absolute inset-0 opacity-[0.06]"
+          style="
+            background-image: radial-gradient(circle at 1px 1px, rgba(15, 23, 42, 1) 1px, transparent 0);
+            background-size: 22px 22px;
+          "
+        ></div>
+
         <div class="container hero-grid">
-          <div>
-            <div class="small">Plan in minutes</div>
-            <h1>Everything you need to organise an event — in one clear place.</h1>
-            <p class="lead">
-              Find venues, catering, entertainment and more. Add to your plan with a click, start
-              conversations when you’re ready, and keep everything together.
+          <div class="relative">
+            <!-- Eyebrow -->
+            <div class="ef-fade-up delay-1 inline-flex items-center gap-2 rounded-full border border-slate-200/70 bg-white/80 px-3 py-1.5 text-sm text-slate-700 shadow-sm backdrop-blur">
+              <span class="inline-flex h-2 w-2 rounded-full bg-emerald-500 ef-pulse-soft"></span>
+              Plan in minutes • Compare suppliers • Keep everything together
+            </div>
+
+            <!-- Headline -->
+            <h1 class="ef-fade-up delay-2 mt-6 text-balance text-4xl font-semibold tracking-tight text-slate-900 sm:text-5xl">
+              <span class="block">Everything you need to organise an event</span>
+              <span class="mt-2 block">
+                <span class="relative inline-block">
+                  <span class="relative z-10 text-emerald-700">In one place</span>
+                  <span class="absolute inset-x-0 -bottom-1.5 z-0 h-3 rounded bg-emerald-100"></span>
+                </span>
+              </span>
+            </h1>
+
+            <!-- Subcopy -->
+            <p class="ef-fade-up delay-3 mt-5 text-pretty text-lg leading-relaxed text-slate-600">
+              Find venues, catering, entertainment and more. Add options to your plan instantly,
+              message suppliers when you're ready, and keep budgets, notes and decisions together.
             </p>
 
-            <!-- Hero Search Bar -->
-            <div class="hero-search">
-              <form id="hero-search-form" class="hero-search-form">
-                <input 
-                  type="text" 
-                  id="hero-search-input" 
-                  class="hero-search-input"
-                  placeholder="Search for suppliers, packages, or venues..." 
-                  autocomplete="off"
-                  aria-label="Search suppliers and packages"
-                >
-                <button 
-                  type="submit" 
-                  class="hero-search-button"
-                  aria-label="Search"
-                >
-                  🔍
-                </button>
-                <div id="hero-search-results" class="hero-search-results">
-                  <!-- Autocomplete results will be inserted here -->
+            <!-- Search Card -->
+            <div class="ef-fade-up delay-4 mt-8 rounded-2xl border border-slate-200/70 bg-white/80 p-4 shadow-soft backdrop-blur">
+              <form class="space-y-3" @submit.prevent="submitSearch()">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+                  <!-- Category -->
+                  <div class="relative sm:w-44">
+                    <label class="sr-only" for="ef-category">Category</label>
+                    <select
+                      id="ef-category"
+                      x-model="category"
+                      class="w-full appearance-none rounded-xl border border-slate-200 bg-white px-3 py-3 pr-9 text-sm text-slate-700 shadow-sm outline-none ring-emerald-600/20 focus:ring-4"
+                    >
+                      <option value="all">All</option>
+                      <option value="venues">Venues</option>
+                      <option value="catering">Catering</option>
+                      <option value="entertainment">Entertainment</option>
+                      <option value="photography">Photography</option>
+                    </select>
+                    <svg class="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                      <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.937a.75.75 0 1 1 1.08 1.04l-4.24 4.5a.75.75 0 0 1-1.08 0l-4.24-4.5a.75.75 0 0 1 .02-1.06z" clip-rule="evenodd"/>
+                    </svg>
+                  </div>
+
+                  <!-- Input -->
+                  <div class="relative flex-1">
+                    <label class="sr-only" for="ef-search">Search suppliers, packages, or venues</label>
+
+                    <svg class="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                      <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 1 0 3.27 9.92l2.65 2.66a.75.75 0 1 0 1.06-1.06l-2.66-2.65A5.5 5.5 0 0 0 9 3.5Zm-4 5.5a4 4 0 1 1 8 0 4 4 0 0 1-8 0Z" clip-rule="evenodd"/>
+                    </svg>
+
+                    <input
+                      id="ef-search"
+                      x-ref="searchInput"
+                      x-model.trim="query"
+                      type="text"
+                      placeholder="Search suppliers, packages, or venues…"
+                      autocomplete="off"
+                      class="w-full rounded-xl border border-slate-200 bg-white py-3 pl-10 pr-3 text-slate-900 shadow-sm outline-none placeholder:text-slate-400 ring-emerald-600/20 focus:ring-4"
+                    />
+                  </div>
+
+                  <!-- Button -->
+                  <button
+                    type="submit"
+                    class="group inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-600/25 active:translate-y-[1px]"
+                  >
+                    <span x-text="isSearching ? 'Searching…' : 'Search'">Search</span>
+                    <svg class="h-4 w-4 transition-transform group-hover:translate-x-0.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                      <path fill-rule="evenodd" d="M3 10a.75.75 0 0 1 .75-.75h10.69L10.22 5.53a.75.75 0 1 1 1.06-1.06l5 5a.75.75 0 0 1 0 1.06l-5 5a.75.75 0 1 1-1.06-1.06l4.22-4.22H3.75A.75.75 0 0 1 3 10Z" clip-rule="evenodd"/>
+                    </svg>
+                  </button>
+                </div>
+
+                <!-- Tags -->
+                <div class="flex flex-wrap gap-2 pt-1">
+                  <template x-for="tag in tags" :key="tag">
+                    <button
+                      type="button"
+                      class="rounded-full bg-slate-100 px-3 py-1.5 text-sm text-slate-700 shadow-sm transition hover:bg-slate-200 active:translate-y-[1px] focus:outline-none focus:ring-4 focus:ring-slate-900/10"
+                      @click="applyTag(tag)"
+                      :aria-label="\`Use tag: \${tag}\`"
+                    >
+                      <span x-text="tag"></span>
+                    </button>
+                  </template>
+                </div>
+
+                <!-- Micro-trust + live region -->
+                <div class="mt-3 flex flex-col gap-2 border-t border-slate-200/70 pt-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-5">
+                  <div class="inline-flex items-center gap-2 text-sm text-slate-600">
+                    <span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-emerald-50 text-emerald-700">✓</span>
+                    Shortlist in one click
+                  </div>
+                  <div class="inline-flex items-center gap-2 text-sm text-slate-600">
+                    <span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-emerald-50 text-emerald-700">✓</span>
+                    Message suppliers from your plan
+                  </div>
+                  <div class="inline-flex items-center gap-2 text-sm text-slate-600">
+                    <span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-emerald-50 text-emerald-700">✓</span>
+                    Keep budget &amp; notes together
+                  </div>
+
+                  <!-- Live status (accessible) -->
+                  <p class="sr-only" role="status" aria-live="polite" x-text="statusText"></p>
                 </div>
               </form>
             </div>
 
-            <div class="hero-cta">
-              <a class="cta" href="/start.html">Start planning your event</a>
-              <a class="cta secondary" href="/suppliers.html">Browse suppliers</a>
+            <!-- CTAs -->
+            <div class="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
+              <a
+                href="/start.html"
+                class="inline-flex items-center justify-center rounded-xl bg-slate-900 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 focus:outline-none focus:ring-4 focus:ring-slate-900/20 active:translate-y-[1px]"
+              >
+                Start planning
+              </a>
+              <a
+                href="/suppliers.html"
+                class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white/90 px-6 py-3 text-sm font-semibold text-slate-800 shadow-sm backdrop-blur transition hover:bg-white focus:outline-none focus:ring-4 focus:ring-slate-900/10 active:translate-y-[1px]"
+              >
+                Browse suppliers
+              </a>
+              <p class="text-sm text-slate-500 sm:ml-2">No commitment — build a shortlist first.</p>
             </div>
           </div>
           <div>
@@ -974,5 +1103,58 @@
       defer
     ></script>
     <script src="/assets/js/jadeassist-init.v2.js" defer></script>
+
+    <!-- Alpine.js Hero Functionality -->
+    <script>
+      function eventFlowHero() {
+        return {
+          query: "",
+          category: "all",
+          isSearching: false,
+          statusText: "",
+          tags: ["London venues", "Canapés & drinks", "DJ packages", "Corporate"],
+
+          init() {
+            const params = new URLSearchParams(window.location.search);
+            const q = params.get("q");
+            const cat = params.get("category");
+            if (q) this.query = q;
+            if (cat) this.category = cat;
+
+            if (window.matchMedia("(min-width: 640px)").matches) {
+              this.$nextTick(() => this.$refs.searchInput?.focus());
+            }
+          },
+
+          applyTag(tag) {
+            this.query = tag;
+            this.statusText = `Tag applied: ${tag}`;
+            this.$nextTick(() => this.$refs.searchInput?.focus());
+          },
+
+          async submitSearch() {
+            const q = (this.query || "").trim();
+            if (!q) {
+              this.statusText = "Please enter a search term.";
+              this.$refs.searchInput?.focus();
+              return;
+            }
+
+            this.isSearching = true;
+            this.statusText = `Searching for ${q} in ${this.category}.`;
+
+            // Navigate to suppliers.html with search params (existing site route)
+            const url = new URL(window.location.origin + "/suppliers.html");
+            url.searchParams.set("q", q);
+            if (this.category !== "all") {
+              url.searchParams.set("category", this.category);
+            }
+
+            await new Promise((r) => setTimeout(r, 220));
+            window.location.href = url.toString();
+          },
+        };
+      }
+    </script>
   </body>
 </html>
