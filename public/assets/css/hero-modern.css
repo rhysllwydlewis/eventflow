@@ -452,11 +452,13 @@
 /* Desktop search button */
 .hero-search-button-desktop {
   display: none !important;
+  position: static;
 }
 
 @media (min-width: 640px) {
   .hero-search-button-desktop {
     display: inline-flex !important;
+    position: static;
   }
 }
 
