@@ -297,22 +297,27 @@
             <!-- Eyebrow -->
             <div class="hero-eyebrow ef-fade-up delay-1">
               <span class="hero-pulse-dot ef-pulse-soft"></span>
-              Plan in minutes • Compare suppliers • Keep everything together
+              <span class="hero-eyebrow-desktop">Plan in minutes • Compare suppliers • Keep everything together</span>
+              <span class="hero-eyebrow-mobile">Plan • Compare • Organise</span>
             </div>
 
             <!-- Headline -->
             <h1 class="ef-fade-up delay-2">
-              <span>Everything you need to organise an event</span>
+              <span class="hero-headline-desktop">Everything you need to organise an event —</span>
+              <span class="hero-headline-mobile">Plan your perfect event</span>
               <span class="hero-highlight-text">
-                In one place
+                <span class="hero-headline-desktop">in one clear workspace</span>
+                <span class="hero-headline-mobile">in one place</span>
                 <span class="hero-highlight-bg"></span>
               </span>
             </h1>
 
             <!-- Subcopy -->
             <p class="hero-modern-subcopy ef-fade-up delay-3">
-              Find venues, catering, entertainment and more. Add options to your plan instantly,
-              message suppliers when you're ready, and keep budgets, notes and decisions together.
+              <span class="hero-subcopy-desktop">Find venues, catering, entertainment and more. Add options to your plan instantly,
+              message suppliers when you're ready, and keep budgets, notes and decisions together.</span>
+              <span class="hero-subcopy-tablet">Find venues, catering, entertainment and more. Add options to your plan and message suppliers when you're ready.</span>
+              <span class="hero-subcopy-mobile">Find venues, catering &amp; more — all together.</span>
             </p>
 
             <!-- Search Card -->
@@ -341,23 +346,36 @@
                   <div class="hero-search-input-wrapper">
                     <label class="sr-only" for="ef-search">Search suppliers, packages, or venues</label>
 
-                    <svg class="hero-search-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <svg class="hero-search-icon hero-search-icon-desktop" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                       <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 1 0 3.27 9.92l2.65 2.66a.75.75 0 1 0 1.06-1.06l-2.66-2.65A5.5 5.5 0 0 0 9 3.5Zm-4 5.5a4 4 0 1 1 8 0 4 4 0 0 1-8 0Z" clip-rule="evenodd"/>
                     </svg>
 
                     <input
                       id="ef-search"
                       type="text"
-                      placeholder="Search suppliers, packages, or venues…"
+                      placeholder="Search suppliers…"
+                      data-placeholder-desktop="Search suppliers, packages, or venues…"
+                      data-placeholder-mobile="Search suppliers…"
                       autocomplete="off"
                       class="hero-search-input"
                     />
+                    
+                    <!-- Mobile search button (icon inside input) -->
+                    <button
+                      type="submit"
+                      class="hero-search-button-mobile"
+                      aria-label="Search"
+                    >
+                      <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 1 0 3.27 9.92l2.65 2.66a.75.75 0 1 0 1.06-1.06l-2.66-2.65A5.5 5.5 0 0 0 9 3.5Zm-4 5.5a4 4 0 1 1 8 0 4 4 0 0 1-8 0Z" clip-rule="evenodd"/>
+                      </svg>
+                    </button>
                   </div>
 
-                  <!-- Button -->
+                  <!-- Button (Desktop/Tablet) -->
                   <button
                     type="submit"
-                    class="hero-search-button"
+                    class="hero-search-button hero-search-button-desktop"
                   >
                     <span>Search</span>
                     <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -368,25 +386,32 @@
 
                 <!-- Tags -->
                 <div class="hero-tags">
-                  <button type="button" class="hero-tag">London venues</button>
-                  <button type="button" class="hero-tag">Canapés & drinks</button>
-                  <button type="button" class="hero-tag">DJ packages</button>
-                  <button type="button" class="hero-tag">Corporate</button>
+                  <button type="button" class="hero-tag hero-tag-desktop">London venues</button>
+                  <button type="button" class="hero-tag hero-tag-desktop">Canapés & drinks</button>
+                  <button type="button" class="hero-tag hero-tag-desktop">DJ packages</button>
+                  <button type="button" class="hero-tag hero-tag-desktop">Corporate</button>
+                  <button type="button" class="hero-tag hero-tag-mobile">Venues</button>
+                  <button type="button" class="hero-tag hero-tag-mobile">Catering</button>
+                  <button type="button" class="hero-tag hero-tag-mobile">Entertainment</button>
                 </div>
 
                 <!-- Micro-trust + live region -->
                 <div class="hero-trust">
-                  <div class="hero-trust-item">
+                  <div class="hero-trust-item hero-trust-desktop">
                     <span class="hero-trust-icon">✓</span>
                     Shortlist in one click
                   </div>
-                  <div class="hero-trust-item">
+                  <div class="hero-trust-item hero-trust-desktop">
                     <span class="hero-trust-icon">✓</span>
                     Message suppliers from your plan
                   </div>
-                  <div class="hero-trust-item">
+                  <div class="hero-trust-item hero-trust-desktop">
                     <span class="hero-trust-icon">✓</span>
                     Keep budget &amp; notes together
+                  </div>
+                  <div class="hero-trust-item hero-trust-mobile">
+                    <span class="hero-trust-icon">✓</span>
+                    Free to use
                   </div>
                 </div>
               </form>
@@ -1109,6 +1134,29 @@
           const categorySelect = document.querySelector('#ef-category');
           if (categorySelect) categorySelect.value = cat;
         }
+        
+        // Responsive placeholder text
+        function updatePlaceholder() {
+          if (searchInput) {
+            const isMobile = window.innerWidth < 640;
+            const placeholder = isMobile 
+              ? searchInput.getAttribute('data-placeholder-mobile')
+              : searchInput.getAttribute('data-placeholder-desktop');
+            if (placeholder) {
+              searchInput.placeholder = placeholder;
+            }
+          }
+        }
+        
+        // Debounce resize handler for performance
+        let resizeTimeout;
+        function debouncedUpdatePlaceholder() {
+          clearTimeout(resizeTimeout);
+          resizeTimeout = setTimeout(updatePlaceholder, 150);
+        }
+        
+        updatePlaceholder();
+        window.addEventListener('resize', debouncedUpdatePlaceholder);
       });
     </script>
   </body>
