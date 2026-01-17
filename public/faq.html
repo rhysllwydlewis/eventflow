@@ -15,6 +15,17 @@
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="EventFlow">
   
+  <!-- DNS Prefetch & Preconnect for external resources -->
+  <link rel="dns-prefetch" href="https://cdn.jsdelivr.net" />
+  <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+  <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+  <!-- Preload critical CSS -->
+  <link rel="preload" href="/assets/css/styles.css" as="style" />
+  <link rel="preload" href="/assets/css/eventflow-17.0.0.css" as="style" />
+
   <link rel="stylesheet" href="/assets/css/styles.css">
   <link rel="stylesheet" href="/assets/css/eventflow-17.0.0.css">
   <link rel="stylesheet" href="/assets/css/utilities.css">
@@ -226,6 +237,7 @@
     </div>
   </div>
 </footer>
+<script src="/assets/js/app.js" defer></script>
 <script src="/assets/js/components/footer-nav.js" defer></script>
 <script src="/assets/js/cookie-consent.js" defer></script>
 
