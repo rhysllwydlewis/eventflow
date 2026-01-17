@@ -20,7 +20,6 @@
   position: absolute;
   border-radius: 9999px;
   filter: blur(80px);
-  pointer-events: none;
   display: none;
 }
 
@@ -391,16 +390,14 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   background: #059669;
   color: white;
   border: none;
   border-radius: 50%;
   cursor: pointer;
   transition: all 0.2s;
-  min-height: 44px;
-  min-width: 44px;
 }
 
 .hero-search-button-mobile svg {

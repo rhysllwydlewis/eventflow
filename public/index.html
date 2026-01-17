@@ -1148,8 +1148,15 @@
           }
         }
         
+        // Debounce resize handler for performance
+        let resizeTimeout;
+        function debouncedUpdatePlaceholder() {
+          clearTimeout(resizeTimeout);
+          resizeTimeout = setTimeout(updatePlaceholder, 150);
+        }
+        
         updatePlaceholder();
-        window.addEventListener('resize', updatePlaceholder);
+        window.addEventListener('resize', debouncedUpdatePlaceholder);
       });
     </script>
   </body>
