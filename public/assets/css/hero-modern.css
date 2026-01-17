@@ -65,6 +65,17 @@
 .hero-modern .hero-grid {
   position: relative;
   z-index: 1;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+  align-items: center;
+}
+
+/* Desktop: Two-column layout with collage */
+@media (min-width: 1024px) {
+  .hero-modern .hero-grid {
+    grid-template-columns: 1.1fr 0.9fr;
+  }
 }
 
 .hero-modern .hero-grid > div:first-child {
