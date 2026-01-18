@@ -1091,9 +1091,10 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
           let loadingComplete = false;
 
           const handleMetadataLoaded = () => {
+            // Already handled
             if (loadingComplete) {
               return;
-            } // Already handled
+            }
             loadingComplete = true;
             if (timeoutId) {
               clearTimeout(timeoutId);
@@ -1110,9 +1111,10 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
           };
 
           const handleVideoError = () => {
+            // Already handled
             if (loadingComplete) {
               return;
-            } // Already handled
+            }
             loadingComplete = true;
             if (timeoutId) {
               clearTimeout(timeoutId);

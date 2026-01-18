@@ -320,7 +320,7 @@
   filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
 }
 
-/* Tag chips - Hidden on mobile by default, shown on tablet/desktop */
+/* Tag chips - Hidden on mobile, shown on tablet/desktop */
 .hero-tags {
   display: none;
 }
@@ -574,8 +574,7 @@
   
   .hero-search-card {
     padding: 16px;
-    margin-left: -16px;
-    margin-right: -16px;
+    margin-inline: -16px;
     border-radius: 0;
   }
   
