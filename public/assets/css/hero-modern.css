@@ -302,7 +302,8 @@
   background: linear-gradient(135deg, #059669 0%, #047857 100%);
   box-shadow: 
     0 4px 8px rgba(5, 150, 105, 0.3),
-    0 8px 20px rgba(5, 150, 105, 0.4);
+    0 8px 20px rgba(5, 150, 105, 0.4),
+    0 0 20px rgba(16, 185, 129, 0.4);
   transform: translateY(-2px);
 }
 
@@ -311,10 +312,12 @@
 }
 
 .hero-search-button:active {
-  transform: translateY(0);
+  transform: translateY(0) scale(0.96);
   box-shadow: 
     0 2px 4px rgba(5, 150, 105, 0.2),
-    0 4px 12px rgba(5, 150, 105, 0.3);
+    0 4px 12px rgba(5, 150, 105, 0.3),
+    0 0 15px rgba(16, 185, 129, 0.5);
+  animation: searchPulse 0.4s ease-out;
 }
 
 .hero-search-button:focus {
@@ -326,6 +329,16 @@
   width: 22px;
   height: 22px;
   filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hero-search-button:hover svg {
+  filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.8));
+  transform: scale(1.05);
+}
+
+.hero-search-button:active svg {
+  transform: scale(0.95);
 }
 
 /* Tag chips - Hidden on mobile, shown on tablet/desktop */
@@ -557,6 +570,28 @@
   @keyframes efPulseSoft {
     0%, 100% { opacity: 0.65; }
     50% { opacity: 1; }
+  }
+
+  /* Search button pulse animation */
+  @keyframes searchPulse {
+    0% {
+      box-shadow: 
+        0 2px 4px rgba(5, 150, 105, 0.2),
+        0 4px 12px rgba(5, 150, 105, 0.3),
+        0 0 0 0 rgba(16, 185, 129, 0.7);
+    }
+    50% {
+      box-shadow: 
+        0 2px 4px rgba(5, 150, 105, 0.2),
+        0 4px 12px rgba(5, 150, 105, 0.3),
+        0 0 0 8px rgba(16, 185, 129, 0);
+    }
+    100% {
+      box-shadow: 
+        0 2px 4px rgba(5, 150, 105, 0.2),
+        0 4px 12px rgba(5, 150, 105, 0.3),
+        0 0 0 0 rgba(16, 185, 129, 0);
+    }
   }
 }
 
@@ -920,7 +955,8 @@
   .hero-collage-card,
   .hero-collage-card img,
   .hero-collage-label,
-  .hero-collage-credit {
+  .hero-collage-credit,
+  .hero-search-button {
     transition: none;
   }
 
@@ -936,5 +972,13 @@
 
   .hero-video-card video {
     animation: none;
+  }
+
+  .hero-search-button:active {
+    animation: none;
+  }
+
+  .hero-search-button svg {
+    transition: none;
   }
 }
