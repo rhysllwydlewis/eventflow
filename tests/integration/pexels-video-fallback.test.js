@@ -21,7 +21,7 @@ describe('Pexels Video Fallback Integration', () => {
     app = express();
     app.use(express.json());
     // Mount admin router at /api to match actual server setup
-    app.use('/api', adminRouter);
+    app.use('/api/admin', adminRouter);
 
     // Enable Pexels collage feature flag with videos enabled
     const settings = await dbUnified.read('settings');
@@ -48,10 +48,10 @@ describe('Pexels Video Fallback Integration', () => {
     }
   });
 
-  describe('GET /api/public/pexels-video', () => {
+  describe('GET /api/admin/public/pexels-video', () => {
     it('should return fallback videos when Pexels API not configured', async () => {
       // Make request for wedding videos
-      const response = await request(app).get('/api/public/pexels-video?query=wedding');
+      const response = await request(app).get('/api/admin/public/pexels-video?query=wedding');
 
       // Verify response
       expect(response.status).toBe(200);
@@ -83,22 +83,29 @@ describe('Pexels Video Fallback Integration', () => {
     });
 
     it('should return 400 for missing query parameter', async () => {
-      const response = await request(app).get('/api/public/pexels-video');
+      const response = await request(app).get('/api/admin/public/pexels-video');
 
       expect(response.status).toBe(400);
       expect(response.body.error).toBe('Query parameter required');
     });
 
     it('should return 404 when collage widget is disabled', async () => {
-      // Disable collage widget
+      // Disable collage widget and legacy flag
       const settings = await dbUnified.read('settings');
       settings.collageWidget.enabled = false;
+      if (settings.features) {
+        settings.features.pexelsCollage = false;
+      }
       await dbUnified.write('settings', settings);
 
-      const response = await request(app).get('/api/public/pexels-video?query=wedding');
+      const response = await request(app).get('/api/admin/public/pexels-video?query=wedding');
 
       expect(response.status).toBe(404);
       expect(response.body.error).toContain('not enabled');
+
+      // Re-enable for subsequent tests
+      settings.collageWidget.enabled = true;
+      await dbUnified.write('settings', settings);
     });
 
     it('should return 400 when videos are disabled in mediaTypes', async () => {
@@ -107,7 +114,7 @@ describe('Pexels Video Fallback Integration', () => {
       settings.collageWidget.mediaTypes.videos = false;
       await dbUnified.write('settings', settings);
 
-      const response = await request(app).get('/api/public/pexels-video?query=wedding');
+      const response = await request(app).get('/api/admin/public/pexels-video?query=wedding');
 
       expect(response.status).toBe(400);
       expect(response.body.error).toContain('Videos are not enabled');
@@ -119,7 +126,7 @@ describe('Pexels Video Fallback Integration', () => {
       settings.collageWidget.source = 'uploads';
       await dbUnified.write('settings', settings);
 
-      const response = await request(app).get('/api/public/pexels-video?query=wedding');
+      const response = await request(app).get('/api/admin/public/pexels-video?query=wedding');
 
       expect(response.status).toBe(400);
       expect(response.body.error).toContain('only supports Pexels source');
@@ -140,7 +147,7 @@ describe('Pexels Video Fallback Integration', () => {
       };
       await dbUnified.write('settings', settings);
 
-      const response = await request(app).get('/api/public/pexels-video?query=wedding');
+      const response = await request(app).get('/api/admin/public/pexels-video?query=wedding');
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
