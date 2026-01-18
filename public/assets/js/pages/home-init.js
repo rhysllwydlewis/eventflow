@@ -1088,17 +1088,10 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
           let timeoutId = null;
           let loadingComplete = false;
 
-          const cleanup = () => {
-            if (timeoutId) {
-              clearTimeout(timeoutId);
-              timeoutId = null;
-            }
-            loadingComplete = true;
-          };
-
           const handleMetadataLoaded = () => {
             if (loadingComplete) return; // Already handled
-            cleanup();
+            loadingComplete = true;
+            if (timeoutId) clearTimeout(timeoutId);
             
             if (isDebugEnabled()) {
               console.log('[Hero Video] Video metadata loaded, attempting to play');
@@ -1112,7 +1105,8 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
 
           const handleVideoError = () => {
             if (loadingComplete) return; // Already handled
-            cleanup();
+            loadingComplete = true;
+            if (timeoutId) clearTimeout(timeoutId);
             
             if (isDebugEnabled()) {
               console.warn('[Hero Video] Video failed to load, will use fallback');
@@ -1128,18 +1122,17 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
           videoSource.src = videoFile.link;
           videoElement.load();
 
-          // Timeout as additional safety net
+          // Timeout as additional safety net (10 seconds)
+          // The { once: true } option auto-removes listeners after first fire,
+          // so we don't need to manually remove them here
           timeoutId = setTimeout(() => {
             if (!loadingComplete && videoElement.readyState < 1) {
               loadingComplete = true;
               if (isDebugEnabled()) {
                 console.warn('[Hero Video] Video metadata loading timeout, using poster fallback');
               }
-              // Remove listeners since we're giving up
-              videoElement.removeEventListener('loadedmetadata', handleMetadataLoaded);
-              videoElement.removeEventListener('error', handleVideoError);
             }
-          }, 10000); // 10 second timeout
+          }, 10000);
 
           // Update credit - using safe DOM manipulation
           if (video.user && video.user.name) {
