@@ -1096,8 +1096,21 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
     if (isDebugEnabled()) {
       console.warn('[Hero Video] Failed to initialize video:', error.message);
     }
-    // Hide video element on error, show fallback gradient
-    videoElement.style.display = 'none';
+    
+    // Try to use fallback: show poster image if available, otherwise hide video
+    // The poster attribute in HTML will show as fallback if video fails to load
+    const posterSrc = videoElement.getAttribute('poster');
+    if (posterSrc) {
+      // Keep video element visible to show poster, but ensure video won't play
+      videoSource.src = '';
+      videoElement.load();
+      if (isDebugEnabled()) {
+        console.log('[Hero Video] Using poster image as fallback');
+      }
+    } else {
+      // No poster available, hide video element and show gradient fallback
+      videoElement.style.display = 'none';
+    }
     videoCredit.style.display = 'none';
   }
 }
