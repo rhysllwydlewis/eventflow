@@ -1088,6 +1088,7 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
           videoElement.load();
           
           // Wait for video to be ready before attempting to play
+          // Using { once: true } ensures automatic cleanup after first trigger
           videoElement.addEventListener('loadedmetadata', () => {
             if (isDebugEnabled()) {
               console.log('[Hero Video] Video metadata loaded, attempting to play');
@@ -1126,17 +1127,21 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
             console.log('[Hero Video] Video initialized successfully');
           }
           return; // Success - exit function
-        } else {
-          if (isDebugEnabled()) {
-            console.warn('[Hero Video] No suitable video file found');
-          }
+        }
+        
+        // No suitable video file found
+        if (isDebugEnabled()) {
+          console.warn('[Hero Video] No suitable video file found');
         }
       } else {
+        // No videos in API response
         if (isDebugEnabled()) {
           console.warn('[Hero Video] No videos in API response');
         }
-        throw new Error('No videos found in API response');
       }
+      
+      // Fall through to error handling if video not initialized
+      throw new Error('No videos found in API response');
     }
   } catch (error) {
     if (isDebugEnabled()) {
