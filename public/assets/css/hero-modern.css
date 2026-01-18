@@ -571,3 +571,252 @@
     font-size: 12px;
   }
 }
+
+/* ========================================
+   HERO COLLAGE - 1x2x2 Grid Layout
+   Two-column layout with video + category cards
+   ======================================== */
+
+/* Two-column hero grid */
+@media (min-width: 1024px) {
+  .hero-modern .hero-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 64px;
+    align-items: center;
+  }
+}
+
+/* Hero collage container */
+.hero-collage {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1.2fr 1fr 1fr;
+  gap: 14px;
+  height: 520px;
+  max-width: 100%;
+}
+
+/* Video card - spans full width (2 columns) */
+.hero-video-card {
+  grid-column: span 2;
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hero-video-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    transparent 60%,
+    rgba(0, 0, 0, 0.3) 100%
+  );
+  z-index: 1;
+  pointer-events: none;
+}
+
+.hero-video-card:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  transform: scale(1.01);
+}
+
+.hero-video-card video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Video credit */
+.hero-video-credit {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* Category cards */
+.hero-collage-card {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: block;
+  text-decoration: none;
+  background: #f8fafc;
+}
+
+.hero-collage-card:hover {
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+  transform: translateY(-4px) scale(1.02);
+  text-decoration: none;
+}
+
+.hero-collage-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hero-collage-card:hover img {
+  transform: scale(1.08);
+}
+
+/* Category label pill */
+.hero-collage-label {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 8px 14px;
+  border-radius: 999px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.25s;
+}
+
+.hero-collage-card:hover .hero-collage-label {
+  background: white;
+  transform: scale(1.05);
+}
+
+.hero-collage-icon {
+  font-size: 16px;
+  line-height: 1;
+}
+
+/* Photo credit */
+.hero-collage-credit {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  font-size: 10px;
+  padding: 3px 6px;
+  border-radius: 3px;
+  z-index: 2;
+  opacity: 0.8;
+  transition: opacity 0.25s;
+  pointer-events: none;
+}
+
+.hero-collage-card:hover .hero-collage-credit {
+  opacity: 1;
+}
+
+/* Mobile responsive */
+@media (max-width: 1023px) {
+  .hero-modern .hero-grid {
+    display: block;
+  }
+
+  .hero-collage {
+    margin-top: 48px;
+    height: auto;
+    grid-template-rows: auto auto auto;
+  }
+
+  .hero-video-card {
+    min-height: 280px;
+  }
+
+  .hero-collage-card {
+    min-height: 200px;
+  }
+
+  /* Hide photo credits on mobile for cleaner look */
+  .hero-collage-credit {
+    display: none;
+  }
+
+  .hero-video-credit {
+    font-size: 10px;
+    padding: 3px 6px;
+  }
+}
+
+/* Tablet adjustments */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .hero-collage {
+    height: 480px;
+    grid-template-rows: 1.5fr 1fr 1fr;
+  }
+
+  .hero-video-card {
+    min-height: 220px;
+  }
+
+  .hero-collage-card {
+    min-height: 180px;
+  }
+}
+
+/* Small mobile adjustments */
+@media (max-width: 640px) {
+  .hero-collage {
+    gap: 12px;
+    grid-template-rows: auto auto auto;
+  }
+
+  .hero-video-card {
+    min-height: 200px;
+  }
+
+  .hero-collage-card {
+    min-height: 160px;
+  }
+
+  .hero-collage-label {
+    font-size: 13px;
+    padding: 6px 12px;
+    bottom: 10px;
+    left: 10px;
+  }
+
+  .hero-collage-icon {
+    font-size: 14px;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .hero-video-card,
+  .hero-collage-card,
+  .hero-collage-card img,
+  .hero-collage-label,
+  .hero-collage-credit {
+    transition: none;
+  }
+
+  .hero-collage-card:hover img {
+    transform: none;
+  }
+
+  .hero-video-card video {
+    animation: none;
+  }
+}

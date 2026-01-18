@@ -748,8 +748,13 @@ async function initPexelsCollage(settings) {
     photography: 3,
   };
 
-  // Get all collage frames
-  const collageFrames = document.querySelectorAll('.collage .frame');
+  // Get all collage frames - support both new and old structures
+  let collageFrames = document.querySelectorAll('.hero-collage .hero-collage-card');
+  
+  // Fallback to old structure for backwards compatibility
+  if (!collageFrames || collageFrames.length === 0) {
+    collageFrames = document.querySelectorAll('.collage .frame');
+  }
 
   if (!collageFrames || collageFrames.length === 0) {
     if (isDevelopmentEnvironment()) {
@@ -987,6 +992,100 @@ async function initPexelsCollage(settings) {
 }
 
 /**
+ * Initialize hero video element with Pexels video
+ * @param {string} source - Source type ('pexels' or 'uploads')
+ * @param {Object} mediaTypes - Media types configuration
+ * @param {Array} uploadGallery - Array of uploaded media URLs
+ */
+async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
+  const videoElement = document.getElementById('hero-pexels-video');
+  const videoSource = document.getElementById('hero-video-source');
+  const videoCredit = document.getElementById('hero-video-credit');
+  
+  if (!videoElement || !videoSource) {
+    return; // Video elements not present in HTML
+  }
+  
+  try {
+    // Check if we should use videos
+    const useVideos = mediaTypes?.videos === true;
+    
+    if (source === 'uploads' && uploadGallery && uploadGallery.length > 0) {
+      // Try to find a video in upload gallery
+      const videoUrl = uploadGallery.find(url => {
+        const urlWithoutParams = url.split('?')[0];
+        return /\.(mp4|webm|mov)$/i.test(urlWithoutParams);
+      });
+      
+      if (videoUrl) {
+        if (isDebugEnabled()) {
+          console.log('[Hero Video] Using uploaded video:', videoUrl);
+        }
+        videoSource.src = videoUrl;
+        videoElement.load();
+        videoElement.play().catch(() => {
+          if (isDebugEnabled()) {
+            console.log('[Hero Video] Autoplay prevented, video will play on user interaction');
+          }
+        });
+        videoCredit.style.display = 'none'; // No credit for uploaded videos
+        return;
+      }
+    }
+    
+    if ((source === 'pexels' || source === 'uploads') && useVideos) {
+      // Fetch Pexels video
+      const eventQueries = ['wedding', 'party', 'corporate event', 'celebration', 'event venue'];
+      const randomQuery = eventQueries[Math.floor(Math.random() * eventQueries.length)];
+      
+      const response = await fetch(
+        `/api/admin/public/pexels-video?query=${encodeURIComponent(randomQuery)}`
+      );
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch video: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.videos && data.videos.length > 0) {
+        const video = data.videos[0];
+        const videoFile = video.video_files?.find(f => f.quality === 'hd' || f.quality === 'sd');
+        
+        if (videoFile && videoFile.link) {
+          if (isDebugEnabled()) {
+            console.log('[Hero Video] Using Pexels video:', videoFile.link);
+          }
+          
+          videoSource.src = videoFile.link;
+          videoElement.load();
+          videoElement.play().catch(() => {
+            if (isDebugEnabled()) {
+              console.log('[Hero Video] Autoplay prevented, video will play on user interaction');
+            }
+          });
+          
+          // Update credit
+          if (video.user && video.user.name) {
+            videoCredit.innerHTML = `Video by <a href="${video.user.url}" target="_blank" rel="noopener noreferrer" style="color: white; text-decoration: underline;">${video.user.name}</a> on Pexels`;
+            videoCredit.style.display = 'block';
+          }
+        }
+      } else {
+        throw new Error('No videos found in API response');
+      }
+    }
+  } catch (error) {
+    if (isDebugEnabled()) {
+      console.warn('[Hero Video] Failed to initialize video:', error.message);
+    }
+    // Hide video element on error, show fallback gradient
+    videoElement.style.display = 'none';
+    videoCredit.style.display = 'none';
+  }
+}
+
+/**
  * Initialize Collage Widget with configurable source (Pexels or Uploads)
  * Supports both photos and videos with accessibility features
  * @param {Object} widgetConfig - Configuration from backend
@@ -1010,7 +1109,7 @@ async function initCollageWidget(widgetConfig) {
     });
   }
 
-  // Map category keys to their collage frame elements
+  // Map category keys to their collage card elements
   const categoryMapping = {
     venues: 0,
     catering: 1,
@@ -1018,8 +1117,13 @@ async function initCollageWidget(widgetConfig) {
     photography: 3,
   };
 
-  // Get all collage frames
-  const collageFrames = document.querySelectorAll('.collage .frame');
+  // Get all collage cards (new structure)
+  let collageFrames = document.querySelectorAll('.hero-collage .hero-collage-card');
+  
+  // Fallback to old structure for backwards compatibility
+  if (!collageFrames || collageFrames.length === 0) {
+    collageFrames = document.querySelectorAll('.collage .frame');
+  }
 
   if (!collageFrames || collageFrames.length === 0) {
     if (isDevelopmentEnvironment()) {
@@ -1027,6 +1131,9 @@ async function initCollageWidget(widgetConfig) {
     }
     return;
   }
+  
+  // Initialize video if present in new hero-collage structure
+  await initHeroVideo(source, mediaTypes, uploadGallery);
 
   // Check for reduced motion preference
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;

@@ -405,63 +405,59 @@
             </div>
           </div>
           <div>
-            <div class="collage" aria-hidden="true">
-              <div class="frame">
-                <span class="tag">Venues</span>
-                <picture>
-                  <source type="image/webp" srcset="/assets/images/collage-venue.webp" />
-                  <img
-                    loading="lazy"
-                    src="/assets/images/collage-venue.jpg"
-                    alt="An event venue exterior"
-                    width="800"
-                    height="600"
-                    onerror="this.style.background='linear-gradient(135deg, #667eea 0%, #764ba2 100%)'; this.style.minHeight='200px'; this.src=''; this.onerror=null;"
-                  />
-                </picture>
+            <div class="hero-collage ef-fade-up delay-3" aria-hidden="true">
+              <!-- Row 1: Video (no label, spans 2 columns) -->
+              <div class="hero-video-card">
+                <video id="hero-pexels-video" autoplay muted loop playsinline
+                       poster="/assets/images/hero-video-poster.jpg"
+                       onerror="this.style.display='none';">
+                  <source src="" type="video/mp4" id="hero-video-source">
+                  Your browser does not support the video tag.
+                </video>
+                <span class="hero-video-credit" id="hero-video-credit">Video by Pexels</span>
               </div>
-              <div class="frame">
-                <span class="tag">Catering</span>
-                <picture>
-                  <source type="image/webp" srcset="/assets/images/collage-catering.webp" />
-                  <img
-                    loading="lazy"
-                    src="/assets/images/collage-catering.jpg"
-                    alt="Plated event catering"
-                    width="800"
-                    height="600"
-                    onerror="this.style.background='linear-gradient(135deg, #f093fb 0%, #f5576c 100%)'; this.style.minHeight='200px'; this.src=''; this.onerror=null;"
-                  />
-                </picture>
-              </div>
-              <div class="frame">
-                <span class="tag">Entertainment</span>
-                <picture>
-                  <source type="image/webp" srcset="/assets/images/collage-entertainment.webp" />
-                  <img
-                    loading="lazy"
-                    src="/assets/images/collage-entertainment.jpg"
-                    alt="Live band performing at an event"
-                    width="800"
-                    height="600"
-                    onerror="this.style.background='linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)'; this.style.minHeight='200px'; this.src=''; this.onerror=null;"
-                  />
-                </picture>
-              </div>
-              <div class="frame">
-                <span class="tag">Photography</span>
-                <picture>
-                  <source type="image/webp" srcset="/assets/images/collage-photography.webp" />
-                  <img
-                    loading="lazy"
-                    src="/assets/images/collage-photography.jpg"
-                    alt="Photographer taking pictures at a wedding"
-                    width="800"
-                    height="600"
-                    onerror="this.style.background='linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)'; this.style.minHeight='200px'; this.src=''; this.onerror=null;"
-                  />
-                </picture>
-              </div>
+              
+              <!-- Row 2: Venues + Catering -->
+              <a href="/category.html?slug=venues" class="hero-collage-card" data-category="venues">
+                <img src="/assets/images/collage-venue.jpg" alt="Venues" id="collage-venues" loading="lazy"
+                     onerror="this.style.background='linear-gradient(135deg, #667eea 0%, #764ba2 100%)'; this.style.minHeight='200px'; this.src=''; this.onerror=null;">
+                <span class="hero-collage-label">
+                  <span class="hero-collage-icon">🏛️</span>
+                  Venues
+                </span>
+                <span class="hero-collage-credit" id="credit-venues"></span>
+              </a>
+              
+              <a href="/category.html?slug=catering" class="hero-collage-card" data-category="catering">
+                <img src="/assets/images/collage-catering.jpg" alt="Catering" id="collage-catering" loading="lazy"
+                     onerror="this.style.background='linear-gradient(135deg, #f093fb 0%, #f5576c 100%)'; this.style.minHeight='200px'; this.src=''; this.onerror=null;">
+                <span class="hero-collage-label">
+                  <span class="hero-collage-icon">🍽️</span>
+                  Catering
+                </span>
+                <span class="hero-collage-credit" id="credit-catering"></span>
+              </a>
+              
+              <!-- Row 3: Entertainment + Photography -->
+              <a href="/category.html?slug=entertainment" class="hero-collage-card" data-category="entertainment">
+                <img src="/assets/images/collage-entertainment.jpg" alt="Entertainment" id="collage-entertainment" loading="lazy"
+                     onerror="this.style.background='linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)'; this.style.minHeight='200px'; this.src=''; this.onerror=null;">
+                <span class="hero-collage-label">
+                  <span class="hero-collage-icon">🎤</span>
+                  Entertainment
+                </span>
+                <span class="hero-collage-credit" id="credit-entertainment"></span>
+              </a>
+              
+              <a href="/category.html?slug=photography" class="hero-collage-card" data-category="photography">
+                <img src="/assets/images/collage-photography.jpg" alt="Photography" id="collage-photography" loading="lazy"
+                     onerror="this.style.background='linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)'; this.style.minHeight='200px'; this.src=''; this.onerror=null;">
+                <span class="hero-collage-label">
+                  <span class="hero-collage-icon">📸</span>
+                  Photography
+                </span>
+                <span class="hero-collage-credit" id="credit-photography"></span>
+              </a>
             </div>
           </div>
         </div>
