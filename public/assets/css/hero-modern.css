@@ -339,12 +339,15 @@
   position: relative;
 }
 
-.hero-tag:hover {
+.hero-tag:hover,
+.hero-tag:focus {
   background: linear-gradient(to bottom, #f0fdf4 0%, #dcfce7 100%);
   border-color: #10b981;
   color: #047857;
   box-shadow: 0 2px 6px rgba(16, 185, 129, 0.15);
   transform: translateY(-1px);
+  outline: 2px solid #10b981;
+  outline-offset: 2px;
 }
 
 .hero-tag:active {
