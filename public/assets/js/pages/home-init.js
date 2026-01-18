@@ -1007,8 +1007,17 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
   }
 
   try {
-    // Check if we should use videos
-    const useVideos = mediaTypes?.videos === true;
+    // Check if we should use videos - default to true if not explicitly set to false
+    const useVideos = mediaTypes?.videos !== false;
+
+    if (isDebugEnabled()) {
+      console.log('[Hero Video] Initialization params:', {
+        source,
+        useVideos,
+        mediaTypesVideos: mediaTypes?.videos,
+        uploadGalleryLength: uploadGallery?.length || 0,
+      });
+    }
 
     if (source === 'uploads' && uploadGallery && uploadGallery.length > 0) {
       // Try to find a video in upload gallery
@@ -1225,8 +1234,11 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
  * @param {Object} widgetConfig - Configuration from backend
  */
 async function initCollageWidget(widgetConfig) {
-  const { source, mediaTypes, intervalSeconds, pexelsQueries, uploadGallery, fallbackToPexels } =
+  const { source, intervalSeconds, pexelsQueries, uploadGallery, fallbackToPexels } =
     widgetConfig;
+
+  // Default mediaTypes to enable videos if not explicitly configured
+  const mediaTypes = widgetConfig.mediaTypes || { photos: true, videos: true };
 
   const intervalMs = (intervalSeconds || 2.5) * 1000;
 
@@ -1235,6 +1247,7 @@ async function initCollageWidget(widgetConfig) {
     console.log('[Collage Widget] Initializing with config:', {
       source,
       hasMediaTypes: !!mediaTypes,
+      mediaTypes,
       intervalSeconds,
       hasQueries: !!pexelsQueries,
       uploadGalleryCount: uploadGallery?.length || 0,

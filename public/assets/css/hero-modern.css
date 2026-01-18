@@ -110,27 +110,27 @@
   max-width: 620px;
 }
 
-/* Search card */
+/* Search card - floating elements without card background */
 .hero-search-card {
   margin-top: 28px;
-  padding: 24px;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(226, 232, 240, 0.8);
-  border-radius: 20px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 0;
+  background: transparent;
+  backdrop-filter: none;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  transition: none;
 }
 
 .hero-search-card:hover {
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
-  border-color: rgba(16, 185, 129, 0.2);
+  box-shadow: none;
+  border-color: transparent;
 }
 
 .hero-search-form {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
 }
 
 .hero-search-row {
@@ -573,8 +573,8 @@
   }
   
   .hero-search-card {
-    padding: 16px;
-    margin-inline: -16px;
+    padding: 0;
+    margin-inline: 0;
     border-radius: 0;
   }
   
