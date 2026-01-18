@@ -5596,8 +5596,8 @@ router.get('/public/pexels-video', async (req, res) => {
       });
     }
 
-    // Check if videos are enabled in mediaTypes
-    const videosEnabled = collageWidget.mediaTypes?.videos === true;
+    // Check if videos are enabled in mediaTypes - default to true if not explicitly disabled
+    const videosEnabled = collageWidget.mediaTypes?.videos !== false;
     if (!videosEnabled) {
       return res.status(400).json({
         error: 'Videos are not enabled in collage widget settings',
