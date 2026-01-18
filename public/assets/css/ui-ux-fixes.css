@@ -1066,30 +1066,30 @@ body.has-admin-navbar {
 .hero-search-input {
   width: 100%;
   padding: 14px 70px 14px 18px; /* Extra right padding for button to prevent overlap */
-  border: 2px solid #E7EAF0;
+  border: none;
   border-radius: 12px;
   font-size: 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  box-shadow: none;
   transition: all 0.3s ease;
-  background: white;
+  background: transparent;
   outline: none;
 }
 
 .hero-search-input:focus {
-  border-color: var(--ink, #0b8073);
-  box-shadow: 0 4px 16px rgba(11, 128, 115, 0.15);
+  border-color: transparent;
+  box-shadow: none;
 }
 
 /* Dark mode support for hero search */
 html[data-theme="dark"] .hero-search-input {
-  background: #0f172a;
-  border-color: #374151;
+  background: transparent;
+  border-color: transparent;
   color: #E5E7EB;
 }
 
 html[data-theme="dark"] .hero-search-input:focus {
-  border-color: var(--ink, #0b8073);
-  box-shadow: 0 4px 16px rgba(11, 128, 115, 0.25);
+  border-color: transparent;
+  box-shadow: none;
 }
 
 html[data-theme="dark"] .hero-search-input::placeholder {
