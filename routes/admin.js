@@ -5562,5 +5562,175 @@ router.get('/public/pexels-collage', async (req, res) => {
   }
 });
 
+/**
+ * GET /api/admin/public/pexels-video
+ * Public endpoint to fetch Pexels videos for homepage hero section
+ * Uses Pexels API when configured, falls back to curated fallback URLs when API unavailable
+ */
+router.get('/public/pexels-video', async (req, res) => {
+  try {
+    // Check if Pexels collage is enabled via collageWidget configuration
+    const settings = (await dbUnified.read('settings')) || {};
+    const collageWidget = settings.collageWidget || {};
+
+    // Check both new collageWidget format and legacy pexelsCollage feature flag for backward compatibility
+    const isEnabled = collageWidget.enabled === true || settings.features?.pexelsCollage === true;
+    const source = collageWidget.source || 'pexels';
+
+    // Debug logging
+    if (isCollageDebugEnabled()) {
+      console.log('[Pexels Video Endpoint] Configuration check:', {
+        isEnabled,
+        collageWidgetEnabled: collageWidget.enabled,
+        legacyPexelsEnabled: settings.features?.pexelsCollage,
+        source,
+        query: req.query.query,
+        mediaTypesVideos: collageWidget.mediaTypes?.videos,
+      });
+    }
+
+    if (!isEnabled) {
+      return res.status(404).json({
+        error: 'Pexels collage feature is not enabled',
+        errorType: 'feature_disabled',
+      });
+    }
+
+    // Check if videos are enabled in mediaTypes
+    const videosEnabled = collageWidget.mediaTypes?.videos === true;
+    if (!videosEnabled) {
+      return res.status(400).json({
+        error: 'Videos are not enabled in collage widget settings',
+        errorType: 'videos_disabled',
+      });
+    }
+
+    // If source is not 'pexels', return an error
+    if (source && source !== 'pexels') {
+      return res.status(400).json({
+        error: 'This endpoint only supports Pexels source',
+        errorType: 'invalid_source',
+        message: 'Configure collage widget to use Pexels source',
+      });
+    }
+
+    const { query } = req.query;
+
+    if (!query) {
+      return res.status(400).json({
+        error: 'Query parameter required',
+        errorType: 'validation',
+      });
+    }
+
+    // Import Pexels service
+    const { getPexelsService } = require('../utils/pexels-service');
+    const pexels = getPexelsService();
+
+    // Try to use Pexels API first
+    if (pexels.isConfigured()) {
+      try {
+        if (isCollageDebugEnabled()) {
+          console.log(`🎥 Searching videos with query: "${query}"`);
+        }
+
+        const results = await pexels.searchVideos(query, 5, 1);
+
+        if (results.videos && results.videos.length > 0) {
+          // Transform to expected frontend format
+          const videos = results.videos.map(video => ({
+            id: video.id,
+            url: video.url,
+            image: video.image,
+            duration: video.duration,
+            user: {
+              name: video.user?.name || 'Pexels',
+              url: video.user?.url || 'https://www.pexels.com',
+            },
+            video_files: (video.videoFiles || []).map(file => ({
+              id: file.id,
+              quality: file.quality,
+              file_type: file.fileType,
+              width: file.width,
+              height: file.height,
+              link: file.link,
+            })),
+          }));
+
+          return res.json({
+            success: true,
+            videos,
+            query,
+            usingFallback: false,
+            source: 'pexels-api',
+          });
+        }
+
+        // If no videos found, fall through to fallback
+        console.warn(`⚠️  No videos found for query "${query}", using fallback`);
+      } catch (apiError) {
+        console.warn(
+          `⚠️  Pexels API failed for video query "${query}" (${apiError.type || 'unknown'}): ${apiError.message}`
+        );
+        console.warn('💡 Falling back to curated video URLs');
+        // Fall through to fallback logic below
+      }
+    } else {
+      console.log('ℹ️  Pexels API not configured, using fallback video URLs');
+    }
+
+    // If API not configured or failed, use fallback URLs from config
+    const { getRandomFallbackVideos } = require('../config/pexels-fallback');
+
+    const fallbackVideos = getRandomFallbackVideos(5);
+
+    // Transform fallback videos to match expected frontend format
+    const videos = fallbackVideos.map(video => {
+      const videoFile = video.videoFiles?.[0];
+      return {
+        id: video.id,
+        url: video.url,
+        image: video.image,
+        duration: video.duration,
+        user: {
+          name: 'Pexels',
+          url: 'https://www.pexels.com',
+        },
+        video_files: [
+          {
+            quality: videoFile?.quality || 'hd',
+            file_type: 'video/mp4',
+            width: videoFile?.width || 1920,
+            height: videoFile?.height || 1080,
+            link: videoFile?.link || '',
+          },
+        ],
+      };
+    });
+
+    res.json({
+      success: true,
+      videos,
+      query,
+      usingFallback: true,
+      source: 'fallback',
+      message: 'Using curated fallback videos from Pexels collection',
+    });
+  } catch (error) {
+    console.error('❌ Error fetching Pexels videos:', error);
+    console.error('🔖 Error type:', error.type || 'unknown');
+
+    // Return appropriate status code based on error type
+    const statusCode = error.statusCode || 500;
+
+    res.status(statusCode).json({
+      error: 'Failed to fetch Pexels videos',
+      message: error.userFriendlyMessage || error.message,
+      errorType: error.type || 'unknown',
+      details: error.message,
+    });
+  }
+});
+
 module.exports = router;
 module.exports.setHelperFunctions = setHelperFunctions;
