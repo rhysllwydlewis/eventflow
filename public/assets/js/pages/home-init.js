@@ -1060,10 +1060,12 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
         console.log('[Hero Video] API response:', {
           hasVideos: !!data.videos,
           videoCount: data.videos?.length || 0,
-          firstVideo: data.videos?.[0] ? {
-            hasVideoFiles: !!data.videos[0].video_files,
-            videoFilesCount: data.videos[0].video_files?.length || 0
-          } : null
+          firstVideo: data.videos?.[0]
+            ? {
+                hasVideoFiles: !!data.videos[0].video_files,
+                videoFilesCount: data.videos[0].video_files?.length || 0,
+              }
+            : null,
         });
       }
 
@@ -1075,7 +1077,7 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
           console.log('[Hero Video] Video file selection:', {
             hasVideoFile: !!videoFile,
             quality: videoFile?.quality,
-            link: videoFile?.link
+            link: videoFile?.link,
           });
         }
 
@@ -1089,10 +1091,15 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
           let loadingComplete = false;
 
           const handleMetadataLoaded = () => {
-            if (loadingComplete) return; // Already handled
+            // Already handled
+            if (loadingComplete) {
+              return;
+            }
             loadingComplete = true;
-            if (timeoutId) clearTimeout(timeoutId);
-            
+            if (timeoutId) {
+              clearTimeout(timeoutId);
+            }
+
             if (isDebugEnabled()) {
               console.log('[Hero Video] Video metadata loaded, attempting to play');
             }
@@ -1104,10 +1111,15 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
           };
 
           const handleVideoError = () => {
-            if (loadingComplete) return; // Already handled
+            // Already handled
+            if (loadingComplete) {
+              return;
+            }
             loadingComplete = true;
-            if (timeoutId) clearTimeout(timeoutId);
-            
+            if (timeoutId) {
+              clearTimeout(timeoutId);
+            }
+
             if (isDebugEnabled()) {
               console.warn('[Hero Video] Video failed to load, will use fallback');
             }
@@ -1129,7 +1141,9 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
             if (!loadingComplete) {
               loadingComplete = true;
               if (isDebugEnabled()) {
-                console.warn('[Hero Video] Video loading timeout - poster will be shown as fallback');
+                console.warn(
+                  '[Hero Video] Video loading timeout - poster will be shown as fallback'
+                );
               }
             }
           }, 10000);
@@ -1162,7 +1176,7 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
           }
           return; // Success - exit function (video will load in background)
         }
-        
+
         // No suitable video file found
         if (isDebugEnabled()) {
           console.warn('[Hero Video] No suitable video file found');
@@ -1173,7 +1187,7 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
           console.warn('[Hero Video] No videos in API response');
         }
       }
-      
+
       // Fall through to error handling if video not initialized
       throw new Error('Failed to initialize video');
     }
@@ -1181,7 +1195,7 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
     if (isDebugEnabled()) {
       console.warn('[Hero Video] Failed to initialize video:', error.message);
     }
-    
+
     // Try to use fallback: show poster image if available, otherwise hide video
     // The poster attribute in HTML will show as fallback if video fails to load
     const posterSrc = videoElement.getAttribute('poster');
@@ -1189,14 +1203,19 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
       // Keep video element visible to show poster, but ensure video won't play
       videoSource.src = '';
       videoElement.load();
+
+      // Update credit text to indicate this is a photo, not a video
+      videoCredit.textContent = 'Photo by EventFlow';
+      videoCredit.style.display = 'block';
+
       if (isDebugEnabled()) {
-        console.log('[Hero Video] Using poster image as fallback');
+        console.log('[Hero Video] Using poster image as fallback with photo credit');
       }
     } else {
       // No poster available, hide video element and show gradient fallback
       videoElement.style.display = 'none';
+      videoCredit.style.display = 'none';
     }
-    videoCredit.style.display = 'none';
   }
 }
 
