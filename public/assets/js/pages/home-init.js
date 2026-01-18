@@ -1038,32 +1038,66 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
       const eventQueries = ['wedding', 'party', 'corporate event', 'celebration', 'event venue'];
       const randomQuery = eventQueries[Math.floor(Math.random() * eventQueries.length)];
 
+      if (isDebugEnabled()) {
+        console.log('[Hero Video] Fetching Pexels video with query:', randomQuery);
+      }
+
       const response = await fetch(
         `/api/admin/public/pexels-video?query=${encodeURIComponent(randomQuery)}`
       );
 
       if (!response.ok) {
+        const errorText = await response.text();
+        if (isDebugEnabled()) {
+          console.warn('[Hero Video] API error:', response.status, errorText);
+        }
         throw new Error(`Failed to fetch video: ${response.status}`);
       }
 
       const data = await response.json();
 
+      if (isDebugEnabled()) {
+        console.log('[Hero Video] API response:', {
+          hasVideos: !!data.videos,
+          videoCount: data.videos?.length || 0,
+          firstVideo: data.videos?.[0] ? {
+            hasVideoFiles: !!data.videos[0].video_files,
+            videoFilesCount: data.videos[0].video_files?.length || 0
+          } : null
+        });
+      }
+
       if (data.videos && data.videos.length > 0) {
         const video = data.videos[0];
         const videoFile = video.video_files?.find(f => f.quality === 'hd' || f.quality === 'sd');
 
+        if (isDebugEnabled()) {
+          console.log('[Hero Video] Video file selection:', {
+            hasVideoFile: !!videoFile,
+            quality: videoFile?.quality,
+            link: videoFile?.link
+          });
+        }
+
         if (videoFile && videoFile.link) {
           if (isDebugEnabled()) {
-            console.log('[Hero Video] Using Pexels video:', videoFile.link);
+            console.log('[Hero Video] Setting video source:', videoFile.link);
           }
 
           videoSource.src = videoFile.link;
           videoElement.load();
-          videoElement.play().catch(() => {
+          
+          // Wait for video to be ready before attempting to play
+          videoElement.addEventListener('loadedmetadata', () => {
             if (isDebugEnabled()) {
-              console.log('[Hero Video] Autoplay prevented, video will play on user interaction');
+              console.log('[Hero Video] Video metadata loaded, attempting to play');
             }
-          });
+            videoElement.play().catch(err => {
+              if (isDebugEnabled()) {
+                console.log('[Hero Video] Autoplay prevented:', err.message);
+              }
+            });
+          }, { once: true });
 
           // Update credit - using safe DOM manipulation
           if (video.user && video.user.name) {
@@ -1087,8 +1121,20 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
             videoCredit.appendChild(document.createTextNode(' on Pexels'));
             videoCredit.style.display = 'block';
           }
+
+          if (isDebugEnabled()) {
+            console.log('[Hero Video] Video initialized successfully');
+          }
+          return; // Success - exit function
+        } else {
+          if (isDebugEnabled()) {
+            console.warn('[Hero Video] No suitable video file found');
+          }
         }
       } else {
+        if (isDebugEnabled()) {
+          console.warn('[Hero Video] No videos in API response');
+        }
         throw new Error('No videos found in API response');
       }
     }
