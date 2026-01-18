@@ -181,7 +181,6 @@
 .hero-category-select:focus {
   border: none;
   outline: 2px solid #10b981;
-  outline-offset: 0px;
   background: rgba(255, 255, 255, 0.5);
   box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15);
 }
@@ -256,7 +255,6 @@
 .hero-search-input:focus {
   border: none;
   outline: 2px solid #10b981;
-  outline-offset: 0px;
   background: rgba(255, 255, 255, 0.5);
   box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15);
 }
