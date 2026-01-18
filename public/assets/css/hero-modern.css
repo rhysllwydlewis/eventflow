@@ -75,10 +75,17 @@
   letter-spacing: -0.02em;
   color: #0f172a;
   max-width: 640px;
+  display: flex;
+  flex-direction: column;
+}
+
+.hero-modern h1 .hero-line-1,
+.hero-modern h1 .hero-line-2 {
+  display: block;
 }
 
 .hero-modern h1 .hero-highlight-text {
-  display: inline-block;
+  display: block;
   position: relative;
   color: #059669;
   margin-top: 8px;
@@ -150,28 +157,29 @@
   width: 100%;
   appearance: none;
   padding: 14px 40px 14px 16px;
-  background: white;
-  border: 2px solid #e2e8f0;
+  background: transparent;
+  border: none;
   border-radius: 14px;
   font-size: 15px;
   font-weight: 500;
   color: #334155;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+  box-shadow: none;
   cursor: pointer;
   outline: none;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  height: 50px;
 }
 
 .hero-category-select:hover {
-  border-color: #cbd5e1;
-  background: #fafbfc;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.06);
+  border-color: transparent;
+  background: rgba(255, 255, 255, 0.3);
+  box-shadow: none;
 }
 
 .hero-category-select:focus {
-  border-color: #10b981;
-  background: white;
-  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15), 0 4px 8px rgba(0, 0, 0, 0.06);
+  border: 2px solid #10b981;
+  background: rgba(255, 255, 255, 0.5);
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15);
 }
 
 .hero-category-icon {
@@ -217,14 +225,15 @@
 .hero-search-input {
   width: 100%;
   padding: 14px 16px 14px 48px;
-  background: white;
-  border: 2px solid #e2e8f0;
+  background: transparent;
+  border: none;
   border-radius: 14px;
   font-size: 16px;
   color: #0f172a;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+  box-shadow: none;
   outline: none;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  height: 50px;
 }
 
 .hero-search-input::placeholder {
@@ -233,15 +242,15 @@
 }
 
 .hero-search-input:hover {
-  border-color: #cbd5e1;
-  background: #fafbfc;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.06);
+  border-color: transparent;
+  background: rgba(255, 255, 255, 0.3);
+  box-shadow: none;
 }
 
 .hero-search-input:focus {
-  border-color: #10b981;
-  background: white;
-  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15), 0 4px 8px rgba(0, 0, 0, 0.06);
+  border: 2px solid #10b981;
+  background: rgba(255, 255, 255, 0.5);
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15);
 }
 
 /* Search button */
