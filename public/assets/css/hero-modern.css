@@ -209,6 +209,8 @@
   position: relative;
   flex: 1;
   min-width: 0; /* Fix flex overflow */
+  display: flex;
+  align-items: center;
 }
 
 .hero-search-icon {
@@ -231,7 +233,7 @@
 
 .hero-search-input {
   width: 100%;
-  padding: 14px 16px 14px 48px;
+  padding: 14px 62px 14px 48px; /* Increased right padding to accommodate button */
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(8px);
   border: 1.5px solid rgba(226, 232, 240, 0.8);
@@ -281,11 +283,12 @@
     0 2px 4px rgba(5, 150, 105, 0.2),
     0 4px 12px rgba(5, 150, 105, 0.3);
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
+  position: absolute;
+  right: 0;
+  top: 0;
   overflow: hidden;
   flex-shrink: 0;
   box-sizing: border-box;
-  align-self: center; /* Explicitly center in flex container */
 }
 
 .hero-search-button::before {
@@ -636,17 +639,22 @@
   }
   
   .hero-search-input-wrapper {
-    /* Input wrapper takes remaining space */
-    flex: 1 1 auto;
+    /* Input wrapper takes full width with button inside */
+    flex: 1 1 100%;
+    width: 100%;
     min-width: 0;
   }
   
   .hero-search-input {
     width: 100%;
+    padding-right: 62px; /* Ensure space for button on mobile */
   }
 
   .hero-search-button {
-    /* Button stays at fixed width, aligned with input */
+    /* Button positioned absolutely inside input wrapper */
+    position: absolute;
+    right: 0;
+    top: 0;
     width: 50px;
     height: 50px;
     flex-shrink: 0;
