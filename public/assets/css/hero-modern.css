@@ -687,7 +687,7 @@
 .hero-collage {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  grid-template-rows: 1.2fr 1fr 1fr;
+  grid-template-rows: 1fr 1fr 1fr;
   gap: 14px;
   height: 520px;
   max-width: 100%;
@@ -919,7 +919,7 @@
 @media (min-width: 768px) and (max-width: 1023px) {
   .hero-collage {
     height: 480px;
-    grid-template-rows: 1.5fr 1fr 1fr;
+    grid-template-rows: 1fr 1fr 1fr;
   }
 
   .hero-video-card {
