@@ -660,10 +660,19 @@
   background: #f8fafc;
 }
 
-.hero-collage-card:hover {
+.hero-collage-card:hover,
+.hero-collage-card:focus {
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
   transform: translateY(-4px) scale(1.02);
   text-decoration: none;
+  outline: 2px solid #10b981;
+  outline-offset: 2px;
+}
+
+.hero-collage-card:focus {
+  /* Ensure focus state is visible for keyboard navigation */
+  outline: 2px solid #10b981;
+  outline-offset: 2px;
 }
 
 .hero-collage-card img {
@@ -674,7 +683,8 @@
   transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.hero-collage-card:hover img {
+.hero-collage-card:hover img,
+.hero-collage-card:focus img {
   transform: scale(1.08);
 }
 
@@ -812,7 +822,13 @@
     transition: none;
   }
 
-  .hero-collage-card:hover img {
+  .hero-collage-card:hover,
+  .hero-collage-card:focus {
+    transform: none;
+  }
+
+  .hero-collage-card:hover img,
+  .hero-collage-card:focus img {
     transform: none;
   }
 
