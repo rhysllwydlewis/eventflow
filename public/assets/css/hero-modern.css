@@ -168,6 +168,8 @@
   outline: none;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   height: 50px;
+  box-sizing: border-box;
+  line-height: normal;
 }
 
 .hero-category-select:hover {
@@ -236,6 +238,8 @@
   outline: none;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   height: 50px;
+  box-sizing: border-box;
+  line-height: normal;
 }
 
 .hero-search-input::placeholder {
@@ -276,6 +280,8 @@
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
+  flex-shrink: 0;
+  box-sizing: border-box;
 }
 
 .hero-search-button::before {
