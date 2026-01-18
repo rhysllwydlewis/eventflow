@@ -277,6 +277,7 @@
   overflow: hidden;
   flex-shrink: 0;
   box-sizing: border-box;
+  align-self: center; /* Explicitly center in flex container */
 }
 
 .hero-search-button::before {
@@ -572,7 +573,7 @@
 
   .hero-search-button {
     width: 100%;
-    height: 48px;
+    height: 50px;
   }
 
   .hero-tag {
@@ -742,33 +743,34 @@
 /* Category label pill */
 .hero-collage-label {
   position: absolute;
-  bottom: 14px;
-  left: 14px;
-  background: rgba(255, 255, 255, 0.98);
-  backdrop-filter: blur(12px);
+  bottom: 12px;
+  left: 12px;
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   color: #0f172a;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 600;
-  padding: 10px 16px;
+  padding: 6px 12px;
   border-radius: 999px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
   z-index: 2;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 1px solid rgba(226, 232, 240, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 .hero-collage-card:hover .hero-collage-label,
 .hero-collage-card:focus .hero-collage-label {
-  background: white;
+  background: rgba(255, 255, 255, 0.95);
   transform: scale(1.05);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
 }
 
 .hero-collage-icon {
-  font-size: 18px;
+  font-size: 14px;
   line-height: 1;
 }
 
@@ -869,14 +871,14 @@
   }
 
   .hero-collage-label {
-    font-size: 13px;
-    padding: 6px 12px;
-    bottom: 10px;
-    left: 10px;
+    font-size: 11px;
+    padding: 5px 10px;
+    bottom: 8px;
+    left: 8px;
   }
 
   .hero-collage-icon {
-    font-size: 14px;
+    font-size: 12px;
   }
 }
 

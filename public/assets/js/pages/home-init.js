@@ -1038,32 +1038,101 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
       const eventQueries = ['wedding', 'party', 'corporate event', 'celebration', 'event venue'];
       const randomQuery = eventQueries[Math.floor(Math.random() * eventQueries.length)];
 
+      if (isDebugEnabled()) {
+        console.log('[Hero Video] Fetching Pexels video with query:', randomQuery);
+      }
+
       const response = await fetch(
         `/api/admin/public/pexels-video?query=${encodeURIComponent(randomQuery)}`
       );
 
       if (!response.ok) {
+        const errorText = await response.text();
+        if (isDebugEnabled()) {
+          console.warn('[Hero Video] API error:', response.status, errorText);
+        }
         throw new Error(`Failed to fetch video: ${response.status}`);
       }
 
       const data = await response.json();
 
+      if (isDebugEnabled()) {
+        console.log('[Hero Video] API response:', {
+          hasVideos: !!data.videos,
+          videoCount: data.videos?.length || 0,
+          firstVideo: data.videos?.[0] ? {
+            hasVideoFiles: !!data.videos[0].video_files,
+            videoFilesCount: data.videos[0].video_files?.length || 0
+          } : null
+        });
+      }
+
       if (data.videos && data.videos.length > 0) {
         const video = data.videos[0];
         const videoFile = video.video_files?.find(f => f.quality === 'hd' || f.quality === 'sd');
 
+        if (isDebugEnabled()) {
+          console.log('[Hero Video] Video file selection:', {
+            hasVideoFile: !!videoFile,
+            quality: videoFile?.quality,
+            link: videoFile?.link
+          });
+        }
+
         if (videoFile && videoFile.link) {
           if (isDebugEnabled()) {
-            console.log('[Hero Video] Using Pexels video:', videoFile.link);
+            console.log('[Hero Video] Setting video source:', videoFile.link);
           }
 
+          // Set up event handlers before loading to catch all events
+          let timeoutId = null;
+          let loadingComplete = false;
+
+          const handleMetadataLoaded = () => {
+            if (loadingComplete) return; // Already handled
+            loadingComplete = true;
+            if (timeoutId) clearTimeout(timeoutId);
+            
+            if (isDebugEnabled()) {
+              console.log('[Hero Video] Video metadata loaded, attempting to play');
+            }
+            videoElement.play().catch(err => {
+              if (isDebugEnabled()) {
+                console.log('[Hero Video] Autoplay prevented:', err.message);
+              }
+            });
+          };
+
+          const handleVideoError = () => {
+            if (loadingComplete) return; // Already handled
+            loadingComplete = true;
+            if (timeoutId) clearTimeout(timeoutId);
+            
+            if (isDebugEnabled()) {
+              console.warn('[Hero Video] Video failed to load, will use fallback');
+            }
+            // Don't throw here - let the video element use its poster as fallback
+          };
+
+          // Add listeners before loading
+          videoElement.addEventListener('loadedmetadata', handleMetadataLoaded, { once: true });
+          videoElement.addEventListener('error', handleVideoError, { once: true });
+
+          // Set source and start loading
           videoSource.src = videoFile.link;
           videoElement.load();
-          videoElement.play().catch(() => {
-            if (isDebugEnabled()) {
-              console.log('[Hero Video] Autoplay prevented, video will play on user interaction');
+
+          // Timeout as additional safety net (10 seconds)
+          // The { once: true } option auto-removes listeners after first fire.
+          // This timeout is a defensive fallback for edge cases where events don't fire.
+          timeoutId = setTimeout(() => {
+            if (!loadingComplete) {
+              loadingComplete = true;
+              if (isDebugEnabled()) {
+                console.warn('[Hero Video] Video loading timeout - poster will be shown as fallback');
+              }
             }
-          });
+          }, 10000);
 
           // Update credit - using safe DOM manipulation
           if (video.user && video.user.name) {
@@ -1087,10 +1156,26 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
             videoCredit.appendChild(document.createTextNode(' on Pexels'));
             videoCredit.style.display = 'block';
           }
+
+          if (isDebugEnabled()) {
+            console.log('[Hero Video] Video initialized (will load asynchronously)');
+          }
+          return; // Success - exit function (video will load in background)
+        }
+        
+        // No suitable video file found
+        if (isDebugEnabled()) {
+          console.warn('[Hero Video] No suitable video file found');
         }
       } else {
-        throw new Error('No videos found in API response');
+        // No videos in API response
+        if (isDebugEnabled()) {
+          console.warn('[Hero Video] No videos in API response');
+        }
       }
+      
+      // Fall through to error handling if video not initialized
+      throw new Error('Failed to initialize video');
     }
   } catch (error) {
     if (isDebugEnabled()) {
