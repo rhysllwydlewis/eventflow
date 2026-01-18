@@ -173,15 +173,14 @@
 }
 
 .hero-category-select:hover {
-  border-color: transparent;
-  background: rgba(255, 255, 255, 0.3);
+  background: transparent;
   box-shadow: none;
 }
 
 .hero-category-select:focus {
   border: none;
   outline: 2px solid #10b981;
-  background: rgba(255, 255, 255, 0.5);
+  background: transparent;
   box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15);
 }
 
@@ -247,15 +246,14 @@
 }
 
 .hero-search-input:hover {
-  border-color: transparent;
-  background: rgba(255, 255, 255, 0.3);
+  background: transparent;
   box-shadow: none;
 }
 
 .hero-search-input:focus {
   border: none;
   outline: 2px solid #10b981;
-  background: rgba(255, 255, 255, 0.5);
+  background: transparent;
   box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15);
 }
 
