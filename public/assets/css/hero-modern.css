@@ -173,6 +173,7 @@
 }
 
 .hero-category-select:hover {
+  border-color: transparent;
   background: transparent;
   box-shadow: none;
 }
@@ -246,6 +247,7 @@
 }
 
 .hero-search-input:hover {
+  border-color: transparent;
   background: transparent;
   box-shadow: none;
 }
