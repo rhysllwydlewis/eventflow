@@ -168,6 +168,7 @@
   outline: none;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   height: 50px;
+  min-height: 50px;
   box-sizing: border-box;
   line-height: normal;
 }
@@ -236,6 +237,7 @@
   outline: none;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   height: 50px;
+  min-height: 50px;
   box-sizing: border-box;
   line-height: normal;
 }
@@ -263,6 +265,7 @@
   justify-content: center;
   width: 50px;
   height: 50px;
+  min-height: 50px; /* Ensure minimum height */
   padding: 0;
   background: linear-gradient(135deg, #10b981 0%, #059669 100%);
   color: white;
@@ -277,6 +280,7 @@
   overflow: hidden;
   flex-shrink: 0;
   box-sizing: border-box;
+  align-self: center; /* Explicitly center in flex container */
 }
 
 .hero-search-button::before {
@@ -572,7 +576,8 @@
 
   .hero-search-button {
     width: 100%;
-    height: 48px;
+    height: 50px;
+    min-height: 50px;
   }
 
   .hero-tag {
