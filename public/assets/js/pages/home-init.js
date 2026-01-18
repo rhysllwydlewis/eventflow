@@ -948,12 +948,42 @@ async function initPexelsCollage(settings) {
       // Expose interval ID on window for debugging
       window.pexelsCollageIntervalId = pexelsCollageIntervalId;
 
+      // Store cycling state for watchdog
+      window.__collageIntervalActive = true;
+      window.__collageLastCycleTime = Date.now();
+
       // Only log in development mode
       if (isDevelopmentEnvironment()) {
         console.log(
           `Pexels collage initialized with ${intervalSeconds}s interval (${Object.keys(imageCache).length} categories)`
         );
       }
+
+      // Watchdog: Check every 2 minutes if interval is still running
+      // This detects if the interval was unexpectedly cleared
+      const watchdogInterval = setInterval(() => {
+        if (!window.__collageIntervalActive) {
+          return; // Collage was intentionally disabled
+        }
+
+        const timeSinceLastCycle = Date.now() - window.__collageLastCycleTime;
+        const expectedInterval = intervalMs * 2; // Allow 2x the interval as tolerance
+
+        if (timeSinceLastCycle > expectedInterval && !pexelsCollageIntervalId) {
+          if (isDevelopmentEnvironment()) {
+            console.warn('⚠️  Collage interval stopped unexpectedly, restarting...');
+          }
+
+          // Restart the interval
+          pexelsCollageIntervalId = setInterval(() => {
+            cyclePexelsImages(imageCache, currentImageIndex, collageFrames, categoryMapping);
+          }, intervalMs);
+          window.pexelsCollageIntervalId = pexelsCollageIntervalId;
+        }
+      }, 120000); // Check every 2 minutes
+
+      // Store watchdog ID for cleanup
+      window.__collageWatchdogId = watchdogInterval;
     } else {
       // Only warn in development mode
       if (isDevelopmentEnvironment()) {
@@ -1213,8 +1243,7 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
  * @param {Object} widgetConfig - Configuration from backend
  */
 async function initCollageWidget(widgetConfig) {
-  const { source, intervalSeconds, pexelsQueries, uploadGallery, fallbackToPexels } =
-    widgetConfig;
+  const { source, intervalSeconds, pexelsQueries, uploadGallery, fallbackToPexels } = widgetConfig;
 
   // Default mediaTypes to enable videos if not explicitly configured
   const mediaTypes = widgetConfig.mediaTypes || { photos: true, videos: true };
@@ -1504,11 +1533,44 @@ async function initCollageWidget(widgetConfig) {
       // Expose interval ID on window for debugging
       window.pexelsCollageIntervalId = pexelsCollageIntervalId;
 
+      // Store cycling state for watchdog
+      window.__collageIntervalActive = true;
+      window.__collageLastCycleTime = Date.now();
+
       if (isDevelopmentEnvironment()) {
         console.log(
           `Collage widget initialized with ${intervalSeconds}s interval (${Object.keys(mediaCache).length} categories)`
         );
       }
+
+      // Watchdog: Check every 2 minutes if interval is still running
+      const watchdogInterval = setInterval(() => {
+        if (!window.__collageIntervalActive) {
+          return;
+        }
+
+        const timeSinceLastCycle = Date.now() - window.__collageLastCycleTime;
+        const expectedInterval = intervalMs * 2;
+
+        if (timeSinceLastCycle > expectedInterval && !pexelsCollageIntervalId) {
+          if (isDevelopmentEnvironment()) {
+            console.warn('⚠️  Collage interval stopped unexpectedly, restarting...');
+          }
+
+          pexelsCollageIntervalId = setInterval(() => {
+            cycleWidgetMedia(
+              mediaCache,
+              currentMediaIndex,
+              collageFrames,
+              categoryMapping,
+              prefersReducedMotion
+            );
+          }, intervalMs);
+          window.pexelsCollageIntervalId = pexelsCollageIntervalId;
+        }
+      }, 120000);
+
+      window.__collageWatchdogId = watchdogInterval;
     }
   } catch (error) {
     if (isDevelopmentEnvironment()) {
@@ -1741,6 +1803,9 @@ function cycleWidgetMedia(
   categoryMapping,
   prefersReducedMotion
 ) {
+  // Update last cycle time for watchdog
+  window.__collageLastCycleTime = Date.now();
+
   Object.keys(mediaCache).forEach(category => {
     const mediaList = mediaCache[category];
     if (!mediaList || !Array.isArray(mediaList) || mediaList.length === 0) {
@@ -1827,6 +1892,22 @@ function cycleWidgetMedia(
             if (isDevelopmentEnvironment()) {
               console.warn(`Failed to load video: ${nextMedia.url}`);
             }
+
+            // Try to find a working media by skipping ahead
+            currentMediaIndex[category] = (currentMediaIndex[category] + 2) % mediaList.length;
+            const fallbackMedia = mediaList[currentMediaIndex[category]];
+
+            // If fallback is an image, load it directly
+            if (fallbackMedia && fallbackMedia.url && fallbackMedia.type !== 'video') {
+              currentElement.src = fallbackMedia.url;
+              currentElement.alt = `${category.charAt(0).toUpperCase() + category.slice(1)} - Photo`;
+              if (fallbackMedia.photographer) {
+                addCreatorCredit(frame, fallbackMedia);
+              } else {
+                removeCreatorCredit(frame);
+              }
+            }
+
             currentElement.classList.remove('fading');
             currentElement.style.opacity = '1';
           };
@@ -1894,6 +1975,22 @@ function cycleWidgetMedia(
             if (isDevelopmentEnvironment()) {
               console.warn(`Failed to load image: ${nextMedia.url}`);
             }
+
+            // Try to find a working image by skipping ahead
+            currentMediaIndex[category] = (currentMediaIndex[category] + 2) % mediaList.length;
+            const fallbackMedia = mediaList[currentMediaIndex[category]];
+
+            // Attempt to load the fallback image directly
+            if (fallbackMedia && fallbackMedia.url && fallbackMedia.type !== 'video') {
+              currentElement.src = fallbackMedia.url;
+              currentElement.alt = `${category.charAt(0).toUpperCase() + category.slice(1)} - Photo`;
+              if (fallbackMedia.photographer || fallbackMedia.videographer) {
+                addCreatorCredit(frame, fallbackMedia);
+              } else {
+                removeCreatorCredit(frame);
+              }
+            }
+
             currentElement.classList.remove('fading');
             currentElement.style.opacity = '1';
           };
@@ -1909,6 +2006,15 @@ function cycleWidgetMedia(
  * Clears intervals and removes event listeners to prevent memory leaks
  */
 function cleanupPexelsCollage() {
+  // Mark collage as inactive for watchdog
+  window.__collageIntervalActive = false;
+
+  // Clear watchdog interval
+  if (window.__collageWatchdogId) {
+    clearInterval(window.__collageWatchdogId);
+    window.__collageWatchdogId = null;
+  }
+
   if (pexelsCollageIntervalId) {
     clearInterval(pexelsCollageIntervalId);
     pexelsCollageIntervalId = null;
@@ -1937,6 +2043,9 @@ function cleanupPexelsCollage() {
  * Handles preload failures gracefully by falling back to direct replacement
  */
 function cyclePexelsImages(imageCache, currentImageIndex, collageFrames, categoryMapping) {
+  // Update last cycle time for watchdog
+  window.__collageLastCycleTime = Date.now();
+
   Object.keys(imageCache).forEach(category => {
     const images = imageCache[category];
     if (!images || !Array.isArray(images) || images.length === 0) {
@@ -2005,9 +2114,19 @@ function cyclePexelsImages(imageCache, currentImageIndex, collageFrames, categor
         console.warn(`⚠️  Failed to load image for ${category}: ${nextImage.url}`);
       }
 
-      // Try next image in sequence
-      currentImageIndex[category] = (currentImageIndex[category] + 1) % images.length;
-      // Don't recurse to avoid infinite loop - just skip this cycle
+      // Try to find a working image by attempting the next one immediately
+      // Skip 2 positions ahead to avoid retrying the same broken image
+      currentImageIndex[category] = (currentImageIndex[category] + 2) % images.length;
+      const fallbackImage = images[currentImageIndex[category]];
+
+      // Attempt to load the fallback image directly without transition
+      if (fallbackImage && fallbackImage.url) {
+        imgElement.src = fallbackImage.url;
+        imgElement.alt = `${category.charAt(0).toUpperCase() + category.slice(1)} - Photo by ${fallbackImage.photographer}`;
+        addCreatorCredit(frame, fallbackImage);
+      }
+      // If fallback also fails, the onerror of that load will be ignored
+      // and the next cycle will try again
     };
   });
 }
