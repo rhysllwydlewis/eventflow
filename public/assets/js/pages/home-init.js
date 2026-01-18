@@ -584,6 +584,12 @@ const PEXELS_TRANSITION_DURATION_MS = 1000;
 const PEXELS_PRELOAD_TIMEOUT_MS = 5000;
 // Delay before restoring transition after instant hide (allows time for reflow)
 const TRANSITION_RESTORE_DELAY_MS = 50;
+// Watchdog check interval (2 minutes)
+const WATCHDOG_CHECK_INTERVAL_MS = 120000;
+// Watchdog tolerance multiplier for detecting stalled intervals
+const WATCHDOG_TOLERANCE_MULTIPLIER = 2;
+// Number of positions to skip ahead when recovering from image load errors
+const ERROR_RECOVERY_SKIP_COUNT = 2;
 
 // Store interval ID for cleanup
 let pexelsCollageIntervalId = null;
@@ -959,7 +965,7 @@ async function initPexelsCollage(settings) {
         );
       }
 
-      // Watchdog: Check every 2 minutes if interval is still running
+      // Watchdog: Check periodically if interval is still running
       // This detects if the interval was unexpectedly cleared
       const watchdogInterval = setInterval(() => {
         if (!window.__collageIntervalActive) {
@@ -967,20 +973,24 @@ async function initPexelsCollage(settings) {
         }
 
         const timeSinceLastCycle = Date.now() - window.__collageLastCycleTime;
-        const expectedInterval = intervalMs * 2; // Allow 2x the interval as tolerance
+        const expectedInterval = intervalMs * WATCHDOG_TOLERANCE_MULTIPLIER;
 
-        if (timeSinceLastCycle > expectedInterval && !pexelsCollageIntervalId) {
-          if (isDevelopmentEnvironment()) {
-            console.warn('⚠️  Collage interval stopped unexpectedly, restarting...');
+        // Check if interval appears to have stopped
+        if (timeSinceLastCycle > expectedInterval) {
+          // Double-check interval ID is actually null before restarting
+          if (!pexelsCollageIntervalId && window.__collageIntervalActive) {
+            if (isDevelopmentEnvironment()) {
+              console.warn('⚠️  Collage interval stopped unexpectedly, restarting...');
+            }
+
+            // Restart the interval
+            pexelsCollageIntervalId = setInterval(() => {
+              cyclePexelsImages(imageCache, currentImageIndex, collageFrames, categoryMapping);
+            }, intervalMs);
+            window.pexelsCollageIntervalId = pexelsCollageIntervalId;
           }
-
-          // Restart the interval
-          pexelsCollageIntervalId = setInterval(() => {
-            cyclePexelsImages(imageCache, currentImageIndex, collageFrames, categoryMapping);
-          }, intervalMs);
-          window.pexelsCollageIntervalId = pexelsCollageIntervalId;
         }
-      }, 120000); // Check every 2 minutes
+      }, WATCHDOG_CHECK_INTERVAL_MS);
 
       // Store watchdog ID for cleanup
       window.__collageWatchdogId = watchdogInterval;
@@ -1543,32 +1553,36 @@ async function initCollageWidget(widgetConfig) {
         );
       }
 
-      // Watchdog: Check every 2 minutes if interval is still running
+      // Watchdog: Check periodically if interval is still running
       const watchdogInterval = setInterval(() => {
         if (!window.__collageIntervalActive) {
           return;
         }
 
         const timeSinceLastCycle = Date.now() - window.__collageLastCycleTime;
-        const expectedInterval = intervalMs * 2;
+        const expectedInterval = intervalMs * WATCHDOG_TOLERANCE_MULTIPLIER;
 
-        if (timeSinceLastCycle > expectedInterval && !pexelsCollageIntervalId) {
-          if (isDevelopmentEnvironment()) {
-            console.warn('⚠️  Collage interval stopped unexpectedly, restarting...');
+        // Check if interval appears to have stopped
+        if (timeSinceLastCycle > expectedInterval) {
+          // Double-check interval ID is actually null before restarting
+          if (!pexelsCollageIntervalId && window.__collageIntervalActive) {
+            if (isDevelopmentEnvironment()) {
+              console.warn('⚠️  Collage interval stopped unexpectedly, restarting...');
+            }
+
+            pexelsCollageIntervalId = setInterval(() => {
+              cycleWidgetMedia(
+                mediaCache,
+                currentMediaIndex,
+                collageFrames,
+                categoryMapping,
+                prefersReducedMotion
+              );
+            }, intervalMs);
+            window.pexelsCollageIntervalId = pexelsCollageIntervalId;
           }
-
-          pexelsCollageIntervalId = setInterval(() => {
-            cycleWidgetMedia(
-              mediaCache,
-              currentMediaIndex,
-              collageFrames,
-              categoryMapping,
-              prefersReducedMotion
-            );
-          }, intervalMs);
-          window.pexelsCollageIntervalId = pexelsCollageIntervalId;
         }
-      }, 120000);
+      }, WATCHDOG_CHECK_INTERVAL_MS);
 
       window.__collageWatchdogId = watchdogInterval;
     }
@@ -1894,7 +1908,8 @@ function cycleWidgetMedia(
             }
 
             // Try to find a working media by skipping ahead
-            currentMediaIndex[category] = (currentMediaIndex[category] + 2) % mediaList.length;
+            currentMediaIndex[category] =
+              (currentMediaIndex[category] + ERROR_RECOVERY_SKIP_COUNT) % mediaList.length;
             const fallbackMedia = mediaList[currentMediaIndex[category]];
 
             // If fallback is an image, load it directly
@@ -1977,7 +1992,8 @@ function cycleWidgetMedia(
             }
 
             // Try to find a working image by skipping ahead
-            currentMediaIndex[category] = (currentMediaIndex[category] + 2) % mediaList.length;
+            currentMediaIndex[category] =
+              (currentMediaIndex[category] + ERROR_RECOVERY_SKIP_COUNT) % mediaList.length;
             const fallbackMedia = mediaList[currentMediaIndex[category]];
 
             // Attempt to load the fallback image directly
@@ -2115,8 +2131,9 @@ function cyclePexelsImages(imageCache, currentImageIndex, collageFrames, categor
       }
 
       // Try to find a working image by attempting the next one immediately
-      // Skip 2 positions ahead to avoid retrying the same broken image
-      currentImageIndex[category] = (currentImageIndex[category] + 2) % images.length;
+      // Skip ahead to avoid retrying the same broken image
+      currentImageIndex[category] =
+        (currentImageIndex[category] + ERROR_RECOVERY_SKIP_COUNT) % images.length;
       const fallbackImage = images[currentImageIndex[category]];
 
       // Attempt to load the fallback image directly without transition
