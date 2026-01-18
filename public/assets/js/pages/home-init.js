@@ -1123,13 +1123,13 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
           videoElement.load();
 
           // Timeout as additional safety net (10 seconds)
-          // The { once: true } option auto-removes listeners after first fire,
-          // so we don't need to manually remove them here
+          // The { once: true } option auto-removes listeners after first fire.
+          // This timeout is a defensive fallback for edge cases where events don't fire.
           timeoutId = setTimeout(() => {
-            if (!loadingComplete && videoElement.readyState < 1) {
+            if (!loadingComplete) {
               loadingComplete = true;
               if (isDebugEnabled()) {
-                console.warn('[Hero Video] Video metadata loading timeout, using poster fallback');
+                console.warn('[Hero Video] Video loading timeout - poster will be shown as fallback');
               }
             }
           }, 10000);
