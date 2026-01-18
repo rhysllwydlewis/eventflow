@@ -1089,7 +1089,7 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
           
           // Wait for video to be ready before attempting to play
           // Using { once: true } ensures automatic cleanup after first trigger
-          videoElement.addEventListener('loadedmetadata', () => {
+          const handleMetadataLoaded = () => {
             if (isDebugEnabled()) {
               console.log('[Hero Video] Video metadata loaded, attempting to play');
             }
@@ -1098,7 +1098,29 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
                 console.log('[Hero Video] Autoplay prevented:', err.message);
               }
             });
-          }, { once: true });
+          };
+
+          const handleVideoError = () => {
+            if (isDebugEnabled()) {
+              console.warn('[Hero Video] Video failed to load');
+            }
+            // Remove the metadata listener since video failed
+            videoElement.removeEventListener('loadedmetadata', handleMetadataLoaded);
+          };
+
+          videoElement.addEventListener('loadedmetadata', handleMetadataLoaded, { once: true });
+          videoElement.addEventListener('error', handleVideoError, { once: true });
+
+          // Timeout as additional safety net
+          setTimeout(() => {
+            if (videoElement.readyState < 1) {
+              if (isDebugEnabled()) {
+                console.warn('[Hero Video] Video metadata loading timeout');
+              }
+              videoElement.removeEventListener('loadedmetadata', handleMetadataLoaded);
+              videoElement.removeEventListener('error', handleVideoError);
+            }
+          }, 10000); // 10 second timeout
 
           // Update credit - using safe DOM manipulation
           if (video.user && video.user.name) {
@@ -1141,7 +1163,7 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
       }
       
       // Fall through to error handling if video not initialized
-      throw new Error('No videos found in API response');
+      throw new Error('Failed to initialize video');
     }
   } catch (error) {
     if (isDebugEnabled()) {
