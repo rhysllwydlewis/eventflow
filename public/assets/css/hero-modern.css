@@ -320,12 +320,9 @@
   filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
 }
 
-/* Tag chips */
+/* Tag chips - Hidden on mobile by default, shown on tablet/desktop */
 .hero-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  padding-top: 8px;
+  display: none;
 }
 
 .hero-tag {
@@ -552,6 +549,16 @@
   }
 }
 
+/* Show tags only on tablet/desktop (768px and above) */
+@media (min-width: 768px) {
+  .hero-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding-top: 8px;
+  }
+}
+
 /* Mobile responsive adjustments */
 @media (max-width: 640px) {
   .hero-modern h1 {
@@ -563,12 +570,27 @@
   }
   
   .hero-search-card {
-    padding: 0;
+    padding: 16px;
+    margin-left: -16px;
+    margin-right: -16px;
     border-radius: 0;
   }
   
+  .hero-search-row {
+    gap: 10px;
+  }
+  
   .hero-category-wrapper {
+    width: 100%;
     min-width: 100%;
+  }
+  
+  .hero-search-input-wrapper {
+    width: 100%;
+  }
+  
+  .hero-search-input {
+    width: 100%;
   }
 
   .hero-search-button {

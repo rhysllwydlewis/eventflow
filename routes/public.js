@@ -102,9 +102,8 @@ router.get('/homepage-settings', async (req, res) => {
 
     // If collageWidget is configured, use it
     // Otherwise fall back to legacy pexelsCollage behavior
-    const collageEnabled = collageWidget.enabled !== undefined 
-      ? collageWidget.enabled 
-      : legacyPexelsEnabled;
+    const collageEnabled =
+      collageWidget.enabled !== undefined ? collageWidget.enabled : legacyPexelsEnabled;
 
     // Sanitize and validate Pexels settings for backward compatibility
     const pexelsCollageSettings = sanitizePexelsSettings(settings.pexelsCollageSettings);
@@ -113,7 +112,7 @@ router.get('/homepage-settings', async (req, res) => {
     const collageWidgetResponse = {
       enabled: collageEnabled,
       source: collageWidget.source || 'pexels',
-      mediaTypes: collageWidget.mediaTypes || { photos: true, videos: false },
+      mediaTypes: collageWidget.mediaTypes || { photos: true, videos: true },
       intervalSeconds: collageWidget.intervalSeconds || pexelsCollageSettings.intervalSeconds,
       pexelsQueries: collageWidget.pexelsQueries || pexelsCollageSettings.queries,
       pexelsVideoQueries: collageWidget.pexelsVideoQueries || {
@@ -123,7 +122,8 @@ router.get('/homepage-settings', async (req, res) => {
         photography: 'wedding videography cinematic',
       },
       uploadGallery: collageWidget.uploadGallery || [],
-      fallbackToPexels: collageWidget.fallbackToPexels !== undefined ? collageWidget.fallbackToPexels : true,
+      fallbackToPexels:
+        collageWidget.fallbackToPexels !== undefined ? collageWidget.fallbackToPexels : true,
     };
 
     // Debug logging
@@ -142,7 +142,7 @@ router.get('/homepage-settings', async (req, res) => {
     res.json({
       // New format
       collageWidget: collageWidgetResponse,
-      
+
       // Legacy format (for backward compatibility)
       pexelsCollageEnabled: legacyPexelsEnabled,
       pexelsCollageSettings,
