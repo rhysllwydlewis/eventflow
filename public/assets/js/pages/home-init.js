@@ -1084,12 +1084,22 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
             console.log('[Hero Video] Setting video source:', videoFile.link);
           }
 
-          videoSource.src = videoFile.link;
-          videoElement.load();
-          
-          // Wait for video to be ready before attempting to play
-          // Using { once: true } ensures automatic cleanup after first trigger
+          // Set up event handlers before loading to catch all events
+          let timeoutId = null;
+          let loadingComplete = false;
+
+          const cleanup = () => {
+            if (timeoutId) {
+              clearTimeout(timeoutId);
+              timeoutId = null;
+            }
+            loadingComplete = true;
+          };
+
           const handleMetadataLoaded = () => {
+            if (loadingComplete) return; // Already handled
+            cleanup();
+            
             if (isDebugEnabled()) {
               console.log('[Hero Video] Video metadata loaded, attempting to play');
             }
@@ -1101,22 +1111,31 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
           };
 
           const handleVideoError = () => {
+            if (loadingComplete) return; // Already handled
+            cleanup();
+            
             if (isDebugEnabled()) {
-              console.warn('[Hero Video] Video failed to load');
+              console.warn('[Hero Video] Video failed to load, will use fallback');
             }
-            // Remove the metadata listener since video failed
-            videoElement.removeEventListener('loadedmetadata', handleMetadataLoaded);
+            // Don't throw here - let the video element use its poster as fallback
           };
 
+          // Add listeners before loading
           videoElement.addEventListener('loadedmetadata', handleMetadataLoaded, { once: true });
           videoElement.addEventListener('error', handleVideoError, { once: true });
 
+          // Set source and start loading
+          videoSource.src = videoFile.link;
+          videoElement.load();
+
           // Timeout as additional safety net
-          setTimeout(() => {
-            if (videoElement.readyState < 1) {
+          timeoutId = setTimeout(() => {
+            if (!loadingComplete && videoElement.readyState < 1) {
+              loadingComplete = true;
               if (isDebugEnabled()) {
-                console.warn('[Hero Video] Video metadata loading timeout');
+                console.warn('[Hero Video] Video metadata loading timeout, using poster fallback');
               }
+              // Remove listeners since we're giving up
               videoElement.removeEventListener('loadedmetadata', handleMetadataLoaded);
               videoElement.removeEventListener('error', handleVideoError);
             }
@@ -1146,9 +1165,9 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
           }
 
           if (isDebugEnabled()) {
-            console.log('[Hero Video] Video initialized successfully');
+            console.log('[Hero Video] Video initialized (will load asynchronously)');
           }
-          return; // Success - exit function
+          return; // Success - exit function (video will load in background)
         }
         
         // No suitable video file found
