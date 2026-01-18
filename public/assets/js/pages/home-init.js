@@ -748,8 +748,13 @@ async function initPexelsCollage(settings) {
     photography: 3,
   };
 
-  // Get all collage frames
-  const collageFrames = document.querySelectorAll('.collage .frame');
+  // Get all collage frames - support both new and old structures
+  let collageFrames = document.querySelectorAll('.hero-collage .hero-collage-card');
+
+  // Fallback to old structure for backwards compatibility
+  if (!collageFrames || collageFrames.length === 0) {
+    collageFrames = document.querySelectorAll('.collage .frame');
+  }
 
   if (!collageFrames || collageFrames.length === 0) {
     if (isDevelopmentEnvironment()) {
@@ -987,6 +992,117 @@ async function initPexelsCollage(settings) {
 }
 
 /**
+ * Initialize hero video element with Pexels video
+ * @param {string} source - Source type ('pexels' or 'uploads')
+ * @param {Object} mediaTypes - Media types configuration
+ * @param {Array} uploadGallery - Array of uploaded media URLs
+ */
+async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
+  const videoElement = document.getElementById('hero-pexels-video');
+  const videoSource = document.getElementById('hero-video-source');
+  const videoCredit = document.getElementById('hero-video-credit');
+
+  if (!videoElement || !videoSource) {
+    return; // Video elements not present in HTML
+  }
+
+  try {
+    // Check if we should use videos
+    const useVideos = mediaTypes?.videos === true;
+
+    if (source === 'uploads' && uploadGallery && uploadGallery.length > 0) {
+      // Try to find a video in upload gallery
+      const videoUrl = uploadGallery.find(url => {
+        const urlWithoutParams = url.split('?')[0];
+        return /\.(mp4|webm|mov)$/i.test(urlWithoutParams);
+      });
+
+      if (videoUrl) {
+        if (isDebugEnabled()) {
+          console.log('[Hero Video] Using uploaded video:', videoUrl);
+        }
+        videoSource.src = videoUrl;
+        videoElement.load();
+        videoElement.play().catch(() => {
+          if (isDebugEnabled()) {
+            console.log('[Hero Video] Autoplay prevented, video will play on user interaction');
+          }
+        });
+        videoCredit.style.display = 'none'; // No credit for uploaded videos
+        return;
+      }
+    }
+
+    if ((source === 'pexels' || source === 'uploads') && useVideos) {
+      // Fetch Pexels video
+      const eventQueries = ['wedding', 'party', 'corporate event', 'celebration', 'event venue'];
+      const randomQuery = eventQueries[Math.floor(Math.random() * eventQueries.length)];
+
+      const response = await fetch(
+        `/api/admin/public/pexels-video?query=${encodeURIComponent(randomQuery)}`
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch video: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (data.videos && data.videos.length > 0) {
+        const video = data.videos[0];
+        const videoFile = video.video_files?.find(f => f.quality === 'hd' || f.quality === 'sd');
+
+        if (videoFile && videoFile.link) {
+          if (isDebugEnabled()) {
+            console.log('[Hero Video] Using Pexels video:', videoFile.link);
+          }
+
+          videoSource.src = videoFile.link;
+          videoElement.load();
+          videoElement.play().catch(() => {
+            if (isDebugEnabled()) {
+              console.log('[Hero Video] Autoplay prevented, video will play on user interaction');
+            }
+          });
+
+          // Update credit - using safe DOM manipulation
+          if (video.user && video.user.name) {
+            // Clear existing content
+            videoCredit.textContent = '';
+
+            // Create text node for "Video by "
+            videoCredit.appendChild(document.createTextNode('Video by '));
+
+            // Create and validate link
+            const link = document.createElement('a');
+            const validatedUrl = validatePexelsUrl(video.user.url);
+            link.href = validatedUrl;
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer';
+            link.style.color = 'white';
+            link.style.textDecoration = 'underline';
+            link.textContent = video.user.name; // Safe - uses textContent
+
+            videoCredit.appendChild(link);
+            videoCredit.appendChild(document.createTextNode(' on Pexels'));
+            videoCredit.style.display = 'block';
+          }
+        }
+      } else {
+        throw new Error('No videos found in API response');
+      }
+    }
+  } catch (error) {
+    if (isDebugEnabled()) {
+      console.warn('[Hero Video] Failed to initialize video:', error.message);
+    }
+    // Hide video element on error, show fallback gradient
+    videoElement.style.display = 'none';
+    videoCredit.style.display = 'none';
+  }
+}
+
+/**
  * Initialize Collage Widget with configurable source (Pexels or Uploads)
  * Supports both photos and videos with accessibility features
  * @param {Object} widgetConfig - Configuration from backend
@@ -1010,7 +1126,7 @@ async function initCollageWidget(widgetConfig) {
     });
   }
 
-  // Map category keys to their collage frame elements
+  // Map category keys to their collage card elements
   const categoryMapping = {
     venues: 0,
     catering: 1,
@@ -1018,8 +1134,13 @@ async function initCollageWidget(widgetConfig) {
     photography: 3,
   };
 
-  // Get all collage frames
-  const collageFrames = document.querySelectorAll('.collage .frame');
+  // Get all collage cards (new structure)
+  let collageFrames = document.querySelectorAll('.hero-collage .hero-collage-card');
+
+  // Fallback to old structure for backwards compatibility
+  if (!collageFrames || collageFrames.length === 0) {
+    collageFrames = document.querySelectorAll('.collage .frame');
+  }
 
   if (!collageFrames || collageFrames.length === 0) {
     if (isDevelopmentEnvironment()) {
@@ -1027,6 +1148,9 @@ async function initCollageWidget(widgetConfig) {
     }
     return;
   }
+
+  // Initialize video if present in new hero-collage structure
+  await initHeroVideo(source, mediaTypes, uploadGallery);
 
   // Check for reduced motion preference
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -1042,7 +1166,9 @@ async function initCollageWidget(widgetConfig) {
     if (source === 'uploads' && uploadGallery && uploadGallery.length > 0) {
       // Use uploaded media
       if (isDebugEnabled()) {
-        console.log(`[Collage Widget] ✅ UPLOADS BRANCH EXECUTED: Loading ${uploadGallery.length} uploaded media files`);
+        console.log(
+          `[Collage Widget] ✅ UPLOADS BRANCH EXECUTED: Loading ${uploadGallery.length} uploaded media files`
+        );
         console.log('[Collage Widget] Upload gallery URLs:', uploadGallery);
       }
 
@@ -1064,9 +1190,11 @@ async function initCollageWidget(widgetConfig) {
             };
           });
         currentMediaIndex[category] = 0;
-        
+
         if (isDebugEnabled()) {
-          console.log(`[Collage Widget] Category "${category}" assigned ${mediaCache[category].length} media items`);
+          console.log(
+            `[Collage Widget] Category "${category}" assigned ${mediaCache[category].length} media items`
+          );
         }
       });
     } else if (source === 'pexels' || (fallbackToPexels && source === 'uploads')) {
@@ -1087,10 +1215,8 @@ async function initCollageWidget(widgetConfig) {
             photos: String(mediaTypes?.photos !== false),
             videos: String(mediaTypes?.videos === true),
           });
-          
-          const response = await fetch(
-            `/api/admin/public/pexels-collage?${params.toString()}`
-          );
+
+          const response = await fetch(`/api/admin/public/pexels-collage?${params.toString()}`);
 
           if (!response.ok) {
             if (isDebugEnabled()) {
@@ -1112,7 +1238,7 @@ async function initCollageWidget(widgetConfig) {
 
           // Combine photos and videos into media array
           const allMedia = [];
-          
+
           if (data.photos && Array.isArray(data.photos) && data.photos.length > 0) {
             const photos = data.photos
               .filter(photo => photo && photo.src && photo.photographer)
@@ -1133,7 +1259,9 @@ async function initCollageWidget(widgetConfig) {
                 type: 'video',
                 thumbnail: video.thumbnail,
                 videographer: String(video.videographer || 'Pexels'),
-                videographerUrl: validatePexelsUrl(video.videographer_url || 'https://www.pexels.com'),
+                videographerUrl: validatePexelsUrl(
+                  video.videographer_url || 'https://www.pexels.com'
+                ),
                 duration: video.duration,
               }));
             allMedia.push(...videos);
@@ -1298,15 +1426,17 @@ function removePictureSourceElements(imgElement) {
   if (!imgElement || !imgElement.parentElement) {
     return;
   }
-  
+
   const parent = imgElement.parentElement;
   if (parent.tagName === 'PICTURE') {
     // Remove all <source> elements to allow img.src to take precedence
     const sources = parent.querySelectorAll('source');
     sources.forEach(source => source.remove());
-    
+
     if (isDebugEnabled()) {
-      console.log('[Collage Widget] Removed <source> elements from <picture> to enable dynamic image switching');
+      console.log(
+        '[Collage Widget] Removed <source> elements from <picture> to enable dynamic image switching'
+      );
     }
   }
 }
@@ -1321,7 +1451,7 @@ function addCacheBuster(url) {
   if (!url) {
     return url;
   }
-  
+
   // Use 'cb' (cache bust) parameter to avoid conflicts with existing 't' parameters
   const separator = url.includes('?') ? '&' : '?';
   return `${url}${separator}cb=${Date.now()}`;
@@ -1367,7 +1497,10 @@ async function loadMediaIntoFrame(
       video.autoplay = true;
       video.className = mediaElement.className;
       video.style.cssText = mediaElement.style.cssText;
-      video.alt = `${category.charAt(0).toUpperCase() + category.slice(1)} - Video`;
+      video.setAttribute(
+        'aria-label',
+        `${category.charAt(0).toUpperCase() + category.slice(1)} video`
+      );
 
       // Accessibility: respect reduced motion
       if (prefersReducedMotion) {
@@ -1424,10 +1557,10 @@ async function loadMediaIntoFrame(
         if (isDebugEnabled()) {
           console.warn(`[Collage Widget] Image preload timeout for ${category}, displaying anyway`);
         }
-        
+
         // Fix picture element issue: Remove <source> elements before changing img.src
         removePictureSourceElements(mediaElement);
-        
+
         // Add cache busting to prevent browser from using cached static images
         const cacheBustedUrl = addCacheBuster(media.url);
         mediaElement.src = cacheBustedUrl;
@@ -1453,10 +1586,10 @@ async function loadMediaIntoFrame(
             `[Collage Widget] Image loaded successfully for ${category}, setting src and opacity=1`
           );
         }
-        
+
         // Fix picture element issue: Remove <source> elements before changing img.src
         removePictureSourceElements(mediaElement);
-        
+
         // Add cache busting to prevent browser from using cached static images
         const cacheBustedUrl = addCacheBuster(media.url);
         mediaElement.src = cacheBustedUrl;
@@ -1557,7 +1690,10 @@ function cycleWidgetMedia(
           video.className = currentElement.className.replace('fading', '');
           video.style.cssText = currentElement.style.cssText;
           video.style.opacity = '0';
-          video.alt = `${category.charAt(0).toUpperCase() + category.slice(1)} - Video`;
+          video.setAttribute(
+            'aria-label',
+            `${category.charAt(0).toUpperCase() + category.slice(1)} video`
+          );
 
           const handleLoadedData = () => {
             currentElement.replaceWith(video);
@@ -1621,7 +1757,7 @@ function cycleWidgetMedia(
               // Update existing img
               // Fix picture element issue: Remove <source> elements before changing img.src
               removePictureSourceElements(currentElement);
-              
+
               // Add cache busting
               const cacheBustedUrl = addCacheBuster(nextMedia.url);
               currentElement.src = cacheBustedUrl;
@@ -1776,11 +1912,11 @@ function removeCreatorCredit(frame) {
   if (!frame) {
     return;
   }
-  
+
   const existingCredit = frame.querySelector('.pexels-credit');
   if (existingCredit) {
     existingCredit.remove();
-    
+
     if (isDebugEnabled()) {
       console.log('[Collage Widget] Removed creator credit');
     }
