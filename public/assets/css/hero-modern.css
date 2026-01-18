@@ -622,16 +622,22 @@
   }
   
   .hero-search-row {
+    /* Use flex-wrap to allow grouping input + button on same row */
+    flex-wrap: wrap;
     gap: 10px;
   }
   
   .hero-category-wrapper {
+    /* Category dropdown takes full width */
     width: 100%;
     min-width: 100%;
+    flex: 1 1 100%;
   }
   
   .hero-search-input-wrapper {
-    width: 100%;
+    /* Input wrapper takes remaining space */
+    flex: 1 1 auto;
+    min-width: 0;
   }
   
   .hero-search-input {
@@ -639,8 +645,10 @@
   }
 
   .hero-search-button {
-    width: 100%;
+    /* Button stays at fixed width, aligned with input */
+    width: 50px;
     height: 50px;
+    flex-shrink: 0;
   }
 
   .hero-tag {

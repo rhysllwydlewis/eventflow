@@ -209,7 +209,7 @@ test.describe('Hero Search Form Mobile Sizing', () => {
     }
   });
 
-  test('should have full-width search button on mobile', async ({ page }) => {
+  test('should have fixed-width search button on mobile (not full-width)', async ({ page }) => {
     await page.setViewportSize(VIEWPORTS.mobile);
     await page.goto('/');
 
@@ -218,11 +218,35 @@ test.describe('Hero Search Form Mobile Sizing', () => {
 
     if (buttonCount > 0) {
       const buttonBox = await searchButton.boundingBox();
-      const searchCard = page.locator('.hero-search-card');
-      const cardBox = await searchCard.boundingBox();
 
-      // Button should be full width on mobile
-      expect(buttonBox.width).toBeGreaterThan(cardBox.width * 0.85);
+      // Button should be fixed width (50px) on mobile, NOT full-width
+      // This ensures it stays at the right end of the search input
+      expect(buttonBox.width).toBe(50);
+      expect(buttonBox.height).toBeGreaterThanOrEqual(44); // Accessibility minimum
+    }
+  });
+
+  test('should position search button at right end of input on mobile', async ({ page }) => {
+    await page.setViewportSize(VIEWPORTS.mobile);
+    await page.goto('/');
+
+    const searchInputWrapper = page.locator('.hero-search-input-wrapper');
+    const searchButton = page.locator('.hero-search-button');
+
+    if ((await searchInputWrapper.count()) > 0 && (await searchButton.count()) > 0) {
+      const inputBox = await searchInputWrapper.boundingBox();
+      const buttonBox = await searchButton.boundingBox();
+
+      // Button should be to the right of input (on the same visual row)
+      expect(buttonBox.x).toBeGreaterThan(inputBox.x);
+
+      // They should be on approximately the same Y level (within 50px accounting for padding/border)
+      // The key is that button is NOT below the input as a separate full-width element
+      const yDifference = Math.abs(inputBox.y - buttonBox.y);
+      expect(yDifference).toBeLessThan(50);
+
+      // Button should be fixed width, not full-width
+      expect(buttonBox.width).toBe(50);
     }
   });
 
