@@ -1157,28 +1157,8 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
             }
           }, 10000);
 
-          // Update credit - using safe DOM manipulation
-          if (video.user && video.user.name) {
-            // Clear existing content
-            videoCredit.textContent = '';
-
-            // Create text node for "Video by "
-            videoCredit.appendChild(document.createTextNode('Video by '));
-
-            // Create and validate link
-            const link = document.createElement('a');
-            const validatedUrl = validatePexelsUrl(video.user.url);
-            link.href = validatedUrl;
-            link.target = '_blank';
-            link.rel = 'noopener noreferrer';
-            link.style.color = 'white';
-            link.style.textDecoration = 'underline';
-            link.textContent = video.user.name; // Safe - uses textContent
-
-            videoCredit.appendChild(link);
-            videoCredit.appendChild(document.createTextNode(' on Pexels'));
-            videoCredit.style.display = 'block';
-          }
+          // Update credit - hide it as per design requirements
+          videoCredit.style.display = 'none';
 
           if (isDebugEnabled()) {
             console.log('[Hero Video] Video initialized (will load asynchronously)');
@@ -1213,12 +1193,11 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
       videoSource.src = '';
       videoElement.load();
 
-      // Update credit text to indicate this is a photo, not a video
-      videoCredit.textContent = 'Photo by EventFlow';
-      videoCredit.style.display = 'block';
+      // Hide credit text as per design requirements
+      videoCredit.style.display = 'none';
 
       if (isDebugEnabled()) {
-        console.log('[Hero Video] Using poster image as fallback with photo credit');
+        console.log('[Hero Video] Using poster image as fallback');
       }
     } else {
       // No poster available, hide video element and show gradient fallback

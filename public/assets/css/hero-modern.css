@@ -330,6 +330,7 @@
   height: 22px;
   filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  display: block; /* Ensure SVG is block-level for proper centering */
 }
 
 .hero-search-button:hover svg {
@@ -761,6 +762,7 @@
   pointer-events: none;
   border: 1px solid rgba(255, 255, 255, 0.15);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  display: none; /* Hide video credits */
 }
 
 .hero-video-credit a {
@@ -818,21 +820,21 @@
 /* Category label pill */
 .hero-collage-label {
   position: absolute;
-  bottom: 12px;
+  top: 12px;
   left: 12px;
   background: rgba(255, 255, 255, 0.75);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   color: #0f172a;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
-  padding: 6px 12px;
+  padding: 5px 10px;
   border-radius: 999px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
   z-index: 2;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   border: 1px solid rgba(255, 255, 255, 0.3);
 }
@@ -845,7 +847,7 @@
 }
 
 .hero-collage-icon {
-  font-size: 14px;
+  font-size: 12px;
   line-height: 1;
 }
 
@@ -909,8 +911,7 @@
   }
 
   .hero-video-credit {
-    font-size: 10px;
-    padding: 3px 6px;
+    display: none;
   }
 }
 
@@ -946,14 +947,14 @@
   }
 
   .hero-collage-label {
-    font-size: 11px;
-    padding: 5px 10px;
-    bottom: 8px;
+    font-size: 10px;
+    padding: 4px 8px;
+    top: 8px;
     left: 8px;
   }
 
   .hero-collage-icon {
-    font-size: 12px;
+    font-size: 11px;
   }
 }
 
