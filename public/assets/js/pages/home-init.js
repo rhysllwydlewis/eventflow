@@ -246,6 +246,24 @@ async function loadPackagesCarousel({ endpoint, containerId, emptyMessage }) {
     </div>
   `;
 
+  // Set up early fallback (5 seconds) before abort timeout
+  const fallbackTimeoutId = setTimeout(() => {
+    const skeletonStillShowing = container.querySelector('.skeleton-carousel');
+    if (skeletonStillShowing) {
+      // Still loading after 5 seconds, show fallback CTA
+      container.innerHTML = `
+        <div class="card" style="text-align: center; padding: 24px;">
+          <p class="small" style="margin-bottom: 12px; color: #667085;">
+            ${emptyMessage || 'Packages are taking longer to load than expected.'}
+          </p>
+          <a href="/marketplace.html" class="cta secondary" style="display: inline-block; text-decoration: none;">
+            Browse Marketplace
+          </a>
+        </div>
+      `;
+    }
+  }, 5000);
+
   // Create AbortController for timeout (8 seconds)
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 8000);
@@ -253,6 +271,7 @@ async function loadPackagesCarousel({ endpoint, containerId, emptyMessage }) {
   try {
     const response = await fetch(endpoint, { signal: controller.signal });
     clearTimeout(timeoutId);
+    clearTimeout(fallbackTimeoutId); // Clear early fallback since data arrived
 
     if (!response.ok) {
       // Silently handle 404s (endpoint not available in static/dev mode)
@@ -302,6 +321,7 @@ async function loadPackagesCarousel({ endpoint, containerId, emptyMessage }) {
     }
   } catch (error) {
     clearTimeout(timeoutId);
+    clearTimeout(fallbackTimeoutId); // Clear early fallback
 
     // Only log timeout errors and network errors, not expected 404s
     if (isDevelopmentEnvironment() && error.name !== 'AbortError') {

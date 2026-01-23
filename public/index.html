@@ -151,34 +151,34 @@
       @media (max-width:640px){.hero{padding:32px 0 16px}}
     </style>
 
-    <!-- Preload critical CSS -->
-    <link rel="preload" href="/assets/css/styles.css" as="style" />
-    <link rel="preload" href="/assets/css/navbar.css" as="style" />
-    <link rel="preload" href="/assets/css/hero-modern.css" as="style" />
+    <!-- Preload critical CSS with versioning -->
+    <link rel="preload" href="/assets/css/styles.css?v=17.0.0" as="style" />
+    <link rel="preload" href="/assets/css/homepage-enhancements.css?v=17.0.0" as="style" />
+    <link rel="preload" href="/assets/css/hero-modern.css?v=17.0.0" as="style" />
 
     <!-- Critical Stylesheets - Load synchronously -->
-    <link rel="stylesheet" href="/assets/css/styles.css" />
-    <link rel="stylesheet" href="/assets/css/navbar.css" />
-    <link rel="stylesheet" href="/assets/css/hero-modern.css" />
+    <link rel="stylesheet" href="/assets/css/styles.css?v=17.0.0" />
+    <link rel="stylesheet" href="/assets/css/homepage-enhancements.css?v=17.0.0" />
+    <link rel="stylesheet" href="/assets/css/hero-modern.css?v=17.0.0" />
     
-    <!-- Non-critical CSS - Load asynchronously -->
+    <!-- Non-critical CSS - Defer via preload -->
+    <link rel="preload" href="/assets/css/navbar.css?v=17.0.0" as="style" onload="this.onload=null;this.rel='stylesheet'" />
     <link rel="preload" href="/assets/css/eventflow-17.0.0.css" as="style" onload="this.onload=null;this.rel='stylesheet'" />
-    <link rel="preload" href="/assets/css/utilities.css" as="style" onload="this.onload=null;this.rel='stylesheet'" />
-    <link rel="preload" href="/assets/css/components.css" as="style" onload="this.onload=null;this.rel='stylesheet'" />
-    <link rel="preload" href="/assets/css/animations.css" as="style" onload="this.onload=null;this.rel='stylesheet'" />
-    <link rel="preload" href="/assets/css/mobile-optimizations.css" as="style" onload="this.onload=null;this.rel='stylesheet'" />
-    <link rel="preload" href="/assets/css/ui-ux-fixes.css" as="style" onload="this.onload=null;this.rel='stylesheet'" />
-    <link rel="preload" href="/assets/css/homepage-enhancements.css" as="style" onload="this.onload=null;this.rel='stylesheet'" />
-    <link rel="preload" href="/assets/css/navigation-enhancements.css" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    <link rel="preload" href="/assets/css/utilities.css?v=17.0.0" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    <link rel="preload" href="/assets/css/components.css?v=17.0.0" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    <link rel="preload" href="/assets/css/animations.css?v=17.0.0" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    <link rel="preload" href="/assets/css/mobile-optimizations.css?v=17.0.0" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    <link rel="preload" href="/assets/css/ui-ux-fixes.css?v=17.0.0" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    <link rel="preload" href="/assets/css/navigation-enhancements.css?v=17.0.0" as="style" onload="this.onload=null;this.rel='stylesheet'" />
     <noscript>
+      <link rel="stylesheet" href="/assets/css/navbar.css?v=17.0.0" />
       <link rel="stylesheet" href="/assets/css/eventflow-17.0.0.css" />
-      <link rel="stylesheet" href="/assets/css/utilities.css" />
-      <link rel="stylesheet" href="/assets/css/components.css" />
-      <link rel="stylesheet" href="/assets/css/animations.css" />
-      <link rel="stylesheet" href="/assets/css/mobile-optimizations.css" />
-      <link rel="stylesheet" href="/assets/css/ui-ux-fixes.css" />
-      <link rel="stylesheet" href="/assets/css/homepage-enhancements.css" />
-      <link rel="stylesheet" href="/assets/css/navigation-enhancements.css" />
+      <link rel="stylesheet" href="/assets/css/utilities.css?v=17.0.0" />
+      <link rel="stylesheet" href="/assets/css/components.css?v=17.0.0" />
+      <link rel="stylesheet" href="/assets/css/animations.css?v=17.0.0" />
+      <link rel="stylesheet" href="/assets/css/mobile-optimizations.css?v=17.0.0" />
+      <link rel="stylesheet" href="/assets/css/ui-ux-fixes.css?v=17.0.0" />
+      <link rel="stylesheet" href="/assets/css/navigation-enhancements.css?v=17.0.0" />
     </noscript>
     
     <link rel="icon" href="/favicon.svg" />
@@ -463,7 +463,7 @@
               <!-- Row 1: Video (no label, spans 2 columns) -->
               <div class="hero-video-card">
                 <!-- Video autoplay is controlled by JavaScript based on prefers-reduced-motion -->
-                <video id="hero-pexels-video" muted loop playsinline
+                <video id="hero-pexels-video" muted loop playsinline preload="metadata"
                        poster="/assets/images/hero-video-poster.jpg"
                        width="800" height="450">
                   <source src="" type="video/mp4" id="hero-video-source">
@@ -475,7 +475,7 @@
               <!-- Row 2: Venues + Catering -->
               <a href="/category.html?slug=venues" class="hero-collage-card" data-category="venues">
                 <img src="/assets/images/collage-venue.jpg" alt="Venues" id="collage-venues" 
-                     width="400" height="300" loading="eager" fetchpriority="high"
+                     width="400" height="300" loading="eager" fetchpriority="high" decoding="async"
                      onerror="this.style.background='linear-gradient(135deg, #667eea 0%, #764ba2 100%)'; this.style.minHeight='200px'; this.src=''; this.onerror=null;">
                 <span class="hero-collage-label">
                   <span class="hero-collage-icon">🏛️</span>
@@ -486,7 +486,7 @@
               
               <a href="/category.html?slug=catering" class="hero-collage-card" data-category="catering">
                 <img src="/assets/images/collage-catering.jpg" alt="Catering" id="collage-catering"
-                     width="400" height="300" loading="eager" fetchpriority="high"
+                     width="400" height="300" loading="eager" fetchpriority="high" decoding="async"
                      onerror="this.style.background='linear-gradient(135deg, #f093fb 0%, #f5576c 100%)'; this.style.minHeight='200px'; this.src=''; this.onerror=null;">
                 <span class="hero-collage-label">
                   <span class="hero-collage-icon">🍽️</span>
@@ -498,7 +498,7 @@
               <!-- Row 3: Entertainment + Photography -->
               <a href="/category.html?slug=entertainment" class="hero-collage-card" data-category="entertainment">
                 <img src="/assets/images/collage-entertainment.jpg" alt="Entertainment" id="collage-entertainment"
-                     width="400" height="300" loading="eager" fetchpriority="high"
+                     width="400" height="300" loading="eager" fetchpriority="high" decoding="async"
                      onerror="this.style.background='linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)'; this.style.minHeight='200px'; this.src=''; this.onerror=null;">
                 <span class="hero-collage-label">
                   <span class="hero-collage-icon">🎤</span>
@@ -509,7 +509,7 @@
               
               <a href="/category.html?slug=photography" class="hero-collage-card" data-category="photography">
                 <img src="/assets/images/collage-photography.jpg" alt="Photography" id="collage-photography"
-                     width="400" height="300" loading="eager" fetchpriority="high"
+                     width="400" height="300" loading="eager" fetchpriority="high" decoding="async"
                      onerror="this.style.background='linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)'; this.style.minHeight='200px'; this.src=''; this.onerror=null;">
                 <span class="hero-collage-label">
                   <span class="hero-collage-icon">📸</span>
@@ -521,6 +521,21 @@
           </div>
         </div>
       </section>
+
+      <!-- Noscript fallback for hero CTAs -->
+      <noscript>
+        <section class="section" style="background: #f9fafb; border: 2px solid #e7eaf0; border-radius: 12px; padding: 24px; margin: 24px auto; max-width: 600px;">
+          <div class="container" style="text-align: center;">
+            <h2 style="margin-bottom: 16px; font-size: 1.5rem;">JavaScript Required for Full Experience</h2>
+            <p style="margin-bottom: 20px; color: #667085;">For the best experience, please enable JavaScript. You can still browse our platform:</p>
+            <div style="display: flex; flex-direction: column; gap: 12px; max-width: 400px; margin: 0 auto;">
+              <a href="/start.html" class="cta" style="display: block; text-decoration: none;">Plan an Event</a>
+              <a href="/suppliers.html" class="cta secondary" style="display: block; text-decoration: none;">Browse Suppliers</a>
+              <a href="/marketplace.html" class="cta secondary" style="display: block; text-decoration: none;">View Marketplace</a>
+            </div>
+          </div>
+        </section>
+      </noscript>
 
       <section class="section" aria-label="Featured packages">
         <div class="container">
