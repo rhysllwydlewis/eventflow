@@ -84,53 +84,6 @@
   // MOBILE MENU
   // ==========================================
 
-  function openMobileMenu() {
-    if (!elements.mobileMenu) {
-      return;
-    }
-
-    state.isMobileMenuOpen = true;
-    elements.mobileMenu.classList.add('open');
-    document.body.classList.add('ef-menu-open');
-
-    if (elements.mobileToggle) {
-      elements.mobileToggle.setAttribute('aria-expanded', 'true');
-    }
-    if (elements.bottomMenu) {
-      elements.bottomMenu.setAttribute('aria-expanded', 'true');
-    }
-  }
-
-  function closeMobileMenu() {
-    if (!elements.mobileMenu) {
-      return;
-    }
-
-    state.isMobileMenuOpen = false;
-    elements.mobileMenu.classList.remove('open');
-    document.body.classList.remove('ef-menu-open');
-
-    if (elements.mobileToggle) {
-      elements.mobileToggle.setAttribute('aria-expanded', 'false');
-    }
-    if (elements.bottomMenu) {
-      elements.bottomMenu.setAttribute('aria-expanded', 'false');
-    }
-  }
-
-  function toggleMobileMenu(event) {
-    if (event) {
-      event.preventDefault();
-      event.stopPropagation();
-    }
-
-    if (state.isMobileMenuOpen) {
-      closeMobileMenu();
-    } else {
-      openMobileMenu();
-    }
-  }
-
   // NOTE: Mobile menu functionality moved to burger-menu.js
   // Legacy mobile menu code removed - now handled by standalone burger-menu.js component
 

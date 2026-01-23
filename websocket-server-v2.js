@@ -456,7 +456,7 @@ class WebSocketServerV2 {
   /**
    * Handle presence update (heartbeat)
    */
-  async handlePresenceUpdate(socket, _data) {
+  async handlePresenceUpdate(socket) {
     try {
       if (!socket.userId) {
         return;
