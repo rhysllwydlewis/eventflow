@@ -70,11 +70,18 @@ router.post('/threads', authRequired, csrfProtection, ensureServices, async (req
     // Add current user to participants if not included
     const allParticipants = [...new Set([req.user.id, ...participants])];
 
-    const thread = await messagingService.createThread(allParticipants, {
-      subject,
-      ...metadata,
-      createdBy: req.user.id,
-    });
+    // Get user's subscription tier
+    const subscriptionTier = req.user.subscriptionTier || 'free';
+
+    const thread = await messagingService.createThread(
+      allParticipants,
+      {
+        subject,
+        ...metadata,
+        createdBy: req.user.id,
+      },
+      subscriptionTier
+    );
 
     res.status(201).json({
       success: true,
@@ -87,6 +94,16 @@ router.post('/threads', authRequired, csrfProtection, ensureServices, async (req
     });
   } catch (error) {
     logger.error('Create thread error', { error: error.message, userId: req.user.id });
+
+    // Handle limit-specific errors with proper status code
+    if (error.message.includes('limit reached')) {
+      return res.status(429).json({
+        error: 'Thread limit reached',
+        message: error.message,
+        upgradeUrl: '/pricing.html',
+      });
+    }
+
     res.status(500).json({
       error: 'Failed to create thread',
       message: error.message,
@@ -283,13 +300,19 @@ router.post('/:threadId', authRequired, csrfProtection, ensureServices, async (r
 
     const recipientIds = thread.participants.filter(p => p !== req.user.id);
 
-    const message = await messagingService.sendMessage({
-      threadId,
-      senderId: req.user.id,
-      recipientIds,
-      content,
-      attachments: attachments || [],
-    });
+    // Get user's subscription tier
+    const subscriptionTier = req.user.subscriptionTier || 'free';
+
+    const message = await messagingService.sendMessage(
+      {
+        threadId,
+        senderId: req.user.id,
+        recipientIds,
+        content,
+        attachments: attachments || [],
+      },
+      subscriptionTier
+    );
 
     res.status(201).json({
       success: true,
@@ -305,6 +328,16 @@ router.post('/:threadId', authRequired, csrfProtection, ensureServices, async (r
     });
   } catch (error) {
     logger.error('Send message error', { error: error.message, userId: req.user.id });
+
+    // Handle limit-specific errors with proper status code
+    if (error.message.includes('limit reached')) {
+      return res.status(429).json({
+        error: 'Message limit reached',
+        message: error.message,
+        upgradeUrl: '/pricing.html',
+      });
+    }
+
     res.status(500).json({
       error: 'Failed to send message',
       message: error.message,
@@ -688,6 +721,32 @@ router.get('/messaging/status', authRequired, roleRequired('admin'), async (req,
     logger.error('Get messaging status error', { error: error.message });
     res.status(500).json({
       error: 'Failed to get status',
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * GET /api/v2/messages/limits
+ * Get remaining message and thread limits for the current user
+ */
+router.get('/limits', authRequired, ensureServices, async (req, res) => {
+  try {
+    const subscriptionTier = req.user.subscriptionTier || 'free';
+
+    const messageLimits = await messagingService.checkMessageLimit(req.user.id, subscriptionTier);
+    const threadLimits = await messagingService.checkThreadLimit(req.user.id, subscriptionTier);
+
+    res.json({
+      success: true,
+      subscription: subscriptionTier,
+      messages: messageLimits,
+      threads: threadLimits,
+    });
+  } catch (error) {
+    logger.error('Get limits error', { error: error.message, userId: req.user.id });
+    res.status(500).json({
+      error: 'Failed to check limits',
       message: error.message,
     });
   }
