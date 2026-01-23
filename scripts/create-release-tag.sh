@@ -13,6 +13,20 @@ fi
 
 echo "Creating tag v$VERSION..."
 
+# Check if tag already exists
+if git tag -l | grep -q "^v$VERSION$"; then
+  echo "⚠️  Warning: Tag v$VERSION already exists"
+  echo "Would you like to delete and recreate it? (y/N)"
+  read -r response
+  if [[ "$response" =~ ^[Yy]$ ]]; then
+    git tag -d "v$VERSION"
+    git push origin ":refs/tags/v$VERSION" 2>/dev/null || true
+  else
+    echo "❌ Aborted: Tag already exists"
+    exit 1
+  fi
+fi
+
 # Create annotated tag
 git tag -a "v$VERSION" -m "Release v$VERSION"
 

@@ -85,9 +85,9 @@ class MessagingService {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
-      // Count threads created today by this user
+      // Count threads created today by this user (use metadata.createdBy field)
       const threadCount = await this.threadsCollection.countDocuments({
-        participants: userId,
+        'metadata.createdBy': userId,
         createdAt: { $gte: today },
       });
 
