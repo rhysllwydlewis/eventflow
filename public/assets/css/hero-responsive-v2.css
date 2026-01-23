@@ -282,7 +282,7 @@
 @media (min-width: 768px) {
   .hero-modern .hero-trust {
     grid-template-columns: repeat(3, auto);
-    justify-content: start;
+    justify-content: flex-start;
   }
 }
 
