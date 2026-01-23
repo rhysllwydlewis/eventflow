@@ -142,8 +142,8 @@
 @media (min-width: 640px) {
   .hero-search-row {
     flex-direction: row;
-    align-items: center;
-    gap: 14px;
+    align-items: stretch; /* Changed from center to stretch for equal height */
+    gap: 12px; /* Gap between input and button */
   }
 }
 
@@ -204,13 +204,12 @@
   color: #059669;
 }
 
-/* Search input */
+/* Search input wrapper - NO position:relative needed, button is separate */
 .hero-search-input-wrapper {
-  position: relative;
   flex: 1;
   min-width: 0; /* Fix flex overflow */
-  display: flex;
-  align-items: center;
+  position: relative; /* Only for the search icon */
+  overflow: hidden; /* Prevent horizontal scroll */
 }
 
 .hero-search-icon {
@@ -233,7 +232,7 @@
 
 .hero-search-input {
   width: 100%;
-  padding: 14px 62px 14px 48px; /* Increased right padding to accommodate button */
+  padding: 14px 16px 14px 48px; /* RIGHT padding normal now - NO space for button inside */
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(8px);
   border: 1.5px solid rgba(226, 232, 240, 0.8);
@@ -266,28 +265,27 @@
   box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1), 0 4px 12px rgba(0, 0, 0, 0.12);
 }
 
-/* Search button */
+/* Search button - NOW SEPARATE, positioned beside input NOT inside */
 .hero-search-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 50px;
-  height: 50px;
+  width: 50px; /* Full 50px - separate button */
+  height: 50px; /* Match input height */
+  min-width: 50px; /* Prevent shrinking */
   padding: 0;
   background: linear-gradient(135deg, #10b981 0%, #059669 100%);
   color: white;
   border: none;
-  border-radius: 14px;
+  border-radius: 14px; /* Match input radius */
   cursor: pointer;
   box-shadow: 
     0 2px 4px rgba(5, 150, 105, 0.2),
     0 4px 12px rgba(5, 150, 105, 0.3);
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  position: absolute;
-  right: 0;
-  top: 0;
+  /* NO position:absolute - it's a flex item beside the input */
   overflow: hidden;
-  flex-shrink: 0;
+  flex-shrink: 0; /* Don't let it shrink on mobile */
   box-sizing: border-box;
 }
 
@@ -307,7 +305,7 @@
     0 4px 8px rgba(5, 150, 105, 0.3),
     0 8px 20px rgba(5, 150, 105, 0.4),
     0 0 20px rgba(16, 185, 129, 0.4);
-  transform: translateY(-2px);
+  transform: translateY(-2px); /* Lift up on hover */
 }
 
 .hero-search-button:hover::before {
@@ -315,7 +313,7 @@
 }
 
 .hero-search-button:active {
-  transform: translateY(0) scale(0.96);
+  transform: translateY(0); /* Press down on click */
   box-shadow: 
     0 2px 4px rgba(5, 150, 105, 0.2),
     0 4px 12px rgba(5, 150, 105, 0.3),
@@ -609,14 +607,44 @@
   }
 }
 
+/* Extra small mobile (< 380px) - Tighten for narrow screens */
+@media (max-width: 380px) {
+  .hero-search-input {
+    padding: 12px 16px 12px 42px; /* Normal right padding - button is separate */
+    font-size: 15px;
+  }
+  
+  .hero-search-icon {
+    left: 12px;
+    width: 20px;
+    height: 20px;
+  }
+  
+  .hero-search-button {
+    width: 44px; /* Fixed 44px at small screens */
+    height: 50px; /* Match input height */
+  }
+}
+
 /* Mobile responsive adjustments */
 @media (max-width: 640px) {
   .hero-modern h1 {
     font-size: 28px;
   }
   
+  /* Mobile text-lite version - hide second line for cleaner look */
+  .hero-modern h1 .hero-line-2 {
+    display: none;
+  }
+  
   .hero-modern-subcopy {
     font-size: 16px;
+    /* Truncate subcopy on mobile for text-lite version */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-height: 1.5;
   }
   
   .hero-search-card {
@@ -626,8 +654,8 @@
   }
   
   .hero-search-row {
-    /* Use flex-wrap to allow grouping input + button on same row */
-    flex-wrap: wrap;
+    /* Vertical layout on mobile: Category, then Input+Button row */
+    flex-direction: column;
     gap: 10px;
   }
   
@@ -635,28 +663,24 @@
     /* Category dropdown takes full width */
     width: 100%;
     min-width: 100%;
-    flex: 1 1 100%;
   }
   
   .hero-search-input-wrapper {
-    /* Input wrapper takes full width with button inside */
-    flex: 1 1 100%;
-    width: 100%;
+    /* Input takes remaining space, button is beside it */
+    flex: 1;
     min-width: 0;
   }
   
   .hero-search-input {
     width: 100%;
-    padding-right: 62px; /* Ensure space for button on mobile */
+    padding-right: 16px; /* Normal padding - button is separate */
   }
 
   .hero-search-button {
-    /* Button positioned absolutely inside input wrapper */
-    position: absolute;
-    right: 0;
-    top: 0;
-    width: 50px;
-    height: 50px;
+    /* Button beside input, not inside */
+    width: clamp(44px, 12vw, 50px); /* Responsive but maintain 44px minimum */
+    height: 50px; /* Match input */
+    min-width: 44px; /* WCAG minimum */
     flex-shrink: 0;
   }
 
@@ -697,8 +721,10 @@
   grid-template-columns: 1fr 1fr;
   grid-template-rows: 1fr 1fr 1fr;
   gap: 14px;
-  height: 520px;
+  aspect-ratio: 16/10;
+  max-height: 70vh;
   max-width: 100%;
+  overflow: hidden;
 }
 
 /* Video card - spans full width (2 columns) */
@@ -901,7 +927,8 @@
 
   .hero-collage {
     margin-top: 48px;
-    height: auto;
+    aspect-ratio: 4/3;
+    max-height: 60vh;
     grid-template-rows: auto auto auto;
   }
 
@@ -926,7 +953,8 @@
 /* Tablet adjustments */
 @media (min-width: 768px) and (max-width: 1023px) {
   .hero-collage {
-    height: 480px;
+    aspect-ratio: 4/3;
+    max-height: 55vh;
     grid-template-rows: 1fr 1fr 1fr;
   }
 
@@ -936,6 +964,7 @@
 
   .hero-collage-card {
     min-height: 180px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); /* Reduce shadow on tablet */
   }
 }
 
@@ -943,6 +972,8 @@
 @media (max-width: 640px) {
   .hero-collage {
     gap: 12px;
+    aspect-ratio: 4/5;
+    max-height: 80vh;
     grid-template-rows: auto auto auto;
   }
 
@@ -966,36 +997,64 @@
   }
 }
 
-/* Reduced motion support */
+/* Reduced motion support - Comprehensive */
 @media (prefers-reduced-motion: reduce) {
+  /* Disable all animations */
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  
+  /* Hero animations */
+  .ef-fade-up,
+  .ef-float,
+  .ef-float.slow {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  
+  /* Hero elements */
   .hero-video-card,
   .hero-collage-card,
   .hero-collage-card img,
   .hero-collage-label,
   .hero-collage-credit,
   .hero-search-button {
-    transition: none;
+    transition: none !important;
+    animation: none !important;
   }
 
   .hero-collage-card:hover,
   .hero-collage-card:focus {
-    transform: none;
+    transform: none !important;
   }
 
   .hero-collage-card:hover img,
   .hero-collage-card:focus img {
-    transform: none;
+    transform: none !important;
   }
 
   .hero-video-card video {
-    animation: none;
+    animation: none !important;
   }
 
   .hero-search-button:active {
-    animation: none;
+    animation: none !important;
+    transform: none !important; /* No transform */
   }
 
   .hero-search-button svg {
-    transition: none;
+    transition: none !important;
+  }
+  
+  /* Blobs and decorative elements */
+  .hero-blob,
+  .hero-blob-1,
+  .hero-blob-2 {
+    animation: none !important;
   }
 }

@@ -246,6 +246,24 @@ async function loadPackagesCarousel({ endpoint, containerId, emptyMessage }) {
     </div>
   `;
 
+  // Set up early fallback (5 seconds) before abort timeout
+  const fallbackTimeoutId = setTimeout(() => {
+    const skeletonStillShowing = container.querySelector('.skeleton-carousel');
+    if (skeletonStillShowing) {
+      // Still loading after 5 seconds, show fallback CTA
+      container.innerHTML = `
+        <div class="card" style="text-align: center; padding: 24px;">
+          <p class="small" style="margin-bottom: 12px; color: #667085;">
+            ${emptyMessage || 'Packages are taking longer to load than expected.'}
+          </p>
+          <a href="/marketplace.html" class="cta secondary" style="display: inline-block; text-decoration: none;">
+            Browse Marketplace
+          </a>
+        </div>
+      `;
+    }
+  }, 5000);
+
   // Create AbortController for timeout (8 seconds)
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 8000);
@@ -253,6 +271,7 @@ async function loadPackagesCarousel({ endpoint, containerId, emptyMessage }) {
   try {
     const response = await fetch(endpoint, { signal: controller.signal });
     clearTimeout(timeoutId);
+    clearTimeout(fallbackTimeoutId); // Clear early fallback since data arrived
 
     if (!response.ok) {
       // Silently handle 404s (endpoint not available in static/dev mode)
@@ -302,6 +321,7 @@ async function loadPackagesCarousel({ endpoint, containerId, emptyMessage }) {
     }
   } catch (error) {
     clearTimeout(timeoutId);
+    clearTimeout(fallbackTimeoutId); // Clear early fallback
 
     // Only log timeout errors and network errors, not expected 404s
     if (isDevelopmentEnvironment() && error.name !== 'AbortError') {
@@ -1298,12 +1318,34 @@ async function initCollageWidget(widgetConfig) {
   }
 
   // Initialize video if present in new hero-collage structure
-  await initHeroVideo(source, mediaTypes, uploadGallery);
-
-  // Check for reduced motion preference
+  // Check for reduced motion and reduced data preferences
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  
+  // Feature detection for prefers-reduced-data (not yet widely supported)
+  let prefersReducedData = false;
+  try {
+    if (window.matchMedia) {
+      prefersReducedData = window.matchMedia('(prefers-reduced-data: reduce)').matches;
+    }
+  } catch (e) {
+    // Browser doesn't support prefers-reduced-data, default to false
+    if (isDevelopmentEnvironment()) {
+      console.log('[Collage Widget] prefers-reduced-data not supported in this browser');
+    }
+  }
+  
   if (prefersReducedMotion && isDevelopmentEnvironment()) {
     console.log('User prefers reduced motion, animations will be minimal');
+  }
+  if (prefersReducedData && isDevelopmentEnvironment()) {
+    console.log('User prefers reduced data, skipping external media (Pexels API)');
+  }
+  
+  // Skip video initialization if user prefers reduced data
+  if (!prefersReducedData) {
+    await initHeroVideo(source, mediaTypes, uploadGallery);
+  } else if (isDevelopmentEnvironment()) {
+    console.log('[Hero Video] Skipped due to prefers-reduced-data');
   }
 
   try {
@@ -1345,8 +1387,8 @@ async function initCollageWidget(widgetConfig) {
           );
         }
       });
-    } else if (source === 'pexels' || (fallbackToPexels && source === 'uploads')) {
-      // Use Pexels API (fallback or primary)
+    } else if ((source === 'pexels' || (fallbackToPexels && source === 'uploads')) && !prefersReducedData) {
+      // Use Pexels API (fallback or primary) - but skip if user prefers reduced data
       if (source === 'uploads' && fallbackToPexels) {
         if (isDebugEnabled()) {
           console.log('[Collage Widget] Upload gallery empty, falling back to Pexels');
