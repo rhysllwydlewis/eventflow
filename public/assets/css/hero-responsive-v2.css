@@ -393,6 +393,12 @@
   .hero-modern .hero-collage-card:hover {
     transform: none;
   }
+  /* Disable smooth layout transitions for reduced motion */
+  .hero-modern .hero-grid,
+  .hero-modern .hero-search-row,
+  .hero-modern .hero-collage {
+    transition: none;
+  }
 }
 
 /* High contrast mode support */
@@ -450,7 +456,7 @@
     font-size: 14px;
   }
   .hero-modern .hero-search-button {
-    width: 42px;
+    width: 44px; /* Maintain WCAG 44px minimum */
     height: 44px;
   }
 }
