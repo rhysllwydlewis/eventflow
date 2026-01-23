@@ -14,6 +14,7 @@ const paymentService = require('../services/paymentService');
 const { processWebhookEvent } = require('../webhooks/stripeWebhookHandler');
 const dbUnified = require('../db-unified');
 const { formatInvoice } = require('../models/Invoice');
+const { createAuditLog } = require('../utils/auditTrail');
 
 const router = express.Router();
 
@@ -147,6 +148,28 @@ router.post('/', authRequired, writeLimiter, ensureStripeEnabled, async (req, re
       trialEnd,
     });
 
+    // Log subscription creation to audit trail
+    await createAuditLog({
+      actor: {
+        id: req.user.id,
+        email: req.user.email,
+        role: req.user.role || 'user',
+      },
+      action: 'SUBSCRIPTION_CREATED',
+      resource: {
+        type: 'subscription',
+        id: subscription.id,
+      },
+      details: {
+        plan: plan,
+        stripeSubscriptionId: stripeSubscription.id,
+        trialDays: trialDays || 0,
+        effectiveDate: new Date().toISOString(),
+      },
+      ipAddress: req.ip,
+      userAgent: req.get('user-agent'),
+    });
+
     res.json({
       success: true,
       subscription,
@@ -219,6 +242,32 @@ router.post('/:id/upgrade', authRequired, writeLimiter, ensureStripeEnabled, asy
     // Upgrade in database
     const updatedSubscription = await subscriptionService.upgradeSubscription(id, newPlan);
 
+    // Log upgrade to audit trail
+    await createAuditLog({
+      actor: {
+        id: req.user.id,
+        email: req.user.email,
+        role: req.user.role || 'user',
+      },
+      action: 'SUBSCRIPTION_UPGRADED',
+      resource: {
+        type: 'subscription',
+        id: id,
+      },
+      changes: {
+        before: { plan: subscription.plan },
+        after: { plan: newPlan },
+      },
+      details: {
+        previousPlan: subscription.plan,
+        newPlan: newPlan,
+        stripeSubscriptionId: subscription.stripeSubscriptionId,
+        effectiveDate: new Date().toISOString(),
+      },
+      ipAddress: req.ip,
+      userAgent: req.get('user-agent'),
+    });
+
     res.json({
       success: true,
       subscription: updatedSubscription,
@@ -281,6 +330,33 @@ router.post('/:id/downgrade', authRequired, writeLimiter, ensureStripeEnabled, a
     // Downgrade in database (scheduled at period end)
     const updatedSubscription = await subscriptionService.downgradeSubscription(id, newPlan);
 
+    // Log downgrade to audit trail
+    await createAuditLog({
+      actor: {
+        id: req.user.id,
+        email: req.user.email,
+        role: req.user.role || 'user',
+      },
+      action: 'SUBSCRIPTION_DOWNGRADED',
+      resource: {
+        type: 'subscription',
+        id: id,
+      },
+      changes: {
+        before: { plan: subscription.plan },
+        after: { plan: newPlan },
+      },
+      details: {
+        previousPlan: subscription.plan,
+        newPlan: newPlan,
+        scheduledAtPeriodEnd: true,
+        stripeSubscriptionId: subscription.stripeSubscriptionId,
+        effectiveDate: new Date().toISOString(),
+      },
+      ipAddress: req.ip,
+      userAgent: req.get('user-agent'),
+    });
+
     res.json({
       success: true,
       subscription: updatedSubscription,
@@ -335,6 +411,33 @@ router.post('/:id/cancel', authRequired, writeLimiter, async (req, res) => {
       reason,
       immediately
     );
+
+    // Log cancellation to audit trail
+    await createAuditLog({
+      actor: {
+        id: req.user.id,
+        email: req.user.email,
+        role: req.user.role || 'user',
+      },
+      action: 'SUBSCRIPTION_CANCELLED',
+      resource: {
+        type: 'subscription',
+        id: id,
+      },
+      changes: {
+        before: { status: subscription.status, plan: subscription.plan },
+        after: { status: 'canceled' },
+      },
+      details: {
+        plan: subscription.plan,
+        reason: reason || 'No reason provided',
+        immediately: !!immediately,
+        stripeSubscriptionId: subscription.stripeSubscriptionId,
+        effectiveDate: new Date().toISOString(),
+      },
+      ipAddress: req.ip,
+      userAgent: req.get('user-agent'),
+    });
 
     res.json({
       success: true,

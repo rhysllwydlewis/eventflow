@@ -1,6 +1,20 @@
 /**
- * EventFlow WebSocket Server
+ * EventFlow WebSocket Server (v1)
  * Real-time notifications and messaging system
+ *
+ * @deprecated WebSocket Server v1 is deprecated.
+ * Use WebSocket Server v2 (websocket-server-v2.js) instead.
+ *
+ * v1 is maintained for backwards compatibility only.
+ * Set WEBSOCKET_MODE=v2 (default) for enhanced features:
+ * - Real-time messaging with typing indicators
+ * - Read receipts and presence tracking
+ * - Emoji reactions
+ * - Redis adapter support for clustering
+ *
+ * v1 will be removed in a future major version.
+ * @see websocket-server-v2.js
+ * @see REALTIME_MESSAGING.md
  */
 
 'use strict';
@@ -13,6 +27,12 @@ const WS_SERVER_INITIALIZED = Symbol.for('eventflow.wsServerInitialized');
 
 class WebSocketServer {
   constructor(httpServer) {
+    // Show deprecation warning
+    console.warn('⚠️  DEPRECATION WARNING: WebSocket Server v1 is deprecated');
+    console.warn('   Please migrate to v2 by setting WEBSOCKET_MODE=v2');
+    console.warn('   v1 will be removed in a future major version');
+    console.warn('   See REALTIME_MESSAGING.md for migration guide');
+
     // Guard against multiple instantiations on the same server (v1 or v2)
     if (httpServer[WS_SERVER_INITIALIZED]) {
       console.warn('⚠️  WebSocket Server already initialized for this HTTP server');

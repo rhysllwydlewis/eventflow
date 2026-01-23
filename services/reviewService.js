@@ -91,7 +91,7 @@ async function checkReviewEligibility(userId, supplierId, bookingId = null) {
  * @param {Object} metadata - Request metadata (IP, user agent)
  * @returns {Promise<Object>} Created review with moderation status
  */
-async function createReview(reviewData, userId, _metadata = {}) {
+async function createReview(reviewData, userId) {
   // Validate input
   const validation = ReviewModel.validateReview({
     ...reviewData,

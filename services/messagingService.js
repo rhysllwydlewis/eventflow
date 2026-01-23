@@ -7,6 +7,7 @@
 
 const logger = require('../utils/logger');
 const { ObjectId } = require('mongodb');
+const { MESSAGE_LIMITS } = require('../config/messagingLimits');
 const {
   COLLECTIONS,
   MESSAGE_STATUS,
@@ -25,9 +26,92 @@ class MessagingService {
   }
 
   /**
-   * Create a new conversation thread
+   * Check if user has reached their message limit for the day
+   * @param {string} userId - User ID
+   * @param {string} subscriptionTier - Subscription tier (free, starter, pro, enterprise)
+   * @returns {Promise<Object>} Limit check result
    */
-  async createThread(participants, metadata = {}) {
+  async checkMessageLimit(userId, subscriptionTier = 'free') {
+    try {
+      const limits = MESSAGE_LIMITS[subscriptionTier] || MESSAGE_LIMITS.free;
+
+      // Unlimited for pro/enterprise
+      if (limits.messagesPerDay === -1) {
+        return { allowed: true };
+      }
+
+      // Get start of today
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      // Count messages sent today
+      const messageCount = await this.messagesCollection.countDocuments({
+        senderId: userId,
+        createdAt: { $gte: today },
+      });
+
+      return {
+        allowed: messageCount < limits.messagesPerDay,
+        current: messageCount,
+        limit: limits.messagesPerDay,
+        remaining: Math.max(0, limits.messagesPerDay - messageCount),
+      };
+    } catch (error) {
+      logger.error('Error checking message limit', {
+        userId,
+        error: error.message,
+      });
+      // On error, allow the message to avoid blocking users due to technical issues
+      return { allowed: true };
+    }
+  }
+
+  /**
+   * Check if user has reached their thread creation limit for the day
+   * @param {string} userId - User ID
+   * @param {string} subscriptionTier - Subscription tier (free, starter, pro, enterprise)
+   * @returns {Promise<Object>} Limit check result
+   */
+  async checkThreadLimit(userId, subscriptionTier = 'free') {
+    try {
+      const limits = MESSAGE_LIMITS[subscriptionTier] || MESSAGE_LIMITS.free;
+
+      // Unlimited for pro/enterprise
+      if (limits.threadsPerDay === -1) {
+        return { allowed: true };
+      }
+
+      // Get start of today
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      // Count threads created today by this user (use metadata.createdBy field)
+      const threadCount = await this.threadsCollection.countDocuments({
+        'metadata.createdBy': userId,
+        createdAt: { $gte: today },
+      });
+
+      return {
+        allowed: threadCount < limits.threadsPerDay,
+        current: threadCount,
+        limit: limits.threadsPerDay,
+        remaining: Math.max(0, limits.threadsPerDay - threadCount),
+      };
+    } catch (error) {
+      logger.error('Error checking thread limit', { userId, error: error.message });
+      // On error, allow the action to avoid blocking users due to technical issues
+      return { allowed: true };
+    }
+  }
+
+  /**
+   * Create a new conversation thread
+   * @param {Array<string>} participants - Array of participant user IDs
+   * @param {Object} metadata - Thread metadata
+   * @param {string} subscriptionTier - Creator's subscription tier
+   * @returns {Promise<Object>} Created or existing thread
+   */
+  async createThread(participants, metadata = {}, subscriptionTier = 'free') {
     try {
       // Validate participants
       const validationErrors = validateThread({ participants });
@@ -43,6 +127,16 @@ class MessagingService {
 
       if (existingThread) {
         return existingThread;
+      }
+
+      // Check thread creation limit only for new threads
+      // Assuming first participant is the creator
+      const creatorId = participants[0];
+      const limitCheck = await this.checkThreadLimit(creatorId, subscriptionTier);
+      if (!limitCheck.allowed) {
+        throw new Error(
+          `Daily thread creation limit reached (${limitCheck.limit}). Upgrade your plan for more conversations.`
+        );
       }
 
       // Create new thread
@@ -109,9 +203,26 @@ class MessagingService {
 
   /**
    * Send a message in a thread
+   * @param {Object} data - Message data
+   * @param {string} subscriptionTier - User's subscription tier
+   * @returns {Promise<Object>} Created message
    */
-  async sendMessage(data) {
+  async sendMessage(data, subscriptionTier = 'free') {
     try {
+      // Check message limit
+      const limitCheck = await this.checkMessageLimit(data.senderId, subscriptionTier);
+      if (!limitCheck.allowed) {
+        throw new Error(
+          `Daily message limit reached (${limitCheck.limit}). Upgrade your plan for more messages.`
+        );
+      }
+
+      // Check message length
+      const limits = MESSAGE_LIMITS[subscriptionTier] || MESSAGE_LIMITS.free;
+      if (data.content && data.content.length > limits.maxMessageLength) {
+        throw new Error(`Message too long. Maximum ${limits.maxMessageLength} characters allowed.`);
+      }
+
       // Validate message data
       const validationErrors = validateMessage(data);
       if (validationErrors) {
