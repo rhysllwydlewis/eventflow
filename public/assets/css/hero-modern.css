@@ -1,6 +1,26 @@
 /* EventFlow Hero Modern Design - Clean Concept */
 /* Scoped styles for the new hero section without Tailwind dependency */
 
+/* ==========================================================================
+   CSS Custom Properties for Hero Section
+   Provides fluid responsive values using clamp() for smooth scaling
+   ========================================================================== */
+
+:root {
+  /* Hero section spacing */
+  --hero-padding-top: clamp(40px, 8vw, 72px);
+  --hero-padding-bottom: clamp(24px, 5vw, 48px);
+  --hero-gap: clamp(24px, 5vw, 72px);
+  
+  /* Typography scaling */
+  --hero-h1-size: clamp(26px, 4vw + 1rem, 52px);
+  --hero-subcopy-size: clamp(15px, 1vw + 0.5rem, 18px);
+  
+  /* Collage styling */
+  --collage-gap: clamp(10px, 2vw, 16px);
+  --collage-radius: clamp(12px, 2vw, 20px);
+}
+
 /* Hero section positioning */
 .hero-modern {
   position: relative;
@@ -1215,5 +1235,147 @@
   .hero-cta-primary::before,
   .hero-cta-secondary::before {
     animation: none !important;
+  }
+}
+
+/* ==========================================================================
+   High Contrast Mode Support
+   ========================================================================== */
+
+@media (prefers-contrast: high) {
+  .hero-modern {
+    background: #fff;
+  }
+  
+  .hero-modern h1 {
+    color: #000;
+  }
+  
+  .hero-modern-subcopy {
+    color: #333;
+  }
+  
+  .hero-search-input,
+  .hero-category-select {
+    border: 2px solid #000;
+    background: #fff;
+  }
+  
+  .hero-cta-primary {
+    background: #000;
+    color: #fff;
+    border: 2px solid #000;
+  }
+  
+  .hero-cta-secondary {
+    background: #fff;
+    color: #000;
+    border: 2px solid #000;
+  }
+}
+
+/* ==========================================================================
+   Print Styles
+   ========================================================================== */
+
+@media print {
+  .hero-modern {
+    background: #fff !important;
+    padding: 20px 0;
+  }
+  
+  .hero-collage,
+  .hero-search-card,
+  .hero-blob,
+  .hero-bg-gradient {
+    display: none !important;
+  }
+  
+  .hero-modern h1 {
+    font-size: 24pt;
+    color: #000;
+  }
+  
+  .hero-modern-subcopy {
+    font-size: 12pt;
+    color: #333;
+  }
+  
+  .hero-modern-ctas {
+    display: none;
+  }
+}
+
+/* ==========================================================================
+   Ultra-wide Screen Support (1600px+)
+   ========================================================================== */
+
+@media (min-width: 1600px) {
+  .hero-modern .container {
+    max-width: 1400px;
+  }
+  
+  .hero-grid {
+    gap: 80px;
+  }
+}
+
+/* ==========================================================================
+   Very Small Screen Support (<320px)
+   ========================================================================== */
+
+@media (max-width: 319px) {
+  .hero-modern {
+    padding: 24px 0 16px;
+  }
+  
+  .hero-modern h1 {
+    font-size: 22px;
+  }
+  
+  .hero-modern-subcopy {
+    font-size: 14px;
+  }
+  
+  .hero-search-input,
+  .hero-category-select {
+    font-size: 14px;
+    padding: 12px;
+  }
+}
+
+/* ==========================================================================
+   Hero Container Override
+   ========================================================================== */
+
+.hero-modern .container {
+  max-width: 1320px;
+  padding-left: clamp(16px, 4vw, 32px);
+  padding-right: clamp(16px, 4vw, 32px);
+}
+
+/* ==========================================================================
+   Collage Responsive Aspect Ratios
+   ========================================================================== */
+
+@media (max-width: 767px) {
+  .hero-collage {
+    aspect-ratio: 4/3;
+  }
+  
+  .hero-collage-card {
+    aspect-ratio: 16/10;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  .hero-collage {
+    aspect-ratio: 1/1;
+  }
+}
+
+@media (min-width: 1024px) {
+  .hero-collage {
+    aspect-ratio: 4/3;
   }
 }

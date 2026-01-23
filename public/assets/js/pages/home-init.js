@@ -55,7 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // If debug mode, show version
       const versionLabel = document.getElementById('ef-version-label');
       if (versionLabel) {
-        versionLabel.textContent = 'v17.0.0';
+        versionLabel.textContent = 'v18.0.0';
       }
     }
   }
