@@ -234,7 +234,7 @@
 
 .hero-search-input {
   width: 100%;
-  padding: 14px 68px 14px 48px; /* Increased right padding to 68px for button clearance */
+  padding: 14px 56px 14px 48px; /* Adjusted right padding for 44px button + 3px spacing x2 */
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(8px);
   border: 1.5px solid rgba(226, 232, 240, 0.8);
@@ -272,22 +272,21 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 50px;
-  height: 50px;
+  width: 44px; /* Reduced from 50px to fit better inside input */
+  height: 44px; /* Reduced from 50px to fit better inside input */
   padding: 0;
   background: linear-gradient(135deg, #10b981 0%, #059669 100%);
   color: white;
   border: none;
-  border-radius: 14px;
+  border-radius: 12px; /* Slightly smaller radius to match smaller size */
   cursor: pointer;
   box-shadow: 
     0 2px 4px rgba(5, 150, 105, 0.2),
     0 4px 12px rgba(5, 150, 105, 0.3);
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   position: absolute;
-  right: 8px; /* Increased from 6px to 8px for better spacing */
-  top: 50%;
-  transform: translateY(-50%); /* Center vertically */
+  right: 3px; /* Inset 3px from edge */
+  top: 3px; /* Inset 3px from top */
   overflow: hidden;
   flex-shrink: 0;
   box-sizing: border-box;
@@ -309,7 +308,7 @@
     0 4px 8px rgba(5, 150, 105, 0.3),
     0 8px 20px rgba(5, 150, 105, 0.4),
     0 0 20px rgba(16, 185, 129, 0.4);
-  transform: translateY(-50%) translateY(-2px); /* Keep centered while moving up */
+  transform: scale(1.05); /* Slight scale up on hover */
 }
 
 .hero-search-button:hover::before {
@@ -317,7 +316,7 @@
 }
 
 .hero-search-button:active {
-  transform: translateY(-50%) scale(0.96); /* Keep centered while scaling */
+  transform: scale(0.95); /* Slight scale down on click */
   box-shadow: 
     0 2px 4px rgba(5, 150, 105, 0.2),
     0 4px 12px rgba(5, 150, 105, 0.3),
@@ -680,17 +679,16 @@
   
   .hero-search-input {
     width: 100%;
-    padding-right: 68px; /* Increase to 68px for better button clearance */
+    padding-right: 54px; /* Adjust for smaller button */
   }
 
   .hero-search-button {
     /* Button positioned absolutely inside input wrapper */
     position: absolute;
-    right: 8px; /* Increase from 6px to 8px for more spacing */
-    top: 50%;
-    transform: translateY(-50%); /* Center vertically */
-    width: clamp(44px, 12vw, 50px);
-    height: clamp(44px, 12vw, 50px);
+    right: 3px; /* Match desktop */
+    top: 3px; /* Match desktop */
+    width: clamp(44px, 11vw, 48px); /* Slightly smaller range */
+    height: clamp(44px, 11vw, 48px);
     min-width: 44px; /* WCAG minimum */
     min-height: 44px;
     flex-shrink: 0;
@@ -1056,7 +1054,7 @@
 
   .hero-search-button:active {
     animation: none !important;
-    transform: translateY(-50%) !important; /* Keep centered, no scale */
+    transform: none !important; /* No transform */
   }
 
   .hero-search-button svg {
