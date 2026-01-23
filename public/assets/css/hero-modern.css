@@ -214,6 +214,7 @@
   border-radius: 14px;
   background: linear-gradient(135deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.05) 100%);
   pointer-events: none;
+  z-index: -1;
 }
 
 .hero-category-select:hover {
