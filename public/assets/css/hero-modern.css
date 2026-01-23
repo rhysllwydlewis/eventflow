@@ -234,7 +234,7 @@
 
 .hero-search-input {
   width: 100%;
-  padding: 14px 62px 14px 48px; /* Increased right padding to accommodate button */
+  padding: 14px 68px 14px 48px; /* Increased right padding to 68px for button clearance */
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(8px);
   border: 1.5px solid rgba(226, 232, 240, 0.8);
@@ -285,7 +285,7 @@
     0 4px 12px rgba(5, 150, 105, 0.3);
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   position: absolute;
-  right: 6px; /* Add 6px spacing from edge */
+  right: 8px; /* Increased from 6px to 8px for better spacing */
   top: 50%;
   transform: translateY(-50%); /* Center vertically */
   overflow: hidden;
@@ -636,8 +636,19 @@
     font-size: 28px;
   }
   
+  /* Mobile text-lite version - hide second line for cleaner look */
+  .hero-modern h1 .hero-line-2 {
+    display: none;
+  }
+  
   .hero-modern-subcopy {
     font-size: 16px;
+    /* Truncate subcopy on mobile for text-lite version */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-height: 1.5;
   }
   
   .hero-search-card {
@@ -669,13 +680,13 @@
   
   .hero-search-input {
     width: 100%;
-    padding-right: 62px; /* Ensure space for button on mobile */
+    padding-right: 68px; /* Increase to 68px for better button clearance */
   }
 
   .hero-search-button {
     /* Button positioned absolutely inside input wrapper */
     position: absolute;
-    right: 6px; /* Add spacing from edge */
+    right: 8px; /* Increase from 6px to 8px for more spacing */
     top: 50%;
     transform: translateY(-50%); /* Center vertically */
     width: clamp(44px, 12vw, 50px);
