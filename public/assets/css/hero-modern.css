@@ -285,8 +285,9 @@
     0 4px 12px rgba(5, 150, 105, 0.3);
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   position: absolute;
-  right: 0;
-  top: 0;
+  right: 6px; /* Add 6px spacing from edge */
+  top: 50%;
+  transform: translateY(-50%); /* Center vertically */
   overflow: hidden;
   flex-shrink: 0;
   box-sizing: border-box;
@@ -308,7 +309,7 @@
     0 4px 8px rgba(5, 150, 105, 0.3),
     0 8px 20px rgba(5, 150, 105, 0.4),
     0 0 20px rgba(16, 185, 129, 0.4);
-  transform: translateY(-2px);
+  transform: translateY(-50%) translateY(-2px); /* Keep centered while moving up */
 }
 
 .hero-search-button:hover::before {
@@ -316,7 +317,7 @@
 }
 
 .hero-search-button:active {
-  transform: translateY(0) scale(0.96);
+  transform: translateY(-50%) scale(0.96); /* Keep centered while scaling */
   box-shadow: 
     0 2px 4px rgba(5, 150, 105, 0.2),
     0 4px 12px rgba(5, 150, 105, 0.3),
@@ -674,8 +675,9 @@
   .hero-search-button {
     /* Button positioned absolutely inside input wrapper */
     position: absolute;
-    right: 0;
-    top: 0;
+    right: 6px; /* Add spacing from edge */
+    top: 50%;
+    transform: translateY(-50%); /* Center vertically */
     width: clamp(44px, 12vw, 50px);
     height: clamp(44px, 12vw, 50px);
     min-width: 44px; /* WCAG minimum */
@@ -1043,7 +1045,7 @@
 
   .hero-search-button:active {
     animation: none !important;
-    transform: none !important;
+    transform: translateY(-50%) !important; /* Keep centered, no scale */
   }
 
   .hero-search-button svg {
