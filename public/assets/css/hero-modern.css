@@ -1274,6 +1274,33 @@
   }
 }
 
+/* Windows High Contrast Mode Support */
+@media (forced-colors: active) {
+  .hero-modern {
+    background: Canvas;
+  }
+  
+  .hero-modern h1 {
+    color: CanvasText;
+  }
+  
+  .hero-modern-subcopy {
+    color: CanvasText;
+  }
+  
+  .hero-search-input,
+  .hero-category-select {
+    border: 2px solid ButtonText;
+    background: Field;
+    color: FieldText;
+  }
+  
+  .hero-cta-primary,
+  .hero-cta-secondary {
+    border: 2px solid ButtonText;
+  }
+}
+
 /* ==========================================================================
    Print Styles
    ========================================================================== */
