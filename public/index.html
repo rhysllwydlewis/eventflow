@@ -185,10 +185,15 @@
     
     <!-- Collage Widget Animations and Styles - Optimized for CLS & Reduced Motion -->
     <style>
+      /* CSS Variables for configurable values */
+      :root {
+        --collage-aspect-ratio: 16/9;
+      }
+      
       .collage .frame {
         position: relative;
         /* Reserve space to prevent CLS */
-        aspect-ratio: 16/9;
+        aspect-ratio: var(--collage-aspect-ratio);
         background: #f1f5f9;
       }
       /* Support both img and video elements */
@@ -457,10 +462,10 @@
             <div class="hero-collage ef-fade-up delay-3" aria-hidden="true">
               <!-- Row 1: Video (no label, spans 2 columns) -->
               <div class="hero-video-card">
+                <!-- Video autoplay is controlled by JavaScript based on prefers-reduced-motion -->
                 <video id="hero-pexels-video" muted loop playsinline
                        poster="/assets/images/hero-video-poster.jpg"
-                       width="800" height="450"
-                       data-autoplay="true">
+                       width="800" height="450">
                   <source src="" type="video/mp4" id="hero-video-source">
                   Your browser does not support the video tag.
                 </video>

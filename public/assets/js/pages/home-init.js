@@ -1300,7 +1300,19 @@ async function initCollageWidget(widgetConfig) {
   // Initialize video if present in new hero-collage structure
   // Check for reduced motion and reduced data preferences
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const prefersReducedData = window.matchMedia('(prefers-reduced-data: reduce)').matches;
+  
+  // Feature detection for prefers-reduced-data (not yet widely supported)
+  let prefersReducedData = false;
+  try {
+    if (window.matchMedia) {
+      prefersReducedData = window.matchMedia('(prefers-reduced-data: reduce)').matches;
+    }
+  } catch (e) {
+    // Browser doesn't support prefers-reduced-data, default to false
+    if (isDevelopmentEnvironment()) {
+      console.log('[Collage Widget] prefers-reduced-data not supported in this browser');
+    }
+  }
   
   if (prefersReducedMotion && isDevelopmentEnvironment()) {
     console.log('User prefers reduced motion, animations will be minimal');
