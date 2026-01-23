@@ -1274,7 +1274,10 @@
   }
 }
 
-/* Windows High Contrast Mode Support */
+/* ==========================================================================
+   Windows High Contrast Mode Support
+   ========================================================================== */
+
 @media (forced-colors: active) {
   .hero-modern {
     background: Canvas;
