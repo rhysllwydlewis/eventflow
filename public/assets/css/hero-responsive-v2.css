@@ -14,6 +14,12 @@
   --collage-radius: clamp(12px, 2vw, 20px);
 }
 
+/* Hero Section Padding - Override with fluid values */
+.hero-modern {
+  padding-top: var(--hero-padding-top);
+  padding-bottom: var(--hero-padding-bottom);
+}
+
 /* Hero Grid - 6-tier responsive system */
 /* Base: Single column mobile-first */
 .hero-modern .hero-grid {
@@ -63,12 +69,33 @@
   .hero-modern h1 .hero-line-2 {
     font-size: 0.92em;
     opacity: 0.95;
+    display: block; /* Override hero-modern.css display:none */
   }
 }
 
 @media (max-width: 374px) {
   .hero.hero-modern h1 {
     font-size: clamp(22px, 5.5vw + 0.25rem, 26px);
+  }
+}
+
+/* Subcopy - Fluid responsive typography */
+.hero-modern .hero-modern-subcopy {
+  font-size: var(--hero-subcopy-size);
+  line-height: 1.7;
+  margin-top: clamp(12px, 2vw, 16px);
+  max-width: 620px;
+}
+
+@media (max-width: 640px) {
+  .hero-modern .hero-modern-subcopy {
+    font-size: clamp(15px, 3.5vw, 17px);
+    line-height: 1.6;
+    /* Override truncation from hero-modern.css for better readability */
+    display: block;
+    -webkit-line-clamp: unset;
+    -webkit-box-orient: unset;
+    overflow: visible;
   }
 }
 
@@ -270,6 +297,32 @@
   }
 }
 
+/* CTA Note - Responsive spacing */
+.hero-modern .hero-cta-note {
+  font-size: clamp(12px, 1vw + 0.25rem, 13px);
+  color: #64748b;
+  margin-top: 4px;
+  line-height: 1.5;
+}
+
+@media (min-width: 640px) {
+  .hero-modern .hero-cta-note {
+    margin-left: 12px;
+    margin-top: 0;
+  }
+}
+
+/* Search Card - Responsive spacing */
+.hero-modern .hero-search-card {
+  margin-top: clamp(24px, 4vw, 32px);
+}
+
+@media (max-width: 640px) {
+  .hero-modern .hero-search-card {
+    margin-top: clamp(20px, 3vw, 24px);
+  }
+}
+
 /* Trust indicators - Grid layout */
 .hero-modern .hero-trust {
   display: grid;
@@ -299,6 +352,32 @@
   margin: 0 auto;
   padding-left: clamp(16px, 4vw, 24px);
   padding-right: clamp(16px, 4vw, 24px);
+}
+
+/* Enhanced focus states for accessibility */
+.hero-modern .hero-search-input:focus,
+.hero-modern .hero-category-select:focus {
+  outline: 2px solid #10b981;
+  outline-offset: 2px;
+}
+
+.hero-modern .hero-cta-primary:focus-visible,
+.hero-modern .hero-cta-secondary:focus-visible {
+  outline: 2px solid #10b981;
+  outline-offset: 2px;
+}
+
+/* Smooth transitions for interactive elements */
+.hero-modern .hero-grid {
+  transition: gap 0.3s ease;
+}
+
+.hero-modern .hero-search-row {
+  transition: gap 0.2s ease;
+}
+
+.hero-modern .hero-collage {
+  transition: margin-top 0.3s ease, gap 0.2s ease;
 }
 
 /* Reduced motion support */
@@ -347,5 +426,31 @@
   .hero-modern h1 {
     font-size: 24pt;
     color: black;
+  }
+}
+
+/* Ultra-wide screens (> 1600px) - Constrain hero content */
+@media (min-width: 1600px) {
+  .hero-modern .hero-grid {
+    max-width: 1440px;
+    margin: 0 auto;
+  }
+}
+
+/* Very small screens (< 320px) - Ensure usability */
+@media (max-width: 319px) {
+  .hero-modern .hero-grid {
+    padding: 0 8px;
+  }
+  .hero.hero-modern h1 {
+    font-size: 20px;
+    line-height: 1.2;
+  }
+  .hero-modern .hero-modern-subcopy {
+    font-size: 14px;
+  }
+  .hero-modern .hero-search-button {
+    width: 42px;
+    height: 44px;
   }
 }
