@@ -105,40 +105,102 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 
+    <!-- Critical CSS Inline - Above the fold styles for LCP optimization -->
+    <style>
+      /* CSS Variables */
+      :root{
+        --bg:#fff;
+        --text:#0B1220;
+        --muted:#667085;
+        --ink:#0B8073;
+        --accent:#13B6A2;
+        --border:#E7EAF0;
+        --shadow:0 10px 30px rgba(15,23,42,.06);
+        --radius:14px;
+        --max:1480px;
+        --ef-header-height:64px;
+        --ef-primary:#0B8073;
+        --ef-border:#e5e7eb;
+        --ef-shadow-sm:0 1px 2px 0 rgba(0,0,0,0.05);
+        --ef-text-dark:#1f2937;
+        --ef-transition:all 0.2s cubic-bezier(0.4,0,0.2,1);
+      }
+      /* Reset & Base */
+      *{box-sizing:border-box;margin:0;padding:0}
+      html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+      /* Container - Critical for layout */
+      .container,.ef-container{max-width:min(var(--max),94%);margin:0 auto;padding:0 20px}
+      .ef-container{max-width:1280px}
+      /* Header - Critical for above-the-fold */
+      .ef-header{position:sticky;top:0;left:0;right:0;z-index:1000;background:rgba(255,255,255,0.95);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--ef-border);box-shadow:var(--ef-shadow-sm);transition:var(--ef-transition)}
+      .ef-header-content{display:flex;align-items:center;justify-content:space-between;height:var(--ef-header-height);gap:16px}
+      .ef-brand{display:flex;align-items:center;gap:12px;text-decoration:none;font-weight:800;font-size:1.125rem;color:var(--ef-text-dark);border-radius:8px;padding:4px 8px;margin-left:-8px}
+      .ef-logo{width:40px;height:40px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+      .ef-logo-inner{width:100%;height:100%;border-radius:12px;background:conic-gradient(from 180deg,#9be7d9 0deg,#13B6A2 90deg,#0B8073 198deg,#0B1220 270deg,#9be7d9 360deg);box-shadow:0 4px 12px rgba(11,128,115,0.35)}
+      /* Hero Skeleton - Prevent CLS */
+      .hero{padding:54px 0 24px;min-height:400px;position:relative}
+      .hero-modern{background:linear-gradient(to bottom,#f8fafc 0%,#f8fafc 50%,#f1f5f9 100%);overflow:hidden}
+      .hero-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:24px;align-items:center}
+      h1{margin:0 0 6px;font-weight:900;letter-spacing:-0.02em;font-size:clamp(30px,4.6vw,46px);line-height:1.15}
+      /* Skip link */
+      .skip-link{position:absolute;top:-40px;left:0;background:var(--ink);color:#fff;padding:8px;text-decoration:none;z-index:9999}
+      .skip-link:focus{top:0}
+      /* Responsive */
+      @media (max-width:900px){.hero-grid{grid-template-columns:1fr}}
+      @media (max-width:768px){.container{width:88%}}
+      @media (max-width:640px){.hero{padding:32px 0 16px}}
+    </style>
+
     <!-- Preload critical CSS -->
-    <!-- Note: Update version number in preload hints when CSS version changes -->
     <link rel="preload" href="/assets/css/styles.css" as="style" />
-    <link rel="preload" href="/assets/css/eventflow-17.0.0.css" as="style" />
-    <link rel="preload" href="/assets/css/homepage-enhancements.css" as="style" />
+    <link rel="preload" href="/assets/css/navbar.css" as="style" />
+    <link rel="preload" href="/assets/css/hero-modern.css" as="style" />
 
-
-
-    <!-- Stylesheets -->
+    <!-- Critical Stylesheets - Load synchronously -->
     <link rel="stylesheet" href="/assets/css/styles.css" />
-    <link rel="stylesheet" href="/assets/css/eventflow-17.0.0.css" />
-    <link rel="stylesheet" href="/assets/css/utilities.css" />
-    <link rel="stylesheet" href="/assets/css/components.css" />
-    <link rel="stylesheet" href="/assets/css/animations.css" />
-    <link rel="stylesheet" href="/assets/css/mobile-optimizations.css" />
-    <link rel="stylesheet" href="/assets/css/ui-ux-fixes.css" />
     <link rel="stylesheet" href="/assets/css/navbar.css" />
-    <link rel="stylesheet" href="/assets/css/homepage-enhancements.css" />
-    <link rel="stylesheet" href="/assets/css/navigation-enhancements.css" />
     <link rel="stylesheet" href="/assets/css/hero-modern.css" />
+    
+    <!-- Non-critical CSS - Load asynchronously -->
+    <link rel="preload" href="/assets/css/eventflow-17.0.0.css" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    <link rel="preload" href="/assets/css/utilities.css" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    <link rel="preload" href="/assets/css/components.css" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    <link rel="preload" href="/assets/css/animations.css" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    <link rel="preload" href="/assets/css/mobile-optimizations.css" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    <link rel="preload" href="/assets/css/ui-ux-fixes.css" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    <link rel="preload" href="/assets/css/homepage-enhancements.css" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    <link rel="preload" href="/assets/css/navigation-enhancements.css" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    <noscript>
+      <link rel="stylesheet" href="/assets/css/eventflow-17.0.0.css" />
+      <link rel="stylesheet" href="/assets/css/utilities.css" />
+      <link rel="stylesheet" href="/assets/css/components.css" />
+      <link rel="stylesheet" href="/assets/css/animations.css" />
+      <link rel="stylesheet" href="/assets/css/mobile-optimizations.css" />
+      <link rel="stylesheet" href="/assets/css/ui-ux-fixes.css" />
+      <link rel="stylesheet" href="/assets/css/homepage-enhancements.css" />
+      <link rel="stylesheet" href="/assets/css/navigation-enhancements.css" />
+    </noscript>
+    
     <link rel="icon" href="/favicon.svg" />
     
-    <!-- Collage Widget Animations and Styles -->
+    <!-- Collage Widget Animations and Styles - Optimized for CLS & Reduced Motion -->
     <style>
       .collage .frame {
         position: relative;
+        /* Reserve space to prevent CLS */
+        aspect-ratio: 16/9;
+        background: #f1f5f9;
       }
       /* Support both img and video elements */
       .collage .frame img,
       .collage .frame video {
-        transition: opacity 1s ease-in-out;
+        position: absolute;
+        top: 0;
+        left: 0;
         width: 100%;
         height: 100%;
         object-fit: cover;
+        transition: opacity 1s ease-in-out;
       }
       .collage .frame img.fading,
       .collage .frame video.fading {
@@ -178,14 +240,17 @@
         color: white;
         text-decoration: underline;
       }
-      /* Reduced motion support */
+      /* Reduced motion support - Disable all animations */
       @media (prefers-reduced-motion: reduce) {
         .collage .frame img,
         .collage .frame video {
-          transition: none;
+          transition: none !important;
         }
         .collage .frame video {
-          animation: none;
+          animation: none !important;
+        }
+        .collage .frame.loading-pexels::after {
+          animation: none !important;
         }
       }
     </style>
@@ -392,8 +457,10 @@
             <div class="hero-collage ef-fade-up delay-3" aria-hidden="true">
               <!-- Row 1: Video (no label, spans 2 columns) -->
               <div class="hero-video-card">
-                <video id="hero-pexels-video" autoplay muted loop playsinline
-                       poster="/assets/images/hero-video-poster.jpg">
+                <video id="hero-pexels-video" muted loop playsinline
+                       poster="/assets/images/hero-video-poster.jpg"
+                       width="800" height="450"
+                       data-autoplay="true">
                   <source src="" type="video/mp4" id="hero-video-source">
                   Your browser does not support the video tag.
                 </video>
@@ -402,7 +469,8 @@
               
               <!-- Row 2: Venues + Catering -->
               <a href="/category.html?slug=venues" class="hero-collage-card" data-category="venues">
-                <img src="/assets/images/collage-venue.jpg" alt="Venues" id="collage-venues" loading="lazy"
+                <img src="/assets/images/collage-venue.jpg" alt="Venues" id="collage-venues" 
+                     width="400" height="300" loading="eager" fetchpriority="high"
                      onerror="this.style.background='linear-gradient(135deg, #667eea 0%, #764ba2 100%)'; this.style.minHeight='200px'; this.src=''; this.onerror=null;">
                 <span class="hero-collage-label">
                   <span class="hero-collage-icon">🏛️</span>
@@ -412,7 +480,8 @@
               </a>
               
               <a href="/category.html?slug=catering" class="hero-collage-card" data-category="catering">
-                <img src="/assets/images/collage-catering.jpg" alt="Catering" id="collage-catering" loading="lazy"
+                <img src="/assets/images/collage-catering.jpg" alt="Catering" id="collage-catering"
+                     width="400" height="300" loading="eager" fetchpriority="high"
                      onerror="this.style.background='linear-gradient(135deg, #f093fb 0%, #f5576c 100%)'; this.style.minHeight='200px'; this.src=''; this.onerror=null;">
                 <span class="hero-collage-label">
                   <span class="hero-collage-icon">🍽️</span>
@@ -423,7 +492,8 @@
               
               <!-- Row 3: Entertainment + Photography -->
               <a href="/category.html?slug=entertainment" class="hero-collage-card" data-category="entertainment">
-                <img src="/assets/images/collage-entertainment.jpg" alt="Entertainment" id="collage-entertainment" loading="lazy"
+                <img src="/assets/images/collage-entertainment.jpg" alt="Entertainment" id="collage-entertainment"
+                     width="400" height="300" loading="eager" fetchpriority="high"
                      onerror="this.style.background='linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)'; this.style.minHeight='200px'; this.src=''; this.onerror=null;">
                 <span class="hero-collage-label">
                   <span class="hero-collage-icon">🎤</span>
@@ -433,7 +503,8 @@
               </a>
               
               <a href="/category.html?slug=photography" class="hero-collage-card" data-category="photography">
-                <img src="/assets/images/collage-photography.jpg" alt="Photography" id="collage-photography" loading="lazy"
+                <img src="/assets/images/collage-photography.jpg" alt="Photography" id="collage-photography"
+                     width="400" height="300" loading="eager" fetchpriority="high"
                      onerror="this.style.background='linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)'; this.style.minHeight='200px'; this.src=''; this.onerror=null;">
                 <span class="hero-collage-label">
                   <span class="hero-collage-icon">📸</span>
