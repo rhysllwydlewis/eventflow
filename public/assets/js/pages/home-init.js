@@ -504,12 +504,12 @@ async function supportsWebP() {
  */
 function getConnectionAwareQuality() {
   // Check for Save-Data header preference
-  if (navigator.connection && navigator.connection.saveData) {
+  if (navigator.connection && navigator.connection.saveData === true) {
     return 'low';
   }
   
   // Check Network Information API
-  if (navigator.connection) {
+  if (navigator.connection && navigator.connection.effectiveType) {
     const effectiveType = navigator.connection.effectiveType;
     if (effectiveType === '2g' || effectiveType === 'slow-2g') {
       return 'low';
