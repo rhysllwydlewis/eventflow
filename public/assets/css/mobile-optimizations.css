@@ -14,7 +14,7 @@
   /* Ensure interactive elements in main content areas meet minimum size */
   /* Excludes navigation, header, and specific UI components */
   main a:not(.ef-nav-link):not(.ef-mobile-link):not(.ef-bottom-link),
-  main button:not(.ef-icon-btn):not(.ef-mobile-toggle):not(.ef-btn):not(.hero-search-button),
+  main button:not(.ef-icon-btn):not(.ef-mobile-toggle):not(.ef-btn):not(.ef-search-bar__button),
   .section a:not(.ef-nav-link):not(.ef-mobile-link):not(.ef-bottom-link),
   .card a:not(.ef-nav-link),
   .form-row input[type="submit"],
@@ -89,7 +89,7 @@
 
 @media (max-width: 768px) {
   /* Full-width buttons on mobile */
-  .cta, .btn, button[type="submit"]:not(.hero-search-button), input[type="submit"] {
+  .cta, .btn, button[type="submit"]:not(.ef-search-bar__button), input[type="submit"] {
     width: 100%;
     min-height: 48px;
     font-size: 16px;

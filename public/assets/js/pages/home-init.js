@@ -119,8 +119,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // Fetch and render testimonials
   fetchTestimonials();
 
-  // Initialize hero search with autocomplete
-  initHeroSearch();
+  // Hero search is now handled by ef-search-bar.js
+  // initHeroSearch(); // Removed - old search component
 
   // Initialize newsletter form
   initNewsletterForm();
@@ -2554,8 +2554,11 @@ async function fetchTestimonials() {
 }
 
 /**
- * Initialize hero search with autocomplete
+ * OLD: Initialize hero search with autocomplete
+ * NOTE: This function is no longer used. The new ef-search-bar component
+ * is handled by ef-search-bar.js. Keeping this commented for reference.
  */
+/*
 function initHeroSearch() {
   const form = document.getElementById('hero-search-form');
   const input = document.getElementById('hero-search-input');
@@ -2643,6 +2646,7 @@ function initHeroSearch() {
     }
   });
 }
+*/
 
 /**
  * Initialize newsletter signup form
