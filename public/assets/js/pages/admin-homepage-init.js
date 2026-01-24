@@ -67,8 +67,8 @@
 
     // Set media type checkboxes
     const mediaTypes = collageWidget.mediaTypes || { photos: true, videos: true };
-    document.getElementById('mediaTypePhotos').checked = mediaTypes.photos || false;
-    document.getElementById('mediaTypeVideos').checked = mediaTypes.videos || false;
+    document.getElementById('mediaTypePhotos').checked = mediaTypes.photos !== false;
+    document.getElementById('mediaTypeVideos').checked = mediaTypes.videos !== false;
 
     // Set interval
     document.getElementById('intervalSeconds').value = collageWidget.intervalSeconds || 2.5;

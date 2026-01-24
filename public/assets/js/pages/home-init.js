@@ -2199,8 +2199,12 @@ async function loadMediaIntoFrame(
         video.loop = false;
       }
 
+      // Declare timeout ID that will be set later
+      let timeoutId;
+
       // Use named functions for easier cleanup
       const handleLoadedData = () => {
+        clearTimeout(timeoutId); // Clear timeout since video loaded successfully
         mediaElement.replaceWith(video);
         video.style.opacity = '1';
         video.classList.add('video-loaded');
@@ -2242,6 +2246,7 @@ async function loadMediaIntoFrame(
       };
 
       const handleError = () => {
+        clearTimeout(timeoutId); // Clear timeout since video errored
         // Track failure
         if (window.__videoMetrics__) {
           window.__videoMetrics__.collageVideoFailures++;
@@ -2260,11 +2265,14 @@ async function loadMediaIntoFrame(
       video.addEventListener('error', handleError, { once: true });
 
       // Set timeout for video loading
-      setTimeout(() => {
+      timeoutId = setTimeout(() => {
         if (frame.classList.contains('loading-pexels')) {
           if (isDebugEnabled()) {
             console.warn(`[Collage Widget] Video load timeout for ${category}`);
           }
+          // Remove event listeners to prevent them from firing after timeout
+          video.removeEventListener('loadeddata', handleLoadedData);
+          video.removeEventListener('error', handleError);
           restoreDefaultImage(mediaElement, frame, uploadGallery, frameIndex);
           frame.classList.remove('loading-pexels');
           resolve();
