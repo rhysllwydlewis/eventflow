@@ -106,7 +106,11 @@ class SEOHelper {
     // If canonical already exists and points to production, do not override
     if (canonical && canonical.href) {
       const existingHref = canonical.href.toLowerCase();
-      if (existingHref.startsWith('https://event-flow.co.uk')) {
+      // Check for exact domain match (not just prefix) to prevent bypasses like https://event-flow.co.uk.evil.com
+      if (
+        existingHref.startsWith('https://event-flow.co.uk/') ||
+        existingHref === 'https://event-flow.co.uk'
+      ) {
         // Production canonical already set in HTML, don't override
         if (isDebugEnabled()) {
           console.log('[SEO] Using existing production canonical:', canonical.href);
@@ -196,7 +200,11 @@ class SEOHelper {
     // Special handling for og:url to respect production URLs
     if (property === 'og:url' && meta && meta.getAttribute('content')) {
       const existingContent = meta.getAttribute('content').toLowerCase();
-      if (existingContent.startsWith('https://event-flow.co.uk')) {
+      // Check for exact domain match (not just prefix) to prevent bypasses like https://event-flow.co.uk.evil.com
+      if (
+        existingContent.startsWith('https://event-flow.co.uk/') ||
+        existingContent === 'https://event-flow.co.uk'
+      ) {
         // Production og:url already set in HTML, don't override
         if (isDebugEnabled()) {
           console.log('[SEO] Using existing production og:url:', meta.getAttribute('content'));
