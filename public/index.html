@@ -482,7 +482,8 @@
                 <!-- Video autoplay is controlled by JavaScript based on prefers-reduced-motion -->
                 <video id="hero-pexels-video" muted loop playsinline preload="metadata"
                        poster="/assets/images/hero-video-poster.jpg"
-                       width="800" height="450">
+                       width="800" height="450"
+                       onerror="this.style.display='none'; this.nextElementSibling && (this.nextElementSibling.style.display='block');">
                   <source src="" type="video/mp4" id="hero-video-source">
                   Your browser does not support the video tag.
                 </video>

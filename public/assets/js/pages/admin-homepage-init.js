@@ -66,7 +66,7 @@
     document.getElementById('sourceUploads').checked = source === 'uploads';
 
     // Set media type checkboxes
-    const mediaTypes = collageWidget.mediaTypes || { photos: true, videos: false };
+    const mediaTypes = collageWidget.mediaTypes || { photos: true, videos: true };
     document.getElementById('mediaTypePhotos').checked = mediaTypes.photos || false;
     document.getElementById('mediaTypeVideos').checked = mediaTypes.videos || false;
 
@@ -84,12 +84,13 @@
     const pexelsVideoQueries = collageWidget.pexelsVideoQueries || {};
     document.getElementById('pexelsVideoQueryVenues').value = pexelsVideoQueries.venues || '';
     document.getElementById('pexelsVideoQueryCatering').value = pexelsVideoQueries.catering || '';
-    document.getElementById('pexelsVideoQueryEntertainment').value = pexelsVideoQueries.entertainment || '';
-    document.getElementById('pexelsVideoQueryPhotography').value = pexelsVideoQueries.photography || '';
+    document.getElementById('pexelsVideoQueryEntertainment').value =
+      pexelsVideoQueries.entertainment || '';
+    document.getElementById('pexelsVideoQueryPhotography').value =
+      pexelsVideoQueries.photography || '';
 
     // Set fallback checkbox
-    document.getElementById('fallbackToPexels').checked =
-      collageWidget.fallbackToPexels !== false;
+    document.getElementById('fallbackToPexels').checked = collageWidget.fallbackToPexels !== false;
 
     // Show/hide panels based on source
     updateSourcePanels();
@@ -130,10 +131,14 @@
 
     if (enabled) {
       settingsDiv.classList.remove('disabled');
-      if (statusBanner) statusBanner.style.display = 'none';
+      if (statusBanner) {
+        statusBanner.style.display = 'none';
+      }
     } else {
       settingsDiv.classList.add('disabled');
-      if (statusBanner) statusBanner.style.display = 'block';
+      if (statusBanner) {
+        statusBanner.style.display = 'block';
+      }
     }
   }
 
@@ -167,7 +172,7 @@
         photography: document.getElementById('pexelsVideoQueryPhotography').value,
       };
       const fallbackToPexels = document.getElementById('fallbackToPexels').checked;
-      
+
       // Build uploadGallery from current media
       const uploadGallery = collageMedia.map(m => m.url);
 
@@ -235,7 +240,7 @@
     const successEl = document.getElementById('collageWidgetSuccess');
     const errorEl = document.getElementById('collageWidgetError');
     errorEl.style.display = 'none';
-    successEl.textContent = '✅ ' + message;
+    successEl.textContent = `✅ ${message}`;
     successEl.style.display = 'block';
     setTimeout(() => {
       successEl.style.display = 'none';
@@ -246,7 +251,7 @@
     const successEl = document.getElementById('collageWidgetSuccess');
     const errorEl = document.getElementById('collageWidgetError');
     successEl.style.display = 'none';
-    errorEl.textContent = '❌ ' + message;
+    errorEl.textContent = `❌ ${message}`;
     errorEl.style.display = 'block';
     setTimeout(() => {
       errorEl.style.display = 'none';
@@ -313,25 +318,33 @@
   }
 
   async function uploadCollageMedia(files) {
-    if (!files || files.length === 0) return;
+    if (!files || files.length === 0) {
+      return;
+    }
 
     // Validate file count
     if (files.length > 10) {
-      showCollageWidgetError('Maximum 10 files can be uploaded at once. Please select fewer files.');
+      showCollageWidgetError(
+        'Maximum 10 files can be uploaded at once. Please select fewer files.'
+      );
       return;
     }
 
     // Validate file sizes and types
     const maxSize = 10 * 1024 * 1024; // 10MB
     const validTypes = /^(image\/(jpeg|jpg|png|webp|gif)|video\/(mp4|webm|quicktime))$/i;
-    
+
     for (const file of files) {
       if (file.size > maxSize) {
-        showCollageWidgetError(`File "${file.name}" is too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Maximum size is 10MB.`);
+        showCollageWidgetError(
+          `File "${file.name}" is too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Maximum size is 10MB.`
+        );
         return;
       }
       if (!validTypes.test(file.type)) {
-        showCollageWidgetError(`File "${file.name}" has unsupported format. Please use JPG, PNG, WebP, MP4, or WebM.`);
+        showCollageWidgetError(
+          `File "${file.name}" has unsupported format. Please use JPG, PNG, WebP, MP4, or WebM.`
+        );
         return;
       }
     }
@@ -373,7 +386,9 @@
     } catch (err) {
       hideUploadProgress();
       console.error('Error uploading collage media:', err);
-      showCollageWidgetError('Network error during upload. Please check your connection and try again.');
+      showCollageWidgetError(
+        'Network error during upload. Please check your connection and try again.'
+      );
     }
   }
 
@@ -385,14 +400,17 @@
       });
       const csrfData = await csrfResponse.json();
 
-      const response = await fetch(`/api/admin/homepage/collage-media/${encodeURIComponent(filename)}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-Token': csrfData.csrfToken,
-        },
-        credentials: 'include',
-      });
+      const response = await fetch(
+        `/api/admin/homepage/collage-media/${encodeURIComponent(filename)}`,
+        {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': csrfData.csrfToken,
+          },
+          credentials: 'include',
+        }
+      );
 
       if (response.ok) {
         showCollageWidgetSuccess('Media deleted successfully!');
@@ -408,11 +426,13 @@
   }
 
   function formatFileSize(bytes) {
-    if (bytes === 0) return '0 B';
+    if (bytes === 0) {
+      return '0 B';
+    }
     const k = 1024;
     const sizes = ['B', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
+    return `${Math.round((bytes / Math.pow(k, i)) * 100) / 100} ${sizes[i]}`;
   }
 
   function showUploadProgress(fileCount) {
@@ -682,7 +702,9 @@
   // ============================================
 
   // Enable/disable toggle
-  document.getElementById('collageWidgetEnabled').addEventListener('change', updateWidgetEnabledState);
+  document
+    .getElementById('collageWidgetEnabled')
+    .addEventListener('change', updateWidgetEnabledState);
 
   // Source selection
   document.querySelectorAll('input[name="collageSource"]').forEach(radio => {

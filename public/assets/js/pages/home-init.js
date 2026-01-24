@@ -486,14 +486,15 @@ async function supportsWebP() {
   if (window.__webpSupported !== undefined) {
     return window.__webpSupported;
   }
-  
+
   return new Promise(resolve => {
     const webp = new Image();
     webp.onload = webp.onerror = () => {
       window.__webpSupported = webp.height === 2;
       resolve(window.__webpSupported);
     };
-    webp.src = 'data:image/webp;base64,UklGRjoAAABXRUJQVlA4IC4AAACyAgCdASoCAAIALmk0mk0iIiIiIgBoSygABc6WWgAA/veff/0PP8bA//LwYAAA';
+    webp.src =
+      'data:image/webp;base64,UklGRjoAAABXRUJQVlA4IC4AAACyAgCdASoCAAIALmk0mk0iIiIiIgBoSygABc6WWgAA/veff/0PP8bA//LwYAAA';
   });
 }
 
@@ -507,7 +508,7 @@ function getConnectionAwareQuality() {
   if (navigator.connection && navigator.connection.saveData === true) {
     return 'low';
   }
-  
+
   // Check Network Information API
   if (navigator.connection && navigator.connection.effectiveType) {
     const effectiveType = navigator.connection.effectiveType;
@@ -518,7 +519,7 @@ function getConnectionAwareQuality() {
       return 'medium';
     }
   }
-  
+
   return 'high';
 }
 
@@ -528,27 +529,29 @@ function getConnectionAwareQuality() {
  * @returns {string} Optimal image URL
  */
 function getOptimalPexelsImageSize(photoSrc) {
-  if (!photoSrc) return null;
-  
+  if (!photoSrc) {
+    return null;
+  }
+
   const dpr = window.devicePixelRatio || 1;
   const viewportWidth = window.innerWidth;
-  
+
   // Calculate effective width needed (accounting for DPR)
   // Collage frames are typically 40-50% of viewport width on mobile
   const frameWidth = viewportWidth <= 768 ? viewportWidth * 0.48 : viewportWidth * 0.25;
   const effectiveWidth = frameWidth * dpr;
-  
+
   // Network-aware quality adjustment
   const quality = getConnectionAwareQuality();
-  
+
   // Size mapping (Pexels standard sizes)
   // tiny: 280px, small: 340px, medium: 940px, large: 1880px, large2x: 3760px
-  
+
   if (quality === 'low') {
     // Force small size on slow connections
     return photoSrc.small || photoSrc.tiny || photoSrc.medium;
   }
-  
+
   if (effectiveWidth <= 280) {
     return photoSrc.tiny || photoSrc.small;
   } else if (effectiveWidth <= 340) {
@@ -569,16 +572,28 @@ function getOptimalPexelsImageSize(photoSrc) {
  * @returns {string} srcset attribute value
  */
 function generateSrcset(photoSrc) {
-  if (!photoSrc) return '';
-  
+  if (!photoSrc) {
+    return '';
+  }
+
   const sources = [];
-  
-  if (photoSrc.tiny) sources.push(`${photoSrc.tiny} 280w`);
-  if (photoSrc.small) sources.push(`${photoSrc.small} 340w`);
-  if (photoSrc.medium) sources.push(`${photoSrc.medium} 940w`);
-  if (photoSrc.large) sources.push(`${photoSrc.large} 1880w`);
-  if (photoSrc.large2x) sources.push(`${photoSrc.large2x} 3760w`);
-  
+
+  if (photoSrc.tiny) {
+    sources.push(`${photoSrc.tiny} 280w`);
+  }
+  if (photoSrc.small) {
+    sources.push(`${photoSrc.small} 340w`);
+  }
+  if (photoSrc.medium) {
+    sources.push(`${photoSrc.medium} 940w`);
+  }
+  if (photoSrc.large) {
+    sources.push(`${photoSrc.large} 1880w`);
+  }
+  if (photoSrc.large2x) {
+    sources.push(`${photoSrc.large2x} 3760w`);
+  }
+
   return sources.join(', ');
 }
 
@@ -593,10 +608,12 @@ function setupCollageResizeOptimization() {
     }
     return null;
   }
-  
+
   const collageElement = document.querySelector('.hero-collage');
-  if (!collageElement) return null;
-  
+  if (!collageElement) {
+    return null;
+  }
+
   let resizeTimeout;
   const observer = new ResizeObserver(() => {
     // Debounce to avoid excessive updates
@@ -609,7 +626,7 @@ function setupCollageResizeOptimization() {
       // This is a placeholder for the optimization hook
     }, 500);
   });
-  
+
   observer.observe(collageElement);
   return observer;
 }
@@ -625,10 +642,12 @@ function setupLazyLoadingForCollage() {
     }
     return null;
   }
-  
+
   const collageCards = document.querySelectorAll('.hero-collage-card');
-  if (collageCards.length === 0) return null;
-  
+  if (collageCards.length === 0) {
+    return null;
+  }
+
   const observer = new IntersectionObserver(
     entries => {
       entries.forEach(entry => {
@@ -650,7 +669,7 @@ function setupLazyLoadingForCollage() {
       rootMargin: '50px', // Preload 50px before entering viewport
     }
   );
-  
+
   collageCards.forEach(card => observer.observe(card));
   return observer;
 }
@@ -907,21 +926,21 @@ function restoreDefaultImage(imgElement, frame, uploadGallery = [], frameIndex =
  */
 function displayPexelsImage(imgElement, frame, imageData, category) {
   imgElement.src = imageData.url;
-  
+
   // Apply srcset if available for responsive images
   if (imageData.srcset) {
     imgElement.srcset = imageData.srcset;
-    
+
     // Add sizes attribute for optimal image selection
     // Mobile: ~48% of viewport (2-column), Tablet+: ~25% of viewport
     imgElement.sizes = '(max-width: 768px) 48vw, 25vw';
   }
-  
+
   // Add decoding="async" for better performance
   // Note: Not using loading="lazy" because collage is above-the-fold (hero section)
   // and needs to load immediately for good LCP (Largest Contentful Paint)
   imgElement.decoding = 'async';
-  
+
   imgElement.alt = `${category.charAt(0).toUpperCase() + category.slice(1)} - Photo by ${imageData.photographer}`;
   imgElement.style.opacity = '1';
   frame.classList.remove('loading-pexels');
@@ -1211,7 +1230,7 @@ async function initPexelsCollage(settings) {
 
       // Store watchdog ID for cleanup
       window.__collageWatchdogId = watchdogInterval;
-      
+
       // Setup responsive image optimization observers
       window.__collageResizeObserver = setupCollageResizeOptimization();
       window.__collageIntersectionObserver = setupLazyLoadingForCollage();
@@ -1262,9 +1281,15 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
   const videoElement = document.getElementById('hero-pexels-video');
   const videoSource = document.getElementById('hero-video-source');
   const videoCredit = document.getElementById('hero-video-credit');
+  const videoCard = document.querySelector('.hero-video-card');
 
   if (!videoElement || !videoSource) {
     return; // Video elements not present in HTML
+  }
+
+  // Add loading state
+  if (videoCard) {
+    videoCard.classList.add('loading-video');
   }
 
   try {
@@ -1293,6 +1318,18 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
         }
         videoSource.src = videoUrl;
         videoElement.load();
+
+        // Remove loading state when video loads
+        videoElement.addEventListener(
+          'loadeddata',
+          () => {
+            if (videoCard) {
+              videoCard.classList.remove('loading-video');
+            }
+          },
+          { once: true }
+        );
+
         videoElement.play().catch(() => {
           if (isDebugEnabled()) {
             console.log('[Hero Video] Autoplay prevented, video will play on user interaction');
@@ -1370,6 +1407,11 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
               clearTimeout(timeoutId);
             }
 
+            // Remove loading state
+            if (videoCard) {
+              videoCard.classList.remove('loading-video');
+            }
+
             if (isDebugEnabled()) {
               console.log('[Hero Video] Video metadata loaded, attempting to play');
             }
@@ -1388,6 +1430,11 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
             loadingComplete = true;
             if (timeoutId) {
               clearTimeout(timeoutId);
+            }
+
+            // Remove loading state on error
+            if (videoCard) {
+              videoCard.classList.remove('loading-video');
             }
 
             if (isDebugEnabled()) {
@@ -1410,6 +1457,10 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
           timeoutId = setTimeout(() => {
             if (!loadingComplete) {
               loadingComplete = true;
+              // Remove loading state on timeout
+              if (videoCard) {
+                videoCard.classList.remove('loading-video');
+              }
               if (isDebugEnabled()) {
                 console.warn(
                   '[Hero Video] Video loading timeout - poster will be shown as fallback'
@@ -1442,6 +1493,11 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
       throw new Error('Failed to initialize video');
     }
   } catch (error) {
+    // Remove loading state on error
+    if (videoCard) {
+      videoCard.classList.remove('loading-video');
+    }
+
     if (isDebugEnabled()) {
       console.warn('[Hero Video] Failed to initialize video:', error.message);
     }
@@ -1996,17 +2052,17 @@ async function loadMediaIntoFrame(
         // Add cache busting to prevent browser from using cached static images
         const cacheBustedUrl = addCacheBuster(media.url);
         mediaElement.src = cacheBustedUrl;
-        
+
         // Apply srcset if available for responsive images
         if (media.srcset) {
           mediaElement.srcset = media.srcset;
           mediaElement.sizes = '(max-width: 768px) 48vw, 25vw';
         }
-        
+
         // Add decoding="async" for better performance
         // Note: Not using loading="lazy" - collage is above-the-fold (hero section)
         mediaElement.decoding = 'async';
-        
+
         mediaElement.alt = `${category.charAt(0).toUpperCase() + category.slice(1)} - Photo`;
         mediaElement.style.opacity = '1';
         frame.classList.remove('loading-pexels');
@@ -2036,17 +2092,17 @@ async function loadMediaIntoFrame(
         // Add cache busting to prevent browser from using cached static images
         const cacheBustedUrl = addCacheBuster(media.url);
         mediaElement.src = cacheBustedUrl;
-        
+
         // Apply srcset if available for responsive images
         if (media.srcset) {
           mediaElement.srcset = media.srcset;
           mediaElement.sizes = '(max-width: 768px) 48vw, 25vw';
         }
-        
+
         // Add decoding="async" for better performance
         // Note: Not using loading="lazy" - collage is above-the-fold (hero section)
         mediaElement.decoding = 'async';
-        
+
         mediaElement.alt = `${category.charAt(0).toUpperCase() + category.slice(1)} - Photo`;
         mediaElement.style.opacity = '1';
         frame.classList.remove('loading-pexels');

@@ -4597,7 +4597,7 @@ router.get('/homepage/collage-widget', authRequired, roleRequired('admin'), asyn
     const collageWidget = settings.collageWidget || {
       enabled: false,
       source: 'pexels',
-      mediaTypes: { photos: true, videos: false },
+      mediaTypes: { photos: true, videos: true },
       intervalSeconds: 2.5,
       pexelsQueries: {
         venues: 'wedding venue elegant ballroom',

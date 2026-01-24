@@ -259,6 +259,14 @@ const FALLBACK_PHOTOS = [
  * Fallback video URLs from curated wedding video collections
  * These are high-quality wedding-related videos suitable for hero sections
  * All videos are free to use per Pexels license
+ *
+ * ⚠️ IMPORTANT: These Vimeo external links may expire over time.
+ * If videos fail to load, these URLs should be validated and updated with:
+ * 1. Fresh Vimeo external links from Pexels API
+ * 2. Direct Pexels CDN URLs (preferred for reliability)
+ *
+ * To validate: Test each video URL in a browser or use a URL checker tool.
+ * To update: Fetch fresh video URLs from the Pexels API or use their CDN.
  */
 const FALLBACK_VIDEOS = [
   {
