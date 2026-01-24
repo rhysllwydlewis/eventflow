@@ -1583,6 +1583,17 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
             }
 
             const videoFile = videoFiles[currentUrlIndex];
+            
+            // Validate video file has a valid link
+            if (!videoFile?.link) {
+              if (isDebugEnabled()) {
+                console.warn(`[Hero Video] Video file at index ${currentUrlIndex} has no valid link, skipping...`);
+              }
+              currentUrlIndex++;
+              tryNextVideo();
+              return;
+            }
+            
             if (isDebugEnabled()) {
               console.log(`[Hero Video] Trying video URL ${currentUrlIndex + 1}/${videoFiles.length}:`, videoFile.link);
             }
