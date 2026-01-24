@@ -77,6 +77,25 @@
   position: relative;
 }
 
+/* Center hero content on mobile/tablet */
+@media (max-width: 1023px) {
+  .hero-modern .hero-grid > div:first-child {
+    text-align: center;
+  }
+  
+  .hero-modern h1 {
+    align-items: center;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  
+  .hero-modern-subcopy {
+    margin-left: auto;
+    margin-right: auto;
+    text-align: center;
+  }
+}
+
 /* Eyebrow badge - Hidden/removed */
 .hero-eyebrow {
   display: none;
@@ -398,8 +417,15 @@
   }
 }
 
-/* Tablet+: Side by side, auto width */
-@media (min-width: 640px) {
+/* Tablet: Center CTAs */
+@media (min-width: 640px) and (max-width: 1023px) {
+  .hero-modern-ctas {
+    justify-content: center;
+  }
+}
+
+/* Desktop: Left-align CTAs for two-column layout */
+@media (min-width: 1024px) {
   .hero-modern-ctas {
     justify-content: flex-start;
   }
