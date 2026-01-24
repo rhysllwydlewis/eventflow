@@ -55,9 +55,11 @@ router.post('/event', async (req, res) => {
     const analyticsEvents = (await dbUnified.read('analyticsEvents')) || [];
     analyticsEvents.push(analyticsEvent);
 
-    // Keep only last 10,000 events to prevent unbounded growth
-    if (analyticsEvents.length > 10000) {
-      analyticsEvents.splice(0, analyticsEvents.length - 10000);
+    // Keep only last N events to prevent unbounded growth
+    // Configurable via env var, defaults to 10000
+    const maxEvents = parseInt(process.env.MAX_ANALYTICS_EVENTS, 10) || 10000;
+    if (analyticsEvents.length > maxEvents) {
+      analyticsEvents.splice(0, analyticsEvents.length - maxEvents);
     }
 
     await dbUnified.write('analyticsEvents', analyticsEvents);

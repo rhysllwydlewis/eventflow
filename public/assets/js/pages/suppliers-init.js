@@ -331,9 +331,9 @@ async function initSuppliersPage() {
     filterPriceEl.addEventListener('change', (e) => {
       // Map price range to budget
       const priceMap = {
-        '£': { min: 0, max: 1000 },
-        '££': { min: 1000, max: 2000 },
-        '£££': { min: 2000, max: 5000 },
+        '£': { min: '0', max: '1000' },
+        '££': { min: '1000', max: '2000' },
+        '£££': { min: '2000', max: '5000' },
       };
       const range = priceMap[e.target.value];
       if (range) {

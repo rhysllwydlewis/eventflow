@@ -199,9 +199,63 @@ class ShortlistDrawer {
    * Clear all items
    */
   async clearAll() {
-    if (confirm('Are you sure you want to clear your entire shortlist?')) {
+    // Create accessible confirmation dialog
+    const confirmed = await this.showConfirmDialog(
+      'Clear Shortlist',
+      'Are you sure you want to clear your entire shortlist?'
+    );
+    
+    if (confirmed) {
       await shortlistManager.clearAll();
     }
+  }
+
+  /**
+   * Show confirmation dialog (accessible alternative to confirm())
+   */
+  showConfirmDialog(title, message) {
+    return new Promise((resolve) => {
+      // Create modal overlay
+      const overlay = document.createElement('div');
+      overlay.className = 'confirm-dialog-overlay';
+      overlay.innerHTML = `
+        <div class="confirm-dialog">
+          <h3 class="confirm-dialog-title">${title}</h3>
+          <p class="confirm-dialog-message">${message}</p>
+          <div class="confirm-dialog-actions">
+            <button class="btn btn-secondary confirm-cancel">Cancel</button>
+            <button class="btn btn-primary confirm-ok">Confirm</button>
+          </div>
+        </div>
+      `;
+      
+      document.body.appendChild(overlay);
+      
+      // Focus first button
+      const cancelBtn = overlay.querySelector('.confirm-cancel');
+      const okBtn = overlay.querySelector('.confirm-ok');
+      
+      cancelBtn.focus();
+      
+      // Handle button clicks
+      cancelBtn.addEventListener('click', () => {
+        document.body.removeChild(overlay);
+        resolve(false);
+      });
+      
+      okBtn.addEventListener('click', () => {
+        document.body.removeChild(overlay);
+        resolve(true);
+      });
+      
+      // Handle ESC key
+      overlay.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          document.body.removeChild(overlay);
+          resolve(false);
+        }
+      });
+    });
   }
 
   /**

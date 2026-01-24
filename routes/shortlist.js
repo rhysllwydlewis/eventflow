@@ -65,7 +65,7 @@ router.post('/', authRequired, async (req, res) => {
       type: validator.escape(type),
       id: validator.escape(id),
       name: validator.escape(name),
-      imageUrl: imageUrl ? validator.escape(imageUrl) : null,
+      imageUrl: imageUrl && validator.isURL(imageUrl) ? imageUrl : null,
       category: category ? validator.escape(category) : null,
       location: location ? validator.escape(location) : null,
       priceHint: priceHint ? validator.escape(priceHint) : null,

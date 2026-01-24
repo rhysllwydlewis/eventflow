@@ -18,7 +18,7 @@ export function getFiltersFromURL() {
     budgetMin: params.get('budgetMin') || '',
     budgetMax: params.get('budgetMax') || '',
     sort: params.get('sort') || 'relevance',
-    page: parseInt(params.get('page')) || 1,
+    page: parseInt(params.get('page'), 10) || 1,
   };
 }
 

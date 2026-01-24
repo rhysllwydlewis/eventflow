@@ -277,8 +277,15 @@ async function initMarketplacePage() {
       // Parse price range (e.g., "0-50", "50-100")
       const range = e.target.value.split('-');
       if (range.length === 2) {
-        currentFilters.budgetMin = parseInt(range[0], 10);
-        currentFilters.budgetMax = parseInt(range[1], 10);
+        const min = parseInt(range[0], 10);
+        const max = parseInt(range[1], 10);
+        if (!isNaN(min) && !isNaN(max)) {
+          currentFilters.budgetMin = min;
+          currentFilters.budgetMax = max;
+        } else {
+          delete currentFilters.budgetMin;
+          delete currentFilters.budgetMax;
+        }
       } else {
         delete currentFilters.budgetMin;
         delete currentFilters.budgetMax;

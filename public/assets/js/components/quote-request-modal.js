@@ -235,13 +235,39 @@ class QuoteRequestModal {
       }
     } catch (error) {
       console.error('Quote request error:', error);
-      alert('Failed to submit quote request. Please try again.');
+      this.showError(error.message || 'Failed to submit quote request. Please try again.');
       
       // Re-enable submit button
       submitBtn.disabled = false;
       submitText.style.display = 'inline';
       submitSpinner.style.display = 'none';
     }
+  }
+
+  /**
+   * Show error message
+   */
+  showError(message) {
+    const modalBody = this.container.querySelector('.quote-modal-body');
+    
+    // Create error message element
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'quote-error';
+    errorDiv.innerHTML = `
+      <div class="quote-error-icon">⚠️</div>
+      <p>${message}</p>
+    `;
+    errorDiv.style.cssText = 'padding: 16px; margin-bottom: 16px; background: #ffebee; border: 1px solid #f44336; border-radius: 6px; color: #c62828; text-align: center;';
+    
+    // Insert at top of modal body
+    modalBody.insertBefore(errorDiv, modalBody.firstChild);
+    
+    // Remove after 5 seconds
+    setTimeout(() => {
+      if (errorDiv.parentNode) {
+        errorDiv.parentNode.removeChild(errorDiv);
+      }
+    }, 5000);
   }
 
   /**
