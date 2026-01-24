@@ -153,33 +153,37 @@
     </style>
 
     <!-- Preload critical CSS with versioning -->
-    <link rel="preload" href="/assets/css/styles.css?v=18.0.0" as="style" />
-    <link rel="preload" href="/assets/css/homepage-enhancements.css?v=18.0.0" as="style" />
-    <link rel="preload" href="/assets/css/hero-modern.css?v=18.0.0" as="style" />
+    <link rel="preload" href="/assets/css/design-system.css?v=18.1.1" as="style" />
+    <link rel="preload" href="/assets/css/liquid-glass.css?v=18.1.1" as="style" />
+    <link rel="preload" href="/assets/css/styles.css?v=18.1.1" as="style" />
+    <link rel="preload" href="/assets/css/homepage-enhancements.css?v=18.1.1" as="style" />
+    <link rel="preload" href="/assets/css/hero-modern.css?v=18.1.1" as="style" />
 
     <!-- Critical Stylesheets - Load synchronously -->
-    <link rel="stylesheet" href="/assets/css/styles.css?v=18.0.0" />
-    <link rel="stylesheet" href="/assets/css/homepage-enhancements.css?v=18.0.0" />
-    <link rel="stylesheet" href="/assets/css/hero-modern.css?v=18.0.0" />
+    <link rel="stylesheet" href="/assets/css/design-system.css?v=18.1.1" />
+    <link rel="stylesheet" href="/assets/css/liquid-glass.css?v=18.1.1" />
+    <link rel="stylesheet" href="/assets/css/styles.css?v=18.1.1" />
+    <link rel="stylesheet" href="/assets/css/homepage-enhancements.css?v=18.1.1" />
+    <link rel="stylesheet" href="/assets/css/hero-modern.css?v=18.1.1" />
     
     <!-- Non-critical CSS - Defer via preload -->
-    <link rel="preload" href="/assets/css/navbar.css?v=18.0.0" as="style" onload="this.onload=null;this.rel='stylesheet'" />
-    <link rel="preload" href="/assets/css/eventflow-17.0.0.css?v=18.0.0" as="style" onload="this.onload=null;this.rel='stylesheet'" />
-    <link rel="preload" href="/assets/css/utilities.css?v=18.0.0" as="style" onload="this.onload=null;this.rel='stylesheet'" />
-    <link rel="preload" href="/assets/css/components.css?v=18.0.0" as="style" onload="this.onload=null;this.rel='stylesheet'" />
-    <link rel="preload" href="/assets/css/animations.css?v=18.0.0" as="style" onload="this.onload=null;this.rel='stylesheet'" />
-    <link rel="preload" href="/assets/css/mobile-optimizations.css?v=18.0.0" as="style" onload="this.onload=null;this.rel='stylesheet'" />
-    <link rel="preload" href="/assets/css/ui-ux-fixes.css?v=18.0.0" as="style" onload="this.onload=null;this.rel='stylesheet'" />
-    <link rel="preload" href="/assets/css/navigation-enhancements.css?v=18.0.0" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    <link rel="preload" href="/assets/css/navbar.css?v=18.1.1" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    <link rel="preload" href="/assets/css/eventflow-17.0.0.css?v=18.1.1" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    <link rel="preload" href="/assets/css/utilities.css?v=18.1.1" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    <link rel="preload" href="/assets/css/components.css?v=18.1.1" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    <link rel="preload" href="/assets/css/animations.css?v=18.1.1" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    <link rel="preload" href="/assets/css/mobile-optimizations.css?v=18.1.1" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    <link rel="preload" href="/assets/css/ui-ux-fixes.css?v=18.1.1" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    <link rel="preload" href="/assets/css/navigation-enhancements.css?v=18.1.1" as="style" onload="this.onload=null;this.rel='stylesheet'" />
     <noscript>
-      <link rel="stylesheet" href="/assets/css/navbar.css?v=18.0.0" />
-      <link rel="stylesheet" href="/assets/css/eventflow-17.0.0.css?v=18.0.0" />
-      <link rel="stylesheet" href="/assets/css/utilities.css?v=18.0.0" />
-      <link rel="stylesheet" href="/assets/css/components.css?v=18.0.0" />
-      <link rel="stylesheet" href="/assets/css/animations.css?v=18.0.0" />
-      <link rel="stylesheet" href="/assets/css/mobile-optimizations.css?v=18.0.0" />
-      <link rel="stylesheet" href="/assets/css/ui-ux-fixes.css?v=18.0.0" />
-      <link rel="stylesheet" href="/assets/css/navigation-enhancements.css?v=18.0.0" />
+      <link rel="stylesheet" href="/assets/css/navbar.css?v=18.1.1" />
+      <link rel="stylesheet" href="/assets/css/eventflow-17.0.0.css?v=18.1.1" />
+      <link rel="stylesheet" href="/assets/css/utilities.css?v=18.1.1" />
+      <link rel="stylesheet" href="/assets/css/components.css?v=18.1.1" />
+      <link rel="stylesheet" href="/assets/css/animations.css?v=18.1.1" />
+      <link rel="stylesheet" href="/assets/css/mobile-optimizations.css?v=18.1.1" />
+      <link rel="stylesheet" href="/assets/css/ui-ux-fixes.css?v=18.1.1" />
+      <link rel="stylesheet" href="/assets/css/navigation-enhancements.css?v=18.1.1" />
     </noscript>
     
     <link rel="icon" href="/favicon.svg" />
@@ -403,33 +407,35 @@
                     </svg>
                   </div>
 
-                  <!-- Input Wrapper -->
+                  <!-- Input + Button Wrapper -->
                   <div class="hero-search-input-wrapper">
-                    <label class="sr-only" for="ef-search">Search suppliers, packages, or venues</label>
+                    <div class="hero-search-input-container">
+                      <label class="sr-only" for="ef-search">Search suppliers, packages, or venues</label>
 
-                    <svg class="hero-search-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                      <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 1 0 3.27 9.92l2.65 2.66a.75.75 0 1 0 1.06-1.06l-2.66-2.65A5.5 5.5 0 0 0 9 3.5Zm-4 5.5a4 4 0 1 1 8 0 4 4 0 0 1-8 0Z" clip-rule="evenodd"/>
-                    </svg>
+                      <svg class="hero-search-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 1 0 3.27 9.92l2.65 2.66a.75.75 0 1 0 1.06-1.06l-2.66-2.65A5.5 5.5 0 0 0 9 3.5Zm-4 5.5a4 4 0 1 1 8 0 4 4 0 0 1-8 0Z" clip-rule="evenodd"/>
+                      </svg>
 
-                    <input
-                      id="ef-search"
-                      type="text"
-                      placeholder="Search suppliers, packages, or venues…"
-                      autocomplete="off"
-                      class="hero-search-input"
-                    />
+                      <input
+                        id="ef-search"
+                        type="text"
+                        placeholder="Search suppliers, packages, or venues…"
+                        autocomplete="off"
+                        class="hero-search-input"
+                      />
+                    </div>
+                    
+                    <!-- Search Button -->
+                    <button
+                      type="submit"
+                      class="hero-search-button"
+                      aria-label="Search"
+                    >
+                      <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 1 0 3.27 9.92l2.65 2.66a.75.75 0 1 0 1.06-1.06l-2.66-2.65A5.5 5.5 0 0 0 9 3.5Zm-4 5.5a4 4 0 1 1 8 0 4 4 0 0 1-8 0Z" clip-rule="evenodd"/>
+                      </svg>
+                    </button>
                   </div>
-
-                  <!-- Search Button - Separate from input -->
-                  <button
-                    type="submit"
-                    class="hero-search-button"
-                    aria-label="Search"
-                  >
-                    <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                      <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 1 0 3.27 9.92l2.65 2.66a.75.75 0 1 0 1.06-1.06l-2.66-2.65A5.5 5.5 0 0 0 9 3.5Zm-4 5.5a4 4 0 1 1 8 0 4 4 0 0 1-8 0Z" clip-rule="evenodd"/>
-                    </svg>
-                  </button>
                 </div>
 
                 <!-- Tags -->
@@ -446,13 +452,16 @@
             <div class="hero-modern-ctas">
               <a
                 href="/start.html"
-                class="hero-cta-primary"
+                class="hero-cta-base hero-cta-primary"
               >
+                <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M5 12h14m-7-7 7 7-7 7"/>
+                </svg>
                 Start planning
               </a>
               <a
                 href="/suppliers.html"
-                class="hero-cta-secondary"
+                class="hero-cta-base hero-cta-secondary"
               >
                 Browse suppliers
               </a>

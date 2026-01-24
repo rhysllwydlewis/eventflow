@@ -1,6 +1,6 @@
 {
   "name": "eventflow-fullstack",
-  "version": "18.0.2",
+  "version": "18.1.0",
   "private": true,
   "engines": {
     "node": ">=20.0.0 <22.0.0"
