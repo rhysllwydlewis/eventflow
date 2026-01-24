@@ -205,19 +205,19 @@
 .hero-category-select {
   width: 100%;
   appearance: none;
-  padding: 14px 40px 14px 16px;
+  padding: 16px 40px 16px 16px;
   background: rgba(255, 255, 255, 0.75);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1.5px solid rgba(255, 255, 255, 0.4);
-  border-radius: 14px;
+  border-radius: 16px;
   font-size: 15px;
   font-weight: 500;
   color: #334155;
   cursor: pointer;
   outline: none;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  height: 50px;
+  height: 56px;
   box-sizing: border-box;
   line-height: normal;
   box-shadow: 
@@ -231,7 +231,7 @@
   content: '';
   position: absolute;
   inset: 0;
-  border-radius: 14px;
+  border-radius: 16px;
   background: linear-gradient(135deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.05) 100%);
   pointer-events: none;
   z-index: -1;
@@ -604,7 +604,7 @@
   white-space: nowrap;
   
   /* Shape */
-  border-radius: 14px;
+  border-radius: 16px;
   
   /* Transitions */
   transform: translateZ(0);
@@ -623,7 +623,7 @@
   background: var(--gradient-primary);
   color: white;
   border: none;
-  border-radius: 14px;
+  border-radius: 16px;
   font-size: var(--hero-cta-size);
   font-weight: 600;
   line-height: 1;
@@ -686,7 +686,7 @@
   -webkit-backdrop-filter: blur(16px);
   color: #0f172a;
   border: 1.5px solid var(--glass-border);
-  border-radius: 14px;
+  border-radius: 16px;
   font-size: var(--hero-cta-size);
   font-weight: 600;
   line-height: 1;
@@ -902,7 +902,7 @@
   
   .hero-search-button {
     width: 44px; /* Fixed 44px at small screens */
-    height: 50px; /* Match input height */
+    height: 56px; /* Match input height */
   }
 }
 
@@ -958,8 +958,8 @@
 
   .hero-search-button {
     /* Button beside input, not inside */
-    width: clamp(44px, 12vw, 50px); /* Responsive but maintain 44px minimum */
-    height: 50px; /* Match input */
+    width: clamp(44px, 12vw, 56px); /* Responsive but maintain 44px minimum */
+    height: 56px; /* Match input */
     min-width: 44px; /* WCAG minimum */
     flex-shrink: 0;
   }
