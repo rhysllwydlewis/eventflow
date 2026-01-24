@@ -114,7 +114,7 @@
   line-height: 1.15;
   letter-spacing: -0.02em;
   color: #0f172a;
-  max-width: 640px;
+  max-width: 680px;
   display: flex;
   flex-direction: column;
 }
@@ -147,7 +147,7 @@
   font-size: 18px;
   line-height: 1.7;
   color: #475569;
-  max-width: 620px;
+  max-width: 660px;
 }
 
 
@@ -1090,8 +1090,8 @@
 
 .hero-modern .container {
   max-width: 1320px;
-  padding-left: clamp(16px, 4vw, 32px);
-  padding-right: clamp(16px, 4vw, 32px);
+  padding-left: clamp(12px, 3vw, 32px);
+  padding-right: clamp(12px, 3vw, 32px);
 }
 
 /* ==========================================================================
