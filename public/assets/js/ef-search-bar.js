@@ -10,52 +10,50 @@ class EFSearchBar {
     this.input = document.querySelector('.ef-search-bar__input');
     this.select = document.querySelector('.ef-search-bar__select');
     this.quickTags = document.querySelectorAll('.ef-quick-tags__tag');
-    
+
     if (this.form) {
       this.init();
     }
   }
-  
+
   init() {
     // Form submission
-    this.form.addEventListener('submit', (e) => this.handleSubmit(e));
-    
+    this.form.addEventListener('submit', e => this.handleSubmit(e));
+
     // Quick tag clicks
     this.quickTags.forEach(tag => {
-      tag.addEventListener('click', (e) => this.handleTagClick(e));
+      tag.addEventListener('click', e => this.handleTagClick(e));
     });
-    
+
     // Keyboard shortcuts
-    document.addEventListener('keydown', (e) => this.handleKeydown(e));
+    document.addEventListener('keydown', e => this.handleKeydown(e));
   }
-  
+
   handleSubmit(e) {
     const query = this.input.value.trim();
     const category = this.select ? this.select.value : '';
-    
-    // Build URL
-    const params = new URLSearchParams();
-    if (query) params.set('q', query);
-    if (category) params.set('category', category);
-    
-    // If no query and no category, prevent empty search
+
+    // Allow submission with either query or category
+    // If neither is provided, prevent empty search
     if (!query && !category) {
       e.preventDefault();
       this.input.focus();
       return;
     }
+
+    // Form will submit naturally with query and/or category parameters
   }
-  
+
   handleTagClick(e) {
     const tag = e.currentTarget;
     const searchTerm = tag.dataset.search;
-    
+
     if (searchTerm) {
       this.input.value = searchTerm;
       this.form.submit();
     }
   }
-  
+
   handleKeydown(e) {
     // Cmd/Ctrl + K to focus search
     if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
