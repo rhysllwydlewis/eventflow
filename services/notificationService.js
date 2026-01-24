@@ -186,7 +186,7 @@ class NotificationService {
   /**
    * Deliver notification via push
    * Supports Firebase Cloud Messaging (FCM) for web/Android and APNs for iOS
-   * 
+   *
    * Prerequisites for production:
    * 1. Set FIREBASE_SERVICE_ACCOUNT_KEY environment variable (JSON string)
    * 2. Store user device tokens in user_devices collection
@@ -196,15 +196,20 @@ class NotificationService {
     try {
       // Check if push notifications are configured
       if (!process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
-        logger.debug('Push notifications not configured (FIREBASE_SERVICE_ACCOUNT_KEY not set)', { userId });
+        logger.debug('Push notifications not configured (FIREBASE_SERVICE_ACCOUNT_KEY not set)', {
+          userId,
+        });
         return;
       }
 
       // Get user's device tokens
-      const userDevices = await this.db.collection('user_devices').find({
-        userId,
-        active: true,
-      }).toArray();
+      const userDevices = await this.db
+        .collection('user_devices')
+        .find({
+          userId,
+          active: true,
+        })
+        .toArray();
 
       if (!userDevices || userDevices.length === 0) {
         logger.debug('No device tokens found for user', { userId });
@@ -214,14 +219,13 @@ class NotificationService {
       // Import firebase-admin (lazy load to avoid issues if not configured)
       let admin;
       try {
+        // eslint-disable-next-line node/no-missing-require
         admin = require('firebase-admin');
-        
+
         // Initialize if not already
         if (!admin.apps.length) {
           admin.initializeApp({
-            credential: admin.credential.cert(
-              JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY)
-            ),
+            credential: admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY)),
           });
         }
       } catch (err) {
@@ -245,7 +249,7 @@ class NotificationService {
       };
 
       const response = await admin.messaging().sendEachForMulticast(message);
-      
+
       logger.info('Push notifications sent', {
         userId,
         successCount: response.successCount,
@@ -262,10 +266,12 @@ class NotificationService {
         });
 
         if (invalidTokens.length > 0) {
-          await this.db.collection('user_devices').updateMany(
-            { token: { $in: invalidTokens } },
-            { $set: { active: false, deactivatedAt: new Date() } }
-          );
+          await this.db
+            .collection('user_devices')
+            .updateMany(
+              { token: { $in: invalidTokens } },
+              { $set: { active: false, deactivatedAt: new Date() } }
+            );
           logger.info('Deactivated invalid device tokens', { count: invalidTokens.length });
         }
       }
