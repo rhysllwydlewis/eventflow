@@ -5330,7 +5330,7 @@ router.get('/public/pexels-collage', async (req, res) => {
       });
     }
 
-    const { category, photos = 'true', videos = 'false' } = req.query;
+    const { category, photos = 'true', videos = 'true' } = req.query;
 
     if (!category) {
       return res.status(400).json({
@@ -5437,27 +5437,42 @@ router.get('/public/pexels-collage', async (req, res) => {
           fetchPromises.push(
             pexels.searchVideos(videoQuery, 4, 1).then(results => ({
               type: 'videos',
-              items: results.videos.map(video => {
-                // Get the best quality video file (prefer HD)
-                const videoFiles = video.videoFiles || [];
-                const hdFile = videoFiles.find(f => f.quality === 'hd') || videoFiles[0];
+              items: results.videos
+                .map(video => {
+                  // Get the best quality video file (prefer HD, fallback to SD, then any available)
+                  const videoFiles = video.videoFiles || [];
+                  const hdFile =
+                    videoFiles.find(f => f.quality === 'hd') ||
+                    videoFiles.find(f => f.quality === 'sd') ||
+                    videoFiles[0];
 
-                return {
-                  type: 'video',
-                  id: video.id,
-                  url: video.url,
-                  src: {
-                    large: hdFile?.link || '',
-                    original: hdFile?.link || '',
-                  },
-                  thumbnail: video.image,
-                  videographer: video.user?.name || 'Pexels',
-                  videographer_url: video.user?.url || 'https://www.pexels.com',
-                  duration: video.duration,
-                  width: video.width,
-                  height: video.height,
-                };
-              }),
+                  // Add validation before using
+                  if (!hdFile || !hdFile.link) {
+                    if (isCollageDebugEnabled()) {
+                      console.warn(
+                        `[Pexels Collage] No valid video file found for video ${video.id}`
+                      );
+                    }
+                    return null; // Filter out invalid videos
+                  }
+
+                  return {
+                    type: 'video',
+                    id: video.id,
+                    url: video.url,
+                    src: {
+                      large: hdFile.link,
+                      original: hdFile.link,
+                    },
+                    thumbnail: video.image,
+                    videographer: video.user?.name || 'Pexels',
+                    videographer_url: video.user?.url || 'https://www.pexels.com',
+                    duration: video.duration,
+                    width: video.width,
+                    height: video.height,
+                  };
+                })
+                .filter(v => v !== null), // Filter out null values
             }))
           );
         }

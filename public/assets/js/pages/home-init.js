@@ -1825,10 +1825,21 @@ async function initCollageWidget(widgetConfig) {
       for (const category of categories) {
         try {
           // Build query params with media types
+          const requestPhotos = mediaTypes?.photos !== false;
+          const requestVideos = mediaTypes?.videos !== false;
+
+          if (isDebugEnabled()) {
+            console.log(`[Collage Widget] Media request for ${category}:`, {
+              requestPhotos,
+              requestVideos,
+              mediaTypesConfig: mediaTypes,
+            });
+          }
+
           const params = new URLSearchParams({
             category: category,
-            photos: String(mediaTypes?.photos !== false),
-            videos: String(mediaTypes?.videos === true),
+            photos: String(requestPhotos),
+            videos: String(requestVideos),
           });
 
           const response = await fetch(`/api/admin/public/pexels-collage?${params.toString()}`);
@@ -1869,7 +1880,13 @@ async function initCollageWidget(widgetConfig) {
 
           if (data.videos && Array.isArray(data.videos) && data.videos.length > 0) {
             const videos = data.videos
-              .filter(video => video && video.src && video.src.large)
+              .filter(video => {
+                const isValid = video && video.src && (video.src.large || video.src.original);
+                if (!isValid && isDebugEnabled()) {
+                  console.warn(`[Collage Widget] Filtered out invalid video:`, video?.id);
+                }
+                return isValid;
+              })
               .map(video => ({
                 url: video.src.large || video.src.original,
                 type: 'video',
@@ -2169,14 +2186,25 @@ async function loadMediaIntoFrame(
         `${category.charAt(0).toUpperCase() + category.slice(1)} video`
       );
 
+      if (isDebugEnabled()) {
+        console.log(`[Collage Widget] Creating video element for ${category}:`, {
+          url: media.url,
+          videographer: media.videographer,
+        });
+      }
+
       // Accessibility: respect reduced motion
       if (prefersReducedMotion) {
         video.autoplay = false;
         video.loop = false;
       }
 
+      // Declare timeout ID that will be set later
+      let timeoutId;
+
       // Use named functions for easier cleanup
       const handleLoadedData = () => {
+        clearTimeout(timeoutId); // Clear timeout since video loaded successfully
         mediaElement.replaceWith(video);
         video.style.opacity = '1';
         video.classList.add('video-loaded');
@@ -2185,6 +2213,13 @@ async function loadMediaIntoFrame(
         // Track success
         if (window.__videoMetrics__) {
           window.__videoMetrics__.collageVideoSuccesses++;
+        }
+
+        if (isDebugEnabled()) {
+          console.log(`[Collage Widget] Video loaded successfully for ${category}:`, {
+            url: media.url,
+            duration: video.duration,
+          });
         }
 
         // Only add credit if from Pexels (has videographer field for videos)
@@ -2211,6 +2246,7 @@ async function loadMediaIntoFrame(
       };
 
       const handleError = () => {
+        clearTimeout(timeoutId); // Clear timeout since video errored
         // Track failure
         if (window.__videoMetrics__) {
           window.__videoMetrics__.collageVideoFailures++;
@@ -2229,11 +2265,14 @@ async function loadMediaIntoFrame(
       video.addEventListener('error', handleError, { once: true });
 
       // Set timeout for video loading
-      setTimeout(() => {
+      timeoutId = setTimeout(() => {
         if (frame.classList.contains('loading-pexels')) {
           if (isDebugEnabled()) {
             console.warn(`[Collage Widget] Video load timeout for ${category}`);
           }
+          // Remove event listeners to prevent them from firing after timeout
+          video.removeEventListener('loadeddata', handleLoadedData);
+          video.removeEventListener('error', handleError);
           restoreDefaultImage(mediaElement, frame, uploadGallery, frameIndex);
           frame.classList.remove('loading-pexels');
           resolve();
