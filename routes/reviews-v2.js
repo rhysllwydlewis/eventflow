@@ -849,7 +849,7 @@ router.get('/', async (req, res) => {
     // Limit results
     const limitedReviews = approvedReviews.slice(0, limit);
 
-    // Project only safe fields
+    // Project only safe fields (explicitly exclude: email, userId, ipAddress, userAgent, moderation flags, etc.)
     const safeReviews = limitedReviews.map(review => ({
       customerName: review.customerName || 'Anonymous',
       supplierName: review.supplierName || '',

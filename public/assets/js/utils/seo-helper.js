@@ -107,6 +107,7 @@ class SEOHelper {
     if (canonical && canonical.href) {
       const existingHref = canonical.href.toLowerCase();
       // Check for exact domain match (not just prefix) to prevent bypasses like https://event-flow.co.uk.evil.com
+      // Only preserve non-www production URLs (https://event-flow.co.uk), not www variants
       if (
         existingHref.startsWith('https://event-flow.co.uk/') ||
         existingHref === 'https://event-flow.co.uk'
@@ -201,6 +202,7 @@ class SEOHelper {
     if (property === 'og:url' && meta && meta.getAttribute('content')) {
       const existingContent = meta.getAttribute('content').toLowerCase();
       // Check for exact domain match (not just prefix) to prevent bypasses like https://event-flow.co.uk.evil.com
+      // Only preserve non-www production URLs (https://event-flow.co.uk), not www variants
       if (
         existingContent.startsWith('https://event-flow.co.uk/') ||
         existingContent === 'https://event-flow.co.uk'

@@ -2865,27 +2865,19 @@ function addCreatorCredit(frame, media) {
  * Fetch and render public stats with graceful fallback
  */
 async function fetchPublicStats() {
-  // Fallback stats if API is unavailable
-  const fallbackStats = {
-    suppliersVerified: 100,
-    packagesApproved: 75,
-    marketplaceListingsActive: 30,
-    reviewsApproved: 200,
-  };
-
   try {
     const response = await fetch('/api/public/stats');
     if (!response.ok) {
       // Silently handle 404s (endpoint not available in static/dev mode)
       if (response.status === 404) {
-        updateStatsUI(fallbackStats);
+        hideStatsSection();
         return;
       }
       // Log other errors only in development
       if (isDevelopmentEnvironment()) {
         console.error(`Failed to load public stats (HTTP ${response.status})`);
       }
-      updateStatsUI(fallbackStats);
+      hideStatsSection();
       return;
     }
 
@@ -2896,8 +2888,18 @@ async function fetchPublicStats() {
     if (isDevelopmentEnvironment() && error.name !== 'AbortError') {
       console.error('Failed to load public stats:', error);
     }
-    // Use fallback values
-    updateStatsUI(fallbackStats);
+    // Hide stats section on error
+    hideStatsSection();
+  }
+}
+
+/**
+ * Hide stats section gracefully when data unavailable
+ */
+function hideStatsSection() {
+  const section = document.getElementById('stats-section');
+  if (section) {
+    section.style.display = 'none';
   }
 }
 

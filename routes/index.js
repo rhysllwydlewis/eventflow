@@ -63,9 +63,9 @@ function mountRoutes(app, deps) {
   // Reports routes
   app.use('/api/reports', reportsRoutes);
 
-  // Reviews V2 routes (includes public endpoint for homepage testimonials)
+  // Reviews routes (public endpoint at /api/reviews for homepage testimonials)
+  // Note: /api/v2/reviews is mounted separately in server.js for v2 API endpoints
   app.use('/api/reviews', reviewsV2Routes);
-  app.use('/api/v2/reviews', reviewsV2Routes);
 
   // Tickets routes
   app.use('/api/tickets', ticketsRoutes);
