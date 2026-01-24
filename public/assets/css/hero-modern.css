@@ -388,10 +388,10 @@
   outline-offset: 2px;
 }
 
-/* Mobile: Side by side, not stacked */
+/* Mobile: Side-by-side, not stacked */
 @media (max-width: 479px) {
   .hero-modern-ctas {
-    flex-direction: row; /* Side by side, not column */
+    flex-direction: row; /* Side-by-side, not column */
     justify-content: center;
     gap: 8px;
     width: 100%;
