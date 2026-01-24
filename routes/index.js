@@ -23,6 +23,9 @@ const reviewsV2Routes = require('./reviews-v2');
 const ticketsRoutes = require('./tickets');
 const webhooksRoutes = require('./webhooks');
 const searchV2Routes = require('./search-v2');
+const shortlistRoutes = require('./shortlist');
+const quoteRequestsRoutes = require('./quote-requests');
+const analyticsRoutes = require('./analytics');
 
 /**
  * Mount all route modules
@@ -75,6 +78,15 @@ function mountRoutes(app, deps) {
 
   // Search V2 routes (advanced search with caching and analytics)
   app.use('/api/v2/search', searchV2Routes);
+
+  // Shortlist routes (user favorites)
+  app.use('/api/shortlist', shortlistRoutes);
+
+  // Quote request routes (customer to supplier inquiries)
+  app.use('/api/quote-requests', quoteRequestsRoutes);
+
+  // Analytics routes (event tracking)
+  app.use('/api/analytics', analyticsRoutes);
 }
 
 module.exports = {
