@@ -604,10 +604,10 @@
 .hero-collage {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  grid-template-rows: 1fr 1fr 1fr;
+  grid-template-rows: 1.2fr 1fr 1fr;
   gap: 14px;
-  aspect-ratio: 16/10;
-  max-height: 70vh;
+  aspect-ratio: 16/10.5;
+  max-height: 72vh;
   max-width: 100%;
   overflow: hidden;
 }
