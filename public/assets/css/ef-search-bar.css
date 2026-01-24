@@ -422,106 +422,66 @@
    Responsive - Mobile First
    ============================================ */
 
-/* Very Small Devices (< 360px) */
-@media (max-width: 359px) {
+/* MOBILE: Simplified Search (< 640px) */
+@media (max-width: 639px) {
   .ef-search-bar {
-    --search-bar-height: 56px;
+    --search-bar-height: 52px;
     --search-bar-padding: 6px;
     --search-bar-radius: 16px;
-    --search-bar-inner-radius: 12px;
-    --search-btn-size: 44px;
+    --search-bar-inner-radius: 10px;
+    --search-btn-size: 40px;
   }
   
-  .ef-search-bar__segment--category {
-    display: none;
-  }
+  .ef-search-bar__segment--category { display: none; }
+  .ef-search-bar__divider { display: none; }
+  .ef-quick-tags { display: none; }
   
-  .ef-search-bar__divider {
-    display: none;
-  }
-  
-  .ef-search-bar__input {
-    font-size: 15px;
-  }
-  
-  .ef-quick-tags {
-    gap: 8px;
-  }
-  
-  .ef-quick-tags__tag {
-    height: 36px;
-    padding: 0 14px;
-    font-size: 13px;
-    border-radius: 10px;
-  }
-}
-
-/* Small Phones (360px - 479px) */
-@media (min-width: 360px) and (max-width: 479px) {
-  .ef-search-bar {
-    --search-bar-height: 58px;
-    --search-bar-padding: 6px;
-    --search-btn-size: 46px;
-  }
-  
-  .ef-search-bar__segment--category {
-    min-width: 80px;
-    padding: 0 2px 0 10px;
-  }
-  
-  .ef-search-bar__select {
-    font-size: 14px;
+  .ef-search-bar__segment--input {
+    flex: 1;
+    padding: 0 4px 0 8px;
   }
   
   .ef-search-bar__input {
-    font-size: 15px;
-    padding-left: 28px;
+    font-size: 16px;
+    padding-left: 36px;
+    padding-right: 4px;
   }
   
-  .ef-search-bar__input-icon {
+  .ef-search-bar__button {
+    margin-left: 2px;
+    align-self: center;
+  }
+  
+  .ef-search-bar__button svg {
     width: 18px;
     height: 18px;
   }
 }
 
-/* Large Phones (480px - 639px) */
-@media (min-width: 480px) and (max-width: 639px) {
+/* Very small screens (< 360px) */
+@media (max-width: 359px) {
   .ef-search-bar {
-    --search-bar-height: 60px;
-    --search-bar-padding: 7px;
-  }
-  
-  .ef-search-bar__segment--category {
-    min-width: 90px;
+    --search-bar-height: 48px;
+    --search-bar-padding: 5px;
+    --search-btn-size: 38px;
   }
 }
 
-/* Tablets (640px - 767px) */
+/* TABLET & DESKTOP (640px+) - show full experience */
+@media (min-width: 640px) {
+  .ef-search-bar__segment--category { display: flex; }
+  .ef-search-bar__divider { display: block; }
+  .ef-quick-tags { display: flex; }
+}
+
+/* TABLET (640px - 767px) - narrower dropdown */
 @media (min-width: 640px) and (max-width: 767px) {
-  .ef-search-bar {
-    --search-bar-height: 62px;
-  }
+  .ef-search-bar__segment--category { min-width: 90px; }
 }
 
-/* Desktop (768px+) */
+/* DESKTOP (768px+) - wider dropdown */
 @media (min-width: 768px) {
-  .ef-search-bar {
-    --search-bar-height: 64px;
-    --search-bar-padding: 8px;
-    --search-btn-size: 48px;
-  }
-  
-  .ef-search-bar__segment--category {
-    min-width: 110px;
-  }
-  
-  .ef-search-bar__select {
-    font-size: 15px;
-  }
-  
-  .ef-search-bar__input {
-    font-size: 16px;
-  }
+  .ef-search-bar__segment--category { min-width: 110px; }
 }
 
 /* Large Desktop (1024px+) */
