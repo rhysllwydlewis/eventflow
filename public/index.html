@@ -1144,55 +1144,6 @@
     ></script>
     <script src="/assets/js/jadeassist-init.v2.js" defer></script>
 
-    <!-- Vanilla JS Hero Search Functionality -->
-    <script>
-      function handleHeroSearch(event) {
-        event.preventDefault();
-        const form = event.target;
-        const query = form.querySelector('#ef-search').value.trim();
-        const category = form.querySelector('#ef-category').value;
-        
-        if (!query) {
-          alert('Please enter a search term.');
-          form.querySelector('#ef-search').focus();
-          return false;
-        }
-        
-        const url = new URL(window.location.origin + '/suppliers.html');
-        url.searchParams.set('q', query);
-        if (category !== 'all') {
-          url.searchParams.set('category', category);
-        }
-        
-        window.location.href = url.toString();
-        return false;
-      }
-
-      // Tag click handlers
-      document.addEventListener('DOMContentLoaded', function() {
-        const tags = document.querySelectorAll('.hero-tag');
-        const searchInput = document.querySelector('#ef-search');
-        
-        tags.forEach(tag => {
-          tag.addEventListener('click', function() {
-            if (searchInput) {
-              searchInput.value = this.textContent.trim();
-              searchInput.focus();
-            }
-          });
-        });
-
-        // Populate from URL params if present
-        const params = new URLSearchParams(window.location.search);
-        const q = params.get('q');
-        const cat = params.get('category');
-        if (q && searchInput) searchInput.value = q;
-        if (cat) {
-          const categorySelect = document.querySelector('#ef-category');
-          if (categorySelect) categorySelect.value = cat;
-        }
-      });
-    </script>
     <script src="/assets/js/ef-search-bar.js" defer></script>
   </body>
 </html>
