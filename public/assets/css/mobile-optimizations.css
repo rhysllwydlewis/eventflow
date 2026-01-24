@@ -569,7 +569,6 @@
   /* Enable image-rendering optimization for high-DPI */
   .collage .frame img,
   .hero-collage-card img {
-    image-rendering: -webkit-optimize-contrast;
     image-rendering: crisp-edges;
   }
 }

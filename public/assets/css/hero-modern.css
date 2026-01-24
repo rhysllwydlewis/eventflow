@@ -865,7 +865,7 @@
   /* High-DPI mobile devices get optimized rendering */
   .hero-collage-card img,
   .hero-video-card video {
-    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
   }
 }
 
