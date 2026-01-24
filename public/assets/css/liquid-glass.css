@@ -1,0 +1,83 @@
+/**
+ * Liquid Glass Component Library
+ * Reusable glass effects for EventFlow
+ */
+
+/* ========================================
+   Base Glass Component
+   ======================================== */
+.ef-glass {
+  background: var(--glass-bg-light);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1.5px solid var(--glass-border);
+  border-radius: 16px;
+  box-shadow: 
+    var(--glass-shadow-medium),
+    inset 0 1px 1px var(--glass-border-highlight),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.05);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Glass shine overlay */
+.ef-glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.4) 0%,
+    rgba(255, 255, 255, 0.1) 40%,
+    rgba(255, 255, 255, 0.05) 60%,
+    transparent 100%
+  );
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+/* Glass depth layer */
+.ef-glass::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse at 30% 20%,
+    rgba(255, 255, 255, 0.15) 0%,
+    transparent 50%
+  );
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+/* ========================================
+   Glass Variants
+   ======================================== */
+.ef-glass--light {
+  background: var(--glass-bg-light);
+}
+
+.ef-glass--medium {
+  background: var(--glass-bg-medium);
+}
+
+.ef-glass--dark {
+  background: var(--glass-bg-dark);
+}
+
+/* ========================================
+   Backdrop Filter Fallback
+   ======================================== */
+@supports not (backdrop-filter: blur(1px)) {
+  .ef-glass {
+    background: rgba(255, 255, 255, 0.95);
+  }
+  
+  .ef-glass--medium {
+    background: rgba(255, 255, 255, 0.92);
+  }
+  
+  .ef-glass--dark {
+    background: rgba(255, 255, 255, 0.88);
+  }
+}

@@ -521,3 +521,94 @@ input[type="radio"]:checked {
     transform: none;
   }
 }
+
+/* ==========================================================================
+   PART 5: Premium Entrance Animations - Staggered System
+   ========================================================================== */
+
+/* Keyframe for entrance */
+@keyframes efGlassEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(24px) scale(0.96);
+    filter: blur(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+/* Staggered delays */
+@media (prefers-reduced-motion: no-preference) {
+  .hero-modern h1 {
+    animation: efGlassEnter 800ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: 0ms;
+  }
+  
+  .hero-modern-subcopy {
+    animation: efGlassEnter 800ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: 80ms;
+  }
+  
+  .hero-category-wrapper {
+    animation: efGlassEnter 800ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: 160ms;
+  }
+  
+  .hero-search-input-wrapper {
+    animation: efGlassEnter 800ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: 240ms;
+  }
+  
+  .hero-search-button {
+    animation: efGlassEnter 800ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: 320ms;
+  }
+  
+  .hero-tags {
+    animation: efGlassEnter 800ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: 400ms;
+  }
+  
+  .hero-modern-ctas {
+    animation: efGlassEnter 800ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: 480ms;
+  }
+  
+  .hero-collage {
+    animation: efGlassEnter 1000ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: 300ms;
+  }
+}
+
+/* ==========================================================================
+   PART 5: Floating Background Blobs
+   ========================================================================== */
+
+@keyframes blobFloat {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  25% {
+    transform: translate(20px, -20px) scale(1.05);
+  }
+  50% {
+    transform: translate(-10px, 10px) scale(0.95);
+  }
+  75% {
+    transform: translate(-20px, -10px) scale(1.02);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .hero-blob-1 {
+    animation: blobFloat 20s ease-in-out infinite;
+  }
+  
+  .hero-blob-2 {
+    animation: blobFloat 25s ease-in-out infinite reverse;
+    animation-delay: -5s;
+  }
+}

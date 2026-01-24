@@ -5,6 +5,45 @@ All notable changes to EventFlow will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [18.1.0] - 2026-01-24
+
+### Added
+
+- **Gold Standard Homepage Redesign**: Apple-inspired Liquid Glass UI transformation
+  - **Design System Foundation**: New `design-system.css` with 8px grid spacing scale and fluid typography tokens
+  - **Liquid Glass Components**: New `liquid-glass.css` with reusable glass effect classes (ef-glass, variants, fallbacks)
+  - **Enhanced Glass Effects**: Multi-layer depth with improved backdrop filters, borders, and shadows
+  - **Premium Input Styling**: Search input with enhanced glass effect, multi-layer shadows, and GPU acceleration
+  - **Liquid Button Effects**: Search button with premium gradient, glass-like depth, and idle glow animation
+  - **Uniform CTA Buttons**: Consistent 48px height CTAs with proper alignment and responsive behavior
+  - **6-Tier Responsive Design**: Optimized breakpoints (<320px, 320-479px, 480-639px, 640-767px, 768-1023px, 1024px+)
+  - **Premium Animations**: Staggered entrance animations (efGlassEnter) with blur and scale effects
+  - **Floating Background Blobs**: Organic blob animations for visual depth
+  - **Accessibility Enhancements**: 
+    - Enhanced focus-visible indicators (3px outline with offset)
+    - High contrast mode support with solid colors
+    - Windows forced colors mode compatibility
+    - Comprehensive reduced motion support
+  - **Performance Optimizations**: 
+    - GPU acceleration hints (translateZ, backface-visibility)
+    - CSS containment for better paint performance
+    - Strategic will-change management on interactions only
+
+### Changed
+
+- **Hero Search Input**: Upgraded to 56px height with enhanced glass effects
+- **Hero Search Button**: Upgraded to 56px square with premium gradient and glow
+- **CTA Styling**: Modernized with design system tokens and uniform sizing
+- **Version**: Bumped to v18.1.0 across all files (package.json, server.js, sw.js)
+- **CSS Imports**: Added design-system.css and liquid-glass.css as critical stylesheets
+
+### Design System
+
+- **Spacing Scale**: 8px-based grid system (--space-1 through --space-10)
+- **Typography Scale**: Fluid clamp() values for responsive text sizing
+- **Color Tokens**: Glass backgrounds, borders, shadows, and brand gradients
+- **Animation Tokens**: Cubic-bezier easing functions and duration constants
+
 ## [18.0.2] - 2026-01-24
 
 ### Added
