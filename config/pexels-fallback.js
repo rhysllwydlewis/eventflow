@@ -262,11 +262,13 @@ const FALLBACK_PHOTOS = [
  *
  * ✅ UPDATED: Videos now use direct Pexels CDN URLs (not Vimeo external links)
  * - URL format: https://videos.pexels.com/video-files/{ID}/{ID}-{quality}_{width}_{height}_{fps}fps.mp4
+ * - Example: https://videos.pexels.com/video-files/4586391/4586391-hd_1920_1080_24fps.mp4
  * - These URLs are stable and don't expire (unlike deprecated Vimeo external links)
  * - Direct CDN links provide better reliability and performance
  *
  * To validate: Test each video URL in a browser or use a URL checker tool.
- * To update: Fetch fresh video URLs from the Pexels API or their CDN.
+ * To update: Visit https://www.pexels.com/video/{VIDEO_ID}/ and fetch the CDN URL
+ * from the video file sources, or use the Pexels API to get video file URLs.
  */
 const FALLBACK_VIDEOS = [
   {
