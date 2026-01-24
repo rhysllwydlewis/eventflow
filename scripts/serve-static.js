@@ -25,6 +25,36 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', mode: 'static' });
 });
 
+// Serve homepage
+app.get('/', (req, res) => {
+  res.sendFile(path.join(PUBLIC_DIR, 'index.html'));
+});
+
+// Redirect non-canonical index URL to canonical
+app.get('/index.html', (req, res) => {
+  res.redirect(301, '/');
+});
+
+// Serve marketplace page
+app.get('/marketplace', (req, res) => {
+  res.sendFile(path.join(PUBLIC_DIR, 'marketplace.html'));
+});
+
+// Redirect non-canonical marketplace URL to canonical
+app.get('/marketplace.html', (req, res) => {
+  res.redirect(301, '/marketplace');
+});
+
+// Serve suppliers page
+app.get('/suppliers', (req, res) => {
+  res.sendFile(path.join(PUBLIC_DIR, 'suppliers.html'));
+});
+
+// Redirect non-canonical suppliers URL to canonical
+app.get('/suppliers.html', (req, res) => {
+  res.redirect(301, '/suppliers');
+});
+
 // Serve static files from public directory
 app.use(express.static(PUBLIC_DIR));
 

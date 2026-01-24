@@ -81,30 +81,54 @@ test.describe('SEO Canonicals', () => {
   }
 
   test('marketplace.html should redirect to /marketplace', async ({ page }) => {
-    const response = await page.goto('/marketplace.html');
+    // Track the initial redirect response
+    let redirectStatus = null;
+    page.on('response', response => {
+      if (response.url().includes('/marketplace.html')) {
+        redirectStatus = response.status();
+      }
+    });
 
-    // Should get a redirect response
-    expect(response?.status()).toBe(301);
+    await page.goto('/marketplace.html');
+
+    // Should get a redirect response (301) - captured before following
+    expect(redirectStatus).toBe(301);
 
     // Should end up at /marketplace
     expect(page.url()).toContain('/marketplace');
   });
 
   test('suppliers.html should redirect to /suppliers', async ({ page }) => {
-    const response = await page.goto('/suppliers.html');
+    // Track the initial redirect response
+    let redirectStatus = null;
+    page.on('response', response => {
+      if (response.url().includes('/suppliers.html')) {
+        redirectStatus = response.status();
+      }
+    });
 
-    // Should get a redirect response
-    expect(response?.status()).toBe(301);
+    await page.goto('/suppliers.html');
+
+    // Should get a redirect response (301) - captured before following
+    expect(redirectStatus).toBe(301);
 
     // Should end up at /suppliers
     expect(page.url()).toContain('/suppliers');
   });
 
   test('index.html should redirect to /', async ({ page }) => {
-    const response = await page.goto('/index.html');
+    // Track the initial redirect response
+    let redirectStatus = null;
+    page.on('response', response => {
+      if (response.url().includes('/index.html')) {
+        redirectStatus = response.status();
+      }
+    });
 
-    // Should get a redirect response
-    expect(response?.status()).toBe(301);
+    await page.goto('/index.html');
+
+    // Should get a redirect response (301) - captured before following
+    expect(redirectStatus).toBe(301);
 
     // Should end up at root
     const finalUrl = page.url();
