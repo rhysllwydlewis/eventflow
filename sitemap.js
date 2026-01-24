@@ -21,7 +21,7 @@ async function generateSitemap(baseUrl) {
   // Static pages - only canonical, indexable URLs
   const staticPages = [
     { url: '/', priority: '1.0', changefreq: 'daily' },
-    { url: '/suppliers.html', priority: '0.9', changefreq: 'daily' },
+    { url: '/suppliers', priority: '0.9', changefreq: 'daily' },
     { url: '/marketplace', priority: '0.9', changefreq: 'daily' },
     { url: '/blog.html', priority: '0.7', changefreq: 'weekly' },
     { url: '/start.html', priority: '0.8', changefreq: 'weekly' },
