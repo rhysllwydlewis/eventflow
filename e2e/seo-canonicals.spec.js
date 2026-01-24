@@ -13,7 +13,7 @@ test.describe('SEO Canonicals', () => {
   const publicPages = [
     { path: '/', canonical: 'https://event-flow.co.uk/' },
     { path: '/blog.html', canonical: 'https://event-flow.co.uk/blog.html' },
-    { path: '/suppliers.html', canonical: 'https://event-flow.co.uk/suppliers.html' },
+    { path: '/suppliers', canonical: 'https://event-flow.co.uk/suppliers' },
     { path: '/marketplace', canonical: 'https://event-flow.co.uk/marketplace' },
     { path: '/pricing.html', canonical: 'https://event-flow.co.uk/pricing.html' },
     { path: '/start.html', canonical: 'https://event-flow.co.uk/start.html' },
@@ -88,6 +88,16 @@ test.describe('SEO Canonicals', () => {
 
     // Should end up at /marketplace
     expect(page.url()).toContain('/marketplace');
+  });
+
+  test('suppliers.html should redirect to /suppliers', async ({ page }) => {
+    const response = await page.goto('/suppliers.html');
+
+    // Should get a redirect response
+    expect(response?.status()).toBe(301);
+
+    // Should end up at /suppliers
+    expect(page.url()).toContain('/suppliers');
   });
 
   test('index.html should redirect to /', async ({ page }) => {

@@ -469,6 +469,16 @@ app.get('/marketplace.html', (req, res) => {
   res.redirect(301, '/marketplace');
 });
 
+// Serve suppliers page
+app.get('/suppliers', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'suppliers.html'));
+});
+
+// Redirect non-canonical suppliers URL to canonical
+app.get('/suppliers.html', (req, res) => {
+  res.redirect(301, '/suppliers');
+});
+
 // Block test/dev pages in production
 if (process.env.NODE_ENV === 'production') {
   const testPages = [
