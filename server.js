@@ -6221,6 +6221,10 @@ app.use('/api/payments', paymentRoutes);
 const profileRoutes = require('./routes/profile');
 app.use('/api/profile', profileRoutes);
 
+// ---------- Suppliers V2 Routes ----------
+const suppliersV2Routes = require('./routes/suppliers-v2');
+app.use('/api/me/suppliers', suppliersV2Routes);
+
 // ---------- Notification Routes ----------
 const notificationRoutes = require('./routes/notifications');
 // WebSocket server will be passed when available (after server starts)

@@ -14,9 +14,29 @@ const dbUnified = require('./db-unified');
  */
 async function searchSuppliers(query) {
   const suppliers = await dbUnified.read('suppliers');
-  // TODO: Use reviews for rating-based sorting
-
-  let results = suppliers.filter(s => s.approved);
+  const reviews = await dbUnified.read('reviews');
+  
+  // Calculate average ratings from reviews for each supplier
+  const supplierRatings = {};
+  reviews.forEach(review => {
+    if (review.approved && review.supplierId) {
+      if (!supplierRatings[review.supplierId]) {
+        supplierRatings[review.supplierId] = { total: 0, count: 0 };
+      }
+      supplierRatings[review.supplierId].total += review.rating;
+      supplierRatings[review.supplierId].count += 1;
+    }
+  });
+  
+  // Enrich suppliers with calculated ratings
+  let results = suppliers.filter(s => s.approved).map(s => {
+    const ratingData = supplierRatings[s.id];
+    return {
+      ...s,
+      calculatedRating: ratingData ? ratingData.total / ratingData.count : s.averageRating || 0,
+      reviewCount: ratingData ? ratingData.count : s.reviewCount || 0,
+    };
+  });
 
   // Text search (name, description, category)
   if (query.q) {
@@ -75,7 +95,7 @@ async function searchSuppliers(query) {
   if (query.minRating) {
     const minRating = Number(query.minRating);
     results = results.filter(s => {
-      return (s.averageRating || 0) >= minRating;
+      return (s.calculatedRating || 0) >= minRating;
     });
   }
 
@@ -118,7 +138,7 @@ async function searchSuppliers(query) {
   const sortBy = query.sortBy || 'relevance';
 
   if (sortBy === 'rating') {
-    results.sort((a, b) => (b.averageRating || 0) - (a.averageRating || 0));
+    results.sort((a, b) => (b.calculatedRating || 0) - (a.calculatedRating || 0));
   } else if (sortBy === 'reviews') {
     results.sort((a, b) => (b.reviewCount || 0) - (a.reviewCount || 0));
   } else if (sortBy === 'name') {
