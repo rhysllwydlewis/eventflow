@@ -1,0 +1,613 @@
+/**
+ * EventFlow Unified Search Bar
+ * Component: ef-search-bar
+ * Version: 1.0.0
+ * 
+ * A liquid glass unified search bar with integrated
+ * category selector, search input, and submit button.
+ */
+
+/* ============================================
+   CSS Custom Properties (Component-scoped)
+   ============================================ */
+.ef-search-bar {
+  /* Dimensions */
+  --search-bar-height: 64px;
+  --search-bar-padding: 8px;
+  --search-bar-radius: 20px;
+  --search-bar-inner-radius: 14px;
+  
+  /* Colors */
+  --search-bar-bg: rgba(255, 255, 255, 0.72);
+  --search-bar-bg-hover: rgba(255, 255, 255, 0.82);
+  --search-bar-border: rgba(255, 255, 255, 0.5);
+  --search-bar-border-hover: rgba(255, 255, 255, 0.7);
+  --search-bar-divider: rgba(0, 0, 0, 0.08);
+  --search-bar-text: #1e293b;
+  --search-bar-placeholder: #64748b;
+  --search-bar-icon: #94a3b8;
+  
+  /* Button */
+  --search-btn-size: 48px;
+  --search-btn-bg: linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%);
+  --search-btn-bg-hover: linear-gradient(135deg, #059669 0%, #047857 50%, #065f46 100%);
+  --search-btn-glow: rgba(16, 185, 129, 0.4);
+  
+  /* Effects */
+  --search-bar-blur: 24px;
+  --search-bar-saturate: 180%;
+  --search-bar-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.08),
+    0 4px 16px rgba(0, 0, 0, 0.04);
+  --search-bar-shadow-hover:
+    0 12px 40px rgba(0, 0, 0, 0.1),
+    0 6px 20px rgba(0, 0, 0, 0.06);
+  --search-bar-inset: inset 0 1px 2px rgba(255, 255, 255, 0.9);
+  
+  /* Transitions */
+  --search-bar-transition: 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ============================================
+   Base Container
+   ============================================ */
+.ef-search-bar {
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.ef-search-bar__form {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  
+  /* Dimensions */
+  height: var(--search-bar-height);
+  padding: var(--search-bar-padding);
+  
+  /* Liquid Glass Effect */
+  background: var(--search-bar-bg);
+  backdrop-filter: blur(var(--search-bar-blur)) saturate(var(--search-bar-saturate));
+  -webkit-backdrop-filter: blur(var(--search-bar-blur)) saturate(var(--search-bar-saturate));
+  
+  /* Border & Shape */
+  border: 1.5px solid var(--search-bar-border);
+  border-radius: var(--search-bar-radius);
+  
+  /* Shadow & Depth */
+  box-shadow: 
+    var(--search-bar-shadow),
+    var(--search-bar-inset);
+  
+  /* GPU Acceleration */
+  transform: translateZ(0);
+  will-change: transform, box-shadow;
+  
+  /* Transitions */
+  transition: 
+    transform var(--search-bar-transition),
+    box-shadow var(--search-bar-transition),
+    background 0.3s ease,
+    border-color 0.3s ease;
+}
+
+/* Hover State - Entire Bar */
+.ef-search-bar__form:hover {
+  background: var(--search-bar-bg-hover);
+  border-color: var(--search-bar-border-hover);
+  box-shadow: 
+    var(--search-bar-shadow-hover),
+    var(--search-bar-inset);
+  transform: translateY(-2px) translateZ(0);
+}
+
+/* Focus-within State */
+.ef-search-bar__form:focus-within {
+  background: rgba(255, 255, 255, 0.88);
+  border-color: rgba(16, 185, 129, 0.4);
+  box-shadow: 
+    0 0 0 4px rgba(16, 185, 129, 0.1),
+    var(--search-bar-shadow-hover),
+    var(--search-bar-inset),
+    0 0 30px rgba(16, 185, 129, 0.15);
+  transform: translateY(-2px) translateZ(0);
+}
+
+/* ============================================
+   Segments (Category & Input containers)
+   ============================================ */
+.ef-search-bar__segment {
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+
+/* Category Segment */
+.ef-search-bar__segment--category {
+  position: relative;
+  flex-shrink: 0;
+  padding: 0 4px 0 12px;
+  min-width: 100px;
+}
+
+/* Input Segment */
+.ef-search-bar__segment--input {
+  flex: 1;
+  position: relative;
+  padding: 0 8px;
+  min-width: 0;
+}
+
+/* ============================================
+   Divider
+   ============================================ */
+.ef-search-bar__divider {
+  width: 1px;
+  height: 28px;
+  background: var(--search-bar-divider);
+  flex-shrink: 0;
+  border-radius: 1px;
+}
+
+/* ============================================
+   Category Select
+   ============================================ */
+.ef-search-bar__select {
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--search-bar-text);
+  
+  width: 100%;
+  height: 100%;
+  padding: 0 28px 0 0;
+  
+  transition: color 0.2s ease;
+}
+
+.ef-search-bar__select:hover {
+  color: #059669;
+}
+
+.ef-search-bar__select:focus {
+  outline: none;
+}
+
+/* Select Chevron Icon */
+.ef-search-bar__select-icon {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--search-bar-icon);
+  pointer-events: none;
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.ef-search-bar__segment--category:hover .ef-search-bar__select-icon {
+  color: #059669;
+}
+
+/* ============================================
+   Search Input
+   ============================================ */
+.ef-search-bar__input {
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  border: none;
+  outline: none;
+  
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 400;
+  color: var(--search-bar-text);
+  
+  width: 100%;
+  height: 100%;
+  padding: 0 0 0 32px;
+}
+
+.ef-search-bar__input::placeholder {
+  color: var(--search-bar-placeholder);
+  opacity: 1;
+}
+
+.ef-search-bar__input::-webkit-search-cancel-button,
+.ef-search-bar__input::-webkit-search-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* Input Search Icon */
+.ef-search-bar__input-icon {
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--search-bar-icon);
+  pointer-events: none;
+  transition: color 0.2s ease;
+}
+
+.ef-search-bar__segment--input:focus-within .ef-search-bar__input-icon {
+  color: #059669;
+}
+
+/* ============================================
+   Submit Button
+   ============================================ */
+.ef-search-bar__button {
+  appearance: none;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  
+  width: var(--search-btn-size);
+  height: var(--search-btn-size);
+  min-width: var(--search-btn-size);
+  flex-shrink: 0;
+  
+  border-radius: var(--search-bar-inner-radius);
+  
+  background: var(--search-btn-bg);
+  color: white;
+  
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  
+  box-shadow: 
+    0 2px 8px rgba(5, 150, 105, 0.3),
+    0 4px 16px rgba(5, 150, 105, 0.2),
+    inset 0 1px 1px rgba(255, 255, 255, 0.25);
+  
+  transform: translateZ(0);
+  
+  transition: 
+    transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.3s ease,
+    background 0.3s ease;
+  
+  position: relative;
+  overflow: hidden;
+}
+
+.ef-search-bar__button:hover {
+  background: var(--search-btn-bg-hover);
+  transform: scale(1.08) translateZ(0);
+  box-shadow: 
+    0 4px 12px rgba(5, 150, 105, 0.4),
+    0 8px 24px rgba(5, 150, 105, 0.3),
+    0 0 32px var(--search-btn-glow),
+    inset 0 1px 2px rgba(255, 255, 255, 0.35);
+}
+
+.ef-search-bar__button:active {
+  transform: scale(1.02) translateZ(0);
+}
+
+.ef-search-bar__button:focus-visible {
+  outline: 3px solid rgba(16, 185, 129, 0.5);
+  outline-offset: 3px;
+}
+
+/* Button Shine Effect */
+.ef-search-bar__button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    120deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.4) 50%,
+    transparent 100%
+  );
+  transition: left 0.5s ease;
+  pointer-events: none;
+}
+
+.ef-search-bar__button:hover::before {
+  left: 100%;
+}
+
+/* Button Idle Glow Animation */
+@media (prefers-reduced-motion: no-preference) {
+  .ef-search-bar__button {
+    animation: efSearchBtnGlow 3s ease-in-out infinite;
+  }
+  
+  @keyframes efSearchBtnGlow {
+    0%, 100% {
+      box-shadow: 
+        0 2px 8px rgba(5, 150, 105, 0.3),
+        0 4px 16px rgba(5, 150, 105, 0.2),
+        inset 0 1px 1px rgba(255, 255, 255, 0.25);
+    }
+    50% {
+      box-shadow: 
+        0 2px 8px rgba(5, 150, 105, 0.4),
+        0 4px 16px rgba(5, 150, 105, 0.3),
+        0 0 24px rgba(16, 185, 129, 0.25),
+        inset 0 1px 1px rgba(255, 255, 255, 0.3);
+    }
+  }
+  
+  .ef-search-bar__button:hover {
+    animation: none;
+  }
+}
+
+/* ============================================
+   Quick Tags Component
+   ============================================ */
+.ef-quick-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 20px;
+  justify-content: center;
+}
+
+.ef-quick-tags__tag {
+  appearance: none;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  
+  height: 40px;
+  padding: 0 18px;
+  
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--search-bar-text, #1e293b);
+  white-space: nowrap;
+  
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(16px) saturate(150%);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 12px;
+  
+  box-shadow: 
+    0 2px 8px rgba(0, 0, 0, 0.04),
+    0 4px 12px rgba(0, 0, 0, 0.02),
+    inset 0 1px 1px rgba(255, 255, 255, 0.7);
+  
+  transform: translateZ(0);
+  
+  transition: 
+    transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.2s ease,
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.ef-quick-tags__tag:hover {
+  background: rgba(255, 255, 255, 0.8);
+  border-color: rgba(16, 185, 129, 0.3);
+  color: #059669;
+  transform: translateY(-2px) translateZ(0);
+  box-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.06),
+    0 6px 16px rgba(0, 0, 0, 0.04),
+    0 0 16px rgba(16, 185, 129, 0.1),
+    inset 0 1px 2px rgba(255, 255, 255, 0.8);
+}
+
+.ef-quick-tags__tag:active {
+  transform: translateY(0) scale(0.98) translateZ(0);
+}
+
+.ef-quick-tags__tag:focus-visible {
+  outline: 2px solid rgba(16, 185, 129, 0.5);
+  outline-offset: 2px;
+}
+
+/* ============================================
+   Responsive - Mobile First
+   ============================================ */
+
+/* Very Small Devices (< 360px) */
+@media (max-width: 359px) {
+  .ef-search-bar {
+    --search-bar-height: 56px;
+    --search-bar-padding: 6px;
+    --search-bar-radius: 16px;
+    --search-bar-inner-radius: 12px;
+    --search-btn-size: 44px;
+  }
+  
+  .ef-search-bar__segment--category {
+    display: none;
+  }
+  
+  .ef-search-bar__divider {
+    display: none;
+  }
+  
+  .ef-search-bar__input {
+    font-size: 15px;
+  }
+  
+  .ef-quick-tags {
+    gap: 8px;
+  }
+  
+  .ef-quick-tags__tag {
+    height: 36px;
+    padding: 0 14px;
+    font-size: 13px;
+    border-radius: 10px;
+  }
+}
+
+/* Small Phones (360px - 479px) */
+@media (min-width: 360px) and (max-width: 479px) {
+  .ef-search-bar {
+    --search-bar-height: 58px;
+    --search-bar-padding: 6px;
+    --search-btn-size: 46px;
+  }
+  
+  .ef-search-bar__segment--category {
+    min-width: 80px;
+    padding: 0 2px 0 10px;
+  }
+  
+  .ef-search-bar__select {
+    font-size: 14px;
+  }
+  
+  .ef-search-bar__input {
+    font-size: 15px;
+    padding-left: 28px;
+  }
+  
+  .ef-search-bar__input-icon {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+/* Large Phones (480px - 639px) */
+@media (min-width: 480px) and (max-width: 639px) {
+  .ef-search-bar {
+    --search-bar-height: 60px;
+    --search-bar-padding: 7px;
+  }
+  
+  .ef-search-bar__segment--category {
+    min-width: 90px;
+  }
+}
+
+/* Tablets (640px - 767px) */
+@media (min-width: 640px) and (max-width: 767px) {
+  .ef-search-bar {
+    --search-bar-height: 62px;
+  }
+}
+
+/* Desktop (768px+) */
+@media (min-width: 768px) {
+  .ef-search-bar {
+    --search-bar-height: 64px;
+    --search-bar-padding: 8px;
+    --search-btn-size: 48px;
+  }
+  
+  .ef-search-bar__segment--category {
+    min-width: 110px;
+  }
+  
+  .ef-search-bar__select {
+    font-size: 15px;
+  }
+  
+  .ef-search-bar__input {
+    font-size: 16px;
+  }
+}
+
+/* Large Desktop (1024px+) */
+@media (min-width: 1024px) {
+  .ef-search-bar {
+    max-width: 680px;
+  }
+}
+
+/* ============================================
+   Accessibility
+   ============================================ */
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+  .ef-search-bar__form {
+    background: white;
+    border: 2px solid black;
+  }
+  
+  .ef-search-bar__divider {
+    background: black;
+    width: 2px;
+  }
+  
+  .ef-search-bar__select,
+  .ef-search-bar__input {
+    color: black;
+  }
+  
+  .ef-search-bar__button {
+    background: black;
+    color: white;
+  }
+  
+  .ef-quick-tags__tag {
+    background: white;
+    border: 2px solid black;
+    color: black;
+  }
+}
+
+/* Windows Forced Colors */
+@media (forced-colors: active) {
+  .ef-search-bar__form {
+    border: 2px solid CanvasText;
+    background: Canvas;
+  }
+  
+  .ef-search-bar__button {
+    background: Highlight;
+    color: HighlightText;
+    forced-color-adjust: none;
+  }
+  
+  .ef-quick-tags__tag {
+    border: 1px solid CanvasText;
+  }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .ef-search-bar__form,
+  .ef-search-bar__button,
+  .ef-quick-tags__tag {
+    transition: none;
+  }
+  
+  .ef-search-bar__button {
+    animation: none;
+  }
+  
+  .ef-search-bar__button::before {
+    display: none;
+  }
+}
+
+/* ============================================
+   Backdrop Filter Fallback
+   ============================================ */
+@supports not (backdrop-filter: blur(1px)) {
+  .ef-search-bar__form {
+    background: rgba(255, 255, 255, 0.95);
+  }
+  
+  .ef-quick-tags__tag {
+    background: rgba(255, 255, 255, 0.92);
+  }
+}

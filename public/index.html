@@ -165,6 +165,7 @@
     <link rel="stylesheet" href="/assets/css/styles.css?v=18.1.1" />
     <link rel="stylesheet" href="/assets/css/homepage-enhancements.css?v=18.1.1" />
     <link rel="stylesheet" href="/assets/css/hero-modern.css?v=18.1.1" />
+    <link rel="stylesheet" href="/assets/css/ef-search-bar.css?v=18.1.0">
     
     <!-- Non-critical CSS - Defer via preload -->
     <link rel="preload" href="/assets/css/navbar.css?v=18.1.1" as="style" onload="this.onload=null;this.rel='stylesheet'" />
@@ -385,67 +386,74 @@
               message suppliers when you're ready, and keep budgets, notes and decisions together.
             </p>
 
-            <!-- Search Card -->
-            <div class="hero-search-card ef-fade-up delay-4">
-              <form class="hero-search-form" onsubmit="return handleHeroSearch(event)">
-                <div class="hero-search-row">
-                  <!-- Category -->
-                  <div class="hero-category-wrapper">
-                    <label class="sr-only" for="ef-category">Category</label>
-                    <select
-                      id="ef-category"
-                      class="hero-category-select"
-                    >
-                      <option value="all">All</option>
-                      <option value="venues">Venues</option>
-                      <option value="catering">Catering</option>
-                      <option value="entertainment">Entertainment</option>
-                      <option value="photography">Photography</option>
-                    </select>
-                    <svg class="hero-category-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                      <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.937a.75.75 0 1 1 1.08 1.04l-4.24 4.5a.75.75 0 0 1-1.08 0l-4.24-4.5a.75.75 0 0 1 .02-1.06z" clip-rule="evenodd"/>
-                    </svg>
-                  </div>
-
-                  <!-- Input + Button Wrapper -->
-                  <div class="hero-search-input-wrapper">
-                    <div class="hero-search-input-container">
-                      <label class="sr-only" for="ef-search">Search suppliers, packages, or venues</label>
-
-                      <svg class="hero-search-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                        <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 1 0 3.27 9.92l2.65 2.66a.75.75 0 1 0 1.06-1.06l-2.66-2.65A5.5 5.5 0 0 0 9 3.5Zm-4 5.5a4 4 0 1 1 8 0 4 4 0 0 1-8 0Z" clip-rule="evenodd"/>
-                      </svg>
-
-                      <input
-                        id="ef-search"
-                        type="text"
-                        placeholder="Search suppliers, packages, or venues…"
-                        autocomplete="off"
-                        class="hero-search-input"
-                      />
-                    </div>
-                    
-                    <!-- Search Button -->
-                    <button
-                      type="submit"
-                      class="hero-search-button"
-                      aria-label="Search"
-                    >
-                      <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                        <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 1 0 3.27 9.92l2.65 2.66a.75.75 0 1 0 1.06-1.06l-2.66-2.65A5.5 5.5 0 0 0 9 3.5Zm-4 5.5a4 4 0 1 1 8 0 4 4 0 0 1-8 0Z" clip-rule="evenodd"/>
-                      </svg>
-                    </button>
-                  </div>
+            <!-- New Unified Search Component -->
+            <div class="ef-search-bar" role="search">
+              <form class="ef-search-bar__form" action="/suppliers" method="GET">
+                
+                <!-- Category Selector -->
+                <div class="ef-search-bar__segment ef-search-bar__segment--category">
+                  <label for="ef-search-category" class="sr-only">Category</label>
+                  <select id="ef-search-category" name="category" class="ef-search-bar__select">
+                    <option value="">All</option>
+                    <option value="venues">Venues</option>
+                    <option value="catering">Catering</option>
+                    <option value="photography">Photography</option>
+                    <option value="entertainment">Entertainment</option>
+                    <option value="florists">Florists</option>
+                    <option value="decorations">Decorations</option>
+                  </select>
+                  <svg class="ef-search-bar__select-icon" aria-hidden="true" width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd"/>
+                  </svg>
                 </div>
 
-                <!-- Tags -->
-                <div class="hero-tags">
-                  <button type="button" class="hero-tag">London venues</button>
-                  <button type="button" class="hero-tag">Canapés & drinks</button>
-                  <button type="button" class="hero-tag">DJ packages</button>
-                  <button type="button" class="hero-tag">Corporate</button>
+                <!-- Divider -->
+                <div class="ef-search-bar__divider" aria-hidden="true"></div>
+
+                <!-- Search Input -->
+                <div class="ef-search-bar__segment ef-search-bar__segment--input">
+                  <svg class="ef-search-bar__input-icon" aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"/>
+                    <path d="m21 21-4.35-4.35"/>
+                  </svg>
+                  <label for="ef-search-input" class="sr-only">Search</label>
+                  <input 
+                    type="search" 
+                    id="ef-search-input" 
+                    name="q" 
+                    class="ef-search-bar__input"
+                    placeholder="Search suppliers, packages..."
+                    autocomplete="off"
+                    autocapitalize="off"
+                    spellcheck="false"
+                  />
                 </div>
+
+                <!-- Submit Button -->
+                <button type="submit" class="ef-search-bar__button" aria-label="Search">
+                  <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <circle cx="11" cy="11" r="8"/>
+                    <path d="m21 21-4.35-4.35"/>
+                  </svg>
+                </button>
+
               </form>
+            </div>
+
+            <!-- Quick Search Tags -->
+            <div class="ef-quick-tags" role="list" aria-label="Popular searches">
+              <button type="button" class="ef-quick-tags__tag" data-search="london venues">
+                London venues
+              </button>
+              <button type="button" class="ef-quick-tags__tag" data-search="canapés drinks">
+                Canapés & drinks
+              </button>
+              <button type="button" class="ef-quick-tags__tag" data-search="dj packages">
+                DJ packages
+              </button>
+              <button type="button" class="ef-quick-tags__tag" data-search="corporate">
+                Corporate
+              </button>
             </div>
 
             <!-- CTAs -->
@@ -1185,5 +1193,6 @@
         }
       });
     </script>
+    <script src="/assets/js/ef-search-bar.js" defer></script>
   </body>
 </html>
