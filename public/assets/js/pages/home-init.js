@@ -1529,24 +1529,79 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
 
       if (data.videos && data.videos.length > 0) {
         const video = data.videos[0];
-        const videoFile = video.video_files?.find(f => f.quality === 'hd' || f.quality === 'sd');
+        // Get all HD and SD quality video files for fallback support
+        const videoFiles = video.video_files?.filter(f => f.quality === 'hd' || f.quality === 'sd') || [];
 
         if (isDebugEnabled()) {
-          console.log('[Hero Video] Video file selection:', {
-            hasVideoFile: !!videoFile,
-            quality: videoFile?.quality,
-            link: videoFile?.link,
+          console.log('[Hero Video] Available video files:', {
+            count: videoFiles.length,
+            files: videoFiles.map(f => ({ quality: f.quality, link: f.link })),
           });
         }
 
-        if (videoFile && videoFile.link) {
-          if (isDebugEnabled()) {
-            console.log('[Hero Video] Setting video source:', videoFile.link);
-          }
-
+        if (videoFiles.length > 0) {
           // Set up event handlers before loading to catch all events
           let timeoutId = null;
           let loadingComplete = false;
+          let currentUrlIndex = 0;
+
+          // Helper function to handle complete failure (all URLs exhausted)
+          const handleAllUrlsFailed = () => {
+            if (loadingComplete) {
+              return;
+            }
+            loadingComplete = true;
+            
+            if (timeoutId) {
+              clearTimeout(timeoutId);
+            }
+            
+            // Remove error listener to prevent further calls
+            videoElement.removeEventListener('error', handleVideoError);
+            
+            // Remove loading state
+            if (videoCard) {
+              videoCard.classList.remove('loading-video');
+            }
+            
+            // Track failure
+            if (window.__videoMetrics__) {
+              window.__videoMetrics__.heroVideoFailures++;
+              window.__videoMetrics__.lastError = 'All video URLs failed';
+            }
+            
+            if (isDebugEnabled()) {
+              console.warn('[Hero Video] All video URLs failed, using poster fallback');
+            }
+          };
+
+          const tryNextVideo = () => {
+            if (currentUrlIndex >= videoFiles.length) {
+              // All URLs exhausted
+              handleAllUrlsFailed();
+              return;
+            }
+
+            const videoFile = videoFiles[currentUrlIndex];
+            
+            // Validate video file has a valid link
+            if (!videoFile?.link) {
+              if (isDebugEnabled()) {
+                console.warn(`[Hero Video] Video file at index ${currentUrlIndex} has no valid link, skipping...`);
+              }
+              currentUrlIndex++;
+              tryNextVideo();
+              return;
+            }
+            
+            if (isDebugEnabled()) {
+              console.log(`[Hero Video] Trying video URL ${currentUrlIndex + 1}/${videoFiles.length}:`, videoFile.link);
+            }
+
+            // Set source and start loading
+            videoSource.src = videoFile.link;
+            videoElement.load();
+          };
 
           const handleMetadataLoaded = () => {
             // Already handled
@@ -1554,9 +1609,13 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
               return;
             }
             loadingComplete = true;
+            
             if (timeoutId) {
               clearTimeout(timeoutId);
             }
+            
+            // Remove error listener since video loaded successfully
+            videoElement.removeEventListener('error', handleVideoError);
 
             // Remove loading state
             if (videoCard) {
@@ -1572,7 +1631,7 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
             }
 
             if (isDebugEnabled()) {
-              console.log('[Hero Video] Video metadata loaded, attempting to play');
+              console.log('[Hero Video] Video loaded successfully, attempting to play');
             }
             videoElement.play().catch(err => {
               if (isDebugEnabled()) {
@@ -1586,42 +1645,35 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
             if (loadingComplete) {
               return;
             }
-            loadingComplete = true;
-            if (timeoutId) {
-              clearTimeout(timeoutId);
-            }
-
-            // Remove loading state on error
-            if (videoCard) {
-              videoCard.classList.remove('loading-video');
-            }
-
-            // Track failure
-            if (window.__videoMetrics__) {
-              window.__videoMetrics__.heroVideoFailures++;
-              window.__videoMetrics__.lastError = 'Video failed to load';
-            }
 
             if (isDebugEnabled()) {
-              console.warn('[Hero Video] Video failed to load, will use fallback');
+              console.warn(`[Hero Video] Video URL ${currentUrlIndex + 1} failed, trying next...`);
             }
-            // Don't throw here - let the video element use its poster as fallback
+
+            // Try next URL
+            currentUrlIndex++;
+            if (currentUrlIndex < videoFiles.length) {
+              tryNextVideo();
+            } else {
+              // All URLs failed
+              handleAllUrlsFailed();
+            }
           };
 
           // Add listeners before loading
           videoElement.addEventListener('loadedmetadata', handleMetadataLoaded, { once: true });
-          videoElement.addEventListener('error', handleVideoError, { once: true });
+          videoElement.addEventListener('error', handleVideoError);
 
-          // Set source and start loading
-          videoSource.src = videoFile.link;
-          videoElement.load();
+          // Start trying the first video
+          tryNextVideo();
 
           // Timeout as additional safety net (10 seconds)
-          // The { once: true } option auto-removes listeners after first fire.
           // This timeout is a defensive fallback for edge cases where events don't fire.
           timeoutId = setTimeout(() => {
             if (!loadingComplete) {
               loadingComplete = true;
+              // Remove error listener since we're timing out
+              videoElement.removeEventListener('error', handleVideoError);
               // Remove loading state on timeout
               if (videoCard) {
                 videoCard.classList.remove('loading-video');

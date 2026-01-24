@@ -260,15 +260,18 @@ const FALLBACK_PHOTOS = [
  * These are high-quality wedding-related videos suitable for hero sections
  * All videos are free to use per Pexels license
  *
- * ✅ UPDATED: Videos now use direct Pexels CDN URLs (not Vimeo external links)
- * - URL format: https://videos.pexels.com/video-files/{ID}/{ID}-{quality}_{width}_{height}_{fps}fps.mp4
- * - Example: https://videos.pexels.com/video-files/4586391/4586391-hd_1920_1080_24fps.mp4
- * - These URLs are stable and don't expire (unlike deprecated Vimeo external links)
- * - Direct CDN links provide better reliability and performance
+ * ✅ UPDATED: Now using direct Pexels CDN URLs (not deprecated Vimeo external links)
+ * 
+ * URL Format: https://videos.pexels.com/video-files/{ID}/{ID}-{quality}_{width}_{height}_{fps}fps.mp4
+ * - These URLs are stable and provided directly from Pexels CDN
+ * - Multiple quality/fps variants are provided as fallbacks for browser compatibility
+ * - The browser will attempt each URL in order until one loads successfully
  *
- * To validate: Test each video URL in a browser or use a URL checker tool.
- * To update: Visit https://www.pexels.com/video/{VIDEO_ID}/ and fetch the CDN URL
- * from the video file sources, or use the Pexels API to get video file URLs.
+ * Note: These fallback URLs should be periodically validated to ensure they remain accessible.
+ * If URLs become broken, they should be replaced with fresh URLs from the Pexels API.
+ * 
+ * To validate: Test each video URL in a browser or use the Pexels API to fetch current URLs.
+ * To update: Use the Pexels Video API to get the latest video file links.
  */
 const FALLBACK_VIDEOS = [
   {
@@ -282,6 +285,18 @@ const FALLBACK_VIDEOS = [
         link: 'https://videos.pexels.com/video-files/4586391/4586391-hd_1920_1080_24fps.mp4',
         width: 1920,
         height: 1080,
+      },
+      {
+        quality: 'hd',
+        link: 'https://videos.pexels.com/video-files/4586391/4586391-hd_1920_1080_25fps.mp4',
+        width: 1920,
+        height: 1080,
+      },
+      {
+        quality: 'sd',
+        link: 'https://videos.pexels.com/video-files/4586391/4586391-sd_640_360_25fps.mp4',
+        width: 640,
+        height: 360,
       },
     ],
     alt: 'Wedding ceremony video',
@@ -298,6 +313,18 @@ const FALLBACK_VIDEOS = [
         width: 1920,
         height: 1080,
       },
+      {
+        quality: 'hd',
+        link: 'https://videos.pexels.com/video-files/5435100/5435100-hd_1920_1080_25fps.mp4',
+        width: 1920,
+        height: 1080,
+      },
+      {
+        quality: 'sd',
+        link: 'https://videos.pexels.com/video-files/5435100/5435100-sd_640_360_25fps.mp4',
+        width: 640,
+        height: 360,
+      },
     ],
     alt: 'Wedding decoration video',
   },
@@ -312,6 +339,18 @@ const FALLBACK_VIDEOS = [
         link: 'https://videos.pexels.com/video-files/3196007/3196007-hd_1920_1080_24fps.mp4',
         width: 1920,
         height: 1080,
+      },
+      {
+        quality: 'hd',
+        link: 'https://videos.pexels.com/video-files/3196007/3196007-hd_1920_1080_25fps.mp4',
+        width: 1920,
+        height: 1080,
+      },
+      {
+        quality: 'sd',
+        link: 'https://videos.pexels.com/video-files/3196007/3196007-sd_640_360_25fps.mp4',
+        width: 640,
+        height: 360,
       },
     ],
     alt: 'Wedding couple video',
@@ -328,6 +367,18 @@ const FALLBACK_VIDEOS = [
         width: 1920,
         height: 1080,
       },
+      {
+        quality: 'hd',
+        link: 'https://videos.pexels.com/video-files/5699934/5699934-hd_1920_1080_25fps.mp4',
+        width: 1920,
+        height: 1080,
+      },
+      {
+        quality: 'sd',
+        link: 'https://videos.pexels.com/video-files/5699934/5699934-sd_640_360_25fps.mp4',
+        width: 640,
+        height: 360,
+      },
     ],
     alt: 'Wedding reception video',
   },
@@ -342,6 +393,18 @@ const FALLBACK_VIDEOS = [
         link: 'https://videos.pexels.com/video-files/4587953/4587953-hd_1920_1080_24fps.mp4',
         width: 1920,
         height: 1080,
+      },
+      {
+        quality: 'hd',
+        link: 'https://videos.pexels.com/video-files/4587953/4587953-hd_1920_1080_25fps.mp4',
+        width: 1920,
+        height: 1080,
+      },
+      {
+        quality: 'sd',
+        link: 'https://videos.pexels.com/video-files/4587953/4587953-sd_640_360_25fps.mp4',
+        width: 640,
+        height: 360,
       },
     ],
     alt: 'Wedding dance video',
@@ -358,6 +421,18 @@ const FALLBACK_VIDEOS = [
         width: 1920,
         height: 1080,
       },
+      {
+        quality: 'hd',
+        link: 'https://videos.pexels.com/video-files/6894337/6894337-hd_1920_1080_25fps.mp4',
+        width: 1920,
+        height: 1080,
+      },
+      {
+        quality: 'sd',
+        link: 'https://videos.pexels.com/video-files/6894337/6894337-sd_640_360_25fps.mp4',
+        width: 640,
+        height: 360,
+      },
     ],
     alt: 'Wedding celebration video',
   },
@@ -373,6 +448,18 @@ const FALLBACK_VIDEOS = [
         width: 1920,
         height: 1080,
       },
+      {
+        quality: 'hd',
+        link: 'https://videos.pexels.com/video-files/5331310/5331310-hd_1920_1080_25fps.mp4',
+        width: 1920,
+        height: 1080,
+      },
+      {
+        quality: 'sd',
+        link: 'https://videos.pexels.com/video-files/5331310/5331310-sd_640_360_25fps.mp4',
+        width: 640,
+        height: 360,
+      },
     ],
     alt: 'Wedding venue video',
   },
@@ -387,6 +474,18 @@ const FALLBACK_VIDEOS = [
         link: 'https://videos.pexels.com/video-files/7651390/7651390-hd_1920_1080_24fps.mp4',
         width: 1920,
         height: 1080,
+      },
+      {
+        quality: 'hd',
+        link: 'https://videos.pexels.com/video-files/7651390/7651390-hd_1920_1080_25fps.mp4',
+        width: 1920,
+        height: 1080,
+      },
+      {
+        quality: 'sd',
+        link: 'https://videos.pexels.com/video-files/7651390/7651390-sd_640_360_25fps.mp4',
+        width: 640,
+        height: 360,
       },
     ],
     alt: 'Wedding moments video',
