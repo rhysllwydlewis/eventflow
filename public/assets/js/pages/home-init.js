@@ -17,6 +17,57 @@ window.__videoMetrics__ = {
   lastError: null,
 };
 
+// Helper function to calculate success rate
+function calculateSuccessRate(successes, attempts) {
+  if (attempts === 0) return 0;
+  return ((successes / attempts) * 100).toFixed(1);
+}
+
+// Helper function to log video metrics (useful for debugging)
+window.logVideoMetrics = function () {
+  console.group('📊 Video Performance Metrics');
+  console.log('Hero Video:');
+  console.log(`  Attempts: ${window.__videoMetrics__.heroVideoAttempts}`);
+  console.log(`  Successes: ${window.__videoMetrics__.heroVideoSuccesses}`);
+  console.log(`  Failures: ${window.__videoMetrics__.heroVideoFailures}`);
+  console.log(`  Success Rate: ${calculateSuccessRate(window.__videoMetrics__.heroVideoSuccesses, window.__videoMetrics__.heroVideoAttempts)}%`);
+  console.log('');
+  console.log('Collage Videos:');
+  console.log(`  Attempts: ${window.__videoMetrics__.collageVideoAttempts}`);
+  console.log(`  Successes: ${window.__videoMetrics__.collageVideoSuccesses}`);
+  console.log(`  Failures: ${window.__videoMetrics__.collageVideoFailures}`);
+  console.log(`  Success Rate: ${calculateSuccessRate(window.__videoMetrics__.collageVideoSuccesses, window.__videoMetrics__.collageVideoAttempts)}%`);
+  if (window.__videoMetrics__.lastError) {
+    console.log('');
+    console.log(`⚠️  Last Error: ${window.__videoMetrics__.lastError}`);
+  }
+  console.groupEnd();
+};
+
+/**
+ * Detect user's connection speed for adaptive video quality
+ * @returns {string} 'slow', 'medium', or 'fast'
+ */
+function detectConnectionSpeed() {
+  // Check for Network Information API support
+  if ('connection' in navigator && navigator.connection) {
+    const connection = navigator.connection;
+    const effectiveType = connection.effectiveType;
+
+    // Map connection types to quality levels
+    if (effectiveType === '4g') {
+      return 'fast';
+    } else if (effectiveType === '3g') {
+      return 'medium';
+    } else {
+      return 'slow';
+    }
+  }
+
+  // Default to medium quality if API not available
+  return 'medium';
+}
+
 /**
  * Check if debug logging is enabled
  * Checks:
@@ -49,6 +100,15 @@ function isDebugEnabled() {
 // Unconditional startup log to confirm collage script execution
 console.log('[Collage Debug] collage script loaded');
 
+// Log connection speed in debug mode
+if (isDebugEnabled()) {
+  const speed = detectConnectionSpeed();
+  console.log(`[Video Quality] Detected connection speed: ${speed}`);
+  if ('connection' in navigator && navigator.connection) {
+    console.log(`[Video Quality] Effective type: ${navigator.connection.effectiveType}`);
+  }
+}
+
 // Initialize homepage components on DOM ready
 document.addEventListener('DOMContentLoaded', () => {
   // Initialize category grid
@@ -69,6 +129,70 @@ document.addEventListener('DOMContentLoaded', () => {
         versionLabel.textContent = 'v18.0.2';
       }
     }
+  }
+
+  // Show video metrics panel in debug mode
+  if (isDebugEnabled()) {
+    // Create metrics panel
+    const metricsPanel = document.createElement('div');
+    metricsPanel.id = 'video-metrics-panel';
+    metricsPanel.style.cssText = `
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: rgba(15, 23, 42, 0.95);
+      color: white;
+      padding: 15px;
+      border-radius: 8px;
+      font-family: monospace;
+      font-size: 12px;
+      z-index: 10000;
+      max-width: 300px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    `;
+    metricsPanel.innerHTML = `
+      <div style="font-weight: bold; margin-bottom: 8px; color: #10b981;">📊 Video Metrics</div>
+      <div id="metrics-content">Loading...</div>
+      <div style="margin-top: 8px; font-size: 10px; opacity: 0.7;">
+        Updates every 2s • <a href="#" id="metrics-log-link" style="color: #10b981;">Log to Console</a>
+      </div>
+    `;
+    document.body.appendChild(metricsPanel);
+
+    // Add event listener for log link (avoid inline onclick)
+    const logLink = document.getElementById('metrics-log-link');
+    if (logLink) {
+      logLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        window.logVideoMetrics();
+      });
+    }
+
+    // Update metrics every 2 seconds
+    const updateMetrics = () => {
+      const m = window.__videoMetrics__;
+      const heroRate = calculateSuccessRate(m.heroVideoSuccesses, m.heroVideoAttempts);
+      const collageRate = calculateSuccessRate(m.collageVideoSuccesses, m.collageVideoAttempts);
+      
+      const content = document.getElementById('metrics-content');
+      if (content) {
+        content.innerHTML = `
+          <div style="margin-bottom: 5px;">
+            <strong>Hero:</strong> ${m.heroVideoSuccesses}/${m.heroVideoAttempts} (${heroRate}%)
+          </div>
+          <div style="margin-bottom: 5px;">
+            <strong>Collage:</strong> ${m.collageVideoSuccesses}/${m.collageVideoAttempts} (${collageRate}%)
+          </div>
+          ${m.lastError ? `<div style="color: #ef4444; margin-top: 5px; font-size: 10px;">⚠️ ${m.lastError}</div>` : ''}
+        `;
+      }
+    };
+
+    // Initial update
+    setTimeout(updateMetrics, 1000);
+    // Update every 2 seconds
+    setInterval(updateMetrics, 2000);
   }
 
   // Load and update hero collage images from admin-uploaded category photos
@@ -1284,8 +1408,17 @@ async function initPexelsCollage(settings) {
 
 /**
  * Initialize hero video element with Pexels video
+ * Features:
+ * - Supports both Pexels API and uploaded videos
+ * - Smooth fade-in transition when video loads
+ * - Loading spinner with animated indicator
+ * - Respects user preferences (reduced-motion, reduced-data)
+ * - Comprehensive error handling with metrics tracking
+ * - Automatic retry on failure
+ * - Graceful fallback to poster image
+ * 
  * @param {string} source - Source type ('pexels' or 'uploads')
- * @param {Object} mediaTypes - Media types configuration
+ * @param {Object} mediaTypes - Media types configuration with {photos: boolean, videos: boolean}
  * @param {Array} uploadGallery - Array of uploaded media URLs
  */
 async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
@@ -2081,7 +2214,7 @@ async function loadMediaIntoFrame(
         // Track failure
         if (window.__videoMetrics__) {
           window.__videoMetrics__.collageVideoFailures++;
-          window.__videoMetrics__.lastError = `Collage video failed for ${category}`;
+          window.__videoMetrics__.lastError = `Collage video failed: ${media.url}`;
         }
 
         if (isDebugEnabled()) {
