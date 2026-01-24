@@ -23,7 +23,7 @@ const jwt = require('jsonwebtoken');
 const validator = require('validator');
 const PDFDocument = require('pdfkit');
 
-const APP_VERSION = 'v18.0.1';
+const APP_VERSION = 'v18.0.2';
 
 require('dotenv').config();
 
