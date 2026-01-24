@@ -5,7 +5,6 @@
 
 class EFSearchBar {
   constructor() {
-    this.searchBar = document.querySelector('.ef-search-bar');
     this.form = document.querySelector('.ef-search-bar__form');
     this.input = document.querySelector('.ef-search-bar__input');
     this.select = document.querySelector('.ef-search-bar__select');
