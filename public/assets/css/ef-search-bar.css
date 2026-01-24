@@ -456,7 +456,7 @@
     position: absolute;
     right: 8px;
     top: 50%;
-    transform: translateY(-52%); /* Adjusted for better visual centering */
+    transform: translateY(-54%); /* Further adjusted for visual centering */
     margin: 0;
   }
   
