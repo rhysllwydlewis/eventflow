@@ -160,7 +160,7 @@ router.get('/homepage-settings', async (req, res) => {
  * GET /api/public/stats
  * Get public statistics for homepage
  * Returns counts of verified suppliers, approved packages, active listings, and approved reviews
- * 
+ *
  * Cache Policy: 5 minutes
  * - Stats don't change frequently, so caching improves performance
  */
@@ -180,7 +180,7 @@ router.get('/stats', async (req, res) => {
     // Read all collections
     const suppliers = (await dbUnified.read('suppliers')) || [];
     const packages = (await dbUnified.read('packages')) || [];
-    const marketplaceListings = (await dbUnified.read('marketplaceListings')) || [];
+    const marketplaceListings = (await dbUnified.read('marketplace_listings')) || [];
     const reviews = (await dbUnified.read('reviews')) || [];
 
     // Calculate stats

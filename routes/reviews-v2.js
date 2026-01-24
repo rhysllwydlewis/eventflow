@@ -819,7 +819,7 @@ router.get('/verified-count/:supplierId', async (req, res) => {
  * Get public approved reviews (no auth required)
  * GET /api/reviews
  * Query: limit (default 10, max 50), sort (rating or recent, default recent)
- * 
+ *
  * This endpoint is used by the homepage to display testimonials
  * Only returns approved reviews with safe fields
  */
@@ -832,7 +832,7 @@ router.get('/', async (req, res) => {
     const allReviews = (await dbUnified.read('reviews')) || [];
 
     // Filter to only approved reviews
-    let approvedReviews = allReviews.filter(r => r.approved === true);
+    const approvedReviews = allReviews.filter(r => r.approved === true);
 
     // Sort reviews
     if (sort === 'rating') {
@@ -854,7 +854,7 @@ router.get('/', async (req, res) => {
       customerName: review.customerName || 'Anonymous',
       supplierName: review.supplierName || '',
       rating: review.rating || 5,
-      comment: review.text || review.comment || '',
+      comment: review.text || review.comment || '', // Prefer 'text' field, fallback to 'comment'
       createdAt: review.createdAt || new Date().toISOString(),
     }));
 

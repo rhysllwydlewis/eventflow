@@ -45,8 +45,8 @@ router.post('/subscribe', newsletterLimiter, async (req, res) => {
     const subscribers = (await dbUnified.read('newsletterSubscribers')) || [];
     const existingSubscriber = subscribers.find(s => s.email === normalizedEmail);
 
-    // Generate confirmation token
-    const confirmToken = crypto.randomBytes(32).toString('hex');
+    // Generate confirmation token (20 bytes = 40 hex chars, URL-safe)
+    const confirmToken = crypto.randomBytes(20).toString('hex');
     const confirmTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
     if (existingSubscriber) {
@@ -68,7 +68,7 @@ router.post('/subscribe', newsletterLimiter, async (req, res) => {
     } else {
       // Create new subscriber
       const newSubscriber = {
-        _id: crypto.randomUUID(),
+        id: crypto.randomUUID(),
         email: normalizedEmail,
         status: 'pending-confirmation',
         confirmToken,
@@ -106,7 +106,10 @@ router.post('/subscribe', newsletterLimiter, async (req, res) => {
       });
     } catch (emailError) {
       console.error('Failed to send confirmation email:', emailError);
-      // Continue anyway - subscriber is in DB, they can resubscribe to get new link
+      // Return error to user so they know email failed
+      return res.status(500).json({
+        error: 'Failed to send confirmation email. Please try again later.',
+      });
     }
 
     res.json({
