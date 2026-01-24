@@ -40,7 +40,35 @@ class EFSearchBar {
       return;
     }
 
+    // Track search event (don't block submission if it fails)
+    this.trackSearch(query, category).catch(err => {
+      console.debug('Analytics tracking failed:', err);
+    });
+
     // Form will submit naturally with query and/or category parameters
+  }
+
+  async trackSearch(query, category) {
+    try {
+      await fetch('/api/analytics/event', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          event: 'search_performed',
+          properties: {
+            query: query || '',
+            category: category || '',
+            source: 'homepage',
+          },
+          timestamp: new Date().toISOString(),
+        }),
+      });
+    } catch (error) {
+      // Fail silently - analytics should never block UX
+      console.debug('Analytics tracking error:', error);
+    }
   }
 
   handleTagClick(e) {
