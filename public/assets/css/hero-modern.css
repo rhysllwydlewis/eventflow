@@ -83,9 +83,9 @@
     text-align: center;
   }
   
-  /* Center h1 horizontally - h1 already has display: flex from line 98 */
+  /* h1 already has display: flex and flex-direction: column (lines 118-119) */
   .hero-modern h1 {
-    align-items: center; /* Centers flex children vertically within h1 */
+    align-items: center; /* Centers flex children horizontally (cross-axis) */
     margin-left: auto;
     margin-right: auto;
   }
