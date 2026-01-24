@@ -40,7 +40,50 @@ class EFSearchBar {
       return;
     }
 
+    // Track search event (don't block submission if it fails)
+    this.trackSearch(query, category).catch(err => {
+      console.debug('Analytics tracking failed:', err);
+    });
+
     // Form will submit naturally with query and/or category parameters
+  }
+
+  async trackSearch(query, category) {
+    try {
+      // Get CSRF token from cookie
+      const token = this.getCsrfToken();
+      
+      await fetch('/api/analytics/event', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { 'X-CSRF-Token': token }),
+        },
+        body: JSON.stringify({
+          event: 'search_performed',
+          properties: {
+            query: query || '',
+            category: category || '',
+            source: 'homepage',
+          },
+          timestamp: new Date().toISOString(),
+        }),
+      });
+    } catch (error) {
+      // Fail silently - analytics should never block UX
+      console.debug('Analytics tracking error:', error);
+    }
+  }
+
+  getCsrfToken() {
+    const cookies = document.cookie.split(';');
+    for (let cookie of cookies) {
+      const [name, value] = cookie.trim().split('=');
+      if (name === 'csrf') {
+        return value;
+      }
+    }
+    return null;
   }
 
   handleTagClick(e) {
