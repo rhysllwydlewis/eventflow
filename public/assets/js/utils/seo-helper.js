@@ -166,6 +166,22 @@ class SEOHelper {
   }
 
   /**
+   * Get the canonical base URL for SEO purposes.
+   * Prefers configured EF_CANONICAL_BASE over window.location.origin
+   * to ensure consistent canonical URLs in all environments.
+   * @returns {string} - Canonical base URL (e.g., 'https://event-flow.co.uk')
+   */
+  getCanonicalBase() {
+    // Prefer explicit production base URL configuration
+    // This ensures canonical URLs are correct even in dev/test environments
+    if (typeof window !== 'undefined' && window.EF_CANONICAL_BASE) {
+      return window.EF_CANONICAL_BASE.replace(/\/$/, ''); // Remove trailing slash
+    }
+    // Fallback to current origin (may be localhost in dev)
+    return window.location.origin;
+  }
+
+  /**
    * Get full URL from relative path (with validation)
    * @param {string} path - Relative or absolute path
    * @returns {string} - Full URL
@@ -180,16 +196,16 @@ class SEOHelper {
       throw new Error('Protocol-relative URLs are not allowed');
     }
 
-    const baseUrl = window.location.origin;
+    const baseUrl = this.getCanonicalBase();
     const cleanPath = path.startsWith('/') ? path : `/${path}`;
 
     // Use URL constructor for safe URL building
+    // Note: Origin validation is not needed here because:
+    // 1. Absolute URLs (http/https) are returned early above
+    // 2. Protocol-relative URLs (//) are blocked above
+    // 3. URL constructor with relative path cannot produce different origin than baseUrl
     try {
       const url = new URL(cleanPath, baseUrl);
-      // Ensure the URL is on the same origin
-      if (url.origin !== baseUrl) {
-        throw new Error('URLs must be on the same origin');
-      }
       return url.href;
     } catch (error) {
       console.error('Invalid URL:', path, error);

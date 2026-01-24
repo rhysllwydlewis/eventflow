@@ -13,7 +13,7 @@ test.describe('SEO Canonicals', () => {
   const publicPages = [
     { path: '/', canonical: 'https://event-flow.co.uk/' },
     { path: '/blog.html', canonical: 'https://event-flow.co.uk/blog.html' },
-    { path: '/suppliers.html', canonical: 'https://event-flow.co.uk/suppliers.html' },
+    { path: '/suppliers', canonical: 'https://event-flow.co.uk/suppliers' },
     { path: '/marketplace', canonical: 'https://event-flow.co.uk/marketplace' },
     { path: '/pricing.html', canonical: 'https://event-flow.co.uk/pricing.html' },
     { path: '/start.html', canonical: 'https://event-flow.co.uk/start.html' },
@@ -80,24 +80,36 @@ test.describe('SEO Canonicals', () => {
     });
   }
 
-  test('marketplace.html should redirect to /marketplace', async ({ page }) => {
-    const response = await page.goto('/marketplace.html');
+  // Canonical URL redirect tests
+  // These verify that non-canonical URLs (with .html) redirect to canonical versions
+  const redirectTests = [
+    { from: '/marketplace.html', to: '/marketplace', urlMatcher: '/marketplace.html' },
+    { from: '/suppliers.html', to: '/suppliers', urlMatcher: '/suppliers.html' },
+    { from: '/index.html', to: '/', urlMatcher: '/index.html' },
+  ];
 
-    // Should get a redirect response
-    expect(response?.status()).toBe(301);
+  for (const redirect of redirectTests) {
+    test(`${redirect.from} should redirect to ${redirect.to}`, async ({ page }) => {
+      // Track the initial redirect response
+      let redirectStatus = null;
+      page.on('response', response => {
+        if (response.url().includes(redirect.urlMatcher)) {
+          redirectStatus = response.status();
+        }
+      });
 
-    // Should end up at /marketplace
-    expect(page.url()).toContain('/marketplace');
-  });
+      await page.goto(redirect.from);
 
-  test('index.html should redirect to /', async ({ page }) => {
-    const response = await page.goto('/index.html');
+      // Should get a redirect response (301) - captured before following
+      expect(redirectStatus).toBe(301);
 
-    // Should get a redirect response
-    expect(response?.status()).toBe(301);
-
-    // Should end up at root
-    const finalUrl = page.url();
-    expect(finalUrl.endsWith('/') || finalUrl === page.context()._options.baseURL).toBe(true);
-  });
+      // Should end up at the canonical URL
+      const finalUrl = page.url();
+      if (redirect.to === '/') {
+        expect(finalUrl.endsWith('/') || finalUrl === page.context()._options.baseURL).toBe(true);
+      } else {
+        expect(finalUrl).toContain(redirect.to);
+      }
+    });
+  }
 });

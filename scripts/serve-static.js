@@ -3,6 +3,10 @@
 /**
  * Lightweight static server for E2E tests
  * Serves the /public directory with a stub /api/health endpoint
+ *
+ * NOTE: This server mirrors routing behavior from main server.js to ensure
+ * E2E tests can verify canonical URL redirects. Express.static alone won't
+ * provide 301 redirects - it would serve files directly without redirection.
  */
 
 const express = require('express');
@@ -23,6 +27,28 @@ app.use((req, res, next) => {
 // Stub /api/health endpoint for Playwright health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', mode: 'static' });
+});
+
+// Canonical URL redirects (matching server.js behavior)
+// These redirects are needed because express.static serves files directly without redirection
+app.get('/index.html', (req, res) => {
+  res.redirect(301, '/');
+});
+
+app.get('/marketplace', (req, res) => {
+  res.sendFile(path.join(PUBLIC_DIR, 'marketplace.html'));
+});
+
+app.get('/marketplace.html', (req, res) => {
+  res.redirect(301, '/marketplace');
+});
+
+app.get('/suppliers', (req, res) => {
+  res.sendFile(path.join(PUBLIC_DIR, 'suppliers.html'));
+});
+
+app.get('/suppliers.html', (req, res) => {
+  res.redirect(301, '/suppliers');
 });
 
 // Serve static files from public directory
