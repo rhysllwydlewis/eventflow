@@ -917,6 +917,9 @@ function displayPexelsImage(imgElement, frame, imageData, category) {
     imgElement.sizes = '(max-width: 768px) 48vw, 25vw';
   }
   
+  // Add decoding="async" for better performance
+  imgElement.decoding = 'async';
+  
   imgElement.alt = `${category.charAt(0).toUpperCase() + category.slice(1)} - Photo by ${imageData.photographer}`;
   imgElement.style.opacity = '1';
   frame.classList.remove('loading-pexels');
@@ -1998,6 +2001,9 @@ async function loadMediaIntoFrame(
           mediaElement.sizes = '(max-width: 768px) 48vw, 25vw';
         }
         
+        // Add decoding="async" for better performance
+        mediaElement.decoding = 'async';
+        
         mediaElement.alt = `${category.charAt(0).toUpperCase() + category.slice(1)} - Photo`;
         mediaElement.style.opacity = '1';
         frame.classList.remove('loading-pexels');
@@ -2033,6 +2039,9 @@ async function loadMediaIntoFrame(
           mediaElement.srcset = media.srcset;
           mediaElement.sizes = '(max-width: 768px) 48vw, 25vw';
         }
+        
+        // Add decoding="async" for better performance
+        mediaElement.decoding = 'async';
         
         mediaElement.alt = `${category.charAt(0).toUpperCase() + category.slice(1)} - Photo`;
         mediaElement.style.opacity = '1';
