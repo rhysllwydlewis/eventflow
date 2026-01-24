@@ -754,7 +754,12 @@
           return;
         }
 
-        const csrfToken = window.__CSRF_TOKEN__ || await fetchCsrfToken();
+        // Get CSRF token - check window first, only fetch if not available
+        let csrfToken = window.__CSRF_TOKEN__;
+        if (!csrfToken) {
+          csrfToken = await fetchCsrfToken();
+        }
+        
         const response = await fetch(`${API_BASE}/me/suppliers/${supplierId}/photos/${photoId}`, {
           method: 'DELETE',
           credentials: 'include',
