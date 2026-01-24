@@ -129,71 +129,6 @@ h3 {
    Modern, engaging hero with better visual flow
    ======================================== */
 
-/* Hero search bar enhancements */
-.hero-search {
-  margin-top: 24px;
-  margin-bottom: 20px;
-}
-
-.hero-search-form {
-  position: relative;
-  box-shadow: var(--ef-shadow-search),
-              0 0 0 1px rgba(11, 128, 115, 0.1);
-  border-radius: 14px;
-  transition: box-shadow var(--ef-transition-normal), 
-              transform var(--ef-transition-normal);
-  contain: layout style;
-}
-
-.hero-search-form:hover {
-  box-shadow: var(--ef-shadow-search-hover),
-              0 0 0 1px rgba(11, 128, 115, 0.2);
-  transform: translateY(-2px);
-}
-
-.hero-search-form:focus-within {
-  box-shadow: 0 12px 32px rgba(11, 128, 115, 0.15),
-              0 0 0 2px var(--ink, #0B8073);
-  transform: translateY(-2px);
-}
-
-.hero-search-input {
-  padding-right: 56px;
-  font-size: 15px;
-  transition: all 0.25s ease;
-}
-
-.hero-search-input:focus {
-  outline: none;
-}
-
-.hero-search-button {
-  position: absolute;
-  right: 8px;
-  top: 50%;
-  transform: translateY(-50%);
-  background: linear-gradient(135deg, var(--ink, #0B8073), var(--accent, #13B6A2));
-  border: none;
-  border-radius: 10px;
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  font-size: 18px;
-}
-
-.hero-search-button:hover {
-  transform: translateY(-50%) scale(1.05);
-  box-shadow: 0 4px 12px rgba(11, 128, 115, 0.3);
-}
-
-.hero-search-button:active {
-  transform: translateY(-50%) scale(0.95);
-}
-
 /* ========================================
    ENHANCED COLLAGE SECTION
    Better image presentation with smooth effects
@@ -443,14 +378,4 @@ a:hover {
 html[data-theme="dark"] .card:hover,
 html[data-theme="dark"] .pack:hover {
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
-}
-
-html[data-theme="dark"] .hero-search-form {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3),
-              0 0 0 1px rgba(94, 234, 212, 0.2);
-}
-
-html[data-theme="dark"] .hero-search-form:hover {
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4),
-              0 0 0 1px rgba(94, 234, 212, 0.3);
 }

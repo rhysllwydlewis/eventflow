@@ -552,24 +552,14 @@ input[type="radio"]:checked {
     animation-delay: 80ms;
   }
   
-  .hero-category-wrapper {
+  .ef-search-bar {
     animation: efGlassEnter 800ms cubic-bezier(0.22, 1, 0.36, 1) both;
     animation-delay: 160ms;
   }
   
-  .hero-search-input-wrapper {
+  .ef-quick-tags {
     animation: efGlassEnter 800ms cubic-bezier(0.22, 1, 0.36, 1) both;
     animation-delay: 240ms;
-  }
-  
-  .hero-search-button {
-    animation: efGlassEnter 800ms cubic-bezier(0.22, 1, 0.36, 1) both;
-    animation-delay: 320ms;
-  }
-  
-  .hero-tags {
-    animation: efGlassEnter 800ms cubic-bezier(0.22, 1, 0.36, 1) both;
-    animation-delay: 400ms;
   }
   
   .hero-modern-ctas {

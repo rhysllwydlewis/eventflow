@@ -172,81 +172,6 @@
 }
 
 /* ========================================
-   SEARCH BAR IMPROVEMENTS
-   Better visibility and functionality
-   ======================================== */
-
-.hero-search {
-  position: relative;
-  z-index: 10;
-}
-
-.hero-search-form {
-  display: flex;
-  align-items: center;
-  background: white;
-  border-radius: 14px;
-  overflow: hidden;
-}
-
-.hero-search-input {
-  flex: 1;
-  border: none;
-  padding: 16px 20px;
-  font-size: 16px;
-  background: transparent;
-}
-
-.hero-search-input::placeholder {
-  color: var(--ef-text-light, #9ca3af);
-  transition: color 0.2s ease;
-}
-
-.hero-search-input:focus::placeholder {
-  color: var(--ef-text-gray, #6b7280);
-}
-
-/* Search results dropdown */
-.hero-search-results {
-  position: absolute;
-  top: calc(100% + 8px);
-  left: 0;
-  right: 0;
-  background: white;
-  border-radius: 14px;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.15);
-  max-height: 400px;
-  overflow-y: auto;
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(-10px);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  z-index: 1000;
-}
-
-.hero-search-results.active {
-  opacity: 1;
-  visibility: visible;
-  transform: translateY(0);
-}
-
-.hero-search-result-item {
-  padding: 12px 20px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  border-bottom: 1px solid var(--ef-border, #e5e7eb);
-}
-
-.hero-search-result-item:last-child {
-  border-bottom: none;
-}
-
-.hero-search-result-item:hover {
-  background: rgba(11, 128, 115, 0.05);
-  padding-left: 24px;
-}
-
-/* ========================================
    BREADCRUMB NAVIGATION
    Better user journey tracking
    ======================================== */
@@ -345,10 +270,6 @@
   .hero-cta .cta {
     width: 100%;
     min-width: auto;
-  }
-  
-  .hero-search-input {
-    font-size: 16px; /* Prevent zoom on iOS */
   }
   
   .breadcrumb {
