@@ -5,6 +5,47 @@ All notable changes to EventFlow will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [18.0.2] - 2026-01-24
+
+### Added
+
+- **Search Rating Sorting**: Supplier search now uses actual review data for rating-based sorting
+  - Reviews fetched and aggregated in real-time
+  - `calculatedRating` and `reviewCount` added to search results
+- **Photo Management Endpoints**: Complete photo gallery API
+  - `GET /api/me/suppliers/:id/photos` - List supplier photos
+  - `DELETE /api/me/suppliers/:id/photos/:photoId` - Delete specific photo
+  - Automatic file cleanup on deletion
+- **Analytics Service**: Track supplier profile views and enquiries
+  - `services/analyticsService.js` - New service for analytics tracking
+  - Daily aggregation with detailed tracking
+  - 7/30/90 day period support
+- **Pagination Utilities**: Standardized pagination across all list endpoints
+  - `utils/pagination.js` - Reusable pagination helpers
+  - Consistent response format with `hasNextPage`, `hasPrevPage`, etc.
+- **Push Notification Infrastructure**: Firebase Cloud Messaging support
+  - FCM integration in notificationService
+  - Device token management
+  - Automatic invalid token cleanup
+
+### Changed
+
+- **Gallery Page**: Now uses actual photos API instead of empty state
+  - Delete functionality wired up
+  - Proper error handling
+- **Security Documentation**: CSP inline handler risk documented with remediation plan
+
+### Fixed
+
+- **Search Sorting**: Rating sort now uses live review data instead of stale supplier field
+- **MOP_UP Items**: Addressed all items from MOP_UP_REVIEW_COMPREHENSIVE.md
+
+### Security
+
+- **CSRF Protection**: Verified all state-changing routes have CSRF middleware
+- **CSP Documentation**: Documented inline handler risks and remediation plan
+- **Path Traversal Protection**: Photo deletion validates resolved paths stay within public directory
+
 ## [18.0.1] - 2026-01-24
 
 ### Added

@@ -185,18 +185,96 @@ class NotificationService {
 
   /**
    * Deliver notification via push
-   * Note: This is a placeholder - actual push implementation depends on
-   * mobile app setup (Firebase, Apple Push Notification service, etc.)
+   * Supports Firebase Cloud Messaging (FCM) for web/Android and APNs for iOS
+   *
+   * Prerequisites for production:
+   * 1. Set FIREBASE_SERVICE_ACCOUNT_KEY environment variable (JSON string)
+   * 2. Store user device tokens in user_devices collection
+   * 3. Configure FCM in Firebase Console
    */
-  async deliverPush(userId, _notification) {
+  async deliverPush(userId, notification) {
     try {
-      // TODO: Implement push notification delivery
-      // This would typically involve:
-      // 1. Get user's device tokens from database
-      // 2. Send to FCM/APNS
-      // 3. Handle delivery confirmations
+      // Check if push notifications are configured
+      if (!process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
+        logger.debug('Push notifications not configured (FIREBASE_SERVICE_ACCOUNT_KEY not set)', {
+          userId,
+        });
+        return;
+      }
 
-      logger.debug('Push notification delivery not implemented', { userId });
+      // Get user's device tokens
+      const userDevices = await this.db
+        .collection('user_devices')
+        .find({
+          userId,
+          active: true,
+        })
+        .toArray();
+
+      if (!userDevices || userDevices.length === 0) {
+        logger.debug('No device tokens found for user', { userId });
+        return;
+      }
+
+      // Import firebase-admin (lazy load to avoid issues if not configured)
+      let admin;
+      try {
+        // eslint-disable-next-line node/no-missing-require
+        admin = require('firebase-admin');
+
+        // Initialize if not already
+        if (!admin.apps.length) {
+          admin.initializeApp({
+            credential: admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY)),
+          });
+        }
+      } catch (err) {
+        logger.warn('Firebase Admin SDK not available', { error: err.message });
+        return;
+      }
+
+      // Send to each device
+      const tokens = userDevices.map(d => d.token);
+      const message = {
+        notification: {
+          title: notification.title,
+          body: notification.message,
+        },
+        data: {
+          type: notification.type,
+          notificationId: notification._id.toString(),
+          url: notification.data?.url || '',
+        },
+        tokens,
+      };
+
+      const response = await admin.messaging().sendEachForMulticast(message);
+
+      logger.info('Push notifications sent', {
+        userId,
+        successCount: response.successCount,
+        failureCount: response.failureCount,
+      });
+
+      // Handle failed tokens (remove invalid ones)
+      if (response.failureCount > 0) {
+        const invalidTokens = [];
+        response.responses.forEach((resp, idx) => {
+          if (!resp.success && resp.error?.code === 'messaging/invalid-registration-token') {
+            invalidTokens.push(tokens[idx]);
+          }
+        });
+
+        if (invalidTokens.length > 0) {
+          await this.db
+            .collection('user_devices')
+            .updateMany(
+              { token: { $in: invalidTokens } },
+              { $set: { active: false, deactivatedAt: new Date() } }
+            );
+          logger.info('Deactivated invalid device tokens', { count: invalidTokens.length });
+        }
+      }
     } catch (error) {
       logger.error('Error delivering push notification', {
         userId,

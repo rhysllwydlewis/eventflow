@@ -23,7 +23,7 @@ const jwt = require('jsonwebtoken');
 const validator = require('validator');
 const PDFDocument = require('pdfkit');
 
-const APP_VERSION = 'v18.0.1';
+const APP_VERSION = 'v18.0.2';
 
 require('dotenv').config();
 
@@ -6220,6 +6220,10 @@ app.use('/api/payments', paymentRoutes);
 // ---------- Profile Routes ----------
 const profileRoutes = require('./routes/profile');
 app.use('/api/profile', profileRoutes);
+
+// ---------- Suppliers V2 Routes ----------
+const suppliersV2Routes = require('./routes/suppliers-v2');
+app.use('/api/me/suppliers', suppliersV2Routes);
 
 // ---------- Notification Routes ----------
 const notificationRoutes = require('./routes/notifications');
