@@ -449,6 +449,7 @@
   
   .ef-search-bar__button {
     margin-left: 2px;
+    align-self: center;
   }
   
   .ef-search-bar__button svg {
