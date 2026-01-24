@@ -14,10 +14,12 @@ const publicRoutes = require('./public');
 const authRoutes = require('./auth');
 const adminRoutes = require('./admin');
 const messagesRoutes = require('./messages');
+const newsletterRoutes = require('./newsletter');
 const paymentsRoutes = require('./payments');
 const pexelsRoutes = require('./pexels');
 const profileRoutes = require('./profile');
 const reportsRoutes = require('./reports');
+const reviewsV2Routes = require('./reviews-v2');
 const ticketsRoutes = require('./tickets');
 const webhooksRoutes = require('./webhooks');
 const searchV2Routes = require('./search-v2');
@@ -46,6 +48,9 @@ function mountRoutes(app, deps) {
   // Messages routes
   app.use('/api/messages', messagesRoutes);
 
+  // Newsletter routes (public, no auth required)
+  app.use('/api/newsletter', newsletterRoutes);
+
   // Payment routes
   app.use('/api/payments', paymentsRoutes);
 
@@ -57,6 +62,10 @@ function mountRoutes(app, deps) {
 
   // Reports routes
   app.use('/api/reports', reportsRoutes);
+
+  // Reviews routes (public endpoint at /api/reviews for homepage testimonials)
+  // Note: /api/v2/reviews is mounted separately in server.js for v2 API endpoints
+  app.use('/api/reviews', reviewsV2Routes);
 
   // Tickets routes
   app.use('/api/tickets', ticketsRoutes);

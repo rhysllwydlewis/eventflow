@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Confirm your EventFlow newsletter subscription</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 600px;
+      margin: 40px auto;
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .header {
+      background: linear-gradient(135deg, #0B8073 0%, #0a6b5f 100%);
+      color: white;
+      padding: 40px 30px;
+      text-align: center;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 28px;
+      font-weight: 600;
+    }
+    .content {
+      padding: 40px 30px;
+    }
+    .content p {
+      margin: 0 0 20px 0;
+      font-size: 16px;
+      color: #555;
+    }
+    .button {
+      display: inline-block;
+      background: #0B8073;
+      color: white !important;
+      padding: 14px 32px;
+      text-decoration: none;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 16px;
+      margin: 20px 0;
+      text-align: center;
+    }
+    .button:hover {
+      background: #0a6b5f;
+    }
+    .note {
+      color: #6b7280;
+      font-size: 14px;
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid #e5e7eb;
+    }
+    .footer {
+      background: #f9fafb;
+      padding: 30px;
+      text-align: center;
+      color: #9ca3af;
+      font-size: 12px;
+      border-top: 1px solid #e5e7eb;
+    }
+    .footer a {
+      color: #0B8073;
+      text-decoration: none;
+    }
+    .logo {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="logo">EventFlow</div>
+      <h1>Confirm your subscription</h1>
+    </div>
+    
+    <div class="content">
+      <p>Hi there,</p>
+      
+      <p>Thanks for subscribing to the EventFlow newsletter! We're excited to keep you updated with:</p>
+      
+      <ul style="color: #555; margin: 20px 0; padding-left: 20px;">
+        <li>New suppliers and venues</li>
+        <li>Event planning tips and guides</li>
+        <li>Exclusive offers and early access</li>
+        <li>Platform updates and new features</li>
+      </ul>
+      
+      <p>Click the button below to confirm your email address:</p>
+      
+      <center>
+        <a href="{{confirmLink}}" class="button">Confirm Subscription</a>
+      </center>
+      
+      <div class="note">
+        <p><strong>Note:</strong> This link will expire in 24 hours.</p>
+        <p>If you didn't subscribe to our newsletter, you can safely ignore this email.</p>
+      </div>
+    </div>
+    
+    <div class="footer">
+      <p><strong>EventFlow</strong></p>
+      <p>Everything you need to organise an event in one place</p>
+      <p style="margin-top: 15px;">
+        <a href="https://event-flow.co.uk">event-flow.co.uk</a>
+      </p>
+    </div>
+  </div>
+</body>
+</html>

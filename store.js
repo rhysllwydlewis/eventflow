@@ -23,6 +23,7 @@ const files = {
   badges: path.join(DATA_DIR, 'badges.json'),
   marketplace_listings: path.join(DATA_DIR, 'marketplace_listings.json'),
   tickets: path.join(DATA_DIR, 'tickets.json'),
+  newsletterSubscribers: path.join(DATA_DIR, 'newsletterSubscribers.json'),
 };
 
 function ensure() {
