@@ -44,6 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **CSRF Protection**: Verified all state-changing routes have CSRF middleware
 - **CSP Documentation**: Documented inline handler risks and remediation plan
+- **Path Traversal Protection**: Photo deletion validates resolved paths stay within public directory
 
 ## [18.0.1] - 2026-01-24
 
