@@ -407,33 +407,35 @@
                     </svg>
                   </div>
 
-                  <!-- Input Wrapper -->
+                  <!-- Input + Button Wrapper -->
                   <div class="hero-search-input-wrapper">
-                    <label class="sr-only" for="ef-search">Search suppliers, packages, or venues</label>
+                    <div class="hero-search-input-container">
+                      <label class="sr-only" for="ef-search">Search suppliers, packages, or venues</label>
 
-                    <svg class="hero-search-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                      <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 1 0 3.27 9.92l2.65 2.66a.75.75 0 1 0 1.06-1.06l-2.66-2.65A5.5 5.5 0 0 0 9 3.5Zm-4 5.5a4 4 0 1 1 8 0 4 4 0 0 1-8 0Z" clip-rule="evenodd"/>
-                    </svg>
+                      <svg class="hero-search-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 1 0 3.27 9.92l2.65 2.66a.75.75 0 1 0 1.06-1.06l-2.66-2.65A5.5 5.5 0 0 0 9 3.5Zm-4 5.5a4 4 0 1 1 8 0 4 4 0 0 1-8 0Z" clip-rule="evenodd"/>
+                      </svg>
 
-                    <input
-                      id="ef-search"
-                      type="text"
-                      placeholder="Search suppliers, packages, or venues…"
-                      autocomplete="off"
-                      class="hero-search-input"
-                    />
+                      <input
+                        id="ef-search"
+                        type="text"
+                        placeholder="Search suppliers, packages, or venues…"
+                        autocomplete="off"
+                        class="hero-search-input"
+                      />
+                    </div>
+                    
+                    <!-- Search Button -->
+                    <button
+                      type="submit"
+                      class="hero-search-button"
+                      aria-label="Search"
+                    >
+                      <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 1 0 3.27 9.92l2.65 2.66a.75.75 0 1 0 1.06-1.06l-2.66-2.65A5.5 5.5 0 0 0 9 3.5Zm-4 5.5a4 4 0 1 1 8 0 4 4 0 0 1-8 0Z" clip-rule="evenodd"/>
+                      </svg>
+                    </button>
                   </div>
-
-                  <!-- Search Button - Separate from input -->
-                  <button
-                    type="submit"
-                    class="hero-search-button"
-                    aria-label="Search"
-                  >
-                    <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                      <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 1 0 3.27 9.92l2.65 2.66a.75.75 0 1 0 1.06-1.06l-2.66-2.65A5.5 5.5 0 0 0 9 3.5Zm-4 5.5a4 4 0 1 1 8 0 4 4 0 0 1-8 0Z" clip-rule="evenodd"/>
-                    </svg>
-                  </button>
                 </div>
 
                 <!-- Tags -->
