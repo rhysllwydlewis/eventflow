@@ -97,12 +97,22 @@ router.delete('/:id/photos/:photoId', authRequired, csrfProtection, async (req, 
 
     // Optionally delete file from filesystem
     if (removedPhoto.url && removedPhoto.url.startsWith('/uploads/')) {
-      const filePath = path.join(__dirname, '..', 'public', removedPhoto.url);
-      try {
-        await fs.unlink(filePath);
-      } catch (err) {
-        // File may not exist, log but don't fail
-        console.warn('Could not delete photo file:', err.message);
+      const publicDir = path.join(__dirname, '..', 'public');
+      const filePath = path.join(publicDir, removedPhoto.url);
+
+      // Security: Verify resolved path is within public directory to prevent path traversal
+      const resolvedPath = path.resolve(filePath);
+      const resolvedPublicDir = path.resolve(publicDir);
+
+      if (resolvedPath.startsWith(resolvedPublicDir)) {
+        try {
+          await fs.unlink(filePath);
+        } catch (err) {
+          // File may not exist, log but don't fail
+          console.warn('Could not delete photo file:', err.message);
+        }
+      } else {
+        console.error('Path traversal attempt detected:', removedPhoto.url);
       }
     }
 
