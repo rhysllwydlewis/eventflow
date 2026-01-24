@@ -1545,19 +1545,40 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
           let loadingComplete = false;
           let currentUrlIndex = 0;
 
+          // Helper function to handle complete failure (all URLs exhausted)
+          const handleAllUrlsFailed = () => {
+            if (loadingComplete) {
+              return;
+            }
+            loadingComplete = true;
+            
+            if (timeoutId) {
+              clearTimeout(timeoutId);
+            }
+            
+            // Remove error listener to prevent further calls
+            videoElement.removeEventListener('error', handleVideoError);
+            
+            // Remove loading state
+            if (videoCard) {
+              videoCard.classList.remove('loading-video');
+            }
+            
+            // Track failure
+            if (window.__videoMetrics__) {
+              window.__videoMetrics__.heroVideoFailures++;
+              window.__videoMetrics__.lastError = 'All video URLs failed';
+            }
+            
+            if (isDebugEnabled()) {
+              console.warn('[Hero Video] All video URLs failed, using poster fallback');
+            }
+          };
+
           const tryNextVideo = () => {
             if (currentUrlIndex >= videoFiles.length) {
-              // All URLs failed, give up
-              if (isDebugEnabled()) {
-                console.warn('[Hero Video] All video URLs failed, using poster fallback');
-              }
-              if (videoCard) {
-                videoCard.classList.remove('loading-video');
-              }
-              if (window.__videoMetrics__) {
-                window.__videoMetrics__.heroVideoFailures++;
-                window.__videoMetrics__.lastError = 'All video URLs failed';
-              }
+              // All URLs exhausted
+              handleAllUrlsFailed();
               return;
             }
 
@@ -1577,9 +1598,13 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
               return;
             }
             loadingComplete = true;
+            
             if (timeoutId) {
               clearTimeout(timeoutId);
             }
+            
+            // Remove error listener since video loaded successfully
+            videoElement.removeEventListener('error', handleVideoError);
 
             // Remove loading state
             if (videoCard) {
@@ -1620,25 +1645,7 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
               tryNextVideo();
             } else {
               // All URLs failed
-              loadingComplete = true;
-              if (timeoutId) {
-                clearTimeout(timeoutId);
-              }
-
-              // Remove loading state on error
-              if (videoCard) {
-                videoCard.classList.remove('loading-video');
-              }
-
-              // Track failure
-              if (window.__videoMetrics__) {
-                window.__videoMetrics__.heroVideoFailures++;
-                window.__videoMetrics__.lastError = 'All video URLs failed';
-              }
-
-              if (isDebugEnabled()) {
-                console.warn('[Hero Video] All video URLs failed, will use poster fallback');
-              }
+              handleAllUrlsFailed();
             }
           };
 
@@ -1650,7 +1657,6 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
           tryNextVideo();
 
           // Timeout as additional safety net (10 seconds)
-          // The { once: true } option auto-removes listeners after first fire.
           // This timeout is a defensive fallback for edge cases where events don't fire.
           timeoutId = setTimeout(() => {
             if (!loadingComplete) {
