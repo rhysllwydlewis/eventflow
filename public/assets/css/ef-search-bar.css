@@ -53,7 +53,7 @@
    ============================================ */
 .ef-search-bar {
   width: 100%;
-  max-width: 640px;
+  max-width: 680px;
   margin: 0 auto;
 }
 
@@ -61,6 +61,7 @@
   display: flex;
   align-items: center;
   gap: 0;
+  position: relative; /* Added for absolute positioning of button on mobile */
   
   /* Dimensions */
   height: var(--search-bar-height);
@@ -439,17 +440,24 @@
   .ef-search-bar__segment--input {
     flex: 1;
     padding: 0 4px 0 8px;
+    /* Add right padding to account for button width (40px) + spacing (8px) */
+    padding-right: 48px;
   }
   
   .ef-search-bar__input {
     font-size: 16px;
     padding-left: 36px;
-    padding-right: 4px;
+    /* Ensure text doesn't go under the button */
+    padding-right: 8px;
   }
   
   .ef-search-bar__button {
-    margin-left: 2px;
-    align-self: center;
+    /* Position button absolutely within form to prevent overlap */
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-54%); /* Further adjusted for visual centering */
+    margin: 0;
   }
   
   .ef-search-bar__button svg {
