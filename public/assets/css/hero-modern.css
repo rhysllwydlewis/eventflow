@@ -545,6 +545,12 @@
   }
 }
 
+/* Spinning animation for video loading indicator */
+@keyframes pexels-spin {
+  0% { transform: translate(-50%, -50%) rotate(0deg); }
+  100% { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
 
 
 /* Mobile responsive adjustments */
@@ -658,6 +664,11 @@
   object-fit: cover;
   display: block;
   transition: opacity 0.5s ease-in-out;
+  opacity: 0;
+}
+
+.hero-video-card video.video-loaded {
+  opacity: 1;
 }
 
 /* Video loading state */
@@ -736,6 +747,25 @@
   /* Ensure focus state is visible for keyboard navigation */
   outline: 2px solid #10b981;
   outline-offset: 2px;
+}
+
+/* Collage card video elements */
+.hero-collage-card video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: opacity 0.5s ease-in-out, transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 0;
+}
+
+.hero-collage-card video.video-loaded {
+  opacity: 1;
+}
+
+.hero-collage-card:hover video,
+.hero-collage-card:focus video {
+  transform: scale(1.1);
 }
 
 .hero-collage-card img {

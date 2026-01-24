@@ -6,6 +6,17 @@
 // Set page identifier
 window.__EF_PAGE__ = 'home';
 
+// Video performance metrics tracker
+window.__videoMetrics__ = {
+  heroVideoAttempts: 0,
+  heroVideoSuccesses: 0,
+  heroVideoFailures: 0,
+  collageVideoAttempts: 0,
+  collageVideoSuccesses: 0,
+  collageVideoFailures: 0,
+  lastError: null,
+};
+
 /**
  * Check if debug logging is enabled
  * Checks:
@@ -1326,6 +1337,8 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
             if (videoCard) {
               videoCard.classList.remove('loading-video');
             }
+            // Add loaded class for smooth fade-in
+            videoElement.classList.add('video-loaded');
           },
           { once: true }
         );
@@ -1344,6 +1357,11 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
       // Fetch Pexels video
       const eventQueries = ['wedding', 'party', 'corporate event', 'celebration', 'event venue'];
       const randomQuery = eventQueries[Math.floor(Math.random() * eventQueries.length)];
+
+      // Track attempt
+      if (window.__videoMetrics__) {
+        window.__videoMetrics__.heroVideoAttempts++;
+      }
 
       if (isDebugEnabled()) {
         console.log('[Hero Video] Fetching Pexels video with query:', randomQuery);
@@ -1412,6 +1430,14 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
               videoCard.classList.remove('loading-video');
             }
 
+            // Add loaded class for smooth fade-in
+            videoElement.classList.add('video-loaded');
+
+            // Track success
+            if (window.__videoMetrics__) {
+              window.__videoMetrics__.heroVideoSuccesses++;
+            }
+
             if (isDebugEnabled()) {
               console.log('[Hero Video] Video metadata loaded, attempting to play');
             }
@@ -1435,6 +1461,12 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
             // Remove loading state on error
             if (videoCard) {
               videoCard.classList.remove('loading-video');
+            }
+
+            // Track failure
+            if (window.__videoMetrics__) {
+              window.__videoMetrics__.heroVideoFailures++;
+              window.__videoMetrics__.lastError = 'Video failed to load';
             }
 
             if (isDebugEnabled()) {
@@ -1714,8 +1746,17 @@ async function initCollageWidget(widgetConfig) {
                   video.videographer_url || 'https://www.pexels.com'
                 ),
                 duration: video.duration,
+                // Add video metadata for better quality selection
+                width: video.width,
+                height: video.height,
               }));
             allMedia.push(...videos);
+
+            if (isDebugEnabled()) {
+              console.log(
+                `[Collage Widget] Added ${videos.length} videos for ${category} (filtered from ${data.videos.length})`
+              );
+            }
           }
 
           if (allMedia.length > 0) {
@@ -1968,6 +2009,11 @@ async function loadMediaIntoFrame(
     const isVideo = media.type === 'video';
 
     if (isVideo) {
+      // Track attempt
+      if (window.__videoMetrics__) {
+        window.__videoMetrics__.collageVideoAttempts++;
+      }
+
       // Clean up existing video if present
       const existingVideo = frame.querySelector('video');
       if (existingVideo) {
@@ -2000,7 +2046,13 @@ async function loadMediaIntoFrame(
       const handleLoadedData = () => {
         mediaElement.replaceWith(video);
         video.style.opacity = '1';
+        video.classList.add('video-loaded');
         frame.classList.remove('loading-pexels');
+
+        // Track success
+        if (window.__videoMetrics__) {
+          window.__videoMetrics__.collageVideoSuccesses++;
+        }
 
         // Only add credit if from Pexels (has videographer field for videos)
         if (media.videographer) {
@@ -2026,6 +2078,12 @@ async function loadMediaIntoFrame(
       };
 
       const handleError = () => {
+        // Track failure
+        if (window.__videoMetrics__) {
+          window.__videoMetrics__.collageVideoFailures++;
+          window.__videoMetrics__.lastError = `Collage video failed for ${category}`;
+        }
+
         if (isDebugEnabled()) {
           console.warn(`[Collage Widget] Failed to load video: ${media.url}`);
         }
@@ -2225,9 +2283,11 @@ function cycleWidgetMedia(
             if (!prefersReducedMotion) {
               setTimeout(() => {
                 video.style.opacity = '1';
+                video.classList.add('video-loaded');
               }, 50);
             } else {
               video.style.opacity = '1';
+              video.classList.add('video-loaded');
             }
 
             // Only add credit if from Pexels (has photographer or videographer field)
