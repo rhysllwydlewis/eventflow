@@ -1632,7 +1632,8 @@ async function initCollageWidget(widgetConfig) {
             const photos = data.photos
               .filter(photo => photo && photo.src && photo.photographer)
               .map(photo => ({
-                url: photo.src.large || photo.src.original,
+                url: getOptimalPexelsImageSize(photo.src) || photo.src.large || photo.src.original,
+                srcset: generateSrcset(photo.src),
                 type: 'photo',
                 photographer: String(photo.photographer),
                 photographerUrl: validatePexelsUrl(photo.photographer_url),
