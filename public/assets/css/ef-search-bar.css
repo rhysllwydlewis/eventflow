@@ -461,18 +461,21 @@
   }
 }
 
-/* TABLET (640px - 767px) - show full experience */
-@media (min-width: 640px) and (max-width: 767px) {
-  .ef-search-bar__segment--category { display: flex; min-width: 90px; }
+/* TABLET & DESKTOP (640px+) - show full experience */
+@media (min-width: 640px) {
+  .ef-search-bar__segment--category { display: flex; }
   .ef-search-bar__divider { display: block; }
   .ef-quick-tags { display: flex; }
 }
 
-/* DESKTOP (768px+) - show full experience */
+/* TABLET (640px - 767px) - narrower dropdown */
+@media (min-width: 640px) and (max-width: 767px) {
+  .ef-search-bar__segment--category { min-width: 90px; }
+}
+
+/* DESKTOP (768px+) - wider dropdown */
 @media (min-width: 768px) {
-  .ef-search-bar__segment--category { display: flex; min-width: 110px; }
-  .ef-search-bar__divider { display: block; }
-  .ef-quick-tags { display: flex; }
+  .ef-search-bar__segment--category { min-width: 110px; }
 }
 
 /* Large Desktop (1024px+) */
