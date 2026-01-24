@@ -11,10 +11,14 @@
  */
 export async function trackEvent(event, properties = {}) {
   try {
+    // Get CSRF token from cookie
+    const token = getCsrfToken();
+    
     await fetch('/api/analytics/event', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        ...(token && { 'X-CSRF-Token': token }),
       },
       body: JSON.stringify({
         event,
@@ -26,6 +30,20 @@ export async function trackEvent(event, properties = {}) {
     // Fail silently - analytics should never block UX
     console.debug('Analytics tracking failed:', error);
   }
+}
+
+/**
+ * Get CSRF token from cookie
+ */
+function getCsrfToken() {
+  const cookies = document.cookie.split(';');
+  for (let cookie of cookies) {
+    const [name, value] = cookie.trim().split('=');
+    if (name === 'csrf') {
+      return value;
+    }
+  }
+  return null;
 }
 
 /**

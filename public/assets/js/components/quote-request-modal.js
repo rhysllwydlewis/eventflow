@@ -14,6 +14,20 @@ class QuoteRequestModal {
   }
 
   /**
+   * Get CSRF token from cookie
+   */
+  getCsrfToken() {
+    const cookies = document.cookie.split(';');
+    for (let cookie of cookies) {
+      const [name, value] = cookie.trim().split('=');
+      if (name === 'csrf') {
+        return value;
+      }
+    }
+    return null;
+  }
+
+  /**
    * Initialize the modal
    */
   init() {
@@ -213,10 +227,12 @@ class QuoteRequestModal {
         })),
       };
 
+      const token = this.getCsrfToken();
       const response = await fetch('/api/quote-requests', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(token && { 'X-CSRF-Token': token }),
         },
         credentials: 'include',
         body: JSON.stringify(requestData),

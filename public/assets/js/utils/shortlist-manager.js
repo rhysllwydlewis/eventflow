@@ -13,6 +13,28 @@ class ShortlistManager {
   }
 
   /**
+   * Get CSRF token from cookie
+   */
+  getCsrfToken() {
+    const cookies = document.cookie.split(';');
+    for (let cookie of cookies) {
+      const [name, value] = cookie.trim().split('=');
+      if (name === 'csrf') {
+        return value;
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Add CSRF token to fetch options
+   */
+  addCsrfHeaders(headers = {}) {
+    const token = this.getCsrfToken();
+    return token ? { ...headers, 'X-CSRF-Token': token } : headers;
+  }
+
+  /**
    * Initialize shortlist manager
    */
   async init() {
@@ -124,9 +146,9 @@ class ShortlistManager {
       try {
         const response = await fetch('/api/shortlist', {
           method: 'POST',
-          headers: {
+          headers: this.addCsrfHeaders({
             'Content-Type': 'application/json',
-          },
+          }),
           credentials: 'include',
           body: JSON.stringify(item),
         });
@@ -161,6 +183,7 @@ class ShortlistManager {
       try {
         await fetch(`/api/shortlist/${type}/${id}`, {
           method: 'DELETE',
+          headers: this.addCsrfHeaders({}),
           credentials: 'include',
         });
       } catch (error) {
@@ -183,6 +206,7 @@ class ShortlistManager {
       try {
         await fetch('/api/shortlist', {
           method: 'DELETE',
+          headers: this.addCsrfHeaders({}),
           credentials: 'include',
         });
       } catch (error) {

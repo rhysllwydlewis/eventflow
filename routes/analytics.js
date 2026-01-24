@@ -9,6 +9,7 @@ const express = require('express');
 const router = express.Router();
 const dbUnified = require('../db-unified');
 const { getUserFromCookie } = require('../middleware/auth');
+const { csrfProtection } = require('../middleware/csrf');
 const validator = require('validator');
 
 // Whitelist of allowed event types
@@ -26,7 +27,7 @@ const ALLOWED_EVENTS = [
  * POST /api/analytics/event
  * Track a user event
  */
-router.post('/event', async (req, res) => {
+router.post('/event', csrfProtection, async (req, res) => {
   try {
     const { event, properties, timestamp } = req.body;
 

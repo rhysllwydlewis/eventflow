@@ -10,13 +10,14 @@ const express = require('express');
 const router = express.Router();
 const dbUnified = require('../db-unified');
 const { getUserFromCookie } = require('../middleware/auth');
+const { csrfProtection } = require('../middleware/csrf');
 const validator = require('validator');
 
 /**
  * POST /api/quote-requests
  * Create a new quote request
  */
-router.post('/', async (req, res) => {
+router.post('/', csrfProtection, async (req, res) => {
   try {
     const {
       name,

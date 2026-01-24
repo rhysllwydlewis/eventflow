@@ -50,10 +50,14 @@ class EFSearchBar {
 
   async trackSearch(query, category) {
     try {
+      // Get CSRF token from cookie
+      const token = this.getCsrfToken();
+      
       await fetch('/api/analytics/event', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(token && { 'X-CSRF-Token': token }),
         },
         body: JSON.stringify({
           event: 'search_performed',
@@ -69,6 +73,17 @@ class EFSearchBar {
       // Fail silently - analytics should never block UX
       console.debug('Analytics tracking error:', error);
     }
+  }
+
+  getCsrfToken() {
+    const cookies = document.cookie.split(';');
+    for (let cookie of cookies) {
+      const [name, value] = cookie.trim().split('=');
+      if (name === 'csrf') {
+        return value;
+      }
+    }
+    return null;
   }
 
   handleTagClick(e) {
