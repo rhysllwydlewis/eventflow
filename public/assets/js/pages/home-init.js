@@ -1825,10 +1825,21 @@ async function initCollageWidget(widgetConfig) {
       for (const category of categories) {
         try {
           // Build query params with media types
+          const requestPhotos = mediaTypes?.photos !== false;
+          const requestVideos = mediaTypes?.videos !== false;
+
+          if (isDebugEnabled()) {
+            console.log(`[Collage Widget] Media request for ${category}:`, {
+              requestPhotos,
+              requestVideos,
+              mediaTypesConfig: mediaTypes,
+            });
+          }
+
           const params = new URLSearchParams({
             category: category,
-            photos: String(mediaTypes?.photos !== false),
-            videos: String(mediaTypes?.videos === true),
+            photos: String(requestPhotos),
+            videos: String(requestVideos),
           });
 
           const response = await fetch(`/api/admin/public/pexels-collage?${params.toString()}`);
@@ -1869,7 +1880,13 @@ async function initCollageWidget(widgetConfig) {
 
           if (data.videos && Array.isArray(data.videos) && data.videos.length > 0) {
             const videos = data.videos
-              .filter(video => video && video.src && video.src.large)
+              .filter(video => {
+                const isValid = video && video.src && (video.src.large || video.src.original);
+                if (!isValid && isDebugEnabled()) {
+                  console.warn(`[Collage Widget] Filtered out invalid video:`, video?.id);
+                }
+                return isValid;
+              })
               .map(video => ({
                 url: video.src.large || video.src.original,
                 type: 'video',
@@ -2169,6 +2186,13 @@ async function loadMediaIntoFrame(
         `${category.charAt(0).toUpperCase() + category.slice(1)} video`
       );
 
+      if (isDebugEnabled()) {
+        console.log(`[Collage Widget] Creating video element for ${category}:`, {
+          url: media.url,
+          videographer: media.videographer,
+        });
+      }
+
       // Accessibility: respect reduced motion
       if (prefersReducedMotion) {
         video.autoplay = false;
@@ -2185,6 +2209,13 @@ async function loadMediaIntoFrame(
         // Track success
         if (window.__videoMetrics__) {
           window.__videoMetrics__.collageVideoSuccesses++;
+        }
+
+        if (isDebugEnabled()) {
+          console.log(`[Collage Widget] Video loaded successfully for ${category}:`, {
+            url: media.url,
+            duration: video.duration,
+          });
         }
 
         // Only add credit if from Pexels (has videographer field for videos)

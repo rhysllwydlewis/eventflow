@@ -115,9 +115,26 @@ describe('Pexels Collage Fallback Integration', () => {
       await dbUnified.write('settings', settings);
     });
   });
-});
 
   describe('Video Support', () => {
+    it('should return videos by default when videos parameter is not specified', async () => {
+      const response = await request(app).get('/api/public/pexels-collage?category=venues');
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      expect(response.body.category).toBe('venues');
+      
+      // Should have both photos and videos arrays by default
+      expect(response.body.photos).toBeDefined();
+      expect(Array.isArray(response.body.photos)).toBe(true);
+      expect(response.body.videos).toBeDefined();
+      expect(Array.isArray(response.body.videos)).toBe(true);
+      
+      // Both should have items (fallback data should include videos)
+      expect(response.body.photos.length).toBeGreaterThan(0);
+      expect(response.body.videos.length).toBeGreaterThan(0);
+    });
+
     it('should return videos when videos parameter is true', async () => {
       const response = await request(app).get('/api/public/pexels-collage?category=venues&photos=true&videos=true');
 
@@ -179,3 +196,4 @@ describe('Pexels Collage Fallback Integration', () => {
       }
     });
   });
+});
