@@ -918,6 +918,8 @@ function displayPexelsImage(imgElement, frame, imageData, category) {
   }
   
   // Add decoding="async" for better performance
+  // Note: Not using loading="lazy" because collage is above-the-fold (hero section)
+  // and needs to load immediately for good LCP (Largest Contentful Paint)
   imgElement.decoding = 'async';
   
   imgElement.alt = `${category.charAt(0).toUpperCase() + category.slice(1)} - Photo by ${imageData.photographer}`;
@@ -2002,6 +2004,7 @@ async function loadMediaIntoFrame(
         }
         
         // Add decoding="async" for better performance
+        // Note: Not using loading="lazy" - collage is above-the-fold (hero section)
         mediaElement.decoding = 'async';
         
         mediaElement.alt = `${category.charAt(0).toUpperCase() + category.slice(1)} - Photo`;
@@ -2041,6 +2044,7 @@ async function loadMediaIntoFrame(
         }
         
         // Add decoding="async" for better performance
+        // Note: Not using loading="lazy" - collage is above-the-fold (hero section)
         mediaElement.decoding = 'async';
         
         mediaElement.alt = `${category.charAt(0).toUpperCase() + category.slice(1)} - Photo`;
