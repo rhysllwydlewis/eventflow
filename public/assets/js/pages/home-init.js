@@ -2010,6 +2010,18 @@ async function loadMediaIntoFrame(
           removeCreatorCredit(frame);
         }
 
+        // Explicitly play the video (autoplay may not work after DOM manipulation)
+        if (!prefersReducedMotion) {
+          video.play().catch(err => {
+            if (isDebugEnabled()) {
+              console.log(
+                `[Collage Widget] Video autoplay prevented for ${category}:`,
+                err.message
+              );
+            }
+          });
+        }
+
         resolve();
       };
 
@@ -2224,6 +2236,18 @@ function cycleWidgetMedia(
             } else {
               // Remove any existing credits when using uploaded media
               removeCreatorCredit(frame);
+            }
+
+            // Explicitly play the video (autoplay may not work after DOM manipulation)
+            if (!prefersReducedMotion) {
+              video.play().catch(err => {
+                if (isDebugEnabled()) {
+                  console.log(
+                    `[Collage Widget] Video autoplay prevented for ${category}:`,
+                    err.message
+                  );
+                }
+              });
             }
           };
 
