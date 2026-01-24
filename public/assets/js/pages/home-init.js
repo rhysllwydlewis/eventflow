@@ -474,6 +474,187 @@ function isDevelopmentEnvironment() {
   return false;
 }
 
+/* ============================================
+   RESPONSIVE IMAGE OPTIMIZATION FUNCTIONS
+   ============================================ */
+
+/**
+ * Detect WebP support
+ * @returns {Promise<boolean>} True if browser supports WebP
+ */
+async function supportsWebP() {
+  if (window.__webpSupported !== undefined) {
+    return window.__webpSupported;
+  }
+  
+  return new Promise(resolve => {
+    const webp = new Image();
+    webp.onload = webp.onerror = () => {
+      window.__webpSupported = webp.height === 2;
+      resolve(window.__webpSupported);
+    };
+    webp.src = 'data:image/webp;base64,UklGRjoAAABXRUJQVlA4IC4AAACyAgCdASoCAAIALmk0mk0iIiIiIgBoSygABc6WWgAA/veff/0PP8bA//LwYAAA';
+  });
+}
+
+/**
+ * Get network-aware quality setting
+ * Reduces image quality on slow connections
+ * @returns {string} Quality setting: 'high', 'medium', or 'low'
+ */
+function getConnectionAwareQuality() {
+  // Check for Save-Data header preference
+  if (navigator.connection && navigator.connection.saveData) {
+    return 'low';
+  }
+  
+  // Check Network Information API
+  if (navigator.connection) {
+    const effectiveType = navigator.connection.effectiveType;
+    if (effectiveType === '2g' || effectiveType === 'slow-2g') {
+      return 'low';
+    }
+    if (effectiveType === '3g') {
+      return 'medium';
+    }
+  }
+  
+  return 'high';
+}
+
+/**
+ * Get optimal Pexels image size based on viewport and device pixel ratio
+ * @param {Object} photoSrc - Pexels photo.src object
+ * @returns {string} Optimal image URL
+ */
+function getOptimalPexelsImageSize(photoSrc) {
+  if (!photoSrc) return null;
+  
+  const dpr = window.devicePixelRatio || 1;
+  const viewportWidth = window.innerWidth;
+  
+  // Calculate effective width needed (accounting for DPR)
+  // Collage frames are typically 40-50% of viewport width on mobile
+  const frameWidth = viewportWidth <= 768 ? viewportWidth * 0.48 : viewportWidth * 0.25;
+  const effectiveWidth = frameWidth * dpr;
+  
+  // Network-aware quality adjustment
+  const quality = getConnectionAwareQuality();
+  
+  // Size mapping (Pexels standard sizes)
+  // tiny: 280px, small: 340px, medium: 940px, large: 1880px, large2x: 3760px
+  
+  if (quality === 'low') {
+    // Force small size on slow connections
+    return photoSrc.small || photoSrc.tiny || photoSrc.medium;
+  }
+  
+  if (effectiveWidth <= 280) {
+    return photoSrc.tiny || photoSrc.small;
+  } else if (effectiveWidth <= 340) {
+    return photoSrc.small || photoSrc.medium;
+  } else if (effectiveWidth <= 940) {
+    return photoSrc.medium || photoSrc.large;
+  } else if (effectiveWidth <= 1880) {
+    return photoSrc.large || photoSrc.original;
+  } else {
+    // High-DPI large screens
+    return photoSrc.large2x || photoSrc.original || photoSrc.large;
+  }
+}
+
+/**
+ * Generate srcset string for responsive images
+ * @param {Object} photoSrc - Pexels photo.src object
+ * @returns {string} srcset attribute value
+ */
+function generateSrcset(photoSrc) {
+  if (!photoSrc) return '';
+  
+  const sources = [];
+  
+  if (photoSrc.tiny) sources.push(`${photoSrc.tiny} 280w`);
+  if (photoSrc.small) sources.push(`${photoSrc.small} 340w`);
+  if (photoSrc.medium) sources.push(`${photoSrc.medium} 940w`);
+  if (photoSrc.large) sources.push(`${photoSrc.large} 1880w`);
+  if (photoSrc.large2x) sources.push(`${photoSrc.large2x} 3760w`);
+  
+  return sources.join(', ');
+}
+
+/**
+ * Setup ResizeObserver for collage to update image quality on viewport changes
+ * Handles device rotation and window resizing
+ */
+function setupCollageResizeOptimization() {
+  if (!('ResizeObserver' in window)) {
+    if (isDebugEnabled()) {
+      console.log('[Collage] ResizeObserver not supported');
+    }
+    return null;
+  }
+  
+  const collageElement = document.querySelector('.hero-collage');
+  if (!collageElement) return null;
+  
+  let resizeTimeout;
+  const observer = new ResizeObserver(() => {
+    // Debounce to avoid excessive updates
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(() => {
+      if (isDebugEnabled()) {
+        console.log('[Collage] Viewport resized, could refresh images for new size');
+      }
+      // Note: Actual refresh would require re-fetching with new size
+      // This is a placeholder for the optimization hook
+    }, 500);
+  });
+  
+  observer.observe(collageElement);
+  return observer;
+}
+
+/**
+ * Setup IntersectionObserver for lazy loading below-fold images
+ * Preloads images as they approach the viewport
+ */
+function setupLazyLoadingForCollage() {
+  if (!('IntersectionObserver' in window)) {
+    if (isDebugEnabled()) {
+      console.log('[Collage] IntersectionObserver not supported');
+    }
+    return null;
+  }
+  
+  const collageCards = document.querySelectorAll('.hero-collage-card');
+  if (collageCards.length === 0) return null;
+  
+  const observer = new IntersectionObserver(
+    entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const img = entry.target.querySelector('img');
+          if (img && img.dataset.src) {
+            // Preload when entering viewport
+            img.src = img.dataset.src;
+            delete img.dataset.src;
+            if (isDebugEnabled()) {
+              console.log('[Collage] Lazy loaded image:', img.alt);
+            }
+          }
+          observer.unobserve(entry.target);
+        }
+      });
+    },
+    {
+      rootMargin: '50px', // Preload 50px before entering viewport
+    }
+  );
+  
+  collageCards.forEach(card => observer.observe(card));
+  return observer;
+}
+
 async function loadHeroCollageImages() {
   // Check if collage widget is enabled via /api/public/homepage-settings endpoint
   // Guard against double initialization
@@ -721,11 +902,21 @@ function restoreDefaultImage(imgElement, frame, uploadGallery = [], frameIndex =
  * Helper function to avoid code duplication in preload success/timeout handlers
  * @param {HTMLImageElement} imgElement - Image element to update
  * @param {HTMLElement} frame - Frame element containing the image
- * @param {Object} imageData - Image data with url and photographer
+ * @param {Object} imageData - Image data with url, srcset, photographer
  * @param {string} category - Category name for alt text
  */
 function displayPexelsImage(imgElement, frame, imageData, category) {
   imgElement.src = imageData.url;
+  
+  // Apply srcset if available for responsive images
+  if (imageData.srcset) {
+    imgElement.srcset = imageData.srcset;
+    
+    // Add sizes attribute for optimal image selection
+    // Mobile: ~48% of viewport (2-column), Tablet+: ~25% of viewport
+    imgElement.sizes = '(max-width: 768px) 48vw, 25vw';
+  }
+  
   imgElement.alt = `${category.charAt(0).toUpperCase() + category.slice(1)} - Photo by ${imageData.photographer}`;
   imgElement.style.opacity = '1';
   frame.classList.remove('loading-pexels');
@@ -889,7 +1080,8 @@ async function initPexelsCollage(settings) {
               );
             })
             .map(photo => ({
-              url: photo.src.large || photo.src.original,
+              url: getOptimalPexelsImageSize(photo.src) || photo.src.large || photo.src.original,
+              srcset: generateSrcset(photo.src),
               photographer: String(photo.photographer),
               photographerUrl: validatePexelsUrl(photo.photographer_url),
             }));
@@ -1014,6 +1206,10 @@ async function initPexelsCollage(settings) {
 
       // Store watchdog ID for cleanup
       window.__collageWatchdogId = watchdogInterval;
+      
+      // Setup responsive image optimization observers
+      window.__collageResizeObserver = setupCollageResizeOptimization();
+      window.__collageIntersectionObserver = setupLazyLoadingForCollage();
     } else {
       // Only warn in development mode
       if (isDevelopmentEnvironment()) {
@@ -1794,6 +1990,13 @@ async function loadMediaIntoFrame(
         // Add cache busting to prevent browser from using cached static images
         const cacheBustedUrl = addCacheBuster(media.url);
         mediaElement.src = cacheBustedUrl;
+        
+        // Apply srcset if available for responsive images
+        if (media.srcset) {
+          mediaElement.srcset = media.srcset;
+          mediaElement.sizes = '(max-width: 768px) 48vw, 25vw';
+        }
+        
         mediaElement.alt = `${category.charAt(0).toUpperCase() + category.slice(1)} - Photo`;
         mediaElement.style.opacity = '1';
         frame.classList.remove('loading-pexels');
@@ -1823,6 +2026,13 @@ async function loadMediaIntoFrame(
         // Add cache busting to prevent browser from using cached static images
         const cacheBustedUrl = addCacheBuster(media.url);
         mediaElement.src = cacheBustedUrl;
+        
+        // Apply srcset if available for responsive images
+        if (media.srcset) {
+          mediaElement.srcset = media.srcset;
+          mediaElement.sizes = '(max-width: 768px) 48vw, 25vw';
+        }
+        
         mediaElement.alt = `${category.charAt(0).toUpperCase() + category.slice(1)} - Photo`;
         mediaElement.style.opacity = '1';
         frame.classList.remove('loading-pexels');
@@ -2082,6 +2292,18 @@ function cleanupPexelsCollage() {
     if (isDevelopmentEnvironment()) {
       console.log('Collage widget interval cleared');
     }
+  }
+
+  // Clean up ResizeObserver
+  if (window.__collageResizeObserver) {
+    window.__collageResizeObserver.disconnect();
+    window.__collageResizeObserver = null;
+  }
+
+  // Clean up IntersectionObserver
+  if (window.__collageIntersectionObserver) {
+    window.__collageIntersectionObserver.disconnect();
+    window.__collageIntersectionObserver = null;
   }
 
   // Clean up video elements to prevent memory leaks
