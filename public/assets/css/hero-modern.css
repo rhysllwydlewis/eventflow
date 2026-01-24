@@ -856,6 +856,41 @@
   }
 }
 
+/* ============================================
+   MOBILE COLLAGE - HIGH-DPI OPTIMIZATION
+   ============================================ */
+
+@media (max-width: 768px) and (-webkit-min-device-pixel-ratio: 2),
+       (max-width: 768px) and (min-resolution: 192dpi) {
+  /* High-DPI mobile devices get optimized rendering */
+  .hero-collage-card img,
+  .hero-video-card video {
+    image-rendering: -webkit-optimize-contrast;
+  }
+}
+
+/* ============================================
+   MOBILE COLLAGE - REDUCED DATA MODE
+   ============================================ */
+
+@media (max-width: 768px) and (prefers-reduced-data: reduce) {
+  /* Reduce visual effects on slow connections */
+  .hero-collage-card {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  }
+  
+  .hero-video-card {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Disable backdrop filters to reduce rendering cost */
+  .hero-collage-label {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: rgba(255, 255, 255, 0.95);
+  }
+}
+
 /* Reduced motion support - Comprehensive */
 @media (prefers-reduced-motion: reduce) {
   /* Disable all animations */

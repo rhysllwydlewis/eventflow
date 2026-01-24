@@ -510,11 +510,16 @@
     height: auto;
   }
   
-  /* Gallery improvements */
+  /* Gallery improvements - 2-column mobile grid for visual appeal */
   .collage {
-    grid-template-columns: 1fr;
-    grid-auto-rows: 200px;
+    grid-template-columns: repeat(2, 1fr);
+    grid-auto-rows: auto;
     gap: 12px;
+  }
+  
+  /* Use aspect-ratio instead of fixed heights to prevent CLS */
+  .collage .frame {
+    aspect-ratio: 4/3;
   }
   
   /* Video embeds */
@@ -533,6 +538,57 @@
   .map-shell iframe {
     width: 100%;
     height: 100%;
+  }
+}
+
+/* ============================================
+   EXTRA SMALL SCREENS - COLLAGE OPTIMIZATION
+   ============================================ */
+
+@media (max-width: 375px) {
+  .collage {
+    gap: 8px;
+  }
+  
+  .collage .frame {
+    aspect-ratio: 1/1;
+  }
+  
+  /* Smaller collage labels on tiny screens */
+  .hero-collage-label {
+    font-size: 9px;
+    padding: 3px 6px;
+  }
+}
+
+/* ============================================
+   HIGH-DPI SCREENS - IMAGE OPTIMIZATION
+   ============================================ */
+
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  /* Enable image-rendering optimization for high-DPI */
+  .collage .frame img,
+  .hero-collage-card img {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+  }
+}
+
+/* ============================================
+   REDUCED DATA MODE - BANDWIDTH SAVING
+   ============================================ */
+
+@media (prefers-reduced-data: reduce) {
+  /* Disable background images to save bandwidth */
+  .hero-bg-gradient,
+  .hero-blob {
+    display: none;
+  }
+  
+  /* Use lighter shadows to reduce rendering cost */
+  .collage .frame,
+  .hero-collage-card {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   }
 }
 
