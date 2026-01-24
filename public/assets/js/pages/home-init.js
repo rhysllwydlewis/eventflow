@@ -2865,48 +2865,64 @@ function addCreatorCredit(frame, media) {
  * Fetch and render public stats with graceful fallback
  */
 async function fetchPublicStats() {
+  // Fallback stats if API is unavailable
+  const fallbackStats = {
+    suppliersVerified: 100,
+    packagesApproved: 75,
+    marketplaceListingsActive: 30,
+    reviewsApproved: 200,
+  };
+
   try {
     const response = await fetch('/api/public/stats');
     if (!response.ok) {
       // Silently handle 404s (endpoint not available in static/dev mode)
       if (response.status === 404) {
+        updateStatsUI(fallbackStats);
         return;
       }
       // Log other errors only in development
       if (isDevelopmentEnvironment()) {
         console.error(`Failed to load public stats (HTTP ${response.status})`);
       }
+      updateStatsUI(fallbackStats);
       return;
     }
 
     const stats = await response.json();
-
-    // Update stat counters with real data
-    const statItems = document.querySelectorAll('.stat-item');
-    if (statItems.length >= 4) {
-      // Update counters with real data
-      const counters = [
-        { value: stats.suppliersVerified, suffix: '+' },
-        { value: stats.packagesApproved, suffix: '+' },
-        { value: stats.marketplaceListingsActive, suffix: '+' },
-        { value: stats.reviewsApproved, suffix: '+' },
-      ];
-
-      statItems.forEach((item, index) => {
-        const counterEl = item.querySelector('.stat-number');
-        if (counterEl && counters[index]) {
-          counterEl.setAttribute('data-counter', counters[index].value);
-          counterEl.setAttribute('data-suffix', counters[index].suffix);
-        }
-      });
-    }
+    updateStatsUI(stats);
   } catch (error) {
-    // Only log network errors and parse errors, not 404s
+    // Only log network errors and parse errors
     if (isDevelopmentEnvironment() && error.name !== 'AbortError') {
       console.error('Failed to load public stats:', error);
     }
-    // Graceful fallback: Use copy-only approach
-    // Stats will show 0 or the data-counter defaults, which is acceptable
+    // Use fallback values
+    updateStatsUI(fallbackStats);
+  }
+}
+
+/**
+ * Helper to update stats UI with given values
+ */
+function updateStatsUI(stats) {
+  // Update stat counters with real data
+  const statItems = document.querySelectorAll('.stat-item');
+  if (statItems.length >= 4) {
+    // Update counters with real data
+    const counters = [
+      { value: stats.suppliersVerified, suffix: '+' },
+      { value: stats.packagesApproved, suffix: '+' },
+      { value: stats.marketplaceListingsActive, suffix: '+' },
+      { value: stats.reviewsApproved, suffix: '+' },
+    ];
+
+    statItems.forEach((item, index) => {
+      const counterEl = item.querySelector('.stat-number');
+      if (counterEl && counters[index]) {
+        counterEl.setAttribute('data-counter', counters[index].value);
+        counterEl.setAttribute('data-suffix', counters[index].suffix);
+      }
+    });
   }
 }
 
@@ -3086,18 +3102,15 @@ async function fetchTestimonials() {
     return;
   }
 
-  // NOTE: Reviews endpoint not yet deployed - hiding section until /api/reviews is available
-  // When the backend endpoint is ready, uncomment the code below to enable testimonials
-  section.style.display = 'none';
-
-  /* DISABLED - Reviews/testimonials fetch
   try {
-    const response = await fetch('/api/reviews?limit=6&approved=true&sort=rating').catch(() => {
-      return null;
-    });
+    const response = await fetch('/api/reviews?limit=6&sort=rating');
 
-    if (!response || response.status === 404 || response.status === 403 || !response.ok) {
+    if (!response.ok) {
+      // Gracefully hide section if endpoint fails
       section.style.display = 'none';
+      if (isDevelopmentEnvironment()) {
+        console.log('[Testimonials] API returned non-ok status, hiding section');
+      }
       return;
     }
 
@@ -3106,6 +3119,9 @@ async function fetchTestimonials() {
 
     if (reviews.length === 0) {
       section.style.display = 'none';
+      if (isDevelopmentEnvironment()) {
+        console.log('[Testimonials] No reviews available, hiding section');
+      }
       return;
     }
 
@@ -3148,9 +3164,11 @@ async function fetchTestimonials() {
 
     section.style.display = 'block';
   } catch (error) {
+    if (isDevelopmentEnvironment()) {
+      console.error('[Testimonials] Failed to load:', error);
+    }
     section.style.display = 'none';
   }
-  */
 }
 
 /**

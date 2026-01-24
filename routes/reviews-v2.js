@@ -811,4 +811,65 @@ router.get('/verified-count/:supplierId', async (req, res) => {
   }
 });
 
+// ============================================================================
+// Public Reviews Endpoint (for homepage testimonials)
+// ============================================================================
+
+/**
+ * Get public approved reviews (no auth required)
+ * GET /api/reviews
+ * Query: limit (default 10, max 50), sort (rating or recent, default recent)
+ * 
+ * This endpoint is used by the homepage to display testimonials
+ * Only returns approved reviews with safe fields
+ */
+router.get('/', async (req, res) => {
+  try {
+    const limit = Math.min(parseInt(req.query.limit, 10) || 10, 50);
+    const sort = req.query.sort === 'rating' ? 'rating' : 'recent';
+
+    const dbUnified = require('../db-unified');
+    const allReviews = (await dbUnified.read('reviews')) || [];
+
+    // Filter to only approved reviews
+    let approvedReviews = allReviews.filter(r => r.approved === true);
+
+    // Sort reviews
+    if (sort === 'rating') {
+      approvedReviews.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+    } else {
+      // Sort by createdAt (recent first)
+      approvedReviews.sort((a, b) => {
+        const dateA = new Date(a.createdAt || 0);
+        const dateB = new Date(b.createdAt || 0);
+        return dateB - dateA;
+      });
+    }
+
+    // Limit results
+    const limitedReviews = approvedReviews.slice(0, limit);
+
+    // Project only safe fields
+    const safeReviews = limitedReviews.map(review => ({
+      customerName: review.customerName || 'Anonymous',
+      supplierName: review.supplierName || '',
+      rating: review.rating || 5,
+      comment: review.text || review.comment || '',
+      createdAt: review.createdAt || new Date().toISOString(),
+    }));
+
+    res.json({
+      reviews: safeReviews,
+      total: approvedReviews.length,
+    });
+  } catch (error) {
+    console.error('Get public reviews error:', error);
+    res.status(500).json({
+      error: 'Failed to get reviews',
+      reviews: [],
+      total: 0,
+    });
+  }
+});
+
 module.exports = router;

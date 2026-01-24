@@ -3,6 +3,25 @@
  * Dynamically updates page metadata for better SEO
  */
 
+/**
+ * Check if debug logging is enabled
+ * @returns {boolean} True if debug logging should be enabled
+ */
+function isDebugEnabled() {
+  // Check window.DEBUG first
+  if (typeof window !== 'undefined' && window.DEBUG) {
+    return true;
+  }
+  // Check for development environment
+  if (
+    typeof window !== 'undefined' &&
+    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+  ) {
+    return true;
+  }
+  return false;
+}
+
 class SEOHelper {
   constructor() {
     this.defaultMeta = {
@@ -75,13 +94,30 @@ class SEOHelper {
 
   /**
    * Set canonical URL
+   * Respects existing production canonical tags to prevent overriding in test/staging
    * @param {string} url - Canonical URL
    */
   setCanonical(url) {
     const fullUrl = this.getFullUrl(url);
 
-    // Update or create canonical link
+    // Check if canonical already exists
     let canonical = document.querySelector('link[rel="canonical"]');
+
+    // If canonical already exists and points to production, do not override
+    if (canonical && canonical.href) {
+      const existingHref = canonical.href.toLowerCase();
+      if (existingHref.startsWith('https://event-flow.co.uk')) {
+        // Production canonical already set in HTML, don't override
+        if (isDebugEnabled()) {
+          console.log('[SEO] Using existing production canonical:', canonical.href);
+        }
+        // Still update og:url to match
+        this.setMetaTag('og:url', canonical.href);
+        return;
+      }
+    }
+
+    // Create or update canonical link
     if (!canonical) {
       canonical = document.createElement('link');
       canonical.rel = 'canonical';
@@ -149,12 +185,25 @@ class SEOHelper {
 
   /**
    * Set meta tag
+   * Respects existing production og:url to prevent overriding in test/staging
    * @param {string} property - Meta property or name
    * @param {string} content - Meta content
    * @param {string} attribute - Attribute type (property or name)
    */
   setMetaTag(property, content, attribute = 'property') {
     let meta = document.querySelector(`meta[${attribute}="${property}"]`);
+
+    // Special handling for og:url to respect production URLs
+    if (property === 'og:url' && meta && meta.getAttribute('content')) {
+      const existingContent = meta.getAttribute('content').toLowerCase();
+      if (existingContent.startsWith('https://event-flow.co.uk')) {
+        // Production og:url already set in HTML, don't override
+        if (isDebugEnabled()) {
+          console.log('[SEO] Using existing production og:url:', meta.getAttribute('content'));
+        }
+        return;
+      }
+    }
 
     if (!meta) {
       meta = document.createElement('meta');

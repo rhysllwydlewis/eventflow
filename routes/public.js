@@ -156,4 +156,57 @@ router.get('/homepage-settings', async (req, res) => {
   }
 });
 
+/**
+ * GET /api/public/stats
+ * Get public statistics for homepage
+ * Returns counts of verified suppliers, approved packages, active listings, and approved reviews
+ * 
+ * Cache Policy: 5 minutes
+ * - Stats don't change frequently, so caching improves performance
+ */
+let statsCache = null;
+let statsCacheTime = 0;
+const STATS_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+router.get('/stats', async (req, res) => {
+  try {
+    // Check cache
+    const now = Date.now();
+    if (statsCache && now - statsCacheTime < STATS_CACHE_DURATION) {
+      res.set('Cache-Control', 'public, max-age=300'); // 5 minutes
+      return res.json(statsCache);
+    }
+
+    // Read all collections
+    const suppliers = (await dbUnified.read('suppliers')) || [];
+    const packages = (await dbUnified.read('packages')) || [];
+    const marketplaceListings = (await dbUnified.read('marketplaceListings')) || [];
+    const reviews = (await dbUnified.read('reviews')) || [];
+
+    // Calculate stats
+    const stats = {
+      suppliersVerified: suppliers.filter(s => s.verified === true).length,
+      packagesApproved: packages.filter(p => p.approved === true).length,
+      marketplaceListingsActive: marketplaceListings.filter(m => m.status === 'active').length,
+      reviewsApproved: reviews.filter(r => r.approved === true).length,
+    };
+
+    // Update cache
+    statsCache = stats;
+    statsCacheTime = now;
+
+    res.set('Cache-Control', 'public, max-age=300'); // 5 minutes
+    res.json(stats);
+  } catch (error) {
+    console.error('[ERROR] Failed to read public stats:', error.message);
+    res.status(500).json({
+      error: 'Failed to read public stats',
+      suppliersVerified: 0,
+      packagesApproved: 0,
+      marketplaceListingsActive: 0,
+      reviewsApproved: 0,
+    });
+  }
+});
+
 module.exports = router;
