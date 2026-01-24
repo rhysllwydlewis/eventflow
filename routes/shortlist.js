@@ -14,12 +14,28 @@ const validator = require('validator');
 
 /**
  * GET /api/shortlist
- * Get user's shortlist (auth required)
+ * Get user's shortlist
+ * Returns empty array for unauthenticated users (no 401)
  */
-router.get('/', authRequired, async (req, res) => {
+router.get('/', async (req, res) => {
   try {
+    // Check if user is authenticated via middleware helper
+    const { getUserFromCookie } = require('../middleware/auth');
+    const user = await getUserFromCookie(req);
+    
+    // Return empty shortlist for unauthenticated users (fail-safe)
+    if (!user) {
+      return res.json({
+        success: true,
+        data: {
+          items: [],
+          updatedAt: new Date().toISOString(),
+        },
+      });
+    }
+
     const shortlists = (await dbUnified.read('shortlists')) || [];
-    const userShortlist = shortlists.find(s => s.userId === req.user.id);
+    const userShortlist = shortlists.find(s => s.userId === user.id);
 
     res.json({
       success: true,

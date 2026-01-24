@@ -13,6 +13,60 @@ const {
 } = require('../utils/searchWeighting');
 
 /**
+ * Project safe public fields from supplier object
+ * Excludes sensitive information like email, phone, addresses, etc.
+ */
+function projectPublicSupplierFields(supplier) {
+  return {
+    id: supplier.id,
+    name: supplier.name,
+    category: supplier.category,
+    location: supplier.location,
+    description_short: supplier.description_short,
+    description_long: supplier.description_long,
+    logo: supplier.logo,
+    images: supplier.images,
+    price_display: supplier.price_display,
+    startingPrice: supplier.startingPrice,
+    rating: supplier.rating,
+    reviewCount: supplier.reviewCount,
+    verified: supplier.verified,
+    isPro: supplier.isPro,
+    featuredSupplier: supplier.featuredSupplier,
+    amenities: supplier.amenities,
+    maxGuests: supplier.maxGuests,
+    badges: supplier.badges,
+    verifications: supplier.verifications,
+    subscriptionTier: supplier.subscriptionTier,
+    isFounding: supplier.isFounding,
+    isTest: supplier.isTest,
+    // Explicitly exclude: email, phone, address, businessAddress, owner details, etc.
+  };
+}
+
+/**
+ * Project safe public fields from package object
+ */
+function projectPublicPackageFields(pkg) {
+  return {
+    id: pkg.id,
+    title: pkg.title,
+    description: pkg.description,
+    description_short: pkg.description_short,
+    category: pkg.category,
+    price: pkg.price,
+    images: pkg.images,
+    supplierId: pkg.supplierId,
+    supplierName: pkg.supplierName,
+    location: pkg.location,
+    maxGuests: pkg.maxGuests,
+    features: pkg.features,
+    createdAt: pkg.createdAt,
+    // Explicitly exclude: internal flags, seller contact info, etc.
+  };
+}
+
+/**
  * Search suppliers with weighted relevance scoring
  * @param {Object} query - Search parameters
  * @param {string} [query.q] - Search query text (max 200 chars)
@@ -60,8 +114,11 @@ async function searchSuppliers(query) {
         query.q
       );
 
+      // Project only public fields
+      const publicSupplier = projectPublicSupplierFields(supplier);
+
       return {
-        ...supplier,
+        ...publicSupplier,
         relevanceScore: score,
         match: {
           fields: matchedFields,
@@ -72,6 +129,9 @@ async function searchSuppliers(query) {
 
     // Filter out items with zero score
     results = results.filter(r => r.relevanceScore > 0);
+  } else {
+    // No search query, just project public fields
+    results = results.map(projectPublicSupplierFields);
   }
 
   // Sort results
@@ -144,8 +204,11 @@ async function searchPackages(query) {
         query.q
       );
 
+      // Project only public fields for package
+      const publicPkg = projectPublicPackageFields(pkg);
+
       return {
-        ...pkg,
+        ...publicPkg,
         supplier: supplier
           ? {
               id: supplier.id,
@@ -166,11 +229,13 @@ async function searchPackages(query) {
 
     results = results.filter(r => r.relevanceScore > 0);
   } else {
-    // Add supplier info even without scoring
+    // Add supplier info even without scoring, project public fields
     results = results.map(pkg => {
       const supplier = supplierMap[pkg.supplierId];
+      const publicPkg = projectPublicPackageFields(pkg);
+      
       return {
-        ...pkg,
+        ...publicPkg,
         supplier: supplier
           ? {
               id: supplier.id,

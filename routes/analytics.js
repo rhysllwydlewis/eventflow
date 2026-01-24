@@ -10,6 +10,7 @@ const router = express.Router();
 const dbUnified = require('../db-unified');
 const { getUserFromCookie } = require('../middleware/auth');
 const { csrfProtection } = require('../middleware/csrf');
+const { writeLimiter } = require('../middleware/rateLimit');
 const validator = require('validator');
 
 // Whitelist of allowed event types
@@ -23,11 +24,93 @@ const ALLOWED_EVENTS = [
   'quote_request_submitted',
 ];
 
+// Whitelist of allowed property keys (prevent arbitrary data)
+const ALLOWED_PROPERTY_KEYS = [
+  'query',
+  'filters',
+  'resultsCount',
+  'source',
+  'filterName',
+  'filterValue',
+  'resultType',
+  'resultId',
+  'position',
+  'itemType',
+  'itemId',
+  'supplierCount',
+  'eventType',
+  'category',
+  'location',
+];
+
+// Maximum string length for property values
+const MAX_STRING_LENGTH = 500;
+
+/**
+ * Sanitize and validate analytics properties
+ */
+function sanitizeProperties(properties) {
+  if (!properties || typeof properties !== 'object') {
+    return {};
+  }
+
+  const sanitized = {};
+  
+  for (const key of ALLOWED_PROPERTY_KEYS) {
+    if (properties[key] !== undefined) {
+      let value = properties[key];
+      
+      // Truncate strings to prevent huge payloads
+      if (typeof value === 'string') {
+        value = value.slice(0, MAX_STRING_LENGTH);
+        // Don't include raw query strings with potential PII
+        // Only store sanitized/truncated versions
+        sanitized[key] = validator.escape(value);
+      } else if (typeof value === 'number' || typeof value === 'boolean') {
+        sanitized[key] = value;
+      } else if (typeof value === 'object') {
+        // For nested objects (like filters), limit depth and sanitize
+        if (key === 'filters') {
+          sanitized[key] = sanitizeFilters(value);
+        }
+      }
+    }
+  }
+  
+  return sanitized;
+}
+
+/**
+ * Sanitize filter object
+ */
+function sanitizeFilters(filters) {
+  if (!filters || typeof filters !== 'object') {
+    return {};
+  }
+  
+  const sanitized = {};
+  const allowedFilterKeys = ['category', 'location', 'budgetMin', 'budgetMax', 'sort'];
+  
+  for (const key of allowedFilterKeys) {
+    if (filters[key] !== undefined) {
+      const value = filters[key];
+      if (typeof value === 'string') {
+        sanitized[key] = validator.escape(value.slice(0, 100));
+      } else if (typeof value === 'number') {
+        sanitized[key] = value;
+      }
+    }
+  }
+  
+  return sanitized;
+}
+
 /**
  * POST /api/analytics/event
  * Track a user event
+ * Rate limited to prevent abuse
  */
-router.post('/event', csrfProtection, async (req, res) => {
+router.post('/event', writeLimiter, csrfProtection, async (req, res) => {
   try {
     const { event, properties, timestamp } = req.body;
 
@@ -42,13 +125,17 @@ router.post('/event', csrfProtection, async (req, res) => {
     // Get user if authenticated
     const user = await getUserFromCookie(req);
 
+    // Sanitize properties to prevent PII leakage and huge payloads
+    const sanitizedProperties = sanitizeProperties(properties);
+
     // Create analytics event
     const analyticsEvent = {
       event: validator.escape(event),
-      properties: properties || {},
+      properties: sanitizedProperties,
       userId: user?.id || null,
       timestamp: timestamp || new Date().toISOString(),
       userAgent: req.headers['user-agent'],
+      // Store IP separately (not in event properties) for rate limiting only
       ip: req.ip,
     };
 

@@ -83,12 +83,66 @@ class ShortlistManager {
       if (response.ok) {
         const data = await response.json();
         this.items = data.data.items || [];
+        
+        // Merge with localStorage if present (auto-merge on login)
+        await this.mergeLocalStorageOnLogin();
+        
         this.saveToLocalStorage();
         this.notifyListeners();
+      } else if (response.status === 401) {
+        // User not authenticated - fail silently, use localStorage
+        this.loadFromLocalStorage();
       }
     } catch (error) {
       console.error('Failed to load shortlist from server:', error);
       this.loadFromLocalStorage();
+    }
+  }
+
+  /**
+   * Merge localStorage items into server on login (one-time operation)
+   */
+  async mergeLocalStorageOnLogin() {
+    try {
+      // Check if we've already merged (flag in localStorage)
+      const mergeKey = 'eventflow_shortlist_merged';
+      if (localStorage.getItem(mergeKey)) {
+        return; // Already merged
+      }
+
+      // Get items from localStorage
+      const stored = localStorage.getItem('eventflow_shortlist');
+      if (!stored) {
+        // No local items to merge
+        localStorage.setItem(mergeKey, 'true');
+        return;
+      }
+
+      const localData = JSON.parse(stored);
+      const localItems = localData.items || [];
+
+      if (localItems.length === 0) {
+        localStorage.setItem(mergeKey, 'true');
+        return;
+      }
+
+      // Merge local items into server (skip duplicates)
+      const existingIds = new Set(
+        this.items.map(item => `${item.type}:${item.id}`)
+      );
+
+      for (const item of localItems) {
+        const itemKey = `${item.type}:${item.id}`;
+        if (!existingIds.has(itemKey)) {
+          // Add new item to server
+          await this.addItem(item);
+        }
+      }
+
+      // Mark as merged
+      localStorage.setItem(mergeKey, 'true');
+    } catch (error) {
+      console.error('Failed to merge localStorage on login:', error);
     }
   }
 

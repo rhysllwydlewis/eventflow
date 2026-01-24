@@ -14,6 +14,10 @@ export async function trackEvent(event, properties = {}) {
     // Get CSRF token from cookie
     const token = getCsrfToken();
     
+    // Create abort controller with 5 second timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    
     await fetch('/api/analytics/event', {
       method: 'POST',
       headers: {
@@ -25,10 +29,14 @@ export async function trackEvent(event, properties = {}) {
         properties,
         timestamp: new Date().toISOString(),
       }),
-    });
+      signal: controller.signal,
+    }).finally(() => clearTimeout(timeoutId));
   } catch (error) {
     // Fail silently - analytics should never block UX
-    console.debug('Analytics tracking failed:', error);
+    // Don't log to console in production to avoid noise
+    if (process.env.NODE_ENV === 'development') {
+      console.debug('Analytics tracking failed:', error);
+    }
   }
 }
 
