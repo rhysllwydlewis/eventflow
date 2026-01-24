@@ -5330,7 +5330,7 @@ router.get('/public/pexels-collage', async (req, res) => {
       });
     }
 
-    const { category, photos = 'true', videos = 'false' } = req.query;
+    const { category, photos = 'true', videos = 'true' } = req.query;
 
     if (!category) {
       return res.status(400).json({
