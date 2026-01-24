@@ -2147,3 +2147,101 @@ html[data-theme="dark"] .skeleton-card {
     width: 100%;
   }
 }
+
+/* ========================================
+   Enhanced Listing Cards (Marketplace)
+   ======================================== */
+
+.listing-card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+
+.listing-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
+}
+
+.listing-card-image {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+}
+
+.listing-card-content {
+  padding: 16px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.listing-card-title {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.listing-card-link {
+  text-decoration: none;
+  color: inherit;
+  transition: color 0.2s ease;
+}
+
+.listing-card-link:hover {
+  color: var(--ink, #0b8073);
+}
+
+.listing-card-meta {
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.listing-card-description {
+  font-size: 14px;
+  color: #333;
+  margin: 8px 0;
+  line-height: 1.5;
+  flex: 1;
+}
+
+.listing-card-price {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ink, #0b8073);
+  margin: 8px 0;
+}
+
+.listing-card-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.listing-card-actions .btn {
+  flex: 1;
+}
+
+/* Marketplace grid layout */
+.marketplace-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+  margin-top: 20px;
+}
+
+@media (max-width: 768px) {
+  .marketplace-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .listing-card-actions {
+    flex-direction: column;
+  }
+
+  .listing-card-actions .btn {
+    width: 100%;
+  }
+}
