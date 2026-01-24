@@ -80,58 +80,36 @@ test.describe('SEO Canonicals', () => {
     });
   }
 
-  test('marketplace.html should redirect to /marketplace', async ({ page }) => {
-    // Track the initial redirect response
-    let redirectStatus = null;
-    page.on('response', response => {
-      if (response.url().includes('/marketplace.html')) {
-        redirectStatus = response.status();
+  // Canonical URL redirect tests
+  // These verify that non-canonical URLs (with .html) redirect to canonical versions
+  const redirectTests = [
+    { from: '/marketplace.html', to: '/marketplace', urlMatcher: '/marketplace.html' },
+    { from: '/suppliers.html', to: '/suppliers', urlMatcher: '/suppliers.html' },
+    { from: '/index.html', to: '/', urlMatcher: '/index.html' },
+  ];
+
+  for (const redirect of redirectTests) {
+    test(`${redirect.from} should redirect to ${redirect.to}`, async ({ page }) => {
+      // Track the initial redirect response
+      let redirectStatus = null;
+      page.on('response', response => {
+        if (response.url().includes(redirect.urlMatcher)) {
+          redirectStatus = response.status();
+        }
+      });
+
+      await page.goto(redirect.from);
+
+      // Should get a redirect response (301) - captured before following
+      expect(redirectStatus).toBe(301);
+
+      // Should end up at the canonical URL
+      const finalUrl = page.url();
+      if (redirect.to === '/') {
+        expect(finalUrl.endsWith('/') || finalUrl === page.context()._options.baseURL).toBe(true);
+      } else {
+        expect(finalUrl).toContain(redirect.to);
       }
     });
-
-    await page.goto('/marketplace.html');
-
-    // Should get a redirect response (301) - captured before following
-    expect(redirectStatus).toBe(301);
-
-    // Should end up at /marketplace
-    expect(page.url()).toContain('/marketplace');
-  });
-
-  test('suppliers.html should redirect to /suppliers', async ({ page }) => {
-    // Track the initial redirect response
-    let redirectStatus = null;
-    page.on('response', response => {
-      if (response.url().includes('/suppliers.html')) {
-        redirectStatus = response.status();
-      }
-    });
-
-    await page.goto('/suppliers.html');
-
-    // Should get a redirect response (301) - captured before following
-    expect(redirectStatus).toBe(301);
-
-    // Should end up at /suppliers
-    expect(page.url()).toContain('/suppliers');
-  });
-
-  test('index.html should redirect to /', async ({ page }) => {
-    // Track the initial redirect response
-    let redirectStatus = null;
-    page.on('response', response => {
-      if (response.url().includes('/index.html')) {
-        redirectStatus = response.status();
-      }
-    });
-
-    await page.goto('/index.html');
-
-    // Should get a redirect response (301) - captured before following
-    expect(redirectStatus).toBe(301);
-
-    // Should end up at root
-    const finalUrl = page.url();
-    expect(finalUrl.endsWith('/') || finalUrl === page.context()._options.baseURL).toBe(true);
-  });
+  }
 });
