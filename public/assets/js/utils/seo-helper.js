@@ -200,6 +200,10 @@ class SEOHelper {
     const cleanPath = path.startsWith('/') ? path : `/${path}`;
 
     // Use URL constructor for safe URL building
+    // Note: Origin validation is not needed here because:
+    // 1. Absolute URLs (http/https) are returned early above
+    // 2. Protocol-relative URLs (//) are blocked above
+    // 3. URL constructor with relative path cannot produce different origin than baseUrl
     try {
       const url = new URL(cleanPath, baseUrl);
       return url.href;
