@@ -5,6 +5,53 @@ All notable changes to EventFlow will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [18.0.1] - 2026-01-24
+
+### Added
+
+- **Complete Auth Navigation System**: Full-featured auth-nav.js implementation
+  - `handleLogout()` function with proper verification
+  - Duplicate event handler prevention using cloneNode pattern
+  - Cache-busting on /api/auth/me calls with timestamp and headers
+  - Periodic auth state validation every 30 seconds
+  - Cross-tab logout synchronization via localStorage events
+  - Immediate navbar update on logout before redirect
+- **WebSocket v2 E2E Tests**: End-to-end tests for real-time features
+  - Connection and endpoint availability tests
+  - Messaging UI load tests
+  - Documentation verification tests
+- **Email Webhook Handlers**: Complete implementation of Postmark webhook handlers
+  - Delivery tracking in `email_logs` collection
+  - Bounce logging in `email_bounces` collection with user marking for hard bounces
+  - Spam complaint handling with automatic unsubscribe in `email_complaints` collection
+  - Subscription change tracking via link tracker
+  - Email open tracking in `email_opens` collection
+  - Link click tracking in `email_clicks` collection
+
+### Fixed
+
+- **Auth State Tests**: All 8 auth-state-fixes integration tests now pass
+  - `handleLogout` function properly defined and exported
+  - cloneNode pattern for duplicate handler prevention
+  - Cache-Control headers on auth API calls
+  - Logout verification before redirect
+  - Periodic validation with setInterval
+  - Cross-tab synchronization with storage events
+
+### Changed
+
+- **Version Bump**: Updated to v18.0.1 across all version references
+  - package.json version
+  - server.js APP_VERSION
+  - home-init.js version label
+  - sw.js CACHE_VERSION
+
+### Security
+
+- **Email Bounce Handling**: Hard bounces now mark user emails as invalid to prevent repeated delivery attempts
+- **Spam Complaint Response**: Automatic unsubscription on spam complaints to maintain sender reputation
+- **Auth State Verification**: Logout now verifies completion before redirect to prevent stale sessions
+
 ## [18.0.0] - 2026-01-23
 
 ### Added

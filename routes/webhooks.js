@@ -69,6 +69,7 @@ router.post('/postmark', express.json(), async (req, res) => {
     }
 
     const event = req.body;
+    const db = req.app.locals.db || global.mongoDb?.db;
 
     // Log the webhook event for monitoring
     console.log('📬 Postmark webhook received:', {
@@ -81,27 +82,27 @@ router.post('/postmark', express.json(), async (req, res) => {
     // Handle different event types
     switch (event.RecordType) {
       case 'Delivery':
-        handleDelivery(event);
+        handleDelivery(event, db);
         break;
 
       case 'Bounce':
-        handleBounce(event);
+        handleBounce(event, db);
         break;
 
       case 'SpamComplaint':
-        handleSpamComplaint(event);
+        handleSpamComplaint(event, db);
         break;
 
       case 'SubscriptionChange':
-        handleSubscriptionChange(event);
+        handleSubscriptionChange(event, db);
         break;
 
       case 'Open':
-        handleOpen(event);
+        handleOpen(event, db);
         break;
 
       case 'Click':
-        handleClick(event);
+        handleClick(event, db);
         break;
 
       default:
@@ -119,111 +120,267 @@ router.post('/postmark', express.json(), async (req, res) => {
 
 /**
  * Handle successful email delivery
+ * @param {Object} event - Postmark delivery event
+ * @param {Object} db - MongoDB database instance
  */
-function handleDelivery(event) {
-  console.log(`✅ Email delivered successfully`);
-  console.log(`   Recipient: ${event.Recipient}`);
-  console.log(`   MessageID: ${event.MessageID}`);
-  console.log(`   DeliveredAt: ${event.DeliveredAt}`);
-  console.log(`   Tag: ${event.Tag || 'none'}`);
-  console.log(`   Stream: ${event.MessageStream || 'default'}`);
+async function handleDelivery(event, db) {
+  const logger = require('../utils/logger');
 
-  // TODO: Update email delivery status in database if needed
-  // Example: Mark email as delivered in email_logs table
+  logger.info('Email delivered successfully', {
+    messageId: event.MessageID,
+    recipient: event.Recipient,
+    deliveredAt: event.DeliveredAt,
+    tag: event.Tag || 'none',
+    stream: event.MessageStream || 'default',
+  });
+
+  // Update email delivery status in database
+  if (db) {
+    try {
+      await db.collection('email_logs').updateOne(
+        { messageId: event.MessageID },
+        {
+          $set: {
+            status: 'delivered',
+            recipient: event.Recipient,
+            deliveredAt: new Date(event.DeliveredAt),
+            tag: event.Tag,
+            messageStream: event.MessageStream,
+            updatedAt: new Date(),
+          },
+        },
+        { upsert: true }
+      );
+    } catch (error) {
+      logger.error('Failed to log email delivery', {
+        error: error.message,
+        messageId: event.MessageID,
+      });
+    }
+  }
 }
 
 /**
  * Handle email bounce
  * Bounces can be "HardBounce" or "SoftBounce"
+ * @param {Object} event - Postmark bounce event
+ * @param {Object} db - MongoDB database instance
  */
-function handleBounce(event) {
+async function handleBounce(event, db) {
+  const logger = require('../utils/logger');
   const isHardBounce = event.Type === 'HardBounce';
 
-  console.error(`❌ Email bounced (${event.Type})`);
-  console.error(`   Recipient: ${event.Email}`);
-  console.error(`   MessageID: ${event.MessageID}`);
-  console.error(`   BouncedAt: ${event.BouncedAt}`);
-  console.error(`   Description: ${event.Description}`);
-  console.error(`   Details: ${event.Details || 'none'}`);
+  logger.error(`Email bounced (${event.Type})`, {
+    recipient: event.Email,
+    messageId: event.MessageID,
+    bouncedAt: event.BouncedAt,
+    description: event.Description,
+    details: event.Details || 'none',
+    isHardBounce,
+  });
 
-  if (isHardBounce) {
-    console.error(`   ⚠️  Hard bounce - email address is invalid or doesn't exist`);
-    console.error(`   ⚠️  Consider marking ${event.Email} as invalid in database`);
+  // Log bounce in database for monitoring
+  if (db) {
+    try {
+      await db.collection('email_bounces').insertOne({
+        email: event.Email,
+        messageId: event.MessageID,
+        type: event.Type,
+        description: event.Description,
+        details: event.Details,
+        bouncedAt: new Date(event.BouncedAt),
+        isHardBounce,
+        createdAt: new Date(),
+      });
 
-    // TODO: Mark email as invalid in database
-    // Example: Update users table to mark email as bounced
-    // This prevents future email attempts to this address
-  } else {
-    console.warn(`   Soft bounce - temporary delivery issue, will retry`);
+      // Mark email as invalid in database for hard bounces
+      if (isHardBounce) {
+        await db.collection('users').updateOne(
+          { email: event.Email },
+          {
+            $set: {
+              emailBounced: true,
+              emailBouncedAt: new Date(event.BouncedAt),
+              emailBouncedReason: event.Description,
+              emailBouncedType: event.Type,
+            },
+          }
+        );
+        logger.warn(`Marked email as invalid due to hard bounce: ${event.Email}`);
+      }
+    } catch (error) {
+      logger.error('Failed to log bounce', {
+        error: error.message,
+        email: event.Email,
+      });
+    }
   }
-
-  // TODO: Log bounce in database for monitoring
-  // Example: Insert into email_bounces table for tracking
 }
 
 /**
  * Handle spam complaint
- * User marked email as spam - important for deliverability
+ * User marked email as spam - critical for deliverability
+ * @param {Object} event - Postmark spam complaint event
+ * @param {Object} db - MongoDB database instance
  */
-function handleSpamComplaint(event) {
-  console.error(`⚠️  Spam complaint received`);
-  console.error(`   Recipient: ${event.Email}`);
-  console.error(`   MessageID: ${event.MessageID}`);
-  console.error(`   ComplaintAt: ${event.BouncedAt}`);
-  console.error(`   ⚠️  CRITICAL: User marked email as spam`);
-  console.error(`   ⚠️  Consider unsubscribing ${event.Email} from all emails immediately`);
+async function handleSpamComplaint(event, db) {
+  const logger = require('../utils/logger');
 
-  // TODO: Automatically unsubscribe user from all emails
-  // Example: Update users table to disable all email notifications
-  // This is critical for maintaining good email reputation
+  logger.error('Spam complaint received - CRITICAL', {
+    recipient: event.Email,
+    messageId: event.MessageID,
+    complainedAt: event.BouncedAt,
+  });
 
-  // TODO: Log spam complaint in database
-  // Example: Insert into email_complaints table for monitoring
+  // Log spam complaint and automatically unsubscribe user
+  if (db) {
+    try {
+      // Log complaint in database
+      await db.collection('email_complaints').insertOne({
+        email: event.Email,
+        messageId: event.MessageID,
+        type: 'spam_complaint',
+        complainedAt: new Date(event.BouncedAt),
+        createdAt: new Date(),
+      });
+
+      // Automatically unsubscribe user from all emails
+      // This is critical for maintaining good email reputation
+      const result = await db.collection('users').updateOne(
+        { email: event.Email },
+        {
+          $set: {
+            emailUnsubscribed: true,
+            emailUnsubscribedAt: new Date(),
+            emailUnsubscribedReason: 'spam_complaint',
+            emailPreferences: {
+              marketing: false,
+              notifications: false,
+              updates: false,
+            },
+          },
+        }
+      );
+
+      if (result.matchedCount > 0) {
+        logger.warn(`Unsubscribed user from all emails due to spam complaint: ${event.Email}`);
+      }
+    } catch (error) {
+      logger.error('Failed to handle spam complaint', {
+        error: error.message,
+        email: event.Email,
+      });
+    }
+  }
 }
 
 /**
  * Handle subscription change (unsubscribe via link tracker)
+ * @param {Object} event - Postmark subscription change event
+ * @param {Object} db - MongoDB database instance
  */
-function handleSubscriptionChange(event) {
-  console.log(`📧 Subscription change`);
-  console.log(`   Recipient: ${event.Recipient}`);
-  console.log(`   SuppressSending: ${event.SuppressSending}`);
-  console.log(`   ChangedAt: ${event.ChangedAt}`);
+async function handleSubscriptionChange(event, db) {
+  const logger = require('../utils/logger');
 
-  if (event.SuppressSending) {
-    console.log(`   User unsubscribed via link tracker`);
+  logger.info('Email subscription change', {
+    recipient: event.Recipient,
+    suppressSending: event.SuppressSending,
+    changedAt: event.ChangedAt,
+  });
 
-    // TODO: Update user preferences in database
-    // Example: Disable marketing emails for this user
+  // Update user preferences in database
+  if (db && event.SuppressSending) {
+    try {
+      await db.collection('users').updateOne(
+        { email: event.Recipient },
+        {
+          $set: {
+            emailUnsubscribed: true,
+            emailUnsubscribedAt: new Date(event.ChangedAt),
+            emailUnsubscribedReason: 'link_tracker_unsubscribe',
+          },
+        }
+      );
+      logger.info(`User unsubscribed via link tracker: ${event.Recipient}`);
+    } catch (error) {
+      logger.error('Failed to update subscription change', {
+        error: error.message,
+        email: event.Recipient,
+      });
+    }
   }
 }
 
 /**
  * Handle email open (if tracking enabled)
+ * @param {Object} event - Postmark open event
+ * @param {Object} db - MongoDB database instance
  */
-function handleOpen(event) {
-  console.log(`👁️  Email opened`);
-  console.log(`   Recipient: ${event.Recipient}`);
-  console.log(`   MessageID: ${event.MessageID}`);
-  console.log(`   FirstOpen: ${event.FirstOpen}`);
-  console.log(`   ReceivedAt: ${event.ReceivedAt}`);
+async function handleOpen(event, db) {
+  const logger = require('../utils/logger');
 
-  // TODO: Track email opens in database for analytics
-  // Example: Insert into email_opens table
+  logger.debug('Email opened', {
+    recipient: event.Recipient,
+    messageId: event.MessageID,
+    firstOpen: event.FirstOpen,
+    receivedAt: event.ReceivedAt,
+  });
+
+  // Track email opens in database for analytics
+  if (db) {
+    try {
+      await db.collection('email_opens').insertOne({
+        email: event.Recipient,
+        messageId: event.MessageID,
+        firstOpen: event.FirstOpen,
+        receivedAt: new Date(event.ReceivedAt),
+        userAgent: event.UserAgent,
+        platform: event.Platform,
+        createdAt: new Date(),
+      });
+    } catch (error) {
+      logger.error('Failed to log email open', {
+        error: error.message,
+        messageId: event.MessageID,
+      });
+    }
+  }
 }
 
 /**
  * Handle link click (if tracking enabled)
+ * @param {Object} event - Postmark click event
+ * @param {Object} db - MongoDB database instance
  */
-function handleClick(event) {
-  console.log(`🔗 Link clicked`);
-  console.log(`   Recipient: ${event.Recipient}`);
-  console.log(`   MessageID: ${event.MessageID}`);
-  console.log(`   OriginalLink: ${event.OriginalLink}`);
-  console.log(`   ClickedAt: ${event.ReceivedAt}`);
+async function handleClick(event, db) {
+  const logger = require('../utils/logger');
 
-  // TODO: Track link clicks in database for analytics
-  // Example: Insert into email_clicks table
+  logger.debug('Link clicked', {
+    recipient: event.Recipient,
+    messageId: event.MessageID,
+    originalLink: event.OriginalLink,
+    clickLocation: event.ClickLocation,
+  });
+
+  // Track link clicks in database for analytics
+  if (db) {
+    try {
+      await db.collection('email_clicks').insertOne({
+        email: event.Recipient,
+        messageId: event.MessageID,
+        originalLink: event.OriginalLink,
+        clickLocation: event.ClickLocation,
+        userAgent: event.UserAgent,
+        platform: event.Platform,
+        createdAt: new Date(),
+      });
+    } catch (error) {
+      logger.error('Failed to log link click', {
+        error: error.message,
+        messageId: event.MessageID,
+      });
+    }
+  }
 }
 
 module.exports = router;

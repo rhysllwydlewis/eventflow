@@ -1,17 +1,14 @@
 /**
- * Legacy navbar compatibility shim
+ * Auth Navigation System
+ * Handles authentication state, logout, and cross-tab synchronization
  *
- * Many pages use the "legacy" header markup:
- *   - Burger button:   #burger
- *   - Drawer menu:     .nav-menu
- *   - Auth links:      #nav-auth, #nav-dashboard, #nav-signout
- *
- * This file intentionally keeps scope minimal:
- *   - Toggle the menu open/closed
- *   - Do a single auth check on load and update legacy auth links
- *   - Provide a basic logout handler (POST /api/auth/logout) if present
- *
- * It must not interfere with the newer EF header system (ef-mobile-toggle / ef-mobile-menu).
+ * Features:
+ * - Menu toggle for legacy header markup
+ * - Auth state management with cache-busting
+ * - Secure logout with verification
+ * - Periodic auth state validation (30 seconds)
+ * - Cross-tab logout synchronization
+ * - Duplicate event handler prevention
  */
 (function () {
   'use strict';
@@ -23,12 +20,17 @@
 
   const burger = document.getElementById('burger');
   const menu = document.querySelector('.nav-menu');
-
-  // Legacy auth links
   const navAuth = document.getElementById('nav-auth');
   const navDashboard = document.getElementById('nav-dashboard');
-  const navSignout = document.getElementById('nav-signout');
+  let navSignout = document.getElementById('nav-signout');
 
+  // Track current auth state for change detection
+  let currentUser = null;
+  let periodicCheckInterval = null;
+
+  // ============================================
+  // Menu Toggle
+  // ============================================
   function setMenuOpen(isOpen) {
     document.body.classList.toggle('nav-open', isOpen);
     if (menu) {
@@ -74,6 +76,9 @@
     });
   }
 
+  // ============================================
+  // Dashboard URL Helper
+  // ============================================
   function dashboardUrlForUser(user) {
     if (!user || !user.role) {
       return '/dashboard.html';
@@ -87,7 +92,11 @@
     return '/dashboard-customer.html';
   }
 
-  function updateLegacyAuthLinks(user) {
+  // ============================================
+  // Auth State Management
+  // ============================================
+  function initAuthNav(user) {
+    currentUser = user;
     if (user) {
       if (navAuth) {
         navAuth.style.display = 'none';
@@ -112,6 +121,9 @@
     }
   }
 
+  // ============================================
+  // CSRF Token Fetching
+  // ============================================
   async function fetchCsrfToken() {
     try {
       const resp = await fetch('/api/csrf-token', { credentials: 'include' });
@@ -123,38 +135,77 @@
         window.__CSRF_TOKEN__ = data.csrfToken;
         return data.csrfToken;
       }
-    } catch (_e) {
-      // Ignore CSRF fetch errors
+    } catch (error) {
+      console.warn('CSRF token fetch failed:', error.message);
     }
     return null;
   }
 
-  async function fetchMe() {
+  // ============================================
+  // Auth State Fetching with Cache Busting
+  // ============================================
+  async function me() {
     try {
-      const resp = await fetch('/api/auth/me', {
+      // Add cache-busting to /api/auth/me calls
+      const resp = await fetch(`/api/auth/me?_=${Date.now()}`, {
         credentials: 'include',
-        headers: { Accept: 'application/json' },
+        headers: {
+          Accept: 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+        },
       });
       if (!resp.ok) {
         return null;
       }
       const data = await resp.json();
       return data && data.user ? data.user : null;
-    } catch (_e) {
+    } catch (error) {
+      console.warn('Auth state check failed:', error.message);
       return null;
     }
   }
 
-  Promise.resolve()
-    .then(fetchMe)
-    .then(updateLegacyAuthLinks)
-    .catch(() => {});
-
-  if (navSignout) {
-    navSignout.addEventListener('click', async e => {
+  // ============================================
+  // Logout Handler (Complete Implementation)
+  // ============================================
+  async function handleLogout(e) {
+    if (e) {
       e.preventDefault();
+    }
 
-      const token = window.__CSRF_TOKEN__ || (await fetchCsrfToken());
+    const token = window.__CSRF_TOKEN__ || (await fetchCsrfToken());
+
+    // Perform logout request
+    if (token) {
+      try {
+        await fetch('/api/auth/logout', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'X-CSRF-Token': token },
+        });
+      } catch (error) {
+        console.warn('Logout request failed:', error.message);
+      }
+    }
+
+    // Update navbar immediately to show logged-out state
+    initAuthNav(null);
+
+    // Clear local storage
+    try {
+      localStorage.removeItem('user');
+      localStorage.removeItem('eventflow_onboarding_new');
+      // Signal logout to other tabs
+      localStorage.setItem('eventflow_logout', Date.now().toString());
+    } catch (error) {
+      console.warn('Storage clear failed:', error.message);
+    }
+
+    // Re-check auth state to verify logout completed
+    const currentUser = await me();
+    if (currentUser) {
+      console.warn('Logout verification failed, retrying...');
+      // Retry logout once
       if (token) {
         try {
           await fetch('/api/auth/logout', {
@@ -163,18 +214,81 @@
             headers: { 'X-CSRF-Token': token },
           });
         } catch (_e) {
-          // Ignore logout errors
+          // Ignore retry errors
         }
       }
+    }
 
-      try {
-        localStorage.removeItem('user');
-        localStorage.removeItem('eventflow_onboarding_new');
-      } catch (_e) {
-        // Ignore storage errors
+    // Redirect with cache busting
+    window.location.href = `/?t=${Date.now()}`;
+  }
+
+  // ============================================
+  // Event Listener Setup (Prevent Duplicates)
+  // ============================================
+  function setupLogoutHandler() {
+    if (navSignout) {
+      // Prevent duplicate event handlers using cloneNode
+      const newSignout = navSignout.cloneNode(true);
+      if (navSignout.parentNode) {
+        navSignout.parentNode.replaceChild(newSignout, navSignout);
       }
+      navSignout = newSignout;
+      navSignout.addEventListener('click', handleLogout);
+    }
+  }
 
-      window.location.href = `/?t=${Date.now()}`;
+  // ============================================
+  // Periodic Auth State Validation
+  // ============================================
+  function startPeriodicValidation() {
+    // Clear any existing interval
+    if (periodicCheckInterval) {
+      clearInterval(periodicCheckInterval);
+    }
+
+    // Periodic auth state validation every 30 seconds
+    periodicCheckInterval = setInterval(async () => {
+      const user = await me();
+      const wasLoggedIn = currentUser !== null;
+      const isLoggedIn = user !== null;
+
+      if (wasLoggedIn !== isLoggedIn) {
+        console.log('Auth state changed, updating navbar');
+        updateAuthState(user);
+      }
+    }, 30000);
+  }
+
+  function updateAuthState(user) {
+    initAuthNav(user);
+    currentUser = user;
+  }
+
+  // ============================================
+  // Cross-tab Auth State Synchronization
+  // ============================================
+  function setupCrossTabSync() {
+    // Cross-tab auth state synchronization
+    window.addEventListener('storage', e => {
+      if (e.key === 'eventflow_logout') {
+        console.log('Logout detected in another tab, syncing...');
+        initAuthNav(null);
+        window.location.href = `/?t=${Date.now()}`;
+      }
     });
   }
+
+  // ============================================
+  // Initialize
+  // ============================================
+  async function init() {
+    const user = await me();
+    initAuthNav(user);
+    setupLogoutHandler();
+    startPeriodicValidation();
+    setupCrossTabSync();
+  }
+
+  init();
 })();

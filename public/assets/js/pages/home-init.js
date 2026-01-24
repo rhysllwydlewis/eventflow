@@ -55,7 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // If debug mode, show version
       const versionLabel = document.getElementById('ef-version-label');
       if (versionLabel) {
-        versionLabel.textContent = 'v18.0.0';
+        versionLabel.textContent = 'v18.0.1';
       }
     }
   }
@@ -1320,7 +1320,7 @@ async function initCollageWidget(widgetConfig) {
   // Initialize video if present in new hero-collage structure
   // Check for reduced motion and reduced data preferences
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  
+
   // Feature detection for prefers-reduced-data (not yet widely supported)
   let prefersReducedData = false;
   try {
@@ -1333,14 +1333,14 @@ async function initCollageWidget(widgetConfig) {
       console.log('[Collage Widget] prefers-reduced-data not supported in this browser');
     }
   }
-  
+
   if (prefersReducedMotion && isDevelopmentEnvironment()) {
     console.log('User prefers reduced motion, animations will be minimal');
   }
   if (prefersReducedData && isDevelopmentEnvironment()) {
     console.log('User prefers reduced data, skipping external media (Pexels API)');
   }
-  
+
   // Skip video initialization if user prefers reduced data
   if (!prefersReducedData) {
     await initHeroVideo(source, mediaTypes, uploadGallery);
@@ -1387,7 +1387,10 @@ async function initCollageWidget(widgetConfig) {
           );
         }
       });
-    } else if ((source === 'pexels' || (fallbackToPexels && source === 'uploads')) && !prefersReducedData) {
+    } else if (
+      (source === 'pexels' || (fallbackToPexels && source === 'uploads')) &&
+      !prefersReducedData
+    ) {
       // Use Pexels API (fallback or primary) - but skip if user prefers reduced data
       if (source === 'uploads' && fallbackToPexels) {
         if (isDebugEnabled()) {
