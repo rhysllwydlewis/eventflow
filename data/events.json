@@ -364,5 +364,66 @@
     },
     "timestamp": "2026-01-24T00:32:04.562Z",
     "date": "2026-01-24"
+  },
+  {
+    "id": "event_1769276551767_1b861667-12d4-4fa2-a7ec-4dbc87d713d4",
+    "type": "profile_view",
+    "supplierId": "test-supplier-123",
+    "userId": "test-user-123",
+    "sessionId": null,
+    "metadata": {},
+    "timestamp": "2026-01-24T17:42:31.767Z",
+    "date": "2026-01-24"
+  },
+  {
+    "id": "event_1769276551771_bc5b18f5-0282-463b-acee-38038e7285cd",
+    "type": "enquiry_started",
+    "supplierId": "test-supplier-123",
+    "userId": "test-user-123",
+    "sessionId": null,
+    "metadata": {
+      "threadId": "thread-123"
+    },
+    "timestamp": "2026-01-24T17:42:31.771Z",
+    "date": "2026-01-24"
+  },
+  {
+    "id": "event_1769276551774_70c07965-bc40-48b4-b493-c470f3e38a39",
+    "type": "enquiry_sent",
+    "supplierId": "test-supplier-123",
+    "userId": "test-user-123",
+    "sessionId": null,
+    "metadata": {
+      "threadId": "thread-123",
+      "messageId": "msg-123"
+    },
+    "timestamp": "2026-01-24T17:42:31.774Z",
+    "date": "2026-01-24"
+  },
+  {
+    "id": "event_1769276551775_b057fd24-7054-4fc4-8fcd-47fadefd1374",
+    "type": "message_reply",
+    "supplierId": "test-supplier-123",
+    "userId": "test-user-123",
+    "sessionId": null,
+    "metadata": {
+      "threadId": "thread-123",
+      "messageId": "msg-123"
+    },
+    "timestamp": "2026-01-24T17:42:31.775Z",
+    "date": "2026-01-24"
+  },
+  {
+    "id": "event_1769276551777_3006451b-6972-43bf-b32f-ad9f4ef005b8",
+    "type": "review_received",
+    "supplierId": "test-supplier-123",
+    "userId": "test-user-123",
+    "sessionId": null,
+    "metadata": {
+      "reviewId": "review-123",
+      "rating": 5
+    },
+    "timestamp": "2026-01-24T17:42:31.777Z",
+    "date": "2026-01-24"
   }
 ]

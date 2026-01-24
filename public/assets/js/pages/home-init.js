@@ -6,6 +6,68 @@
 // Set page identifier
 window.__EF_PAGE__ = 'home';
 
+// Video performance metrics tracker
+window.__videoMetrics__ = {
+  heroVideoAttempts: 0,
+  heroVideoSuccesses: 0,
+  heroVideoFailures: 0,
+  collageVideoAttempts: 0,
+  collageVideoSuccesses: 0,
+  collageVideoFailures: 0,
+  lastError: null,
+};
+
+// Helper function to calculate success rate
+function calculateSuccessRate(successes, attempts) {
+  if (attempts === 0) return 0;
+  return ((successes / attempts) * 100).toFixed(1);
+}
+
+// Helper function to log video metrics (useful for debugging)
+window.logVideoMetrics = function () {
+  console.group('📊 Video Performance Metrics');
+  console.log('Hero Video:');
+  console.log(`  Attempts: ${window.__videoMetrics__.heroVideoAttempts}`);
+  console.log(`  Successes: ${window.__videoMetrics__.heroVideoSuccesses}`);
+  console.log(`  Failures: ${window.__videoMetrics__.heroVideoFailures}`);
+  console.log(`  Success Rate: ${calculateSuccessRate(window.__videoMetrics__.heroVideoSuccesses, window.__videoMetrics__.heroVideoAttempts)}%`);
+  console.log('');
+  console.log('Collage Videos:');
+  console.log(`  Attempts: ${window.__videoMetrics__.collageVideoAttempts}`);
+  console.log(`  Successes: ${window.__videoMetrics__.collageVideoSuccesses}`);
+  console.log(`  Failures: ${window.__videoMetrics__.collageVideoFailures}`);
+  console.log(`  Success Rate: ${calculateSuccessRate(window.__videoMetrics__.collageVideoSuccesses, window.__videoMetrics__.collageVideoAttempts)}%`);
+  if (window.__videoMetrics__.lastError) {
+    console.log('');
+    console.log(`⚠️  Last Error: ${window.__videoMetrics__.lastError}`);
+  }
+  console.groupEnd();
+};
+
+/**
+ * Detect user's connection speed for adaptive video quality
+ * @returns {string} 'slow', 'medium', or 'fast'
+ */
+function detectConnectionSpeed() {
+  // Check for Network Information API support
+  if ('connection' in navigator && navigator.connection) {
+    const connection = navigator.connection;
+    const effectiveType = connection.effectiveType;
+
+    // Map connection types to quality levels
+    if (effectiveType === '4g') {
+      return 'fast';
+    } else if (effectiveType === '3g') {
+      return 'medium';
+    } else {
+      return 'slow';
+    }
+  }
+
+  // Default to medium quality if API not available
+  return 'medium';
+}
+
 /**
  * Check if debug logging is enabled
  * Checks:
@@ -38,6 +100,15 @@ function isDebugEnabled() {
 // Unconditional startup log to confirm collage script execution
 console.log('[Collage Debug] collage script loaded');
 
+// Log connection speed in debug mode
+if (isDebugEnabled()) {
+  const speed = detectConnectionSpeed();
+  console.log(`[Video Quality] Detected connection speed: ${speed}`);
+  if ('connection' in navigator && navigator.connection) {
+    console.log(`[Video Quality] Effective type: ${navigator.connection.effectiveType}`);
+  }
+}
+
 // Initialize homepage components on DOM ready
 document.addEventListener('DOMContentLoaded', () => {
   // Initialize category grid
@@ -58,6 +129,70 @@ document.addEventListener('DOMContentLoaded', () => {
         versionLabel.textContent = 'v18.0.2';
       }
     }
+  }
+
+  // Show video metrics panel in debug mode
+  if (isDebugEnabled()) {
+    // Create metrics panel
+    const metricsPanel = document.createElement('div');
+    metricsPanel.id = 'video-metrics-panel';
+    metricsPanel.style.cssText = `
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: rgba(15, 23, 42, 0.95);
+      color: white;
+      padding: 15px;
+      border-radius: 8px;
+      font-family: monospace;
+      font-size: 12px;
+      z-index: 10000;
+      max-width: 300px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    `;
+    metricsPanel.innerHTML = `
+      <div style="font-weight: bold; margin-bottom: 8px; color: #10b981;">📊 Video Metrics</div>
+      <div id="metrics-content">Loading...</div>
+      <div style="margin-top: 8px; font-size: 10px; opacity: 0.7;">
+        Updates every 2s • <a href="#" id="metrics-log-link" style="color: #10b981;">Log to Console</a>
+      </div>
+    `;
+    document.body.appendChild(metricsPanel);
+
+    // Add event listener for log link (avoid inline onclick)
+    const logLink = document.getElementById('metrics-log-link');
+    if (logLink) {
+      logLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        window.logVideoMetrics();
+      });
+    }
+
+    // Update metrics every 2 seconds
+    const updateMetrics = () => {
+      const m = window.__videoMetrics__;
+      const heroRate = calculateSuccessRate(m.heroVideoSuccesses, m.heroVideoAttempts);
+      const collageRate = calculateSuccessRate(m.collageVideoSuccesses, m.collageVideoAttempts);
+      
+      const content = document.getElementById('metrics-content');
+      if (content) {
+        content.innerHTML = `
+          <div style="margin-bottom: 5px;">
+            <strong>Hero:</strong> ${m.heroVideoSuccesses}/${m.heroVideoAttempts} (${heroRate}%)
+          </div>
+          <div style="margin-bottom: 5px;">
+            <strong>Collage:</strong> ${m.collageVideoSuccesses}/${m.collageVideoAttempts} (${collageRate}%)
+          </div>
+          ${m.lastError ? `<div style="color: #ef4444; margin-top: 5px; font-size: 10px;">⚠️ ${m.lastError}</div>` : ''}
+        `;
+      }
+    };
+
+    // Initial update
+    setTimeout(updateMetrics, 1000);
+    // Update every 2 seconds
+    setInterval(updateMetrics, 2000);
   }
 
   // Load and update hero collage images from admin-uploaded category photos
@@ -486,14 +621,15 @@ async function supportsWebP() {
   if (window.__webpSupported !== undefined) {
     return window.__webpSupported;
   }
-  
+
   return new Promise(resolve => {
     const webp = new Image();
     webp.onload = webp.onerror = () => {
       window.__webpSupported = webp.height === 2;
       resolve(window.__webpSupported);
     };
-    webp.src = 'data:image/webp;base64,UklGRjoAAABXRUJQVlA4IC4AAACyAgCdASoCAAIALmk0mk0iIiIiIgBoSygABc6WWgAA/veff/0PP8bA//LwYAAA';
+    webp.src =
+      'data:image/webp;base64,UklGRjoAAABXRUJQVlA4IC4AAACyAgCdASoCAAIALmk0mk0iIiIiIgBoSygABc6WWgAA/veff/0PP8bA//LwYAAA';
   });
 }
 
@@ -507,7 +643,7 @@ function getConnectionAwareQuality() {
   if (navigator.connection && navigator.connection.saveData === true) {
     return 'low';
   }
-  
+
   // Check Network Information API
   if (navigator.connection && navigator.connection.effectiveType) {
     const effectiveType = navigator.connection.effectiveType;
@@ -518,7 +654,7 @@ function getConnectionAwareQuality() {
       return 'medium';
     }
   }
-  
+
   return 'high';
 }
 
@@ -528,27 +664,29 @@ function getConnectionAwareQuality() {
  * @returns {string} Optimal image URL
  */
 function getOptimalPexelsImageSize(photoSrc) {
-  if (!photoSrc) return null;
-  
+  if (!photoSrc) {
+    return null;
+  }
+
   const dpr = window.devicePixelRatio || 1;
   const viewportWidth = window.innerWidth;
-  
+
   // Calculate effective width needed (accounting for DPR)
   // Collage frames are typically 40-50% of viewport width on mobile
   const frameWidth = viewportWidth <= 768 ? viewportWidth * 0.48 : viewportWidth * 0.25;
   const effectiveWidth = frameWidth * dpr;
-  
+
   // Network-aware quality adjustment
   const quality = getConnectionAwareQuality();
-  
+
   // Size mapping (Pexels standard sizes)
   // tiny: 280px, small: 340px, medium: 940px, large: 1880px, large2x: 3760px
-  
+
   if (quality === 'low') {
     // Force small size on slow connections
     return photoSrc.small || photoSrc.tiny || photoSrc.medium;
   }
-  
+
   if (effectiveWidth <= 280) {
     return photoSrc.tiny || photoSrc.small;
   } else if (effectiveWidth <= 340) {
@@ -569,16 +707,28 @@ function getOptimalPexelsImageSize(photoSrc) {
  * @returns {string} srcset attribute value
  */
 function generateSrcset(photoSrc) {
-  if (!photoSrc) return '';
-  
+  if (!photoSrc) {
+    return '';
+  }
+
   const sources = [];
-  
-  if (photoSrc.tiny) sources.push(`${photoSrc.tiny} 280w`);
-  if (photoSrc.small) sources.push(`${photoSrc.small} 340w`);
-  if (photoSrc.medium) sources.push(`${photoSrc.medium} 940w`);
-  if (photoSrc.large) sources.push(`${photoSrc.large} 1880w`);
-  if (photoSrc.large2x) sources.push(`${photoSrc.large2x} 3760w`);
-  
+
+  if (photoSrc.tiny) {
+    sources.push(`${photoSrc.tiny} 280w`);
+  }
+  if (photoSrc.small) {
+    sources.push(`${photoSrc.small} 340w`);
+  }
+  if (photoSrc.medium) {
+    sources.push(`${photoSrc.medium} 940w`);
+  }
+  if (photoSrc.large) {
+    sources.push(`${photoSrc.large} 1880w`);
+  }
+  if (photoSrc.large2x) {
+    sources.push(`${photoSrc.large2x} 3760w`);
+  }
+
   return sources.join(', ');
 }
 
@@ -593,10 +743,12 @@ function setupCollageResizeOptimization() {
     }
     return null;
   }
-  
+
   const collageElement = document.querySelector('.hero-collage');
-  if (!collageElement) return null;
-  
+  if (!collageElement) {
+    return null;
+  }
+
   let resizeTimeout;
   const observer = new ResizeObserver(() => {
     // Debounce to avoid excessive updates
@@ -609,7 +761,7 @@ function setupCollageResizeOptimization() {
       // This is a placeholder for the optimization hook
     }, 500);
   });
-  
+
   observer.observe(collageElement);
   return observer;
 }
@@ -625,10 +777,12 @@ function setupLazyLoadingForCollage() {
     }
     return null;
   }
-  
+
   const collageCards = document.querySelectorAll('.hero-collage-card');
-  if (collageCards.length === 0) return null;
-  
+  if (collageCards.length === 0) {
+    return null;
+  }
+
   const observer = new IntersectionObserver(
     entries => {
       entries.forEach(entry => {
@@ -650,7 +804,7 @@ function setupLazyLoadingForCollage() {
       rootMargin: '50px', // Preload 50px before entering viewport
     }
   );
-  
+
   collageCards.forEach(card => observer.observe(card));
   return observer;
 }
@@ -907,21 +1061,21 @@ function restoreDefaultImage(imgElement, frame, uploadGallery = [], frameIndex =
  */
 function displayPexelsImage(imgElement, frame, imageData, category) {
   imgElement.src = imageData.url;
-  
+
   // Apply srcset if available for responsive images
   if (imageData.srcset) {
     imgElement.srcset = imageData.srcset;
-    
+
     // Add sizes attribute for optimal image selection
     // Mobile: ~48% of viewport (2-column), Tablet+: ~25% of viewport
     imgElement.sizes = '(max-width: 768px) 48vw, 25vw';
   }
-  
+
   // Add decoding="async" for better performance
   // Note: Not using loading="lazy" because collage is above-the-fold (hero section)
   // and needs to load immediately for good LCP (Largest Contentful Paint)
   imgElement.decoding = 'async';
-  
+
   imgElement.alt = `${category.charAt(0).toUpperCase() + category.slice(1)} - Photo by ${imageData.photographer}`;
   imgElement.style.opacity = '1';
   frame.classList.remove('loading-pexels');
@@ -1211,7 +1365,7 @@ async function initPexelsCollage(settings) {
 
       // Store watchdog ID for cleanup
       window.__collageWatchdogId = watchdogInterval;
-      
+
       // Setup responsive image optimization observers
       window.__collageResizeObserver = setupCollageResizeOptimization();
       window.__collageIntersectionObserver = setupLazyLoadingForCollage();
@@ -1254,17 +1408,32 @@ async function initPexelsCollage(settings) {
 
 /**
  * Initialize hero video element with Pexels video
+ * Features:
+ * - Supports both Pexels API and uploaded videos
+ * - Smooth fade-in transition when video loads
+ * - Loading spinner with animated indicator
+ * - Respects user preferences (reduced-motion, reduced-data)
+ * - Comprehensive error handling with metrics tracking
+ * - Automatic retry on failure
+ * - Graceful fallback to poster image
+ * 
  * @param {string} source - Source type ('pexels' or 'uploads')
- * @param {Object} mediaTypes - Media types configuration
+ * @param {Object} mediaTypes - Media types configuration with {photos: boolean, videos: boolean}
  * @param {Array} uploadGallery - Array of uploaded media URLs
  */
 async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
   const videoElement = document.getElementById('hero-pexels-video');
   const videoSource = document.getElementById('hero-video-source');
   const videoCredit = document.getElementById('hero-video-credit');
+  const videoCard = document.querySelector('.hero-video-card');
 
   if (!videoElement || !videoSource) {
     return; // Video elements not present in HTML
+  }
+
+  // Add loading state
+  if (videoCard) {
+    videoCard.classList.add('loading-video');
   }
 
   try {
@@ -1293,6 +1462,20 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
         }
         videoSource.src = videoUrl;
         videoElement.load();
+
+        // Remove loading state when video loads
+        videoElement.addEventListener(
+          'loadeddata',
+          () => {
+            if (videoCard) {
+              videoCard.classList.remove('loading-video');
+            }
+            // Add loaded class for smooth fade-in
+            videoElement.classList.add('video-loaded');
+          },
+          { once: true }
+        );
+
         videoElement.play().catch(() => {
           if (isDebugEnabled()) {
             console.log('[Hero Video] Autoplay prevented, video will play on user interaction');
@@ -1307,6 +1490,11 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
       // Fetch Pexels video
       const eventQueries = ['wedding', 'party', 'corporate event', 'celebration', 'event venue'];
       const randomQuery = eventQueries[Math.floor(Math.random() * eventQueries.length)];
+
+      // Track attempt
+      if (window.__videoMetrics__) {
+        window.__videoMetrics__.heroVideoAttempts++;
+      }
 
       if (isDebugEnabled()) {
         console.log('[Hero Video] Fetching Pexels video with query:', randomQuery);
@@ -1370,6 +1558,19 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
               clearTimeout(timeoutId);
             }
 
+            // Remove loading state
+            if (videoCard) {
+              videoCard.classList.remove('loading-video');
+            }
+
+            // Add loaded class for smooth fade-in
+            videoElement.classList.add('video-loaded');
+
+            // Track success
+            if (window.__videoMetrics__) {
+              window.__videoMetrics__.heroVideoSuccesses++;
+            }
+
             if (isDebugEnabled()) {
               console.log('[Hero Video] Video metadata loaded, attempting to play');
             }
@@ -1388,6 +1589,17 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
             loadingComplete = true;
             if (timeoutId) {
               clearTimeout(timeoutId);
+            }
+
+            // Remove loading state on error
+            if (videoCard) {
+              videoCard.classList.remove('loading-video');
+            }
+
+            // Track failure
+            if (window.__videoMetrics__) {
+              window.__videoMetrics__.heroVideoFailures++;
+              window.__videoMetrics__.lastError = 'Video failed to load';
             }
 
             if (isDebugEnabled()) {
@@ -1410,6 +1622,10 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
           timeoutId = setTimeout(() => {
             if (!loadingComplete) {
               loadingComplete = true;
+              // Remove loading state on timeout
+              if (videoCard) {
+                videoCard.classList.remove('loading-video');
+              }
               if (isDebugEnabled()) {
                 console.warn(
                   '[Hero Video] Video loading timeout - poster will be shown as fallback'
@@ -1442,6 +1658,11 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
       throw new Error('Failed to initialize video');
     }
   } catch (error) {
+    // Remove loading state on error
+    if (videoCard) {
+      videoCard.classList.remove('loading-video');
+    }
+
     if (isDebugEnabled()) {
       console.warn('[Hero Video] Failed to initialize video:', error.message);
     }
@@ -1658,8 +1879,17 @@ async function initCollageWidget(widgetConfig) {
                   video.videographer_url || 'https://www.pexels.com'
                 ),
                 duration: video.duration,
+                // Add video metadata for better quality selection
+                width: video.width,
+                height: video.height,
               }));
             allMedia.push(...videos);
+
+            if (isDebugEnabled()) {
+              console.log(
+                `[Collage Widget] Added ${videos.length} videos for ${category} (filtered from ${data.videos.length})`
+              );
+            }
           }
 
           if (allMedia.length > 0) {
@@ -1912,6 +2142,11 @@ async function loadMediaIntoFrame(
     const isVideo = media.type === 'video';
 
     if (isVideo) {
+      // Track attempt
+      if (window.__videoMetrics__) {
+        window.__videoMetrics__.collageVideoAttempts++;
+      }
+
       // Clean up existing video if present
       const existingVideo = frame.querySelector('video');
       if (existingVideo) {
@@ -1944,7 +2179,13 @@ async function loadMediaIntoFrame(
       const handleLoadedData = () => {
         mediaElement.replaceWith(video);
         video.style.opacity = '1';
+        video.classList.add('video-loaded');
         frame.classList.remove('loading-pexels');
+
+        // Track success
+        if (window.__videoMetrics__) {
+          window.__videoMetrics__.collageVideoSuccesses++;
+        }
 
         // Only add credit if from Pexels (has videographer field for videos)
         if (media.videographer) {
@@ -1954,10 +2195,28 @@ async function loadMediaIntoFrame(
           removeCreatorCredit(frame);
         }
 
+        // Explicitly play the video (autoplay may not work after DOM manipulation)
+        if (!prefersReducedMotion) {
+          video.play().catch(err => {
+            if (isDebugEnabled()) {
+              console.log(
+                `[Collage Widget] Video autoplay prevented for ${category}:`,
+                err.message
+              );
+            }
+          });
+        }
+
         resolve();
       };
 
       const handleError = () => {
+        // Track failure
+        if (window.__videoMetrics__) {
+          window.__videoMetrics__.collageVideoFailures++;
+          window.__videoMetrics__.lastError = `Collage video failed: ${media.url}`;
+        }
+
         if (isDebugEnabled()) {
           console.warn(`[Collage Widget] Failed to load video: ${media.url}`);
         }
@@ -1996,17 +2255,17 @@ async function loadMediaIntoFrame(
         // Add cache busting to prevent browser from using cached static images
         const cacheBustedUrl = addCacheBuster(media.url);
         mediaElement.src = cacheBustedUrl;
-        
+
         // Apply srcset if available for responsive images
         if (media.srcset) {
           mediaElement.srcset = media.srcset;
           mediaElement.sizes = '(max-width: 768px) 48vw, 25vw';
         }
-        
+
         // Add decoding="async" for better performance
         // Note: Not using loading="lazy" - collage is above-the-fold (hero section)
         mediaElement.decoding = 'async';
-        
+
         mediaElement.alt = `${category.charAt(0).toUpperCase() + category.slice(1)} - Photo`;
         mediaElement.style.opacity = '1';
         frame.classList.remove('loading-pexels');
@@ -2036,17 +2295,17 @@ async function loadMediaIntoFrame(
         // Add cache busting to prevent browser from using cached static images
         const cacheBustedUrl = addCacheBuster(media.url);
         mediaElement.src = cacheBustedUrl;
-        
+
         // Apply srcset if available for responsive images
         if (media.srcset) {
           mediaElement.srcset = media.srcset;
           mediaElement.sizes = '(max-width: 768px) 48vw, 25vw';
         }
-        
+
         // Add decoding="async" for better performance
         // Note: Not using loading="lazy" - collage is above-the-fold (hero section)
         mediaElement.decoding = 'async';
-        
+
         mediaElement.alt = `${category.charAt(0).toUpperCase() + category.slice(1)} - Photo`;
         mediaElement.style.opacity = '1';
         frame.classList.remove('loading-pexels');
@@ -2157,9 +2416,11 @@ function cycleWidgetMedia(
             if (!prefersReducedMotion) {
               setTimeout(() => {
                 video.style.opacity = '1';
+                video.classList.add('video-loaded');
               }, 50);
             } else {
               video.style.opacity = '1';
+              video.classList.add('video-loaded');
             }
 
             // Only add credit if from Pexels (has photographer or videographer field)
@@ -2168,6 +2429,18 @@ function cycleWidgetMedia(
             } else {
               // Remove any existing credits when using uploaded media
               removeCreatorCredit(frame);
+            }
+
+            // Explicitly play the video (autoplay may not work after DOM manipulation)
+            if (!prefersReducedMotion) {
+              video.play().catch(err => {
+                if (isDebugEnabled()) {
+                  console.log(
+                    `[Collage Widget] Video autoplay prevented for ${category}:`,
+                    err.message
+                  );
+                }
+              });
             }
           };
 
