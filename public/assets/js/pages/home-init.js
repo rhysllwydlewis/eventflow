@@ -19,7 +19,9 @@ window.__videoMetrics__ = {
 
 // Helper function to calculate success rate
 function calculateSuccessRate(successes, attempts) {
-  if (attempts === 0) return 0;
+  if (attempts === 0) {
+    return 0;
+  }
   return ((successes / attempts) * 100).toFixed(1);
 }
 
@@ -30,13 +32,17 @@ window.logVideoMetrics = function () {
   console.log(`  Attempts: ${window.__videoMetrics__.heroVideoAttempts}`);
   console.log(`  Successes: ${window.__videoMetrics__.heroVideoSuccesses}`);
   console.log(`  Failures: ${window.__videoMetrics__.heroVideoFailures}`);
-  console.log(`  Success Rate: ${calculateSuccessRate(window.__videoMetrics__.heroVideoSuccesses, window.__videoMetrics__.heroVideoAttempts)}%`);
+  console.log(
+    `  Success Rate: ${calculateSuccessRate(window.__videoMetrics__.heroVideoSuccesses, window.__videoMetrics__.heroVideoAttempts)}%`
+  );
   console.log('');
   console.log('Collage Videos:');
   console.log(`  Attempts: ${window.__videoMetrics__.collageVideoAttempts}`);
   console.log(`  Successes: ${window.__videoMetrics__.collageVideoSuccesses}`);
   console.log(`  Failures: ${window.__videoMetrics__.collageVideoFailures}`);
-  console.log(`  Success Rate: ${calculateSuccessRate(window.__videoMetrics__.collageVideoSuccesses, window.__videoMetrics__.collageVideoAttempts)}%`);
+  console.log(
+    `  Success Rate: ${calculateSuccessRate(window.__videoMetrics__.collageVideoSuccesses, window.__videoMetrics__.collageVideoAttempts)}%`
+  );
   if (window.__videoMetrics__.lastError) {
     console.log('');
     console.log(`⚠️  Last Error: ${window.__videoMetrics__.lastError}`);
@@ -163,7 +169,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Add event listener for log link (avoid inline onclick)
     const logLink = document.getElementById('metrics-log-link');
     if (logLink) {
-      logLink.addEventListener('click', (e) => {
+      logLink.addEventListener('click', e => {
         e.preventDefault();
         window.logVideoMetrics();
       });
@@ -174,7 +180,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const m = window.__videoMetrics__;
       const heroRate = calculateSuccessRate(m.heroVideoSuccesses, m.heroVideoAttempts);
       const collageRate = calculateSuccessRate(m.collageVideoSuccesses, m.collageVideoAttempts);
-      
+
       const content = document.getElementById('metrics-content');
       if (content) {
         content.innerHTML = `
@@ -1416,7 +1422,7 @@ async function initPexelsCollage(settings) {
  * - Comprehensive error handling with metrics tracking
  * - Automatic retry on failure
  * - Graceful fallback to poster image
- * 
+ *
  * @param {string} source - Source type ('pexels' or 'uploads')
  * @param {Object} mediaTypes - Media types configuration with {photos: boolean, videos: boolean}
  * @param {Array} uploadGallery - Array of uploaded media URLs
@@ -1530,7 +1536,8 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
       if (data.videos && data.videos.length > 0) {
         const video = data.videos[0];
         // Get all HD and SD quality video files for fallback support
-        const videoFiles = video.video_files?.filter(f => f.quality === 'hd' || f.quality === 'sd') || [];
+        const videoFiles =
+          video.video_files?.filter(f => f.quality === 'hd' || f.quality === 'sd') || [];
 
         if (isDebugEnabled()) {
           console.log('[Hero Video] Available video files:', {
@@ -1551,25 +1558,25 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
               return;
             }
             loadingComplete = true;
-            
+
             if (timeoutId) {
               clearTimeout(timeoutId);
             }
-            
+
             // Remove error listener to prevent further calls
             videoElement.removeEventListener('error', handleVideoError);
-            
+
             // Remove loading state
             if (videoCard) {
               videoCard.classList.remove('loading-video');
             }
-            
+
             // Track failure
             if (window.__videoMetrics__) {
               window.__videoMetrics__.heroVideoFailures++;
               window.__videoMetrics__.lastError = 'All video URLs failed';
             }
-            
+
             if (isDebugEnabled()) {
               console.warn('[Hero Video] All video URLs failed, using poster fallback');
             }
@@ -1583,19 +1590,24 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
             }
 
             const videoFile = videoFiles[currentUrlIndex];
-            
+
             // Validate video file has a valid link
             if (!videoFile?.link) {
               if (isDebugEnabled()) {
-                console.warn(`[Hero Video] Video file at index ${currentUrlIndex} has no valid link, skipping...`);
+                console.warn(
+                  `[Hero Video] Video file at index ${currentUrlIndex} has no valid link, skipping...`
+                );
               }
               currentUrlIndex++;
               tryNextVideo();
               return;
             }
-            
+
             if (isDebugEnabled()) {
-              console.log(`[Hero Video] Trying video URL ${currentUrlIndex + 1}/${videoFiles.length}:`, videoFile.link);
+              console.log(
+                `[Hero Video] Trying video URL ${currentUrlIndex + 1}/${videoFiles.length}:`,
+                videoFile.link
+              );
             }
 
             // Set source and start loading
@@ -1603,19 +1615,21 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
             videoElement.load();
           };
 
-          const handleMetadataLoaded = () => {
+          const handleVideoLoaded = () => {
             // Already handled
             if (loadingComplete) {
               return;
             }
             loadingComplete = true;
-            
+
             if (timeoutId) {
               clearTimeout(timeoutId);
             }
-            
+
             // Remove error listener since video loaded successfully
             videoElement.removeEventListener('error', handleVideoError);
+            // Remove the canplay listener as well
+            videoElement.removeEventListener('canplay', handleVideoLoaded);
 
             // Remove loading state
             if (videoCard) {
@@ -1660,8 +1674,9 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
             }
           };
 
-          // Add listeners before loading
-          videoElement.addEventListener('loadedmetadata', handleMetadataLoaded, { once: true });
+          // Add listeners before loading - use both loadeddata and canplay for better reliability
+          videoElement.addEventListener('loadeddata', handleVideoLoaded, { once: true });
+          videoElement.addEventListener('canplay', handleVideoLoaded, { once: true });
           videoElement.addEventListener('error', handleVideoError);
 
           // Start trying the first video
