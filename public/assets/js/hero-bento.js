@@ -20,6 +20,9 @@ class BentoHeroController {
     this.pexelsBaseUrl = 'https://api.pexels.com/v1';
     this.apiTimeout = 8000; // 8 second timeout for API requests
 
+    // Collage widget settings from backend
+    this.settings = null;
+
     // Category queries for Pexels
     this.categoryQueries = {
       venues: 'wedding venue elegant',
@@ -30,10 +33,35 @@ class BentoHeroController {
   }
 
   /**
+   * Fetch collage widget settings from backend
+   */
+  async fetchSettings() {
+    try {
+      const response = await fetch('/api/public/homepage-settings');
+      
+      if (!response.ok) {
+        console.warn('[Bento Hero] Failed to fetch settings, using defaults');
+        return null;
+      }
+      
+      const data = await response.json();
+      const settings = data.collageWidget || null;
+      console.log('[Bento Hero] Settings loaded:', settings);
+      return settings;
+    } catch (error) {
+      console.warn('[Bento Hero] Error fetching settings:', error);
+      return null;
+    }
+  }
+
+  /**
    * Initialize the bento grid with video and images
    */
   async init() {
     console.log('[Bento Hero] Initializing...');
+
+    // Fetch settings from backend first
+    this.settings = await this.fetchSettings();
 
     // Find the hero cell
     const heroCell = document.querySelector('.ef-bento-hero');
@@ -49,15 +77,31 @@ class BentoHeroController {
       return;
     }
 
-    // Setup video playback
-    await this.initializeVideo();
+    // Check if collage widget is enabled
+    const isEnabled = this.settings?.enabled !== false; // Default to true if settings not loaded
+    const source = this.settings?.source || 'pexels';
 
-    // Setup observers for performance
+    console.log('[Bento Hero] Widget enabled:', isEnabled, 'Source:', source);
+
+    if (!isEnabled) {
+      console.log('[Bento Hero] Collage widget is disabled, using static images');
+      return;
+    }
+
+    // Only load from Pexels if source is 'pexels'
+    if (source === 'pexels') {
+      // Setup video playback
+      await this.initializeVideo();
+
+      // Load category images from Pexels
+      await this.loadCategoryImages();
+    } else {
+      console.log('[Bento Hero] Source is not Pexels, using static images');
+    }
+
+    // Setup observers for performance (regardless of source)
     this.setupIntersectionObserver();
     this.setupVisibilityObserver();
-
-    // Load category images from Pexels
-    await this.loadCategoryImages();
 
     console.log('[Bento Hero] Initialization complete');
   }
@@ -320,7 +364,10 @@ class BentoHeroController {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), this.apiTimeout);
 
-      const query = this.categoryQueries[category] || category;
+      // Use custom query from settings if available, otherwise use default
+      const customQueries = this.settings?.pexelsQueries || {};
+      const query = customQueries[category] || this.categoryQueries[category] || category;
+      
       const response = await fetch(
         `${this.pexelsBaseUrl}/search?query=${encodeURIComponent(query)}&per_page=15&orientation=landscape`,
         {
