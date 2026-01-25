@@ -3646,11 +3646,15 @@ router.put(
         updatedBy: req.user.email,
       };
 
-      const writeSuccess = await dbUnified.write('settings', settings);
+      // Write and verify the data was persisted
+      const writeResult = await dbUnified.writeAndVerify('settings', settings);
 
-      if (!writeSuccess) {
-        console.error('Failed to persist site settings to database');
-        return res.status(500).json({ error: 'Failed to persist settings to database' });
+      if (!writeResult.success || !writeResult.verified) {
+        console.error('Failed to persist site settings to database:', writeResult.error);
+        return res.status(500).json({
+          error: 'Failed to persist settings to database',
+          details: writeResult.error,
+        });
       }
 
       auditLog({
@@ -3662,7 +3666,8 @@ router.put(
         details: { name, tagline },
       });
 
-      res.json({ success: true, site: settings.site });
+      // Return the verified data from the database
+      res.json({ success: true, site: writeResult.data.site });
     } catch (error) {
       console.error('Error updating site settings:', error);
       res.status(500).json({ error: 'Failed to update settings' });
@@ -3787,22 +3792,25 @@ router.put(
         registration: newFeatures.registration,
       });
 
-      // Write with timeout protection (new timeout promise)
+      // Write with timeout protection and verification
       const writeStart = Date.now();
-      const writeSuccess = await Promise.race([
-        dbUnified.write('settings', settings),
-        createTimeout(5000, 'Write operation'),
+      const writeResult = await Promise.race([
+        dbUnified.writeAndVerify('settings', settings),
+        createTimeout(5000, 'Write and verify operation'),
       ]);
 
       console.log(
-        `[${requestId}] Database write completed in ${Date.now() - writeStart}ms, success: ${writeSuccess}`
+        `[${requestId}] Database write completed in ${Date.now() - writeStart}ms, success: ${writeResult.success}, verified: ${writeResult.verified}`
       );
 
-      if (!writeSuccess) {
-        console.error(`[${requestId}] Failed to persist feature flags to database`);
+      if (!writeResult.success || !writeResult.verified) {
+        console.error(
+          `[${requestId}] Failed to persist feature flags to database:`,
+          writeResult.error
+        );
         return res.status(500).json({
           error: 'Failed to persist settings to database',
-          details: 'Database write returned false',
+          details: writeResult.error || 'Database write or verification failed',
         });
       }
 
@@ -3819,13 +3827,14 @@ router.put(
         action: 'FEATURES_UPDATED',
         targetType: 'features',
         targetId: null,
-        details: settings.features,
+        details: writeResult.data.features,
       });
 
       const totalTime = Date.now() - startTime;
       console.log(`[${requestId}] Feature flags update completed successfully in ${totalTime}ms`);
 
-      res.json({ success: true, features: settings.features });
+      // Return the verified data from the database
+      res.json({ success: true, features: writeResult.data.features });
     } catch (error) {
       const totalTime = Date.now() - startTime;
       console.error(
@@ -3901,11 +3910,15 @@ router.put(
         updatedBy: req.user.email,
       };
 
-      const writeSuccess = await dbUnified.write('settings', settings);
+      // Write and verify the data was persisted
+      const writeResult = await dbUnified.writeAndVerify('settings', settings);
 
-      if (!writeSuccess) {
-        console.error('Failed to persist maintenance settings to database');
-        return res.status(500).json({ error: 'Failed to persist settings to database' });
+      if (!writeResult.success || !writeResult.verified) {
+        console.error('Failed to persist maintenance settings to database:', writeResult.error);
+        return res.status(500).json({
+          error: 'Failed to persist settings to database',
+          details: writeResult.error,
+        });
       }
 
       auditLog({
@@ -3917,7 +3930,8 @@ router.put(
         details: { enabled, message, duration, expiresAt },
       });
 
-      res.json({ success: true, maintenance: settings.maintenance });
+      // Return the verified data from the database
+      res.json({ success: true, maintenance: writeResult.data.maintenance });
     } catch (error) {
       console.error('Error updating maintenance settings:', error);
       res.status(500).json({ error: 'Failed to update settings' });
@@ -4000,11 +4014,15 @@ router.put(
         updatedBy: req.user.email,
       };
 
-      const writeSuccess = await dbUnified.write('settings', settings);
+      // Write and verify the data was persisted
+      const writeResult = await dbUnified.writeAndVerify('settings', settings);
 
-      if (!writeSuccess) {
-        console.error('Failed to persist email template to database');
-        return res.status(500).json({ error: 'Failed to persist template to database' });
+      if (!writeResult.success || !writeResult.verified) {
+        console.error('Failed to persist email template to database:', writeResult.error);
+        return res.status(500).json({
+          error: 'Failed to persist template to database',
+          details: writeResult.error,
+        });
       }
 
       auditLog({
@@ -4016,7 +4034,8 @@ router.put(
         details: { subject },
       });
 
-      res.json({ success: true, template: settings.emailTemplates[req.params.name] });
+      // Return the verified data from the database
+      res.json({ success: true, template: writeResult.data.emailTemplates[req.params.name] });
     } catch (error) {
       console.error('Error updating email template:', error);
       res.status(500).json({ error: 'Failed to update settings' });
@@ -4702,7 +4721,10 @@ router.put(
         }
       }
 
-      if (transition?.effect && !['fade', 'slide', 'zoom', 'crossfade'].includes(transition.effect)) {
+      if (
+        transition?.effect &&
+        !['fade', 'slide', 'zoom', 'crossfade'].includes(transition.effect)
+      ) {
         return res.status(400).json({ error: 'Invalid transition effect' });
       }
 
@@ -4772,7 +4794,10 @@ router.put(
         settings.collageWidget.heroVideo = { ...settings.collageWidget.heroVideo, ...heroVideo };
       }
       if (videoQuality !== undefined) {
-        settings.collageWidget.videoQuality = { ...settings.collageWidget.videoQuality, ...videoQuality };
+        settings.collageWidget.videoQuality = {
+          ...settings.collageWidget.videoQuality,
+          ...videoQuality,
+        };
       }
       if (transition !== undefined) {
         settings.collageWidget.transition = { ...settings.collageWidget.transition, ...transition };
@@ -4781,19 +4806,37 @@ router.put(
         settings.collageWidget.preloading = { ...settings.collageWidget.preloading, ...preloading };
       }
       if (mobileOptimizations !== undefined) {
-        settings.collageWidget.mobileOptimizations = { ...settings.collageWidget.mobileOptimizations, ...mobileOptimizations };
+        settings.collageWidget.mobileOptimizations = {
+          ...settings.collageWidget.mobileOptimizations,
+          ...mobileOptimizations,
+        };
       }
       if (contentFiltering !== undefined) {
-        settings.collageWidget.contentFiltering = { ...settings.collageWidget.contentFiltering, ...contentFiltering };
+        settings.collageWidget.contentFiltering = {
+          ...settings.collageWidget.contentFiltering,
+          ...contentFiltering,
+        };
       }
       if (playbackControls !== undefined) {
-        settings.collageWidget.playbackControls = { ...settings.collageWidget.playbackControls, ...playbackControls };
+        settings.collageWidget.playbackControls = {
+          ...settings.collageWidget.playbackControls,
+          ...playbackControls,
+        };
       }
 
       settings.collageWidget.updatedAt = new Date().toISOString();
       settings.collageWidget.updatedBy = req.user.email;
 
-      await dbUnified.write('settings', settings);
+      // Write and verify the data was persisted
+      const writeResult = await dbUnified.writeAndVerify('settings', settings);
+
+      if (!writeResult.success || !writeResult.verified) {
+        console.error('Failed to persist collage widget settings to database:', writeResult.error);
+        return res.status(500).json({
+          error: 'Failed to persist collage widget configuration to database',
+          details: writeResult.error,
+        });
+      }
 
       auditLog({
         adminId: req.user.id,
@@ -4804,9 +4847,10 @@ router.put(
         details: { enabled, source, mediaTypes },
       });
 
+      // Return the verified data from the database, not the in-memory object
       res.json({
         success: true,
-        collageWidget: settings.collageWidget,
+        collageWidget: writeResult.data.collageWidget,
       });
     } catch (error) {
       console.error('Error updating collage widget config:', error);

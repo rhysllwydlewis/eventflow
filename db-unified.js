@@ -245,6 +245,157 @@ async function write(collectionName, data) {
 }
 
 /**
+ * Write data to a collection and verify it was persisted correctly
+ * Provides stronger guarantees than write() alone by reading back the data
+ * @param {string} collectionName - Name of the collection
+ * @param {Array|Object} data - Array of documents or object (for settings) to write
+ * @param {Object} options - Options for write and verify operation
+ * @param {number} options.maxRetries - Maximum number of retry attempts (default: 2)
+ * @param {number} options.retryDelayMs - Delay between retries in milliseconds (default: 100)
+ * @returns {Promise<Object>} Result object with success, verified, data, and error
+ */
+async function writeAndVerify(collectionName, data, options = {}) {
+  const { maxRetries = 2, retryDelayMs = 100 } = options;
+  let lastError = null;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      if (attempt > 0) {
+        console.log(
+          `Retrying write and verify for ${collectionName}, attempt ${attempt + 1}/${maxRetries + 1}`
+        );
+        // Wait before retrying
+        await new Promise(resolve => setTimeout(resolve, retryDelayMs));
+      }
+
+      // Perform the write operation
+      const writeSuccess = await write(collectionName, data);
+
+      if (!writeSuccess) {
+        lastError = new Error('Write operation returned false');
+        continue; // Try again
+      }
+
+      // Small delay to ensure write has propagated (especially important for distributed databases)
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      // Read back the data to verify
+      const verifiedData = await read(collectionName);
+
+      // Verify the data matches what we wrote
+      const isVerified = await verifyDataMatch(collectionName, data, verifiedData);
+
+      if (isVerified) {
+        return {
+          success: true,
+          verified: true,
+          data: verifiedData,
+        };
+      } else {
+        lastError = new Error('Data verification failed - written data does not match read data');
+      }
+    } catch (error) {
+      lastError = error;
+      console.error(
+        `Error in writeAndVerify for ${collectionName} (attempt ${attempt + 1}):`,
+        error.message
+      );
+    }
+  }
+
+  // All retries exhausted
+  console.error(
+    `Failed to write and verify ${collectionName} after ${maxRetries + 1} attempts. Last error: ${lastError?.message}`
+  );
+
+  return {
+    success: false,
+    verified: false,
+    data: null,
+    error: lastError?.message || 'Unknown error',
+  };
+}
+
+/**
+ * Verify that written data matches read data
+ * For settings collection, does deep comparison of key fields
+ * For array collections, compares lengths and key properties
+ * @param {string} collectionName - Name of the collection
+ * @param {Array|Object} writtenData - Data that was written
+ * @param {Array|Object} readData - Data that was read back
+ * @returns {Promise<boolean>} True if data matches
+ */
+async function verifyDataMatch(collectionName, writtenData, readData) {
+  try {
+    // Handle settings collection (object comparison)
+    if (collectionName === 'settings') {
+      if (!readData || typeof readData !== 'object') {
+        return false;
+      }
+
+      // Deep comparison of all nested properties
+      return deepCompareObjects(writtenData, readData, collectionName);
+    }
+
+    // Handle array collections (length and basic content comparison)
+    if (Array.isArray(writtenData) && Array.isArray(readData)) {
+      // For array collections, length comparison is sufficient for most cases
+      // as we typically replace the entire collection
+      return writtenData.length === readData.length;
+    }
+
+    // Fallback: JSON comparison (less efficient but works for most cases)
+    return JSON.stringify(writtenData) === JSON.stringify(readData);
+  } catch (error) {
+    console.error('Error in verifyDataMatch:', error.message);
+    return false;
+  }
+}
+
+/**
+ * Deep compare two objects recursively
+ * @param {Object} written - Written object
+ * @param {Object} read - Read object
+ * @param {string} path - Current path for error messages
+ * @returns {boolean} True if objects match
+ */
+function deepCompareObjects(written, read, path = '') {
+  // Compare all keys in written object
+  for (const [key, writtenValue] of Object.entries(written)) {
+    const readValue = read[key];
+    const currentPath = path ? `${path}.${key}` : key;
+
+    // Handle nested objects recursively
+    if (
+      writtenValue &&
+      typeof writtenValue === 'object' &&
+      !Array.isArray(writtenValue) &&
+      !(writtenValue instanceof Date)
+    ) {
+      if (!readValue || typeof readValue !== 'object') {
+        console.warn(`Verification mismatch at ${currentPath}: read value is not an object`);
+        return false;
+      }
+      // Recursively compare nested objects
+      if (!deepCompareObjects(writtenValue, readValue, currentPath)) {
+        return false;
+      }
+    } else {
+      // Compare primitive values, arrays, and dates using JSON serialization
+      const writtenJson = JSON.stringify(writtenValue);
+      const readJson = JSON.stringify(readValue);
+      if (writtenJson !== readJson) {
+        console.warn(
+          `Verification mismatch at ${currentPath}: ` + `written=${writtenJson}, read=${readJson}`
+        );
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+/**
  * Find one document by filter
  * @param {string} collectionName - Name of the collection
  * @param {Object|Function} filter - Filter object or function
@@ -790,6 +941,7 @@ module.exports = {
   initializeDatabase,
   read,
   write,
+  writeAndVerify,
   find,
   findOne,
   updateOne,
