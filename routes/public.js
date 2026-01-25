@@ -1,1 +1,147 @@
-404: Not Found
+/**
+ * Public Routes
+ * Public-facing endpoints that don't require authentication
+ * Includes homepage settings, public stats, and other publicly accessible data
+ */
+
+'use strict';
+
+const express = require('express');
+const router = express.Router();
+const dbUnified = require('../db-unified');
+
+function isCollageDebugEnabled() {
+  return process.env.NODE_ENV === 'development' || process.env.DEBUG_COLLAGE === 'true';
+}
+
+const ALLOWED_PEXELS_KEYS = ['intervalSeconds', 'queries', 'perPage', 'orientation', 'tags'];
+
+const DEFAULT_PEXELS_SETTINGS = {
+  intervalSeconds: 2.5,
+  queries: {
+    venues: 'wedding venue elegant ballroom',
+    catering: 'wedding catering food elegant',
+    entertainment: 'live band wedding party',
+    photography: 'wedding photography professional',
+  },
+};
+
+function sanitizePexelsSettings(settings) {
+  if (!settings || typeof settings !== 'object') {
+    return DEFAULT_PEXELS_SETTINGS;
+  }
+  const sanitized = {};
+  ALLOWED_PEXELS_KEYS.forEach(key => {
+    if (settings[key] !== undefined) {
+      sanitized[key] = settings[key];
+    }
+  });
+  if (sanitized.intervalSeconds !== undefined) {
+    const interval = Number(sanitized.intervalSeconds);
+    if (isNaN(interval) || interval < 1 || interval > 60) {
+      sanitized.intervalSeconds = DEFAULT_PEXELS_SETTINGS.intervalSeconds;
+    } else {
+      sanitized.intervalSeconds = interval;
+    }
+  } else {
+    sanitized.intervalSeconds = DEFAULT_PEXELS_SETTINGS.intervalSeconds;
+  }
+  if (!sanitized.queries || typeof sanitized.queries !== 'object') {
+    sanitized.queries = DEFAULT_PEXELS_SETTINGS.queries;
+  }
+  if (settings.interval && !sanitized.intervalSeconds) {
+    const interval = Number(settings.interval);
+    if (!isNaN(interval) && interval >= 1 && interval <= 60) {
+      sanitized.intervalSeconds = interval;
+    }
+  }
+  return sanitized;
+}
+
+router.get('/homepage-settings', async (req, res) => {
+  try {
+    res.set('Cache-Control', 'no-store, private');
+    const settings = (await dbUnified.read('settings')) || {};
+    const features = settings.features || {};
+    const collageWidget = settings.collageWidget || {};
+    const legacyPexelsEnabled = features.pexelsCollage === true;
+    const collageEnabled =
+      collageWidget.enabled !== undefined ? collageWidget.enabled : legacyPexelsEnabled;
+    const pexelsCollageSettings = sanitizePexelsSettings(settings.pexelsCollageSettings);
+    const collageWidgetResponse = {
+      enabled: collageEnabled,
+      source: collageWidget.source || 'pexels',
+      mediaTypes: collageWidget.mediaTypes || { photos: true, videos: true },
+      intervalSeconds: collageWidget.intervalSeconds || pexelsCollageSettings.intervalSeconds,
+      pexelsQueries: collageWidget.pexelsQueries || pexelsCollageSettings.queries,
+      pexelsVideoQueries: collageWidget.pexelsVideoQueries || {
+        venues: 'wedding venue video aerial',
+        catering: 'catering food preparation video',
+        entertainment: 'live band music performance video',
+        photography: 'wedding videography cinematic',
+      },
+      uploadGallery: collageWidget.uploadGallery || [],
+      fallbackToPexels:
+        collageWidget.fallbackToPexels !== undefined ? collageWidget.fallbackToPexels : true,
+    };
+    if (isCollageDebugEnabled()) {
+      console.log('[Homepage Settings] Returning collage config:', {
+        collageEnabled,
+        collageWidgetEnabled: collageWidget.enabled,
+        legacyPexelsEnabled,
+        source: collageWidgetResponse.source,
+        hasQueries: !!collageWidgetResponse.pexelsQueries,
+        uploadGalleryCount: collageWidgetResponse.uploadGallery.length,
+      });
+    }
+    res.json({
+      collageWidget: collageWidgetResponse,
+      pexelsCollageEnabled: legacyPexelsEnabled,
+      pexelsCollageSettings,
+    });
+  } catch (error) {
+    if (!res.headersSent) {
+      console.error('[ERROR] Failed to read homepage settings:', error.message);
+      res.status(500).json({ error: 'Failed to read homepage settings' });
+    }
+  }
+});
+
+let statsCache = null;
+let statsCacheTime = 0;
+const STATS_CACHE_DURATION = 5 * 60 * 1000;
+
+router.get('/stats', async (req, res) => {
+  try {
+    const now = Date.now();
+    if (statsCache && now - statsCacheTime < STATS_CACHE_DURATION) {
+      res.set('Cache-Control', 'public, max-age=300');
+      return res.json(statsCache);
+    }
+    const suppliers = (await dbUnified.read('suppliers')) || [];
+    const packages = (await dbUnified.read('packages')) || [];
+    const marketplaceListings = (await dbUnified.read('marketplace_listings')) || [];
+    const reviews = (await dbUnified.read('reviews')) || [];
+    const stats = {
+      suppliersVerified: suppliers.filter(s => s.verified === true).length,
+      packagesApproved: packages.filter(p => p.approved === true).length,
+      marketplaceListingsActive: marketplaceListings.filter(m => m.status === 'active').length,
+      reviewsApproved: reviews.filter(r => r.approved === true).length,
+    };
+    statsCache = stats;
+    statsCacheTime = now;
+    res.set('Cache-Control', 'public, max-age=300');
+    res.json(stats);
+  } catch (error) {
+    console.error('[ERROR] Failed to read public stats:', error.message);
+    res.status(500).json({
+      error: 'Failed to read public stats',
+      suppliersVerified: 0,
+      packagesApproved: 0,
+      marketplaceListingsActive: 0,
+      reviewsApproved: 0,
+    });
+  }
+});
+
+module.exports = router;
