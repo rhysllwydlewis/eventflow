@@ -2408,6 +2408,31 @@ html[data-theme="dark"] .skeleton-card {
   line-height: 1;
 }
 
+/* Enhanced icon wrapper with background circle for trust badges */
+.ef-card__icon-wrapper {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto var(--ef-space-3, 12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #0B8073 0%, #13B6A2 100%);
+  box-shadow: 0 4px 12px rgba(11, 128, 115, 0.3);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ef-card--hover:hover .ef-card__icon-wrapper {
+  transform: scale(1.05) translateY(-2px);
+  box-shadow: 0 8px 20px rgba(11, 128, 115, 0.4);
+}
+
+.ef-card__icon-wrapper .ef-card__icon {
+  color: #fff;
+  margin-bottom: 0;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
 .ef-card__title {
   font-size: var(--ef-text-lg, 18px);
   font-weight: var(--ef-font-semibold, 600);

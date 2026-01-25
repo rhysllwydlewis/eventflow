@@ -189,6 +189,25 @@ h3 {
   color: var(--accent, #13B6A2);
 }
 
+/* Enhanced trust badge icon styling */
+.trust-badge .ef-card__icon-wrapper {
+  width: 72px;
+  height: 72px;
+  background: linear-gradient(135deg, rgba(11, 128, 115, 0.08) 0%, rgba(19, 182, 162, 0.08) 100%);
+  box-shadow: 0 2px 8px rgba(11, 128, 115, 0.12);
+}
+
+.trust-badge:hover .ef-card__icon-wrapper {
+  background: linear-gradient(135deg, rgba(11, 128, 115, 0.15) 0%, rgba(19, 182, 162, 0.15) 100%);
+  box-shadow: 0 4px 16px rgba(11, 128, 115, 0.2);
+}
+
+.trust-badge .ef-card__icon-wrapper .ef-card__icon {
+  color: var(--ink, #0B8073);
+  font-size: 36px;
+  filter: none;
+}
+
 /* ========================================
    ENHANCED STATS SECTION
    More dynamic and engaging animations
@@ -204,14 +223,17 @@ h3 {
   text-align: center;
   padding: 24px;
   border-radius: var(--radius, 14px);
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.12);
   backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .stat-item:hover {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.2);
   transform: translateY(-4px) scale(1.02);
+  border-color: rgba(255, 255, 255, 0.25);
 }
 
 .stat-number {
@@ -219,11 +241,12 @@ h3 {
   font-weight: 900;
   line-height: 1;
   margin-bottom: 0.5rem;
-  background: linear-gradient(135deg, #ffffff, rgba(255, 255, 255, 0.8));
+  background: linear-gradient(135deg, #ffffff, rgba(255, 255, 255, 0.85));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
   transition: transform 0.3s ease;
+  font-variant-numeric: tabular-nums;
 }
 
 .stat-item:hover .stat-number {
