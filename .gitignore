@@ -160,3 +160,4 @@ DEPLOYMENT_NOTES.md
 playwright-report/
 test-results/
 test-navbar-auth.js
+test-settings-persistence.js
