@@ -81,6 +81,14 @@ function configureHelmet(isProduction = false) {
           'https://images.pexels.com',
           'https://*.pexels.com',
         ],
+        mediaSrc: [
+          "'self'",
+          'https:', // Allow all HTTPS video/audio sources
+          'blob:',
+          // Explicitly list Pexels video domain for clarity
+          'https://videos.pexels.com',
+          'https://*.pexels.com',
+        ],
         connectSrc: [
           "'self'",
           'https:',

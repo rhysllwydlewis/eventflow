@@ -934,7 +934,7 @@ async function loadHeroCollageImages() {
  */
 
 // Crossfade transition duration (must match CSS transition in index.html)
-const PEXELS_TRANSITION_DURATION_MS = 1000;
+const PEXELS_TRANSITION_DURATION_MS = 400;
 // Preload timeout to prevent hanging
 const PEXELS_PRELOAD_TIMEOUT_MS = 5000;
 // Delay before restoring transition after instant hide (allows time for reflow)
