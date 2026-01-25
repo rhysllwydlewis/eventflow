@@ -208,6 +208,27 @@ h3 {
   filter: none;
 }
 
+/* Trust indicators section - enhanced icon styling without wrapper */
+section[aria-label="Trust indicators"] .ef-card__icon {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(11, 128, 115, 0.1) 0%, rgba(19, 182, 162, 0.1) 100%);
+  box-shadow: 0 2px 8px rgba(11, 128, 115, 0.15);
+  font-size: 36px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+section[aria-label="Trust indicators"] .ef-card:hover .ef-card__icon {
+  background: linear-gradient(135deg, rgba(11, 128, 115, 0.15) 0%, rgba(19, 182, 162, 0.15) 100%);
+  box-shadow: 0 4px 16px rgba(11, 128, 115, 0.25);
+  transform: scale(1.05);
+}
+
 /* ========================================
    ENHANCED STATS SECTION
    More dynamic and engaging animations
