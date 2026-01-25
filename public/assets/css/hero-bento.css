@@ -512,39 +512,39 @@
   }
 }
 
-/* Stagger animation delays for each cell */
-.ef-bento-hero {
+/* Stagger animation delays using nth-child for better maintainability */
+.ef-hero-bento > .ef-bento-cell:nth-child(1) {
   animation-delay: 0.1s;
 }
 
-.ef-bento-venues {
+.ef-hero-bento > .ef-bento-cell:nth-child(2) {
   animation-delay: 0.2s;
 }
 
-.ef-bento-catering {
+.ef-hero-bento > .ef-bento-cell:nth-child(3) {
   animation-delay: 0.3s;
 }
 
-.ef-bento-entertainment {
+.ef-hero-bento > .ef-bento-cell:nth-child(4) {
   animation-delay: 0.4s;
 }
 
-.ef-bento-photography {
+.ef-hero-bento > .ef-bento-cell:nth-child(5) {
   animation-delay: 0.5s;
 }
 
-/* Smooth shimmer effect */
+/* Smooth shimmer effect - Optimized version */
 @keyframes shimmer {
   0% {
-    background-position: -200% center;
+    transform: translateX(-200%);
   }
   100% {
-    background-position: 200% center;
+    transform: translateX(200%);
   }
 }
 
-/* Add shimmer to category cells on hover */
-.ef-bento-cell:hover .ef-bento-label::before {
+/* Pre-create shimmer element for better performance */
+.ef-bento-label::before {
   content: '';
   position: absolute;
   inset: 0;
@@ -554,8 +554,12 @@
     rgba(255, 255, 255, 0.6) 50%,
     transparent 100%
   );
-  background-size: 200% 100%;
-  animation: shimmer 2s ease-in-out;
   border-radius: inherit;
   pointer-events: none;
+  transform: translateX(-200%);
+  transition: none;
+}
+
+.ef-bento-cell:hover .ef-bento-label::before {
+  animation: shimmer 1.5s ease-in-out;
 }
