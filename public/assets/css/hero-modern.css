@@ -15,6 +15,10 @@
   /* Typography scaling */
   --hero-h1-size: clamp(26px, 4vw + 1rem, 52px);
   --hero-subcopy-size: clamp(15px, 1vw + 0.5rem, 18px);
+  
+  /* Collage styling */
+  --collage-gap: clamp(10px, 2vw, 16px);
+  --collage-radius: clamp(12px, 2vw, 20px);
 }
 
 /* Hero section positioning */
@@ -581,6 +585,11 @@
   }
 }
 
+/* ========================================
+   HERO COLLAGE - 1x2x2 Grid Layout
+   Two-column layout with video + category cards
+   ======================================== */
+
 /* Two-column hero grid */
 @media (min-width: 1024px) {
   .hero-modern .hero-grid {
@@ -591,18 +600,377 @@
   }
 }
 
+/* Hero collage container */
+.hero-collage {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1.2fr 1fr 1fr;
+  gap: 14px;
+  aspect-ratio: 16/10.5;
+  max-height: 72vh;
+  max-width: 100%;
+  overflow: hidden;
+}
 
+/* Video card - spans full width (2 columns) */
+.hero-video-card {
+  grid-column: span 2;
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.hero-video-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    transparent 50%,
+    rgba(0, 0, 0, 0.4) 100%
+  );
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* Add subtle animation to video card */
+.hero-video-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at top right,
+    rgba(255, 255, 255, 0.1) 0%,
+    transparent 50%
+  );
+  z-index: 0;
+  pointer-events: none;
+}
+
+.hero-video-card:hover {
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.16);
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.hero-video-card video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: opacity 0.4s ease-in-out;
+  opacity: 0;
+}
+
+.hero-video-card video.video-loaded {
+  opacity: 1;
+}
+
+/* Video loading state */
+.hero-video-card.loading-video::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #0b8073;
+  border-radius: 50%;
+  animation: pexels-spin 0.8s linear infinite;
+  z-index: 15;
+}
+
+.hero-video-card.loading-video video {
+  opacity: 0.5;
+}
+
+/* Video credit */
+.hero-video-credit {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(8px);
+  color: white;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 6px 10px;
+  border-radius: 6px;
+  z-index: 2;
+  pointer-events: none;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  display: none; /* Hide video credits */
+}
+
+.hero-video-credit a {
+  color: white;
+  text-decoration: none;
+  font-weight: 600;
+  pointer-events: auto;
+  transition: opacity 0.2s;
+}
+
+.hero-video-credit a:hover {
+  opacity: 0.8;
+}
+
+/* Category cards */
+.hero-collage-card {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: block;
+  text-decoration: none;
+  background: #f8fafc;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+}
+
+.hero-collage-card:hover,
+.hero-collage-card:focus {
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.18);
+  transform: translateY(-6px) scale(1.02);
+  text-decoration: none;
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.hero-collage-card:focus {
+  /* Ensure focus state is visible for keyboard navigation */
+  outline: 2px solid #10b981;
+  outline-offset: 2px;
+}
+
+/* Collage card video elements */
+.hero-collage-card video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: opacity 0.4s ease-in-out, transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 0;
+}
+
+.hero-collage-card video.video-loaded {
+  opacity: 1;
+}
+
+.hero-collage-card:hover video,
+.hero-collage-card:focus video {
+  transform: scale(1.1);
+}
+
+.hero-collage-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: opacity 0.4s ease-in-out, transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 1;
+}
+
+.hero-collage-card img.fading {
+  opacity: 0;
+}
+
+.hero-collage-card:hover img,
+.hero-collage-card:focus img {
+  transform: scale(1.1);
+}
+
+/* Category label pill */
+.hero-collage-label {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: #0f172a;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 5px 10px;
+  border-radius: 999px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.hero-collage-card:hover .hero-collage-label,
+.hero-collage-card:focus .hero-collage-label {
+  background: rgba(255, 255, 255, 0.95);
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+}
+
+.hero-collage-icon {
+  font-size: 12px;
+  line-height: 1;
+}
+
+/* Photo credit */
+.hero-collage-credit {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(8px);
+  color: white;
+  font-size: 10px;
+  font-weight: 500;
+  padding: 4px 8px;
+  border-radius: 4px;
+  z-index: 2;
+  opacity: 0.9;
+  transition: opacity 0.25s;
+  pointer-events: none;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.hero-collage-card:hover .hero-collage-credit,
+.hero-collage-card:focus .hero-collage-credit {
+  opacity: 1;
+}
+
+.hero-collage-credit a {
+  color: white;
+  text-decoration: none;
+  pointer-events: auto;
+}
+
+.hero-collage-credit a:hover {
+  text-decoration: underline;
+}
 
 /* Mobile responsive */
 @media (max-width: 1023px) {
   .hero-modern .hero-grid {
     display: block;
   }
+
+  .hero-collage {
+    margin-top: 48px;
+    aspect-ratio: 4/3;
+    max-height: 60vh;
+    grid-template-rows: auto auto auto;
+  }
+
+  .hero-video-card {
+    min-height: 280px;
+  }
+
+  .hero-collage-card {
+    min-height: 200px;
+  }
+
+  /* Hide photo credits on mobile for cleaner look */
+  .hero-collage-credit {
+    display: none;
+  }
+
+  .hero-video-credit {
+    display: none;
+  }
+}
+
+/* Tablet adjustments */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .hero-collage {
+    aspect-ratio: 4/3;
+    max-height: 55vh;
+    grid-template-rows: 1fr 1fr 1fr;
+  }
+
+  .hero-video-card {
+    min-height: 220px;
+  }
+
+  .hero-collage-card {
+    min-height: 160px; /* Taller photos on tablet */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); /* Reduce shadow on tablet */
+  }
+}
+
+/* Small mobile adjustments */
+@media (max-width: 640px) {
+  .hero-collage {
+    gap: 12px;
+    aspect-ratio: unset; /* Remove fixed aspect ratio causing cutoff */
+    max-height: none; /* Allow content to determine height */
+    grid-template-rows: minmax(140px, 180px) 1fr 1fr; /* Video row + 2 card rows */
+    margin-left: auto;
+    margin-right: auto;
+    justify-content: center;
+  }
+
+  .hero-video-card {
+    min-height: 140px;
+    max-height: 180px;
+  }
+
+  .hero-collage-card {
+    min-height: 140px; /* INCREASED - make photos TALLER */
+    aspect-ratio: 4/3; /* Taller aspect ratio */
+  }
+
+  .hero-collage-label {
+    font-size: 10px;
+    padding: 4px 8px;
+    top: 8px;
+    left: 8px;
+  }
+
+  .hero-collage-icon {
+    font-size: 11px;
+  }
+}
+
+/* ============================================
+   MOBILE COLLAGE - HIGH-DPI OPTIMIZATION
+   ============================================ */
+
+@media (max-width: 768px) and (-webkit-min-device-pixel-ratio: 2),
+       (max-width: 768px) and (min-resolution: 192dpi) {
+  /* High-DPI mobile devices get optimized rendering */
+  .hero-collage-card img,
+  .hero-video-card video {
+    image-rendering: crisp-edges;
+  }
 }
 
 /* ============================================
    MOBILE COLLAGE - REDUCED DATA MODE
    ============================================ */
+
+@media (max-width: 768px) and (prefers-reduced-data: reduce) {
+  /* Reduce visual effects on slow connections */
+  .hero-collage-card {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  }
+  
+  .hero-video-card {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Disable backdrop filters to reduce rendering cost */
+  .hero-collage-label {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: rgba(255, 255, 255, 0.95);
+  }
+}
 
 /* Reduced motion support - Comprehensive */
 @media (prefers-reduced-motion: reduce) {
@@ -625,6 +993,11 @@
   }
   
   /* Hero elements */
+  .hero-video-card,
+  .hero-collage-card,
+  .hero-collage-card img,
+  .hero-collage-label,
+  .hero-collage-credit,
   .hero-modern-ctas,
   .hero-cta-primary,
   .hero-cta-secondary {
@@ -632,6 +1005,20 @@
     animation: none !important;
   }
 
+  .hero-collage-card:hover,
+  .hero-collage-card:focus {
+    transform: none !important;
+  }
+
+  .hero-collage-card:hover img,
+  .hero-collage-card:focus img {
+    transform: none !important;
+  }
+
+  .hero-video-card video {
+    animation: none !important;
+  }
+  
   /* Blobs and decorative elements */
   .hero-blob,
   .hero-blob-1,
@@ -709,6 +1096,7 @@
     padding: 20px 0;
   }
   
+  .hero-collage,
   .hero-blob,
   .hero-bg-gradient {
     display: none !important;
@@ -776,6 +1164,32 @@
   .hero-modern .container {
     padding-left: clamp(6px, 2vw, 12px);
     padding-right: clamp(6px, 2vw, 12px);
+  }
+}
+
+/* ==========================================================================
+   Collage Responsive Aspect Ratios
+   ========================================================================== */
+
+@media (max-width: 767px) {
+  .hero-collage {
+    aspect-ratio: 4/3;
+  }
+  
+  .hero-collage-card {
+    aspect-ratio: 16/10;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  .hero-collage {
+    aspect-ratio: 1/1;
+  }
+}
+
+@media (min-width: 1024px) {
+  .hero-collage {
+    aspect-ratio: 4/3;
   }
 }
 

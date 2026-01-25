@@ -175,7 +175,6 @@
     <link rel="preload" href="/assets/css/components.css?v=18.2.0" as="style" />
     <link rel="preload" href="/assets/css/homepage-enhancements.css?v=18.2.0" as="style" />
     <link rel="preload" href="/assets/css/hero-modern.css?v=18.2.0" as="style" />
-    <link rel="preload" href="/assets/css/hero-bento.css?v=18.2.0" as="style" />
 
     <!-- Critical Stylesheets - Load synchronously -->
     <link rel="stylesheet" href="/assets/css/tokens.css?v=18.2.0" />
@@ -185,7 +184,6 @@
     <link rel="stylesheet" href="/assets/css/components.css?v=18.2.0" />
     <link rel="stylesheet" href="/assets/css/homepage-enhancements.css?v=18.2.0" />
     <link rel="stylesheet" href="/assets/css/hero-modern.css?v=18.2.0" />
-    <link rel="stylesheet" href="/assets/css/hero-bento.css?v=18.2.0" />
     <link rel="stylesheet" href="/assets/css/ef-search-bar.css?v=18.2.0">
     
     <!-- Non-critical CSS - Defer via preload -->
@@ -495,85 +493,69 @@
             </div>
           </div>
           <div>
-            <!-- New Hero Bento Grid -->
-            <div class="ef-hero-bento ef-fade-up delay-3" role="region" aria-label="Event category showcase">
-              
-              <!-- Hero Video Cell (Primary - Dominates Layout) -->
-              <div class="ef-bento-cell ef-bento-hero" role="img" aria-label="Wedding celebration video">
-                <video muted loop playsinline preload="metadata"
+            <div class="hero-collage ef-fade-up delay-3" aria-hidden="true">
+              <!-- Row 1: Video (no label, spans 2 columns) -->
+              <div class="hero-video-card">
+                <!-- Video autoplay is controlled by JavaScript based on prefers-reduced-motion -->
+                <video id="hero-pexels-video" muted loop playsinline preload="metadata"
                        poster="/assets/images/hero-video-poster.jpg"
-                       width="1920" height="1080"
-                       aria-label="Wedding celebration showcase video">
-                  <source src="" type="video/mp4">
+                       width="800" height="450"
+                       onerror="this.style.display='none'; this.nextElementSibling && (this.nextElementSibling.style.display='block');">
+                  <source src="" type="video/mp4" id="hero-video-source">
                   Your browser does not support the video tag.
                 </video>
-                <img class="video-fallback" 
-                     src="/assets/images/hero-video-poster.jpg" 
-                     alt="Wedding celebration"
-                     style="display: none;">
+                <span class="hero-video-credit" id="hero-video-credit">Video by Pexels</span>
               </div>
               
-              <!-- Category Cells -->
-              <a href="/category.html?slug=venues" class="ef-bento-cell ef-bento-venues ef-bento-link" 
-                 aria-label="Browse venues">
-                <img src="/assets/images/collage-venue.jpg" 
-                     alt="Wedding venues" 
-                     width="600" height="450"
-                     loading="eager" 
-                     fetchpriority="high"
-                     onerror="this.style.display='none';">
-                <span class="ef-bento-label">
-                  <span class="ef-bento-label-icon" aria-hidden="true">🏛️</span>
+              <!-- Row 2: Venues + Catering -->
+              <a href="/category.html?slug=venues" class="hero-collage-card" data-category="venues">
+                <img src="/assets/images/collage-venue.jpg" alt="Venues" id="collage-venues" 
+                     width="400" height="300" loading="eager" fetchpriority="high" decoding="async"
+                     sizes="(max-width: 768px) 48vw, 25vw"
+                     onerror="this.style.background='linear-gradient(135deg, #667eea 0%, #764ba2 100%)'; this.style.minHeight='200px'; this.src=''; this.onerror=null;">
+                <span class="hero-collage-label">
+                  <span class="hero-collage-icon">🏛️</span>
                   Venues
                 </span>
-                <span class="ef-bento-credit"></span>
+                <span class="hero-collage-credit" id="credit-venues"></span>
               </a>
               
-              <a href="/category.html?slug=catering" class="ef-bento-cell ef-bento-catering ef-bento-link"
-                 aria-label="Browse catering">
-                <img src="/assets/images/collage-catering.jpg" 
-                     alt="Catering services" 
-                     width="600" height="450"
-                     loading="eager" 
-                     fetchpriority="high"
-                     onerror="this.style.display='none';">
-                <span class="ef-bento-label">
-                  <span class="ef-bento-label-icon" aria-hidden="true">🍽️</span>
+              <a href="/category.html?slug=catering" class="hero-collage-card" data-category="catering">
+                <img src="/assets/images/collage-catering.jpg" alt="Catering" id="collage-catering"
+                     width="400" height="300" loading="eager" fetchpriority="high" decoding="async"
+                     sizes="(max-width: 768px) 48vw, 25vw"
+                     onerror="this.style.background='linear-gradient(135deg, #f093fb 0%, #f5576c 100%)'; this.style.minHeight='200px'; this.src=''; this.onerror=null;">
+                <span class="hero-collage-label">
+                  <span class="hero-collage-icon">🍽️</span>
                   Catering
                 </span>
-                <span class="ef-bento-credit"></span>
+                <span class="hero-collage-credit" id="credit-catering"></span>
               </a>
               
-              <a href="/category.html?slug=entertainment" class="ef-bento-cell ef-bento-entertainment ef-bento-link"
-                 aria-label="Browse entertainment">
-                <img src="/assets/images/collage-entertainment.jpg" 
-                     alt="Entertainment services" 
-                     width="600" height="450"
-                     loading="eager" 
-                     fetchpriority="high"
-                     onerror="this.style.display='none';">
-                <span class="ef-bento-label">
-                  <span class="ef-bento-label-icon" aria-hidden="true">🎤</span>
+              <!-- Row 3: Entertainment + Photography -->
+              <a href="/category.html?slug=entertainment" class="hero-collage-card" data-category="entertainment">
+                <img src="/assets/images/collage-entertainment.jpg" alt="Entertainment" id="collage-entertainment"
+                     width="400" height="300" loading="eager" fetchpriority="high" decoding="async"
+                     sizes="(max-width: 768px) 48vw, 25vw"
+                     onerror="this.style.background='linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)'; this.style.minHeight='200px'; this.src=''; this.onerror=null;">
+                <span class="hero-collage-label">
+                  <span class="hero-collage-icon">🎤</span>
                   Entertainment
                 </span>
-                <span class="ef-bento-credit"></span>
+                <span class="hero-collage-credit" id="credit-entertainment"></span>
               </a>
               
-              <a href="/category.html?slug=photography" class="ef-bento-cell ef-bento-photography ef-bento-link"
-                 aria-label="Browse photography">
-                <img src="/assets/images/collage-photography.jpg" 
-                     alt="Photography services" 
-                     width="600" height="450"
-                     loading="eager" 
-                     fetchpriority="high"
-                     onerror="this.style.display='none';">
-                <span class="ef-bento-label">
-                  <span class="ef-bento-label-icon" aria-hidden="true">📸</span>
+              <a href="/category.html?slug=photography" class="hero-collage-card" data-category="photography">
+                <img src="/assets/images/collage-photography.jpg" alt="Photography" id="collage-photography"
+                     width="400" height="300" loading="eager" fetchpriority="high" decoding="async"
+                     sizes="(max-width: 768px) 48vw, 25vw"
+                     onerror="this.style.background='linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)'; this.style.minHeight='200px'; this.src=''; this.onerror=null;">
+                <span class="hero-collage-label">
+                  <span class="hero-collage-icon">📸</span>
                   Photography
                 </span>
-                <span class="ef-bento-credit"></span>
+                <span class="hero-collage-credit" id="credit-photography"></span>
               </a>
-              
             </div>
           </div>
         </div>
@@ -957,7 +939,6 @@
     <script src="/assets/js/components/package-list.js" defer></script>
     <!-- Carousel must load before home-init.js -->
     <script src="/assets/js/components/carousel.js" defer></script>
-    <script src="/assets/js/hero-bento.js" defer></script>
     <script src="/assets/js/pages/home-init.js" defer></script>
     <script src="/assets/js/cookie-consent.js" defer></script>
     <script defer>

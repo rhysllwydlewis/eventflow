@@ -3646,15 +3646,11 @@ router.put(
         updatedBy: req.user.email,
       };
 
-      // Write and verify the data was persisted
-      const writeResult = await dbUnified.writeAndVerify('settings', settings);
+      const writeSuccess = await dbUnified.write('settings', settings);
 
-      if (!writeResult.success || !writeResult.verified) {
-        console.error('Failed to persist site settings to database:', writeResult.error);
-        return res.status(500).json({
-          error: 'Failed to persist settings to database',
-          details: writeResult.error,
-        });
+      if (!writeSuccess) {
+        console.error('Failed to persist site settings to database');
+        return res.status(500).json({ error: 'Failed to persist settings to database' });
       }
 
       auditLog({
@@ -3666,8 +3662,7 @@ router.put(
         details: { name, tagline },
       });
 
-      // Return the verified data from the database
-      res.json({ success: true, site: writeResult.data.site });
+      res.json({ success: true, site: settings.site });
     } catch (error) {
       console.error('Error updating site settings:', error);
       res.status(500).json({ error: 'Failed to update settings' });
@@ -3682,21 +3677,13 @@ router.put(
 router.get('/settings/features', authRequired, roleRequired('admin'), async (req, res) => {
   try {
     const settings = (await dbUnified.read('settings')) || {};
-
-    // Default feature flags
-    const defaultFeatures = {
+    const features = settings.features || {
       registration: true,
       supplierApplications: true,
       reviews: true,
       photoUploads: true,
       supportTickets: true,
       pexelsCollage: false,
-    };
-
-    // Merge saved settings with defaults to preserve partial saves
-    const features = {
-      ...defaultFeatures,
-      ...(settings.features || {}),
     };
 
     // Ensure metadata fields are included in response
@@ -3800,25 +3787,22 @@ router.put(
         registration: newFeatures.registration,
       });
 
-      // Write with timeout protection and verification
+      // Write with timeout protection (new timeout promise)
       const writeStart = Date.now();
-      const writeResult = await Promise.race([
-        dbUnified.writeAndVerify('settings', settings),
-        createTimeout(5000, 'Write and verify operation'),
+      const writeSuccess = await Promise.race([
+        dbUnified.write('settings', settings),
+        createTimeout(5000, 'Write operation'),
       ]);
 
       console.log(
-        `[${requestId}] Database write completed in ${Date.now() - writeStart}ms, success: ${writeResult.success}, verified: ${writeResult.verified}`
+        `[${requestId}] Database write completed in ${Date.now() - writeStart}ms, success: ${writeSuccess}`
       );
 
-      if (!writeResult.success || !writeResult.verified) {
-        console.error(
-          `[${requestId}] Failed to persist feature flags to database:`,
-          writeResult.error
-        );
+      if (!writeSuccess) {
+        console.error(`[${requestId}] Failed to persist feature flags to database`);
         return res.status(500).json({
           error: 'Failed to persist settings to database',
-          details: writeResult.error || 'Database write or verification failed',
+          details: 'Database write returned false',
         });
       }
 
@@ -3835,14 +3819,13 @@ router.put(
         action: 'FEATURES_UPDATED',
         targetType: 'features',
         targetId: null,
-        details: writeResult.data.features,
+        details: settings.features,
       });
 
       const totalTime = Date.now() - startTime;
       console.log(`[${requestId}] Feature flags update completed successfully in ${totalTime}ms`);
 
-      // Return the verified data from the database
-      res.json({ success: true, features: writeResult.data.features });
+      res.json({ success: true, features: settings.features });
     } catch (error) {
       const totalTime = Date.now() - startTime;
       console.error(
@@ -3918,15 +3901,11 @@ router.put(
         updatedBy: req.user.email,
       };
 
-      // Write and verify the data was persisted
-      const writeResult = await dbUnified.writeAndVerify('settings', settings);
+      const writeSuccess = await dbUnified.write('settings', settings);
 
-      if (!writeResult.success || !writeResult.verified) {
-        console.error('Failed to persist maintenance settings to database:', writeResult.error);
-        return res.status(500).json({
-          error: 'Failed to persist settings to database',
-          details: writeResult.error,
-        });
+      if (!writeSuccess) {
+        console.error('Failed to persist maintenance settings to database');
+        return res.status(500).json({ error: 'Failed to persist settings to database' });
       }
 
       auditLog({
@@ -3938,8 +3917,7 @@ router.put(
         details: { enabled, message, duration, expiresAt },
       });
 
-      // Return the verified data from the database
-      res.json({ success: true, maintenance: writeResult.data.maintenance });
+      res.json({ success: true, maintenance: settings.maintenance });
     } catch (error) {
       console.error('Error updating maintenance settings:', error);
       res.status(500).json({ error: 'Failed to update settings' });
@@ -4022,15 +4000,11 @@ router.put(
         updatedBy: req.user.email,
       };
 
-      // Write and verify the data was persisted
-      const writeResult = await dbUnified.writeAndVerify('settings', settings);
+      const writeSuccess = await dbUnified.write('settings', settings);
 
-      if (!writeResult.success || !writeResult.verified) {
-        console.error('Failed to persist email template to database:', writeResult.error);
-        return res.status(500).json({
-          error: 'Failed to persist template to database',
-          details: writeResult.error,
-        });
+      if (!writeSuccess) {
+        console.error('Failed to persist email template to database');
+        return res.status(500).json({ error: 'Failed to persist template to database' });
       }
 
       auditLog({
@@ -4042,8 +4016,7 @@ router.put(
         details: { subject },
       });
 
-      // Return the verified data from the database
-      res.json({ success: true, template: writeResult.data.emailTemplates[req.params.name] });
+      res.json({ success: true, template: settings.emailTemplates[req.params.name] });
     } catch (error) {
       console.error('Error updating email template:', error);
       res.status(500).json({ error: 'Failed to update settings' });
@@ -4621,9 +4594,7 @@ const collageUpload = multer({
 router.get('/homepage/collage-widget', authRequired, roleRequired('admin'), async (req, res) => {
   try {
     const settings = (await dbUnified.read('settings')) || {};
-
-    // Default configuration
-    const defaultCollageWidget = {
+    const collageWidget = settings.collageWidget || {
       enabled: false,
       source: 'pexels',
       mediaTypes: { photos: true, videos: true },
@@ -4679,53 +4650,6 @@ router.get('/homepage/collage-widget', authRequired, roleRequired('admin'), asyn
       },
     };
 
-    // Merge saved settings with defaults to preserve partial saves
-    const collageWidget = {
-      ...defaultCollageWidget,
-      ...(settings.collageWidget || {}),
-      // Deep merge nested objects
-      heroVideo: {
-        ...defaultCollageWidget.heroVideo,
-        ...(settings.collageWidget?.heroVideo || {}),
-      },
-      videoQuality: {
-        ...defaultCollageWidget.videoQuality,
-        ...(settings.collageWidget?.videoQuality || {}),
-      },
-      transition: {
-        ...defaultCollageWidget.transition,
-        ...(settings.collageWidget?.transition || {}),
-      },
-      preloading: {
-        ...defaultCollageWidget.preloading,
-        ...(settings.collageWidget?.preloading || {}),
-      },
-      mobileOptimizations: {
-        ...defaultCollageWidget.mobileOptimizations,
-        ...(settings.collageWidget?.mobileOptimizations || {}),
-      },
-      contentFiltering: {
-        ...defaultCollageWidget.contentFiltering,
-        ...(settings.collageWidget?.contentFiltering || {}),
-      },
-      playbackControls: {
-        ...defaultCollageWidget.playbackControls,
-        ...(settings.collageWidget?.playbackControls || {}),
-      },
-      mediaTypes: {
-        ...defaultCollageWidget.mediaTypes,
-        ...(settings.collageWidget?.mediaTypes || {}),
-      },
-      pexelsQueries: {
-        ...defaultCollageWidget.pexelsQueries,
-        ...(settings.collageWidget?.pexelsQueries || {}),
-      },
-      pexelsVideoQueries: {
-        ...defaultCollageWidget.pexelsVideoQueries,
-        ...(settings.collageWidget?.pexelsVideoQueries || {}),
-      },
-    };
-
     res.json(collageWidget);
   } catch (error) {
     console.error('Error reading collage widget config:', error);
@@ -4778,10 +4702,7 @@ router.put(
         }
       }
 
-      if (
-        transition?.effect &&
-        !['fade', 'slide', 'zoom', 'crossfade'].includes(transition.effect)
-      ) {
+      if (transition?.effect && !['fade', 'slide', 'zoom', 'crossfade'].includes(transition.effect)) {
         return res.status(400).json({ error: 'Invalid transition effect' });
       }
 
@@ -4817,124 +4738,62 @@ router.put(
         });
       }
 
-      console.log('[Admin] PUT /homepage/collage-widget - Reading settings...');
-      let settings = await dbUnified.read('settings');
-
-      if (!settings || typeof settings !== 'object' || Array.isArray(settings)) {
-        console.warn(
-          '[Admin] Settings was null, undefined, or invalid type, initializing empty object'
-        );
-        settings = {};
-      }
-
-      console.log('[Admin] Settings read successfully, keys:', Object.keys(settings));
-      console.log('[Admin] Current collageWidget:', settings.collageWidget);
-
-      if (!settings.collageWidget || typeof settings.collageWidget !== 'object') {
-        console.log('[Admin] Initializing collageWidget object');
+      const settings = (await dbUnified.read('settings')) || {};
+      if (!settings.collageWidget) {
         settings.collageWidget = {};
       }
 
-      // Update only provided fields using nullish coalescing for proper defaults
+      // Update only provided fields
       if (enabled !== undefined) {
         settings.collageWidget.enabled = enabled;
-        console.log('[Admin] Updated enabled to:', enabled);
       }
-      if (source !== undefined) {
-        // Use provided source, or existing source, or default to 'pexels'
-        const defaultSource = settings.collageWidget.source || 'pexels';
-        settings.collageWidget.source = source ?? defaultSource;
-        console.log('[Admin] Updated source to:', settings.collageWidget.source);
+      if (source) {
+        settings.collageWidget.source = source;
       }
-      if (mediaTypes !== undefined) {
+      if (mediaTypes) {
         settings.collageWidget.mediaTypes = mediaTypes;
       }
       if (intervalSeconds !== undefined) {
         settings.collageWidget.intervalSeconds = intervalSeconds;
       }
-      if (pexelsQueries !== undefined) {
+      if (pexelsQueries) {
         settings.collageWidget.pexelsQueries = pexelsQueries;
       }
-      if (pexelsVideoQueries !== undefined) {
+      if (pexelsVideoQueries) {
         settings.collageWidget.pexelsVideoQueries = pexelsVideoQueries;
       }
-      if (uploadGallery !== undefined) {
+      if (uploadGallery) {
         settings.collageWidget.uploadGallery = uploadGallery;
       }
       if (fallbackToPexels !== undefined) {
         settings.collageWidget.fallbackToPexels = fallbackToPexels;
       }
       if (heroVideo !== undefined) {
-        settings.collageWidget.heroVideo = {
-          ...(settings.collageWidget.heroVideo || {}),
-          ...heroVideo,
-        };
+        settings.collageWidget.heroVideo = { ...settings.collageWidget.heroVideo, ...heroVideo };
       }
       if (videoQuality !== undefined) {
-        settings.collageWidget.videoQuality = {
-          ...(settings.collageWidget.videoQuality || {}),
-          ...videoQuality,
-        };
+        settings.collageWidget.videoQuality = { ...settings.collageWidget.videoQuality, ...videoQuality };
       }
       if (transition !== undefined) {
-        settings.collageWidget.transition = {
-          ...(settings.collageWidget.transition || {}),
-          ...transition,
-        };
+        settings.collageWidget.transition = { ...settings.collageWidget.transition, ...transition };
       }
       if (preloading !== undefined) {
-        settings.collageWidget.preloading = {
-          ...(settings.collageWidget.preloading || {}),
-          ...preloading,
-        };
+        settings.collageWidget.preloading = { ...settings.collageWidget.preloading, ...preloading };
       }
       if (mobileOptimizations !== undefined) {
-        settings.collageWidget.mobileOptimizations = {
-          ...(settings.collageWidget.mobileOptimizations || {}),
-          ...mobileOptimizations,
-        };
+        settings.collageWidget.mobileOptimizations = { ...settings.collageWidget.mobileOptimizations, ...mobileOptimizations };
       }
       if (contentFiltering !== undefined) {
-        settings.collageWidget.contentFiltering = {
-          ...(settings.collageWidget.contentFiltering || {}),
-          ...contentFiltering,
-        };
+        settings.collageWidget.contentFiltering = { ...settings.collageWidget.contentFiltering, ...contentFiltering };
       }
       if (playbackControls !== undefined) {
-        settings.collageWidget.playbackControls = {
-          ...(settings.collageWidget.playbackControls || {}),
-          ...playbackControls,
-        };
+        settings.collageWidget.playbackControls = { ...settings.collageWidget.playbackControls, ...playbackControls };
       }
 
       settings.collageWidget.updatedAt = new Date().toISOString();
       settings.collageWidget.updatedBy = req.user.email;
 
-      console.log(
-        '[Admin] About to write settings, collageWidget.enabled:',
-        settings.collageWidget.enabled
-      );
-
-      // Write and verify the data was persisted
-      const writeResult = await dbUnified.writeAndVerify('settings', settings);
-
-      if (!writeResult.success) {
-        console.error('[Admin] Write operation failed:', writeResult.error);
-        return res.status(500).json({
-          error: 'Failed to write collage widget configuration to database',
-          details: writeResult.error,
-        });
-      }
-
-      if (!writeResult.verified) {
-        console.error('[Admin] Verification failed after write:', writeResult.error);
-        return res.status(500).json({
-          error: 'Failed to verify collage widget configuration persistence',
-          details: writeResult.error,
-        });
-      }
-
-      console.log('[Admin] Write and verify succeeded');
+      await dbUnified.write('settings', settings);
 
       auditLog({
         adminId: req.user.id,
@@ -4945,10 +4804,9 @@ router.put(
         details: { enabled, source, mediaTypes },
       });
 
-      // Return the verified data from the database, not the in-memory object
       res.json({
         success: true,
-        collageWidget: writeResult.data.collageWidget,
+        collageWidget: settings.collageWidget,
       });
     } catch (error) {
       console.error('Error updating collage widget config:', error);
