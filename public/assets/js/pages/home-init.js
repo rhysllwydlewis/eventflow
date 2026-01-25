@@ -19,7 +19,9 @@ window.__videoMetrics__ = {
 
 // Helper function to calculate success rate
 function calculateSuccessRate(successes, attempts) {
-  if (attempts === 0) return 0;
+  if (attempts === 0) {
+    return 0;
+  }
   return ((successes / attempts) * 100).toFixed(1);
 }
 
@@ -30,13 +32,17 @@ window.logVideoMetrics = function () {
   console.log(`  Attempts: ${window.__videoMetrics__.heroVideoAttempts}`);
   console.log(`  Successes: ${window.__videoMetrics__.heroVideoSuccesses}`);
   console.log(`  Failures: ${window.__videoMetrics__.heroVideoFailures}`);
-  console.log(`  Success Rate: ${calculateSuccessRate(window.__videoMetrics__.heroVideoSuccesses, window.__videoMetrics__.heroVideoAttempts)}%`);
+  console.log(
+    `  Success Rate: ${calculateSuccessRate(window.__videoMetrics__.heroVideoSuccesses, window.__videoMetrics__.heroVideoAttempts)}%`
+  );
   console.log('');
   console.log('Collage Videos:');
   console.log(`  Attempts: ${window.__videoMetrics__.collageVideoAttempts}`);
   console.log(`  Successes: ${window.__videoMetrics__.collageVideoSuccesses}`);
   console.log(`  Failures: ${window.__videoMetrics__.collageVideoFailures}`);
-  console.log(`  Success Rate: ${calculateSuccessRate(window.__videoMetrics__.collageVideoSuccesses, window.__videoMetrics__.collageVideoAttempts)}%`);
+  console.log(
+    `  Success Rate: ${calculateSuccessRate(window.__videoMetrics__.collageVideoSuccesses, window.__videoMetrics__.collageVideoAttempts)}%`
+  );
   if (window.__videoMetrics__.lastError) {
     console.log('');
     console.log(`⚠️  Last Error: ${window.__videoMetrics__.lastError}`);
@@ -163,7 +169,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Add event listener for log link (avoid inline onclick)
     const logLink = document.getElementById('metrics-log-link');
     if (logLink) {
-      logLink.addEventListener('click', (e) => {
+      logLink.addEventListener('click', e => {
         e.preventDefault();
         window.logVideoMetrics();
       });
@@ -174,7 +180,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const m = window.__videoMetrics__;
       const heroRate = calculateSuccessRate(m.heroVideoSuccesses, m.heroVideoAttempts);
       const collageRate = calculateSuccessRate(m.collageVideoSuccesses, m.collageVideoAttempts);
-      
+
       const content = document.getElementById('metrics-content');
       if (content) {
         content.innerHTML = `
@@ -1416,12 +1422,12 @@ async function initPexelsCollage(settings) {
  * - Comprehensive error handling with metrics tracking
  * - Automatic retry on failure
  * - Graceful fallback to poster image
- * 
+ *
  * @param {string} source - Source type ('pexels' or 'uploads')
  * @param {Object} mediaTypes - Media types configuration with {photos: boolean, videos: boolean}
  * @param {Array} uploadGallery - Array of uploaded media URLs
  */
-async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
+async function initHeroVideo(source, mediaTypes, uploadGallery = [], heroVideoConfig = {}) {
   const videoElement = document.getElementById('hero-pexels-video');
   const videoSource = document.getElementById('hero-video-source');
   const videoCredit = document.getElementById('hero-video-credit');
@@ -1429,6 +1435,25 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
 
   if (!videoElement || !videoSource) {
     return; // Video elements not present in HTML
+  }
+
+  // Check if hero video is enabled
+  if (heroVideoConfig.enabled === false) {
+    if (isDebugEnabled()) {
+      console.log('[Hero Video] Hero video disabled via config');
+    }
+    return;
+  }
+
+  // Apply hero video settings
+  if (heroVideoConfig.autoplay !== undefined) {
+    videoElement.autoplay = heroVideoConfig.autoplay;
+  }
+  if (heroVideoConfig.muted !== undefined) {
+    videoElement.muted = heroVideoConfig.muted;
+  }
+  if (heroVideoConfig.loop !== undefined) {
+    videoElement.loop = heroVideoConfig.loop;
   }
 
   // Add loading state
@@ -1529,8 +1554,17 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
 
       if (data.videos && data.videos.length > 0) {
         const video = data.videos[0];
-        // Get all HD and SD quality video files for fallback support
-        const videoFiles = video.video_files?.filter(f => f.quality === 'hd' || f.quality === 'sd') || [];
+        // Determine quality preference from config
+        const qualityPreference = heroVideoConfig.quality || 'hd';
+        
+        // Filter and sort video files based on quality preference
+        let videoFiles = (video.video_files || []).filter(f => f.quality === 'hd' || f.quality === 'sd');
+        
+        if (qualityPreference === 'sd') {
+          // Prefer SD quality first, then HD as fallback
+          videoFiles.sort((a, b) => (a.quality === 'sd') ? -1 : (b.quality === 'sd') ? 1 : 0);
+        }
+        // For 'hd' and 'auto', HD is preferred first (default order)
 
         if (isDebugEnabled()) {
           console.log('[Hero Video] Available video files:', {
@@ -1551,25 +1585,25 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
               return;
             }
             loadingComplete = true;
-            
+
             if (timeoutId) {
               clearTimeout(timeoutId);
             }
-            
+
             // Remove error listener to prevent further calls
             videoElement.removeEventListener('error', handleVideoError);
-            
+
             // Remove loading state
             if (videoCard) {
               videoCard.classList.remove('loading-video');
             }
-            
+
             // Track failure
             if (window.__videoMetrics__) {
               window.__videoMetrics__.heroVideoFailures++;
               window.__videoMetrics__.lastError = 'All video URLs failed';
             }
-            
+
             if (isDebugEnabled()) {
               console.warn('[Hero Video] All video URLs failed, using poster fallback');
             }
@@ -1583,19 +1617,24 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
             }
 
             const videoFile = videoFiles[currentUrlIndex];
-            
+
             // Validate video file has a valid link
             if (!videoFile?.link) {
               if (isDebugEnabled()) {
-                console.warn(`[Hero Video] Video file at index ${currentUrlIndex} has no valid link, skipping...`);
+                console.warn(
+                  `[Hero Video] Video file at index ${currentUrlIndex} has no valid link, skipping...`
+                );
               }
               currentUrlIndex++;
               tryNextVideo();
               return;
             }
-            
+
             if (isDebugEnabled()) {
-              console.log(`[Hero Video] Trying video URL ${currentUrlIndex + 1}/${videoFiles.length}:`, videoFile.link);
+              console.log(
+                `[Hero Video] Trying video URL ${currentUrlIndex + 1}/${videoFiles.length}:`,
+                videoFile.link
+              );
             }
 
             // Set source and start loading
@@ -1603,19 +1642,22 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
             videoElement.load();
           };
 
-          const handleMetadataLoaded = () => {
+          const handleVideoLoaded = () => {
             // Already handled
             if (loadingComplete) {
               return;
             }
             loadingComplete = true;
-            
+
             if (timeoutId) {
               clearTimeout(timeoutId);
             }
-            
+
             // Remove error listener since video loaded successfully
             videoElement.removeEventListener('error', handleVideoError);
+            // Remove both event listeners to prevent memory leaks
+            videoElement.removeEventListener('loadeddata', handleVideoLoaded);
+            videoElement.removeEventListener('canplay', handleVideoLoaded);
 
             // Remove loading state
             if (videoCard) {
@@ -1660,8 +1702,9 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
             }
           };
 
-          // Add listeners before loading
-          videoElement.addEventListener('loadedmetadata', handleMetadataLoaded, { once: true });
+          // Add listeners before loading - use both loadeddata and canplay for better reliability
+          videoElement.addEventListener('loadeddata', handleVideoLoaded, { once: true });
+          videoElement.addEventListener('canplay', handleVideoLoaded, { once: true });
           videoElement.addEventListener('error', handleVideoError);
 
           // Start trying the first video
@@ -1747,24 +1790,56 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
  * @param {Object} widgetConfig - Configuration from backend
  */
 async function initCollageWidget(widgetConfig) {
-  const { source, intervalSeconds, pexelsQueries, uploadGallery, fallbackToPexels } = widgetConfig;
+  const { 
+    source, 
+    intervalSeconds, 
+    pexelsQueries, 
+    uploadGallery, 
+    fallbackToPexels,
+    heroVideo,
+    videoQuality,
+    transition,
+    preloading,
+    mobileOptimizations,
+    contentFiltering,
+    playbackControls,
+  } = widgetConfig;
 
   // Default mediaTypes to enable videos if not explicitly configured
   const mediaTypes = widgetConfig.mediaTypes || { photos: true, videos: true };
 
-  const intervalMs = (intervalSeconds || 2.5) * 1000;
+  // Mobile optimization constants
+  const MOBILE_TRANSITION_MULTIPLIER = 1.5;
+
+  // Check for mobile device
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  
+  // Apply mobile optimizations
+  let effectiveIntervalMs = (intervalSeconds || 2.5) * 1000;
+  if (isMobile && mobileOptimizations?.slowerTransitions) {
+    effectiveIntervalMs *= MOBILE_TRANSITION_MULTIPLIER;
+  }
+
+  // Check if videos should be disabled on mobile
+  let effectiveMediaTypes = { ...mediaTypes };
+  if (isMobile && mobileOptimizations?.disableVideos) {
+    effectiveMediaTypes.videos = false;
+  }
 
   // Debug logging
   if (isDebugEnabled()) {
     console.log('[Collage Widget] Initializing with config:', {
       source,
       hasMediaTypes: !!mediaTypes,
-      mediaTypes,
+      mediaTypes: effectiveMediaTypes,
       intervalSeconds,
       hasQueries: !!pexelsQueries,
       uploadGalleryCount: uploadGallery?.length || 0,
       uploadGalleryUrls: uploadGallery || [],
       fallbackToPexels,
+      isMobile,
+      transition,
+      preloading,
     });
   }
 
@@ -1817,7 +1892,7 @@ async function initCollageWidget(widgetConfig) {
 
   // Skip video initialization if user prefers reduced data
   if (!prefersReducedData) {
-    await initHeroVideo(source, mediaTypes, uploadGallery);
+    await initHeroVideo(source, effectiveMediaTypes, uploadGallery, heroVideo || {});
   } else if (isDevelopmentEnvironment()) {
     console.log('[Hero Video] Skipped due to prefers-reduced-data');
   }
@@ -2084,7 +2159,7 @@ async function initCollageWidget(widgetConfig) {
           categoryMapping,
           prefersReducedMotion
         );
-      }, intervalMs);
+      }, effectiveIntervalMs);
 
       // Expose interval ID on window for debugging
       window.pexelsCollageIntervalId = pexelsCollageIntervalId;
@@ -2106,7 +2181,7 @@ async function initCollageWidget(widgetConfig) {
         }
 
         const timeSinceLastCycle = Date.now() - window.__collageLastCycleTime;
-        const expectedInterval = intervalMs * WATCHDOG_TOLERANCE_MULTIPLIER;
+        const expectedInterval = effectiveIntervalMs * WATCHDOG_TOLERANCE_MULTIPLIER;
 
         // Check if interval appears to have stopped
         if (timeSinceLastCycle > expectedInterval) {
@@ -2124,7 +2199,7 @@ async function initCollageWidget(widgetConfig) {
                 categoryMapping,
                 prefersReducedMotion
               );
-            }, intervalMs);
+            }, effectiveIntervalMs);
             window.pexelsCollageIntervalId = pexelsCollageIntervalId;
           }
         }
