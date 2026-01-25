@@ -1628,7 +1628,8 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
 
             // Remove error listener since video loaded successfully
             videoElement.removeEventListener('error', handleVideoError);
-            // Remove the canplay listener as well
+            // Remove both event listeners to prevent memory leaks
+            videoElement.removeEventListener('loadeddata', handleVideoLoaded);
             videoElement.removeEventListener('canplay', handleVideoLoaded);
 
             // Remove loading state
