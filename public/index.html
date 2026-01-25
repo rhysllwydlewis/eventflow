@@ -1,975 +1,253 @@
-<!doctype html>
-<html lang="en-GB">
-  <head>
-    <meta charset="UTF-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes"
-    />
-    <meta name="theme-color" content="#0B8073" />
-
-    <!-- Canonical Base URL for SEO helper (ensures correct URLs in all environments) -->
-    <script>window.EF_CANONICAL_BASE = 'https://event-flow.co.uk';</script>
-
-    <!-- SEO Meta Tags -->
-    <title>EventFlow - UK Event Planning Platform | Suppliers & Marketplace</title>
-    <meta
-      name="description"
-      content="Plan your perfect UK event with EventFlow. Connect with verified suppliers, browse packages, and manage your event in one place. Free to use, no platform fees."
-    />
-    <link rel="canonical" href="https://event-flow.co.uk/" />
-
-    <!-- Open Graph -->
-    <meta property="og:title" content="EventFlow - UK Event Planning Platform" />
-    <meta
-      property="og:description"
-      content="Plan your perfect UK event with EventFlow. Connect with verified suppliers, browse packages, and manage your event in one place."
-    />
-    <meta property="og:url" content="https://event-flow.co.uk/" />
-    <meta property="og:type" content="website" />
-    <meta
-      property="og:image"
-      content="https://event-flow.co.uk/assets/images/eventflow-og-image.jpg"
-    />
-    <meta property="og:site_name" content="EventFlow" />
-
-    <!-- Twitter -->
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:url" content="https://event-flow.co.uk/" />
-    <meta name="twitter:title" content="EventFlow - UK Event Planning Platform" />
-    <meta
-      name="twitter:description"
-      content="Plan your perfect UK event with EventFlow. Connect with verified suppliers, browse packages, and manage your event in one place."
-    />
-    <meta
-      name="twitter:image"
-      content="https://event-flow.co.uk/assets/images/eventflow-og-image.jpg"
-    />
-
-    <!-- JSON-LD Schema -->
-    <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@type": "Organization",
-        "@id": "https://event-flow.co.uk/#organization",
-        "name": "EventFlow",
-        "url": "https://event-flow.co.uk",
-        "description": "UK event planning platform connecting customers with verified event suppliers",
-        "foundingDate": "2025",
-        "address": {
-          "@type": "PostalAddress",
-          "addressCountry": "GB"
-        }
-      }
-    </script>
-
-    <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@type": "WebSite",
-        "@id": "https://event-flow.co.uk/#website",
-        "name": "EventFlow",
-        "url": "https://event-flow.co.uk",
-        "publisher": {
-          "@id": "https://event-flow.co.uk/#organization"
-        },
-        "potentialAction": {
-          "@type": "SearchAction",
-          "target": "https://event-flow.co.uk/suppliers?q={search_term_string}",
-          "query-input": "required name=search_term_string"
-        }
-      }
-    </script>
-
-    <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@type": "WebPage",
-        "@id": "https://event-flow.co.uk/#webpage",
-        "url": "https://event-flow.co.uk/",
-        "name": "EventFlow - UK Event Planning Platform",
-        "description": "Plan your perfect UK event with EventFlow. Connect with verified suppliers, browse packages, and manage your event in one place. Free to use, no platform fees.",
-        "isPartOf": {
-          "@id": "https://event-flow.co.uk/#website"
-        },
-        "about": {
-          "@id": "https://event-flow.co.uk/#organization"
-        },
-        "publisher": {
-          "@id": "https://event-flow.co.uk/#organization"
-        }
-      }
-    </script>
-
-    <!-- DNS Prefetch & Preconnect for external resources -->
-    <link rel="dns-prefetch" href="https://cdn.jsdelivr.net" />
-    <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
-    <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-
-    <!-- Critical CSS Inline - Above the fold styles for LCP optimization -->
-    <style>
-      /* CSS Variables */
-      :root{
-        --bg:#fff;
-        --text:#0B1220;
-        --muted:#667085;
-        --ink:#0B8073;
-        --accent:#13B6A2;
-        --border:#E7EAF0;
-        --shadow:0 10px 30px rgba(15,23,42,.06);
-        --radius:14px;
-        --max:1480px;
-        --ef-header-height:64px;
-        --ef-primary:#0B8073;
-        --ef-border:#e5e7eb;
-        --ef-shadow-sm:0 1px 2px 0 rgba(0,0,0,0.05);
-        --ef-text-dark:#1f2937;
-        --ef-transition:all 0.2s cubic-bezier(0.4,0,0.2,1);
-      }
-      /* Reset & Base */
-      *{box-sizing:border-box;margin:0;padding:0}
-      html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
-      /* Container - Critical for layout */
-      .container,.ef-container{max-width:min(var(--max),94%);margin:0 auto;padding:0 20px}
-      .ef-container{max-width:1280px}
-      /* Header - Critical for above-the-fold */
-      .ef-header{position:sticky;top:0;left:0;right:0;z-index:1000;background:rgba(255,255,255,0.95);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--ef-border);box-shadow:var(--ef-shadow-sm);transition:var(--ef-transition)}
-      .ef-header-content{display:flex;align-items:center;justify-content:space-between;height:var(--ef-header-height);gap:16px}
-      .ef-brand{display:flex;align-items:center;gap:12px;text-decoration:none;font-weight:800;font-size:1.125rem;color:var(--ef-text-dark);border-radius:8px;padding:4px 8px;margin-left:-8px}
-      .ef-logo{width:40px;height:40px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
-      .ef-logo-inner{width:100%;height:100%;border-radius:12px;background:conic-gradient(from 180deg,#9be7d9 0deg,#13B6A2 90deg,#0B8073 198deg,#0B1220 270deg,#9be7d9 360deg);box-shadow:0 4px 12px rgba(11,128,115,0.35)}
-      /* Hero Skeleton - Prevent CLS */
-      .hero{padding:clamp(40px,8vw,72px) 0 clamp(24px,5vw,48px);min-height:400px;position:relative}
-      .hero-modern{background:linear-gradient(to bottom,#f8fafc 0%,#f8fafc 50%,#f1f5f9 100%);overflow:hidden}
-      .hero-grid{display:block}
-      @media(min-width:1024px){.hero-grid{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center}}
-      @media(min-width:768px) and (max-width:1023px){.hero-grid{display:grid;grid-template-columns:1.25fr .75fr;gap:28px;align-items:start}}
-      h1{margin:0 0 6px;font-weight:700;letter-spacing:-0.025em;font-size:clamp(26px,4vw + 1rem,52px);line-height:1.12}
-      /* Skip link */
-      .skip-link{position:absolute;top:-40px;left:0;background:var(--ink);color:#fff;padding:8px;text-decoration:none;z-index:9999}
-      .skip-link:focus{top:0}
-      /* Responsive */
-      @media (max-width:767px){.container{width:100%;padding:0 16px}}
-      @media (max-width:639px){.hero{padding:32px 0 20px}}
-      /* Critical component fallbacks - Prevent FOUC */
-      .ef-card{background:#fff;border:1px solid #E7EAF0;border-radius:14px;padding:24px;box-shadow:0 1px 2px 0 rgba(0,0,0,0.05);transition:transform 200ms,box-shadow 200ms,border-color 200ms}
-      .ef-card--center{text-align:center}
-      .ef-card--hover:hover{transform:translateY(-4px);box-shadow:0 10px 30px rgba(15,23,42,0.1);border-color:rgba(11,128,115,0.2)}
-      .ef-card__icon{font-size:48px;margin-bottom:12px;line-height:1}
-      .ef-card__title{font-size:18px;font-weight:600;color:#0B8073;margin:0 0 8px 0}
-      .ef-card__text{font-size:14px;color:#667085;margin:0;line-height:1.5}
-      .ef-section{padding:48px 0}
-      .ef-section--gradient{background:linear-gradient(135deg,#0B8073 0%,#13B6A2 100%);color:#fff}
-      .ef-section--subtle-gradient{background:linear-gradient(135deg,#f7fafc 0%,#e7f3f1 100%);border-top:1px solid #E7EAF0;border-bottom:1px solid #E7EAF0}
-      .ef-grid{display:grid;gap:24px}
-      .ef-grid--auto-sm{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
-    </style>
-
-    <!-- Preload critical CSS with versioning -->
-    <link rel="preload" href="/assets/css/tokens.css?v=18.2.0" as="style" />
-    <link rel="preload" href="/assets/css/design-system.css?v=18.2.0" as="style" />
-    <link rel="preload" href="/assets/css/liquid-glass.css?v=18.2.0" as="style" />
-    <link rel="preload" href="/assets/css/styles.css?v=18.2.0" as="style" />
-    <link rel="preload" href="/assets/css/components.css?v=18.2.0" as="style" />
-    <link rel="preload" href="/assets/css/homepage-enhancements.css?v=18.2.0" as="style" />
-    <link rel="preload" href="/assets/css/hero-modern.css?v=18.2.0" as="style" />
-
-    <!-- Critical Stylesheets - Load synchronously -->
-    <link rel="stylesheet" href="/assets/css/tokens.css?v=18.2.0" />
-    <link rel="stylesheet" href="/assets/css/design-system.css?v=18.2.0" />
-    <link rel="stylesheet" href="/assets/css/liquid-glass.css?v=18.2.0" />
-    <link rel="stylesheet" href="/assets/css/styles.css?v=18.2.0" />
-    <link rel="stylesheet" href="/assets/css/components.css?v=18.2.0" />
-    <link rel="stylesheet" href="/assets/css/homepage-enhancements.css?v=18.2.0" />
-    <link rel="stylesheet" href="/assets/css/hero-modern.css?v=18.2.0" />
-    <link rel="stylesheet" href="/assets/css/ef-search-bar.css?v=18.2.0">
-    
-    <!-- Non-critical CSS - Defer via preload -->
-    <link rel="preload" href="/assets/css/navbar.css?v=18.2.0" as="style" onload="this.onload=null;this.rel='stylesheet'" />
-    <link rel="preload" href="/assets/css/eventflow-17.0.0.css?v=18.2.0" as="style" onload="this.onload=null;this.rel='stylesheet'" />
-    <link rel="preload" href="/assets/css/utilities.css?v=18.2.0" as="style" onload="this.onload=null;this.rel='stylesheet'" />
-    <link rel="preload" href="/assets/css/animations.css?v=18.2.0" as="style" onload="this.onload=null;this.rel='stylesheet'" />
-    <link rel="preload" href="/assets/css/mobile-optimizations.css?v=18.2.0" as="style" onload="this.onload=null;this.rel='stylesheet'" />
-    <link rel="preload" href="/assets/css/ui-ux-fixes.css?v=18.2.0" as="style" onload="this.onload=null;this.rel='stylesheet'" />
-    <link rel="preload" href="/assets/css/navigation-enhancements.css?v=18.2.0" as="style" onload="this.onload=null;this.rel='stylesheet'" />
-    <noscript>
-      <link rel="stylesheet" href="/assets/css/navbar.css?v=18.2.0" />
-      <link rel="stylesheet" href="/assets/css/eventflow-17.0.0.css?v=18.2.0" />
-      <link rel="stylesheet" href="/assets/css/utilities.css?v=18.2.0" />
-      <link rel="stylesheet" href="/assets/css/animations.css?v=18.2.0" />
-      <link rel="stylesheet" href="/assets/css/mobile-optimizations.css?v=18.2.0" />
-      <link rel="stylesheet" href="/assets/css/ui-ux-fixes.css?v=18.2.0" />
-      <link rel="stylesheet" href="/assets/css/navigation-enhancements.css?v=18.2.0" />
-    </noscript>
-    
-    <link rel="icon" href="/favicon.svg" />
-    
-    <!-- Collage Widget Animations and Styles - Optimized for CLS & Reduced Motion -->
-    <style>
-      /* CSS Variables for configurable values */
-      :root {
-        --collage-aspect-ratio: 16/9;
-      }
-      
-      .collage .frame {
-        position: relative;
-        /* Reserve space to prevent CLS */
-        aspect-ratio: var(--collage-aspect-ratio);
-        background: #f1f5f9;
-      }
-      /* Support both img and video elements */
-      .collage .frame img,
-      .collage .frame video {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        transition: opacity 0.4s ease-in-out;
-      }
-      .collage .frame img.fading,
-      .collage .frame video.fading {
-        opacity: 0;
-      }
-      /* Loading state for collage media */
-      .collage .frame.loading-pexels::after {
-        content: '';
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        width: 40px;
-        height: 40px;
-        border: 3px solid rgba(255, 255, 255, 0.3);
-        border-top-color: rgba(255, 255, 255, 0.8);
-        border-radius: 50%;
-        animation: pexels-spin 0.8s linear infinite;
-        z-index: 15;
-      }
-      @keyframes pexels-spin {
-        to { transform: translate(-50%, -50%) rotate(360deg); }
-      }
-      /* Media credit (for Pexels attribution) */
-      .pexels-credit {
-        position: absolute;
-        bottom: 4px;
-        right: 4px;
-        background: rgba(0, 0, 0, 0.6);
-        color: white;
-        font-size: 10px;
-        padding: 2px 6px;
-        border-radius: 2px;
-        z-index: 10;
-      }
-      .pexels-credit a {
-        color: white;
-        text-decoration: underline;
-      }
-      /* Reduced motion support - Disable all animations */
-      @media (prefers-reduced-motion: reduce) {
-        .collage .frame img,
-        .collage .frame video {
-          transition: none !important;
-        }
-        .collage .frame video {
-          animation: none !important;
-        }
-        .collage .frame.loading-pexels::after {
-          animation: none !important;
-        }
-      }
-    </style>
-  </head>
-  <body>
-    <a href="#main-content" class="skip-link">Skip to main content</a>
-    <!-- TOP NAVBAR - GOLD STANDARD REBUILD -->
-    <header class="ef-header" role="banner">
-      <div class="ef-container">
-        <div class="ef-header-content">
-          <!-- Brand Logo - Enhanced Animated -->
-          <a href="/" class="ef-brand" aria-label="EventFlow - Return to homepage">
-            <div class="ef-logo" aria-hidden="true">
-              <div class="ef-logo-inner"></div>
-            </div>
-            <span class="ef-brand-text">EventFlow</span>
-          </a>
-
-          <!-- Desktop Navigation -->
-          <nav class="ef-nav-desktop" aria-label="Main navigation">
-            <a href="/start" class="ef-nav-link">Plan</a>
-            <a href="/suppliers" class="ef-nav-link">Suppliers</a>
-            <a href="/marketplace" class="ef-nav-link">Marketplace</a>
-            <a href="/blog" class="ef-nav-link">Guides</a>
-            <a href="/pricing" class="ef-nav-link">Pricing</a>
-          </nav>
-
-          <!-- Actions -->
-          <div class="ef-header-actions">
-            <!-- Notification Bell (hidden by default, shown when logged in) -->
-            <button 
-              id="ef-notification-btn" 
-              class="ef-icon-btn" 
-              type="button" 
-              aria-label="View notifications"
-              style="display: none;"
-            >
-              <svg class="ef-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-                <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-              </svg>
-              <span id="ef-notification-badge" class="ef-badge" style="display: none;">0</span>
-            </button>
-
-            <!-- Auth Button (Desktop) -->
-            <a href="/auth" id="ef-auth-link" class="ef-btn ef-btn-primary">
-              Log in
-            </a>
-
-            <!-- Dashboard Link (Desktop, hidden by default) -->
-            <a href="#" id="ef-dashboard-link" class="ef-nav-link" style="display: none;">
-              Dashboard
-            </a>
-
-            <!-- Mobile Menu Toggle -->
-            <button 
-              id="ef-mobile-toggle" 
-              class="ef-mobile-toggle" 
-              type="button"
-              aria-label="Toggle menu"
-              aria-expanded="false"
-              aria-controls="ef-mobile-menu"
-            >
-              <span class="ef-toggle-line"></span>
-              <span class="ef-toggle-line"></span>
-              <span class="ef-toggle-line"></span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Mobile Menu -->
-      <div id="ef-mobile-menu" class="ef-mobile-menu" role="dialog" aria-modal="true" aria-label="Mobile navigation">
-        <nav class="ef-mobile-nav" aria-label="Primary navigation">
-          <a href="/start" class="ef-mobile-link">Plan an Event</a>
-          <a href="/suppliers" class="ef-mobile-link">Browse Suppliers</a>
-          <a href="/marketplace" class="ef-mobile-link">Marketplace</a>
-          <a href="/blog" class="ef-mobile-link">Guides</a>
-          <a href="/pricing" class="ef-mobile-link">Pricing</a>
-          <a href="/for-suppliers" class="ef-mobile-link">For Suppliers</a>
-          <a href="/faq" class="ef-mobile-link">FAQ</a>
-          <div class="ef-mobile-divider"></div>
-          <a href="/auth" id="ef-mobile-auth" class="ef-mobile-link ef-mobile-primary">Log in</a>
-          <a href="#" id="ef-mobile-dashboard" class="ef-mobile-link" style="display: none;">Dashboard</a>
-          <a href="#" id="ef-mobile-logout" class="ef-mobile-link" style="display: none;">Log out</a>
-        </nav>
-      </div>
-    </header>
-    
-    <!-- Load auth state manager first -->
-    <script src="/assets/js/utils/auth-state.js" defer></script>
-    <!-- Burger menu - simple standalone implementation -->
-    <script src="/assets/js/burger-menu.js" defer></script>
-    <script src="/assets/js/navbar.js" defer></script>
-    <script src="/assets/js/components.js" defer></script>
-    <script src="/assets/js/animations.js" defer></script>
-    <script src="/assets/js/notifications.js" defer></script>
-    <script src="/assets/js/websocket-client.js" defer></script>
-
-    <main id="main-content">
-      <section class="hero hero-modern">
-        <div class="hero-bg-gradient"></div>
-        <div class="hero-blob hero-blob-1 ef-float"></div>
-        <div class="hero-blob hero-blob-2 ef-float slow"></div>
-        <div class="hero-grid-texture"></div>
-
-        <div class="container hero-grid">
-          <div class="relative">
-            <!-- Headline -->
-            <h1 class="ef-fade-up delay-2">
-              <span class="hero-line-1">Everything you need</span>
-              <span class="hero-line-2">to organise an event</span>
-              <span class="hero-highlight-text">
-                In one place
-                <span class="hero-highlight-bg"></span>
-              </span>
-            </h1>
-
-            <!-- Subcopy -->
-            <p class="hero-modern-subcopy ef-fade-up delay-3">
-              Find venues, catering, entertainment and more. Add options to your plan instantly,
-              message suppliers when you're ready, and keep budgets, notes and decisions together.
-            </p>
-
-            <!-- New Unified Search Component -->
-            <div class="ef-search-bar" role="search">
-              <form class="ef-search-bar__form" action="/suppliers" method="GET">
-                
-                <!-- Category Selector -->
-                <div class="ef-search-bar__segment ef-search-bar__segment--category">
-                  <label for="ef-search-category" class="sr-only">Category</label>
-                  <select id="ef-search-category" name="category" class="ef-search-bar__select">
-                    <option value="">All</option>
-                    <option value="venues">Venues</option>
-                    <option value="catering">Catering</option>
-                    <option value="photography">Photography</option>
-                    <option value="entertainment">Entertainment</option>
-                    <option value="florists">Florists</option>
-                    <option value="decorations">Decorations</option>
-                  </select>
-                  <svg class="ef-search-bar__select-icon" aria-hidden="true" width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd"/>
-                  </svg>
-                </div>
-
-                <!-- Divider -->
-                <div class="ef-search-bar__divider" aria-hidden="true"></div>
-
-                <!-- Search Input -->
-                <div class="ef-search-bar__segment ef-search-bar__segment--input">
-                  <svg class="ef-search-bar__input-icon" aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="11" cy="11" r="8"/>
-                    <path d="m21 21-4.35-4.35"/>
-                  </svg>
-                  <label for="ef-search-input" class="sr-only">Search</label>
-                  <input 
-                    type="search" 
-                    id="ef-search-input" 
-                    name="q" 
-                    class="ef-search-bar__input"
-                    placeholder="Search suppliers, packages..."
-                    autocomplete="off"
-                    autocapitalize="off"
-                    spellcheck="false"
-                  />
-                </div>
-
-                <!-- Submit Button -->
-                <button type="submit" class="ef-search-bar__button" aria-label="Search">
-                  <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                    <circle cx="11" cy="11" r="8"/>
-                    <path d="m21 21-4.35-4.35"/>
-                  </svg>
-                </button>
-
-              </form>
-            </div>
-
-            <!-- Quick Search Tags -->
-            <div class="ef-quick-tags" role="list" aria-label="Popular searches">
-              <button type="button" class="ef-quick-tags__tag" data-search="london venues">
-                London venues
-              </button>
-              <button type="button" class="ef-quick-tags__tag" data-search="canapés drinks">
-                Canapés & drinks
-              </button>
-              <button type="button" class="ef-quick-tags__tag" data-search="dj packages">
-                DJ packages
-              </button>
-              <button type="button" class="ef-quick-tags__tag" data-search="corporate">
-                Corporate
-              </button>
-            </div>
-
-            <!-- CTAs -->
-            <div class="hero-modern-ctas">
-              <a
-                href="/start"
-                class="hero-cta-base hero-cta-primary"
-              >
-                <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M5 12h14m-7-7 7 7-7 7"/>
-                </svg>
-                Start planning
-              </a>
-              <a
-                href="/suppliers"
-                class="hero-cta-base hero-cta-secondary"
-              >
-                Browse suppliers
-              </a>
-            </div>
-          </div>
-          <div>
-            <div class="hero-collage ef-fade-up delay-3" aria-hidden="true">
-              <!-- Row 1: Video (no label, spans 2 columns) -->
-              <div class="hero-video-card">
-                <!-- Video autoplay is controlled by JavaScript based on prefers-reduced-motion -->
-                <video id="hero-pexels-video" muted loop playsinline preload="metadata"
-                       poster="/assets/images/hero-video-poster.jpg"
-                       width="800" height="450"
-                       onerror="this.style.display='none'; this.nextElementSibling && (this.nextElementSibling.style.display='block');">
-                  <source src="" type="video/mp4" id="hero-video-source">
-                  Your browser does not support the video tag.
-                </video>
-                <span class="hero-video-credit" id="hero-video-credit">Video by Pexels</span>
-              </div>
-              
-              <!-- Row 2: Venues + Catering -->
-              <a href="/category.html?slug=venues" class="hero-collage-card" data-category="venues">
-                <img src="/assets/images/collage-venue.jpg" alt="Venues" id="collage-venues" 
-                     width="400" height="300" loading="eager" fetchpriority="high" decoding="async"
-                     sizes="(max-width: 768px) 48vw, 25vw"
-                     onerror="this.style.background='linear-gradient(135deg, #667eea 0%, #764ba2 100%)'; this.style.minHeight='200px'; this.src=''; this.onerror=null;">
-                <span class="hero-collage-label">
-                  <span class="hero-collage-icon">🏛️</span>
-                  Venues
-                </span>
-                <span class="hero-collage-credit" id="credit-venues"></span>
-              </a>
-              
-              <a href="/category.html?slug=catering" class="hero-collage-card" data-category="catering">
-                <img src="/assets/images/collage-catering.jpg" alt="Catering" id="collage-catering"
-                     width="400" height="300" loading="eager" fetchpriority="high" decoding="async"
-                     sizes="(max-width: 768px) 48vw, 25vw"
-                     onerror="this.style.background='linear-gradient(135deg, #f093fb 0%, #f5576c 100%)'; this.style.minHeight='200px'; this.src=''; this.onerror=null;">
-                <span class="hero-collage-label">
-                  <span class="hero-collage-icon">🍽️</span>
-                  Catering
-                </span>
-                <span class="hero-collage-credit" id="credit-catering"></span>
-              </a>
-              
-              <!-- Row 3: Entertainment + Photography -->
-              <a href="/category.html?slug=entertainment" class="hero-collage-card" data-category="entertainment">
-                <img src="/assets/images/collage-entertainment.jpg" alt="Entertainment" id="collage-entertainment"
-                     width="400" height="300" loading="eager" fetchpriority="high" decoding="async"
-                     sizes="(max-width: 768px) 48vw, 25vw"
-                     onerror="this.style.background='linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)'; this.style.minHeight='200px'; this.src=''; this.onerror=null;">
-                <span class="hero-collage-label">
-                  <span class="hero-collage-icon">🎤</span>
-                  Entertainment
-                </span>
-                <span class="hero-collage-credit" id="credit-entertainment"></span>
-              </a>
-              
-              <a href="/category.html?slug=photography" class="hero-collage-card" data-category="photography">
-                <img src="/assets/images/collage-photography.jpg" alt="Photography" id="collage-photography"
-                     width="400" height="300" loading="eager" fetchpriority="high" decoding="async"
-                     sizes="(max-width: 768px) 48vw, 25vw"
-                     onerror="this.style.background='linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)'; this.style.minHeight='200px'; this.src=''; this.onerror=null;">
-                <span class="hero-collage-label">
-                  <span class="hero-collage-icon">📸</span>
-                  Photography
-                </span>
-                <span class="hero-collage-credit" id="credit-photography"></span>
-              </a>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Noscript fallback for hero CTAs -->
-      <noscript>
-        <section class="section" style="background: #f9fafb; border: 2px solid #e7eaf0; border-radius: 12px; padding: 24px; margin: 24px auto; max-width: 600px;">
-          <div class="container" style="text-align: center;">
-            <h2 style="margin-bottom: 16px; font-size: 1.5rem;">JavaScript Required for Full Experience</h2>
-            <p style="margin-bottom: 20px; color: #667085;">For the best experience, please enable JavaScript. You can still browse our platform:</p>
-            <div style="display: flex; flex-direction: column; gap: 12px; max-width: 400px; margin: 0 auto;">
-              <a href="/start" class="cta" style="display: block; text-decoration: none;">Plan an Event</a>
-              <a href="/suppliers" class="cta secondary" style="display: block; text-decoration: none;">Browse Suppliers</a>
-              <a href="/marketplace" class="cta secondary" style="display: block; text-decoration: none;">View Marketplace</a>
-            </div>
-          </div>
-        </section>
-      </noscript>
-
-      <section class="ef-section" aria-label="Featured packages">
-        <div class="container">
-          <div class="ef-section__header">
-            <span class="ef-section__kicker">Featured packages</span>
-          </div>
-          <div id="featured-packages" class="featured-carousel">
-            <div class="card"><p class="small">Loading…</p></div>
-          </div>
-        </div>
-      </section>
-
-      <section class="ef-section" aria-label="Spotlight packages">
-        <div class="container">
-          <div class="ef-section__header">
-            <span class="ef-section__kicker">Spotlight packages</span>
-            <p class="ef-section__subtitle">
-              Discover something new — our spotlight changes every hour
-            </p>
-          </div>
-          <div id="spotlight-packages" class="featured-carousel">
-            <div class="card"><p class="small">Loading…</p></div>
-          </div>
-        </div>
-      </section>
-
-      <section class="ef-section" aria-label="Browse suppliers by category">
-        <div class="container">
-          <div class="ef-section__header">
-            <span class="ef-section__kicker">Browse suppliers by category</span>
-            <p class="ef-section__subtitle">
-              Explore our full range of verified UK suppliers
-            </p>
-          </div>
-          <div id="category-grid-home"></div>
-        </div>
-      </section>
-
-      <section class="ef-section ef-section--gradient" aria-label="EventFlow statistics" aria-live="polite">
-        <div class="container">
-          <div class="ef-stats-grid">
-            <div class="ef-stat" data-reveal>
-              <div class="ef-stat__number" data-counter="500" data-suffix="+">0</div>
-              <div class="ef-stat__label">Verified Suppliers</div>
-            </div>
-            <div class="ef-stat" data-reveal>
-              <div class="ef-stat__number" data-counter="1200" data-suffix="+">0</div>
-              <div class="ef-stat__label">Packages Available</div>
-            </div>
-            <div class="ef-stat" data-reveal>
-              <div class="ef-stat__number" data-counter="150" data-suffix="+">0</div>
-              <div class="ef-stat__label">Marketplace Items</div>
-            </div>
-            <div class="ef-stat" data-reveal>
-              <div class="ef-stat__number" data-counter="500" data-suffix="+">0</div>
-              <div class="ef-stat__label">Customer Reviews</div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Trust Badges Section -->
-      <section class="ef-section" aria-label="Trust indicators">
-        <div class="container">
-          <div class="ef-grid ef-grid--auto-sm" style="max-width: 900px; margin: 0 auto;">
-            <div class="ef-card ef-card--center ef-card--hover">
-              <div class="ef-card__icon">✓</div>
-              <h3 class="ef-card__title">Verified Suppliers</h3>
-              <p class="ef-card__text">All suppliers are verified and vetted</p>
-            </div>
-            <div class="ef-card ef-card--center ef-card--hover">
-              <div class="ef-card__icon">🔒</div>
-              <h3 class="ef-card__title">Secure Messaging</h3>
-              <p class="ef-card__text">Safe and private communication</p>
-            </div>
-            <div class="ef-card ef-card--center ef-card--hover">
-              <div class="ef-card__icon">💷</div>
-              <h3 class="ef-card__title">No Platform Fees</h3>
-              <p class="ef-card__text">Direct bookings with suppliers</p>
-            </div>
-            <div class="ef-card ef-card--center ef-card--hover">
-              <div class="ef-card__icon">🇬🇧</div>
-              <h3 class="ef-card__title">UK Based Support</h3>
-              <p class="ef-card__text">Local support when you need it</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Testimonials Section -->
-      <section class="ef-section ef-section--muted" aria-label="Customer testimonials" id="testimonials-section">
-        <div class="container">
-          <div class="ef-section__header ef-section__header--center">
-            <span class="ef-section__kicker">Testimonials</span>
-            <h2 class="ef-section__title">What Our Customers Say</h2>
-          </div>
-          <div id="testimonials-carousel" class="testimonials-grid">
-            <!-- Placeholder card -->
-            <div class="ef-card ef-card--center" style="max-width: 600px; margin: 0 auto;" data-reveal>
-              <div class="ef-card__icon">✨</div>
-              <h3 class="ef-card__title" style="font-size: 1.5rem;">Testimonials Coming Soon</h3>
-              <p class="ef-card__text">
-                We're gathering feedback from our amazing customers. Check back soon to see what they have to say about their EventFlow experience!
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Marketplace Preview Section -->
-      <section class="ef-section" aria-label="Marketplace preview" id="marketplace-preview-section">
-        <div class="container">
-          <div class="ef-section__header">
-            <span class="ef-section__kicker">Marketplace</span>
-            <h2 class="ef-section__title">Latest Items for Sale</h2>
-            <p class="ef-section__subtitle">
-              Buy and sell pre-loved event items — dresses, décor, AV gear and more
-            </p>
-          </div>
-          <div id="marketplace-preview" aria-live="polite">
-            <p class="small">Loading marketplace items...</p>
-          </div>
-          <div style="text-align: center; margin-top: var(--ef-space-5, 24px);">
-            <a href="/marketplace" class="ef-btn ef-btn--primary">View All Marketplace Items</a>
-          </div>
-        </div>
-      </section>
-
-      <!-- Latest Guides Section -->
-      <section
-        class="section"
-        aria-label="Planning guides"
-        id="guides-section"
-        style="display: none"
-      >
-        <div class="container">
-          <div
-            class="small"
-            style="text-transform: uppercase; letter-spacing: 0.2em; color: #7e8794"
-          >
-            Helpful Guides
-          </div>
-          <h2 style="margin-top: 0.5rem; margin-bottom: 1rem">Event Planning Resources</h2>
-          <div id="guides-list" class="cards" aria-live="polite">
-            <p class="small">Loading guides...</p>
-          </div>
-        </div>
-      </section>
-
-      <section class="section" aria-labelledby="how-it-works">
-        <div class="container">
-          <h2 id="how-it-works" class="sr-only">How it works</h2>
-          <div class="cards">
-            <div class="card card-hover" data-reveal>
-              <h3>1 · Tell us about your event</h3>
-              <p class="small">Type, location and date help us surface relevant suppliers.</p>
-            </div>
-            <div class="card card-hover" data-reveal>
-              <h3>2 · Compare suppliers</h3>
-              <p class="small">
-                Browse venues, catering, entertainment and more — add to your plan with one click.
-              </p>
-            </div>
-            <div class="card card-hover" data-reveal>
-              <h3>3 · Save &amp; message</h3>
-              <p class="small">
-                Create a free account to save your plan and start conversations with suppliers.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Supplier CTA Section -->
-      <section class="ef-section ef-section--subtle-gradient">
-        <div class="container" style="max-width: 900px; text-align: center;">
-          <div class="ef-section__header ef-section__header--center">
-            <span class="ef-badge ef-badge--primary" style="margin-bottom: var(--ef-space-4, 16px);">FOR SUPPLIERS</span>
-            <h2 class="ef-section__title" style="color: var(--ef-primary, #0B8073);">
-              Are you a wedding or event supplier?
-            </h2>
-            <p class="ef-section__subtitle" style="max-width: 700px; margin: 0 auto;">
-              Join EventFlow and connect with couples planning their perfect day. Get discovered by
-              customers actively looking for services like yours, with no commission on bookings.
-            </p>
-          </div>
-
-          <div class="ef-features" style="max-width: 700px; margin: var(--ef-space-6, 32px) auto;">
-            <div class="ef-feature">
-              <div class="ef-feature__icon">✓</div>
-              <div class="ef-feature__content">
-                <span class="ef-feature__title">No Commission</span>
-                <span class="ef-feature__text">Keep 100% of your booking fees</span>
-              </div>
-            </div>
-            <div class="ef-feature">
-              <div class="ef-feature__icon">✓</div>
-              <div class="ef-feature__content">
-                <span class="ef-feature__title">Verified Leads</span>
-                <span class="ef-feature__text">Connect with serious customers</span>
-              </div>
-            </div>
-            <div class="ef-feature">
-              <div class="ef-feature__icon">✓</div>
-              <div class="ef-feature__content">
-                <span class="ef-feature__title">Easy Setup</span>
-                <span class="ef-feature__text">Go live in minutes</span>
-              </div>
-            </div>
-          </div>
-
-          <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin-top: var(--ef-space-6, 32px);">
-            <a href="/pricing" class="ef-btn ef-btn--primary">View Pricing & Plans</a>
-            <a href="/for-suppliers" class="ef-btn ef-btn--secondary">Learn More</a>
-          </div>
-
-          <p class="ef-section__subtitle" style="margin-top: var(--ef-space-6, 32px); font-size: var(--ef-text-sm, 14px);">
-            Join over 500+ verified suppliers already on EventFlow
-          </p>
-        </div>
-      </section>
-
-      <!-- Marketplace Signposting Section -->
-      <section class="ef-section ef-section--subtle-gradient" aria-label="Event Marketplace">
-        <div class="container" style="max-width: 900px; text-align: center;">
-          <div class="ef-section__header ef-section__header--center">
-            <h2 class="ef-section__title" style="color: var(--ef-primary, #0B8073);">
-              Event Marketplace
-            </h2>
-            <p class="ef-section__subtitle" style="max-width: 700px; margin: 0 auto;">
-              Buy and sell pre-loved event items — dresses, décor, AV gear and more. UK-focused, no
-              platform fees.
-            </p>
-          </div>
-
-          <div style="margin-top: var(--ef-space-6, 32px);">
-            <a href="/marketplace" class="ef-btn ef-btn--primary">Visit the Marketplace</a>
-          </div>
-        </div>
-      </section>
-
-      <!-- Newsletter Signup Section -->
-      <section class="ef-section ef-section--gradient" aria-label="Newsletter signup">
-        <div class="container" style="max-width: 700px;">
-          <div class="ef-section__header ef-section__header--center">
-            <h2 class="ef-section__title">Stay Updated</h2>
-            <p class="ef-section__subtitle">
-              Get the latest event planning tips, supplier spotlights, and special offers delivered to your inbox.
-            </p>
-          </div>
-          <form id="newsletter-form" class="ef-newsletter-form">
-            <input 
-              type="email" 
-              id="newsletter-email" 
-              name="email" 
-              class="ef-input ef-newsletter-form__input"
-              placeholder="Enter your email address" 
-              required
-              aria-label="Email address"
-            >
-            <button type="submit" class="ef-btn ef-newsletter-form__btn">
-              Subscribe
-            </button>
-          </form>
-          <p class="ef-newsletter-form__note">
-            We respect your privacy. Unsubscribe at any time.
-          </p>
-        </div>
-      </section>
-    </main>
-
-    <footer class="footer" role="contentinfo">
-      <div class="container ef-footer-content">
-        <div>
-          <strong>EventFlow</strong><br /><span class="small">Event planning made simple.</span>
-        </div>
-        <div class="version">Version: <span id="ef-version-label">loading…</span></div>
-        <div class="small">
-          <a href="/blog">Guides</a> · <a href="/marketplace">Marketplace</a> · <a href="/credits">Credits</a> ·
-          <a href="/contact">Contact</a> ·
-          <a href="/legal">Legal Hub</a>
-        </div>
-      </div>
-    </footer>
-
-    <!-- BOTTOM NAVBAR - GOLD STANDARD REBUILD (Mobile Only) -->
-    <nav class="ef-bottom-nav" role="navigation" aria-label="Mobile bottom navigation">
-      <a href="/start" class="ef-bottom-link" aria-label="Plan your event">
-        <svg class="ef-bottom-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M12 20h9"/>
-          <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
-        </svg>
-        <span class="ef-bottom-label">Plan</span>
-      </a>
-      
-      <a href="/suppliers" class="ef-bottom-link" aria-label="Browse suppliers">
-        <svg class="ef-bottom-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <circle cx="11" cy="11" r="8"/>
-          <path d="m21 21-4.35-4.35"/>
-        </svg>
-        <span class="ef-bottom-label">Suppliers</span>
-      </a>
-      
-      <a href="/blog" class="ef-bottom-link" aria-label="View guides">
-        <svg class="ef-bottom-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-        </svg>
-        <span class="ef-bottom-label">Guides</span>
-      </a>
-      
-      <!-- Dashboard with notification badge (shown when logged in, replaces Alerts) -->
-      <a href="#" id="ef-bottom-dashboard" class="ef-bottom-link" style="display: none;" aria-label="Go to dashboard">
-        <svg class="ef-bottom-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <rect x="3" y="3" width="7" height="7" rx="1"/>
-          <rect x="14" y="3" width="7" height="7" rx="1"/>
-          <rect x="14" y="14" width="7" height="7" rx="1"/>
-          <rect x="3" y="14" width="7" height="7" rx="1"/>
-        </svg>
-        <span class="ef-bottom-label">Dashboard</span>
-        <span id="ef-bottom-dashboard-badge" class="ef-badge" style="display: none;">0</span>
-      </a>
-      
-      <!-- Alerts button (shown when logged out) -->
-      <a href="/blog" id="ef-bottom-alerts" class="ef-bottom-link" aria-label="View guides and alerts">
-        <svg class="ef-bottom-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-          <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-        </svg>
-        <span class="ef-bottom-label">Alerts</span>
-      </a>
-      
-      <button 
-        id="ef-bottom-menu" 
-        class="ef-bottom-link" 
-        type="button"
-        aria-label="Open menu"
-        aria-expanded="false"
-        aria-controls="ef-mobile-menu"
-      >
-        <svg class="ef-bottom-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <line x1="3" y1="12" x2="21" y2="12"/>
-          <line x1="3" y1="6" x2="21" y2="6"/>
-          <line x1="3" y1="18" x2="21" y2="18"/>
-        </svg>
-        <span class="ef-bottom-label">Menu</span>
-      </button>
-    </nav>
-
-    <!-- Load core utilities -->
-    <script src="/assets/js/components/ErrorBoundary.js" defer></script>
-    <script src="/assets/js/utils/keyboard-nav.js" defer></script>
-    <script src="/assets/js/utils/pexels-client.js" defer></script>
-    <script src="/assets/js/utils/image-optimizer.js" defer></script>
-    <script src="/assets/js/utils/performance-monitor.js" defer></script>
-    <script src="/assets/js/utils/seo-helper.js" defer></script>
-    <script src="/assets/js/utils/mobile-enhancements.js" defer></script>
-    <script src="/assets/js/utils/lazy-loading.js" defer></script>
-
-    <script src="/assets/js/app.js" defer></script>
-    <script src="/assets/js/components/category-grid.js" defer></script>
-    <script src="/assets/js/components/package-list.js" defer></script>
-    <!-- Carousel must load before home-init.js -->
-    <script src="/assets/js/components/carousel.js" defer></script>
-    <script src="/assets/js/pages/home-init.js" defer></script>
-    <script src="/assets/js/cookie-consent.js" defer></script>
-    <script defer>
-      // Initialize core utilities
-      document.addEventListener('DOMContentLoaded', function () {
-        // Initialize error boundary
-        window.errorBoundary = new ErrorBoundary({
-          showErrorDetails: window.location.hostname === 'localhost',
-        });
-
-        // Update SEO for homepage
-        if (window.seoHelper) {
-          window.seoHelper.setAll({
-            title: 'EventFlow — Plan your event the simple way',
-            description:
-              'Find suppliers, build your plan and keep everything in one place — beautifully simple on mobile and desktop.',
-            keywords: ['event planning', 'wedding planning', 'suppliers', 'venues', 'catering'],
-            canonical: '/',
-            type: 'website',
-          });
-        }
-      });
-    </script>
-
-    <!-- JadeAssist Chat Widget - Using local build with positioning API -->
-    <script
-      src="https://cdn.jsdelivr.net/gh/rhysllwydlewis/JadeAssist@abbf580487e0bcf7739a0857d4d940213fe2e176/packages/widget/dist/jade-widget.js"
-      defer
-    ></script>
-    <script src="/assets/js/jadeassist-init.v2.js" defer></script>
-
-    <script src="/assets/js/ef-search-bar.js" defer></script>
-  </body>
-</html>
+--- a/public/index.html
++++ b/public/index.html
+@@ -493,22 +493,20 @@
+             </div>
+           </div>
+           <div>
+-            <div class="hero-collage ef-fade-up delay-3" aria-hidden="true">
+-              <!-- Row 1: Video (no label, spans 2 columns) -->
+-              <div class="hero-video-card">
+-                <!-- Video autoplay is controlled by JavaScript based on prefers-reduced-motion -->
+-                <video id="hero-pexels-video" muted loop playsinline preload="metadata"
+-                       poster="/assets/images/hero-video-poster.jpg"
+-                       width="800" height="450"
+-                       onerror="this.style.display='none'; this.nextElementSibling && (this.nextElementSibling.style.display='block');">
+-                  <source src="" type="video/mp4" id="hero-video-source">
+-                  Your browser does not support the video tag.
+-                </video>
+-                <span class="hero-video-credit" id="hero-video-credit">Video by Pexels</span>
++            <!-- Right-side category collage: glass shell + plan teaser (replaces large hero video) -->
++            <div class="hero-collage-shell ef-glass ef-glass--medium ef-fade-up delay-3" aria-label="Browse categories">
++              <div class="hero-plan-card" aria-label="Plan teaser">
++                <div class="hero-plan-accent" aria-hidden="true"></div>
++                <div class="hero-plan-content">
++                  <div class="hero-plan-title">Plan faster with a single workspace</div>
++                  <div class="hero-plan-sub">Add suppliers → compare → message → track budget</div>
++                </div>
++                <a class="hero-plan-cta" href="/start">Try it</a>
+               </div>
+-              
+-              <!-- Row 2: Venues + Catering -->
+-              <a href="/category.html?slug=venues" class="hero-collage-card" data-category="venues">
++
++              <div class="hero-collage" role="list" aria-label="Categories">
++                <!-- Row 1: Venues + Catering -->
++                <a href="/category.html?slug=venues" class="hero-collage-card" data-category="venues" role="listitem">
+                 <img src="/assets/images/collage-venue.jpg" alt="Venues" id="collage-venues" 
+                      width="400" height="300" loading="eager" fetchpriority="high" decoding="async"
+                      sizes="(max-width: 768px) 48vw, 25vw"
+@@ -520,7 +518,7 @@
+                 <span class="hero-collage-credit" id="credit-venues"></span>
+               </a>
+               
+-              <a href="/category.html?slug=catering" class="hero-collage-card" data-category="catering">
++              <a href="/category.html?slug=catering" class="hero-collage-card" data-category="catering" role="listitem">
+                 <img src="/assets/images/collage-catering.jpg" alt="Catering" id="collage-catering"
+                      width="400" height="300" loading="eager" fetchpriority="high" decoding="async"
+                      sizes="(max-width: 768px) 48vw, 25vw"
+@@ -532,8 +530,8 @@
+                 <span class="hero-collage-credit" id="credit-catering"></span>
+               </a>
+               
+-              <!-- Row 3: Entertainment + Photography -->
+-              <a href="/category.html?slug=entertainment" class="hero-collage-card" data-category="entertainment">
++              <!-- Row 2: Entertainment + Photography -->
++              <a href="/category.html?slug=entertainment" class="hero-collage-card" data-category="entertainment" role="listitem">
+                 <img src="/assets/images/collage-entertainment.jpg" alt="Entertainment" id="collage-entertainment"
+                      width="400" height="300" loading="eager" fetchpriority="high" decoding="async"
+                      sizes="(max-width: 768px) 48vw, 25vw"
+@@ -545,7 +543,7 @@
+                 <span class="hero-collage-credit" id="credit-entertainment"></span>
+               </a>
+               
+-              <a href="/category.html?slug=photography" class="hero-collage-card" data-category="photography">
++              <a href="/category.html?slug=photography" class="hero-collage-card" data-category="photography" role="listitem">
+                 <img src="/assets/images/collage-photography.jpg" alt="Photography" id="collage-photography"
+                      width="400" height="300" loading="eager" fetchpriority="high" decoding="async"
+                      sizes="(max-width: 768px) 48vw, 25vw"
+@@ -556,6 +554,7 @@
+                 </span>
+                 <span class="hero-collage-credit" id="credit-photography"></span>
+               </a>
++              </div>
+             </div>
+           </div>
+         </div>
+--- a/public/assets/css/hero-modern.css
++++ b/public/assets/css/hero-modern.css
+@@ -600,16 +600,111 @@
+   }
+ }
+ 
+-/* Hero collage container */
++/* Collage glass shell (wraps plan teaser + 2x2 category grid) */
++.hero-collage-shell {
++  border-radius: 24px;
++  padding: 16px;
++  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.12);
++}
++
++/* Add a subtle "liquid" specular highlight */
++.hero-collage-shell::before {
++  content: '';
++  position: absolute;
++  inset: 0;
++  border-radius: inherit;
++  pointer-events: none;
++  background:
++    radial-gradient(600px 260px at 25% 10%, rgba(255,255,255,0.55), transparent 60%),
++    radial-gradient(520px 280px at 85% 25%, rgba(255,255,255,0.25), transparent 55%);
++  opacity: 0.6;
++}
++
++.hero-collage-shell {
++  position: relative;
++  overflow: hidden;
++  display: flex;
++  flex-direction: column;
++  gap: 14px;
++}
++
++/* Plan teaser card (replaces large hero video) */
++.hero-plan-card {
++  position: relative;
++  display: flex;
++  align-items: center;
++  justify-content: space-between;
++  gap: 14px;
++  padding: 14px 14px 14px 14px;
++  border-radius: 18px;
++  background: rgba(255, 255, 255, 0.55);
++  backdrop-filter: blur(18px) saturate(180%);
++  -webkit-backdrop-filter: blur(18px) saturate(180%);
++  border: 1px solid rgba(255, 255, 255, 0.6);
++  box-shadow:
++    0 10px 30px rgba(15, 23, 42, 0.10),
++    inset 0 1px 0 rgba(255,255,255,0.7);
++  overflow: hidden;
++}
++
++.hero-plan-accent {
++  position: absolute;
++  left: 14px;
++  right: 14px;
++  top: 12px;
++  height: 6px;
++  border-radius: 999px;
++  background: linear-gradient(90deg, rgba(99,102,241,0.55), rgba(16,185,129,0.55));
++}
++
++.hero-plan-content {
++  padding-top: 10px;
++}
++
++.hero-plan-title {
++  font-size: 14px;
++  font-weight: 700;
++  color: #0f172a;
++  letter-spacing: -0.01em;
++}
++
++.hero-plan-sub {
++  margin-top: 2px;
++  font-size: 12px;
++  color: #475569;
++}
++
++.hero-plan-cta {
++  flex: 0 0 auto;
++  display: inline-flex;
++  align-items: center;
++  justify-content: center;
++  padding: 10px 14px;
++  border-radius: 999px;
++  text-decoration: none;
++  font-weight: 700;
++  font-size: 12px;
++  color: #065f46;
++  background: rgba(209, 250, 229, 0.85);
++  border: 1px solid rgba(16, 185, 129, 0.28);
++  box-shadow: 0 6px 18px rgba(16, 185, 129, 0.16);
++  transition: transform 180ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 180ms;
++}
++
++.hero-plan-cta:hover,
++.hero-plan-cta:focus {
++  transform: translateY(-1px);
++  box-shadow: 0 10px 24px rgba(16, 185, 129, 0.22);
++}
++
++/* 2x2 category grid */
+ .hero-collage {
+   display: grid;
+   grid-template-columns: 1fr 1fr;
+-  grid-template-rows: 1.2fr 1fr 1fr;
+   gap: 14px;
+-  aspect-ratio: 16/10.5;
++  aspect-ratio: 16 / 10.5;
+   max-height: 72vh;
+   max-width: 100%;
+-  overflow: hidden;
+ }
+ 
+ /* Video card - spans full width (2 columns) */
+@@ -727,20 +822,26 @@
+   position: relative;
+   border-radius: 16px;
+   overflow: hidden;
+-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
++  box-shadow:
++    0 14px 36px rgba(15, 23, 42, 0.12),
++    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+   display: block;
+   text-decoration: none;
+-  background: #f8fafc;
+-  border: 2px solid rgba(255, 255, 255, 0.5);
++  background: rgba(255, 255, 255, 0.35);
++  border: 1px solid rgba(255, 255, 255, 0.55);
++  backdrop-filter: blur(16px) saturate(170%);
++  -webkit-backdrop-filter: blur(16px) saturate(170%);
+ }
+ 
+ .hero-collage-card:hover,
+ .hero-collage-card:focus {
+-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.18);
+-  transform: translateY(-6px) scale(1.02);
++  box-shadow:
++    0 26px 64px rgba(15, 23, 42, 0.16),
++    inset 0 1px 0 rgba(255, 255, 255, 0.45);
++  transform: translateY(-5px) scale(1.012);
+   text-decoration: none;
+-  border-color: rgba(16, 185, 129, 0.3);
++  border-color: rgba(16, 185, 129, 0.22);
+ }
+ 
+ .hero-collage-card:focus {
+@@ -791,21 +892,21 @@
+   position: absolute;
+   top: 12px;
+   left: 12px;
+-  background: rgba(255, 255, 255, 0.75);
+-  backdrop-filter: blur(10px);
+-  -webkit-backdrop-filter: blur(10px);
++  background: rgba(255, 255, 255, 0.62);
++  backdrop-filter: blur(14px) saturate(160%);
++  -webkit-backdrop-filter: blur(14px) saturate(160%);
+   color: #0f172a;
+   font-size: 11px;
+   font-weight: 600;
+   padding: 5px 10px;
+   border-radius: 999px;
+-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
++  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.10);
+   z-index: 2;
+   display: flex;
+   align-items: center;
+   gap: 5px;
+   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+-  border: 1px solid rgba(255, 255, 255, 0.3);
++  border: 1px solid rgba(255, 255, 255, 0.5);
+ }
+ 
+ .hero-collage-card:hover .hero-collage-label,
