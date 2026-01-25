@@ -153,43 +153,55 @@
       /* Responsive */
       @media (max-width:767px){.container{width:100%;padding:0 16px}}
       @media (max-width:639px){.hero{padding:32px 0 20px}}
+      /* Critical component fallbacks - Prevent FOUC */
+      .ef-card{background:#fff;border:1px solid #E7EAF0;border-radius:14px;padding:24px;box-shadow:0 1px 2px 0 rgba(0,0,0,0.05);transition:transform 200ms,box-shadow 200ms,border-color 200ms}
+      .ef-card--center{text-align:center}
+      .ef-card--hover:hover{transform:translateY(-4px);box-shadow:0 10px 30px rgba(15,23,42,0.1);border-color:rgba(11,128,115,0.2)}
+      .ef-card__icon{font-size:48px;margin-bottom:12px;line-height:1}
+      .ef-card__title{font-size:18px;font-weight:600;color:#0B8073;margin:0 0 8px 0}
+      .ef-card__text{font-size:14px;color:#667085;margin:0;line-height:1.5}
+      .ef-section{padding:48px 0}
+      .ef-section--gradient{background:linear-gradient(135deg,#0B8073 0%,#13B6A2 100%);color:#fff}
+      .ef-section--subtle-gradient{background:linear-gradient(135deg,#f7fafc 0%,#e7f3f1 100%);border-top:1px solid #E7EAF0;border-bottom:1px solid #E7EAF0}
+      .ef-grid{display:grid;gap:24px}
+      .ef-grid--auto-sm{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
     </style>
 
     <!-- Preload critical CSS with versioning -->
-    <link rel="preload" href="/assets/css/tokens.css?v=18.1.1" as="style" />
-    <link rel="preload" href="/assets/css/design-system.css?v=18.1.1" as="style" />
-    <link rel="preload" href="/assets/css/liquid-glass.css?v=18.1.1" as="style" />
-    <link rel="preload" href="/assets/css/styles.css?v=18.1.1" as="style" />
-    <link rel="preload" href="/assets/css/homepage-enhancements.css?v=18.1.1" as="style" />
-    <link rel="preload" href="/assets/css/hero-modern.css?v=18.1.1" as="style" />
+    <link rel="preload" href="/assets/css/tokens.css?v=18.2.0" as="style" />
+    <link rel="preload" href="/assets/css/design-system.css?v=18.2.0" as="style" />
+    <link rel="preload" href="/assets/css/liquid-glass.css?v=18.2.0" as="style" />
+    <link rel="preload" href="/assets/css/styles.css?v=18.2.0" as="style" />
+    <link rel="preload" href="/assets/css/components.css?v=18.2.0" as="style" />
+    <link rel="preload" href="/assets/css/homepage-enhancements.css?v=18.2.0" as="style" />
+    <link rel="preload" href="/assets/css/hero-modern.css?v=18.2.0" as="style" />
 
     <!-- Critical Stylesheets - Load synchronously -->
-    <link rel="stylesheet" href="/assets/css/tokens.css?v=18.1.1" />
-    <link rel="stylesheet" href="/assets/css/design-system.css?v=18.1.1" />
-    <link rel="stylesheet" href="/assets/css/liquid-glass.css?v=18.1.1" />
-    <link rel="stylesheet" href="/assets/css/styles.css?v=18.1.1" />
-    <link rel="stylesheet" href="/assets/css/homepage-enhancements.css?v=18.1.1" />
-    <link rel="stylesheet" href="/assets/css/hero-modern.css?v=18.1.1" />
-    <link rel="stylesheet" href="/assets/css/ef-search-bar.css?v=18.1.1">
+    <link rel="stylesheet" href="/assets/css/tokens.css?v=18.2.0" />
+    <link rel="stylesheet" href="/assets/css/design-system.css?v=18.2.0" />
+    <link rel="stylesheet" href="/assets/css/liquid-glass.css?v=18.2.0" />
+    <link rel="stylesheet" href="/assets/css/styles.css?v=18.2.0" />
+    <link rel="stylesheet" href="/assets/css/components.css?v=18.2.0" />
+    <link rel="stylesheet" href="/assets/css/homepage-enhancements.css?v=18.2.0" />
+    <link rel="stylesheet" href="/assets/css/hero-modern.css?v=18.2.0" />
+    <link rel="stylesheet" href="/assets/css/ef-search-bar.css?v=18.2.0">
     
     <!-- Non-critical CSS - Defer via preload -->
-    <link rel="preload" href="/assets/css/navbar.css?v=18.1.1" as="style" onload="this.onload=null;this.rel='stylesheet'" />
-    <link rel="preload" href="/assets/css/eventflow-17.0.0.css?v=18.1.1" as="style" onload="this.onload=null;this.rel='stylesheet'" />
-    <link rel="preload" href="/assets/css/utilities.css?v=18.1.1" as="style" onload="this.onload=null;this.rel='stylesheet'" />
-    <link rel="preload" href="/assets/css/components.css?v=18.1.1" as="style" onload="this.onload=null;this.rel='stylesheet'" />
-    <link rel="preload" href="/assets/css/animations.css?v=18.1.1" as="style" onload="this.onload=null;this.rel='stylesheet'" />
-    <link rel="preload" href="/assets/css/mobile-optimizations.css?v=18.1.1" as="style" onload="this.onload=null;this.rel='stylesheet'" />
-    <link rel="preload" href="/assets/css/ui-ux-fixes.css?v=18.1.1" as="style" onload="this.onload=null;this.rel='stylesheet'" />
-    <link rel="preload" href="/assets/css/navigation-enhancements.css?v=18.1.1" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    <link rel="preload" href="/assets/css/navbar.css?v=18.2.0" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    <link rel="preload" href="/assets/css/eventflow-17.0.0.css?v=18.2.0" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    <link rel="preload" href="/assets/css/utilities.css?v=18.2.0" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    <link rel="preload" href="/assets/css/animations.css?v=18.2.0" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    <link rel="preload" href="/assets/css/mobile-optimizations.css?v=18.2.0" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    <link rel="preload" href="/assets/css/ui-ux-fixes.css?v=18.2.0" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    <link rel="preload" href="/assets/css/navigation-enhancements.css?v=18.2.0" as="style" onload="this.onload=null;this.rel='stylesheet'" />
     <noscript>
-      <link rel="stylesheet" href="/assets/css/navbar.css?v=18.1.1" />
-      <link rel="stylesheet" href="/assets/css/eventflow-17.0.0.css?v=18.1.1" />
-      <link rel="stylesheet" href="/assets/css/utilities.css?v=18.1.1" />
-      <link rel="stylesheet" href="/assets/css/components.css?v=18.1.1" />
-      <link rel="stylesheet" href="/assets/css/animations.css?v=18.1.1" />
-      <link rel="stylesheet" href="/assets/css/mobile-optimizations.css?v=18.1.1" />
-      <link rel="stylesheet" href="/assets/css/ui-ux-fixes.css?v=18.1.1" />
-      <link rel="stylesheet" href="/assets/css/navigation-enhancements.css?v=18.1.1" />
+      <link rel="stylesheet" href="/assets/css/navbar.css?v=18.2.0" />
+      <link rel="stylesheet" href="/assets/css/eventflow-17.0.0.css?v=18.2.0" />
+      <link rel="stylesheet" href="/assets/css/utilities.css?v=18.2.0" />
+      <link rel="stylesheet" href="/assets/css/animations.css?v=18.2.0" />
+      <link rel="stylesheet" href="/assets/css/mobile-optimizations.css?v=18.2.0" />
+      <link rel="stylesheet" href="/assets/css/ui-ux-fixes.css?v=18.2.0" />
+      <link rel="stylesheet" href="/assets/css/navigation-enhancements.css?v=18.2.0" />
     </noscript>
     
     <link rel="icon" href="/favicon.svg" />
