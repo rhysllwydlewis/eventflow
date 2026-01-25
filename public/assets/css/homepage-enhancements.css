@@ -190,6 +190,7 @@ h3 {
 }
 
 /* Enhanced trust badge icon styling */
+/* Note: .trust-badge .ef-card__icon-wrapper is for future HTML updates with wrapper elements */
 .trust-badge .ef-card__icon-wrapper {
   width: 72px;
   height: 72px;
@@ -208,7 +209,8 @@ h3 {
   filter: none;
 }
 
-/* Trust indicators section - enhanced icon styling without wrapper */
+/* Trust indicators section - enhanced icon styling without HTML changes */
+/* This selector provides the same styling as above but applies directly to icons in the trust section */
 section[aria-label="Trust indicators"] .ef-card__icon {
   width: 72px;
   height: 72px;
