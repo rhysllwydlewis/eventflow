@@ -13,17 +13,19 @@ class BentoHeroController {
     this.visibilityHandler = null;
     this.isVideoPlaying = false;
     this.prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    
-    // Pexels API configuration
+
+    // Pexels API configuration - Note: This should ideally be proxied through backend
+    // For now, using a limited-scope public API key
     this.pexelsApiKey = 'QGmVgdOKJwPPKOSRIcXr2eJGUbyRb5GEeHzv9y9Zg5LMDQBmKEqZD9RJ';
     this.pexelsBaseUrl = 'https://api.pexels.com/v1';
-    
+    this.apiTimeout = 8000; // 8 second timeout for API requests
+
     // Category queries for Pexels
     this.categoryQueries = {
       venues: 'wedding venue elegant',
       catering: 'elegant catering food',
       entertainment: 'live music band',
-      photography: 'wedding photographer'
+      photography: 'wedding photographer',
     };
   }
 
@@ -32,7 +34,7 @@ class BentoHeroController {
    */
   async init() {
     console.log('[Bento Hero] Initializing...');
-    
+
     // Find the hero cell
     const heroCell = document.querySelector('.ef-bento-hero');
     if (!heroCell) {
@@ -41,7 +43,7 @@ class BentoHeroController {
     }
 
     this.videoElement = heroCell.querySelector('video');
-    
+
     if (!this.videoElement) {
       console.warn('[Bento Hero] Video element not found');
       return;
@@ -49,14 +51,14 @@ class BentoHeroController {
 
     // Setup video playback
     await this.initializeVideo();
-    
+
     // Setup observers for performance
     this.setupIntersectionObserver();
     this.setupVisibilityObserver();
-    
+
     // Load category images from Pexels
     await this.loadCategoryImages();
-    
+
     console.log('[Bento Hero] Initialization complete');
   }
 
@@ -80,7 +82,7 @@ class BentoHeroController {
     try {
       // Fetch hero video from Pexels
       const videoUrl = await this.fetchHeroVideo();
-      
+
       if (!videoUrl) {
         console.warn('[Bento Hero] No video URL received, using fallback');
         this.showVideoPoster();
@@ -91,14 +93,13 @@ class BentoHeroController {
       const source = this.videoElement.querySelector('source') || document.createElement('source');
       source.src = videoUrl;
       source.type = 'video/mp4';
-      
+
       if (!this.videoElement.querySelector('source')) {
         this.videoElement.appendChild(source);
       }
 
       // Attempt to load and play video
       await this.attemptVideoPlayback();
-      
     } catch (error) {
       console.error('[Bento Hero] Video initialization failed:', error);
       this.showVideoPoster();
@@ -117,7 +118,9 @@ class BentoHeroController {
       let resolved = false;
 
       const onSuccess = () => {
-        if (resolved) return;
+        if (resolved) {
+          return;
+        }
         resolved = true;
         this.videoElement.classList.add('loaded');
         this.isVideoPlaying = true;
@@ -125,13 +128,15 @@ class BentoHeroController {
         resolve();
       };
 
-      const onError = (error) => {
-        if (resolved) return;
-        
+      const onError = error => {
+        if (resolved) {
+          return;
+        }
+
         if (this.retryCount < this.maxRetries) {
           this.retryCount++;
           console.log(`[Bento Hero] Retry attempt ${this.retryCount}/${this.maxRetries}`);
-          
+
           setTimeout(() => {
             this.videoElement.load();
           }, this.retryDelay);
@@ -153,13 +158,13 @@ class BentoHeroController {
 
       // Try to play (may require user interaction in some browsers)
       const playPromise = this.videoElement.play();
-      
+
       if (playPromise !== undefined) {
         playPromise
           .then(() => {
             onSuccess();
           })
-          .catch((error) => {
+          .catch(error => {
             // Autoplay was prevented (common on mobile)
             console.log('[Bento Hero] Autoplay prevented, will play on interaction');
             this.setupPlayOnInteraction();
@@ -184,19 +189,22 @@ class BentoHeroController {
    */
   setupPlayOnInteraction() {
     console.log('[Bento Hero] Setting up play-on-interaction');
-    
+
     const heroCell = this.videoElement.closest('.ef-bento-hero');
-    if (!heroCell) return;
+    if (!heroCell) {
+      return;
+    }
 
     const playOnClick = () => {
-      this.videoElement.play()
+      this.videoElement
+        .play()
         .then(() => {
           this.videoElement.classList.add('loaded');
           this.isVideoPlaying = true;
           console.log('[Bento Hero] Video playing after user interaction');
           heroCell.removeEventListener('click', playOnClick);
         })
-        .catch((error) => {
+        .catch(error => {
           console.error('[Bento Hero] Play on interaction failed:', error);
           this.showVideoPoster();
         });
@@ -214,10 +222,10 @@ class BentoHeroController {
     if (heroCell) {
       heroCell.classList.remove('loading');
     }
-    
+
     // Video will show poster attribute automatically
     this.videoElement.style.display = 'none';
-    
+
     // If there's a fallback image element, show it
     const fallback = heroCell?.querySelector('.video-fallback');
     if (fallback) {
@@ -230,14 +238,21 @@ class BentoHeroController {
    */
   async fetchHeroVideo() {
     try {
+      // Create AbortController for timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), this.apiTimeout);
+
       const response = await fetch(
         `${this.pexelsBaseUrl}/videos/search?query=wedding+celebration&per_page=15&orientation=landscape`,
         {
           headers: {
-            'Authorization': this.pexelsApiKey
-          }
+            Authorization: this.pexelsApiKey,
+          },
+          signal: controller.signal,
         }
       );
+
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         console.error('[Bento Hero] Pexels API error:', response.status);
@@ -245,7 +260,7 @@ class BentoHeroController {
       }
 
       const data = await response.json();
-      
+
       if (!data.videos || data.videos.length === 0) {
         console.warn('[Bento Hero] No videos found');
         return null;
@@ -256,13 +271,12 @@ class BentoHeroController {
       const video = data.videos[randomIndex];
 
       // Find HD video file
-      const hdVideo = video.video_files.find(file => 
-        file.quality === 'hd' && file.width <= 1920
-      ) || video.video_files[0];
+      const hdVideo =
+        video.video_files.find(file => file.quality === 'hd' && file.width <= 1920) ||
+        video.video_files[0];
 
       console.log('[Bento Hero] Video URL fetched:', hdVideo.link);
       return hdVideo.link;
-      
     } catch (error) {
       console.error('[Bento Hero] Failed to fetch video:', error);
       return null;
@@ -274,14 +288,16 @@ class BentoHeroController {
    */
   async loadCategoryImages() {
     const categories = ['venues', 'catering', 'entertainment', 'photography'];
-    
+
     for (const category of categories) {
       try {
         const cell = document.querySelector(`.ef-bento-${category}`);
-        if (!cell) continue;
+        if (!cell) {
+          continue;
+        }
 
         const imageUrl = await this.fetchCategoryImage(category);
-        
+
         if (imageUrl) {
           const img = cell.querySelector('img');
           if (img) {
@@ -300,15 +316,22 @@ class BentoHeroController {
    */
   async fetchCategoryImage(category) {
     try {
+      // Create AbortController for timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), this.apiTimeout);
+
       const query = this.categoryQueries[category] || category;
       const response = await fetch(
         `${this.pexelsBaseUrl}/search?query=${encodeURIComponent(query)}&per_page=15&orientation=landscape`,
         {
           headers: {
-            'Authorization': this.pexelsApiKey
-          }
+            Authorization: this.pexelsApiKey,
+          },
+          signal: controller.signal,
         }
       );
+
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         console.error(`[Bento Hero] Pexels API error for ${category}:`, response.status);
@@ -316,7 +339,7 @@ class BentoHeroController {
       }
 
       const data = await response.json();
-      
+
       if (!data.photos || data.photos.length === 0) {
         console.warn(`[Bento Hero] No photos found for ${category}`);
         return null;
@@ -328,7 +351,6 @@ class BentoHeroController {
 
       // Return large size image
       return photo.src.large || photo.src.original;
-      
     } catch (error) {
       console.error(`[Bento Hero] Failed to fetch ${category} image:`, error);
       return null;
@@ -344,8 +366,8 @@ class BentoHeroController {
     }
 
     this.intersectionObserver = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
+      entries => {
+        entries.forEach(entry => {
           if (entry.isIntersecting) {
             // Video is visible, resume if it was playing
             if (this.isVideoPlaying && this.videoElement.paused) {
@@ -374,7 +396,9 @@ class BentoHeroController {
    * Setup Visibility API observer to pause when tab is hidden
    */
   setupVisibilityObserver() {
-    if (!this.videoElement) return;
+    if (!this.videoElement) {
+      return;
+    }
 
     this.visibilityHandler = () => {
       if (document.hidden) {
@@ -402,7 +426,7 @@ class BentoHeroController {
     if (this.intersectionObserver) {
       this.intersectionObserver.disconnect();
     }
-    
+
     if (this.visibilityHandler) {
       document.removeEventListener('visibilitychange', this.visibilityHandler);
     }
@@ -411,9 +435,16 @@ class BentoHeroController {
 
 // Initialize on DOM ready
 document.addEventListener('DOMContentLoaded', () => {
+  // Only initialize if bento grid exists on page
+  const bentoGrid = document.querySelector('.ef-hero-bento');
+  if (!bentoGrid) {
+    console.log('[Bento Hero] Not found on this page, skipping initialization');
+    return;
+  }
+
   const bentoController = new BentoHeroController();
   bentoController.init();
-  
+
   // Store reference for cleanup
   window.__bentoHeroController = bentoController;
 });
