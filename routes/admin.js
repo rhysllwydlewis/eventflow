@@ -4615,7 +4615,7 @@ router.get('/homepage/collage-widget', authRequired, roleRequired('admin'), asyn
       fallbackToPexels: true,
       heroVideo: {
         enabled: true,
-        autoplay: true,
+        autoplay: false,
         muted: true,
         loop: true,
         quality: 'hd',

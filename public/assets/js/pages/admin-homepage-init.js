@@ -75,17 +75,17 @@
 
     // Hero Video Controls
     const heroVideo = collageWidget.heroVideo || {};
-    document.getElementById('heroVideoEnabled').checked = heroVideo.enabled !== false;
-    document.getElementById('heroVideoAutoplay').checked = heroVideo.autoplay !== false;
-    document.getElementById('heroVideoMuted').checked = heroVideo.muted !== false;
-    document.getElementById('heroVideoLoop').checked = heroVideo.loop !== false;
+    document.getElementById('heroVideoEnabled').checked = heroVideo.enabled ?? true;
+    document.getElementById('heroVideoAutoplay').checked = heroVideo.autoplay ?? false;
+    document.getElementById('heroVideoMuted').checked = heroVideo.muted ?? true;
+    document.getElementById('heroVideoLoop').checked = heroVideo.loop ?? true;
     document.getElementById('heroVideoQuality').value = heroVideo.quality || 'hd';
 
     // Video Quality Settings
     const videoQuality = collageWidget.videoQuality || {};
     document.getElementById('videoQualityPreference').value = videoQuality.preference || 'hd';
-    document.getElementById('videoQualityAdaptive').checked = videoQuality.adaptive !== false;
-    document.getElementById('videoQualityMobileOptimized').checked = videoQuality.mobileOptimized !== false;
+    document.getElementById('videoQualityAdaptive').checked = videoQuality.adaptive ?? true;
+    document.getElementById('videoQualityMobileOptimized').checked = videoQuality.mobileOptimized ?? true;
 
     // Transition Effects
     const transition = collageWidget.transition || {};
@@ -94,14 +94,14 @@
 
     // Preloading
     const preloading = collageWidget.preloading || {};
-    document.getElementById('preloadingEnabled').checked = preloading.enabled !== false;
+    document.getElementById('preloadingEnabled').checked = preloading.enabled ?? true;
     document.getElementById('preloadingCount').value = preloading.count !== undefined ? preloading.count : 3;
 
     // Mobile Optimizations
     const mobileOpt = collageWidget.mobileOptimizations || {};
-    document.getElementById('mobileSlowerTransitions').checked = mobileOpt.slowerTransitions !== false;
-    document.getElementById('mobileDisableVideos').checked = mobileOpt.disableVideos === true;
-    document.getElementById('mobileTouchControls').checked = mobileOpt.touchControls !== false;
+    document.getElementById('mobileSlowerTransitions').checked = mobileOpt.slowerTransitions ?? true;
+    document.getElementById('mobileDisableVideos').checked = mobileOpt.disableVideos ?? false;
+    document.getElementById('mobileTouchControls').checked = mobileOpt.touchControls ?? true;
 
     // Content Filtering
     const filtering = collageWidget.contentFiltering || {};
@@ -111,9 +111,9 @@
 
     // Playback Controls
     const playback = collageWidget.playbackControls || {};
-    document.getElementById('playbackShowControls').checked = playback.showControls === true;
-    document.getElementById('playbackPauseOnHover').checked = playback.pauseOnHover !== false;
-    document.getElementById('playbackFullscreen').checked = playback.fullscreen === true;
+    document.getElementById('playbackShowControls').checked = playback.showControls ?? false;
+    document.getElementById('playbackPauseOnHover').checked = playback.pauseOnHover ?? true;
+    document.getElementById('playbackFullscreen').checked = playback.fullscreen ?? false;
 
     // Set Pexels photo queries
     const pexelsQueries = collageWidget.pexelsQueries || {};

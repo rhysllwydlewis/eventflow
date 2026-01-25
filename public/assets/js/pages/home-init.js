@@ -1559,12 +1559,11 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = [], heroVideoCo
         
         // Filter video files based on quality preference
         let videoFiles = video.video_files || [];
-        if (qualityPreference === 'hd') {
-          videoFiles = videoFiles.filter(f => f.quality === 'hd' || f.quality === 'sd');
-        } else if (qualityPreference === 'sd') {
+        if (qualityPreference === 'sd') {
           videoFiles = videoFiles.filter(f => f.quality === 'sd' || f.quality === 'hd');
           videoFiles.sort((a, b) => (a.quality === 'sd' ? -1 : 1));
         } else {
+          // HD and auto both prefer HD first, then SD as fallback
           videoFiles = videoFiles.filter(f => f.quality === 'hd' || f.quality === 'sd');
         }
 
@@ -1810,13 +1809,16 @@ async function initCollageWidget(widgetConfig) {
   // Default mediaTypes to enable videos if not explicitly configured
   const mediaTypes = widgetConfig.mediaTypes || { photos: true, videos: true };
 
+  // Mobile optimization constants
+  const MOBILE_TRANSITION_MULTIPLIER = 1.5;
+
   // Check for mobile device
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   
   // Apply mobile optimizations
   let effectiveIntervalMs = (intervalSeconds || 2.5) * 1000;
   if (isMobile && mobileOptimizations?.slowerTransitions) {
-    effectiveIntervalMs *= 1.5; // 50% slower on mobile
+    effectiveIntervalMs *= MOBILE_TRANSITION_MULTIPLIER;
   }
 
   // Check if videos should be disabled on mobile
