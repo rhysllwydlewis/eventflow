@@ -37,20 +37,28 @@ class BentoHeroController {
    */
   async fetchSettings() {
     try {
-      const response = await fetch('/api/public/homepage-settings');
+      // Create AbortController for timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), this.apiTimeout);
+      
+      const response = await fetch('/api/public/homepage-settings', {
+        signal: controller.signal,
+      });
+      
+      clearTimeout(timeoutId);
       
       if (!response.ok) {
-        console.warn('[Bento Hero] Failed to fetch settings, using defaults');
-        return null;
+        console.warn('[Bento Hero] Failed to fetch settings, widget will be disabled');
+        return { enabled: false }; // Safe default: disable widget
       }
       
       const data = await response.json();
-      const settings = data.collageWidget || null;
+      const settings = data.collageWidget || { enabled: false };
       console.log('[Bento Hero] Settings loaded:', settings);
       return settings;
     } catch (error) {
-      console.warn('[Bento Hero] Error fetching settings:', error);
-      return null;
+      console.warn('[Bento Hero] Error fetching settings, widget will be disabled:', error);
+      return { enabled: false }; // Safe default: disable widget on error
     }
   }
 
@@ -77,8 +85,8 @@ class BentoHeroController {
       return;
     }
 
-    // Check if collage widget is enabled
-    const isEnabled = this.settings?.enabled !== false; // Default to true if settings not loaded
+    // Check if collage widget is enabled (default to false if not set)
+    const isEnabled = this.settings?.enabled === true;
     const source = this.settings?.source || 'pexels';
 
     console.log('[Bento Hero] Widget enabled:', isEnabled, 'Source:', source);
