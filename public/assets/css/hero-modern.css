@@ -1,1 +1,1300 @@
-žée
+/* EventFlow Hero Modern Design - Clean Concept */
+/* Scoped styles for the new hero section without Tailwind dependency */
+
+/* ==========================================================================
+   CSS Custom Properties for Hero Section
+   Provides fluid responsive values using clamp() for smooth scaling
+   ========================================================================== */
+
+:root {
+  /* Hero section spacing */
+  --hero-padding-top: clamp(40px, 8vw, 72px);
+  --hero-padding-bottom: clamp(24px, 5vw, 48px);
+  --hero-gap: clamp(24px, 5vw, 72px);
+  
+  /* Typography scaling */
+  --hero-h1-size: clamp(26px, 4vw + 1rem, 52px);
+  --hero-subcopy-size: clamp(15px, 1vw + 0.5rem, 18px);
+  
+  /* Collage styling */
+  --collage-gap: clamp(10px, 2vw, 16px);
+  --collage-radius: clamp(12px, 2vw, 20px);
+}
+
+/* Hero section positioning */
+.hero-modern {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(to bottom, #f8fafc 0%, #f8fafc 50%, #f1f5f9 100%);
+}
+
+/* Background decorative elements */
+.hero-bg-gradient {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.hero-blob {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(80px);
+  pointer-events: none;
+}
+
+.hero-blob-1 {
+  right: -144px;
+  top: -128px;
+  width: 320px;
+  height: 320px;
+  background: rgba(16, 185, 129, 0.45);
+}
+
+.hero-blob-2 {
+  left: -144px;
+  bottom: -112px;
+  width: 320px;
+  height: 320px;
+  background: rgba(56, 189, 248, 0.40);
+}
+
+.hero-grid-texture {
+  position: absolute;
+  inset: 0;
+  opacity: 0.06;
+  background-image: radial-gradient(circle at 1px 1px, rgba(15, 23, 42, 1) 1px, transparent 0);
+  background-size: 22px 22px;
+  pointer-events: none;
+}
+
+/* Hero grid override for modern layout */
+.hero-modern .hero-grid {
+  position: relative;
+  z-index: 1;
+}
+
+.hero-modern .hero-grid > div:first-child {
+  position: relative;
+}
+
+/* Center hero content on mobile/tablet */
+@media (max-width: 1023px) {
+  .hero-modern .hero-grid > div:first-child {
+    text-align: center;
+  }
+  
+  /* h1 already has display: flex and flex-direction: column (lines 118-119) */
+  .hero-modern h1 {
+    align-items: center; /* Centers flex children horizontally (cross-axis) */
+    margin-left: auto;
+    margin-right: auto;
+  }
+  
+  .hero-modern-subcopy {
+    margin-left: auto;
+    margin-right: auto;
+    text-align: center;
+  }
+}
+
+/* Eyebrow badge - Hidden/removed */
+.hero-eyebrow {
+  display: none;
+}
+
+.hero-pulse-dot {
+  display: none;
+}
+
+/* Modern headline styles */
+.hero-modern h1 {
+  margin: 0 0 0 0;
+  font-size: clamp(30px, 4.6vw, 48px);
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: #0f172a;
+  max-width: 680px;
+  display: flex;
+  flex-direction: column;
+}
+
+.hero-modern h1 .hero-line-1,
+.hero-modern h1 .hero-line-2 {
+  display: block;
+}
+
+.hero-modern h1 .hero-highlight-text {
+  display: block;
+  position: relative;
+  color: #059669;
+  margin-top: 8px;
+}
+
+.hero-modern h1 .hero-highlight-bg {
+  position: absolute;
+  inset-x: 0;
+  bottom: -6px;
+  height: 12px;
+  background: #d1fae5;
+  border-radius: 4px;
+  z-index: -1;
+}
+
+/* Subcopy paragraph */
+.hero-modern-subcopy {
+  margin: 16px 0 0 0;
+  font-size: 18px;
+  line-height: 1.7;
+  color: #475569;
+  max-width: 660px;
+}
+
+
+
+/* Staggered entrance animations for search elements */
+@media (prefers-reduced-motion: no-preference) {
+  .hero-modern-ctas {
+    animation: efFadeUp 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: 500ms;
+  }
+}
+
+
+
+/* Trust indicators */
+.hero-trust {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: none;
+}
+
+@media (min-width: 640px) {
+  .hero-trust {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 24px;
+  }
+}
+
+.hero-trust-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: #64748b;
+  font-weight: 500;
+  transition: all 0.25s;
+}
+
+.hero-trust-item:hover {
+  color: #059669;
+}
+
+.hero-trust-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  color: #059669;
+  border-radius: 50%;
+  font-size: 13px;
+  font-weight: 700;
+  flex-shrink: 0;
+  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.15);
+  transition: all 0.25s;
+}
+
+.hero-trust-item:hover .hero-trust-icon {
+  transform: scale(1.1) rotate(5deg);
+  box-shadow: 0 4px 8px rgba(16, 185, 129, 0.25);
+}
+
+/* CTA Container - Perfect centering */
+.hero-modern-ctas {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: var(--space-3); /* 12px */
+  margin-top: var(--space-6); /* 32px */
+  justify-content: flex-start;
+  align-items: center;
+}
+
+/* Base CTA - Uniform sizing */
+.hero-cta-base {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2); /* 8px */
+  
+  /* Fixed height for alignment */
+  height: 48px;
+  padding: 0 24px;
+  
+  /* Typography */
+  font-size: var(--hero-cta-size);
+  font-weight: 600;
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
+  
+  /* Shape */
+  border-radius: 16px;
+  
+  /* Transitions */
+  transform: translateZ(0);
+  will-change: transform, box-shadow;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Primary CTA */
+.hero-cta-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  height: 48px;
+  padding: 0 24px;
+  background: var(--gradient-primary);
+  color: white;
+  border: none;
+  border-radius: 16px;
+  font-size: var(--hero-cta-size);
+  font-weight: 600;
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
+  box-shadow: 
+    0 2px 8px rgba(5, 150, 105, 0.2),
+    0 4px 16px rgba(5, 150, 105, 0.25),
+    inset 0 1px 1px rgba(255, 255, 255, 0.2);
+  transform: translateZ(0);
+  will-change: transform, box-shadow;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-cta-primary::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 100%);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.hero-cta-primary:hover {
+  background: var(--gradient-primary-hover);
+  transform: translateY(-2px) translateZ(0);
+  box-shadow: 
+    0 4px 12px rgba(5, 150, 105, 0.3),
+    0 8px 24px rgba(5, 150, 105, 0.35),
+    0 0 30px rgba(16, 185, 129, 0.3),
+    inset 0 1px 2px rgba(255, 255, 255, 0.3);
+  text-decoration: none;
+}
+
+.hero-cta-primary:hover::before {
+  opacity: 1;
+}
+
+.hero-cta-primary:active {
+  transform: translateY(0) scale(1);
+}
+
+.hero-cta-primary:focus {
+  outline: 2px solid #10b981;
+  outline-offset: 2px;
+}
+
+/* Secondary CTA - Glass effect */
+.hero-cta-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  height: 48px;
+  padding: 0 24px;
+  background: var(--glass-bg-light);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  color: #0f172a;
+  border: 1.5px solid var(--glass-border);
+  border-radius: 16px;
+  font-size: var(--hero-cta-size);
+  font-weight: 600;
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
+  box-shadow: 
+    var(--glass-shadow-soft),
+    inset 0 1px 1px rgba(255, 255, 255, 0.5);
+  transform: translateZ(0);
+  will-change: transform, box-shadow;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-cta-secondary::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(16,185,129,0.1) 0%, transparent 100%);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.hero-cta-secondary:hover {
+  background: rgba(255, 255, 255, 0.85);
+  border-color: rgba(16, 185, 129, 0.4);
+  transform: translateY(-2px) translateZ(0);
+  box-shadow: 
+    var(--glass-shadow-medium),
+    0 0 20px rgba(16, 185, 129, 0.1),
+    inset 0 1px 2px rgba(255, 255, 255, 0.7);
+  text-decoration: none;
+}
+
+.hero-cta-secondary:hover::before {
+  opacity: 1;
+  animation: shimmerSweep 0.8s ease-out;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes shimmerSweep {
+    0% {
+      transform: translateX(-100%) skewX(-15deg);
+    }
+    100% {
+      transform: translateX(100%) skewX(-15deg);
+    }
+  }
+}
+
+.hero-cta-secondary:active {
+  transform: translateY(0) scale(1);
+}
+
+.hero-cta-secondary:focus {
+  outline: 2px solid #10b981;
+  outline-offset: 2px;
+}
+
+/* Mobile: Side-by-side, not stacked */
+@media (max-width: 479px) {
+  .hero-modern-ctas {
+    flex-direction: row; /* Side-by-side, not column */
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+  }
+  
+  .hero-cta-primary,
+  .hero-cta-secondary {
+    flex: 1;
+    min-width: 0;
+    width: auto;
+    height: 44px; /* Reduced from 52px */
+    padding: 0 10px;
+    font-size: 13.5px;
+    justify-content: center;
+  }
+  
+  /* Hide icon on primary button to save space */
+  .hero-cta-primary svg {
+    display: none;
+  }
+}
+
+/* Further optimization for very small screens */
+@media (max-width: 380px) {
+  .hero-cta-primary,
+  .hero-cta-secondary {
+    padding: 0 8px;
+    font-size: 13px;
+  }
+}
+
+/* Small tablets: Side by side but allow wrap */
+@media (min-width: 480px) and (max-width: 639px) {
+  .hero-modern-ctas {
+    flex-direction: row;
+    justify-content: center;
+  }
+  
+  .hero-cta-primary,
+  .hero-cta-secondary {
+    flex: 1;
+    min-width: 140px;
+    max-width: 200px;
+  }
+}
+
+/* Tablet: Center CTAs */
+@media (min-width: 640px) and (max-width: 1023px) {
+  .hero-modern-ctas {
+    justify-content: center;
+  }
+}
+
+/* Desktop: Left-align CTAs for two-column layout */
+@media (min-width: 1024px) {
+  .hero-modern-ctas {
+    justify-content: flex-start;
+  }
+  
+  .hero-cta-primary,
+  .hero-cta-secondary {
+    width: auto;
+    min-width: 160px;
+  }
+}
+
+.hero-cta-note {
+  display: none !important;
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+  font-weight: 500;
+}
+
+@media (min-width: 640px) {
+  .hero-cta-note {
+    display: none !important;
+    margin-left: 12px;
+  }
+}
+
+/* Screen reader only utility */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Animations - respect reduced motion */
+@media (prefers-reduced-motion: no-preference) {
+  .ef-fade-up {
+    animation: efFadeUp 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .ef-fade-up.delay-1 { animation-delay: 80ms; }
+  .ef-fade-up.delay-2 { animation-delay: 160ms; }
+  .ef-fade-up.delay-3 { animation-delay: 240ms; }
+  .ef-fade-up.delay-4 { animation-delay: 320ms; }
+  
+  @keyframes efFadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .ef-float {
+    animation: efFloat 7s ease-in-out infinite;
+  }
+  .ef-float.slow {
+    animation-duration: 10s;
+  }
+  
+  @keyframes efFloat {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+
+  .ef-pulse-soft {
+    animation: efPulseSoft 3.2s ease-in-out infinite;
+  }
+  
+  @keyframes efPulseSoft {
+    0%, 100% { opacity: 0.65; }
+    50% { opacity: 1; }
+  }
+
+  /* Search button pulse animation */
+  @keyframes searchPulse {
+    0% {
+      box-shadow: 
+        0 2px 4px rgba(5, 150, 105, 0.2),
+        0 4px 12px rgba(5, 150, 105, 0.3),
+        0 0 0 0 rgba(16, 185, 129, 0.7);
+    }
+    50% {
+      box-shadow: 
+        0 2px 4px rgba(5, 150, 105, 0.2),
+        0 4px 12px rgba(5, 150, 105, 0.3),
+        0 0 0 8px rgba(16, 185, 129, 0);
+    }
+    100% {
+      box-shadow: 
+        0 2px 4px rgba(5, 150, 105, 0.2),
+        0 4px 12px rgba(5, 150, 105, 0.3),
+        0 0 0 0 rgba(16, 185, 129, 0);
+    }
+  }
+}
+
+/* Spinning animation for video loading indicator */
+@keyframes pexels-spin {
+  0% { transform: translate(-50%, -50%) rotate(0deg); }
+  100% { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+
+
+/* Mobile responsive adjustments */
+@media (max-width: 640px) {
+  .hero-modern h1 {
+    font-size: 28px;
+  }
+  
+  /* Mobile text-lite version - hide second line for cleaner look */
+  .hero-modern h1 .hero-line-2 {
+    display: none;
+  }
+  
+  .hero-modern-subcopy {
+    font-size: 16px;
+    /* Truncate subcopy on mobile for text-lite version */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-height: 1.5;
+  }
+
+  .hero-trust-item {
+    font-size: 13px;
+  }
+
+  .hero-trust-icon {
+    width: 26px;
+    height: 26px;
+    font-size: 12px;
+  }
+}
+
+/* ========================================
+   HERO COLLAGE - 1x2x2 Grid Layout
+   Two-column layout with video + category cards
+   ======================================== */
+
+/* Two-column hero grid */
+@media (min-width: 1024px) {
+  .hero-modern .hero-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 64px;
+    align-items: start;
+  }
+}
+
+/* Hero collage container */
+.hero-collage {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1.2fr 1fr 1fr;
+  gap: 14px;
+  aspect-ratio: 16/10.5;
+  max-height: 72vh;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+/* Video card - spans full width (2 columns) */
+.hero-video-card {
+  grid-column: span 2;
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.hero-video-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    transparent 50%,
+    rgba(0, 0, 0, 0.4) 100%
+  );
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* Add subtle animation to video card */
+.hero-video-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at top right,
+    rgba(255, 255, 255, 0.1) 0%,
+    transparent 50%
+  );
+  z-index: 0;
+  pointer-events: none;
+}
+
+.hero-video-card:hover {
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.16);
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.hero-video-card video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: opacity 0.4s ease-in-out;
+  opacity: 0;
+}
+
+.hero-video-card video.video-loaded {
+  opacity: 1;
+}
+
+/* Video loading state */
+.hero-video-card.loading-video::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #0b8073;
+  border-radius: 50%;
+  animation: pexels-spin 0.8s linear infinite;
+  z-index: 15;
+}
+
+.hero-video-card.loading-video video {
+  opacity: 0.5;
+}
+
+/* Video credit */
+.hero-video-credit {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(8px);
+  color: white;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 6px 10px;
+  border-radius: 6px;
+  z-index: 2;
+  pointer-events: none;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  display: none; /* Hide video credits */
+}
+
+.hero-video-credit a {
+  color: white;
+  text-decoration: none;
+  font-weight: 600;
+  pointer-events: auto;
+  transition: opacity 0.2s;
+}
+
+.hero-video-credit a:hover {
+  opacity: 0.8;
+}
+
+/* Category cards */
+.hero-collage-card {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: block;
+  text-decoration: none;
+  background: #f8fafc;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+}
+
+.hero-collage-card:hover,
+.hero-collage-card:focus {
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.18);
+  transform: translateY(-6px) scale(1.02);
+  text-decoration: none;
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.hero-collage-card:focus {
+  /* Ensure focus state is visible for keyboard navigation */
+  outline: 2px solid #10b981;
+  outline-offset: 2px;
+}
+
+/* Collage card video elements */
+.hero-collage-card video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: opacity 0.4s ease-in-out, transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 0;
+}
+
+.hero-collage-card video.video-loaded {
+  opacity: 1;
+}
+
+.hero-collage-card:hover video,
+.hero-collage-card:focus video {
+  transform: scale(1.1);
+}
+
+.hero-collage-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: opacity 0.4s ease-in-out, transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 1;
+}
+
+.hero-collage-card img.fading {
+  opacity: 0;
+}
+
+.hero-collage-card:hover img,
+.hero-collage-card:focus img {
+  transform: scale(1.1);
+}
+
+/* Category label pill */
+.hero-collage-label {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: #0f172a;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 5px 10px;
+  border-radius: 999px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.hero-collage-card:hover .hero-collage-label,
+.hero-collage-card:focus .hero-collage-label {
+  background: rgba(255, 255, 255, 0.95);
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+}
+
+.hero-collage-icon {
+  font-size: 12px;
+  line-height: 1;
+}
+
+/* Photo credit */
+.hero-collage-credit {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(8px);
+  color: white;
+  font-size: 10px;
+  font-weight: 500;
+  padding: 4px 8px;
+  border-radius: 4px;
+  z-index: 2;
+  opacity: 0.9;
+  transition: opacity 0.25s;
+  pointer-events: none;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.hero-collage-card:hover .hero-collage-credit,
+.hero-collage-card:focus .hero-collage-credit {
+  opacity: 1;
+}
+
+.hero-collage-credit a {
+  color: white;
+  text-decoration: none;
+  pointer-events: auto;
+}
+
+.hero-collage-credit a:hover {
+  text-decoration: underline;
+}
+
+/* Mobile responsive */
+@media (max-width: 1023px) {
+  .hero-modern .hero-grid {
+    display: block;
+  }
+
+  .hero-collage {
+    margin-top: 48px;
+    aspect-ratio: 4/3;
+    max-height: 60vh;
+    grid-template-rows: auto auto auto;
+  }
+
+  .hero-video-card {
+    min-height: 280px;
+  }
+
+  .hero-collage-card {
+    min-height: 200px;
+  }
+
+  /* Hide photo credits on mobile for cleaner look */
+  .hero-collage-credit {
+    display: none;
+  }
+
+  .hero-video-credit {
+    display: none;
+  }
+}
+
+/* Tablet adjustments */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .hero-collage {
+    aspect-ratio: 4/3;
+    max-height: 55vh;
+    grid-template-rows: 1fr 1fr 1fr;
+  }
+
+  .hero-video-card {
+    min-height: 220px;
+  }
+
+  .hero-collage-card {
+    min-height: 160px; /* Taller photos on tablet */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); /* Reduce shadow on tablet */
+  }
+}
+
+/* Small mobile adjustments */
+@media (max-width: 640px) {
+  .hero-collage {
+    gap: 12px;
+    aspect-ratio: unset; /* Remove fixed aspect ratio causing cutoff */
+    max-height: none; /* Allow content to determine height */
+    grid-template-rows: minmax(140px, 180px) 1fr 1fr; /* Video row + 2 card rows */
+    margin-left: auto;
+    margin-right: auto;
+    justify-content: center;
+  }
+
+  .hero-video-card {
+    min-height: 140px;
+    max-height: 180px;
+  }
+
+  .hero-collage-card {
+    min-height: 140px; /* INCREASED - make photos TALLER */
+    aspect-ratio: 4/3; /* Taller aspect ratio */
+  }
+
+  .hero-collage-label {
+    font-size: 10px;
+    padding: 4px 8px;
+    top: 8px;
+    left: 8px;
+  }
+
+  .hero-collage-icon {
+    font-size: 11px;
+  }
+}
+
+/* ============================================
+   MOBILE COLLAGE - HIGH-DPI OPTIMIZATION
+   ============================================ */
+
+@media (max-width: 768px) and (-webkit-min-device-pixel-ratio: 2),
+       (max-width: 768px) and (min-resolution: 192dpi) {
+  /* High-DPI mobile devices get optimized rendering */
+  .hero-collage-card img,
+  .hero-video-card video {
+    image-rendering: crisp-edges;
+  }
+}
+
+/* ============================================
+   MOBILE COLLAGE - REDUCED DATA MODE
+   ============================================ */
+
+@media (max-width: 768px) and (prefers-reduced-data: reduce) {
+  /* Reduce visual effects on slow connections */
+  .hero-collage-card {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  }
+  
+  .hero-video-card {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Disable backdrop filters to reduce rendering cost */
+  .hero-collage-label {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: rgba(255, 255, 255, 0.95);
+  }
+}
+
+/* Reduced motion support - Comprehensive */
+@media (prefers-reduced-motion: reduce) {
+  /* Disable all animations */
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  
+  /* Hero animations */
+  .ef-fade-up,
+  .ef-float,
+  .ef-float.slow {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  
+  /* Hero elements */
+  .hero-video-card,
+  .hero-collage-card,
+  .hero-collage-card img,
+  .hero-collage-label,
+  .hero-collage-credit,
+  .hero-modern-ctas,
+  .hero-cta-primary,
+  .hero-cta-secondary {
+    transition: none !important;
+    animation: none !important;
+  }
+
+  .hero-collage-card:hover,
+  .hero-collage-card:focus {
+    transform: none !important;
+  }
+
+  .hero-collage-card:hover img,
+  .hero-collage-card:focus img {
+    transform: none !important;
+  }
+
+  .hero-video-card video {
+    animation: none !important;
+  }
+  
+  /* Blobs and decorative elements */
+  .hero-blob,
+  .hero-blob-1,
+  .hero-blob-2 {
+    animation: none !important;
+  }
+  
+  /* Shimmer effects */
+  .hero-cta-primary::before,
+  .hero-cta-secondary::before {
+    animation: none !important;
+  }
+}
+
+/* ==========================================================================
+   High Contrast Mode Support
+   ========================================================================== */
+
+@media (prefers-contrast: high) {
+  .hero-modern {
+    background: #fff;
+  }
+  
+  .hero-modern h1 {
+    color: #000;
+  }
+  
+  .hero-modern-subcopy {
+    color: #333;
+  }
+  
+  .hero-cta-primary {
+    background: #000;
+    color: #fff;
+    border: 2px solid #000;
+  }
+  
+  .hero-cta-secondary {
+    background: #fff;
+    color: #000;
+    border: 2px solid #000;
+  }
+}
+
+/* ==========================================================================
+   Windows High Contrast Mode Support
+   ========================================================================== */
+
+@media (forced-colors: active) {
+  .hero-modern {
+    background: Canvas;
+  }
+  
+  .hero-modern h1 {
+    color: CanvasText;
+  }
+  
+  .hero-modern-subcopy {
+    color: CanvasText;
+  }
+  
+  .hero-cta-primary,
+  .hero-cta-secondary {
+    border: 2px solid ButtonText;
+  }
+}
+
+/* ==========================================================================
+   Print Styles
+   ========================================================================== */
+
+@media print {
+  .hero-modern {
+    background: #fff !important;
+    padding: 20px 0;
+  }
+  
+  .hero-collage,
+  .hero-blob,
+  .hero-bg-gradient {
+    display: none !important;
+  }
+  
+  .hero-modern h1 {
+    font-size: 24pt;
+    color: #000;
+  }
+  
+  .hero-modern-subcopy {
+    font-size: 12pt;
+    color: #333;
+  }
+  
+  .hero-modern-ctas {
+    display: none;
+  }
+}
+
+/* ==========================================================================
+   Ultra-wide Screen Support (1600px+)
+   ========================================================================== */
+
+@media (min-width: 1600px) {
+  .hero-modern .container {
+    max-width: 1400px;
+  }
+  
+  .hero-grid {
+    gap: 80px;
+  }
+}
+
+/* ==========================================================================
+   Very Small Screen Support (<320px)
+   ========================================================================== */
+
+@media (max-width: 319px) {
+  .hero-modern {
+    padding: 24px 0 16px;
+  }
+  
+  .hero-modern h1 {
+    font-size: 22px;
+  }
+  
+  .hero-modern-subcopy {
+    font-size: 14px;
+  }
+}
+
+/* ==========================================================================
+   Hero Container Override
+   ========================================================================== */
+
+.hero-modern .container {
+  max-width: 1320px;
+  padding-left: clamp(12px, 3vw, 32px);
+  padding-right: clamp(12px, 3vw, 32px);
+}
+
+/* Extra space optimization for small mobile screens */
+@media (max-width: 400px) {
+  .hero-modern .container {
+    padding-left: clamp(6px, 2vw, 12px);
+    padding-right: clamp(6px, 2vw, 12px);
+  }
+}
+
+/* ==========================================================================
+   Collage Responsive Aspect Ratios
+   ========================================================================== */
+
+@media (max-width: 767px) {
+  .hero-collage {
+    aspect-ratio: 4/3;
+  }
+  
+  .hero-collage-card {
+    aspect-ratio: 16/10;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  .hero-collage {
+    aspect-ratio: 1/1;
+  }
+}
+
+@media (min-width: 1024px) {
+  .hero-collage {
+    aspect-ratio: 4/3;
+  }
+}
+
+/* ==========================================================================
+   PART 6: Accessibility Enhancements - Focus Indicators
+   ========================================================================== */
+
+.hero-cta-primary:focus-visible,
+.hero-cta-secondary:focus-visible {
+  outline: 3px solid rgba(16, 185, 129, 0.6);
+  outline-offset: 3px;
+}
+
+/* ==========================================================================
+   PART 6: High Contrast Mode - Enhanced
+   ========================================================================== */
+
+@media (prefers-contrast: high) {
+  .hero-modern {
+    background: #ffffff;
+  }
+  
+  .hero-modern h1,
+  .hero-modern-subcopy {
+    color: #000000;
+  }
+  
+  .hero-cta-primary {
+    background: #000000;
+    color: #ffffff;
+    border: 2px solid #000000;
+  }
+  
+  .hero-cta-secondary {
+    background: #ffffff;
+    color: #000000;
+    border: 2px solid #000000;
+  }
+  
+  .hero-blob,
+  .hero-bg-gradient,
+  .hero-grid-texture {
+    display: none;
+  }
+}
+
+/* ==========================================================================
+   PART 6: Windows Forced Colors Mode - Enhanced
+   ========================================================================== */
+
+@media (forced-colors: active) {
+  .hero-cta-primary,
+  .hero-cta-secondary {
+    forced-color-adjust: none;
+    border: 2px solid CanvasText;
+  }
+  
+  .hero-cta-primary {
+    background: Highlight;
+    color: HighlightText;
+  }
+  
+  .hero-blob,
+  .hero-bg-gradient {
+    display: none;
+  }
+}
+
+/* ==========================================================================
+   PART 6: Reduced Motion - Enhanced
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  
+  .hero-blob {
+    animation: none;
+  }
+}
+
+/* ==========================================================================
+   PART 8: Performance Optimization - GPU Acceleration
+   ========================================================================== */
+
+.hero-modern,
+.hero-cta-primary,
+.hero-cta-secondary,
+.hero-blob {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* Contain for better paint performance */
+.collage .frame {
+  contain: layout style paint;
+}
+
+/* Will-Change Management - only on interaction */
+.hero-cta-primary:hover,
+.hero-cta-secondary:hover {
+  will-change: transform, box-shadow;
+}
