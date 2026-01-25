@@ -1427,7 +1427,7 @@ async function initPexelsCollage(settings) {
  * @param {Object} mediaTypes - Media types configuration with {photos: boolean, videos: boolean}
  * @param {Array} uploadGallery - Array of uploaded media URLs
  */
-async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
+async function initHeroVideo(source, mediaTypes, uploadGallery = [], heroVideoConfig = {}) {
   const videoElement = document.getElementById('hero-pexels-video');
   const videoSource = document.getElementById('hero-video-source');
   const videoCredit = document.getElementById('hero-video-credit');
@@ -1435,6 +1435,25 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
 
   if (!videoElement || !videoSource) {
     return; // Video elements not present in HTML
+  }
+
+  // Check if hero video is enabled
+  if (heroVideoConfig.enabled === false) {
+    if (isDebugEnabled()) {
+      console.log('[Hero Video] Hero video disabled via config');
+    }
+    return;
+  }
+
+  // Apply hero video settings
+  if (heroVideoConfig.autoplay !== undefined) {
+    videoElement.autoplay = heroVideoConfig.autoplay;
+  }
+  if (heroVideoConfig.muted !== undefined) {
+    videoElement.muted = heroVideoConfig.muted;
+  }
+  if (heroVideoConfig.loop !== undefined) {
+    videoElement.loop = heroVideoConfig.loop;
   }
 
   // Add loading state
@@ -1535,9 +1554,19 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
 
       if (data.videos && data.videos.length > 0) {
         const video = data.videos[0];
-        // Get all HD and SD quality video files for fallback support
-        const videoFiles =
-          video.video_files?.filter(f => f.quality === 'hd' || f.quality === 'sd') || [];
+        // Determine quality preference from config
+        const qualityPreference = heroVideoConfig.quality || 'hd';
+        
+        // Filter video files based on quality preference
+        let videoFiles = video.video_files || [];
+        if (qualityPreference === 'hd') {
+          videoFiles = videoFiles.filter(f => f.quality === 'hd' || f.quality === 'sd');
+        } else if (qualityPreference === 'sd') {
+          videoFiles = videoFiles.filter(f => f.quality === 'sd' || f.quality === 'hd');
+          videoFiles.sort((a, b) => (a.quality === 'sd' ? -1 : 1));
+        } else {
+          videoFiles = videoFiles.filter(f => f.quality === 'hd' || f.quality === 'sd');
+        }
 
         if (isDebugEnabled()) {
           console.log('[Hero Video] Available video files:', {
@@ -1763,24 +1792,53 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = []) {
  * @param {Object} widgetConfig - Configuration from backend
  */
 async function initCollageWidget(widgetConfig) {
-  const { source, intervalSeconds, pexelsQueries, uploadGallery, fallbackToPexels } = widgetConfig;
+  const { 
+    source, 
+    intervalSeconds, 
+    pexelsQueries, 
+    uploadGallery, 
+    fallbackToPexels,
+    heroVideo,
+    videoQuality,
+    transition,
+    preloading,
+    mobileOptimizations,
+    contentFiltering,
+    playbackControls,
+  } = widgetConfig;
 
   // Default mediaTypes to enable videos if not explicitly configured
   const mediaTypes = widgetConfig.mediaTypes || { photos: true, videos: true };
 
-  const intervalMs = (intervalSeconds || 2.5) * 1000;
+  // Check for mobile device
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  
+  // Apply mobile optimizations
+  let effectiveIntervalMs = (intervalSeconds || 2.5) * 1000;
+  if (isMobile && mobileOptimizations?.slowerTransitions) {
+    effectiveIntervalMs *= 1.5; // 50% slower on mobile
+  }
+
+  // Check if videos should be disabled on mobile
+  let effectiveMediaTypes = { ...mediaTypes };
+  if (isMobile && mobileOptimizations?.disableVideos) {
+    effectiveMediaTypes.videos = false;
+  }
 
   // Debug logging
   if (isDebugEnabled()) {
     console.log('[Collage Widget] Initializing with config:', {
       source,
       hasMediaTypes: !!mediaTypes,
-      mediaTypes,
+      mediaTypes: effectiveMediaTypes,
       intervalSeconds,
       hasQueries: !!pexelsQueries,
       uploadGalleryCount: uploadGallery?.length || 0,
       uploadGalleryUrls: uploadGallery || [],
       fallbackToPexels,
+      isMobile,
+      transition,
+      preloading,
     });
   }
 
@@ -1833,7 +1891,7 @@ async function initCollageWidget(widgetConfig) {
 
   // Skip video initialization if user prefers reduced data
   if (!prefersReducedData) {
-    await initHeroVideo(source, mediaTypes, uploadGallery);
+    await initHeroVideo(source, effectiveMediaTypes, uploadGallery, heroVideo || {});
   } else if (isDevelopmentEnvironment()) {
     console.log('[Hero Video] Skipped due to prefers-reduced-data');
   }
@@ -2100,7 +2158,7 @@ async function initCollageWidget(widgetConfig) {
           categoryMapping,
           prefersReducedMotion
         );
-      }, intervalMs);
+      }, effectiveIntervalMs);
 
       // Expose interval ID on window for debugging
       window.pexelsCollageIntervalId = pexelsCollageIntervalId;
@@ -2122,7 +2180,7 @@ async function initCollageWidget(widgetConfig) {
         }
 
         const timeSinceLastCycle = Date.now() - window.__collageLastCycleTime;
-        const expectedInterval = intervalMs * WATCHDOG_TOLERANCE_MULTIPLIER;
+        const expectedInterval = effectiveIntervalMs * WATCHDOG_TOLERANCE_MULTIPLIER;
 
         // Check if interval appears to have stopped
         if (timeSinceLastCycle > expectedInterval) {
@@ -2140,7 +2198,7 @@ async function initCollageWidget(widgetConfig) {
                 categoryMapping,
                 prefersReducedMotion
               );
-            }, intervalMs);
+            }, effectiveIntervalMs);
             window.pexelsCollageIntervalId = pexelsCollageIntervalId;
           }
         }

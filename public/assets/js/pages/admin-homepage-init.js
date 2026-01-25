@@ -73,6 +73,48 @@
     // Set interval
     document.getElementById('intervalSeconds').value = collageWidget.intervalSeconds || 2.5;
 
+    // Hero Video Controls
+    const heroVideo = collageWidget.heroVideo || {};
+    document.getElementById('heroVideoEnabled').checked = heroVideo.enabled !== false;
+    document.getElementById('heroVideoAutoplay').checked = heroVideo.autoplay !== false;
+    document.getElementById('heroVideoMuted').checked = heroVideo.muted !== false;
+    document.getElementById('heroVideoLoop').checked = heroVideo.loop !== false;
+    document.getElementById('heroVideoQuality').value = heroVideo.quality || 'hd';
+
+    // Video Quality Settings
+    const videoQuality = collageWidget.videoQuality || {};
+    document.getElementById('videoQualityPreference').value = videoQuality.preference || 'hd';
+    document.getElementById('videoQualityAdaptive').checked = videoQuality.adaptive !== false;
+    document.getElementById('videoQualityMobileOptimized').checked = videoQuality.mobileOptimized !== false;
+
+    // Transition Effects
+    const transition = collageWidget.transition || {};
+    document.getElementById('transitionEffect').value = transition.effect || 'fade';
+    document.getElementById('transitionDuration').value = transition.duration || 1000;
+
+    // Preloading
+    const preloading = collageWidget.preloading || {};
+    document.getElementById('preloadingEnabled').checked = preloading.enabled !== false;
+    document.getElementById('preloadingCount').value = preloading.count !== undefined ? preloading.count : 3;
+
+    // Mobile Optimizations
+    const mobileOpt = collageWidget.mobileOptimizations || {};
+    document.getElementById('mobileSlowerTransitions').checked = mobileOpt.slowerTransitions !== false;
+    document.getElementById('mobileDisableVideos').checked = mobileOpt.disableVideos === true;
+    document.getElementById('mobileTouchControls').checked = mobileOpt.touchControls !== false;
+
+    // Content Filtering
+    const filtering = collageWidget.contentFiltering || {};
+    document.getElementById('filterAspectRatio').value = filtering.aspectRatio || 'any';
+    document.getElementById('filterOrientation').value = filtering.orientation || 'any';
+    document.getElementById('filterMinResolution').value = filtering.minResolution || 'SD';
+
+    // Playback Controls
+    const playback = collageWidget.playbackControls || {};
+    document.getElementById('playbackShowControls').checked = playback.showControls === true;
+    document.getElementById('playbackPauseOnHover').checked = playback.pauseOnHover !== false;
+    document.getElementById('playbackFullscreen').checked = playback.fullscreen === true;
+
     // Set Pexels photo queries
     const pexelsQueries = collageWidget.pexelsQueries || {};
     document.getElementById('pexelsQueryVenues').value = pexelsQueries.venues || '';
@@ -159,6 +201,56 @@
         videos: document.getElementById('mediaTypeVideos').checked,
       };
       const intervalSeconds = parseFloat(document.getElementById('intervalSeconds').value);
+      
+      // Hero Video Controls
+      const heroVideo = {
+        enabled: document.getElementById('heroVideoEnabled').checked,
+        autoplay: document.getElementById('heroVideoAutoplay').checked,
+        muted: document.getElementById('heroVideoMuted').checked,
+        loop: document.getElementById('heroVideoLoop').checked,
+        quality: document.getElementById('heroVideoQuality').value,
+      };
+
+      // Video Quality Settings
+      const videoQuality = {
+        preference: document.getElementById('videoQualityPreference').value,
+        adaptive: document.getElementById('videoQualityAdaptive').checked,
+        mobileOptimized: document.getElementById('videoQualityMobileOptimized').checked,
+      };
+
+      // Transition Effects
+      const transition = {
+        effect: document.getElementById('transitionEffect').value,
+        duration: parseInt(document.getElementById('transitionDuration').value, 10),
+      };
+
+      // Preloading
+      const preloading = {
+        enabled: document.getElementById('preloadingEnabled').checked,
+        count: parseInt(document.getElementById('preloadingCount').value, 10),
+      };
+
+      // Mobile Optimizations
+      const mobileOptimizations = {
+        slowerTransitions: document.getElementById('mobileSlowerTransitions').checked,
+        disableVideos: document.getElementById('mobileDisableVideos').checked,
+        touchControls: document.getElementById('mobileTouchControls').checked,
+      };
+
+      // Content Filtering
+      const contentFiltering = {
+        aspectRatio: document.getElementById('filterAspectRatio').value,
+        orientation: document.getElementById('filterOrientation').value,
+        minResolution: document.getElementById('filterMinResolution').value,
+      };
+
+      // Playback Controls
+      const playbackControls = {
+        showControls: document.getElementById('playbackShowControls').checked,
+        pauseOnHover: document.getElementById('playbackPauseOnHover').checked,
+        fullscreen: document.getElementById('playbackFullscreen').checked,
+      };
+
       const pexelsQueries = {
         venues: document.getElementById('pexelsQueryVenues').value,
         catering: document.getElementById('pexelsQueryCatering').value,
@@ -185,6 +277,13 @@
         uploadGalleryCount: uploadGallery.length,
         uploadGalleryUrls: uploadGallery,
         fallbackToPexels,
+        heroVideo,
+        videoQuality,
+        transition,
+        preloading,
+        mobileOptimizations,
+        contentFiltering,
+        playbackControls,
       });
 
       // Validation
@@ -215,6 +314,13 @@
           pexelsVideoQueries,
           uploadGallery,
           fallbackToPexels,
+          heroVideo,
+          videoQuality,
+          transition,
+          preloading,
+          mobileOptimizations,
+          contentFiltering,
+          playbackControls,
         }),
       });
 

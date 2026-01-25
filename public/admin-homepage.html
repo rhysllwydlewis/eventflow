@@ -246,6 +246,191 @@
           <p class="small" style="margin-top: 4px; color: #6b7280;">Range: 1-60 seconds</p>
         </div>
 
+        <!-- Hero Video Controls -->
+        <div style="margin-bottom: 24px; padding: 20px; background: #fef3c7; border-radius: 8px; border: 1px solid #fbbf24;">
+          <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 16px;">🎬 Hero Video Controls</h3>
+          <div style="display: grid; gap: 12px;">
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+              <input type="checkbox" id="heroVideoEnabled" style="width: 18px; height: 18px; cursor: pointer;">
+              <span>Enable Hero Video</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+              <input type="checkbox" id="heroVideoAutoplay" style="width: 18px; height: 18px; cursor: pointer;">
+              <span>Autoplay</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+              <input type="checkbox" id="heroVideoMuted" style="width: 18px; height: 18px; cursor: pointer;">
+              <span>Muted</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+              <input type="checkbox" id="heroVideoLoop" style="width: 18px; height: 18px; cursor: pointer;">
+              <span>Loop</span>
+            </label>
+            <div>
+              <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 0.9rem;">Quality Preference</label>
+              <select id="heroVideoQuality" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px;">
+                <option value="hd">HD (1080p)</option>
+                <option value="sd">SD (720p)</option>
+                <option value="auto">Auto</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Video Quality Settings -->
+        <div style="margin-bottom: 24px; padding: 20px; background: #e0f2fe; border-radius: 8px; border: 1px solid #38bdf8;">
+          <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 16px;">📹 Video Quality Settings</h3>
+          <div style="display: grid; gap: 12px;">
+            <div>
+              <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 0.9rem;">Default Quality</label>
+              <select id="videoQualityPreference" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px;">
+                <option value="hd">HD (1080p)</option>
+                <option value="sd">SD (720p)</option>
+                <option value="auto">Auto (adaptive)</option>
+              </select>
+            </div>
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+              <input type="checkbox" id="videoQualityAdaptive" style="width: 18px; height: 18px; cursor: pointer;">
+              <span>Adaptive Quality (adjust based on connection)</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+              <input type="checkbox" id="videoQualityMobileOptimized" style="width: 18px; height: 18px; cursor: pointer;">
+              <span>Mobile Optimized (reduce quality on mobile)</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Transition Effects -->
+        <div style="margin-bottom: 24px; padding: 20px; background: #f3e8ff; border-radius: 8px; border: 1px solid #c084fc;">
+          <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 16px;">✨ Transition Effects</h3>
+          <div style="display: grid; gap: 12px;">
+            <div>
+              <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 0.9rem;">Effect Type</label>
+              <select id="transitionEffect" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px;">
+                <option value="fade">Fade</option>
+                <option value="slide">Slide</option>
+                <option value="zoom">Zoom</option>
+                <option value="crossfade">Crossfade</option>
+              </select>
+            </div>
+            <div>
+              <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 0.9rem;">Duration (ms)</label>
+              <input type="number" id="transitionDuration" min="300" max="3000" step="100" value="1000" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px;">
+            </div>
+          </div>
+        </div>
+
+        <!-- Preloading & Caching -->
+        <div style="margin-bottom: 24px; padding: 20px; background: #ecfccb; border-radius: 8px; border: 1px solid #a3e635;">
+          <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 16px;">⚡ Preloading & Caching</h3>
+          <div style="display: grid; gap: 12px;">
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+              <input type="checkbox" id="preloadingEnabled" style="width: 18px; height: 18px; cursor: pointer;">
+              <span>Enable Preloading</span>
+            </label>
+            <div>
+              <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 0.9rem;">Items to Preload</label>
+              <input type="number" id="preloadingCount" min="0" max="5" step="1" value="3" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px;">
+              <p class="small" style="margin-top: 4px; color: #6b7280;">0-5 items (0 = disabled)</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mobile Optimizations -->
+        <div style="margin-bottom: 24px; padding: 20px; background: #ffe4e6; border-radius: 8px; border: 1px solid #fb7185;">
+          <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 16px;">📱 Mobile Optimizations</h3>
+          <div style="display: grid; gap: 12px;">
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+              <input type="checkbox" id="mobileSlowerTransitions" style="width: 18px; height: 18px; cursor: pointer;">
+              <span>Slower Transitions on Mobile</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+              <input type="checkbox" id="mobileDisableVideos" style="width: 18px; height: 18px; cursor: pointer;">
+              <span>Disable Videos on Mobile</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+              <input type="checkbox" id="mobileTouchControls" style="width: 18px; height: 18px; cursor: pointer;">
+              <span>Touch Controls (swipe to change)</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Content Filtering -->
+        <div style="margin-bottom: 24px; padding: 20px; background: #dbeafe; border-radius: 8px; border: 1px solid #60a5fa;">
+          <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 16px;">🎯 Content Filtering</h3>
+          <div style="display: grid; gap: 12px;">
+            <div>
+              <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 0.9rem;">Aspect Ratio</label>
+              <select id="filterAspectRatio" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px;">
+                <option value="any">Any</option>
+                <option value="16:9">16:9 (Widescreen)</option>
+                <option value="4:3">4:3 (Standard)</option>
+                <option value="1:1">1:1 (Square)</option>
+              </select>
+            </div>
+            <div>
+              <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 0.9rem;">Orientation</label>
+              <select id="filterOrientation" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px;">
+                <option value="any">Any</option>
+                <option value="landscape">Landscape</option>
+                <option value="portrait">Portrait</option>
+                <option value="square">Square</option>
+              </select>
+            </div>
+            <div>
+              <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 0.9rem;">Minimum Resolution</label>
+              <select id="filterMinResolution" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px;">
+                <option value="SD">SD (720p)</option>
+                <option value="HD">HD (1080p)</option>
+                <option value="FHD">Full HD (1920x1080)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Playback Controls -->
+        <div style="margin-bottom: 24px; padding: 20px; background: #fce7f3; border-radius: 8px; border: 1px solid #f9a8d4;">
+          <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 16px;">🎮 Playback Controls</h3>
+          <div style="display: grid; gap: 12px;">
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+              <input type="checkbox" id="playbackShowControls" style="width: 18px; height: 18px; cursor: pointer;">
+              <span>Show Next/Previous Buttons</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+              <input type="checkbox" id="playbackPauseOnHover" style="width: 18px; height: 18px; cursor: pointer;">
+              <span>Pause on Hover</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+              <input type="checkbox" id="playbackFullscreen" style="width: 18px; height: 18px; cursor: pointer;">
+              <span>Enable Fullscreen Mode</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Video Analytics Dashboard -->
+        <div style="margin-bottom: 24px; padding: 20px; background: #f0fdf4; border-radius: 8px; border: 1px solid #4ade80;">
+          <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 16px;">📊 Video Analytics Dashboard</h3>
+          <div id="videoAnalytics" style="display: grid; gap: 12px;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
+              <div style="padding: 12px; background: white; border-radius: 6px; border: 1px solid #e5e7eb;">
+                <div style="font-size: 0.75rem; color: #6b7280; margin-bottom: 4px;">Hero Video Success</div>
+                <div style="font-size: 1.5rem; font-weight: 700; color: #22c55e;" id="heroVideoSuccessRate">-</div>
+              </div>
+              <div style="padding: 12px; background: white; border-radius: 6px; border: 1px solid #e5e7eb;">
+                <div style="font-size: 0.75rem; color: #6b7280; margin-bottom: 4px;">Collage Video Success</div>
+                <div style="font-size: 1.5rem; font-weight: 700; color: #22c55e;" id="collageVideoSuccessRate">-</div>
+              </div>
+              <div style="padding: 12px; background: white; border-radius: 6px; border: 1px solid #e5e7eb;">
+                <div style="font-size: 0.75rem; color: #6b7280; margin-bottom: 4px;">Total Attempts</div>
+                <div style="font-size: 1.5rem; font-weight: 700; color: #3b82f6;" id="totalVideoAttempts">-</div>
+              </div>
+            </div>
+            <p class="small" style="color: #6b7280; margin: 0;">
+              ℹ️ Analytics are tracked per browser session. Visit <a href="/" target="_blank" style="color: #2563eb;">homepage</a> to generate metrics.
+            </p>
+          </div>
+        </div>
+
         <!-- Pexels Settings Panel -->
         <div id="pexelsSettingsPanel" style="display: none; margin-bottom: 24px; padding: 20px; background: #f9fafb; border-radius: 8px;">
           <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 16px;">🔍 Pexels Search Queries</h3>

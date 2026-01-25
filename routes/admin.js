@@ -4613,6 +4613,41 @@ router.get('/homepage/collage-widget', authRequired, roleRequired('admin'), asyn
       },
       uploadGallery: [],
       fallbackToPexels: true,
+      heroVideo: {
+        enabled: true,
+        autoplay: true,
+        muted: true,
+        loop: true,
+        quality: 'hd',
+      },
+      videoQuality: {
+        preference: 'hd',
+        adaptive: true,
+        mobileOptimized: true,
+      },
+      transition: {
+        effect: 'fade',
+        duration: 1000,
+      },
+      preloading: {
+        enabled: true,
+        count: 3,
+      },
+      mobileOptimizations: {
+        slowerTransitions: true,
+        disableVideos: false,
+        touchControls: true,
+      },
+      contentFiltering: {
+        aspectRatio: 'any',
+        orientation: 'any',
+        minResolution: 'SD',
+      },
+      playbackControls: {
+        showControls: false,
+        pauseOnHover: true,
+        fullscreen: false,
+      },
     };
 
     res.json(collageWidget);
@@ -4642,6 +4677,13 @@ router.put(
         pexelsVideoQueries,
         uploadGallery,
         fallbackToPexels,
+        heroVideo,
+        videoQuality,
+        transition,
+        preloading,
+        mobileOptimizations,
+        contentFiltering,
+        playbackControls,
       } = req.body;
 
       // Validation
@@ -4658,6 +4700,21 @@ router.put(
         if (isNaN(interval) || interval < 1 || interval > 60) {
           return res.status(400).json({ error: 'intervalSeconds must be between 1 and 60' });
         }
+      }
+
+      if (transition?.effect && !['fade', 'slide', 'zoom', 'crossfade'].includes(transition.effect)) {
+        return res.status(400).json({ error: 'Invalid transition effect' });
+      }
+
+      if (preloading?.count !== undefined) {
+        const count = Number(preloading.count);
+        if (isNaN(count) || count < 0 || count > 5) {
+          return res.status(400).json({ error: 'Preloading count must be between 0 and 5' });
+        }
+      }
+
+      if (videoQuality?.preference && !['hd', 'sd', 'auto'].includes(videoQuality.preference)) {
+        return res.status(400).json({ error: 'Invalid video quality preference' });
       }
 
       // Validate uploadGallery structure if provided
@@ -4710,6 +4767,27 @@ router.put(
       }
       if (fallbackToPexels !== undefined) {
         settings.collageWidget.fallbackToPexels = fallbackToPexels;
+      }
+      if (heroVideo !== undefined) {
+        settings.collageWidget.heroVideo = { ...settings.collageWidget.heroVideo, ...heroVideo };
+      }
+      if (videoQuality !== undefined) {
+        settings.collageWidget.videoQuality = { ...settings.collageWidget.videoQuality, ...videoQuality };
+      }
+      if (transition !== undefined) {
+        settings.collageWidget.transition = { ...settings.collageWidget.transition, ...transition };
+      }
+      if (preloading !== undefined) {
+        settings.collageWidget.preloading = { ...settings.collageWidget.preloading, ...preloading };
+      }
+      if (mobileOptimizations !== undefined) {
+        settings.collageWidget.mobileOptimizations = { ...settings.collageWidget.mobileOptimizations, ...mobileOptimizations };
+      }
+      if (contentFiltering !== undefined) {
+        settings.collageWidget.contentFiltering = { ...settings.collageWidget.contentFiltering, ...contentFiltering };
+      }
+      if (playbackControls !== undefined) {
+        settings.collageWidget.playbackControls = { ...settings.collageWidget.playbackControls, ...playbackControls };
       }
 
       settings.collageWidget.updatedAt = new Date().toISOString();
