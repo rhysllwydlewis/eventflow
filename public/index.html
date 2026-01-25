@@ -156,6 +156,7 @@
     </style>
 
     <!-- Preload critical CSS with versioning -->
+    <link rel="preload" href="/assets/css/tokens.css?v=18.1.1" as="style" />
     <link rel="preload" href="/assets/css/design-system.css?v=18.1.1" as="style" />
     <link rel="preload" href="/assets/css/liquid-glass.css?v=18.1.1" as="style" />
     <link rel="preload" href="/assets/css/styles.css?v=18.1.1" as="style" />
@@ -163,6 +164,7 @@
     <link rel="preload" href="/assets/css/hero-modern.css?v=18.1.1" as="style" />
 
     <!-- Critical Stylesheets - Load synchronously -->
+    <link rel="stylesheet" href="/assets/css/tokens.css?v=18.1.1" />
     <link rel="stylesheet" href="/assets/css/design-system.css?v=18.1.1" />
     <link rel="stylesheet" href="/assets/css/liquid-glass.css?v=18.1.1" />
     <link rel="stylesheet" href="/assets/css/styles.css?v=18.1.1" />
@@ -285,11 +287,11 @@
 
           <!-- Desktop Navigation -->
           <nav class="ef-nav-desktop" aria-label="Main navigation">
-            <a href="/start.html" class="ef-nav-link">Plan</a>
-            <a href="/suppliers.html" class="ef-nav-link">Suppliers</a>
-            <a href="/marketplace.html" class="ef-nav-link">Marketplace</a>
-            <a href="/blog.html" class="ef-nav-link">Guides</a>
-            <a href="/pricing.html" class="ef-nav-link">Pricing</a>
+            <a href="/start" class="ef-nav-link">Plan</a>
+            <a href="/suppliers" class="ef-nav-link">Suppliers</a>
+            <a href="/marketplace" class="ef-nav-link">Marketplace</a>
+            <a href="/blog" class="ef-nav-link">Guides</a>
+            <a href="/pricing" class="ef-nav-link">Pricing</a>
           </nav>
 
           <!-- Actions -->
@@ -310,7 +312,7 @@
             </button>
 
             <!-- Auth Button (Desktop) -->
-            <a href="/auth.html" id="ef-auth-link" class="ef-btn ef-btn-primary">
+            <a href="/auth" id="ef-auth-link" class="ef-btn ef-btn-primary">
               Log in
             </a>
 
@@ -339,15 +341,15 @@
       <!-- Mobile Menu -->
       <div id="ef-mobile-menu" class="ef-mobile-menu" role="dialog" aria-modal="true" aria-label="Mobile navigation">
         <nav class="ef-mobile-nav" aria-label="Primary navigation">
-          <a href="/start.html" class="ef-mobile-link">Plan an Event</a>
-          <a href="/suppliers.html" class="ef-mobile-link">Browse Suppliers</a>
-          <a href="/marketplace.html" class="ef-mobile-link">Marketplace</a>
-          <a href="/blog.html" class="ef-mobile-link">Guides</a>
-          <a href="/pricing.html" class="ef-mobile-link">Pricing</a>
-          <a href="/for-suppliers.html" class="ef-mobile-link">For Suppliers</a>
-          <a href="/faq.html" class="ef-mobile-link">FAQ</a>
+          <a href="/start" class="ef-mobile-link">Plan an Event</a>
+          <a href="/suppliers" class="ef-mobile-link">Browse Suppliers</a>
+          <a href="/marketplace" class="ef-mobile-link">Marketplace</a>
+          <a href="/blog" class="ef-mobile-link">Guides</a>
+          <a href="/pricing" class="ef-mobile-link">Pricing</a>
+          <a href="/for-suppliers" class="ef-mobile-link">For Suppliers</a>
+          <a href="/faq" class="ef-mobile-link">FAQ</a>
           <div class="ef-mobile-divider"></div>
-          <a href="/auth.html" id="ef-mobile-auth" class="ef-mobile-link ef-mobile-primary">Log in</a>
+          <a href="/auth" id="ef-mobile-auth" class="ef-mobile-link ef-mobile-primary">Log in</a>
           <a href="#" id="ef-mobile-dashboard" class="ef-mobile-link" style="display: none;">Dashboard</a>
           <a href="#" id="ef-mobile-logout" class="ef-mobile-link" style="display: none;">Log out</a>
         </nav>
@@ -462,7 +464,7 @@
             <!-- CTAs -->
             <div class="hero-modern-ctas">
               <a
-                href="/start.html"
+                href="/start"
                 class="hero-cta-base hero-cta-primary"
               >
                 <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -471,7 +473,7 @@
                 Start planning
               </a>
               <a
-                href="/suppliers.html"
+                href="/suppliers"
                 class="hero-cta-base hero-cta-secondary"
               >
                 Browse suppliers
@@ -554,21 +556,18 @@
             <h2 style="margin-bottom: 16px; font-size: 1.5rem;">JavaScript Required for Full Experience</h2>
             <p style="margin-bottom: 20px; color: #667085;">For the best experience, please enable JavaScript. You can still browse our platform:</p>
             <div style="display: flex; flex-direction: column; gap: 12px; max-width: 400px; margin: 0 auto;">
-              <a href="/start.html" class="cta" style="display: block; text-decoration: none;">Plan an Event</a>
-              <a href="/suppliers.html" class="cta secondary" style="display: block; text-decoration: none;">Browse Suppliers</a>
-              <a href="/marketplace.html" class="cta secondary" style="display: block; text-decoration: none;">View Marketplace</a>
+              <a href="/start" class="cta" style="display: block; text-decoration: none;">Plan an Event</a>
+              <a href="/suppliers" class="cta secondary" style="display: block; text-decoration: none;">Browse Suppliers</a>
+              <a href="/marketplace" class="cta secondary" style="display: block; text-decoration: none;">View Marketplace</a>
             </div>
           </div>
         </section>
       </noscript>
 
-      <section class="section" aria-label="Featured packages">
+      <section class="ef-section" aria-label="Featured packages">
         <div class="container">
-          <div
-            class="small"
-            style="text-transform: uppercase; letter-spacing: 0.2em; color: #7e8794"
-          >
-            Featured packages
+          <div class="ef-section__header">
+            <span class="ef-section__kicker">Featured packages</span>
           </div>
           <div id="featured-packages" class="featured-carousel">
             <div class="card"><p class="small">Loading…</p></div>
@@ -576,124 +575,96 @@
         </div>
       </section>
 
-      <section class="section" aria-label="Spotlight packages">
+      <section class="ef-section" aria-label="Spotlight packages">
         <div class="container">
-          <div
-            class="small"
-            style="text-transform: uppercase; letter-spacing: 0.2em; color: #7e8794"
-          >
-            Spotlight packages
+          <div class="ef-section__header">
+            <span class="ef-section__kicker">Spotlight packages</span>
+            <p class="ef-section__subtitle">
+              Discover something new — our spotlight changes every hour
+            </p>
           </div>
-          <p
-            class="small"
-            style="
-              margin-top: 8px;
-              margin-bottom: 16px;
-              color: var(--color-text-secondary, #6c757d);
-            "
-          >
-            Discover something new — our spotlight changes every hour
-          </p>
           <div id="spotlight-packages" class="featured-carousel">
             <div class="card"><p class="small">Loading…</p></div>
           </div>
         </div>
       </section>
 
-      <section class="section" aria-label="Browse suppliers by category">
+      <section class="ef-section" aria-label="Browse suppliers by category">
         <div class="container">
-          <div
-            class="small"
-            style="text-transform: uppercase; letter-spacing: 0.2em; color: #7e8794"
-          >
-            Browse suppliers by category
+          <div class="ef-section__header">
+            <span class="ef-section__kicker">Browse suppliers by category</span>
+            <p class="ef-section__subtitle">
+              Explore our full range of verified UK suppliers
+            </p>
           </div>
-          <p
-            class="small"
-            style="
-              margin-top: 8px;
-              margin-bottom: 16px;
-              color: var(--color-text-secondary, #6c757d);
-            "
-          >
-            Explore our full range of verified UK suppliers
-          </p>
           <div id="category-grid-home"></div>
         </div>
       </section>
 
-      <section
-        class="section"
-        style="
-          background: linear-gradient(135deg, var(--ink, #0b8073), var(--accent, #13b6a2));
-          color: white;
-        "
-        aria-label="EventFlow statistics"
-        aria-live="polite"
-      >
+      <section class="ef-section ef-section--gradient" aria-label="EventFlow statistics" aria-live="polite">
         <div class="container">
-          <div class="stats-grid">
-            <div class="stat-item" data-reveal>
-              <div class="stat-number" data-counter="500" data-suffix="+">0</div>
-              <div class="stat-label">Verified Suppliers</div>
+          <div class="ef-stats-grid">
+            <div class="ef-stat" data-reveal>
+              <div class="ef-stat__number" data-counter="500" data-suffix="+">0</div>
+              <div class="ef-stat__label">Verified Suppliers</div>
             </div>
-            <div class="stat-item" data-reveal>
-              <div class="stat-number" data-counter="1200" data-suffix="+">0</div>
-              <div class="stat-label">Packages Available</div>
+            <div class="ef-stat" data-reveal>
+              <div class="ef-stat__number" data-counter="1200" data-suffix="+">0</div>
+              <div class="ef-stat__label">Packages Available</div>
             </div>
-            <div class="stat-item" data-reveal>
-              <div class="stat-number" data-counter="150" data-suffix="+">0</div>
-              <div class="stat-label">Marketplace Items</div>
+            <div class="ef-stat" data-reveal>
+              <div class="ef-stat__number" data-counter="150" data-suffix="+">0</div>
+              <div class="ef-stat__label">Marketplace Items</div>
             </div>
-            <div class="stat-item" data-reveal>
-              <div class="stat-number" data-counter="500" data-suffix="+">0</div>
-              <div class="stat-label">Customer Reviews</div>
+            <div class="ef-stat" data-reveal>
+              <div class="ef-stat__number" data-counter="500" data-suffix="+">0</div>
+              <div class="ef-stat__label">Customer Reviews</div>
             </div>
           </div>
         </div>
       </section>
 
       <!-- Trust Badges Section -->
-      <section class="section" aria-label="Trust indicators">
+      <section class="ef-section" aria-label="Trust indicators">
         <div class="container">
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 24px; max-width: 900px; margin: 0 auto;">
-            <div class="trust-badge" style="text-align: center; padding: 24px; background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
-              <div style="font-size: 48px; margin-bottom: 12px;">✓</div>
-              <h3 style="font-size: 18px; font-weight: 600; margin: 0 0 8px 0; color: var(--ink, #0B8073);">Verified Suppliers</h3>
-              <p class="small" style="margin: 0; color: #6b7280;">All suppliers are verified and vetted</p>
+          <div class="ef-grid ef-grid--auto-sm" style="max-width: 900px; margin: 0 auto;">
+            <div class="ef-card ef-card--center ef-card--hover">
+              <div class="ef-card__icon">✓</div>
+              <h3 class="ef-card__title">Verified Suppliers</h3>
+              <p class="ef-card__text">All suppliers are verified and vetted</p>
             </div>
-            <div class="trust-badge" style="text-align: center; padding: 24px; background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
-              <div style="font-size: 48px; margin-bottom: 12px;">🔒</div>
-              <h3 style="font-size: 18px; font-weight: 600; margin: 0 0 8px 0; color: var(--ink, #0B8073);">Secure Messaging</h3>
-              <p class="small" style="margin: 0; color: #6b7280;">Safe and private communication</p>
+            <div class="ef-card ef-card--center ef-card--hover">
+              <div class="ef-card__icon">🔒</div>
+              <h3 class="ef-card__title">Secure Messaging</h3>
+              <p class="ef-card__text">Safe and private communication</p>
             </div>
-            <div class="trust-badge" style="text-align: center; padding: 24px; background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
-              <div style="font-size: 48px; margin-bottom: 12px;">💷</div>
-              <h3 style="font-size: 18px; font-weight: 600; margin: 0 0 8px 0; color: var(--ink, #0B8073);">No Platform Fees</h3>
-              <p class="small" style="margin: 0; color: #6b7280;">Direct bookings with suppliers</p>
+            <div class="ef-card ef-card--center ef-card--hover">
+              <div class="ef-card__icon">💷</div>
+              <h3 class="ef-card__title">No Platform Fees</h3>
+              <p class="ef-card__text">Direct bookings with suppliers</p>
             </div>
-            <div class="trust-badge" style="text-align: center; padding: 24px; background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
-              <div style="font-size: 48px; margin-bottom: 12px;">🇬🇧</div>
-              <h3 style="font-size: 18px; font-weight: 600; margin: 0 0 8px 0; color: var(--ink, #0B8073);">UK Based Support</h3>
-              <p class="small" style="margin: 0; color: #6b7280;">Local support when you need it</p>
+            <div class="ef-card ef-card--center ef-card--hover">
+              <div class="ef-card__icon">🇬🇧</div>
+              <h3 class="ef-card__title">UK Based Support</h3>
+              <p class="ef-card__text">Local support when you need it</p>
             </div>
           </div>
         </div>
       </section>
 
       <!-- Testimonials Section -->
-      <section class="section section--muted" aria-label="Customer testimonials" id="testimonials-section">
+      <section class="ef-section ef-section--muted" aria-label="Customer testimonials" id="testimonials-section">
         <div class="container">
-          <div style="text-align: center; margin-bottom: 2rem;">
-            <div class="small" style="text-transform: uppercase; letter-spacing: 0.2em; color: #7e8794;">Testimonials</div>
-            <h2 style="margin-top: 0.5rem; margin-bottom: 1rem;">What Our Customers Say</h2>
+          <div class="ef-section__header ef-section__header--center">
+            <span class="ef-section__kicker">Testimonials</span>
+            <h2 class="ef-section__title">What Our Customers Say</h2>
           </div>
           <div id="testimonials-carousel" class="testimonials-grid">
             <!-- Placeholder card -->
-            <div style="max-width: 600px; margin: 0 auto; padding: 2rem; background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); text-align: center;" data-reveal>
-              <div style="font-size: 2rem; margin-bottom: 1rem;">✨</div>
-              <h3 style="color: #0B8073; margin-bottom: 1rem; font-size: 1.5rem;">Testimonials Coming Soon</h3>
-              <p style="color: #6c757d; line-height: 1.6;">
+            <div class="ef-card ef-card--center" style="max-width: 600px; margin: 0 auto;" data-reveal>
+              <div class="ef-card__icon">✨</div>
+              <h3 class="ef-card__title" style="font-size: 1.5rem;">Testimonials Coming Soon</h3>
+              <p class="ef-card__text">
                 We're gathering feedback from our amazing customers. Check back soon to see what they have to say about their EventFlow experience!
               </p>
             </div>
@@ -702,26 +673,20 @@
       </section>
 
       <!-- Marketplace Preview Section -->
-      <section class="section" aria-label="Marketplace preview" id="marketplace-preview-section">
+      <section class="ef-section" aria-label="Marketplace preview" id="marketplace-preview-section">
         <div class="container">
-          <div
-            class="small"
-            style="text-transform: uppercase; letter-spacing: 0.2em; color: #7e8794"
-          >
-            Marketplace
+          <div class="ef-section__header">
+            <span class="ef-section__kicker">Marketplace</span>
+            <h2 class="ef-section__title">Latest Items for Sale</h2>
+            <p class="ef-section__subtitle">
+              Buy and sell pre-loved event items — dresses, décor, AV gear and more
+            </p>
           </div>
-          <h2 style="margin-top: 0.5rem; margin-bottom: 1rem">Latest Items for Sale</h2>
-          <p
-            class="small"
-            style="margin-bottom: 1.5rem; color: var(--color-text-secondary, #6c757d)"
-          >
-            Buy and sell pre-loved event items — dresses, décor, AV gear and more
-          </p>
           <div id="marketplace-preview" aria-live="polite">
             <p class="small">Loading marketplace items...</p>
           </div>
-          <div style="text-align: center; margin-top: 1.5rem">
-            <a href="/marketplace" class="cta">View All Marketplace Items</a>
+          <div style="text-align: center; margin-top: var(--ef-space-5, 24px);">
+            <a href="/marketplace" class="ef-btn ef-btn--primary">View All Marketplace Items</a>
           </div>
         </div>
       </section>
@@ -772,247 +737,97 @@
       </section>
 
       <!-- Supplier CTA Section -->
-      <section
-        class="section"
-        style="
-          background: linear-gradient(135deg, #f7fafc 0%, #e7f3f1 100%);
-          border-top: 1px solid #e3e9ef;
-          border-bottom: 1px solid #e3e9ef;
-        "
-      >
-        <div class="container" style="max-width: 900px; text-align: center">
-          <div
-            style="
-              display: inline-block;
-              background: #0b8073;
-              color: white;
-              padding: 6px 16px;
-              border-radius: 20px;
-              font-size: 0.85rem;
-              font-weight: 600;
-              letter-spacing: 0.5px;
-              margin-bottom: 1.5rem;
-            "
-          >
-            FOR SUPPLIERS
+      <section class="ef-section ef-section--subtle-gradient">
+        <div class="container" style="max-width: 900px; text-align: center;">
+          <div class="ef-section__header ef-section__header--center">
+            <span class="ef-badge ef-badge--primary" style="margin-bottom: var(--ef-space-4, 16px);">FOR SUPPLIERS</span>
+            <h2 class="ef-section__title" style="color: var(--ef-primary, #0B8073);">
+              Are you a wedding or event supplier?
+            </h2>
+            <p class="ef-section__subtitle" style="max-width: 700px; margin: 0 auto;">
+              Join EventFlow and connect with couples planning their perfect day. Get discovered by
+              customers actively looking for services like yours, with no commission on bookings.
+            </p>
           </div>
-          <h2 style="font-size: 2rem; margin: 0 0 1rem 0; color: #0b8073">
-            Are you a wedding or event supplier?
-          </h2>
-          <p
-            style="
-              font-size: 1.15rem;
-              line-height: 1.7;
-              color: #4a5568;
-              margin: 0 0 2rem 0;
-              max-width: 700px;
-              margin-left: auto;
-              margin-right: auto;
-            "
-          >
-            Join EventFlow and connect with couples planning their perfect day. Get discovered by
-            customers actively looking for services like yours, with no commission on bookings.
-          </p>
 
-          <div
-            style="
-              display: grid;
-              grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-              gap: 1.5rem;
-              margin: 2.5rem 0;
-              text-align: left;
-              max-width: 700px;
-              margin-left: auto;
-              margin-right: auto;
-            "
-          >
-            <div style="display: flex; align-items: flex-start; gap: 12px">
-              <div
-                style="
-                  background: #0b8073;
-                  color: white;
-                  width: 32px;
-                  height: 32px;
-                  border-radius: 50%;
-                  display: flex;
-                  align-items: center;
-                  justify-content: center;
-                  flex-shrink: 0;
-                  font-weight: 600;
-                "
-              >
-                ✓
-              </div>
-              <div>
-                <strong style="display: block; color: #1f2937; margin-bottom: 4px"
-                  >No Commission</strong
-                >
-                <span style="font-size: 0.9rem; color: #6b7280"
-                  >Keep 100% of your booking fees</span
-                >
+          <div class="ef-features" style="max-width: 700px; margin: var(--ef-space-6, 32px) auto;">
+            <div class="ef-feature">
+              <div class="ef-feature__icon">✓</div>
+              <div class="ef-feature__content">
+                <span class="ef-feature__title">No Commission</span>
+                <span class="ef-feature__text">Keep 100% of your booking fees</span>
               </div>
             </div>
-            <div style="display: flex; align-items: flex-start; gap: 12px">
-              <div
-                style="
-                  background: #0b8073;
-                  color: white;
-                  width: 32px;
-                  height: 32px;
-                  border-radius: 50%;
-                  display: flex;
-                  align-items: center;
-                  justify-content: center;
-                  flex-shrink: 0;
-                  font-weight: 600;
-                "
-              >
-                ✓
-              </div>
-              <div>
-                <strong style="display: block; color: #1f2937; margin-bottom: 4px"
-                  >Verified Leads</strong
-                >
-                <span style="font-size: 0.9rem; color: #6b7280"
-                  >Connect with serious customers</span
-                >
+            <div class="ef-feature">
+              <div class="ef-feature__icon">✓</div>
+              <div class="ef-feature__content">
+                <span class="ef-feature__title">Verified Leads</span>
+                <span class="ef-feature__text">Connect with serious customers</span>
               </div>
             </div>
-            <div style="display: flex; align-items: flex-start; gap: 12px">
-              <div
-                style="
-                  background: #0b8073;
-                  color: white;
-                  width: 32px;
-                  height: 32px;
-                  border-radius: 50%;
-                  display: flex;
-                  align-items: center;
-                  justify-content: center;
-                  flex-shrink: 0;
-                  font-weight: 600;
-                "
-              >
-                ✓
-              </div>
-              <div>
-                <strong style="display: block; color: #1f2937; margin-bottom: 4px"
-                  >Easy Setup</strong
-                >
-                <span style="font-size: 0.9rem; color: #6b7280">Go live in minutes</span>
+            <div class="ef-feature">
+              <div class="ef-feature__icon">✓</div>
+              <div class="ef-feature__content">
+                <span class="ef-feature__title">Easy Setup</span>
+                <span class="ef-feature__text">Go live in minutes</span>
               </div>
             </div>
           </div>
 
-          <div
-            style="
-              display: flex;
-              gap: 1rem;
-              justify-content: center;
-              flex-wrap: wrap;
-              margin-top: 2rem;
-            "
-          >
-            <a
-              href="/pricing.html"
-              class="cta"
-              style="
-                display: inline-block;
-                background: #0b8073;
-                color: white;
-                padding: 14px 32px;
-                text-decoration: none;
-                border-radius: 8px;
-                font-weight: 600;
-                font-size: 1.05rem;
-                box-shadow: 0 4px 12px rgba(11, 128, 115, 0.3);
-                transition:
-                  transform 0.2s,
-                  box-shadow 0.2s;
-              "
-            >
-              View Pricing & Plans
-            </a>
-            <a
-              href="/for-suppliers.html"
-              class="cta secondary"
-              style="
-                display: inline-block;
-                background: white;
-                color: #0b8073;
-                padding: 14px 32px;
-                text-decoration: none;
-                border-radius: 8px;
-                font-weight: 600;
-                font-size: 1.05rem;
-                border: 2px solid #0b8073;
-              "
-            >
-              Learn More
-            </a>
+          <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin-top: var(--ef-space-6, 32px);">
+            <a href="/pricing" class="ef-btn ef-btn--primary">View Pricing & Plans</a>
+            <a href="/for-suppliers" class="ef-btn ef-btn--secondary">Learn More</a>
           </div>
 
-          <p style="font-size: 0.85rem; color: #6b7280; margin-top: 2rem">
+          <p class="ef-section__subtitle" style="margin-top: var(--ef-space-6, 32px); font-size: var(--ef-text-sm, 14px);">
             Join over 500+ verified suppliers already on EventFlow
           </p>
         </div>
       </section>
 
       <!-- Marketplace Signposting Section -->
-      <section
-        class="section"
-        style="
-          background: linear-gradient(135deg, #f7fafc 0%, #e7f3f1 100%);
-          border-top: 1px solid #e3e9ef;
-          border-bottom: 1px solid #e3e9ef;
-        "
-        aria-label="Event Marketplace"
-      >
-        <div class="container" style="max-width: 900px; text-align: center">
-          <h2 style="font-size: 2rem; margin: 0 0 1rem 0; color: var(--ink, #0b8073)">
-            Event Marketplace
-          </h2>
-          <p
-            style="
-              font-size: 1.15rem;
-              line-height: 1.7;
-              color: #4a5568;
-              margin: 0 auto 2rem auto;
-              max-width: 700px;
-            "
-          >
-            Buy and sell pre-loved event items — dresses, décor, AV gear and more. UK-focused, no
-            platform fees.
-          </p>
+      <section class="ef-section ef-section--subtle-gradient" aria-label="Event Marketplace">
+        <div class="container" style="max-width: 900px; text-align: center;">
+          <div class="ef-section__header ef-section__header--center">
+            <h2 class="ef-section__title" style="color: var(--ef-primary, #0B8073);">
+              Event Marketplace
+            </h2>
+            <p class="ef-section__subtitle" style="max-width: 700px; margin: 0 auto;">
+              Buy and sell pre-loved event items — dresses, décor, AV gear and more. UK-focused, no
+              platform fees.
+            </p>
+          </div>
 
-          <div style="margin-top: 2rem">
-            <a href="/marketplace" class="cta"> Visit the Marketplace </a>
+          <div style="margin-top: var(--ef-space-6, 32px);">
+            <a href="/marketplace" class="ef-btn ef-btn--primary">Visit the Marketplace</a>
           </div>
         </div>
       </section>
 
       <!-- Newsletter Signup Section -->
-      <section class="section" style="background: linear-gradient(135deg, var(--ink, #0b8073), var(--accent, #13b6a2)); color: white;" aria-label="Newsletter signup">
-        <div class="container" style="max-width: 700px; text-align: center;">
-          <h2 style="font-size: 2rem; margin: 0 0 1rem 0; color: white;">Stay Updated</h2>
-          <p style="font-size: 1.15rem; line-height: 1.7; color: rgba(255,255,255,0.9); margin: 0 0 2rem 0;">
-            Get the latest event planning tips, supplier spotlights, and special offers delivered to your inbox.
-          </p>
-          <form id="newsletter-form" style="display: flex; gap: 12px; max-width: 500px; margin: 0 auto; flex-wrap: wrap;">
+      <section class="ef-section ef-section--gradient" aria-label="Newsletter signup">
+        <div class="container" style="max-width: 700px;">
+          <div class="ef-section__header ef-section__header--center">
+            <h2 class="ef-section__title">Stay Updated</h2>
+            <p class="ef-section__subtitle">
+              Get the latest event planning tips, supplier spotlights, and special offers delivered to your inbox.
+            </p>
+          </div>
+          <form id="newsletter-form" class="ef-newsletter-form">
             <input 
               type="email" 
               id="newsletter-email" 
               name="email" 
+              class="ef-input ef-newsletter-form__input"
               placeholder="Enter your email address" 
               required
               aria-label="Email address"
-              style="flex: 1; min-width: 250px; padding: 14px 20px; border: none; border-radius: 8px; font-size: 16px;"
             >
-            <button type="submit" class="cta" style="background: white; color: var(--ink, #0b8073); border: none; padding: 14px 32px; border-radius: 8px; font-weight: 600; font-size: 16px; cursor: pointer;">
+            <button type="submit" class="ef-btn ef-newsletter-form__btn">
               Subscribe
             </button>
           </form>
-          <p class="small" style="margin-top: 1rem; color: rgba(255,255,255,0.7);">
+          <p class="ef-newsletter-form__note">
             We respect your privacy. Unsubscribe at any time.
           </p>
         </div>
@@ -1020,31 +835,22 @@
     </main>
 
     <footer class="footer" role="contentinfo">
-      <div
-        class="container"
-        style="
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 10px;
-          flex-wrap: wrap;
-        "
-      >
+      <div class="container ef-footer-content">
         <div>
           <strong>EventFlow</strong><br /><span class="small">Event planning made simple.</span>
         </div>
         <div class="version">Version: <span id="ef-version-label">loading…</span></div>
         <div class="small">
-          <a href="/blog.html">Guides</a> · <a href="/marketplace.html">Marketplace</a> · <a href="/credits.html">Credits</a> ·
-          <a href="/contact.html">Contact</a> ·
-          <a href="/legal.html">Legal Hub</a>
+          <a href="/blog">Guides</a> · <a href="/marketplace">Marketplace</a> · <a href="/credits">Credits</a> ·
+          <a href="/contact">Contact</a> ·
+          <a href="/legal">Legal Hub</a>
         </div>
       </div>
     </footer>
 
     <!-- BOTTOM NAVBAR - GOLD STANDARD REBUILD (Mobile Only) -->
     <nav class="ef-bottom-nav" role="navigation" aria-label="Mobile bottom navigation">
-      <a href="/start.html" class="ef-bottom-link" aria-label="Plan your event">
+      <a href="/start" class="ef-bottom-link" aria-label="Plan your event">
         <svg class="ef-bottom-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M12 20h9"/>
           <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
@@ -1052,7 +858,7 @@
         <span class="ef-bottom-label">Plan</span>
       </a>
       
-      <a href="/suppliers.html" class="ef-bottom-link" aria-label="Browse suppliers">
+      <a href="/suppliers" class="ef-bottom-link" aria-label="Browse suppliers">
         <svg class="ef-bottom-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <circle cx="11" cy="11" r="8"/>
           <path d="m21 21-4.35-4.35"/>
@@ -1060,7 +866,7 @@
         <span class="ef-bottom-label">Suppliers</span>
       </a>
       
-      <a href="/blog.html" class="ef-bottom-link" aria-label="View guides">
+      <a href="/blog" class="ef-bottom-link" aria-label="View guides">
         <svg class="ef-bottom-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
           <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
@@ -1081,7 +887,7 @@
       </a>
       
       <!-- Alerts button (shown when logged out) -->
-      <a href="/blog.html" id="ef-bottom-alerts" class="ef-bottom-link" aria-label="View guides and alerts">
+      <a href="/blog" id="ef-bottom-alerts" class="ef-bottom-link" aria-label="View guides and alerts">
         <svg class="ef-bottom-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
           <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
