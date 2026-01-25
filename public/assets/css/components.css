@@ -2998,3 +2998,21 @@ html[data-theme="dark"] .skeleton-card {
     animation: none;
   }
 }
+
+/* ----------------------------------------
+   Footer Layout Component
+   ---------------------------------------- */
+.ef-footer-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ef-space-3, 10px);
+  flex-wrap: wrap;
+}
+
+@media (max-width: 640px) {
+  .ef-footer-content {
+    flex-direction: column;
+    text-align: center;
+  }
+}

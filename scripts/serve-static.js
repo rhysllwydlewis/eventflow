@@ -51,6 +51,30 @@ app.get('/suppliers.html', (req, res) => {
   res.redirect(301, '/suppliers');
 });
 
+// Canonical routes for other pages (matching server.js behavior)
+const canonicalPages = [
+  'start',
+  'blog',
+  'pricing',
+  'faq',
+  'for-suppliers',
+  'auth',
+  'contact',
+  'legal',
+  'credits',
+];
+
+canonicalPages.forEach(page => {
+  // Serve the page at canonical URL
+  app.get(`/${page}`, (req, res) => {
+    res.sendFile(path.join(PUBLIC_DIR, `${page}.html`));
+  });
+  // Redirect .html to canonical
+  app.get(`/${page}.html`, (req, res) => {
+    res.redirect(301, `/${page}`);
+  });
+});
+
 // Serve static files from public directory
 app.use(express.static(PUBLIC_DIR));
 
