@@ -1557,15 +1557,14 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = [], heroVideoCo
         // Determine quality preference from config
         const qualityPreference = heroVideoConfig.quality || 'hd';
         
-        // Filter video files based on quality preference
-        let videoFiles = video.video_files || [];
+        // Filter and sort video files based on quality preference
+        let videoFiles = (video.video_files || []).filter(f => f.quality === 'hd' || f.quality === 'sd');
+        
         if (qualityPreference === 'sd') {
-          videoFiles = videoFiles.filter(f => f.quality === 'sd' || f.quality === 'hd');
-          videoFiles.sort((a, b) => (a.quality === 'sd' ? -1 : 1));
-        } else {
-          // HD and auto both prefer HD first, then SD as fallback
-          videoFiles = videoFiles.filter(f => f.quality === 'hd' || f.quality === 'sd');
+          // Prefer SD quality first, then HD as fallback
+          videoFiles.sort((a, b) => (a.quality === 'sd') ? -1 : (b.quality === 'sd') ? 1 : 0);
         }
+        // For 'hd' and 'auto', HD is preferred first (default order)
 
         if (isDebugEnabled()) {
           console.log('[Hero Video] Available video files:', {
