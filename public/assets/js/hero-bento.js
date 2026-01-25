@@ -14,10 +14,7 @@ class BentoHeroController {
     this.isVideoPlaying = false;
     this.prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    // Pexels API configuration - Note: This should ideally be proxied through backend
-    // For now, using a limited-scope public API key
-    this.pexelsApiKey = 'QGmVgdOKJwPPKOSRIcXr2eJGUbyRb5GEeHzv9y9Zg5LMDQBmKEqZD9RJ';
-    this.pexelsBaseUrl = 'https://api.pexels.com/v1';
+    // Backend proxy endpoints for secure API access (no API key needed on client)
     this.apiTimeout = 8000; // 8 second timeout for API requests
 
     // Collage widget settings from backend
@@ -29,6 +26,14 @@ class BentoHeroController {
       catering: 'elegant catering food',
       entertainment: 'live music band',
       photography: 'wedding photographer',
+    };
+
+    // Fallback images for when API is unavailable
+    this.fallbackImages = {
+      venues: '/assets/images/collage-venue.jpg',
+      catering: '/assets/images/collage-catering.jpg',
+      entertainment: '/assets/images/collage-entertainment.jpg',
+      photography: '/assets/images/collage-photography.jpg',
     };
   }
 
@@ -93,18 +98,23 @@ class BentoHeroController {
 
     if (!isEnabled) {
       console.log('[Bento Hero] Collage widget is disabled, using static images');
+      this.showFallbackImages();
       return;
     }
 
-    // Only load from Pexels if source is 'pexels'
+    // Load images based on source
     if (source === 'pexels') {
       // Setup video playback
       await this.initializeVideo();
 
       // Load category images from Pexels
       await this.loadCategoryImages();
+    } else if (source === 'uploads') {
+      console.log('[Bento Hero] Source is uploads, loading uploaded media');
+      await this.loadUploadedMedia();
     } else {
-      console.log('[Bento Hero] Source is not Pexels, using static images');
+      console.log('[Bento Hero] Unknown source, using fallback images');
+      this.showFallbackImages();
     }
 
     // Setup observers for performance (regardless of source)
@@ -286,7 +296,7 @@ class BentoHeroController {
   }
 
   /**
-   * Fetch hero video from Pexels API
+   * Fetch hero video from Pexels API via backend proxy
    */
   async fetchHeroVideo() {
     try {
@@ -295,11 +305,8 @@ class BentoHeroController {
       const timeoutId = setTimeout(() => controller.abort(), this.apiTimeout);
 
       const response = await fetch(
-        `${this.pexelsBaseUrl}/videos/search?query=wedding+celebration&per_page=15&orientation=landscape`,
+        `/api/public/pexels/video?query=wedding+celebration&orientation=landscape`,
         {
-          headers: {
-            Authorization: this.pexelsApiKey,
-          },
           signal: controller.signal,
         }
       );
@@ -307,28 +314,24 @@ class BentoHeroController {
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        console.error('[Bento Hero] Pexels API error:', response.status);
+        console.error('[Bento Hero] Backend proxy error:', response.status);
         return null;
       }
 
       const data = await response.json();
 
-      if (!data.videos || data.videos.length === 0) {
-        console.warn('[Bento Hero] No videos found');
+      if (!data.success) {
+        console.error('[Bento Hero] Proxy returned error:', data.message);
         return null;
       }
 
-      // Get a random video from the results
-      const randomIndex = Math.floor(Math.random() * Math.min(5, data.videos.length));
-      const video = data.videos[randomIndex];
+      if (data.fallback || !data.video || !data.video.url) {
+        console.warn('[Bento Hero] No video URL received or fallback mode, using static poster');
+        return null;
+      }
 
-      // Find HD video file
-      const hdVideo =
-        video.video_files.find(file => file.quality === 'hd' && file.width <= 1920) ||
-        video.video_files[0];
-
-      console.log('[Bento Hero] Video URL fetched:', hdVideo.link);
-      return hdVideo.link;
+      console.log('[Bento Hero] Video URL fetched:', data.video.url);
+      return data.video.url;
     } catch (error) {
       console.error('[Bento Hero] Failed to fetch video:', error);
       return null;
@@ -336,16 +339,17 @@ class BentoHeroController {
   }
 
   /**
-   * Load category images from Pexels API
+   * Load category images from Pexels API via backend proxy with fallback handling
    */
   async loadCategoryImages() {
     const categories = ['venues', 'catering', 'entertainment', 'photography'];
 
-    for (const category of categories) {
+    // Use Promise.allSettled to handle all requests even if some fail
+    const imagePromises = categories.map(async category => {
       try {
         const cell = document.querySelector(`.ef-bento-${category}`);
         if (!cell) {
-          continue;
+          return { category, success: false, reason: 'Cell not found' };
         }
 
         const imageUrl = await this.fetchCategoryImage(category);
@@ -355,16 +359,47 @@ class BentoHeroController {
           if (img) {
             img.src = imageUrl;
             img.classList.add('loaded');
+            return { category, success: true };
           }
         }
+
+        // If no image URL, show fallback
+        const img = cell.querySelector('img');
+        if (img && this.fallbackImages[category]) {
+          img.src = this.fallbackImages[category];
+          img.classList.add('loaded');
+          console.log(`[Bento Hero] Using fallback image for ${category}`);
+          return { category, success: true, fallback: true };
+        }
+
+        return { category, success: false, reason: 'No image available' };
       } catch (error) {
         console.error(`[Bento Hero] Failed to load ${category} image:`, error);
+        
+        // Show fallback on error
+        const cell = document.querySelector(`.ef-bento-${category}`);
+        if (cell) {
+          const img = cell.querySelector('img');
+          if (img && this.fallbackImages[category]) {
+            img.src = this.fallbackImages[category];
+            img.classList.add('loaded');
+            console.log(`[Bento Hero] Using fallback image for ${category} after error`);
+          }
+        }
+        
+        return { category, success: false, error: error.message };
       }
-    }
+    });
+
+    const results = await Promise.allSettled(imagePromises);
+    
+    // Log results
+    const successCount = results.filter(r => r.status === 'fulfilled' && r.value.success).length;
+    console.log(`[Bento Hero] Loaded ${successCount}/${categories.length} category images`);
   }
 
   /**
-   * Fetch a single category image from Pexels
+   * Fetch a single category image from Pexels via backend proxy
    */
   async fetchCategoryImage(category) {
     try {
@@ -377,11 +412,8 @@ class BentoHeroController {
       const query = customQueries[category] || this.categoryQueries[category] || category;
       
       const response = await fetch(
-        `${this.pexelsBaseUrl}/search?query=${encodeURIComponent(query)}&per_page=15&orientation=landscape`,
+        `/api/public/pexels/photo?query=${encodeURIComponent(query)}&category=${category}`,
         {
-          headers: {
-            Authorization: this.pexelsApiKey,
-          },
           signal: controller.signal,
         }
       );
@@ -389,27 +421,94 @@ class BentoHeroController {
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        console.error(`[Bento Hero] Pexels API error for ${category}:`, response.status);
+        console.error(`[Bento Hero] Backend proxy error for ${category}:`, response.status);
         return null;
       }
 
       const data = await response.json();
 
-      if (!data.photos || data.photos.length === 0) {
-        console.warn(`[Bento Hero] No photos found for ${category}`);
+      if (!data.success) {
+        console.error(`[Bento Hero] Proxy returned error for ${category}:`, data.message);
         return null;
       }
 
-      // Get a random photo from the results
-      const randomIndex = Math.floor(Math.random() * Math.min(10, data.photos.length));
-      const photo = data.photos[randomIndex];
+      if (data.fallback && data.photo?.src?.large) {
+        console.log(`[Bento Hero] Using fallback photo for ${category}`);
+        return data.photo.src.large;
+      }
+
+      if (!data.photo || !data.photo.src) {
+        console.warn(`[Bento Hero] No photo found for ${category}`);
+        return null;
+      }
 
       // Return large size image
-      return photo.src.large || photo.src.original;
+      return data.photo.src.large || data.photo.src.original;
     } catch (error) {
       console.error(`[Bento Hero] Failed to fetch ${category} image:`, error);
       return null;
     }
+  }
+
+  /**
+   * Show fallback images for all categories
+   * Used when API is unavailable or disabled
+   */
+  showFallbackImages() {
+    console.log('[Bento Hero] Showing fallback images for all categories');
+    
+    const categories = ['venues', 'catering', 'entertainment', 'photography'];
+    
+    categories.forEach(category => {
+      const cell = document.querySelector(`.ef-bento-${category}`);
+      if (!cell) {
+        return;
+      }
+
+      const img = cell.querySelector('img');
+      if (img && this.fallbackImages[category]) {
+        img.src = this.fallbackImages[category];
+        img.classList.add('loaded');
+        console.log(`[Bento Hero] Set fallback image for ${category}`);
+      }
+    });
+  }
+
+  /**
+   * Load uploaded media from settings
+   * Used when source is 'uploads' instead of 'pexels'
+   */
+  async loadUploadedMedia() {
+    console.log('[Bento Hero] Loading uploaded media from settings');
+    
+    const uploadGallery = this.settings?.uploadGallery || [];
+    
+    if (uploadGallery.length === 0) {
+      console.warn('[Bento Hero] No uploaded media found in settings');
+      this.showFallbackImages();
+      return;
+    }
+
+    const categories = ['venues', 'catering', 'entertainment', 'photography'];
+    
+    // Distribute uploaded media across categories
+    categories.forEach((category, index) => {
+      const cell = document.querySelector(`.ef-bento-${category}`);
+      if (!cell) {
+        return;
+      }
+
+      // Use modulo to cycle through uploaded media if there are fewer than 4 items
+      const mediaIndex = index % uploadGallery.length;
+      const mediaUrl = uploadGallery[mediaIndex];
+
+      const img = cell.querySelector('img');
+      if (img && mediaUrl) {
+        img.src = mediaUrl;
+        img.classList.add('loaded');
+        console.log(`[Bento Hero] Set uploaded media for ${category}: ${mediaUrl}`);
+      }
+    });
   }
 
   /**
