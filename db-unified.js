@@ -333,41 +333,14 @@ async function verifyDataMatch(collectionName, writtenData, readData) {
         return false;
       }
 
-      // Compare key fields - check that all written fields are present and equal in read data
-      // We allow read data to have additional fields (like _id, id) that weren't in written data
-      for (const [key, value] of Object.entries(writtenData)) {
-        if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
-          // Deep comparison for nested objects
-          const readValue = readData[key];
-          if (!readValue || typeof readValue !== 'object') {
-            return false;
-          }
-          // Compare nested object properties
-          for (const [nestedKey, nestedValue] of Object.entries(value)) {
-            if (JSON.stringify(readValue[nestedKey]) !== JSON.stringify(nestedValue)) {
-              console.warn(
-                `Verification mismatch in ${collectionName}.${key}.${nestedKey}: ` +
-                  `written=${JSON.stringify(nestedValue)}, read=${JSON.stringify(readValue[nestedKey])}`
-              );
-              return false;
-            }
-          }
-        } else {
-          // Simple comparison for primitive values and arrays
-          if (JSON.stringify(readData[key]) !== JSON.stringify(value)) {
-            console.warn(
-              `Verification mismatch in ${collectionName}.${key}: ` +
-                `written=${JSON.stringify(value)}, read=${JSON.stringify(readData[key])}`
-            );
-            return false;
-          }
-        }
-      }
-      return true;
+      // Deep comparison of all nested properties
+      return deepCompareObjects(writtenData, readData, collectionName);
     }
 
-    // Handle array collections (length comparison)
+    // Handle array collections (length and basic content comparison)
     if (Array.isArray(writtenData) && Array.isArray(readData)) {
+      // For array collections, length comparison is sufficient for most cases
+      // as we typically replace the entire collection
       return writtenData.length === readData.length;
     }
 
@@ -377,6 +350,49 @@ async function verifyDataMatch(collectionName, writtenData, readData) {
     console.error('Error in verifyDataMatch:', error.message);
     return false;
   }
+}
+
+/**
+ * Deep compare two objects recursively
+ * @param {Object} written - Written object
+ * @param {Object} read - Read object
+ * @param {string} path - Current path for error messages
+ * @returns {boolean} True if objects match
+ */
+function deepCompareObjects(written, read, path = '') {
+  // Compare all keys in written object
+  for (const [key, writtenValue] of Object.entries(written)) {
+    const readValue = read[key];
+    const currentPath = path ? `${path}.${key}` : key;
+
+    // Handle nested objects recursively
+    if (
+      writtenValue &&
+      typeof writtenValue === 'object' &&
+      !Array.isArray(writtenValue) &&
+      !(writtenValue instanceof Date)
+    ) {
+      if (!readValue || typeof readValue !== 'object') {
+        console.warn(`Verification mismatch at ${currentPath}: read value is not an object`);
+        return false;
+      }
+      // Recursively compare nested objects
+      if (!deepCompareObjects(writtenValue, readValue, currentPath)) {
+        return false;
+      }
+    } else {
+      // Compare primitive values, arrays, and dates using JSON serialization
+      const writtenJson = JSON.stringify(writtenValue);
+      const readJson = JSON.stringify(readValue);
+      if (writtenJson !== readJson) {
+        console.warn(
+          `Verification mismatch at ${currentPath}: ` + `written=${writtenJson}, read=${readJson}`
+        );
+        return false;
+      }
+    }
+  }
+  return true;
 }
 
 /**

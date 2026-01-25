@@ -104,6 +104,34 @@ describe('Database Unified - writeAndVerify', () => {
       });
     });
 
+    it('should verify very deeply nested objects (3+ levels)', async () => {
+      const testSettings = {
+        advanced: {
+          level1: {
+            level2: {
+              level3: {
+                level4: {
+                  value: 'deep value',
+                  number: 42,
+                  boolean: true,
+                },
+              },
+            },
+          },
+        },
+      };
+
+      const result = await dbUnified.writeAndVerify('settings', testSettings);
+
+      expect(result.success).toBe(true);
+      expect(result.verified).toBe(true);
+      expect(result.data.advanced.level1.level2.level3.level4).toEqual({
+        value: 'deep value',
+        number: 42,
+        boolean: true,
+      });
+    });
+
     it('should handle feature flags correctly', async () => {
       const testSettings = {
         features: {
