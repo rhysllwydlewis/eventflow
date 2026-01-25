@@ -479,6 +479,30 @@ app.get('/suppliers.html', (req, res) => {
   res.redirect(301, '/suppliers');
 });
 
+// Canonical routes for other pages
+const canonicalPages = [
+  'start',
+  'blog',
+  'pricing',
+  'faq',
+  'for-suppliers',
+  'auth',
+  'contact',
+  'legal',
+  'credits',
+];
+
+canonicalPages.forEach(page => {
+  // Serve the page at canonical URL
+  app.get(`/${page}`, (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', `${page}.html`));
+  });
+  // Redirect .html to canonical
+  app.get(`/${page}.html`, (req, res) => {
+    res.redirect(301, `/${page}`);
+  });
+});
+
 // Block test/dev pages in production
 if (process.env.NODE_ENV === 'production') {
   const testPages = [

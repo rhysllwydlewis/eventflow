@@ -1,0 +1,158 @@
+/**
+ * EventFlow Design Tokens
+ * A single source of truth for spacing, typography, colors, shadows, and radii
+ * v1.0.0
+ */
+
+:root {
+  /* ========================================
+     SPACING SCALE (8px grid system)
+     ======================================== */
+  --ef-space-1: 4px;    /* 0.5x */
+  --ef-space-2: 8px;    /* 1x */
+  --ef-space-3: 12px;   /* 1.5x */
+  --ef-space-4: 16px;   /* 2x */
+  --ef-space-5: 24px;   /* 3x */
+  --ef-space-6: 32px;   /* 4x */
+  --ef-space-7: 48px;   /* 6x */
+  --ef-space-8: 64px;   /* 8x */
+  
+  /* ========================================
+     TYPOGRAPHY SCALE (fluid/responsive)
+     ======================================== */
+  --ef-text-xs: clamp(11px, 0.75vw + 9px, 12px);
+  --ef-text-sm: clamp(13px, 0.8vw + 10px, 14px);
+  --ef-text-base: clamp(15px, 0.9vw + 12px, 16px);
+  --ef-text-lg: clamp(17px, 1vw + 13px, 18px);
+  --ef-text-xl: clamp(19px, 1.2vw + 14px, 20px);
+  --ef-text-2xl: clamp(23px, 1.5vw + 16px, 24px);
+  --ef-text-3xl: clamp(28px, 2vw + 18px, 32px);
+  --ef-text-4xl: clamp(34px, 3vw + 20px, 42px);
+  
+  /* Font weights */
+  --ef-font-normal: 400;
+  --ef-font-medium: 500;
+  --ef-font-semibold: 600;
+  --ef-font-bold: 700;
+  --ef-font-extrabold: 800;
+  
+  /* Line heights */
+  --ef-leading-tight: 1.2;
+  --ef-leading-snug: 1.375;
+  --ef-leading-normal: 1.5;
+  --ef-leading-relaxed: 1.625;
+  
+  /* ========================================
+     BORDER RADIUS SCALE
+     ======================================== */
+  --ef-radius-sm: 6px;
+  --ef-radius-md: 10px;
+  --ef-radius-lg: 14px;
+  --ef-radius-xl: 20px;
+  --ef-radius-full: 9999px;
+  
+  /* ========================================
+     SHADOW SCALE
+     ======================================== */
+  --ef-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --ef-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --ef-shadow-lg: 0 10px 30px rgba(15, 23, 42, 0.1);
+  --ef-shadow-xl: 0 20px 50px rgba(15, 23, 42, 0.15);
+  --ef-shadow-hover: 0 16px 40px rgba(15, 23, 42, 0.14);
+  
+  /* ========================================
+     SEMANTIC COLORS
+     ======================================== */
+  /* Background & Surface */
+  --ef-bg: #ffffff;
+  --ef-bg-muted: #f9fafb;
+  --ef-bg-subtle: #f3f4f6;
+  --ef-surface: #ffffff;
+  
+  /* Text colors */
+  --ef-text: #0B1220;
+  --ef-text-muted: #667085;
+  --ef-text-subtle: #9ca3af;
+  
+  /* Brand colors */
+  --ef-primary: #0B8073;
+  --ef-primary-hover: #097267;
+  --ef-primary-light: #F2FBF9;
+  --ef-accent: #13B6A2;
+  --ef-accent-light: #E8FAF7;
+  
+  /* Border colors */
+  --ef-border: #E7EAF0;
+  --ef-border-muted: #e5e7eb;
+  --ef-border-focus: rgba(11, 128, 115, 0.5);
+  
+  /* Status colors */
+  --ef-success: #10b981;
+  --ef-success-light: #d1fae5;
+  --ef-warning: #f59e0b;
+  --ef-warning-light: #fef3c7;
+  --ef-error: #ef4444;
+  --ef-error-light: #fee2e2;
+  --ef-info: #3b82f6;
+  --ef-info-light: #dbeafe;
+  
+  /* ========================================
+     FOCUS RING TOKEN
+     ======================================== */
+  --ef-focus-ring: 0 0 0 2px var(--ef-bg), 0 0 0 4px var(--ef-primary);
+  --ef-focus-ring-inset: inset 0 0 0 2px var(--ef-primary);
+  
+  /* ========================================
+     TRANSITIONS
+     ======================================== */
+  --ef-transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --ef-transition-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  --ef-transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  
+  /* ========================================
+     GRADIENTS
+     ======================================== */
+  --ef-gradient-primary: linear-gradient(135deg, var(--ef-primary) 0%, var(--ef-accent) 100%);
+  --ef-gradient-subtle: linear-gradient(135deg, #f7fafc 0%, #e7f3f1 100%);
+  --ef-gradient-hero: linear-gradient(to bottom, #f8fafc 0%, #f8fafc 50%, #f1f5f9 100%);
+  
+  /* ========================================
+     Z-INDEX SCALE
+     ======================================== */
+  --ef-z-base: 0;
+  --ef-z-dropdown: 100;
+  --ef-z-sticky: 200;
+  --ef-z-fixed: 300;
+  --ef-z-modal-backdrop: 400;
+  --ef-z-modal: 500;
+  --ef-z-tooltip: 600;
+  --ef-z-toast: 700;
+}
+
+/* ========================================
+   REDUCED MOTION SUPPORT
+   ======================================== */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --ef-transition-fast: 0ms;
+    --ef-transition-base: 0ms;
+    --ef-transition-slow: 0ms;
+  }
+}
+
+/* ========================================
+   DARK MODE TOKENS (future use)
+   ======================================== */
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="system"] {
+    --ef-bg: #0f172a;
+    --ef-bg-muted: #1e293b;
+    --ef-bg-subtle: #334155;
+    --ef-surface: #1e293b;
+    --ef-text: #f1f5f9;
+    --ef-text-muted: #94a3b8;
+    --ef-text-subtle: #64748b;
+    --ef-border: #334155;
+    --ef-border-muted: #475569;
+  }
+}
