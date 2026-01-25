@@ -3682,13 +3682,21 @@ router.put(
 router.get('/settings/features', authRequired, roleRequired('admin'), async (req, res) => {
   try {
     const settings = (await dbUnified.read('settings')) || {};
-    const features = settings.features || {
+    
+    // Default feature flags
+    const defaultFeatures = {
       registration: true,
       supplierApplications: true,
       reviews: true,
       photoUploads: true,
       supportTickets: true,
       pexelsCollage: false,
+    };
+    
+    // Merge saved settings with defaults to preserve partial saves
+    const features = {
+      ...defaultFeatures,
+      ...(settings.features || {}),
     };
 
     // Ensure metadata fields are included in response
@@ -4613,7 +4621,9 @@ const collageUpload = multer({
 router.get('/homepage/collage-widget', authRequired, roleRequired('admin'), async (req, res) => {
   try {
     const settings = (await dbUnified.read('settings')) || {};
-    const collageWidget = settings.collageWidget || {
+    
+    // Default configuration
+    const defaultCollageWidget = {
       enabled: false,
       source: 'pexels',
       mediaTypes: { photos: true, videos: true },
@@ -4666,6 +4676,53 @@ router.get('/homepage/collage-widget', authRequired, roleRequired('admin'), asyn
         showControls: false,
         pauseOnHover: true,
         fullscreen: false,
+      },
+    };
+    
+    // Merge saved settings with defaults to preserve partial saves
+    const collageWidget = {
+      ...defaultCollageWidget,
+      ...(settings.collageWidget || {}),
+      // Deep merge nested objects
+      heroVideo: {
+        ...defaultCollageWidget.heroVideo,
+        ...(settings.collageWidget?.heroVideo || {}),
+      },
+      videoQuality: {
+        ...defaultCollageWidget.videoQuality,
+        ...(settings.collageWidget?.videoQuality || {}),
+      },
+      transition: {
+        ...defaultCollageWidget.transition,
+        ...(settings.collageWidget?.transition || {}),
+      },
+      preloading: {
+        ...defaultCollageWidget.preloading,
+        ...(settings.collageWidget?.preloading || {}),
+      },
+      mobileOptimizations: {
+        ...defaultCollageWidget.mobileOptimizations,
+        ...(settings.collageWidget?.mobileOptimizations || {}),
+      },
+      contentFiltering: {
+        ...defaultCollageWidget.contentFiltering,
+        ...(settings.collageWidget?.contentFiltering || {}),
+      },
+      playbackControls: {
+        ...defaultCollageWidget.playbackControls,
+        ...(settings.collageWidget?.playbackControls || {}),
+      },
+      mediaTypes: {
+        ...defaultCollageWidget.mediaTypes,
+        ...(settings.collageWidget?.mediaTypes || {}),
+      },
+      pexelsQueries: {
+        ...defaultCollageWidget.pexelsQueries,
+        ...(settings.collageWidget?.pexelsQueries || {}),
+      },
+      pexelsVideoQueries: {
+        ...defaultCollageWidget.pexelsVideoQueries,
+        ...(settings.collageWidget?.pexelsVideoQueries || {}),
       },
     };
 
