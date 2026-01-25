@@ -45,18 +45,18 @@ class BentoHeroController {
       // Create AbortController for timeout
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), this.apiTimeout);
-      
+
       const response = await fetch('/api/public/homepage-settings', {
         signal: controller.signal,
       });
-      
+
       clearTimeout(timeoutId);
-      
+
       if (!response.ok) {
         console.warn('[Bento Hero] Failed to fetch settings, widget will be disabled');
         return { enabled: false }; // Safe default: disable widget
       }
-      
+
       const data = await response.json();
       const settings = data.collageWidget || { enabled: false };
       console.log('[Bento Hero] Settings loaded:', settings);
@@ -373,9 +373,9 @@ class BentoHeroController {
         }
 
         return { category, success: false, reason: 'No image available' };
-      } catch (error) {
-        console.error(`[Bento Hero] Failed to load ${category} image:`, error);
-        
+      } catch (_error) {
+        console.error(`[Bento Hero] Failed to load ${category} image:`, _error);
+
         // Show fallback on error
         const cell = document.querySelector(`.ef-bento-${category}`);
         if (cell) {
@@ -386,13 +386,13 @@ class BentoHeroController {
             console.log(`[Bento Hero] Using fallback image for ${category} after error`);
           }
         }
-        
-        return { category, success: false, error: error.message };
+
+        return { category, success: false, error: _error.message };
       }
     });
 
     const results = await Promise.allSettled(imagePromises);
-    
+
     // Log results
     const successCount = results.filter(r => r.status === 'fulfilled' && r.value.success).length;
     console.log(`[Bento Hero] Loaded ${successCount}/${categories.length} category images`);
@@ -410,7 +410,7 @@ class BentoHeroController {
       // Use custom query from settings if available, otherwise use default
       const customQueries = this.settings?.pexelsQueries || {};
       const query = customQueries[category] || this.categoryQueries[category] || category;
-      
+
       const response = await fetch(
         `/api/public/pexels/photo?query=${encodeURIComponent(query)}&category=${category}`,
         {
@@ -456,9 +456,9 @@ class BentoHeroController {
    */
   showFallbackImages() {
     console.log('[Bento Hero] Showing fallback images for all categories');
-    
+
     const categories = ['venues', 'catering', 'entertainment', 'photography'];
-    
+
     categories.forEach(category => {
       const cell = document.querySelector(`.ef-bento-${category}`);
       if (!cell) {
@@ -480,9 +480,9 @@ class BentoHeroController {
    */
   async loadUploadedMedia() {
     console.log('[Bento Hero] Loading uploaded media from settings');
-    
+
     const uploadGallery = this.settings?.uploadGallery || [];
-    
+
     if (uploadGallery.length === 0) {
       console.warn('[Bento Hero] No uploaded media found in settings');
       this.showFallbackImages();
@@ -490,7 +490,7 @@ class BentoHeroController {
     }
 
     const categories = ['venues', 'catering', 'entertainment', 'photography'];
-    
+
     // Distribute uploaded media across categories
     categories.forEach((category, index) => {
       const cell = document.querySelector(`.ef-bento-${category}`);
