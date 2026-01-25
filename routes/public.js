@@ -9,6 +9,7 @@
 const express = require('express');
 const router = express.Router();
 const dbUnified = require('../db-unified');
+const { getPexelsService } = require('../utils/pexels-service');
 
 /**
  * Check if collage debug logging is enabled
@@ -20,6 +21,14 @@ function isCollageDebugEnabled() {
 
 // Whitelist of allowed Pexels collage setting keys
 const ALLOWED_PEXELS_KEYS = ['intervalSeconds', 'queries', 'perPage', 'orientation', 'tags'];
+
+// Fallback images for collage categories (used when API is unavailable)
+const FALLBACK_PHOTOS = {
+  venues: '/assets/images/collage-venue.jpg',
+  catering: '/assets/images/collage-catering.jpg',
+  entertainment: '/assets/images/collage-entertainment.jpg',
+  photography: '/assets/images/collage-photography.jpg',
+};
 
 // Safe defaults for Pexels collage settings
 const DEFAULT_PEXELS_SETTINGS = {
@@ -205,6 +214,201 @@ router.get('/stats', async (req, res) => {
       packagesApproved: 0,
       marketplaceListingsActive: 0,
       reviewsApproved: 0,
+    });
+  }
+});
+
+/**
+ * GET /api/public/pexels/photo
+ * Public proxy for Pexels photo search API (no auth required)
+ * Returns fallback photo URLs if API is not configured or fails
+ *
+ * Query params:
+ * - query: Search query string
+ * - category: Category name (for fallback selection)
+ *
+ * This endpoint allows frontend to fetch photos without exposing API keys
+ */
+router.get('/pexels/photo', async (req, res) => {
+  try {
+    const { query, category } = req.query;
+
+    if (!query) {
+      return res.status(400).json({
+        error: 'Missing query parameter',
+        message: 'Query parameter "query" is required',
+      });
+    }
+
+    const pexels = getPexelsService();
+
+    // Check if Pexels API is configured
+    if (!pexels.isConfigured()) {
+      console.log('[Pexels Photo Proxy] API not configured, using fallback');
+
+      // Return fallback photo URL based on category
+      const fallbackUrl = FALLBACK_PHOTOS[category] || FALLBACK_PHOTOS.venues;
+
+      return res.json({
+        success: true,
+        fallback: true,
+        photo: {
+          src: {
+            large: fallbackUrl,
+            original: fallbackUrl,
+          },
+          photographer: 'EventFlow',
+          photographer_url: '',
+          alt: query,
+        },
+      });
+    }
+
+    try {
+      // Fetch from Pexels API with timeout
+      const results = await pexels.searchPhotos(query, 15, 1, { orientation: 'landscape' });
+
+      if (!results.photos || results.photos.length === 0) {
+        console.log('[Pexels Photo Proxy] No photos found, using fallback');
+
+        // Return fallback
+        const fallbackUrl = FALLBACK_PHOTOS[category] || FALLBACK_PHOTOS.venues;
+
+        return res.json({
+          success: true,
+          fallback: true,
+          photo: {
+            src: {
+              large: fallbackUrl,
+              original: fallbackUrl,
+            },
+            photographer: 'EventFlow',
+            photographer_url: '',
+            alt: query,
+          },
+        });
+      }
+
+      // Get a random photo from results
+      const randomIndex = Math.floor(Math.random() * Math.min(10, results.photos.length));
+      const photo = results.photos[randomIndex];
+
+      res.json({
+        success: true,
+        fallback: false,
+        photo,
+      });
+    } catch (apiError) {
+      console.error('[Pexels Photo Proxy] API error:', apiError.message);
+
+      // Return fallback on API error
+      const fallbackUrl = FALLBACK_PHOTOS[category] || FALLBACK_PHOTOS.venues;
+
+      return res.json({
+        success: true,
+        fallback: true,
+        photo: {
+          src: {
+            large: fallbackUrl,
+            original: fallbackUrl,
+          },
+          photographer: 'EventFlow',
+          photographer_url: '',
+          alt: query,
+        },
+      });
+    }
+  } catch (error) {
+    console.error('[Pexels Photo Proxy] Unexpected error:', error);
+    res.status(500).json({
+      error: 'Failed to fetch photo',
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * GET /api/public/pexels/video
+ * Public proxy for Pexels video search API (no auth required)
+ * Returns null with fallback flag if API is not configured or fails
+ *
+ * Query params:
+ * - query: Search query string
+ * - orientation: Video orientation (landscape, portrait, square)
+ *
+ * This endpoint allows frontend to fetch videos without exposing API keys
+ */
+router.get('/pexels/video', async (req, res) => {
+  try {
+    const { query, orientation = 'landscape' } = req.query;
+
+    if (!query) {
+      return res.status(400).json({
+        error: 'Missing query parameter',
+        message: 'Query parameter "query" is required',
+      });
+    }
+
+    const pexels = getPexelsService();
+
+    // Check if Pexels API is configured
+    if (!pexels.isConfigured()) {
+      console.log('[Pexels Video Proxy] API not configured, returning null with fallback flag');
+
+      return res.json({
+        success: true,
+        fallback: true,
+        video: null,
+      });
+    }
+
+    try {
+      // Fetch from Pexels API with timeout
+      const results = await pexels.searchVideos(query, 15, 1, { orientation });
+
+      if (!results.videos || results.videos.length === 0) {
+        console.log('[Pexels Video Proxy] No videos found, returning null with fallback flag');
+
+        return res.json({
+          success: true,
+          fallback: true,
+          video: null,
+        });
+      }
+
+      // Get a random video from results
+      const randomIndex = Math.floor(Math.random() * Math.min(5, results.videos.length));
+      const video = results.videos[randomIndex];
+
+      // Find HD video file
+      const hdVideo =
+        video.video_files.find(file => file.quality === 'hd' && file.width <= 1920) ||
+        video.video_files[0];
+
+      res.json({
+        success: true,
+        fallback: false,
+        video: {
+          url: hdVideo.link,
+          width: hdVideo.width,
+          height: hdVideo.height,
+          duration: video.duration,
+        },
+      });
+    } catch (apiError) {
+      console.error('[Pexels Video Proxy] API error:', apiError.message);
+
+      return res.json({
+        success: true,
+        fallback: true,
+        video: null,
+      });
+    }
+  } catch (error) {
+    console.error('[Pexels Video Proxy] Unexpected error:', error);
+    res.status(500).json({
+      error: 'Failed to fetch video',
+      message: error.message,
     });
   }
 });

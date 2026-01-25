@@ -258,34 +258,69 @@ async function writeAndVerify(collectionName, data, options = {}) {
   const { maxRetries = 2, retryDelayMs = 100 } = options;
   let lastError = null;
 
+  // Enhanced logging for settings collection
+  const isSettings = collectionName === 'settings';
+  if (isSettings) {
+    console.log(`[writeAndVerify] Starting write for ${collectionName}`);
+    console.log(`[writeAndVerify] Data keys:`, Object.keys(data));
+    if (data.collageWidget) {
+      console.log(`[writeAndVerify] collageWidget.enabled:`, data.collageWidget.enabled);
+    }
+  }
+
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       if (attempt > 0) {
         console.log(
-          `Retrying write and verify for ${collectionName}, attempt ${attempt + 1}/${maxRetries + 1}`
+          `[writeAndVerify] Retrying for ${collectionName}, attempt ${attempt + 1}/${maxRetries + 1}`
         );
         // Wait before retrying
         await new Promise(resolve => setTimeout(resolve, retryDelayMs));
       }
 
       // Perform the write operation
+      if (isSettings) {
+        console.log(
+          `[writeAndVerify] Calling write() for ${collectionName} (attempt ${attempt + 1})`
+        );
+      }
       const writeSuccess = await write(collectionName, data);
 
       if (!writeSuccess) {
         lastError = new Error('Write operation returned false');
+        if (isSettings) {
+          console.error(`[writeAndVerify] Write returned false for ${collectionName}`);
+        }
         continue; // Try again
       }
 
-      // Small delay to ensure write has propagated (especially important for distributed databases)
-      await new Promise(resolve => setTimeout(resolve, 50));
+      if (isSettings) {
+        console.log(`[writeAndVerify] Write succeeded, waiting 100ms before verification`);
+      }
+
+      // Longer delay to ensure write has propagated (especially important for distributed databases)
+      await new Promise(resolve => setTimeout(resolve, 100));
 
       // Read back the data to verify
+      if (isSettings) {
+        console.log(`[writeAndVerify] Reading back ${collectionName} for verification`);
+      }
       const verifiedData = await read(collectionName);
+
+      if (isSettings && verifiedData.collageWidget) {
+        console.log(
+          `[writeAndVerify] Verified data collageWidget.enabled:`,
+          verifiedData.collageWidget.enabled
+        );
+      }
 
       // Verify the data matches what we wrote
       const isVerified = await verifyDataMatch(collectionName, data, verifiedData);
 
       if (isVerified) {
+        if (isSettings) {
+          console.log(`[writeAndVerify] Verification succeeded for ${collectionName}`);
+        }
         return {
           success: true,
           verified: true,
@@ -293,11 +328,14 @@ async function writeAndVerify(collectionName, data, options = {}) {
         };
       } else {
         lastError = new Error('Data verification failed - written data does not match read data');
+        if (isSettings) {
+          console.error(`[writeAndVerify] Verification failed for ${collectionName}`);
+        }
       }
     } catch (error) {
       lastError = error;
       console.error(
-        `Error in writeAndVerify for ${collectionName} (attempt ${attempt + 1}):`,
+        `[writeAndVerify] Error in writeAndVerify for ${collectionName} (attempt ${attempt + 1}):`,
         error.message
       );
     }
@@ -305,7 +343,7 @@ async function writeAndVerify(collectionName, data, options = {}) {
 
   // All retries exhausted
   console.error(
-    `Failed to write and verify ${collectionName} after ${maxRetries + 1} attempts. Last error: ${lastError?.message}`
+    `[writeAndVerify] Failed to write and verify ${collectionName} after ${maxRetries + 1} attempts. Last error: ${lastError?.message}`
   );
 
   return {
@@ -330,7 +368,28 @@ async function verifyDataMatch(collectionName, writtenData, readData) {
     // Handle settings collection (object comparison)
     if (collectionName === 'settings') {
       if (!readData || typeof readData !== 'object') {
+        console.error('[verifyDataMatch] Read data is not an object');
         return false;
+      }
+
+      // Specific check for collageWidget.enabled field (critical for persistence fix)
+      if (writtenData.collageWidget?.enabled !== undefined) {
+        const writtenEnabled = writtenData.collageWidget.enabled;
+        const readEnabled = readData.collageWidget?.enabled;
+
+        if (writtenEnabled !== readEnabled) {
+          console.error(
+            `[verifyDataMatch] collageWidget.enabled mismatch: written=${writtenEnabled}, read=${readEnabled}`
+          );
+          return false;
+        }
+
+        // Only log in development or when debug flag is set
+        if (process.env.NODE_ENV === 'development' || process.env.DEBUG_COLLAGE === 'true') {
+          console.log(
+            `[verifyDataMatch] collageWidget.enabled verified: ${writtenEnabled} === ${readEnabled}`
+          );
+        }
       }
 
       // Deep comparison of all nested properties
@@ -347,7 +406,7 @@ async function verifyDataMatch(collectionName, writtenData, readData) {
     // Fallback: JSON comparison (less efficient but works for most cases)
     return JSON.stringify(writtenData) === JSON.stringify(readData);
   } catch (error) {
-    console.error('Error in verifyDataMatch:', error.message);
+    console.error('[verifyDataMatch] Error in verifyDataMatch:', error.message);
     return false;
   }
 }
