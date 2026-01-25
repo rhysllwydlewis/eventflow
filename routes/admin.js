@@ -3682,7 +3682,7 @@ router.put(
 router.get('/settings/features', authRequired, roleRequired('admin'), async (req, res) => {
   try {
     const settings = (await dbUnified.read('settings')) || {};
-    
+
     // Default feature flags
     const defaultFeatures = {
       registration: true,
@@ -3692,7 +3692,7 @@ router.get('/settings/features', authRequired, roleRequired('admin'), async (req
       supportTickets: true,
       pexelsCollage: false,
     };
-    
+
     // Merge saved settings with defaults to preserve partial saves
     const features = {
       ...defaultFeatures,
@@ -4621,7 +4621,7 @@ const collageUpload = multer({
 router.get('/homepage/collage-widget', authRequired, roleRequired('admin'), async (req, res) => {
   try {
     const settings = (await dbUnified.read('settings')) || {};
-    
+
     // Default configuration
     const defaultCollageWidget = {
       enabled: false,
@@ -4678,7 +4678,7 @@ router.get('/homepage/collage-widget', authRequired, roleRequired('admin'), asyn
         fullscreen: false,
       },
     };
-    
+
     // Merge saved settings with defaults to preserve partial saves
     const collageWidget = {
       ...defaultCollageWidget,
@@ -4819,15 +4819,17 @@ router.put(
 
       console.log('[Admin] PUT /homepage/collage-widget - Reading settings...');
       let settings = await dbUnified.read('settings');
-      
+
       if (!settings || typeof settings !== 'object' || Array.isArray(settings)) {
-        console.warn('[Admin] Settings was null, undefined, or invalid type, initializing empty object');
+        console.warn(
+          '[Admin] Settings was null, undefined, or invalid type, initializing empty object'
+        );
         settings = {};
       }
-      
+
       console.log('[Admin] Settings read successfully, keys:', Object.keys(settings));
       console.log('[Admin] Current collageWidget:', settings.collageWidget);
-      
+
       if (!settings.collageWidget || typeof settings.collageWidget !== 'object') {
         console.log('[Admin] Initializing collageWidget object');
         settings.collageWidget = {};
@@ -4839,7 +4841,9 @@ router.put(
         console.log('[Admin] Updated enabled to:', enabled);
       }
       if (source !== undefined) {
-        settings.collageWidget.source = source ?? settings.collageWidget.source ?? 'pexels';
+        // Use provided source, or existing source, or default to 'pexels'
+        const defaultSource = settings.collageWidget.source || 'pexels';
+        settings.collageWidget.source = source ?? defaultSource;
         console.log('[Admin] Updated source to:', settings.collageWidget.source);
       }
       if (mediaTypes !== undefined) {
@@ -4861,9 +4865,9 @@ router.put(
         settings.collageWidget.fallbackToPexels = fallbackToPexels;
       }
       if (heroVideo !== undefined) {
-        settings.collageWidget.heroVideo = { 
-          ...(settings.collageWidget.heroVideo || {}), 
-          ...heroVideo 
+        settings.collageWidget.heroVideo = {
+          ...(settings.collageWidget.heroVideo || {}),
+          ...heroVideo,
         };
       }
       if (videoQuality !== undefined) {
@@ -4873,15 +4877,15 @@ router.put(
         };
       }
       if (transition !== undefined) {
-        settings.collageWidget.transition = { 
-          ...(settings.collageWidget.transition || {}), 
-          ...transition 
+        settings.collageWidget.transition = {
+          ...(settings.collageWidget.transition || {}),
+          ...transition,
         };
       }
       if (preloading !== undefined) {
-        settings.collageWidget.preloading = { 
-          ...(settings.collageWidget.preloading || {}), 
-          ...preloading 
+        settings.collageWidget.preloading = {
+          ...(settings.collageWidget.preloading || {}),
+          ...preloading,
         };
       }
       if (mobileOptimizations !== undefined) {
@@ -4906,7 +4910,10 @@ router.put(
       settings.collageWidget.updatedAt = new Date().toISOString();
       settings.collageWidget.updatedBy = req.user.email;
 
-      console.log('[Admin] About to write settings, collageWidget.enabled:', settings.collageWidget.enabled);
+      console.log(
+        '[Admin] About to write settings, collageWidget.enabled:',
+        settings.collageWidget.enabled
+      );
 
       // Write and verify the data was persisted
       const writeResult = await dbUnified.writeAndVerify('settings', settings);
@@ -4918,7 +4925,7 @@ router.put(
           details: writeResult.error,
         });
       }
-      
+
       if (!writeResult.verified) {
         console.error('[Admin] Verification failed after write:', writeResult.error);
         return res.status(500).json({

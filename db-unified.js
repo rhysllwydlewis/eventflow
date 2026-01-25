@@ -280,7 +280,9 @@ async function writeAndVerify(collectionName, data, options = {}) {
 
       // Perform the write operation
       if (isSettings) {
-        console.log(`[writeAndVerify] Calling write() for ${collectionName} (attempt ${attempt + 1})`);
+        console.log(
+          `[writeAndVerify] Calling write() for ${collectionName} (attempt ${attempt + 1})`
+        );
       }
       const writeSuccess = await write(collectionName, data);
 
@@ -374,16 +376,20 @@ async function verifyDataMatch(collectionName, writtenData, readData) {
       if (writtenData.collageWidget?.enabled !== undefined) {
         const writtenEnabled = writtenData.collageWidget.enabled;
         const readEnabled = readData.collageWidget?.enabled;
-        
+
         if (writtenEnabled !== readEnabled) {
           console.error(
             `[verifyDataMatch] collageWidget.enabled mismatch: written=${writtenEnabled}, read=${readEnabled}`
           );
           return false;
         }
-        console.log(
-          `[verifyDataMatch] collageWidget.enabled verified: ${writtenEnabled} === ${readEnabled}`
-        );
+
+        // Only log in development or when debug flag is set
+        if (process.env.NODE_ENV === 'development' || process.env.DEBUG_COLLAGE === 'true') {
+          console.log(
+            `[verifyDataMatch] collageWidget.enabled verified: ${writtenEnabled} === ${readEnabled}`
+          );
+        }
       }
 
       // Deep comparison of all nested properties
