@@ -110,7 +110,7 @@ PR #380 **enhanced** security without removing PR #375 features:
 - `routes/public.js` - Added backend proxy endpoints
 
 **Security improvements:**
-- ❌ Removed: `this.pexelsApiKey = 'QGmVgdOKJwPPKOSRIcXr2eJGUbyRb5GEeHzv9y9Zg5LMDQBmKEqZD9RJ'`
+- ❌ Removed: Hardcoded Pexels API key from client-side code
 - ✅ Added: Backend proxy endpoints (`/api/public/pexels/photo`, `/api/public/pexels/video`)
 - ✅ Added: Fallback images when API unavailable
 - ✅ Enhanced: Admin settings persistence
