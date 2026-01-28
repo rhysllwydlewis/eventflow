@@ -586,6 +586,12 @@ app.use((req, res, next) => {
   next();
 });
 
+// ---------- Template Rendering Middleware ----------
+// CRITICAL: Must come before express.static() to process HTML files with placeholders
+// Replaces {{PLACEHOLDER}} values in HTML files with dynamic content
+const { templateMiddleware } = require('./utils/template-renderer');
+app.use(templateMiddleware());
+
 app.use(express.static(path.join(__dirname, 'public')));
 // Far-future caching for user uploads (they have unique filenames)
 app.use(
