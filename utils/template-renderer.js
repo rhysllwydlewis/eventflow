@@ -54,7 +54,7 @@ function shouldProcessFile(filePath) {
   // Exclude admin panel HTML from template rendering (they use dynamic JS)
   // But include admin-settings.html as it may have placeholders
   const fileName = path.basename(filePath);
-  
+
   // Process legal documents, articles, and main pages
   const processFiles = [
     'legal.html',
@@ -75,8 +75,10 @@ function shouldProcessFile(filePath) {
 
   // Process any HTML file in public root that might have copyright
   // Exclude test files and specific admin files
-  if (fileName.startsWith('test-') || 
-      fileName.startsWith('admin-') && fileName !== 'admin-settings.html') {
+  if (
+    fileName.startsWith('test-') ||
+    (fileName.startsWith('admin-') && fileName !== 'admin-settings.html')
+  ) {
     return false;
   }
 
@@ -91,36 +93,32 @@ function shouldProcessFile(filePath) {
 async function getFile(filePath) {
   const cachingEnabled = isCachingEnabled();
 
-  try {
-    const stats = await fs.stat(filePath);
-    const mtime = stats.mtime.getTime();
+  const stats = await fs.stat(filePath);
+  const mtime = stats.mtime.getTime();
 
-    // Check cache if enabled
-    if (cachingEnabled && templateCache.has(filePath)) {
-      const cached = templateCache.get(filePath);
-      if (cached.mtime === mtime) {
-        return { content: cached.content, fromCache: true };
-      }
+  // Check cache if enabled
+  if (cachingEnabled && templateCache.has(filePath)) {
+    const cached = templateCache.get(filePath);
+    if (cached.mtime === mtime) {
+      return { content: cached.content, fromCache: true };
     }
-
-    // Read file from filesystem
-    const content = await fs.readFile(filePath, 'utf8');
-    
-    // Process placeholders
-    const processedContent = replacePlaceholders(content);
-
-    // Cache if enabled
-    if (cachingEnabled) {
-      templateCache.set(filePath, {
-        content: processedContent,
-        mtime: mtime,
-      });
-    }
-
-    return { content: processedContent, fromCache: false };
-  } catch (error) {
-    throw error;
   }
+
+  // Read file from filesystem
+  const content = await fs.readFile(filePath, 'utf8');
+
+  // Process placeholders
+  const processedContent = replacePlaceholders(content);
+
+  // Cache if enabled
+  if (cachingEnabled) {
+    templateCache.set(filePath, {
+      content: processedContent,
+      mtime: mtime,
+    });
+  }
+
+  return { content: processedContent, fromCache: false };
 }
 
 /**
@@ -143,7 +141,7 @@ function templateMiddleware() {
 
     // Get the file path being requested
     let requestPath = req.path;
-    
+
     // Normalize path
     if (requestPath === '/') {
       requestPath = '/index.html';
@@ -163,7 +161,7 @@ function templateMiddleware() {
 
     try {
       const { content } = await getFile(filePath);
-      
+
       // Send processed content
       res.type('html');
       res.send(content);

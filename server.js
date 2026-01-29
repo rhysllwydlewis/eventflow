@@ -459,27 +459,20 @@ app.get('/index.html', (req, res) => {
   res.redirect(301, '/');
 });
 
-// Serve marketplace page
-app.get('/marketplace', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'marketplace.html'));
-});
-
+// Serve marketplace page (handled by template middleware)
 // Redirect non-canonical marketplace URL to canonical
 app.get('/marketplace.html', (req, res) => {
   res.redirect(301, '/marketplace');
 });
 
-// Serve suppliers page
-app.get('/suppliers', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'suppliers.html'));
-});
-
+// Serve suppliers page (handled by template middleware)
 // Redirect non-canonical suppliers URL to canonical
 app.get('/suppliers.html', (req, res) => {
   res.redirect(301, '/suppliers');
 });
 
 // Canonical routes for other pages
+// Note: These routes let the template middleware handle file rendering
 const canonicalPages = [
   'start',
   'blog',
@@ -493,14 +486,11 @@ const canonicalPages = [
 ];
 
 canonicalPages.forEach(page => {
-  // Serve the page at canonical URL
-  app.get(`/${page}`, (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', `${page}.html`));
-  });
-  // Redirect .html to canonical
+  // Redirect .html to canonical (this ensures canonical URLs)
   app.get(`/${page}.html`, (req, res) => {
     res.redirect(301, `/${page}`);
   });
+  // The canonical URL without .html is handled by template middleware + static files
 });
 
 // Block test/dev pages in production
