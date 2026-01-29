@@ -96,9 +96,21 @@ async function getFile(filePath) {
   const stats = await fs.stat(filePath);
   const mtime = stats.mtime.getTime();
 
+  // Include config file mtime in cache key to invalidate when config changes
+  const configPath = path.join(__dirname, '..', 'config', 'content-config.js');
+  let configMtime = 0;
+  try {
+    const configStats = await fs.stat(configPath);
+    configMtime = configStats.mtime.getTime();
+  } catch (err) {
+    // Config file doesn't exist or can't be read - use 0
+  }
+
+  const cacheKey = `${filePath}:${configMtime}`;
+
   // Check cache if enabled
-  if (cachingEnabled && templateCache.has(filePath)) {
-    const cached = templateCache.get(filePath);
+  if (cachingEnabled && templateCache.has(cacheKey)) {
+    const cached = templateCache.get(cacheKey);
     if (cached.mtime === mtime) {
       return { content: cached.content, fromCache: true };
     }
@@ -112,7 +124,7 @@ async function getFile(filePath) {
 
   // Cache if enabled
   if (cachingEnabled) {
-    templateCache.set(filePath, {
+    templateCache.set(cacheKey, {
       content: processedContent,
       mtime: mtime,
     });

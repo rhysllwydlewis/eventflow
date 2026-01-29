@@ -17,8 +17,18 @@ function getCurrentYear() {
  */
 function formatMonthYear(date) {
   const months = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
   ];
   return `${months[date.getMonth()]} ${date.getFullYear()}`;
 }
@@ -43,7 +53,7 @@ const contentConfig = {
   company: {
     name: 'EventFlow Limited',
     nameLegal: 'EventFlow Limited',
-    registrationNumber: '12345678', // Update with actual company registration
+    registrationNumber: '12345678', // TODO: Update with actual company registration number
     tradingName: 'EventFlow',
   },
 
@@ -54,6 +64,7 @@ const contentConfig = {
     abuseEmail: 'abuse@event-flow.co.uk',
     salesEmail: 'sales@event-flow.co.uk',
     privacyEmail: 'privacy@event-flow.co.uk',
+    // TODO: Update with actual company address before production deployment
     address: {
       line1: '123 Business Street',
       line2: 'Floor 2',

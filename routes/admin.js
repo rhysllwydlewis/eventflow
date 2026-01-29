@@ -5856,44 +5856,92 @@ router.put('/content-config', authRequired, roleRequired('admin'), async (req, r
       });
     }
 
-    // Basic format validation (should be like "January 2026")
-    const datePattern = /^[A-Za-z]+\s+\d{4}$/;
-    if (!datePattern.test(legalLastUpdated) || !datePattern.test(legalEffectiveDate)) {
+    // Validate date format (Month YYYY)
+    const validMonths = [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
+    ];
+    const datePattern = /^([A-Za-z]+)\s+(\d{4})$/;
+
+    const validateDate = (dateStr, fieldName) => {
+      const match = dateStr.match(datePattern);
+      if (!match) {
+        throw new Error(`${fieldName} must be in format "Month YYYY" (e.g., "January 2026")`);
+      }
+      const [, month, year] = match;
+      if (!validMonths.includes(month)) {
+        throw new Error(
+          `${fieldName} has invalid month "${month}". Use full month name (e.g., "January")`
+        );
+      }
+      const yearNum = parseInt(year, 10);
+      if (yearNum < 2020 || yearNum > 2100) {
+        throw new Error(`${fieldName} has unrealistic year "${year}". Use year between 2020-2100`);
+      }
+    };
+
+    try {
+      validateDate(legalLastUpdated, 'legalLastUpdated');
+      validateDate(legalEffectiveDate, 'legalEffectiveDate');
+    } catch (err) {
       return res.status(400).json({
         error: 'Invalid date format',
-        message: 'Dates should be in format "Month YYYY" (e.g., "January 2026")',
+        message: err.message,
       });
     }
 
-    // Read the content-config.js file
-    const fs = require('fs');
+    // Read the content-config.js file asynchronously
+    const fs = require('fs').promises;
     const path = require('path');
     const configPath = path.join(__dirname, '..', 'config', 'content-config.js');
-    let configContent = fs.readFileSync(configPath, 'utf8');
+
+    let configContent = await fs.readFile(configPath, 'utf8');
+
+    // Sanitize inputs by escaping quotes
+    const sanitize = str => str.replace(/'/g, "\\'");
+    const sanitizedLastUpdated = sanitize(legalLastUpdated);
+    const sanitizedEffectiveDate = sanitize(legalEffectiveDate);
 
     // Update the dates using regex
     configContent = configContent.replace(
       /legalLastUpdated:\s*['"].*?['"]/,
-      `legalLastUpdated: '${legalLastUpdated}'`
+      `legalLastUpdated: '${sanitizedLastUpdated}'`
     );
     configContent = configContent.replace(
       /legalEffectiveDate:\s*['"].*?['"]/,
-      `legalEffectiveDate: '${legalEffectiveDate}'`
+      `legalEffectiveDate: '${sanitizedEffectiveDate}'`
     );
 
-    // Write the file back
-    fs.writeFileSync(configPath, configContent, 'utf8');
+    // Write the file back asynchronously
+    await fs.writeFile(configPath, configContent, 'utf8');
 
     // Clear the require cache for the config module
     const configModulePath = require.resolve('../config/content-config');
     delete require.cache[configModulePath];
 
-    // Clear the template cache
+    // Clear the template cache - this is critical for changes to take effect
     try {
       const { clearCache } = require('../utils/template-renderer');
       clearCache();
+      console.log('✅ Template cache cleared successfully');
     } catch (err) {
-      console.warn('Failed to clear template cache:', err);
+      console.error('❌ Failed to clear template cache:', err);
+      // Return error since cache clearing is critical
+      return res.status(500).json({
+        error: 'Configuration updated but cache clearing failed',
+        message: 'Changes may not be visible until server restart. Please contact administrator.',
+        details: err.message,
+      });
     }
 
     // Audit log
@@ -5906,7 +5954,7 @@ router.put('/content-config', authRequired, roleRequired('admin'), async (req, r
     res.json({
       success: true,
       message: 'Content configuration updated successfully',
-      note: 'Changes will take full effect after server restart',
+      note: 'Changes take effect immediately for new page requests',
       legalLastUpdated,
       legalEffectiveDate,
     });
