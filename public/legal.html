@@ -252,7 +252,7 @@
 
 <main id="main-content" class='section'>
   <div class='container' style="max-width: 1200px;">
-    <span class="last-updated">Last Updated: December 2024</span>
+    <span class="last-updated">Last Updated: {{LEGAL_LAST_UPDATED}}</span>
     <h1>Legal Hub</h1>
     <p style="font-size: 1.1rem; color: #667085; margin-bottom: 32px;">All EventFlow legal documents, policies, and guidelines in one place. Navigate using the menu below.</p>
 
@@ -270,6 +270,7 @@
           <li><a href="#acceptable-use"><span class="legal-toc-icon">✓</span> Acceptable Use</a></li>
           <li><a href="#copyright"><span class="legal-toc-icon">©</span> Copyright</a></li>
           <li><a href="#supplier-terms"><span class="legal-toc-icon">🤝</span> Supplier Terms</a></li>
+          <li><a href="#marketplace-terms"><span class="legal-toc-icon">🛒</span> Marketplace Terms</a></li>
           <li><a href="#community"><span class="legal-toc-icon">👥</span> Community</a></li>
           <li><a href="#accessibility"><span class="legal-toc-icon">♿</span> Accessibility</a></li>
           <li><a href="#security"><span class="legal-toc-icon">🔐</span> Security</a></li>
@@ -284,12 +285,13 @@
         <section id="overview" class="legal-section">
           <h2>📋 Overview</h2>
           <p>Welcome to the EventFlow Legal Hub. This page contains all our legal documentation in one convenient location.</p>
-          <p><strong>EventFlow Limited</strong> is a UK-registered company providing event planning services. We are committed to:</p>
+          <p><strong>EventFlow Limited</strong> is a UK-registered company providing event planning services and a peer-to-peer marketplace for event items. We are committed to:</p>
           <ul>
             <li>Transparency in how we operate</li>
             <li>Protecting your personal data under UK GDPR</li>
             <li>Providing clear terms and policies</li>
             <li>Maintaining a safe and respectful community</li>
+            <li>Facilitating secure marketplace transactions</li>
           </ul>
           <p><strong>Key Links:</strong></p>
           <ul>
@@ -324,7 +326,7 @@
             <li><strong>How we protect it:</strong> Encryption, secure storage, access controls</li>
             <li><strong>Your rights:</strong> Access, rectification, erasure, portability, objection</li>
             <li><strong>Retention:</strong> We keep data only as long as necessary</li>
-            <li><strong>Contact:</strong> admin@event-flow.co.uk for data protection queries</li>
+            <li><strong>Contact:</strong> {{ADMIN_EMAIL}} for data protection queries</li>
           </ul>
           <p><a href="/privacy.html" class="cta">Read Full Privacy Notice →</a></p>
         </section>
@@ -367,7 +369,7 @@
           <div class="card" style="background: #F9FAFB; border: 1px solid #E7EAF0; margin: 16px 0;">
             <h3 class="h5">Right to Access</h3>
             <p>Request a copy of all your personal data we hold.</p>
-            <p><strong>How:</strong> Email admin@event-flow.co.uk with "Data Access Request"</p>
+            <p><strong>How:</strong> Email {{ADMIN_EMAIL}} with "Data Access Request"</p>
           </div>
           
           <div class="card" style="background: #F9FAFB; border: 1px solid #E7EAF0; margin: 16px 0;">
@@ -379,13 +381,13 @@
           <div class="card" style="background: #F9FAFB; border: 1px solid #E7EAF0; margin: 16px 0;">
             <h3 class="h5">Right to Erasure</h3>
             <p>Request deletion of your personal data ("right to be forgotten").</p>
-            <p><strong>How:</strong> Email admin@event-flow.co.uk with "Account Deletion Request"</p>
+            <p><strong>How:</strong> Email {{ADMIN_EMAIL}} with "Account Deletion Request"</p>
           </div>
           
           <div class="card" style="background: #F9FAFB; border: 1px solid #E7EAF0; margin: 16px 0;">
             <h3 class="h5">Right to Data Portability</h3>
             <p>Receive your data in machine-readable format (JSON).</p>
-            <p><strong>How:</strong> Email admin@event-flow.co.uk with "Data Portability Request"</p>
+            <p><strong>How:</strong> Email {{ADMIN_EMAIL}} with "Data Portability Request"</p>
           </div>
           
           <div class="card" style="background: #F9FAFB; border: 1px solid #E7EAF0; margin: 16px 0;">
@@ -434,7 +436,7 @@
             <li>Legal action in serious cases</li>
           </ul>
           
-          <p><strong>Report Violations:</strong> Email abuse@event-flow.co.uk</p>
+          <p><strong>Report Violations:</strong> Email {{ABUSE_EMAIL}}</p>
         </section>
 
         <!-- Copyright Policy -->
@@ -462,7 +464,7 @@
           <h3 class="h5">Copyright Infringement</h3>
           <p>If you believe content on EventFlow infringes your copyright:</p>
           <ol>
-            <li>Email admin@event-flow.co.uk with "Copyright Claim"</li>
+            <li>Email {{ADMIN_EMAIL}} with "Copyright Claim"</li>
             <li>Provide details of the copyrighted work</li>
             <li>Identify the infringing content (URL)</li>
             <li>Include your contact information</li>
@@ -516,6 +518,176 @@
           <p>See our full <a href="/terms.html">Terms of Use</a> for complete supplier terms.</p>
         </section>
 
+        <!-- Marketplace Terms -->
+        <section id="marketplace-terms" class="legal-section">
+          <h2>🛒 Marketplace Terms</h2>
+          <p>The EventFlow Marketplace is a peer-to-peer platform for buying and selling physical event-related items. These terms apply to all marketplace users (buyers and sellers).</p>
+          
+          <h3 class="h5">Marketplace Overview</h3>
+          <ul>
+            <li><strong>Physical Items Only:</strong> The marketplace is for tangible event items (decorations, furniture, equipment, supplies)</li>
+            <li><strong>No Services:</strong> Event services should be booked through supplier listings, not the marketplace</li>
+            <li><strong>Peer-to-Peer:</strong> Transactions occur directly between buyers and sellers</li>
+            <li><strong>Platform Role:</strong> EventFlow facilitates connections but is not party to transactions</li>
+            <li><strong>UK Focus:</strong> Marketplace primarily serves UK-based users</li>
+          </ul>
+          
+          <h3 class="h5">Seller Requirements & Obligations</h3>
+          <p><strong>Accurate Listings:</strong></p>
+          <ul>
+            <li>Provide truthful descriptions of item condition, size, and functionality</li>
+            <li>Upload clear, genuine photos showing actual item (not stock photos)</li>
+            <li>Set fair pricing based on item condition and market value</li>
+            <li>Specify accurate location for pickup or delivery</li>
+            <li>Update listings promptly when items are sold or unavailable</li>
+          </ul>
+          
+          <p><strong>Legal Compliance:</strong></p>
+          <ul>
+            <li>You own the items you list or have permission to sell them</li>
+            <li>Items must be legal to sell in the UK</li>
+            <li>You have rights to all photos and content you upload</li>
+            <li>You comply with consumer protection and safety regulations</li>
+            <li>You handle any applicable VAT or tax obligations</li>
+          </ul>
+          
+          <p><strong>Communication & Transaction:</strong></p>
+          <ul>
+            <li>Respond to buyer inquiries within 48 hours</li>
+            <li>Arrange secure payment methods (PayPal, bank transfer, cash on collection)</li>
+            <li>Arrange pickup/delivery logistics with buyer</li>
+            <li>Provide accurate availability for collection times</li>
+            <li>Handle transactions professionally and courteously</li>
+          </ul>
+          
+          <h3 class="h5">Buyer Guidelines & Responsibilities</h3>
+          <p><strong>Before Purchase:</strong></p>
+          <ul>
+            <li>Review item description, photos, and condition carefully</li>
+            <li>Ask questions about condition, measurements, or functionality</li>
+            <li>Verify seller location and collection/delivery arrangements</li>
+            <li>Agree on payment method and amount before committing</li>
+            <li>Check seller ratings and reviews if available</li>
+          </ul>
+          
+          <p><strong>Payment & Collection:</strong></p>
+          <ul>
+            <li>Use secure payment methods (avoid cash payments for high-value items)</li>
+            <li>Inspect items in person before payment when collecting</li>
+            <li>Arrange safe collection times and public meeting places</li>
+            <li>Get proof of purchase/receipt for expensive items</li>
+            <li>Contact seller promptly if items don't match description</li>
+          </ul>
+          
+          <h3 class="h5">Prohibited Items & Conduct</h3>
+          <p><strong>Prohibited Items:</strong></p>
+          <ul>
+            <li>Counterfeit, replica, or knock-off items</li>
+            <li>Stolen or illegally obtained goods</li>
+            <li>Dangerous or hazardous materials</li>
+            <li>Restricted items (weapons, explosives, controlled substances)</li>
+            <li>Services (use supplier listings instead)</li>
+            <li>Items violating intellectual property rights</li>
+            <li>Perishable food items (safety concerns)</li>
+          </ul>
+          
+          <p><strong>Prohibited Conduct:</strong></p>
+          <ul>
+            <li>Fake or misleading listings</li>
+            <li>Bait-and-switch tactics</li>
+            <li>Harassment or threatening behavior</li>
+            <li>Price manipulation or artificial scarcity</li>
+            <li>Attempting to circumvent platform policies</li>
+            <li>Identity theft or impersonation</li>
+          </ul>
+          
+          <h3 class="h5">Platform Role & Liability Disclaimer</h3>
+          <p><strong>EventFlow's Role:</strong></p>
+          <ul>
+            <li>We provide a platform for users to connect and transact</li>
+            <li>We do not verify item conditions or inspect listings</li>
+            <li>We are not party to buyer-seller transactions</li>
+            <li>We do not process payments or handle money transfers</li>
+            <li>We do not arrange delivery or logistics</li>
+          </ul>
+          
+          <p><strong>Liability Disclaimer:</strong></p>
+          <ul>
+            <li><strong>Not Responsible for Items:</strong> EventFlow is not responsible for item quality, condition, authenticity, or safety</li>
+            <li><strong>Not Responsible for Transactions:</strong> We are not liable for payment disputes, delivery issues, or transaction failures</li>
+            <li><strong>Not Responsible for Users:</strong> We do not guarantee user identity, reliability, or trustworthiness</li>
+            <li><strong>No Warranties:</strong> Items are sold "as is" between users; EventFlow makes no warranties</li>
+            <li><strong>User Responsibility:</strong> Users assume all risks when buying or selling through the marketplace</li>
+          </ul>
+          
+          <h3 class="h5">Dispute Resolution</h3>
+          <p>If disputes arise between buyers and sellers:</p>
+          <ol>
+            <li><strong>Direct Resolution:</strong> Try to resolve the issue directly with the other party</li>
+            <li><strong>Platform Mediation:</strong> Contact {{ABUSE_EMAIL}} if direct resolution fails</li>
+            <li><strong>Evidence Required:</strong> Provide photos, messages, and transaction proof</li>
+            <li><strong>Platform Action:</strong> We may remove listings, suspend users, or ban violators</li>
+            <li><strong>Legal Action:</strong> Serious disputes may require small claims court or consumer rights services</li>
+          </ol>
+          
+          <h3 class="h5">Content Ownership & Licensing</h3>
+          <p><strong>Your Content:</strong></p>
+          <ul>
+            <li>You own all photos and descriptions you upload</li>
+            <li>You grant EventFlow a license to display your listings on the platform</li>
+            <li>This license is non-exclusive, worldwide, and royalty-free</li>
+            <li>The license continues while your listing is active</li>
+            <li>You can delete your listing at any time to revoke the license</li>
+          </ul>
+          
+          <p><strong>Photo Requirements:</strong></p>
+          <ul>
+            <li>Use clear, well-lit photos showing the actual item</li>
+            <li>Include multiple angles and close-ups of defects/wear</li>
+            <li>Photos must be your own (not stock images or competitors' photos)</li>
+            <li>Remove photos with personal information or location markers</li>
+            <li>Maximum file size: 10MB per photo</li>
+            <li>Supported formats: JPG, PNG, WEBP</li>
+          </ul>
+          
+          <h3 class="h5">Listing Removal Rights</h3>
+          <p>EventFlow reserves the right to remove marketplace listings for:</p>
+          <ul>
+            <li>Violations of these marketplace terms</li>
+            <li>Prohibited items or conduct</li>
+            <li>Customer complaints or reports</li>
+            <li>Suspected fraud or misrepresentation</li>
+            <li>Inactivity (listings over 90 days old may be archived)</li>
+            <li>Copyright or trademark infringement</li>
+            <li>Safety concerns</li>
+          </ul>
+          
+          <p>Sellers will be notified of removals when possible, with reasons provided.</p>
+          
+          <h3 class="h5">Safety Tips</h3>
+          <p><strong>For Buyers:</strong></p>
+          <ul>
+            <li>Meet in public places for item collection</li>
+            <li>Bring someone with you for high-value items</li>
+            <li>Inspect items before payment</li>
+            <li>Use secure payment methods with buyer protection</li>
+            <li>Trust your instincts - if it seems too good to be true, it probably is</li>
+          </ul>
+          
+          <p><strong>For Sellers:</strong></p>
+          <ul>
+            <li>Meet buyers in public, well-lit areas</li>
+            <li>Have someone with you when meeting buyers</li>
+            <li>Count cash payments carefully before handing over items</li>
+            <li>Keep records of all transactions</li>
+            <li>Don't share personal financial information</li>
+          </ul>
+          
+          <p><strong>More Information:</strong></p>
+          <p>For a detailed guide on using the marketplace safely and effectively, see our <a href="/articles/marketplace-guide.html">Marketplace User Guide</a>.</p>
+          <p>See also our full <a href="/terms.html#marketplace-terms">Terms of Use - Marketplace Section</a> for complete legal terms.</p>
+        </section>
+
         <!-- Community Guidelines -->
         <section id="community" class="legal-section">
           <h2>👥 Community Guidelines</h2>
@@ -553,7 +725,7 @@
             <li>Focus on service quality, not personal attacks</li>
           </ul>
           
-          <p><strong>Report Issues:</strong> If you see behavior that violates these guidelines, email abuse@event-flow.co.uk</p>
+          <p><strong>Report Issues:</strong> If you see behavior that violates these guidelines, email {{ABUSE_EMAIL}}</p>
         </section>
 
         <!-- Accessibility Statement -->
@@ -591,7 +763,7 @@
           
           <h3 class="h5">Feedback</h3>
           <p>If you encounter accessibility barriers, please let us know:</p>
-          <p><strong>Email:</strong> admin@event-flow.co.uk<br>
+          <p><strong>Email:</strong> {{ADMIN_EMAIL}}<br>
           <strong>Subject:</strong> "Accessibility Feedback"</p>
           
           <p>We will respond within 7 days and work to address the issue.</p>
@@ -623,7 +795,7 @@
           <h3 class="h5">Reporting Security Issues</h3>
           <p>If you discover a security vulnerability:</p>
           <ol>
-            <li>Email admin@event-flow.co.uk with "Security Issue"</li>
+            <li>Email {{ADMIN_EMAIL}} with "Security Issue"</li>
             <li>Describe the vulnerability in detail</li>
             <li>Do not publicly disclose before we can address it</li>
             <li>We will respond within 48 hours</li>
@@ -650,14 +822,14 @@
             <strong>Website:</strong> www.event-flow.co.uk</p>
             
             <h4 style="margin-top: 24px; margin-bottom: 8px;">General Inquiries</h4>
-            <p><strong>Email:</strong> <a href="mailto:support@event-flow.co.uk">support@event-flow.co.uk</a></p>
+            <p><strong>Email:</strong> <a href="mailto:{{SUPPORT_EMAIL}}">{{SUPPORT_EMAIL}}</a></p>
             
             <h4 style="margin-top: 24px; margin-bottom: 8px;">Privacy & Data Protection</h4>
-            <p><strong>Email:</strong> <a href="mailto:admin@event-flow.co.uk">admin@event-flow.co.uk</a><br>
-            <strong>Data Protection Officer:</strong> admin@event-flow.co.uk</p>
+            <p><strong>Email:</strong> <a href="mailto:{{ADMIN_EMAIL}}">{{ADMIN_EMAIL}}</a><br>
+            <strong>Data Protection Officer:</strong> {{ADMIN_EMAIL}}</p>
             
             <h4 style="margin-top: 24px; margin-bottom: 8px;">Report Abuse or Violations</h4>
-            <p><strong>Email:</strong> <a href="mailto:abuse@event-flow.co.uk">abuse@event-flow.co.uk</a></p>
+            <p><strong>Email:</strong> <a href="mailto:{{ABUSE_EMAIL}}">{{ABUSE_EMAIL}}</a></p>
             
             <h4 style="margin-top: 24px; margin-bottom: 8px;">UK Supervisory Authority</h4>
             <p>Information Commissioner's Office (ICO)<br>
@@ -676,7 +848,7 @@
     <!-- Bottom Notice -->
     <div class="card" style="margin-top: 48px; background: #F9FAFB; text-align: center;">
       <p><strong>Important:</strong> These legal documents are regularly updated to reflect changes in our services and applicable laws. We recommend reviewing them periodically.</p>
-      <p class="small" style="margin-top: 12px; color: #667085;">Last Updated: December 2024 | Effective Date: December 2024</p>
+      <p class="small" style="margin-top: 12px; color: #667085;">Last Updated: {{LEGAL_LAST_UPDATED}} | Effective Date: {{LEGAL_EFFECTIVE_DATE}}</p>
     </div>
 
   </div>
