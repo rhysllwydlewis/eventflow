@@ -186,4 +186,88 @@ router.delete('/:id', authRequired, csrfProtection, async (req, res) => {
   }
 });
 
+/**
+ * GET /api/me/plans/:planId/budget
+ * Get budget items for a plan
+ */
+router.get('/:planId/budget', authRequired, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { planId } = req.params;
+
+    const plans = await dbUnified.read('plans');
+    const plan = plans.find(p => p.id === planId && p.userId === userId);
+
+    if (!plan) {
+      return res.status(404).json({ error: 'Plan not found' });
+    }
+
+    const budgetItems = plan.budgetItems || [];
+
+    res.json({
+      success: true,
+      budgetItems,
+      count: budgetItems.length,
+      totalEstimated: budgetItems.reduce((sum, item) => sum + (item.estimated || 0), 0),
+      totalActual: budgetItems.reduce((sum, item) => sum + (item.actual || 0), 0),
+      totalPaid: budgetItems.reduce((sum, item) => sum + (item.paid || 0), 0),
+    });
+  } catch (error) {
+    console.error('Error fetching budget:', error);
+    res.status(500).json({ error: 'Failed to fetch budget', details: error.message });
+  }
+});
+
+/**
+ * POST /api/me/plans/:planId/budget
+ * Save budget items for a plan
+ * Body: { budgetItems: [{ category, item, estimated, actual, paid, notes }] }
+ */
+router.post('/:planId/budget', authRequired, csrfProtection, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { planId } = req.params;
+    const { budgetItems } = req.body;
+
+    if (!Array.isArray(budgetItems)) {
+      return res.status(400).json({ error: 'budgetItems must be an array' });
+    }
+
+    const plans = await dbUnified.read('plans');
+    const planIndex = plans.findIndex(p => p.id === planId && p.userId === userId);
+
+    if (planIndex === -1) {
+      return res.status(404).json({ error: 'Plan not found' });
+    }
+
+    const now = new Date().toISOString();
+
+    // Validate and sanitize budget items
+    const sanitizedItems = budgetItems.map(item => ({
+      id: item.id || uid('budget'),
+      category: item.category ? String(item.category).trim().slice(0, 100) : '',
+      item: item.item ? String(item.item).trim().slice(0, 200) : '',
+      estimated: item.estimated ? Math.max(0, parseFloat(item.estimated) || 0) : 0,
+      actual: item.actual ? Math.max(0, parseFloat(item.actual) || 0) : 0,
+      paid: item.paid ? Math.max(0, parseFloat(item.paid) || 0) : 0,
+      notes: item.notes ? String(item.notes).trim().slice(0, 500) : '',
+      updatedAt: now,
+    }));
+
+    plans[planIndex].budgetItems = sanitizedItems;
+    plans[planIndex].updatedAt = now;
+
+    await dbUnified.write('plans', plans);
+
+    res.json({
+      success: true,
+      budgetItems: sanitizedItems,
+      count: sanitizedItems.length,
+    });
+  } catch (error) {
+    console.error('Error saving budget:', error);
+    res.status(500).json({ error: 'Failed to save budget', details: error.message });
+  }
+});
+
 module.exports = router;

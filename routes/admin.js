@@ -3247,6 +3247,50 @@ router.get('/badge-counts', authRequired, roleRequired('admin'), async (req, res
         packages: 0,
         reviews: 0,
         reports: 0,
+       },
+    });
+  }
+});
+
+/**
+ * GET /api/admin/dashboard/counts
+ * Get badge counts for admin dashboard
+ * Returns counts for pending items that need admin action
+ */
+router.get('/dashboard/counts', authRequired, roleRequired('admin'), async (req, res) => {
+  try {
+    const photos = await dbUnified.read('photos');
+    const suppliers = await dbUnified.read('suppliers');
+    const reviews = await dbUnified.read('reviews');
+    const reports = await dbUnified.read('reports');
+    const tickets = await dbUnified.read('tickets');
+
+    const pendingPhotos = photos.filter(p => p.status === 'pending').length;
+    const pendingSuppliers = suppliers.filter(s => s.approvalStatus === 'pending').length;
+    const pendingReviews = reviews.filter(r => r.status === 'pending').length;
+    const openReports = reports.filter(r => r.status === 'open').length;
+    const openTickets = tickets.filter(t => t.status === 'open').length;
+
+    res.json({
+      success: true,
+      counts: {
+        pendingPhotos,
+        pendingSuppliers,
+        pendingReviews,
+        openReports,
+        openTickets,
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching dashboard counts:', error);
+    res.status(500).json({
+      error: 'Failed to fetch dashboard counts',
+      counts: {
+        pendingPhotos: 0,
+        pendingSuppliers: 0,
+        pendingReviews: 0,
+        openReports: 0,
+        openTickets: 0,
       },
     });
   }
