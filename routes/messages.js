@@ -171,11 +171,11 @@ router.post('/threads', authRequired, csrfProtection, async (req, res) => {
 
     const now = new Date().toISOString();
     
-    // Sanitize message text if provided
+    // Sanitize message text if provided - stripLow before escape to remove control chars first
     let sanitizedMessage = null;
     let messagePreview = null;
     if (message && typeof message === 'string' && message.trim()) {
-      sanitizedMessage = validator.stripLow(validator.escape(message.trim()));
+      sanitizedMessage = validator.escape(validator.stripLow(message.trim()));
       messagePreview = sanitizedMessage.substring(0, 100);
     }
 
@@ -354,8 +354,8 @@ router.post('/threads/:threadId/messages', authRequired, csrfProtection, async (
       return res.status(403).json({ error: 'Access denied' });
     }
 
-    // Sanitize message text to prevent XSS
-    const sanitizedText = text ? validator.stripLow(validator.escape(text.trim())) : '';
+    // Sanitize message text to prevent XSS - stripLow before escape to remove control chars first
+    const sanitizedText = text ? validator.escape(validator.stripLow(text.trim())) : '';
 
     const now = new Date().toISOString();
     const messages = await dbUnified.read('messages');

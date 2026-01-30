@@ -77,8 +77,8 @@ router.post('/', authRequired, csrfProtection, async (req, res) => {
       eventType: eventType ? String(eventType).trim().slice(0, 100) : null,
       eventDate: eventDate || null,
       location: location ? String(location).trim().slice(0, 200) : null,
-      guests: guests ? parseInt(guests, 10) : null,
-      budget: budget ? parseFloat(budget) : null,
+      guests: guests ? Math.max(0, parseInt(guests, 10) || 0) : null,
+      budget: budget ? Math.max(0, parseFloat(budget) || 0) : null,
       timeline: Array.isArray(timeline) ? timeline : [],
       checklist: Array.isArray(checklist) ? checklist : [],
       createdAt: now,
@@ -132,10 +132,10 @@ router.patch('/:id', authRequired, csrfProtection, async (req, res) => {
       plan.location = location ? String(location).trim().slice(0, 200) : null;
     }
     if (guests !== undefined) {
-      plan.guests = guests ? parseInt(guests, 10) : null;
+      plan.guests = guests ? Math.max(0, parseInt(guests, 10) || 0) : null;
     }
     if (budget !== undefined) {
-      plan.budget = budget ? parseFloat(budget) : null;
+      plan.budget = budget ? Math.max(0, parseFloat(budget) || 0) : null;
     }
     if (timeline !== undefined) {
       plan.timeline = Array.isArray(timeline) ? timeline : [];

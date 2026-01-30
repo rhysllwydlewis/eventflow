@@ -153,6 +153,11 @@ async function authRequired(req, res, next) {
   }
 
   // Verify user still exists in database - prevents stale JWT issues
+  // NOTE: This reads the entire users collection on every auth request.
+  // For production at scale, consider implementing:
+  // 1. A user cache with short TTL (e.g., Redis with 5-minute expiration)
+  // 2. Database query optimization with indexed lookup
+  // 3. Rate limiting on auth-heavy endpoints
   try {
     const dbUnified = require('../db-unified');
     const users = await dbUnified.read('users');
@@ -176,10 +181,11 @@ async function authRequired(req, res, next) {
     next();
   } catch (error) {
     console.error('Error verifying user in authRequired:', error);
-    // Fall back to JWT data if database check fails (graceful degradation)
-    req.user = u;
-    req.userId = u.id;
-    next();
+    // If database is unavailable, return service unavailable instead of bypassing security
+    return res.status(503).json({
+      error: 'Service temporarily unavailable',
+      message: 'Unable to verify authentication. Please try again.',
+    });
   }
 }
 
