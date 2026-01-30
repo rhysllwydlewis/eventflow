@@ -3646,12 +3646,8 @@ router.put(
         updatedBy: req.user.email,
       };
 
-      const writeSuccess = await dbUnified.write('settings', settings);
-
-      if (!writeSuccess) {
-        console.error('Failed to persist site settings to database');
-        return res.status(500).json({ error: 'Failed to persist settings to database' });
-      }
+      // Write and verify to ensure persistence
+      const verifiedSettings = await dbUnified.writeAndVerify('settings', settings);
 
       auditLog({
         adminId: req.user.id,
@@ -3662,7 +3658,8 @@ router.put(
         details: { name, tagline },
       });
 
-      res.json({ success: true, site: settings.site });
+      // Return verified data from database
+      res.json({ success: true, site: verifiedSettings.site });
     } catch (error) {
       console.error('Error updating site settings:', error);
       res.status(500).json({ error: 'Failed to update settings' });
@@ -3787,24 +3784,16 @@ router.put(
         registration: newFeatures.registration,
       });
 
-      // Write with timeout protection (new timeout promise)
+      // Write and verify with timeout protection
       const writeStart = Date.now();
-      const writeSuccess = await Promise.race([
-        dbUnified.write('settings', settings),
-        createTimeout(5000, 'Write operation'),
+      const verifiedSettings = await Promise.race([
+        dbUnified.writeAndVerify('settings', settings),
+        createTimeout(5000, 'Write and verify operation'),
       ]);
 
       console.log(
-        `[${requestId}] Database write completed in ${Date.now() - writeStart}ms, success: ${writeSuccess}`
+        `[${requestId}] Database write and verify completed in ${Date.now() - writeStart}ms`
       );
-
-      if (!writeSuccess) {
-        console.error(`[${requestId}] Failed to persist feature flags to database`);
-        return res.status(500).json({
-          error: 'Failed to persist settings to database',
-          details: 'Database write returned false',
-        });
-      }
 
       // Log Pexels feature flag changes specifically
       if (pexelsCollage !== undefined) {
@@ -3819,13 +3808,14 @@ router.put(
         action: 'FEATURES_UPDATED',
         targetType: 'features',
         targetId: null,
-        details: settings.features,
+        details: verifiedSettings.features,
       });
 
       const totalTime = Date.now() - startTime;
       console.log(`[${requestId}] Feature flags update completed successfully in ${totalTime}ms`);
 
-      res.json({ success: true, features: settings.features });
+      // Return verified data from database
+      res.json({ success: true, features: verifiedSettings.features });
     } catch (error) {
       const totalTime = Date.now() - startTime;
       console.error(
@@ -3901,12 +3891,8 @@ router.put(
         updatedBy: req.user.email,
       };
 
-      const writeSuccess = await dbUnified.write('settings', settings);
-
-      if (!writeSuccess) {
-        console.error('Failed to persist maintenance settings to database');
-        return res.status(500).json({ error: 'Failed to persist settings to database' });
-      }
+      // Write and verify to ensure persistence
+      const verifiedSettings = await dbUnified.writeAndVerify('settings', settings);
 
       auditLog({
         adminId: req.user.id,
@@ -3917,7 +3903,8 @@ router.put(
         details: { enabled, message, duration, expiresAt },
       });
 
-      res.json({ success: true, maintenance: settings.maintenance });
+      // Return verified data from database
+      res.json({ success: true, maintenance: verifiedSettings.maintenance });
     } catch (error) {
       console.error('Error updating maintenance settings:', error);
       res.status(500).json({ error: 'Failed to update settings' });
@@ -4000,12 +3987,8 @@ router.put(
         updatedBy: req.user.email,
       };
 
-      const writeSuccess = await dbUnified.write('settings', settings);
-
-      if (!writeSuccess) {
-        console.error('Failed to persist email template to database');
-        return res.status(500).json({ error: 'Failed to persist template to database' });
-      }
+      // Write and verify to ensure persistence
+      const verifiedSettings = await dbUnified.writeAndVerify('settings', settings);
 
       auditLog({
         adminId: req.user.id,
@@ -4016,7 +3999,8 @@ router.put(
         details: { subject },
       });
 
-      res.json({ success: true, template: settings.emailTemplates[req.params.name] });
+      // Return verified data from database
+      res.json({ success: true, template: verifiedSettings.emailTemplates[req.params.name] });
     } catch (error) {
       console.error('Error updating email template:', error);
       res.status(500).json({ error: 'Failed to update settings' });
@@ -4808,7 +4792,8 @@ router.put(
       settings.collageWidget.updatedAt = new Date().toISOString();
       settings.collageWidget.updatedBy = req.user.email;
 
-      await dbUnified.write('settings', settings);
+      // Write and verify to ensure persistence
+      const verifiedSettings = await dbUnified.writeAndVerify('settings', settings);
 
       auditLog({
         adminId: req.user.id,
@@ -4819,9 +4804,10 @@ router.put(
         details: { enabled, source, mediaTypes },
       });
 
+      // Return verified data from database, not in-memory object
       res.json({
         success: true,
-        collageWidget: settings.collageWidget,
+        collageWidget: verifiedSettings.collageWidget,
       });
     } catch (error) {
       console.error('Error updating collage widget config:', error);
