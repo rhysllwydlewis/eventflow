@@ -256,6 +256,770 @@ await fetch(`/api/v2/messages/${messageId}/reactions`, {
 });
 ```
 
+## Frontend Integration Examples
+
+### Complete Messaging UI Implementation
+
+#### 1. Initialize WebSocket Connection
+
+```html
+<!-- Load Socket.IO client -->
+<script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+
+<script>
+  // Initialize connection
+  class MessagingClient {
+    constructor() {
+      this.socket = null;
+      this.userId = null;
+      this.currentThreadId = null;
+      this.typingTimeout = null;
+    }
+
+    connect(userId) {
+      this.userId = userId;
+      this.socket = io(window.location.origin, {
+        transports: ['websocket', 'polling'],
+        reconnection: true,
+        reconnectionDelay: 1000,
+        reconnectionAttempts: 5,
+      });
+
+      this.setupEventListeners();
+      this.authenticate();
+    }
+
+    authenticate() {
+      this.socket.emit('auth', { userId: this.userId });
+
+      this.socket.on('auth:success', data => {
+        console.log('✓ Authenticated:', data.userId);
+        this.loadThreads();
+      });
+
+      this.socket.on('auth:error', error => {
+        console.error('✗ Authentication failed:', error);
+        this.showError('Failed to connect to messaging service');
+      });
+    }
+
+    setupEventListeners() {
+      // Connection events
+      this.socket.on('connect', () => {
+        console.log('✓ Connected to server');
+        this.updateConnectionStatus(true);
+      });
+
+      this.socket.on('disconnect', () => {
+        console.log('✗ Disconnected from server');
+        this.updateConnectionStatus(false);
+      });
+
+      this.socket.on('reconnect', attemptNumber => {
+        console.log(`✓ Reconnected after ${attemptNumber} attempts`);
+        this.authenticate(); // Re-authenticate after reconnect
+      });
+
+      // Message events
+      this.socket.on('message:received', data => {
+        this.handleMessageReceived(data);
+      });
+
+      // Typing indicators
+      this.socket.on('typing:update', data => {
+        this.handleTypingUpdate(data);
+      });
+
+      // Presence updates
+      this.socket.on('presence:sync', data => {
+        this.updateUserPresence(data);
+      });
+
+      // Read receipts
+      this.socket.on('message:read:update', data => {
+        this.updateReadStatus(data);
+      });
+
+      // Reactions
+      this.socket.on('reaction:received', data => {
+        this.handleReactionReceived(data);
+      });
+    }
+
+    // ... more methods below
+  }
+</script>
+```
+
+#### 2. Message Display Component
+
+```html
+<div id="messaging-container">
+  <!-- Thread List -->
+  <div class="threads-panel">
+    <div class="threads-header">
+      <h3>Messages</h3>
+      <button onclick="messagingClient.createNewThread()">New Message</button>
+    </div>
+    <div id="threads-list" class="threads-list">
+      <!-- Threads will be dynamically added -->
+    </div>
+  </div>
+
+  <!-- Message Thread -->
+  <div class="messages-panel">
+    <div class="messages-header">
+      <div class="participant-info">
+        <img id="participant-avatar" class="avatar" src="" alt="" />
+        <div>
+          <h4 id="participant-name"></h4>
+          <span id="participant-status" class="status-indicator"></span>
+        </div>
+      </div>
+    </div>
+
+    <div id="messages-container" class="messages-container">
+      <!-- Messages will be dynamically added -->
+    </div>
+
+    <div class="typing-indicator" id="typing-indicator" style="display: none;">
+      <span class="typing-dots"> <span></span><span></span><span></span> </span>
+      <span class="typing-text">User is typing...</span>
+    </div>
+
+    <div class="message-input-container">
+      <textarea id="message-input" placeholder="Type your message..." rows="3"></textarea>
+      <div class="message-actions">
+        <button onclick="messagingClient.attachFile()">📎</button>
+        <button onclick="messagingClient.sendMessage()" class="btn-send">Send</button>
+      </div>
+    </div>
+  </div>
+</div>
+```
+
+#### 3. Message Handling Methods
+
+```javascript
+// Continuation of MessagingClient class
+
+async loadThreads() {
+  try {
+    const response = await fetch('/api/v2/messages/threads', {
+      credentials: 'include',
+    });
+    const data = await response.json();
+
+    if (data.success) {
+      this.renderThreads(data.threads);
+    }
+  } catch (error) {
+    console.error('Failed to load threads:', error);
+  }
+}
+
+renderThreads(threads) {
+  const container = document.getElementById('threads-list');
+  container.innerHTML = '';
+
+  threads.forEach(thread => {
+    const threadEl = document.createElement('div');
+    threadEl.className = `thread-item ${thread.unreadCount ? 'unread' : ''}`;
+    threadEl.onclick = () => this.openThread(thread._id);
+
+    threadEl.innerHTML = `
+      <img src="${thread.participant.avatar}" class="avatar" alt="">
+      <div class="thread-info">
+        <div class="thread-name">${thread.participant.name}</div>
+        <div class="thread-preview">${thread.lastMessage?.content || 'No messages yet'}</div>
+        <div class="thread-time">${this.formatTime(thread.lastMessageAt)}</div>
+      </div>
+      ${thread.unreadCount ? `<span class="unread-badge">${thread.unreadCount}</span>` : ''}
+    `;
+
+    container.appendChild(threadEl);
+  });
+}
+
+async openThread(threadId) {
+  this.currentThreadId = threadId;
+
+  // Join thread room
+  this.socket.emit('thread:join', { threadId });
+
+  // Load messages
+  try {
+    const response = await fetch(`/api/v2/messages/${threadId}`, {
+      credentials: 'include',
+    });
+    const data = await response.json();
+
+    if (data.success) {
+      this.renderMessages(data.messages);
+      this.markThreadAsRead(threadId);
+    }
+  } catch (error) {
+    console.error('Failed to load messages:', error);
+  }
+}
+
+renderMessages(messages) {
+  const container = document.getElementById('messages-container');
+  container.innerHTML = '';
+
+  messages.forEach(message => {
+    const messageEl = this.createMessageElement(message);
+    container.appendChild(messageEl);
+  });
+
+  // Scroll to bottom
+  container.scrollTop = container.scrollHeight;
+}
+
+createMessageElement(message) {
+  const div = document.createElement('div');
+  const isOwn = message.senderId === this.userId;
+
+  div.className = `message ${isOwn ? 'message-own' : 'message-other'}`;
+  div.dataset.messageId = message._id;
+
+  div.innerHTML = `
+    <div class="message-bubble">
+      <div class="message-content">${this.escapeHtml(message.content)}</div>
+      <div class="message-meta">
+        <span class="message-time">${this.formatTime(message.createdAt)}</span>
+        ${isOwn ? `<span class="message-status">${this.getStatusIcon(message.status)}</span>` : ''}
+      </div>
+      ${message.reactions.length ? this.renderReactions(message.reactions) : ''}
+    </div>
+    <div class="message-actions">
+      <button onclick="messagingClient.addReaction('${message._id}', '👍')">👍</button>
+      <button onclick="messagingClient.addReaction('${message._id}', '❤️')">❤️</button>
+      <button onclick="messagingClient.addReaction('${message._id}', '😊')">😊</button>
+    </div>
+  `;
+
+  return div;
+}
+
+async sendMessage() {
+  const input = document.getElementById('message-input');
+  const content = input.value.trim();
+
+  if (!content || !this.currentThreadId) return;
+
+  // Emit to WebSocket for real-time delivery
+  this.socket.emit('message:send', {
+    threadId: this.currentThreadId,
+    content,
+    attachments: [],
+  });
+
+  // Also send via REST API as backup
+  try {
+    await fetch(`/api/v2/messages/${this.currentThreadId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': this.getCsrfToken(),
+      },
+      credentials: 'include',
+      body: JSON.stringify({ content, attachments: [] }),
+    });
+
+    // Clear input
+    input.value = '';
+    this.stopTyping();
+  } catch (error) {
+    console.error('Failed to send message:', error);
+    this.showError('Failed to send message');
+  }
+}
+
+handleMessageReceived(data) {
+  if (data.message.threadId !== this.currentThreadId) {
+    // Message for different thread - show notification
+    this.showNotification(data.message);
+    return;
+  }
+
+  // Add message to current thread
+  const messageEl = this.createMessageElement(data.message);
+  const container = document.getElementById('messages-container');
+  container.appendChild(messageEl);
+  container.scrollTop = container.scrollHeight;
+
+  // Mark as read if thread is open
+  this.markMessageAsRead(data.message._id);
+
+  // Play notification sound
+  this.playNotificationSound();
+}
+
+// Typing indicators
+setupTypingIndicator() {
+  const input = document.getElementById('message-input');
+
+  input.addEventListener('input', () => {
+    this.startTyping();
+  });
+
+  input.addEventListener('blur', () => {
+    this.stopTyping();
+  });
+}
+
+startTyping() {
+  if (!this.currentThreadId) return;
+
+  // Emit typing start
+  this.socket.emit('typing:start', { threadId: this.currentThreadId });
+
+  // Clear existing timeout
+  if (this.typingTimeout) {
+    clearTimeout(this.typingTimeout);
+  }
+
+  // Auto-stop after 3 seconds
+  this.typingTimeout = setTimeout(() => {
+    this.stopTyping();
+  }, 3000);
+}
+
+stopTyping() {
+  if (!this.currentThreadId) return;
+
+  this.socket.emit('typing:stop', { threadId: this.currentThreadId });
+
+  if (this.typingTimeout) {
+    clearTimeout(this.typingTimeout);
+    this.typingTimeout = null;
+  }
+}
+
+handleTypingUpdate(data) {
+  if (data.threadId !== this.currentThreadId) return;
+
+  const indicator = document.getElementById('typing-indicator');
+  if (data.isTyping && data.userId !== this.userId) {
+    indicator.style.display = 'block';
+  } else {
+    indicator.style.display = 'none';
+  }
+}
+
+// Presence tracking
+updateUserPresence(data) {
+  const statusEl = document.getElementById('participant-status');
+  if (statusEl) {
+    statusEl.className = `status-indicator status-${data.status}`;
+    statusEl.title = data.status === 'online' ? 'Online' : 'Offline';
+  }
+}
+
+// Reactions
+async addReaction(messageId, emoji) {
+  try {
+    await fetch(`/api/v2/messages/${messageId}/reactions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': this.getCsrfToken(),
+      },
+      credentials: 'include',
+      body: JSON.stringify({ emoji }),
+    });
+
+    // WebSocket will broadcast the update
+  } catch (error) {
+    console.error('Failed to add reaction:', error);
+  }
+}
+
+handleReactionReceived(data) {
+  const messageEl = document.querySelector(`[data-message-id="${data.messageId}"]`);
+  if (messageEl) {
+    const reactionsEl = messageEl.querySelector('.message-reactions');
+    if (reactionsEl) {
+      reactionsEl.innerHTML = this.renderReactions(data.reactions);
+    }
+  }
+}
+
+renderReactions(reactions) {
+  const grouped = {};
+  reactions.forEach(r => {
+    if (!grouped[r.emoji]) grouped[r.emoji] = 0;
+    grouped[r.emoji]++;
+  });
+
+  return `
+    <div class="message-reactions">
+      ${Object.entries(grouped).map(([emoji, count]) => `
+        <span class="reaction">${emoji} ${count}</span>
+      `).join('')}
+    </div>
+  `;
+}
+
+// Utility methods
+formatTime(date) {
+  const d = new Date(date);
+  const now = new Date();
+  const diff = now - d;
+
+  if (diff < 60000) return 'Just now';
+  if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+  if (diff < 86400000) return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  return d.toLocaleDateString();
+}
+
+getStatusIcon(status) {
+  const icons = {
+    sent: '✓',
+    delivered: '✓✓',
+    read: '✓✓',
+  };
+  return icons[status] || '';
+}
+
+escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+getCsrfToken() {
+  return window.__CSRF_TOKEN__ || '';
+}
+
+showNotification(message) {
+  if ('Notification' in window && Notification.permission === 'granted') {
+    new Notification('New Message', {
+      body: message.content,
+      icon: '/assets/images/notification-icon.png',
+    });
+  }
+}
+
+playNotificationSound() {
+  const audio = new Audio('/assets/sounds/notification.mp3');
+  audio.volume = 0.5;
+  audio.play().catch(() => {}); // Ignore if blocked
+}
+
+showError(message) {
+  // Implement your error notification system
+  console.error(message);
+}
+
+updateConnectionStatus(isConnected) {
+  const statusEl = document.getElementById('connection-status');
+  if (statusEl) {
+    statusEl.textContent = isConnected ? 'Connected' : 'Disconnected';
+    statusEl.className = isConnected ? 'status-online' : 'status-offline';
+  }
+}
+```
+
+#### 4. Styling (CSS)
+
+```css
+/* Messaging Container */
+#messaging-container {
+  display: flex;
+  height: 600px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* Threads Panel */
+.threads-panel {
+  width: 300px;
+  border-right: 1px solid #ddd;
+  display: flex;
+  flex-direction: column;
+}
+
+.threads-header {
+  padding: 15px;
+  border-bottom: 1px solid #ddd;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.threads-list {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.thread-item {
+  padding: 12px 15px;
+  border-bottom: 1px solid #eee;
+  cursor: pointer;
+  display: flex;
+  gap: 10px;
+  position: relative;
+}
+
+.thread-item:hover {
+  background: #f5f5f5;
+}
+
+.thread-item.unread {
+  background: #e3f2fd;
+  font-weight: 600;
+}
+
+.unread-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: #2196f3;
+  color: white;
+  border-radius: 12px;
+  padding: 2px 8px;
+  font-size: 12px;
+}
+
+/* Messages Panel */
+.messages-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.messages-header {
+  padding: 15px;
+  border-bottom: 1px solid #ddd;
+}
+
+.participant-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.status-indicator {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.status-online {
+  background: #4caf50;
+}
+
+.status-offline {
+  background: #9e9e9e;
+}
+
+/* Messages Container */
+.messages-container {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.message {
+  display: flex;
+  margin-bottom: 8px;
+}
+
+.message-own {
+  justify-content: flex-end;
+}
+
+.message-bubble {
+  max-width: 70%;
+  padding: 10px 15px;
+  border-radius: 18px;
+  position: relative;
+}
+
+.message-own .message-bubble {
+  background: #2196f3;
+  color: white;
+}
+
+.message-other .message-bubble {
+  background: #f1f1f1;
+  color: #333;
+}
+
+.message-content {
+  word-wrap: break-word;
+}
+
+.message-meta {
+  margin-top: 5px;
+  font-size: 11px;
+  opacity: 0.7;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.message-actions {
+  opacity: 0;
+  transition: opacity 0.2s;
+  display: flex;
+  gap: 5px;
+  margin-top: 5px;
+}
+
+.message:hover .message-actions {
+  opacity: 1;
+}
+
+.message-reactions {
+  display: flex;
+  gap: 5px;
+  margin-top: 5px;
+}
+
+.reaction {
+  background: rgba(0, 0, 0, 0.05);
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 14px;
+}
+
+/* Typing Indicator */
+.typing-indicator {
+  padding: 10px 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #666;
+  font-size: 14px;
+}
+
+.typing-dots span {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #999;
+  margin: 0 2px;
+  animation: typing 1.4s infinite;
+}
+
+.typing-dots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typing-dots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes typing {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-10px);
+  }
+}
+
+/* Message Input */
+.message-input-container {
+  padding: 15px;
+  border-top: 1px solid #ddd;
+}
+
+#message-input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  resize: none;
+  font-family: inherit;
+}
+
+.message-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+}
+
+.btn-send {
+  background: #2196f3;
+  color: white;
+  border: none;
+  padding: 8px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.btn-send:hover {
+  background: #1976d2;
+}
+```
+
+#### 5. Initialize on Page Load
+
+```javascript
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', () => {
+  // Get current user ID from page
+  const userId = document.body.dataset.userId;
+
+  if (userId) {
+    // Create messaging client
+    window.messagingClient = new MessagingClient();
+    messagingClient.connect(userId);
+    messagingClient.setupTypingIndicator();
+
+    // Request notification permission
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+  }
+});
+```
+
+### Mobile Responsive Considerations
+
+```css
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  #messaging-container {
+    flex-direction: column;
+    height: 100vh;
+  }
+
+  .threads-panel {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid #ddd;
+  }
+
+  .messages-panel {
+    flex: 1;
+  }
+
+  .message-bubble {
+    max-width: 85%;
+  }
+}
+```
+
 ## Configuration
 
 ### Environment Variables
