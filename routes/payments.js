@@ -82,6 +82,20 @@ function getSubscriptionTier(planName) {
 }
 
 /**
+ * GET /api/payments/health
+ * Check payment system health and configuration status
+ */
+router.get('/health', (req, res) => {
+  res.json({
+    ok: true,
+    STRIPE_ENABLED,
+    configured: STRIPE_ENABLED,
+    webhookConfigured: !!STRIPE_WEBHOOK_SECRET,
+    introPricingEnabled: INTRO_PRICING_ENABLED,
+  });
+});
+
+/**
  * Helper: Check if Stripe is enabled
  */
 function ensureStripeEnabled(req, res, next) {

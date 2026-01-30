@@ -6,11 +6,13 @@
 'use strict';
 
 const express = require('express');
+const validator = require('validator');
 const { authRequired } = require('../middleware/auth');
 const { csrfProtection } = require('../middleware/csrf');
 const { auditLog } = require('../middleware/audit');
 const dbUnified = require('../db-unified');
 const { uid } = require('../store');
+const postmark = require('../utils/postmark');
 
 function getMessageText(recipientName, senderName, text, baseUrl) {
   const msgPreview = text.trim().substring(0, 200);
@@ -131,7 +133,7 @@ router.get('/threads/:threadId', authRequired, async (req, res) => {
 /**
  * POST /api/messages/threads
  * Create a new conversation thread
- * Body: { supplierId, packageId?, subject?, eventType?, eventDate?, eventLocation?, guests? }
+ * Body: { supplierId, packageId?, subject?, eventType?, eventDate?, eventLocation?, guests?, message? }
  */
 router.post('/threads', authRequired, csrfProtection, async (req, res) => {
   try {
@@ -142,7 +144,7 @@ router.post('/threads', authRequired, csrfProtection, async (req, res) => {
       return res.status(403).json({ error: 'Only customers can initiate threads' });
     }
 
-    const { supplierId, packageId, subject, eventType, eventDate, eventLocation, guests } =
+    const { supplierId, packageId, subject, eventType, eventDate, eventLocation, guests, message } =
       req.body;
 
     if (!supplierId) {
@@ -168,6 +170,15 @@ router.post('/threads', authRequired, csrfProtection, async (req, res) => {
       suppliers.find(s => s.id === supplierId) || users.find(u => u.id === supplierId);
 
     const now = new Date().toISOString();
+    
+    // Sanitize message text if provided
+    let sanitizedMessage = null;
+    let messagePreview = null;
+    if (message && typeof message === 'string' && message.trim()) {
+      sanitizedMessage = validator.stripLow(validator.escape(message.trim()));
+      messagePreview = sanitizedMessage.substring(0, 100);
+    }
+
     const newThread = {
       id: uid(),
       customerId: userId,
@@ -181,15 +192,57 @@ router.post('/threads', authRequired, csrfProtection, async (req, res) => {
       eventDate: eventDate || null,
       eventLocation: eventLocation || null,
       guests: guests || null,
-      lastMessageAt: null,
-      lastMessagePreview: null,
-      unreadCount: {},
+      lastMessageAt: sanitizedMessage ? now : null,
+      lastMessagePreview: messagePreview,
+      unreadCount: sanitizedMessage ? { [supplierId]: 1 } : {},
       createdAt: now,
       updatedAt: now,
     };
 
     threads.push(newThread);
     await dbUnified.write('threads', threads);
+
+    // Create initial message if provided
+    let initialMessage = null;
+    if (sanitizedMessage) {
+      const messages = await dbUnified.read('messages');
+      initialMessage = {
+        id: uid(),
+        threadId: newThread.id,
+        fromUserId: userId,
+        fromRole: userRole,
+        text: sanitizedMessage,
+        isDraft: false,
+        sentAt: now,
+        readBy: [userId],
+        attachments: [],
+        reactions: [],
+        createdAt: now,
+        updatedAt: now,
+      };
+      messages.push(initialMessage);
+      await dbUnified.write('messages', messages);
+
+      // Send email notification to supplier
+      setImmediate(async () => {
+        try {
+          const supplierEmail = supplier?.email;
+          const supplierName = supplier?.name || 'Supplier';
+          const customerName = customer?.name || 'Customer';
+
+          if (supplierEmail && supplierName) {
+            await postmark.sendMail({
+              to: supplierEmail,
+              subject: `New message from ${customerName} - EventFlow`,
+              text: getMessageText(supplierName, customerName, sanitizedMessage, process.env.BASE_URL),
+              html: getMessageHtml(supplierName, customerName, sanitizedMessage, process.env.BASE_URL),
+            });
+          }
+        } catch (emailError) {
+          console.error('Failed to send email notification:', emailError);
+        }
+      });
+    }
 
     // Track enquiry started event
     const supplierAnalytics = require('../utils/supplierAnalytics');
@@ -211,7 +264,11 @@ router.post('/threads', authRequired, csrfProtection, async (req, res) => {
       details: { supplierId, packageId },
     });
 
-    res.status(201).json({ thread: newThread, isExisting: false });
+    res.status(201).json({ 
+      thread: newThread, 
+      message: initialMessage,
+      isExisting: false 
+    });
   } catch (error) {
     console.error('Error creating thread:', error);
     res.status(500).json({ error: 'Failed to create thread', details: error.message });
@@ -297,6 +354,9 @@ router.post('/threads/:threadId/messages', authRequired, csrfProtection, async (
       return res.status(403).json({ error: 'Access denied' });
     }
 
+    // Sanitize message text to prevent XSS
+    const sanitizedText = text ? validator.stripLow(validator.escape(text.trim())) : '';
+
     const now = new Date().toISOString();
     const messages = await dbUnified.read('messages');
 
@@ -305,7 +365,7 @@ router.post('/threads/:threadId/messages', authRequired, csrfProtection, async (
       threadId,
       fromUserId: userId,
       fromRole: userRole,
-      text: text ? text.trim() : '',
+      text: sanitizedText,
       isDraft: isDraft === true,
       sentAt: isDraft ? null : now,
       readBy: [userId], // Sender has already "read" their own message
@@ -321,7 +381,7 @@ router.post('/threads/:threadId/messages', authRequired, csrfProtection, async (
     // Update thread if not a draft
     if (!isDraft) {
       thread.lastMessageAt = now;
-      thread.lastMessagePreview = text.trim().substring(0, 100);
+      thread.lastMessagePreview = sanitizedText.substring(0, 100);
       thread.updatedAt = now;
 
       // Increment unread count for the recipient
@@ -393,8 +453,8 @@ router.post('/threads/:threadId/messages', authRequired, csrfProtection, async (
             await postmark.sendMail({
               to: recipientEmail,
               subject: `New message from ${senderName} - EventFlow`,
-              text: getMessageText(recipientName, senderName, text, process.env.BASE_URL),
-              html: getMessageHtml(recipientName, senderName, text, process.env.BASE_URL),
+              text: getMessageText(recipientName, senderName, sanitizedText, process.env.BASE_URL),
+              html: getMessageHtml(recipientName, senderName, sanitizedText, process.env.BASE_URL),
             });
           }
         } catch (emailError) {

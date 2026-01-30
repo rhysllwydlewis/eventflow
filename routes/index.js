@@ -26,6 +26,7 @@ const searchV2Routes = require('./search-v2');
 const shortlistRoutes = require('./shortlist');
 const quoteRequestsRoutes = require('./quote-requests');
 const analyticsRoutes = require('./analytics');
+const plansRoutes = require('./plans');
 
 /**
  * Mount all route modules
@@ -87,6 +88,9 @@ function mountRoutes(app, deps) {
 
   // Analytics routes (event tracking)
   app.use('/api/analytics', analyticsRoutes);
+
+  // Plans routes (user wedding/event plans)
+  app.use('/api/me/plans', plansRoutes);
 }
 
 module.exports = {
