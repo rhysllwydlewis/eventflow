@@ -283,6 +283,33 @@
         <li>Secure backup procedures</li>
       </ul>
 
+      <h3 class="h5">5.3 Payment Security</h3>
+      <p><strong>Subscription & Service Payments:</strong></p>
+      <ul>
+        <li><strong>Payment Processor:</strong> Stripe (PCI DSS Level 1 Service Provider)</li>
+        <li><strong>Data Handling:</strong> EventFlow does NOT store or process payment card details directly</li>
+        <li><strong>Tokenization:</strong> Card details tokenized by Stripe; only secure tokens stored in our system</li>
+        <li><strong>Encryption:</strong> All payment data transmitted using TLS 1.3 encryption</li>
+        <li><strong>PCI DSS Compliance:</strong> Stripe maintains full PCI DSS Level 1 compliance</li>
+        <li><strong>3D Secure:</strong> Strong Customer Authentication (SCA) for EU/UK transactions</li>
+      </ul>
+      
+      <p><strong>Marketplace Transactions (Peer-to-Peer):</strong></p>
+      <ul>
+        <li><strong>Payment Processing:</strong> EventFlow does NOT currently process marketplace payments</li>
+        <li><strong>Arrangement:</strong> Payment arrangements made directly between buyers and sellers</li>
+        <li><strong>No Financial Data:</strong> We do not collect or store payment card details for marketplace transactions</li>
+        <li><strong>Transaction Records:</strong> We only store transaction metadata (listing ID, communication logs) not financial details</li>
+        <li><strong>User Responsibility:</strong> Users responsible for choosing secure payment methods</li>
+      </ul>
+      
+      <p><strong>Future Payment Processing:</strong></p>
+      <ul>
+        <li>If EventFlow implements integrated marketplace payment processing, it will be via PCI DSS Level 1 certified processors</li>
+        <li>Users will be notified of any changes to payment processing methods</li>
+        <li>This privacy notice will be updated to reflect any new payment data handling</li>
+      </ul>
+
       <h2 class="h4">6. Data Retention</h2>
       <p>We retain your personal data only for as long as necessary to fulfill the purposes outlined in this Privacy Notice, unless a longer retention period is required or permitted by law.</p>
 
@@ -380,12 +407,100 @@
       <strong>Safeguards:</strong> Encryption at rest and in transit, access controls, regular backups</p>
 
       <h2 class="h4">8. International Data Transfers</h2>
-      <p>We store and process data primarily within the European Union and United Kingdom. If data is transferred outside the EU/UK, we ensure appropriate safeguards are in place:</p>
+      <p>EventFlow stores and processes data primarily within the European Union and United Kingdom. However, some data may be transferred internationally as detailed below:</p>
+      
+      <h3 class="h5">8.1 Data Storage Locations</h3>
+      <p><strong>Primary Data Storage:</strong></p>
       <ul>
-        <li><strong>Standard Contractual Clauses (SCCs):</strong> We use EU-approved Standard Contractual Clauses for data transfers</li>
-        <li><strong>Adequacy Decisions:</strong> We may transfer data to countries deemed adequate by the UK Information Commissioner's Office</li>
-        <li><strong>Additional Safeguards:</strong> Encryption, access controls, and contractual protections</li>
+        <li><strong>EU Region:</strong> Amazon Web Services (AWS) EU-West-1 (Ireland)</li>
+        <li><strong>Data Type:</strong> User accounts, event data, marketplace listings, messages</li>
+        <li><strong>Location:</strong> European Union (Ireland)</li>
+        <li><strong>Compliance:</strong> Full GDPR and UK GDPR compliance</li>
       </ul>
+      
+      <h3 class="h5">8.2 Countries Data May Be Transferred To</h3>
+      <p>Your personal data may be transferred to the following locations:</p>
+      <ul>
+        <li><strong>United Kingdom:</strong> Adequate protection (UK-EU adequacy decision)</li>
+        <li><strong>European Union Member States:</strong> Within EU/EEA, no additional safeguards required</li>
+        <li><strong>United States:</strong> For specific third-party services (see safeguards below)</li>
+      </ul>
+      
+      <h3 class="h5">8.3 Third-Party Service Locations</h3>
+      <table style="width: 100%; border-collapse: collapse; margin-top: 12px;">
+        <tr style="background: #F3F4F6;">
+          <th style="padding: 12px; text-align: left; border: 1px solid #E7EAF0;">Service</th>
+          <th style="padding: 12px; text-align: left; border: 1px solid #E7EAF0;">Location</th>
+          <th style="padding: 12px; text-align: left; border: 1px solid #E7EAF0;">Safeguards</th>
+        </tr>
+        <tr>
+          <td style="padding: 12px; border: 1px solid #E7EAF0;">AWS (Database & Storage)</td>
+          <td style="padding: 12px; border: 1px solid #E7EAF0;">EU (Ireland)</td>
+          <td style="padding: 12px; border: 1px solid #E7EAF0;">Within EU - No transfer</td>
+        </tr>
+        <tr style="background: #F9FAFB;">
+          <td style="padding: 12px; border: 1px solid #E7EAF0;">Stripe (Payments)</td>
+          <td style="padding: 12px; border: 1px solid #E7EAF0;">US/EU</td>
+          <td style="padding: 12px; border: 1px solid #E7EAF0;">SCCs, Data Privacy Framework</td>
+        </tr>
+        <tr>
+          <td style="padding: 12px; border: 1px solid #E7EAF0;">Postmark (Email)</td>
+          <td style="padding: 12px; border: 1px solid #E7EAF0;">US</td>
+          <td style="padding: 12px; border: 1px solid #E7EAF0;">SCCs, DPA</td>
+        </tr>
+        <tr style="background: #F9FAFB;">
+          <td style="padding: 12px; border: 1px solid #E7EAF0;">Pexels (Stock Images)</td>
+          <td style="padding: 12px; border: 1px solid #E7EAF0;">Germany</td>
+          <td style="padding: 12px; border: 1px solid #E7EAF0;">Within EU - No transfer</td>
+        </tr>
+      </table>
+      
+      <h3 class="h5" style="margin-top: 24px;">8.4 Safeguards for International Transfers</h3>
+      <p>When we transfer data outside the UK/EU, we ensure appropriate safeguards:</p>
+      
+      <p><strong>Standard Contractual Clauses (SCCs):</strong></p>
+      <ul>
+        <li>We use EU Commission-approved Standard Contractual Clauses (SCCs)</li>
+        <li>SCCs are legally binding contracts ensuring GDPR-level protection</li>
+        <li>Updated to new SCCs adopted June 2021</li>
+        <li>Include supplementary measures as required by Schrems II decision</li>
+      </ul>
+      
+      <p><strong>UK-EU Adequacy Decision:</strong></p>
+      <ul>
+        <li>UK has adequacy decision from EU (renewed June 2025)</li>
+        <li>Data transfers between UK and EU require no additional safeguards</li>
+        <li>Both jurisdictions maintain equivalent data protection standards</li>
+      </ul>
+      
+      <p><strong>US Data Privacy Framework:</strong></p>
+      <ul>
+        <li>For US-based processors certified under EU-US Data Privacy Framework</li>
+        <li>Framework provides adequate protection for EU-US transfers</li>
+        <li>Applies to companies like Stripe who maintain certification</li>
+        <li>Combined with SCCs for additional protection</li>
+      </ul>
+      
+      <p><strong>Additional Technical & Organizational Safeguards:</strong></p>
+      <ul>
+        <li><strong>Encryption:</strong> Data encrypted in transit (TLS 1.3) and at rest (AES-256)</li>
+        <li><strong>Access Controls:</strong> Strict access controls and authentication requirements</li>
+        <li><strong>Data Minimization:</strong> Only transfer data that is strictly necessary</li>
+        <li><strong>Contractual Protections:</strong> Data Processing Agreements with all processors</li>
+        <li><strong>Regular Audits:</strong> Compliance audits and security assessments</li>
+        <li><strong>Incident Response:</strong> Procedures for breach notification and remediation</li>
+      </ul>
+      
+      <h3 class="h5">8.5 Your Rights Regarding International Transfers</h3>
+      <p>You have the right to:</p>
+      <ul>
+        <li>Request information about international transfers of your data</li>
+        <li>Obtain copies of safeguards (e.g., SCCs) protecting your data</li>
+        <li>Object to transfers if you believe safeguards are inadequate</li>
+        <li>Request that your data is not transferred to specific countries (where technically feasible)</li>
+      </ul>
+      
+      <p>To exercise these rights, contact us at {{ADMIN_EMAIL}}.</p>
 
       <h2 class="h4">9. Cookies and Similar Technologies</h2>
       
@@ -554,7 +669,8 @@
       <a href="/marketplace">Marketplace</a> ·
       <a href="/credits">Credits</a> ·
       <a href="/contact">Contact</a> ·
-      <a href="/legal">Legal Hub</a>
+      <a href="/legal">Legal Hub</a> ·
+      <a href="/legal#illegal-content" style="color: #DC2626; font-weight: 600;">Report Illegal Content</a>
     </div>
   </div>
 </footer>
