@@ -278,4 +278,108 @@ router.delete('/:id', authRequired, csrfProtection, writeLimiter, async (req, re
   }
 });
 
+/**
+ * POST /api/tickets/:id/reply
+ * Add a reply to a support ticket
+ * Body: { message }
+ */
+router.post('/:id/reply', authRequired, csrfProtection, writeLimiter, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const userRole = req.user.role;
+    const { id } = req.params;
+    const { message } = req.body;
+
+    // Validation
+    if (!message || typeof message !== 'string' || message.trim().length === 0) {
+      return res.status(400).json({ error: 'Reply message is required' });
+    }
+
+    if (message.length > 5000) {
+      return res.status(400).json({ error: 'Reply message is too long (max 5000 characters)' });
+    }
+
+    const tickets = await dbUnified.read('tickets');
+    const ticketIndex = tickets.findIndex(t => t.id === id);
+
+    if (ticketIndex === -1) {
+      return res.status(404).json({ error: 'Ticket not found' });
+    }
+
+    const ticket = tickets[ticketIndex];
+
+    // Check access: admins can reply to any ticket, users can only reply to their own
+    if (userRole !== 'admin' && ticket.senderId !== userId) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const now = new Date().toISOString();
+
+    // Create reply object
+    const reply = {
+      id: uid('reply'),
+      userId,
+      userName: req.user.name || req.user.email,
+      userRole,
+      message: message.trim(),
+      createdAt: now,
+    };
+
+    // Add reply to responses array
+    if (!ticket.responses) {
+      ticket.responses = [];
+    }
+    ticket.responses.push(reply);
+
+    // Update ticket metadata
+    ticket.updatedAt = now;
+    if (ticket.status === 'open' && userRole === 'admin') {
+      ticket.status = 'replied';
+    }
+
+    tickets[ticketIndex] = ticket;
+    await dbUnified.write('tickets', tickets);
+
+    // Send email notification to ticket creator (if reply is from admin)
+    if (userRole === 'admin' && ticket.senderEmail) {
+      try {
+        const postmark = require('../utils/postmark');
+        await postmark.sendEmail({
+          to: ticket.senderEmail,
+          subject: `Reply to your support ticket: ${ticket.subject}`,
+          text: `You have received a reply to your support ticket.\n\nTicket: ${ticket.subject}\n\nReply: ${message}\n\nView your ticket at: ${process.env.BASE_URL || 'https://eventflow.com'}/tickets/${ticket.id}`,
+          html: `
+            <h2>Reply to Your Support Ticket</h2>
+            <p><strong>Ticket:</strong> ${ticket.subject}</p>
+            <p><strong>Reply:</strong></p>
+            <p>${message.replace(/\n/g, '<br>')}</p>
+            <p><a href="${process.env.BASE_URL || 'https://eventflow.com'}/tickets/${ticket.id}">View Ticket</a></p>
+          `,
+        });
+      } catch (emailError) {
+        console.error('Failed to send reply notification email:', emailError);
+      }
+    }
+
+    // Audit log
+    auditLog({
+      adminId: userId,
+      adminEmail: req.user.email,
+      action: 'TICKET_REPLIED',
+      targetType: 'ticket',
+      targetId: ticket.id,
+      details: { subject: ticket.subject, replyBy: userRole },
+    });
+
+    res.json({
+      success: true,
+      reply,
+      ticket,
+    });
+  } catch (error) {
+    console.error('Error adding ticket reply:', error);
+    res.status(500).json({ error: 'Failed to add reply', details: error.message });
+  }
+});
+
 module.exports = router;

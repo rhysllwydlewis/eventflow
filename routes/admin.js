@@ -18,6 +18,9 @@ const dbUnified = require('../db-unified');
 
 const router = express.Router();
 
+// Constants
+const BATCH_PHOTO_LIMIT = 50; // Maximum photos that can be processed in a single batch operation
+
 /**
  * Check if collage debug logging is enabled
  * @returns {boolean} True if debug logging should be enabled
@@ -2883,6 +2886,126 @@ router.post(
   }
 );
 
+/**
+ * POST /api/admin/photos/batch-approve
+ * Batch approve multiple photos
+ * Body: { photoIds: string[], action: 'approve' | 'reject', reason?: string }
+ */
+router.post(
+  '/photos/batch-approve',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    try {
+      const { photoIds, action, reason } = req.body;
+
+      // Validate input
+      if (!Array.isArray(photoIds) || photoIds.length === 0) {
+        return res.status(400).json({ error: 'photoIds array is required' });
+      }
+
+      if (action !== 'approve' && action !== 'reject') {
+        return res.status(400).json({ error: 'action must be "approve" or "reject"' });
+      }
+
+      // Limit batch size
+      if (photoIds.length > BATCH_PHOTO_LIMIT) {
+        return res.status(400).json({ 
+          error: `Cannot process more than ${BATCH_PHOTO_LIMIT} photos at once` 
+        });
+      }
+
+      const photos = await dbUnified.read('photos');
+      const suppliers = await dbUnified.read('suppliers');
+      const now = new Date().toISOString();
+      
+      const results = {
+        success: [],
+        failed: [],
+      };
+
+      for (const photoId of photoIds) {
+        try {
+          const photoIndex = photos.findIndex(p => p.id === photoId);
+          
+          if (photoIndex === -1) {
+            results.failed.push({ photoId, error: 'Photo not found' });
+            continue;
+          }
+
+          const photo = photos[photoIndex];
+
+          if (action === 'approve') {
+            photo.status = 'approved';
+            photo.approvedAt = now;
+            photo.approvedBy = req.user.id;
+
+            // Add to supplier's photos array
+            const supplierIndex = suppliers.findIndex(s => s.id === photo.supplierId);
+            if (supplierIndex !== -1) {
+              if (!suppliers[supplierIndex].photos) {
+                suppliers[supplierIndex].photos = [];
+              }
+              if (!suppliers[supplierIndex].photos.includes(photo.url)) {
+                suppliers[supplierIndex].photos.push(photo.url);
+              }
+            }
+
+            auditLog({
+              adminId: req.user.id,
+              adminEmail: req.user.email,
+              action: AUDIT_ACTIONS.CONTENT_APPROVED,
+              targetType: 'photo',
+              targetId: photo.id,
+              details: { supplierId: photo.supplierId, batch: true },
+            });
+          } else {
+            photo.status = 'rejected';
+            photo.rejectedAt = now;
+            photo.rejectedBy = req.user.id;
+            photo.rejectionReason = reason || 'Batch rejection';
+
+            auditLog({
+              adminId: req.user.id,
+              adminEmail: req.user.email,
+              action: AUDIT_ACTIONS.CONTENT_REJECTED,
+              targetType: 'photo',
+              targetId: photo.id,
+              details: { supplierId: photo.supplierId, reason: photo.rejectionReason, batch: true },
+            });
+          }
+
+          photos[photoIndex] = photo;
+          results.success.push(photoId);
+        } catch (error) {
+          results.failed.push({ photoId, error: error.message });
+        }
+      }
+
+      // Save all changes
+      await dbUnified.write('photos', photos);
+      if (action === 'approve') {
+        await dbUnified.write('suppliers', suppliers);
+      }
+
+      res.json({
+        success: true,
+        message: `Batch ${action} completed`,
+        results: {
+          total: photoIds.length,
+          succeeded: results.success.length,
+          failed: results.failed.length,
+          details: results,
+        },
+      });
+    } catch (error) {
+      console.error('Error in batch photo approval:', error);
+      res.status(500).json({ error: 'Failed to batch approve photos' });
+    }
+  }
+);
+
 // ---------- Smart Tagging ----------
 
 /**
@@ -3129,6 +3252,50 @@ router.get('/badge-counts', authRequired, roleRequired('admin'), async (req, res
         packages: 0,
         reviews: 0,
         reports: 0,
+       },
+    });
+  }
+});
+
+/**
+ * GET /api/admin/dashboard/counts
+ * Get badge counts for admin dashboard
+ * Returns counts for pending items that need admin action
+ */
+router.get('/dashboard/counts', authRequired, roleRequired('admin'), async (req, res) => {
+  try {
+    const photos = await dbUnified.read('photos');
+    const suppliers = await dbUnified.read('suppliers');
+    const reviews = await dbUnified.read('reviews');
+    const reports = await dbUnified.read('reports');
+    const tickets = await dbUnified.read('tickets');
+
+    const pendingPhotos = photos.filter(p => p.status === 'pending').length;
+    const pendingSuppliers = suppliers.filter(s => s.approvalStatus === 'pending').length;
+    const pendingReviews = reviews.filter(r => r.status === 'pending').length;
+    const openReports = reports.filter(r => r.status === 'open').length;
+    const openTickets = tickets.filter(t => t.status === 'open').length;
+
+    res.json({
+      success: true,
+      counts: {
+        pendingPhotos,
+        pendingSuppliers,
+        pendingReviews,
+        openReports,
+        openTickets,
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching dashboard counts:', error);
+    res.status(500).json({
+      error: 'Failed to fetch dashboard counts',
+      counts: {
+        pendingPhotos: 0,
+        pendingSuppliers: 0,
+        pendingReviews: 0,
+        openReports: 0,
+        openTickets: 0,
       },
     });
   }

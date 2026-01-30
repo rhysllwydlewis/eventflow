@@ -957,4 +957,161 @@ function escapeHtml(unsafe) {
 <!-- JadeAssist Chat Widget -->
 <script src="https://cdn.jsdelivr.net/gh/rhysllwydlewis/JadeAssist@abbf580487e0bcf7739a0857d4d940213fe2e176/packages/widget/dist/jade-widget.js" defer></script>
 <script src="/assets/js/jadeassist-init.v2.js" defer></script>
+
+<!-- Supplier Enquiry Notifications -->
+<script>
+(function() {
+  'use strict';
+  
+  let ws = null;
+  let reconnectAttempts = 0;
+  const MAX_RECONNECT_ATTEMPTS = 5;
+  const RECONNECT_DELAY = 3000;
+  let originalTitle = document.title;
+  let enquiryCount = 0;
+  let notificationSound = null;
+  
+  function initWebSocket() {
+    if (typeof WebSocket === 'undefined') {
+      console.warn('WebSocket not supported');
+      return;
+    }
+    
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const host = window.location.host;
+    const wsUrl = `${protocol}//${host}`;
+    
+    try {
+      ws = new WebSocket(wsUrl);
+      
+      ws.onopen = function() {
+        console.log('WebSocket connected for enquiries');
+        reconnectAttempts = 0;
+        
+        const user = window.AuthState?.getUser?.();
+        if (user?.uid) {
+          ws.send(JSON.stringify({
+            type: 'subscribe',
+            channel: 'enquiries',
+            userId: user.uid
+          }));
+        }
+      };
+      
+      ws.onmessage = function(event) {
+        try {
+          const data = JSON.parse(event.data);
+          
+          if (data.type === 'new_enquiry') {
+            handleNewEnquiry(data);
+          }
+        } catch (e) {
+          console.error('Error parsing WebSocket message:', e);
+        }
+      };
+      
+      ws.onerror = function(error) {
+        console.error('WebSocket error:', error);
+      };
+      
+      ws.onclose = function() {
+        console.log('WebSocket closed');
+        attemptReconnect();
+      };
+    } catch (error) {
+      console.error('Failed to create WebSocket:', error);
+    }
+  }
+  
+  function attemptReconnect() {
+    if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+      reconnectAttempts++;
+      console.log(`Reconnecting... attempt ${reconnectAttempts}`);
+      setTimeout(initWebSocket, RECONNECT_DELAY * reconnectAttempts);
+    }
+  }
+  
+  function handleNewEnquiry(data) {
+    enquiryCount++;
+    
+    updateBadge();
+    
+    if ('Notification' in window && Notification.permission === 'granted') {
+      showDesktopNotification(data);
+    } else if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission().then(function(permission) {
+        if (permission === 'granted') {
+          showDesktopNotification(data);
+        }
+      });
+    }
+    
+    playNotificationSound();
+    updateTabTitle();
+  }
+  
+  function updateBadge() {
+    const badge = document.getElementById('enquiry-badge') 
+      || document.querySelector('[data-enquiry-badge]')
+      || document.getElementById('ef-notification-badge');
+      
+    if (badge) {
+      badge.textContent = enquiryCount > 99 ? '99+' : enquiryCount.toString();
+      badge.style.display = 'inline-block';
+      
+      badge.classList.add('badge-pulse');
+      setTimeout(() => badge.classList.remove('badge-pulse'), 300);
+    }
+  }
+  
+  function showDesktopNotification(data) {
+    const notification = new Notification('New Enquiry', {
+      body: data.message || 'You have a new customer enquiry',
+      icon: '/favicon.svg',
+      badge: '/favicon.svg',
+      tag: 'enquiry-' + Date.now()
+    });
+    
+    notification.onclick = function() {
+      window.focus();
+      notification.close();
+    };
+    
+    setTimeout(() => notification.close(), 10000);
+  }
+  
+  function playNotificationSound() {
+    if (!notificationSound) {
+      // Simple notification beep (base64-encoded 440Hz tone, ~0.1s duration)
+      // TODO: Replace with complete audio file or use notification sound library
+      // for more reliable cross-browser sound playback
+      notificationSound = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQoGAAA=');
+    }
+    
+    notificationSound.play().catch(e => console.log('Sound play failed:', e));
+  }
+  
+  function updateTabTitle() {
+    document.title = `(${enquiryCount}) ${originalTitle}`;
+  }
+  
+  window.addEventListener('focus', function() {
+    enquiryCount = 0;
+    document.title = originalTitle;
+    updateBadge();
+  });
+  
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initWebSocket);
+  } else {
+    initWebSocket();
+  }
+  
+  window.addEventListener('beforeunload', function() {
+    if (ws) {
+      ws.close();
+    }
+  });
+})();
+</script>
 </body></html>

@@ -17,6 +17,8 @@
     { key: 'transport', name: 'Transport', icon: '🚗' },
   ];
 
+  const WIZARD_DATA_EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours
+
   let currentStep = 0;
   let wizardState = null;
   const availablePackages = {}; // { categoryKey: [packages] }
@@ -30,6 +32,9 @@
       console.error('WizardState not loaded');
       return;
     }
+
+    // Check if we need to restore from localStorage
+    restoreWizardState();
 
     wizardState = window.WizardState.getState();
     currentStep = wizardState.currentStep || 0;
@@ -590,68 +595,150 @@
     createBtn.textContent = 'Creating...';
 
     try {
-      // Check if user is logged in
-      const authResponse = await fetch('/api/auth/me', { credentials: 'include' });
-      const isLoggedIn = authResponse.ok;
+      // Check authentication using AuthState if available
+      let user = null;
+      let isLoggedIn = false;
+      
+      if (window.AuthState && typeof window.AuthState.getUser === 'function') {
+        user = window.AuthState.getUser();
+        isLoggedIn = !!user;
+      }
+      
+      if (!isLoggedIn) {
+        const authResponse = await fetch('/api/auth/me', { credentials: 'include' });
+        isLoggedIn = authResponse.ok;
+        if (isLoggedIn) {
+          const authData = await authResponse.json();
+          user = authData.user || authData;
+        }
+      }
 
       const planData = window.WizardState.exportForPlanCreation();
 
       if (!isLoggedIn) {
-        // Create guest plan
-        const csrfToken = await getCsrfToken();
-        const response = await fetch('/api/plans/guest', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-Token': csrfToken,
-          },
-          credentials: 'include',
-          body: JSON.stringify(planData),
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to create guest plan');
+        // Save to localStorage for restoration after auth
+        try {
+          localStorage.setItem('eventflow_wizard_pending', JSON.stringify(planData));
+          localStorage.setItem('eventflow_wizard_timestamp', Date.now().toString());
+        } catch (e) {
+          console.error('Failed to save to localStorage:', e);
         }
-
-        const result = await response.json();
-
-        // Store guest token for claiming after login
-        localStorage.setItem('eventflow_guest_plan_token', result.token);
-
-        // Clear wizard state
-        window.WizardState.clearState();
-
-        // Show success message and redirect to auth
-        alert('Your plan has been saved! Please log in or register to continue.');
-        location.href = '/auth.html?redirect=/dashboard-customer.html';
+        
+        // Redirect to auth with return URL
+        const returnUrl = encodeURIComponent('/start-wizard.html?restore=true');
+        location.href = `/auth.html?returnTo=${returnUrl}`;
         return;
       }
 
-      // Create authenticated plan
-      const csrfToken = await getCsrfToken();
-      const response = await fetch('/api/me/plans', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-Token': csrfToken,
-        },
-        credentials: 'include',
-        body: JSON.stringify(planData),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to create plan');
-      }
-
-      // Success!
+      // User is authenticated - save to backend
+      await savePlanToBackend(planData);
+      
+      // Clear wizard state and localStorage
       window.WizardState.clearState();
-      alert('Your plan has been created!');
+      try {
+        localStorage.removeItem('eventflow_wizard_pending');
+        localStorage.removeItem('eventflow_wizard_timestamp');
+      } catch (e) {
+        console.error('Failed to clear localStorage:', e);
+      }
+      
+      // Success!
+      if (window.showNotification) {
+        window.showNotification('Your event plan has been created!', 'success');
+      } else {
+        alert('Your plan has been created!');
+      }
+      
       location.href = '/dashboard-customer.html';
+      
     } catch (err) {
       console.error('Error creating plan:', err);
-      alert('There was an error creating your plan. Please try again.');
+      
+      if (window.showNotification) {
+        window.showNotification(err.message || 'Failed to create plan. Please try again.', 'error');
+      } else {
+        alert('There was an error creating your plan. Please try again.');
+      }
+      
       createBtn.disabled = false;
       createBtn.textContent = 'Create My Plan';
+    }
+  }
+
+  /**
+   * Save plan to backend
+   * @param {Object} planData - Plan data to save
+   */
+  async function savePlanToBackend(planData) {
+    const csrfToken = await getCsrfToken();
+    
+    const response = await fetch('/api/me/plans', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': csrfToken,
+      },
+      credentials: 'include',
+      body: JSON.stringify(planData),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || errorData.message || 'Failed to save plan');
+    }
+
+    return await response.json();
+  }
+
+  /**
+   * Restore wizard state from localStorage after authentication
+   */
+  function restoreWizardState() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const shouldRestore = urlParams.get('restore') === 'true';
+    
+    if (!shouldRestore) {
+      return;
+    }
+    
+    try {
+      const pendingData = localStorage.getItem('eventflow_wizard_pending');
+      const timestamp = localStorage.getItem('eventflow_wizard_timestamp');
+      
+      if (!pendingData || !timestamp) {
+        return;
+      }
+      
+      const age = Date.now() - parseInt(timestamp, 10);
+      
+      if (age > WIZARD_DATA_EXPIRY_MS) {
+        localStorage.removeItem('eventflow_wizard_pending');
+        localStorage.removeItem('eventflow_wizard_timestamp');
+        return;
+      }
+      
+      const planData = JSON.parse(pendingData);
+      
+      if (window.AuthState && window.AuthState.getUser && window.AuthState.getUser()) {
+        savePlanToBackend(planData).then(() => {
+          localStorage.removeItem('eventflow_wizard_pending');
+          localStorage.removeItem('eventflow_wizard_timestamp');
+          
+          if (window.showNotification) {
+            window.showNotification('Your event plan has been saved!', 'success');
+          }
+          
+          setTimeout(() => {
+            location.href = '/dashboard-customer.html';
+          }, 1500);
+        }).catch(err => {
+          console.error('Failed to save restored plan:', err);
+        });
+      }
+    } catch (e) {
+      console.error('Failed to restore wizard state:', e);
+      localStorage.removeItem('eventflow_wizard_pending');
+      localStorage.removeItem('eventflow_wizard_timestamp');
     }
   }
 

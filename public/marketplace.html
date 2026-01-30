@@ -507,6 +507,100 @@
     <script src="/assets/js/components/footer-nav.js" defer></script>
     <script src="/assets/js/cookie-consent.js" defer></script>
     <script src="/assets/js/marketplace.js" defer></script>
+    
+    <!-- Marketplace Category Filter Handler -->
+    <script>
+    (function() {
+      'use strict';
+      
+      function initCategoryFilter() {
+        const categorySelect = document.getElementById('marketplace-filter-category');
+        const priceSelect = document.getElementById('marketplace-filter-price');
+        const conditionSelect = document.getElementById('marketplace-filter-condition');
+        
+        if (!categorySelect) {
+          return;
+        }
+        
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('category')) {
+          categorySelect.value = urlParams.get('category');
+        }
+        
+        function applyFilters() {
+          const category = categorySelect.value;
+          const price = priceSelect?.value || '';
+          const condition = conditionSelect?.value || '';
+          
+          const params = new URLSearchParams();
+          if (category) params.set('category', category);
+          if (price) params.set('price', price);
+          if (condition) params.set('condition', condition);
+          
+          const newUrl = params.toString() 
+            ? `${window.location.pathname}?${params.toString()}`
+            : window.location.pathname;
+          
+          window.history.pushState({ filters: { category, price, condition } }, '', newUrl);
+          
+          if (typeof window.fetchMarketplaceListings === 'function') {
+            window.fetchMarketplaceListings({ category, price, condition });
+          } else if (typeof window.loadMarketplaceItems === 'function') {
+            window.loadMarketplaceItems({ category, price, condition });
+          } else {
+            window.location.href = newUrl;
+          }
+          
+          updateResultsCount();
+        }
+        
+        function updateResultsCount() {
+          const resultsContainer = document.getElementById('marketplace-results') 
+            || document.querySelector('.marketplace-grid')
+            || document.querySelector('[data-marketplace-results]');
+            
+          if (resultsContainer) {
+            const items = resultsContainer.querySelectorAll('.marketplace-item, .card, [data-listing-id]');
+            const count = items.length;
+            
+            const countElement = document.getElementById('results-count') 
+              || document.querySelector('.results-count')
+              || document.querySelector('[data-results-count]');
+              
+            if (countElement) {
+              countElement.textContent = count === 1 ? '1 item' : `${count} items`;
+            }
+          }
+        }
+        
+        categorySelect.addEventListener('change', applyFilters);
+        
+        if (priceSelect) {
+          priceSelect.addEventListener('change', applyFilters);
+        }
+        
+        if (conditionSelect) {
+          conditionSelect.addEventListener('change', applyFilters);
+        }
+        
+        window.addEventListener('popstate', function(event) {
+          if (event.state && event.state.filters) {
+            categorySelect.value = event.state.filters.category || '';
+            if (priceSelect) priceSelect.value = event.state.filters.price || '';
+            if (conditionSelect) conditionSelect.value = event.state.filters.condition || '';
+            applyFilters();
+          }
+        });
+      }
+      
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initCategoryFilter);
+      } else {
+        initCategoryFilter();
+      }
+    })();
+    </script>
+    
     <script defer>
       // Initialize core utilities
       document.addEventListener('DOMContentLoaded', function () {

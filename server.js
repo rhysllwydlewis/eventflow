@@ -2155,33 +2155,54 @@ app.post(
   }
 );
 
+/**
+ * GET /api/suppliers/:id
+ * Get a specific supplier by ID (public and admin)
+ * Public users only see approved suppliers, admins see all
+ */
 app.get('/api/suppliers/:id', async (req, res) => {
-  const sRaw = (await dbUnified.read('suppliers')).find(x => x.id === req.params.id && x.approved);
-  if (!sRaw) {
-    return res.status(404).json({ error: 'Not found' });
+  try {
+    const suppliers = await dbUnified.read('suppliers');
+    const sRaw = suppliers.find(x => x.id === req.params.id);
+    
+    if (!sRaw) {
+      return res.status(404).json({ error: 'Supplier not found' });
+    }
+
+    // Check approval status - only show approved suppliers to non-admins
+    const user = getUserFromCookie(req);
+    const isAdmin = user && user.role === 'admin';
+    const isOwner = user && sRaw.ownerUserId === user.id;
+
+    if (!sRaw.approved && !isAdmin && !isOwner) {
+      return res.status(404).json({ error: 'Supplier not found' });
+    }
+
+    const pkgs = await dbUnified.read('packages');
+    const featuredSupplier = pkgs.some(p => p.supplierId === sRaw.id && p.featured);
+    const isProActive = supplierIsProActive(sRaw);
+    const s = {
+      ...sRaw,
+      featuredSupplier,
+      isPro: isProActive,
+      proExpiresAt: sRaw.proExpiresAt || null,
+    };
+
+    // Track profile view (unless preview mode)
+    const isPreview = req.query.preview === 'true';
+    const supplierAnalytics = require('./utils/supplierAnalytics');
+    const userId = req.user ? req.user.id : null;
+    const sessionId = req.session ? req.session.id : null;
+
+    supplierAnalytics
+      .trackProfileView(req.params.id, userId, sessionId, isPreview)
+      .catch(err => console.error('Failed to track profile view:', err));
+
+    res.json(s);
+  } catch (error) {
+    console.error('Error fetching supplier:', error);
+    res.status(500).json({ error: 'Failed to fetch supplier' });
   }
-
-  const pkgs = await dbUnified.read('packages');
-  const featuredSupplier = pkgs.some(p => p.supplierId === sRaw.id && p.featured);
-  const isProActive = supplierIsProActive(sRaw);
-  const s = {
-    ...sRaw,
-    featuredSupplier,
-    isPro: isProActive,
-    proExpiresAt: sRaw.proExpiresAt || null,
-  };
-
-  // Track profile view (unless preview mode)
-  const isPreview = req.query.preview === 'true';
-  const supplierAnalytics = require('./utils/supplierAnalytics');
-  const userId = req.user ? req.user.id : null;
-  const sessionId = req.session ? req.session.id : null;
-
-  supplierAnalytics
-    .trackProfileView(req.params.id, userId, sessionId, isPreview)
-    .catch(err => console.error('Failed to track profile view:', err));
-
-  res.json(s);
 });
 
 app.get('/api/suppliers/:id/packages', async (req, res) => {

@@ -9,6 +9,7 @@ const logger = require('../utils/logger');
 
 let STRIPE_ENABLED = false;
 let stripeClient = null;
+let initializationError = null;
 
 /**
  * Initialize Stripe client
@@ -28,7 +29,12 @@ function initializeStripe() {
       logger.info('ℹ️  Stripe: Not configured (optional)');
     }
   } catch (err) {
-    logger.warn('Stripe is not configured:', err.message);
+    initializationError = err.message;
+    logger.warn('Stripe initialization failed:', err.message);
+    logger.error('Stripe configuration error details:', {
+      error: err.message,
+      stack: err.stack,
+    });
   }
 
   return STRIPE_ENABLED;
@@ -50,8 +56,17 @@ function isStripeEnabled() {
   return STRIPE_ENABLED;
 }
 
+/**
+ * Get initialization error if any
+ * @returns {string|null} Error message or null
+ */
+function getInitializationError() {
+  return initializationError;
+}
+
 module.exports = {
   initializeStripe,
   getStripeClient,
   isStripeEnabled,
+  getInitializationError,
 };

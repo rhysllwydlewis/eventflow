@@ -615,7 +615,7 @@ router.post('/reset-password', authLimiter, async (req, res) => {
     return res.status(400).json({ error: 'Missing token or password' });
   }
 
-  // Validate password strength
+  // Validate password strength (min 8 characters)
   if (!passwordOk(password)) {
     return res
       .status(400)
@@ -631,17 +631,24 @@ router.post('/reset-password', authLimiter, async (req, res) => {
 
   const user = users[idx];
 
-  // Check if token has expired
+  // Check if token has expired - CRITICAL CHECK
   if (user.resetTokenExpiresAt) {
     const expiresAt = new Date(user.resetTokenExpiresAt);
     if (expiresAt < new Date()) {
-      return res.status(400).json({ error: 'Reset token has expired. Please request a new one.' });
+      return res.status(400).json({ 
+        error: 'Reset token has expired. Please request a new one.',
+        canRequestNew: true 
+      });
     }
+  } else {
+    // If no expiry set, reject for security
+    return res.status(400).json({ error: 'Invalid reset token format' });
   }
 
-  // Update password and clear reset token
+  // Update password, clear reset token, and set passwordChangedAt
   users[idx].passwordHash = bcrypt.hashSync(password, 10);
   users[idx].passwordResetRequired = false;
+  users[idx].passwordChangedAt = new Date().toISOString();
   delete users[idx].resetToken;
   delete users[idx].resetTokenExpiresAt;
   write('users', users);

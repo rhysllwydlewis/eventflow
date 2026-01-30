@@ -117,7 +117,7 @@ function getUserFromCookie(req) {
  * @param {Object} res - Express response object
  * @param {Function} next - Express next function
  */
-function authRequired(req, res, next) {
+async function authRequired(req, res, next) {
   const u = getUserFromCookie(req);
   if (!u) {
     // Log 401 for debugging (use logger if available, otherwise console)
@@ -151,10 +151,42 @@ function authRequired(req, res, next) {
       message: 'Please log in to access this resource.',
     });
   }
-  req.user = u;
-  // Also expose userId for routes that rely on it
-  req.userId = u.id;
-  next();
+
+  // Verify user still exists in database - prevents stale JWT issues
+  // NOTE: This reads the entire users collection on every auth request.
+  // For production at scale, consider implementing:
+  // 1. A user cache with short TTL (e.g., Redis with 5-minute expiration)
+  // 2. Database query optimization with indexed lookup
+  // 3. Rate limiting on auth-heavy endpoints
+  try {
+    const dbUnified = require('../db-unified');
+    const users = await dbUnified.read('users');
+    const userExists = users.find(dbUser => dbUser.id === u.id);
+    
+    if (!userExists) {
+      return res.status(401).json({
+        error: 'Unauthenticated',
+        message: 'User account not found. Please log in again.',
+      });
+    }
+
+    // Attach only minimal user object to prevent stale data
+    req.user = {
+      id: u.id,
+      email: u.email,
+      role: u.role,
+    };
+    // Also expose userId for routes that rely on it
+    req.userId = u.id;
+    next();
+  } catch (error) {
+    console.error('Error verifying user in authRequired:', error);
+    // If database is unavailable, return service unavailable instead of bypassing security
+    return res.status(503).json({
+      error: 'Service temporarily unavailable',
+      message: 'Unable to verify authentication. Please try again.',
+    });
+  }
 }
 
 /**

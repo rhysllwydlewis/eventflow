@@ -26,6 +26,10 @@ const searchV2Routes = require('./search-v2');
 const shortlistRoutes = require('./shortlist');
 const quoteRequestsRoutes = require('./quote-requests');
 const analyticsRoutes = require('./analytics');
+const plansRoutes = require('./plans');
+const guestsRoutes = require('./guests');
+const savedRoutes = require('./saved');
+const supplierRoutes = require('./supplier');
 
 /**
  * Mount all route modules
@@ -87,6 +91,18 @@ function mountRoutes(app, deps) {
 
   // Analytics routes (event tracking)
   app.use('/api/analytics', analyticsRoutes);
+
+  // Plans routes (user wedding/event plans)
+  app.use('/api/me/plans', plansRoutes);
+
+  // Guests routes (guest list management for plans)
+  app.use('/api/me/plans', guestsRoutes);
+
+  // Saved items routes (user favorites)
+  app.use('/api/me/saved', savedRoutes);
+
+  // Supplier routes (trial activation, analytics)
+  app.use('/api/supplier', supplierRoutes);
 }
 
 module.exports = {
