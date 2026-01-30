@@ -587,7 +587,9 @@ async function writeAndVerify(collectionName, data) {
  */
 async function checkMongoConnection() {
   try {
-    if (!mongodb) return false;
+    if (!mongodb) {
+      return false;
+    }
     await mongodb.admin().ping();
     return true;
   } catch (error) {
@@ -601,7 +603,7 @@ async function checkMongoConnection() {
  */
 async function getStatus() {
   const mongoConfigured = process.env.MONGODB_URI ? 'configured' : 'not configured';
-  
+
   return {
     backend: dbType || 'not initialized',
     connected: dbType === 'mongodb' ? await checkMongoConnection() : true,

@@ -47,7 +47,9 @@ class LoadingSpinner {
    * @param {HTMLElement} container - Container element
    */
   hide(container) {
-    if (!container) return;
+    if (!container) {
+      return;
+    }
 
     const spinner = container.querySelector('[data-loading-spinner]');
     if (spinner) {
@@ -75,7 +77,9 @@ class LoadingSpinner {
    * Escape HTML to prevent XSS
    */
   escapeHtml(unsafe) {
-    if (typeof unsafe !== 'string') return '';
+    if (typeof unsafe !== 'string') {
+      return '';
+    }
     return unsafe
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
