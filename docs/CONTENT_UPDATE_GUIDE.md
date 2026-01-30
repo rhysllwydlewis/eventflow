@@ -85,8 +85,13 @@ The admin panel will provide a user-friendly interface for non-technical staff t
 
 - `{{COMPANY_NAME}}` - EventFlow Limited
 - `{{COMPANY_NAME_LEGAL}}` - EventFlow Limited (legal name)
+- `{{COMPANY_LEGAL_NAME}}` - EventFlow Limited (legal name)
 - `{{TRADING_NAME}}` - EventFlow
 - `{{COMPANY_REGISTRATION}}` - Company registration number
+- `{{COMPANY_NUMBER}}` - [Pending Registration - To be added upon Companies House registration]
+- `{{REGISTERED_OFFICE}}` - [To be added upon company registration]
+- `{{VAT_NUMBER}}` - [Not currently VAT registered]
+- `{{PLACE_OF_REGISTRATION}}` - England and Wales
 
 #### Contact Information
 

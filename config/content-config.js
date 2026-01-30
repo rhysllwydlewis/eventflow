@@ -53,7 +53,12 @@ const contentConfig = {
   company: {
     name: 'EventFlow Limited',
     nameLegal: 'EventFlow Limited',
+    legalName: 'EventFlow Limited',
     registrationNumber: '12345678', // TODO: Update with actual company registration number
+    companyNumber: '[Pending Registration - To be added upon Companies House registration]',
+    registeredOffice: '[To be added upon company registration]',
+    vatNumber: '[Not currently VAT registered]',
+    placeOfRegistration: 'England and Wales',
     tradingName: 'EventFlow',
   },
 
@@ -113,7 +118,12 @@ function getPlaceholders() {
     // Company placeholders
     COMPANY_NAME: contentConfig.company.name,
     COMPANY_NAME_LEGAL: contentConfig.company.nameLegal,
+    COMPANY_LEGAL_NAME: contentConfig.company.legalName,
     COMPANY_REGISTRATION: contentConfig.company.registrationNumber,
+    COMPANY_NUMBER: contentConfig.company.companyNumber,
+    REGISTERED_OFFICE: contentConfig.company.registeredOffice,
+    VAT_NUMBER: contentConfig.company.vatNumber,
+    PLACE_OF_REGISTRATION: contentConfig.company.placeOfRegistration,
     TRADING_NAME: contentConfig.company.tradingName,
 
     // Contact placeholders
