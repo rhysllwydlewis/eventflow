@@ -581,6 +581,34 @@ async function writeAndVerify(collectionName, data) {
   }
 }
 
+/**
+ * Check if MongoDB connection is healthy
+ * @returns {Promise<boolean>} True if connected and responsive
+ */
+async function checkMongoConnection() {
+  try {
+    if (!mongodb) return false;
+    await mongodb.admin().ping();
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
+/**
+ * Get current database backend status
+ * @returns {Promise<Object>} Status object with backend type and connection state
+ */
+async function getStatus() {
+  const mongoConfigured = process.env.MONGODB_URI ? 'configured' : 'not configured';
+  
+  return {
+    backend: dbType || 'not initialized',
+    connected: dbType === 'mongodb' ? await checkMongoConnection() : true,
+    database: mongoConfigured,
+  };
+}
+
 module.exports = {
   initializeDatabase,
   read,
@@ -601,4 +629,5 @@ module.exports = {
   count,
   aggregate,
   findWithOptions,
+  getStatus,
 };

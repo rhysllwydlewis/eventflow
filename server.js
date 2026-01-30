@@ -6769,6 +6769,36 @@ async function startServer() {
         await dbUnified.initializeDatabase();
         console.log('   ✅ Database connection successful');
 
+        // Verify database connection in production
+        if (process.env.NODE_ENV === 'production') {
+          console.log('');
+          console.log('🔒 Verifying production database configuration...');
+          const dbStatus = await dbUnified.getStatus();
+
+          if (dbStatus.backend !== 'mongodb') {
+            logger.error('');
+            logger.error('❌ CRITICAL: Production is using local file storage instead of MongoDB!');
+            logger.error('❌ Data will NOT persist between restarts!');
+            logger.error('❌ Check MONGODB_URI environment variable.');
+            logger.error('Current status:', dbStatus);
+            logger.error('');
+
+            // Fail fast - don't start server with wrong database
+            process.exit(1);
+          }
+
+          if (!dbStatus.connected) {
+            logger.error('');
+            logger.error('❌ CRITICAL: MongoDB configured but not connected!');
+            logger.error('');
+            process.exit(1);
+          }
+
+          logger.info('✅ Production database verification passed:', dbStatus);
+          console.log('   ✅ MongoDB configured and connected');
+          console.log('   ✅ Production database verification passed');
+        }
+
         // Initialize WebSocket v2 with MongoDB
         try {
           const db = await mongoDb.getDb();
