@@ -11,6 +11,8 @@ class GlobalSearch {
     this.maxHistory = 10;
     this.modal = null;
     this.input = null;
+    this.autocompleteTimeout = null;
+    this.autocompleteCache = new Map();
 
     this.loadHistory();
     this.init();
@@ -19,6 +21,324 @@ class GlobalSearch {
   init() {
     this.createModal();
     this.setupKeyboardShortcut();
+    this.initAutocomplete();
+  }
+
+  /**
+   * Initialize autocomplete for search inputs
+   */
+  initAutocomplete() {
+    const searchInputs = document.querySelectorAll('input[type="search"], .search-input, [data-search-autocomplete]');
+    
+    searchInputs.forEach(input => {
+      this.attachAutocomplete(input);
+    });
+  }
+
+  /**
+   * Attach autocomplete to a search input
+   */
+  attachAutocomplete(input) {
+    if (input.dataset.autocompleteAttached) {
+      return;
+    }
+    
+    input.dataset.autocompleteAttached = 'true';
+    
+    const dropdown = document.createElement('div');
+    dropdown.className = 'search-autocomplete-dropdown';
+    dropdown.style.display = 'none';
+    
+    input.parentElement.style.position = 'relative';
+    input.parentElement.appendChild(dropdown);
+    
+    const debouncedSearch = this.debounce((query) => {
+      this.fetchSuggestions(query, input, dropdown);
+    }, 300);
+    
+    input.addEventListener('input', (e) => {
+      const query = e.target.value.trim();
+      
+      if (query.length >= 2) {
+        debouncedSearch(query);
+      } else {
+        dropdown.style.display = 'none';
+      }
+    });
+    
+    input.addEventListener('keydown', (e) => {
+      this.handleAutocompleteKeyboard(e, dropdown);
+    });
+    
+    input.addEventListener('blur', () => {
+      setTimeout(() => {
+        dropdown.style.display = 'none';
+      }, 200);
+    });
+    
+    document.addEventListener('click', (e) => {
+      if (!input.contains(e.target) && !dropdown.contains(e.target)) {
+        dropdown.style.display = 'none';
+      }
+    });
+    
+    if (!document.getElementById('autocomplete-styles')) {
+      this.addAutocompleteStyles();
+    }
+  }
+
+  /**
+   * Fetch suggestions from API
+   */
+  async fetchSuggestions(query, input, dropdown) {
+    if (this.autocompleteCache.has(query)) {
+      this.renderSuggestions(this.autocompleteCache.get(query), input, dropdown);
+      return;
+    }
+    
+    try {
+      const endpoints = [
+        `/api/search/suggestions?q=${encodeURIComponent(query)}`,
+        `/api/v2/search/autocomplete?q=${encodeURIComponent(query)}`
+      ];
+      
+      let suggestions = null;
+      
+      for (const endpoint of endpoints) {
+        try {
+          const response = await fetch(endpoint, {
+            credentials: 'include',
+            headers: {
+              'Accept': 'application/json'
+            }
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            suggestions = data.suggestions || data.items || data.results || [];
+            break;
+          }
+        } catch (e) {
+          continue;
+        }
+      }
+      
+      if (!suggestions) {
+        suggestions = this.generateMockSuggestions(query);
+      }
+      
+      this.autocompleteCache.set(query, suggestions);
+      
+      if (this.autocompleteCache.size > 50) {
+        const firstKey = this.autocompleteCache.keys().next().value;
+        this.autocompleteCache.delete(firstKey);
+      }
+      
+      this.renderSuggestions(suggestions, input, dropdown);
+      
+    } catch (error) {
+      console.error('Autocomplete error:', error);
+      dropdown.style.display = 'none';
+    }
+  }
+
+  /**
+   * Generate mock suggestions for fallback
+   */
+  generateMockSuggestions(query) {
+    const lowerQuery = query.toLowerCase();
+    const mockData = [
+      { text: 'Wedding venues', type: 'category', url: '/suppliers.html?category=venues' },
+      { text: 'Photography services', type: 'category', url: '/suppliers.html?category=photography' },
+      { text: 'Catering services', type: 'category', url: '/suppliers.html?category=catering' },
+      { text: 'Entertainment', type: 'category', url: '/suppliers.html?category=entertainment' },
+      { text: 'Flowers & décor', type: 'category', url: '/suppliers.html?category=flowers' },
+    ];
+    
+    return mockData.filter(item => item.text.toLowerCase().includes(lowerQuery));
+  }
+
+  /**
+   * Render suggestions dropdown
+   */
+  renderSuggestions(suggestions, input, dropdown) {
+    if (!suggestions || suggestions.length === 0) {
+      dropdown.style.display = 'none';
+      return;
+    }
+    
+    const html = suggestions.map((item, index) => {
+      const text = item.text || item.name || item.title || '';
+      const icon = this.getSuggestionIcon(item.type);
+      
+      return `
+        <div class="autocomplete-item" data-index="${index}" data-url="${item.url || ''}" data-value="${this.escapeHtml(text)}">
+          <span class="autocomplete-icon">${icon}</span>
+          <span class="autocomplete-text">${this.escapeHtml(text)}</span>
+          ${item.type ? `<span class="autocomplete-type">${this.escapeHtml(item.type)}</span>` : ''}
+        </div>
+      `;
+    }).join('');
+    
+    dropdown.innerHTML = html;
+    dropdown.style.display = 'block';
+    
+    dropdown.querySelectorAll('.autocomplete-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const value = item.dataset.value;
+        const url = item.dataset.url;
+        
+        input.value = value;
+        dropdown.style.display = 'none';
+        
+        if (url) {
+          window.location.href = url;
+        } else {
+          input.form?.submit();
+        }
+      });
+    });
+  }
+
+  /**
+   * Handle keyboard navigation in autocomplete
+   */
+  handleAutocompleteKeyboard(e, dropdown) {
+    const items = dropdown.querySelectorAll('.autocomplete-item');
+    if (items.length === 0) {
+      return;
+    }
+    
+    const current = dropdown.querySelector('.autocomplete-item.active');
+    let index = current ? parseInt(current.dataset.index) : -1;
+    
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        index = Math.min(index + 1, items.length - 1);
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        index = Math.max(index - 1, 0);
+        break;
+      case 'Enter':
+        if (current) {
+          e.preventDefault();
+          current.click();
+        }
+        return;
+      case 'Escape':
+        dropdown.style.display = 'none';
+        return;
+      default:
+        return;
+    }
+    
+    items.forEach((item, i) => {
+      if (i === index) {
+        item.classList.add('active');
+        item.scrollIntoView({ block: 'nearest' });
+      } else {
+        item.classList.remove('active');
+      }
+    });
+  }
+
+  /**
+   * Get icon for suggestion type
+   */
+  getSuggestionIcon(type) {
+    const icons = {
+      supplier: '🏢',
+      category: '📂',
+      location: '📍',
+      package: '📦',
+      page: '📄',
+      help: '❓'
+    };
+    
+    return icons[type] || '🔍';
+  }
+
+  /**
+   * Add autocomplete styles
+   */
+  addAutocompleteStyles() {
+    const style = document.createElement('style');
+    style.id = 'autocomplete-styles';
+    style.textContent = `
+      .search-autocomplete-dropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: white;
+        border: 1px solid var(--border, #e5e7eb);
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        max-height: 300px;
+        overflow-y: auto;
+        z-index: 1000;
+        margin-top: 4px;
+      }
+      
+      .autocomplete-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem 1rem;
+        cursor: pointer;
+        transition: background 0.15s ease;
+      }
+      
+      .autocomplete-item:hover,
+      .autocomplete-item.active {
+        background: rgba(11, 128, 115, 0.08);
+      }
+      
+      .autocomplete-icon {
+        font-size: 1.25rem;
+        flex-shrink: 0;
+      }
+      
+      .autocomplete-text {
+        flex: 1;
+        color: var(--text, #333);
+      }
+      
+      .autocomplete-type {
+        font-size: 0.75rem;
+        color: var(--muted, #6b7280);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      
+      .autocomplete-item:first-child {
+        border-top-left-radius: 8px;
+        border-top-right-radius: 8px;
+      }
+      
+      .autocomplete-item:last-child {
+        border-bottom-left-radius: 8px;
+        border-bottom-right-radius: 8px;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  /**
+   * Debounce utility
+   */
+  debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+      const later = () => {
+        clearTimeout(timeout);
+        func(...args);
+      };
+      clearTimeout(timeout);
+      timeout = setTimeout(later, wait);
+    };
   }
 
   setupKeyboardShortcut() {

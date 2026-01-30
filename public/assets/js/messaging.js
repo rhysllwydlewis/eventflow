@@ -269,7 +269,152 @@ class MessagingSystem {
   }
 }
 
+/**
+ * MessagingManager - Enhanced messaging with unread badge updates
+ */
+class MessagingManager {
+  constructor() {
+    this.messagingSystem = new MessagingSystem();
+    this.badgeElement = null;
+    this.lastUnreadCount = 0;
+  }
+
+  /**
+   * Mark messages as read in a thread
+   * @param {string} threadId - Thread/conversation ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async markMessagesAsRead(threadId) {
+    try {
+      const response = await fetch(`/api/messages/threads/${threadId}/mark-read`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': window.__CSRF_TOKEN__ || '',
+        },
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        await this.refreshUnreadCount();
+        return true;
+      }
+      
+      console.error('Failed to mark messages as read');
+      return false;
+    } catch (error) {
+      console.error('Error marking messages as read:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Refresh unread message count
+   * @returns {Promise<number>} Unread count
+   */
+  async refreshUnreadCount() {
+    try {
+      const response = await fetch('/api/messages/unread-count', {
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch unread count');
+      }
+
+      const data = await response.json();
+      const count = data.count || data.unreadCount || 0;
+
+      this.updateBadge(count);
+      
+      const event = new CustomEvent('unreadCountUpdated', {
+        detail: { count },
+      });
+      window.dispatchEvent(event);
+
+      return count;
+    } catch (error) {
+      console.error('Error fetching unread count:', error);
+      return 0;
+    }
+  }
+
+  /**
+   * Update badge element with count
+   * @param {number} count - Unread message count
+   */
+  updateBadge(count) {
+    if (!this.badgeElement) {
+      this.badgeElement = document.getElementById('unread-badge') 
+        || document.getElementById('message-badge')
+        || document.querySelector('.unread-badge')
+        || document.querySelector('[data-unread-badge]');
+    }
+
+    if (!this.badgeElement) {
+      return;
+    }
+
+    if (count > 0) {
+      this.badgeElement.textContent = count > 99 ? '99+' : count.toString();
+      this.badgeElement.style.display = 'inline-block';
+      
+      if (count !== this.lastUnreadCount) {
+        this.animateBadge();
+      }
+    } else {
+      this.badgeElement.style.display = 'none';
+    }
+
+    this.lastUnreadCount = count;
+  }
+
+  /**
+   * Animate badge on count change
+   */
+  animateBadge() {
+    if (!this.badgeElement) {
+      return;
+    }
+
+    this.badgeElement.classList.add('badge-animate');
+    
+    setTimeout(() => {
+      this.badgeElement.classList.remove('badge-animate');
+    }, 300);
+
+    if (!document.getElementById('badge-animation-styles')) {
+      const style = document.createElement('style');
+      style.id = 'badge-animation-styles';
+      style.textContent = `
+        @keyframes badge-pulse {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.2); }
+        }
+        .badge-animate {
+          animation: badge-pulse 0.3s ease-in-out;
+        }
+      `;
+      document.head.appendChild(style);
+    }
+  }
+
+  /**
+   * Initialize polling for unread count
+   * @param {number} interval - Polling interval in ms (default: 30000)
+   */
+  startUnreadCountPolling(interval = 30000) {
+    this.refreshUnreadCount();
+    
+    return setInterval(() => {
+      this.refreshUnreadCount();
+    }, interval);
+  }
+}
+
 // Create and export singleton instance
 const messagingSystem = new MessagingSystem();
+const messagingManager = new MessagingManager();
 
 export default messagingSystem;
+export { MessagingManager, messagingManager };
