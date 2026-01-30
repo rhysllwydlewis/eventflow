@@ -77,6 +77,10 @@ class LoadingSpinner {
    * Escape HTML to prevent XSS
    */
   escapeHtml(unsafe) {
+    // Explicitly handle null and undefined
+    if (unsafe === null || unsafe === undefined) {
+      return '';
+    }
     if (typeof unsafe !== 'string') {
       return '';
     }

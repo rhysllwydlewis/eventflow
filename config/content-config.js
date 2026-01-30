@@ -54,17 +54,17 @@ const contentConfig = {
     name: 'EventFlow Limited',
     nameLegal: 'EventFlow Limited',
     legalName: 'EventFlow Limited',
-    
+
     // TODO: BEFORE PRODUCTION - Get from Companies House registration
     registrationNumber: '12345678', // PLACEHOLDER - UPDATE BEFORE LAUNCH
     companyNumber: '[Pending Registration - To be added upon Companies House registration]',
-    
+
     // TODO: BEFORE PRODUCTION - Add actual registered office address
     registeredOffice: '[To be added upon company registration]',
-    
+
     // TODO: BEFORE PRODUCTION - Update VAT status
     vatNumber: '[Not currently VAT registered]', // Update if/when VAT registered
-    
+
     placeOfRegistration: 'England and Wales',
     tradingName: 'EventFlow',
   },
@@ -76,7 +76,7 @@ const contentConfig = {
     abuseEmail: 'abuse@event-flow.co.uk',
     salesEmail: 'sales@event-flow.co.uk',
     privacyEmail: 'privacy@event-flow.co.uk',
-    
+
     // TODO: BEFORE PRODUCTION - Update with actual company address
     address: {
       line1: '123 Business Street', // PLACEHOLDER
@@ -214,5 +214,6 @@ module.exports = {
   getConfig,
   getPlaceholders,
   updateLegalDates,
+  validateProductionConfig,
   contentConfig,
 };

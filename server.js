@@ -6763,6 +6763,7 @@ async function startServer() {
 
     // 4. Initialize database connection in background (non-blocking)
     // This allows the server to respond to healthchecks while database initializes
+    // Note: In production, the app will exit if MongoDB is not properly configured
     (async () => {
       try {
         console.log('   Connecting to database...');
@@ -6770,6 +6771,10 @@ async function startServer() {
         console.log('   ✅ Database connection successful');
 
         // Verify database connection in production
+        // IMPORTANT: This happens after server.listen() to allow health checks during startup,
+        // but will terminate the process if production is misconfigured with wrong database.
+        // This is intentional - the brief window allows orchestrators to detect the issue
+        // without blocking health checks, then the process exits for proper restart.
         if (process.env.NODE_ENV === 'production') {
           console.log('');
           console.log('🔒 Verifying production database configuration...');

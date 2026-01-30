@@ -80,16 +80,18 @@
 
     showUserError(event.error || new Error(event.message));
 
-    // Prevent default browser error handling
-    event.preventDefault();
+    // Prevent default browser error handling (only in production for better UX)
+    // In development, preserve full debugging capabilities
+    if (!isDevelopment) {
+      event.preventDefault();
+    }
   });
 
   /**
    * Handle unhandled promise rejections
    */
   window.addEventListener('unhandledrejection', event => {
-    const error =
-      event.reason instanceof Error ? event.reason : new Error(String(event.reason));
+    const error = event.reason instanceof Error ? event.reason : new Error(String(event.reason));
 
     logError(error, {
       type: 'unhandled_promise_rejection',
@@ -98,8 +100,11 @@
 
     showUserError(error);
 
-    // Prevent default browser error handling
-    event.preventDefault();
+    // Prevent default browser error handling (only in production for better UX)
+    // In development, preserve full debugging capabilities
+    if (!isDevelopment) {
+      event.preventDefault();
+    }
   });
 
   /**
