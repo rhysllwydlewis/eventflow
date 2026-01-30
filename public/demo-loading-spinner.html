@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loading Spinner Demo</title>
+    <link rel="stylesheet" href="/assets/css/components.css">
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            padding: 2rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .demo-container {
+            border: 2px dashed #ccc;
+            padding: 2rem;
+            margin: 1rem 0;
+            min-height: 200px;
+            position: relative;
+            border-radius: 8px;
+        }
+        button {
+            background: #0b8073;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin: 0.5rem;
+        }
+        button:hover {
+            background: #096b5f;
+        }
+        h1 {
+            color: #0b8073;
+        }
+        .info {
+            background: #f0f9ff;
+            border-left: 4px solid #0b8073;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Loading Spinner Component Demo</h1>
+    
+    <div class="info">
+        <strong>Features:</strong>
+        <ul>
+            <li>Three sizes: small, medium, large</li>
+            <li>Dark mode support</li>
+            <li>Accessibility: respects prefers-reduced-motion</li>
+            <li>XSS protection</li>
+            <li>Customizable messages</li>
+        </ul>
+    </div>
+
+    <h2>Demo 1: Medium Spinner (Default)</h2>
+    <div id="demo1" class="demo-container">
+        <p>Click the button to show a loading spinner in this container.</p>
+    </div>
+    <button onclick="demo1()">Show Medium Spinner</button>
+    <button onclick="hide1()">Hide Spinner</button>
+
+    <h2>Demo 2: Small Spinner</h2>
+    <div id="demo2" class="demo-container">
+        <p>Click to show a small loading spinner with custom message.</p>
+    </div>
+    <button onclick="demo2()">Show Small Spinner</button>
+    <button onclick="hide2()">Hide Spinner</button>
+
+    <h2>Demo 3: Large Spinner</h2>
+    <div id="demo3" class="demo-container">
+        <p>Click to show a large loading spinner.</p>
+    </div>
+    <button onclick="demo3()">Show Large Spinner</button>
+    <button onclick="hide3()">Hide Spinner</button>
+
+    <h2>Demo 4: Full Page Spinner</h2>
+    <button onclick="demo4()">Show Full Page Spinner (3 seconds)</button>
+
+    <script src="/assets/js/components/LoadingSpinner.js"></script>
+    <script>
+        const spinner1 = new LoadingSpinner();
+        const spinner2 = new LoadingSpinner({ size: 'small' });
+        const spinner3 = new LoadingSpinner({ size: 'large' });
+
+        function demo1() {
+            spinner1.show(document.getElementById('demo1'), 'Loading data...');
+        }
+
+        function hide1() {
+            spinner1.hide(document.getElementById('demo1'));
+        }
+
+        function demo2() {
+            spinner2.show(document.getElementById('demo2'), 'Processing your request...');
+        }
+
+        function hide2() {
+            spinner2.hide(document.getElementById('demo2'));
+        }
+
+        function demo3() {
+            spinner3.show(document.getElementById('demo3'), 'Uploading files...');
+        }
+
+        function hide3() {
+            spinner3.hide(document.getElementById('demo3'));
+        }
+
+        function demo4() {
+            window.loading.showFullPage('Loading application...');
+            setTimeout(() => {
+                window.loading.hideFullPage();
+            }, 3000);
+        }
+
+        console.log('✅ LoadingSpinner demo loaded');
+        console.log('Available instances:', {
+            spinner1: 'medium',
+            spinner2: 'small',
+            spinner3: 'large',
+            globalInstance: 'window.loading'
+        });
+    </script>
+</body>
+</html>

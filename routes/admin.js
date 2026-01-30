@@ -5830,7 +5830,7 @@ router.get('/public/pexels-video', async (req, res) => {
  * PUT /api/admin/content-config
  * Update content configuration (legal dates, company info)
  */
-router.put('/content-config', authRequired, roleRequired('admin'), async (req, res) => {
+router.put('/content-config', csrfProtection, authRequired, roleRequired('admin'), async (req, res) => {
   try {
     const { legalLastUpdated, legalEffectiveDate } = req.body;
 

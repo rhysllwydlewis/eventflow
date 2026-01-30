@@ -6763,11 +6763,46 @@ async function startServer() {
 
     // 4. Initialize database connection in background (non-blocking)
     // This allows the server to respond to healthchecks while database initializes
+    // Note: In production, the app will exit if MongoDB is not properly configured
     (async () => {
       try {
         console.log('   Connecting to database...');
         await dbUnified.initializeDatabase();
         console.log('   ✅ Database connection successful');
+
+        // Verify database connection in production
+        // IMPORTANT: This happens after server.listen() to allow health checks during startup,
+        // but will terminate the process if production is misconfigured with wrong database.
+        // This is intentional - the brief window allows orchestrators to detect the issue
+        // without blocking health checks, then the process exits for proper restart.
+        if (process.env.NODE_ENV === 'production') {
+          console.log('');
+          console.log('🔒 Verifying production database configuration...');
+          const dbStatus = await dbUnified.getStatus();
+
+          if (dbStatus.backend !== 'mongodb') {
+            logger.error('');
+            logger.error('❌ CRITICAL: Production is using local file storage instead of MongoDB!');
+            logger.error('❌ Data will NOT persist between restarts!');
+            logger.error('❌ Check MONGODB_URI environment variable.');
+            logger.error('Current status:', dbStatus);
+            logger.error('');
+
+            // Fail fast - don't start server with wrong database
+            process.exit(1);
+          }
+
+          if (!dbStatus.connected) {
+            logger.error('');
+            logger.error('❌ CRITICAL: MongoDB configured but not connected!');
+            logger.error('');
+            process.exit(1);
+          }
+
+          logger.info('✅ Production database verification passed:', dbStatus);
+          console.log('   ✅ MongoDB configured and connected');
+          console.log('   ✅ Production database verification passed');
+        }
 
         // Initialize WebSocket v2 with MongoDB
         try {

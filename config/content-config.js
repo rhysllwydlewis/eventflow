@@ -54,10 +54,17 @@ const contentConfig = {
     name: 'EventFlow Limited',
     nameLegal: 'EventFlow Limited',
     legalName: 'EventFlow Limited',
-    registrationNumber: '12345678', // TODO: Update with actual company registration number
+
+    // TODO: BEFORE PRODUCTION - Get from Companies House registration
+    registrationNumber: '12345678', // PLACEHOLDER - UPDATE BEFORE LAUNCH
     companyNumber: '[Pending Registration - To be added upon Companies House registration]',
+
+    // TODO: BEFORE PRODUCTION - Add actual registered office address
     registeredOffice: '[To be added upon company registration]',
-    vatNumber: '[Not currently VAT registered]',
+
+    // TODO: BEFORE PRODUCTION - Update VAT status
+    vatNumber: '[Not currently VAT registered]', // Update if/when VAT registered
+
     placeOfRegistration: 'England and Wales',
     tradingName: 'EventFlow',
   },
@@ -69,12 +76,13 @@ const contentConfig = {
     abuseEmail: 'abuse@event-flow.co.uk',
     salesEmail: 'sales@event-flow.co.uk',
     privacyEmail: 'privacy@event-flow.co.uk',
-    // TODO: Update with actual company address before production deployment
+
+    // TODO: BEFORE PRODUCTION - Update with actual company address
     address: {
-      line1: '123 Business Street',
-      line2: 'Floor 2',
-      city: 'London',
-      postcode: 'EC1A 1BB',
+      line1: '123 Business Street', // PLACEHOLDER
+      line2: 'Floor 2', // PLACEHOLDER
+      city: 'London', // PLACEHOLDER
+      postcode: 'EC1A 1BB', // PLACEHOLDER
       country: 'United Kingdom',
     },
   },
@@ -173,9 +181,39 @@ function getConfig() {
   return contentConfig;
 }
 
+/**
+ * Validate production configuration for placeholder values
+ * Warns if production config contains placeholder values that need updating
+ */
+function validateProductionConfig() {
+  const placeholders = [
+    '12345678',
+    '[Pending Registration',
+    '[To be added',
+    '[Not currently VAT',
+    '123 Business Street',
+    'EC1A 1BB',
+  ];
+
+  const configStr = JSON.stringify(contentConfig);
+  const foundPlaceholders = placeholders.filter(p => configStr.includes(p));
+
+  if (foundPlaceholders.length > 0 && process.env.NODE_ENV === 'production') {
+    console.warn('');
+    console.warn('⚠️  WARNING: Production config contains placeholder values!');
+    console.warn('⚠️  Update config/content-config.js before launch');
+    console.warn('⚠️  Found placeholders:', foundPlaceholders);
+    console.warn('');
+  }
+}
+
+// Run validation on module load
+validateProductionConfig();
+
 module.exports = {
   getConfig,
   getPlaceholders,
   updateLegalDates,
+  validateProductionConfig,
   contentConfig,
 };
