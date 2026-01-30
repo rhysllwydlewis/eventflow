@@ -18,7 +18,7 @@ const {
   getUserFromCookie,
 } = require('../middleware/auth');
 const { passwordOk } = require('../middleware/validation');
-const { authLimiter } = require('../middleware/rateLimit');
+const { authLimiter, resendEmailLimiter } = require('../middleware/rateLimit');
 const { csrfProtection } = require('../middleware/csrf');
 const { featureRequired, getFeatureFlags } = require('../middleware/features');
 const postmark = require('../utils/postmark');
@@ -635,9 +635,9 @@ router.post('/reset-password', authLimiter, async (req, res) => {
   if (user.resetTokenExpiresAt) {
     const expiresAt = new Date(user.resetTokenExpiresAt);
     if (expiresAt < new Date()) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'Reset token has expired. Please request a new one.',
-        canRequestNew: true 
+        canRequestNew: true,
       });
     }
   } else {
@@ -812,7 +812,7 @@ router.get('/unsubscribe', (req, res) => {
  * Resend verification email to user
  * Can be called by the user themselves or by an admin
  */
-router.post('/resend-verification', authLimiter, async (req, res) => {
+router.post('/resend-verification', resendEmailLimiter, async (req, res) => {
   const { email } = req.body || {};
 
   if (!email) {

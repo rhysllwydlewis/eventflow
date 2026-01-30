@@ -96,7 +96,7 @@ router.get('/', authRequired, async (req, res) => {
   try {
     const userId = req.user.id;
     const userRole = req.user.role;
-    const { status } = req.query;
+    const { status, limit } = req.query;
 
     let tickets = await dbUnified.read('tickets');
 
@@ -122,6 +122,14 @@ router.get('/', authRequired, async (req, res) => {
       const bTime = new Date(b.createdAt).getTime();
       return bTime - aTime;
     });
+
+    // Apply limit if provided
+    if (limit) {
+      const limitNum = parseInt(limit, 10);
+      if (!isNaN(limitNum) && limitNum > 0) {
+        tickets = tickets.slice(0, limitNum);
+      }
+    }
 
     res.json({ tickets });
   } catch (error) {

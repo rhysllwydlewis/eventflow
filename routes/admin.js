@@ -2911,15 +2911,15 @@ router.post(
 
       // Limit batch size
       if (photoIds.length > BATCH_PHOTO_LIMIT) {
-        return res.status(400).json({ 
-          error: `Cannot process more than ${BATCH_PHOTO_LIMIT} photos at once` 
+        return res.status(400).json({
+          error: `Cannot process more than ${BATCH_PHOTO_LIMIT} photos at once`,
         });
       }
 
       const photos = await dbUnified.read('photos');
       const suppliers = await dbUnified.read('suppliers');
       const now = new Date().toISOString();
-      
+
       const results = {
         success: [],
         failed: [],
@@ -2928,7 +2928,7 @@ router.post(
       for (const photoId of photoIds) {
         try {
           const photoIndex = photos.findIndex(p => p.id === photoId);
-          
+
           if (photoIndex === -1) {
             results.failed.push({ photoId, error: 'Photo not found' });
             continue;
@@ -3252,7 +3252,7 @@ router.get('/badge-counts', authRequired, roleRequired('admin'), async (req, res
         packages: 0,
         reviews: 0,
         reports: 0,
-       },
+      },
     });
   }
 });
@@ -3471,6 +3471,107 @@ router.put('/content/homepage', authRequired, roleRequired('admin'), csrfProtect
 
   res.json({ success: true, content: content.homepage });
 });
+
+/**
+ * POST /api/admin/homepage/hero-image
+ * Upload hero image for homepage
+ */
+const heroImageUploadDir = path.join(__dirname, '../public/uploads/hero');
+
+// Ensure upload directory exists
+if (!fs.existsSync(heroImageUploadDir)) {
+  fs.mkdirSync(heroImageUploadDir, { recursive: true });
+}
+
+const heroImageUpload = multer({
+  storage: multer.diskStorage({
+    destination: function (req, file, cb) {
+      cb(null, heroImageUploadDir);
+    },
+    filename: function (req, file, cb) {
+      const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+      const ext = path.extname(file.originalname);
+      cb(null, `hero-${uniqueSuffix}${ext}`);
+    },
+  }),
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit
+  },
+  fileFilter: function (req, file, cb) {
+    // Allow only images
+    const allowedTypes = /^image\/(jpeg|jpg|png|gif|webp)$/;
+    if (!allowedTypes.test(file.mimetype)) {
+      cb(new Error('Only image files are allowed (JPEG, PNG, GIF, WebP)'));
+      return;
+    }
+    cb(null, true);
+  },
+});
+
+router.post(
+  '/homepage/hero-image',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  heroImageUpload.single('image'),
+  async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: 'No image file provided' });
+      }
+
+      const imageUrl = `/uploads/hero/${req.file.filename}`;
+
+      // Optionally resize image using sharp if available
+      try {
+        const sharp = require('sharp');
+        const outputPath = path.join(heroImageUploadDir, req.file.filename);
+        await sharp(req.file.path)
+          .resize(1920, 1080, { fit: 'cover', position: 'center' })
+          .jpeg({ quality: 85 })
+          .toFile(`${outputPath}.optimized`);
+
+        // Replace original with optimized
+        fs.renameSync(`${outputPath}.optimized`, outputPath);
+      } catch (sharpError) {
+        // Sharp not available or error, use original image
+        console.log('Sharp not available for image optimization:', sharpError.message);
+      }
+
+      // Save to homepage settings
+      const content = read('content') || {};
+      if (!content.homepage) {
+        content.homepage = {};
+      }
+      content.homepage.heroImage = imageUrl;
+      content.homepage.heroImageUpdatedAt = new Date().toISOString();
+      content.homepage.heroImageUpdatedBy = req.user.email;
+      write('content', content);
+
+      // Audit log
+      auditLog({
+        adminId: req.user.id,
+        adminEmail: req.user.email,
+        action: 'CONTENT_UPDATED',
+        targetType: 'homepage',
+        targetId: 'hero-image',
+        details: { imageUrl },
+      });
+
+      res.json({
+        success: true,
+        imageUrl,
+        filename: req.file.filename,
+      });
+    } catch (error) {
+      console.error('Hero image upload error:', error);
+      res.status(500).json({
+        error: 'Failed to upload hero image',
+        message: error.message,
+      });
+    }
+  }
+);
 
 /**
  * GET /api/admin/content/announcements
@@ -5997,128 +6098,136 @@ router.get('/public/pexels-video', async (req, res) => {
  * PUT /api/admin/content-config
  * Update content configuration (legal dates, company info)
  */
-router.put('/content-config', csrfProtection, authRequired, roleRequired('admin'), async (req, res) => {
-  try {
-    const { legalLastUpdated, legalEffectiveDate } = req.body;
-
-    // Validation
-    if (!legalLastUpdated || !legalEffectiveDate) {
-      return res.status(400).json({
-        error: 'Missing required fields',
-        message: 'Both legalLastUpdated and legalEffectiveDate are required',
-      });
-    }
-
-    // Validate date format (Month YYYY)
-    const validMonths = [
-      'January',
-      'February',
-      'March',
-      'April',
-      'May',
-      'June',
-      'July',
-      'August',
-      'September',
-      'October',
-      'November',
-      'December',
-    ];
-    const datePattern = /^([A-Za-z]+)\s+(\d{4})$/;
-
-    const validateDate = (dateStr, fieldName) => {
-      const match = dateStr.match(datePattern);
-      if (!match) {
-        throw new Error(`${fieldName} must be in format "Month YYYY" (e.g., "January 2026")`);
-      }
-      const [, month, year] = match;
-      if (!validMonths.includes(month)) {
-        throw new Error(
-          `${fieldName} has invalid month "${month}". Use full month name (e.g., "January")`
-        );
-      }
-      const yearNum = parseInt(year, 10);
-      if (yearNum < 2020 || yearNum > 2100) {
-        throw new Error(`${fieldName} has unrealistic year "${year}". Use year between 2020-2100`);
-      }
-    };
-
+router.put(
+  '/content-config',
+  csrfProtection,
+  authRequired,
+  roleRequired('admin'),
+  async (req, res) => {
     try {
-      validateDate(legalLastUpdated, 'legalLastUpdated');
-      validateDate(legalEffectiveDate, 'legalEffectiveDate');
-    } catch (err) {
-      return res.status(400).json({
-        error: 'Invalid date format',
-        message: err.message,
+      const { legalLastUpdated, legalEffectiveDate } = req.body;
+
+      // Validation
+      if (!legalLastUpdated || !legalEffectiveDate) {
+        return res.status(400).json({
+          error: 'Missing required fields',
+          message: 'Both legalLastUpdated and legalEffectiveDate are required',
+        });
+      }
+
+      // Validate date format (Month YYYY)
+      const validMonths = [
+        'January',
+        'February',
+        'March',
+        'April',
+        'May',
+        'June',
+        'July',
+        'August',
+        'September',
+        'October',
+        'November',
+        'December',
+      ];
+      const datePattern = /^([A-Za-z]+)\s+(\d{4})$/;
+
+      const validateDate = (dateStr, fieldName) => {
+        const match = dateStr.match(datePattern);
+        if (!match) {
+          throw new Error(`${fieldName} must be in format "Month YYYY" (e.g., "January 2026")`);
+        }
+        const [, month, year] = match;
+        if (!validMonths.includes(month)) {
+          throw new Error(
+            `${fieldName} has invalid month "${month}". Use full month name (e.g., "January")`
+          );
+        }
+        const yearNum = parseInt(year, 10);
+        if (yearNum < 2020 || yearNum > 2100) {
+          throw new Error(
+            `${fieldName} has unrealistic year "${year}". Use year between 2020-2100`
+          );
+        }
+      };
+
+      try {
+        validateDate(legalLastUpdated, 'legalLastUpdated');
+        validateDate(legalEffectiveDate, 'legalEffectiveDate');
+      } catch (err) {
+        return res.status(400).json({
+          error: 'Invalid date format',
+          message: err.message,
+        });
+      }
+
+      // Read the content-config.js file asynchronously
+      const fs = require('fs').promises;
+      const path = require('path');
+      const configPath = path.join(__dirname, '..', 'config', 'content-config.js');
+
+      let configContent = await fs.readFile(configPath, 'utf8');
+
+      // Sanitize inputs by escaping quotes
+      const sanitize = str => str.replace(/'/g, "\\'");
+      const sanitizedLastUpdated = sanitize(legalLastUpdated);
+      const sanitizedEffectiveDate = sanitize(legalEffectiveDate);
+
+      // Update the dates using regex
+      configContent = configContent.replace(
+        /legalLastUpdated:\s*['"].*?['"]/,
+        `legalLastUpdated: '${sanitizedLastUpdated}'`
+      );
+      configContent = configContent.replace(
+        /legalEffectiveDate:\s*['"].*?['"]/,
+        `legalEffectiveDate: '${sanitizedEffectiveDate}'`
+      );
+
+      // Write the file back asynchronously
+      await fs.writeFile(configPath, configContent, 'utf8');
+
+      // Clear the require cache for the config module
+      const configModulePath = require.resolve('../config/content-config');
+      delete require.cache[configModulePath];
+
+      // Clear the template cache - this is critical for changes to take effect
+      try {
+        const { clearCache } = require('../utils/template-renderer');
+        clearCache();
+        console.log('✅ Template cache cleared successfully');
+      } catch (err) {
+        console.error('❌ Failed to clear template cache:', err);
+        // Return error since cache clearing is critical
+        return res.status(500).json({
+          error: 'Configuration updated but cache clearing failed',
+          message: 'Changes may not be visible until server restart. Please contact administrator.',
+          details: err.message,
+        });
+      }
+
+      // Audit log
+      await auditLog(req, AUDIT_ACTIONS.SETTINGS_UPDATE, {
+        category: 'content-config',
+        legalLastUpdated,
+        legalEffectiveDate,
+      });
+
+      res.json({
+        success: true,
+        message: 'Content configuration updated successfully',
+        note: 'Changes take effect immediately for new page requests',
+        legalLastUpdated,
+        legalEffectiveDate,
+      });
+    } catch (error) {
+      console.error('Error updating content config:', error);
+      res.status(500).json({
+        error: 'Failed to update content configuration',
+        message: error.message,
       });
     }
-
-    // Read the content-config.js file asynchronously
-    const fs = require('fs').promises;
-    const path = require('path');
-    const configPath = path.join(__dirname, '..', 'config', 'content-config.js');
-
-    let configContent = await fs.readFile(configPath, 'utf8');
-
-    // Sanitize inputs by escaping quotes
-    const sanitize = str => str.replace(/'/g, "\\'");
-    const sanitizedLastUpdated = sanitize(legalLastUpdated);
-    const sanitizedEffectiveDate = sanitize(legalEffectiveDate);
-
-    // Update the dates using regex
-    configContent = configContent.replace(
-      /legalLastUpdated:\s*['"].*?['"]/,
-      `legalLastUpdated: '${sanitizedLastUpdated}'`
-    );
-    configContent = configContent.replace(
-      /legalEffectiveDate:\s*['"].*?['"]/,
-      `legalEffectiveDate: '${sanitizedEffectiveDate}'`
-    );
-
-    // Write the file back asynchronously
-    await fs.writeFile(configPath, configContent, 'utf8');
-
-    // Clear the require cache for the config module
-    const configModulePath = require.resolve('../config/content-config');
-    delete require.cache[configModulePath];
-
-    // Clear the template cache - this is critical for changes to take effect
-    try {
-      const { clearCache } = require('../utils/template-renderer');
-      clearCache();
-      console.log('✅ Template cache cleared successfully');
-    } catch (err) {
-      console.error('❌ Failed to clear template cache:', err);
-      // Return error since cache clearing is critical
-      return res.status(500).json({
-        error: 'Configuration updated but cache clearing failed',
-        message: 'Changes may not be visible until server restart. Please contact administrator.',
-        details: err.message,
-      });
-    }
-
-    // Audit log
-    await auditLog(req, AUDIT_ACTIONS.SETTINGS_UPDATE, {
-      category: 'content-config',
-      legalLastUpdated,
-      legalEffectiveDate,
-    });
-
-    res.json({
-      success: true,
-      message: 'Content configuration updated successfully',
-      note: 'Changes take effect immediately for new page requests',
-      legalLastUpdated,
-      legalEffectiveDate,
-    });
-  } catch (error) {
-    console.error('Error updating content config:', error);
-    res.status(500).json({
-      error: 'Failed to update content configuration',
-      message: error.message,
-    });
   }
-});
+);
 
 module.exports = router;
 module.exports.setHelperFunctions = setHelperFunctions;
