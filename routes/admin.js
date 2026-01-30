@@ -18,6 +18,9 @@ const dbUnified = require('../db-unified');
 
 const router = express.Router();
 
+// Constants
+const BATCH_PHOTO_LIMIT = 50; // Maximum photos that can be processed in a single batch operation
+
 /**
  * Check if collage debug logging is enabled
  * @returns {boolean} True if debug logging should be enabled
@@ -2907,8 +2910,10 @@ router.post(
       }
 
       // Limit batch size
-      if (photoIds.length > 50) {
-        return res.status(400).json({ error: 'Cannot process more than 50 photos at once' });
+      if (photoIds.length > BATCH_PHOTO_LIMIT) {
+        return res.status(400).json({ 
+          error: `Cannot process more than ${BATCH_PHOTO_LIMIT} photos at once` 
+        });
       }
 
       const photos = await dbUnified.read('photos');

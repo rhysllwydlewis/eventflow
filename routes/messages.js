@@ -1,6 +1,10 @@
 /**
  * Messages Routes
  * Handles customer-supplier messaging functionality
+ * 
+ * SECURITY NOTE: Message text is sanitized using validator.escape() to prevent XSS.
+ * This escapes HTML entities (<, >, &, ", ', /) which is sufficient for text content.
+ * For future enhancement, consider DOMPurify or sanitize-html if rich text is needed.
  */
 
 'use strict';
