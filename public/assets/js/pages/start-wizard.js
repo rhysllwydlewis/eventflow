@@ -17,6 +17,8 @@
     { key: 'transport', name: 'Transport', icon: '🚗' },
   ];
 
+  const WIZARD_DATA_EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours
+
   let currentStep = 0;
   let wizardState = null;
   const availablePackages = {}; // { categoryKey: [packages] }
@@ -708,9 +710,8 @@
       }
       
       const age = Date.now() - parseInt(timestamp, 10);
-      const maxAge = 24 * 60 * 60 * 1000; // 24 hours
       
-      if (age > maxAge) {
+      if (age > WIZARD_DATA_EXPIRY_MS) {
         localStorage.removeItem('eventflow_wizard_pending');
         localStorage.removeItem('eventflow_wizard_timestamp');
         return;

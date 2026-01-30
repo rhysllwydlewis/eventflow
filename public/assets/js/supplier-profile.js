@@ -124,7 +124,7 @@
               <div class="small" style="color: var(--muted);">${formatDate(review.createdAt)}</div>
             </div>
           </div>
-          <div class="review-content"></div>
+          <div class="review-content" data-review-index="${reviews.indexOf(review)}"></div>
         </div>
       `;
     }).join('');
@@ -137,7 +137,7 @@
     `;
 
     reviews.forEach((review, index) => {
-      const reviewElement = container.querySelectorAll('.review-content')[index];
+      const reviewElement = container.querySelector(`[data-review-index="${index}"]`);
       if (reviewElement) {
         reviewElement.textContent = review.comment || review.content || 'No comment provided';
       }

@@ -1082,6 +1082,7 @@ function escapeHtml(unsafe) {
   
   function playNotificationSound() {
     if (!notificationSound) {
+      // Simple notification beep (base64-encoded 440Hz tone, ~0.1s duration)
       notificationSound = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQoGAAA=');
     }
     
