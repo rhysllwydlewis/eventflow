@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes">
+  <meta name="theme-color" content="#0B8073">
+  <title>EventFlow Marketplace: Complete Guide for Buyers & Sellers - EventFlow</title>
+  <meta name="description" content="Learn how to buy and sell event items safely on the EventFlow Marketplace. Step-by-step guide for listing items, finding deals, and completing transactions securely.">
+  <meta name="keywords" content="EventFlow marketplace, buy event items, sell event items, event decorations marketplace, wedding items for sale, event equipment UK, marketplace guide">
+  <link rel="canonical" href="https://event-flow.co.uk/articles/marketplace-guide.html">
+  
+  <!-- Open Graph -->
+  <meta property="og:title" content="EventFlow Marketplace: Complete Guide for Buyers & Sellers">
+  <meta property="og:description" content="Learn how to buy and sell event items safely on the EventFlow Marketplace. Step-by-step guide for listing items, finding deals, and completing transactions securely.">
+  <meta property="og:url" content="https://event-flow.co.uk/articles/marketplace-guide.html">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="EventFlow">
+  <link rel="stylesheet" href="/assets/css/styles.css?v=18.0.0">
+  <link rel="stylesheet" href="/assets/css/eventflow-17.0.0.css?v=18.0.0">
+  <link rel="stylesheet" href="/assets/css/utilities.css?v=18.0.0">
+  <link rel="stylesheet" href="/assets/css/components.css?v=18.0.0">
+  <link rel="stylesheet" href="/assets/css/animations.css?v=18.0.0">
+  <link rel="stylesheet" href="/assets/css/mobile-optimizations.css?v=18.0.0">
+  <link rel="stylesheet" href="/assets/css/navbar.css?v=18.0.0">
+  <link rel="icon" href="/favicon.svg">
+</head>
+<body>
+<a href="#main-content" class="skip-link">Skip to main content</a>
+<!-- TOP NAVBAR -->
+<header class="ef-header" role="banner">
+  <div class="ef-container">
+    <div class="ef-header-content">
+      <a href="/" class="ef-brand" aria-label="EventFlow - Return to homepage">
+        <div class="ef-logo" aria-hidden="true">
+          <div class="ef-logo-inner"></div>
+        </div>
+        <span class="ef-brand-text">EventFlow</span>
+      </a>
+      <nav class="ef-nav-desktop" aria-label="Main navigation">
+        <a href="/start" class="ef-nav-link">Plan</a>
+        <a href="/suppliers" class="ef-nav-link">Suppliers</a>
+        <a href="/marketplace" class="ef-nav-link">Marketplace</a>
+        <a href="/blog" class="ef-nav-link">Guides</a>
+        <a href="/pricing" class="ef-nav-link">Pricing</a>
+      </nav>
+      <div class="ef-header-actions">
+        <button id="ef-notification-btn" class="ef-icon-btn" type="button" aria-label="View notifications" style="display: none;">
+          <svg class="ef-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+          </svg>
+          <span id="ef-notification-badge" class="ef-badge" style="display: none;">0</span>
+        </button>
+        <a href="/auth" id="ef-auth-link" class="ef-btn ef-btn-primary">Log in</a>
+        <a href="#" id="ef-dashboard-link" class="ef-nav-link" style="display: none;">Dashboard</a>
+        <button id="ef-mobile-toggle" class="ef-mobile-toggle" type="button" aria-label="Toggle menu" aria-expanded="false" aria-controls="ef-mobile-menu">
+          <span class="ef-toggle-line"></span>
+          <span class="ef-toggle-line"></span>
+          <span class="ef-toggle-line"></span>
+        </button>
+      </div>
+    </div>
+  </div>
+  <div id="ef-mobile-menu" class="ef-mobile-menu" role="dialog" aria-modal="true" aria-label="Mobile navigation">
+    <nav class="ef-mobile-nav" aria-label="Primary navigation">
+      <a href="/start" class="ef-mobile-link">Plan an Event</a>
+      <a href="/suppliers" class="ef-mobile-link">Browse Suppliers</a>
+      <a href="/marketplace" class="ef-mobile-link">Marketplace</a>
+      <a href="/blog" class="ef-mobile-link">Guides</a>
+      <a href="/pricing" class="ef-mobile-link">Pricing</a>
+      <a href="/for-suppliers" class="ef-mobile-link">For Suppliers</a>
+      <a href="/faq" class="ef-mobile-link">FAQ</a>
+      <div class="ef-mobile-divider"></div>
+      <a href="/auth" id="ef-mobile-auth" class="ef-mobile-link ef-mobile-primary">Log in</a>
+      <a href="#" id="ef-mobile-dashboard" class="ef-mobile-link" style="display: none;">Dashboard</a>
+      <a href="#" id="ef-mobile-logout" class="ef-mobile-link" style="display: none;">Log out</a>
+    </nav>
+  </div>
+</header>
+<script src="/assets/js/utils/auth-state.js" defer></script>
+<script src="/assets/js/burger-menu.js" defer></script>
+<script src="/assets/js/navbar.js" defer></script>
+<script src="/assets/js/websocket-client.js" defer></script>
+
+<main id="main-content" class="section">
+  <div class="container" style="max-width: 900px;">
+    <article>
+      <header>
+        <div style="text-align: center; margin-bottom: 32px;">
+          <p class="small" style="color: var(--ink, #0B8073); font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">EventFlow Marketplace</p>
+          <h1 style="margin: 12px 0;">Complete Guide for Buyers & Sellers</h1>
+          <p class="lead" style="color: #667085; font-size: 1.125rem;">Learn how to buy and sell event items safely on the EventFlow Marketplace</p>
+          <p class="small" style="color: #667085; margin-top: 16px;">📚 12 min read • Updated {{LEGAL_LAST_UPDATED}}</p>
+        </div>
+      </header>
+
+      <div class="card">
+        <h2 class="h3">🛒 What is the EventFlow Marketplace?</h2>
+        <p>The EventFlow Marketplace is a peer-to-peer platform where event planners can buy and sell physical event-related items. Whether you're looking for budget-friendly decorations, selling items from a past event, or finding unique pieces for your celebration, the marketplace connects buyers and sellers in the event planning community.</p>
+        
+        <div style="background: #F9FAFB; border-left: 4px solid var(--ink, #0B8073); padding: 16px; margin: 24px 0;">
+          <p style="margin: 0;"><strong>Key Point:</strong> The marketplace is for physical items only (decorations, furniture, equipment, supplies). For event services like catering or photography, use our <a href="/suppliers">Supplier Directory</a>.</p>
+        </div>
+
+        <h3 class="h4">What You Can Find:</h3>
+        <ul>
+          <li>Wedding decorations (centerpieces, signage, backdrops)</li>
+          <li>Event furniture (chairs, tables, lounges)</li>
+          <li>Lighting and sound equipment</li>
+          <li>Party supplies and tableware</li>
+          <li>Ceremony items (arches, aisle runners)</li>
+          <li>Event technology (photo booths, projectors)</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h2 class="h3">🎯 For Sellers: How to List Items</h2>
+        
+        <h3 class="h4">Step 1: Create Your Account</h3>
+        <ol>
+          <li>Visit <a href="/auth">EventFlow Sign Up</a></li>
+          <li>Provide your name, email, and create a secure password</li>
+          <li>Verify your email address</li>
+          <li>Complete your profile with location information</li>
+        </ol>
+
+        <h3 class="h4">Step 2: Navigate to Marketplace</h3>
+        <ol>
+          <li>Log into your EventFlow account</li>
+          <li>Click "Marketplace" in the navigation menu</li>
+          <li>Click "My Listings" or "Create Listing"</li>
+        </ol>
+
+        <h3 class="h4">Step 3: Create Your Listing</h3>
+        <p><strong>Item Title:</strong> Be clear and descriptive</p>
+        <ul>
+          <li>✅ Good: "Vintage Gold Candelabras - Set of 10 (70cm tall)"</li>
+          <li>❌ Bad: "Pretty candles"</li>
+        </ul>
+
+        <p><strong>Description:</strong> Include all relevant details</p>
+        <ul>
+          <li>Item condition (new, like new, good, fair)</li>
+          <li>Dimensions and measurements</li>
+          <li>Material and color</li>
+          <li>Any defects or wear</li>
+          <li>Original purchase price (optional but helpful)</li>
+          <li>How many times used</li>
+        </ul>
+
+        <p><strong>Photos:</strong> Upload 3-6 clear images</p>
+        <ul>
+          <li>Use natural lighting</li>
+          <li>Show multiple angles</li>
+          <li>Include close-ups of any defects</li>
+          <li>Show scale (place next to common object)</li>
+          <li>Use your own photos (not stock images)</li>
+        </ul>
+
+        <p><strong>Pricing:</strong> Set a fair price</p>
+        <ul>
+          <li>Research similar items on the marketplace</li>
+          <li>Consider condition, age, and original price</li>
+          <li>Be open to reasonable offers</li>
+          <li>Remember: buyers want a good deal</li>
+        </ul>
+
+        <p><strong>Location & Collection:</strong></p>
+        <ul>
+          <li>Specify your general location (city/town)</li>
+          <li>Indicate if delivery is available (and cost)</li>
+          <li>Mention if you can meet at public location</li>
+          <li>State your availability for collection</li>
+        </ul>
+
+        <h3 class="h4">Step 4: Manage Inquiries</h3>
+        <ul>
+          <li>Respond to buyer messages within 48 hours</li>
+          <li>Answer questions honestly</li>
+          <li>Provide additional photos if requested</li>
+          <li>Be professional and courteous</li>
+        </ul>
+
+        <h3 class="h4">Step 5: Complete the Sale</h3>
+        <ol>
+          <li><strong>Agree on Payment:</strong> Discuss and agree on payment method (PayPal, bank transfer, cash)</li>
+          <li><strong>Arrange Collection:</strong> Schedule a safe meeting time and place</li>
+          <li><strong>Inspection:</strong> Allow buyer to inspect item before payment (for cash transactions)</li>
+          <li><strong>Exchange:</strong> Complete payment and hand over item</li>
+          <li><strong>Update Listing:</strong> Mark item as "Sold" in your dashboard</li>
+        </ol>
+      </div>
+
+      <div class="card">
+        <h2 class="h3">🛍️ For Buyers: How to Purchase Items</h2>
+        
+        <h3 class="h4">Step 1: Browse the Marketplace</h3>
+        <ul>
+          <li>Use search filters (category, price, location)</li>
+          <li>Sort by newest, price, or distance</li>
+          <li>Save items to your favorites for later</li>
+          <li>Set up alerts for specific items</li>
+        </ul>
+
+        <h3 class="h4">Step 2: Research the Item</h3>
+        <ul>
+          <li>Read the full description carefully</li>
+          <li>Examine all photos for condition</li>
+          <li>Check item dimensions and specifications</li>
+          <li>Review seller's location and collection options</li>
+          <li>Look at seller's other listings and history</li>
+        </ul>
+
+        <h3 class="h4">Step 3: Contact the Seller</h3>
+        <p><strong>Questions to Ask:</strong></p>
+        <ul>
+          <li>"Can you confirm the exact dimensions?"</li>
+          <li>"Are there any defects not shown in the photos?"</li>
+          <li>"When is the item available for collection?"</li>
+          <li>"What payment methods do you accept?"</li>
+          <li>"Can you provide additional photos from [specific angle]?"</li>
+          <li>"Is the price negotiable?"</li>
+        </ul>
+
+        <h3 class="h4">Step 4: Arrange Payment & Collection</h3>
+        <p><strong>Payment Options:</strong></p>
+        <ul>
+          <li><strong>PayPal Goods & Services:</strong> Best option - buyer protection included</li>
+          <li><strong>Bank Transfer:</strong> Quick but less protection</li>
+          <li><strong>Cash on Collection:</strong> Safe for local pickups, inspect before paying</li>
+          <li><strong>❌ Avoid:</strong> Wire transfers, cryptocurrency, gift cards</li>
+        </ul>
+
+        <p><strong>Collection Tips:</strong></p>
+        <ul>
+          <li>Arrange to meet in a public, well-lit location</li>
+          <li>Bring someone with you for expensive items</li>
+          <li>Test items if possible (lights, electronics)</li>
+          <li>Bring appropriate vehicle/transport</li>
+          <li>Get a receipt or proof of purchase</li>
+        </ul>
+
+        <h3 class="h4">Step 5: Inspect the Item</h3>
+        <ul>
+          <li>Compare item to photos and description</li>
+          <li>Check for any hidden damage</li>
+          <li>Verify dimensions if critical</li>
+          <li>Test functionality (for equipment)</li>
+          <li>Don't feel pressured - walk away if something seems wrong</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h2 class="h3">⚠️ Safety Tips for All Users</h2>
+        
+        <h3 class="h4">Meeting Safely</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 24px 0;">
+          <div>
+            <h4 style="color: #16A34A; margin-top: 0;">✅ DO</h4>
+            <ul>
+              <li>Meet in public places (cafés, shopping centers)</li>
+              <li>Bring a friend or family member</li>
+              <li>Meet during daylight hours</li>
+              <li>Tell someone where you're going</li>
+              <li>Stay in well-lit, populated areas</li>
+              <li>Trust your instincts</li>
+            </ul>
+          </div>
+          <div>
+            <h4 style="color: #DC2626; margin-top: 0;">❌ DON'T</h4>
+            <ul>
+              <li>Meet in private homes (first meeting)</li>
+              <li>Go alone for high-value items</li>
+              <li>Share personal financial info</li>
+              <li>Send money before seeing item</li>
+              <li>Feel pressured to complete deal</li>
+              <li>Ignore red flags</li>
+            </ul>
+          </div>
+        </div>
+
+        <h3 class="h4">Red Flags to Watch For</h3>
+        <ul>
+          <li>🚩 Seller/buyer won't meet in person</li>
+          <li>🚩 Price is significantly below market value</li>
+          <li>🚩 Pressure to pay immediately</li>
+          <li>🚩 Won't provide additional photos</li>
+          <li>🚩 Vague or contradictory descriptions</li>
+          <li>🚩 Requests unusual payment methods</li>
+          <li>🚩 Poor communication or delays</li>
+          <li>🚩 Refuses to allow inspection</li>
+        </ul>
+
+        <h3 class="h4">Secure Payment Guidelines</h3>
+        <p><strong>For High-Value Items (£100+):</strong></p>
+        <ul>
+          <li>Use PayPal Goods & Services (buyer protection)</li>
+          <li>Never use PayPal Friends & Family</li>
+          <li>Document the transaction with photos</li>
+          <li>Get written confirmation of sale</li>
+        </ul>
+
+        <p><strong>For Lower-Value Items:</strong></p>
+        <ul>
+          <li>Cash on collection is acceptable</li>
+          <li>Count cash carefully</li>
+          <li>Provide/request receipt</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h2 class="h3">🚫 Prohibited Items</h2>
+        <p>The following items are NOT allowed on the EventFlow Marketplace:</p>
+        <ul>
+          <li>Counterfeit or replica items</li>
+          <li>Stolen goods</li>
+          <li>Dangerous or hazardous materials</li>
+          <li>Weapons, explosives, or controlled substances</li>
+          <li>Services (use supplier listings instead)</li>
+          <li>Items violating intellectual property rights</li>
+          <li>Perishable food items</li>
+          <li>Live animals</li>
+          <li>Items you don't own or have permission to sell</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h2 class="h3">💬 Dispute Resolution</h2>
+        
+        <h3 class="h4">If Something Goes Wrong:</h3>
+        <ol>
+          <li><strong>Contact the Other Party:</strong> Try to resolve directly first</li>
+          <li><strong>Document Everything:</strong> Save messages, photos, receipts</li>
+          <li><strong>Report to EventFlow:</strong> Email {{ABUSE_EMAIL}} with evidence</li>
+          <li><strong>Payment Dispute:</strong> If used PayPal, open a dispute through PayPal</li>
+          <li><strong>Legal Action:</strong> For serious issues, consider small claims court</li>
+        </ol>
+
+        <p><strong>What EventFlow Can Do:</strong></p>
+        <ul>
+          <li>Remove fraudulent listings</li>
+          <li>Suspend or ban violators</li>
+          <li>Provide user information to authorities (when legally required)</li>
+        </ul>
+
+        <p><strong>What EventFlow Cannot Do:</strong></p>
+        <ul>
+          <li>Process refunds or mediate payments</li>
+          <li>Force completion of transactions</li>
+          <li>Guarantee item quality or authenticity</li>
+          <li>Provide legal representation</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h2 class="h3">❓ Frequently Asked Questions</h2>
+        
+        <h3 class="h5">Is there a fee to sell on the marketplace?</h3>
+        <p>Currently, listing items on the EventFlow Marketplace is free. We do not charge selling fees or commissions.</p>
+
+        <h3 class="h5">Does EventFlow process payments?</h3>
+        <p>No. Buyers and sellers arrange payment directly using their preferred method (PayPal, bank transfer, cash). EventFlow is not involved in financial transactions.</p>
+
+        <h3 class="h5">What if an item doesn't match the description?</h3>
+        <p>Contact the seller first to resolve. If unsuccessful, report to {{ABUSE_EMAIL}}. For items paid via PayPal Goods & Services, you can open a dispute for buyer protection.</p>
+
+        <h3 class="h5">Can I ship items to buyers?</h3>
+        <p>Yes, sellers can offer shipping at their discretion. Discuss shipping costs and methods with the buyer. We recommend using tracked, insured shipping for valuable items.</p>
+
+        <h3 class="h5">How do I delete a listing?</h3>
+        <p>Go to "My Listings" in your dashboard, find the item, and click "Delete" or "Mark as Sold."</p>
+
+        <h3 class="h5">What happens if I change my mind after agreeing to buy?</h3>
+        <p>Be respectful and communicate promptly. Backing out after commitment is poor etiquette but not prohibited. Repeated issues may result in account suspension.</p>
+
+        <h3 class="h5">Can I report suspicious activity?</h3>
+        <p>Yes, absolutely. Report suspicious listings, users, or behavior to {{ABUSE_EMAIL}}. Include screenshots and specific details.</p>
+
+        <h3 class="h5">Are there any buyer protections?</h3>
+        <p>EventFlow does not provide buyer protection as we don't process payments. Use payment methods with buyer protection (PayPal Goods & Services recommended) and always inspect items before paying.</p>
+      </div>
+
+      <div class="card">
+        <h2 class="h3">📋 Quick Reference Checklists</h2>
+        
+        <h3 class="h4">Seller Checklist ✅</h3>
+        <ul>
+          <li>☐ Create clear, descriptive title</li>
+          <li>☐ Write detailed description including condition</li>
+          <li>☐ Upload 3-6 clear photos</li>
+          <li>☐ Set fair price based on condition</li>
+          <li>☐ Specify location and collection options</li>
+          <li>☐ Respond to inquiries within 48 hours</li>
+          <li>☐ Agree on payment method with buyer</li>
+          <li>☐ Arrange safe meeting location</li>
+          <li>☐ Mark as sold after transaction</li>
+        </ul>
+
+        <h3 class="h4">Buyer Checklist ✅</h3>
+        <ul>
+          <li>☐ Review all photos and description carefully</li>
+          <li>☐ Ask questions about condition/specifications</li>
+          <li>☐ Verify seller location and availability</li>
+          <li>☐ Agree on payment method (use PayPal G&S for protection)</li>
+          <li>☐ Arrange meeting in public place</li>
+          <li>☐ Bring someone with you for high-value items</li>
+          <li>☐ Inspect item thoroughly before payment</li>
+          <li>☐ Get receipt or proof of purchase</li>
+        </ul>
+      </div>
+
+      <div class="card" style="background: linear-gradient(135deg, #0B8073 0%, #088770 100%); color: white; text-align: center;">
+        <h2 style="color: white;">Ready to Start?</h2>
+        <p>Join the EventFlow Marketplace community today and discover great deals on event items or turn your event supplies into cash!</p>
+        <div style="margin-top: 24px; display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;">
+          <a href="/marketplace" class="cta" style="background: white; color: #0B8073;">Browse Marketplace</a>
+          <a href="/legal#marketplace-terms" class="cta" style="background: rgba(255,255,255,0.2); color: white; border: 2px solid white;">Read Legal Terms</a>
+        </div>
+      </div>
+
+      <div style="text-align: center; margin-top: 48px; padding-top: 32px; border-top: 1px solid #E7EAF0;">
+        <p class="small" style="color: #667085;">
+          <strong>Need help?</strong> Contact us at {{SUPPORT_EMAIL}}<br>
+          <strong>Report issues:</strong> {{ABUSE_EMAIL}}<br>
+          <a href="/legal#marketplace-terms">Marketplace Legal Terms</a> • 
+          <a href="/privacy">Privacy Notice</a> • 
+          <a href="/terms">Terms of Use</a>
+        </p>
+      </div>
+    </article>
+  </div>
+</main>
+
+<footer class="footer" role="contentinfo">
+  <div class="container" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+    <div><strong>EventFlow</strong><br><span class="small">Event planning made simple.</span></div>
+    <div class="small">© {{COPYRIGHT_YEAR}} EventFlow Limited. All rights reserved.</div>
+  </div>
+</footer>
+</body>
+</html>

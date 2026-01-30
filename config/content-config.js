@@ -1,0 +1,171 @@
+/**
+ * Content Configuration
+ * Centralized configuration for dates, company info, and content management
+ */
+
+'use strict';
+
+/**
+ * Get current year (for copyright and current date references)
+ */
+function getCurrentYear() {
+  return new Date().getFullYear();
+}
+
+/**
+ * Format date as "Month YYYY" (e.g., "January 2026")
+ */
+function formatMonthYear(date) {
+  const months = [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
+  ];
+  return `${months[date.getMonth()]} ${date.getFullYear()}`;
+}
+
+/**
+ * Content configuration object
+ * All placeholders used in HTML templates are defined here
+ */
+const contentConfig = {
+  // Date Management
+  dates: {
+    currentYear: getCurrentYear(),
+    copyrightYear: getCurrentYear(),
+    // Legal document dates - update these when legal docs are revised
+    legalLastUpdated: 'January 2026',
+    legalEffectiveDate: 'January 2026',
+    // Sitemap last modification date
+    sitemapLastMod: new Date().toISOString().split('T')[0], // YYYY-MM-DD format
+  },
+
+  // Company Information
+  company: {
+    name: 'EventFlow Limited',
+    nameLegal: 'EventFlow Limited',
+    registrationNumber: '12345678', // TODO: Update with actual company registration number
+    tradingName: 'EventFlow',
+  },
+
+  // Contact Information
+  contact: {
+    supportEmail: 'support@event-flow.co.uk',
+    adminEmail: 'admin@event-flow.co.uk',
+    abuseEmail: 'abuse@event-flow.co.uk',
+    salesEmail: 'sales@event-flow.co.uk',
+    privacyEmail: 'privacy@event-flow.co.uk',
+    // TODO: Update with actual company address before production deployment
+    address: {
+      line1: '123 Business Street',
+      line2: 'Floor 2',
+      city: 'London',
+      postcode: 'EC1A 1BB',
+      country: 'United Kingdom',
+    },
+  },
+
+  // Website URLs
+  urls: {
+    domain: 'event-flow.co.uk',
+    websiteUrl: 'https://event-flow.co.uk',
+    legalHub: 'https://event-flow.co.uk/legal.html',
+    termsUrl: 'https://event-flow.co.uk/terms.html',
+    privacyUrl: 'https://event-flow.co.uk/privacy.html',
+  },
+
+  // Feature Flags (for progressive rollout)
+  features: {
+    marketplaceEnabled: true,
+    aiAssistantEnabled: false,
+    videoCallsEnabled: false,
+  },
+
+  // Version Management
+  version: {
+    contentVersion: '1.0.0',
+    lastContentUpdate: new Date().toISOString(),
+  },
+};
+
+/**
+ * Get all placeholder values as a flat object for template replacement
+ * @returns {Object} Flat object with all placeholder key-value pairs
+ */
+function getPlaceholders() {
+  return {
+    // Date placeholders
+    CURRENT_YEAR: contentConfig.dates.currentYear.toString(),
+    COPYRIGHT_YEAR: contentConfig.dates.copyrightYear.toString(),
+    LEGAL_LAST_UPDATED: contentConfig.dates.legalLastUpdated,
+    LEGAL_EFFECTIVE_DATE: contentConfig.dates.legalEffectiveDate,
+    SITEMAP_LAST_MOD: contentConfig.dates.sitemapLastMod,
+
+    // Company placeholders
+    COMPANY_NAME: contentConfig.company.name,
+    COMPANY_NAME_LEGAL: contentConfig.company.nameLegal,
+    COMPANY_REGISTRATION: contentConfig.company.registrationNumber,
+    TRADING_NAME: contentConfig.company.tradingName,
+
+    // Contact placeholders
+    SUPPORT_EMAIL: contentConfig.contact.supportEmail,
+    ADMIN_EMAIL: contentConfig.contact.adminEmail,
+    ABUSE_EMAIL: contentConfig.contact.abuseEmail,
+    SALES_EMAIL: contentConfig.contact.salesEmail,
+    PRIVACY_EMAIL: contentConfig.contact.privacyEmail,
+    COMPANY_ADDRESS_LINE1: contentConfig.contact.address.line1,
+    COMPANY_ADDRESS_LINE2: contentConfig.contact.address.line2,
+    COMPANY_ADDRESS_CITY: contentConfig.contact.address.city,
+    COMPANY_ADDRESS_POSTCODE: contentConfig.contact.address.postcode,
+    COMPANY_ADDRESS_COUNTRY: contentConfig.contact.address.country,
+
+    // URL placeholders
+    DOMAIN: contentConfig.urls.domain,
+    WEBSITE_URL: contentConfig.urls.websiteUrl,
+    LEGAL_HUB_URL: contentConfig.urls.legalHub,
+    TERMS_URL: contentConfig.urls.termsUrl,
+    PRIVACY_URL: contentConfig.urls.privacyUrl,
+  };
+}
+
+/**
+ * Update legal document dates
+ * @param {string} lastUpdated - Last updated date (e.g., "January 2026")
+ * @param {string} effectiveDate - Effective date (e.g., "January 2026")
+ */
+function updateLegalDates(lastUpdated, effectiveDate) {
+  if (lastUpdated) {
+    contentConfig.dates.legalLastUpdated = lastUpdated;
+  }
+  if (effectiveDate) {
+    contentConfig.dates.legalEffectiveDate = effectiveDate;
+  }
+  contentConfig.version.lastContentUpdate = new Date().toISOString();
+}
+
+/**
+ * Get content configuration
+ * @returns {Object} Content configuration object
+ */
+function getConfig() {
+  // Refresh current year on each call
+  contentConfig.dates.currentYear = getCurrentYear();
+  contentConfig.dates.copyrightYear = getCurrentYear();
+  return contentConfig;
+}
+
+module.exports = {
+  getConfig,
+  getPlaceholders,
+  updateLegalDates,
+  contentConfig,
+};

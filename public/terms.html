@@ -121,7 +121,7 @@
   <div class='container'>
     <h1>Terms of Use</h1>
     <div class="card" style="max-width: 900px; margin: 0 auto;">
-      <p class="small" style="color:#667085;"><strong>Last updated:</strong> December 2024</p>
+      <p class="small" style="color:#667085;"><strong>Last updated:</strong> {{LEGAL_LAST_UPDATED}}</p>
 
       <p>These Terms of Use (the "Terms") describe the terms and conditions on which EventFlow Limited, a company registered in England and Wales ("EventFlow," "we," "us," or "our") makes its website and services available to Users. These Terms apply to all websites and mobile applications owned and operated by us, including but not limited to www.event-flow.co.uk and related online services (collectively, the "Services").</p>
 
@@ -140,6 +140,7 @@
         <li><strong>Website Visitors:</strong> Individual users accessing our Services or browsing our websites</li>
         <li><strong>Customers:</strong> Individual users who have registered to create an account with us for planning events</li>
         <li><strong>Suppliers:</strong> Companies and individuals offering products and services related to events</li>
+        <li><strong>Marketplace Users:</strong> Buyers and sellers using our peer-to-peer marketplace for event items</li>
       </ul>
 
       <h3 class="h5">a. Customers</h3>
@@ -227,6 +228,8 @@
 
       <p>You may use the Services and Intellectual Property Content for your own personal, non-commercial use, but you may not use it for commercial purposes. You may not modify, copy, reproduce, republish, upload, post, transmit, translate, sell, create derivative works, exploit, or distribute any material from the Services unless explicitly authorised.</p>
 
+      <p><strong>Marketplace Listings:</strong> When you upload photos or content for marketplace listings, you grant EventFlow a non-exclusive, worldwide, royalty-free license to display, reproduce, and distribute that content on our platform. This license continues while your listing is active and terminates when you delete the listing. See Section 24 (Marketplace Terms) for detailed information.</p>
+
       <h2 class="h4">11. Content Submitted by Users</h2>
       <p>Any information submitted by you to the Services is "Submitted Content." You retain ownership of Intellectual Property Content that forms part of your Submitted Content.</p>
 
@@ -306,9 +309,9 @@
       <h2 class="h4">22. Contact and Reporting</h2>
       <p>If you need to contact us or report issues:</p>
       <ul>
-        <li><strong>Email:</strong> support@event-flow.co.uk</li>
+        <li><strong>Email:</strong> {{SUPPORT_EMAIL}}</li>
         <li><strong>Address:</strong> EventFlow Limited, United Kingdom</li>
-        <li><strong>Abuse Reports:</strong> Use the contact form or email abuse@event-flow.co.uk</li>
+        <li><strong>Abuse Reports:</strong> Use the contact form or email {{ABUSE_EMAIL}}</li>
       </ul>
 
       <p>We will review reports and respond within 90 days or as required by law.</p>
@@ -316,9 +319,143 @@
       <h2 class="h4">23. Data Protection</h2>
       <p>EventFlow processes personal data in accordance with our Privacy Notice and applicable data protection legislation including the UK GDPR. For full details, please see our Privacy Notice.</p>
 
+      <h2 class="h4">24. Marketplace Terms</h2>
+      <p>The EventFlow Marketplace is a peer-to-peer platform where users can buy and sell physical event-related items. This section applies specifically to marketplace users (buyers and sellers).</p>
+      
+      <h3 class="h5">a. Marketplace Nature and Platform Role</h3>
+      <p><strong>Peer-to-Peer Transactions:</strong> The marketplace facilitates direct transactions between individual users. EventFlow is not a party to these transactions and does not buy, sell, or own any items listed on the marketplace.</p>
+      
+      <p><strong>Platform Role:</strong> We provide the technology platform and tools for users to list items, communicate, and arrange transactions. We do not:</p>
+      <ul>
+        <li>Verify item conditions, authenticity, or descriptions</li>
+        <li>Process payments or handle money transfers</li>
+        <li>Arrange delivery or logistics</li>
+        <li>Inspect or test items before sale</li>
+        <li>Guarantee user identity or reliability</li>
+      </ul>
+
+      <h3 class="h5">b. Seller Obligations and Requirements</h3>
+      <p><strong>Accurate Listings:</strong> Sellers must provide truthful, complete, and accurate descriptions of items including:</p>
+      <ul>
+        <li>Item condition (new, like new, good, fair, poor)</li>
+        <li>Dimensions, size, weight, and specifications</li>
+        <li>Any defects, damage, or wear</li>
+        <li>Clear, genuine photos showing the actual item</li>
+        <li>Fair pricing based on item condition</li>
+      </ul>
+
+      <p><strong>Legal Compliance:</strong> Sellers represent and warrant that:</p>
+      <ul>
+        <li>They own the items or have permission to sell them</li>
+        <li>Items are legal to sell in the UK</li>
+        <li>They have rights to all photos and content uploaded</li>
+        <li>They comply with consumer protection and safety laws</li>
+        <li>They handle any applicable tax obligations (including VAT if applicable)</li>
+      </ul>
+
+      <p><strong>Prohibited Items:</strong> Sellers must not list:</p>
+      <ul>
+        <li>Counterfeit or replica items</li>
+        <li>Stolen or illegally obtained goods</li>
+        <li>Dangerous or hazardous materials</li>
+        <li>Weapons, explosives, or controlled substances</li>
+        <li>Services (use supplier listings instead)</li>
+        <li>Items violating intellectual property rights</li>
+        <li>Perishable food items</li>
+      </ul>
+
+      <h3 class="h5">c. Buyer Responsibilities</h3>
+      <p><strong>Due Diligence:</strong> Buyers are responsible for:</p>
+      <ul>
+        <li>Reviewing item descriptions and photos carefully</li>
+        <li>Asking questions about condition and specifications</li>
+        <li>Verifying seller location and collection arrangements</li>
+        <li>Agreeing on payment methods and terms before purchase</li>
+        <li>Inspecting items in person before payment when collecting</li>
+      </ul>
+
+      <p><strong>Safe Transactions:</strong> Buyers should:</p>
+      <ul>
+        <li>Use secure payment methods with buyer protection</li>
+        <li>Meet sellers in public, well-lit locations</li>
+        <li>Bring someone with you for high-value items</li>
+        <li>Trust your instincts and report suspicious behavior</li>
+      </ul>
+
+      <h3 class="h5">d. Prohibited Conduct</h3>
+      <p>All marketplace users must not engage in:</p>
+      <ul>
+        <li>Fake, misleading, or fraudulent listings</li>
+        <li>Bait-and-switch tactics</li>
+        <li>Harassment or threatening behavior</li>
+        <li>Price manipulation or artificial scarcity</li>
+        <li>Circumventing platform policies</li>
+        <li>Identity theft or impersonation</li>
+        <li>Discrimination based on protected characteristics</li>
+      </ul>
+
+      <h3 class="h5">e. Liability Disclaimer</h3>
+      <p><strong>NO LIABILITY FOR ITEMS OR TRANSACTIONS:</strong> EventFlow is not responsible or liable for:</p>
+      <ul>
+        <li>Item quality, condition, authenticity, safety, or legality</li>
+        <li>Accuracy of listings, descriptions, or photos</li>
+        <li>Payment disputes, fraud, or financial losses</li>
+        <li>Delivery issues, logistics problems, or item damage in transit</li>
+        <li>User conduct, reliability, or trustworthiness</li>
+        <li>Disputes between buyers and sellers</li>
+        <li>Personal injury or property damage related to marketplace items</li>
+      </ul>
+
+      <p><strong>AS IS BASIS:</strong> All marketplace items are sold "as is" between users. EventFlow makes no warranties, express or implied, regarding marketplace items or transactions.</p>
+
+      <p><strong>USER RISK:</strong> Users assume all risks when buying or selling through the marketplace. We strongly recommend using secure payment methods with buyer protection and meeting in safe, public locations.</p>
+
+      <h3 class="h5">f. Content Licensing</h3>
+      <p>When you create a marketplace listing, you grant EventFlow a non-exclusive, worldwide, royalty-free license to:</p>
+      <ul>
+        <li>Display your photos and descriptions on our platform</li>
+        <li>Reproduce and distribute listing content for platform purposes</li>
+        <li>Use listing data for search, recommendations, and analytics</li>
+      </ul>
+
+      <p>This license continues while your listing is active and terminates when you delete the listing. You retain ownership of all content you upload.</p>
+
+      <h3 class="h5">g. Listing Removal and Enforcement</h3>
+      <p>EventFlow reserves the right to remove marketplace listings and suspend or ban users for:</p>
+      <ul>
+        <li>Violations of these marketplace terms</li>
+        <li>Prohibited items or conduct</li>
+        <li>User complaints or reports</li>
+        <li>Suspected fraud or misrepresentation</li>
+        <li>Inactivity (listings over 90 days may be archived)</li>
+        <li>Copyright or trademark infringement</li>
+        <li>Safety concerns</li>
+      </ul>
+
+      <p>We may also cooperate with law enforcement and provide user information as required by law or to prevent illegal activity.</p>
+
+      <h3 class="h5">h. Dispute Resolution</h3>
+      <p>If disputes arise between marketplace users:</p>
+      <ol>
+        <li>Users should first attempt to resolve issues directly</li>
+        <li>Users may contact {{ABUSE_EMAIL}} for platform mediation</li>
+        <li>EventFlow may investigate and take action (listing removal, account suspension)</li>
+        <li>Serious disputes may require legal action through small claims court or consumer rights services</li>
+      </ol>
+
+      <p>EventFlow is not obligated to mediate disputes and any mediation is at our sole discretion.</p>
+
+      <h3 class="h5">i. Additional Resources</h3>
+      <p>For detailed guidance on using the marketplace safely and effectively, see:</p>
+      <ul>
+        <li><a href="/legal.html#marketplace-terms">Legal Hub - Marketplace Terms</a> - Complete marketplace policies</li>
+        <li><a href="/articles/marketplace-guide.html">Marketplace User Guide</a> - Step-by-step guide for buyers and sellers</li>
+        <li><a href="/privacy.html">Privacy Notice</a> - How we handle marketplace data</li>
+      </ul>
+
       <hr style="margin: 2rem 0; border: none; border-top: 1px solid #E7EAF0;">
 
-      <p class="small" style="color:#667085;"><em>These Terms of Use are effective as of December 2024. EventFlow Limited reserves the right to update these terms as needed to comply with applicable law and reflect changes to our services.</em></p>
+      <p class="small" style="color:#667085;"><em>These Terms of Use are effective as of {{LEGAL_EFFECTIVE_DATE}}. EventFlow Limited reserves the right to update these terms as needed to comply with applicable law and reflect changes to our services.</em></p>
     </div>
   </div>
 </main>

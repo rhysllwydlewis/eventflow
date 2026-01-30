@@ -91,18 +91,18 @@
   <div class='container'>
     <h1>Privacy Notice</h1>
     <div class="card" style="max-width: 900px; margin: 0 auto;">
-      <p class="small" style="color:#667085;"><strong>Last updated:</strong> December 2024</p>
-      <p class="small" style="color:#667085;"><strong>Effective date:</strong> December 2024</p>
+      <p class="small" style="color:#667085;"><strong>Last updated:</strong> {{LEGAL_LAST_UPDATED}}</p>
+      <p class="small" style="color:#667085;"><strong>Effective date:</strong> {{LEGAL_EFFECTIVE_DATE}}</p>
 
       <p>EventFlow Limited ("EventFlow," "we," "us," or "our") is committed to protecting your privacy and personal data. This Privacy Notice explains how we collect, use, store, and protect your personal information when you use our website and services at www.event-flow.co.uk and related platforms (collectively, the "Services").</p>
 
-      <p>This Privacy Notice applies to all users of our Services, including website visitors, customers planning events, and suppliers offering event-related services.</p>
+      <p>This Privacy Notice applies to all users of our Services, including website visitors, customers planning events, suppliers offering event-related services, and marketplace users buying or selling event items.</p>
 
       <h2 class="h4">1. Data Controller Information</h2>
       <p><strong>Organisation:</strong> EventFlow Limited<br>
       <strong>Registered in:</strong> England and Wales<br>
-      <strong>Contact Email:</strong> <a href="mailto:admin@event-flow.co.uk">admin@event-flow.co.uk</a><br>
-      <strong>Data Protection Officer:</strong> admin@event-flow.co.uk</p>
+      <strong>Contact Email:</strong> <a href="mailto:{{ADMIN_EMAIL}}">{{ADMIN_EMAIL}}</a><br>
+      <strong>Data Protection Officer:</strong> {{ADMIN_EMAIL}}</p>
 
       <p>EventFlow is the data controller responsible for your personal data. If you have any questions about how we process your data or wish to exercise your rights, please contact us using the details above.</p>
 
@@ -154,6 +154,18 @@
         <li><strong>Authentication Tokens:</strong> JWT tokens stored in HTTP-only cookies for session management</li>
       </ul>
 
+      <h3 class="h5">2.6 Marketplace Data</h3>
+      <p>When you use the EventFlow Marketplace to list, browse, or purchase event items, we collect:</p>
+      <ul>
+        <li><strong>Listing Information:</strong> Item title, description, price, location, category, condition, availability status</li>
+        <li><strong>Item Photos:</strong> Images you upload for marketplace listings (stored securely in AWS S3 cloud storage)</li>
+        <li><strong>Transaction Data:</strong> Listing status (active, sold, removed, expired), view counts, listing creation and modification dates</li>
+        <li><strong>Communication Data:</strong> Messages exchanged between buyers and sellers through our platform messaging system</li>
+        <li><strong>User Activity:</strong> Items viewed, searches performed, saved listings, listing performance metrics</li>
+      </ul>
+
+      <p><strong>Important:</strong> EventFlow does not collect or process payment information for marketplace transactions. Buyers and sellers arrange payment directly using their chosen payment methods (PayPal, bank transfer, cash, etc.). We are not party to marketplace transactions and do not handle money transfers.</p>
+
       <h2 class="h4">3. Legal Basis for Processing</h2>
       <p>We process your personal data under the following lawful bases as defined by the UK General Data Protection Regulation (UK GDPR):</p>
 
@@ -196,6 +208,8 @@
         <li>Enabling event planning tools and features</li>
         <li>Facilitating connections between customers and suppliers</li>
         <li>Processing and displaying supplier profiles and portfolios</li>
+        <li>Operating the marketplace platform (listing display, search, user communication)</li>
+        <li>Connecting marketplace buyers and sellers</li>
       </ul>
 
       <h3 class="h5">4.2 Communication</h3>
@@ -311,6 +325,21 @@
             <td style="padding: 12px;">Until account deletion</td>
             <td style="padding: 12px;">User communication history</td>
           </tr>
+          <tr style="border-bottom: 1px solid #E7EAF0;">
+            <td style="padding: 12px;">Marketplace listings</td>
+            <td style="padding: 12px;">Until user deletes or marks as sold</td>
+            <td style="padding: 12px;">Marketplace functionality and user control</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #E7EAF0;">
+            <td style="padding: 12px;">Marketplace photos</td>
+            <td style="padding: 12px;">Until removal requested or listing deleted</td>
+            <td style="padding: 12px;">Listing display and user-controlled content</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #E7EAF0;">
+            <td style="padding: 12px;">Marketplace messages</td>
+            <td style="padding: 12px;">Until account deletion</td>
+            <td style="padding: 12px;">Buyer-seller communication and dispute resolution</td>
+          </tr>
           <tr>
             <td style="padding: 12px;">Data export files</td>
             <td style="padding: 12px;">Immediate deletion recommended</td>
@@ -335,11 +364,12 @@
 
       <h3 class="h5">7.2 Cloud Storage Providers</h3>
       <ul>
-        <li><strong>AWS S3 (Amazon Simple Storage Service)</strong> – Secure photo and file storage</li>
+        <li><strong>AWS S3 (Amazon Simple Storage Service)</strong> – Secure photo and file storage (including marketplace listing photos)</li>
       </ul>
-      <p><strong>Data Shared:</strong> Uploaded photos and media files<br>
+      <p><strong>Data Shared:</strong> Uploaded photos and media files (supplier portfolios, marketplace listings)<br>
       <strong>Region:</strong> Configurable (EU/UK regions available)<br>
-      <strong>Safeguards:</strong> Encryption at rest and in transit, access controls</p>
+      <strong>Safeguards:</strong> Encryption at rest and in transit, access controls<br>
+      <strong>Marketplace Photos:</strong> AWS S3 stores all marketplace listing photos uploaded by sellers. Photos are deleted when listings are removed or users request deletion.</p>
 
       <h3 class="h5">7.3 Database Providers</h3>
       <ul>
@@ -510,7 +540,7 @@
 
       <hr style="margin: 2rem 0; border: none; border-top: 1px solid #E7EAF0;">
 
-      <p class="small" style="color:#667085;"><em>This Privacy Notice is effective as of December 2024. EventFlow Limited is committed to transparency and protecting your privacy rights under UK data protection law. For questions or to exercise your rights, contact <a href="mailto:admin@event-flow.co.uk">admin@event-flow.co.uk</a>.</em></p>
+      <p class="small" style="color:#667085;"><em>This Privacy Notice is effective as of {{LEGAL_EFFECTIVE_DATE}}. EventFlow Limited is committed to transparency and protecting your privacy rights under UK data protection law. For questions or to exercise your rights, contact <a href="mailto:{{ADMIN_EMAIL}}">{{ADMIN_EMAIL}}</a>.</em></p>
     </div>
   </div>
 </main>

@@ -4702,7 +4702,10 @@ router.put(
         }
       }
 
-      if (transition?.effect && !['fade', 'slide', 'zoom', 'crossfade'].includes(transition.effect)) {
+      if (
+        transition?.effect &&
+        !['fade', 'slide', 'zoom', 'crossfade'].includes(transition.effect)
+      ) {
         return res.status(400).json({ error: 'Invalid transition effect' });
       }
 
@@ -4772,7 +4775,10 @@ router.put(
         settings.collageWidget.heroVideo = { ...settings.collageWidget.heroVideo, ...heroVideo };
       }
       if (videoQuality !== undefined) {
-        settings.collageWidget.videoQuality = { ...settings.collageWidget.videoQuality, ...videoQuality };
+        settings.collageWidget.videoQuality = {
+          ...settings.collageWidget.videoQuality,
+          ...videoQuality,
+        };
       }
       if (transition !== undefined) {
         settings.collageWidget.transition = { ...settings.collageWidget.transition, ...transition };
@@ -4781,13 +4787,22 @@ router.put(
         settings.collageWidget.preloading = { ...settings.collageWidget.preloading, ...preloading };
       }
       if (mobileOptimizations !== undefined) {
-        settings.collageWidget.mobileOptimizations = { ...settings.collageWidget.mobileOptimizations, ...mobileOptimizations };
+        settings.collageWidget.mobileOptimizations = {
+          ...settings.collageWidget.mobileOptimizations,
+          ...mobileOptimizations,
+        };
       }
       if (contentFiltering !== undefined) {
-        settings.collageWidget.contentFiltering = { ...settings.collageWidget.contentFiltering, ...contentFiltering };
+        settings.collageWidget.contentFiltering = {
+          ...settings.collageWidget.contentFiltering,
+          ...contentFiltering,
+        };
       }
       if (playbackControls !== undefined) {
-        settings.collageWidget.playbackControls = { ...settings.collageWidget.playbackControls, ...playbackControls };
+        settings.collageWidget.playbackControls = {
+          ...settings.collageWidget.playbackControls,
+          ...playbackControls,
+        };
       }
 
       settings.collageWidget.updatedAt = new Date().toISOString();
@@ -5821,6 +5836,133 @@ router.get('/public/pexels-video', async (req, res) => {
       message: error.userFriendlyMessage || error.message,
       errorType: error.type || 'unknown',
       details: error.message,
+    });
+  }
+});
+
+/**
+ * PUT /api/admin/content-config
+ * Update content configuration (legal dates, company info)
+ */
+router.put('/content-config', authRequired, roleRequired('admin'), async (req, res) => {
+  try {
+    const { legalLastUpdated, legalEffectiveDate } = req.body;
+
+    // Validation
+    if (!legalLastUpdated || !legalEffectiveDate) {
+      return res.status(400).json({
+        error: 'Missing required fields',
+        message: 'Both legalLastUpdated and legalEffectiveDate are required',
+      });
+    }
+
+    // Validate date format (Month YYYY)
+    const validMonths = [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
+    ];
+    const datePattern = /^([A-Za-z]+)\s+(\d{4})$/;
+
+    const validateDate = (dateStr, fieldName) => {
+      const match = dateStr.match(datePattern);
+      if (!match) {
+        throw new Error(`${fieldName} must be in format "Month YYYY" (e.g., "January 2026")`);
+      }
+      const [, month, year] = match;
+      if (!validMonths.includes(month)) {
+        throw new Error(
+          `${fieldName} has invalid month "${month}". Use full month name (e.g., "January")`
+        );
+      }
+      const yearNum = parseInt(year, 10);
+      if (yearNum < 2020 || yearNum > 2100) {
+        throw new Error(`${fieldName} has unrealistic year "${year}". Use year between 2020-2100`);
+      }
+    };
+
+    try {
+      validateDate(legalLastUpdated, 'legalLastUpdated');
+      validateDate(legalEffectiveDate, 'legalEffectiveDate');
+    } catch (err) {
+      return res.status(400).json({
+        error: 'Invalid date format',
+        message: err.message,
+      });
+    }
+
+    // Read the content-config.js file asynchronously
+    const fs = require('fs').promises;
+    const path = require('path');
+    const configPath = path.join(__dirname, '..', 'config', 'content-config.js');
+
+    let configContent = await fs.readFile(configPath, 'utf8');
+
+    // Sanitize inputs by escaping quotes
+    const sanitize = str => str.replace(/'/g, "\\'");
+    const sanitizedLastUpdated = sanitize(legalLastUpdated);
+    const sanitizedEffectiveDate = sanitize(legalEffectiveDate);
+
+    // Update the dates using regex
+    configContent = configContent.replace(
+      /legalLastUpdated:\s*['"].*?['"]/,
+      `legalLastUpdated: '${sanitizedLastUpdated}'`
+    );
+    configContent = configContent.replace(
+      /legalEffectiveDate:\s*['"].*?['"]/,
+      `legalEffectiveDate: '${sanitizedEffectiveDate}'`
+    );
+
+    // Write the file back asynchronously
+    await fs.writeFile(configPath, configContent, 'utf8');
+
+    // Clear the require cache for the config module
+    const configModulePath = require.resolve('../config/content-config');
+    delete require.cache[configModulePath];
+
+    // Clear the template cache - this is critical for changes to take effect
+    try {
+      const { clearCache } = require('../utils/template-renderer');
+      clearCache();
+      console.log('✅ Template cache cleared successfully');
+    } catch (err) {
+      console.error('❌ Failed to clear template cache:', err);
+      // Return error since cache clearing is critical
+      return res.status(500).json({
+        error: 'Configuration updated but cache clearing failed',
+        message: 'Changes may not be visible until server restart. Please contact administrator.',
+        details: err.message,
+      });
+    }
+
+    // Audit log
+    await auditLog(req, AUDIT_ACTIONS.SETTINGS_UPDATE, {
+      category: 'content-config',
+      legalLastUpdated,
+      legalEffectiveDate,
+    });
+
+    res.json({
+      success: true,
+      message: 'Content configuration updated successfully',
+      note: 'Changes take effect immediately for new page requests',
+      legalLastUpdated,
+      legalEffectiveDate,
+    });
+  } catch (error) {
+    console.error('Error updating content config:', error);
+    res.status(500).json({
+      error: 'Failed to update content configuration',
+      message: error.message,
     });
   }
 });

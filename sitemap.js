@@ -83,6 +83,7 @@ async function generateSitemap(baseUrl) {
       'sustainable-event-planning-guide.html',
       'corporate-event-planning-guide.html',
       'birthday-party-planning-guide.html',
+      'marketplace-guide.html',
     ];
 
     articles.forEach(article => {
