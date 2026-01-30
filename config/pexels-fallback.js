@@ -261,7 +261,7 @@ const FALLBACK_PHOTOS = [
  * All videos are free to use per Pexels license
  *
  * ✅ UPDATED: Now using direct Pexels CDN URLs (not deprecated Vimeo external links)
- * 
+ *
  * URL Format: https://videos.pexels.com/video-files/{ID}/{ID}-{quality}_{width}_{height}_{fps}fps.mp4
  * - These URLs are stable and provided directly from Pexels CDN
  * - Multiple quality/fps variants are provided as fallbacks for browser compatibility
@@ -269,7 +269,7 @@ const FALLBACK_PHOTOS = [
  *
  * Note: These fallback URLs should be periodically validated to ensure they remain accessible.
  * If URLs become broken, they should be replaced with fresh URLs from the Pexels API.
- * 
+ *
  * To validate: Test each video URL in a browser or use the Pexels API to fetch current URLs.
  * To update: Use the Pexels Video API to get the latest video file links.
  */

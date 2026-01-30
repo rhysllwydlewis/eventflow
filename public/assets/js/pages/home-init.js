@@ -1556,13 +1556,15 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = [], heroVideoCo
         const video = data.videos[0];
         // Determine quality preference from config
         const qualityPreference = heroVideoConfig.quality || 'hd';
-        
+
         // Filter and sort video files based on quality preference
-        let videoFiles = (video.video_files || []).filter(f => f.quality === 'hd' || f.quality === 'sd');
-        
+        const videoFiles = (video.video_files || []).filter(
+          f => f.quality === 'hd' || f.quality === 'sd'
+        );
+
         if (qualityPreference === 'sd') {
           // Prefer SD quality first, then HD as fallback
-          videoFiles.sort((a, b) => (a.quality === 'sd') ? -1 : (b.quality === 'sd') ? 1 : 0);
+          videoFiles.sort((a, b) => (a.quality === 'sd' ? -1 : b.quality === 'sd' ? 1 : 0));
         }
         // For 'hd' and 'auto', HD is preferred first (default order)
 
@@ -1790,11 +1792,11 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = [], heroVideoCo
  * @param {Object} widgetConfig - Configuration from backend
  */
 async function initCollageWidget(widgetConfig) {
-  const { 
-    source, 
-    intervalSeconds, 
-    pexelsQueries, 
-    uploadGallery, 
+  const {
+    source,
+    intervalSeconds,
+    pexelsQueries,
+    uploadGallery,
     fallbackToPexels,
     heroVideo,
     videoQuality,
@@ -1812,8 +1814,10 @@ async function initCollageWidget(widgetConfig) {
   const MOBILE_TRANSITION_MULTIPLIER = 1.5;
 
   // Check for mobile device
-  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-  
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+    navigator.userAgent
+  );
+
   // Apply mobile optimizations
   let effectiveIntervalMs = (intervalSeconds || 2.5) * 1000;
   if (isMobile && mobileOptimizations?.slowerTransitions) {
@@ -1821,7 +1825,7 @@ async function initCollageWidget(widgetConfig) {
   }
 
   // Check if videos should be disabled on mobile
-  let effectiveMediaTypes = { ...mediaTypes };
+  const effectiveMediaTypes = { ...mediaTypes };
   if (isMobile && mobileOptimizations?.disableVideos) {
     effectiveMediaTypes.videos = false;
   }

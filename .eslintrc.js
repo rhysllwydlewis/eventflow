@@ -52,7 +52,7 @@ module.exports = {
       },
     },
     {
-      files: ['public/**/*.js'],
+      files: ['public/**/*.js', 'utils/analytics.js', 'utils/url-state.js'],
       env: {
         browser: true,
         node: false,

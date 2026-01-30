@@ -14,27 +14,27 @@ const logger = require('../utils/logger');
 
 /**
  * Configure Helmet with Content Security Policy
- * 
+ *
  * SECURITY NOTE: 'unsafe-inline' in scriptSrc
  * ============================================
  * Currently required for inline event handlers (onclick, onerror) in HTML.
- * 
+ *
  * Files with inline handlers that need refactoring:
  * - public/index.html (onclick handlers)
  * - public/suppliers.html (onclick handlers)
  * - public/gallery.html (onclick, onerror handlers)
  * - Various other HTML files
- * 
+ *
  * REMEDIATION PLAN (Future PR):
  * 1. Audit all HTML files for inline handlers
  * 2. Move handlers to external JS files with addEventListener
  * 3. Remove 'unsafe-inline' from scriptSrc
  * 4. Test thoroughly across all pages
- * 
+ *
  * Risk Assessment: MEDIUM
  * - XSS attacks via inline script injection possible
  * - Mitigated by input sanitization and other CSP directives
- * 
+ *
  * @param {boolean} isProduction - Whether running in production
  * @returns {Function} Helmet middleware
  */

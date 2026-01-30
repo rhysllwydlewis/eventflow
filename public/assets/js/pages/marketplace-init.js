@@ -4,12 +4,19 @@
  */
 
 import { getFiltersFromURL, updateURL, handlePopState } from '../../../utils/url-state.js';
-import { trackSearch, trackFilterChange, trackResultClick, trackShortlistAdd } from '../../../utils/analytics.js';
+import {
+  trackSearch,
+  trackFilterChange,
+  trackResultClick,
+  trackShortlistAdd,
+} from '../../../utils/analytics.js';
 import shortlistManager from '../utils/shortlist-manager.js';
 
 // HTML escaping utility
 function escapeHtml(unsafe) {
-  if (typeof unsafe !== 'string') return '';
+  if (typeof unsafe !== 'string') {
+    return '';
+  }
   const div = document.createElement('div');
   div.textContent = unsafe;
   return div.innerHTML;
@@ -21,9 +28,10 @@ function createListingCard(listing, position) {
   const shortlistBtnClass = isInShortlist ? 'btn-shortlist-active' : '';
   const shortlistBtnText = isInShortlist ? '❤️ Saved' : '♡ Save';
 
-  const imageUrl = listing.images && listing.images.length > 0 
-    ? listing.images[0] 
-    : '/assets/images/placeholder-listing.jpg';
+  const imageUrl =
+    listing.images && listing.images.length > 0
+      ? listing.images[0]
+      : '/assets/images/placeholder-listing.jpg';
 
   const condition = listing.condition || 'Good';
   const priceDisplay = listing.price ? `£${listing.price}` : 'Price on request';
@@ -68,15 +76,21 @@ function createListingCard(listing, position) {
 
 // Skeleton loading cards
 function createSkeletonCards(count = 3) {
-  return Array(count).fill().map(() => `
+  return Array(count)
+    .fill()
+    .map(
+      () => `
     <div class="card skeleton-card" style="height: 300px; margin-bottom: 20px;"></div>
-  `).join('');
+  `
+    )
+    .join('');
 }
 
 // Empty state
 function createEmptyState(filters) {
-  const hasFilters = filters.q || filters.category || filters.location || filters.budgetMin || filters.budgetMax;
-  
+  const hasFilters =
+    filters.q || filters.category || filters.location || filters.budgetMin || filters.budgetMax;
+
   return `
     <div class="empty-state">
       <div class="empty-state-icon">🔍</div>
@@ -93,13 +107,25 @@ function createEmptyState(filters) {
 // Search marketplace listings
 async function searchListings(filters, page = 1) {
   const params = new URLSearchParams();
-  
-  if (filters.q) params.set('q', filters.q);
-  if (filters.location) params.set('location', filters.location);
-  if (filters.category) params.set('category', filters.category);
-  if (filters.budgetMin) params.set('minPrice', filters.budgetMin);
-  if (filters.budgetMax) params.set('maxPrice', filters.budgetMax);
-  if (filters.sort) params.set('sortBy', filters.sort);
+
+  if (filters.q) {
+    params.set('q', filters.q);
+  }
+  if (filters.location) {
+    params.set('location', filters.location);
+  }
+  if (filters.category) {
+    params.set('category', filters.category);
+  }
+  if (filters.budgetMin) {
+    params.set('minPrice', filters.budgetMin);
+  }
+  if (filters.budgetMax) {
+    params.set('maxPrice', filters.budgetMax);
+  }
+  if (filters.sort) {
+    params.set('sortBy', filters.sort);
+  }
   params.set('page', page);
   params.set('limit', 20);
 
@@ -153,7 +179,9 @@ async function initMarketplacePage() {
 
   // Render results
   async function renderResults() {
-    if (isLoading) return;
+    if (isLoading) {
+      return;
+    }
     isLoading = true;
 
     // Show skeleton loading
@@ -176,16 +204,17 @@ async function initMarketplacePage() {
         resultsContainer.innerHTML = createEmptyState(currentFilters);
         attachEmptyStateHandlers();
       } else {
-        resultsContainer.innerHTML = results.map((listing, index) => 
-          createListingCard(listing, index + 1)
-        ).join('');
+        resultsContainer.innerHTML = results
+          .map((listing, index) => createListingCard(listing, index + 1))
+          .join('');
         attachCardHandlers();
       }
 
       // TODO: Add pagination controls
     } catch (error) {
       console.error('Render error:', error);
-      resultsContainer.innerHTML = '<div class="card"><p>Error loading listings. Please try again.</p></div>';
+      resultsContainer.innerHTML =
+        '<div class="card"><p>Error loading listings. Please try again.</p></div>';
     } finally {
       isLoading = false;
     }
@@ -195,7 +224,7 @@ async function initMarketplacePage() {
   function attachCardHandlers() {
     // Shortlist buttons
     resultsContainer.querySelectorAll('.btn-shortlist').forEach(btn => {
-      btn.addEventListener('click', async (e) => {
+      btn.addEventListener('click', async e => {
         e.preventDefault();
         const listingId = btn.dataset.listingId;
         const isActive = btn.classList.contains('btn-shortlist-active');
@@ -224,7 +253,7 @@ async function initMarketplacePage() {
 
     // Track result clicks
     resultsContainer.querySelectorAll('.listing-card-link').forEach(link => {
-      link.addEventListener('click', (e) => {
+      link.addEventListener('click', e => {
         const listingId = link.closest('.listing-card').dataset.listingId;
         const position = parseInt(link.dataset.position, 10);
         trackResultClick('listing', listingId, position);
@@ -239,9 +268,15 @@ async function initMarketplacePage() {
       clearBtn.addEventListener('click', () => {
         currentFilters = { sort: 'newest', page: 1 };
         updateURL(currentFilters, true);
-        if (filterQueryEl) filterQueryEl.value = '';
-        if (filterCategoryEl) filterCategoryEl.value = '';
-        if (filterPriceEl) filterPriceEl.value = '';
+        if (filterQueryEl) {
+          filterQueryEl.value = '';
+        }
+        if (filterCategoryEl) {
+          filterCategoryEl.value = '';
+        }
+        if (filterPriceEl) {
+          filterPriceEl.value = '';
+        }
         renderResults();
       });
     }
@@ -250,7 +285,7 @@ async function initMarketplacePage() {
   // Handle filter changes
   if (filterQueryEl) {
     let debounceTimer;
-    filterQueryEl.addEventListener('input', (e) => {
+    filterQueryEl.addEventListener('input', e => {
       clearTimeout(debounceTimer);
       debounceTimer = setTimeout(() => {
         currentFilters.q = e.target.value;
@@ -263,7 +298,7 @@ async function initMarketplacePage() {
   }
 
   if (filterCategoryEl) {
-    filterCategoryEl.addEventListener('change', (e) => {
+    filterCategoryEl.addEventListener('change', e => {
       currentFilters.category = e.target.value;
       currentFilters.page = 1;
       updateURL(currentFilters);
@@ -273,7 +308,7 @@ async function initMarketplacePage() {
   }
 
   if (filterPriceEl) {
-    filterPriceEl.addEventListener('change', (e) => {
+    filterPriceEl.addEventListener('change', e => {
       // Parse price range (e.g., "0-50", "50-100")
       const range = e.target.value.split('-');
       if (range.length === 2) {
@@ -298,7 +333,7 @@ async function initMarketplacePage() {
   }
 
   // Handle browser back/forward
-  handlePopState((filters) => {
+  handlePopState(filters => {
     currentFilters = filters;
     populateFiltersFromURL();
     renderResults();
@@ -311,8 +346,10 @@ async function initMarketplacePage() {
 
 // Auto-initialize when DOM is ready, only on marketplace page
 function shouldInit() {
-  return document.getElementById('marketplace-results') && 
-         window.location.pathname.includes('marketplace');
+  return (
+    document.getElementById('marketplace-results') &&
+    window.location.pathname.includes('marketplace')
+  );
 }
 
 if (shouldInit()) {

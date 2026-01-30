@@ -19,17 +19,8 @@ const validator = require('validator');
  */
 router.post('/', csrfProtection, async (req, res) => {
   try {
-    const {
-      name,
-      email,
-      phone,
-      eventType,
-      eventDate,
-      location,
-      budget,
-      notes,
-      suppliers,
-    } = req.body;
+    const { name, email, phone, eventType, eventDate, location, budget, notes, suppliers } =
+      req.body;
 
     // Get user if authenticated
     const user = await getUserFromCookie(req);

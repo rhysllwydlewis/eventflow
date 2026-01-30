@@ -9,6 +9,7 @@ This document details the fixes applied in response to the pre-merge review feed
 **Issue**: Confirm /api/shortlist behavior for logged-out users and ensure frontend doesn't spam failing requests.
 
 **Fixes Applied**:
+
 - **`routes/shortlist.js` GET endpoint**: Changed from `authRequired` middleware to `getUserFromCookie` helper that returns empty array for unauthenticated users (no 401)
 - **`shortlist-manager.js`**: Updated `loadFromServer()` to handle 401 responses silently and fall back to localStorage
 - **Auto-merge on login**: Added `mergeLocalStorageOnLogin()` function that:
@@ -18,6 +19,7 @@ This document details the fixes applied in response to the pre-merge review feed
   - Only merges items not already on server
 
 **Code References**:
+
 ```javascript
 // routes/shortlist.js (lines 15-40)
 router.get('/', async (req, res) => {
@@ -43,12 +45,14 @@ async mergeLocalStorageOnLogin() {
 **Issue**: Verify CSRF token availability on suppliers/marketplace pages and ensure GET requests don't require CSRF.
 
 **Fixes Applied**:
+
 - **CSRF reading**: All client-side code reads CSRF token from cookie directly (not from `window.__CSRF_TOKEN__`)
 - **Cookie-based approach**: Uses `document.cookie.split(';')` to find `csrf` cookie
 - **GET requests**: Properly skip CSRF (only POST/DELETE/PUT/PATCH require it)
 - **Graceful failure**: If token missing, requests still proceed (server will reject if needed)
 
 **Code References**:
+
 ```javascript
 // utils/analytics.js, shortlist-manager.js, quote-request-modal.js
 getCsrfToken() {
@@ -68,14 +72,16 @@ getCsrfToken() {
 **Issue**: Confirm requests are stored in production persistence layer and POST response includes requestId.
 
 **Fixes Applied**:
+
 - **Persistence**: Uses `dbUnified.write('quoteRequests', ...)` which maps to production MongoDB/JSON storage
 - **Response includes ID**: POST returns `{ success: true, data: { quoteRequestId, suppliersCount } }`
-- **GET routes available**: 
+- **GET routes available**:
   - `GET /api/quote-requests` - list user's requests
   - `GET /api/quote-requests/:id` - view specific request
 - **Success UI**: Modal shows confirmation with count and next steps
 
 **Code References**:
+
 ```javascript
 // routes/quote-requests.js (lines 108-115)
 res.json({
@@ -95,12 +101,14 @@ res.json({
 **Issue**: Ensure search results don't leak email, phone, addresses, or seller contact info.
 
 **Fixes Applied**:
+
 - **Added field projection functions**: `projectPublicSupplierFields()` and `projectPublicPackageFields()`
 - **Explicit inclusion pattern**: Only explicitly listed fields are returned
 - **Applied to all results**: Used in both `searchSuppliers()` and `searchPackages()` functions
 - **Excluded fields**: email, phone, address, businessAddress, owner details, internal flags
 
 **Code References**:
+
 ```javascript
 // services/searchService.js (lines 17-55)
 function projectPublicSupplierFields(supplier) {
@@ -118,7 +126,8 @@ const publicSupplier = projectPublicSupplierFields(supplier);
 return { ...publicSupplier, relevanceScore, match };
 ```
 
-**Manual Verification Needed**: 
+**Manual Verification Needed**:
+
 - [ ] Inspect live search API response to confirm no sensitive fields present
 - [ ] Test with actual supplier data containing email/phone
 
@@ -129,6 +138,7 @@ return { ...publicSupplier, relevanceScore, match };
 **Issue**: Ensure rate limiting, payload size caps, and no PII in analytics.
 
 **Fixes Applied**:
+
 - **Rate limiting**: Added `writeLimiter` (80 requests per 10 minutes)
 - **Property whitelist**: Only `ALLOWED_PROPERTY_KEYS` accepted (query, filters, resultsCount, etc.)
 - **String truncation**: Max 500 characters per string value
@@ -137,11 +147,18 @@ return { ...publicSupplier, relevanceScore, match };
 - **Fail silently**: Errors don't break UX, just logged with `console.debug`
 
 **Code References**:
+
 ```javascript
 // routes/analytics.js (lines 17-40)
 const ALLOWED_PROPERTY_KEYS = [
-  'query', 'filters', 'resultsCount', 'source',
-  'filterName', 'filterValue', 'resultType', 'resultId',
+  'query',
+  'filters',
+  'resultsCount',
+  'source',
+  'filterName',
+  'filterValue',
+  'resultType',
+  'resultId',
   // ... limited set
 ];
 const MAX_STRING_LENGTH = 500;
@@ -154,6 +171,7 @@ router.post('/event', writeLimiter, csrfProtection, async (req, res) => {
 ```
 
 **Client-side timeout**:
+
 ```javascript
 // utils/analytics.js (lines 11-22)
 const controller = new AbortController();
@@ -170,12 +188,14 @@ await fetch('/api/analytics/event', {
 **Issue**: Verify multi-select categories, invalid params don't break rendering, and no tight loops.
 
 **Fixes Applied**:
+
 - **Multi-select categories**: Supports both `?category=a&category=b` and `?category=a,b`
 - **Invalid page**: `page=abc` or negative values default to 1
 - **Invalid budgets**: Non-numeric or `min > max` ignored entirely
 - **Debouncing**: `updateURL()` debounced by 100ms to prevent tight loops
 
 **Code References**:
+
 ```javascript
 // utils/url-state.js (lines 9-32)
 const parsed = parseInt(pageParam, 10);
@@ -193,12 +213,16 @@ let categories = params.getAll('category');
 if (categories.length === 0) {
   const categoryParam = params.get('category');
   if (categoryParam) {
-    categories = categoryParam.split(',').map(c => c.trim()).filter(c => c);
+    categories = categoryParam
+      .split(',')
+      .map(c => c.trim())
+      .filter(c => c);
   }
 }
 ```
 
 **Debouncing**:
+
 ```javascript
 // utils/url-state.js (lines 45-66)
 let updateURLTimer = null;
@@ -217,6 +241,7 @@ export function updateURL(filters, replace = false) {
 **Issue**: Ensure keyboard accessibility, focus traps, ARIA roles, and skeleton loader timing.
 
 **Previously Implemented**:
+
 - **Keyboard accessibility**: ESC closes modals, Tab navigation works
 - **Focus management**: Modals trap focus, first button auto-focused
 - **ARIA labels**: All interactive elements have aria-labels
@@ -224,6 +249,7 @@ export function updateURL(filters, replace = false) {
 - **Skeleton loaders**: CSS animations, no flicker (consistent height)
 
 **Code References**:
+
 - `shortlist-drawer.js`: ESC key handler, focus on buttons
 - `quote-request-modal.js`: Form with proper labels, keyboard accessible
 - `components.css`: Skeleton loading animations, accessible confirm dialog styles
@@ -233,8 +259,9 @@ export function updateURL(filters, replace = false) {
 ### 8. ✅ Testing
 
 **Created Integration Tests**:
+
 - **File**: `tests/integration/funnel-features.test.js`
-- **Coverage**: 
+- **Coverage**:
   - Shortlist API (auth behavior, CSRF, validation)
   - Quote Requests API (validation, sanitization)
   - Analytics API (rate limiting, whitelisting, sanitization)
@@ -244,6 +271,7 @@ export function updateURL(filters, replace = false) {
   - Shortlist Manager (auto-merge, duplicate prevention)
 
 **Test Count**: 43 test cases covering:
+
 - Route file structure and exports
 - Endpoint definitions and middleware usage
 - Input validation and sanitization
@@ -252,6 +280,7 @@ export function updateURL(filters, replace = false) {
 - Client-side safety (timeouts, debouncing)
 
 **To Run Tests** (once jest is configured):
+
 ```bash
 npm test -- tests/integration/funnel-features.test.js
 ```
@@ -260,16 +289,16 @@ npm test -- tests/integration/funnel-features.test.js
 
 ## Summary of Changes by File
 
-| File | Changes |
-|------|---------|
-| `routes/shortlist.js` | GET endpoint now safe for anonymous users |
-| `routes/analytics.js` | Rate limiting, property whitelisting, sanitization |
-| `routes/quote-requests.js` | No changes (already validated) |
-| `services/searchService.js` | Field projection functions, applied to results |
-| `utils/url-state.js` | Parameter validation, debouncing |
-| `utils/analytics.js` | Timeout with AbortController |
-| `public/assets/js/utils/shortlist-manager.js` | Auto-merge on login, fail-silent for 401 |
-| `tests/integration/funnel-features.test.js` | **NEW** - 43 integration tests |
+| File                                          | Changes                                            |
+| --------------------------------------------- | -------------------------------------------------- |
+| `routes/shortlist.js`                         | GET endpoint now safe for anonymous users          |
+| `routes/analytics.js`                         | Rate limiting, property whitelisting, sanitization |
+| `routes/quote-requests.js`                    | No changes (already validated)                     |
+| `services/searchService.js`                   | Field projection functions, applied to results     |
+| `utils/url-state.js`                          | Parameter validation, debouncing                   |
+| `utils/analytics.js`                          | Timeout with AbortController                       |
+| `public/assets/js/utils/shortlist-manager.js` | Auto-merge on login, fail-silent for 401           |
+| `tests/integration/funnel-features.test.js`   | **NEW** - 43 integration tests                     |
 
 ---
 

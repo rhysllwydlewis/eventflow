@@ -36,11 +36,13 @@ class AnalyticsService {
           $set: { updatedAt: new Date() },
           $push: {
             viewDetails: {
-              $each: [{
-                viewerUserId,
-                timestamp: new Date(),
-                ...metadata,
-              }],
+              $each: [
+                {
+                  viewerUserId,
+                  timestamp: new Date(),
+                  ...metadata,
+                },
+              ],
               $slice: -100, // Keep last 100 view details
             },
           },
@@ -76,11 +78,13 @@ class AnalyticsService {
           $set: { updatedAt: new Date() },
           $push: {
             enquiryDetails: {
-              $each: [{
-                userId,
-                enquiryType,
-                timestamp: new Date(),
-              }],
+              $each: [
+                {
+                  userId,
+                  enquiryType,
+                  timestamp: new Date(),
+                },
+              ],
               $slice: -100,
             },
           },

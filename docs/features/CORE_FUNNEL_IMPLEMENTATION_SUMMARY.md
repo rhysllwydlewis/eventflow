@@ -1,6 +1,7 @@
 # Core Funnel Overhaul Implementation Summary
 
 ## Overview
+
 This PR implements a comprehensive overhaul of EventFlow's core conversion funnel: **Search → Discover → Shortlist → Quote**. The implementation focuses on URL-driven state, user-friendly interactions, and conversion optimization.
 
 ## 🎯 Key Features Implemented
@@ -8,6 +9,7 @@ This PR implements a comprehensive overhaul of EventFlow's core conversion funne
 ### 1. Backend Infrastructure
 
 #### New API Routes
+
 - **`/api/shortlist`** - Shortlist management
   - `GET /` - Get user's shortlist
   - `POST /` - Add item to shortlist
@@ -36,24 +38,27 @@ This PR implements a comprehensive overhaul of EventFlow's core conversion funne
 ### 2. Frontend Utilities
 
 #### URL State Management (`utils/url-state.js`)
+
 ```javascript
-- getFiltersFromURL() // Parse query params into filter object
-- updateURL(filters, replace) // Update URL with pushState/replaceState
-- buildQueryString(filters) // Construct query string
-- handlePopState(callback) // Handle browser back/forward
+-getFiltersFromURL() - // Parse query params into filter object
+  updateURL(filters, replace) - // Update URL with pushState/replaceState
+  buildQueryString(filters) - // Construct query string
+  handlePopState(callback); // Handle browser back/forward
 ```
 
 #### Analytics Tracking (`utils/analytics.js`)
+
 ```javascript
-- trackEvent(event, properties) // Generic event tracking
-- trackSearch(query, filters, resultsCount)
-- trackFilterChange(filterName, value)
-- trackResultClick(type, id, position)
-- trackShortlistAdd/Remove(type, id)
-- trackQuoteRequestStarted/Submitted(count, eventType)
+-trackEvent(event, properties) - // Generic event tracking
+  trackSearch(query, filters, resultsCount) -
+  trackFilterChange(filterName, value) -
+  trackResultClick(type, id, position) -
+  trackShortlistAdd / Remove(type, id) -
+  trackQuoteRequestStarted / Submitted(count, eventType);
 ```
 
 #### Shortlist Manager (`public/assets/js/utils/shortlist-manager.js`)
+
 - Singleton class for managing shortlist state
 - localStorage persistence for anonymous users
 - Server sync for authenticated users
@@ -63,6 +68,7 @@ This PR implements a comprehensive overhaul of EventFlow's core conversion funne
 ### 3. UI Components
 
 #### Shortlist Drawer (`public/assets/js/components/shortlist-drawer.js`)
+
 - Floating button with count badge
 - Slide-in panel with saved items
 - Mini cards with remove buttons
@@ -71,6 +77,7 @@ This PR implements a comprehensive overhaul of EventFlow's core conversion funne
 - Empty state with helpful messaging
 
 #### Quote Request Modal (`public/assets/js/components/quote-request-modal.js`)
+
 - Form with validation
 - Supports single supplier or batch requests
 - Fields: name, email, phone, event type, date, location, budget, notes
@@ -81,6 +88,7 @@ This PR implements a comprehensive overhaul of EventFlow's core conversion funne
 ### 4. Enhanced Pages
 
 #### Suppliers Page (`public/suppliers.html` + `public/assets/js/pages/suppliers-init.js`)
+
 - ✅ URL-driven filters (q, location, category, budgetMin/Max, sort, page)
 - ✅ Integrates with `/api/v2/search/suppliers`
 - ✅ Enhanced supplier cards with:
@@ -95,6 +103,7 @@ This PR implements a comprehensive overhaul of EventFlow's core conversion funne
 - ✅ Browser back/forward support
 
 #### Marketplace Page (`public/marketplace.html` + `public/assets/js/pages/marketplace-init.js`)
+
 - ✅ Same URL-driven filter architecture
 - ✅ Integrates with `/api/v2/search/packages`
 - ✅ Enhanced listing cards with:
@@ -106,6 +115,7 @@ This PR implements a comprehensive overhaul of EventFlow's core conversion funne
 - ✅ Same skeleton loading and empty states
 
 #### Homepage Search (`public/assets/js/ef-search-bar.js`)
+
 - ✅ Analytics tracking on submit
 - ✅ Already redirects to `/suppliers?q=...&category=...`
 - ✅ CSRF token included in analytics requests
@@ -113,6 +123,7 @@ This PR implements a comprehensive overhaul of EventFlow's core conversion funne
 ### 5. Styling (`public/assets/css/components.css`)
 
 Added comprehensive styles for:
+
 - Shortlist floating button and drawer
 - Quote request modal
 - Skeleton loading animations
@@ -125,7 +136,9 @@ Added comprehensive styles for:
 ## 🔒 Security Features
 
 ### CSRF Protection
+
 All state-changing endpoints are protected:
+
 - ✅ Shortlist POST/DELETE routes
 - ✅ Quote request POST route
 - ✅ Analytics POST route
@@ -133,6 +146,7 @@ All state-changing endpoints are protected:
 - ✅ Automatic token inclusion in fetch requests
 
 ### Input Validation & Sanitization
+
 - ✅ Email validation (validator.isEmail)
 - ✅ Phone validation (regex pattern)
 - ✅ URL validation (validator.isURL)
@@ -141,6 +155,7 @@ All state-changing endpoints are protected:
 - ✅ Type validation for all parameters
 
 ### Privacy & Data Protection
+
 - ✅ No PII in analytics unless user authenticated
 - ✅ IP addresses logged separately (not in events)
 - ✅ Safe field projection in search results
@@ -149,35 +164,39 @@ All state-changing endpoints are protected:
 
 ## 📊 Analytics Events Tracked
 
-| Event | Properties | Triggered When |
-|-------|-----------|----------------|
-| `search_performed` | query, filters, resultsCount, source | User submits search |
-| `filter_changed` | filterName, filterValue | User changes filter |
-| `result_clicked` | resultType, resultId, position | User clicks result |
-| `shortlist_add` | itemType, itemId | User adds to shortlist |
-| `shortlist_remove` | itemType, itemId | User removes from shortlist |
-| `quote_request_started` | supplierCount | User opens quote modal |
-| `quote_request_submitted` | supplierCount, eventType | User submits quote |
+| Event                     | Properties                           | Triggered When              |
+| ------------------------- | ------------------------------------ | --------------------------- |
+| `search_performed`        | query, filters, resultsCount, source | User submits search         |
+| `filter_changed`          | filterName, filterValue              | User changes filter         |
+| `result_clicked`          | resultType, resultId, position       | User clicks result          |
+| `shortlist_add`           | itemType, itemId                     | User adds to shortlist      |
+| `shortlist_remove`        | itemType, itemId                     | User removes from shortlist |
+| `quote_request_started`   | supplierCount                        | User opens quote modal      |
+| `quote_request_submitted` | supplierCount, eventType             | User submits quote          |
 
 ## 🎨 User Experience Improvements
 
 ### URL-Driven State
+
 - ✅ All filters reflected in URL
 - ✅ Shareable links maintain exact state
 - ✅ Browser back/forward navigation works correctly
 - ✅ Bookmarkable search results
 
 ### Loading States
+
 - ✅ Skeleton cards prevent layout shift
 - ✅ Loading spinners on form submission
 - ✅ Smooth transitions and animations
 
 ### Empty States
+
 - ✅ Helpful messaging when no results
 - ✅ Actionable buttons (clear filters, change radius, browse all)
 - ✅ Friendly icons and copy
 
 ### Accessibility
+
 - ✅ Keyboard navigation support
 - ✅ ARIA labels and roles
 - ✅ Screen reader friendly
@@ -187,6 +206,7 @@ All state-changing endpoints are protected:
 - ✅ Inline error messages (no alert())
 
 ### Mobile Responsive
+
 - ✅ Touch-friendly button sizes
 - ✅ Responsive grid layouts
 - ✅ Mobile-optimized drawer and modals
@@ -195,6 +215,7 @@ All state-changing endpoints are protected:
 ## 🧪 Testing Checklist
 
 ### URL State Management
+
 - [ ] Homepage search redirects with query params
 - [ ] Filters update URL on change
 - [ ] URL updates on pagination
@@ -204,6 +225,7 @@ All state-changing endpoints are protected:
 - [ ] Page refresh maintains filters
 
 ### Shortlist
+
 - [ ] Add item to shortlist (logged out - localStorage)
 - [ ] Add item to shortlist (logged in - server)
 - [ ] Remove item from shortlist
@@ -215,6 +237,7 @@ All state-changing endpoints are protected:
 - [ ] Empty state shown when no items
 
 ### Quote Requests
+
 - [ ] Request quote from single supplier
 - [ ] Request quotes from multiple suppliers (shortlist)
 - [ ] Form validation works (required fields)
@@ -225,6 +248,7 @@ All state-changing endpoints are protected:
 - [ ] Error messages display correctly
 
 ### Analytics
+
 - [ ] Search events tracked
 - [ ] Filter change events tracked
 - [ ] Result click events tracked
@@ -234,6 +258,7 @@ All state-changing endpoints are protected:
 - [ ] Failed tracking fails silently
 
 ### Security
+
 - [ ] CSRF tokens included in POST requests
 - [ ] Unauthorized access blocked (auth required routes)
 - [ ] XSS prevention (no unescaped HTML)
@@ -241,6 +266,7 @@ All state-changing endpoints are protected:
 - [ ] No sensitive data in client logs
 
 ### Mobile
+
 - [ ] All pages responsive on mobile
 - [ ] Touch targets adequate size
 - [ ] Modals/drawers work on mobile
@@ -250,6 +276,7 @@ All state-changing endpoints are protected:
 ## 📦 Files Added/Modified
 
 ### New Files (13)
+
 ```
 routes/shortlist.js
 routes/quote-requests.js
@@ -265,6 +292,7 @@ public/assets/js/pages/marketplace-init.js
 ```
 
 ### Modified Files (6)
+
 ```
 routes/index.js (mount new routes)
 public/suppliers.html (add component scripts)
@@ -276,19 +304,24 @@ public/assets/css/components.css (add styles)
 ## 🚀 Deployment Considerations
 
 ### Environment Variables
+
 ```bash
 # Optional: Configure max analytics events (default: 10000)
 MAX_ANALYTICS_EVENTS=10000
 ```
 
 ### Database
+
 No migrations needed - uses existing dbUnified for:
+
 - `shortlists` collection
 - `quoteRequests` collection
 - `analyticsEvents` collection
 
 ### Dependencies
+
 No new dependencies required - uses existing:
+
 - `validator` (already in package.json)
 - `express`
 - `crypto` (built-in)

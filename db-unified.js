@@ -557,10 +557,35 @@ async function findWithOptions(collectionName, filter = {}, options = {}) {
   }
 }
 
+/**
+ * Write data and verify it was persisted correctly
+ * This ensures data is actually stored in the database, not just in memory
+ * @param {string} collectionName - Name of collection
+ * @param {Object} data - Data to write
+ * @returns {Promise<Object>} The verified data read back from database
+ */
+async function writeAndVerify(collectionName, data) {
+  await initializeDatabase();
+  try {
+    // Write the data
+    await write(collectionName, data);
+
+    // Read it back to verify persistence
+    const verified = await read(collectionName);
+
+    // Return the verified data from database
+    return verified;
+  } catch (error) {
+    console.error(`Error in writeAndVerify for ${collectionName}:`, error.message);
+    throw error;
+  }
+}
+
 module.exports = {
   initializeDatabase,
   read,
   write,
+  writeAndVerify,
   find,
   findOne,
   updateOne,

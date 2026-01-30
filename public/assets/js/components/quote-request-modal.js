@@ -18,7 +18,7 @@ class QuoteRequestModal {
    */
   getCsrfToken() {
     const cookies = document.cookie.split(';');
-    for (let cookie of cookies) {
+    for (const cookie of cookies) {
       const [name, value] = cookie.trim().split('=');
       if (name === 'csrf') {
         return value;
@@ -35,7 +35,7 @@ class QuoteRequestModal {
     this.attachEventListeners();
 
     // Listen for custom event to open modal
-    window.addEventListener('openQuoteRequestModal', (e) => {
+    window.addEventListener('openQuoteRequestModal', e => {
       this.open(e.detail.items || []);
     });
   }
@@ -157,13 +157,13 @@ class QuoteRequestModal {
 
     // Form submit
     const form = this.container.querySelector('#quote-request-form');
-    form.addEventListener('submit', (e) => {
+    form.addEventListener('submit', e => {
       e.preventDefault();
       this.submitRequest();
     });
 
     // ESC key to close
-    document.addEventListener('keydown', (e) => {
+    document.addEventListener('keydown', e => {
       if (e.key === 'Escape' && this.isOpen) {
         this.close();
       }
@@ -175,7 +175,7 @@ class QuoteRequestModal {
    */
   renderSuppliers() {
     const listContainer = this.container.querySelector('#quote-suppliers-list');
-    
+
     if (this.suppliers.length === 0) {
       listContainer.innerHTML = '<p>No suppliers selected</p>';
       return;
@@ -184,12 +184,16 @@ class QuoteRequestModal {
     listContainer.innerHTML = `
       <p class="quote-suppliers-count">Requesting quotes from ${this.suppliers.length} supplier${this.suppliers.length > 1 ? 's' : ''}:</p>
       <ul class="quote-suppliers">
-        ${this.suppliers.map(s => `
+        ${this.suppliers
+          .map(
+            s => `
           <li class="quote-supplier-item">
             <strong>${s.name}</strong>
             ${s.category ? `<span class="quote-supplier-category">${s.category}</span>` : ''}
           </li>
-        `).join('')}
+        `
+          )
+          .join('')}
       </ul>
     `;
   }
@@ -200,7 +204,7 @@ class QuoteRequestModal {
   async submitRequest() {
     const form = this.container.querySelector('#quote-request-form');
     const formData = new FormData(form);
-    
+
     const submitBtn = this.container.querySelector('#quote-submit-btn');
     const submitText = this.container.querySelector('#quote-submit-text');
     const submitSpinner = this.container.querySelector('#quote-submit-spinner');
@@ -252,7 +256,7 @@ class QuoteRequestModal {
     } catch (error) {
       console.error('Quote request error:', error);
       this.showError(error.message || 'Failed to submit quote request. Please try again.');
-      
+
       // Re-enable submit button
       submitBtn.disabled = false;
       submitText.style.display = 'inline';
@@ -265,7 +269,7 @@ class QuoteRequestModal {
    */
   showError(message) {
     const modalBody = this.container.querySelector('.quote-modal-body');
-    
+
     // Create error message element
     const errorDiv = document.createElement('div');
     errorDiv.className = 'quote-error';
@@ -273,11 +277,12 @@ class QuoteRequestModal {
       <div class="quote-error-icon">⚠️</div>
       <p>${message}</p>
     `;
-    errorDiv.style.cssText = 'padding: 16px; margin-bottom: 16px; background: #ffebee; border: 1px solid #f44336; border-radius: 6px; color: #c62828; text-align: center;';
-    
+    errorDiv.style.cssText =
+      'padding: 16px; margin-bottom: 16px; background: #ffebee; border: 1px solid #f44336; border-radius: 6px; color: #c62828; text-align: center;';
+
     // Insert at top of modal body
     modalBody.insertBefore(errorDiv, modalBody.firstChild);
-    
+
     // Remove after 5 seconds
     setTimeout(() => {
       if (errorDiv.parentNode) {

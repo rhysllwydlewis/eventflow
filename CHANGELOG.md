@@ -19,12 +19,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **6-Tier Responsive Design**: Optimized breakpoints (<320px, 320-479px, 480-639px, 640-767px, 768-1023px, 1024px+)
   - **Premium Animations**: Staggered entrance animations (efGlassEnter) with blur and scale effects
   - **Floating Background Blobs**: Organic blob animations for visual depth
-  - **Accessibility Enhancements**: 
+  - **Accessibility Enhancements**:
     - Enhanced focus-visible indicators (3px outline with offset)
     - High contrast mode support with solid colors
     - Windows forced colors mode compatibility
     - Comprehensive reduced motion support
-  - **Performance Optimizations**: 
+  - **Performance Optimizations**:
     - GPU acceleration hints (translateZ, backface-visibility)
     - CSS containment for better paint performance
     - Strategic will-change management on interactions only

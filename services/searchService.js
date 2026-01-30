@@ -233,7 +233,7 @@ async function searchPackages(query) {
     results = results.map(pkg => {
       const supplier = supplierMap[pkg.supplierId];
       const publicPkg = projectPublicPackageFields(pkg);
-      
+
       return {
         ...publicPkg,
         supplier: supplier

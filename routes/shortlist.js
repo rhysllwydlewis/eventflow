@@ -22,7 +22,7 @@ router.get('/', async (req, res) => {
     // Check if user is authenticated via middleware helper
     const { getUserFromCookie } = require('../middleware/auth');
     const user = await getUserFromCookie(req);
-    
+
     // Return empty shortlist for unauthenticated users (fail-safe)
     if (!user) {
       return res.json({
@@ -104,8 +104,10 @@ router.post('/', authRequired, csrfProtection, async (req, res) => {
     }
 
     // Check if item already exists
-    const existingIndex = userShortlist.items.findIndex(i => i.type === item.type && i.id === item.id);
-    
+    const existingIndex = userShortlist.items.findIndex(
+      i => i.type === item.type && i.id === item.id
+    );
+
     if (existingIndex !== -1) {
       return res.status(400).json({
         success: false,
