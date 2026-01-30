@@ -12,6 +12,10 @@ const dbUnified = require('../db-unified');
 
 const router = express.Router();
 
+// Constants
+const TRIAL_DURATION_DAYS = 14;
+const ANALYTICS_WINDOW_DAYS = 30;
+
 /**
  * POST /api/supplier/trial/activate
  * Activate free trial for supplier
@@ -47,7 +51,7 @@ router.post('/trial/activate', authRequired, csrfProtection, async (req, res) =>
 
     // Set trial
     const now = new Date();
-    const trialEndsAt = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000); // 14 days
+    const trialEndsAt = new Date(now.getTime() + TRIAL_DURATION_DAYS * 24 * 60 * 60 * 1000);
 
     supplier.subscriptionStatus = 'trial';
     supplier.trialStartedAt = now.toISOString();
@@ -65,7 +69,7 @@ router.post('/trial/activate', authRequired, csrfProtection, async (req, res) =>
         status: 'trial',
         startedAt: supplier.trialStartedAt,
         endsAt: supplier.trialEndsAt,
-        daysRemaining: 14,
+        daysRemaining: TRIAL_DURATION_DAYS,
       },
     });
   } catch (error) {
@@ -118,25 +122,25 @@ router.get('/analytics', authRequired, async (req, res) => {
       // bookings collection may not exist
     }
 
-    // Generate chart data for last 30 days
+    // Generate chart data for last N days
     const now = new Date();
-    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const windowStart = new Date(now.getTime() - ANALYTICS_WINDOW_DAYS * 24 * 60 * 60 * 1000);
 
     const last30DaysViews = viewEvents.filter(e => {
       const eventDate = new Date(e.timestamp || e.createdAt);
-      return eventDate >= thirtyDaysAgo;
+      return eventDate >= windowStart;
     });
 
     const last30DaysEnquiries = enquiries.filter(e => {
       const eventDate = new Date(e.createdAt);
-      return eventDate >= thirtyDaysAgo;
+      return eventDate >= windowStart;
     });
 
     // Group by date
     const viewsByDate = {};
     const enquiriesByDate = {};
 
-    for (let i = 0; i < 30; i++) {
+    for (let i = 0; i < ANALYTICS_WINDOW_DAYS; i++) {
       const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
       const dateKey = date.toISOString().split('T')[0];
       viewsByDate[dateKey] = 0;

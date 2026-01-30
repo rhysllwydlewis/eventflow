@@ -13,6 +13,12 @@ const { uid } = require('../store');
 
 const router = express.Router();
 
+// Field length limits
+const MAX_GUEST_NAME_LENGTH = 200;
+const MAX_EMAIL_LENGTH = 200;
+const MAX_DIETARY_LENGTH = 500;
+const MAX_NOTES_LENGTH = 1000;
+
 /**
  * Middleware to verify plan ownership
  */
@@ -72,12 +78,12 @@ router.post('/:planId/guests', authRequired, csrfProtection, verifyPlanOwnership
     const now = new Date().toISOString();
     const newGuest = {
       id: uid('guest'),
-      name: String(name).trim().slice(0, 200),
-      email: email ? String(email).trim().slice(0, 200) : null,
+      name: String(name).trim().slice(0, MAX_GUEST_NAME_LENGTH),
+      email: email ? String(email).trim().slice(0, MAX_EMAIL_LENGTH) : null,
       plusOne: plusOne ? parseInt(plusOne, 10) || 0 : 0,
-      dietary: dietary ? String(dietary).trim().slice(0, 500) : null,
+      dietary: dietary ? String(dietary).trim().slice(0, MAX_DIETARY_LENGTH) : null,
       rsvpStatus: rsvpStatus || 'pending',
-      notes: notes ? String(notes).trim().slice(0, 1000) : null,
+      notes: notes ? String(notes).trim().slice(0, MAX_NOTES_LENGTH) : null,
       createdAt: now,
       updatedAt: now,
     };
@@ -139,22 +145,22 @@ router.patch('/:planId/guests/:id', authRequired, csrfProtection, verifyPlanOwne
     const now = new Date().toISOString();
 
     if (name !== undefined) {
-      guest.name = String(name).trim().slice(0, 200);
+      guest.name = String(name).trim().slice(0, MAX_GUEST_NAME_LENGTH);
     }
     if (email !== undefined) {
-      guest.email = email ? String(email).trim().slice(0, 200) : null;
+      guest.email = email ? String(email).trim().slice(0, MAX_EMAIL_LENGTH) : null;
     }
     if (plusOne !== undefined) {
       guest.plusOne = plusOne ? parseInt(plusOne, 10) || 0 : 0;
     }
     if (dietary !== undefined) {
-      guest.dietary = dietary ? String(dietary).trim().slice(0, 500) : null;
+      guest.dietary = dietary ? String(dietary).trim().slice(0, MAX_DIETARY_LENGTH) : null;
     }
     if (rsvpStatus !== undefined) {
       guest.rsvpStatus = rsvpStatus;
     }
     if (notes !== undefined) {
-      guest.notes = notes ? String(notes).trim().slice(0, 1000) : null;
+      guest.notes = notes ? String(notes).trim().slice(0, MAX_NOTES_LENGTH) : null;
     }
 
     guest.updatedAt = now;
