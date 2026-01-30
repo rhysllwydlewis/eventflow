@@ -15,7 +15,7 @@ const dbUnified = require('./db-unified');
 async function searchSuppliers(query) {
   const suppliers = await dbUnified.read('suppliers');
   const reviews = await dbUnified.read('reviews');
-  
+
   // Calculate average ratings from reviews for each supplier
   const supplierRatings = {};
   reviews.forEach(review => {
@@ -27,16 +27,18 @@ async function searchSuppliers(query) {
       supplierRatings[review.supplierId].count += 1;
     }
   });
-  
+
   // Enrich suppliers with calculated ratings
-  let results = suppliers.filter(s => s.approved).map(s => {
-    const ratingData = supplierRatings[s.id];
-    return {
-      ...s,
-      calculatedRating: ratingData ? ratingData.total / ratingData.count : s.averageRating || 0,
-      reviewCount: ratingData ? ratingData.count : s.reviewCount || 0,
-    };
-  });
+  let results = suppliers
+    .filter(s => s.approved)
+    .map(s => {
+      const ratingData = supplierRatings[s.id];
+      return {
+        ...s,
+        calculatedRating: ratingData ? ratingData.total / ratingData.count : s.averageRating || 0,
+        reviewCount: ratingData ? ratingData.count : s.reviewCount || 0,
+      };
+    });
 
   // Text search (name, description, category)
   if (query.q) {

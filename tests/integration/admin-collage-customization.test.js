@@ -9,7 +9,7 @@ describe('Collage Widget Customization Tests', () => {
   describe('Backend API Structure', () => {
     it('should have collage-widget GET endpoint', () => {
       const adminRoutesContent = fs.readFileSync('routes/admin.js', 'utf8');
-      
+
       expect(adminRoutesContent).toContain("router.get('/homepage/collage-widget'");
       expect(adminRoutesContent).toContain('heroVideo:');
       expect(adminRoutesContent).toContain('videoQuality:');
@@ -22,24 +22,24 @@ describe('Collage Widget Customization Tests', () => {
 
     it('should have collage-widget PUT endpoint with validation', () => {
       const adminRoutesContent = fs.readFileSync('routes/admin.js', 'utf8');
-      
-      expect(adminRoutesContent).toContain("router.put");
+
+      expect(adminRoutesContent).toContain('router.put');
       expect(adminRoutesContent).toContain('/homepage/collage-widget');
-      expect(adminRoutesContent).toContain("transition?.effect");
+      expect(adminRoutesContent).toContain('transition?.effect');
       expect(adminRoutesContent).toContain("fade', 'slide', 'zoom', 'crossfade'");
-      expect(adminRoutesContent).toContain("preloading?.count");
-      expect(adminRoutesContent).toContain("videoQuality?.preference");
+      expect(adminRoutesContent).toContain('preloading?.count');
+      expect(adminRoutesContent).toContain('videoQuality?.preference');
     });
 
     it('should have sensible default values', () => {
       const adminRoutesContent = fs.readFileSync('routes/admin.js', 'utf8');
-      
+
       // Check hero video defaults
       expect(adminRoutesContent).toContain('enabled: true');
       expect(adminRoutesContent).toContain('autoplay: false');
       expect(adminRoutesContent).toContain('muted: true');
       expect(adminRoutesContent).toContain('loop: true');
-      
+
       // Check transition defaults
       expect(adminRoutesContent).toContain("effect: 'fade'");
       expect(adminRoutesContent).toContain('duration: 1000');
@@ -49,7 +49,7 @@ describe('Collage Widget Customization Tests', () => {
   describe('Admin UI Elements', () => {
     it('should have hero video control inputs', () => {
       const htmlContent = fs.readFileSync('public/admin-homepage.html', 'utf8');
-      
+
       expect(htmlContent).toContain('id="heroVideoEnabled"');
       expect(htmlContent).toContain('id="heroVideoAutoplay"');
       expect(htmlContent).toContain('id="heroVideoMuted"');
@@ -59,7 +59,7 @@ describe('Collage Widget Customization Tests', () => {
 
     it('should have video quality settings inputs', () => {
       const htmlContent = fs.readFileSync('public/admin-homepage.html', 'utf8');
-      
+
       expect(htmlContent).toContain('id="videoQualityPreference"');
       expect(htmlContent).toContain('id="videoQualityAdaptive"');
       expect(htmlContent).toContain('id="videoQualityMobileOptimized"');
@@ -67,7 +67,7 @@ describe('Collage Widget Customization Tests', () => {
 
     it('should have transition effect controls', () => {
       const htmlContent = fs.readFileSync('public/admin-homepage.html', 'utf8');
-      
+
       expect(htmlContent).toContain('id="transitionEffect"');
       expect(htmlContent).toContain('id="transitionDuration"');
       expect(htmlContent).toContain('value="fade"');
@@ -78,14 +78,14 @@ describe('Collage Widget Customization Tests', () => {
 
     it('should have preloading controls', () => {
       const htmlContent = fs.readFileSync('public/admin-homepage.html', 'utf8');
-      
+
       expect(htmlContent).toContain('id="preloadingEnabled"');
       expect(htmlContent).toContain('id="preloadingCount"');
     });
 
     it('should have mobile optimization controls', () => {
       const htmlContent = fs.readFileSync('public/admin-homepage.html', 'utf8');
-      
+
       expect(htmlContent).toContain('id="mobileSlowerTransitions"');
       expect(htmlContent).toContain('id="mobileDisableVideos"');
       expect(htmlContent).toContain('id="mobileTouchControls"');
@@ -93,7 +93,7 @@ describe('Collage Widget Customization Tests', () => {
 
     it('should have content filtering controls', () => {
       const htmlContent = fs.readFileSync('public/admin-homepage.html', 'utf8');
-      
+
       expect(htmlContent).toContain('id="filterAspectRatio"');
       expect(htmlContent).toContain('id="filterOrientation"');
       expect(htmlContent).toContain('id="filterMinResolution"');
@@ -101,7 +101,7 @@ describe('Collage Widget Customization Tests', () => {
 
     it('should have playback controls', () => {
       const htmlContent = fs.readFileSync('public/admin-homepage.html', 'utf8');
-      
+
       expect(htmlContent).toContain('id="playbackShowControls"');
       expect(htmlContent).toContain('id="playbackPauseOnHover"');
       expect(htmlContent).toContain('id="playbackFullscreen"');
@@ -109,7 +109,7 @@ describe('Collage Widget Customization Tests', () => {
 
     it('should have video analytics dashboard', () => {
       const htmlContent = fs.readFileSync('public/admin-homepage.html', 'utf8');
-      
+
       expect(htmlContent).toContain('Video Analytics Dashboard');
       expect(htmlContent).toContain('id="heroVideoSuccessRate"');
       expect(htmlContent).toContain('id="collageVideoSuccessRate"');
@@ -120,7 +120,7 @@ describe('Collage Widget Customization Tests', () => {
   describe('Admin JavaScript Functions', () => {
     it('should handle all new settings in renderCollageWidget', () => {
       const jsContent = fs.readFileSync('public/assets/js/pages/admin-homepage-init.js', 'utf8');
-      
+
       expect(jsContent).toContain('heroVideo');
       expect(jsContent).toContain('videoQuality');
       expect(jsContent).toContain('transition');
@@ -132,7 +132,7 @@ describe('Collage Widget Customization Tests', () => {
 
     it('should serialize all settings in saveCollageWidget', () => {
       const jsContent = fs.readFileSync('public/assets/js/pages/admin-homepage-init.js', 'utf8');
-      
+
       expect(jsContent).toContain('heroVideo:');
       expect(jsContent).toContain('videoQuality:');
       expect(jsContent).toContain('transition:');
@@ -144,7 +144,7 @@ describe('Collage Widget Customization Tests', () => {
 
     it('should use nullish coalescing for consistent defaults', () => {
       const jsContent = fs.readFileSync('public/assets/js/pages/admin-homepage-init.js', 'utf8');
-      
+
       expect(jsContent).toContain('??');
     });
   });
@@ -152,8 +152,10 @@ describe('Collage Widget Customization Tests', () => {
   describe('Frontend Implementation', () => {
     it('should pass heroVideo config to initHeroVideo', () => {
       const jsContent = fs.readFileSync('public/assets/js/pages/home-init.js', 'utf8');
-      
-      expect(jsContent).toContain('async function initHeroVideo(source, mediaTypes, uploadGallery = [], heroVideoConfig = {})');
+
+      expect(jsContent).toContain(
+        'async function initHeroVideo(source, mediaTypes, uploadGallery = [], heroVideoConfig = {})'
+      );
       expect(jsContent).toContain('heroVideoConfig.enabled');
       expect(jsContent).toContain('heroVideoConfig.autoplay');
       expect(jsContent).toContain('heroVideoConfig.muted');
@@ -162,7 +164,7 @@ describe('Collage Widget Customization Tests', () => {
 
     it('should implement mobile optimizations', () => {
       const jsContent = fs.readFileSync('public/assets/js/pages/home-init.js', 'utf8');
-      
+
       expect(jsContent).toContain('mobileOptimizations');
       expect(jsContent).toContain('isMobile');
       expect(jsContent).toContain('effectiveIntervalMs');
@@ -171,13 +173,13 @@ describe('Collage Widget Customization Tests', () => {
 
     it('should use named constants for magic numbers', () => {
       const jsContent = fs.readFileSync('public/assets/js/pages/home-init.js', 'utf8');
-      
+
       expect(jsContent).toContain('MOBILE_TRANSITION_MULTIPLIER');
     });
 
     it('should handle video quality preferences', () => {
       const jsContent = fs.readFileSync('public/assets/js/pages/home-init.js', 'utf8');
-      
+
       expect(jsContent).toContain('qualityPreference');
       expect(jsContent).toContain('heroVideoConfig.quality');
     });
@@ -186,14 +188,14 @@ describe('Collage Widget Customization Tests', () => {
   describe('Configuration Validation', () => {
     it('should validate transition effects', () => {
       const adminRoutesContent = fs.readFileSync('routes/admin.js', 'utf8');
-      
+
       expect(adminRoutesContent).toContain("!['fade', 'slide', 'zoom', 'crossfade'].includes");
       expect(adminRoutesContent).toContain('Invalid transition effect');
     });
 
     it('should validate preloading count range', () => {
       const adminRoutesContent = fs.readFileSync('routes/admin.js', 'utf8');
-      
+
       expect(adminRoutesContent).toContain('preloading?.count');
       expect(adminRoutesContent).toContain('count < 0 || count > 5');
       expect(adminRoutesContent).toContain('Preloading count must be between 0 and 5');
@@ -201,7 +203,7 @@ describe('Collage Widget Customization Tests', () => {
 
     it('should validate video quality preference', () => {
       const adminRoutesContent = fs.readFileSync('routes/admin.js', 'utf8');
-      
+
       expect(adminRoutesContent).toContain('videoQuality?.preference');
       expect(adminRoutesContent).toContain("!['hd', 'sd', 'auto'].includes");
       expect(adminRoutesContent).toContain('Invalid video quality preference');
@@ -211,9 +213,11 @@ describe('Collage Widget Customization Tests', () => {
   describe('Code Quality', () => {
     it('should have no duplicate filtering logic', () => {
       const jsContent = fs.readFileSync('public/assets/js/pages/home-init.js', 'utf8');
-      
+
       // Check that filtering is done once, not duplicated
-      const filterMatches = jsContent.match(/\.filter\(f => f\.quality === 'hd' \|\| f\.quality === 'sd'\)/g);
+      const filterMatches = jsContent.match(
+        /\.filter\(f => f\.quality === 'hd' \|\| f\.quality === 'sd'\)/g
+      );
       expect(filterMatches).toBeTruthy();
       // Should appear only once in video quality section
       expect(filterMatches.length).toBeLessThanOrEqual(2);
@@ -221,7 +225,7 @@ describe('Collage Widget Customization Tests', () => {
 
     it('should have clear sort logic for SD preference', () => {
       const jsContent = fs.readFileSync('public/assets/js/pages/home-init.js', 'utf8');
-      
+
       expect(jsContent).toContain("(a.quality === 'sd') ? -1 : (b.quality === 'sd') ? 1 : 0");
     });
   });

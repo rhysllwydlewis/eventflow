@@ -98,7 +98,7 @@ async function getSupplierAnalytics(supplierId, days = 7) {
     // Get messages for response rate calculation
     const messages = await dbUnified.read('messages');
     const threads = await dbUnified.read('threads');
-    
+
     // Calculate response rate based on actual message patterns
     // For each thread, check if supplier replied to customer messages
     const supplierThreads = threads.filter(t => t.supplierId === supplierId);
@@ -106,12 +106,12 @@ async function getSupplierAnalytics(supplierId, days = 7) {
     let respondedToCustomerMessages = 0;
     let totalResponseTime = 0;
     let responseCount = 0;
-    
+
     for (const thread of supplierThreads) {
       const threadMessages = messages
         .filter(m => m.threadId === thread.id && !m.isDraft)
         .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-      
+
       // Track customer messages and supplier responses
       for (let i = 0; i < threadMessages.length; i++) {
         const msg = threadMessages[i];
@@ -121,7 +121,9 @@ async function getSupplierAnalytics(supplierId, days = 7) {
           totalCustomerMessages++;
 
           // Check if supplier responded to this message (look for next non-customer message)
-          const supplierResponse = threadMessages.slice(i + 1).find(m => m.fromUserId !== thread.customerId);
+          const supplierResponse = threadMessages
+            .slice(i + 1)
+            .find(m => m.fromUserId !== thread.customerId);
 
           if (supplierResponse) {
             respondedToCustomerMessages++;
@@ -144,7 +146,8 @@ async function getSupplierAnalytics(supplierId, days = 7) {
     // Calculate average response time (in hours)
     let avgResponseTime = 0;
     if (responseCount > 0) {
-      avgResponseTime = Math.round((totalResponseTime / responseCount / (1000 * 60 * 60)) * 10) / 10;
+      avgResponseTime =
+        Math.round((totalResponseTime / responseCount / (1000 * 60 * 60)) * 10) / 10;
     }
 
     // Generate daily breakdown

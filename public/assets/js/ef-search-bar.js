@@ -52,7 +52,7 @@ class EFSearchBar {
     try {
       // Get CSRF token from cookie
       const token = this.getCsrfToken();
-      
+
       await fetch('/api/analytics/event', {
         method: 'POST',
         headers: {
@@ -77,7 +77,7 @@ class EFSearchBar {
 
   getCsrfToken() {
     const cookies = document.cookie.split(';');
-    for (let cookie of cookies) {
+    for (const cookie of cookies) {
       const [name, value] = cookie.trim().split('=');
       if (name === 'csrf') {
         return value;

@@ -15,13 +15,13 @@ function getCsrfToken() {
 
   // Otherwise, read from cookie
   const cookies = document.cookie.split(';');
-  for (let cookie of cookies) {
+  for (const cookie of cookies) {
     const [name, value] = cookie.trim().split('=');
     if (name === 'csrf') {
       return value;
     }
   }
-  
+
   return null;
 }
 
@@ -32,7 +32,7 @@ function getCsrfToken() {
  */
 function addCsrfToken(options = {}) {
   const token = getCsrfToken();
-  
+
   if (!token) {
     console.warn('CSRF token not found');
     return options;
@@ -59,7 +59,7 @@ async function fetchWithCsrf(url, options = {}) {
   if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
     options = addCsrfToken(options);
   }
-  
+
   return fetch(url, options);
 }
 

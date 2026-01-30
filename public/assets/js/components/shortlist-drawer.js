@@ -46,7 +46,7 @@ class ShortlistDrawer {
     `;
     button.setAttribute('aria-label', 'View shortlist');
     button.addEventListener('click', () => this.toggle());
-    
+
     document.body.appendChild(button);
   }
 
@@ -104,7 +104,7 @@ class ShortlistDrawer {
     quotesBtn.addEventListener('click', () => this.requestQuotes());
 
     // ESC key to close
-    document.addEventListener('keydown', (e) => {
+    document.addEventListener('keydown', e => {
       if (e.key === 'Escape' && this.isOpen) {
         this.close();
       }
@@ -147,7 +147,7 @@ class ShortlistDrawer {
 
     // Attach remove buttons
     content.querySelectorAll('.shortlist-item-remove').forEach(btn => {
-      btn.addEventListener('click', (e) => {
+      btn.addEventListener('click', e => {
         const type = e.currentTarget.dataset.type;
         const id = e.currentTarget.dataset.id;
         this.removeItem(type, id);
@@ -204,7 +204,7 @@ class ShortlistDrawer {
       'Clear Shortlist',
       'Are you sure you want to clear your entire shortlist?'
     );
-    
+
     if (confirmed) {
       await shortlistManager.clearAll();
     }
@@ -214,7 +214,7 @@ class ShortlistDrawer {
    * Show confirmation dialog (accessible alternative to confirm())
    */
   showConfirmDialog(title, message) {
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
       // Create modal overlay
       const overlay = document.createElement('div');
       overlay.className = 'confirm-dialog-overlay';
@@ -228,28 +228,28 @@ class ShortlistDrawer {
           </div>
         </div>
       `;
-      
+
       document.body.appendChild(overlay);
-      
+
       // Focus first button
       const cancelBtn = overlay.querySelector('.confirm-cancel');
       const okBtn = overlay.querySelector('.confirm-ok');
-      
+
       cancelBtn.focus();
-      
+
       // Handle button clicks
       cancelBtn.addEventListener('click', () => {
         document.body.removeChild(overlay);
         resolve(false);
       });
-      
+
       okBtn.addEventListener('click', () => {
         document.body.removeChild(overlay);
         resolve(true);
       });
-      
+
       // Handle ESC key
-      overlay.addEventListener('keydown', (e) => {
+      overlay.addEventListener('keydown', e => {
         if (e.key === 'Escape') {
           document.body.removeChild(overlay);
           resolve(false);
@@ -263,7 +263,7 @@ class ShortlistDrawer {
    */
   requestQuotes() {
     const items = shortlistManager.getItems();
-    
+
     if (items.length === 0) {
       alert('Your shortlist is empty. Add some suppliers or packages first!');
       return;

@@ -4,12 +4,19 @@
  */
 
 import { getFiltersFromURL, updateURL, handlePopState } from '../../../utils/url-state.js';
-import { trackSearch, trackFilterChange, trackResultClick, trackShortlistAdd } from '../../../utils/analytics.js';
+import {
+  trackSearch,
+  trackFilterChange,
+  trackResultClick,
+  trackShortlistAdd,
+} from '../../../utils/analytics.js';
 import shortlistManager from '../utils/shortlist-manager.js';
 
 // HTML escaping utility
 function escapeHtml(unsafe) {
-  if (typeof unsafe !== 'string') return '';
+  if (typeof unsafe !== 'string') {
+    return '';
+  }
   const div = document.createElement('div');
   div.textContent = unsafe;
   return div.innerHTML;
@@ -43,9 +50,15 @@ function createSupplierCard(supplier, position) {
 
   // Build badges
   const badges = [];
-  if (supplier.verified) badges.push('<span class="badge badge-verified">✓ Verified</span>');
-  if (supplier.isPro) badges.push('<span class="badge badge-pro">Pro</span>');
-  if (supplier.featuredSupplier) badges.push('<span class="badge badge-featured">Featured</span>');
+  if (supplier.verified) {
+    badges.push('<span class="badge badge-verified">✓ Verified</span>');
+  }
+  if (supplier.isPro) {
+    badges.push('<span class="badge badge-pro">Pro</span>');
+  }
+  if (supplier.featuredSupplier) {
+    badges.push('<span class="badge badge-featured">Featured</span>');
+  }
 
   const rating = supplier.rating ? `⭐ ${supplier.rating}` : '';
   const priceDisplay = supplier.price_display || 'Contact for quote';
@@ -95,15 +108,21 @@ function createSupplierCard(supplier, position) {
 
 // Skeleton loading cards
 function createSkeletonCards(count = 3) {
-  return Array(count).fill().map(() => `
+  return Array(count)
+    .fill()
+    .map(
+      () => `
     <div class="card skeleton-card" style="height: 250px; margin-bottom: 20px;"></div>
-  `).join('');
+  `
+    )
+    .join('');
 }
 
 // Empty state
 function createEmptyState(filters) {
-  const hasFilters = filters.q || filters.category || filters.location || filters.budgetMin || filters.budgetMax;
-  
+  const hasFilters =
+    filters.q || filters.category || filters.location || filters.budgetMin || filters.budgetMax;
+
   return `
     <div class="empty-state">
       <div class="empty-state-icon">🔍</div>
@@ -120,14 +139,28 @@ function createEmptyState(filters) {
 // Search suppliers using the v2 API
 async function searchSuppliers(filters, page = 1) {
   const params = new URLSearchParams();
-  
-  if (filters.q) params.set('q', filters.q);
-  if (filters.location) params.set('location', filters.location);
-  if (filters.category) params.set('category', filters.category);
-  if (filters.eventType) params.set('eventType', filters.eventType);
-  if (filters.budgetMin) params.set('minPrice', filters.budgetMin);
-  if (filters.budgetMax) params.set('maxPrice', filters.budgetMax);
-  if (filters.sort) params.set('sortBy', filters.sort);
+
+  if (filters.q) {
+    params.set('q', filters.q);
+  }
+  if (filters.location) {
+    params.set('location', filters.location);
+  }
+  if (filters.category) {
+    params.set('category', filters.category);
+  }
+  if (filters.eventType) {
+    params.set('eventType', filters.eventType);
+  }
+  if (filters.budgetMin) {
+    params.set('minPrice', filters.budgetMin);
+  }
+  if (filters.budgetMax) {
+    params.set('maxPrice', filters.budgetMax);
+  }
+  if (filters.sort) {
+    params.set('sortBy', filters.sort);
+  }
   params.set('page', page);
   params.set('limit', 20);
 
@@ -175,9 +208,9 @@ async function initSuppliersPage() {
     if (filterPriceEl && currentFilters.budgetMin && currentFilters.budgetMax) {
       // Map budget to price range
       const priceMap = {
-        '1000': '£',
-        '2000': '££',
-        '5000': '£££',
+        1000: '£',
+        2000: '££',
+        5000: '£££',
       };
       filterPriceEl.value = priceMap[currentFilters.budgetMax] || '';
     }
@@ -185,7 +218,9 @@ async function initSuppliersPage() {
 
   // Render results
   async function renderResults() {
-    if (isLoading) return;
+    if (isLoading) {
+      return;
+    }
     isLoading = true;
 
     // Show skeleton loading
@@ -208,16 +243,17 @@ async function initSuppliersPage() {
         resultsContainer.innerHTML = createEmptyState(currentFilters);
         attachEmptyStateHandlers();
       } else {
-        resultsContainer.innerHTML = results.map((supplier, index) => 
-          createSupplierCard(supplier, index + 1)
-        ).join('');
+        resultsContainer.innerHTML = results
+          .map((supplier, index) => createSupplierCard(supplier, index + 1))
+          .join('');
         attachCardHandlers();
       }
 
       // TODO: Add pagination controls
     } catch (error) {
       console.error('Render error:', error);
-      resultsContainer.innerHTML = '<div class="card"><p>Error loading suppliers. Please try again.</p></div>';
+      resultsContainer.innerHTML =
+        '<div class="card"><p>Error loading suppliers. Please try again.</p></div>';
     } finally {
       isLoading = false;
     }
@@ -227,7 +263,7 @@ async function initSuppliersPage() {
   function attachCardHandlers() {
     // Shortlist buttons
     resultsContainer.querySelectorAll('.btn-shortlist').forEach(btn => {
-      btn.addEventListener('click', async (e) => {
+      btn.addEventListener('click', async e => {
         e.preventDefault();
         const supplierId = btn.dataset.supplierId;
         const isActive = btn.classList.contains('btn-shortlist-active');
@@ -257,12 +293,12 @@ async function initSuppliersPage() {
 
     // Quote buttons
     resultsContainer.querySelectorAll('.btn-quote').forEach(btn => {
-      btn.addEventListener('click', (e) => {
+      btn.addEventListener('click', e => {
         e.preventDefault();
         const supplierId = btn.dataset.supplierId;
         const card = btn.closest('.supplier-card');
         const shortlistBtn = card.querySelector('.btn-shortlist');
-        
+
         // Get supplier data from card
         const supplier = {
           id: supplierId,
@@ -271,15 +307,17 @@ async function initSuppliersPage() {
         };
 
         // Dispatch event to open quote modal
-        window.dispatchEvent(new CustomEvent('openQuoteRequestModal', {
-          detail: { items: [supplier] },
-        }));
+        window.dispatchEvent(
+          new CustomEvent('openQuoteRequestModal', {
+            detail: { items: [supplier] },
+          })
+        );
       });
     });
 
     // Track result clicks
     resultsContainer.querySelectorAll('.supplier-card-link').forEach(link => {
-      link.addEventListener('click', (e) => {
+      link.addEventListener('click', e => {
         const supplierId = link.closest('.supplier-card').dataset.supplierId;
         const position = parseInt(link.dataset.position, 10);
         trackResultClick('supplier', supplierId, position);
@@ -294,9 +332,15 @@ async function initSuppliersPage() {
       clearBtn.addEventListener('click', () => {
         currentFilters = { sort: 'relevance', page: 1 };
         updateURL(currentFilters, true);
-        if (filterQueryEl) filterQueryEl.value = '';
-        if (filterCategoryEl) filterCategoryEl.value = '';
-        if (filterPriceEl) filterPriceEl.value = '';
+        if (filterQueryEl) {
+          filterQueryEl.value = '';
+        }
+        if (filterCategoryEl) {
+          filterCategoryEl.value = '';
+        }
+        if (filterPriceEl) {
+          filterPriceEl.value = '';
+        }
         renderResults();
       });
     }
@@ -305,7 +349,7 @@ async function initSuppliersPage() {
   // Handle filter changes
   if (filterQueryEl) {
     let debounceTimer;
-    filterQueryEl.addEventListener('input', (e) => {
+    filterQueryEl.addEventListener('input', e => {
       clearTimeout(debounceTimer);
       debounceTimer = setTimeout(() => {
         currentFilters.q = e.target.value;
@@ -318,7 +362,7 @@ async function initSuppliersPage() {
   }
 
   if (filterCategoryEl) {
-    filterCategoryEl.addEventListener('change', (e) => {
+    filterCategoryEl.addEventListener('change', e => {
       currentFilters.category = e.target.value;
       currentFilters.page = 1;
       updateURL(currentFilters);
@@ -328,7 +372,7 @@ async function initSuppliersPage() {
   }
 
   if (filterPriceEl) {
-    filterPriceEl.addEventListener('change', (e) => {
+    filterPriceEl.addEventListener('change', e => {
       // Map price range to budget
       const priceMap = {
         '£': { min: '0', max: '1000' },
@@ -351,7 +395,7 @@ async function initSuppliersPage() {
   }
 
   // Handle browser back/forward
-  handlePopState((filters) => {
+  handlePopState(filters => {
     currentFilters = filters;
     populateFiltersFromURL();
     renderResults();
@@ -363,7 +407,9 @@ async function initSuppliersPage() {
       const category = btn.getAttribute('data-quick-category');
       currentFilters.category = category;
       currentFilters.page = 1;
-      if (filterCategoryEl) filterCategoryEl.value = category;
+      if (filterCategoryEl) {
+        filterCategoryEl.value = category;
+      }
       updateURL(currentFilters);
       renderResults();
     });
@@ -378,8 +424,7 @@ async function initSuppliersPage() {
 function shouldInit() {
   // Check if we're on the suppliers page by looking for the results container
   // and verifying the page context
-  return document.getElementById('results') && 
-         window.location.pathname.includes('suppliers');
+  return document.getElementById('results') && window.location.pathname.includes('suppliers');
 }
 
 if (shouldInit()) {

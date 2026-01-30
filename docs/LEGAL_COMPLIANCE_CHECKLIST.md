@@ -351,6 +351,7 @@ Maintain compliance records:
 ## Notes
 
 This checklist should be reviewed and updated:
+
 - When new regulations are introduced
 - When new features are added to the platform
 - Following significant compliance incidents

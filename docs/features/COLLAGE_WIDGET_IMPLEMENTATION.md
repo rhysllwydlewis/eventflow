@@ -1,6 +1,7 @@
 # Collage Widget Implementation Guide
 
 ## Overview
+
 This document describes the implementation of the configurable collage widget for the EventFlow homepage. The widget allows administrators to display dynamic photo/video collages using either Pexels API or uploaded media.
 
 ## Status: Production Ready ✅
@@ -10,6 +11,7 @@ This document describes the implementation of the configurable collage widget fo
 **Total Commits:** 12
 
 ### Recent Updates (v1.1)
+
 - ✅ Added comprehensive debug logging for easier troubleshooting
 - ✅ Added UI deprecation notices for legacy Pexels toggle
 - ✅ Improved error visibility and diagnostics
@@ -18,6 +20,7 @@ This document describes the implementation of the configurable collage widget fo
 - ✅ Added backend debug logging with environment variable control
 
 ### Previous Updates (v1.0)
+
 - ✅ Fixed critical uploadGallery saving bug
 - ✅ Resolved memory leaks from video elements
 - ✅ Improved URL comparison for cache-busted media
@@ -32,12 +35,14 @@ This document describes the implementation of the configurable collage widget fo
 EventFlow supports **two ways** to configure the homepage collage, for backward compatibility:
 
 #### 1. **Collage Widget** (Recommended - New System)
+
 - **Location**: `/admin-homepage.html` → "Collage Widget" section
 - **Storage**: `settings.collageWidget` object in database
 - **Features**: Full control over source (Pexels/uploads), media types, intervals, queries, upload gallery
 - **Recommended for**: All new configurations and advanced features
 
 #### 2. **Legacy Pexels Collage Flag** (Backward Compatibility)
+
 - **Location**: `/admin-settings.html` → "Feature Flags" → "Pexels Dynamic Collage"
 - **Storage**: `features.pexelsCollage` boolean in database
 - **Features**: Simple on/off toggle for Pexels collage with default settings
@@ -75,13 +80,17 @@ To migrate from legacy to new system:
 ### Enable Debug Logging
 
 #### Frontend (Browser Console)
+
 Add `?debug=1` to homepage URL or set:
+
 ```javascript
 window.DEBUG = true;
 ```
 
 #### Backend (Server Logs)
+
 Set environment variable:
+
 ```bash
 DEBUG_COLLAGE=true node server.js
 # Or in .env file:
@@ -91,6 +100,7 @@ DEBUG_COLLAGE=true
 ### Debug Output Examples
 
 **Frontend Console:**
+
 ```
 [Collage Debug] Settings received: {collageWidgetEnabled: true, legacyEnabled: false, source: "pexels", ...}
 [Collage Debug] Using new collageWidget format
@@ -100,6 +110,7 @@ DEBUG_COLLAGE=true
 ```
 
 **Backend Logs:**
+
 ```
 [Homepage Settings] Returning collage config: {collageEnabled: true, source: "pexels", ...}
 [Pexels Collage Endpoint] Configuration check: {isEnabled: true, source: "pexels", category: "venues"}
@@ -108,6 +119,7 @@ DEBUG_COLLAGE=true
 ## Features
 
 ### Core Functionality
+
 - **Dual Source Support**: Choose between Pexels API or uploaded media
 - **Media Types**: Support for both photos and videos
 - **Video Support**: Videos play muted, looped, with playsinline attribute
@@ -116,6 +128,7 @@ DEBUG_COLLAGE=true
 - **Backward Compatible**: Existing pexelsCollage feature still works
 
 ### Accessibility
+
 - **Reduced Motion Support**: Respects `prefers-reduced-motion` media query
 - **Proper Video Attributes**: Muted, playsinline for mobile compatibility
 - **Lazy Loading**: Progressive enhancement with timeout controls
@@ -123,6 +136,7 @@ DEBUG_COLLAGE=true
 - **Status Indicators**: Clear visual feedback for widget state
 
 ### Security & Quality
+
 - **CSRF Protection**: All admin endpoints protected
 - **File Type Validation**: Client and server-side validation
 - **Path Sanitization**: Prevention of directory traversal attacks
@@ -136,12 +150,15 @@ DEBUG_COLLAGE=true
 ### Admin Endpoints (Authentication Required)
 
 #### Get Widget Configuration
+
 ```http
 GET /api/admin/homepage/collage-widget
 ```
+
 Returns the current collage widget configuration.
 
 **Response:**
+
 ```json
 {
   "enabled": true,
@@ -160,6 +177,7 @@ Returns the current collage widget configuration.
 ```
 
 #### Update Widget Configuration
+
 ```http
 PUT /api/admin/homepage/collage-widget
 Content-Type: application/json
@@ -167,6 +185,7 @@ X-CSRF-Token: <token>
 ```
 
 **Request Body:**
+
 ```json
 {
   "enabled": true,
@@ -180,6 +199,7 @@ X-CSRF-Token: <token>
 ```
 
 **Validation:**
+
 - `enabled`: boolean
 - `source`: "pexels" | "uploads"
 - `intervalSeconds`: 1-60
@@ -187,11 +207,13 @@ X-CSRF-Token: <token>
 - When enabled with uploads source, uploadGallery cannot be empty
 
 #### List Uploaded Media
+
 ```http
 GET /api/admin/homepage/collage-media
 ```
 
 **Response:**
+
 ```json
 {
   "media": [
@@ -207,6 +229,7 @@ GET /api/admin/homepage/collage-media
 ```
 
 #### Upload Media
+
 ```http
 POST /api/admin/homepage/collage-media
 Content-Type: multipart/form-data
@@ -214,11 +237,13 @@ X-CSRF-Token: <token>
 ```
 
 **Form Data:**
+
 - `media`: File(s) - Up to 10 files
-- Accepts: image/*, video/*
+- Accepts: image/_, video/_
 - Max size: 10MB per file
 
 #### Delete Media
+
 ```http
 DELETE /api/admin/homepage/collage-media/:filename
 X-CSRF-Token: <token>
@@ -227,11 +252,13 @@ X-CSRF-Token: <token>
 ### Public Endpoints (No Authentication)
 
 #### Get Homepage Settings
+
 ```http
 GET /api/public/homepage-settings
 ```
 
 **Response:**
+
 ```json
 {
   "collageWidget": {
@@ -251,6 +278,7 @@ GET /api/public/homepage-settings
 ## Admin UI
 
 ### Location
+
 Navigate to: `/admin-homepage.html`
 
 ### Configuration Steps
@@ -296,6 +324,7 @@ Navigate to: `/admin-homepage.html`
 ## Frontend Behavior
 
 ### Initialization Flow
+
 1. Fetch configuration from `/api/public/homepage-settings`
 2. Check if `collageWidget.enabled` is true
 3. Load media based on `source` setting:
@@ -305,7 +334,9 @@ Navigate to: `/admin-homepage.html`
 5. Start cycling interval based on `intervalSeconds`
 
 ### Media Distribution
+
 For uploaded media, files are distributed across 4 categories in round-robin fashion:
+
 - File 1 → Venues (frame 0)
 - File 2 → Catering (frame 1)
 - File 3 → Entertainment (frame 2)
@@ -314,12 +345,14 @@ For uploaded media, files are distributed across 4 categories in round-robin fas
 - And so on...
 
 ### Transitions
+
 - Crossfade effect between media items
 - Fade out duration: 1 second (configurable via CSS)
 - Respects `prefers-reduced-motion` setting
 - Videos replaced seamlessly with images and vice versa
 
 ### Fallback Hierarchy
+
 1. **Primary Source** (Pexels or Uploads)
 2. **Fallback to Pexels** (if enabled and uploads fail)
 3. **Static Hero Images** (from hero-images config)
@@ -328,27 +361,33 @@ For uploaded media, files are distributed across 4 categories in round-robin fas
 ## File Storage
 
 ### Upload Directory
+
 ```
 /public/uploads/homepage-collage/
 ```
 
 ### File Naming
+
 ```
 collage-{timestamp}-{random}.{ext}
 ```
+
 Example: `collage-1705410000000-123456789.jpg`
 
 ### Supported Formats
+
 - **Images**: JPG, JPEG, PNG, WebP, GIF
 - **Videos**: MP4, WebM, MOV
 
 ### Size Limits
+
 - **Images**: 5MB
 - **Videos**: 10MB
 
 ## Database Schema
 
 ### Settings Collection
+
 ```javascript
 {
   collageWidget: {
@@ -378,6 +417,7 @@ Example: `collage-1705410000000-123456789.jpg`
 ### Manual Testing
 
 #### Admin UI Tests
+
 1. **Enable/Disable Widget**
    - Toggle enabled checkbox
    - Verify settings become disabled/enabled
@@ -406,6 +446,7 @@ Example: `collage-1705410000000-123456789.jpg`
    - Refresh page and verify settings persist
 
 #### Frontend Tests
+
 1. **Pexels Source**
    - Enable widget with Pexels source
    - Visit homepage
@@ -438,6 +479,7 @@ Example: `collage-1705410000000-123456789.jpg`
    - Check videos don't autoplay
 
 ### Security Testing
+
 1. **Path Traversal**
    - Try deleting file with `../` in filename
    - Verify 400 error returned
@@ -457,24 +499,28 @@ Example: `collage-1705410000000-123456789.jpg`
 ## Troubleshooting
 
 ### Widget Not Appearing
+
 1. Check `collageWidget.enabled` is `true`
 2. Verify homepage settings endpoint returns data
 3. Check browser console for errors
 4. Confirm media is available (Pexels or uploads)
 
 ### Videos Not Playing
+
 1. Check video file format (MP4 works best)
 2. Verify file size under 10MB
 3. Check browser console for codec errors
 4. Test in different browsers
 
 ### Upload Fails
+
 1. Check file size (max 10MB)
 2. Verify file type is supported
 3. Check disk space on server
 4. Review server logs for errors
 
 ### Media Not Cycling
+
 1. Verify `intervalSeconds` is set (1-60)
 2. Check JavaScript console for errors
 3. Ensure multiple media items exist
@@ -512,6 +558,7 @@ Example: `collage-1705410000000-123456789.jpg`
    - Verify `collageWidget.enabled: true` in API response
 
 **Debug Steps**:
+
 ```bash
 # 1. Check backend logs with debug enabled
 DEBUG_COLLAGE=true node server.js
@@ -531,6 +578,7 @@ curl http://localhost:3000/api/admin/public/pexels-collage?category=venues
 ### Enhancements
 
 **1. Debug Logging System**
+
 - **Feature**: Comprehensive logging for frontend and backend
 - **Controls**: `window.DEBUG`, `isDevelopmentEnvironment()`, `DEBUG_COLLAGE` env var
 - **Coverage**: Settings fetch, initialization, Pexels fetches, media caching
@@ -538,12 +586,14 @@ curl http://localhost:3000/api/admin/public/pexels-collage?category=venues
 - **Commit**: f473bf8, e05ea32
 
 **2. UI Deprecation Notices**
+
 - **Feature**: Clear guidance about dual configuration systems
 - **Locations**: admin-settings.html (legacy toggle), admin-homepage.html (info banner)
 - **Benefit**: Reduces confusion, guides users to new system
 - **Commit**: f473bf8
 
 **3. Strict Equality Check**
+
 - **Issue**: Condition used truthy check instead of strict equality
 - **Fix**: Changed `if (collageWidget?.enabled)` to `if (collageWidget?.enabled === true)`
 - **Benefit**: Consistent behavior with initial validation
@@ -554,30 +604,35 @@ curl http://localhost:3000/api/admin/public/pexels-collage?category=venues
 ### Critical Bugs Fixed
 
 **1. Missing uploadGallery in Save Configuration**
+
 - **Issue**: Upload gallery array wasn't included in save requests
 - **Impact**: Uploads source mode completely broken
 - **Fix**: Added uploadGallery to configuration save body
 - **Commit**: e108fa2
 
 **2. Memory Leaks from Video Elements**
+
 - **Issue**: Video elements and event listeners accumulated without cleanup
 - **Impact**: Performance degradation over time
 - **Fix**: Proper video.pause(), source clearing, `{ once: true }` listeners
 - **Commit**: e108fa2
 
 **3. File Deletion URL Comparison**
+
 - **Issue**: Cache-busted URLs (with ?t=timestamp) not matched during deletion
 - **Impact**: Orphaned references in uploadGallery
 - **Fix**: Strip query parameters before URL comparison
 - **Commit**: e108fa2
 
 **4. Missing uploadGallery Validation**
+
 - **Issue**: No validation of array structure or URL format
 - **Impact**: Malformed data could crash frontend
 - **Fix**: Validate array type and item formats
 - **Commit**: e108fa2
 
 **5. Media Type Detection with Query Params**
+
 - **Issue**: Extension detection failed with cache-busted URLs
 - **Impact**: Videos loaded as photos or vice versa
 - **Fix**: Strip query params before extension check
@@ -586,12 +641,14 @@ curl http://localhost:3000/api/admin/public/pexels-collage?category=venues
 ### UX Improvements
 
 **Better Error Messages**
+
 - Specific file size errors: "File 'video.mp4' is too large (12.3MB)"
 - Network context: "Network error during upload. Please check your connection."
 - Validation errors with actionable advice
 - **Commit**: bd6783e
 
 **Enhanced Help Text**
+
 - Detailed file format requirements
 - Codec recommendations (H.264, VP8)
 - Dimension guidance (800x600px+)
@@ -599,6 +656,7 @@ curl http://localhost:3000/api/admin/public/pexels-collage?category=venues
 - **Commit**: bd6783e
 
 **Visual Feedback**
+
 - Status banner when widget disabled
 - Animated upload progress with spinner
 - Smooth fade transitions
@@ -606,6 +664,7 @@ curl http://localhost:3000/api/admin/public/pexels-collage?category=venues
 - **Commit**: bd6783e
 
 **Client-Side Validation**
+
 - Pre-upload file size checks
 - Type validation before server request
 - Max file count enforcement
@@ -615,6 +674,7 @@ curl http://localhost:3000/api/admin/public/pexels-collage?category=venues
 ## Future Enhancements
 
 ### Potential Features
+
 - [ ] Per-category upload assignment (manual distribution)
 - [ ] Video thumbnail generation
 - [ ] Image optimization on upload
@@ -627,6 +687,7 @@ curl http://localhost:3000/api/admin/public/pexels-collage?category=venues
 - [ ] Scheduled media rotation
 
 ### Performance Optimizations
+
 - [ ] CDN integration for uploaded media
 - [ ] WebP conversion for images
 - [ ] Video compression/optimization
@@ -636,6 +697,7 @@ curl http://localhost:3000/api/admin/public/pexels-collage?category=venues
 ## Support
 
 For issues or questions:
+
 1. Check browser console for errors
 2. Review server logs in production
 3. Verify configuration in admin panel

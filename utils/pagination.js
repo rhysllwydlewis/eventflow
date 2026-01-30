@@ -41,7 +41,7 @@ function createPaginationMeta(page, limit, total) {
 function paginate(items, page = 1, limit = 20) {
   const pageNum = Math.max(1, parseInt(page, 10) || 1);
   const limitNum = Math.max(1, Math.min(100, parseInt(limit, 10) || 20));
-  
+
   const total = items.length;
   const offset = (pageNum - 1) * limitNum;
   const paginatedItems = items.slice(offset, offset + limitNum);

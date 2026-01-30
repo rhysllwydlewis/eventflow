@@ -17,7 +17,7 @@ class ShortlistManager {
    */
   getCsrfToken() {
     const cookies = document.cookie.split(';');
-    for (let cookie of cookies) {
+    for (const cookie of cookies) {
       const [name, value] = cookie.trim().split('=');
       if (name === 'csrf') {
         return value;
@@ -59,8 +59,10 @@ class ShortlistManager {
       const response = await fetch('/api/auth/me', {
         credentials: 'include',
       });
-      if (response.ok) return true;
-      
+      if (response.ok) {
+        return true;
+      }
+
       // Fallback to /api/user endpoint
       const fallbackResponse = await fetch('/api/user', {
         credentials: 'include',
@@ -79,14 +81,14 @@ class ShortlistManager {
       const response = await fetch('/api/shortlist', {
         credentials: 'include',
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         this.items = data.data.items || [];
-        
+
         // Merge with localStorage if present (auto-merge on login)
         await this.mergeLocalStorageOnLogin();
-        
+
         this.saveToLocalStorage();
         this.notifyListeners();
       } else if (response.status === 401) {
@@ -127,9 +129,7 @@ class ShortlistManager {
       }
 
       // Merge local items into server (skip duplicates)
-      const existingIds = new Set(
-        this.items.map(item => `${item.type}:${item.id}`)
-      );
+      const existingIds = new Set(this.items.map(item => `${item.type}:${item.id}`));
 
       for (const item of localItems) {
         const itemKey = `${item.type}:${item.id}`;
@@ -167,10 +167,13 @@ class ShortlistManager {
    */
   saveToLocalStorage() {
     try {
-      localStorage.setItem('eventflow_shortlist', JSON.stringify({
-        items: this.items,
-        lastUpdated: new Date().toISOString(),
-      }));
+      localStorage.setItem(
+        'eventflow_shortlist',
+        JSON.stringify({
+          items: this.items,
+          lastUpdated: new Date().toISOString(),
+        })
+      );
     } catch (error) {
       console.error('Failed to save shortlist to localStorage:', error);
     }

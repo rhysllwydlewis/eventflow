@@ -14,36 +14,40 @@ The homepage collage widget was showing default/static photos even when the Pexe
 
 EventFlow has two ways to configure the homepage collage:
 
-| System | Location | Storage | Priority |
-|--------|----------|---------|----------|
-| **New Widget** | `/admin-homepage.html` | `settings.collageWidget` | Takes precedence when explicitly set |
+| System          | Location               | Storage                  | Priority                                    |
+| --------------- | ---------------------- | ------------------------ | ------------------------------------------- |
+| **New Widget**  | `/admin-homepage.html` | `settings.collageWidget` | Takes precedence when explicitly set        |
 | **Legacy Flag** | `/admin-settings.html` | `features.pexelsCollage` | Used as fallback when widget not configured |
 
 ### Priority Logic
 
 ```javascript
 // Backend (routes/public.js)
-const collageEnabled = collageWidget.enabled !== undefined 
-  ? collageWidget.enabled    // Use explicit widget setting
-  : legacyPexelsEnabled;     // Fallback to legacy flag
+const collageEnabled =
+  collageWidget.enabled !== undefined
+    ? collageWidget.enabled // Use explicit widget setting
+    : legacyPexelsEnabled; // Fallback to legacy flag
 
 // Frontend (home-init.js)
 if (collageWidget?.enabled === true) {
-  await initCollageWidget(collageWidget);   // New system
+  await initCollageWidget(collageWidget); // New system
 } else {
-  await initPexelsCollage(settings.pexelsCollageSettings);  // Legacy system
+  await initPexelsCollage(settings.pexelsCollageSettings); // Legacy system
 }
 ```
 
 ### Issue Scenarios
 
 **Scenario A**: User enables legacy flag but never configures new widget
+
 - Result: ✅ Works correctly (uses legacy system)
 
 **Scenario B**: User enables new widget but has misconfigured settings
+
 - Result: ❌ Silently falls back to static images (no error visibility)
 
 **Scenario C**: User enables both systems with conflicting settings
+
 - Result: ⚠️ Confusing behavior (new widget takes precedence)
 
 ## Solution Implemented
@@ -51,6 +55,7 @@ if (collageWidget?.enabled === true) {
 ### 1. Enhanced Debug Logging 🔍
 
 #### Frontend (home-init.js)
+
 ```javascript
 // Example debug output:
 [Collage Debug] Settings received: {
@@ -68,6 +73,7 @@ if (collageWidget?.enabled === true) {
 Enabled via: `window.DEBUG = true` or `isDevelopmentEnvironment()`
 
 #### Backend (routes/public.js, routes/admin.js)
+
 ```javascript
 // Example debug output:
 [Homepage Settings] Returning collage config: {
@@ -88,34 +94,43 @@ Enabled via: `DEBUG_COLLAGE=true` environment variable
 ### 2. UI Guidance & Deprecation Notices 📋
 
 #### admin-settings.html
+
 Added warning banner to legacy toggle:
+
 ```html
-⚠️ Legacy: Use Homepage Settings → Collage Widget for full control
-over photos, videos, and uploads.
+⚠️ Legacy: Use Homepage Settings → Collage Widget for full control over photos, videos, and uploads.
 ```
+
 - Visual styling: reduced opacity (0.7)
 - Link to new admin-homepage.html interface
 
 #### admin-homepage.html
+
 Added informational banner:
+
 ```html
-ℹ️ Note: This collage widget replaces the legacy "Pexels Dynamic Collage"
-feature flag in Settings. Use this interface for full control.
+ℹ️ Note: This collage widget replaces the legacy "Pexels Dynamic Collage" feature flag in Settings.
+Use this interface for full control.
 ```
+
 - Clear guidance about relationship between systems
 
 ### 3. Strict Equality Check 🔧
 
 **Before:**
+
 ```javascript
-if (collageWidget?.enabled) {  // Truthy check
+if (collageWidget?.enabled) {
+  // Truthy check
   await initCollageWidget(collageWidget);
 }
 ```
 
 **After:**
+
 ```javascript
-if (collageWidget?.enabled === true) {  // Strict equality
+if (collageWidget?.enabled === true) {
+  // Strict equality
   await initCollageWidget(collageWidget);
 }
 ```
@@ -125,6 +140,7 @@ if (collageWidget?.enabled === true) {  // Strict equality
 ### 4. Documentation Updates 📚
 
 Updated `COLLAGE_WIDGET_IMPLEMENTATION.md` with:
+
 - **Configuration Systems** section explaining priority rules
 - **Debugging & Troubleshooting** section with:
   - How to enable debug logging
@@ -155,12 +171,14 @@ All 5 scenarios pass:
 ## Impact & Benefits
 
 ### Before Fix
+
 - ❌ Users confused about why widget shows static images
 - ❌ No visibility into configuration or API failures
 - ❌ Conflicting UI elements without guidance
 - ❌ Silent fallback to defaults without explanation
 
 ### After Fix
+
 - ✅ Clear debug logging shows exactly what's happening
 - ✅ UI guidance directs users to correct interface
 - ✅ Documentation explains priority rules and migration
@@ -172,6 +190,7 @@ All 5 scenarios pass:
 ### For Administrators
 
 1. **Check current configuration**:
+
    ```bash
    curl http://localhost:3000/api/public/homepage-settings
    ```
@@ -236,6 +255,7 @@ All 5 scenarios pass:
 ## Conclusion
 
 This fix addresses the "static images when enabled" issue by:
+
 - ✅ Making configuration behavior visible through debug logging
 - ✅ Guiding users to the correct admin interface
 - ✅ Documenting priority rules and troubleshooting steps

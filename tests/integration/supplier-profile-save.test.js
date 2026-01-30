@@ -18,19 +18,13 @@ describe('Supplier Profile Save Fixes', () => {
       path.join(__dirname, '../../public/dashboard-supplier.html'),
       'utf8'
     );
-    appJsContent = fs.readFileSync(
-      path.join(__dirname, '../../public/assets/js/app.js'),
-      'utf8'
-    );
+    appJsContent = fs.readFileSync(path.join(__dirname, '../../public/assets/js/app.js'), 'utf8');
     supplierGalleryContent = fs.readFileSync(
       path.join(__dirname, '../../public/assets/js/supplier-gallery.js'),
       'utf8'
     );
     serverJsContent = fs.readFileSync(path.join(__dirname, '../../server.js'), 'utf8');
-    geocodingContent = fs.readFileSync(
-      path.join(__dirname, '../../utils/geocoding.js'),
-      'utf8'
-    );
+    geocodingContent = fs.readFileSync(path.join(__dirname, '../../utils/geocoding.js'), 'utf8');
   });
 
   describe('Frontend Form Updates', () => {
@@ -64,9 +58,7 @@ describe('Supplier Profile Save Fixes', () => {
     });
 
     it('should have real-time validation on input', () => {
-      expect(dashboardSupplierHtml).toContain(
-        "venuePostcodeInput.addEventListener('input'"
-      );
+      expect(dashboardSupplierHtml).toContain("venuePostcodeInput.addEventListener('input'");
       expect(dashboardSupplierHtml).toContain("venuePostcodeInput.addEventListener('blur'");
     });
 
@@ -76,7 +68,9 @@ describe('Supplier Profile Save Fixes', () => {
     });
 
     it('should have accessibility attributes on venue postcode field', () => {
-      expect(dashboardSupplierHtml).toContain('aria-describedby="venue-postcode-help venue-postcode-error"');
+      expect(dashboardSupplierHtml).toContain(
+        'aria-describedby="venue-postcode-help venue-postcode-error"'
+      );
       expect(dashboardSupplierHtml).toContain('aria-required=');
       expect(dashboardSupplierHtml).toContain('role="alert"');
       expect(dashboardSupplierHtml).toContain('aria-live="polite"');
@@ -138,7 +132,9 @@ describe('Supplier Profile Save Fixes', () => {
 
     it('should include credentials in fetch requests', () => {
       // Check that api function includes credentials
-      const apiFunction = appJsContent.match(/async function api\(path, opts[\s\S]*?return r\.json\(\)/);
+      const apiFunction = appJsContent.match(
+        /async function api\(path, opts[\s\S]*?return r\.json\(\)/
+      );
       expect(apiFunction).toBeTruthy();
       expect(apiFunction[0]).toContain("credentials: opts.credentials || 'include'");
     });

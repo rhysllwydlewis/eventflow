@@ -5,6 +5,7 @@ This guide walks you through setting up Cloudflare CDN for the EventFlow platfor
 ## Overview
 
 Cloudflare provides:
+
 - **CDN (Content Delivery Network)** - Cache and serve static assets globally
 - **DDoS Protection** - Protect against malicious traffic
 - **SSL/TLS** - Free SSL certificates
@@ -59,6 +60,7 @@ Cloudflare provides:
 Create the following page rules in order (priority matters):
 
 #### Rule 1: Cache Static Assets Aggressively
+
 - **URL Pattern**: `*event-flow.co.uk/assets/*`
 - **Settings**:
   - Cache Level: Cache Everything
@@ -66,11 +68,13 @@ Create the following page rules in order (priority matters):
   - Browser Cache TTL: 1 month
 
 #### Rule 2: Bypass Cache for API Endpoints
+
 - **URL Pattern**: `*event-flow.co.uk/api/*`
 - **Settings**:
   - Cache Level: Bypass
 
 #### Rule 3: Cache HTML Pages with Short TTL
+
 - **URL Pattern**: `*event-flow.co.uk/*.html`
 - **Settings**:
   - Cache Level: Cache Everything
@@ -110,15 +114,19 @@ Enable the following:
 ## Step 7: Security Settings
 
 ### Security Level (Security > Settings)
+
 - Set to **Medium** (adjust based on your needs)
 
 ### Bot Fight Mode
+
 - Enable to block bad bots (free plan feature)
 
 ### Browser Integrity Check
+
 - Enable to challenge browsers without valid User-Agent
 
 ### Challenge Passage
+
 - Set to **30 minutes** or **1 hour**
 
 ## Step 8: Configure Firewall Rules (Optional)
@@ -149,6 +157,7 @@ This ensures `req.ip` reflects the actual visitor IP, not Cloudflare's IP.
 ### Verify Real IP in Logs
 
 Use Cloudflare headers to get real visitor IPs:
+
 - `CF-Connecting-IP`: The actual visitor IP
 - `CF-IPCountry`: Visitor's country code
 - `CF-Ray`: Unique request identifier for debugging
@@ -168,6 +177,7 @@ Use Cloudflare headers to get real visitor IPs:
 ### Clear Cache When Needed
 
 To purge cache after deployments:
+
 1. Go to **Caching** > **Configuration**
 2. Click **Purge Everything** (use sparingly)
 3. Or selectively purge by URL or tag
@@ -210,6 +220,7 @@ For Pro plan users, use **Cache Rules** instead of Page Rules:
 ### Set Up Alerts (Pro plan)
 
 Configure alerts for:
+
 - Traffic spikes
 - High error rates (5xx)
 - SSL certificate expiration
@@ -219,7 +230,8 @@ Configure alerts for:
 ### Issue: Stale Content After Deployment
 
 **Solution**: Purge cache after each deployment
-- Add to deployment script: 
+
+- Add to deployment script:
   ```bash
   curl -X POST "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/purge_cache" \
     -H "Authorization: Bearer ${CF_API_TOKEN}" \
@@ -230,12 +242,14 @@ Configure alerts for:
 ### Issue: Admin Panel Not Accessible
 
 **Solution**: Ensure `/api/admin/*` is not cached
+
 - Verify Page Rule or Cache Rule bypasses cache for admin endpoints
 - Check that authentication cookies are working
 
 ### Issue: Slow TTFB (Time to First Byte)
 
-**Solution**: 
+**Solution**:
+
 - Reduce cache TTL to force more frequent origin checks
 - Use Cloudflare Workers to cache dynamic content
 - Enable Argo Smart Routing (paid feature)
@@ -243,12 +257,14 @@ Configure alerts for:
 ## Cost Optimization
 
 ### Free Plan Limits
+
 - Unlimited bandwidth
 - 3 Page Rules
 - Basic DDoS protection
 - Shared SSL certificate
 
 ### When to Upgrade to Pro ($20/month)
+
 - Need more Page Rules (20 rules)
 - Want Argo Smart Routing
 - Need Image Optimization
@@ -272,9 +288,11 @@ Configure alerts for:
 ## Support
 
 For EventFlow-specific Cloudflare issues:
+
 - Check the EventFlow [GitHub Issues](https://github.com/rhysllwydlewis/eventflow/issues)
 - Contact the EventFlow team
 
 For Cloudflare-specific issues:
+
 - Free plan: Community forums
 - Paid plans: Email and chat support

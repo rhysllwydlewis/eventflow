@@ -11,6 +11,7 @@ This document tracks frontend features and their backend API implementation stat
 **Backend Endpoint:** `GET /api/me/suppliers/:id/analytics?period=7|30|90`
 
 **Response Format:**
+
 ```json
 {
   "period": 7,
@@ -25,6 +26,7 @@ This document tracks frontend features and their backend API implementation stat
 ```
 
 **Implementation Details:**
+
 - ✅ Reads from `analytics` collection in database
 - ✅ Calculates response metrics from `messages` collection
 - ✅ Supports 7/30/90 day periods
@@ -34,10 +36,12 @@ This document tracks frontend features and their backend API implementation stat
 ### Analytics Tracking TODO
 
 To populate real analytics data, implement tracking for:
+
 1. **Profile Views** - Track when users view supplier profiles
 2. **Enquiries** - Track when users send enquiries/messages to suppliers
 
 Example analytics record format:
+
 ```json
 {
   "supplierId": "sup_123",
@@ -56,13 +60,16 @@ Example analytics record format:
 **Status:** Partially implemented
 
 ### Currently Available:
+
 - ✅ POST `/api/me/suppliers/:id/photos` - Upload photo (uses base64 encoding, stores locally in /uploads)
 
 ### Missing:
+
 - ❌ GET `/api/me/suppliers/:id/photos` - List photos
 - ❌ DELETE `/api/me/suppliers/:id/photos/:photoId` - Delete specific photo
 
 **Current Storage Architecture:**
+
 - Photo files: Stored locally in `/uploads/{ownerType}/{ownerId}/` directory
 - Photo metadata: Stored in MongoDB in supplier document's `photosGallery` array
 - Format: `{ url: string, approved: boolean, uploadedAt: timestamp }`
@@ -76,6 +83,7 @@ Example analytics record format:
 ## 📊 Data Storage Architecture
 
 ### Database (MongoDB/dbUnified)
+
 - ✅ **Suppliers**: Full supplier profiles
 - ✅ **Tickets**: Support tickets with responses
 - ✅ **Messages**: Customer-supplier messages with response tracking
@@ -85,11 +93,13 @@ Example analytics record format:
 - ⚠️ **Analytics**: Analytics data (structure exists, tracking needs implementation)
 
 ### File Storage
+
 - ✅ **Photos**: Local filesystem at `/uploads/{ownerType}/{ownerId}/`
 - ✅ **Hero Images**: Cloudinary (admin only, via routes/admin.js)
 - 📝 Note: Supplier photos use local storage with base64 transfer, NOT Cloudinary
 
 ### CSRF Protection
+
 - ✅ All POST/PATCH/DELETE endpoints protected with `csrfProtection` middleware
 - ✅ Includes photo uploads, ticket creation, supplier updates
 
@@ -97,15 +107,15 @@ Example analytics record format:
 
 ## Summary
 
-| Feature | Status | Priority | Frontend File | Backend Status |
-|---------|--------|----------|---------------|----------------|
-| Supplier Analytics API | ✅ Implemented | High | supplier-analytics-chart.js | Live, needs tracking |
-| Analytics Tracking | ⚠️ TODO | High | N/A | Needs implementation |
-| Supplier CRUD | ✅ Complete | High | supplier-gallery.js | Fully functional |
-| Photo Upload | ✅ Complete | High | supplier-photo-upload.js | Fully functional |
-| Photo Gallery GET | ⚠️ Workaround | Medium | supplier-photo-upload.js | Via supplier endpoint |
-| Photo DELETE | ❌ Missing | Medium | supplier-photo-upload.js | Not implemented |
-| Ticketing | ✅ Complete | High | ticketing.js | Fully functional |
+| Feature                | Status         | Priority | Frontend File               | Backend Status        |
+| ---------------------- | -------------- | -------- | --------------------------- | --------------------- |
+| Supplier Analytics API | ✅ Implemented | High     | supplier-analytics-chart.js | Live, needs tracking  |
+| Analytics Tracking     | ⚠️ TODO        | High     | N/A                         | Needs implementation  |
+| Supplier CRUD          | ✅ Complete    | High     | supplier-gallery.js         | Fully functional      |
+| Photo Upload           | ✅ Complete    | High     | supplier-photo-upload.js    | Fully functional      |
+| Photo Gallery GET      | ⚠️ Workaround  | Medium   | supplier-photo-upload.js    | Via supplier endpoint |
+| Photo DELETE           | ❌ Missing     | Medium   | supplier-photo-upload.js    | Not implemented       |
+| Ticketing              | ✅ Complete    | High     | ticketing.js                | Fully functional      |
 
 ---
 

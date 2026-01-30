@@ -55,11 +55,11 @@ function sanitizeProperties(properties) {
   }
 
   const sanitized = {};
-  
+
   for (const key of ALLOWED_PROPERTY_KEYS) {
     if (properties[key] !== undefined) {
       let value = properties[key];
-      
+
       // Truncate strings to prevent huge payloads
       if (typeof value === 'string') {
         value = value.slice(0, MAX_STRING_LENGTH);
@@ -76,7 +76,7 @@ function sanitizeProperties(properties) {
       }
     }
   }
-  
+
   return sanitized;
 }
 
@@ -87,10 +87,10 @@ function sanitizeFilters(filters) {
   if (!filters || typeof filters !== 'object') {
     return {};
   }
-  
+
   const sanitized = {};
   const allowedFilterKeys = ['category', 'location', 'budgetMin', 'budgetMax', 'sort'];
-  
+
   for (const key of allowedFilterKeys) {
     if (filters[key] !== undefined) {
       const value = filters[key];
@@ -101,7 +101,7 @@ function sanitizeFilters(filters) {
       }
     }
   }
-  
+
   return sanitized;
 }
 

@@ -123,25 +123,27 @@ describe('Pexels Collage Fallback Integration', () => {
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
       expect(response.body.category).toBe('venues');
-      
+
       // Should have both photos and videos arrays by default
       expect(response.body.photos).toBeDefined();
       expect(Array.isArray(response.body.photos)).toBe(true);
       expect(response.body.videos).toBeDefined();
       expect(Array.isArray(response.body.videos)).toBe(true);
-      
+
       // Both should have items (fallback data should include videos)
       expect(response.body.photos.length).toBeGreaterThan(0);
       expect(response.body.videos.length).toBeGreaterThan(0);
     });
 
     it('should return videos when videos parameter is true', async () => {
-      const response = await request(app).get('/api/public/pexels-collage?category=venues&photos=true&videos=true');
+      const response = await request(app).get(
+        '/api/public/pexels-collage?category=venues&photos=true&videos=true'
+      );
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
       expect(response.body.category).toBe('venues');
-      
+
       // Should have both photos and videos arrays
       expect(response.body.photos).toBeDefined();
       expect(Array.isArray(response.body.photos)).toBe(true);
@@ -150,14 +152,16 @@ describe('Pexels Collage Fallback Integration', () => {
     });
 
     it('should return only photos when videos parameter is false', async () => {
-      const response = await request(app).get('/api/public/pexels-collage?category=venues&photos=true&videos=false');
+      const response = await request(app).get(
+        '/api/public/pexels-collage?category=venues&photos=true&videos=false'
+      );
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
       expect(response.body.photos).toBeDefined();
       expect(Array.isArray(response.body.photos)).toBe(true);
       expect(response.body.photos.length).toBeGreaterThan(0);
-      
+
       // Videos should be empty array
       expect(response.body.videos).toBeDefined();
       expect(Array.isArray(response.body.videos)).toBe(true);
@@ -165,14 +169,16 @@ describe('Pexels Collage Fallback Integration', () => {
     });
 
     it('should return only videos when photos parameter is false', async () => {
-      const response = await request(app).get('/api/public/pexels-collage?category=venues&photos=false&videos=true');
+      const response = await request(app).get(
+        '/api/public/pexels-collage?category=venues&photos=false&videos=true'
+      );
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
       expect(response.body.videos).toBeDefined();
       expect(Array.isArray(response.body.videos)).toBe(true);
       expect(response.body.videos.length).toBeGreaterThan(0);
-      
+
       // Photos should be empty array
       expect(response.body.photos).toBeDefined();
       expect(Array.isArray(response.body.photos)).toBe(true);
@@ -180,10 +186,12 @@ describe('Pexels Collage Fallback Integration', () => {
     });
 
     it('should validate video structure', async () => {
-      const response = await request(app).get('/api/public/pexels-collage?category=venues&photos=false&videos=true');
+      const response = await request(app).get(
+        '/api/public/pexels-collage?category=venues&photos=false&videos=true'
+      );
 
       expect(response.status).toBe(200);
-      
+
       if (response.body.videos && response.body.videos.length > 0) {
         const video = response.body.videos[0];
         expect(video).toHaveProperty('type', 'video');

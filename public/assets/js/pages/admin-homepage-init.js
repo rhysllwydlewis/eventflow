@@ -85,7 +85,8 @@
     const videoQuality = collageWidget.videoQuality || {};
     document.getElementById('videoQualityPreference').value = videoQuality.preference || 'hd';
     document.getElementById('videoQualityAdaptive').checked = videoQuality.adaptive ?? true;
-    document.getElementById('videoQualityMobileOptimized').checked = videoQuality.mobileOptimized ?? true;
+    document.getElementById('videoQualityMobileOptimized').checked =
+      videoQuality.mobileOptimized ?? true;
 
     // Transition Effects
     const transition = collageWidget.transition || {};
@@ -95,11 +96,13 @@
     // Preloading
     const preloading = collageWidget.preloading || {};
     document.getElementById('preloadingEnabled').checked = preloading.enabled ?? true;
-    document.getElementById('preloadingCount').value = preloading.count !== undefined ? preloading.count : 3;
+    document.getElementById('preloadingCount').value =
+      preloading.count !== undefined ? preloading.count : 3;
 
     // Mobile Optimizations
     const mobileOpt = collageWidget.mobileOptimizations || {};
-    document.getElementById('mobileSlowerTransitions').checked = mobileOpt.slowerTransitions ?? true;
+    document.getElementById('mobileSlowerTransitions').checked =
+      mobileOpt.slowerTransitions ?? true;
     document.getElementById('mobileDisableVideos').checked = mobileOpt.disableVideos ?? false;
     document.getElementById('mobileTouchControls').checked = mobileOpt.touchControls ?? true;
 
@@ -201,7 +204,7 @@
         videos: document.getElementById('mediaTypeVideos').checked,
       };
       const intervalSeconds = parseFloat(document.getElementById('intervalSeconds').value);
-      
+
       // Hero Video Controls
       const heroVideo = {
         enabled: document.getElementById('heroVideoEnabled').checked,

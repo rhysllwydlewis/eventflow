@@ -13,11 +13,11 @@ export async function trackEvent(event, properties = {}) {
   try {
     // Get CSRF token from cookie
     const token = getCsrfToken();
-    
+
     // Create abort controller with 5 second timeout
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000);
-    
+
     await fetch('/api/analytics/event', {
       method: 'POST',
       headers: {
@@ -45,7 +45,7 @@ export async function trackEvent(event, properties = {}) {
  */
 function getCsrfToken() {
   const cookies = document.cookie.split(';');
-  for (let cookie of cookies) {
+  for (const cookie of cookies) {
     const [name, value] = cookie.trim().split('=');
     if (name === 'csrf') {
       return value;
