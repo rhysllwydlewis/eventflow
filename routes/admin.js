@@ -2731,7 +2731,7 @@ router.patch('/packages/:id/tags', authRequired, roleRequired('admin'), csrfProt
       });
     }
     
-    const packages = read('packages');
+    const packages = await dbUnified.read('packages');
     const pkgIndex = packages.findIndex(p => p.id === id);
     
     if (pkgIndex === -1) {
@@ -2742,7 +2742,7 @@ router.patch('/packages/:id/tags', authRequired, roleRequired('admin'), csrfProt
     packages[pkgIndex].seasonalTags = seasonalTags.map(t => t.toLowerCase());
     packages[pkgIndex].updatedAt = new Date().toISOString();
     
-    write('packages', packages);
+    await dbUnified.write('packages', packages);
     
     // Log the action
     auditLog({

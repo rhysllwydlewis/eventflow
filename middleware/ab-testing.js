@@ -58,7 +58,7 @@ function hashCode(str) {
   for (let i = 0; i < str.length; i++) {
     const char = str.charCodeAt(i);
     hash = (hash << 5) - hash + char;
-    hash = hash & hash; // Convert to 32bit integer
+    hash |= 0; // Convert to 32bit integer
   }
   return Math.abs(hash);
 }
@@ -218,12 +218,13 @@ router.post('/:name/view', csrfProtection, async (req, res) => {
     
     views.push(view);
     
-    // Keep only recent views (prevent unbounded growth)
+    // Keep only recent views (prevent unbounded growth) - use slice for efficiency
     if (views.length > 10000) {
-      views.splice(0, views.length - 10000);
+      const trimmedViews = views.slice(-10000);
+      await dbUnified.write('ab_views', trimmedViews);
+    } else {
+      await dbUnified.write('ab_views', views);
     }
-    
-    await dbUnified.write('ab_views', views);
     
     res.json({ success: true, message: 'View tracked' });
   } catch (error) {

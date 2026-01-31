@@ -24,6 +24,8 @@ class VoiceInput {
     this.targetTextarea = null;
     this.finalTranscript = '';
     this.interimTranscript = '';
+    this.restartAttempts = 0;
+    this.maxRestartAttempts = 5; // Prevent infinite restart loops
     
     // Set up event handlers
     this.setupEventHandlers();
@@ -44,15 +46,21 @@ class VoiceInput {
       this.isListening = false;
       this.onEnd();
       
-      // Restart if we're supposed to be listening
-      if (this.shouldBeListening) {
+      // Restart if we're supposed to be listening (with retry limit)
+      if (this.shouldBeListening && this.restartAttempts < this.maxRestartAttempts) {
+        this.restartAttempts++;
         setTimeout(() => {
           try {
             this.recognition.start();
           } catch (e) {
             console.debug('Could not restart recognition:', e);
+            this.shouldBeListening = false;
           }
         }, 100);
+      } else if (this.restartAttempts >= this.maxRestartAttempts) {
+        console.warn('Max restart attempts reached, stopping voice input');
+        this.shouldBeListening = false;
+        this.onError('Voice recognition stopped after multiple failures');
       }
     };
     
@@ -108,6 +116,7 @@ class VoiceInput {
     this.finalTranscript = textarea.value || '';
     this.interimTranscript = '';
     this.shouldBeListening = true;
+    this.restartAttempts = 0; // Reset retry counter
     
     try {
       this.recognition.start();

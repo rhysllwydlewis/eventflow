@@ -268,19 +268,19 @@ router.post('/lead-score', authRequired, async (req, res) => {
       }
     }
     
-    // Response time (faster response = higher interest)
+    // Response time (enquiry recency - how long ago was it created)
     if (enquiry.createdAt) {
-      const hoursSinceEnquiry = (Date.now() - new Date(enquiry.createdAt)) / (1000 * 60 * 60);
+      const hoursSinceCreation = (Date.now() - new Date(enquiry.createdAt)) / (1000 * 60 * 60);
       
-      if (hoursSinceEnquiry < 1) {
+      if (hoursSinceCreation < 1) {
         score += 30;
-        scoreBreakdown.responseTime = { points: 30, reason: 'Very quick response (<1 hour)' };
-      } else if (hoursSinceEnquiry < 24) {
+        scoreBreakdown.enquiryRecency = { points: 30, reason: 'Very recent enquiry (<1 hour)' };
+      } else if (hoursSinceCreation < 24) {
         score += 20;
-        scoreBreakdown.responseTime = { points: 20, reason: 'Quick response (<24 hours)' };
+        scoreBreakdown.enquiryRecency = { points: 20, reason: 'Recent enquiry (<24 hours)' };
       } else {
         score += 5;
-        scoreBreakdown.responseTime = { points: 5, reason: 'Standard response time' };
+        scoreBreakdown.enquiryRecency = { points: 5, reason: 'Older enquiry' };
       }
     }
     

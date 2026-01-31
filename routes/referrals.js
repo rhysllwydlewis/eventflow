@@ -16,10 +16,12 @@ const router = express.Router();
 
 /**
  * Generate a unique referral code for a user
+ * Uses crypto random bytes for security
  */
 function generateReferralCode(userId) {
-  // Create a short, user-friendly referral code
-  const hash = crypto.createHash('sha256').update(userId).digest('hex');
+  // Create a unique referral code with random salt for security
+  const randomSalt = crypto.randomBytes(4).toString('hex');
+  const hash = crypto.createHash('sha256').update(userId + randomSalt).digest('hex');
   return hash.substring(0, 8).toUpperCase();
 }
 

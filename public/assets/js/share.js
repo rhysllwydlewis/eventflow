@@ -87,6 +87,8 @@
     `;
     button.setAttribute('aria-label', `Share ${title}`);
     
+    let resetTimeout = null;
+    
     button.addEventListener('click', async () => {
       button.disabled = true;
       
@@ -106,10 +108,16 @@
           onSuccess(result);
         }
         
+        // Clear any existing timeout
+        if (resetTimeout) {
+          clearTimeout(resetTimeout);
+        }
+        
         // Reset button after 2 seconds
-        setTimeout(() => {
+        resetTimeout = setTimeout(() => {
           button.innerHTML = originalHTML;
           button.disabled = false;
+          resetTimeout = null;
         }, 2000);
       } else if (!result.cancelled) {
         // Show error feedback
