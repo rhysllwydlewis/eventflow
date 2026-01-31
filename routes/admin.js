@@ -6657,6 +6657,12 @@ router.get('/pexels/test', authRequired, roleRequired('admin'), async (req, res)
  */
 router.post('/users/:id/impersonate', authRequired, roleRequired('admin'), csrfProtection, async (req, res) => {
   try {
+    // Validate JWT secret first in production
+    const JWT_SECRET = process.env.JWT_SECRET || 'change_me';
+    if (JWT_SECRET === 'change_me' && process.env.NODE_ENV === 'production') {
+      return res.status(500).json({ error: 'Impersonation disabled: JWT secret not configured' });
+    }
+
     const { id } = req.params;
     
     // Prevent impersonating if already impersonating
@@ -6698,11 +6704,6 @@ router.post('/users/:id/impersonate', authRequired, roleRequired('admin'), csrfP
     // Update user in JWT token
     const jwt = require('jsonwebtoken');
     const { setAuthCookie } = require('../middleware/auth');
-    const JWT_SECRET = process.env.JWT_SECRET || 'change_me';
-    
-    if (JWT_SECRET === 'change_me' && process.env.NODE_ENV === 'production') {
-      return res.status(500).json({ error: 'JWT secret not configured' });
-    }
     
     const token = jwt.sign(
       { id: targetUser.id, email: targetUser.email, role: targetUser.role },
@@ -6735,6 +6736,12 @@ router.post('/users/:id/impersonate', authRequired, roleRequired('admin'), csrfP
  */
 router.post('/users/stop-impersonate', authRequired, csrfProtection, async (req, res) => {
   try {
+    // Validate JWT secret first in production
+    const JWT_SECRET = process.env.JWT_SECRET || 'change_me';
+    if (JWT_SECRET === 'change_me' && process.env.NODE_ENV === 'production') {
+      return res.status(500).json({ error: 'Stop impersonation disabled: JWT secret not configured' });
+    }
+
     if (!req.session.originalUser) {
       return res.status(400).json({ error: 'Not currently impersonating' });
     }
@@ -6759,11 +6766,6 @@ router.post('/users/stop-impersonate', authRequired, csrfProtection, async (req,
     // Restore original admin JWT
     const jwt = require('jsonwebtoken');
     const { setAuthCookie } = require('../middleware/auth');
-    const JWT_SECRET = process.env.JWT_SECRET || 'change_me';
-    
-    if (JWT_SECRET === 'change_me' && process.env.NODE_ENV === 'production') {
-      return res.status(500).json({ error: 'JWT secret not configured' });
-    }
     
     const token = jwt.sign(
       { id: originalUser.id, email: originalUser.email, role: originalUser.role },
