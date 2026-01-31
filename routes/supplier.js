@@ -195,4 +195,109 @@ router.get('/analytics', authRequired, async (req, res) => {
   }
 });
 
+/**
+ * GET /api/supplier/invoices
+ * Get Stripe invoices for supplier's subscription
+ */
+router.get('/invoices', authRequired, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    if (req.user.role !== 'supplier') {
+      return res.status(403).json({ error: 'Only suppliers can access invoices' });
+    }
+
+    // Get supplier record to find Stripe customer ID
+    const suppliers = await dbUnified.read('suppliers');
+    const supplier = suppliers.find(s => s.ownerUserId === userId);
+
+    if (!supplier) {
+      return res.status(404).json({ error: 'Supplier profile not found' });
+    }
+
+    if (!supplier.stripeCustomerId) {
+      return res.json({ invoices: [], message: 'No Stripe customer ID found' });
+    }
+
+    // Initialize Stripe
+    const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+    if (!stripeSecretKey) {
+      return res.status(503).json({ error: 'Stripe not configured' });
+    }
+
+    const stripe = require('stripe')(stripeSecretKey);
+
+    // Fetch invoices from Stripe
+    const invoices = await stripe.invoices.list({
+      customer: supplier.stripeCustomerId,
+      limit: 100,
+    });
+
+    const formattedInvoices = invoices.data.map(inv => ({
+      id: inv.id,
+      number: inv.number,
+      amount: inv.amount_paid,
+      currency: inv.currency,
+      status: inv.status,
+      date: inv.created,
+      dueDate: inv.due_date,
+      pdfUrl: inv.invoice_pdf,
+      hostedUrl: inv.hosted_invoice_url,
+      description: inv.lines.data.map(l => l.description).join(', '),
+    }));
+
+    res.json({ invoices: formattedInvoices });
+  } catch (error) {
+    console.error('Error fetching invoices:', error);
+    res.status(500).json({ error: 'Failed to fetch invoices', details: error.message });
+  }
+});
+
+/**
+ * GET /api/supplier/invoices/:id/download
+ * Get download URL for a specific invoice
+ */
+router.get('/invoices/:id/download', authRequired, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { id } = req.params;
+
+    if (req.user.role !== 'supplier') {
+      return res.status(403).json({ error: 'Only suppliers can access invoices' });
+    }
+
+    // Get supplier record
+    const suppliers = await dbUnified.read('suppliers');
+    const supplier = suppliers.find(s => s.ownerUserId === userId);
+
+    if (!supplier || !supplier.stripeCustomerId) {
+      return res.status(404).json({ error: 'Supplier or Stripe customer not found' });
+    }
+
+    const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+    if (!stripeSecretKey) {
+      return res.status(503).json({ error: 'Stripe not configured' });
+    }
+
+    const stripe = require('stripe')(stripeSecretKey);
+
+    // Fetch invoice
+    const invoice = await stripe.invoices.retrieve(id);
+
+    // Verify invoice belongs to this supplier
+    if (invoice.customer !== supplier.stripeCustomerId) {
+      return res.status(403).json({ error: 'Invoice does not belong to this supplier' });
+    }
+
+    res.json({
+      pdfUrl: invoice.invoice_pdf,
+      hostedUrl: invoice.hosted_invoice_url,
+      number: invoice.number,
+    });
+  } catch (error) {
+    console.error('Error fetching invoice download:', error);
+    res.status(500).json({ error: 'Failed to fetch invoice', details: error.message });
+  }
+});
+
 module.exports = router;
