@@ -13,6 +13,7 @@ const { read, write, uid } = require('../store');
 const { authRequired, roleRequired } = require('../middleware/auth');
 const { auditLog, auditMiddleware, AUDIT_ACTIONS } = require('../middleware/audit');
 const { csrfProtection } = require('../middleware/csrf');
+const { writeLimiter } = require('../middleware/rateLimit');
 const postmark = require('../utils/postmark');
 const dbUnified = require('../db-unified');
 
@@ -64,6 +65,39 @@ let seedFn = null;
 function setHelperFunctions(supplierIsProActive, seed) {
   supplierIsProActiveFn = supplierIsProActive;
   seedFn = seed;
+}
+
+/**
+ * Validate JWT secret is properly configured
+ * @returns {Object|null} Error object if invalid, null if valid
+ */
+function validateJWTSecret() {
+  const JWT_SECRET = process.env.JWT_SECRET;
+  const weakSecrets = ['change_me', 'your-secret-key', 'secret', 'password'];
+
+  if (!JWT_SECRET) {
+    return {
+      error: 'JWT secret not configured',
+      message: 'A secure JWT_SECRET environment variable is required',
+    };
+  }
+
+  if (JWT_SECRET.length < 32) {
+    return {
+      error: 'JWT secret too short',
+      message: 'JWT_SECRET must be at least 32 characters long for security',
+    };
+  }
+
+  if (weakSecrets.some(weak => JWT_SECRET.toLowerCase().includes(weak))) {
+    return {
+      error: 'JWT secret contains weak or placeholder values',
+      message:
+        'JWT_SECRET must not contain common weak values. Generate a secure secret using: openssl rand -base64 32',
+    };
+  }
+
+  return null; // Valid
 }
 
 /**
@@ -6301,6 +6335,557 @@ router.put(
     }
   }
 );
+
+/**
+ * GET /api/admin/audit/export
+ * Export audit logs with optional filtering
+ * Query params: format (csv|json), startDate, endDate
+ */
+router.get('/audit/export', authRequired, roleRequired('admin'), async (req, res) => {
+  try {
+    const { format = 'json', startDate, endDate } = req.query;
+
+    if (!['csv', 'json'].includes(format)) {
+      return res.status(400).json({ error: 'Invalid format. Use csv or json' });
+    }
+
+    let logs = await dbUnified.read('audit_logs');
+
+    // Apply date filters if provided
+    if (startDate || endDate) {
+      logs = logs.filter(log => {
+        const logDate = new Date(log.timestamp || log.createdAt);
+        if (startDate && logDate < new Date(startDate)) {
+          return false;
+        }
+        if (endDate && logDate > new Date(endDate)) {
+          return false;
+        }
+        return true;
+      });
+    }
+
+    // Sort by timestamp descending
+    logs.sort((a, b) => {
+      const dateA = new Date(a.timestamp || a.createdAt);
+      const dateB = new Date(b.timestamp || b.createdAt);
+      return dateB - dateA;
+    });
+
+    // Audit the export action
+    await auditLog({
+      adminId: req.user.id,
+      adminEmail: req.user.email,
+      action: 'AUDIT_LOG_EXPORT',
+      targetType: 'audit_log',
+      targetId: 'export',
+      details: { format, startDate, endDate, count: logs.length },
+    });
+
+    if (format === 'csv') {
+      // Generate CSV
+      const headers = [
+        'Timestamp',
+        'Admin Email',
+        'Action',
+        'Target Type',
+        'Target ID',
+        'Details',
+        'IP Address',
+      ];
+      const rows = logs.map(log => [
+        log.timestamp || log.createdAt,
+        log.adminEmail || '',
+        log.action || '',
+        log.targetType || '',
+        log.targetId || '',
+        JSON.stringify(log.details || {}),
+        log.ipAddress || '',
+      ]);
+
+      const csvContent = [
+        headers.join(','),
+        ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')),
+      ].join('\n');
+
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename="audit-logs-${Date.now()}.csv"`);
+      res.send(csvContent);
+    } else {
+      // JSON format
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Content-Disposition', `attachment; filename="audit-logs-${Date.now()}.json"`);
+      res.json({ logs, count: logs.length, exportedAt: new Date().toISOString() });
+    }
+  } catch (error) {
+    console.error('Error exporting audit logs:', error);
+    res.status(500).json({ error: 'Failed to export audit logs', details: error.message });
+  }
+});
+
+/**
+ * POST /api/admin/backup/create
+ * Create a full database backup
+ */
+router.post(
+  '/backup/create',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  writeLimiter,
+  async (req, res) => {
+    try {
+      const backupsDir = path.join(__dirname, '..', 'backups');
+
+      // Ensure backups directory exists
+      if (!fs.existsSync(backupsDir)) {
+        fs.mkdirSync(backupsDir, { recursive: true });
+      }
+
+      // Read all collections
+      const collections = [
+        'users',
+        'suppliers',
+        'packages',
+        'categories',
+        'plans',
+        'notes',
+        'messages',
+        'threads',
+        'events',
+        'reviews',
+        'reports',
+        'audit_logs',
+        'search_history',
+        'photos',
+        'payments',
+        'settings',
+        'badges',
+        'marketplace_listings',
+        'tickets',
+        'newsletterSubscribers',
+        'savedItems',
+      ];
+
+      const backup = {
+        createdAt: new Date().toISOString(),
+        createdBy: req.user.email,
+        version: '1.0',
+        data: {},
+      };
+
+      // Read all collections
+      for (const collection of collections) {
+        try {
+          backup.data[collection] = await dbUnified.read(collection);
+        } catch (error) {
+          console.warn(`Warning: Could not backup collection ${collection}:`, error.message);
+          backup.data[collection] = [];
+        }
+      }
+
+      // Save backup with timestamp
+      const timestamp = new Date().toISOString().replace(/:/g, '-').replace(/\..+/, '');
+      const filename = `backup-${timestamp}.json`;
+      const filepath = path.join(backupsDir, filename);
+
+      fs.writeFileSync(filepath, JSON.stringify(backup, null, 2), 'utf8');
+
+      // Audit log
+      await auditLog({
+        adminId: req.user.id,
+        adminEmail: req.user.email,
+        action: 'BACKUP_CREATED',
+        targetType: 'backup',
+        targetId: filename,
+        details: { collections: collections.length, filename },
+      });
+
+      res.json({
+        success: true,
+        message: 'Backup created successfully',
+        filename,
+        size: fs.statSync(filepath).size,
+        createdAt: backup.createdAt,
+      });
+    } catch (error) {
+      console.error('Error creating backup:', error);
+      res.status(500).json({ error: 'Failed to create backup', details: error.message });
+    }
+  }
+);
+
+/**
+ * GET /api/admin/backup/list
+ * List all available backups
+ */
+router.get('/backup/list', authRequired, roleRequired('admin'), writeLimiter, async (req, res) => {
+  try {
+    const backupsDir = path.join(__dirname, '..', 'backups');
+
+    if (!fs.existsSync(backupsDir)) {
+      return res.json({ backups: [] });
+    }
+
+    const files = fs
+      .readdirSync(backupsDir)
+      .filter(f => f.endsWith('.json') && f.startsWith('backup-'))
+      .map(filename => {
+        const filepath = path.join(backupsDir, filename);
+        const stats = fs.statSync(filepath);
+        return {
+          filename,
+          size: stats.size,
+          createdAt: stats.mtime.toISOString(),
+        };
+      })
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    res.json({ backups: files });
+  } catch (error) {
+    console.error('Error listing backups:', error);
+    res.status(500).json({ error: 'Failed to list backups', details: error.message });
+  }
+});
+
+/**
+ * POST /api/admin/backup/restore
+ * Restore database from backup
+ * Body: { filename }
+ */
+router.post(
+  '/backup/restore',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  writeLimiter,
+  async (req, res) => {
+    try {
+      const { filename } = req.body;
+
+      if (!filename) {
+        return res.status(400).json({ error: 'Filename is required' });
+      }
+
+      const backupsDir = path.join(__dirname, '..', 'backups');
+      const filepath = path.join(backupsDir, filename);
+
+      if (!fs.existsSync(filepath)) {
+        return res.status(404).json({ error: 'Backup file not found' });
+      }
+
+      // Read backup file
+      const backupData = JSON.parse(fs.readFileSync(filepath, 'utf8'));
+
+      if (!backupData.data || typeof backupData.data !== 'object') {
+        return res.status(400).json({ error: 'Invalid backup file format' });
+      }
+
+      // Restore all collections
+      let restoredCount = 0;
+      for (const [collection, data] of Object.entries(backupData.data)) {
+        try {
+          await dbUnified.write(collection, data);
+          restoredCount++;
+        } catch (error) {
+          console.warn(`Warning: Could not restore collection ${collection}:`, error.message);
+        }
+      }
+
+      // Audit log
+      await auditLog({
+        adminId: req.user.id,
+        adminEmail: req.user.email,
+        action: 'BACKUP_RESTORED',
+        targetType: 'backup',
+        targetId: filename,
+        details: { filename, collectionsRestored: restoredCount },
+      });
+
+      res.json({
+        success: true,
+        message: 'Backup restored successfully',
+        collectionsRestored: restoredCount,
+        backupDate: backupData.createdAt,
+      });
+    } catch (error) {
+      console.error('Error restoring backup:', error);
+      res.status(500).json({ error: 'Failed to restore backup', details: error.message });
+    }
+  }
+);
+
+/**
+ * POST /api/admin/packages/:id/duplicate
+ * Duplicate a package with (Copy) suffix
+ */
+router.post(
+  '/packages/:id/duplicate',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      const packages = await dbUnified.read('packages');
+      const originalPkg = packages.find(p => p.id === id);
+
+      if (!originalPkg) {
+        return res.status(404).json({ error: 'Package not found' });
+      }
+
+      // Create duplicate with new ID
+      const now = new Date().toISOString();
+      const duplicatePkg = {
+        ...originalPkg,
+        id: uid('pkg'),
+        title: `${originalPkg.title} (Copy)`,
+        slug: `${originalPkg.slug}-copy-${Date.now()}`,
+        approved: false,
+        featured: false,
+        createdAt: now,
+        updatedAt: now,
+        duplicatedFrom: originalPkg.id,
+        duplicatedAt: now,
+        duplicatedBy: req.user.id,
+      };
+
+      // Remove version history from duplicate
+      delete duplicatePkg.versionHistory;
+
+      packages.push(duplicatePkg);
+      await dbUnified.write('packages', packages);
+
+      // Audit log
+      await auditLog({
+        adminId: req.user.id,
+        adminEmail: req.user.email,
+        action: 'PACKAGE_DUPLICATED',
+        targetType: 'package',
+        targetId: duplicatePkg.id,
+        details: { originalId: originalPkg.id, newId: duplicatePkg.id, title: duplicatePkg.title },
+      });
+
+      res.status(201).json({
+        success: true,
+        message: 'Package duplicated successfully',
+        package: duplicatePkg,
+      });
+    } catch (error) {
+      console.error('Error duplicating package:', error);
+      res.status(500).json({ error: 'Failed to duplicate package', details: error.message });
+    }
+  }
+);
+
+/**
+ * GET /api/admin/pexels/test
+ * Test Pexels API configuration
+ */
+router.get('/pexels/test', authRequired, roleRequired('admin'), async (req, res) => {
+  try {
+    const apiKey = process.env.PEXELS_API_KEY;
+
+    if (!apiKey) {
+      return res.status(400).json({
+        success: false,
+        error: 'Pexels API key not configured',
+        message: 'Please set PEXELS_API_KEY environment variable',
+      });
+    }
+
+    // Test API by fetching sample images (using Node.js 18+ built-in fetch)
+    const response = await fetch('https://api.pexels.com/v1/search?query=event&per_page=5', {
+      headers: {
+        Authorization: apiKey,
+      },
+    });
+
+    if (!response.ok) {
+      return res.status(response.status).json({
+        success: false,
+        error: 'Pexels API request failed',
+        status: response.status,
+        message: response.statusText,
+      });
+    }
+
+    const data = await response.json();
+
+    res.json({
+      success: true,
+      message: 'Pexels API is working correctly',
+      apiKey: `${apiKey.substring(0, 10)}...`,
+      sampleImages: data.photos
+        ? data.photos.slice(0, 3).map(p => ({
+            id: p.id,
+            url: p.src.medium,
+            photographer: p.photographer,
+          }))
+        : [],
+      totalResults: data.total_results || 0,
+    });
+  } catch (error) {
+    console.error('Error testing Pexels API:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to test Pexels API',
+      details: error.message,
+    });
+  }
+});
+
+/**
+ * POST /api/admin/users/:id/impersonate
+ * Start impersonating a user
+ */
+router.post(
+  '/users/:id/impersonate',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    try {
+      // Validate JWT secret is properly configured
+      const jwtError = validateJWTSecret();
+      if (jwtError) {
+        return res.status(500).json({
+          error: `Impersonation disabled: ${jwtError.error}`,
+          message: jwtError.message,
+        });
+      }
+
+      const { id } = req.params;
+
+      // Prevent impersonating if already impersonating
+      if (req.session.originalUser) {
+        return res
+          .status(400)
+          .json({ error: 'Already impersonating a user. Stop current session first.' });
+      }
+
+      const users = await dbUnified.read('users');
+      const targetUser = users.find(u => u.id === id);
+
+      if (!targetUser) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      // Don't allow impersonating other admins
+      if (targetUser.role === 'admin') {
+        return res.status(403).json({ error: 'Cannot impersonate admin users' });
+      }
+
+      // Store original user in session
+      req.session.originalUser = {
+        id: req.user.id,
+        email: req.user.email,
+        role: req.user.role,
+      };
+
+      // Audit log
+      await auditLog({
+        adminId: req.user.id,
+        adminEmail: req.user.email,
+        action: 'USER_IMPERSONATION_START',
+        targetType: 'user',
+        targetId: id,
+        details: { targetEmail: targetUser.email, targetRole: targetUser.role },
+        ipAddress: req.ip,
+        userAgent: req.get('user-agent'),
+      });
+
+      // Update user in JWT token
+      const jwt = require('jsonwebtoken');
+      const { setAuthCookie } = require('../middleware/auth');
+      const JWT_SECRET = process.env.JWT_SECRET;
+
+      const token = jwt.sign(
+        { id: targetUser.id, email: targetUser.email, role: targetUser.role },
+        JWT_SECRET,
+        { expiresIn: '7d' }
+      );
+
+      // Set new auth cookie
+      setAuthCookie(res, token);
+
+      res.json({
+        success: true,
+        message: `Now impersonating ${targetUser.email}`,
+        user: {
+          id: targetUser.id,
+          email: targetUser.email,
+          role: targetUser.role,
+        },
+        originalUser: req.session.originalUser,
+      });
+    } catch (error) {
+      console.error('Error starting impersonation:', error);
+      res.status(500).json({ error: 'Failed to start impersonation', details: error.message });
+    }
+  }
+);
+
+/**
+ * POST /api/admin/users/stop-impersonate
+ * Stop impersonating and return to original admin user
+ */
+router.post('/users/stop-impersonate', authRequired, csrfProtection, async (req, res) => {
+  try {
+    // Validate JWT secret is properly configured
+    const jwtError = validateJWTSecret();
+    if (jwtError) {
+      return res.status(500).json({
+        error: `Stop impersonation disabled: ${jwtError.error}`,
+        message: jwtError.message,
+      });
+    }
+
+    if (!req.session.originalUser) {
+      return res.status(400).json({ error: 'Not currently impersonating' });
+    }
+
+    const originalUser = req.session.originalUser;
+
+    // Audit log
+    await auditLog({
+      adminId: originalUser.id,
+      adminEmail: originalUser.email,
+      action: 'USER_IMPERSONATION_STOP',
+      targetType: 'user',
+      targetId: req.user.id,
+      details: { impersonatedEmail: req.user.email },
+      ipAddress: req.ip,
+      userAgent: req.get('user-agent'),
+    });
+
+    // Clear impersonation from session
+    delete req.session.originalUser;
+
+    // Restore original admin JWT
+    const jwt = require('jsonwebtoken');
+    const { setAuthCookie } = require('../middleware/auth');
+    const JWT_SECRET = process.env.JWT_SECRET;
+
+    const token = jwt.sign(
+      { id: originalUser.id, email: originalUser.email, role: originalUser.role },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    setAuthCookie(res, token);
+
+    res.json({
+      success: true,
+      message: 'Stopped impersonation',
+      user: originalUser,
+    });
+  } catch (error) {
+    console.error('Error stopping impersonation:', error);
+    res.status(500).json({ error: 'Failed to stop impersonation', details: error.message });
+  }
+});
 
 module.exports = router;
 module.exports.setHelperFunctions = setHelperFunctions;

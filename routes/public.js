@@ -144,4 +144,126 @@ router.get('/stats', async (req, res) => {
   }
 });
 
+/**
+ * POST /api/public/faq/vote
+ * Vote on FAQ helpfulness
+ */
+router.post('/faq/vote', async (req, res) => {
+  try {
+    const { faqId, helpful } = req.body;
+
+    if (!faqId || typeof helpful !== 'boolean') {
+      return res.status(400).json({ error: 'Missing or invalid faqId or helpful flag' });
+    }
+
+    // Read existing votes
+    let faqVotes = [];
+    try {
+      faqVotes = await dbUnified.read('faqVotes');
+    } catch (e) {
+      // Collection doesn't exist yet, will be created
+    }
+
+    // Create vote record
+    const { uid } = require('../store');
+    const vote = {
+      id: uid('faqvote'),
+      faqId,
+      helpful,
+      createdAt: new Date().toISOString(),
+      ipAddress: req.ip || req.headers['x-forwarded-for'] || 'unknown',
+    };
+
+    faqVotes.push(vote);
+    await dbUnified.write('faqVotes', faqVotes);
+
+    res.json({ success: true, message: 'Thank you for your feedback!' });
+  } catch (error) {
+    console.error('Error recording FAQ vote:', error);
+    res.status(500).json({ error: 'Failed to record vote', details: error.message });
+  }
+});
+
+/**
+ * GET /api/public/recommendations
+ * Get recommended suppliers based on user preferences
+ */
+router.get('/recommendations', async (req, res) => {
+  try {
+    const { category, location, budget, eventType } = req.query;
+
+    const suppliers = await dbUnified.read('suppliers');
+
+    // Filter active and verified suppliers
+    let recommended = suppliers.filter(
+      s => s.verified === true && s.subscriptionStatus === 'active'
+    );
+
+    // Apply category filter
+    if (category) {
+      recommended = recommended.filter(s => s.category === category);
+    }
+
+    // Apply location filter (basic match)
+    if (location) {
+      const locationLower = location.toLowerCase();
+      recommended = recommended.filter(s => {
+        const supplierLocation = (s.location || '').toLowerCase();
+        return supplierLocation.includes(locationLower) || locationLower.includes(supplierLocation);
+      });
+    }
+
+    // Apply budget filter (if supplier has pricing info)
+    if (budget) {
+      const budgetNum = parseFloat(budget);
+      if (!isNaN(budgetNum)) {
+        recommended = recommended.filter(s => {
+          if (!s.priceRange) {
+            return true;
+          }
+          const minPrice = parseFloat(s.priceRange.min || 0);
+          const maxPrice = parseFloat(s.priceRange.max || 999999);
+          return budgetNum >= minPrice && budgetNum <= maxPrice;
+        });
+      }
+    }
+
+    // Score and sort by relevance
+    recommended = recommended.map(s => {
+      let score = 0;
+
+      // Boost score for category match
+      if (category && s.category === category) {
+        score += 10;
+      }
+
+      // Boost score for location proximity
+      if (location && (s.location || '').toLowerCase().includes(location.toLowerCase())) {
+        score += 5;
+      }
+
+      // Boost for reviews
+      score += (s.reviewCount || 0) * 0.1;
+      score += (s.averageRating || 0) * 2;
+
+      return { ...s, recommendationScore: score };
+    });
+
+    // Sort by score descending
+    recommended.sort((a, b) => b.recommendationScore - a.recommendationScore);
+
+    // Return top 3
+    const top3 = recommended.slice(0, 3);
+
+    res.json({
+      success: true,
+      recommendations: top3,
+      total: recommended.length,
+    });
+  } catch (error) {
+    console.error('Error fetching recommendations:', error);
+    res.status(500).json({ error: 'Failed to fetch recommendations', details: error.message });
+  }
+});
+
 module.exports = router;

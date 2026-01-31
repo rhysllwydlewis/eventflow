@@ -131,6 +131,42 @@ const upload = multer({
 });
 
 /**
+ * Extract EXIF metadata from image buffer before stripping
+ * @param {Buffer} buffer - Image buffer
+ * @returns {Promise<Object>} EXIF metadata
+ */
+async function extractExifData(buffer) {
+  try {
+    const image = sharp(buffer);
+    const metadata = await image.metadata();
+    
+    const exifData = {
+      camera: metadata.exif ? {
+        make: metadata.exif.Make || null,
+        model: metadata.exif.Model || null,
+      } : null,
+      dateTaken: (metadata.exif && (metadata.exif.DateTimeOriginal || metadata.exif.DateTime)) || null,
+      location: (metadata.exif && metadata.exif.GPSLatitude && metadata.exif.GPSLongitude) ? {
+        latitude: metadata.exif.GPSLatitude,
+        longitude: metadata.exif.GPSLongitude,
+      } : null,
+      dimensions: {
+        width: metadata.width,
+        height: metadata.height,
+      },
+      format: metadata.format,
+      space: metadata.space,
+      orientation: metadata.orientation,
+    };
+    
+    return exifData;
+  } catch (error) {
+    logger.warn('Failed to extract EXIF data', { error: error.message });
+    return null;
+  }
+}
+
+/**
  * Process image with metadata stripping
  * Automatically strips metadata (EXIF/GPS) for privacy
  * @param {Buffer} buffer - Image buffer
@@ -252,11 +288,15 @@ async function processAndSaveImage(buffer, originalFilename, context = 'supplier
   const filename = generateFilename(originalFilename);
   const baseFilename = filename.replace(path.extname(filename), '');
 
+  // Extract EXIF data before processing (which strips metadata)
+  const exifData = await extractExifData(buffer);
+
   const results = {
     original: null,
     thumbnail: null,
     optimized: null,
     large: null,
+    exif: exifData,
   };
 
   try {
@@ -528,6 +568,7 @@ module.exports = {
   replacePhoto,
   applyFilters,
   updatePhotoOrder,
+  extractExifData,
   IMAGE_CONFIGS,
   // Export file size constants for use in routes
   MAX_FILE_SIZE_SUPPLIER: MAX_FILE_SIZE,

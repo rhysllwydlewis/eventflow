@@ -821,6 +821,7 @@ async function initSupplier() {
       ${trustHtml}
       <div class="form-actions" style="margin-top:20px; display: flex; gap: 12px; flex-wrap: wrap;">
         <button class="cta" id="add" style="flex: 1; min-width: 150px;">Add to My Plan</button>
+        <button class="cta secondary" id="save-supplier-btn" data-supplier-id="${escapeHtml(s.id)}" style="flex: 1; min-width: 150px;" aria-label="Save supplier to favorites">♡ Save</button>
         <button class="cta secondary" id="start-thread" style="flex: 1; min-width: 150px;">Start Conversation</button>
       </div>
     </div>
@@ -1090,6 +1091,94 @@ async function initSupplier() {
           alert('Enquiry sent. Visit your dashboard to continue the conversation.');
         }
       });
+    });
+  }
+
+  // Handle save supplier button
+  const saveSupplierBtn = document.getElementById('save-supplier-btn');
+  if (saveSupplierBtn) {
+    // Check if supplier is already saved
+    const checkSavedStatus = async () => {
+      if (!user) {
+        saveSupplierBtn.textContent = '♡ Save';
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/me/saved', { credentials: 'include' });
+        if (res.ok) {
+          const data = await res.json();
+          const isSaved = data.savedItems.some(item => 
+            item.itemType === 'supplier' && item.itemId === s.id
+          );
+          saveSupplierBtn.textContent = isSaved ? '❤️ Saved' : '♡ Save';
+          saveSupplierBtn.dataset.saved = isSaved ? 'true' : 'false';
+        }
+      } catch (err) {
+        console.error('Error checking saved status:', err);
+      }
+    };
+
+    checkSavedStatus();
+
+    saveSupplierBtn.addEventListener('click', async () => {
+      if (!user) {
+        alert('Please sign in to save suppliers to your favorites.');
+        return;
+      }
+
+      const isSaved = saveSupplierBtn.dataset.saved === 'true';
+      
+      try {
+        if (isSaved) {
+          // Find and unsave
+          const res = await fetch('/api/me/saved', { credentials: 'include' });
+          if (res.ok) {
+            const data = await res.json();
+            const savedItem = data.savedItems.find(item => 
+              item.itemType === 'supplier' && item.itemId === s.id
+            );
+            
+            if (savedItem) {
+              const deleteRes = await fetch(`/api/me/saved/${savedItem.id}`, {
+                method: 'DELETE',
+                headers: { 'X-CSRF-Token': window.__CSRF_TOKEN__ || '' },
+                credentials: 'include',
+              });
+              
+              if (deleteRes.ok) {
+                saveSupplierBtn.textContent = '♡ Save';
+                saveSupplierBtn.dataset.saved = 'false';
+              }
+            }
+          }
+        } else {
+          // Save
+          const saveRes = await fetch('/api/me/saved', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRF-Token': window.__CSRF_TOKEN__ || '',
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+              itemType: 'supplier',
+              itemId: s.id,
+            }),
+          });
+
+          if (saveRes.ok) {
+            saveSupplierBtn.textContent = '❤️ Saved';
+            saveSupplierBtn.dataset.saved = 'true';
+          } else {
+            const error = await saveRes.json();
+            alert(error.error || 'Failed to save supplier');
+          }
+        }
+      } catch (err) {
+        console.error('Error saving supplier:', err);
+        alert('Failed to save supplier. Please try again.');
+      }
     });
   }
 

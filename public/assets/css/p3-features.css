@@ -1,0 +1,797 @@
+/**
+ * P3 Features CSS
+ * Styles for P3 priority features
+ */
+
+/* ====================================
+   P3-02: New Supplier Badge
+   ==================================== */
+.new-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  background: linear-gradient(135deg, #13b6a2 0%, #0b8073 100%);
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 4px;
+  margin-left: 0.5rem;
+  vertical-align: middle;
+  animation: badge-pulse 2s ease-in-out infinite;
+}
+
+@keyframes badge-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+/* ====================================
+   P3-03: Breadcrumb Navigation
+   ==================================== */
+.breadcrumb-nav {
+  padding: 1rem 0;
+  margin-bottom: 1.5rem;
+}
+
+.breadcrumb-list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.breadcrumb-item {
+  display: flex;
+  align-items: center;
+  color: #6b7280;
+}
+
+.breadcrumb-item a {
+  color: var(--accent, #13b6a2);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.breadcrumb-item a:hover {
+  color: var(--ink, #0b8073);
+  text-decoration: underline;
+}
+
+.breadcrumb-item:not(:last-child)::after {
+  content: '›';
+  margin-left: 0.5rem;
+  color: #9ca3af;
+  font-size: 1rem;
+}
+
+.breadcrumb-item[aria-current='page'] {
+  color: #374151;
+  font-weight: 500;
+}
+
+/* ====================================
+   P3-04: Typing Indicator
+   ==================================== */
+.typing-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.5rem 0.75rem;
+  background: #f3f4f6;
+  border-radius: 1rem;
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin: 0.5rem 0;
+  animation: typing-fade-in 0.2s ease-in;
+}
+
+@keyframes typing-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.typing-dots {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.typing-dot {
+  width: 6px;
+  height: 6px;
+  background: #9ca3af;
+  border-radius: 50%;
+  animation: typing-bounce 1.4s ease-in-out infinite;
+}
+
+.typing-dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typing-dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes typing-bounce {
+  0%, 60%, 100% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-8px);
+  }
+}
+
+/* ====================================
+   P3-07: Annual Billing Toggle
+   ==================================== */
+.billing-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin: 2rem 0;
+}
+
+.billing-toggle-label {
+  font-weight: 500;
+  color: #374151;
+  transition: color 0.2s;
+}
+
+.billing-toggle-label.active {
+  color: var(--accent, #13b6a2);
+}
+
+.toggle-switch {
+  position: relative;
+  width: 50px;
+  height: 26px;
+  cursor: pointer;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #e5e7eb;
+  border-radius: 26px;
+  transition: background 0.3s;
+}
+
+.toggle-slider::before {
+  content: '';
+  position: absolute;
+  height: 20px;
+  width: 20px;
+  left: 3px;
+  bottom: 3px;
+  background: white;
+  border-radius: 50%;
+  transition: transform 0.3s;
+}
+
+.toggle-switch input:checked + .toggle-slider {
+  background: var(--accent, #13b6a2);
+}
+
+.toggle-switch input:checked + .toggle-slider::before {
+  transform: translateX(24px);
+}
+
+.savings-badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  background: #fef3c7;
+  color: #92400e;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 4px;
+  margin-left: 0.5rem;
+}
+
+/* ====================================
+   P3-08: Image Carousel
+   ==================================== */
+.image-carousel-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: carousel-fade-in 0.2s ease-in;
+}
+
+@keyframes carousel-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.carousel-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.9);
+  cursor: pointer;
+}
+
+.carousel-content {
+  position: relative;
+  width: 90%;
+  max-width: 1200px;
+  height: 80vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+
+.carousel-close {
+  position: absolute;
+  top: -40px;
+  right: 0;
+  background: transparent;
+  border: none;
+  color: white;
+  font-size: 2.5rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  line-height: 1;
+  transition: opacity 0.2s;
+  z-index: 2;
+}
+
+.carousel-close:hover {
+  opacity: 0.7;
+}
+
+.carousel-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.9);
+  border: none;
+  color: #1f2937;
+  font-size: 3rem;
+  cursor: pointer;
+  padding: 1rem 1.25rem;
+  line-height: 1;
+  border-radius: 50%;
+  transition: all 0.2s;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+}
+
+.carousel-nav:hover {
+  background: white;
+  transform: translateY(-50%) scale(1.1);
+}
+
+.carousel-prev {
+  left: 20px;
+}
+
+.carousel-next {
+  right: 20px;
+}
+
+.carousel-image-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.carousel-image {
+  max-width: 100%;
+  max-height: 70vh;
+  object-fit: contain;
+  border-radius: 8px;
+  transition: opacity 0.15s ease-in-out;
+}
+
+.carousel-caption {
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  border-radius: 6px;
+  font-size: 0.9375rem;
+  max-width: 600px;
+  text-align: center;
+}
+
+.carousel-counter {
+  position: absolute;
+  bottom: -40px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: white;
+  font-size: 0.9375rem;
+  font-weight: 500;
+}
+
+/* ====================================
+   P3-09: FAQ Voting
+   ==================================== */
+.faq-vote-section {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.faq-vote-label {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-bottom: 0.5rem;
+}
+
+.faq-vote-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.faq-vote-btn {
+  padding: 0.5rem 1rem;
+  border: 1px solid #d1d5db;
+  background: white;
+  color: #374151;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.faq-vote-btn:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.faq-vote-btn.voted {
+  background: var(--accent, #13b6a2);
+  color: white;
+  border-color: var(--accent, #13b6a2);
+}
+
+.faq-vote-thanks {
+  color: var(--accent, #13b6a2);
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-top: 0.5rem;
+}
+
+/* ====================================
+   P3-10: Reading Time
+   ==================================== */
+.reading-time {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  color: #6b7280;
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+}
+
+.reading-time::before {
+  content: '📖';
+  font-size: 1rem;
+}
+
+/* ====================================
+   P3-11: Print Styles
+   ==================================== */
+@media print {
+  /* Hide navigation and interactive elements */
+  header,
+  nav,
+  .ef-header,
+  .navbar,
+  footer,
+  .sidebar,
+  .modal,
+  button:not(.print-button),
+  .social-share,
+  .comments-section,
+  .breadcrumb-nav,
+  .back-button,
+  .floating-action,
+  .cookie-consent,
+  .ef-burger,
+  .ef-header-actions {
+    display: none !important;
+  }
+
+  /* Optimize layout */
+  body {
+    font-size: 12pt;
+    line-height: 1.5;
+    color: #000;
+    background: #fff;
+  }
+
+  main,
+  article,
+  .content {
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Ensure black and white readability */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    color: #000;
+    page-break-after: avoid;
+  }
+
+  p,
+  li {
+    orphans: 3;
+    widows: 3;
+  }
+
+  /* Show link URLs */
+  a[href]::after {
+    content: ' (' attr(href) ')';
+    font-size: 0.8em;
+    color: #666;
+  }
+
+  /* Images */
+  img {
+    max-width: 100%;
+    page-break-inside: avoid;
+  }
+
+  /* Page breaks */
+  .page-break {
+    page-break-before: always;
+  }
+
+  /* Tables */
+  table {
+    border-collapse: collapse;
+    width: 100%;
+  }
+
+  th,
+  td {
+    border: 1px solid #000;
+    padding: 0.5rem;
+  }
+}
+
+/* Print button */
+.print-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: white;
+  border: 1px solid #d1d5db;
+  color: #374151;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.print-button:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.print-button::before {
+  content: '🖨️';
+}
+
+/* ====================================
+   P3-13: Password Toggle
+   ==================================== */
+.password-input-wrapper {
+  position: relative;
+}
+
+.password-toggle-btn {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 0.5rem;
+  font-size: 1.125rem;
+  line-height: 1;
+  transition: color 0.2s;
+}
+
+.password-toggle-btn:hover {
+  color: #374151;
+}
+
+.password-toggle-btn:focus {
+  outline: 2px solid var(--accent, #13b6a2);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ====================================
+   P3-14: Keyboard Shortcuts
+   ==================================== */
+.keyboard-shortcuts-modal .modal-content {
+  max-width: 500px;
+}
+
+.shortcuts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.shortcut-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  background: #f9fafb;
+  border-radius: 6px;
+}
+
+.shortcut-description {
+  font-size: 0.9375rem;
+  color: #374151;
+}
+
+.shortcut-key,
+kbd {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.875rem;
+  color: #1f2937;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.keyboard-shortcut-hint {
+  display: inline-block;
+  padding: 0.125rem 0.375rem;
+  background: #e5e7eb;
+  color: #6b7280;
+  font-size: 0.75rem;
+  border-radius: 3px;
+  margin-left: 0.5rem;
+  font-family: 'Courier New', monospace;
+}
+
+/* ====================================
+   P3-15: Recommended Suppliers Widget
+   ==================================== */
+.recommendations-widget {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin: 2rem 0;
+}
+
+.recommendations-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.recommendations-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0;
+}
+
+.recommendations-view-all {
+  color: var(--accent, #13b6a2);
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.recommendations-view-all:hover {
+  color: var(--ink, #0b8073);
+  text-decoration: underline;
+}
+
+.recommendations-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.recommendation-card {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 1rem;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.recommendation-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* ====================================
+   P3-16: UX Polish & Transitions
+   ==================================== */
+
+/* Smooth transitions for buttons */
+button,
+.btn,
+a.button {
+  transition: all 0.2s ease-in-out;
+}
+
+button:hover:not(:disabled),
+.btn:hover:not(:disabled),
+a.button:hover {
+  transform: translateY(-1px);
+}
+
+/* Card transitions */
+.card,
+.supplier-card,
+.package-card {
+  transition: all 0.3s ease-in-out;
+}
+
+.card:hover,
+.supplier-card:hover,
+.package-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+/* Modal transitions */
+.modal {
+  transition: opacity 0.15s ease-in-out;
+}
+
+/* Focus indicators for accessibility */
+*:focus-visible {
+  outline: 2px solid var(--accent, #13b6a2);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Remove outline for mouse users */
+*:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Input focus states */
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--accent, #13b6a2);
+  box-shadow: 0 0 0 3px rgba(19, 182, 162, 0.1);
+}
+
+/* Link hover states */
+a {
+  transition: color 0.2s ease-in-out;
+}
+
+/* Image hover effects */
+img {
+  transition: transform 0.3s ease-in-out;
+}
+
+.gallery-image:hover,
+.supplier-photo:hover {
+  transform: scale(1.05);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .breadcrumb-nav {
+    font-size: 0.8125rem;
+  }
+
+  .carousel-nav {
+    font-size: 2rem;
+    width: 50px;
+    height: 50px;
+    padding: 0.75rem 1rem;
+  }
+
+  .carousel-prev {
+    left: 10px;
+  }
+
+  .carousel-next {
+    right: 10px;
+  }
+
+  .recommendations-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .new-badge {
+    font-size: 0.6875rem;
+    padding: 0.1875rem 0.375rem;
+  }
+}
+
+/* Accessibility: Respect prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .card:hover,
+  .supplier-card:hover,
+  .package-card:hover {
+    transform: none;
+  }
+
+  button:hover:not(:disabled),
+  .btn:hover:not(:disabled) {
+    transform: none;
+  }
+}

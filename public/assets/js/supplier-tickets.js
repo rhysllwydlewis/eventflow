@@ -105,6 +105,7 @@ function showCreateTicketModal() {
               <option value="low">Low</option>
               <option value="medium" selected>Medium</option>
               <option value="high">High</option>
+              <option value="urgent">Urgent</option>
             </select>
           </div>
           <div class="form-actions" style="margin-top:1rem;">

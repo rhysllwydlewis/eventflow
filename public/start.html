@@ -146,6 +146,9 @@
     <!-- Main wizard area -->
     <div style="flex: 1; min-width: 0;">
       <h1>Start planning your event</h1>
+      <!-- Template Selector (initially shown) -->
+      <div id="template-selector-container" class="card" style="margin-bottom: 1rem; display: none;"></div>
+      
       <h2 class="sr-only">Event details wizard</h2>
       <div id="wizard-container">
         <!-- Wizard steps will be rendered here -->
@@ -162,7 +165,33 @@
 
 <script src="/assets/js/utils/pexels-client.js"></script>
 <script src="/assets/js/utils/wizard-state.js"></script>
+<script src="/assets/js/templates.js"></script>
 <script src="/assets/js/pages/start-wizard.js"></script>
+<script>
+  // Show template selector on page load
+  document.addEventListener('DOMContentLoaded', () => {
+    const container = document.getElementById('template-selector-container');
+    if (container && window.EventTemplates) {
+      container.style.display = 'block';
+      window.EventTemplates.renderSelector('template-selector-container', (template) => {
+        if (template) {
+          // Pre-fill wizard with template data
+          console.log('Template selected:', template);
+          if (window.WizardState) {
+            // Pre-fill basic info
+            window.WizardState.saveStep(1, {
+              location: '',
+              guests: template.guestCount,
+              budget: template.budget.toString()
+            });
+          }
+        }
+        // Hide template selector and show wizard
+        container.style.display = 'none';
+      });
+    }
+  });
+</script>
 
 <!-- BOTTOM NAVBAR - GOLD STANDARD REBUILD (Mobile Only) -->
 <nav class="ef-bottom-nav" role="navigation" aria-label="Mobile bottom navigation">

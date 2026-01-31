@@ -195,4 +195,186 @@ router.get('/analytics', authRequired, async (req, res) => {
   }
 });
 
+/**
+ * GET /api/supplier/invoices
+ * Get Stripe invoices for supplier's subscription
+ */
+router.get('/invoices', authRequired, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    if (req.user.role !== 'supplier') {
+      return res.status(403).json({ error: 'Only suppliers can access invoices' });
+    }
+
+    // Get supplier record to find Stripe customer ID
+    const suppliers = await dbUnified.read('suppliers');
+    const supplier = suppliers.find(s => s.ownerUserId === userId);
+
+    if (!supplier) {
+      return res.status(404).json({ error: 'Supplier profile not found' });
+    }
+
+    if (!supplier.stripeCustomerId) {
+      return res.json({ invoices: [], message: 'No Stripe customer ID found' });
+    }
+
+    // Initialize Stripe
+    const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+    if (!stripeSecretKey) {
+      return res.status(503).json({ error: 'Stripe not configured' });
+    }
+
+    const stripe = require('stripe')(stripeSecretKey);
+
+    // Fetch invoices from Stripe
+    const invoices = await stripe.invoices.list({
+      customer: supplier.stripeCustomerId,
+      limit: 100,
+    });
+
+    const formattedInvoices = invoices.data.map(inv => ({
+      id: inv.id,
+      number: inv.number,
+      amount: inv.amount_paid,
+      currency: inv.currency,
+      status: inv.status,
+      date: inv.created,
+      dueDate: inv.due_date,
+      pdfUrl: inv.invoice_pdf,
+      hostedUrl: inv.hosted_invoice_url,
+      description: inv.lines.data.map(l => l.description).join(', '),
+    }));
+
+    res.json({ invoices: formattedInvoices });
+  } catch (error) {
+    console.error('Error fetching invoices:', error);
+    res.status(500).json({ error: 'Failed to fetch invoices', details: error.message });
+  }
+});
+
+/**
+ * GET /api/supplier/invoices/:id/download
+ * Get download URL for a specific invoice
+ */
+router.get('/invoices/:id/download', authRequired, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { id } = req.params;
+
+    if (req.user.role !== 'supplier') {
+      return res.status(403).json({ error: 'Only suppliers can access invoices' });
+    }
+
+    // Get supplier record
+    const suppliers = await dbUnified.read('suppliers');
+    const supplier = suppliers.find(s => s.ownerUserId === userId);
+
+    if (!supplier || !supplier.stripeCustomerId) {
+      return res.status(404).json({ error: 'Supplier or Stripe customer not found' });
+    }
+
+    const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+    if (!stripeSecretKey) {
+      return res.status(503).json({ error: 'Stripe not configured' });
+    }
+
+    const stripe = require('stripe')(stripeSecretKey);
+
+    // Fetch invoice
+    const invoice = await stripe.invoices.retrieve(id);
+
+    // Verify invoice belongs to this supplier
+    if (invoice.customer !== supplier.stripeCustomerId) {
+      return res.status(403).json({ error: 'Invoice does not belong to this supplier' });
+    }
+
+    res.json({
+      pdfUrl: invoice.invoice_pdf,
+      hostedUrl: invoice.hosted_invoice_url,
+      number: invoice.number,
+    });
+  } catch (error) {
+    console.error('Error fetching invoice download:', error);
+    res.status(500).json({ error: 'Failed to fetch invoice', details: error.message });
+  }
+});
+
+/**
+ * GET /api/supplier/enquiries/export
+ * Export enquiries to CSV for supplier
+ */
+router.get('/enquiries/export', authRequired, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    if (req.user.role !== 'supplier') {
+      return res.status(403).json({ error: 'Only suppliers can export enquiries' });
+    }
+
+    const suppliers = await dbUnified.read('suppliers');
+    const supplier = suppliers.find(s => s.ownerUserId === userId);
+
+    if (!supplier) {
+      return res.status(404).json({ error: 'Supplier profile not found' });
+    }
+
+    // Get quote requests for this supplier
+    const quoteRequests = await dbUnified.read('quoteRequests');
+    const supplierEnquiries = quoteRequests.filter(q => q.supplierId === supplier.id);
+
+    // Get user details for enquiries
+    const users = await dbUnified.read('users');
+    const userMap = {};
+    users.forEach(u => {
+      userMap[u.id] = u;
+    });
+
+    // Build CSV
+    const headers = [
+      'Date',
+      'Customer Name',
+      'Customer Email',
+      'Event Type',
+      'Event Date',
+      'Location',
+      'Budget',
+      'Guest Count',
+      'Status',
+      'Message',
+    ].join(',');
+
+    const rows = supplierEnquiries.map(enq => {
+      const user = userMap[enq.customerId] || {};
+      const date = new Date(enq.createdAt).toLocaleDateString('en-GB');
+      const eventDate = enq.eventDate ? new Date(enq.eventDate).toLocaleDateString('en-GB') : 'N/A';
+      
+      return [
+        date,
+        `"${user.name || 'N/A'}"`,
+        `"${user.email || 'N/A'}"`,
+        `"${enq.eventType || 'N/A'}"`,
+        eventDate,
+        `"${enq.location || 'N/A'}"`,
+        `"${enq.budget || 'N/A'}"`,
+        enq.guestCount || 'N/A',
+        `"${enq.status || 'pending'}"`,
+        `"${(enq.message || '').replace(/"/g, '""')}"`,
+      ].join(',');
+    });
+
+    const csv = [headers, ...rows].join('\n');
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="enquiries-${new Date().toISOString().split('T')[0]}.csv"`
+    );
+    res.send(csv);
+  } catch (error) {
+    console.error('Error exporting enquiries:', error);
+    res.status(500).json({ error: 'Failed to export enquiries', details: error.message });
+  }
+});
+
 module.exports = router;

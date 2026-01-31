@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang='en-GB'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>Customer dashboard — EventFlow</title><link rel='stylesheet' href='/assets/css/styles.css?v=18.0.0'><link rel='stylesheet' href='/assets/css/eventflow-17.0.0.css?v=18.0.0'><link rel='stylesheet' href='/assets/css/utilities.css?v=18.0.0'><link rel='stylesheet' href='/assets/css/components.css?v=18.0.0'><link rel='stylesheet' href='/assets/css/animations.css?v=18.0.0'><link rel='stylesheet' href='/assets/css/mobile-optimizations.css?v=18.0.0'><link rel='stylesheet' href='/assets/css/ui-ux-fixes.css?v=18.0.0'><link rel='stylesheet' href='/assets/css/navbar.css?v=18.0.0'><link rel='stylesheet' href='/assets/css/skeleton.css?v=18.0.0'><link rel='stylesheet' href='/assets/css/dashboard-animations.css?v=18.0.0'><script src="/assets/js/dashboard-guard.js?v=17.0.2"></script>
+<!DOCTYPE html><html lang='en-GB'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>Customer dashboard — EventFlow</title><link rel='stylesheet' href='/assets/css/styles.css?v=18.0.0'><link rel='stylesheet' href='/assets/css/eventflow-17.0.0.css?v=18.0.0'><link rel='stylesheet' href='/assets/css/utilities.css?v=18.0.0'><link rel='stylesheet' href='/assets/css/components.css?v=18.0.0'><link rel='stylesheet' href='/assets/css/animations.css?v=18.0.0'><link rel='stylesheet' href='/assets/css/mobile-optimizations.css?v=18.0.0'><link rel='stylesheet' href='/assets/css/ui-ux-fixes.css?v=18.0.0'><link rel='stylesheet' href='/assets/css/navbar.css?v=18.0.0'><link rel='stylesheet' href='/assets/css/skeleton.css?v=18.0.0'><link rel='stylesheet' href='/assets/css/dashboard-animations.css?v=18.0.0'><link rel='stylesheet' href='/assets/css/p3-features.css?v=18.1.1'><script src="/assets/js/dashboard-guard.js?v=17.0.2"></script>
   </head><body>
 <a href="#main-content" class="skip-link">Skip to main content</a>
 <!-- TOP NAVBAR - GOLD STANDARD REBUILD -->
@@ -120,6 +120,14 @@
 
 <!-- Upcoming Events Timeline -->
 <div id="upcoming-events-timeline"></div>
+
+<!-- Calendar View Card -->
+<div class="card" style="margin-bottom: 1.5rem;">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+    <h3 style="margin: 0; font-size: 1.25rem; color: #0B1220;">📅 Events Calendar</h3>
+  </div>
+  <div id="events-calendar" style="min-height: 400px;"></div>
+</div>
 
 <div class="cards">
   <!-- Your Plans Card -->
@@ -738,6 +746,30 @@ initDashboard();
   </div>
 </footer>
 <script src="/assets/js/cookie-consent.js" defer></script>
+
+<!-- FullCalendar for Events Calendar -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css">
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+<script src="/assets/js/calendar-view.js"></script>
+<script>
+  // Initialize calendar view
+  document.addEventListener('DOMContentLoaded', () => {
+    // Wait a bit for auth to load
+    setTimeout(() => {
+      if (window.CalendarView && document.getElementById('events-calendar')) {
+        window.CalendarView.init('events-calendar', {
+          initialView: 'dayGridMonth',
+          height: 500
+        });
+      }
+    }, 500);
+  });
+</script>
+<script src="/assets/js/recommendations-widget.js" defer></script>
+<script src="/assets/js/keyboard-shortcuts.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+<script src="/assets/js/utils/p3-features.js" defer></script>
+<script src="/assets/js/customer-dashboard-enhancements.js" defer></script>
 
 <!-- JadeAssist Chat Widget -->
 <script src="https://cdn.jsdelivr.net/gh/rhysllwydlewis/JadeAssist@abbf580487e0bcf7739a0857d4d940213fe2e176/packages/widget/dist/jade-widget.js" defer></script>
