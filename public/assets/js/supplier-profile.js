@@ -109,11 +109,12 @@
    * Render reviews
    */
   function renderReviews(container, reviews) {
-    const reviewsHTML = reviews.map(review => {
-      const rating = Math.max(1, Math.min(5, review.rating || 0));
-      const starsHTML = generateStarRating(rating);
-      
-      return `
+    const reviewsHTML = reviews
+      .map(review => {
+        const rating = Math.max(1, Math.min(5, review.rating || 0));
+        const starsHTML = generateStarRating(rating);
+
+        return `
         <div class="review-card" style="padding: 1.5rem; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 1rem;">
           <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
             <div>
@@ -127,7 +128,8 @@
           <div class="review-content" data-review-index="${reviews.indexOf(review)}"></div>
         </div>
       `;
-    }).join('');
+      })
+      .join('');
 
     container.innerHTML = `
       <div class="reviews-list">
@@ -153,19 +155,19 @@
     const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
 
     let html = '';
-    
+
     for (let i = 0; i < fullStars; i++) {
       html += '<span style="color: #fbbf24; font-size: 1.25rem;">★</span>';
     }
-    
+
     if (hasHalfStar) {
       html += '<span style="color: #fbbf24; font-size: 1.25rem;">⯨</span>';
     }
-    
+
     for (let i = 0; i < emptyStars; i++) {
       html += '<span style="color: #d1d5db; font-size: 1.25rem;">★</span>';
     }
-    
+
     return html;
   }
 
@@ -173,20 +175,32 @@
    * Format date for display
    */
   function formatDate(date) {
-    if (!date) return '';
-    
+    if (!date) {
+      return '';
+    }
+
     try {
       const d = new Date(date);
       const now = new Date();
       const diffTime = Math.abs(now - d);
       const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
-      if (diffDays === 0) return 'Today';
-      if (diffDays === 1) return 'Yesterday';
-      if (diffDays < 7) return `${diffDays} days ago`;
-      if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
-      if (diffDays < 365) return `${Math.floor(diffDays / 30)} months ago`;
-      
+      if (diffDays === 0) {
+        return 'Today';
+      }
+      if (diffDays === 1) {
+        return 'Yesterday';
+      }
+      if (diffDays < 7) {
+        return `${diffDays} days ago`;
+      }
+      if (diffDays < 30) {
+        return `${Math.floor(diffDays / 7)} weeks ago`;
+      }
+      if (diffDays < 365) {
+        return `${Math.floor(diffDays / 30)} months ago`;
+      }
+
       return d.toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: 'numeric' });
     } catch (e) {
       return '';
@@ -209,7 +223,7 @@
 
       card.addEventListener('click', () => handlePackageClick(packageId));
 
-      card.addEventListener('keydown', (e) => {
+      card.addEventListener('keydown', e => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
           handlePackageClick(packageId);
@@ -275,8 +289,10 @@
    * Escape HTML to prevent XSS
    */
   function escapeHtml(unsafe) {
-    if (typeof unsafe !== 'string') return '';
-    
+    if (typeof unsafe !== 'string') {
+      return '';
+    }
+
     return unsafe
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')

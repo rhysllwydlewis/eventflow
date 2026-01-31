@@ -9,11 +9,11 @@
  */
 export function getFiltersFromURL() {
   const params = new URLSearchParams(window.location.search);
-  
+
   // Support both priceMin/Max and budgetMin/Max for backward compatibility
   const budgetMin = params.get('budgetMin') || params.get('priceMin') || '';
   const budgetMax = params.get('budgetMax') || params.get('priceMax') || '';
-  
+
   return {
     category: params.get('category') || '',
     location: params.get('location') || '',
@@ -33,23 +33,39 @@ export function getFiltersFromURL() {
  */
 export function updateURL(filters, replace = false) {
   const params = new URLSearchParams();
-  
+
   // Add non-empty filter parameters
-  if (filters.category) params.set('category', filters.category);
-  if (filters.location) params.set('location', filters.location);
+  if (filters.category) {
+    params.set('category', filters.category);
+  }
+  if (filters.location) {
+    params.set('location', filters.location);
+  }
   // Use priceMin/Max as canonical names (requirement specifies these)
-  if (filters.budgetMin) params.set('priceMin', filters.budgetMin);
-  if (filters.budgetMax) params.set('priceMax', filters.budgetMax);
-  if (filters.q) params.set('q', filters.q);
-  if (filters.eventType) params.set('eventType', filters.eventType);
-  if (filters.sort && filters.sort !== 'relevance') params.set('sort', filters.sort);
-  if (filters.page && filters.page > 1) params.set('page', filters.page);
-  
+  if (filters.budgetMin) {
+    params.set('priceMin', filters.budgetMin);
+  }
+  if (filters.budgetMax) {
+    params.set('priceMax', filters.budgetMax);
+  }
+  if (filters.q) {
+    params.set('q', filters.q);
+  }
+  if (filters.eventType) {
+    params.set('eventType', filters.eventType);
+  }
+  if (filters.sort && filters.sort !== 'relevance') {
+    params.set('sort', filters.sort);
+  }
+  if (filters.page && filters.page > 1) {
+    params.set('page', filters.page);
+  }
+
   const queryString = params.toString();
-  const newUrl = queryString 
-    ? `${window.location.pathname}?${queryString}` 
+  const newUrl = queryString
+    ? `${window.location.pathname}?${queryString}`
     : window.location.pathname;
-  
+
   if (replace) {
     window.history.replaceState({}, '', newUrl);
   } else {

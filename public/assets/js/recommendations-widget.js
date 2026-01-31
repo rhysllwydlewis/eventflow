@@ -11,7 +11,9 @@
    */
   async function initRecommendations() {
     const widget = document.getElementById('recommendations-widget');
-    if (!widget) return;
+    if (!widget) {
+      return;
+    }
 
     // Get user preferences from data attributes or localStorage
     const category = widget.dataset.category || localStorage.getItem('preferredCategory');
@@ -39,14 +41,22 @@
    */
   async function fetchRecommendations(params = {}) {
     const queryParams = new URLSearchParams();
-    
-    if (params.category) queryParams.append('category', params.category);
-    if (params.location) queryParams.append('location', params.location);
-    if (params.budget) queryParams.append('budget', params.budget);
-    if (params.eventType) queryParams.append('eventType', params.eventType);
+
+    if (params.category) {
+      queryParams.append('category', params.category);
+    }
+    if (params.location) {
+      queryParams.append('location', params.location);
+    }
+    if (params.budget) {
+      queryParams.append('budget', params.budget);
+    }
+    if (params.eventType) {
+      queryParams.append('eventType', params.eventType);
+    }
 
     const response = await fetch(`/api/public/recommendations?${queryParams}`);
-    
+
     if (!response.ok) {
       throw new Error('Failed to fetch recommendations');
     }
@@ -102,19 +112,29 @@
    */
   function createRecommendationsWidget(containerId, options = {}) {
     const container = document.getElementById(containerId);
-    if (!container) return;
+    if (!container) {
+      return;
+    }
 
     const widget = document.createElement('div');
     widget.id = 'recommendations-widget';
     widget.className = 'recommendations-widget';
-    
-    if (options.category) widget.dataset.category = options.category;
-    if (options.location) widget.dataset.location = options.location;
-    if (options.budget) widget.dataset.budget = options.budget;
-    if (options.eventType) widget.dataset.eventType = options.eventType;
+
+    if (options.category) {
+      widget.dataset.category = options.category;
+    }
+    if (options.location) {
+      widget.dataset.location = options.location;
+    }
+    if (options.budget) {
+      widget.dataset.budget = options.budget;
+    }
+    if (options.eventType) {
+      widget.dataset.eventType = options.eventType;
+    }
 
     container.appendChild(widget);
-    
+
     return initRecommendations();
   }
 

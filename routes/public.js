@@ -193,9 +193,11 @@ router.get('/recommendations', async (req, res) => {
     const { category, location, budget, eventType } = req.query;
 
     const suppliers = await dbUnified.read('suppliers');
-    
+
     // Filter active and verified suppliers
-    let recommended = suppliers.filter(s => s.verified === true && s.subscriptionStatus === 'active');
+    let recommended = suppliers.filter(
+      s => s.verified === true && s.subscriptionStatus === 'active'
+    );
 
     // Apply category filter
     if (category) {
@@ -216,7 +218,9 @@ router.get('/recommendations', async (req, res) => {
       const budgetNum = parseFloat(budget);
       if (!isNaN(budgetNum)) {
         recommended = recommended.filter(s => {
-          if (!s.priceRange) return true;
+          if (!s.priceRange) {
+            return true;
+          }
           const minPrice = parseFloat(s.priceRange.min || 0);
           const maxPrice = parseFloat(s.priceRange.max || 999999);
           return budgetNum >= minPrice && budgetNum <= maxPrice;
@@ -227,19 +231,21 @@ router.get('/recommendations', async (req, res) => {
     // Score and sort by relevance
     recommended = recommended.map(s => {
       let score = 0;
-      
+
       // Boost score for category match
-      if (category && s.category === category) score += 10;
-      
+      if (category && s.category === category) {
+        score += 10;
+      }
+
       // Boost score for location proximity
       if (location && (s.location || '').toLowerCase().includes(location.toLowerCase())) {
         score += 5;
       }
-      
+
       // Boost for reviews
       score += (s.reviewCount || 0) * 0.1;
       score += (s.averageRating || 0) * 2;
-      
+
       return { ...s, recommendationScore: score };
     });
 
@@ -249,10 +255,10 @@ router.get('/recommendations', async (req, res) => {
     // Return top 3
     const top3 = recommended.slice(0, 3);
 
-    res.json({ 
-      success: true, 
+    res.json({
+      success: true,
       recommendations: top3,
-      total: recommended.length 
+      total: recommended.length,
     });
   } catch (error) {
     console.error('Error fetching recommendations:', error);

@@ -9,7 +9,9 @@
  * @returns {boolean}
  */
 function isNewSupplier(createdAt) {
-  if (!createdAt) return false;
+  if (!createdAt) {
+    return false;
+  }
   const created = new Date(createdAt);
   const now = new Date();
   const daysDiff = (now - created) / (1000 * 60 * 60 * 24);
@@ -27,7 +29,7 @@ function addNewBadgeIfApplicable(cardElement, createdAt) {
     badge.className = 'new-badge';
     badge.innerHTML = '🆕 New';
     badge.setAttribute('aria-label', 'New supplier');
-    
+
     // Find appropriate place to insert (after title or at top of card)
     const title = cardElement.querySelector('h3, h2, .supplier-name');
     if (title) {
@@ -45,7 +47,9 @@ function addNewBadgeIfApplicable(cardElement, createdAt) {
  */
 function renderBreadcrumbs(items, containerId = 'breadcrumb-container') {
   const container = document.getElementById(containerId);
-  if (!container) return;
+  if (!container) {
+    return;
+  }
 
   const nav = document.createElement('nav');
   nav.setAttribute('aria-label', 'Breadcrumb');
@@ -84,7 +88,9 @@ function renderBreadcrumbs(items, containerId = 'breadcrumb-container') {
  * @returns {number} Estimated minutes
  */
 function calculateReadingTime(content, wordsPerMinute = 200) {
-  if (!content) return 0;
+  if (!content) {
+    return 0;
+  }
   const words = content.trim().split(/\s+/).length;
   const minutes = Math.ceil(words / wordsPerMinute);
   return minutes;
@@ -97,7 +103,9 @@ function calculateReadingTime(content, wordsPerMinute = 200) {
  */
 function displayReadingTime(content, containerId = 'reading-time') {
   const container = document.getElementById(containerId);
-  if (!container) return;
+  if (!container) {
+    return;
+  }
 
   const minutes = calculateReadingTime(content);
   container.textContent = `${minutes} min read`;
@@ -129,23 +137,22 @@ function triggerSuccessConfetti() {
  * @param {HTMLElement} toggleButton
  */
 function setupPasswordToggle(passwordInput, toggleButton) {
-  if (!passwordInput || !toggleButton) return;
+  if (!passwordInput || !toggleButton) {
+    return;
+  }
 
   toggleButton.addEventListener('click', () => {
     const isPassword = passwordInput.type === 'password';
     passwordInput.type = isPassword ? 'text' : 'password';
-    
+
     // Update button icon/text
     const icon = toggleButton.querySelector('i, .icon');
     if (icon) {
       icon.className = isPassword ? 'icon-eye-slash' : 'icon-eye';
     }
-    
+
     // Update aria-label
-    toggleButton.setAttribute(
-      'aria-label',
-      isPassword ? 'Hide password' : 'Show password'
-    );
+    toggleButton.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
   });
 }
 
@@ -157,10 +164,12 @@ function setupPasswordToggle(passwordInput, toggleButton) {
  */
 function showLoadingSkeleton(containerId, type = 'supplier-card', count = 3) {
   const container = document.getElementById(containerId);
-  if (!container) return;
+  if (!container) {
+    return;
+  }
 
   container.innerHTML = '';
-  
+
   for (let i = 0; i < count; i++) {
     const skeleton = createSkeletonElement(type);
     container.appendChild(skeleton);
@@ -172,7 +181,7 @@ function showLoadingSkeleton(containerId, type = 'supplier-card', count = 3) {
  */
 function createSkeletonElement(type) {
   const div = document.createElement('div');
-  
+
   if (type === 'supplier-card') {
     div.className = 'skeleton-supplier-card-full';
     div.innerHTML = `
@@ -208,7 +217,7 @@ function createSkeletonElement(type) {
       </div>
     `;
   }
-  
+
   return div;
 }
 

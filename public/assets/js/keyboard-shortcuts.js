@@ -87,7 +87,7 @@
     const searchInput = document.querySelector(
       '#search-input, .search-input, input[type="search"], #ef-search-input'
     );
-    
+
     if (searchInput) {
       searchInput.focus();
       searchInput.select();
@@ -114,10 +114,8 @@
    */
   function closeModals() {
     // Close any modal with class 'modal' or specific IDs
-    const modals = document.querySelectorAll(
-      '.modal, [role="dialog"], #keyboard-shortcuts-modal'
-    );
-    
+    const modals = document.querySelectorAll('.modal, [role="dialog"], #keyboard-shortcuts-modal');
+
     modals.forEach(modal => {
       if (modal.style.display !== 'none') {
         modal.style.display = 'none';
@@ -190,13 +188,15 @@
    * Add shortcut hint to an element
    */
   function addShortcutHint(element, shortcutKey) {
-    if (!element || !shortcuts[shortcutKey]) return;
+    if (!element || !shortcuts[shortcutKey]) {
+      return;
+    }
 
     const hint = document.createElement('span');
     hint.className = 'keyboard-shortcut-hint';
     hint.textContent = shortcuts[shortcutKey].display;
     hint.setAttribute('aria-label', `Keyboard shortcut: ${shortcuts[shortcutKey].display}`);
-    
+
     element.appendChild(hint);
   }
 

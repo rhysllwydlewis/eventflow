@@ -17,10 +17,14 @@
 
     // Use MutationObserver instead of setTimeout
     const observer = new MutationObserver(() => {
-      const statsSection = document.querySelector('.dashboard-stats, #stats-section, .dashboard-content');
-      
-      if (!statsSection) return;
-      
+      const statsSection = document.querySelector(
+        '.dashboard-stats, #stats-section, .dashboard-content'
+      );
+
+      if (!statsSection) {
+        return;
+      }
+
       // Double-check widget doesn't exist
       if (document.getElementById('recommendations-widget')) {
         observer.disconnect();
@@ -77,7 +81,10 @@
   function setupProfileCompletionConfetti() {
     // Check if profile was just completed
     const params = new URLSearchParams(window.location.search);
-    if (params.get('profile_completed') === 'true' && typeof triggerSuccessConfetti === 'function') {
+    if (
+      params.get('profile_completed') === 'true' &&
+      typeof triggerSuccessConfetti === 'function'
+    ) {
       // Small delay for page to load
       setTimeout(() => {
         triggerSuccessConfetti();

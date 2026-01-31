@@ -14,10 +14,12 @@
    */
   function initBillingToggle() {
     const pricingContainer = document.querySelector('.pricing-plans, #pricing-container');
-    if (!pricingContainer) return;
+    if (!pricingContainer) {
+      return;
+    }
 
     createBillingToggle(pricingContainer);
-    
+
     // Store original monthly prices
     storePrices();
 
@@ -29,7 +31,9 @@
    */
   function createBillingToggle(container) {
     // Check if toggle already exists
-    if (document.getElementById('billing-toggle')) return;
+    if (document.getElementById('billing-toggle')) {
+      return;
+    }
 
     const toggle = document.createElement('div');
     toggle.id = 'billing-toggle';
@@ -59,7 +63,7 @@
    */
   function storePrices() {
     const priceElements = document.querySelectorAll('.price-amount, [data-monthly-price]');
-    
+
     priceElements.forEach(el => {
       if (!el.dataset.monthlyPrice) {
         const priceText = el.textContent.replace(/[£$€,]/g, '');
@@ -76,11 +80,11 @@
    */
   function handleToggle(e) {
     const isAnnual = e.target.checked;
-    
+
     // Update labels
     const monthlyLabel = document.getElementById('monthly-label');
     const annualLabel = document.getElementById('annual-label');
-    
+
     if (isAnnual) {
       monthlyLabel.classList.remove('active');
       annualLabel.classList.add('active');
@@ -98,10 +102,12 @@
   function updatePrices(period) {
     const priceElements = document.querySelectorAll('.price-amount, [data-monthly-price]');
     const periodLabels = document.querySelectorAll('.price-period, .billing-period');
-    
+
     priceElements.forEach(el => {
       const monthlyPrice = parseFloat(el.dataset.monthlyPrice);
-      if (isNaN(monthlyPrice)) return;
+      if (isNaN(monthlyPrice)) {
+        return;
+      }
 
       let displayPrice;
       if (period === 'annual') {
@@ -132,18 +138,20 @@
    */
   function updateCheckoutLinks(period) {
     const checkoutButtons = document.querySelectorAll('[data-plan-link], .checkout-link');
-    
+
     checkoutButtons.forEach(btn => {
       let href = btn.getAttribute('href') || btn.dataset.planLink;
-      if (!href) return;
+      if (!href) {
+        return;
+      }
 
       // Remove existing period param
       href = href.replace(/[?&]period=(monthly|annual)/, '');
-      
+
       // Add period param
       const separator = href.includes('?') ? '&' : '?';
       href = `${href}${separator}period=${period}`;
-      
+
       if (btn.tagName === 'A') {
         btn.href = href;
       } else {

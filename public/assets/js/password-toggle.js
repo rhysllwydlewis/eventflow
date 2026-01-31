@@ -11,8 +11,10 @@
    */
   function initPasswordToggles() {
     const passwordInputs = document.querySelectorAll('input[type="password"]');
-    
-    if (passwordInputs.length === 0) return;
+
+    if (passwordInputs.length === 0) {
+      return;
+    }
 
     passwordInputs.forEach(input => {
       // Skip if already has toggle
@@ -51,15 +53,15 @@
     toggle.addEventListener('click', () => {
       const isPassword = input.type === 'password';
       input.type = isPassword ? 'text' : 'password';
-      
+
       // Update icon
       toggle.innerHTML = isPassword
         ? '<span class="icon-eye-slash" aria-hidden="true">🙈</span>'
         : '<span class="icon-eye" aria-hidden="true">👁️</span>';
-      
+
       // Update aria-label
       toggle.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
-      
+
       // Keep focus on input
       input.focus();
     });

@@ -11,8 +11,10 @@
    */
   function initFaqVoting() {
     const faqItems = document.querySelectorAll('.faq-item, .accordion-item, [data-faq-id]');
-    
-    if (faqItems.length === 0) return;
+
+    if (faqItems.length === 0) {
+      return;
+    }
 
     faqItems.forEach((item, index) => {
       const faqId = item.dataset.faqId || `faq-${index + 1}`;
@@ -27,7 +29,9 @@
    */
   function addVotingButtons(faqItem, faqId) {
     // Check if already has voting buttons
-    if (faqItem.querySelector('.faq-vote-section')) return;
+    if (faqItem.querySelector('.faq-vote-section')) {
+      return;
+    }
 
     const voteSection = document.createElement('div');
     voteSection.className = 'faq-vote-section';
@@ -91,7 +95,7 @@
       // Show thank you message
       const buttons = voteSection.querySelector('.faq-vote-buttons');
       const thanks = voteSection.querySelector('.faq-vote-thanks');
-      
+
       buttons.style.display = 'none';
       thanks.style.display = 'block';
 

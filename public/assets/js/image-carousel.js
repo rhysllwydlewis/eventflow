@@ -15,8 +15,10 @@
    */
   function initCarousel() {
     const galleryImages = document.querySelectorAll('.gallery-image, .supplier-photo, .photo-item');
-    
-    if (galleryImages.length === 0) return;
+
+    if (galleryImages.length === 0) {
+      return;
+    }
 
     // Store images data
     images = Array.from(galleryImages).map((img, index) => ({
@@ -39,7 +41,9 @@
    * Create carousel modal structure
    */
   function createCarouselModal() {
-    if (document.getElementById('image-carousel-modal')) return;
+    if (document.getElementById('image-carousel-modal')) {
+      return;
+    }
 
     const modal = document.createElement('div');
     modal.id = 'image-carousel-modal';
@@ -105,15 +109,17 @@
    * Open carousel at specific index
    */
   function openCarousel(index = 0) {
-    if (!carousel || images.length === 0) return;
+    if (!carousel || images.length === 0) {
+      return;
+    }
 
     currentIndex = index;
     updateCarouselImage();
-    
+
     carousel.style.display = 'flex';
     carousel.setAttribute('aria-hidden', 'false');
     document.body.style.overflow = 'hidden';
-    
+
     // Focus the carousel for keyboard navigation
     carousel.focus();
   }
@@ -122,7 +128,9 @@
    * Close carousel
    */
   function closeCarousel() {
-    if (!carousel) return;
+    if (!carousel) {
+      return;
+    }
 
     carousel.style.display = 'none';
     carousel.setAttribute('aria-hidden', 'true');
@@ -133,7 +141,9 @@
    * Show next image
    */
   function nextImage() {
-    if (images.length === 0) return;
+    if (images.length === 0) {
+      return;
+    }
     currentIndex = (currentIndex + 1) % images.length;
     updateCarouselImage();
   }
@@ -142,7 +152,9 @@
    * Show previous image
    */
   function prevImage() {
-    if (images.length === 0) return;
+    if (images.length === 0) {
+      return;
+    }
     currentIndex = (currentIndex - 1 + images.length) % images.length;
     updateCarouselImage();
   }
@@ -156,17 +168,19 @@
     const current = document.getElementById('carousel-current');
     const total = document.getElementById('carousel-total');
 
-    if (!img || !images[currentIndex]) return;
+    if (!img || !images[currentIndex]) {
+      return;
+    }
 
     const image = images[currentIndex];
-    
+
     // Fade out
     img.style.opacity = '0';
-    
+
     setTimeout(() => {
       img.src = image.src;
       img.alt = image.alt;
-      
+
       if (image.caption) {
         caption.textContent = image.caption;
         caption.style.display = 'block';
@@ -184,7 +198,7 @@
     // Update navigation buttons visibility
     const prevBtn = carousel.querySelector('.carousel-prev');
     const nextBtn = carousel.querySelector('.carousel-next');
-    
+
     if (images.length <= 1) {
       prevBtn.style.display = 'none';
       nextBtn.style.display = 'none';
@@ -198,7 +212,9 @@
    * Handle keyboard navigation
    */
   function handleKeyboard(e) {
-    if (!carousel || carousel.style.display === 'none') return;
+    if (!carousel || carousel.style.display === 'none') {
+      return;
+    }
 
     switch (e.key) {
       case 'Escape':

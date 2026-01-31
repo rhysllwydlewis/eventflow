@@ -22,7 +22,9 @@
     createTypingIndicatorElement();
 
     // Hook into message input
-    const messageInput = document.querySelector('#message-input, .message-input, textarea[name="message"]');
+    const messageInput = document.querySelector(
+      '#message-input, .message-input, textarea[name="message"]'
+    );
     if (messageInput) {
       messageInput.addEventListener('input', handleTypingInput);
       messageInput.addEventListener('blur', handleTypingStop);
@@ -47,8 +49,12 @@
    * Create typing indicator HTML element
    */
   function createTypingIndicatorElement() {
-    const messagesContainer = document.querySelector('.messages-container, .chat-messages, #messages-container');
-    if (!messagesContainer) return;
+    const messagesContainer = document.querySelector(
+      '.messages-container, .chat-messages, #messages-container'
+    );
+    if (!messagesContainer) {
+      return;
+    }
 
     const indicator = document.createElement('div');
     indicator.id = 'typing-indicator';
@@ -99,7 +105,9 @@
    * Emit typing start event via WebSocket
    */
   function emitTypingStart() {
-    if (!window.socket || !window.currentThreadId) return;
+    if (!window.socket || !window.currentThreadId) {
+      return;
+    }
 
     window.socket.emit('typing:start', {
       threadId: window.currentThreadId,
@@ -111,7 +119,9 @@
    * Emit typing stop event via WebSocket
    */
   function emitTypingStop() {
-    if (!window.socket || !window.currentThreadId) return;
+    if (!window.socket || !window.currentThreadId) {
+      return;
+    }
 
     window.socket.emit('typing:stop', {
       threadId: window.currentThreadId,
@@ -123,7 +133,9 @@
    * Setup WebSocket listeners for typing events
    */
   function setupWebSocketListeners() {
-    if (!window.socket) return;
+    if (!window.socket) {
+      return;
+    }
 
     // Listen for typing started
     window.socket.on('typing:started', data => {
@@ -144,10 +156,12 @@
    * Show typing indicator
    */
   function showTypingIndicator() {
-    if (!typingIndicatorElement) return;
-    
+    if (!typingIndicatorElement) {
+      return;
+    }
+
     typingIndicatorElement.style.display = 'inline-flex';
-    
+
     // Auto-hide after timeout
     setTimeout(() => {
       hideTypingIndicator();
@@ -164,7 +178,9 @@
    * Hide typing indicator
    */
   function hideTypingIndicator() {
-    if (!typingIndicatorElement) return;
+    if (!typingIndicatorElement) {
+      return;
+    }
     typingIndicatorElement.style.display = 'none';
   }
 
