@@ -223,6 +223,7 @@
         </div>
 
         <div class="wizard-actions">
+          <button class="cta secondary wizard-back">Back</button>
           <button class="cta wizard-next" disabled>Continue</button>
         </div>
       </div>
@@ -571,9 +572,40 @@
   }
 
   /**
+   * Check if wizard has any user-entered data
+   */
+  function hasFormData() {
+    const state = window.WizardState.getState();
+    return !!(
+      state.eventType ||
+      state.location ||
+      state.date ||
+      state.guests ||
+      state.budget ||
+      Object.keys(state.selectedPackages || {}).length > 0
+    );
+  }
+
+  /**
    * Handle back button
    */
   function handleBack() {
+    // Special handling for step 1 (first step with back button)
+    if (currentStep === 0) {
+      // Check if user has entered any data
+      if (hasFormData()) {
+        const confirmed = confirm('Leave wizard? Your progress will be lost.');
+        if (!confirmed) {
+          return;
+        }
+        // Clear wizard state if leaving
+        window.WizardState.clearState();
+      }
+      // Navigate to homepage
+      window.location.href = '/';
+      return;
+    }
+
     currentStep = Math.max(currentStep - 1, 0);
     renderStep(currentStep);
 
@@ -598,12 +630,12 @@
       // Check authentication using AuthState if available
       let user = null;
       let isLoggedIn = false;
-      
+
       if (window.AuthState && typeof window.AuthState.getUser === 'function') {
         user = window.AuthState.getUser();
         isLoggedIn = !!user;
       }
-      
+
       if (!isLoggedIn) {
         const authResponse = await fetch('/api/auth/me', { credentials: 'include' });
         isLoggedIn = authResponse.ok;
@@ -623,7 +655,7 @@
         } catch (e) {
           console.error('Failed to save to localStorage:', e);
         }
-        
+
         // Redirect to auth with return URL
         const returnUrl = encodeURIComponent('/start-wizard.html?restore=true');
         location.href = `/auth.html?returnTo=${returnUrl}`;
@@ -632,7 +664,7 @@
 
       // User is authenticated - save to backend
       await savePlanToBackend(planData);
-      
+
       // Clear wizard state and localStorage
       window.WizardState.clearState();
       try {
@@ -641,25 +673,24 @@
       } catch (e) {
         console.error('Failed to clear localStorage:', e);
       }
-      
+
       // Success!
       if (window.showNotification) {
         window.showNotification('Your event plan has been created!', 'success');
       } else {
         alert('Your plan has been created!');
       }
-      
+
       location.href = '/dashboard-customer.html';
-      
     } catch (err) {
       console.error('Error creating plan:', err);
-      
+
       if (window.showNotification) {
         window.showNotification(err.message || 'Failed to create plan. Please try again.', 'error');
       } else {
         alert('There was an error creating your plan. Please try again.');
       }
-      
+
       createBtn.disabled = false;
       createBtn.textContent = 'Create My Plan';
     }
@@ -671,7 +702,7 @@
    */
   async function savePlanToBackend(planData) {
     const csrfToken = await getCsrfToken();
-    
+
     const response = await fetch('/api/me/plans', {
       method: 'POST',
       headers: {
@@ -696,44 +727,46 @@
   function restoreWizardState() {
     const urlParams = new URLSearchParams(window.location.search);
     const shouldRestore = urlParams.get('restore') === 'true';
-    
+
     if (!shouldRestore) {
       return;
     }
-    
+
     try {
       const pendingData = localStorage.getItem('eventflow_wizard_pending');
       const timestamp = localStorage.getItem('eventflow_wizard_timestamp');
-      
+
       if (!pendingData || !timestamp) {
         return;
       }
-      
+
       const age = Date.now() - parseInt(timestamp, 10);
-      
+
       if (age > WIZARD_DATA_EXPIRY_MS) {
         localStorage.removeItem('eventflow_wizard_pending');
         localStorage.removeItem('eventflow_wizard_timestamp');
         return;
       }
-      
+
       const planData = JSON.parse(pendingData);
-      
+
       if (window.AuthState && window.AuthState.getUser && window.AuthState.getUser()) {
-        savePlanToBackend(planData).then(() => {
-          localStorage.removeItem('eventflow_wizard_pending');
-          localStorage.removeItem('eventflow_wizard_timestamp');
-          
-          if (window.showNotification) {
-            window.showNotification('Your event plan has been saved!', 'success');
-          }
-          
-          setTimeout(() => {
-            location.href = '/dashboard-customer.html';
-          }, 1500);
-        }).catch(err => {
-          console.error('Failed to save restored plan:', err);
-        });
+        savePlanToBackend(planData)
+          .then(() => {
+            localStorage.removeItem('eventflow_wizard_pending');
+            localStorage.removeItem('eventflow_wizard_timestamp');
+
+            if (window.showNotification) {
+              window.showNotification('Your event plan has been saved!', 'success');
+            }
+
+            setTimeout(() => {
+              location.href = '/dashboard-customer.html';
+            }, 1500);
+          })
+          .catch(err => {
+            console.error('Failed to save restored plan:', err);
+          });
       }
     } catch (e) {
       console.error('Failed to restore wizard state:', e);
