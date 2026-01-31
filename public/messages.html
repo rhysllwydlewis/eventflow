@@ -910,7 +910,6 @@
           // Draft autosave functionality
           let draftSaveTimeout;
           const AUTOSAVE_DELAY = 2000; // 2 seconds
-          let currentThreadId = null;
           
           function getDraftKey(supplierId) {
             return supplierId ? `draft_new_${supplierId}` : null;
@@ -919,23 +918,32 @@
           function autosaveDraft(supplierId, messageText, subject) {
             clearTimeout(draftSaveTimeout);
             
-            if (!supplierId || !messageText.trim()) {
+            if (!supplierId) {
               return;
             }
             
             draftSaveTimeout = setTimeout(() => {
+              const draftKey = getDraftKey(supplierId);
+              if (!draftKey) return;
+              
+              // If message is empty, clear the draft
+              if (!messageText.trim()) {
+                localStorage.removeItem(draftKey);
+                showDraftIndicator('', '');
+                document.getElementById('discardDraftBtn').style.display = 'none';
+                return;
+              }
+              
+              // Save the draft
               const draft = {
                 message: messageText,
                 subject: subject || '',
                 savedAt: new Date().toISOString()
               };
               
-              const draftKey = getDraftKey(supplierId);
-              if (draftKey) {
-                localStorage.setItem(draftKey, JSON.stringify(draft));
-                showDraftIndicator('Draft saved', 'saved');
-                document.getElementById('discardDraftBtn').style.display = 'inline-block';
-              }
+              localStorage.setItem(draftKey, JSON.stringify(draft));
+              showDraftIndicator('Draft saved', 'saved');
+              document.getElementById('discardDraftBtn').style.display = 'inline-block';
             }, AUTOSAVE_DELAY);
           }
           
@@ -1000,9 +1008,38 @@
           
           // Restore draft when supplier is selected
           supplierSelect.addEventListener('change', () => {
-            const supplierId = supplierSelect.value;
-            if (supplierId) {
-              restoreDraft(supplierId);
+            const previousSupplierId = supplierSelect.dataset.previousValue;
+            const newSupplierId = supplierSelect.value;
+            
+            // Autosave current draft before switching
+            if (previousSupplierId) {
+              const currentMessage = messageTextarea.value;
+              const currentSubject = subjectInput.value;
+              if (currentMessage.trim()) {
+                const draft = {
+                  message: currentMessage,
+                  subject: currentSubject || '',
+                  savedAt: new Date().toISOString()
+                };
+                const draftKey = getDraftKey(previousSupplierId);
+                if (draftKey) {
+                  localStorage.setItem(draftKey, JSON.stringify(draft));
+                }
+              }
+            }
+            
+            // Store current supplier for next change
+            supplierSelect.dataset.previousValue = newSupplierId;
+            
+            // Restore draft for new supplier
+            if (newSupplierId) {
+              restoreDraft(newSupplierId);
+            } else {
+              // Clear form if no supplier selected
+              messageTextarea.value = '';
+              subjectInput.value = '';
+              showDraftIndicator('', '');
+              document.getElementById('discardDraftBtn').style.display = 'none';
             }
           });
           
