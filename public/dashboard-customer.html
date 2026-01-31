@@ -121,6 +121,14 @@
 <!-- Upcoming Events Timeline -->
 <div id="upcoming-events-timeline"></div>
 
+<!-- Calendar View Card -->
+<div class="card" style="margin-bottom: 1.5rem;">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+    <h3 style="margin: 0; font-size: 1.25rem; color: #0B1220;">📅 Events Calendar</h3>
+  </div>
+  <div id="events-calendar" style="min-height: 400px;"></div>
+</div>
+
 <div class="cards">
   <!-- Your Plans Card -->
   <div class="card">
@@ -738,6 +746,25 @@ initDashboard();
   </div>
 </footer>
 <script src="/assets/js/cookie-consent.js" defer></script>
+
+<!-- FullCalendar for Events Calendar -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css">
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+<script src="/assets/js/calendar-view.js"></script>
+<script>
+  // Initialize calendar view
+  document.addEventListener('DOMContentLoaded', () => {
+    // Wait a bit for auth to load
+    setTimeout(() => {
+      if (window.CalendarView && document.getElementById('events-calendar')) {
+        window.CalendarView.init('events-calendar', {
+          initialView: 'dayGridMonth',
+          height: 500
+        });
+      }
+    }, 500);
+  });
+</script>
 
 <!-- JadeAssist Chat Widget -->
 <script src="https://cdn.jsdelivr.net/gh/rhysllwydlewis/JadeAssist@abbf580487e0bcf7739a0857d4d940213fe2e176/packages/widget/dist/jade-widget.js" defer></script>
