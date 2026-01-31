@@ -245,7 +245,7 @@ describe('Contact Form Validation', () => {
       expect(validateMessage('A'.repeat(10))).toBeNull();
       expect(validateMessage('A'.repeat(1000))).toBeNull();
       expect(
-        validateMessage('Hi! We are planning an event on [DATE] for around [GUESTS] guests.')
+        validateMessage('Hi! We are planning an event on January 15th for around 50 guests.')
       ).toBeNull();
     });
   });
