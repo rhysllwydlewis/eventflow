@@ -248,8 +248,9 @@ export function createProgressRing(data, containerId) {
  * Create upcoming events timeline widget
  * @param {Array} events - Array of event objects
  * @param {string} containerId - ID of container element
+ * @param {string} eventDate - Optional event date for countdown
  */
-export function createEventsTimeline(events, containerId) {
+export function createEventsTimeline(events, containerId, eventDate = null) {
   const container = document.getElementById(containerId);
   if (!container) {
     return;
@@ -265,9 +266,36 @@ export function createEventsTimeline(events, containerId) {
     return;
   }
 
+  // Generate countdown HTML if event date is provided
+  let countdownHtml = '';
+  if (eventDate) {
+    countdownHtml = `
+      <div id="countdown-widget" style="background: linear-gradient(135deg, #0B8073 0%, #13B6A2 100%); border-radius: 12px; padding: 1.5rem; margin-bottom: 1rem; text-align: center;">
+        <div style="color: white; font-size: 0.875rem; margin-bottom: 0.5rem; opacity: 0.9;">🎉 Event Countdown</div>
+        <div id="countdown-display" style="color: white;">
+          <div class="countdown-widget" style="display: flex; justify-content: center; gap: 1.5rem; flex-wrap: wrap;">
+            <div style="text-align: center;">
+              <div class="countdown-number" style="font-size: 2rem; font-weight: 700;">--</div>
+              <div style="font-size: 0.875rem; opacity: 0.9;">days</div>
+            </div>
+            <div style="text-align: center;">
+              <div class="countdown-number" style="font-size: 2rem; font-weight: 700;">--</div>
+              <div style="font-size: 0.875rem; opacity: 0.9;">hours</div>
+            </div>
+            <div style="text-align: center;">
+              <div class="countdown-number" style="font-size: 2rem; font-weight: 700;">--</div>
+              <div style="font-size: 0.875rem; opacity: 0.9;">minutes</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
   const html = `
     <div class="card" style="padding: 1.5rem;">
       <h3 style="margin: 0 0 1rem 0; font-size: 1.25rem; color: #0B1220;">Upcoming Tasks</h3>
+      ${countdownHtml}
       <div class="timeline">
         ${events
           .map(
@@ -298,6 +326,60 @@ export function createEventsTimeline(events, containerId) {
   `;
 
   container.innerHTML = html;
+
+  // Initialize countdown if event date is provided
+  if (eventDate) {
+    initCountdown(eventDate);
+  }
+}
+
+/**
+ * Initialize and update countdown timer
+ * @param {string} eventDate - ISO date string for the event
+ */
+function initCountdown(eventDate) {
+  function updateCountdown() {
+    const now = new Date();
+    const event = new Date(eventDate);
+    const diff = event - now;
+
+    const display = document.getElementById('countdown-display');
+    if (!display) {
+      return;
+    }
+
+    if (diff <= 0) {
+      display.innerHTML = '<div style="font-size: 1.75rem; font-weight: 700;">🎉 Event Day!</div>';
+      return;
+    }
+
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+    display.innerHTML = `
+      <div class="countdown-widget" style="display: flex; justify-content: center; gap: 1.5rem; flex-wrap: wrap;">
+        <div style="text-align: center;">
+          <div class="countdown-number" style="font-size: 2rem; font-weight: 700;">${days}</div>
+          <div style="font-size: 0.875rem; opacity: 0.9;">days</div>
+        </div>
+        <div style="text-align: center;">
+          <div class="countdown-number" style="font-size: 2rem; font-weight: 700;">${hours}</div>
+          <div style="font-size: 0.875rem; opacity: 0.9;">hours</div>
+        </div>
+        <div style="text-align: center;">
+          <div class="countdown-number" style="font-size: 2rem; font-weight: 700;">${minutes}</div>
+          <div style="font-size: 0.875rem; opacity: 0.9;">minutes</div>
+        </div>
+      </div>
+    `;
+  }
+
+  // Update immediately
+  updateCountdown();
+
+  // Update every minute
+  setInterval(updateCountdown, 60000);
 }
 
 function getBadgeStyle(daysUntil) {

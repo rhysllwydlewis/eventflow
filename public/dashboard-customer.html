@@ -434,24 +434,47 @@ async function initCustomerDashboardWidgets() {
     
     createBudgetTracker(budgetData, 'budget-tracker-widget');
     
-    // Calculate event progress
-    const totalSuppliers = 10; // Average suppliers for a complete event
-    const bookedSuppliers = savedSuppliers.length;
-    const pendingSuppliers = Math.max(0, totalSuppliers - bookedSuppliers);
-    const progressPercentage = Math.min(100, Math.round((bookedSuppliers / totalSuppliers) * 100));
+    // Calculate real progress based on completion criteria
+    let progressPercentage = 0;
+    let completedSteps = 0;
+    let totalSteps = 5;
+    
+    if (plans.length > 0) {
+      // Get the first plan with data or the most recent plan
+      const activePlan = plans.find(p => p.eventDate || p.venue || p.catering) || plans[0];
+      
+      // Define completion criteria
+      const criteria = [
+        !!activePlan.eventDate || !!activePlan.date,  // Has event date
+        !!activePlan.venue,                            // Has venue selected
+        !!activePlan.catering,                         // Has catering selected
+        !!(activePlan.budget && parseFloat(activePlan.budget) > 0),  // Has budget set
+        !!(activePlan.guestCount || activePlan.guests) && parseInt(activePlan.guestCount || activePlan.guests || 0) > 0,  // Has guest list
+      ];
+      
+      completedSteps = criteria.filter(Boolean).length;
+      progressPercentage = Math.round((completedSteps / totalSteps) * 100);
+    }
     
     // Create progress ring
     createProgressRing({
       percentage: progressPercentage,
       label: 'Event Progress',
-      booked: bookedSuppliers,
-      pending: pendingSuppliers,
+      booked: completedSteps,
+      pending: totalSteps - completedSteps,
     }, 'progress-ring-widget');
     
     // Create upcoming events timeline based on plans
     let upcomingEvents = [];
+    let eventDate = null;
     
     if (plans.length > 0) {
+      // Find nearest upcoming event date
+      const planWithDate = plans.find(p => p.eventDate || p.date);
+      if (planWithDate) {
+        eventDate = planWithDate.eventDate || planWithDate.date;
+      }
+      
       // Generate contextual tasks based on actual plans
       upcomingEvents = [
         { name: 'Review plan details', supplier: 'Planning Dashboard', daysUntil: 2 },
@@ -467,7 +490,7 @@ async function initCustomerDashboardWidgets() {
       ];
     }
     
-    createEventsTimeline(upcomingEvents, 'upcoming-events-timeline');
+    createEventsTimeline(upcomingEvents, 'upcoming-events-timeline', eventDate);
     
   } catch (error) {
     console.error('Error initializing dashboard widgets:', error);
