@@ -8,7 +8,6 @@ import { getListItemSkeletons, showEmptyState, showErrorState } from './utils/sk
 import {
   getLeadQualityBadge,
   calculateLeadQuality,
-  sortThreadsByQualityScore,
   filterThreadsByQualityLevel,
 } from './utils/lead-quality-helper.js';
 
