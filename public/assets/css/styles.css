@@ -1486,6 +1486,13 @@ button, .cta{
   padding: 20px;
 }
 
+.article-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
 .article-card-tag {
   display: inline-block;
   padding: 4px 12px;
@@ -1494,7 +1501,6 @@ button, .cta{
   color: var(--ink);
   font-size: 0.75rem;
   font-weight: 600;
-  margin-right: 8px;
 }
 
 .article-card-affiliate {
@@ -1505,6 +1511,46 @@ button, .cta{
   color: #F59E0B;
   font-size: 0.75rem;
   font-weight: 600;
+}
+
+/* Tag Filter Buttons */
+.tag-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  align-items: center;
+}
+
+.tag-filter {
+  padding: 10px 20px;
+  border: 2px solid var(--border);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--text);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: capitalize;
+}
+
+.tag-filter:hover {
+  background: #F2FBF9;
+  border-color: var(--ink);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(11, 128, 115, 0.15);
+}
+
+.tag-filter.active {
+  background: var(--ink);
+  color: #fff;
+  border-color: var(--ink);
+}
+
+.tag-filter.active:hover {
+  background: #0a7069;
+  border-color: #0a7069;
 }
 
 .article-card-title {
