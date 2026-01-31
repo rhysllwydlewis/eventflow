@@ -1,0 +1,68 @@
+/**
+ * Analytics Utility
+ * Provides tracking functions for user interactions
+ */
+
+/**
+ * Track search query
+ * @param {string} query - Search query
+ * @param {Object} filters - Applied filters
+ * @param {number} resultCount - Number of results returned
+ */
+export function trackSearch(query, filters, resultCount) {
+  if (typeof window.gtag === 'function') {
+    window.gtag('event', 'search', {
+      search_term: query,
+      filters: JSON.stringify(filters),
+      result_count: resultCount,
+    });
+  }
+  console.log('Search tracked:', { query, filters, resultCount });
+}
+
+/**
+ * Track filter change
+ * @param {string} filterType - Type of filter changed
+ * @param {string} value - New filter value
+ */
+export function trackFilterChange(filterType, value) {
+  if (typeof window.gtag === 'function') {
+    window.gtag('event', 'filter_change', {
+      filter_type: filterType,
+      filter_value: value,
+    });
+  }
+  console.log('Filter change tracked:', { filterType, value });
+}
+
+/**
+ * Track result click
+ * @param {string} type - Type of result (e.g., 'supplier')
+ * @param {string} id - Result ID
+ * @param {number} position - Position in results
+ */
+export function trackResultClick(type, id, position) {
+  if (typeof window.gtag === 'function') {
+    window.gtag('event', 'select_content', {
+      content_type: type,
+      content_id: id,
+      position: position,
+    });
+  }
+  console.log('Result click tracked:', { type, id, position });
+}
+
+/**
+ * Track shortlist add
+ * @param {string} type - Type of item (e.g., 'supplier')
+ * @param {string} id - Item ID
+ */
+export function trackShortlistAdd(type, id) {
+  if (typeof window.gtag === 'function') {
+    window.gtag('event', 'add_to_wishlist', {
+      content_type: type,
+      content_id: id,
+    });
+  }
+  console.log('Shortlist add tracked:', { type, id });
+}

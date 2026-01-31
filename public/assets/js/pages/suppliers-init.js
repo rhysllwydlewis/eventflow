@@ -415,6 +415,25 @@ async function initSuppliersPage() {
     });
   });
 
+  // Clear filters button (top of page)
+  const clearFiltersBtn = document.getElementById('clear-filters-btn-top');
+  if (clearFiltersBtn) {
+    clearFiltersBtn.addEventListener('click', () => {
+      currentFilters = { sort: 'relevance', page: 1 };
+      updateURL(currentFilters, true);
+      if (filterQueryEl) {
+        filterQueryEl.value = '';
+      }
+      if (filterCategoryEl) {
+        filterCategoryEl.value = '';
+      }
+      if (filterPriceEl) {
+        filterPriceEl.value = '';
+      }
+      renderResults();
+    });
+  }
+
   // Initial render
   populateFiltersFromURL();
   renderResults();
