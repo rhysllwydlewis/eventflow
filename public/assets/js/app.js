@@ -902,6 +902,39 @@ async function initSupplier() {
         <div id="review-pagination" class="review-pagination" style="display: none;" role="navigation" aria-label="Review pagination"></div>
       </section>
     </div>
+
+    <section class="section" style="animation: fadeInUp 0.5s ease-out 0.5s backwards;">
+      <div class="card">
+        <h2 style="font-size: 24px; font-weight: 600; margin-bottom: 16px;">Contact ${escapeHtml(s.name)}</h2>
+        <p class="small" style="margin-bottom: 20px; color: #6b7280;">Have a question? Send a message and get a response directly.</p>
+        <form id="supplier-contact-form" novalidate>
+          <div style="margin-bottom: 16px;">
+            <label for="contact-name" style="display: block; font-weight: 500; margin-bottom: 8px;">Name <span style="color: #ef4444;">*</span></label>
+            <input type="text" id="contact-name" name="name" required minlength="2" maxlength="100" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px;" placeholder="Your name">
+            <div id="contact-name-error" class="validation-error" style="display: none; color: #ef4444; font-size: 14px; margin-top: 4px;"></div>
+          </div>
+          
+          <div style="margin-bottom: 16px;">
+            <label for="contact-email" style="display: block; font-weight: 500; margin-bottom: 8px;">Email <span style="color: #ef4444;">*</span></label>
+            <input type="email" id="contact-email" name="email" required maxlength="100" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px;" placeholder="your.email@example.com">
+            <div id="contact-email-error" class="validation-error" style="display: none; color: #ef4444; font-size: 14px; margin-top: 4px;"></div>
+          </div>
+          
+          <div style="margin-bottom: 16px;">
+            <label for="contact-message" style="display: block; font-weight: 500; margin-bottom: 8px;">Message <span style="color: #ef4444;">*</span></label>
+            <textarea id="contact-message" name="message" required minlength="10" maxlength="1000" rows="5" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; resize: vertical;" placeholder="Tell us about your event..."></textarea>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+              <div id="contact-message-error" class="validation-error" style="display: none; color: #ef4444; font-size: 14px;"></div>
+              <div id="contact-message-count" style="font-size: 12px; color: #6b7280;">0 / 1000</div>
+            </div>
+          </div>
+          
+          <div class="form-actions">
+            <button type="submit" id="contact-submit-btn" class="cta" style="min-width: 150px;">Send Message</button>
+          </div>
+        </form>
+      </div>
+    </section>
   `;
 
   // Initialize lightbox gallery
@@ -1152,6 +1185,243 @@ async function initSupplier() {
       }
     }, RETRY_INTERVAL_MS);
   }
+
+  // Initialize contact form validation
+  initContactFormValidation(s.id, s.name);
+}
+
+/**
+ * Initialize contact form validation and submission
+ * @param {string} supplierId - The supplier ID
+ * @param {string} supplierName - The supplier name
+ */
+function initContactFormValidation(supplierId, supplierName) {
+  const form = document.getElementById('supplier-contact-form');
+  if (!form) {
+    return;
+  }
+
+  const nameInput = document.getElementById('contact-name');
+  const emailInput = document.getElementById('contact-email');
+  const messageInput = document.getElementById('contact-message');
+  const submitBtn = document.getElementById('contact-submit-btn');
+  const messageCount = document.getElementById('contact-message-count');
+
+  // Character counter for message
+  if (messageInput && messageCount) {
+    messageInput.addEventListener('input', () => {
+      const length = messageInput.value.length;
+      messageCount.textContent = `${length} / 1000`;
+
+      if (length > 1000) {
+        messageCount.style.color = '#ef4444';
+      } else if (length > 900) {
+        messageCount.style.color = '#f59e0b';
+      } else {
+        messageCount.style.color = '#6b7280';
+      }
+    });
+  }
+
+  // Real-time validation
+  const validateField = (field, errorElementId, validator) => {
+    const errorElement = document.getElementById(errorElementId);
+    const error = validator(field.value);
+
+    if (error) {
+      errorElement.textContent = error;
+      errorElement.style.display = 'block';
+      field.style.borderColor = '#ef4444';
+      return false;
+    } else {
+      errorElement.style.display = 'none';
+      field.style.borderColor = '#d1d5db';
+      return true;
+    }
+  };
+
+  // Validators
+  const validateName = value => {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return 'Name is required';
+    }
+    if (trimmed.length < 2) {
+      return 'Name must be at least 2 characters';
+    }
+    if (trimmed.length > 100) {
+      return 'Name must be less than 100 characters';
+    }
+    return null;
+  };
+
+  const validateEmail = value => {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return 'Email is required';
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trimmed)) {
+      return 'Please enter a valid email address';
+    }
+    if (trimmed.length > 100) {
+      return 'Email must be less than 100 characters';
+    }
+    return null;
+  };
+
+  const validateMessage = value => {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return 'Message is required';
+    }
+    if (trimmed.length < 10) {
+      return 'Message must be at least 10 characters';
+    }
+    if (trimmed.length > 1000) {
+      return 'Message must be less than 1000 characters';
+    }
+    return null;
+  };
+
+  // Add blur event listeners for real-time validation
+  if (nameInput) {
+    nameInput.addEventListener('blur', () => {
+      validateField(nameInput, 'contact-name-error', validateName);
+    });
+  }
+
+  if (emailInput) {
+    emailInput.addEventListener('blur', () => {
+      validateField(emailInput, 'contact-email-error', validateEmail);
+    });
+  }
+
+  if (messageInput) {
+    messageInput.addEventListener('blur', () => {
+      validateField(messageInput, 'contact-message-error', validateMessage);
+    });
+  }
+
+  // Form submission
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+
+    // Validate all fields
+    const nameValid = validateField(nameInput, 'contact-name-error', validateName);
+    const emailValid = validateField(emailInput, 'contact-email-error', validateEmail);
+    const messageValid = validateField(messageInput, 'contact-message-error', validateMessage);
+
+    if (!nameValid || !emailValid || !messageValid) {
+      // Scroll to first error
+      const firstError = document.querySelector('.validation-error[style*="display: block"]');
+      if (firstError) {
+        firstError.closest('div').querySelector('input, textarea').focus();
+      }
+      return;
+    }
+
+    // Disable submit button
+    submitBtn.disabled = true;
+    submitBtn.style.opacity = '0.5';
+    submitBtn.style.cursor = 'not-allowed';
+    submitBtn.textContent = 'Sending...';
+
+    try {
+      const formData = {
+        name: nameInput.value.trim(),
+        email: emailInput.value.trim(),
+        message: messageInput.value.trim(),
+        supplierId: supplierId,
+      };
+
+      const response = await fetch('/api/contact-supplier', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': window.__CSRF_TOKEN__ || '',
+        },
+        credentials: 'include',
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Show success message
+        showToast(`Message sent successfully! ${supplierName} will respond soon.`, 'success');
+
+        // Reset form
+        form.reset();
+        messageCount.textContent = '0 / 1000';
+        messageCount.style.color = '#6b7280';
+
+        // Clear any error states
+        document.querySelectorAll('.validation-error').forEach(el => (el.style.display = 'none'));
+        [nameInput, emailInput, messageInput].forEach(input => {
+          if (input) {
+            input.style.borderColor = '#d1d5db';
+          }
+        });
+      } else {
+        showToast(data.error || 'Failed to send message. Please try again.', 'error');
+      }
+    } catch (error) {
+      console.error('Error sending contact message:', error);
+      showToast('Network error. Please check your connection and try again.', 'error');
+    } finally {
+      // Re-enable submit button
+      submitBtn.disabled = false;
+      submitBtn.style.opacity = '1';
+      submitBtn.style.cursor = 'pointer';
+      submitBtn.textContent = 'Send Message';
+    }
+  });
+}
+
+/**
+ * Show toast notification
+ * @param {string} message - Toast message
+ * @param {string} type - Toast type (success, error, info)
+ */
+function showToast(message, type = 'info') {
+  const existingToast = document.querySelector('.toast-notification');
+  if (existingToast) {
+    existingToast.remove();
+  }
+
+  const toast = document.createElement('div');
+  toast.className = 'toast-notification';
+  toast.textContent = message;
+
+  const colors = {
+    success: '#10b981',
+    error: '#ef4444',
+    info: '#3b82f6',
+  };
+
+  toast.style.cssText = `
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: ${colors[type] || colors.info};
+    color: white;
+    padding: 16px 24px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 10000;
+    animation: slideInUp 0.3s ease-out;
+    max-width: 400px;
+    font-size: 14px;
+    line-height: 1.5;
+  `;
+
+  document.body.appendChild(toast);
+
+  setTimeout(() => {
+    toast.style.animation = 'slideOutDown 0.3s ease-out';
+    setTimeout(() => toast.remove(), 300);
+  }, 5000);
 }
 
 /**
