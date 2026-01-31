@@ -182,21 +182,25 @@ async function initMarketplacePage() {
   }
 
   // Render results
-  async function renderResults() {
+  async function renderResults(append = false) {
     if (isLoading) {
       return;
     }
     isLoading = true;
 
     // Show skeleton loading
-    resultsContainer.innerHTML = createSkeletonCards();
+    if (!append) {
+      resultsContainer.innerHTML = createSkeletonCards();
+    }
 
     try {
       const data = await searchListings(currentFilters, currentFilters.page);
       const { results, pagination } = data;
 
       // Track search
-      trackSearch(currentFilters.q || '', currentFilters, pagination.total);
+      if (!append) {
+        trackSearch(currentFilters.q || '', currentFilters, pagination.total);
+      }
 
       // Update result count
       if (resultCountEl) {
@@ -204,17 +208,31 @@ async function initMarketplacePage() {
       }
 
       // Render results or empty state
-      if (results.length === 0) {
+      if (results.length === 0 && !append) {
         resultsContainer.innerHTML = createEmptyState(currentFilters);
         attachEmptyStateHandlers();
       } else {
-        resultsContainer.innerHTML = results
-          .map((listing, index) => createListingCard(listing, index + 1))
+        const cardsHTML = results
+          .map((listing, index) => createListingCard(listing, ((currentFilters.page - 1) * 20) + index + 1))
           .join('');
+        
+        if (append) {
+          // Remove load more button before appending
+          const loadMoreBtn = document.getElementById('marketplace-load-more-btn');
+          if (loadMoreBtn) {
+            loadMoreBtn.remove();
+          }
+          resultsContainer.insertAdjacentHTML('beforeend', cardsHTML);
+        } else {
+          resultsContainer.innerHTML = cardsHTML;
+        }
         attachCardHandlers();
+        
+        // Add Load More button if there are more pages
+        if (pagination.page < pagination.totalPages) {
+          addLoadMoreButton(pagination);
+        }
       }
-
-      // TODO: Add pagination controls
     } catch (error) {
       console.error('Render error:', error);
       resultsContainer.innerHTML =
@@ -222,6 +240,29 @@ async function initMarketplacePage() {
     } finally {
       isLoading = false;
     }
+  }
+
+  // Add Load More button
+  function addLoadMoreButton(pagination) {
+    const existingBtn = document.getElementById('marketplace-load-more-btn');
+    if (existingBtn) {
+      existingBtn.remove();
+    }
+
+    const loadMoreHTML = `
+      <div style="text-align: center; margin: 2rem 0;">
+        <button id="marketplace-load-more-btn" class="btn btn-secondary">
+          Load More (${pagination.page} of ${pagination.totalPages})
+        </button>
+      </div>
+    `;
+    resultsContainer.insertAdjacentHTML('beforeend', loadMoreHTML);
+
+    const loadMoreBtn = document.getElementById('marketplace-load-more-btn');
+    loadMoreBtn.addEventListener('click', async () => {
+      currentFilters.page = (currentFilters.page || 1) + 1;
+      await renderResults(true);
+    });
   }
 
   // Attach handlers to listing cards
