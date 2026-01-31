@@ -1,0 +1,233 @@
+/**
+ * P3-08: Image Carousel/Lightbox
+ * Simple, accessible image carousel for galleries
+ */
+
+(function () {
+  'use strict';
+
+  let currentIndex = 0;
+  let images = [];
+  let carousel = null;
+
+  /**
+   * Initialize image carousel on gallery images
+   */
+  function initCarousel() {
+    const galleryImages = document.querySelectorAll('.gallery-image, .supplier-photo, .photo-item');
+    
+    if (galleryImages.length === 0) return;
+
+    // Store images data
+    images = Array.from(galleryImages).map((img, index) => ({
+      src: img.dataset.fullsize || img.src,
+      alt: img.alt || `Image ${index + 1}`,
+      caption: img.dataset.caption || img.title || '',
+    }));
+
+    // Add click handlers to images
+    galleryImages.forEach((img, index) => {
+      img.style.cursor = 'pointer';
+      img.addEventListener('click', () => openCarousel(index));
+    });
+
+    createCarouselModal();
+    console.log(`✓ Image carousel initialized with ${images.length} images`);
+  }
+
+  /**
+   * Create carousel modal structure
+   */
+  function createCarouselModal() {
+    if (document.getElementById('image-carousel-modal')) return;
+
+    const modal = document.createElement('div');
+    modal.id = 'image-carousel-modal';
+    modal.className = 'image-carousel-modal';
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-label', 'Image carousel');
+    modal.style.display = 'none';
+
+    modal.innerHTML = `
+      <div class="carousel-overlay" onclick="ImageCarousel.close()"></div>
+      <div class="carousel-content">
+        <button 
+          type="button"
+          class="carousel-close" 
+          onclick="ImageCarousel.close()"
+          aria-label="Close carousel"
+        >
+          <span aria-hidden="true">×</span>
+        </button>
+        
+        <button 
+          type="button"
+          class="carousel-nav carousel-prev" 
+          onclick="ImageCarousel.prev()"
+          aria-label="Previous image"
+        >
+          <span aria-hidden="true">‹</span>
+        </button>
+        
+        <div class="carousel-image-container">
+          <img 
+            id="carousel-image" 
+            src="" 
+            alt="" 
+            class="carousel-image"
+          />
+          <div id="carousel-caption" class="carousel-caption"></div>
+        </div>
+        
+        <button 
+          type="button"
+          class="carousel-nav carousel-next" 
+          onclick="ImageCarousel.next()"
+          aria-label="Next image"
+        >
+          <span aria-hidden="true">›</span>
+        </button>
+        
+        <div class="carousel-counter" id="carousel-counter" aria-live="polite">
+          <span id="carousel-current">1</span> / <span id="carousel-total">1</span>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+    carousel = modal;
+
+    // Keyboard navigation
+    document.addEventListener('keydown', handleKeyboard);
+  }
+
+  /**
+   * Open carousel at specific index
+   */
+  function openCarousel(index = 0) {
+    if (!carousel || images.length === 0) return;
+
+    currentIndex = index;
+    updateCarouselImage();
+    
+    carousel.style.display = 'flex';
+    carousel.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+    
+    // Focus the carousel for keyboard navigation
+    carousel.focus();
+  }
+
+  /**
+   * Close carousel
+   */
+  function closeCarousel() {
+    if (!carousel) return;
+
+    carousel.style.display = 'none';
+    carousel.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+  }
+
+  /**
+   * Show next image
+   */
+  function nextImage() {
+    if (images.length === 0) return;
+    currentIndex = (currentIndex + 1) % images.length;
+    updateCarouselImage();
+  }
+
+  /**
+   * Show previous image
+   */
+  function prevImage() {
+    if (images.length === 0) return;
+    currentIndex = (currentIndex - 1 + images.length) % images.length;
+    updateCarouselImage();
+  }
+
+  /**
+   * Update carousel image display
+   */
+  function updateCarouselImage() {
+    const img = document.getElementById('carousel-image');
+    const caption = document.getElementById('carousel-caption');
+    const current = document.getElementById('carousel-current');
+    const total = document.getElementById('carousel-total');
+
+    if (!img || !images[currentIndex]) return;
+
+    const image = images[currentIndex];
+    
+    // Fade out
+    img.style.opacity = '0';
+    
+    setTimeout(() => {
+      img.src = image.src;
+      img.alt = image.alt;
+      
+      if (image.caption) {
+        caption.textContent = image.caption;
+        caption.style.display = 'block';
+      } else {
+        caption.style.display = 'none';
+      }
+
+      current.textContent = currentIndex + 1;
+      total.textContent = images.length;
+
+      // Fade in
+      img.style.opacity = '1';
+    }, 150);
+
+    // Update navigation buttons visibility
+    const prevBtn = carousel.querySelector('.carousel-prev');
+    const nextBtn = carousel.querySelector('.carousel-next');
+    
+    if (images.length <= 1) {
+      prevBtn.style.display = 'none';
+      nextBtn.style.display = 'none';
+    } else {
+      prevBtn.style.display = 'flex';
+      nextBtn.style.display = 'flex';
+    }
+  }
+
+  /**
+   * Handle keyboard navigation
+   */
+  function handleKeyboard(e) {
+    if (!carousel || carousel.style.display === 'none') return;
+
+    switch (e.key) {
+      case 'Escape':
+        closeCarousel();
+        break;
+      case 'ArrowLeft':
+        prevImage();
+        break;
+      case 'ArrowRight':
+        nextImage();
+        break;
+    }
+  }
+
+  // Initialize when DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initCarousel);
+  } else {
+    initCarousel();
+  }
+
+  // Export public API
+  if (typeof window !== 'undefined') {
+    window.ImageCarousel = {
+      init: initCarousel,
+      open: openCarousel,
+      close: closeCarousel,
+      next: nextImage,
+      prev: prevImage,
+    };
+  }
+})();

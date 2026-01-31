@@ -300,4 +300,81 @@ router.get('/invoices/:id/download', authRequired, async (req, res) => {
   }
 });
 
+/**
+ * GET /api/supplier/enquiries/export
+ * Export enquiries to CSV for supplier
+ */
+router.get('/enquiries/export', authRequired, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    if (req.user.role !== 'supplier') {
+      return res.status(403).json({ error: 'Only suppliers can export enquiries' });
+    }
+
+    const suppliers = await dbUnified.read('suppliers');
+    const supplier = suppliers.find(s => s.ownerUserId === userId);
+
+    if (!supplier) {
+      return res.status(404).json({ error: 'Supplier profile not found' });
+    }
+
+    // Get quote requests for this supplier
+    const quoteRequests = await dbUnified.read('quoteRequests');
+    const supplierEnquiries = quoteRequests.filter(q => q.supplierId === supplier.id);
+
+    // Get user details for enquiries
+    const users = await dbUnified.read('users');
+    const userMap = {};
+    users.forEach(u => {
+      userMap[u.id] = u;
+    });
+
+    // Build CSV
+    const headers = [
+      'Date',
+      'Customer Name',
+      'Customer Email',
+      'Event Type',
+      'Event Date',
+      'Location',
+      'Budget',
+      'Guest Count',
+      'Status',
+      'Message',
+    ].join(',');
+
+    const rows = supplierEnquiries.map(enq => {
+      const user = userMap[enq.customerId] || {};
+      const date = new Date(enq.createdAt).toLocaleDateString('en-GB');
+      const eventDate = enq.eventDate ? new Date(enq.eventDate).toLocaleDateString('en-GB') : 'N/A';
+      
+      return [
+        date,
+        `"${user.name || 'N/A'}"`,
+        `"${user.email || 'N/A'}"`,
+        `"${enq.eventType || 'N/A'}"`,
+        eventDate,
+        `"${enq.location || 'N/A'}"`,
+        `"${enq.budget || 'N/A'}"`,
+        enq.guestCount || 'N/A',
+        `"${enq.status || 'pending'}"`,
+        `"${(enq.message || '').replace(/"/g, '""')}"`,
+      ].join(',');
+    });
+
+    const csv = [headers, ...rows].join('\n');
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="enquiries-${new Date().toISOString().split('T')[0]}.csv"`
+    );
+    res.send(csv);
+  } catch (error) {
+    console.error('Error exporting enquiries:', error);
+    res.status(500).json({ error: 'Failed to export enquiries', details: error.message });
+  }
+});
+
 module.exports = router;
