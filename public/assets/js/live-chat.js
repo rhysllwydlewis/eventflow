@@ -3,9 +3,9 @@
  * Simple live chat widget for customer support
  */
 
-(function() {
+(function () {
   'use strict';
-  
+
   // Chat widget HTML
   const chatWidgetHTML = `
     <div id="ef-chat-widget" class="ef-chat-widget">
@@ -22,7 +22,7 @@
             <div class="ef-chat-message-content">
               👋 Hello! How can we help you today?
             </div>
-            <div class="ef-chat-message-time">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+            <div class="ef-chat-message-time">${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
           </div>
         </div>
         <div class="ef-chat-input-container">
@@ -38,7 +38,7 @@
       </div>
     </div>
   `;
-  
+
   // Chat widget CSS
   const chatWidgetCSS = `
     .ef-chat-widget {
@@ -235,7 +235,7 @@
       transform: scale(0.98);
     }
   `;
-  
+
   /**
    * Initialize chat widget
    */
@@ -244,10 +244,10 @@
     const style = document.createElement('style');
     style.textContent = chatWidgetCSS;
     document.head.appendChild(style);
-    
+
     // Inject HTML
     document.body.insertAdjacentHTML('beforeend', chatWidgetHTML);
-    
+
     // Get elements
     const chatToggle = document.getElementById('ef-chat-toggle');
     const chatBox = document.getElementById('ef-chat-box');
@@ -255,73 +255,75 @@
     const chatInput = document.getElementById('ef-chat-input');
     const chatSend = document.getElementById('ef-chat-send');
     const chatMessages = document.getElementById('ef-chat-messages');
-    
+
     // Toggle chat visibility
     function toggleChat() {
       const isVisible = chatBox.style.display !== 'none';
       chatBox.style.display = isVisible ? 'none' : 'flex';
-      
+
       if (!isVisible) {
         chatInput.focus();
       }
     }
-    
+
     // Add message to chat
     function addMessage(content, isUser = false) {
-      const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+      const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       const messageHTML = `
         <div class="ef-chat-message ${isUser ? 'ef-chat-user-message' : 'ef-chat-bot-message'}">
           <div class="ef-chat-message-content">${escapeHtml(content)}</div>
           <div class="ef-chat-message-time">${time}</div>
         </div>
       `;
-      
+
       chatMessages.insertAdjacentHTML('beforeend', messageHTML);
       chatMessages.scrollTop = chatMessages.scrollHeight;
     }
-    
+
     // Escape HTML to prevent XSS
     function escapeHtml(text) {
       const div = document.createElement('div');
       div.textContent = text;
       return div.innerHTML;
     }
-    
+
     // Send message
     function sendMessage() {
       const message = chatInput.value.trim();
-      
-      if (!message) return;
-      
+
+      if (!message) {
+        return;
+      }
+
       // Add user message
       addMessage(message, true);
       chatInput.value = '';
-      
+
       // Simulate bot response (in production, this would connect to a real chat service)
       setTimeout(() => {
         const responses = [
-          "Thanks for your message! A team member will respond shortly.",
+          'Thanks for your message! A team member will respond shortly.',
           "I'll connect you with our support team right away.",
-          "Great question! Let me find that information for you.",
-          "Our team is here to help. You can also check our FAQ at /faq.html",
+          'Great question! Let me find that information for you.',
+          'Our team is here to help. You can also check our FAQ at /faq.html',
         ];
-        
+
         const randomResponse = responses[Math.floor(Math.random() * responses.length)];
         addMessage(randomResponse, false);
       }, 1000);
     }
-    
+
     // Event listeners
     chatToggle.addEventListener('click', toggleChat);
     chatMinimize.addEventListener('click', toggleChat);
     chatSend.addEventListener('click', sendMessage);
-    chatInput.addEventListener('keypress', (e) => {
+    chatInput.addEventListener('keypress', e => {
       if (e.key === 'Enter') {
         sendMessage();
       }
     });
   }
-  
+
   // Initialize when DOM is ready
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initChatWidget);

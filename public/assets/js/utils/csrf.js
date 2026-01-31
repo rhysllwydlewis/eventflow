@@ -57,6 +57,7 @@ async function fetchWithCsrf(url, options = {}) {
   // Only add CSRF for state-changing methods
   const method = (options.method || 'GET').toUpperCase();
   if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+    // eslint-disable-next-line no-param-reassign
     options = addCsrfToken(options);
   }
 

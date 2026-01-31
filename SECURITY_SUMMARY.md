@@ -63,6 +63,7 @@
 #### Input Validation
 
 ✅ CSRF protection on all mutations (`csrfProtection`)  
+✅ CSRF protection on FAQ voting endpoint  
 ✅ CSV escaping to prevent injection attacks  
 ✅ File path validation (prevents directory traversal)  
 ✅ Environment variable checks before usage
@@ -72,7 +73,8 @@
 ✅ Authentication endpoints: 100 req/15 min  
 ✅ Write operations: 80 req/10 min  
 ✅ File system operations: 80 req/10 min  
-✅ Email resend: 3 req/15 min per email
+✅ Email resend: 3 req/15 min per email  
+✅ FAQ voting: Rate limited with writeLimiter
 
 #### Audit Logging
 

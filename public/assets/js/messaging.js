@@ -11,6 +11,8 @@ class MessagingSystem {
   constructor() {
     this.pollingIntervals = [];
     this.apiBase = '/api';
+    this.badgeElement = null;
+    this.lastUnreadCount = -1; // Initialize to -1 so first update (even 0) triggers animation
   }
 
   /**
@@ -94,14 +96,21 @@ class MessagingSystem {
    * @returns {Function} Unsubscribe function
    */
   listenToUnreadCount(userId, userType, callback) {
-    if (!this.useFirebase) {
-      // Fallback: Use MongoDB API
-      this.fetchUnreadCountFromAPI(userId, userType, callback);
-      return () => {}; // No-op unsubscribe
-    }
+    // MongoDB API - Use polling
+    this.fetchUnreadCountFromAPI(userId, userType, callback);
 
-    callback(0);
-    return () => {};
+    // Poll for updates every 30 seconds
+    const pollInterval = setInterval(() => {
+      this.fetchUnreadCountFromAPI(userId, userType, callback);
+    }, 30000);
+
+    this.pollingIntervals.push(pollInterval);
+
+    // Return unsubscribe function
+    return () => {
+      clearInterval(pollInterval);
+      this.pollingIntervals = this.pollingIntervals.filter(i => i !== pollInterval);
+    };
   }
 
   // MongoDB API fallback methods
@@ -299,7 +308,7 @@ class MessagingManager {
         await this.refreshUnreadCount();
         return true;
       }
-      
+
       console.error('Failed to mark messages as read');
       return false;
     } catch (error) {
@@ -326,7 +335,7 @@ class MessagingManager {
       const count = data.count || data.unreadCount || 0;
 
       this.updateBadge(count);
-      
+
       const event = new CustomEvent('unreadCountUpdated', {
         detail: { count },
       });
@@ -345,10 +354,11 @@ class MessagingManager {
    */
   updateBadge(count) {
     if (!this.badgeElement) {
-      this.badgeElement = document.getElementById('unread-badge') 
-        || document.getElementById('message-badge')
-        || document.querySelector('.unread-badge')
-        || document.querySelector('[data-unread-badge]');
+      this.badgeElement =
+        document.getElementById('unread-badge') ||
+        document.getElementById('message-badge') ||
+        document.querySelector('.unread-badge') ||
+        document.querySelector('[data-unread-badge]');
     }
 
     if (!this.badgeElement) {
@@ -358,7 +368,7 @@ class MessagingManager {
     if (count > 0) {
       this.badgeElement.textContent = count > 99 ? '99+' : count.toString();
       this.badgeElement.style.display = 'inline-block';
-      
+
       if (count !== this.lastUnreadCount) {
         this.animateBadge();
       }
@@ -378,7 +388,7 @@ class MessagingManager {
     }
 
     this.badgeElement.classList.add('badge-animate');
-    
+
     setTimeout(() => {
       this.badgeElement.classList.remove('badge-animate');
     }, 300);
@@ -405,7 +415,7 @@ class MessagingManager {
    */
   startUnreadCountPolling(interval = 30000) {
     this.refreshUnreadCount();
-    
+
     return setInterval(() => {
       this.refreshUnreadCount();
     }, interval);

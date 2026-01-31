@@ -629,7 +629,9 @@ function isDevelopmentEnvironment() {
 /**
  * Detect WebP support
  * @returns {Promise<boolean>} True if browser supports WebP
+ * Note: Currently unused but kept for potential future image optimization
  */
+// eslint-disable-next-line no-unused-vars
 async function supportsWebP() {
   if (window.__webpSupported !== undefined) {
     return window.__webpSupported;
@@ -1806,12 +1808,9 @@ async function initCollageWidget(widgetConfig) {
     uploadGallery,
     fallbackToPexels,
     heroVideo,
-    videoQuality,
     transition,
     preloading,
     mobileOptimizations,
-    contentFiltering,
-    playbackControls,
   } = widgetConfig;
 
   // Default mediaTypes to enable videos if not explicitly configured
@@ -2338,6 +2337,7 @@ async function loadMediaIntoFrame(
       }
 
       // Declare timeout ID that will be set later
+      // eslint-disable-next-line prefer-const
       let timeoutId;
 
       // Use named functions for easier cleanup

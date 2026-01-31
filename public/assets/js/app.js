@@ -502,6 +502,7 @@ async function initResults() {
 // Helper function to adjust color brightness
 function adjustColorBrightness(hex, percent) {
   // Remove # if present
+  // eslint-disable-next-line no-param-reassign
   hex = hex.replace('#', '');
 
   // Convert to RGB
@@ -1108,8 +1109,8 @@ async function initSupplier() {
         const res = await fetch('/api/me/saved', { credentials: 'include' });
         if (res.ok) {
           const data = await res.json();
-          const isSaved = data.savedItems.some(item => 
-            item.itemType === 'supplier' && item.itemId === s.id
+          const isSaved = data.savedItems.some(
+            item => item.itemType === 'supplier' && item.itemId === s.id
           );
           saveSupplierBtn.textContent = isSaved ? '❤️ Saved' : '♡ Save';
           saveSupplierBtn.dataset.saved = isSaved ? 'true' : 'false';
@@ -1128,24 +1129,24 @@ async function initSupplier() {
       }
 
       const isSaved = saveSupplierBtn.dataset.saved === 'true';
-      
+
       try {
         if (isSaved) {
           // Find and unsave
           const res = await fetch('/api/me/saved', { credentials: 'include' });
           if (res.ok) {
             const data = await res.json();
-            const savedItem = data.savedItems.find(item => 
-              item.itemType === 'supplier' && item.itemId === s.id
+            const savedItem = data.savedItems.find(
+              item => item.itemType === 'supplier' && item.itemId === s.id
             );
-            
+
             if (savedItem) {
               const deleteRes = await fetch(`/api/me/saved/${savedItem.id}`, {
                 method: 'DELETE',
                 headers: { 'X-CSRF-Token': window.__CSRF_TOKEN__ || '' },
                 credentials: 'include',
               });
-              
+
               if (deleteRes.ok) {
                 saveSupplierBtn.textContent = '♡ Save';
                 saveSupplierBtn.dataset.saved = 'false';

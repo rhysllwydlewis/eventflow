@@ -7,45 +7,47 @@ class VoiceInput {
   constructor() {
     // Check for browser support
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    
+
     if (!SpeechRecognition) {
       this.supported = false;
       console.warn('Speech Recognition API not supported in this browser');
       return;
     }
-    
+
     this.supported = true;
     this.recognition = new SpeechRecognition();
     this.recognition.continuous = true;
     this.recognition.interimResults = true;
     this.recognition.lang = 'en-GB'; // British English
-    
+
     this.isListening = false;
     this.targetTextarea = null;
     this.finalTranscript = '';
     this.interimTranscript = '';
     this.restartAttempts = 0;
     this.maxRestartAttempts = 5; // Prevent infinite restart loops
-    
+
     // Set up event handlers
     this.setupEventHandlers();
   }
-  
+
   /**
    * Setup speech recognition event handlers
    */
   setupEventHandlers() {
-    if (!this.recognition) return;
-    
+    if (!this.recognition) {
+      return;
+    }
+
     this.recognition.onstart = () => {
       this.isListening = true;
       this.onStart();
     };
-    
+
     this.recognition.onend = () => {
       this.isListening = false;
       this.onEnd();
-      
+
       // Restart if we're supposed to be listening (with retry limit)
       if (this.shouldBeListening && this.restartAttempts < this.maxRestartAttempts) {
         this.restartAttempts++;
@@ -63,10 +65,10 @@ class VoiceInput {
         this.onError('Voice recognition stopped after multiple failures');
       }
     };
-    
-    this.recognition.onerror = (event) => {
+
+    this.recognition.onerror = event => {
       console.debug('Speech recognition error:', event.error);
-      
+
       // Handle specific errors
       if (event.error === 'not-allowed') {
         this.onError('Microphone access denied. Please allow microphone access.');
@@ -76,27 +78,27 @@ class VoiceInput {
         this.onError(`Speech recognition error: ${event.error}`);
       }
     };
-    
-    this.recognition.onresult = (event) => {
+
+    this.recognition.onresult = event => {
       this.interimTranscript = '';
-      
+
       // Process all results
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const transcript = event.results[i][0].transcript;
-        
+
         if (event.results[i].isFinal) {
-          this.finalTranscript += transcript + ' ';
+          this.finalTranscript += `${transcript} `;
         } else {
           this.interimTranscript += transcript;
         }
       }
-      
+
       // Update the textarea
       this.updateTextarea();
       this.onResult(this.finalTranscript, this.interimTranscript);
     };
   }
-  
+
   /**
    * Start listening to voice input
    * @param {HTMLTextAreaElement} textarea - The textarea to update with transcription
@@ -106,18 +108,18 @@ class VoiceInput {
       this.onError('Voice input not supported in this browser');
       return;
     }
-    
+
     if (this.isListening) {
       console.debug('Already listening');
       return;
     }
-    
+
     this.targetTextarea = textarea;
     this.finalTranscript = textarea.value || '';
     this.interimTranscript = '';
     this.shouldBeListening = true;
     this.restartAttempts = 0; // Reset retry counter
-    
+
     try {
       this.recognition.start();
     } catch (error) {
@@ -125,38 +127,42 @@ class VoiceInput {
       this.onError('Failed to start voice input');
     }
   }
-  
+
   /**
    * Stop listening to voice input
    */
   stop() {
-    if (!this.supported) return;
-    
+    if (!this.supported) {
+      return;
+    }
+
     this.shouldBeListening = false;
     this.isListening = false;
-    
+
     try {
       this.recognition.stop();
     } catch (error) {
       console.debug('Error stopping recognition:', error);
     }
   }
-  
+
   /**
    * Update the target textarea with transcription
    */
   updateTextarea() {
-    if (!this.targetTextarea) return;
-    
+    if (!this.targetTextarea) {
+      return;
+    }
+
     // Combine final and interim transcript
     const fullTranscript = this.finalTranscript + this.interimTranscript;
     this.targetTextarea.value = fullTranscript;
-    
+
     // Trigger input event for any listeners
     const event = new Event('input', { bubbles: true });
     this.targetTextarea.dispatchEvent(event);
   }
-  
+
   /**
    * Clear transcription and reset
    */
@@ -167,34 +173,39 @@ class VoiceInput {
       this.targetTextarea.value = '';
     }
   }
-  
+
   /**
    * Check if voice input is supported
    */
   isSupported() {
     return this.supported;
   }
-  
+
   /**
    * Check if currently listening
    */
   isActive() {
     return this.isListening;
   }
-  
+
   // Override these methods to handle events
   onStart() {
     console.log('Voice input started');
   }
-  
+
   onEnd() {
     console.log('Voice input ended');
   }
-  
-  onResult(finalTranscript, interimTranscript) {
+
+  /**
+   * Override this method to handle transcription results
+   * @param {string} _finalTranscript - The final transcribed text (unused in base implementation)
+   * @param {string} _interimTranscript - The interim transcribed text (unused in base implementation)
+   */
+  onResult(_finalTranscript, _interimTranscript) {
     // Override to handle results
   }
-  
+
   onError(error) {
     console.error('Voice input error:', error);
   }
@@ -212,7 +223,7 @@ function createVoiceInputButton(textarea, options = {}) {
     listeningClass = 'listening',
     position = 'after', // 'before' or 'after' textarea
   } = options;
-  
+
   // Create button
   const button = document.createElement('button');
   button.type = 'button';
@@ -220,10 +231,10 @@ function createVoiceInputButton(textarea, options = {}) {
   button.innerHTML = '🎤';
   button.title = 'Voice input';
   button.setAttribute('aria-label', 'Start voice input');
-  
+
   // Create voice input instance
   const voiceInput = new VoiceInput();
-  
+
   // Check support
   if (!voiceInput.isSupported()) {
     button.disabled = true;
@@ -231,11 +242,13 @@ function createVoiceInputButton(textarea, options = {}) {
     button.style.opacity = '0.5';
     button.style.cursor = 'not-allowed';
   }
-  
+
   // Handle button click
   button.addEventListener('click', () => {
-    if (!voiceInput.isSupported()) return;
-    
+    if (!voiceInput.isSupported()) {
+      return;
+    }
+
     if (voiceInput.isActive()) {
       // Stop listening
       voiceInput.stop();
@@ -250,31 +263,31 @@ function createVoiceInputButton(textarea, options = {}) {
       button.setAttribute('aria-label', 'Stop voice input');
     }
   });
-  
+
   // Override event handlers
   voiceInput.onStart = () => {
     button.classList.add(listeningClass);
     button.innerHTML = '⏹️';
   };
-  
+
   voiceInput.onEnd = () => {
     button.classList.remove(listeningClass);
     button.innerHTML = '🎤';
   };
-  
-  voiceInput.onError = (error) => {
+
+  voiceInput.onError = error => {
     alert(error);
     button.classList.remove(listeningClass);
     button.innerHTML = '🎤';
   };
-  
+
   // Insert button
   if (position === 'before') {
     textarea.parentNode.insertBefore(button, textarea);
   } else {
     textarea.parentNode.insertBefore(button, textarea.nextSibling);
   }
-  
+
   return button;
 }
 

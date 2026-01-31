@@ -58,7 +58,8 @@ describe('Badge Management', () => {
     it('should have emoji icons for all badges', () => {
       const badges = badgeManagement.BADGE_DEFINITIONS;
 
-      for (const [key, badge] of Object.entries(badges)) {
+      // eslint-disable-next-line no-unused-vars
+      for (const [_key, badge] of Object.entries(badges)) {
         expect(badge.icon).toBeDefined();
         expect(typeof badge.icon).toBe('string');
         expect(badge.icon.length).toBeGreaterThan(0);
@@ -68,7 +69,8 @@ describe('Badge Management', () => {
     it('should have color codes for all badges', () => {
       const badges = badgeManagement.BADGE_DEFINITIONS;
 
-      for (const [key, badge] of Object.entries(badges)) {
+      // eslint-disable-next-line no-unused-vars
+      for (const [_key, badge] of Object.entries(badges)) {
         expect(badge.color).toBeDefined();
         expect(typeof badge.color).toBe('string');
         expect(badge.color).toMatch(/^#[0-9A-F]{6}$/i);

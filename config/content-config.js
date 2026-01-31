@@ -13,27 +13,6 @@ function getCurrentYear() {
 }
 
 /**
- * Format date as "Month YYYY" (e.g., "January 2026")
- */
-function formatMonthYear(date) {
-  const months = [
-    'January',
-    'February',
-    'March',
-    'April',
-    'May',
-    'June',
-    'July',
-    'August',
-    'September',
-    'October',
-    'November',
-    'December',
-  ];
-  return `${months[date.getMonth()]} ${date.getFullYear()}`;
-}
-
-/**
  * Content configuration object
  * All placeholders used in HTML templates are defined here
  */

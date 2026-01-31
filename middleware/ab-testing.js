@@ -69,15 +69,15 @@ function hashCode(str) {
  */
 function assignVariant(userId, experimentName) {
   const experiment = experiments[experimentName];
-  
+
   if (!experiment || !experiment.active) {
     return 'control';
   }
-  
+
   const variants = Object.keys(experiment.variants);
   const hash = hashCode(userId + experimentName);
   const variantIndex = hash % variants.length;
-  
+
   return variants[variantIndex];
 }
 
@@ -95,7 +95,7 @@ router.get('/', async (req, res) => {
         description: exp.description,
         variantCount: Object.keys(exp.variants).length,
       }));
-    
+
     res.json({
       success: true,
       experiments: activeExperiments,
@@ -113,19 +113,19 @@ router.get('/', async (req, res) => {
 router.get('/:name/variant', async (req, res) => {
   try {
     const experimentName = req.params.name;
-    
+
     // Check if experiment exists
     if (!experiments[experimentName]) {
       return res.status(404).json({ error: 'Experiment not found' });
     }
-    
+
     // Get user ID (from auth or session)
     const userId = req.user?.id || req.sessionID || crypto.randomBytes(16).toString('hex');
-    
+
     // Assign variant
     const variant = assignVariant(userId, experimentName);
     const variantValue = experiments[experimentName].variants[variant];
-    
+
     res.json({
       success: true,
       experiment: experimentName,
@@ -146,20 +146,20 @@ router.post('/:name/convert', csrfProtection, async (req, res) => {
   try {
     const experimentName = req.params.name;
     const { variant, metadata } = req.body;
-    
+
     // Validate experiment
     if (!experiments[experimentName]) {
       return res.status(404).json({ error: 'Experiment not found' });
     }
-    
+
     // Validate variant
     if (!experiments[experimentName].variants[variant]) {
       return res.status(400).json({ error: 'Invalid variant' });
     }
-    
+
     // Get user ID
     const userId = req.user?.id || req.sessionID || 'anonymous';
-    
+
     // Store conversion
     const conversions = await dbUnified.read('ab_conversions');
     const conversion = {
@@ -172,10 +172,10 @@ router.post('/:name/convert', csrfProtection, async (req, res) => {
       userAgent: req.headers['user-agent'],
       ip: req.ip,
     };
-    
+
     conversions.push(conversion);
     await dbUnified.write('ab_conversions', conversions);
-    
+
     res.json({ success: true, message: 'Conversion tracked' });
   } catch (error) {
     console.error('Error tracking conversion:', error);
@@ -192,20 +192,20 @@ router.post('/:name/view', csrfProtection, async (req, res) => {
   try {
     const experimentName = req.params.name;
     const { variant } = req.body;
-    
+
     // Validate experiment
     if (!experiments[experimentName]) {
       return res.status(404).json({ error: 'Experiment not found' });
     }
-    
+
     // Validate variant
     if (!experiments[experimentName].variants[variant]) {
       return res.status(400).json({ error: 'Invalid variant' });
     }
-    
+
     // Get user ID
     const userId = req.user?.id || req.sessionID || 'anonymous';
-    
+
     // Store view
     const views = await dbUnified.read('ab_views');
     const view = {
@@ -215,9 +215,9 @@ router.post('/:name/view', csrfProtection, async (req, res) => {
       userId,
       timestamp: new Date().toISOString(),
     };
-    
+
     views.push(view);
-    
+
     // Keep only recent views (prevent unbounded growth) - use slice for efficiency
     if (views.length > 10000) {
       const trimmedViews = views.slice(-10000);
@@ -225,7 +225,7 @@ router.post('/:name/view', csrfProtection, async (req, res) => {
     } else {
       await dbUnified.write('ab_views', views);
     }
-    
+
     res.json({ success: true, message: 'View tracked' });
   } catch (error) {
     console.error('Error tracking view:', error);
@@ -244,41 +244,41 @@ router.get('/:name/results', async (req, res) => {
     if (!req.user || req.user.role !== 'admin') {
       return res.status(403).json({ error: 'Admin access required' });
     }
-    
+
     const experimentName = req.params.name;
-    
+
     // Validate experiment
     if (!experiments[experimentName]) {
       return res.status(404).json({ error: 'Experiment not found' });
     }
-    
+
     // Get views and conversions
     const views = await dbUnified.read('ab_views');
     const conversions = await dbUnified.read('ab_conversions');
-    
+
     // Filter by experiment
     const experimentViews = views.filter(v => v.experimentName === experimentName);
     const experimentConversions = conversions.filter(c => c.experimentName === experimentName);
-    
+
     // Calculate stats by variant
     const variants = Object.keys(experiments[experimentName].variants);
     const results = variants.map(variant => {
       const variantViews = experimentViews.filter(v => v.variant === variant);
       const variantConversions = experimentConversions.filter(c => c.variant === variant);
-      
+
       const viewCount = variantViews.length;
       const conversionCount = variantConversions.length;
       const conversionRate = viewCount > 0 ? (conversionCount / viewCount) * 100 : 0;
-      
+
       return {
         variant,
         value: experiments[experimentName].variants[variant],
         views: viewCount,
         conversions: conversionCount,
-        conversionRate: conversionRate.toFixed(2) + '%',
+        conversionRate: `${conversionRate.toFixed(2)}%`,
       };
     });
-    
+
     res.json({
       success: true,
       experiment: experimentName,
