@@ -182,6 +182,13 @@
 import { createStatsGrid, createBudgetTracker, createProgressRing, createEventsTimeline } from '/assets/js/dashboard-widgets.js';
 import { initCountUp } from '/assets/js/count-up-animation.js';
 
+// Budget calculation configuration
+const BUDGET_CONFIG = {
+  DEFAULT_TOTAL_BUDGET: 5000, // Default budget for new event planners
+  BUDGET_BUFFER_MULTIPLIER: 1.2, // Ensure total budget is 20% more than spent
+  DEFAULT_GUEST_COUNT: 50, // Default guest count for per-person pricing estimates
+};
+
 /**
  * Parse price string to numeric value
  * Handles formats like: "£3,500", "£45 pp", "From £500", "Contact for pricing"
@@ -240,9 +247,6 @@ function categorizePackage(category) {
  * @returns {Object} - Budget data with spent, total, remaining, and breakdown
  */
 async function calculateRealBudget(plans) {
-  const DEFAULT_TOTAL_BUDGET = 5000;
-  const BUDGET_BUFFER_MULTIPLIER = 1.2;
-  
   let totalSpent = 0;
   const breakdown = {
     venue: 0,
@@ -258,8 +262,8 @@ async function calculateRealBudget(plans) {
   if (!plans || plans.length === 0) {
     return {
       spent: 0,
-      total: DEFAULT_TOTAL_BUDGET,
-      remaining: DEFAULT_TOTAL_BUDGET,
+      total: BUDGET_CONFIG.DEFAULT_TOTAL_BUDGET,
+      remaining: BUDGET_CONFIG.DEFAULT_TOTAL_BUDGET,
       breakdown,
     };
   }
@@ -318,7 +322,7 @@ async function calculateRealBudget(plans) {
         if (isPP && price > 0) {
           // Try to get guest count from plan
           const plan = plans.find(p => p.packages && p.packages.includes(pkg.id));
-          const guests = plan?.guests || 50; // Default to 50 if not specified
+          const guests = plan?.guests || BUDGET_CONFIG.DEFAULT_GUEST_COUNT;
           actualPrice = price * guests;
         }
         
@@ -335,7 +339,7 @@ async function calculateRealBudget(plans) {
   }
   
   // Get total budget from plan or calculate based on spent
-  let totalBudget = DEFAULT_TOTAL_BUDGET;
+  let totalBudget = BUDGET_CONFIG.DEFAULT_TOTAL_BUDGET;
   
   // Check if user has set a custom budget in their plan
   const planWithBudget = plans.find(p => p.budget && parseFloat(p.budget) > 0);
@@ -343,7 +347,7 @@ async function calculateRealBudget(plans) {
     totalBudget = parseFloat(planWithBudget.budget);
   } else if (totalSpent > 0) {
     // If spending but no budget set, ensure budget is reasonable
-    totalBudget = Math.max(DEFAULT_TOTAL_BUDGET, totalSpent * BUDGET_BUFFER_MULTIPLIER);
+    totalBudget = Math.max(BUDGET_CONFIG.DEFAULT_TOTAL_BUDGET, totalSpent * BUDGET_CONFIG.BUDGET_BUFFER_MULTIPLIER);
   }
   
   const remaining = Math.max(0, totalBudget - totalSpent);
