@@ -846,6 +846,226 @@
       </section>
     </main>
 
+    <!-- Testimonials Section (P4-01) -->
+    <section class="ef-section ef-testimonials-section" aria-label="Customer testimonials">
+      <div class="container">
+        <div class="ef-section__header">
+          <h2 class="ef-section__title">What Our Customers Say</h2>
+          <p class="ef-section__subtitle">Real experiences from real event planners</p>
+        </div>
+        
+        <div class="ef-testimonials-carousel" id="ef-testimonials-carousel">
+          <div class="ef-testimonial active">
+            <div class="ef-testimonial-content">
+              <div class="ef-testimonial-stars" aria-label="5 out of 5 stars">★★★★★</div>
+              <p class="ef-testimonial-quote">"EventFlow made planning our wedding so easy! We found amazing suppliers and managed everything in one place. Couldn't recommend it more!"</p>
+              <div class="ef-testimonial-author">
+                <strong>Sarah & Tom</strong>
+                <span class="ef-testimonial-event">Wedding, Manchester</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="ef-testimonial">
+            <div class="ef-testimonial-content">
+              <div class="ef-testimonial-stars" aria-label="5 out of 5 stars">★★★★★</div>
+              <p class="ef-testimonial-quote">"As a supplier, EventFlow has brought me so many quality leads. The platform is easy to use and the support team is fantastic."</p>
+              <div class="ef-testimonial-author">
+                <strong>James Wilson</strong>
+                <span class="ef-testimonial-event">Wedding Photographer, London</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="ef-testimonial">
+            <div class="ef-testimonial-content">
+              <div class="ef-testimonial-stars" aria-label="5 out of 5 stars">★★★★★</div>
+              <p class="ef-testimonial-quote">"The budget tracking and planning tools saved us so much stress. Everything we needed was right there when we needed it."</p>
+              <div class="ef-testimonial-author">
+                <strong>Emma Davies</strong>
+                <span class="ef-testimonial-event">Birthday Party, Birmingham</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="ef-testimonials-dots" role="tablist" aria-label="Testimonial navigation">
+          <button type="button" role="tab" aria-selected="true" aria-label="View testimonial 1" data-testimonial="0" class="ef-testimonial-dot active"></button>
+          <button type="button" role="tab" aria-selected="false" aria-label="View testimonial 2" data-testimonial="1" class="ef-testimonial-dot"></button>
+          <button type="button" role="tab" aria-selected="false" aria-label="View testimonial 3" data-testimonial="2" class="ef-testimonial-dot"></button>
+        </div>
+      </div>
+    </section>
+    
+    <style>
+      /* Testimonials Section Styles */
+      .ef-testimonials-section {
+        background: linear-gradient(135deg, #f8fafc 0%, #e5f3f1 100%);
+        padding: 4rem 0;
+      }
+      
+      .ef-testimonials-carousel {
+        position: relative;
+        min-height: 200px;
+        margin: 2rem 0;
+      }
+      
+      .ef-testimonial {
+        display: none;
+        opacity: 0;
+        transition: opacity 0.5s ease-in-out;
+        text-align: center;
+        max-width: 800px;
+        margin: 0 auto;
+      }
+      
+      .ef-testimonial.active {
+        display: block;
+        opacity: 1;
+      }
+      
+      .ef-testimonial-content {
+        background: white;
+        padding: 2.5rem;
+        border-radius: 16px;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+      }
+      
+      .ef-testimonial-stars {
+        color: #f59e0b;
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
+      }
+      
+      .ef-testimonial-quote {
+        font-size: 1.125rem;
+        line-height: 1.75;
+        color: #1f2937;
+        margin-bottom: 1.5rem;
+        font-style: italic;
+      }
+      
+      .ef-testimonial-author {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+      }
+      
+      .ef-testimonial-author strong {
+        color: #0B8073;
+        font-size: 1rem;
+      }
+      
+      .ef-testimonial-event {
+        color: #6b7280;
+        font-size: 0.875rem;
+      }
+      
+      .ef-testimonials-dots {
+        display: flex;
+        justify-content: center;
+        gap: 0.75rem;
+        margin-top: 2rem;
+      }
+      
+      .ef-testimonial-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #d1d5db;
+        border: none;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        padding: 0;
+      }
+      
+      .ef-testimonial-dot.active,
+      .ef-testimonial-dot:hover {
+        background: #0B8073;
+        transform: scale(1.2);
+      }
+      
+      @media (max-width: 768px) {
+        .ef-testimonial-content {
+          padding: 1.5rem;
+        }
+        
+        .ef-testimonial-quote {
+          font-size: 1rem;
+        }
+      }
+    </style>
+    
+    <script>
+      // Testimonials carousel functionality (P4-01)
+      (function() {
+        let currentTestimonial = 0;
+        let carouselInterval = null;
+        const testimonials = document.querySelectorAll('.ef-testimonial');
+        const dots = document.querySelectorAll('.ef-testimonial-dot');
+        
+        function showTestimonial(index) {
+          // Hide all testimonials
+          testimonials.forEach(t => {
+            t.classList.remove('active');
+            t.setAttribute('aria-hidden', 'true');
+          });
+          
+          // Update dots
+          dots.forEach((dot, i) => {
+            dot.classList.toggle('active', i === index);
+            dot.setAttribute('aria-selected', i === index ? 'true' : 'false');
+          });
+          
+          // Show selected testimonial
+          testimonials[index].classList.add('active');
+          testimonials[index].setAttribute('aria-hidden', 'false');
+          currentTestimonial = index;
+        }
+        
+        // Dot click handlers
+        dots.forEach((dot, index) => {
+          dot.addEventListener('click', () => {
+            showTestimonial(index);
+            // Reset interval on manual interaction
+            if (carouselInterval) {
+              clearInterval(carouselInterval);
+            }
+            startAutoRotation();
+          });
+        });
+        
+        // Auto-rotate testimonials every 5 seconds
+        function startAutoRotation() {
+          carouselInterval = setInterval(() => {
+            currentTestimonial = (currentTestimonial + 1) % testimonials.length;
+            showTestimonial(currentTestimonial);
+          }, 5000);
+        }
+        
+        startAutoRotation();
+        
+        // Pause rotation when section is not visible (Intersection Observer)
+        if ('IntersectionObserver' in window) {
+          const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+              if (!entry.isIntersecting && carouselInterval) {
+                clearInterval(carouselInterval);
+                carouselInterval = null;
+              } else if (entry.isIntersecting && !carouselInterval) {
+                startAutoRotation();
+              }
+            });
+          }, { threshold: 0.5 });
+          
+          const section = document.querySelector('.ef-testimonials-section');
+          if (section) {
+            observer.observe(section);
+          }
+        }
+      })();
+    </script>
+
     <footer class="footer" role="contentinfo">
       <div class="container ef-footer-content">
         <div>
