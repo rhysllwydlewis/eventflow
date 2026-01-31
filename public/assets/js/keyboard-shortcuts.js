@@ -152,14 +152,13 @@
     modal.style.display = 'none';
 
     modal.innerHTML = `
-      <div class="modal-overlay" onclick="document.getElementById('keyboard-shortcuts-modal').style.display='none'; document.body.style.overflow=''"></div>
+      <div class="modal-overlay"></div>
       <div class="modal-content keyboard-shortcuts-content">
         <div class="modal-header">
           <h2 id="shortcuts-title">Keyboard Shortcuts</h2>
           <button 
             type="button" 
             class="modal-close" 
-            onclick="document.getElementById('keyboard-shortcuts-modal').style.display='none'; document.body.style.overflow=''"
             aria-label="Close dialog"
           >
             <span aria-hidden="true">×</span>
@@ -183,6 +182,23 @@
     `;
 
     document.body.appendChild(modal);
+
+    // Add event listeners for close functionality
+    const overlay = modal.querySelector('.modal-overlay');
+    const closeBtn = modal.querySelector('.modal-close');
+
+    const closeHelpModal = () => {
+      modal.style.display = 'none';
+      modal.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+    };
+
+    if (overlay) {
+      overlay.addEventListener('click', closeHelpModal);
+    }
+    if (closeBtn) {
+      closeBtn.addEventListener('click', closeHelpModal);
+    }
 
     // Close on escape
     modal.addEventListener('keydown', e => {

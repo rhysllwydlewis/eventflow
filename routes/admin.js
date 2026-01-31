@@ -67,6 +67,39 @@ function setHelperFunctions(supplierIsProActive, seed) {
 }
 
 /**
+ * Validate JWT secret is properly configured
+ * @returns {Object|null} Error object if invalid, null if valid
+ */
+function validateJWTSecret() {
+  const JWT_SECRET = process.env.JWT_SECRET;
+  const weakSecrets = ['change_me', 'your-secret-key', 'secret', 'password'];
+
+  if (!JWT_SECRET) {
+    return {
+      error: 'JWT secret not configured',
+      message: 'A secure JWT_SECRET environment variable is required',
+    };
+  }
+
+  if (JWT_SECRET.length < 32) {
+    return {
+      error: 'JWT secret too short',
+      message: 'JWT_SECRET must be at least 32 characters long for security',
+    };
+  }
+
+  if (weakSecrets.some(weak => JWT_SECRET.toLowerCase().includes(weak))) {
+    return {
+      error: 'JWT secret contains weak or placeholder values',
+      message:
+        'JWT_SECRET must not contain common weak values. Generate a secure secret using: openssl rand -base64 32',
+    };
+  }
+
+  return null; // Valid
+}
+
+/**
  * GET /api/admin/db-status
  * Get database connection status
  */
@@ -6712,11 +6745,11 @@ router.post(
   async (req, res) => {
     try {
       // Validate JWT secret is properly configured
-      const JWT_SECRET = process.env.JWT_SECRET;
-      if (!JWT_SECRET || JWT_SECRET === 'change_me' || JWT_SECRET.includes('your-secret-key')) {
+      const jwtError = validateJWTSecret();
+      if (jwtError) {
         return res.status(500).json({
-          error: 'Impersonation disabled: JWT secret not properly configured',
-          message: 'A secure JWT_SECRET environment variable is required',
+          error: `Impersonation disabled: ${jwtError.error}`,
+          message: jwtError.message,
         });
       }
 
@@ -6763,6 +6796,7 @@ router.post(
       // Update user in JWT token
       const jwt = require('jsonwebtoken');
       const { setAuthCookie } = require('../middleware/auth');
+      const JWT_SECRET = process.env.JWT_SECRET;
 
       const token = jwt.sign(
         { id: targetUser.id, email: targetUser.email, role: targetUser.role },
@@ -6797,11 +6831,11 @@ router.post(
 router.post('/users/stop-impersonate', authRequired, csrfProtection, async (req, res) => {
   try {
     // Validate JWT secret is properly configured
-    const JWT_SECRET = process.env.JWT_SECRET;
-    if (!JWT_SECRET || JWT_SECRET === 'change_me' || JWT_SECRET.includes('your-secret-key')) {
+    const jwtError = validateJWTSecret();
+    if (jwtError) {
       return res.status(500).json({
-        error: 'Stop impersonation disabled: JWT secret not properly configured',
-        message: 'A secure JWT_SECRET environment variable is required',
+        error: `Stop impersonation disabled: ${jwtError.error}`,
+        message: jwtError.message,
       });
     }
 
@@ -6829,6 +6863,7 @@ router.post('/users/stop-impersonate', authRequired, csrfProtection, async (req,
     // Restore original admin JWT
     const jwt = require('jsonwebtoken');
     const { setAuthCookie } = require('../middleware/auth');
+    const JWT_SECRET = process.env.JWT_SECRET;
 
     const token = jwt.sign(
       { id: originalUser.id, email: originalUser.email, role: originalUser.role },

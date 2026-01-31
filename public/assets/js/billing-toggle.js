@@ -6,8 +6,10 @@
 (function () {
   'use strict';
 
-  const ANNUAL_DISCOUNT_PERCENTAGE = 16.67; // Approximation: 2 months free (~16.67%)
+  const FREE_MONTHS = 2; // Number of free months with annual billing
   const MONTHS_IN_YEAR = 12;
+  const ANNUAL_DISCOUNT_PERCENTAGE = (FREE_MONTHS / MONTHS_IN_YEAR) * 100; // Precise calculation: 16.666...%
+  const ANNUAL_DISCOUNT_DISPLAY = Math.round(ANNUAL_DISCOUNT_PERCENTAGE); // 17% for display
 
   /**
    * Initialize billing toggle
@@ -46,7 +48,7 @@
       </label>
       <span class="billing-toggle-label" id="annual-label">
         Annual
-        <span class="savings-badge">Save 2 months</span>
+        <span class="savings-badge">Save ${FREE_MONTHS} months (${ANNUAL_DISCOUNT_DISPLAY}% off)</span>
       </span>
     `;
 

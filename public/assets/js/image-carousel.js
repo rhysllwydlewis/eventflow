@@ -53,7 +53,7 @@
     modal.style.display = 'none';
 
     modal.innerHTML = `
-      <div class="carousel-overlay" aria-label="Click to close carousel"></div>
+      <div class="carousel-overlay" role="button" tabindex="0" aria-label="Close carousel"></div>
       <div class="carousel-content">
         <button 
           type="button"
