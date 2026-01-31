@@ -13,6 +13,7 @@ const { read, write, uid } = require('../store');
 const { authRequired, roleRequired } = require('../middleware/auth');
 const { auditLog, auditMiddleware, AUDIT_ACTIONS } = require('../middleware/audit');
 const { csrfProtection } = require('../middleware/csrf');
+const { writeLimiter } = require('../middleware/rateLimit');
 const postmark = require('../utils/postmark');
 const dbUnified = require('../db-unified');
 
@@ -6431,6 +6432,7 @@ router.post(
   authRequired,
   roleRequired('admin'),
   csrfProtection,
+  writeLimiter,
   async (req, res) => {
     try {
       const backupsDir = path.join(__dirname, '..', 'backups');
@@ -6517,7 +6519,7 @@ router.post(
  * GET /api/admin/backup/list
  * List all available backups
  */
-router.get('/backup/list', authRequired, roleRequired('admin'), async (req, res) => {
+router.get('/backup/list', authRequired, roleRequired('admin'), writeLimiter, async (req, res) => {
   try {
     const backupsDir = path.join(__dirname, '..', 'backups');
 
@@ -6556,6 +6558,7 @@ router.post(
   authRequired,
   roleRequired('admin'),
   csrfProtection,
+  writeLimiter,
   async (req, res) => {
     try {
       const { filename } = req.body;
