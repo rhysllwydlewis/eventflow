@@ -145,10 +145,10 @@ async function extractExifData(buffer) {
         make: metadata.exif.Make || null,
         model: metadata.exif.Model || null,
       } : null,
-      dateTaken: metadata.exif?.DateTimeOriginal || metadata.exif?.DateTime || null,
-      location: metadata.exif ? {
-        latitude: metadata.exif.GPSLatitude || null,
-        longitude: metadata.exif.GPSLongitude || null,
+      dateTaken: (metadata.exif && (metadata.exif.DateTimeOriginal || metadata.exif.DateTime)) || null,
+      location: (metadata.exif && metadata.exif.GPSLatitude && metadata.exif.GPSLongitude) ? {
+        latitude: metadata.exif.GPSLatitude,
+        longitude: metadata.exif.GPSLongitude,
       } : null,
       dimensions: {
         width: metadata.width,

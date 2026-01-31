@@ -6,7 +6,7 @@
 (function () {
   'use strict';
 
-  const ANNUAL_DISCOUNT_PERCENTAGE = 16.67; // 2 months free = ~16.67% discount
+  const ANNUAL_DISCOUNT_PERCENTAGE = 16.67; // Approximation: 2 months free (~16.67%)
   const MONTHS_IN_YEAR = 12;
 
   /**

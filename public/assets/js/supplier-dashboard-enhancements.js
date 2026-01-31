@@ -10,13 +10,18 @@
    * Add CSV export button to enquiries section
    */
   function addExportButton() {
+    // Check if export button already exists first
+    if (document.getElementById('export-enquiries-btn')) {
+      return;
+    }
+
     // Wait for dashboard to load
     const observer = new MutationObserver(() => {
       // Look for enquiries section or stats
       const statsSection = document.querySelector('.stats-grid, .dashboard-stats, #stats-section');
       
       if (statsSection) {
-        // Check if export button already exists
+        // Double-check button doesn't exist
         if (document.getElementById('export-enquiries-btn')) {
           observer.disconnect();
           return;
@@ -78,9 +83,6 @@
     if (main) {
       observer.observe(main, { childList: true, subtree: true });
     }
-
-    // Also try immediate addition
-    setTimeout(addExportButton, 2000);
   }
 
   /**

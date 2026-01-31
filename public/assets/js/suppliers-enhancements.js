@@ -40,10 +40,15 @@
       observer.observe(container, { childList: true, subtree: true });
     }
 
-    // Also try immediate enhancement
+    // Also try immediate enhancement in case cards are already loaded
     setTimeout(() => {
       const cards = document.querySelectorAll('.supplier-card, [data-supplier-id]');
       cards.forEach(card => {
+        // Check if badge already exists
+        if (card.querySelector('.new-badge')) {
+          return;
+        }
+        
         const createdAt = card.dataset.createdAt || card.dataset.supplierCreated;
         if (createdAt && typeof addNewBadgeIfApplicable === 'function') {
           addNewBadgeIfApplicable(card, createdAt);

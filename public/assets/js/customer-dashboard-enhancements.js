@@ -10,21 +10,28 @@
    * Add recommendations widget to dashboard
    */
   function addRecommendationsWidget() {
-    // Wait for dashboard to load
-    setTimeout(() => {
-      // Look for a good place to insert the widget
+    // Check if widget already exists
+    if (document.getElementById('recommendations-widget')) {
+      return;
+    }
+
+    // Use MutationObserver instead of setTimeout
+    const observer = new MutationObserver(() => {
       const statsSection = document.querySelector('.dashboard-stats, #stats-section, .dashboard-content');
       
       if (!statsSection) return;
       
-      // Check if widget already exists
-      if (document.getElementById('recommendations-widget')) return;
+      // Double-check widget doesn't exist
+      if (document.getElementById('recommendations-widget')) {
+        observer.disconnect();
+        return;
+      }
 
       // Create widget container
       const widgetContainer = document.createElement('div');
       widgetContainer.id = 'recommendations-widget';
       widgetContainer.className = 'recommendations-widget';
-      widgetContainer.style.display = 'none'; // Will be shown by the widget script if recommendations exist
+      widgetContainer.style.display = 'none';
 
       // Insert after stats section
       statsSection.insertAdjacentElement('afterend', widgetContainer);
@@ -33,7 +40,15 @@
       if (window.RecommendationsWidget) {
         window.RecommendationsWidget.init();
       }
-    }, 2000);
+
+      observer.disconnect();
+    });
+
+    // Start observing
+    const main = document.querySelector('main, #main-content, body');
+    if (main) {
+      observer.observe(main, { childList: true, subtree: true });
+    }
   }
 
   /**
