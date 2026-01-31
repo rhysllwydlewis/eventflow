@@ -19,6 +19,19 @@
       const data = await AdminShared.api('/api/admin/suppliers');
       // API may return data.items or data.suppliers - accept both for compatibility
       allSuppliers = data.items || data.suppliers || [];
+
+      // Calculate health scores for all suppliers
+      allSuppliers = await Promise.all(
+        allSuppliers.map(async supplier => {
+          const healthData = await calculateSupplierHealth(supplier);
+          return {
+            ...supplier,
+            healthScore: healthData.score,
+            healthBreakdown: healthData.breakdown,
+          };
+        })
+      );
+
       filteredSuppliers = [...allSuppliers];
 
       updateStats();
@@ -34,17 +47,129 @@
     }
   }
 
+  // Calculate supplier health score
+  async function calculateSupplierHealth(supplier) {
+    let score = 0;
+    const breakdown = {};
+
+    // Profile completeness (0-30)
+    const profileFields = ['name', 'description', 'location', 'category', 'priceRange'];
+    const completedFields = profileFields.filter(
+      f => supplier[f] && supplier[f].toString().trim()
+    ).length;
+    const profileScore = (completedFields / profileFields.length) * 30;
+    score += profileScore;
+    breakdown.profileCompleteness = {
+      score: Math.round(profileScore),
+      weight: 30,
+      completedFields,
+      totalFields: profileFields.length,
+    };
+
+    // Response rate (0-25) - default to 0.5 if not available
+    const responseRate = supplier.responseRate || 0.5;
+    const responseScore = responseRate * 25;
+    score += responseScore;
+    breakdown.responseRate = {
+      score: Math.round(responseScore),
+      weight: 25,
+      rate: Math.round(responseRate * 100),
+    };
+
+    // Review rating (0-20)
+    const averageRating = supplier.averageRating || supplier.rating || 3.5;
+    const ratingScore = (averageRating / 5) * 20;
+    score += ratingScore;
+    breakdown.reviewRating = {
+      score: Math.round(ratingScore),
+      weight: 20,
+      rating: averageRating.toFixed(1),
+    };
+
+    // Booking count (0-15)
+    const bookingCount = supplier.bookingCount || supplier.bookings?.length || 0;
+    const bookingScore = Math.min(bookingCount / 10, 1) * 15;
+    score += bookingScore;
+    breakdown.bookingCount = {
+      score: Math.round(bookingScore),
+      weight: 15,
+      count: bookingCount,
+    };
+
+    // Photo count (0-10)
+    const photoCount = supplier.photoCount || supplier.photosGallery?.length || 0;
+    const photoScore = Math.min(photoCount / 10, 1) * 10;
+    score += photoScore;
+    breakdown.photoCount = {
+      score: Math.round(photoScore),
+      weight: 10,
+      count: photoCount,
+    };
+
+    return {
+      score: Math.round(score),
+      breakdown,
+    };
+  }
+
+  // Get health score badge HTML
+  function getHealthScoreBadge(score, breakdown) {
+    let color, bgColor, label;
+
+    if (score >= 80) {
+      color = '#10b981';
+      bgColor = '#d1fae5';
+      label = 'Excellent';
+    } else if (score >= 60) {
+      color = '#f59e0b';
+      bgColor = '#fef3c7';
+      label = 'Good';
+    } else if (score >= 40) {
+      color = '#f97316';
+      bgColor = '#fed7aa';
+      label = 'Fair';
+    } else {
+      color = '#ef4444';
+      bgColor = '#fee2e2';
+      label = 'Poor';
+    }
+
+    const breakdownHtml = breakdown
+      ? `
+      <div style="text-align: left; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.2);">
+        <div style="font-size: 11px; margin-bottom: 4px;">Profile: ${breakdown.profileCompleteness.score}/${breakdown.profileCompleteness.weight} (${breakdown.profileCompleteness.completedFields}/${breakdown.profileCompleteness.totalFields} fields)</div>
+        <div style="font-size: 11px; margin-bottom: 4px;">Response: ${breakdown.responseRate.score}/${breakdown.responseRate.weight} (${breakdown.responseRate.rate}%)</div>
+        <div style="font-size: 11px; margin-bottom: 4px;">Rating: ${breakdown.reviewRating.score}/${breakdown.reviewRating.weight} (${breakdown.reviewRating.rating}/5)</div>
+        <div style="font-size: 11px; margin-bottom: 4px;">Bookings: ${breakdown.bookingCount.score}/${breakdown.bookingCount.weight} (${breakdown.bookingCount.count})</div>
+        <div style="font-size: 11px;">Photos: ${breakdown.photoCount.score}/${breakdown.photoCount.weight} (${breakdown.photoCount.count})</div>
+      </div>
+    `
+      : '';
+
+    return `
+      <div class="health-score-badge" style="position: relative; display: inline-block; cursor: help;">
+        <span style="display: inline-block; padding: 4px 12px; border-radius: 12px; font-weight: 600; font-size: 14px; color: ${color}; background: ${bgColor};">
+          ${score}%
+        </span>
+        <div class="health-score-tooltip" style="display: none; position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.9); color: white; padding: 12px; border-radius: 8px; white-space: nowrap; z-index: 1000; margin-bottom: 8px; min-width: 250px;">
+          <div style="font-weight: 600; margin-bottom: 8px;">Health Score: ${score}% (${label})</div>
+          ${breakdownHtml}
+        </div>
+      </div>
+    `;
+  }
+
   // Update statistics
   function updateStats() {
     const total = allSuppliers.length;
     const pending = allSuppliers.filter(s => !s.approved).length;
     const pro = allSuppliers.filter(s => s.subscription?.tier === 'pro_plus').length;
-    const avgScore = allSuppliers.reduce((sum, s) => sum + (s.score || 0), 0) / total || 0;
+    const avgScore = allSuppliers.reduce((sum, s) => sum + (s.healthScore || 0), 0) / total || 0;
 
     document.getElementById('totalSuppliers').textContent = total;
     document.getElementById('pendingSuppliers').textContent = pending;
     document.getElementById('proSuppliers').textContent = pro;
-    document.getElementById('avgScore').textContent = avgScore.toFixed(1);
+    document.getElementById('avgScore').textContent = `${avgScore.toFixed(1)}%`;
   }
 
   // Setup event listeners
@@ -134,6 +259,10 @@
       .map(supplier => {
         const isSelected = selectedSuppliers.has(supplier.id);
         const subscriptionBadge = getSubscriptionBadge(supplier.subscription?.tier || 'free');
+        const healthScoreBadge = getHealthScoreBadge(
+          supplier.healthScore || 0,
+          supplier.healthBreakdown
+        );
 
         return `
         <tr>
@@ -142,7 +271,7 @@
           <td>${escapeHtml(supplier.email || '')}</td>
           <td>${supplier.approved ? '<span style="color: #10b981;">✓ Yes</span>' : '<span style="color: #f59e0b;">Pending</span>'}</td>
           <td>${subscriptionBadge}</td>
-          <td><span style="font-weight: 600; color: #667eea;">${supplier.score || 0}</span></td>
+          <td>${healthScoreBadge}</td>
           <td><span style="font-size: 12px; color: #6b7280;">${supplier.tags?.join(', ') || 'None'}</span></td>
           <td>
             <div style="display: flex; gap: 8px;">
@@ -159,6 +288,27 @@
 
     updatePagination();
     updateBulkActionsBar();
+
+    // Setup tooltip hover listeners
+    setupHealthScoreTooltips();
+  }
+
+  // Setup health score tooltips
+  function setupHealthScoreTooltips() {
+    document.querySelectorAll('.health-score-badge').forEach(badge => {
+      badge.addEventListener('mouseenter', function () {
+        const tooltip = this.querySelector('.health-score-tooltip');
+        if (tooltip) {
+          tooltip.style.display = 'block';
+        }
+      });
+      badge.addEventListener('mouseleave', function () {
+        const tooltip = this.querySelector('.health-score-tooltip');
+        if (tooltip) {
+          tooltip.style.display = 'none';
+        }
+      });
+    });
   }
 
   // Get subscription badge HTML

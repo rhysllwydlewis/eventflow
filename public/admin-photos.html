@@ -241,6 +241,11 @@
           <label>Search supplier</label>
           <input id="searchSupplier" placeholder="Search by supplier name...">
         </div>
+        <div style="position: relative;">
+          <label>Filter by supplier</label>
+          <input id="supplierNameFilter" placeholder="Type supplier name..." autocomplete="off">
+          <div id="supplierDropdown" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ddd; border-radius: 4px; max-height: 200px; overflow-y: auto; z-index: 1000; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-top: 4px;"></div>
+        </div>
       </div>
     </div>
     
@@ -291,10 +296,14 @@
   
   let photos = [];
   let selectedPhotos = new Set();
+  let suppliers = [];
+  let selectedSupplier = null;
   
   const queueElement = document.getElementById('photoQueue');
   const filterStatus = document.getElementById('filterStatus');
   const searchSupplier = document.getElementById('searchSupplier');
+  const supplierNameFilter = document.getElementById('supplierNameFilter');
+  const supplierDropdown = document.getElementById('supplierDropdown');
   const batchActions = document.getElementById('batchActions');
   const selectedCount = document.getElementById('selectedCount');
   const batchApprove = document.getElementById('batchApprove');
@@ -316,11 +325,21 @@
     try {
       const data = await AdminShared.api('/api/admin/photos/pending');
       photos = data.photos || [];
+      await loadSuppliers();
       renderPhotos();
     } catch (err) {
       console.error('Error loading photos:', err);
       AdminShared.showToast('Failed to load photos', 'error');
       queueElement.innerHTML = '<div class="card"><p class="small">Failed to load photos. Please try again.</p></div>';
+    }
+  }
+  
+  async function loadSuppliers() {
+    try {
+      const data = await AdminShared.api('/api/admin/suppliers');
+      suppliers = data.items || data.suppliers || [];
+    } catch (err) {
+      console.error('Error loading suppliers:', err);
     }
   }
   
@@ -347,6 +366,11 @@
       );
     }
     
+    // Filter by selected supplier
+    if (selectedSupplier) {
+      filtered = filtered.filter(p => p.supplierId === selectedSupplier.id);
+    }
+    
     if (filtered.length === 0) {
       queueElement.innerHTML = `
         <div class="photo-queue__empty">
@@ -370,6 +394,7 @@
           </div>
           <div class="photo-queue__supplier">
             Supplier: <a href="/supplier.html?id=${escapeHtml(photo.supplierId)}">${escapeHtml(photo.supplierName || 'Unknown')}</a>
+            | <a href="/admin-supplier-detail.html?id=${escapeHtml(photo.supplierId)}" style="color: #667eea;">View Profile</a>
           </div>
           ${photo.caption ? `<div class="small" style="margin-bottom: 0.5rem;">${escapeHtml(photo.caption)}</div>` : ''}
           <div class="small" style="color: #999;">Uploaded: ${formatDate(photo.uploadedAt)}</div>
@@ -477,6 +502,76 @@
   
   filterStatus.addEventListener('change', renderPhotos);
   searchSupplier.addEventListener('input', renderPhotos);
+  
+  // Supplier name autocomplete
+  supplierNameFilter.addEventListener('input', function() {
+    const searchTerm = this.value.toLowerCase().trim();
+    
+    if (!searchTerm) {
+      supplierDropdown.style.display = 'none';
+      selectedSupplier = null;
+      renderPhotos();
+      return;
+    }
+    
+    const matched = suppliers.filter(s => 
+      (s.name || '').toLowerCase().includes(searchTerm)
+    );
+    
+    if (matched.length === 0) {
+      supplierDropdown.style.display = 'none';
+      return;
+    }
+    
+    // Count photos per supplier
+    const photoCounts = {};
+    photos.forEach(p => {
+      if (p.supplierId) {
+        photoCounts[p.supplierId] = (photoCounts[p.supplierId] || 0) + 1;
+      }
+    });
+    
+    supplierDropdown.innerHTML = matched.map(s => {
+      const count = photoCounts[s.id] || 0;
+      return `
+        <div class="supplier-dropdown-item" data-supplier-id="${escapeHtml(s.id)}" style="padding: 10px; cursor: pointer; border-bottom: 1px solid #eee;">
+          <div style="font-weight: 500;">${escapeHtml(s.name || 'Unknown')}</div>
+          <div style="font-size: 12px; color: #666;">${count} photo${count !== 1 ? 's' : ''}</div>
+        </div>
+      `;
+    }).join('');
+    
+    supplierDropdown.style.display = 'block';
+    
+    // Add click handlers
+    supplierDropdown.querySelectorAll('.supplier-dropdown-item').forEach(item => {
+      item.addEventListener('click', function() {
+        const supplierId = this.dataset.supplierId;
+        selectedSupplier = suppliers.find(s => s.id === supplierId);
+        if (selectedSupplier) {
+          supplierNameFilter.value = selectedSupplier.name || 'Unknown';
+          supplierDropdown.style.display = 'none';
+          renderPhotos();
+        }
+      });
+    });
+  });
+  
+  // Close dropdown when clicking outside
+  document.addEventListener('click', function(e) {
+    if (!supplierNameFilter.contains(e.target) && !supplierDropdown.contains(e.target)) {
+      supplierDropdown.style.display = 'none';
+    }
+  });
+  
+  // Clear supplier filter when input is cleared manually
+  supplierNameFilter.addEventListener('keydown', function(e) {
+    if (e.key === 'Backspace' || e.key === 'Delete') {
+      if (this.value.length <= 1) {
+        selectedSupplier = null;
+      }
+    }
+  });
   
   function formatFileSize(bytes) {
     if (bytes === 0) return '0 B';
