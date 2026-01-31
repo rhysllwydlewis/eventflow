@@ -48,7 +48,7 @@ export function createStatsGrid(stats, containerId) {
 
 /**
  * Create budget tracker widget
- * @param {object} budgetData - {spent, total}
+ * @param {object} budgetData - {spent, total, remaining, breakdown}
  * @param {string} containerId - ID of container element
  */
 export function createBudgetTracker(budgetData, containerId) {
@@ -57,18 +57,78 @@ export function createBudgetTracker(budgetData, containerId) {
     return;
   }
 
-  const { spent = 0, total = 1000 } = budgetData;
-  const remaining = Math.max(0, total - spent);
+  const { spent = 0, total = 1000, remaining, breakdown = {} } = budgetData;
+  const actualRemaining = remaining !== undefined ? remaining : Math.max(0, total - spent);
   const percentage = total > 0 ? (spent / total) * 100 : 0;
 
   let badgeColor = '#22C55E';
   let badgeText = 'On Track';
-  if (percentage >= 80) {
+  if (percentage >= 100) {
     badgeColor = '#EF4444';
     badgeText = 'Over Budget';
-  } else if (percentage >= 60) {
-    badgeColor = '#EAB308';
+  } else if (percentage >= 80) {
+    badgeColor = '#F59E0B';
     badgeText = 'Attention';
+  }
+
+  // Generate breakdown HTML if we have breakdown data
+  let breakdownHtml = '';
+  const hasBreakdown = breakdown && Object.values(breakdown).some(val => val > 0);
+
+  if (hasBreakdown) {
+    const categoryIcons = {
+      venue: '🏛️',
+      catering: '🍽️',
+      entertainment: '🎵',
+      photography: '📸',
+      decorations: '💐',
+      transport: '🚗',
+      beauty: '💄',
+      other: '📦',
+    };
+
+    const categoryLabels = {
+      venue: 'Venue',
+      catering: 'Catering',
+      entertainment: 'Entertainment',
+      photography: 'Photography',
+      decorations: 'Decorations',
+      transport: 'Transport',
+      beauty: 'Hair & Makeup',
+      other: 'Other',
+    };
+
+    const breakdownItems = Object.entries(breakdown)
+      .filter(([_, value]) => value > 0)
+      .sort((a, b) => b[1] - a[1])
+      .map(([category, value]) => {
+        const percent = spent > 0 ? ((value / spent) * 100).toFixed(0) : 0;
+        return `
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid #E7EAF0;">
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <span style="font-size: 1.2rem;">${categoryIcons[category] || '📦'}</span>
+              <span style="font-size: 0.875rem; color: #667085;">${categoryLabels[category] || category}</span>
+            </div>
+            <div style="text-align: right;">
+              <div style="font-size: 0.875rem; font-weight: 600; color: #0B1220;">£${value.toLocaleString('en-GB', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</div>
+              <div style="font-size: 0.75rem; color: #667085;">${percent}%</div>
+            </div>
+          </div>
+        `;
+      })
+      .join('');
+
+    breakdownHtml = `
+      <details style="margin-top: 1rem;" id="${containerId}-breakdown">
+        <summary style="cursor: pointer; font-size: 0.875rem; color: #0B8073; font-weight: 600; padding: 0.5rem; background: white; border-radius: 8px; list-style: none; display: flex; justify-content: space-between; align-items: center;">
+          <span>📊 View Breakdown by Category</span>
+          <span style="font-size: 1rem;">▼</span>
+        </summary>
+        <div style="margin-top: 0.75rem; background: white; border-radius: 8px; padding: 0.75rem;">
+          ${breakdownItems}
+        </div>
+      </details>
+    `;
   }
 
   const html = `
@@ -89,9 +149,11 @@ export function createBudgetTracker(budgetData, containerId) {
         </div>
         <div style="padding: 1rem; background: white; border-radius: 12px; text-align: center;">
           <div style="font-size: 0.875rem; color: #667085; margin-bottom: 0.5rem;">Remaining</div>
-          <div class="stat-number" data-target="${remaining}" data-format="currency" data-start="0" style="font-size: 1.5rem; color: #22C55E;">£0</div>
+          <div class="stat-number" data-target="${actualRemaining}" data-format="currency" data-start="0" style="font-size: 1.5rem; color: #22C55E;">£0</div>
         </div>
       </div>
+      
+      ${breakdownHtml}
     </div>
   `;
 
