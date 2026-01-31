@@ -53,12 +53,11 @@
     modal.style.display = 'none';
 
     modal.innerHTML = `
-      <div class="carousel-overlay" onclick="ImageCarousel.close()"></div>
+      <div class="carousel-overlay" aria-label="Click to close carousel"></div>
       <div class="carousel-content">
         <button 
           type="button"
           class="carousel-close" 
-          onclick="ImageCarousel.close()"
           aria-label="Close carousel"
         >
           <span aria-hidden="true">×</span>
@@ -67,7 +66,6 @@
         <button 
           type="button"
           class="carousel-nav carousel-prev" 
-          onclick="ImageCarousel.prev()"
           aria-label="Previous image"
         >
           <span aria-hidden="true">‹</span>
@@ -86,7 +84,6 @@
         <button 
           type="button"
           class="carousel-nav carousel-next" 
-          onclick="ImageCarousel.next()"
           aria-label="Next image"
         >
           <span aria-hidden="true">›</span>
@@ -100,6 +97,31 @@
 
     document.body.appendChild(modal);
     carousel = modal;
+
+    // Add event listeners for buttons
+    const overlay = modal.querySelector('.carousel-overlay');
+    const closeBtn = modal.querySelector('.carousel-close');
+    const prevBtn = modal.querySelector('.carousel-prev');
+    const nextBtn = modal.querySelector('.carousel-next');
+
+    if (overlay) {
+      overlay.addEventListener('click', closeCarousel);
+      overlay.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          closeCarousel();
+        }
+      });
+    }
+    if (closeBtn) {
+      closeBtn.addEventListener('click', closeCarousel);
+    }
+    if (prevBtn) {
+      prevBtn.addEventListener('click', prevImage);
+    }
+    if (nextBtn) {
+      nextBtn.addEventListener('click', nextImage);
+    }
 
     // Keyboard navigation
     document.addEventListener('keydown', handleKeyboard);

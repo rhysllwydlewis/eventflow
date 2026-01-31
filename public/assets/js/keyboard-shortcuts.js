@@ -58,8 +58,16 @@
 
     // Check each shortcut
     Object.values(shortcuts).forEach(shortcut => {
+      // Map modifier key names to correct event properties
+      const modifierKeyMap = {
+        Meta: 'metaKey',
+        Control: 'ctrlKey',
+        Alt: 'altKey',
+        Shift: 'shiftKey',
+      };
+
       const modifierMatch = shortcut.modifier
-        ? e.key === shortcut.key && e[`${shortcut.modifier.toLowerCase()}Key`]
+        ? e.key === shortcut.key && e[modifierKeyMap[shortcut.modifier]]
         : e.key === shortcut.key;
 
       if (modifierMatch) {

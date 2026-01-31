@@ -83,7 +83,7 @@
         ${recommendations
           .map(
             supplier => `
-          <div class="recommendation-card" onclick="window.location.href='/supplier?id=${supplier.id}'">
+          <a href="/supplier?id=${supplier.id}" class="recommendation-card" style="text-decoration: none; color: inherit; display: block; cursor: pointer;">
             <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem;">
               ${
                 supplier.logo
@@ -97,7 +97,7 @@
             </div>
             ${supplier.location ? `<p style="margin: 0 0 0.5rem; font-size: 0.875rem; color: #6b7280;">📍 ${supplier.location}</p>` : ''}
             ${supplier.averageRating ? `<p style="margin: 0; font-size: 0.875rem; color: #6b7280;">⭐ ${supplier.averageRating.toFixed(1)} (${supplier.reviewCount || 0} reviews)</p>` : ''}
-          </div>
+          </a>
         `
           )
           .join('')}

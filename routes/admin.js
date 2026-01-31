@@ -6711,10 +6711,13 @@ router.post(
   csrfProtection,
   async (req, res) => {
     try {
-      // Validate JWT secret first in production
-      const JWT_SECRET = process.env.JWT_SECRET || 'change_me';
-      if (JWT_SECRET === 'change_me' && process.env.NODE_ENV === 'production') {
-        return res.status(500).json({ error: 'Impersonation disabled: JWT secret not configured' });
+      // Validate JWT secret is properly configured
+      const JWT_SECRET = process.env.JWT_SECRET;
+      if (!JWT_SECRET || JWT_SECRET === 'change_me' || JWT_SECRET.includes('your-secret-key')) {
+        return res.status(500).json({
+          error: 'Impersonation disabled: JWT secret not properly configured',
+          message: 'A secure JWT_SECRET environment variable is required',
+        });
       }
 
       const { id } = req.params;
@@ -6793,12 +6796,13 @@ router.post(
  */
 router.post('/users/stop-impersonate', authRequired, csrfProtection, async (req, res) => {
   try {
-    // Validate JWT secret first in production
-    const JWT_SECRET = process.env.JWT_SECRET || 'change_me';
-    if (JWT_SECRET === 'change_me' && process.env.NODE_ENV === 'production') {
-      return res
-        .status(500)
-        .json({ error: 'Stop impersonation disabled: JWT secret not configured' });
+    // Validate JWT secret is properly configured
+    const JWT_SECRET = process.env.JWT_SECRET;
+    if (!JWT_SECRET || JWT_SECRET === 'change_me' || JWT_SECRET.includes('your-secret-key')) {
+      return res.status(500).json({
+        error: 'Stop impersonation disabled: JWT secret not properly configured',
+        message: 'A secure JWT_SECRET environment variable is required',
+      });
     }
 
     if (!req.session.originalUser) {
