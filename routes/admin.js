@@ -6697,7 +6697,13 @@ router.post('/users/:id/impersonate', authRequired, roleRequired('admin'), csrfP
 
     // Update user in JWT token
     const jwt = require('jsonwebtoken');
+    const { setAuthCookie } = require('../middleware/auth');
     const JWT_SECRET = process.env.JWT_SECRET || 'change_me';
+    
+    if (JWT_SECRET === 'change_me' && process.env.NODE_ENV === 'production') {
+      return res.status(500).json({ error: 'JWT secret not configured' });
+    }
+    
     const token = jwt.sign(
       { id: targetUser.id, email: targetUser.email, role: targetUser.role },
       JWT_SECRET,
@@ -6705,7 +6711,6 @@ router.post('/users/:id/impersonate', authRequired, roleRequired('admin'), csrfP
     );
 
     // Set new auth cookie
-    const { setAuthCookie } = require('../middleware/auth');
     setAuthCookie(res, token);
 
     res.json({
@@ -6753,14 +6758,19 @@ router.post('/users/stop-impersonate', authRequired, csrfProtection, async (req,
 
     // Restore original admin JWT
     const jwt = require('jsonwebtoken');
+    const { setAuthCookie } = require('../middleware/auth');
     const JWT_SECRET = process.env.JWT_SECRET || 'change_me';
+    
+    if (JWT_SECRET === 'change_me' && process.env.NODE_ENV === 'production') {
+      return res.status(500).json({ error: 'JWT secret not configured' });
+    }
+    
     const token = jwt.sign(
       { id: originalUser.id, email: originalUser.email, role: originalUser.role },
       JWT_SECRET,
       { expiresIn: '7d' }
     );
 
-    const { setAuthCookie } = require('../middleware/auth');
     setAuthCookie(res, token);
 
     res.json({

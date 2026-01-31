@@ -821,7 +821,7 @@ async function initSupplier() {
       ${trustHtml}
       <div class="form-actions" style="margin-top:20px; display: flex; gap: 12px; flex-wrap: wrap;">
         <button class="cta" id="add" style="flex: 1; min-width: 150px;">Add to My Plan</button>
-        <button class="cta secondary" id="save-supplier-btn" data-supplier-id="${escapeHtml(s.id)}" style="flex: 1; min-width: 150px;">♡ Save</button>
+        <button class="cta secondary" id="save-supplier-btn" data-supplier-id="${escapeHtml(s.id)}" style="flex: 1; min-width: 150px;" aria-label="Save supplier to favorites">♡ Save</button>
         <button class="cta secondary" id="start-thread" style="flex: 1; min-width: 150px;">Start Conversation</button>
       </div>
     </div>
