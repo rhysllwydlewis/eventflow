@@ -1780,6 +1780,79 @@ function parseDuration(duration) {
 }
 
 /**
+ * POST /api/admin/users/bulk-delete
+ * Bulk delete users
+ * Body: { userIds: string[] }
+ */
+router.post(
+  '/users/bulk-delete',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    try {
+      const { userIds } = req.body;
+
+      if (!Array.isArray(userIds) || userIds.length === 0) {
+        return res.status(400).json({ error: 'userIds must be a non-empty array' });
+      }
+
+      const users = await dbUnified.read('users');
+      let deletedCount = 0;
+      const deletedUsers = [];
+
+      // Filter out users that cannot be deleted
+      userIds.forEach(userId => {
+        const index = users.findIndex(u => u.id === userId);
+        if (index >= 0) {
+          const user = users[index];
+
+          // Prevent admins from deleting themselves
+          if (user.id === req.user.id) {
+            return;
+          }
+
+          // Prevent deletion of the owner account
+          if (user.email === 'admin@event-flow.co.uk' || user.isOwner) {
+            return;
+          }
+
+          deletedUsers.push({ id: user.id, email: user.email, name: user.name });
+          users.splice(index, 1);
+          deletedCount++;
+        }
+      });
+
+      if (deletedCount > 0) {
+        await dbUnified.write('users', users);
+      }
+
+      // Create audit log
+      await auditLog({
+        adminId: req.user.id,
+        adminEmail: req.user.email,
+        action: 'BULK_USERS_DELETED',
+        targetType: 'users',
+        targetId: 'bulk',
+        details: { userIds, deletedCount, deletedUsers },
+        ipAddress: req.ip || req.connection.remoteAddress,
+        userAgent: req.get('user-agent'),
+      });
+
+      res.json({
+        success: true,
+        message: `Successfully deleted ${deletedCount} user(s)`,
+        deletedCount,
+        totalRequested: userIds.length,
+      });
+    } catch (error) {
+      console.error('Error bulk deleting users:', error);
+      res.status(500).json({ error: 'Failed to bulk delete users' });
+    }
+  }
+);
+
+/**
  * POST /api/admin/suppliers/:id/verify
  * Verify a supplier account
  * Body: { verified: boolean, verificationNotes: string }

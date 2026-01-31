@@ -177,11 +177,30 @@
         <button id="clearFilters" class="btn btn-secondary">Clear</button>
       </div>
       
+      <div id="bulkActionsBar" class="bulk-actions-bar" style="display:none;margin-top:10px;padding:12px;background:#f8f9fa;border-radius:8px;border:1px solid #e0e0e0;">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+          <span id="selectedCount" style="font-weight:600;color:#333;">0 users selected</span>
+          <select id="bulkActionSelect" style="padding:6px 12px;border:1px solid #ccc;border-radius:4px;background:white;">
+            <option value="">Select action...</option>
+            <option value="verify">Verify</option>
+            <option value="suspend">Suspend</option>
+            <option value="unsuspend">Unsuspend</option>
+            <option value="delete">Delete</option>
+            <option value="export">Export CSV</option>
+          </select>
+          <button id="executeBulkAction" class="btn btn-primary" style="padding:6px 16px;">Execute</button>
+          <button id="clearSelection" class="btn btn-secondary" style="padding:6px 16px;">Clear Selection</button>
+        </div>
+      </div>
+      
       <div class="small" id="user-summary">Loading…</div>
       <div style="overflow-x:auto;margin-top:10px">
         <table class="table">
           <thead>
             <tr>
+              <th style="width:40px;">
+                <input type="checkbox" id="selectAll" aria-label="Select all users" style="cursor:pointer;width:16px;height:16px;">
+              </th>
               <th>Name</th>
               <th>Email</th>
               <th>Role</th>
@@ -194,7 +213,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr><td colspan="9" class="small">Loading…</td></tr>
+            <tr><td colspan="10" class="small">Loading…</td></tr>
           </tbody>
         </table>
       </div>

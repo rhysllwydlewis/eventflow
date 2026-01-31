@@ -1,6 +1,7 @@
 // Standalone admin users loader with search and filters
 (function () {
   let allUsers = [];
+  const selectedUserIds = new Set();
 
   function escapeHtml(str) {
     const div = document.createElement('div');
@@ -31,7 +32,7 @@
     // Show loading state
     AdminShared.showLoadingState(tbody, {
       rows: 5,
-      cols: 9,
+      cols: 10,
       message: 'Loading users...',
     });
 
@@ -49,7 +50,7 @@
       AdminShared.showErrorState(tbody, {
         message: 'Failed to load users. Please try again.',
         onRetry: loadAdminUsers,
-        colspan: 9,
+        colspan: 10,
       });
     }
   }
@@ -131,7 +132,7 @@
 
           renderUsers();
         },
-        colspan: 9,
+        colspan: 10,
       });
       return;
     }
@@ -149,19 +150,23 @@
           subscriptionBadge = '<span class="badge badge-free">Free</span>';
         }
 
+        const userId = escapeHtml(u.id || u._id || '');
+        const isChecked = selectedUserIds.has(userId);
+
         const actionsHtml = `
-          <button class="btn btn-secondary btn-sm" data-manage-subscription="${escapeHtml(u.id || u._id || '')}" style="font-size:12px;padding:4px 8px;margin-right:4px;">Manage Subscription</button>
+          <button class="btn btn-secondary btn-sm" data-manage-subscription="${userId}" style="font-size:12px;padding:4px 8px;margin-right:4px;">Manage Subscription</button>
           ${
             !u.verified
-              ? `<button class="btn btn-secondary btn-sm" data-resend-verification="${escapeHtml(u.id || u._id || '')}" style="font-size:12px;padding:4px 8px;">Resend Verification</button>`
+              ? `<button class="btn btn-secondary btn-sm" data-resend-verification="${userId}" style="font-size:12px;padding:4px 8px;">Resend Verification</button>`
               : ''
           }
         `;
 
         return (
           `<tr>` +
-          `<td><a href="/admin-user-detail.html?id=${escapeHtml(u.id || u._id || '')}" style="color:#3b82f6;text-decoration:none;">${escapeHtml(u.name || '')}</a></td>` +
-          `<td><a href="/admin-user-detail.html?id=${escapeHtml(u.id || u._id || '')}" style="color:#3b82f6;text-decoration:none;">${escapeHtml(u.email || '')}</a></td>` +
+          `<td><input type="checkbox" class="user-checkbox" data-user-id="${userId}" ${isChecked ? 'checked' : ''} style="cursor:pointer;width:16px;height:16px;"></td>` +
+          `<td><a href="/admin-user-detail.html?id=${userId}" style="color:#3b82f6;text-decoration:none;">${escapeHtml(u.name || '')}</a></td>` +
+          `<td><a href="/admin-user-detail.html?id=${userId}" style="color:#3b82f6;text-decoration:none;">${escapeHtml(u.email || '')}</a></td>` +
           `<td>${escapeHtml(u.role || '')}</td>` +
           `<td>${subscriptionBadge}</td>` +
           `<td>${u.verified ? '✓ Yes' : '✗ No'}</td>` +
@@ -223,6 +228,367 @@
         );
       });
     });
+
+    // Add event listeners to checkboxes
+    document.querySelectorAll('.user-checkbox').forEach(checkbox => {
+      checkbox.addEventListener('change', e => {
+        const userId = e.target.getAttribute('data-user-id');
+        if (e.target.checked) {
+          selectedUserIds.add(userId);
+        } else {
+          selectedUserIds.delete(userId);
+        }
+        updateBulkActionsUI();
+      });
+    });
+
+    // Update "Select All" checkbox state
+    updateSelectAllCheckbox();
+  }
+
+  function updateBulkActionsUI() {
+    const bulkActionsBar = document.getElementById('bulkActionsBar');
+    const selectedCount = document.getElementById('selectedCount');
+
+    if (!bulkActionsBar || !selectedCount) {
+      return;
+    }
+
+    if (selectedUserIds.size > 0) {
+      bulkActionsBar.style.display = 'block';
+      selectedCount.textContent = `${selectedUserIds.size} user${selectedUserIds.size === 1 ? '' : 's'} selected`;
+    } else {
+      bulkActionsBar.style.display = 'none';
+    }
+  }
+
+  function updateSelectAllCheckbox() {
+    const selectAllCheckbox = document.getElementById('selectAll');
+    if (!selectAllCheckbox) {
+      return;
+    }
+
+    const checkboxes = document.querySelectorAll('.user-checkbox');
+    const checkedCount = Array.from(checkboxes).filter(cb => cb.checked).length;
+
+    if (checkedCount === 0) {
+      selectAllCheckbox.checked = false;
+      selectAllCheckbox.indeterminate = false;
+    } else if (checkedCount === checkboxes.length) {
+      selectAllCheckbox.checked = true;
+      selectAllCheckbox.indeterminate = false;
+    } else {
+      selectAllCheckbox.checked = false;
+      selectAllCheckbox.indeterminate = true;
+    }
+  }
+
+  function setupSelectAllCheckbox() {
+    const selectAllCheckbox = document.getElementById('selectAll');
+    if (!selectAllCheckbox) {
+      return;
+    }
+
+    selectAllCheckbox.addEventListener('change', e => {
+      const checkboxes = document.querySelectorAll('.user-checkbox');
+      const isChecked = e.target.checked;
+
+      checkboxes.forEach(checkbox => {
+        checkbox.checked = isChecked;
+        const userId = checkbox.getAttribute('data-user-id');
+        if (isChecked) {
+          selectedUserIds.add(userId);
+        } else {
+          selectedUserIds.delete(userId);
+        }
+      });
+
+      updateBulkActionsUI();
+    });
+  }
+
+  function setupBulkActions() {
+    const executeBulkActionBtn = document.getElementById('executeBulkAction');
+    const clearSelectionBtn = document.getElementById('clearSelection');
+    const bulkActionSelect = document.getElementById('bulkActionSelect');
+
+    if (executeBulkActionBtn) {
+      executeBulkActionBtn.addEventListener('click', async () => {
+        const action = bulkActionSelect?.value;
+        if (!action) {
+          AdminShared.showToast('Please select an action', 'error');
+          return;
+        }
+
+        if (selectedUserIds.size === 0) {
+          AdminShared.showToast('No users selected', 'error');
+          return;
+        }
+
+        const userIds = Array.from(selectedUserIds);
+
+        switch (action) {
+          case 'delete':
+            await bulkDeleteUsers(userIds);
+            break;
+          case 'verify':
+            await bulkVerifyUsers(userIds);
+            break;
+          case 'suspend':
+            await bulkSuspendUsers(userIds, true);
+            break;
+          case 'unsuspend':
+            await bulkSuspendUsers(userIds, false);
+            break;
+          case 'export':
+            await exportSelectedUsers(userIds);
+            break;
+          default:
+            AdminShared.showToast('Unknown action', 'error');
+        }
+      });
+    }
+
+    if (clearSelectionBtn) {
+      clearSelectionBtn.addEventListener('click', () => {
+        selectedUserIds.clear();
+        const checkboxes = document.querySelectorAll('.user-checkbox');
+        checkboxes.forEach(cb => (cb.checked = false));
+        const selectAll = document.getElementById('selectAll');
+        if (selectAll) {
+          selectAll.checked = false;
+          selectAll.indeterminate = false;
+        }
+        updateBulkActionsUI();
+      });
+    }
+  }
+
+  async function bulkDeleteUsers(userIds) {
+    const confirmed = await AdminShared.showConfirmModal({
+      title: 'Delete Users',
+      message: `Are you sure you want to delete ${userIds.length} user${userIds.length === 1 ? '' : 's'}? This action cannot be undone.`,
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      type: 'danger',
+    });
+
+    if (!confirmed) {
+      return;
+    }
+
+    const executeBtn = document.getElementById('executeBulkAction');
+    let successCount = 0;
+    let failedCount = 0;
+    const errors = [];
+
+    await AdminShared.safeAction(
+      executeBtn,
+      async () => {
+        // Process deletions sequentially to respect API rate limits
+        for (const userId of userIds) {
+          try {
+            await AdminShared.adminFetch(`/api/admin/users/${userId}`, {
+              method: 'DELETE',
+            });
+            successCount++;
+            selectedUserIds.delete(userId);
+          } catch (error) {
+            failedCount++;
+            errors.push(`Failed to delete user ${userId}: ${error.message}`);
+          }
+        }
+
+        // Clear selection and refresh
+        selectedUserIds.clear();
+        await loadAdminUsers();
+
+        return { successCount, failedCount };
+      },
+      {
+        loadingText: 'Deleting...',
+        successMessage: `Deleted ${successCount} user${successCount === 1 ? '' : 's'}${failedCount > 0 ? `, ${failedCount} failed` : ''}`,
+        errorMessage: 'Bulk delete operation failed',
+        showDefaultToast: false,
+      }
+    );
+
+    // Show summary
+    if (successCount > 0 || failedCount > 0) {
+      const message = `Deleted ${successCount} user${successCount === 1 ? '' : 's'} successfully${failedCount > 0 ? `. ${failedCount} failed.` : '.'}`;
+      AdminShared.showToast(message, failedCount > 0 ? 'warning' : 'success');
+    }
+  }
+
+  async function bulkVerifyUsers(userIds) {
+    const confirmed = await AdminShared.showConfirmModal({
+      title: 'Verify Users',
+      message: `Verify ${userIds.length} user${userIds.length === 1 ? '' : 's'}?`,
+      confirmText: 'Verify',
+      cancelText: 'Cancel',
+      type: 'info',
+    });
+
+    if (!confirmed) {
+      return;
+    }
+
+    const executeBtn = document.getElementById('executeBulkAction');
+
+    await AdminShared.safeAction(
+      executeBtn,
+      async () => {
+        const result = await AdminShared.adminFetch('/api/admin/users/bulk-verify', {
+          method: 'POST',
+          body: { userIds },
+        });
+
+        // Clear selection and refresh
+        selectedUserIds.clear();
+        await loadAdminUsers();
+
+        return result;
+      },
+      {
+        loadingText: 'Verifying...',
+        successMessage: data => {
+          return `Verified ${data.verifiedCount} user${data.verifiedCount === 1 ? '' : 's'}${data.alreadyVerifiedCount > 0 ? ` (${data.alreadyVerifiedCount} already verified)` : ''}`;
+        },
+        errorMessage: 'Failed to verify users',
+      }
+    );
+  }
+
+  async function bulkSuspendUsers(userIds, suspend = true) {
+    const action = suspend ? 'Suspend' : 'Unsuspend';
+
+    let reason = '';
+    let duration = '';
+
+    if (suspend) {
+      // Ask for reason and duration
+      const reasonResult = await AdminShared.showInputModal({
+        title: 'Suspension Reason',
+        message: 'Please provide a reason for suspending these users',
+        label: 'Reason',
+        placeholder: 'e.g., Terms of service violation',
+        required: false,
+        type: 'textarea',
+      });
+
+      if (!reasonResult.confirmed) {
+        return;
+      }
+      reason = reasonResult.value || 'Bulk suspension';
+
+      const durationResult = await AdminShared.showInputModal({
+        title: 'Suspension Duration',
+        message: 'Enter duration (e.g., "7d", "30d", "1y") or leave blank for permanent',
+        label: 'Duration',
+        placeholder: 'e.g., 7d, 30d, 1y',
+        required: false,
+      });
+
+      if (!durationResult.confirmed) {
+        return;
+      }
+      duration = durationResult.value || '';
+    }
+
+    const confirmed = await AdminShared.showConfirmModal({
+      title: `${action} Users`,
+      message: `${action} ${userIds.length} user${userIds.length === 1 ? '' : 's'}?`,
+      confirmText: action,
+      cancelText: 'Cancel',
+      type: suspend ? 'warning' : 'info',
+    });
+
+    if (!confirmed) {
+      return;
+    }
+
+    const executeBtn = document.getElementById('executeBulkAction');
+
+    await AdminShared.safeAction(
+      executeBtn,
+      async () => {
+        const result = await AdminShared.adminFetch('/api/admin/users/bulk-suspend', {
+          method: 'POST',
+          body: { userIds, suspended: suspend, reason, duration },
+        });
+
+        // Clear selection and refresh
+        selectedUserIds.clear();
+        await loadAdminUsers();
+
+        return result;
+      },
+      {
+        loadingText: `${suspend ? 'Suspending' : 'Unsuspending'}...`,
+        successMessage: data => {
+          return `${suspend ? 'Suspended' : 'Unsuspended'} ${data.updatedCount} user${data.updatedCount === 1 ? '' : 's'}`;
+        },
+        errorMessage: `Failed to ${suspend ? 'suspend' : 'unsuspend'} users`,
+      }
+    );
+  }
+
+  async function exportSelectedUsers(userIds) {
+    try {
+      // Get full user data
+      const selectedUsers = allUsers.filter(u => userIds.includes(u.id || u._id));
+
+      if (selectedUsers.length === 0) {
+        AdminShared.showToast('No users to export', 'error');
+        return;
+      }
+
+      // Create CSV content
+      const headers = [
+        'Name',
+        'Email',
+        'Role',
+        'Subscription',
+        'Verified',
+        'Marketing Opt-In',
+        'Joined',
+        'Last Login',
+      ];
+      const rows = selectedUsers.map(u => [
+        u.name || '',
+        u.email || '',
+        u.role || '',
+        u.subscription?.tier || 'free',
+        u.verified ? 'Yes' : 'No',
+        u.marketingOptIn ? 'Yes' : 'No',
+        u.createdAt || '',
+        u.lastLoginAt || '',
+      ]);
+
+      const csv = [
+        headers.join(','),
+        ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')),
+      ].join('\n');
+
+      // Create and download file
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `users-export-${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      AdminShared.showToast(
+        `Exported ${selectedUsers.length} user${selectedUsers.length === 1 ? '' : 's'}`,
+        'success'
+      );
+    } catch (error) {
+      AdminShared.debugError('Export error:', error);
+      AdminShared.showToast('Failed to export users', 'error');
+    }
   }
 
   function setupFilterListeners() {
@@ -553,10 +919,14 @@
       loadAdminUsers();
       setupFilterListeners();
       setupSubscriptionModal();
+      setupSelectAllCheckbox();
+      setupBulkActions();
     });
   } else {
     loadAdminUsers();
     setupFilterListeners();
     setupSubscriptionModal();
+    setupSelectAllCheckbox();
+    setupBulkActions();
   }
 })();
