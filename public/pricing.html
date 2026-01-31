@@ -311,6 +311,194 @@
       font-size: 0.9375rem;
     }
     
+    .pricing-comparison {
+      margin: 4rem 0 3rem;
+    }
+    
+    .pricing-comparison h2 {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #111827;
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+    
+    .comparison-table-wrapper {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+    
+    .comparison-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      background: white;
+      min-width: 800px;
+    }
+    
+    .comparison-table thead {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: white;
+    }
+    
+    .comparison-table th {
+      background: #f9fafb;
+      padding: 1.5rem 1rem;
+      text-align: center;
+      font-weight: 700;
+      font-size: 1.125rem;
+      color: #111827;
+      border-bottom: 2px solid #e5e7eb;
+      position: relative;
+    }
+    
+    .comparison-table th:first-child {
+      text-align: left;
+      border-top-left-radius: 12px;
+      width: 35%;
+    }
+    
+    .comparison-table th:last-child {
+      border-top-right-radius: 12px;
+    }
+    
+    .comparison-table th.popular {
+      background: #0B8073;
+      color: white;
+    }
+    
+    .comparison-table .badge {
+      display: inline-block;
+      background: #fbbf24;
+      color: #78350f;
+      padding: 0.25rem 0.75rem;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      margin-left: 0.5rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .comparison-table tbody tr {
+      border-bottom: 1px solid #f3f4f6;
+    }
+    
+    .comparison-table tbody tr:last-child td:first-child {
+      border-bottom-left-radius: 12px;
+    }
+    
+    .comparison-table tbody tr:last-child td:last-child {
+      border-bottom-right-radius: 12px;
+    }
+    
+    .comparison-table tbody tr:hover {
+      background: #f9fafb;
+    }
+    
+    .comparison-table td {
+      padding: 1.25rem 1rem;
+      text-align: center;
+      font-size: 0.9375rem;
+      color: #374151;
+      vertical-align: middle;
+    }
+    
+    .comparison-table td:first-child {
+      text-align: left;
+      font-weight: 500;
+      color: #111827;
+    }
+    
+    .comparison-table .popular-col {
+      background: #f0fdfa;
+    }
+    
+    .comparison-table .checkmark {
+      color: #0B8073;
+      font-size: 1.25rem;
+      font-weight: 700;
+    }
+    
+    .comparison-table .value {
+      font-weight: 600;
+      color: #0B8073;
+    }
+    
+    .comparison-table .na {
+      color: #d1d5db;
+      font-size: 1.25rem;
+    }
+    
+    .tooltip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px;
+      height: 18px;
+      margin-left: 0.5rem;
+      background: #e5e7eb;
+      color: #6b7280;
+      border-radius: 50%;
+      font-size: 0.75rem;
+      font-weight: 700;
+      cursor: help;
+      position: relative;
+      vertical-align: middle;
+      transition: background 0.2s;
+    }
+    
+    .tooltip:hover {
+      background: #0B8073;
+      color: white;
+    }
+    
+    .tooltip:hover::after {
+      content: attr(data-tip);
+      position: absolute;
+      bottom: calc(100% + 8px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1f2937;
+      color: white;
+      padding: 0.5rem 0.75rem;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      font-weight: 400;
+      white-space: nowrap;
+      z-index: 100;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    
+    .tooltip:hover::before {
+      content: '';
+      position: absolute;
+      bottom: calc(100% + 2px);
+      left: 50%;
+      transform: translateX(-50%);
+      border: 6px solid transparent;
+      border-top-color: #1f2937;
+      z-index: 100;
+    }
+    
+    .feature-category {
+      background: #f3f4f6;
+      font-weight: 700;
+      color: #111827;
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: 0.5px;
+      padding: 0.75rem 1rem !important;
+    }
+    
+    .feature-category td {
+      padding: 0.75rem 1rem;
+    }
+    
     @media (max-width: 768px) {
       .pricing-hero h1 {
         font-size: 2rem;
@@ -322,6 +510,38 @@
       
       .trust-footer ul {
         grid-template-columns: 1fr;
+      }
+      
+      .pricing-comparison h2 {
+        font-size: 1.5rem;
+        margin-bottom: 1.5rem;
+      }
+      
+      .comparison-table-wrapper {
+        border-radius: 8px;
+        margin: 0 -1rem;
+      }
+      
+      .comparison-table {
+        min-width: 700px;
+      }
+      
+      .comparison-table th,
+      .comparison-table td {
+        padding: 0.875rem 0.75rem;
+        font-size: 0.875rem;
+      }
+      
+      .comparison-table th:first-child,
+      .comparison-table td:first-child {
+        width: 40%;
+        padding-left: 1rem;
+      }
+      
+      .tooltip:hover::after {
+        white-space: normal;
+        max-width: 200px;
+        text-align: center;
       }
     }
   </style>
@@ -494,6 +714,306 @@
         <a href="/checkout.html?plan=pro_plus" class="pricing-cta">Get Professional Plus</a>
       </div>
     </div>
+
+    <!-- Feature Comparison Table -->
+    <section class="pricing-comparison">
+      <h2>Compare All Features</h2>
+      <div class="comparison-table-wrapper">
+        <table class="comparison-table">
+          <thead>
+            <tr>
+              <th>Feature</th>
+              <th>Free</th>
+              <th class="popular">Pro <span class="badge">Popular</span></th>
+              <th>Enterprise</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Profile & Visibility -->
+            <tr class="feature-category">
+              <td colspan="4">Profile & Visibility</td>
+            </tr>
+            <tr>
+              <td>
+                Supplier Profile
+                <span class="tooltip" data-tip="Your business page on EventFlow">ⓘ</span>
+              </td>
+              <td><span class="checkmark">✓</span></td>
+              <td class="popular-col"><span class="checkmark">✓</span></td>
+              <td><span class="checkmark">✓</span></td>
+            </tr>
+            <tr>
+              <td>
+                Photo Gallery
+                <span class="tooltip" data-tip="Upload portfolio photos to showcase your work">ⓘ</span>
+              </td>
+              <td><span class="value">5 photos</span></td>
+              <td class="popular-col"><span class="value">Unlimited</span></td>
+              <td><span class="value">Unlimited</span></td>
+            </tr>
+            <tr>
+              <td>
+                Package Listings
+                <span class="tooltip" data-tip="Create service packages for customers">ⓘ</span>
+              </td>
+              <td><span class="value">1 package</span></td>
+              <td class="popular-col"><span class="value">Unlimited</span></td>
+              <td><span class="value">Unlimited</span></td>
+            </tr>
+            <tr>
+              <td>
+                Standard Listing
+                <span class="tooltip" data-tip="Appear in supplier search results">ⓘ</span>
+              </td>
+              <td><span class="checkmark">✓</span></td>
+              <td class="popular-col"><span class="checkmark">✓</span></td>
+              <td><span class="checkmark">✓</span></td>
+            </tr>
+            <tr>
+              <td>
+                Priority Search Placement
+                <span class="tooltip" data-tip="Appear higher in search results">ⓘ</span>
+              </td>
+              <td><span class="na">—</span></td>
+              <td class="popular-col"><span class="checkmark">✓</span></td>
+              <td><span class="checkmark">✓</span></td>
+            </tr>
+            <tr>
+              <td>
+                Homepage Featured Placement
+                <span class="tooltip" data-tip="Featured on EventFlow homepage">ⓘ</span>
+              </td>
+              <td><span class="na">—</span></td>
+              <td class="popular-col"><span class="na">—</span></td>
+              <td><span class="checkmark">✓</span></td>
+            </tr>
+            <tr>
+              <td>
+                Top of Category Pages
+                <span class="tooltip" data-tip="Featured at top of your category">ⓘ</span>
+              </td>
+              <td><span class="na">—</span></td>
+              <td class="popular-col"><span class="na">—</span></td>
+              <td><span class="checkmark">✓</span></td>
+            </tr>
+
+            <!-- Trust & Verification -->
+            <tr class="feature-category">
+              <td colspan="4">Trust & Verification</td>
+            </tr>
+            <tr>
+              <td>
+                Email Verification Badge
+                <span class="tooltip" data-tip="Show verified email on your profile">ⓘ</span>
+              </td>
+              <td><span class="na">—</span></td>
+              <td class="popular-col"><span class="checkmark">✓</span></td>
+              <td><span class="checkmark">✓</span></td>
+            </tr>
+            <tr>
+              <td>
+                Phone Verification Badge
+                <span class="tooltip" data-tip="Show verified phone number on your profile">ⓘ</span>
+              </td>
+              <td><span class="na">—</span></td>
+              <td class="popular-col"><span class="checkmark">✓</span></td>
+              <td><span class="checkmark">✓</span></td>
+            </tr>
+            <tr>
+              <td>
+                Business Verification Badge
+                <span class="tooltip" data-tip="Official business registration verified">ⓘ</span>
+              </td>
+              <td><span class="na">—</span></td>
+              <td class="popular-col"><span class="na">—</span></td>
+              <td><span class="checkmark">✓</span></td>
+            </tr>
+            <tr>
+              <td>
+                Response Time Display
+                <span class="tooltip" data-tip="Show average response time to customers">ⓘ</span>
+              </td>
+              <td><span class="na">—</span></td>
+              <td class="popular-col"><span class="checkmark">✓</span></td>
+              <td><span class="checkmark">✓</span></td>
+            </tr>
+
+            <!-- Lead Management -->
+            <tr class="feature-category">
+              <td colspan="4">Lead Management</td>
+            </tr>
+            <tr>
+              <td>
+                Receive Enquiries
+                <span class="tooltip" data-tip="Get enquiries from potential customers">ⓘ</span>
+              </td>
+              <td><span class="checkmark">✓</span></td>
+              <td class="popular-col"><span class="checkmark">✓</span></td>
+              <td><span class="checkmark">✓</span></td>
+            </tr>
+            <tr>
+              <td>
+                Lead Quality Scoring
+                <span class="tooltip" data-tip="AI-powered High/Medium/Low quality ratings">ⓘ</span>
+              </td>
+              <td><span class="na">—</span></td>
+              <td class="popular-col"><span class="checkmark">✓</span></td>
+              <td><span class="checkmark">✓</span></td>
+            </tr>
+            <tr>
+              <td>
+                Response Time Tracking
+                <span class="tooltip" data-tip="Track how quickly you respond to enquiries">ⓘ</span>
+              </td>
+              <td><span class="na">—</span></td>
+              <td class="popular-col"><span class="checkmark">✓</span></td>
+              <td><span class="checkmark">✓</span></td>
+            </tr>
+            <tr>
+              <td>
+                Email Notifications
+                <span class="tooltip" data-tip="Get notified of new enquiries via email">ⓘ</span>
+              </td>
+              <td><span class="checkmark">✓</span></td>
+              <td class="popular-col"><span class="checkmark">✓</span></td>
+              <td><span class="checkmark">✓</span></td>
+            </tr>
+
+            <!-- Analytics & Insights -->
+            <tr class="feature-category">
+              <td colspan="4">Analytics & Insights</td>
+            </tr>
+            <tr>
+              <td>
+                Profile Views
+                <span class="tooltip" data-tip="See how many people viewed your profile">ⓘ</span>
+              </td>
+              <td><span class="value">Last 7 days</span></td>
+              <td class="popular-col"><span class="value">Last 90 days</span></td>
+              <td><span class="value">All time</span></td>
+            </tr>
+            <tr>
+              <td>
+                Enquiry Analytics
+                <span class="tooltip" data-tip="Track enquiry trends and conversion rates">ⓘ</span>
+              </td>
+              <td><span class="na">—</span></td>
+              <td class="popular-col"><span class="checkmark">✓</span></td>
+              <td><span class="checkmark">✓</span></td>
+            </tr>
+            <tr>
+              <td>
+                Search Performance
+                <span class="tooltip" data-tip="See how you rank in search results">ⓘ</span>
+              </td>
+              <td><span class="na">—</span></td>
+              <td class="popular-col"><span class="checkmark">✓</span></td>
+              <td><span class="checkmark">✓</span></td>
+            </tr>
+            <tr>
+              <td>
+                Export Analytics (CSV)
+                <span class="tooltip" data-tip="Download your data for analysis">ⓘ</span>
+              </td>
+              <td><span class="na">—</span></td>
+              <td class="popular-col"><span class="na">—</span></td>
+              <td><span class="checkmark">✓</span></td>
+            </tr>
+            <tr>
+              <td>
+                Monthly Performance Review
+                <span class="tooltip" data-tip="Personalized monthly insights report">ⓘ</span>
+              </td>
+              <td><span class="na">—</span></td>
+              <td class="popular-col"><span class="na">—</span></td>
+              <td><span class="checkmark">✓</span></td>
+            </tr>
+
+            <!-- Support -->
+            <tr class="feature-category">
+              <td colspan="4">Support</td>
+            </tr>
+            <tr>
+              <td>
+                Email Support
+                <span class="tooltip" data-tip="Get help via email">ⓘ</span>
+              </td>
+              <td><span class="value">48h response</span></td>
+              <td class="popular-col"><span class="value">24h response</span></td>
+              <td><span class="value">12h response</span></td>
+            </tr>
+            <tr>
+              <td>
+                Priority Support
+                <span class="tooltip" data-tip="Jump the queue for faster help">ⓘ</span>
+              </td>
+              <td><span class="na">—</span></td>
+              <td class="popular-col"><span class="checkmark">✓</span></td>
+              <td><span class="checkmark">✓</span></td>
+            </tr>
+            <tr>
+              <td>
+                Dedicated Onboarding Call
+                <span class="tooltip" data-tip="One-on-one setup assistance">ⓘ</span>
+              </td>
+              <td><span class="na">—</span></td>
+              <td class="popular-col"><span class="na">—</span></td>
+              <td><span class="checkmark">✓</span></td>
+            </tr>
+            <tr>
+              <td>
+                VIP Account Manager
+                <span class="tooltip" data-tip="Dedicated contact for your account">ⓘ</span>
+              </td>
+              <td><span class="na">—</span></td>
+              <td class="popular-col"><span class="na">—</span></td>
+              <td><span class="checkmark">✓</span></td>
+            </tr>
+
+            <!-- Platform Features -->
+            <tr class="feature-category">
+              <td colspan="4">Platform Features</td>
+            </tr>
+            <tr>
+              <td>
+                No Commission on Bookings
+                <span class="tooltip" data-tip="Keep 100% of your booking revenue">ⓘ</span>
+              </td>
+              <td><span class="checkmark">✓</span></td>
+              <td class="popular-col"><span class="checkmark">✓</span></td>
+              <td><span class="checkmark">✓</span></td>
+            </tr>
+            <tr>
+              <td>
+                Monthly Billing
+                <span class="tooltip" data-tip="No annual contracts, pay monthly">ⓘ</span>
+              </td>
+              <td><span class="checkmark">✓</span></td>
+              <td class="popular-col"><span class="checkmark">✓</span></td>
+              <td><span class="checkmark">✓</span></td>
+            </tr>
+            <tr>
+              <td>
+                Cancel Anytime
+                <span class="tooltip" data-tip="No long-term commitment required">ⓘ</span>
+              </td>
+              <td><span class="checkmark">✓</span></td>
+              <td class="popular-col"><span class="checkmark">✓</span></td>
+              <td><span class="checkmark">✓</span></td>
+            </tr>
+            <tr>
+              <td>
+                Data Export
+                <span class="tooltip" data-tip="Export your data anytime">ⓘ</span>
+              </td>
+              <td><span class="checkmark">✓</span></td>
+              <td class="popular-col"><span class="checkmark">✓</span></td>
+              <td><span class="checkmark">✓</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
 
     <!-- Trust Footer -->
     <div class="trust-footer">
