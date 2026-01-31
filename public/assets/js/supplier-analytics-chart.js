@@ -396,10 +396,242 @@ export function createAnalyticsSummary(containerId, stats) {
   }, 100);
 }
 
+/**
+ * Create enquiry trend chart with period comparison
+ * @param {string} containerId - Container element ID
+ */
+export async function createEnquiryTrendChart(containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) {
+    return null;
+  }
+
+  const canvasId = `${containerId}-canvas`;
+
+  const html = `
+    <div class="card" style="padding: 1.5rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; gap: 1rem; flex-wrap: wrap;">
+        <h3 style="margin: 0; font-size: 1.25rem; color: #0B1220;">Enquiry Trends</h3>
+        <button id="export-chart-btn" style="padding: 0.5rem 1rem; border: 1px solid #E7EAF0; background: white; border-radius: 8px; cursor: pointer; font-size: 0.875rem; transition: all 0.2s; display: flex; align-items: center; gap: 0.5rem;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          Export Chart
+        </button>
+      </div>
+      <div class="chart-container" style="position: relative; height: 350px;">
+        <canvas id="${canvasId}"></canvas>
+      </div>
+      <div id="trend-comparison" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #E7EAF0;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+          <div style="text-align: center; padding: 0.75rem;">
+            <div style="font-size: 0.875rem; color: #667085; margin-bottom: 0.25rem;">Last 30 Days</div>
+            <div id="current-period-total" style="font-size: 1.5rem; font-weight: 700; color: #0B8073;">-</div>
+            <div style="font-size: 0.75rem; color: #98A2B3;">Total Enquiries</div>
+          </div>
+          <div style="text-align: center; padding: 0.75rem;">
+            <div style="font-size: 0.875rem; color: #667085; margin-bottom: 0.25rem;">Previous 30 Days</div>
+            <div id="previous-period-total" style="font-size: 1.5rem; font-weight: 700; color: #98A2B3;">-</div>
+            <div style="font-size: 0.75rem; color: #98A2B3;">Total Enquiries</div>
+          </div>
+          <div style="text-align: center; padding: 0.75rem;">
+            <div style="font-size: 0.875rem; color: #667085; margin-bottom: 0.25rem;">Change</div>
+            <div id="period-change" style="font-size: 1.5rem; font-weight: 700; color: #667085;">-</div>
+            <div style="font-size: 0.75rem; color: #98A2B3;">vs. Previous Period</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  container.innerHTML = html;
+
+  try {
+    // Fetch enquiry data for last 60 days
+    const data = await fetchEnquiryTrendData();
+
+    if (!data) {
+      throw new Error('Failed to fetch enquiry data');
+    }
+
+    // Create gradients
+    const canvas = document.getElementById(canvasId);
+    const ctx = canvas.getContext('2d');
+
+    const currentGradient = ctx.createLinearGradient(0, 0, 0, 350);
+    currentGradient.addColorStop(0, 'rgba(11, 128, 115, 0.2)');
+    currentGradient.addColorStop(1, 'rgba(11, 128, 115, 0.01)');
+
+    const previousGradient = ctx.createLinearGradient(0, 0, 0, 350);
+    previousGradient.addColorStop(0, 'rgba(209, 213, 219, 0.2)');
+    previousGradient.addColorStop(1, 'rgba(209, 213, 219, 0.01)');
+
+    const chartData = {
+      labels: data.labels,
+      datasets: [
+        {
+          label: 'Last 30 Days',
+          data: data.currentData,
+          borderColor: '#0B8073',
+          backgroundColor: currentGradient,
+          borderWidth: 2,
+          fill: true,
+          tension: 0.4,
+          pointRadius: 3,
+          pointHoverRadius: 5,
+          pointBackgroundColor: '#0B8073',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2,
+        },
+        {
+          label: 'Previous 30 Days',
+          data: data.previousData,
+          borderColor: '#d1d5db',
+          backgroundColor: previousGradient,
+          borderWidth: 2,
+          fill: true,
+          tension: 0.4,
+          borderDash: [5, 5],
+          pointRadius: 3,
+          pointHoverRadius: 5,
+          pointBackgroundColor: '#d1d5db',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2,
+        },
+      ],
+    };
+
+    const chartOptions = {
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            stepSize: 1,
+            precision: 0,
+          },
+        },
+      },
+      plugins: {
+        tooltip: {
+          mode: 'index',
+          intersect: false,
+        },
+        legend: {
+          display: true,
+          position: 'top',
+        },
+      },
+    };
+
+    const chart = await createAnalyticsChart(canvasId, chartData, chartOptions);
+
+    // Update comparison stats
+    const currentTotal = data.currentData.reduce((sum, val) => sum + val, 0);
+    const previousTotal = data.previousData.reduce((sum, val) => sum + val, 0);
+    const change = currentTotal - previousTotal;
+    const changePercent = previousTotal > 0 ? ((change / previousTotal) * 100).toFixed(1) : 0;
+
+    document.getElementById('current-period-total').textContent = currentTotal;
+    document.getElementById('previous-period-total').textContent = previousTotal;
+
+    const changeElement = document.getElementById('period-change');
+    const changeSign = change >= 0 ? '+' : '';
+    changeElement.textContent = `${changeSign}${change} (${changeSign}${changePercent}%)`;
+    changeElement.style.color = change >= 0 ? '#10B981' : '#EF4444';
+
+    // Add export functionality
+    const exportBtn = document.getElementById('export-chart-btn');
+    exportBtn.addEventListener('click', () => {
+      const url = canvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.download = `enquiry-trends-${new Date().toISOString().split('T')[0]}.png`;
+      link.href = url;
+      link.click();
+    });
+
+    return chart;
+  } catch (error) {
+    console.error('Error creating enquiry trend chart:', error);
+    container.innerHTML = `
+      <div class="card" style="padding: 1.5rem;">
+        <h3 style="margin: 0 0 0.5rem 0; font-size: 1.25rem; color: #0B1220;">Enquiry Trends</h3>
+        <p style="color: #667085;">Unable to load enquiry trend data. Please try again later.</p>
+      </div>
+    `;
+    return null;
+  }
+}
+
+/**
+ * Fetch enquiry trend data for last 60 days
+ * @returns {Promise<object>} Trend data with current, previous, and labels
+ */
+async function fetchEnquiryTrendData() {
+  try {
+    // Fetch analytics data for 60 days
+    const response = await fetch('/api/supplier/analytics?days=60', {
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch analytics data');
+    }
+
+    const result = await response.json();
+
+    if (!result.success || !result.analytics || !result.analytics.chartData) {
+      throw new Error('Invalid analytics data');
+    }
+
+    const chartData = result.analytics.chartData;
+
+    // Generate last 30 and previous 30 days
+    const now = new Date();
+    const labels = [];
+    const currentData = [];
+    const previousData = [];
+
+    // Create maps for easy lookup
+    const enquiriesByDate = {};
+    chartData.forEach(item => {
+      enquiriesByDate[item.date] = item.enquiries || 0;
+    });
+
+    // Last 30 days (most recent)
+    for (let i = 29; i >= 0; i--) {
+      const date = new Date(now);
+      date.setDate(date.getDate() - i);
+      const dateKey = date.toISOString().split('T')[0];
+      labels.push(date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }));
+      currentData.push(enquiriesByDate[dateKey] || 0);
+    }
+
+    // Previous 30 days (30-59 days ago)
+    for (let i = 29; i >= 0; i--) {
+      const date = new Date(now);
+      date.setDate(date.getDate() - i - 30);
+      const dateKey = date.toISOString().split('T')[0];
+      previousData.push(enquiriesByDate[dateKey] || 0);
+    }
+
+    return {
+      labels,
+      currentData,
+      previousData,
+    };
+  } catch (error) {
+    console.error('Error fetching enquiry trend data:', error);
+    return null;
+  }
+}
+
 // Export functions
 export default {
   createAnalyticsChart,
   createPerformanceChart,
   createAnalyticsSummary,
+  createEnquiryTrendChart,
   loadChartJS,
 };

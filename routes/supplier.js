@@ -14,7 +14,8 @@ const router = express.Router();
 
 // Constants
 const TRIAL_DURATION_DAYS = 14;
-const ANALYTICS_WINDOW_DAYS = 30;
+const DEFAULT_ANALYTICS_WINDOW_DAYS = 30;
+const MAX_ANALYTICS_WINDOW_DAYS = 90;
 
 /**
  * POST /api/supplier/trial/activate
@@ -101,6 +102,12 @@ router.get('/analytics', authRequired, async (req, res) => {
 
     const supplierId = supplier.id;
 
+    // Get analytics window from query parameter, default to 30 days, max 90 days
+    const days = Math.min(
+      parseInt(req.query.days) || DEFAULT_ANALYTICS_WINDOW_DAYS,
+      MAX_ANALYTICS_WINDOW_DAYS
+    );
+
     // Count enquiries from message threads
     const threads = await dbUnified.read('threads');
     const enquiries = threads.filter(t => t.supplierId === supplierId);
@@ -124,7 +131,7 @@ router.get('/analytics', authRequired, async (req, res) => {
 
     // Generate chart data for last N days
     const now = new Date();
-    const windowStart = new Date(now.getTime() - ANALYTICS_WINDOW_DAYS * 24 * 60 * 60 * 1000);
+    const windowStart = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
 
     const last30DaysViews = viewEvents.filter(e => {
       const eventDate = new Date(e.timestamp || e.createdAt);
@@ -140,7 +147,7 @@ router.get('/analytics', authRequired, async (req, res) => {
     const viewsByDate = {};
     const enquiriesByDate = {};
 
-    for (let i = 0; i < ANALYTICS_WINDOW_DAYS; i++) {
+    for (let i = 0; i < days; i++) {
       const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
       const dateKey = date.toISOString().split('T')[0];
       viewsByDate[dateKey] = 0;

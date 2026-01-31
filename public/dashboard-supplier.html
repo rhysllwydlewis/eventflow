@@ -138,6 +138,9 @@
 <!-- Performance Analytics Chart -->
 <div id="supplier-performance-chart"></div>
 
+<!-- Enquiry Trend Chart -->
+<div id="enquiry-trend-chart"></div>
+
 <!-- Profile Completeness Checklist -->
 <div id="profile-completeness-widget"></div>
 
@@ -475,7 +478,7 @@
   } from '/supplier/js/feature-access.js';
   
   import { createStatsGrid, createProfileChecklist } from '/assets/js/dashboard-widgets.js';
-  import { createPerformanceChart, createAnalyticsSummary } from '/assets/js/supplier-analytics-chart.js';
+  import { createPerformanceChart, createAnalyticsSummary, createEnquiryTrendChart } from '/assets/js/supplier-analytics-chart.js';
   import { initCountUp } from '/assets/js/count-up-animation.js';
   
   // Initialize feature access control (non-blocking)
@@ -589,6 +592,9 @@
       }
       
       await createPerformanceChart('supplier-performance-chart', viewsData, enquiriesData, labels);
+      
+      // Create enquiry trend chart
+      await createEnquiryTrendChart('enquiry-trend-chart');
       
       // Fetch supplier profiles to check completion
       let hasProfile = false;
