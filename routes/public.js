@@ -9,6 +9,8 @@
 const express = require('express');
 const router = express.Router();
 const dbUnified = require('../db-unified');
+const { csrfProtection } = require('../middleware/csrf');
+const { writeLimiter } = require('../middleware/rateLimit');
 
 function isCollageDebugEnabled() {
   return process.env.NODE_ENV === 'development' || process.env.DEBUG_COLLAGE === 'true';
@@ -147,8 +149,9 @@ router.get('/stats', async (req, res) => {
 /**
  * POST /api/public/faq/vote
  * Vote on FAQ helpfulness
+ * CSRF protected to prevent unauthorized votes
  */
-router.post('/faq/vote', async (req, res) => {
+router.post('/faq/vote', writeLimiter, csrfProtection, async (req, res) => {
   try {
     const { faqId, helpful } = req.body;
 
@@ -190,7 +193,7 @@ router.post('/faq/vote', async (req, res) => {
  */
 router.get('/recommendations', async (req, res) => {
   try {
-    const { category, location, budget, eventType } = req.query;
+    const { category, location, budget } = req.query;
 
     const suppliers = await dbUnified.read('suppliers');
 

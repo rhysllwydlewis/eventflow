@@ -2710,59 +2710,75 @@ router.delete('/packages/:id', authRequired, roleRequired('admin'), csrfProtecti
  * PATCH /api/admin/packages/:id/tags (P3-28: Seasonal Tagging)
  * Add or update seasonal tags for a package
  */
-router.patch('/packages/:id/tags', authRequired, roleRequired('admin'), csrfProtection, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { seasonalTags } = req.body;
-    
-    if (!Array.isArray(seasonalTags)) {
-      return res.status(400).json({ error: 'seasonalTags must be an array' });
-    }
-    
-    // Validate seasonal tags
-    const validSeasons = ['spring', 'summer', 'autumn', 'winter', 'christmas', 'valentine', 'easter', 'halloween', 'new-year'];
-    const invalidTags = seasonalTags.filter(tag => !validSeasons.includes(tag.toLowerCase()));
-    
-    if (invalidTags.length > 0) {
-      return res.status(400).json({ 
-        error: 'Invalid seasonal tags',
-        invalidTags,
-        validSeasons,
+router.patch(
+  '/packages/:id/tags',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { seasonalTags } = req.body;
+
+      if (!Array.isArray(seasonalTags)) {
+        return res.status(400).json({ error: 'seasonalTags must be an array' });
+      }
+
+      // Validate seasonal tags
+      const validSeasons = [
+        'spring',
+        'summer',
+        'autumn',
+        'winter',
+        'christmas',
+        'valentine',
+        'easter',
+        'halloween',
+        'new-year',
+      ];
+      const invalidTags = seasonalTags.filter(tag => !validSeasons.includes(tag.toLowerCase()));
+
+      if (invalidTags.length > 0) {
+        return res.status(400).json({
+          error: 'Invalid seasonal tags',
+          invalidTags,
+          validSeasons,
+        });
+      }
+
+      const packages = await dbUnified.read('packages');
+      const pkgIndex = packages.findIndex(p => p.id === id);
+
+      if (pkgIndex === -1) {
+        return res.status(404).json({ error: 'Package not found' });
+      }
+
+      // Update seasonal tags
+      packages[pkgIndex].seasonalTags = seasonalTags.map(t => t.toLowerCase());
+      packages[pkgIndex].updatedAt = new Date().toISOString();
+
+      await dbUnified.write('packages', packages);
+
+      // Log the action
+      auditLog({
+        adminId: req.user.id,
+        adminEmail: req.user.email,
+        action: 'package_updated',
+        targetType: 'package',
+        targetId: id,
+        details: { field: 'seasonalTags', value: seasonalTags },
       });
+
+      res.json({
+        success: true,
+        package: packages[pkgIndex],
+      });
+    } catch (error) {
+      console.error('Error updating seasonal tags:', error);
+      res.status(500).json({ error: 'Failed to update seasonal tags', details: error.message });
     }
-    
-    const packages = await dbUnified.read('packages');
-    const pkgIndex = packages.findIndex(p => p.id === id);
-    
-    if (pkgIndex === -1) {
-      return res.status(404).json({ error: 'Package not found' });
-    }
-    
-    // Update seasonal tags
-    packages[pkgIndex].seasonalTags = seasonalTags.map(t => t.toLowerCase());
-    packages[pkgIndex].updatedAt = new Date().toISOString();
-    
-    await dbUnified.write('packages', packages);
-    
-    // Log the action
-    auditLog({
-      adminId: req.user.id,
-      adminEmail: req.user.email,
-      action: 'package_updated',
-      targetType: 'package',
-      targetId: id,
-      details: { field: 'seasonalTags', value: seasonalTags },
-    });
-    
-    res.json({ 
-      success: true, 
-      package: packages[pkgIndex],
-    });
-  } catch (error) {
-    console.error('Error updating seasonal tags:', error);
-    res.status(500).json({ error: 'Failed to update seasonal tags', details: error.message });
   }
-});
+);
 
 /**
  * POST /api/admin/users/:id/grant-admin
@@ -5888,8 +5904,6 @@ router.get('/public/pexels-collage', async (req, res) => {
     const shouldFetchPhotos = photos === 'true';
     const shouldFetchVideos = videos === 'true';
 
-    const allMedia = [];
-
     // Try to use Pexels API first
     if (pexels.isConfigured()) {
       try {
@@ -6953,23 +6967,23 @@ router.get('/analytics/competitors', authRequired, roleRequired('admin'), async 
   try {
     // Define key competitors
     const competitors = [
-      { 
-        name: 'Bridebook', 
+      {
+        name: 'Bridebook',
         url: 'bridebook.co.uk',
         description: 'Leading UK wedding planning platform',
       },
-      { 
-        name: 'Hitched', 
+      {
+        name: 'Hitched',
         url: 'hitched.co.uk',
         description: 'Wedding venue and supplier directory',
       },
-      { 
-        name: 'WeddingWire', 
+      {
+        name: 'WeddingWire',
         url: 'weddingwire.co.uk',
         description: 'International wedding marketplace',
       },
     ];
-    
+
     // Basic competitor feature analysis
     const analysis = competitors.map(competitor => ({
       name: competitor.name,
@@ -6998,8 +7012,8 @@ router.get('/analytics/competitors', authRequired, roleRequired('admin'), async 
         focus: competitor.name === 'Bridebook' ? 'Planning tools' : 'Supplier directory',
       },
     }));
-    
-    res.json({ 
+
+    res.json({
       success: true,
       competitors: analysis,
       lastUpdated: new Date().toISOString(),
@@ -7020,61 +7034,53 @@ router.get('/users/segments', authRequired, roleRequired('admin'), async (req, r
     const suppliers = await dbUnified.read('suppliers');
     const plans = await dbUnified.read('plans');
     const messages = await dbUnified.read('messages');
-    
+
     // Segment 1: Active Customers (have created plans)
     const activeCustomers = users.filter(u => {
       const userPlans = plans.filter(p => p.userId === u.id);
       return u.role === 'customer' && userPlans.length > 0;
     });
-    
+
     // Segment 2: Inactive Customers (registered but no plans)
     const inactiveCustomers = users.filter(u => {
       const userPlans = plans.filter(p => p.userId === u.id);
       return u.role === 'customer' && userPlans.length === 0;
     });
-    
+
     // Segment 3: Premium Suppliers (have subscription)
-    const premiumSuppliers = suppliers.filter(s => 
-      s.subscription && s.subscription !== 'free'
-    );
-    
+    const premiumSuppliers = suppliers.filter(s => s.subscription && s.subscription !== 'free');
+
     // Segment 4: Free Suppliers (no subscription or free tier)
-    const freeSuppliers = suppliers.filter(s => 
-      !s.subscription || s.subscription === 'free'
-    );
-    
+    const freeSuppliers = suppliers.filter(s => !s.subscription || s.subscription === 'free');
+
     // Segment 5: Active Suppliers (sent messages in last 30 days)
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     const activeSuppliers = suppliers.filter(s => {
-      const recentMessages = messages.filter(m => 
-        m.senderId === s.userId && 
-        new Date(m.createdAt) > thirtyDaysAgo
+      const recentMessages = messages.filter(
+        m => m.senderId === s.userId && new Date(m.createdAt) > thirtyDaysAgo
       );
       return recentMessages.length > 0;
     });
-    
+
     // Segment 6: At-Risk Suppliers (inactive for 60+ days)
     const sixtyDaysAgo = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000);
     const atRiskSuppliers = suppliers.filter(s => {
-      const recentMessages = messages.filter(m => 
-        m.senderId === s.userId && 
-        new Date(m.createdAt) > sixtyDaysAgo
+      const recentMessages = messages.filter(
+        m => m.senderId === s.userId && new Date(m.createdAt) > sixtyDaysAgo
       );
       return recentMessages.length === 0;
     });
-    
+
     // Segment 7: High-Value Customers (multiple events planned)
     const highValueCustomers = users.filter(u => {
       const userPlans = plans.filter(p => p.userId === u.id);
       return u.role === 'customer' && userPlans.length >= 2;
     });
-    
+
     // Segment 8: New Users (registered in last 7 days)
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-    const newUsers = users.filter(u => 
-      new Date(u.createdAt || 0) > sevenDaysAgo
-    );
-    
+    const newUsers = users.filter(u => new Date(u.createdAt || 0) > sevenDaysAgo);
+
     const segments = {
       activeCustomers: {
         count: activeCustomers.length,
@@ -7141,8 +7147,8 @@ router.get('/users/segments', authRequired, roleRequired('admin'), async (req, r
         })),
       },
     };
-    
-    res.json({ 
+
+    res.json({
       success: true,
       segments,
       totalUsers: users.length,

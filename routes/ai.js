@@ -22,7 +22,7 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
  */
 router.post('/suggestions', authRequired, async (req, res) => {
   try {
-    const { eventType, location, budget, guests, eventDate } = req.body;
+    const { eventType, location, budget, guests } = req.body;
 
     // Validate input
     if (!eventType) {

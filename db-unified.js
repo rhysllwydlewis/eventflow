@@ -115,7 +115,10 @@ async function read(collectionName) {
       if (collectionName === 'settings') {
         const doc = await collection.findOne({ id: 'system' });
         if (doc) {
-          const { _id, id, ...settings } = doc;
+          // eslint-disable-next-line no-unused-vars
+          const { _id, ...settings } = doc;
+          // Remove id field as well to keep only settings
+          delete settings.id;
           return settings;
         }
         return {};

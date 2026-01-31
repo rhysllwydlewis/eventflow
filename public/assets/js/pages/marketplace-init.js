@@ -213,9 +213,11 @@ async function initMarketplacePage() {
         attachEmptyStateHandlers();
       } else {
         const cardsHTML = results
-          .map((listing, index) => createListingCard(listing, ((currentFilters.page - 1) * 20) + index + 1))
+          .map((listing, index) =>
+            createListingCard(listing, (currentFilters.page - 1) * 20 + index + 1)
+          )
           .join('');
-        
+
         if (append) {
           // Remove load more button before appending
           const loadMoreBtn = document.getElementById('marketplace-load-more-btn');
@@ -227,7 +229,7 @@ async function initMarketplacePage() {
           resultsContainer.innerHTML = cardsHTML;
         }
         attachCardHandlers();
-        
+
         // Add Load More button if there are more pages
         if (pagination.page < pagination.totalPages) {
           addLoadMoreButton(pagination);
@@ -298,7 +300,7 @@ async function initMarketplacePage() {
 
     // Track result clicks
     resultsContainer.querySelectorAll('.listing-card-link').forEach(link => {
-      link.addEventListener('click', e => {
+      link.addEventListener('click', _e => {
         const listingId = link.closest('.listing-card').dataset.listingId;
         const position = parseInt(link.dataset.position, 10);
         trackResultClick('listing', listingId, position);

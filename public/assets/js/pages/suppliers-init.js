@@ -248,9 +248,11 @@ async function initSuppliersPage() {
         attachEmptyStateHandlers();
       } else {
         const cardsHTML = results
-          .map((supplier, index) => createSupplierCard(supplier, ((currentFilters.page - 1) * 20) + index + 1))
+          .map((supplier, index) =>
+            createSupplierCard(supplier, (currentFilters.page - 1) * 20 + index + 1)
+          )
           .join('');
-        
+
         if (append) {
           // Remove load more button before appending
           const loadMoreBtn = document.getElementById('load-more-btn');
@@ -262,7 +264,7 @@ async function initSuppliersPage() {
           resultsContainer.innerHTML = cardsHTML;
         }
         attachCardHandlers();
-        
+
         // Add Load More button if there are more pages
         if (pagination.page < pagination.totalPages) {
           addLoadMoreButton(pagination);
@@ -358,7 +360,7 @@ async function initSuppliersPage() {
 
     // Track result clicks
     resultsContainer.querySelectorAll('.supplier-card-link').forEach(link => {
-      link.addEventListener('click', e => {
+      link.addEventListener('click', _e => {
         const supplierId = link.closest('.supplier-card').dataset.supplierId;
         const position = parseInt(link.dataset.position, 10);
         trackResultClick('supplier', supplierId, position);

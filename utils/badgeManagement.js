@@ -190,6 +190,8 @@ async function calculateSupplierStats(supplierId) {
     // Calculate message stats based on actual conversation flow
     const supplierThreads = threads.filter(t => t.supplierId === supplierId);
     let totalCustomerMessages = 0;
+    // Track responded messages for future response rate calculation
+    // eslint-disable-next-line no-unused-vars
     let respondedToCustomerMessages = 0;
     let totalResponseTime = 0;
     let responseCount = 0;
@@ -213,6 +215,7 @@ async function calculateSupplierStats(supplierId) {
             .find(m => m.fromUserId !== thread.customerId);
 
           if (supplierResponse) {
+            // eslint-disable-next-line no-unused-vars
             respondedToCustomerMessages++;
 
             // Calculate response time
