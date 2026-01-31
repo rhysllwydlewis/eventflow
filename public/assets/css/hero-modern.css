@@ -665,6 +665,7 @@
   display: block;
   transition: opacity 0.4s ease-in-out;
   opacity: 0;
+  pointer-events: none; /* Prevent video element from intercepting clicks */
 }
 
 .hero-video-card video.video-loaded {
@@ -691,7 +692,7 @@
   opacity: 0.5;
 }
 
-/* Video credit */
+/* Video credit - CRITICAL FIX: Prevent attribution from being clickable */
 .hero-video-credit {
   position: absolute;
   bottom: 10px;
@@ -704,22 +705,25 @@
   padding: 6px 10px;
   border-radius: 6px;
   z-index: 2;
-  pointer-events: none;
+  pointer-events: none; /* CRITICAL: Prevent blocking clicks */
+  user-select: none; /* Prevent text selection */
   border: 1px solid rgba(255, 255, 255, 0.15);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   display: none; /* Hide video credits */
 }
 
+/* Links inside video credit should also not be clickable - CRITICAL FIX */
 .hero-video-credit a {
   color: white;
   text-decoration: none;
   font-weight: 600;
-  pointer-events: auto;
+  pointer-events: none; /* CRITICAL: Prevent video attribution link from being clickable */
+  cursor: default; /* Show default cursor, not pointer */
   transition: opacity 0.2s;
 }
 
 .hero-video-credit a:hover {
-  opacity: 0.8;
+  opacity: 1; /* Don't change opacity since it's not interactive */
 }
 
 /* Category cards */
@@ -749,7 +753,7 @@
   outline-offset: 2px;
 }
 
-/* Collage card video elements */
+/* Collage card video elements - UPDATED to prevent video from being directly clickable */
 .hero-collage-card video {
   width: 100%;
   height: 100%;
@@ -757,6 +761,7 @@
   display: block;
   transition: opacity 0.4s ease-in-out, transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   opacity: 0;
+  pointer-events: none; /* CRITICAL: Prevent video element from intercepting clicks */
 }
 
 .hero-collage-card video.video-loaded {
@@ -786,7 +791,7 @@
   transform: scale(1.1);
 }
 
-/* Category label pill */
+/* Category label pill - UPDATED to prevent blocking clicks */
 .hero-collage-label {
   position: absolute;
   top: 12px;
@@ -806,6 +811,8 @@
   gap: 5px;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   border: 1px solid rgba(255, 255, 255, 0.3);
+  pointer-events: none; /* CRITICAL: Prevent label from blocking card clicks */
+  user-select: none; /* Prevent text selection */
 }
 
 .hero-collage-card:hover .hero-collage-label,
@@ -820,7 +827,7 @@
   line-height: 1;
 }
 
-/* Photo credit */
+/* Photo credit - CRITICAL FIX: Prevent attribution from being clickable */
 .hero-collage-credit {
   position: absolute;
   bottom: 10px;
@@ -835,7 +842,8 @@
   z-index: 2;
   opacity: 0.9;
   transition: opacity 0.25s;
-  pointer-events: none;
+  pointer-events: none; /* CRITICAL: Prevent blocking clicks on card */
+  user-select: none; /* Prevent text selection */
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
@@ -844,14 +852,16 @@
   opacity: 1;
 }
 
+/* Links inside attribution should also not be clickable - CRITICAL FIX */
 .hero-collage-credit a {
   color: white;
   text-decoration: none;
-  pointer-events: auto;
+  pointer-events: none; /* CRITICAL: Prevent attribution link from being clickable */
+  cursor: default; /* Show default cursor, not pointer */
 }
 
 .hero-collage-credit a:hover {
-  text-decoration: underline;
+  text-decoration: none; /* Don't underline since it's not clickable */
 }
 
 /* Mobile responsive */
@@ -903,26 +913,31 @@
   }
 }
 
-/* Small mobile adjustments */
+/* Small mobile adjustments - IMPROVED FOR BETTER UX */
 @media (max-width: 640px) {
   .hero-collage {
-    gap: 12px;
+    gap: 10px; /* Reduced gap for small screens */
     aspect-ratio: unset; /* Remove fixed aspect ratio causing cutoff */
     max-height: none; /* Allow content to determine height */
-    grid-template-rows: minmax(140px, 180px) 1fr 1fr; /* Video row + 2 card rows */
+    grid-template-rows: minmax(160px, 200px) minmax(140px, 160px) minmax(140px, 160px); /* Better sizing */
     margin-left: auto;
     margin-right: auto;
     justify-content: center;
+    padding: 0 4px; /* Small padding to prevent edge overflow */
   }
 
   .hero-video-card {
-    min-height: 140px;
-    max-height: 180px;
+    min-height: 160px;
+    max-height: 200px;
+    border-radius: 12px; /* Smaller radius on mobile */
   }
 
   .hero-collage-card {
     min-height: 140px; /* INCREASED - make photos TALLER */
-    aspect-ratio: 4/3; /* Taller aspect ratio */
+    aspect-ratio: 4/3; /* Taller aspect ratio for better mobile visibility */
+    border-radius: 12px; /* Smaller radius on mobile */
+    width: 100%; /* Ensure full width */
+    max-width: 100%; /* Prevent overflow */
   }
 
   .hero-collage-label {
@@ -930,10 +945,20 @@
     padding: 4px 8px;
     top: 8px;
     left: 8px;
+    pointer-events: none; /* Ensure label doesn't block clicks */
   }
 
   .hero-collage-icon {
     font-size: 11px;
+  }
+  
+  /* Ensure images/videos fit properly on mobile */
+  .hero-collage-card img,
+  .hero-collage-card video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
   }
 }
 
