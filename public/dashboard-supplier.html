@@ -763,62 +763,87 @@
     }
 
     try {
-      const response = await fetch("/api/threads/my");
-      if (!response.ok) {
+      // Fetch threads and supplier profile
+      const [threadsResponse, supplierResponse] = await Promise.all([
+        fetch("/api/threads/my"),
+        fetch("/api/me/suppliers")
+      ]);
+      
+      if (!threadsResponse.ok) {
         throw new Error("Failed to fetch threads");
       }
-      const data = await response.json();
-      const threads = data.items || []; // API returns 'items', not 'threads'
+      const data = await threadsResponse.json();
+      const threads = data.items || [];
+      
+      let supplierProfile = {};
+      if (supplierResponse.ok) {
+        const supplierData = await supplierResponse.json();
+        supplierProfile = supplierData.items?.[0] || {};
+      }
 
       if (threads.length === 0) {
         container.innerHTML = "<p class=\"small\">No enquiries yet. Lead quality statistics will appear here when customers contact you.</p>";
         return;
       }
 
-      // Calculate lead quality breakdown
-      const counts = { High: 0, Medium: 0, Low: 0 };
+      // Import lead quality helper (inline since we're in a script tag)
+      const { calculateLeadQuality } = await import('/assets/js/utils/lead-quality-helper.js');
+
+      // Calculate new quality scores
+      const counts = { Hot: 0, High: 0, Good: 0, Low: 0 };
+      let totalScore = 0;
+      
       threads.forEach(thread => {
-        if (thread.leadScore) {
-          counts[thread.leadScore] = (counts[thread.leadScore] || 0) + 1;
-        }
+        const quality = calculateLeadQuality(thread, supplierProfile);
+        counts[quality.label] = (counts[quality.label] || 0) + 1;
+        totalScore += quality.score;
       });
 
       const total = threads.length;
+      const hotPercent = Math.round((counts.Hot / total) * 100) || 0;
       const highPercent = Math.round((counts.High / total) * 100) || 0;
-      const mediumPercent = Math.round((counts.Medium / total) * 100) || 0;
+      const goodPercent = Math.round((counts.Good / total) * 100) || 0;
       const lowPercent = Math.round((counts.Low / total) * 100) || 0;
-      const avgScore = Math.round(
-        threads.reduce((sum, t) => sum + (t.leadScoreRaw || 50), 0) / total
-      );
+      const avgScore = Math.round(totalScore / total);
 
       container.innerHTML = `
         <div style="margin-bottom: 1rem;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-            <span class="lead-badge lead-badge-high" style="font-size: 0.875rem;">High Quality</span>
+            <span style="font-size: 0.875rem; font-weight: 600;">🔥 Hot (80+)</span>
+            <span style="font-weight: 600;">${counts.Hot} (${hotPercent}%)</span>
+          </div>
+          <div style="background: #e5e7eb; border-radius: 4px; height: 8px; overflow: hidden;">
+            <div style="background: #ef4444; height: 100%; width: ${hotPercent}%; transition: width 0.3s;"></div>
+          </div>
+        </div>
+        
+        <div style="margin-bottom: 1rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+            <span style="font-size: 0.875rem; font-weight: 600;">⭐ High (60-79)</span>
             <span style="font-weight: 600;">${counts.High} (${highPercent}%)</span>
           </div>
           <div style="background: #e5e7eb; border-radius: 4px; height: 8px; overflow: hidden;">
-            <div style="background: #10b981; height: 100%; width: ${highPercent}%; transition: width 0.3s;"></div>
+            <div style="background: #f59e0b; height: 100%; width: ${highPercent}%; transition: width 0.3s;"></div>
           </div>
         </div>
         
         <div style="margin-bottom: 1rem;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-            <span class="lead-badge lead-badge-medium" style="font-size: 0.875rem;">Medium Quality</span>
-            <span style="font-weight: 600;">${counts.Medium} (${mediumPercent}%)</span>
+            <span style="font-size: 0.875rem; font-weight: 600;">✓ Good (40-59)</span>
+            <span style="font-weight: 600;">${counts.Good} (${goodPercent}%)</span>
           </div>
           <div style="background: #e5e7eb; border-radius: 4px; height: 8px; overflow: hidden;">
-            <div style="background: #f59e0b; height: 100%; width: ${mediumPercent}%; transition: width 0.3s;"></div>
+            <div style="background: #10b981; height: 100%; width: ${goodPercent}%; transition: width 0.3s;"></div>
           </div>
         </div>
         
         <div style="margin-bottom: 1rem;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-            <span class="lead-badge lead-badge-low" style="font-size: 0.875rem;">Low Quality</span>
+            <span style="font-size: 0.875rem; font-weight: 600;">◯ Low (&lt;40)</span>
             <span style="font-weight: 600;">${counts.Low} (${lowPercent}%)</span>
           </div>
           <div style="background: #e5e7eb; border-radius: 4px; height: 8px; overflow: hidden;">
-            <div style="background: #ef4444; height: 100%; width: ${lowPercent}%; transition: width 0.3s;"></div>
+            <div style="background: #6b7280; height: 100%; width: ${lowPercent}%; transition: width 0.3s;"></div>
           </div>
         </div>
         

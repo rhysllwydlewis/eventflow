@@ -5,7 +5,12 @@
 
 import messagingSystem from './messaging.js';
 import { getListItemSkeletons, showEmptyState, showErrorState } from './utils/skeleton-loader.js';
-import { getLeadQualityBadge } from './utils/lead-quality-helper.js';
+import {
+  getLeadQualityBadge,
+  calculateLeadQuality,
+  sortThreadsByQualityScore,
+  filterThreadsByQualityLevel,
+} from './utils/lead-quality-helper.js';
 
 // Get current user
 async function getCurrentUser() {
@@ -39,6 +44,22 @@ async function getUserSuppliers() {
   }
 }
 
+// Get supplier profile for quality scoring
+async function getSupplierProfile() {
+  try {
+    const response = await fetch('/api/me/suppliers');
+    if (!response.ok) {
+      return null;
+    }
+    const data = await response.json();
+    const suppliers = data.items || [];
+    return suppliers.length > 0 ? suppliers[0] : null;
+  } catch (error) {
+    console.error('Error getting supplier profile:', error);
+    return null;
+  }
+}
+
 // Escape HTML
 function escapeHtml(text) {
   const div = document.createElement('div');
@@ -46,8 +67,8 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
-// Render conversations
-function renderConversations(conversations) {
+// Render conversations with quality badges, sorting, and filtering
+function renderConversations(conversations, supplierProfile = null) {
   const container = document.getElementById('threads-sup');
   if (!container) {
     return;
@@ -71,24 +92,59 @@ function renderConversations(conversations) {
     return;
   }
 
-  let html = '<div class="thread-list">';
+  // Calculate quality scores for all conversations
+  const conversationsWithQuality = conversations.map(conv => {
+    const quality = calculateLeadQuality(conv, supplierProfile || {});
+    return { ...conv, qualityScore: quality };
+  });
 
-  conversations.forEach(conversation => {
+  // Get current filter and sort state
+  const currentFilter = container.dataset.qualityFilter || 'all';
+  const currentSort = container.dataset.qualitySort || 'desc';
+
+  // Filter conversations
+  const filteredConversations = filterThreadsByQualityLevel(
+    conversationsWithQuality,
+    currentFilter
+  );
+
+  // Sort by quality score (always by quality now)
+  filteredConversations.sort((a, b) => {
+    return currentSort === 'desc'
+      ? b.qualityScore.score - a.qualityScore.score
+      : a.qualityScore.score - b.qualityScore.score;
+  });
+
+  let html = `
+    <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap;">
+      <select id="quality-filter" class="form-control" style="width: auto; padding: 0.5rem; font-size: 0.875rem;">
+        <option value="all" ${currentFilter === 'all' ? 'selected' : ''}>All Quality Levels</option>
+        <option value="Hot" ${currentFilter === 'Hot' ? 'selected' : ''}>🔥 Hot (80+)</option>
+        <option value="High" ${currentFilter === 'High' ? 'selected' : ''}>⭐ High (60-79)</option>
+        <option value="Good" ${currentFilter === 'Good' ? 'selected' : ''}>✓ Good (40-59)</option>
+        <option value="Low" ${currentFilter === 'Low' ? 'selected' : ''}>◯ Low (&lt;40)</option>
+      </select>
+      <button id="sort-quality" class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.875rem;" data-sort="${currentSort}">
+        Sort: ${currentSort === 'desc' ? 'Highest First ↓' : 'Lowest First ↑'}
+      </button>
+    </div>
+    <div class="thread-list">
+  `;
+
+  filteredConversations.forEach(conversation => {
     const customerName = conversation.customerName || 'Customer';
     const lastMessage = conversation.lastMessage || 'No messages yet';
     const lastMessageTime = conversation.lastMessageTime
       ? messagingSystem.formatTimestamp(conversation.lastMessageTime)
       : '';
-    // Use the professional lead quality badge helper
-    const leadQualityBadge =
-      conversation.leadScore || conversation.leadScoreRaw
-        ? getLeadQualityBadge(conversation.leadScore, conversation.leadScoreRaw)
-        : '';
+
+    // Use new quality badge
+    const leadQualityBadge = getLeadQualityBadge(conversation.qualityScore);
 
     html += `
       <div class="thread-item" style="border:1px solid #e4e4e7;padding:1rem;margin-bottom:0.5rem;border-radius:4px;cursor:pointer;transition:background 0.2s;" data-conversation-id="${conversation.id}">
         <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:0.5rem;">
-          <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
             <strong>${escapeHtml(customerName)}</strong>
             ${leadQualityBadge}
           </div>
@@ -102,7 +158,27 @@ function renderConversations(conversations) {
   html += '</div>';
   container.innerHTML = html;
 
-  // Add click handlers
+  // Add filter handler
+  const filterSelect = document.getElementById('quality-filter');
+  if (filterSelect) {
+    filterSelect.addEventListener('change', e => {
+      container.dataset.qualityFilter = e.target.value;
+      renderConversations(conversations, supplierProfile);
+    });
+  }
+
+  // Add sort handler
+  const sortBtn = document.getElementById('sort-quality');
+  if (sortBtn) {
+    sortBtn.addEventListener('click', () => {
+      const newSort = sortBtn.dataset.sort === 'desc' ? 'asc' : 'desc';
+      container.dataset.qualitySort = newSort;
+      sortBtn.dataset.sort = newSort;
+      renderConversations(conversations, supplierProfile);
+    });
+  }
+
+  // Add click handlers to thread items
   container.querySelectorAll('.thread-item').forEach(item => {
     item.addEventListener('click', function () {
       const conversationId = this.getAttribute('data-conversation-id');
@@ -283,8 +359,9 @@ async function init() {
     return;
   }
 
-  // Get user's suppliers
+  // Get user's suppliers and profile
   const suppliers = await getUserSuppliers(user.id);
+  const supplierProfile = await getSupplierProfile();
 
   if (!suppliers || suppliers.length === 0) {
     showEmptyState(container, {
@@ -316,14 +393,14 @@ async function init() {
 
         // Render when all suppliers loaded
         if (loadedCount >= suppliers.length) {
-          // Sort by last message time
+          // Sort by last message time initially
           allConversations.sort((a, b) => {
             const timeA = a.lastMessageTime?.seconds || 0;
             const timeB = b.lastMessageTime?.seconds || 0;
             return timeB - timeA;
           });
 
-          renderConversations(allConversations);
+          renderConversations(allConversations, supplierProfile);
         }
       });
 

@@ -4,12 +4,94 @@
  */
 
 /**
+ * Calculate lead quality score based on multiple factors
+ * @param {object} enquiry - Enquiry/thread object
+ * @param {object} supplierProfile - Supplier profile object (optional)
+ * @returns {object} { badge, label, color, score }
+ */
+export function calculateLeadQuality(enquiry, supplierProfile = {}) {
+  let score = 0;
+
+  // Budget match (0-40 points)
+  const enquiryBudget = enquiry.budget || enquiry.estimatedBudget || 0;
+  const minBudget = supplierProfile.minBudget || supplierProfile.priceRange?.min || 0;
+
+  if (minBudget > 0 && enquiryBudget >= minBudget) {
+    score += 40;
+  } else if (minBudget > 0 && enquiryBudget >= minBudget * 0.8) {
+    score += 30;
+  } else if (minBudget > 0 && enquiryBudget >= minBudget * 0.6) {
+    score += 20;
+  } else if (enquiryBudget > 0) {
+    score += 10; // Has some budget
+  }
+
+  // Message quality (0-20 points)
+  const message = enquiry.message || enquiry.lastMessage || '';
+  if (message.length > 100) {
+    score += 20;
+  } else if (message.length > 50) {
+    score += 10;
+  } else if (message.length > 0) {
+    score += 5;
+  }
+
+  // Customer profile completeness (0-20 points)
+  const customer = enquiry.customer || enquiry.customerDetails || {};
+  if (customer.verified || customer.emailVerified) {
+    score += 10;
+  }
+  if (customer.profileComplete || (customer.name && customer.email)) {
+    score += 10;
+  }
+
+  // Urgency (0-20 points)
+  const eventDate = enquiry.eventDate || enquiry.date;
+  if (eventDate) {
+    const daysUntilEvent = Math.floor((new Date(eventDate) - new Date()) / (1000 * 60 * 60 * 24));
+    if (daysUntilEvent <= 30) {
+      score += 20;
+    } else if (daysUntilEvent <= 60) {
+      score += 15;
+    } else if (daysUntilEvent <= 90) {
+      score += 10;
+    } else {
+      score += 5;
+    }
+  }
+
+  // Determine badge
+  if (score >= 80) {
+    return { badge: '🔥', label: 'Hot', color: '#ef4444', score };
+  }
+  if (score >= 60) {
+    return { badge: '⭐', label: 'High', color: '#f59e0b', score };
+  }
+  if (score >= 40) {
+    return { badge: '✓', label: 'Good', color: '#10b981', score };
+  }
+  return { badge: '◯', label: 'Low', color: '#6b7280', score };
+}
+
+/**
  * Get lead quality badge HTML
- * @param {string} rating - 'High', 'Medium', or 'Low'
- * @param {number} score - Raw score 0-100
+ * @param {string} rating - 'High', 'Medium', or 'Low' (legacy) OR quality object with badge/label/color/score
+ * @param {number} score - Raw score 0-100 (optional if using quality object)
  * @returns {string} HTML string for badge
  */
 export function getLeadQualityBadge(rating, score) {
+  // New format: rating is quality object
+  if (typeof rating === 'object' && rating.badge) {
+    return `
+      <span class="lead-badge" style="background: ${rating.color}; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.25rem;" role="status" aria-label="Lead quality: ${rating.label} (${rating.score} points)">
+        <span style="font-size: 0.875rem;">${rating.badge}</span>
+        <span>${rating.label}</span>
+        <span style="opacity: 0.8; font-size: 0.7rem;">(${rating.score})</span>
+      </span>
+    `;
+  }
+
+  // Legacy format
   if (!rating) {
     return '';
   }
@@ -225,11 +307,57 @@ export function filterThreadsByQuality(threads, quality) {
   return threads.filter(thread => thread.leadScore === quality);
 }
 
+/**
+ * Sort threads by new quality score
+ * @param {Array} threads - Array of thread objects
+ * @param {object} supplierProfile - Supplier profile for scoring
+ * @param {string} order - 'asc' or 'desc'
+ * @returns {Array} Sorted threads with quality scores
+ */
+export function sortThreadsByQualityScore(threads, supplierProfile = {}, order = 'desc') {
+  // Calculate quality for each thread
+  const threadsWithQuality = threads.map(thread => {
+    const quality = calculateLeadQuality(thread, supplierProfile);
+    return { ...thread, qualityScore: quality };
+  });
+
+  // Sort by score
+  threadsWithQuality.sort((a, b) => {
+    return order === 'desc'
+      ? b.qualityScore.score - a.qualityScore.score
+      : a.qualityScore.score - b.qualityScore.score;
+  });
+
+  return threadsWithQuality;
+}
+
+/**
+ * Filter threads by new quality level
+ * @param {Array} threads - Array of thread objects with qualityScore
+ * @param {string} level - 'Hot', 'High', 'Good', 'Low', or 'all'
+ * @returns {Array} Filtered threads
+ */
+export function filterThreadsByQualityLevel(threads, level) {
+  if (level === 'all' || !level) {
+    return threads;
+  }
+
+  return threads.filter(thread => {
+    if (!thread.qualityScore) {
+      return false;
+    }
+    return thread.qualityScore.label === level;
+  });
+}
+
 export default {
+  calculateLeadQuality,
   getLeadQualityBadge,
   getSupplierBadges,
   getLeadQualityBreakdown,
   getThreadLeadQualityIndicator,
   sortThreadsByLeadQuality,
   filterThreadsByQuality,
+  sortThreadsByQualityScore,
+  filterThreadsByQualityLevel,
 };
