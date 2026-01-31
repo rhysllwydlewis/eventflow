@@ -59,14 +59,15 @@ class TicketingSystem {
    * @param {string} userType - 'customer' | 'supplier'
    * @returns {Promise<Array>} Array of tickets
    */
-  async getUserTickets(userId, userType) {
+  async getUserTickets(userId, userType, limit = null) {
     try {
-      const response = await fetch(
-        `${this.apiBase}/tickets?userId=${userId}&userType=${userType}`,
-        {
-          credentials: 'include',
-        }
-      );
+      let url = `${this.apiBase}/tickets?userId=${userId}&userType=${userType}`;
+      if (limit) {
+        url += `&limit=${limit}`;
+      }
+      const response = await fetch(url, {
+        credentials: 'include',
+      });
 
       if (!response.ok) {
         throw new Error('Failed to fetch tickets');
@@ -239,12 +240,12 @@ class TicketingSystem {
    * @param {Function} callback - Callback function
    * @returns {Function} Unsubscribe function
    */
-  listenToUserTickets(userId, userType, callback) {
+  listenToUserTickets(userId, userType, callback, limit = null) {
     console.warn('Real-time updates not available with MongoDB. Using polling instead.');
 
     const pollInterval = setInterval(async () => {
       try {
-        const tickets = await this.getUserTickets(userId, userType);
+        const tickets = await this.getUserTickets(userId, userType, limit);
         callback(tickets);
       } catch (error) {
         console.error('Error polling user tickets:', error);

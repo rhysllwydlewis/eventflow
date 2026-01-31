@@ -152,6 +152,11 @@
 
   <section class="section">
     <div class="container">
+      <!-- Tag Filter Buttons -->
+      <div id="tag-filters" class="tag-filters" style="margin-bottom: 2rem;">
+        <!-- Filter buttons will be loaded here -->
+      </div>
+      
       <div id="blog-articles" class="articles-grid">
         <!-- Articles will be loaded here -->
       </div>
@@ -246,13 +251,21 @@
     const container = document.getElementById('blog-articles');
     if (!container) return;
 
+    // Helper function to capitalize tag names for display
+    function capitalizeTag(tag) {
+      return tag
+        .split(/[-\s]/)
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+    }
+
     // Sample articles - in production, these would come from a CMS or API
     const articles = [
       {
         title: 'The Ultimate Wedding Venue Selection Guide 2024',
         excerpt: 'Discover how to choose the perfect wedding venue with our comprehensive guide. Expert tips on location, capacity, budget, and must-have amenities for your dream wedding.',
         image: '/assets/images/hero-venue.jpg',
-        tag: 'Venues',
+        tags: ['venues', 'wedding', 'planning'],
         link: '/articles/wedding-venue-selection-guide.html',
         affiliate: false
       },
@@ -260,7 +273,7 @@
         title: "Wedding Catering Trends 2024: What's Hot in Event Food & Beverage",
         excerpt: "Explore the latest food and beverage trends that will make your event menu stand out. From sustainable sourcing to interactive food stations, discover what's making waves in event catering.",
         image: '/assets/images/collage-catering.jpg',
-        tag: 'Catering',
+        tags: ['catering', 'wedding', 'trends'],
         link: '/articles/wedding-catering-trends-2024.html',
         affiliate: true
       },
@@ -268,7 +281,7 @@
         title: 'Complete Guide to Event Photography: Tips for Perfect Memories',
         excerpt: 'Master event photography with our comprehensive guide. Learn expert tips on capturing special moments, working with photographers, and creating lasting memories of your event.',
         image: 'https://images.pexels.com/photos/2788792/pexels-photo-2788792.jpeg?auto=compress&cs=tinysrgb&w=800',
-        tag: 'Photography',
+        tags: ['photography', 'tips', 'wedding'],
         link: '/articles/event-photography-complete-guide.html',
         affiliate: false
       },
@@ -276,7 +289,7 @@
         title: 'Perfect Wedding Day Timeline: Hour-by-Hour Planning Guide 2025',
         excerpt: 'Create the perfect wedding day timeline with our comprehensive hour-by-hour guide. Expert tips on scheduling, timing, and coordinating every moment for a stress-free celebration.',
         image: 'https://images.pexels.com/photos/265722/pexels-photo-265722.jpeg?auto=compress&cs=tinysrgb&w=800',
-        tag: 'Planning',
+        tags: ['planning', 'wedding', 'tips'],
         link: '/articles/perfect-wedding-day-timeline-guide.html',
         affiliate: false
       },
@@ -284,7 +297,7 @@
         title: 'Sustainable Event Planning Guide',
         excerpt: 'Plan eco-friendly events with our comprehensive sustainability guide. Discover how to reduce waste, choose green vendors, and create memorable events while protecting the environment.',
         image: '/assets/images/hero-planning.jpg',
-        tag: 'Planning',
+        tags: ['planning', 'sustainability', 'tips'],
         link: '/articles/sustainable-event-planning-guide.html',
         affiliate: false
       },
@@ -292,7 +305,7 @@
         title: 'Event Budget Management: Complete Guide',
         excerpt: 'Master event budgeting with expert strategies for tracking expenses, negotiating with vendors, and maximizing value while staying on budget.',
         image: '/assets/images/collage-venue.jpg',
-        tag: 'Planning',
+        tags: ['planning', 'budget', 'tips'],
         link: '/articles/event-budget-management-guide.html',
         affiliate: false
       },
@@ -300,7 +313,7 @@
         title: 'Corporate Event Planning: The Ultimate Guide',
         excerpt: 'Plan successful corporate events from conferences to team building. Expert tips on venue selection, catering, technology, and creating engaging professional experiences.',
         image: '/assets/images/collage-entertainment.jpg',
-        tag: 'Corporate',
+        tags: ['corporate', 'planning', 'venues'],
         link: '/articles/corporate-event-planning-guide.html',
         affiliate: false
       },
@@ -308,7 +321,7 @@
         title: 'Birthday Party Planning Guide for All Ages',
         excerpt: 'Create unforgettable birthday celebrations with our comprehensive planning guide. Tips for themes, venues, entertainment, and catering for children and adults.',
         image: '/assets/images/hero-venue.jpg',
-        tag: 'Parties',
+        tags: ['parties', 'planning', 'venues'],
         link: '/articles/birthday-party-planning-guide.html',
         affiliate: false
       }
@@ -317,6 +330,7 @@
     articles.forEach(article => {
       const card = document.createElement('article');
       card.className = 'article-card';
+      card.dataset.tags = article.tags.join(',');
       
       const link = document.createElement('a');
       link.href = article.link;
@@ -331,15 +345,23 @@
       const content = document.createElement('div');
       content.className = 'article-card-content';
       
-      const tag = document.createElement('span');
-      tag.className = 'article-card-tag';
-      tag.textContent = article.tag;
-      content.appendChild(tag);
+      // Add all tags as badges
+      const tagsContainer = document.createElement('div');
+      tagsContainer.className = 'article-card-tags';
+      article.tags.forEach(tag => {
+        const tagBadge = document.createElement('span');
+        tagBadge.className = 'article-card-tag';
+        tagBadge.textContent = capitalizeTag(tag);
+        tagsContainer.appendChild(tagBadge);
+      });
+      content.appendChild(tagsContainer);
       
       if (article.affiliate) {
         const affiliateBadge = document.createElement('span');
         affiliateBadge.className = 'article-card-affiliate';
         affiliateBadge.textContent = 'Partner';
+        affiliateBadge.style.display = 'inline-block';
+        affiliateBadge.style.marginTop = '4px';
         content.appendChild(affiliateBadge);
       }
       
@@ -363,6 +385,47 @@
       card.appendChild(link);
       container.appendChild(card);
     });
+
+    // Render tag filters
+    renderTagFilters();
+
+    function renderTagFilters() {
+      const allTags = new Set();
+      articles.forEach(article => {
+        article.tags.forEach(tag => allTags.add(tag));
+      });
+
+      const sortedTags = Array.from(allTags).sort();
+      const filterContainer = document.getElementById('tag-filters');
+      
+      let html = '<button class="tag-filter active" data-tag="">All</button>';
+      sortedTags.forEach(tag => {
+        const displayTag = capitalizeTag(tag);
+        html += `<button class="tag-filter" data-tag="${tag}">${displayTag}</button>`;
+      });
+      
+      filterContainer.innerHTML = html;
+      
+      // Add click handlers
+      document.querySelectorAll('.tag-filter').forEach(btn => {
+        btn.addEventListener('click', () => filterByTag(btn.dataset.tag));
+      });
+    }
+
+    function filterByTag(tag) {
+      const articleCards = document.querySelectorAll('.article-card');
+      
+      articleCards.forEach(card => {
+        const articleTags = card.dataset.tags.split(',');
+        const matches = !tag || articleTags.includes(tag);
+        card.style.display = matches ? '' : 'none';
+      });
+      
+      // Update active button
+      document.querySelectorAll('.tag-filter').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tag === tag);
+      });
+    }
   });
 </script>
 <script src="/assets/js/cookie-consent.js" defer></script>

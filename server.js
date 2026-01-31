@@ -2164,7 +2164,7 @@ app.get('/api/suppliers/:id', async (req, res) => {
   try {
     const suppliers = await dbUnified.read('suppliers');
     const sRaw = suppliers.find(x => x.id === req.params.id);
-    
+
     if (!sRaw) {
       return res.status(404).json({ error: 'Supplier not found' });
     }
@@ -6263,6 +6263,10 @@ app.use('/api/tickets', ticketsRoutes);
 // ---------- Pexels Stock Photos Routes ----------
 const pexelsRoutes = require('./routes/pexels');
 app.use('/api/pexels', pexelsRoutes);
+
+// ---------- AI Routes ----------
+const aiRoutes = require('./routes/ai');
+app.use('/api/ai', aiRoutes);
 
 // ---------- Payment Routes ----------
 const paymentRoutes = require('./routes/payments');

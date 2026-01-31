@@ -306,6 +306,47 @@
       border-top: 1px solid #e5e7eb;
     }
 
+    .draft-indicator {
+      font-size: 12px;
+      color: #6b7280;
+      padding: 4px 8px;
+      margin-top: 4px;
+      display: none;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .draft-indicator.visible {
+      display: flex;
+    }
+
+    .draft-indicator.saved {
+      color: #059669;
+    }
+
+    .draft-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-left: auto;
+    }
+
+    .btn-discard-draft {
+      font-size: 12px;
+      padding: 4px 8px;
+      background: transparent;
+      color: #dc2626;
+      border: 1px solid #dc2626;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-discard-draft:hover {
+      background: #dc2626;
+      color: white;
+    }
+
     /* Mobile responsiveness */
     @media (max-width: 768px) {
       .messages-container {
@@ -767,11 +808,15 @@
                   <div class="form-group">
                     <label for="messageText">Message *</label>
                     <textarea id="messageText" name="message" rows="6" placeholder="Type your message here..." required></textarea>
+                    <div id="draft-indicator" class="draft-indicator"></div>
                   </div>
                 </div>
                 <div class="form-actions">
                   <button type="button" class="btn btn-secondary" id="cancelNewMessage">Cancel</button>
-                  <button type="submit" class="btn btn-primary" id="sendNewMessage">Send Message</button>
+                  <div class="draft-actions">
+                    <button type="button" class="btn-discard-draft" id="discardDraftBtn" style="display: none;">Discard Draft</button>
+                    <button type="submit" class="btn btn-primary" id="sendNewMessage">Send Message</button>
+                  </div>
                 </div>
               </form>
             </div>
@@ -847,6 +892,9 @@
                 throw new Error('Failed to send message');
               }
               
+              // Clear draft after successful send
+              clearDraft(supplierId);
+              
               closeModal();
               
               // Redirect to the conversation
@@ -856,6 +904,174 @@
               alert('Failed to send message. Please try again.');
               sendBtn.disabled = false;
               sendBtn.textContent = 'Send Message';
+            }
+          });
+          
+          // Draft autosave functionality
+          let draftSaveTimeout;
+          const AUTOSAVE_DELAY = 2000; // 2 seconds
+          
+          function getDraftKey(supplierId) {
+            return supplierId ? `draft_new_${supplierId}` : null;
+          }
+          
+          function autosaveDraft(supplierId, messageText, subject) {
+            clearTimeout(draftSaveTimeout);
+            
+            if (!supplierId) {
+              return;
+            }
+            
+            draftSaveTimeout = setTimeout(() => {
+              const draftKey = getDraftKey(supplierId);
+              if (!draftKey) return;
+              
+              // If message is empty, clear the draft
+              if (!messageText.trim()) {
+                localStorage.removeItem(draftKey);
+                showDraftIndicator('', '');
+                document.getElementById('discardDraftBtn').style.display = 'none';
+                return;
+              }
+              
+              // Save the draft
+              const draft = {
+                message: messageText,
+                subject: subject || '',
+                savedAt: new Date().toISOString()
+              };
+              
+              localStorage.setItem(draftKey, JSON.stringify(draft));
+              showDraftIndicator('Draft saved', 'saved');
+              document.getElementById('discardDraftBtn').style.display = 'inline-block';
+            }, AUTOSAVE_DELAY);
+          }
+          
+          function restoreDraft(supplierId) {
+            const draftKey = getDraftKey(supplierId);
+            if (!draftKey) return;
+            
+            const draftJson = localStorage.getItem(draftKey);
+            
+            if (draftJson) {
+              try {
+                const draft = JSON.parse(draftJson);
+                const messageTextarea = document.getElementById('messageText');
+                const subjectInput = document.getElementById('messageSubject');
+                
+                if (messageTextarea && draft.message) {
+                  messageTextarea.value = draft.message;
+                }
+                
+                if (subjectInput && draft.subject) {
+                  subjectInput.value = draft.subject;
+                }
+                
+                const savedDate = new Date(draft.savedAt);
+                const timeAgo = formatTimeAgo(savedDate);
+                showDraftIndicator(`Draft from ${timeAgo}`, 'saved');
+                document.getElementById('discardDraftBtn').style.display = 'inline-block';
+              } catch (error) {
+                console.error('Error restoring draft:', error);
+              }
+            }
+          }
+          
+          function clearDraft(supplierId) {
+            const draftKey = getDraftKey(supplierId);
+            if (draftKey) {
+              localStorage.removeItem(draftKey);
+              showDraftIndicator('', '');
+              document.getElementById('discardDraftBtn').style.display = 'none';
+            }
+          }
+          
+          function showDraftIndicator(text, status) {
+            const indicator = document.getElementById('draft-indicator');
+            if (indicator) {
+              indicator.textContent = text;
+              indicator.className = 'draft-indicator';
+              
+              if (text) {
+                indicator.classList.add('visible');
+                if (status === 'saved') {
+                  indicator.classList.add('saved');
+                }
+              }
+            }
+          }
+          
+          // Set up autosave listeners
+          const messageTextarea = document.getElementById('messageText');
+          const subjectInput = document.getElementById('messageSubject');
+          const supplierSelect = document.getElementById('supplierSelect');
+          
+          // Restore draft when supplier is selected
+          supplierSelect.addEventListener('change', () => {
+            const previousSupplierId = supplierSelect.dataset.previousValue;
+            const newSupplierId = supplierSelect.value;
+            
+            // Autosave current draft before switching
+            if (previousSupplierId) {
+              const currentMessage = messageTextarea.value;
+              const currentSubject = subjectInput.value;
+              if (currentMessage.trim()) {
+                const draft = {
+                  message: currentMessage,
+                  subject: currentSubject || '',
+                  savedAt: new Date().toISOString()
+                };
+                const draftKey = getDraftKey(previousSupplierId);
+                if (draftKey) {
+                  localStorage.setItem(draftKey, JSON.stringify(draft));
+                }
+              }
+            }
+            
+            // Store current supplier for next change
+            supplierSelect.dataset.previousValue = newSupplierId;
+            
+            // Restore draft for new supplier
+            if (newSupplierId) {
+              restoreDraft(newSupplierId);
+            } else {
+              // Clear form if no supplier selected
+              messageTextarea.value = '';
+              subjectInput.value = '';
+              showDraftIndicator('', '');
+              document.getElementById('discardDraftBtn').style.display = 'none';
+            }
+          });
+          
+          // Autosave on input
+          messageTextarea.addEventListener('input', () => {
+            const supplierId = supplierSelect.value;
+            const messageText = messageTextarea.value;
+            const subject = subjectInput.value;
+            
+            if (supplierId) {
+              autosaveDraft(supplierId, messageText, subject);
+            }
+          });
+          
+          subjectInput.addEventListener('input', () => {
+            const supplierId = supplierSelect.value;
+            const messageText = messageTextarea.value;
+            const subject = subjectInput.value;
+            
+            if (supplierId) {
+              autosaveDraft(supplierId, messageText, subject);
+            }
+          });
+          
+          // Discard draft button handler
+          document.getElementById('discardDraftBtn').addEventListener('click', () => {
+            const supplierId = supplierSelect.value;
+            if (supplierId && confirm('Are you sure you want to discard this draft?')) {
+              clearDraft(supplierId);
+              messageTextarea.value = '';
+              subjectInput.value = '';
+              messageTextarea.focus();
             }
           });
           

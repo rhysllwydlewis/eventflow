@@ -303,9 +303,9 @@ async function init() {
     createBtn.addEventListener('click', showCreateTicketModal);
   }
 
-  // Listen to user's tickets with real-time updates
+  // Listen to user's tickets with real-time updates (limit to 5 recent tickets on dashboard)
   try {
-    ticketingSystem.listenToUserTickets(user.id, 'customer', renderTickets);
+    ticketingSystem.listenToUserTickets(user.id, 'customer', renderTickets, 5);
   } catch (error) {
     console.error('Error loading tickets:', error);
     showErrorState(container, {

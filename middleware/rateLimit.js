@@ -29,7 +29,24 @@ const writeLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+/**
+ * Rate limiter for email resend operations
+ * 3 requests per 15 minutes per email address
+ */
+const resendEmailLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 3,
+  message: 'Too many resend requests. Please try again in 15 minutes.',
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: req => {
+    // Rate limit by email address to prevent abuse of a single account
+    return req.body.email || req.ip;
+  },
+});
+
 module.exports = {
   authLimiter,
   writeLimiter,
+  resendEmailLimiter,
 };

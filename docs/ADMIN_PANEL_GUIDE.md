@@ -90,6 +90,11 @@ POST   /api/admin/users/:id/verify         # Manually verify user
 POST   /api/admin/users/:id/reset-password # Send password reset email
 POST   /api/admin/users/:id/grant-admin    # Grant admin role
 POST   /api/admin/users/:id/revoke-admin   # Revoke admin role
+
+# Bulk Operations
+POST   /api/admin/users/bulk-delete        # Bulk delete users
+POST   /api/admin/users/bulk-verify        # Bulk verify users
+POST   /api/admin/users/bulk-suspend       # Bulk suspend/unsuspend users
 ```
 
 ### Package Management
@@ -571,6 +576,102 @@ modal.addEventListener('close', () => {
   triggerButton.focus();
 });
 ```
+
+## Bulk User Actions
+
+The User Management page (`/admin-users.html`) supports bulk operations for efficiently managing multiple users at once.
+
+### Features
+
+1. **Selection**
+   - Individual checkboxes on each user row
+   - "Select All" checkbox in table header with indeterminate state support
+   - Selected count display
+   - Clear selection button
+
+2. **Actions Available**
+   - **Verify**: Bulk verify user email addresses
+   - **Suspend**: Suspend multiple users with reason and optional duration
+   - **Unsuspend**: Remove suspension from multiple users
+   - **Delete**: Delete multiple users (with protections)
+   - **Export**: Export selected users to CSV file
+
+3. **Safety Features**
+   - Confirmation dialogs before all destructive actions
+   - Cannot delete/suspend own account
+   - Cannot delete owner account
+   - Progress indicators during processing
+   - Success/error count summaries
+
+### Usage Example
+
+```javascript
+// Select users using checkboxes
+// 1. Check individual boxes or use "Select All"
+// 2. Choose action from "Bulk Actions" dropdown
+// 3. Click "Execute" button
+// 4. Confirm in modal dialog
+// 5. View progress and results
+
+// Bulk Delete Implementation
+async function bulkDeleteUsers(userIds) {
+  const confirmed = await AdminShared.showConfirmModal({
+    title: 'Delete Users',
+    message: `Delete ${userIds.length} users? This cannot be undone.`,
+    confirmText: 'Delete',
+    type: 'danger',
+  });
+
+  if (!confirmed) return;
+
+  let successCount = 0;
+  for (const userId of userIds) {
+    try {
+      await AdminShared.adminFetch(`/api/admin/users/${userId}`, {
+        method: 'DELETE',
+      });
+      successCount++;
+    } catch (error) {
+      console.error(`Failed to delete ${userId}:`, error);
+    }
+  }
+
+  AdminShared.showToast(`Deleted ${successCount} users successfully`, 'success');
+  await loadAdminUsers(); // Refresh list
+}
+```
+
+### API Endpoints for Bulk Operations
+
+```javascript
+// Bulk Verify
+POST /api/admin/users/bulk-verify
+Body: { userIds: string[] }
+Response: { success, verifiedCount, alreadyVerifiedCount, totalRequested }
+
+// Bulk Suspend
+POST /api/admin/users/bulk-suspend
+Body: { userIds: string[], suspended: boolean, reason: string, duration?: string }
+Response: { success, updatedCount, totalRequested }
+
+// Bulk Delete
+POST /api/admin/users/bulk-delete
+Body: { userIds: string[] }
+Response: { success, deletedCount, totalRequested }
+```
+
+### CSV Export Format
+
+Exported CSV includes these columns:
+
+- Name
+- Email
+- Role
+- Subscription
+- Verified (Yes/No)
+- Marketing Opt-In (Yes/No)
+- Joined (ISO date)
+- Last Login (ISO date)
 
 ## Testing Checklist
 

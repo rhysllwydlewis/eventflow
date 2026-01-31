@@ -431,7 +431,14 @@ async function loadPackagesCarousel({ endpoint, containerId, emptyMessage }) {
     const data = await response.json();
 
     if (!data.items || data.items.length === 0) {
-      container.innerHTML = `<p class="small">${emptyMessage}</p>`;
+      // Enhanced empty state with call-to-action
+      container.innerHTML = `
+        <div class="empty-state" style="text-align: center; padding: 3rem;">
+          <h3 style="margin-bottom: 1rem; color: #344054;">Featured packages coming soon!</h3>
+          <p style="margin-bottom: 1.5rem; color: #667085;">Check back later for curated event packages.</p>
+          <a href="/marketplace.html" class="cta" style="display: inline-block; text-decoration: none;">Browse All Packages</a>
+        </div>
+      `;
       return;
     }
 

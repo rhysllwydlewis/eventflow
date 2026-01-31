@@ -48,7 +48,7 @@ export function createStatsGrid(stats, containerId) {
 
 /**
  * Create budget tracker widget
- * @param {object} budgetData - {spent, total}
+ * @param {object} budgetData - {spent, total, remaining, breakdown}
  * @param {string} containerId - ID of container element
  */
 export function createBudgetTracker(budgetData, containerId) {
@@ -57,18 +57,78 @@ export function createBudgetTracker(budgetData, containerId) {
     return;
   }
 
-  const { spent = 0, total = 1000 } = budgetData;
-  const remaining = Math.max(0, total - spent);
+  const { spent = 0, total = 1000, remaining, breakdown = {} } = budgetData;
+  const actualRemaining = remaining !== undefined ? remaining : Math.max(0, total - spent);
   const percentage = total > 0 ? (spent / total) * 100 : 0;
 
   let badgeColor = '#22C55E';
   let badgeText = 'On Track';
-  if (percentage >= 80) {
+  if (percentage >= 100) {
     badgeColor = '#EF4444';
     badgeText = 'Over Budget';
-  } else if (percentage >= 60) {
-    badgeColor = '#EAB308';
+  } else if (percentage >= 80) {
+    badgeColor = '#F59E0B';
     badgeText = 'Attention';
+  }
+
+  // Generate breakdown HTML if we have breakdown data
+  let breakdownHtml = '';
+  const hasBreakdown = breakdown && Object.values(breakdown).some(val => val > 0);
+
+  if (hasBreakdown) {
+    const categoryIcons = {
+      venue: '🏛️',
+      catering: '🍽️',
+      entertainment: '🎵',
+      photography: '📸',
+      decorations: '💐',
+      transport: '🚗',
+      beauty: '💄',
+      other: '📦',
+    };
+
+    const categoryLabels = {
+      venue: 'Venue',
+      catering: 'Catering',
+      entertainment: 'Entertainment',
+      photography: 'Photography',
+      decorations: 'Decorations',
+      transport: 'Transport',
+      beauty: 'Hair & Makeup',
+      other: 'Other',
+    };
+
+    const breakdownItems = Object.entries(breakdown)
+      .filter(([_, value]) => value > 0)
+      .sort((a, b) => b[1] - a[1])
+      .map(([category, value]) => {
+        const percent = spent > 0 ? ((value / spent) * 100).toFixed(0) : 0;
+        return `
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid #E7EAF0;">
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <span style="font-size: 1.2rem;">${categoryIcons[category] || '📦'}</span>
+              <span style="font-size: 0.875rem; color: #667085;">${categoryLabels[category] || category}</span>
+            </div>
+            <div style="text-align: right;">
+              <div style="font-size: 0.875rem; font-weight: 600; color: #0B1220;">£${value.toLocaleString('en-GB', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</div>
+              <div style="font-size: 0.75rem; color: #667085;">${percent}%</div>
+            </div>
+          </div>
+        `;
+      })
+      .join('');
+
+    breakdownHtml = `
+      <details style="margin-top: 1rem;" id="${containerId}-breakdown">
+        <summary style="cursor: pointer; font-size: 0.875rem; color: #0B8073; font-weight: 600; padding: 0.5rem; background: white; border-radius: 8px; list-style: none; display: flex; justify-content: space-between; align-items: center;">
+          <span>📊 View Breakdown by Category</span>
+          <span style="font-size: 1rem;">▼</span>
+        </summary>
+        <div style="margin-top: 0.75rem; background: white; border-radius: 8px; padding: 0.75rem;">
+          ${breakdownItems}
+        </div>
+      </details>
+    `;
   }
 
   const html = `
@@ -89,9 +149,11 @@ export function createBudgetTracker(budgetData, containerId) {
         </div>
         <div style="padding: 1rem; background: white; border-radius: 12px; text-align: center;">
           <div style="font-size: 0.875rem; color: #667085; margin-bottom: 0.5rem;">Remaining</div>
-          <div class="stat-number" data-target="${remaining}" data-format="currency" data-start="0" style="font-size: 1.5rem; color: #22C55E;">£0</div>
+          <div class="stat-number" data-target="${actualRemaining}" data-format="currency" data-start="0" style="font-size: 1.5rem; color: #22C55E;">£0</div>
         </div>
       </div>
+      
+      ${breakdownHtml}
     </div>
   `;
 
@@ -186,8 +248,9 @@ export function createProgressRing(data, containerId) {
  * Create upcoming events timeline widget
  * @param {Array} events - Array of event objects
  * @param {string} containerId - ID of container element
+ * @param {string} eventDate - Optional event date for countdown
  */
-export function createEventsTimeline(events, containerId) {
+export function createEventsTimeline(events, containerId, eventDate = null) {
   const container = document.getElementById(containerId);
   if (!container) {
     return;
@@ -203,9 +266,36 @@ export function createEventsTimeline(events, containerId) {
     return;
   }
 
+  // Generate countdown HTML if event date is provided
+  let countdownHtml = '';
+  if (eventDate) {
+    countdownHtml = `
+      <div id="countdown-widget" style="background: linear-gradient(135deg, #0B8073 0%, #13B6A2 100%); border-radius: 12px; padding: 1.5rem; margin-bottom: 1rem; text-align: center;">
+        <div style="color: white; font-size: 0.875rem; margin-bottom: 0.5rem; opacity: 0.9;">🎉 Event Countdown</div>
+        <div id="countdown-display" style="color: white;">
+          <div class="countdown-widget" style="display: flex; justify-content: center; gap: 1.5rem; flex-wrap: wrap;">
+            <div style="text-align: center;">
+              <div class="countdown-number" style="font-size: 2rem; font-weight: 700;">--</div>
+              <div style="font-size: 0.875rem; opacity: 0.9;">days</div>
+            </div>
+            <div style="text-align: center;">
+              <div class="countdown-number" style="font-size: 2rem; font-weight: 700;">--</div>
+              <div style="font-size: 0.875rem; opacity: 0.9;">hours</div>
+            </div>
+            <div style="text-align: center;">
+              <div class="countdown-number" style="font-size: 2rem; font-weight: 700;">--</div>
+              <div style="font-size: 0.875rem; opacity: 0.9;">minutes</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
   const html = `
     <div class="card" style="padding: 1.5rem;">
       <h3 style="margin: 0 0 1rem 0; font-size: 1.25rem; color: #0B1220;">Upcoming Tasks</h3>
+      ${countdownHtml}
       <div class="timeline">
         ${events
           .map(
@@ -236,6 +326,60 @@ export function createEventsTimeline(events, containerId) {
   `;
 
   container.innerHTML = html;
+
+  // Initialize countdown if event date is provided
+  if (eventDate) {
+    initCountdown(eventDate);
+  }
+}
+
+/**
+ * Initialize and update countdown timer
+ * @param {string} eventDate - ISO date string for the event
+ */
+function initCountdown(eventDate) {
+  function updateCountdown() {
+    const now = new Date();
+    const event = new Date(eventDate);
+    const diff = event - now;
+
+    const display = document.getElementById('countdown-display');
+    if (!display) {
+      return;
+    }
+
+    if (diff <= 0) {
+      display.innerHTML = '<div style="font-size: 1.75rem; font-weight: 700;">🎉 Event Day!</div>';
+      return;
+    }
+
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+    display.innerHTML = `
+      <div class="countdown-widget" style="display: flex; justify-content: center; gap: 1.5rem; flex-wrap: wrap;">
+        <div style="text-align: center;">
+          <div class="countdown-number" style="font-size: 2rem; font-weight: 700;">${days}</div>
+          <div style="font-size: 0.875rem; opacity: 0.9;">days</div>
+        </div>
+        <div style="text-align: center;">
+          <div class="countdown-number" style="font-size: 2rem; font-weight: 700;">${hours}</div>
+          <div style="font-size: 0.875rem; opacity: 0.9;">hours</div>
+        </div>
+        <div style="text-align: center;">
+          <div class="countdown-number" style="font-size: 2rem; font-weight: 700;">${minutes}</div>
+          <div style="font-size: 0.875rem; opacity: 0.9;">minutes</div>
+        </div>
+      </div>
+    `;
+  }
+
+  // Update immediately
+  updateCountdown();
+
+  // Update every minute
+  setInterval(updateCountdown, 60000);
 }
 
 function getBadgeStyle(daysUntil) {

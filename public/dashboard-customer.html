@@ -182,6 +182,184 @@
 import { createStatsGrid, createBudgetTracker, createProgressRing, createEventsTimeline } from '/assets/js/dashboard-widgets.js';
 import { initCountUp } from '/assets/js/count-up-animation.js';
 
+// Budget calculation configuration
+const BUDGET_CONFIG = {
+  DEFAULT_TOTAL_BUDGET: 5000, // Default budget for new event planners
+  BUDGET_BUFFER_MULTIPLIER: 1.2, // Ensure total budget is 20% more than spent
+  DEFAULT_GUEST_COUNT: 50, // Default guest count for per-person pricing estimates
+};
+
+/**
+ * Parse price string to numeric value
+ * Handles formats like: "£3,500", "£45 pp", "From £500", "Contact for pricing"
+ * @param {string} priceStr - Price string to parse
+ * @returns {number} - Parsed price value or 0
+ */
+function parsePrice(priceStr) {
+  if (!priceStr || typeof priceStr !== 'string') return 0;
+  
+  // Remove "From", "£", commas, and other non-numeric characters (except digits and decimal point)
+  const cleaned = priceStr
+    .replace(/from/gi, '')
+    .replace(/£/g, '')
+    .replace(/,/g, '')
+    .trim();
+  
+  // Handle "per person" (pp) or "per guest" pricing - extract base price
+  const ppMatch = cleaned.match(/(\d+(?:\.\d+)?)\s*(?:pp|per person|per guest)/i);
+  if (ppMatch) {
+    return parseFloat(ppMatch[1]) || 0;
+  }
+  
+  // Extract first number found
+  const numMatch = cleaned.match(/(\d+(?:\.\d+)?)/);
+  if (numMatch) {
+    return parseFloat(numMatch[1]) || 0;
+  }
+  
+  // If no number found (e.g., "Contact for pricing"), return 0
+  return 0;
+}
+
+/**
+ * Categorize a package by its category
+ * @param {string} category - Package category
+ * @returns {string} - Standardized category name
+ */
+function categorizePackage(category) {
+  if (!category) return 'other';
+  
+  const cat = category.toLowerCase();
+  if (cat.includes('venue')) return 'venue';
+  if (cat.includes('catering') || cat.includes('food')) return 'catering';
+  if (cat.includes('entertainment') || cat.includes('music') || cat.includes('dj') || cat.includes('band')) return 'entertainment';
+  if (cat.includes('photo')) return 'photography';
+  if (cat.includes('flower') || cat.includes('decor') || cat.includes('decoration')) return 'decorations';
+  if (cat.includes('transport')) return 'transport';
+  if (cat.includes('hair') || cat.includes('makeup')) return 'beauty';
+  
+  return 'other';
+}
+
+/**
+ * Calculate real budget from user's plans
+ * @param {Array} plans - User's event plans
+ * @returns {Object} - Budget data with spent, total, remaining, and breakdown
+ */
+async function calculateRealBudget(plans) {
+  let totalSpent = 0;
+  const breakdown = {
+    venue: 0,
+    catering: 0,
+    entertainment: 0,
+    photography: 0,
+    decorations: 0,
+    transport: 0,
+    beauty: 0,
+    other: 0,
+  };
+  
+  if (!plans || plans.length === 0) {
+    return {
+      spent: 0,
+      total: BUDGET_CONFIG.DEFAULT_TOTAL_BUDGET,
+      remaining: BUDGET_CONFIG.DEFAULT_TOTAL_BUDGET,
+      breakdown,
+    };
+  }
+  
+  // Collect all package IDs from plans
+  const packageIds = [];
+  plans.forEach(plan => {
+    if (plan.packages && Array.isArray(plan.packages)) {
+      packageIds.push(...plan.packages);
+    }
+    
+    // Add custom budget items if available
+    if (plan.budgetItems && Array.isArray(plan.budgetItems)) {
+      plan.budgetItems.forEach(item => {
+        const amount = parseFloat(item.actual || item.estimated || 0);
+        if (amount > 0) {
+          totalSpent += amount;
+          breakdown.other += amount;
+        }
+      });
+    }
+  });
+  
+  // Fetch package details from API if we have package IDs
+  if (packageIds.length > 0) {
+    try {
+      // Fetch packages in batches to avoid overwhelming the API
+      const packagePromises = packageIds.map(async (pkgId) => {
+        try {
+          const response = await fetch(`/api/packages/${pkgId}`, { 
+            credentials: 'include',
+            headers: { 'Accept': 'application/json' }
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            return data.package || data;
+          }
+        } catch (err) {
+          console.warn(`Failed to fetch package ${pkgId}:`, err);
+        }
+        return null;
+      });
+      
+      const packages = (await Promise.all(packagePromises)).filter(p => p !== null);
+      
+      // Calculate spent from packages
+      packages.forEach(pkg => {
+        const price = parsePrice(pkg.price || pkg.price_display || '0');
+        
+        // Handle per-person pricing - estimate with guest count if available
+        const isPP = (pkg.price || '').toLowerCase().includes('pp') || 
+                    (pkg.price || '').toLowerCase().includes('per person');
+        
+        let actualPrice = price;
+        if (isPP && price > 0) {
+          // Try to get guest count from plan
+          const plan = plans.find(p => p.packages && p.packages.includes(pkg.id));
+          const guests = plan?.guests || BUDGET_CONFIG.DEFAULT_GUEST_COUNT;
+          actualPrice = price * guests;
+        }
+        
+        totalSpent += actualPrice;
+        
+        // Categorize and add to breakdown
+        const category = categorizePackage(pkg.category);
+        breakdown[category] += actualPrice;
+      });
+      
+    } catch (err) {
+      console.error('Error fetching package details:', err);
+    }
+  }
+  
+  // Get total budget from plan or calculate based on spent
+  let totalBudget = BUDGET_CONFIG.DEFAULT_TOTAL_BUDGET;
+  
+  // Check if user has set a custom budget in their plan
+  const planWithBudget = plans.find(p => p.budget && parseFloat(p.budget) > 0);
+  if (planWithBudget) {
+    totalBudget = parseFloat(planWithBudget.budget);
+  } else if (totalSpent > 0) {
+    // If spending but no budget set, ensure budget is reasonable
+    totalBudget = Math.max(BUDGET_CONFIG.DEFAULT_TOTAL_BUDGET, totalSpent * BUDGET_CONFIG.BUDGET_BUFFER_MULTIPLIER);
+  }
+  
+  const remaining = Math.max(0, totalBudget - totalSpent);
+  
+  return {
+    spent: Math.round(totalSpent * 100) / 100,
+    total: Math.round(totalBudget * 100) / 100,
+    remaining: Math.round(remaining * 100) / 100,
+    breakdown,
+  };
+}
+
 // Initialize dashboard widgets after data loads
 async function initCustomerDashboardWidgets() {
   try {
@@ -251,45 +429,52 @@ async function initCustomerDashboardWidgets() {
       },
     ], 'customer-stats-grid');
     
-    // Budget estimation configuration
-    const AVERAGE_PLAN_COST = 500; // Estimated average cost per supplier/plan in GBP
-    const DEFAULT_TOTAL_BUDGET = 5000; // Default budget for new event planners
-    const BUDGET_BUFFER_MULTIPLIER = 1.5; // Ensure total budget is 50% more than spent
+    // Calculate real budget from plans
+    const budgetData = await calculateRealBudget(plans);
     
-    // Calculate budget from plans data (if available)
-    let totalBudget = DEFAULT_TOTAL_BUDGET;
-    let spentBudget = 0;
+    createBudgetTracker(budgetData, 'budget-tracker-widget');
     
-    // Calculate spent based on saved suppliers or plans
+    // Calculate real progress based on completion criteria
+    let progressPercentage = 0;
+    let completedSteps = 0;
+    let totalSteps = 5;
+    
     if (plans.length > 0) {
-      // Estimate spend: each plan represents approximately £500 committed
-      spentBudget = plans.length * AVERAGE_PLAN_COST;
-      totalBudget = Math.max(DEFAULT_TOTAL_BUDGET, spentBudget * BUDGET_BUFFER_MULTIPLIER);
+      // Get the first plan with data or the most recent plan
+      const activePlan = plans.find(p => p.eventDate || p.venue || p.catering) || plans[0];
+      
+      // Define completion criteria
+      const criteria = [
+        !!activePlan.eventDate || !!activePlan.date,  // Has event date
+        !!activePlan.venue,                            // Has venue selected
+        !!activePlan.catering,                         // Has catering selected
+        !!(activePlan.budget && parseFloat(activePlan.budget) > 0),  // Has budget set
+        !!(activePlan.guestCount || activePlan.guests) && parseInt(activePlan.guestCount || activePlan.guests || 0) > 0,  // Has guest list
+      ];
+      
+      completedSteps = criteria.filter(Boolean).length;
+      progressPercentage = Math.round((completedSteps / totalSteps) * 100);
     }
-    
-    createBudgetTracker({
-      spent: spentBudget,
-      total: totalBudget,
-    }, 'budget-tracker-widget');
-    
-    // Calculate event progress
-    const totalSuppliers = 10; // Average suppliers for a complete event
-    const bookedSuppliers = savedSuppliers.length;
-    const pendingSuppliers = Math.max(0, totalSuppliers - bookedSuppliers);
-    const progressPercentage = Math.min(100, Math.round((bookedSuppliers / totalSuppliers) * 100));
     
     // Create progress ring
     createProgressRing({
       percentage: progressPercentage,
       label: 'Event Progress',
-      booked: bookedSuppliers,
-      pending: pendingSuppliers,
+      booked: completedSteps,
+      pending: totalSteps - completedSteps,
     }, 'progress-ring-widget');
     
     // Create upcoming events timeline based on plans
     let upcomingEvents = [];
+    let eventDate = null;
     
     if (plans.length > 0) {
+      // Find nearest upcoming event date
+      const planWithDate = plans.find(p => p.eventDate || p.date);
+      if (planWithDate) {
+        eventDate = planWithDate.eventDate || planWithDate.date;
+      }
+      
       // Generate contextual tasks based on actual plans
       upcomingEvents = [
         { name: 'Review plan details', supplier: 'Planning Dashboard', daysUntil: 2 },
@@ -305,7 +490,7 @@ async function initCustomerDashboardWidgets() {
       ];
     }
     
-    createEventsTimeline(upcomingEvents, 'upcoming-events-timeline');
+    createEventsTimeline(upcomingEvents, 'upcoming-events-timeline', eventDate);
     
   } catch (error) {
     console.error('Error initializing dashboard widgets:', error);

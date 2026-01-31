@@ -154,6 +154,7 @@ async function initMarketplacePage() {
   const filterCategoryEl = document.getElementById('marketplace-filter-category');
   const filterPriceEl = document.getElementById('marketplace-filter-price');
   const filterQueryEl = document.getElementById('marketplace-filter-query');
+  const sortSelectEl = document.getElementById('marketplace-sort');
 
   if (!resultsContainer) {
     console.warn('Marketplace results container not found, skipping marketplace init');
@@ -174,6 +175,9 @@ async function initMarketplacePage() {
     if (filterPriceEl && currentFilters.budgetMin && currentFilters.budgetMax) {
       // Map budget to price range
       filterPriceEl.value = `${currentFilters.budgetMin}-${currentFilters.budgetMax}`;
+    }
+    if (sortSelectEl && currentFilters.sort) {
+      sortSelectEl.value = currentFilters.sort;
     }
   }
 
@@ -277,6 +281,9 @@ async function initMarketplacePage() {
         if (filterPriceEl) {
           filterPriceEl.value = '';
         }
+        if (sortSelectEl) {
+          sortSelectEl.value = 'newest';
+        }
         renderResults();
       });
     }
@@ -329,6 +336,17 @@ async function initMarketplacePage() {
       updateURL(currentFilters);
       renderResults();
       trackFilterChange('price', e.target.value);
+    });
+  }
+
+  // Handle sort changes
+  if (sortSelectEl) {
+    sortSelectEl.addEventListener('change', e => {
+      currentFilters.sort = e.target.value;
+      currentFilters.page = 1;
+      updateURL(currentFilters);
+      renderResults();
+      trackFilterChange('sort', e.target.value);
     });
   }
 
