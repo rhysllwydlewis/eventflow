@@ -197,6 +197,11 @@ class VoiceInput {
     console.log('Voice input ended');
   }
 
+  /**
+   * Override this method to handle transcription results
+   * @param {string} _finalTranscript - The final transcribed text (unused in base implementation)
+   * @param {string} _interimTranscript - The interim transcribed text (unused in base implementation)
+   */
   onResult(_finalTranscript, _interimTranscript) {
     // Override to handle results
   }
