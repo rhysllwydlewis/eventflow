@@ -116,14 +116,7 @@ test.describe('Blog Tag Filtering', () => {
     
     if (filters.length > 0) {
       const filter = filters[0];
-      
-      const initialBg = await filter.evaluate(el => 
-        window.getComputedStyle(el).backgroundColor
-      );
-      
       await filter.hover();
-      
-      await page.waitForTimeout(100);
       
       const hoverBg = await filter.evaluate(el => 
         window.getComputedStyle(el).backgroundColor

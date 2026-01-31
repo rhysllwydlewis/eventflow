@@ -251,6 +251,11 @@
     const container = document.getElementById('blog-articles');
     if (!container) return;
 
+    // Helper function to capitalize tag names for display
+    function capitalizeTag(tag) {
+      return tag.charAt(0).toUpperCase() + tag.slice(1);
+    }
+
     // Sample articles - in production, these would come from a CMS or API
     const articles = [
       {
@@ -343,7 +348,7 @@
       article.tags.forEach(tag => {
         const tagBadge = document.createElement('span');
         tagBadge.className = 'article-card-tag';
-        tagBadge.textContent = tag.charAt(0).toUpperCase() + tag.slice(1);
+        tagBadge.textContent = capitalizeTag(tag);
         tagsContainer.appendChild(tagBadge);
       });
       content.appendChild(tagsContainer);
@@ -392,7 +397,7 @@
       
       let html = '<button class="tag-filter active" data-tag="">All</button>';
       sortedTags.forEach(tag => {
-        const displayTag = tag.charAt(0).toUpperCase() + tag.slice(1);
+        const displayTag = capitalizeTag(tag);
         html += `<button class="tag-filter" data-tag="${tag}">${displayTag}</button>`;
       });
       
