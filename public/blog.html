@@ -253,7 +253,10 @@
 
     // Helper function to capitalize tag names for display
     function capitalizeTag(tag) {
-      return tag.charAt(0).toUpperCase() + tag.slice(1);
+      return tag
+        .split(/[-\s]/)
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
     }
 
     // Sample articles - in production, these would come from a CMS or API
