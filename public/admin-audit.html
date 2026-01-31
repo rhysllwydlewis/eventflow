@@ -182,6 +182,7 @@
         <input type="date" id="startDateFilter" class="filter-select">
         <input type="date" id="endDateFilter" class="filter-select">
         <button class="btn btn-secondary" id="clearFilters">Clear Filters</button>
+        <button class="btn btn-primary" id="exportAuditBtn">📥 Export</button>
       </div>
       
       <div id="auditContainer">
@@ -290,6 +291,40 @@
   // Back button
   document.getElementById('backToDashboard')?.addEventListener('click', () => {
     window.location.href = '/admin.html';
+  });
+
+  // Export button
+  document.getElementById('exportAuditBtn')?.addEventListener('click', async () => {
+    const startDate = document.getElementById('startDateFilter')?.value || '';
+    const endDate = document.getElementById('endDateFilter')?.value || '';
+    
+    const params = new URLSearchParams();
+    params.set('format', 'csv');
+    if (startDate) params.set('startDate', startDate);
+    if (endDate) params.set('endDate', endDate);
+    
+    try {
+      const response = await fetch(`/api/admin/audit/export?${params.toString()}`, {
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `audit-logs-${Date.now()}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        a.remove();
+      } else {
+        alert('Failed to export audit logs');
+      }
+    } catch (error) {
+      console.error('Export error:', error);
+      alert('Failed to export audit logs');
+    }
   });
   
   // Initialize
