@@ -1,5 +1,18 @@
 <!DOCTYPE html><html lang='en-GB'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>Supplier dashboard — EventFlow</title><link rel='stylesheet' href='/assets/css/styles.css?v=18.2.0'><link rel='stylesheet' href='/assets/css/eventflow-17.0.0.css?v=18.2.0'><link rel='stylesheet' href='/assets/css/utilities.css?v=18.2.0'><link rel='stylesheet' href='/assets/css/components.css?v=18.2.0'><link rel='stylesheet' href='/assets/css/animations.css?v=18.2.0'><link rel='stylesheet' href='/assets/css/mobile-optimizations.css?v=18.2.0'><link rel='stylesheet' href='/assets/css/ui-ux-fixes.css?v=18.2.0'><link rel='stylesheet' href='/assets/css/navbar.css?v=18.2.0'><link rel='stylesheet' href='/assets/css/skeleton.css?v=18.2.0'><link rel='stylesheet' href='/assets/css/dashboard-animations.css?v=18.2.0'><link rel='stylesheet' href='/assets/css/p3-features.css?v=18.2.0'><link rel='stylesheet' href='/assets/css/liquid-glass.css?v=18.2.0'><link rel='stylesheet' href='/assets/css/supplier-dashboard-improvements.css?v=18.2.0'><script src="/assets/js/dashboard-guard.js?v=17.0.2"></script>
+<script src="/assets/js/toast-notifications.js?v=18.2.0"></script>
   </head><body>
+<!-- Screen Reader Announcer -->
+<div id="sr-announcer" aria-live="polite" aria-atomic="true"></div>
+<script>
+// Screen reader announcement helper
+window.announceToSR = function(message) {
+  const announcer = document.getElementById('sr-announcer');
+  if (announcer) {
+    announcer.textContent = message;
+    setTimeout(() => { announcer.textContent = ''; }, 1000);
+  }
+};
+</script>
 <a href="#main-content" class="skip-link">Skip to main content</a>
 <!-- modern-ui -->
 <!-- TOP NAVBAR - GOLD STANDARD REBUILD -->
@@ -93,34 +106,84 @@
 <script src="/assets/js/navbar.js" defer></script>
 
 <script src="/assets/js/websocket-client.js" defer></script>
+
+<!-- Mobile Section Navigation -->
+<nav class="dashboard-mobile-nav" aria-label="Dashboard sections">
+  <div class="mobile-nav-pills">
+    <button class="mobile-nav-pill active" data-section="welcome-section">Overview</button>
+    <button class="mobile-nav-pill" data-section="supplier-stats-grid">Stats</button>
+    <button class="mobile-nav-pill" data-section="my-suppliers">Profiles</button>
+    <button class="mobile-nav-pill" data-section="my-packages">Packages</button>
+    <button class="mobile-nav-pill" data-section="threads-sup">Messages <span class="pill-badge" id="mobile-msg-badge" style="display:none;">0</span></button>
+    <button class="mobile-nav-pill" data-section="tickets-sup">Tickets</button>
+  </div>
+</nav>
+
 <main id="main-content" class='section'><div class='container'>
   <div id="supplier-pro-ribbon" class="pro-ribbon" style="display:none"></div>
 
-<!-- Welcome Section -->
-<div id="welcome-section" class="card supplier-welcome-card">
-  <h1 id="welcome-heading" class="supplier-welcome-title">Supplier Dashboard</h1>
-  <p class="small supplier-welcome-subtitle">Manage your supplier profiles, packages, and customer inquiries.</p>
-  <div id="what-you-can-do" class="supplier-welcome-features">
-    <h3 class="supplier-features-title">What you can do from here:</h3>
-    <ul class="supplier-features-list">
-      <li>Create and manage your supplier profiles</li>
-      <li>Add and edit service packages</li>
-      <li>Respond to customer inquiries and support tickets</li>
-      <li>Track conversations with potential clients</li>
-    </ul>
+<!-- Welcome Section with Enhanced Card -->
+<section id="welcome-section" class="card supplier-welcome-card supplier-welcome-card--enhanced" aria-labelledby="welcome-heading">
+  <div class="supplier-welcome-content">
+    <p class="supplier-welcome-greeting" id="welcome-greeting">Good day,</p>
+    <h1 id="welcome-heading" class="supplier-welcome-title">Supplier Dashboard</h1>
+    <p class="small supplier-welcome-subtitle">Manage your supplier profiles, packages, and customer inquiries.</p>
+    <div id="what-you-can-do" class="supplier-welcome-features">
+      <h3 class="supplier-features-title">What you can do from here:</h3>
+      <ul class="supplier-features-list">
+        <li>Create and manage your supplier profiles</li>
+        <li>Add and edit service packages</li>
+        <li>Respond to customer inquiries and support tickets</li>
+        <li>Track conversations with potential clients</li>
+      </ul>
+    </div>
   </div>
-</div>
+  <div class="supplier-welcome-quick-stats" id="welcome-quick-stats">
+    <div class="welcome-stat-card">
+      <span class="welcome-stat-value" id="quick-stat-enquiries">0</span>
+      <span class="welcome-stat-label">Enquiries</span>
+    </div>
+    <div class="welcome-stat-card">
+      <span class="welcome-stat-value" id="quick-stat-profiles">0</span>
+      <span class="welcome-stat-label">Profiles</span>
+    </div>
+  </div>
+</section>
+
+<script>
+// Set greeting based on time of day
+(function() {
+  const hour = new Date().getHours();
+  let greeting = 'Good day,';
+  if (hour < 12) greeting = 'Good morning,';
+  else if (hour < 18) greeting = 'Good afternoon,';
+  else greeting = 'Good evening,';
+  
+  const greetingEl = document.getElementById('welcome-greeting');
+  if (greetingEl) greetingEl.textContent = greeting;
+})();
+</script>
 
 <!-- Quick Actions Section -->
-<div class="card supplier-quick-actions">
-  <h2 class="supplier-section-title">Quick Actions</h2>
+<section class="card supplier-quick-actions" aria-labelledby="quick-actions-title">
+  <h2 id="quick-actions-title" class="supplier-section-title">Quick Actions</h2>
+  
+  <!-- Primary Actions -->
+  <div class="supplier-actions-primary">
+    <button class="supplier-action-btn--large" onclick="document.getElementById('sup-name').focus();document.getElementById('sup-name').scrollIntoView({behavior:'smooth',block:'center'});">
+      <span class="action-icon">➕</span>
+      <span class="action-label">Create Profile</span>
+      <span class="action-desc">Set up your business listing</span>
+    </button>
+    <button class="supplier-action-btn--large" onclick="document.getElementById('pkg-title').focus();document.getElementById('pkg-title').scrollIntoView({behavior:'smooth',block:'center'});">
+      <span class="action-icon">📦</span>
+      <span class="action-label">Create Package</span>
+      <span class="action-desc">Add a service package</span>
+    </button>
+  </div>
+  
+  <!-- Secondary Actions -->
   <div class="supplier-actions-grid">
-    <button class="cta secondary supplier-action-btn" onclick="document.getElementById('sup-name').focus();document.getElementById('sup-name').scrollIntoView({behavior:'smooth',block:'center'});">
-      ➕ Create Profile
-    </button>
-    <button class="cta secondary supplier-action-btn" onclick="document.getElementById('pkg-title').focus();document.getElementById('pkg-title').scrollIntoView({behavior:'smooth',block:'center'});">
-      📦 Create Package
-    </button>
     <a href="/supplier/profile-customization.html" class="cta secondary supplier-action-btn">
       ✨ Customize Profile
     </a>
@@ -134,10 +197,11 @@
       ⚙️ Account Settings
     </a>
   </div>
-</div>
+</section>
 
 <!-- Statistics Widgets -->
-<div id="supplier-stats-grid"></div>
+<h2 id="stats-heading" class="sr-only">Dashboard Statistics</h2>
+<section id="supplier-stats-grid" aria-labelledby="stats-heading" role="region"></section>
 
 <!-- Performance Analytics Chart -->
 <div id="supplier-performance-chart"></div>
@@ -148,8 +212,8 @@
 <!-- Profile Completeness Checklist -->
 <div id="profile-completeness-widget"></div>
 
-<h2>Your supplier profiles</h2>
-<div class="card">
+<h2 id="profiles-heading">Your supplier profiles</h2>
+<div class="card" role="region" aria-labelledby="profiles-heading">
   <h3>Profile management</h3>
   <p class="small">
     Experimental: each profile gets a simple listing health score based on photos, description and details you&apos;ve added.
@@ -163,7 +227,7 @@
   <input type="hidden" id="sup-id" name="id">
   <div class="form-row supplier-form-grid">
     <div>
-      <label>Business name</label>
+      <label for="sup-name">Business name</label>
       <input id="sup-name" name="name">
     </div>
     <div>
@@ -431,27 +495,27 @@
 </div>
 
 
-<div class="card supplier-dashboard-card">
+<section class="card supplier-dashboard-card" role="region" aria-labelledby="tickets-heading">
   <div class="supplier-card-header">
-    <h3>Support Tickets</h3>
+    <h3 id="tickets-heading">Support Tickets</h3>
     <button class="cta supplier-card-action-btn" id="createSupplierTicketBtn">Create Ticket</button>
   </div>
   <div id="tickets-sup" class="section">
     <div class="skeleton skeleton-text skeleton-text-long"></div>
     <div class="skeleton skeleton-text skeleton-text-medium"></div>
   </div>
-</div>
+</section>
 
-<div class="card supplier-dashboard-card">
+<section class="card supplier-dashboard-card" role="region" aria-labelledby="messages-heading">
   <div class="supplier-card-header">
-    <h3>Messages</h3>
-    <span id="unreadMessageBadge" class="badge badge-info supplier-unread-badge">0 unread</span>
+    <h3 id="messages-heading">Messages</h3>
+    <span id="unreadMessageBadge" class="badge badge-info supplier-unread-badge" aria-label="0 unread messages">0 unread</span>
   </div>
   <div id="threads-sup" class="section">
     <div class="skeleton skeleton-text skeleton-text-long"></div>
     <div class="skeleton skeleton-text skeleton-text-medium"></div>
   </div>
-</div>
+</section>
 
 <script>
   // Quick Actions: Handle view conversations button
@@ -466,6 +530,75 @@
       });
     }
   });
+</script>
+
+<!-- Mobile Navigation Scroll Spy -->
+<script>
+(function() {
+  'use strict';
+  
+  const mobileNav = document.querySelector('.dashboard-mobile-nav');
+  if (!mobileNav) return;
+  
+  const pills = mobileNav.querySelectorAll('.mobile-nav-pill');
+  const sections = [];
+  
+  // Collect section elements
+  pills.forEach(pill => {
+    const sectionId = pill.dataset.section;
+    const section = document.getElementById(sectionId);
+    if (section) {
+      sections.push({ id: sectionId, element: section, pill: pill });
+    }
+  });
+  
+  // Click handler for pills
+  pills.forEach(pill => {
+    pill.addEventListener('click', function() {
+      const sectionId = this.dataset.section;
+      const section = document.getElementById(sectionId);
+      if (section) {
+        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        
+        // Update active state
+        pills.forEach(p => p.classList.remove('active'));
+        this.classList.add('active');
+        
+        // Scroll pill into view
+        this.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+      }
+    });
+  });
+  
+  // Scroll spy
+  let ticking = false;
+  function updateActiveSection() {
+    const scrollPosition = window.scrollY + 120; // Account for sticky nav
+    
+    let activeSection = sections[0];
+    
+    for (const section of sections) {
+      if (section.element.offsetTop <= scrollPosition) {
+        activeSection = section;
+      }
+    }
+    
+    if (activeSection) {
+      pills.forEach(p => p.classList.remove('active'));
+      activeSection.pill.classList.add('active');
+      activeSection.pill.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    }
+    
+    ticking = false;
+  }
+  
+  window.addEventListener('scroll', function() {
+    if (!ticking) {
+      window.requestAnimationFrame(updateActiveSection);
+      ticking = true;
+    }
+  }, { passive: true });
+})();
 </script>
 
 <script src="/assets/js/app.js?v=18.2.0"></script>
