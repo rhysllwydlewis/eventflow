@@ -1248,51 +1248,51 @@ textarea:focus {
    =========================================== */
 .profile-checklist {
   background: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
+  border: 1px solid var(--ef-border, #E7EAF0);
+  border-radius: var(--ef-radius-md, 10px);
+  padding: var(--ef-space-5, 24px);
+  margin-bottom: var(--ef-space-5, 24px);
 }
 
 .profile-checklist__header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
+  margin-bottom: var(--ef-space-4, 16px);
 }
 
 .profile-checklist__progress {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: var(--ef-space-3, 12px);
 }
 
 .profile-checklist__bar {
   width: 100px;
   height: 8px;
-  background: #e5e7eb;
-  border-radius: 4px;
+  background: var(--ef-border-muted, #e5e7eb);
+  border-radius: var(--ef-radius-sm, 6px);
   overflow: hidden;
 }
 
 .profile-checklist__fill {
   height: 100%;
-  background: linear-gradient(90deg, #0B8073, #10b981);
-  border-radius: 4px;
+  background: linear-gradient(90deg, var(--ef-primary, #0B8073), var(--ef-success, #10b981));
+  border-radius: var(--ef-radius-sm, 6px);
   transition: width 0.5s ease;
 }
 
 .profile-checklist__percent {
-  font-weight: 600;
-  color: #0B8073;
+  font-weight: var(--ef-font-semibold, 600);
+  color: var(--ef-primary, #0B8073);
 }
 
 .checklist-item {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem 0;
-  border-bottom: 1px solid #f3f4f6;
+  gap: var(--ef-space-3, 12px);
+  padding: var(--ef-space-3, 12px) 0;
+  border-bottom: 1px solid var(--ef-bg-subtle, #f3f4f6);
 }
 
 .checklist-item:last-child {
@@ -1310,30 +1310,30 @@ textarea:focus {
 }
 
 .checklist-item--complete .checklist-item__icon {
-  background: #10b981;
+  background: var(--ef-success, #10b981);
   color: white;
 }
 
 .checklist-item--incomplete .checklist-item__icon {
-  background: #e5e7eb;
-  color: #9ca3af;
+  background: var(--ef-border-muted, #e5e7eb);
+  color: var(--ef-text-subtle, #9ca3af);
 }
 
 .checklist-item__text {
   flex: 1;
-  font-size: 0.9rem;
+  font-size: var(--ef-text-sm, 14px);
 }
 
 .checklist-item--complete .checklist-item__text {
-  color: #6b7280;
+  color: var(--ef-text-muted, #667085);
   text-decoration: line-through;
 }
 
 .checklist-item__action {
-  font-size: 0.8rem;
-  color: #0B8073;
+  font-size: var(--ef-text-sm, 14px);
+  color: var(--ef-primary, #0B8073);
   text-decoration: none;
-  font-weight: 500;
+  font-weight: var(--ef-font-medium, 500);
 }
 
 .checklist-item__action:hover {
@@ -1346,13 +1346,13 @@ textarea:focus {
 .supplier-form-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1rem;
+  gap: var(--ef-space-4, 16px);
 }
 
 .supplier-form-grid-2col {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 1rem;
+  gap: var(--ef-space-4, 16px);
 }
 
 @media (max-width: 640px) {
@@ -1366,19 +1366,19 @@ textarea:focus {
    24. FORM VALIDATION STATES
    =========================================== */
 .form-required {
-  color: #ef4444;
+  color: var(--ef-error, #ef4444);
 }
 
 .form-help-text {
-  color: #667085;
-  margin-top: 0.25rem;
-  font-size: 0.875rem;
+  color: var(--ef-text-muted, #667085);
+  margin-top: var(--ef-space-1, 4px);
+  font-size: var(--ef-text-sm, 14px);
 }
 
 .form-error-text {
-  color: #ef4444;
-  margin-top: 0.25rem;
-  font-size: 0.875rem;
+  color: var(--ef-error, #ef4444);
+  margin-top: var(--ef-space-1, 4px);
+  font-size: var(--ef-text-sm, 14px);
   display: none;
 }
 
@@ -1390,23 +1390,23 @@ textarea:focus {
    25. SECTION HEADERS
    =========================================== */
 .supplier-section-header {
-  margin-top: 1rem;
-  margin-bottom: 0.75rem;
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: #0B1220;
+  margin-top: var(--ef-space-4, 16px);
+  margin-bottom: var(--ef-space-3, 12px);
+  font-size: var(--ef-text-lg, 18px);
+  font-weight: var(--ef-font-semibold, 600);
+  color: var(--ef-text, #0B1220);
 }
 
 /* ===========================================
    26. CARD COMPONENTS
    =========================================== */
 .supplier-card-action-btn {
-  padding: 0.5rem 1rem;
-  font-size: 0.875rem;
+  padding: var(--ef-space-2, 8px) var(--ef-space-4, 16px);
+  font-size: var(--ef-text-sm, 14px);
 }
 
 .supplier-unread-badge {
-  font-size: 0.875rem;
+  font-size: var(--ef-text-sm, 14px);
   display: none;
 }
 
@@ -1425,11 +1425,11 @@ textarea:focus {
    28. SUBSCRIPTION CARD HELPERS
    =========================================== */
 .subscription-status-active {
-  color: #10b981;
+  color: var(--ef-success, #10b981);
 }
 
 .subscription-action-btn {
-  margin-top: 0.5rem;
+  margin-top: var(--ef-space-2, 8px);
 }
 
 /* ===========================================
@@ -1437,7 +1437,7 @@ textarea:focus {
    =========================================== */
 /* High-visibility focus for keyboard users */
 *:focus-visible {
-  outline: 2px solid #0B8073;
+  outline: 2px solid var(--ef-primary, #0B8073);
   outline-offset: 2px;
 }
 
@@ -1451,12 +1451,12 @@ textarea:focus {
   position: absolute;
   left: -9999px;
   z-index: 9999;
-  padding: 1rem;
-  background: #0B8073;
+  padding: var(--ef-space-4, 16px);
+  background: var(--ef-primary, #0B8073);
   color: white;
   text-decoration: none;
-  font-weight: 600;
-  border-radius: 0 0 8px 0;
+  font-weight: var(--ef-font-semibold, 600);
+  border-radius: 0 0 var(--ef-radius-md, 10px) 0;
 }
 
 .skip-link:focus {
@@ -1470,18 +1470,18 @@ textarea:focus {
 .small,
 .form-hint,
 .form-help {
-  color: #4b5563; /* Darker gray for better contrast */
+  color: var(--ef-text-muted, #667085);
 }
 
 /* Error messages */
 .form-error-text {
-  color: #dc2626; /* Darker red */
-  font-weight: 500;
+  color: var(--ef-error, #ef4444);
+  font-weight: var(--ef-font-medium, 500);
 }
 
 /* Success messages - enhanced with WCAG AA compliant color */
 .text-success {
-  color: #059669; /* Darker green for better contrast */
+  color: var(--ef-success, #10b981);
 }
 
 /* ===========================================
@@ -1491,13 +1491,17 @@ textarea:focus {
   .supplier-welcome-card::before,
   .cta::before,
   .lead-quality-fill::after,
-  .skeleton {
+  .skeleton,
+  .glass-progress__fill::after {
     animation: none;
   }
   
   .supplier-action-btn:hover,
   .card:hover,
-  .cta:hover {
+  .cta:hover,
+  .supplier-dashboard-card:hover,
+  .stat-widget:hover,
+  .empty-state__action:hover {
     transform: none;
   }
   
@@ -1511,26 +1515,26 @@ textarea:focus {
    32. UTILITY CLASSES
    =========================================== */
 .text-error {
-  color: #ef4444;
+  color: var(--ef-error, #ef4444);
 }
 
 .text-warning {
-  color: #f59e0b;
+  color: var(--ef-warning, #f59e0b);
 }
 
 .text-muted {
-  color: #6b7280;
+  color: var(--ef-text-muted, #667085);
 }
 
 .loading-text {
-  margin-top: 1rem;
+  margin-top: var(--ef-space-4, 16px);
 }
 
 .error-message {
-  color: #d32f2f;
-  padding: 20px;
+  color: var(--ef-error, #ef4444);
+  padding: var(--ef-space-5, 24px);
   text-align: center;
-  background: #ffebee;
-  border-radius: 8px;
-  margin: 20px;
+  background: var(--ef-error-light, #fee2e2);
+  border-radius: var(--ef-radius-md, 10px);
+  margin: var(--ef-space-5, 24px);
 }
