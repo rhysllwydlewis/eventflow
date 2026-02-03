@@ -1496,6 +1496,12 @@ textarea:focus {
     animation: none;
   }
   
+  /* Set solid background for skeleton when animations are disabled */
+  .skeleton {
+    background: var(--ef-bg-subtle, #f3f4f6);
+    background-size: 100% 100%;
+  }
+  
   .supplier-action-btn:hover,
   .card:hover,
   .cta:hover,
