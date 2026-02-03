@@ -548,7 +548,7 @@
 /* ===========================================
    9. TOUCH-FRIENDLY IMPROVEMENTS
    =========================================== */
-/* Larger touch targets for mobile */
+/* Larger touch targets for touch-capable devices (phones, tablets) */
 @media (hover: none) and (pointer: coarse) {
   .cta,
   .supplier-action-btn {
@@ -1369,7 +1369,7 @@ textarea:focus {
   font-weight: 500;
 }
 
-/* Success messages - enhanced */
+/* Success messages - enhanced with WCAG AA compliant color */
 .text-success {
   color: #059669; /* Darker green for better contrast */
 }
@@ -1402,10 +1402,6 @@ textarea:focus {
    =========================================== */
 .text-error {
   color: #ef4444;
-}
-
-.text-success {
-  color: #059669; /* Darker green for WCAG AA compliance */
 }
 
 .text-warning {
