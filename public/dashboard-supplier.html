@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang='en-GB'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>Supplier dashboard — EventFlow</title><link rel='stylesheet' href='/assets/css/styles.css?v=18.0.0'><link rel='stylesheet' href='/assets/css/eventflow-17.0.0.css?v=18.0.0'><link rel='stylesheet' href='/assets/css/utilities.css?v=18.0.0'><link rel='stylesheet' href='/assets/css/components.css?v=18.0.0'><link rel='stylesheet' href='/assets/css/animations.css?v=18.0.0'><link rel='stylesheet' href='/assets/css/mobile-optimizations.css?v=18.0.0'><link rel='stylesheet' href='/assets/css/ui-ux-fixes.css?v=18.0.0'><link rel='stylesheet' href='/assets/css/navbar.css?v=18.0.0'><link rel='stylesheet' href='/assets/css/skeleton.css?v=18.0.0'><link rel='stylesheet' href='/assets/css/dashboard-animations.css?v=18.0.0'><link rel='stylesheet' href='/assets/css/p3-features.css?v=18.1.1'><script src="/assets/js/dashboard-guard.js?v=17.0.2"></script>
+<!DOCTYPE html><html lang='en-GB'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>Supplier dashboard — EventFlow</title><link rel='stylesheet' href='/assets/css/styles.css?v=18.0.0'><link rel='stylesheet' href='/assets/css/eventflow-17.0.0.css?v=18.0.0'><link rel='stylesheet' href='/assets/css/utilities.css?v=18.0.0'><link rel='stylesheet' href='/assets/css/components.css?v=18.0.0'><link rel='stylesheet' href='/assets/css/animations.css?v=18.0.0'><link rel='stylesheet' href='/assets/css/mobile-optimizations.css?v=18.0.0'><link rel='stylesheet' href='/assets/css/ui-ux-fixes.css?v=18.0.0'><link rel='stylesheet' href='/assets/css/navbar.css?v=18.0.0'><link rel='stylesheet' href='/assets/css/skeleton.css?v=18.0.0'><link rel='stylesheet' href='/assets/css/dashboard-animations.css?v=18.0.0'><link rel='stylesheet' href='/assets/css/p3-features.css?v=18.1.1'><link rel='stylesheet' href='/assets/css/supplier-dashboard-improvements.css?v=18.1.0'><script src="/assets/js/dashboard-guard.js?v=17.0.2"></script>
   </head><body>
 <a href="#main-content" class="skip-link">Skip to main content</a>
 <!-- modern-ui -->
@@ -97,40 +97,40 @@
   <div id="supplier-pro-ribbon" class="pro-ribbon" style="display:none"></div>
 
 <!-- Welcome Section -->
-<div id="welcome-section" class="card" style="background:linear-gradient(135deg, #0B8073 0%, #0a6b5f 100%);color:white;margin-bottom:1rem;">
-  <h1 id="welcome-heading" style="margin:0 0 0.5rem 0;color:white;">Supplier Dashboard</h1>
-  <p class="small" style="color:rgba(255,255,255,0.9);margin:0 0 1rem 0;">Manage your supplier profiles, packages, and customer inquiries.</p>
-  <div id="what-you-can-do" style="margin-top:1rem;padding-top:1rem;border-top:1px solid rgba(255,255,255,0.2);">
-    <h3 style="margin:0 0 0.5rem 0;color:white;font-size:1.1rem;">What you can do from here:</h3>
-    <ul style="margin:0;padding-left:1.25rem;color:rgba(255,255,255,0.95);font-size:0.95rem;">
-      <li style="margin-bottom:0.25rem;">Create and manage your supplier profiles</li>
-      <li style="margin-bottom:0.25rem;">Add and edit service packages</li>
-      <li style="margin-bottom:0.25rem;">Respond to customer inquiries and support tickets</li>
-      <li style="margin-bottom:0.25rem;">Track conversations with potential clients</li>
+<div id="welcome-section" class="card supplier-welcome-card">
+  <h1 id="welcome-heading" class="supplier-welcome-title">Supplier Dashboard</h1>
+  <p class="small supplier-welcome-subtitle">Manage your supplier profiles, packages, and customer inquiries.</p>
+  <div id="what-you-can-do" class="supplier-welcome-features">
+    <h3 class="supplier-features-title">What you can do from here:</h3>
+    <ul class="supplier-features-list">
+      <li>Create and manage your supplier profiles</li>
+      <li>Add and edit service packages</li>
+      <li>Respond to customer inquiries and support tickets</li>
+      <li>Track conversations with potential clients</li>
     </ul>
   </div>
 </div>
 
 <!-- Quick Actions Section -->
-<div class="card" style="margin-bottom:1.5rem;">
-  <h2 style="margin:0 0 1rem 0;font-size:1.25rem;color:#0B1220;">Quick Actions</h2>
-  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:0.75rem;">
-    <button class="cta secondary" onclick="document.getElementById('sup-name').focus();document.getElementById('sup-name').scrollIntoView({behavior:'smooth',block:'center'});" style="width:100%;text-align:center;">
+<div class="card supplier-quick-actions">
+  <h2 class="supplier-section-title">Quick Actions</h2>
+  <div class="supplier-actions-grid">
+    <button class="cta secondary supplier-action-btn" onclick="document.getElementById('sup-name').focus();document.getElementById('sup-name').scrollIntoView({behavior:'smooth',block:'center'});">
       ➕ Create Profile
     </button>
-    <button class="cta secondary" onclick="document.getElementById('pkg-title').focus();document.getElementById('pkg-title').scrollIntoView({behavior:'smooth',block:'center'});" style="width:100%;text-align:center;">
+    <button class="cta secondary supplier-action-btn" onclick="document.getElementById('pkg-title').focus();document.getElementById('pkg-title').scrollIntoView({behavior:'smooth',block:'center'});">
       📦 Create Package
     </button>
-    <a href="/supplier/profile-customization.html" class="cta secondary" style="width:100%;text-align:center;text-decoration:none;display:inline-block;">
+    <a href="/supplier/profile-customization.html" class="cta secondary supplier-action-btn">
       ✨ Customize Profile
     </a>
-    <a href="/gallery.html" class="cta secondary" style="width:100%;text-align:center;text-decoration:none;display:inline-block;">
+    <a href="/gallery.html" class="cta secondary supplier-action-btn">
       📸 Manage Photos
     </a>
-    <button class="cta secondary" id="viewConversationsBtn" style="width:100%;text-align:center;">
+    <button class="cta secondary supplier-action-btn" id="viewConversationsBtn">
       💬 View Messages
     </button>
-    <a href="/settings.html" class="cta secondary" style="width:100%;text-align:center;text-decoration:none;display:inline-block;">
+    <a href="/settings.html" class="cta secondary supplier-action-btn">
       ⚙️ Account Settings
     </a>
   </div>
@@ -244,7 +244,7 @@
 
   <!-- Profile Customization Link -->
   <div class="form-row" style="margin-top:2rem;padding-top:2rem;border-top:2px solid #e5e7eb;">
-    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1.5rem; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
+    <div style="background: linear-gradient(135deg, #0B8073 0%, #0a6b5f 100%); color: white; padding: 1.5rem; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
       <div>
         <h3 style="margin: 0 0 0.5rem 0; font-size: 1.1rem; color: white;">
           ✨ Profile Customization 
@@ -254,7 +254,7 @@
           Make your profile stand out with custom banners, taglines, highlights, and social media links
         </p>
       </div>
-      <a href="/supplier/profile-customization.html" class="cta" style="background: white; color: #667eea; text-decoration: none; white-space: nowrap; padding: 0.75rem 1.5rem; font-weight: 600;">
+      <a href="/supplier/profile-customization.html" class="cta" style="background: white; color: #0B8073; text-decoration: none; white-space: nowrap; padding: 0.75rem 1.5rem; font-weight: 600;">
         Customize Profile →
       </a>
     </div>
@@ -355,7 +355,7 @@
 })();
 </script>
 
-<div class="card" style="margin-top:16px">
+<div class="card supplier-dashboard-card">
   <h3>Your packages</h3>
   <p class="small" id="pkg-limit-note">Checking your package allowance…</p>
   <div id="my-packages" class="section">
@@ -384,19 +384,19 @@
           <option value="extras">Extras & Add-ons</option>
         </select>
       </div>
-      <div>
-        <label>Event Types <span style="color:red">*</span></label>
-        <div style="display:flex;gap:1rem;align-items:center;padding-top:0.5rem;">
-          <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;">
-            <input type="checkbox" id="pkg-event-wedding" name="eventTypes" value="wedding">
-            <span>Wedding</span>
+      <div class="form-group">
+        <label class="form-label">Event Types <span class="required">*</span></label>
+        <div class="checkbox-group">
+          <label class="checkbox-inline">
+            <input type="checkbox" id="pkg-event-wedding" name="eventTypes" value="wedding" class="form-checkbox">
+            <span class="checkbox-text">Wedding</span>
           </label>
-          <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;">
-            <input type="checkbox" id="pkg-event-other" name="eventTypes" value="other">
-            <span>Other Events</span>
+          <label class="checkbox-inline">
+            <input type="checkbox" id="pkg-event-other" name="eventTypes" value="other" class="form-checkbox">
+            <span class="checkbox-text">Other Events</span>
           </label>
         </div>
-        <p class="small" style="color:#667085;margin-top:0.25rem;">Select at least one</p>
+        <p class="form-help">Select at least one</p>
       </div>
     </div>
     <div class="form-row"><label>Description</label><textarea id="pkg-desc" name="description" rows="4"></textarea></div>
@@ -416,13 +416,13 @@
     <input type="hidden" name="supplierId" id="pkg-supplier-id-hidden">
     <input type="hidden" name="id" id="pkg-id-hidden">
   </form>
-</div><div class="card" style="margin-top:16px;">
+</div><div class="card supplier-dashboard-card">
   <h3>Subscription</h3>
   <div id="supplier-subscription-card" class="section">
     <p class="small">Checking subscription status…</p>
   </div>
 </div>
-<div class="card" style="margin-top:16px">
+<div class="card supplier-dashboard-card">
   <h3>Lead Quality Overview</h3>
   <div id="lead-quality-breakdown" class="section">
     <div class="skeleton skeleton-text skeleton-text-long"></div>
@@ -431,9 +431,9 @@
 </div>
 
 
-<div class="card" style="margin-top:16px">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
-    <h3 style="margin:0;">Support Tickets</h3>
+<div class="card supplier-dashboard-card">
+  <div class="supplier-card-header">
+    <h3>Support Tickets</h3>
     <button class="cta" id="createSupplierTicketBtn" style="padding:0.5rem 1rem;font-size:14px;">Create Ticket</button>
   </div>
   <div id="tickets-sup" class="section">
@@ -442,9 +442,9 @@
   </div>
 </div>
 
-<div class="card" style="margin-top:16px">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
-    <h3 style="margin:0;">Messages</h3>
+<div class="card supplier-dashboard-card">
+  <div class="supplier-card-header">
+    <h3>Messages</h3>
     <span id="unreadMessageBadge" class="badge badge-info" style="display:none;font-size:14px;">0 unread</span>
   </div>
   <div id="threads-sup" class="section">

@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="/assets/css/mobile-optimizations.css?v=18.0.0" />
     <link rel="stylesheet" href="/assets/css/ui-ux-fixes.css?v=18.0.0" />
     <link rel="stylesheet" href="/assets/css/navbar.css?v=18.0.0" />
+    <link rel="stylesheet" href="/assets/css/supplier-dashboard-improvements.css?v=18.1.0" />
     <script src="/assets/js/dashboard-guard.js?v=17.0.2"></script>
   </head>
   <body>
@@ -108,7 +109,7 @@
       <div class="container">
         <!-- Breadcrumb Navigation -->
         <div style="margin-bottom: 1.5rem;">
-          <a href="/dashboard-supplier.html" style="color: #667eea; text-decoration: none; font-size: 0.875rem;">
+          <a href="/dashboard-supplier.html" style="color: #0B8073; text-decoration: none; font-size: 0.875rem;">
             ← Back to Dashboard
           </a>
         </div>
@@ -174,13 +175,16 @@
 
             <!-- Brand Theme Color -->
             <div class="form-row">
-              <label>Brand Theme Color <span class="small" style="color:#667085;font-weight:400;">(optional)</span></label>
-              <div style="display:flex;gap:1rem;align-items:center;flex-wrap:wrap;">
-                <input type="color" id="sup-theme-color" name="themeColor" value="#0B8073" style="width:80px;height:40px;cursor:pointer;border:2px solid #e5e7eb;border-radius:4px;">
-                <input type="text" id="sup-theme-color-hex" placeholder="#0B8073" maxlength="7" style="width:120px;">
-                <button type="button" id="reset-theme-color" class="cta secondary" style="padding:0.5rem 1rem;">Reset to Default</button>
+              <label class="form-label">
+                Brand Theme Color 
+                <span class="label-optional">(optional)</span>
+              </label>
+              <div class="color-picker-group">
+                <input type="color" id="sup-theme-color" name="themeColor" value="#0B8073" class="color-picker-input">
+                <input type="text" id="sup-theme-color-hex" placeholder="#0B8073" maxlength="7" class="color-hex-input">
+                <button type="button" id="reset-theme-color" class="cta secondary">Reset to Default</button>
               </div>
-              <p class="tiny" style="color:#667085;margin-top:0.25rem;">Choose a color that matches your brand</p>
+              <p class="form-hint">Choose a color that matches your brand</p>
             </div>
 
             <!-- Social Media Links -->
