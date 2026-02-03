@@ -25,7 +25,7 @@
     socket: null,
     isConnected: false,
     hasDesktopPermission: false,
-    soundEnabled: true,
+    soundEnabled: localStorage.getItem('ef_notification_sound_enabled') !== 'false',
   };
 
   // ==========================================
@@ -631,6 +631,8 @@
       delete: deleteNotification,
       toggleSound: () => {
         state.soundEnabled = !state.soundEnabled;
+        // Sync with localStorage so settings page stays in sync
+        localStorage.setItem('ef_notification_sound_enabled', state.soundEnabled);
         return state.soundEnabled;
       },
     };
