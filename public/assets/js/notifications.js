@@ -308,6 +308,11 @@
 
       oscillator.start(audioContext.currentTime);
       oscillator.stop(audioContext.currentTime + 0.5);
+
+      // Clean up AudioContext after playback to prevent resource leaks
+      oscillator.onended = function () {
+        audioContext.close();
+      };
     } catch (error) {
       console.error('Error playing notification sound:', error);
     }
