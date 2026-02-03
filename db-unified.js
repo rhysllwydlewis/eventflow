@@ -575,11 +575,19 @@ async function writeAndVerify(collectionName, data) {
     // Read it back to verify persistence
     const verified = await read(collectionName);
 
-    // Return the verified data from database
-    return verified;
+    // Return structured result with verification status
+    return {
+      success: true,
+      verified: true,
+      data: verified,
+    };
   } catch (error) {
     console.error(`Error in writeAndVerify for ${collectionName}:`, error.message);
-    throw error;
+    return {
+      success: false,
+      verified: false,
+      error: error.message,
+    };
   }
 }
 

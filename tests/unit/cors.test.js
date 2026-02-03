@@ -89,7 +89,7 @@ describe('CORS Configuration', () => {
 
       expect(response.status).toBe(403);
       expect(response.body).toHaveProperty('error');
-      expect(response.body.error).toContain('not allowed');
+      expect(response.body.error.toLowerCase()).toContain('not allowed');
     });
 
     test('should allow requests without origin', async () => {

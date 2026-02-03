@@ -28,11 +28,14 @@ function projectPublicSupplierFields(supplier) {
     images: supplier.images,
     price_display: supplier.price_display,
     startingPrice: supplier.startingPrice,
-    rating: supplier.rating,
+    rating: supplier.rating || supplier.averageRating, // Legacy field for backward compatibility
+    averageRating: supplier.averageRating,
     reviewCount: supplier.reviewCount,
     verified: supplier.verified,
     isPro: supplier.isPro,
+    featured: supplier.featured,
     featuredSupplier: supplier.featuredSupplier,
+    approved: supplier.approved,
     amenities: supplier.amenities,
     maxGuests: supplier.maxGuests,
     badges: supplier.badges,
@@ -61,6 +64,7 @@ function projectPublicPackageFields(pkg) {
     location: pkg.location,
     maxGuests: pkg.maxGuests,
     features: pkg.features,
+    approved: pkg.approved,
     createdAt: pkg.createdAt,
     // Explicitly exclude: internal flags, seller contact info, etc.
   };
