@@ -305,7 +305,8 @@
     }
     
     async function loadSelectOptions() {
-      const uploadType = document.querySelector('input[name="uploadType"]:checked').value;
+      const checkedRadio = document.querySelector('input[name="uploadType"]:checked');
+      const uploadType = checkedRadio ? checkedRadio.value : 'supplier';
       uploadTarget.innerHTML = '<option value="">Loading...</option>';
       
       try {
@@ -356,7 +357,8 @@
     }
     
     modalConfirm.addEventListener('click', async function() {
-      const uploadType = document.querySelector('input[name="uploadType"]:checked').value;
+      const checkedRadio = document.querySelector('input[name="uploadType"]:checked');
+      const uploadType = checkedRadio ? checkedRadio.value : 'supplier';
       const id = uploadTarget.value;
       
       if (!id) {

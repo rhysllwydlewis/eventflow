@@ -571,9 +571,10 @@ window.announceToSR = function(message) {
   });
   
   // Scroll spy
+  const STICKY_NAV_OFFSET = 120; // Height of header + mobile nav
   let ticking = false;
   function updateActiveSection() {
-    const scrollPosition = window.scrollY + 120; // Account for sticky nav
+    const scrollPosition = window.scrollY + STICKY_NAV_OFFSET;
     
     let activeSection = sections[0];
     
