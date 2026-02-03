@@ -158,10 +158,10 @@
     <div class="skeleton skeleton-text skeleton-text-long"></div>
     <div class="skeleton skeleton-text skeleton-text-medium"></div>
   </div>
-  <h3 style="margin-top:16px">Create / Edit profile</h3>
+  <h3 class="supplier-section-header">Create / Edit profile</h3>
 <form id="supplier-form" action="#">
   <input type="hidden" id="sup-id" name="id">
-  <div class="form-row" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))">
+  <div class="form-row supplier-form-grid">
     <div>
       <label>Business name</label>
       <input id="sup-name" name="name">
@@ -219,14 +219,14 @@
     <input id="sup-max" name="maxGuests" type="number" min="0" step="1">
   </div>
 
-  <div class="form-row" id="venue-postcode-row" style="display:none">
-    <label for="sup-venue-postcode">Venue postcode <span style="color:#ef4444">*</span></label>
+  <div class="form-row form-row-hidden" id="venue-postcode-row">
+    <label for="sup-venue-postcode">Venue postcode <span class="form-required">*</span></label>
     <input id="sup-venue-postcode" name="venuePostcode" placeholder="e.g. SW1A 1AA" aria-describedby="venue-postcode-help venue-postcode-error" aria-required="false">
-    <p class="small" id="venue-postcode-help" style="color:#667085;margin-top:0.25rem;">Required for Venues category. Enter a valid UK postcode.</p>
-    <p class="small" id="venue-postcode-error" style="color:#ef4444;margin-top:0.25rem;display:none;" role="alert" aria-live="polite"></p>
+    <p class="small form-help-text" id="venue-postcode-help">Required for Venues category. Enter a valid UK postcode.</p>
+    <p class="small form-error-text" id="venue-postcode-error" role="alert" aria-live="polite"></p>
   </div>
 
-  <div class="form-row" style="display:none">
+  <div class="form-row form-row-hidden">
     <label>Photos (one URL per line)</label>
     <textarea id="sup-photos" name="photos" rows="3"></textarea>
   </div>
@@ -243,24 +243,24 @@
   </div>
 
   <!-- Profile Customization Link -->
-  <div class="form-row" style="margin-top:2rem;padding-top:2rem;border-top:2px solid #e5e7eb;">
-    <div style="background: linear-gradient(135deg, #0B8073 0%, #0a6b5f 100%); color: white; padding: 1.5rem; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
-      <div>
-        <h3 style="margin: 0 0 0.5rem 0; font-size: 1.1rem; color: white;">
+  <div class="form-row supplier-cta-section">
+    <div class="supplier-cta-banner">
+      <div class="supplier-cta-banner-content">
+        <h3 class="supplier-cta-banner-title">
           ✨ Profile Customization 
-          <span class="badge" style="background: #10b981; color: white; font-size: 0.75rem; margin-left: 0.5rem;">New</span>
+          <span class="supplier-cta-banner-badge">New</span>
         </h3>
-        <p class="small" style="color: rgba(255,255,255,0.9); margin: 0;">
+        <p class="supplier-cta-banner-text">
           Make your profile stand out with custom banners, taglines, highlights, and social media links
         </p>
       </div>
-      <a href="/supplier/profile-customization.html" class="cta" style="background: white; color: #0B8073; text-decoration: none; white-space: nowrap; padding: 0.75rem 1.5rem; font-weight: 600;">
+      <a href="/supplier/profile-customization.html" class="supplier-cta-banner-button">
         Customize Profile →
       </a>
     </div>
   </div>
 
-  <div class="form-actions" style="margin-top:10px">
+  <div class="form-actions supplier-form-actions">
     <button class="cta" id="sup-create" type="submit">Save profile</button>
     <button type="button" id="sup-preview" class="cta secondary">👁️ Preview Profile</button>
     <span class="small" id="sup-status"></span>
@@ -362,16 +362,16 @@
     <div class="skeleton skeleton-text skeleton-text-long"></div>
     <div class="skeleton skeleton-text skeleton-text-medium"></div>
   </div>
-  <h3 style="margin-top:16px">Create a package</h3>
+  <h3 class="supplier-section-header">Create a package</h3>
   <form id="package-form" action="#">
-    <div class="form-row" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))">
+    <div class="form-row supplier-form-grid">
       <div><label>For supplier</label><select id="pkg-supplier"></select></div>
       <div><label>Title</label><input id="pkg-title" name="title"></div>
       <div><label>Price</label><input id="pkg-price" name="price" placeholder="e.g. £999 or £45 pp"></div>
     </div>
-    <div class="form-row" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))">
+    <div class="form-row supplier-form-grid">
       <div>
-        <label>Primary Category <span style="color:red">*</span></label>
+        <label>Primary Category <span class="form-required">*</span></label>
         <select id="pkg-category" name="primaryCategoryKey" required>
           <option value="">Choose a category…</option>
           <option value="venues">Venues</option>
@@ -400,7 +400,7 @@
       </div>
     </div>
     <div class="form-row"><label>Description</label><textarea id="pkg-desc" name="description" rows="4"></textarea></div>
-    <div class="form-row" style="display:none">
+    <div class="form-row form-row-hidden">
       <label>Image URL (optional)</label>
       <input id="pkg-image" name="image" placeholder="your-website-url">
     </div>
@@ -409,7 +409,7 @@
       <div id="pkg-photo-drop" class="photo-drop-zone">Drag &amp; drop an image here, or click to choose a file.</div>
       <div id="pkg-photo-preview" class="photo-preview-grid"></div>
     </div>
-    <div class="form-actions" style="margin-top:10px">
+    <div class="form-actions supplier-form-actions">
       <button class="cta" type="submit">Save package</button>
       <span class="small" id="pkg-status"></span>
     </div>
@@ -434,7 +434,7 @@
 <div class="card supplier-dashboard-card">
   <div class="supplier-card-header">
     <h3>Support Tickets</h3>
-    <button class="cta" id="createSupplierTicketBtn" style="padding:0.5rem 1rem;font-size:14px;">Create Ticket</button>
+    <button class="cta supplier-card-action-btn" id="createSupplierTicketBtn">Create Ticket</button>
   </div>
   <div id="tickets-sup" class="section">
     <div class="skeleton skeleton-text skeleton-text-long"></div>
@@ -445,7 +445,7 @@
 <div class="card supplier-dashboard-card">
   <div class="supplier-card-header">
     <h3>Messages</h3>
-    <span id="unreadMessageBadge" class="badge badge-info" style="display:none;font-size:14px;">0 unread</span>
+    <span id="unreadMessageBadge" class="badge badge-info supplier-unread-badge">0 unread</span>
   </div>
   <div id="threads-sup" class="section">
     <div class="skeleton skeleton-text skeleton-text-long"></div>
@@ -707,21 +707,21 @@
           container.innerHTML = `
             <p class="small"><strong>Active Plan:</strong> ${details.planName || 'Pro Plan'}</p>
             <p class="small"><strong>Renews:</strong> ${endDate.toLocaleDateString('en-GB')}</p>
-            <p class="small"><strong>Status:</strong> <span style="color: #10b981;">✓ Active</span></p>
-            <a href="/supplier/subscription.html" class="btn btn-secondary" style="margin-top: 0.5rem;">Manage Subscription</a>
+            <p class="small"><strong>Status:</strong> <span class="subscription-status-active">✓ Active</span></p>
+            <a href="/supplier/subscription.html" class="btn btn-secondary subscription-action-btn">Manage Subscription</a>
           `;
         } else {
           container.innerHTML = `
             <p class="small">You're currently on the <strong>Free Plan</strong></p>
             <p class="small">Upgrade to unlock premium features and boost your visibility!</p>
-            <a href="/supplier/subscription.html" class="btn btn-primary" style="margin-top: 0.5rem;">Upgrade to Pro</a>
+            <a href="/supplier/subscription.html" class="btn btn-primary subscription-action-btn">Upgrade to Pro</a>
           `;
         }
       } else {
         // API error - show basic message
         container.innerHTML = `
           <p class="small">Manage your subscription and unlock premium features.</p>
-          <a href="/supplier/subscription.html" class="btn btn-secondary" style="margin-top: 0.5rem;">View Plans</a>
+          <a href="/supplier/subscription.html" class="btn btn-secondary subscription-action-btn">View Plans</a>
         `;
       }
       
@@ -732,7 +732,7 @@
       console.error('Error loading subscription status:', error);
       container.innerHTML = `
         <p class="small">Unable to load subscription status.</p>
-        <a href="/supplier/subscription.html" class="btn btn-secondary" style="margin-top: 0.5rem;">View Subscription</a>
+        <a href="/supplier/subscription.html" class="btn btn-secondary subscription-action-btn">View Subscription</a>
       `;
     }
   }
@@ -817,49 +817,49 @@
       const avgScore = Math.round(totalScore / total);
 
       container.innerHTML = `
-        <div style="margin-bottom: 1rem;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-            <span style="font-size: 0.875rem; font-weight: 600;">🔥 Hot (80+)</span>
-            <span style="font-weight: 600;">${counts.Hot} (${hotPercent}%)</span>
+        <div class="lead-quality-item">
+          <div class="lead-quality-header">
+            <span class="lead-quality-label">🔥 Hot (80+)</span>
+            <span class="lead-quality-value">${counts.Hot} (${hotPercent}%)</span>
           </div>
-          <div style="background: #e5e7eb; border-radius: 4px; height: 8px; overflow: hidden;">
-            <div style="background: #ef4444; height: 100%; width: ${hotPercent}%; transition: width 0.3s;"></div>
-          </div>
-        </div>
-        
-        <div style="margin-bottom: 1rem;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-            <span style="font-size: 0.875rem; font-weight: 600;">⭐ High (60-79)</span>
-            <span style="font-weight: 600;">${counts.High} (${highPercent}%)</span>
-          </div>
-          <div style="background: #e5e7eb; border-radius: 4px; height: 8px; overflow: hidden;">
-            <div style="background: #f59e0b; height: 100%; width: ${highPercent}%; transition: width 0.3s;"></div>
+          <div class="lead-quality-bar">
+            <div class="lead-quality-fill lead-quality-fill--hot" style="width: ${hotPercent}%;"></div>
           </div>
         </div>
         
-        <div style="margin-bottom: 1rem;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-            <span style="font-size: 0.875rem; font-weight: 600;">✓ Good (40-59)</span>
-            <span style="font-weight: 600;">${counts.Good} (${goodPercent}%)</span>
+        <div class="lead-quality-item">
+          <div class="lead-quality-header">
+            <span class="lead-quality-label">⭐ High (60-79)</span>
+            <span class="lead-quality-value">${counts.High} (${highPercent}%)</span>
           </div>
-          <div style="background: #e5e7eb; border-radius: 4px; height: 8px; overflow: hidden;">
-            <div style="background: #10b981; height: 100%; width: ${goodPercent}%; transition: width 0.3s;"></div>
-          </div>
-        </div>
-        
-        <div style="margin-bottom: 1rem;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-            <span style="font-size: 0.875rem; font-weight: 600;">◯ Low (&lt;40)</span>
-            <span style="font-weight: 600;">${counts.Low} (${lowPercent}%)</span>
-          </div>
-          <div style="background: #e5e7eb; border-radius: 4px; height: 8px; overflow: hidden;">
-            <div style="background: #6b7280; height: 100%; width: ${lowPercent}%; transition: width 0.3s;"></div>
+          <div class="lead-quality-bar">
+            <div class="lead-quality-fill lead-quality-fill--high" style="width: ${highPercent}%;"></div>
           </div>
         </div>
         
-        <div style="margin-top: 1.5rem; padding: 0.75rem; background: #f9fafb; border-radius: 6px; text-align: center;">
-          <div style="font-size: 0.875rem; color: #6b7280; margin-bottom: 0.25rem;">Average Lead Score</div>
-          <div style="font-size: 1.5rem; font-weight: 700; color: #111827;">${avgScore}/100</div>
+        <div class="lead-quality-item">
+          <div class="lead-quality-header">
+            <span class="lead-quality-label">✓ Good (40-59)</span>
+            <span class="lead-quality-value">${counts.Good} (${goodPercent}%)</span>
+          </div>
+          <div class="lead-quality-bar">
+            <div class="lead-quality-fill lead-quality-fill--good" style="width: ${goodPercent}%;"></div>
+          </div>
+        </div>
+        
+        <div class="lead-quality-item">
+          <div class="lead-quality-header">
+            <span class="lead-quality-label">◯ Low (&lt;40)</span>
+            <span class="lead-quality-value">${counts.Low} (${lowPercent}%)</span>
+          </div>
+          <div class="lead-quality-bar">
+            <div class="lead-quality-fill lead-quality-fill--low" style="width: ${lowPercent}%;"></div>
+          </div>
+        </div>
+        
+        <div class="lead-quality-summary">
+          <div class="lead-quality-summary-label">Average Lead Score</div>
+          <div class="lead-quality-summary-value">${avgScore}/100</div>
         </div>
       `;
     } catch (error) {
@@ -980,7 +980,7 @@ function escapeHtml(unsafe) {
 
 
 <footer class="footer" role="contentinfo">
-  <div class="container" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+  <div class="container supplier-footer-content">
     <div><strong>EventFlow</strong><br><span class="small">Event planning made simple.</span></div>
     <div class="version">Version: v17.0.0</div>
     <div class="small"><a href="/blog">Blog</a> ·
