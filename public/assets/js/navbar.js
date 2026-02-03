@@ -43,6 +43,7 @@
       dashboardLink: document.getElementById('ef-dashboard-link'),
       mobileAuth: document.getElementById('ef-mobile-auth'),
       mobileDashboard: document.getElementById('ef-mobile-dashboard'),
+      mobileSettings: document.getElementById('ef-mobile-settings'),
       mobileLogout: document.getElementById('ef-mobile-logout'),
       bottomDashboard: document.getElementById('ef-bottom-dashboard'),
       bottomAlerts: document.getElementById('ef-bottom-alerts'),
@@ -227,6 +228,11 @@
         elements.mobileDashboard.style.display = '';
       }
 
+      // Show mobile settings
+      if (elements.mobileSettings) {
+        elements.mobileSettings.style.display = '';
+      }
+
       // Show mobile logout
       if (elements.mobileLogout) {
         elements.mobileLogout.style.display = '';
@@ -289,6 +295,9 @@
       // Hide mobile dashboard and logout
       if (elements.mobileDashboard) {
         elements.mobileDashboard.style.display = 'none';
+      }
+      if (elements.mobileSettings) {
+        elements.mobileSettings.style.display = 'none';
       }
       if (elements.mobileLogout) {
         elements.mobileLogout.style.display = 'none';

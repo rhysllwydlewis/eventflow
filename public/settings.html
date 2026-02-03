@@ -179,8 +179,54 @@
 <!-- Notification Preferences Card -->
 <div class="card" style="margin-top:1.5rem;">
   <h2 style="margin:0 0 1rem 0;font-size:1.5rem;">Notification Preferences</h2>
-  <label><input id="notify" type="checkbox"> Email me when I receive a new message</label>
-  <div class="form-actions" style="margin-top:10px"><button class="cta" id="save-settings">Save Preferences</button><span class="small" id="settings-status"></span></div>
+  
+  <!-- Email Notifications -->
+  <div style="margin-bottom:1.5rem;">
+    <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;">
+      <input id="notify" type="checkbox" style="cursor:pointer;"> 
+      <span>Email me when I receive a new message</span>
+    </label>
+  </div>
+  
+  <!-- Sound Notifications -->
+  <div style="margin-bottom:1.5rem;">
+    <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;margin-bottom:0.75rem;">
+      <input id="notification-sound-enabled" type="checkbox" style="cursor:pointer;" checked> 
+      <span>Enable notification sounds</span>
+    </label>
+    
+    <!-- Volume Control -->
+    <div id="volume-control" style="margin-left:1.75rem;padding-left:1rem;border-left:2px solid #e5e7eb;">
+      <label for="notification-volume" style="display:block;margin-bottom:0.5rem;font-size:0.9rem;color:#667085;">
+        Volume: <span id="volume-value">30</span>%
+      </label>
+      <div style="display:flex;align-items:center;gap:0.75rem;">
+        <span style="font-size:1.2rem;">🔈</span>
+        <input 
+          type="range" 
+          id="notification-volume" 
+          min="0" 
+          max="100" 
+          value="30" 
+          style="flex:1;height:6px;cursor:pointer;accent-color:#0B8073;"
+        >
+        <span style="font-size:1.2rem;">🔊</span>
+      </div>
+      <button 
+        type="button" 
+        class="cta secondary" 
+        id="test-notification-sound" 
+        style="margin-top:0.75rem;font-size:0.85rem;padding:0.5rem 1rem;"
+      >
+        🔔 Test Sound
+      </button>
+    </div>
+  </div>
+  
+  <div class="form-actions" style="margin-top:10px">
+    <button class="cta" id="save-settings">Save Preferences</button>
+    <span class="small" id="settings-status"></span>
+  </div>
 </div>
 
 <div class="card" style="margin-top:16px">
@@ -303,6 +349,110 @@
       btn.disabled = false;
     }, 2000);
   });
+  
+  // ===== NOTIFICATION SOUND SETTINGS =====
+  
+  // Load notification settings from localStorage
+  function loadNotificationSettings() {
+    const soundEnabled = localStorage.getItem('ef_notification_sound_enabled');
+    const volume = localStorage.getItem('ef_notification_volume');
+    
+    // Set default values
+    document.getElementById('notification-sound-enabled').checked = soundEnabled !== 'false';
+    document.getElementById('notification-volume').value = volume || '30';
+    document.getElementById('volume-value').textContent = volume || '30';
+    
+    // Update volume control visibility based on sound enabled state
+    updateVolumeControlVisibility();
+  }
+  
+  // Update volume control visibility
+  function updateVolumeControlVisibility() {
+    const soundEnabled = document.getElementById('notification-sound-enabled').checked;
+    const volumeControl = document.getElementById('volume-control');
+    volumeControl.style.opacity = soundEnabled ? '1' : '0.5';
+    volumeControl.style.pointerEvents = soundEnabled ? 'auto' : 'none';
+  }
+  
+  // Update volume value display
+  document.getElementById('notification-volume').addEventListener('input', function(e) {
+    document.getElementById('volume-value').textContent = e.target.value;
+  });
+  
+  // Toggle sound enabled/disabled
+  document.getElementById('notification-sound-enabled').addEventListener('change', function() {
+    updateVolumeControlVisibility();
+  });
+  
+  // Test notification sound
+  document.getElementById('test-notification-sound').addEventListener('click', function() {
+    const volume = parseInt(document.getElementById('notification-volume').value, 10) / 100;
+    const soundEnabled = document.getElementById('notification-sound-enabled').checked;
+    
+    if (!soundEnabled) {
+      alert('⚠️ Notification sounds are disabled. Enable them to test.');
+      return;
+    }
+    
+    try {
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.frequency.value = 800;
+      oscillator.type = 'sine';
+      
+      gainNode.gain.setValueAtTime(volume, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+      
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.5);
+      
+      oscillator.onended = function() {
+        audioContext.close();
+      };
+      
+      // Visual feedback
+      const btn = this;
+      btn.textContent = '✓ Sound Played!';
+      btn.disabled = true;
+      setTimeout(() => {
+        btn.textContent = '🔔 Test Sound';
+        btn.disabled = false;
+      }, 1500);
+    } catch (error) {
+      console.error('Error playing test sound:', error);
+      alert('❌ Error playing sound: ' + error.message);
+    }
+  });
+  
+  // Save notification settings to localStorage
+  document.getElementById('save-settings').addEventListener('click', function() {
+    const soundEnabled = document.getElementById('notification-sound-enabled').checked;
+    const volume = document.getElementById('notification-volume').value;
+    const notify = document.getElementById('notify').checked;
+    
+    // Save to localStorage
+    localStorage.setItem('ef_notification_sound_enabled', soundEnabled);
+    localStorage.setItem('ef_notification_volume', volume);
+    
+    // Also save email notification preference to user profile (handled by app.js)
+    // The app.js file handles the server-side persistence of the 'notify' checkbox
+    
+    const status = document.getElementById('settings-status');
+    status.textContent = '✓ Settings saved!';
+    status.style.color = '#10b981';
+    
+    setTimeout(() => {
+      status.textContent = '';
+    }, 3000);
+  });
+  
+  // Load settings on page load
+  loadNotificationSettings();
 </script>
 </div></main>
 <footer class="footer" role="contentinfo">

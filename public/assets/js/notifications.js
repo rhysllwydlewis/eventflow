@@ -292,6 +292,16 @@
 
   function playNotificationSound() {
     try {
+      // Check if notification sounds are enabled
+      const soundEnabled = localStorage.getItem('ef_notification_sound_enabled');
+      if (soundEnabled === 'false') {
+        return; // Don't play sound if disabled
+      }
+
+      // Get volume from settings (default 30%)
+      const volumePercent = parseInt(localStorage.getItem('ef_notification_volume') || '30', 10);
+      const volume = volumePercent / 100;
+
       // Create a simple notification sound using Web Audio API
       const audioContext = new (window.AudioContext || window.webkitAudioContext)();
       const oscillator = audioContext.createOscillator();
@@ -303,7 +313,7 @@
       oscillator.frequency.value = 800;
       oscillator.type = 'sine';
 
-      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+      gainNode.gain.setValueAtTime(volume, audioContext.currentTime);
       gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
 
       oscillator.start(audioContext.currentTime);
