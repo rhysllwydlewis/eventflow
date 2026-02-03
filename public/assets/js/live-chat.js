@@ -14,7 +14,10 @@
       </button>
       <div id="ef-chat-box" class="ef-chat-box" style="display: none;">
         <div class="ef-chat-header">
-          <h4>Support Chat</h4>
+          <div>
+            <h4>Support Chat</h4>
+            <div style="font-size: 10px; opacity: 0.8; margin-top: 2px;">Automated replies • Team responds within 24h</div>
+          </div>
           <button id="ef-chat-minimize" class="ef-chat-close" aria-label="Minimize chat">−</button>
         </div>
         <div id="ef-chat-messages" class="ef-chat-messages">
@@ -299,13 +302,15 @@
       addMessage(message, true);
       chatInput.value = '';
 
-      // Simulate bot response (in production, this would connect to a real chat service)
+      // Automated responses - clearly marked as bot responses
+      // NOTE: This is a placeholder. In production, connect to a real chat service
+      // such as Intercom, Zendesk, or a custom WebSocket-based solution.
       setTimeout(() => {
         const responses = [
-          'Thanks for your message! A team member will respond shortly.',
-          "I'll connect you with our support team right away.",
-          'Great question! Let me find that information for you.',
-          'Our team is here to help. You can also check our FAQ at /faq.html',
+          '🤖 [Automated] Thanks for your message! This is an automated response. A team member will respond via email within 24 hours.',
+          "🤖 [Automated] I'll connect you with our support team right away. Please note this is an automated message - expect a reply within 24 hours.",
+          '🤖 [Automated] Great question! For immediate help, please check our FAQ at /faq.html. A team member will follow up via email soon.',
+          '🤖 [Automated] Our team is here to help! This is an automated response. For urgent matters, please email support@event-flow.co.uk directly.',
         ];
 
         const randomResponse = responses[Math.floor(Math.random() * responses.length)];

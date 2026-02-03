@@ -323,7 +323,7 @@ class MessagingManager {
    */
   async refreshUnreadCount() {
     try {
-      const response = await fetch('/api/messages/unread-count', {
+      const response = await fetch('/api/messages/unread', {
         credentials: 'include',
       });
 

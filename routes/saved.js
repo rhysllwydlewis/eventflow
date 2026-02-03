@@ -120,8 +120,61 @@ router.post('/', authRequired, csrfProtection, async (req, res) => {
 });
 
 /**
+ * DELETE /api/me/saved/by-item
+ * Remove a saved item by its type and itemId (convenience endpoint)
+ * This allows frontend to unsave without first fetching all saved items
+ * Query params: itemType (supplier|package), itemId
+ */
+router.delete('/by-item', authRequired, csrfProtection, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { itemType, itemId } = req.query;
+
+    // Validate required parameters
+    if (!itemType || !itemId) {
+      return res.status(400).json({ 
+        error: 'itemType and itemId query parameters are required',
+        example: 'DELETE /api/me/saved/by-item?itemType=supplier&itemId=sup_123'
+      });
+    }
+
+    // Validate itemType
+    if (!['supplier', 'package'].includes(itemType)) {
+      return res.status(400).json({ 
+        error: 'itemType must be "supplier" or "package"' 
+      });
+    }
+
+    const savedItems = await dbUnified.read('savedItems');
+    const itemIndex = savedItems.findIndex(
+      item => item.userId === userId && item.itemType === itemType && item.itemId === itemId
+    );
+
+    if (itemIndex === -1) {
+      return res.status(404).json({ error: 'Saved item not found' });
+    }
+
+    // Remove the item
+    const removedItem = savedItems.splice(itemIndex, 1)[0];
+    await dbUnified.write('savedItems', savedItems);
+
+    res.json({
+      success: true,
+      message: 'Item removed from saved',
+      removedItem: {
+        itemType: removedItem.itemType,
+        itemId: removedItem.itemId,
+      },
+    });
+  } catch (error) {
+    console.error('Error removing saved item by item:', error);
+    res.status(500).json({ error: 'Failed to remove saved item', details: error.message });
+  }
+});
+
+/**
  * DELETE /api/me/saved/:id
- * Remove an item from saved
+ * Remove an item from saved (by internal saved item ID)
  */
 router.delete('/:id', authRequired, csrfProtection, async (req, res) => {
   try {
