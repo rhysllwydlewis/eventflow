@@ -295,13 +295,13 @@
   function updateVenuePostcodeVisibility() {
     const selectedCategory = categorySelect.value;
     if (selectedCategory === 'Venues') {
-      venuePostcodeRow.style.display = 'block';
+      venuePostcodeRow.classList.remove('form-row-hidden');
       venuePostcodeInput.setAttribute('aria-required', 'true');
     } else {
-      venuePostcodeRow.style.display = 'none';
+      venuePostcodeRow.classList.add('form-row-hidden');
       venuePostcodeInput.value = ''; // Clear value when not Venues
       venuePostcodeInput.setAttribute('aria-required', 'false');
-      venuePostcodeError.style.display = 'none';
+      venuePostcodeError.classList.remove('visible');
     }
   }
 
@@ -313,9 +313,9 @@
     const result = validatePostcode(this.value);
     if (!result.valid && this.value.trim()) {
       venuePostcodeError.textContent = result.message;
-      venuePostcodeError.style.display = 'block';
+      venuePostcodeError.classList.add('visible');
     } else {
-      venuePostcodeError.style.display = 'none';
+      venuePostcodeError.classList.remove('visible');
     }
   });
 
@@ -327,7 +327,7 @@
     const result = validatePostcode(this.value);
     if (!result.valid) {
       venuePostcodeError.textContent = result.message;
-      venuePostcodeError.style.display = 'block';
+      venuePostcodeError.classList.add('visible');
     }
   });
 
@@ -343,7 +343,7 @@
       const result = validatePostcode(venuePostcodeInput.value);
       if (!result.valid) {
         venuePostcodeError.textContent = result.message;
-        venuePostcodeError.style.display = 'block';
+        venuePostcodeError.classList.add('visible');
         venuePostcodeInput.focus();
         // Scroll to the error field smoothly
         venuePostcodeInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
