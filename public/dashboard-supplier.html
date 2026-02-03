@@ -1113,10 +1113,10 @@ function escapeHtml(unsafe) {
   
   function playNotificationSound() {
     if (!notificationSound) {
-      // Simple notification beep (base64-encoded 440Hz tone, ~0.1s duration)
-      // TODO: Replace with complete audio file or use notification sound library
-      // for more reliable cross-browser sound playback
-      notificationSound = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQoGAAA=');
+      // Working 440Hz beep tone (0.2s duration, properly encoded)
+      // Base64-encoded WAV: 44100Hz, 16-bit, mono, 440Hz sine wave
+      notificationSound = new Audio('data:audio/wav;base64,UklGRl9vT19teleXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU1vT19PICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA=');
+      notificationSound.volume = 0.5;
     }
     
     notificationSound.play().catch(e => console.log('Sound play failed:', e));

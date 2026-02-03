@@ -8,6 +8,7 @@
 
 const express = require('express');
 const router = express.Router();
+const crypto = require('crypto');
 const dbUnified = require('../db-unified');
 const { csrfProtection } = require('../middleware/csrf');
 const { writeLimiter } = require('../middleware/rateLimit');
@@ -150,6 +151,7 @@ router.get('/stats', async (req, res) => {
  * POST /api/public/faq/vote
  * Vote on FAQ helpfulness
  * CSRF protected to prevent unauthorized votes
+ * Duplicate votes prevented by session/IP tracking
  */
 router.post('/faq/vote', writeLimiter, csrfProtection, async (req, res) => {
   try {
@@ -159,6 +161,22 @@ router.post('/faq/vote', writeLimiter, csrfProtection, async (req, res) => {
       return res.status(400).json({ error: 'Missing or invalid faqId or helpful flag' });
     }
 
+    // Generate visitor ID from session or IP (hashed for privacy)
+    // Reject vote if neither session ID nor IP is available to prevent shared anonymous votes
+    const visitorIdentifier = req.sessionID || req.ip;
+    if (!visitorIdentifier) {
+      return res.status(400).json({
+        error:
+          'Unable to identify visitor. Please enable cookies or check your network connection.',
+      });
+    }
+
+    const visitorId = crypto
+      .createHash('sha256')
+      .update(visitorIdentifier + (process.env.JWT_SECRET || 'salt'))
+      .digest('hex')
+      .substring(0, 16);
+
     // Read existing votes
     let faqVotes = [];
     try {
@@ -167,12 +185,26 @@ router.post('/faq/vote', writeLimiter, csrfProtection, async (req, res) => {
       // Collection doesn't exist yet, will be created
     }
 
-    // Create vote record
+    // Check for existing vote from this visitor on this FAQ
+    const existingVoteIndex = faqVotes.findIndex(
+      v => v.faqId === faqId && v.visitorId === visitorId
+    );
+
+    if (existingVoteIndex !== -1) {
+      // Update existing vote instead of creating duplicate
+      faqVotes[existingVoteIndex].helpful = helpful;
+      faqVotes[existingVoteIndex].updatedAt = new Date().toISOString();
+      await dbUnified.write('faqVotes', faqVotes);
+      return res.json({ success: true, message: 'Thank you for your feedback!' });
+    }
+
+    // Create vote record with visitor tracking
     const { uid } = require('../store');
     const vote = {
       id: uid('faqvote'),
       faqId,
       helpful,
+      visitorId,
       createdAt: new Date().toISOString(),
       ipAddress: req.ip || req.headers['x-forwarded-for'] || 'unknown',
     };
