@@ -409,3 +409,219 @@
     font-size: 0.9rem;
   }
 }
+
+/* ===========================================
+   9. BREADCRUMB NAVIGATION
+   =========================================== */
+.supplier-breadcrumb {
+  margin-bottom: 1.5rem;
+}
+
+.supplier-breadcrumb-link {
+  color: #0B8073;
+  text-decoration: none;
+  font-size: 0.875rem;
+  transition: color 0.2s ease;
+}
+
+.supplier-breadcrumb-link:hover {
+  color: #059669;
+  text-decoration: underline;
+}
+
+/* ===========================================
+   10. PAGE HEADER CARD (Reusable Gradient Header)
+   =========================================== */
+.supplier-page-header {
+  background: linear-gradient(135deg, #0B8073 0%, #0a6b5f 100%);
+  color: white;
+  margin-bottom: 1.5rem;
+}
+
+.supplier-page-title {
+  margin: 0 0 0.5rem 0;
+  color: white;
+  font-size: 1.75rem;
+  font-weight: 700;
+}
+
+.supplier-page-subtitle {
+  color: rgba(255, 255, 255, 0.9);
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+/* ===========================================
+   11. SECTION CARDS
+   =========================================== */
+.supplier-section-card {
+  margin-bottom: 1.5rem;
+}
+
+/* ===========================================
+   12. HIGHLIGHTS CONTAINER
+   =========================================== */
+.highlights-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* ===========================================
+   13. SOCIAL MEDIA GRID
+   =========================================== */
+.social-links-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 0.75rem;
+}
+
+.social-label {
+  color: #667085;
+  font-size: 0.875rem;
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+/* ===========================================
+   14. FORM ACTIONS
+   =========================================== */
+.supplier-form-actions {
+  margin-top: 1.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+/* ===========================================
+   15. FOOTER (Shared)
+   =========================================== */
+.supplier-footer-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* ===========================================
+   16. SUBSCRIPTION PAGE
+   =========================================== */
+.subscription-faq-card {
+  margin-top: 3rem;
+}
+
+.subscription-support-card {
+  margin-top: 2rem;
+  text-align: center;
+}
+
+.subscription-support-cta {
+  display: inline-block;
+  margin-top: 1rem;
+}
+
+/* ===========================================
+   17. FAQ ACCORDION
+   =========================================== */
+.faq-item {
+  margin-bottom: 1rem;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 1rem;
+}
+
+.faq-item:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.faq-question {
+  cursor: pointer;
+  font-weight: 600;
+  padding: 0.5rem 0;
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.faq-question::-webkit-details-marker {
+  display: none;
+}
+
+.faq-question::after {
+  content: '+';
+  font-size: 1.25rem;
+  color: #0B8073;
+  transition: transform 0.2s ease;
+}
+
+details[open] .faq-question::after {
+  content: '-';
+}
+
+.faq-answer {
+  padding-left: 1rem;
+  margin-top: 0.5rem;
+  color: #667085;
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+/* ===========================================
+   18. MESSAGE ALERTS (Hidden by default)
+   =========================================== */
+.alert-message {
+  display: none;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.alert-message.error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+}
+
+.alert-message.success {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #16a34a;
+}
+
+.alert-message.visible {
+  display: block;
+}
+
+/* ===========================================
+   19. SUPPLIERS LISTING PAGE
+   =========================================== */
+.map-section-title {
+  margin-top: 0.4rem;
+}
+
+.map-shell {
+  margin-top: 1rem;
+}
+
+.results-count {
+  margin: 10px 2px 0;
+  font-size: 0.875rem;
+  color: #667085;
+}
+
+/* ===========================================
+   20. RESPONSIVE UPDATES
+   =========================================== */
+@media (max-width: 640px) {
+  .supplier-footer-content {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .social-links-grid {
+    grid-template-columns: 1fr;
+  }
+}

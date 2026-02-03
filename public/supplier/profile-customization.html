@@ -108,23 +108,23 @@
     <main id="main-content" class="section">
       <div class="container">
         <!-- Breadcrumb Navigation -->
-        <div style="margin-bottom: 1.5rem;">
-          <a href="/dashboard-supplier.html" style="color: #0B8073; text-decoration: none; font-size: 0.875rem;">
+        <div class="supplier-breadcrumb">
+          <a href="/dashboard-supplier.html" class="supplier-breadcrumb-link">
             ← Back to Dashboard
           </a>
         </div>
 
         <!-- Header -->
-        <div class="card" style="background: linear-gradient(135deg, #0B8073 0%, #0a6b5f 100%); color: white; margin-bottom: 1.5rem;">
-          <h1 style="margin: 0 0 0.5rem 0; color: white; font-size: 1.75rem;">✨ Profile Customization</h1>
-          <p class="small" style="color: rgba(255,255,255,0.9); margin: 0;">
+        <div class="card supplier-page-header">
+          <h1 class="supplier-page-title">✨ Profile Customization</h1>
+          <p class="supplier-page-subtitle">
             Make your profile stand out with custom branding, highlights, and personalization
           </p>
         </div>
 
         <!-- Profile Selection -->
-        <div class="card" style="margin-bottom: 1.5rem;">
-          <h2 style="margin: 0 0 1rem 0; font-size: 1.25rem;">Select Profile to Customize</h2>
+        <div class="card supplier-section-card">
+          <h2 class="supplier-section-title">Select Profile to Customize</h2>
           <div id="profile-selector-container">
             <div class="skeleton skeleton-text skeleton-text-long"></div>
           </div>
@@ -137,40 +137,40 @@
 
             <!-- Banner Image Section -->
             <div class="form-row">
-              <label>Banner Image <span class="small" style="color:#667085;font-weight:400;">(optional)</span></label>
+              <label>Banner Image <span class="label-optional">(optional)</span></label>
               <div id="sup-banner-drop" class="photo-drop-zone">
                 Drag &amp; drop a banner image here, or click to choose a file.
               </div>
               <div id="sup-banner-preview" class="photo-preview-grid"></div>
               <input type="hidden" id="sup-banner" name="bannerUrl">
-              <p class="tiny" style="color:#667085;margin-top:0.25rem;">Add a custom banner image to make your profile stand out (recommended: 1200x400px)</p>
+              <p class="form-hint">Add a custom banner image to make your profile stand out (recommended: 1200x400px)</p>
             </div>
 
             <!-- Tagline -->
             <div class="form-row">
-              <label>Tagline <span class="small" style="color:#667085;font-weight:400;">(optional)</span></label>
+              <label>Tagline <span class="label-optional">(optional)</span></label>
               <input id="sup-tagline" name="tagline" placeholder="e.g. Creating magical moments for over 10 years" maxlength="100">
-              <p class="tiny" style="color:#667085;margin-top:0.25rem;">A catchy tagline that describes your business (max 100 characters)</p>
+              <p class="form-hint">A catchy tagline that describes your business (max 100 characters)</p>
             </div>
 
             <!-- Key Highlights -->
             <div class="form-row">
-              <label>Key Highlights <span class="small" style="color:#667085;font-weight:400;">(optional)</span></label>
-              <div id="highlights-container" style="display:flex;flex-direction:column;gap:0.5rem;">
+              <label>Key Highlights <span class="label-optional">(optional)</span></label>
+              <div id="highlights-container" class="highlights-stack">
                 <input id="sup-highlight-1" class="highlight-input" placeholder="e.g. Award-winning service" maxlength="60">
                 <input id="sup-highlight-2" class="highlight-input" placeholder="e.g. Fully licensed and insured" maxlength="60">
                 <input id="sup-highlight-3" class="highlight-input" placeholder="e.g. 5-star reviews" maxlength="60">
                 <input id="sup-highlight-4" class="highlight-input" placeholder="e.g. 10+ years experience" maxlength="60">
                 <input id="sup-highlight-5" class="highlight-input" placeholder="e.g. Professional equipment" maxlength="60">
               </div>
-              <p class="tiny" style="color:#667085;margin-top:0.25rem;">Add up to 5 key highlights about your business</p>
+              <p class="form-hint">Add up to 5 key highlights about your business</p>
             </div>
 
             <!-- Featured Services -->
             <div class="form-row">
-              <label>Featured Services <span class="small" style="color:#667085;font-weight:400;">(optional)</span></label>
+              <label>Featured Services <span class="label-optional">(optional)</span></label>
               <textarea id="sup-featured-services" name="featuredServices" rows="5" placeholder="Enter each service on a new line&#10;e.g.:&#10;Wedding Photography&#10;Engagement Shoots&#10;Photo Albums"></textarea>
-              <p class="tiny" style="color:#667085;margin-top:0.25rem;">List your main services, one per line (max 10)</p>
+              <p class="form-hint">List your main services, one per line (max 10)</p>
             </div>
 
             <!-- Brand Theme Color -->
@@ -189,41 +189,41 @@
 
             <!-- Social Media Links -->
             <div class="form-row">
-              <label>Social Media Links <span class="small" style="color:#667085;font-weight:400;">(optional)</span></label>
-              <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:0.75rem;">
+              <label>Social Media Links <span class="label-optional">(optional)</span></label>
+              <div class="social-links-grid">
                 <div>
-                  <label class="small" style="color:#667085;font-size:0.875rem;">📘 Facebook</label>
+                  <label class="social-label">📘 Facebook</label>
                   <input id="sup-social-facebook" class="social-input" placeholder="https://facebook.com/yourpage">
                 </div>
                 <div>
-                  <label class="small" style="color:#667085;font-size:0.875rem;">📷 Instagram</label>
+                  <label class="social-label">📷 Instagram</label>
                   <input id="sup-social-instagram" class="social-input" placeholder="https://instagram.com/yourpage">
                 </div>
                 <div>
-                  <label class="small" style="color:#667085;font-size:0.875rem;">🐦 Twitter</label>
+                  <label class="social-label">🐦 Twitter</label>
                   <input id="sup-social-twitter" class="social-input" placeholder="https://twitter.com/yourpage">
                 </div>
                 <div>
-                  <label class="small" style="color:#667085;font-size:0.875rem;">💼 LinkedIn</label>
+                  <label class="social-label">💼 LinkedIn</label>
                   <input id="sup-social-linkedin" class="social-input" placeholder="https://linkedin.com/company/yourpage">
                 </div>
                 <div>
-                  <label class="small" style="color:#667085;font-size:0.875rem;">▶️ YouTube</label>
+                  <label class="social-label">▶️ YouTube</label>
                   <input id="sup-social-youtube" class="social-input" placeholder="https://youtube.com/@yourpage">
                 </div>
                 <div>
-                  <label class="small" style="color:#667085;font-size:0.875rem;">🎵 TikTok</label>
+                  <label class="social-label">🎵 TikTok</label>
                   <input id="sup-social-tiktok" class="social-input" placeholder="https://tiktok.com/@yourpage">
                 </div>
               </div>
-              <p class="tiny" style="color:#667085;margin-top:0.5rem;">Add links to your social media profiles to help customers connect with you</p>
+              <p class="form-hint">Add links to your social media profiles to help customers connect with you</p>
             </div>
 
             <!-- Form Actions -->
-            <div class="form-actions" style="margin-top: 1.5rem;">
+            <div class="supplier-form-actions">
               <button class="cta" type="submit">💾 Save Customization</button>
               <button type="button" id="sup-preview" class="cta secondary">👁️ Preview Profile</button>
-              <a href="/dashboard-supplier.html" class="cta secondary" style="text-decoration: none;">Cancel</a>
+              <a href="/dashboard-supplier.html" class="cta secondary">Cancel</a>
               <span class="small" id="sup-status"></span>
             </div>
           </form>
@@ -233,7 +233,7 @@
 
     <!-- Footer -->
     <footer class="footer" role="contentinfo">
-      <div class="container" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+      <div class="container supplier-footer-content">
         <div><strong>EventFlow</strong><br><span class="small">Event planning made simple.</span></div>
         <div class="version">Version: v17.0.0</div>
         <div class="small">
