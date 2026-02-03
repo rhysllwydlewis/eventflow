@@ -16,6 +16,7 @@
   <link rel="stylesheet" href="/assets/css/liquid-glass.css?v=18.1.0">
   <link rel="stylesheet" href="/assets/css/supplier-dashboard-improvements.css?v=18.1.0">
   <link rel="stylesheet" href="/assets/css/gallery.css?v=18.1.0">
+  <script src="/assets/js/toast-notifications.js?v=18.2.0"></script>
 </head>
 <body>
 <a href="#main-content" class="skip-link">Skip to main content</a>
@@ -166,9 +167,57 @@
     <div class="gallery-grid" id="galleryGrid"></div>
 
     <div class="empty-state" id="emptyState" style="display: none;">
-      <div class="empty-state-icon">🖼️</div>
-      <h3>No Photos Yet</h3>
-      <p>Upload your first photo to get started!</p>
+      <div class="empty-state__illustration">🖼️</div>
+      <h3 class="empty-state__title">No Photos Yet</h3>
+      <p class="empty-state__text">Upload your first photo to get started!</p>
+    </div>
+  </div>
+
+  <!-- Upload Modal -->
+  <div class="modal-overlay" id="uploadModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">Upload Photos</h3>
+        <button type="button" class="modal-close" id="modalClose" aria-label="Close modal">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Upload for:</label>
+          <div class="radio-cards">
+            <label class="radio-card">
+              <input type="radio" name="uploadType" value="supplier" checked>
+              <div class="radio-card-content">
+                <span class="radio-card-icon">👤</span>
+                <span class="radio-card-label">Supplier</span>
+                <span class="radio-card-desc">Profile photos</span>
+              </div>
+            </label>
+            <label class="radio-card">
+              <input type="radio" name="uploadType" value="package">
+              <div class="radio-card-content">
+                <span class="radio-card-icon">📦</span>
+                <span class="radio-card-label">Package</span>
+                <span class="radio-card-desc">Package images</span>
+              </div>
+            </label>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="uploadTarget">Select item:</label>
+          <select class="form-select" id="uploadTarget">
+            <option value="">Loading...</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="cta secondary" id="modalCancel">Cancel</button>
+        <button type="button" class="cta" id="modalConfirm">Upload</button>
+      </div>
     </div>
   </div>
 
@@ -239,23 +288,85 @@
       }
     }
 
+    // Modal management
+    const uploadModal = document.getElementById('uploadModal');
+    const modalClose = document.getElementById('modalClose');
+    const modalCancel = document.getElementById('modalCancel');
+    const modalConfirm = document.getElementById('modalConfirm');
+    const uploadTarget = document.getElementById('uploadTarget');
+    
+    function showModal() {
+      uploadModal.classList.add('visible');
+      loadSelectOptions();
+    }
+    
+    function hideModal() {
+      uploadModal.classList.remove('visible');
+    }
+    
+    async function loadSelectOptions() {
+      const checkedRadio = document.querySelector('input[name="uploadType"]:checked');
+      const uploadType = checkedRadio ? checkedRadio.value : 'supplier';
+      uploadTarget.innerHTML = '<option value="">Loading...</option>';
+      
+      try {
+        const endpoint = uploadType === 'supplier' ? '/api/me/suppliers' : '/api/me/packages';
+        const response = await fetch(endpoint, { credentials: 'include' });
+        if (response.ok) {
+          const data = await response.json();
+          const items = data.items || [];
+          
+          if (items.length === 0) {
+            uploadTarget.innerHTML = `<option value="">No ${uploadType}s found</option>`;
+          } else {
+            uploadTarget.innerHTML = items.map(item => 
+              `<option value="${item.id || item._id}">${item.name || item.title || 'Unnamed'}</option>`
+            ).join('');
+          }
+        }
+      } catch (error) {
+        uploadTarget.innerHTML = '<option value="">Error loading items</option>';
+      }
+    }
+    
+    // Radio button change handler
+    document.querySelectorAll('input[name="uploadType"]').forEach(radio => {
+      radio.addEventListener('change', loadSelectOptions);
+    });
+    
+    modalClose.addEventListener('click', hideModal);
+    modalCancel.addEventListener('click', hideModal);
+    
+    // Close on overlay click
+    uploadModal.addEventListener('click', function(e) {
+      if (e.target === uploadModal) {
+        hideModal();
+      }
+    });
+    
+    // Escape key to close
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape' && uploadModal.classList.contains('visible')) {
+        hideModal();
+      }
+    });
+
     async function uploadFiles() {
       if (selectedFiles.length === 0) return;
-
-      const type = prompt('Upload for:\n1. Supplier\n2. Package\n\nEnter 1 or 2:');
-      let uploadType;
-      if (type === '1') uploadType = 'supplier';
-      else if (type === '2') uploadType = 'package';
-      else {
-        alert('Invalid selection');
-        return;
-      }
-
-      const id = prompt(`Enter ${uploadType} ID:`);
+      showModal();
+    }
+    
+    modalConfirm.addEventListener('click', async function() {
+      const checkedRadio = document.querySelector('input[name="uploadType"]:checked');
+      const uploadType = checkedRadio ? checkedRadio.value : 'supplier';
+      const id = uploadTarget.value;
+      
       if (!id) {
-        alert('ID is required');
+        alert('Please select an item');
         return;
       }
+      
+      hideModal();
 
       const formData = new FormData();
       selectedFiles.forEach(file => {
@@ -289,7 +400,11 @@
         const result = await response.json();
         
         if (response.ok) {
-          alert(result.message || 'Upload successful!');
+          if (typeof window.EFToast !== 'undefined') {
+            window.EFToast.success(result.message || 'Upload successful!');
+          } else {
+            alert(result.message || 'Upload successful!');
+          }
           
           // Reset
           selectedFiles = [];
@@ -306,7 +421,11 @@
 
           loadGallery();
         } else {
-          alert('Upload failed: ' + (result.error || 'Unknown error'));
+          if (typeof window.EFToast !== 'undefined') {
+            window.EFToast.error('Upload failed: ' + (result.error || 'Unknown error'));
+          } else {
+            alert('Upload failed: ' + (result.error || 'Unknown error'));
+          }
           progressContainer.style.display = 'none';
         }
       } catch (error) {

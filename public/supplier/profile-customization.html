@@ -180,11 +180,36 @@
                 Brand Theme Color 
                 <span class="label-optional">(optional)</span>
               </label>
+              
+              <!-- Color Presets -->
+              <div class="color-presets">
+                <button type="button" class="color-preset active" data-color="#0B8073" style="background-color: #0B8073;" aria-label="Teal" title="Teal"></button>
+                <button type="button" class="color-preset" data-color="#3B82F6" style="background-color: #3B82F6;" aria-label="Blue" title="Blue"></button>
+                <button type="button" class="color-preset" data-color="#8B5CF6" style="background-color: #8B5CF6;" aria-label="Purple" title="Purple"></button>
+                <button type="button" class="color-preset" data-color="#F59E0B" style="background-color: #F59E0B;" aria-label="Amber" title="Amber"></button>
+                <button type="button" class="color-preset" data-color="#EF4444" style="background-color: #EF4444;" aria-label="Red" title="Red"></button>
+                <button type="button" class="color-preset" data-color="#10B981" style="background-color: #10B981;" aria-label="Emerald" title="Emerald"></button>
+                <button type="button" class="color-preset" data-color="#EC4899" style="background-color: #EC4899;" aria-label="Pink" title="Pink"></button>
+                <button type="button" class="color-preset" data-color="#1F2937" style="background-color: #1F2937;" aria-label="Dark" title="Dark"></button>
+              </div>
+              
               <div class="color-picker-group">
                 <input type="color" id="sup-theme-color" name="themeColor" value="#0B8073" class="color-picker-input">
                 <input type="text" id="sup-theme-color-hex" placeholder="#0B8073" maxlength="7" class="color-hex-input">
                 <button type="button" id="reset-theme-color" class="cta secondary">Reset to Default</button>
               </div>
+              
+              <!-- Live Preview -->
+              <div class="color-preview-card">
+                <div class="color-preview-header" id="color-preview-header" style="background-color: #0B8073;">
+                  <h4>Preview Header</h4>
+                </div>
+                <div class="color-preview-body">
+                  <p class="small">This is how your brand color will appear on your profile.</p>
+                  <button type="button" class="color-preview-button" id="color-preview-button" style="background-color: #0B8073;">Sample Button</button>
+                </div>
+              </div>
+              
               <p class="form-hint">Choose a color that matches your brand</p>
             </div>
 
@@ -255,25 +280,54 @@
     <!-- Theme color sync script -->
     <script>
       (function() {
+        'use strict';
+        
         const colorPicker = document.getElementById('sup-theme-color');
         const colorHex = document.getElementById('sup-theme-color-hex');
         const resetBtn = document.getElementById('reset-theme-color');
+        const previewHeader = document.getElementById('color-preview-header');
+        const previewButton = document.getElementById('color-preview-button');
+        const presets = document.querySelectorAll('.color-preset');
+        
+        const defaultColor = '#0B8073';
+
+        function updateAllElements(color) {
+          if (colorPicker) colorPicker.value = color;
+          if (colorHex) colorHex.value = color;
+          if (previewHeader) previewHeader.style.backgroundColor = color;
+          if (previewButton) previewButton.style.backgroundColor = color;
+          
+          // Update preset active state
+          presets.forEach(preset => {
+            preset.classList.toggle('active', preset.dataset.color.toLowerCase() === color.toLowerCase());
+          });
+        }
 
         if (colorPicker && colorHex && resetBtn) {
+          // Color picker input
           colorPicker.addEventListener('input', function() {
-            colorHex.value = this.value;
+            updateAllElements(this.value);
           });
 
+          // Hex input
           colorHex.addEventListener('input', function() {
             const hex = this.value.trim();
             if (/^#[0-9A-F]{6}$/i.test(hex)) {
-              colorPicker.value = hex;
+              updateAllElements(hex);
             }
           });
 
+          // Reset button
           resetBtn.addEventListener('click', function() {
-            colorPicker.value = '#0B8073';
-            colorHex.value = '#0B8073';
+            updateAllElements(defaultColor);
+          });
+          
+          // Color presets
+          presets.forEach(preset => {
+            preset.addEventListener('click', function() {
+              const color = this.dataset.color;
+              updateAllElements(color);
+            });
           });
         }
       })();
