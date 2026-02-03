@@ -1,0 +1,274 @@
+/**
+ * EventFlow Admin UI/UX Improvements
+ * Version: 1.0.0
+ * 
+ * Fixes:
+ * - Checkbox/toggle alignment issues
+ * - Oversized checkboxes in tables
+ * - Feature item layout consistency
+ * - Form element spacing
+ * - Bulk actions bar styling
+ */
+
+/* ===========================================
+   1. TABLE CHECKBOXES
+   =========================================== */
+.checkbox-cell {
+  width: 44px;
+  text-align: center;
+  padding: 0.75rem 0.5rem !important;
+}
+
+.table-checkbox {
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+  accent-color: #0B8073; /* Fallback: default browser checkbox color for older browsers */
+  border-radius: 3px;
+  border: 1.5px solid #d1d5db;
+  transition: all 0.15s ease;
+  vertical-align: middle;
+  margin: 0;
+}
+
+.table-checkbox:hover {
+  border-color: #0B8073;
+  box-shadow: 0 0 0 3px rgba(11, 128, 115, 0.1);
+}
+
+.table-checkbox:focus-visible {
+  outline: 2px solid #0B8073;
+  outline-offset: 2px;
+}
+
+tbody .checkbox-cell .table-checkbox,
+tbody .checkbox-cell .user-checkbox {
+  opacity: 0.7;
+  transition: opacity 0.15s ease;
+}
+
+tbody tr:hover .checkbox-cell .table-checkbox,
+tbody tr:hover .checkbox-cell .user-checkbox {
+  opacity: 1;
+}
+
+/* ===========================================
+   2. FORM CHECKBOXES
+   =========================================== */
+.checkbox-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.625rem;
+  cursor: pointer;
+  user-select: none;
+  padding: 0.5rem 0;
+}
+
+.form-checkbox {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  cursor: pointer;
+  accent-color: #0B8073;
+  border: 2px solid #d1d5db;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+  margin: 0;
+}
+
+.form-checkbox:hover {
+  border-color: #0B8073;
+}
+
+.form-checkbox:focus-visible {
+  outline: 2px solid #0B8073;
+  outline-offset: 2px;
+}
+
+.checkbox-text {
+  font-size: 0.95rem;
+  color: #374151;
+  line-height: 1.4;
+}
+
+.checkbox-label:hover .checkbox-text {
+  color: #1f2937;
+}
+
+/* ===========================================
+   3. FEATURE ITEMS (Settings Page)
+   =========================================== */
+.feature-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 1rem 0;
+  border-bottom: 1px solid #e5e7eb;
+  gap: 1rem;
+}
+
+.feature-item:last-child {
+  border-bottom: none;
+}
+
+.feature-item > div:first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.feature-item strong {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #1f2937;
+  line-height: 1.4;
+  margin-bottom: 0.25rem;
+}
+
+.feature-item .small {
+  font-size: 0.85rem;
+  color: #6b7280;
+  line-height: 1.5;
+}
+
+.feature-item .toggle-switch {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* ===========================================
+   4. TOGGLE SWITCHES
+   =========================================== */
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #d1d5db;
+  transition: all 0.25s ease;
+  border-radius: 24px;
+}
+
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: all 0.25s ease;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.toggle-switch input:checked + .toggle-slider {
+  background-color: #0B8073;
+}
+
+.toggle-switch input:checked + .toggle-slider:before {
+  transform: translateX(20px);
+}
+
+.toggle-switch input:focus-visible + .toggle-slider {
+  box-shadow: 0 0 0 3px rgba(11, 128, 115, 0.3);
+}
+
+.toggle-switch input:disabled + .toggle-slider {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ===========================================
+   5. BULK ACTIONS BAR
+   =========================================== */
+.bulk-actions-bar {
+  margin-top: 0.75rem;
+  padding: 0.875rem 1rem;
+  background: linear-gradient(to right, #f0f9ff, #f8fafc);
+  border-radius: 8px;
+  border: 1px solid #bfdbfe;
+}
+
+.bulk-actions-content {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  flex-wrap: wrap;
+}
+
+.bulk-selected-count {
+  font-weight: 600;
+  color: #1e40af;
+  font-size: 0.9rem;
+  padding: 0.25rem 0.75rem;
+  background: #dbeafe;
+  border-radius: 999px;
+}
+
+.bulk-action-select {
+  padding: 0.5rem 0.875rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: white;
+  font-size: 0.875rem;
+  min-width: 150px;
+  cursor: pointer;
+}
+
+.bulk-action-select:focus {
+  outline: none;
+  border-color: #0B8073;
+  box-shadow: 0 0 0 3px rgba(11, 128, 115, 0.1);
+}
+
+/* ===========================================
+   6. RESPONSIVE ADJUSTMENTS
+   =========================================== */
+@media (max-width: 768px) {
+  .feature-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  
+  .feature-item .toggle-switch {
+    margin-top: 0;
+  }
+  
+  .bulk-actions-content {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .bulk-action-select {
+    width: 100%;
+  }
+  
+  .bulk-selected-count {
+    text-align: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .checkbox-cell {
+    width: 36px;
+    padding: 0.5rem 0.25rem !important;
+  }
+}

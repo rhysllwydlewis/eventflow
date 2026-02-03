@@ -17,6 +17,7 @@
 <link rel='icon' href='/favicon.svg'>
 <script src="/assets/js/admin-navbar.js" defer></script>
   <link rel="stylesheet" href="/assets/css/mobile-optimizations.css?v=18.0.0"><link rel="stylesheet" href="/assets/css/ui-ux-fixes.css?v=18.0.0">
+  <link rel="stylesheet" href="/assets/css/admin-ui-improvements.css?v=18.1.0">
 </head>
 <body class="has-admin-navbar">
 <a href="#main-content" class="skip-link">Skip to main content</a>
@@ -177,10 +178,10 @@
         <button id="clearFilters" class="btn btn-secondary">Clear</button>
       </div>
       
-      <div id="bulkActionsBar" class="bulk-actions-bar" style="display:none;margin-top:10px;padding:12px;background:#f8f9fa;border-radius:8px;border:1px solid #e0e0e0;">
-        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-          <span id="selectedCount" style="font-weight:600;color:#333;">0 users selected</span>
-          <select id="bulkActionSelect" style="padding:6px 12px;border:1px solid #ccc;border-radius:4px;background:white;">
+      <div id="bulkActionsBar" class="bulk-actions-bar" style="display:none;">
+        <div class="bulk-actions-content">
+          <span id="selectedCount" class="bulk-selected-count">0 users selected</span>
+          <select id="bulkActionSelect" class="bulk-action-select">
             <option value="">Select action...</option>
             <option value="verify">Verify</option>
             <option value="suspend">Suspend</option>
@@ -188,8 +189,8 @@
             <option value="delete">Delete</option>
             <option value="export">Export CSV</option>
           </select>
-          <button id="executeBulkAction" class="btn btn-primary" style="padding:6px 16px;">Execute</button>
-          <button id="clearSelection" class="btn btn-secondary" style="padding:6px 16px;">Clear Selection</button>
+          <button id="executeBulkAction" class="btn btn-primary btn-sm">Execute</button>
+          <button id="clearSelection" class="btn btn-secondary btn-sm">Clear Selection</button>
         </div>
       </div>
       
@@ -198,8 +199,8 @@
         <table class="table">
           <thead>
             <tr>
-              <th style="width:40px;">
-                <input type="checkbox" id="selectAll" aria-label="Select all users" style="cursor:pointer;width:16px;height:16px;">
+              <th class="checkbox-cell">
+                <input type="checkbox" id="selectAll" class="table-checkbox" aria-label="Select all users">
               </th>
               <th>Name</th>
               <th>Email</th>
