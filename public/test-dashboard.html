@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang='en-GB'>
+<head>
+<meta charset='utf-8'>
+<meta name='viewport' content='width=device-width,initial-scale=1'>
+<title>Test Supplier Dashboard</title>
+<link rel='stylesheet' href='http://localhost:3000/assets/css/styles.css?v=18.2.0'>
+<link rel='stylesheet' href='http://localhost:3000/assets/css/eventflow-17.0.0.css?v=18.2.0'>
+<link rel='stylesheet' href='http://localhost:3000/assets/css/components.css?v=18.2.0'>
+<link rel='stylesheet' href='http://localhost:3000/assets/css/supplier-dashboard-improvements.css?v=18.2.0'>
+<style>
+/* Debug styles */
+body { border: 5px solid red; min-height: 2000px; }
+main { border: 3px solid blue; }
+.container { border: 2px solid green; }
+</style>
+</head>
+<body>
+<main id="main-content" class='section'>
+  <div class='container'>
+    <h1 style="margin: 50px 0;">Test: Can you scroll?</h1>
+    
+    <section class="card supplier-welcome-card supplier-welcome-card--enhanced">
+      <div class="supplier-welcome-content">
+        <p class="supplier-welcome-greeting">Good day,</p>
+        <h2 class="supplier-welcome-title">Supplier Dashboard</h2>
+        <p class="small supplier-welcome-subtitle">Manage your supplier profiles, packages, and customer inquiries.</p>
+      </div>
+      <div class="supplier-welcome-quick-stats">
+        <div class="welcome-stat-card">
+          <span class="welcome-stat-value">5</span>
+          <span class="welcome-stat-label">Enquiries</span>
+        </div>
+        <div class="welcome-stat-card">
+          <span class="welcome-stat-value">3</span>
+          <span class="welcome-stat-label">Profiles</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="card supplier-quick-actions">
+      <h2 class="supplier-section-title">Quick Actions</h2>
+      <div class="supplier-actions-primary">
+        <button class="supplier-action-btn--large">
+          <span class="action-icon">➕</span>
+          <span class="action-label">Create Profile</span>
+          <span class="action-desc">Set up your business listing</span>
+        </button>
+        <button class="supplier-action-btn--large">
+          <span class="action-icon">📦</span>
+          <span class="action-label">Create Package</span>
+          <span class="action-desc">Add a service package</span>
+        </button>
+      </div>
+    </section>
+
+    <div style="height: 1000px; background: repeating-linear-gradient(45deg, #f0f0f0, #f0f0f0 10px, white 10px, white 20px); display: flex; align-items: center; justify-content: center;">
+      <h2>Scroll Test Area - If you can see this, scrolling works!</h2>
+    </div>
+  </div>
+</main>
+</body>
+</html>

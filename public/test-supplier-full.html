@@ -1,0 +1,88 @@
+<!DOCTYPE html><html lang='en-GB'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>Supplier dashboard — EventFlow</title><link rel='stylesheet' href='/assets/css/styles.css?v=18.2.0'><link rel='stylesheet' href='/assets/css/eventflow-17.0.0.css?v=18.2.0'><link rel='stylesheet' href='/assets/css/utilities.css?v=18.2.0'><link rel='stylesheet' href='/assets/css/components.css?v=18.2.0'><link rel='stylesheet' href='/assets/css/animations.css?v=18.2.0'><link rel='stylesheet' href='/assets/css/mobile-optimizations.css?v=18.2.0'><link rel='stylesheet' href='/assets/css/ui-ux-fixes.css?v=18.2.0'><link rel='stylesheet' href='/assets/css/navbar.css?v=18.2.0'><link rel='stylesheet' href='/assets/css/skeleton.css?v=18.2.0'><link rel='stylesheet' href='/assets/css/dashboard-animations.css?v=18.2.0'><link rel='stylesheet' href='/assets/css/p3-features.css?v=18.2.0'><link rel='stylesheet' href='/assets/css/liquid-glass.css?v=18.2.0'><link rel='stylesheet' href='/assets/css/supplier-dashboard-improvements.css?v=18.2.0'>
+</head><body>
+<a href="#main-content" class="skip-link">Skip to main content</a>
+
+<!-- Mobile Section Navigation -->
+<nav class="dashboard-mobile-nav" aria-label="Dashboard sections">
+  <div class="mobile-nav-pills">
+    <button class="mobile-nav-pill active" data-section="welcome-section">Overview</button>
+    <button class="mobile-nav-pill" data-section="supplier-stats-grid">Stats</button>
+    <button class="mobile-nav-pill" data-section="my-suppliers">Profiles</button>
+    <button class="mobile-nav-pill" data-section="my-packages">Packages</button>
+    <button class="mobile-nav-pill" data-section="threads-sup">Messages</button>
+    <button class="mobile-nav-pill" data-section="tickets-sup">Tickets</button>
+  </div>
+</nav>
+
+<main id="main-content" class='section'><div class='container'>
+
+<!-- Welcome Section with Enhanced Card -->
+<section id="welcome-section" class="card supplier-welcome-card supplier-welcome-card--enhanced" aria-labelledby="welcome-heading">
+  <div class="supplier-welcome-content">
+    <p class="supplier-welcome-greeting" id="welcome-greeting">Good day,</p>
+    <h1 id="welcome-heading" class="supplier-welcome-title">Supplier Dashboard</h1>
+    <p class="small supplier-welcome-subtitle">Manage your supplier profiles, packages, and customer inquiries.</p>
+    <div id="what-you-can-do" class="supplier-welcome-features">
+      <h3 class="supplier-features-title">What you can do from here:</h3>
+      <ul class="supplier-features-list">
+        <li>Create and manage your supplier profiles</li>
+        <li>Add and edit service packages</li>
+        <li>Respond to customer inquiries and support tickets</li>
+        <li>Track conversations with potential clients</li>
+      </ul>
+    </div>
+  </div>
+  <div class="supplier-welcome-quick-stats" id="welcome-quick-stats">
+    <div class="welcome-stat-card">
+      <span class="welcome-stat-value" id="quick-stat-enquiries">12</span>
+      <span class="welcome-stat-label">Enquiries</span>
+    </div>
+    <div class="welcome-stat-card">
+      <span class="welcome-stat-value" id="quick-stat-profiles">3</span>
+      <span class="welcome-stat-label">Profiles</span>
+    </div>
+  </div>
+</section>
+
+<!-- Quick Actions Section -->
+<section class="card supplier-quick-actions" aria-labelledby="quick-actions-title">
+  <h2 id="quick-actions-title" class="supplier-section-title">Quick Actions</h2>
+  
+  <!-- Primary Actions -->
+  <div class="supplier-actions-primary">
+    <button class="supplier-action-btn--large">
+      <span class="action-icon">➕</span>
+      <span class="action-label">Create Profile</span>
+      <span class="action-desc">Set up your business listing</span>
+    </button>
+    <button class="supplier-action-btn--large">
+      <span class="action-icon">📦</span>
+      <span class="action-label">Create Package</span>
+      <span class="action-desc">Add a service package</span>
+    </button>
+  </div>
+  
+  <!-- Secondary Actions -->
+  <div class="supplier-actions-grid">
+    <a href="/supplier/profile-customization.html" class="cta secondary supplier-action-btn">
+      ✨ Customize Profile
+    </a>
+    <a href="/gallery.html" class="cta secondary supplier-action-btn">
+      📸 Manage Photos
+    </a>
+    <button class="cta secondary supplier-action-btn">
+      💬 View Messages
+    </button>
+    <a href="/settings.html" class="cta secondary supplier-action-btn">
+      ⚙️ Account Settings
+    </a>
+  </div>
+</section>
+
+<h2>Test Content Below</h2>
+<div style="height: 1500px; background: repeating-linear-gradient(45deg, #f0f0f0, #f0f0f0 10px, white 10px, white 20px); display: flex; align-items: center; justify-content: center;">
+  <h2>SCROLL TEST - If you can see this, scrolling works!</h2>
+</div>
+
+</div></main>
+</body></html>
