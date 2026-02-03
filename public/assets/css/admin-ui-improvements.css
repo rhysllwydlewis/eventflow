@@ -23,7 +23,7 @@
   width: 14px;
   height: 14px;
   cursor: pointer;
-  accent-color: #0B8073;
+  accent-color: #0B8073; /* Fallback: default browser checkbox color for older browsers */
   border-radius: 3px;
   border: 1.5px solid #d1d5db;
   transition: all 0.15s ease;
@@ -41,12 +41,14 @@
   outline-offset: 2px;
 }
 
-tbody .checkbox-cell .table-checkbox {
+tbody .checkbox-cell .table-checkbox,
+tbody .checkbox-cell .user-checkbox {
   opacity: 0.7;
   transition: opacity 0.15s ease;
 }
 
-tbody tr:hover .checkbox-cell .table-checkbox {
+tbody tr:hover .checkbox-cell .table-checkbox,
+tbody tr:hover .checkbox-cell .user-checkbox {
   opacity: 1;
 }
 
