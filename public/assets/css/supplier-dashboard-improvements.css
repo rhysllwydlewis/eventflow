@@ -1,0 +1,443 @@
+/**
+ * EventFlow Supplier Dashboard UI/UX Improvements
+ * Version: 1.0.0
+ * 
+ * Fixes:
+ * - Heavy inline styles converted to CSS classes
+ * - Checkbox alignment issues
+ * - Inconsistent card spacing
+ * - Brand color consistency (#0B8073 teal)
+ * - Form element styling improvements
+ * - Upload dropzone branding
+ * - Filter controls polish
+ */
+
+/* ===========================================
+   1. SUPPLIER WELCOME CARD
+   =========================================== */
+.supplier-welcome-card {
+  background: linear-gradient(135deg, #0B8073 0%, #0a6b5f 100%);
+  color: white;
+  margin-bottom: 1rem;
+  padding: 1.5rem;
+}
+
+.supplier-welcome-title {
+  margin: 0 0 0.5rem 0;
+  color: white;
+  font-size: 1.75rem;
+  font-weight: 700;
+}
+
+.supplier-welcome-subtitle {
+  color: rgba(255, 255, 255, 0.9);
+  margin: 0 0 1rem 0;
+  font-size: 0.95rem;
+}
+
+.supplier-welcome-features {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.supplier-features-title {
+  margin: 0 0 0.5rem 0;
+  color: white;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.supplier-features-list {
+  margin: 0;
+  padding-left: 1.25rem;
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 0.95rem;
+}
+
+.supplier-features-list li {
+  margin-bottom: 0.25rem;
+  line-height: 1.5;
+}
+
+/* ===========================================
+   2. QUICK ACTIONS GRID
+   =========================================== */
+.supplier-quick-actions {
+  margin-bottom: 1.5rem;
+}
+
+.supplier-section-title {
+  margin: 0 0 1rem 0;
+  font-size: 1.25rem;
+  color: #0B1220;
+  font-weight: 600;
+}
+
+.supplier-actions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.75rem;
+}
+
+.supplier-action-btn {
+  width: 100%;
+  text-align: center;
+  padding: 0.75rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  box-sizing: border-box;
+}
+
+.supplier-action-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* ===========================================
+   3. FORM CHECKBOXES
+   =========================================== */
+.checkbox-group {
+  display: flex;
+  gap: 1.25rem;
+  align-items: center;
+  padding-top: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.checkbox-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  user-select: none;
+  padding: 0.25rem 0;
+}
+
+.form-checkbox {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  cursor: pointer;
+  accent-color: #0B8073;
+  border: 2px solid #d1d5db;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+  margin: 0;
+}
+
+.form-checkbox:hover {
+  border-color: #0B8073;
+}
+
+.form-checkbox:focus-visible {
+  outline: 2px solid #0B8073;
+  outline-offset: 2px;
+}
+
+.checkbox-text {
+  font-size: 0.95rem;
+  color: #374151;
+  line-height: 1.4;
+}
+
+.checkbox-inline:hover .checkbox-text {
+  color: #0B8073;
+}
+
+.form-help {
+  color: #667085;
+  font-size: 0.85rem;
+  margin-top: 0.25rem;
+}
+
+.required {
+  color: #ef4444;
+}
+
+/* ===========================================
+   4. CARD SPACING
+   =========================================== */
+.supplier-dashboard-card {
+  margin-top: 1rem;
+}
+
+.supplier-dashboard-card:first-child {
+  margin-top: 0;
+}
+
+.supplier-dashboard-card h3 {
+  margin: 0 0 0.75rem 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #0B1220;
+}
+
+.supplier-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.supplier-card-header h3 {
+  margin: 0;
+}
+
+/* ===========================================
+   5. COLOR PICKER
+   =========================================== */
+.color-picker-group {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.color-picker-input {
+  width: 80px;
+  height: 44px;
+  cursor: pointer;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 4px;
+  background: white;
+  transition: border-color 0.2s ease;
+}
+
+.color-picker-input:hover {
+  border-color: #0B8073;
+}
+
+.color-picker-input:focus {
+  outline: none;
+  border-color: #0B8073;
+  box-shadow: 0 0 0 3px rgba(11, 128, 115, 0.1);
+}
+
+.color-hex-input {
+  width: 120px;
+  font-family: monospace;
+  text-transform: uppercase;
+}
+
+.label-optional {
+  color: #667085;
+  font-weight: 400;
+  font-size: 0.875rem;
+}
+
+.form-hint {
+  color: #667085;
+  font-size: 0.8rem;
+  margin-top: 0.25rem;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+/* ===========================================
+   6. UPLOAD DROPZONE
+   =========================================== */
+.upload-dropzone {
+  border: 3px dashed #0B8073;
+  border-radius: 12px;
+  padding: 2.5rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: #f0fdf9;
+}
+
+.upload-dropzone:hover,
+.upload-dropzone.dragover {
+  background: #ccfbf1;
+  border-color: #059669;
+  transform: scale(1.01);
+}
+
+.upload-text {
+  font-size: 1.2rem;
+  color: #0B8073;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+.photo-drop-zone {
+  border: 2px dashed #d1d5db;
+  border-radius: 12px;
+  padding: 2rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: #fafafa;
+  color: #6b7280;
+  font-size: 0.95rem;
+}
+
+.photo-drop-zone:hover {
+  border-color: #0B8073;
+  background: #f0fdf9;
+  color: #0B8073;
+}
+
+.photo-drop-zone.dragover {
+  border-color: #0B8073;
+  background: #ccfbf1;
+  border-style: solid;
+}
+
+/* ===========================================
+   7. FILTER CONTROLS
+   =========================================== */
+.filter-card {
+  margin-bottom: 1.5rem;
+}
+
+.filter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.filter-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.filter-select,
+.filter-input {
+  width: 100%;
+  min-height: 44px;
+  padding: 0.625rem 0.875rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: white;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+}
+
+.filter-select:focus,
+.filter-input:focus {
+  outline: none;
+  border-color: #0B8073;
+  box-shadow: 0 0 0 3px rgba(11, 128, 115, 0.1);
+}
+
+.filter-actions {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+/* ===========================================
+   8. RESPONSIVE BREAKPOINTS
+   =========================================== */
+@media (max-width: 768px) {
+  .supplier-welcome-title {
+    font-size: 1.5rem;
+  }
+  
+  .supplier-actions-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .filter-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .supplier-actions-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .filter-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .filter-actions {
+    justify-content: stretch;
+  }
+  
+  .filter-actions .btn {
+    width: 100%;
+  }
+  
+  .checkbox-group {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  
+  .color-picker-group {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 480px) {
+  .supplier-welcome-card {
+    padding: 1rem;
+  }
+  
+  .supplier-action-btn {
+    padding: 0.625rem 0.875rem;
+    font-size: 0.9rem;
+  }
+}
+
+/* ===========================================
+   9. BTN SECONDARY ENHANCEMENT
+   =========================================== */
+.btn {
+  display: inline-block;
+  padding: 0.625rem 1.25rem;
+  font-size: 1rem;
+  font-weight: 500;
+  text-align: center;
+  text-decoration: none;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-secondary {
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
+}
+
+.btn-secondary:hover {
+  background: #e5e7eb;
+  border-color: #9ca3af;
+}
+
+.btn-sm {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+}
