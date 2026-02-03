@@ -1829,7 +1829,7 @@ textarea:focus-visible {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 4px;
+  gap: var(--ef-space-1, 4px);
 }
 
 .welcome-stat-value {
@@ -1884,7 +1884,7 @@ textarea:focus-visible {
   text-align: left;
   width: 100%; /* Ensure button takes full width of grid cell */
   min-height: 120px; /* Ensure consistent button height */
-  box-shadow: 0 4px 12px rgba(11, 128, 115, 0.2); /* Add depth */
+  box-shadow: var(--ef-shadow-md, 0 4px 12px rgba(11, 128, 115, 0.2)); /* Add depth */
 }
 
 .supplier-action-btn--large:hover {
