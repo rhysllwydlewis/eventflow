@@ -80,6 +80,7 @@
       <div class="ef-mobile-divider"></div>
       <a href="/auth" id="ef-mobile-auth" class="ef-mobile-link ef-mobile-primary">Log in</a>
       <a href="#" id="ef-mobile-dashboard" class="ef-mobile-link" style="display: none;">Dashboard</a>
+      <a href="/settings.html" id="ef-mobile-settings" class="ef-mobile-link" style="display: none;">⚙️ Settings</a>
       <a href="#" id="ef-mobile-logout" class="ef-mobile-link" style="display: none;">Log out</a>
     </nav>
   </div>
@@ -129,6 +130,9 @@
     <button class="cta secondary" id="viewConversationsBtn" style="width:100%;text-align:center;">
       💬 View Messages
     </button>
+    <a href="/settings.html" class="cta secondary" style="width:100%;text-align:center;text-decoration:none;display:inline-block;">
+      ⚙️ Account Settings
+    </a>
   </div>
 </div>
 
@@ -1000,7 +1004,6 @@ function escapeHtml(unsafe) {
   const RECONNECT_DELAY = 3000;
   let originalTitle = document.title;
   let enquiryCount = 0;
-  let notificationSound = null;
   
   function initWebSocket() {
     if (typeof WebSocket === 'undefined') {
@@ -1112,14 +1115,45 @@ function escapeHtml(unsafe) {
   }
   
   function playNotificationSound() {
-    if (!notificationSound) {
-      // Working 440Hz beep tone (0.2s duration, properly encoded)
-      // Base64-encoded WAV: 44100Hz, 16-bit, mono, 440Hz sine wave
-      notificationSound = new Audio('data:audio/wav;base64,UklGRl9vT19teleXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU1vT19PICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA=');
-      notificationSound.volume = 0.5;
+    try {
+      // Check if notification sounds are enabled
+      const soundEnabled = localStorage.getItem('ef_notification_sound_enabled');
+      if (soundEnabled === 'false') {
+        return; // Don't play sound if disabled
+      }
+      
+      // Get volume from settings (default 30%)
+      const volumePercent = parseInt(localStorage.getItem('ef_notification_volume') || '30', 10);
+      const volume = volumePercent / 100;
+      
+      // Create notification sound using Web Audio API
+      // This approach is consistent with public/assets/js/notifications.js
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      // 800Hz sine wave (pleasant notification tone)
+      oscillator.frequency.value = 800;
+      oscillator.type = 'sine';
+      
+      // Volume control with fade out
+      gainNode.gain.setValueAtTime(volume, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+      
+      // Play for 0.5 seconds
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.5);
+      
+      // Clean up AudioContext after playback to prevent resource leaks
+      oscillator.onended = function() {
+        audioContext.close();
+      };
+    } catch (error) {
+      console.error('Error playing notification sound:', error);
     }
-    
-    notificationSound.play().catch(e => console.log('Sound play failed:', e));
   }
   
   function updateTabTitle() {
