@@ -8,6 +8,7 @@
 
 const express = require('express');
 const router = express.Router();
+const crypto = require('crypto');
 const dbUnified = require('../db-unified');
 const { csrfProtection } = require('../middleware/csrf');
 const { writeLimiter } = require('../middleware/rateLimit');
@@ -161,8 +162,15 @@ router.post('/faq/vote', writeLimiter, csrfProtection, async (req, res) => {
     }
 
     // Generate visitor ID from session or IP (hashed for privacy)
-    const crypto = require('crypto');
-    const visitorIdentifier = req.sessionID || req.ip || 'anonymous';
+    // Reject vote if neither session ID nor IP is available to prevent shared anonymous votes
+    const visitorIdentifier = req.sessionID || req.ip;
+    if (!visitorIdentifier) {
+      return res.status(400).json({
+        error:
+          'Unable to identify visitor. Please enable cookies or check your network connection.',
+      });
+    }
+
     const visitorId = crypto
       .createHash('sha256')
       .update(visitorIdentifier + (process.env.JWT_SECRET || 'salt'))
