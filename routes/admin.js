@@ -4096,7 +4096,7 @@ router.put(
       };
 
       // Write and verify to ensure persistence
-      const verifiedSettings = await dbUnified.writeAndVerify('settings', settings);
+      const result = await dbUnified.writeAndVerify('settings', settings);
 
       auditLog({
         adminId: req.user.id,
@@ -4108,7 +4108,7 @@ router.put(
       });
 
       // Return verified data from database
-      res.json({ success: true, site: verifiedSettings.site });
+      res.json({ success: true, site: result.data.site });
     } catch (error) {
       console.error('Error updating site settings:', error);
       res.status(500).json({ error: 'Failed to update settings' });
@@ -4235,7 +4235,7 @@ router.put(
 
       // Write and verify with timeout protection
       const writeStart = Date.now();
-      const verifiedSettings = await Promise.race([
+      const result = await Promise.race([
         dbUnified.writeAndVerify('settings', settings),
         createTimeout(5000, 'Write and verify operation'),
       ]);
@@ -4257,14 +4257,14 @@ router.put(
         action: 'FEATURES_UPDATED',
         targetType: 'features',
         targetId: null,
-        details: verifiedSettings.features,
+        details: result.data.features,
       });
 
       const totalTime = Date.now() - startTime;
       console.log(`[${requestId}] Feature flags update completed successfully in ${totalTime}ms`);
 
       // Return verified data from database
-      res.json({ success: true, features: verifiedSettings.features });
+      res.json({ success: true, features: result.data.features });
     } catch (error) {
       const totalTime = Date.now() - startTime;
       console.error(
@@ -4341,7 +4341,7 @@ router.put(
       };
 
       // Write and verify to ensure persistence
-      const verifiedSettings = await dbUnified.writeAndVerify('settings', settings);
+      const result = await dbUnified.writeAndVerify('settings', settings);
 
       auditLog({
         adminId: req.user.id,
@@ -4353,7 +4353,7 @@ router.put(
       });
 
       // Return verified data from database
-      res.json({ success: true, maintenance: verifiedSettings.maintenance });
+      res.json({ success: true, maintenance: result.data.maintenance });
     } catch (error) {
       console.error('Error updating maintenance settings:', error);
       res.status(500).json({ error: 'Failed to update settings' });
@@ -4437,7 +4437,7 @@ router.put(
       };
 
       // Write and verify to ensure persistence
-      const verifiedSettings = await dbUnified.writeAndVerify('settings', settings);
+      const result = await dbUnified.writeAndVerify('settings', settings);
 
       auditLog({
         adminId: req.user.id,
@@ -4449,7 +4449,7 @@ router.put(
       });
 
       // Return verified data from database
-      res.json({ success: true, template: verifiedSettings.emailTemplates[req.params.name] });
+      res.json({ success: true, template: result.data.emailTemplates[req.params.name] });
     } catch (error) {
       console.error('Error updating email template:', error);
       res.status(500).json({ error: 'Failed to update settings' });
@@ -5242,7 +5242,7 @@ router.put(
       settings.collageWidget.updatedBy = req.user.email;
 
       // Write and verify to ensure persistence
-      const verifiedSettings = await dbUnified.writeAndVerify('settings', settings);
+      const result = await dbUnified.writeAndVerify('settings', settings);
 
       auditLog({
         adminId: req.user.id,
@@ -5256,7 +5256,7 @@ router.put(
       // Return verified data from database, not in-memory object
       res.json({
         success: true,
-        collageWidget: verifiedSettings.collageWidget,
+        collageWidget: result.data.collageWidget,
       });
     } catch (error) {
       console.error('Error updating collage widget config:', error);

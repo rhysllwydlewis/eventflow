@@ -28,7 +28,6 @@ function projectPublicSupplierFields(supplier) {
     images: supplier.images,
     price_display: supplier.price_display,
     startingPrice: supplier.startingPrice,
-    rating: supplier.rating,
     averageRating: supplier.averageRating,
     reviewCount: supplier.reviewCount,
     verified: supplier.verified,
