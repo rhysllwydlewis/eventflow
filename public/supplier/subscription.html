@@ -115,64 +115,64 @@
         <div id="current-subscription-status"></div>
         
         <!-- Error/Success Messages -->
-        <div id="error-message" style="display:none;"></div>
-        <div id="success-message" style="display:none;"></div>
+        <div id="error-message" class="alert-message error"></div>
+        <div id="success-message" class="alert-message success"></div>
 
         <!-- Subscription Plans -->
         <div id="subscription-plans"></div>
 
         <!-- Additional Information -->
-        <div class="card" style="margin-top: 3rem;">
+        <div class="card subscription-faq-card">
           <h3>Frequently Asked Questions</h3>
           
-          <details style="margin-bottom: 1rem;">
-            <summary style="cursor: pointer; font-weight: 600; padding: 0.5rem 0;">
+          <details class="faq-item">
+            <summary class="faq-question">
               What happens during the free trial?
             </summary>
-            <p class="small" style="padding-left: 1rem; margin-top: 0.5rem;">
+            <p class="faq-answer">
               During your free trial, you'll have full access to all features of your chosen plan.
               You won't be charged until the trial period ends. You can cancel anytime during the trial
               with no charge.
             </p>
           </details>
 
-          <details style="margin-bottom: 1rem;">
-            <summary style="cursor: pointer; font-weight: 600; padding: 0.5rem 0;">
+          <details class="faq-item">
+            <summary class="faq-question">
               Can I change my plan later?
             </summary>
-            <p class="small" style="padding-left: 1rem; margin-top: 0.5rem;">
+            <p class="faq-answer">
               Yes! You can upgrade or downgrade your plan at any time. When you change plans,
               we'll calculate a pro-rated amount based on your current billing cycle.
             </p>
           </details>
 
-          <details style="margin-bottom: 1rem;">
-            <summary style="cursor: pointer; font-weight: 600; padding: 0.5rem 0;">
+          <details class="faq-item">
+            <summary class="faq-question">
               How do I cancel my subscription?
             </summary>
-            <p class="small" style="padding-left: 1rem; margin-top: 0.5rem;">
+            <p class="faq-answer">
               You can cancel your subscription at any time from this page or your dashboard.
               You'll continue to have access to premium features until the end of your current
               billing period.
             </p>
           </details>
 
-          <details style="margin-bottom: 1rem;">
-            <summary style="cursor: pointer; font-weight: 600; padding: 0.5rem 0;">
+          <details class="faq-item">
+            <summary class="faq-question">
               What payment methods do you accept?
             </summary>
-            <p class="small" style="padding-left: 1rem; margin-top: 0.5rem;">
+            <p class="faq-answer">
               We accept payments through Stripe, which supports all major credit and debit cards,
               Apple Pay, Google Pay, and more. Stripe provides secure, fast checkout with
               industry-leading security.
             </p>
           </details>
 
-          <details style="margin-bottom: 1rem;">
-            <summary style="cursor: pointer; font-weight: 600; padding: 0.5rem 0;">
+          <details class="faq-item">
+            <summary class="faq-question">
               Is my payment information secure?
             </summary>
-            <p class="small" style="padding-left: 1rem; margin-top: 0.5rem;">
+            <p class="faq-answer">
               Yes, absolutely. All payments are processed securely through Stripe, which uses
               industry-standard encryption and PCI-DSS Level 1 certification. We never store
               your payment information on our servers - all card data is handled by Stripe.
@@ -181,12 +181,12 @@
         </div>
 
         <!-- Support -->
-        <div class="card" style="margin-top: 2rem; text-align: center;">
+        <div class="card subscription-support-card">
           <h3>Need Help?</h3>
           <p class="small">
             Have questions about our subscription plans? Contact our support team.
           </p>
-          <a href="/contact.html" class="cta" style="display: inline-block; margin-top: 1rem;">
+          <a href="/contact.html" class="cta subscription-support-cta">
             Contact Support
           </a>
         </div>
