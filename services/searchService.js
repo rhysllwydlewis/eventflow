@@ -28,6 +28,7 @@ function projectPublicSupplierFields(supplier) {
     images: supplier.images,
     price_display: supplier.price_display,
     startingPrice: supplier.startingPrice,
+    rating: supplier.rating || supplier.averageRating, // Legacy field for backward compatibility
     averageRating: supplier.averageRating,
     reviewCount: supplier.reviewCount,
     verified: supplier.verified,
