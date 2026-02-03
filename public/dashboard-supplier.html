@@ -1000,7 +1000,6 @@ function escapeHtml(unsafe) {
   const RECONNECT_DELAY = 3000;
   let originalTitle = document.title;
   let enquiryCount = 0;
-  let notificationSound = null;
   
   function initWebSocket() {
     if (typeof WebSocket === 'undefined') {
@@ -1112,14 +1111,30 @@ function escapeHtml(unsafe) {
   }
   
   function playNotificationSound() {
-    if (!notificationSound) {
-      // Working 440Hz beep tone (0.2s duration, properly encoded)
-      // Base64-encoded WAV: 44100Hz, 16-bit, mono, 440Hz sine wave
-      notificationSound = new Audio('data:audio/wav;base64,UklGRl9vT19teleXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU1vT19PICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA=');
-      notificationSound.volume = 0.5;
+    try {
+      // Create notification sound using Web Audio API
+      // This approach is consistent with public/assets/js/notifications.js
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      // 800Hz sine wave (pleasant notification tone)
+      oscillator.frequency.value = 800;
+      oscillator.type = 'sine';
+      
+      // Volume control with fade out
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+      
+      // Play for 0.5 seconds
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.5);
+    } catch (error) {
+      console.error('Error playing notification sound:', error);
     }
-    
-    notificationSound.play().catch(e => console.log('Sound play failed:', e));
   }
   
   function updateTabTitle() {
