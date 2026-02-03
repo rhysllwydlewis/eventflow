@@ -194,6 +194,9 @@
       <input id="notification-sound-enabled" type="checkbox" style="cursor:pointer;" checked> 
       <span>Enable notification sounds</span>
     </label>
+    <p class="small" style="color:#667085;margin:0 0 1rem 1.75rem;">
+      Play a short tone when you receive new notifications (enquiries, messages, etc.)
+    </p>
     
     <!-- Volume Control -->
     <div id="volume-control" style="margin-left:1.75rem;padding-left:1rem;border-left:2px solid #e5e7eb;">
@@ -201,25 +204,32 @@
         Volume: <span id="volume-value">30</span>%
       </label>
       <div style="display:flex;align-items:center;gap:0.75rem;">
-        <span style="font-size:1.2rem;">🔈</span>
+        <span style="font-size:1.2rem;" aria-hidden="true">🔈</span>
         <input 
           type="range" 
           id="notification-volume" 
           min="0" 
           max="100" 
           value="30" 
+          aria-label="Notification volume"
+          aria-valuemin="0"
+          aria-valuemax="100"
+          aria-valuenow="30"
+          aria-valuetext="30 percent"
           style="flex:1;height:6px;cursor:pointer;accent-color:#0B8073;"
         >
-        <span style="font-size:1.2rem;">🔊</span>
+        <span style="font-size:1.2rem;" aria-hidden="true">🔊</span>
       </div>
       <button 
         type="button" 
         class="cta secondary" 
         id="test-notification-sound" 
         style="margin-top:0.75rem;font-size:0.85rem;padding:0.5rem 1rem;"
+        aria-label="Test notification sound"
       >
         🔔 Test Sound
       </button>
+      <div id="test-sound-feedback" style="margin-top:0.5rem;font-size:0.85rem;min-height:1.2rem;" role="status" aria-live="polite"></div>
     </div>
   </div>
   
@@ -376,7 +386,11 @@
   
   // Update volume value display
   document.getElementById('notification-volume').addEventListener('input', function(e) {
-    document.getElementById('volume-value').textContent = e.target.value;
+    const value = e.target.value;
+    document.getElementById('volume-value').textContent = value;
+    // Update ARIA attributes for screen readers
+    e.target.setAttribute('aria-valuenow', value);
+    e.target.setAttribute('aria-valuetext', value + ' percent');
   });
   
   // Toggle sound enabled/disabled
@@ -388,9 +402,22 @@
   document.getElementById('test-notification-sound').addEventListener('click', function() {
     const volume = parseInt(document.getElementById('notification-volume').value, 10) / 100;
     const soundEnabled = document.getElementById('notification-sound-enabled').checked;
+    const feedback = document.getElementById('test-sound-feedback');
+    const btn = this;
+    
+    // Clear previous feedback
+    feedback.textContent = '';
+    feedback.style.color = '';
     
     if (!soundEnabled) {
-      alert('⚠️ Notification sounds are disabled. Enable them to test.');
+      feedback.textContent = '⚠️ Notification sounds are disabled. Enable them to test.';
+      feedback.style.color = '#f59e0b';
+      return;
+    }
+    
+    if (volume === 0) {
+      feedback.textContent = '⚠️ Volume is set to 0%. Increase volume to hear the sound.';
+      feedback.style.color = '#f59e0b';
       return;
     }
     
@@ -416,39 +443,72 @@
       };
       
       // Visual feedback
-      const btn = this;
       btn.textContent = '✓ Sound Played!';
       btn.disabled = true;
+      feedback.textContent = '✓ Notification sound played successfully';
+      feedback.style.color = '#10b981';
+      
       setTimeout(() => {
         btn.textContent = '🔔 Test Sound';
         btn.disabled = false;
-      }, 1500);
+        feedback.textContent = '';
+      }, 2000);
     } catch (error) {
       console.error('Error playing test sound:', error);
-      alert('❌ Error playing sound: ' + error.message);
+      feedback.textContent = '✗ Error: ' + error.message;
+      feedback.style.color = '#ef4444';
+      
+      setTimeout(() => {
+        feedback.textContent = '';
+      }, 5000);
     }
   });
   
-  // Save notification settings to localStorage
-  document.getElementById('save-settings').addEventListener('click', function() {
+  // Save notification settings
+  document.getElementById('save-settings').addEventListener('click', async function() {
     const soundEnabled = document.getElementById('notification-sound-enabled').checked;
     const volume = document.getElementById('notification-volume').value;
     const notify = document.getElementById('notify').checked;
     
-    // Save to localStorage
-    localStorage.setItem('ef_notification_sound_enabled', soundEnabled);
-    localStorage.setItem('ef_notification_volume', volume);
-    
-    // Also save email notification preference to user profile (handled by app.js)
-    // The app.js file handles the server-side persistence of the 'notify' checkbox
-    
     const status = document.getElementById('settings-status');
-    status.textContent = '✓ Settings saved!';
-    status.style.color = '#10b981';
+    const btn = this;
     
-    setTimeout(() => {
-      status.textContent = '';
-    }, 3000);
+    try {
+      // Save sound settings to localStorage
+      localStorage.setItem('ef_notification_sound_enabled', soundEnabled);
+      localStorage.setItem('ef_notification_volume', volume);
+      
+      // Save email notification preference to server
+      const response = await fetch('/api/me/settings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': window.__CSRF_TOKEN__ || '',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ notify: notify }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to save email notification preference');
+      }
+      
+      // Success feedback
+      status.textContent = '✓ All settings saved!';
+      status.style.color = '#10b981';
+      
+      setTimeout(() => {
+        status.textContent = '';
+      }, 3000);
+    } catch (error) {
+      console.error('Error saving settings:', error);
+      status.textContent = '✗ Error saving email preferences';
+      status.style.color = '#ef4444';
+      
+      setTimeout(() => {
+        status.textContent = '';
+      }, 5000);
+    }
   });
   
   // Load settings on page load
