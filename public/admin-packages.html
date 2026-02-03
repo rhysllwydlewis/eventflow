@@ -33,6 +33,7 @@
 <script src="/assets/js/components.js" defer></script>
 <script src="/assets/js/admin-navbar.js" defer></script>
   <link rel="stylesheet" href="/assets/css/mobile-optimizations.css?v=18.0.0"><link rel="stylesheet" href="/assets/css/ui-ux-fixes.css?v=18.0.0">
+  <link rel="stylesheet" href="/assets/css/admin-ui-improvements.css?v=18.1.0">
 </head>
 <body class="has-admin-navbar">
 <a href="#main-content" class="skip-link">Skip to main content</a>
@@ -239,16 +240,16 @@
         </div>
 
         <div class="form-row">
-          <label>
-            <input type="checkbox" id="packageApproved" name="approved">
-            Approved (visible to customers)
+          <label class="checkbox-label">
+            <input type="checkbox" id="packageApproved" name="approved" class="form-checkbox">
+            <span class="checkbox-text">Approved (visible to customers)</span>
           </label>
         </div>
 
         <div class="form-row">
-          <label>
-            <input type="checkbox" id="packageFeatured" name="featured">
-            Featured (shown on homepage)
+          <label class="checkbox-label">
+            <input type="checkbox" id="packageFeatured" name="featured" class="form-checkbox">
+            <span class="checkbox-text">Featured (shown on homepage)</span>
           </label>
         </div>
 
