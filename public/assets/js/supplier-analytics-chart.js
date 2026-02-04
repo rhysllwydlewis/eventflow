@@ -719,30 +719,30 @@ async function fetchLeadQualityData() {
     }
 
     // Fallback to mock data (matching other widgets until backend is ready)
-    // This provides a visual example for demonstration
+    // Using fixed values for consistent UX
     return {
       breakdown: [
         {
           type: 'Qualified',
-          count: Math.floor(Math.random() * 15) + 5,
+          count: 12,
           icon: '✓',
           color: '#10B981',
         },
         {
           type: 'Interested',
-          count: Math.floor(Math.random() * 10) + 3,
+          count: 8,
           icon: '↗',
           color: '#3B82F6',
         },
         {
           type: 'Cold',
-          count: Math.floor(Math.random() * 8) + 2,
+          count: 5,
           icon: '❄',
           color: '#6B7280',
         },
         {
           type: 'Spam',
-          count: Math.floor(Math.random() * 5),
+          count: 2,
           icon: '✕',
           color: '#EF4444',
         },
