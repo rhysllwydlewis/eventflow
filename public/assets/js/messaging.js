@@ -203,17 +203,27 @@ class MessagingSystem {
 
   async fetchUnreadCountFromAPI(userId, userType, callback) {
     try {
-      const response = await fetch(`/api/messages/unread?userId=${userId}&userType=${userType}`, {
+      // Use the authenticated endpoint - no need for userId/userType params
+      const response = await fetch('/api/messages/unread', {
         credentials: 'include',
       });
       if (response.ok) {
         const data = await response.json();
         callback(data.count || 0);
       } else {
+        // Gracefully handle non-200 responses without console spam
+        if (!this._unreadErrorLogged) {
+          this._unreadErrorLogged = true;
+          console.warn('Unable to fetch unread count, showing zero');
+        }
         callback(0);
       }
     } catch (error) {
-      console.error('Error fetching unread count:', error);
+      // Gracefully handle errors without console spam
+      if (!this._unreadErrorLogged) {
+        this._unreadErrorLogged = true;
+        console.warn('Unable to fetch unread count:', error.message);
+      }
       callback(0);
     }
   }
