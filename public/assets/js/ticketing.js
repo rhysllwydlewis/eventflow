@@ -22,6 +22,7 @@ class TicketingSystem {
   constructor() {
     this.pollingIntervals = [];
     this.apiBase = '/api';
+    this._pollingNotificationShown = false; // Track if we've shown the polling notification
   }
 
   /**
@@ -213,7 +214,15 @@ class TicketingSystem {
    * @returns {Function} Unsubscribe function
    */
   listenToTicket(ticketId, callback) {
-    console.warn('Real-time updates not available with MongoDB. Using polling instead.');
+    // Show user-facing notification only once
+    if (!this._pollingNotificationShown) {
+      this._pollingNotificationShown = true;
+      if (typeof Toast !== 'undefined' && Toast.info) {
+        Toast.info('Using polling for ticket updates (refreshes every 5 seconds)', {
+          duration: 5000
+        });
+      }
+    }
 
     const pollInterval = setInterval(async () => {
       try {
@@ -241,7 +250,7 @@ class TicketingSystem {
    * @returns {Function} Unsubscribe function
    */
   listenToUserTickets(userId, userType, callback, limit = null) {
-    console.warn('Real-time updates not available with MongoDB. Using polling instead.');
+    // Silently use polling - no need to notify for each ticket
 
     const pollInterval = setInterval(async () => {
       try {
