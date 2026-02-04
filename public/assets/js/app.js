@@ -2481,7 +2481,7 @@ function efMaybeShowOnboarding(page) {
     return;
   }
 
-  // For supplier dashboard, create a modern, engaging onboarding card
+  // For supplier dashboard, create a modern, engaging onboarding card with liquid glass aesthetic
   if (page === 'dash_supplier') {
     const container = document.querySelector('main .container');
     if (!container) {
@@ -2489,13 +2489,16 @@ function efMaybeShowOnboarding(page) {
     }
 
     const box = document.createElement('div');
-    box.className = 'card';
-    box.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+    box.className = 'card glass-card glass-card--teal glass-card--elevated';
+    box.style.background = 'linear-gradient(135deg, rgba(11, 128, 115, 0.85) 0%, rgba(10, 103, 93, 0.9) 100%)';
     box.style.color = '#ffffff';
     box.style.padding = '2rem';
-    box.style.borderRadius = '12px';
-    box.style.boxShadow = '0 10px 40px rgba(102, 126, 234, 0.3)';
+    box.style.borderRadius = '16px';
+    box.style.boxShadow = '0 12px 40px rgba(11, 128, 115, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.15)';
     box.style.textAlign = 'center';
+    box.style.backdropFilter = 'blur(20px) saturate(200%)';
+    box.style.webkitBackdropFilter = 'blur(20px) saturate(200%)';
+    box.style.border = '1px solid rgba(255, 255, 255, 0.25)';
     
     box.innerHTML = `
       <div style="font-size: 3rem; margin-bottom: 1rem;" role="img" aria-label="celebration">🎉</div>
@@ -2503,21 +2506,21 @@ function efMaybeShowOnboarding(page) {
       <p style="color: rgba(255, 255, 255, 0.95); font-size: 1.1rem; line-height: 1.6; margin-bottom: 1.5rem; max-width: 600px; margin-left: auto; margin-right: auto;">
         You're all set to showcase your services and connect with event planners. Let's help you get started on your journey!
       </p>
-      <div style="background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(10px); border-radius: 8px; padding: 1.25rem; margin-bottom: 1.5rem; text-align: left; max-width: 600px; margin-left: auto; margin-right: auto;">
+      <div style="background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 12px; padding: 1.25rem; margin-bottom: 1.5rem; text-align: left; max-width: 600px; margin-left: auto; margin-right: auto; box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1);">
         <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem;">
           <span style="font-size: 1.5rem;" aria-hidden="true">✨</span>
-          <span style="color: rgba(255, 255, 255, 0.95); font-weight: 500;">Complete your supplier profile</span>
+          <span style="color: rgba(255, 255, 255, 0.98); font-weight: 500;">Complete your supplier profile</span>
         </div>
         <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem;">
           <span style="font-size: 1.5rem;" aria-hidden="true">📦</span>
-          <span style="color: rgba(255, 255, 255, 0.95); font-weight: 500;">Add your first package or service</span>
+          <span style="color: rgba(255, 255, 255, 0.98); font-weight: 500;">Add your first package or service</span>
         </div>
         <div style="display: flex; align-items: center; gap: 0.75rem;">
           <span style="font-size: 1.5rem;" aria-hidden="true">💬</span>
-          <span style="color: rgba(255, 255, 255, 0.95); font-weight: 500;">Start engaging with customers</span>
+          <span style="color: rgba(255, 255, 255, 0.98); font-weight: 500;">Start engaging with customers</span>
         </div>
       </div>
-      <button type="button" class="cta" id="ef-onboarding-dismiss" aria-label="Dismiss onboarding and start using dashboard" style="background: #ffffff; color: #667eea; font-weight: 600; padding: 0.75rem 2rem; border-radius: 8px; border: none; cursor: pointer; font-size: 1rem; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); transition: transform 0.2s;">Got it! Let's go 🚀</button>
+      <button type="button" class="cta" id="ef-onboarding-dismiss" aria-label="Dismiss onboarding and start using dashboard" style="background: #ffffff; color: #0B8073; font-weight: 600; padding: 0.75rem 2rem; border-radius: 10px; border: none; cursor: pointer; font-size: 1rem; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);">Got it! Let's go 🚀</button>
     `;
 
     const cards = container.querySelector('.cards');
@@ -2529,12 +2532,14 @@ function efMaybeShowOnboarding(page) {
 
     const btn = box.querySelector('#ef-onboarding-dismiss');
     if (btn) {
-      // Add hover effect
+      // Add hover effect with teal theme glow
       btn.addEventListener('mouseenter', () => {
-        btn.style.transform = 'scale(1.05)';
+        btn.style.transform = 'scale(1.05) translateY(-2px)';
+        btn.style.boxShadow = '0 8px 20px rgba(11, 128, 115, 0.3)';
       });
       btn.addEventListener('mouseleave', () => {
-        btn.style.transform = 'scale(1)';
+        btn.style.transform = 'scale(1) translateY(0)';
+        btn.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
       });
       
       // Save permanent dismissal and remove card
@@ -2544,7 +2549,7 @@ function efMaybeShowOnboarding(page) {
         } catch (_) {
           /* Ignore localStorage errors */
         }
-        box.style.transition = 'opacity 0.3s, transform 0.3s';
+        box.style.transition = 'opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
         box.style.opacity = '0';
         box.style.transform = 'scale(0.95)';
         setTimeout(() => box.remove(), 300);

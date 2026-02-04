@@ -118,7 +118,7 @@ test.describe('Supplier Dashboard Improvements @backend', () => {
     await expect(onboardingCard).not.toBeVisible();
   });
 
-  test('onboarding card should have modern gradient design', async ({ page, context }) => {
+  test('onboarding card should have teal liquid glass design', async ({ page, context }) => {
     // Set the flag that triggers onboarding
     await context.addInitScript(() => {
       localStorage.setItem('eventflow_onboarding_new', '1');
@@ -134,15 +134,28 @@ test.describe('Supplier Dashboard Improvements @backend', () => {
     const onboardingCard = dismissButton.locator('..');
     
     if ((await onboardingCard.count()) > 0) {
-      // Check for gradient background
+      // Check for teal gradient background (should contain teal colors)
       const background = await onboardingCard.evaluate(el => {
         return window.getComputedStyle(el).background;
       });
       
       expect(background).toContain('gradient');
       
+      // Check for liquid glass effects
+      const backdropFilter = await onboardingCard.evaluate(el => {
+        return window.getComputedStyle(el).backdropFilter;
+      });
+      expect(backdropFilter).toContain('blur');
+      
       // Check for emoji icon with accessibility attributes
       await expect(page.locator('[role="img"][aria-label="celebration"]')).toBeVisible();
+      
+      // Check button has teal color (#0B8073)
+      const buttonColor = await dismissButton.evaluate(el => {
+        return window.getComputedStyle(el).color;
+      });
+      // RGB equivalent of #0B8073 is rgb(11, 128, 115)
+      expect(buttonColor).toContain('11');
       
       // Check for the new CTA text
       await expect(page.locator('text=Got it! Let\'s go 🚀')).toBeVisible();
