@@ -108,14 +108,14 @@ window.announceToSR = function(message) {
 <script src="/assets/js/websocket-client.js" defer></script>
 
 <!-- Mobile Section Navigation -->
-<nav class="dashboard-mobile-nav" aria-label="Dashboard sections">
-  <div class="mobile-nav-pills">
-    <button class="mobile-nav-pill active" data-section="welcome-section">🏠 Overview</button>
-    <button class="mobile-nav-pill" data-section="supplier-stats-grid">📊 Stats</button>
-    <button class="mobile-nav-pill" data-section="my-suppliers">👤 Profiles</button>
-    <button class="mobile-nav-pill" data-section="my-packages">📦 Packages</button>
-    <button class="mobile-nav-pill" data-section="threads-sup">💬 Messages <span class="pill-badge" id="mobile-msg-badge" style="display:none;">0</span></button>
-    <button class="mobile-nav-pill" data-section="tickets-sup">🎫 Tickets</button>
+<nav class="dashboard-mobile-nav" aria-label="Dashboard sections" data-test="supplier-mobile-nav">
+  <div class="mobile-nav-pills" data-test="mobile-nav-pills">
+    <button class="mobile-nav-pill active" data-section="welcome-section" data-test="nav-overview">🏠 Overview</button>
+    <button class="mobile-nav-pill" data-section="supplier-stats-grid" data-test="nav-stats">📊 Stats</button>
+    <button class="mobile-nav-pill" data-section="my-suppliers" data-test="nav-profiles">👤 Profiles</button>
+    <button class="mobile-nav-pill" data-section="my-packages" data-test="nav-packages">📦 Packages</button>
+    <button class="mobile-nav-pill" data-section="threads-sup" data-test="nav-messages">💬 Messages <span class="pill-badge" id="mobile-msg-badge" style="display:none;">0</span></button>
+    <button class="mobile-nav-pill" data-section="tickets-sup" data-test="nav-tickets">🎫 Tickets</button>
   </div>
 </nav>
 
@@ -123,9 +123,9 @@ window.announceToSR = function(message) {
   <div id="supplier-pro-ribbon" class="pro-ribbon" style="display:none"></div>
 
 <!-- Welcome Section with Enhanced Card -->
-<section id="welcome-section" class="card supplier-welcome-card supplier-welcome-card--enhanced" aria-labelledby="welcome-heading">
+<section id="welcome-section" class="card supplier-welcome-card supplier-welcome-card--enhanced" aria-labelledby="welcome-heading" data-test="welcome-card">
   <div class="supplier-welcome-content">
-    <p class="supplier-welcome-greeting" id="welcome-greeting">Good day,</p>
+    <p class="supplier-welcome-greeting" id="welcome-greeting" data-test="time-greeting">Good day,</p>
     <h1 id="welcome-heading" class="supplier-welcome-title">Supplier Dashboard</h1>
     <p class="small supplier-welcome-subtitle">Manage your supplier profiles, packages, and customer inquiries.</p>
     <div id="what-you-can-do" class="supplier-welcome-features">
@@ -140,14 +140,14 @@ window.announceToSR = function(message) {
   </div>
   <div class="supplier-welcome-quick-stats" id="welcome-quick-stats">
     <div class="welcome-stat-card">
-      <span class="welcome-stat-value" id="quick-stat-enquiries" data-target="12">0</span>
+      <span class="welcome-stat-value" id="quick-stat-enquiries" data-target="12" data-test="stat-counter-enquiries">0</span>
       <span class="welcome-stat-label">Enquiries</span>
     </div>
     <div class="welcome-stat-card">
-      <span class="welcome-stat-value" id="quick-stat-profiles" data-target="4">0</span>
+      <span class="welcome-stat-value" id="quick-stat-profiles" data-target="4" data-test="stat-counter-profiles">0</span>
       <span class="welcome-stat-label">Profiles</span>
     </div>
-    <div class="welcome-pro-tip" id="welcome-pro-tip" aria-live="polite">
+    <div class="welcome-pro-tip" id="welcome-pro-tip" aria-live="polite" data-test="pro-tip">
       <span class="pro-tip-icon" aria-hidden="true">💡</span>
       <span class="pro-tip-text" id="pro-tip-text">Boost response speed to delight customers.</span>
     </div>
@@ -156,25 +156,25 @@ window.announceToSR = function(message) {
 
 
 <!-- Quick Actions Section -->
-<section class="card supplier-quick-actions" aria-labelledby="quick-actions-title">
+<section class="card supplier-quick-actions" aria-labelledby="quick-actions-title" data-test="quick-actions-section">
   <h2 id="quick-actions-title" class="supplier-section-title">Quick Actions</h2>
   
   <!-- Primary Actions -->
   <div class="quick-actions-nav">
-    <button class="quick-actions-arrow" id="quick-actions-prev" aria-label="Previous actions">←</button>
-    <div class="supplier-actions-primary">
-      <button class="supplier-action-btn--large" onclick="document.getElementById('sup-name').focus();document.getElementById('sup-name').scrollIntoView({behavior:'smooth',block:'center'});">
+    <button class="quick-actions-arrow" id="quick-actions-prev" aria-label="Previous actions" data-test="quick-actions-prev">←</button>
+    <div class="supplier-actions-primary" data-test="actions-carousel">
+      <button class="supplier-action-btn--large" onclick="document.getElementById('sup-name').focus();document.getElementById('sup-name').scrollIntoView({behavior:'smooth',block:'center'});" data-test="action-create-profile">
         <span class="action-icon">➕</span>
         <span class="action-label">Create Profile</span>
         <span class="action-desc">Set up your business listing</span>
       </button>
-    <button class="supplier-action-btn--large" onclick="document.getElementById('pkg-title').focus();document.getElementById('pkg-title').scrollIntoView({behavior:'smooth',block:'center'});">
+    <button class="supplier-action-btn--large" onclick="document.getElementById('pkg-title').focus();document.getElementById('pkg-title').scrollIntoView({behavior:'smooth',block:'center'});" data-test="action-create-package">
       <span class="action-icon">📦</span>
         <span class="action-label">Create Package</span>
         <span class="action-desc">Add a service package</span>
       </button>
     </div>
-    <button class="quick-actions-arrow" id="quick-actions-next" aria-label="Next actions">→</button>
+    <button class="quick-actions-arrow" id="quick-actions-next" aria-label="Next actions" data-test="quick-actions-next">→</button>
   </div>
   
   <!-- Secondary Actions -->

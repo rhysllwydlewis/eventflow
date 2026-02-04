@@ -350,6 +350,54 @@
   transform: translateY(0);
 }
 
+/* Ripple effect for action buttons */
+.ripple-effect {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.6);
+  transform: scale(0);
+  animation: ripple-animation 0.6s ease-out;
+  pointer-events: none;
+}
+
+@keyframes ripple-animation {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+/* Enhanced floating icon animation for large action buttons */
+.supplier-action-btn--large .action-icon {
+  animation: float-icon 3s ease-in-out infinite;
+}
+
+@keyframes float-icon {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+.supplier-action-btn--large:hover .action-icon {
+  animation: none;
+  transform: translateY(-2px) scale(1.1);
+}
+
+/* Enhanced gradient hover effects for large action buttons */
+.supplier-action-btn--large {
+  background: linear-gradient(135deg, var(--ef-primary, #0b8073) 0%, var(--ef-success, #10b981) 100%);
+  transition: all 0.3s ease;
+}
+
+.supplier-action-btn--large:hover {
+  background: linear-gradient(135deg, #0d9582 0%, #14c996 100%);
+  box-shadow: 0 12px 30px rgba(11, 128, 115, 0.35);
+  transform: translateY(-2px);
+}
+
 /* ===========================================
    3. MOBILE NAVIGATION PILLS
    =========================================== */
@@ -402,13 +450,38 @@
   border: 1px solid rgba(11, 128, 115, 0.2);
   background: rgba(255, 255, 255, 0.9);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+  cursor: pointer;
+  white-space: nowrap;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.mobile-nav-pill:hover {
+  background: rgba(11, 128, 115, 0.05);
+  border-color: rgba(11, 128, 115, 0.3);
+  transform: translateY(-1px);
+}
+
+.mobile-nav-pill:focus {
+  outline: 2px solid var(--ef-primary, #0B8073);
+  outline-offset: 2px;
+}
+
+.mobile-nav-pill:focus:not(:focus-visible) {
+  outline: none;
+}
+
+.mobile-nav-pill:focus-visible {
+  outline: 2px solid var(--ef-primary, #0B8073);
+  outline-offset: 2px;
 }
 
 .mobile-nav-pill.active {
   color: var(--ef-primary, #0B8073);
   border-color: rgba(11, 128, 115, 0.5);
   background: rgba(11, 128, 115, 0.08);
+  font-weight: 600;
 }
 
 .mobile-nav-indicator {
@@ -417,12 +490,32 @@
   height: 3px;
   background: linear-gradient(90deg, var(--ef-primary, #0B8073), var(--ef-success, #10b981));
   border-radius: 999px;
-  transition: transform 0.25s ease, width 0.25s ease;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   transform-origin: left;
   z-index: 4;
+  pointer-events: none;
+  box-shadow: 0 2px 8px rgba(11, 128, 115, 0.3);
+}
+
+/* Badge styling for unread message count */
+.pill-badge {
+  background: rgba(255, 255, 255, 0.25);
+  padding: 2px 6px;
+  border-radius: var(--ef-radius-full, 9999px);
+  font-size: var(--ef-text-xs, 12px);
+  margin-left: 4px;
+}
+
+.mobile-nav-pill:not(.active) .pill-badge {
+  background: var(--ef-primary, #0B8073);
+  color: white;
 }
 
 @media (max-width: 768px) {
+  .dashboard-mobile-nav {
+    display: block;
+  }
+  
   .supplier-actions-grid {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -1757,11 +1850,18 @@ textarea:focus {
    31. ACCESSIBILITY - REDUCED MOTION
    =========================================== */
 @media (prefers-reduced-motion: reduce) {
+  /* Disable decorative animations */
   .supplier-welcome-card::before,
   .cta::before,
   .lead-quality-fill::after,
   .skeleton,
-  .glass-progress__fill::after {
+  .glass-progress__fill::after,
+  .ripple-effect {
+    animation: none;
+  }
+  
+  /* Disable floating icon animation on large action buttons */
+  .supplier-action-btn--large .action-icon {
     animation: none;
   }
   
@@ -1776,7 +1876,8 @@ textarea:focus {
   .cta:hover,
   .supplier-dashboard-card:hover,
   .stat-widget:hover,
-  .empty-state__action:hover {
+  .empty-state__action:hover,
+  .mobile-nav-pill:hover {
     transform: none;
   }
   
@@ -2324,71 +2425,18 @@ textarea:focus-visible {
 /* ===========================================
    40. MOBILE SECTION NAVIGATION - FIXED
    =========================================== */
-.dashboard-mobile-nav {
-  display: none;
-  position: sticky;
-  top: 60px;
-  z-index: 100;
-  background: white;
-  border-bottom: 1px solid var(--ef-border, #E7EAF0);
-  padding: var(--ef-space-2, 8px) 0;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-  margin-bottom: var(--ef-space-4, 16px);
-  /* Prevent scroll interference */
-  overscroll-behavior-x: contain;
+/* Styles consolidated to section 3 for better organization:
+   - Dashboard mobile nav container starts at line 404
+   - Mobile nav pills styling at lines 413-487
+   - Responsive display toggle below at line 515
+*/
+
+@media (max-width: 768px) {
+  .dashboard-mobile-nav {
+    display: block;
+  }
 }
 
-.dashboard-mobile-nav::-webkit-scrollbar {
-  display: none;
-}
-
-.mobile-nav-pills {
-  display: flex;
-  gap: var(--ef-space-2, 8px);
-  padding: 0 var(--ef-space-4, 16px);
-  min-width: max-content;
-}
-
-.mobile-nav-pill {
-  padding: var(--ef-space-2, 8px) var(--ef-space-4, 16px);
-  background: var(--ef-bg-subtle, #f3f4f6);
-  border: none;
-  border-radius: var(--ef-radius-full, 9999px);
-  font-size: var(--ef-text-sm, 14px);
-  font-weight: var(--ef-font-medium, 500);
-  color: var(--ef-text-muted, #667085);
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  gap: var(--ef-space-1, 4px);
-  /* Better touch target */
-  min-height: 44px;
-}
-
-.mobile-nav-pill:hover {
-  background: var(--ef-bg-muted, #e5e7eb);
-}
-
-.mobile-nav-pill.active {
-  background: var(--ef-primary, #0B8073);
-  color: white;
-}
-
-.pill-badge {
-  background: rgba(255, 255, 255, 0.25);
-  padding: 2px 6px;
-  border-radius: var(--ef-radius-full, 9999px);
-  font-size: var(--ef-text-xs, 12px);
-}
-
-.mobile-nav-pill:not(.active) .pill-badge {
-  background: var(--ef-primary, #0B8073);
-  color: white;
-}
 
 @media (max-width: 768px) {
   .dashboard-mobile-nav {
