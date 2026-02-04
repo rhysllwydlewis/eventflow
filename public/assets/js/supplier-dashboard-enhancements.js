@@ -130,6 +130,17 @@
   function setupQuickActionsCarousel() {
     const container = document.querySelector('.supplier-actions-primary');
     if (!container) return;
+    const prev = document.getElementById('quick-actions-prev');
+    const next = document.getElementById('quick-actions-next');
+
+    const scrollByAmount = () => container.clientWidth * 0.9;
+    const scrollTo = (delta) => {
+      container.scrollTo({ left: container.scrollLeft + delta, behavior: 'smooth' });
+    };
+
+    if (prev) prev.addEventListener('click', () => scrollTo(-scrollByAmount()));
+    if (next) next.addEventListener('click', () => scrollTo(scrollByAmount()));
+
     let isDown = false;
     let startX;
     let scrollLeft;
