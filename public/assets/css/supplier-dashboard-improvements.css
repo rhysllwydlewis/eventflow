@@ -722,9 +722,11 @@
   border-radius: 999px;
   padding: 10px 14px;
   border: 1px solid rgba(11, 128, 115, 0.2);
-  background: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 2px 4px rgba(11, 128, 115, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
   white-space: nowrap;
   font-size: 14px;
@@ -732,9 +734,12 @@
 }
 
 .mobile-nav-pill:hover {
-  background: rgba(11, 128, 115, 0.05);
-  border-color: rgba(11, 128, 115, 0.3);
-  transform: translateY(-1px);
+  background: rgba(11, 128, 115, 0.1);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-color: rgba(11, 128, 115, 0.35);
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 4px 12px rgba(11, 128, 115, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.6);
 }
 
 .mobile-nav-pill:focus {
@@ -754,8 +759,27 @@
 .mobile-nav-pill.active {
   color: var(--ef-primary, #0B8073);
   border-color: rgba(11, 128, 115, 0.5);
-  background: rgba(11, 128, 115, 0.08);
+  background: linear-gradient(135deg, rgba(11, 128, 115, 0.15) 0%, rgba(16, 185, 129, 0.12) 100%);
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
   font-weight: 600;
+  box-shadow: 
+    0 4px 12px rgba(11, 128, 115, 0.2), 
+    inset 0 1px 1px rgba(255, 255, 255, 0.3),
+    0 0 0 1px rgba(11, 128, 115, 0.1);
+}
+
+.mobile-nav-pill.active::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(11, 128, 115, 0.4), rgba(16, 185, 129, 0.3));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
 }
 
 .mobile-nav-indicator {
@@ -768,21 +792,25 @@
   transform-origin: left;
   z-index: 4;
   pointer-events: none;
-  box-shadow: 0 2px 8px rgba(11, 128, 115, 0.3);
+  box-shadow: 0 2px 8px rgba(11, 128, 115, 0.4);
 }
 
 /* Badge styling for unread message count */
 .pill-badge {
-  background: rgba(255, 255, 255, 0.25);
+  background: rgba(11, 128, 115, 0.2);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   padding: 2px 6px;
   border-radius: var(--ef-radius-full, 9999px);
   font-size: var(--ef-text-xs, 12px);
   margin-left: 4px;
+  box-shadow: 0 1px 3px rgba(11, 128, 115, 0.2);
 }
 
 .mobile-nav-pill:not(.active) .pill-badge {
-  background: var(--ef-primary, #0B8073);
+  background: linear-gradient(135deg, var(--ef-primary, #0B8073), var(--ef-success, #10b981));
   color: white;
+  box-shadow: 0 2px 4px rgba(11, 128, 115, 0.3);
 }
 
 @media (max-width: 768px) {

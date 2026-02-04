@@ -786,17 +786,25 @@ window.announceToSR = function(message) {
 </div>
 
 <!-- Subscription Card -->
-<div class="card supplier-dashboard-card">
-  <div class="supplier-card-header">
+<!-- Section Divider -->
+<div style="margin: 3rem 0 2rem; position: relative;">
+  <div style="position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: linear-gradient(90deg, transparent, rgba(11, 128, 115, 0.2), transparent);"></div>
+  <div style="position: relative; width: fit-content; margin: 0 auto; background: white; padding: 0 1rem;">
+    <span style="font-size: 0.75rem; color: var(--ef-text-muted, #667085); text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600;">Account & Support</span>
+  </div>
+</div>
+
+<!-- Subscription Card - Enhanced -->
+<div class="card supplier-dashboard-card" style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(8px);">
+  <div class="supplier-card-header" style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(139, 92, 246, 0.03) 100%); border-bottom: 1px solid rgba(99, 102, 241, 0.1); padding: 1.5rem;">
     <div class="supplier-card-header__content">
-      <h3>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20" class="supplier-card-header__icon" aria-hidden="true">
-          <rect x="2" y="5" width="20" height="14" rx="2"/>
-          <line x1="2" y1="10" x2="22" y2="10"/>
-        </svg>
-        Subscription
-      </h3>
-      <p class="small">Manage your plan and billing</p>
+      <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
+        <div style="width: 36px; height: 36px; background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.125rem;">
+          💳
+        </div>
+        <h3 style="margin: 0; font-size: 1.375rem; color: var(--ef-text, #0B1220);">Subscription</h3>
+      </div>
+      <p class="small" style="margin: 0 0 0 3rem; color: #6B7280;">Manage your plan and billing</p>
     </div>
   </div>
   <div id="supplier-subscription-card" class="section">
@@ -804,17 +812,17 @@ window.announceToSR = function(message) {
   </div>
 </div>
 
-<!-- Lead Quality Card -->
-<div class="card supplier-dashboard-card">
-  <div class="supplier-card-header">
+<!-- Lead Quality Card - Enhanced -->
+<div class="card supplier-dashboard-card" style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(8px);">
+  <div class="supplier-card-header" style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(37, 99, 235, 0.03) 100%); border-bottom: 1px solid rgba(59, 130, 246, 0.1); padding: 1.5rem;">
     <div class="supplier-card-header__content">
-      <h3>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20" class="supplier-card-header__icon" aria-hidden="true">
-          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-        </svg>
-        Lead Quality Overview
-      </h3>
-      <p class="small">Track the quality of your enquiries</p>
+      <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
+        <div style="width: 36px; height: 36px; background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.125rem;">
+          📈
+        </div>
+        <h3 style="margin: 0; font-size: 1.375rem; color: var(--ef-text, #0B1220);">Lead Quality Overview</h3>
+      </div>
+      <p class="small" style="margin: 0 0 0 3rem; color: #6B7280;">Track the quality of your enquiries</p>
     </div>
   </div>
   <div id="lead-quality-breakdown" class="section">
@@ -824,10 +832,26 @@ window.announceToSR = function(message) {
 </div>
 
 
-<section class="card supplier-dashboard-card" role="region" aria-labelledby="tickets-heading">
-  <div class="supplier-card-header">
-    <h3 id="tickets-heading">Support Tickets</h3>
-    <button class="cta supplier-card-action-btn" id="createSupplierTicketBtn">Create Ticket</button>
+<section class="card supplier-dashboard-card" role="region" aria-labelledby="tickets-heading" style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(8px);">
+  <div class="supplier-card-header" style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.05) 0%, rgba(220, 38, 38, 0.03) 100%); border-bottom: 1px solid rgba(239, 68, 68, 0.1); padding: 1.5rem;">
+    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; width: 100%;">
+      <div style="display: flex; align-items: center; gap: 0.75rem;">
+        <div style="width: 36px; height: 36px; background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.125rem;">
+          🎫
+        </div>
+        <div>
+          <h3 id="tickets-heading" style="margin: 0; font-size: 1.375rem; color: var(--ef-text, #0B1220);">Support Tickets</h3>
+          <p class="small" style="margin: 0; color: #6B7280;">Get help when you need it</p>
+        </div>
+      </div>
+      <button class="glass-btn glass-btn--primary" id="createSupplierTicketBtn" style="padding: 0.625rem 1.25rem; font-size: 0.875rem;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" style="margin-right: 0.5rem; display: inline-block; vertical-align: middle;">
+          <line x1="12" y1="5" x2="12" y2="19"/>
+          <line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        <span style="vertical-align: middle;">Create Ticket</span>
+      </button>
+    </div>
   </div>
   <div id="tickets-sup" class="section">
     <div class="skeleton skeleton-text skeleton-text-long"></div>
@@ -835,14 +859,19 @@ window.announceToSR = function(message) {
   </div>
 </section>
 
-<section class="card supplier-dashboard-card" role="region" aria-labelledby="messages-heading">
-  <div class="supplier-card-header">
-    <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+<section class="card supplier-dashboard-card" role="region" aria-labelledby="messages-heading" style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(8px);">
+  <div class="supplier-card-header" style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(37, 99, 235, 0.03) 100%); border-bottom: 1px solid rgba(59, 130, 246, 0.1); padding: 1.5rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 1rem;">
       <div style="display: flex; align-items: center; gap: 1rem;">
-        <h3 id="messages-heading" style="margin: 0;">Messages</h3>
-        <span id="unreadMessageBadge" class="badge badge-info supplier-unread-badge" aria-label="0 unread messages">0 unread</span>
+        <div style="width: 36px; height: 36px; background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.125rem;">
+          💬
+        </div>
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+          <h3 id="messages-heading" style="margin: 0; font-size: 1.375rem; color: var(--ef-text, #0B1220);">Messages</h3>
+          <span id="unreadMessageBadge" class="badge badge-info supplier-unread-badge" style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(37, 99, 235, 0.15) 100%); backdrop-filter: blur(8px); border: 1px solid rgba(59, 130, 246, 0.3); color: #1E40AF; font-weight: 600; padding: 0.25rem 0.625rem; border-radius: 12px; font-size: 0.75rem;" aria-label="0 unread messages">0 unread</span>
+        </div>
       </div>
-      <button id="export-enquiries-btn" style="padding: 0.5rem 1rem; background: white; border: 1px solid #E5E7EB; border-radius: 6px; cursor: pointer; font-size: 0.875rem; display: flex; align-items: center; gap: 0.5rem; transition: all 0.2s;" onmouseover="this.style.background='#F9FAFB'; this.style.borderColor='#D1D5DB';" onmouseout="this.style.background='white'; this.style.borderColor='#E5E7EB';">
+      <button id="export-enquiries-btn" class="glass-btn" style="padding: 0.5rem 1rem; font-size: 0.875rem; display: flex; align-items: center; gap: 0.5rem;">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
           <polyline points="7 10 12 15 17 10"/>
