@@ -14,7 +14,7 @@
  */
 
 /* ===========================================
-   1. SUPPLIER WELCOME CARD - Enhanced Liquid Glass
+   1. SUPPLIER WELCOME CARD - Enhanced Liquid Glass - FIXED
    =========================================== */
 .supplier-welcome-card {
   background: linear-gradient(135deg, 
@@ -24,12 +24,12 @@
   backdrop-filter: blur(var(--glass-blur, 12px)) saturate(180%);
   -webkit-backdrop-filter: blur(var(--glass-blur, 12px)) saturate(180%);
   color: white;
-  margin-bottom: var(--ef-space-5, 24px);
+  margin-bottom: var(--ef-space-5, 24px); /* Consistent with other cards */
   padding: var(--ef-space-6, 32px);
   border-radius: var(--ef-radius-lg, 14px);
   border: 1px solid rgba(255, 255, 255, 0.18);
   box-shadow: 
-    0 10px 40px rgba(11, 128, 115, 0.25),
+    0 8px 32px rgba(11, 128, 115, 0.2), /* Reduced intensity */
     inset 0 1px 0 rgba(255, 255, 255, 0.15),
     inset 0 -1px 0 rgba(0, 0, 0, 0.05);
   position: relative;
@@ -37,7 +37,7 @@
   transition: var(--ef-transition-base, 200ms cubic-bezier(0.4, 0, 0.2, 1));
 }
 
-/* Subtle shine effect */
+/* Keep shine effect but reduce intensity */
 .supplier-welcome-card::before {
   content: '';
   position: absolute;
@@ -48,10 +48,10 @@
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(255, 255, 255, 0.1),
+    rgba(255, 255, 255, 0.08), /* Reduced from 0.1 */
     transparent
   );
-  animation: card-shine 4s ease-in-out infinite;
+  animation: card-shine 6s ease-in-out infinite; /* Slower from 4s */
 }
 
 @keyframes card-shine {
@@ -80,12 +80,14 @@
   color: white;
   font-size: var(--ef-text-2xl, 24px);
   font-weight: var(--ef-font-bold, 700);
+  line-height: 1.3;
 }
 
 .supplier-welcome-subtitle {
   color: rgba(255, 255, 255, 0.9);
   margin: 0 0 var(--ef-space-4, 16px) 0;
   font-size: var(--ef-text-base, 16px);
+  line-height: 1.5;
 }
 
 .supplier-welcome-features {
@@ -110,11 +112,27 @@
 
 .supplier-features-list li {
   margin-bottom: var(--ef-space-1, 4px);
-  line-height: var(--ef-leading-normal, 1.5);
+  line-height: 1.5;
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .supplier-welcome-card {
+    padding: var(--ef-space-5, 24px);
+    margin-bottom: var(--ef-space-4, 16px);
+  }
+  
+  .supplier-welcome-title {
+    font-size: var(--ef-text-xl, 20px);
+  }
+  
+  .supplier-welcome-subtitle {
+    font-size: var(--ef-text-sm, 14px);
+  }
 }
 
 /* ===========================================
-   2. QUICK ACTIONS GRID - Enhanced Glass Buttons
+   2. QUICK ACTIONS GRID - Enhanced Glass Buttons - FIXED
    =========================================== */
 .supplier-quick-actions {
   margin-bottom: var(--ef-space-5, 24px);
@@ -130,16 +148,17 @@
 .supplier-actions-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: var(--ef-space-4, 16px);
+  gap: var(--ef-space-3, 12px); /* Consistent spacing */
 }
 
 .supplier-action-btn {
-  background: var(--glass-bg-light, rgba(255, 255, 255, 0.72));
-  backdrop-filter: blur(8px) saturate(150%);
-  -webkit-backdrop-filter: blur(8px) saturate(150%);
-  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.35));
+  /* Lighter glass effect */
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(4px); /* Reduced from 8px */
+  -webkit-backdrop-filter: blur(4px);
+  border: 1px solid rgba(11, 128, 115, 0.15);
   border-radius: var(--ef-radius-md, 10px);
-  padding: var(--ef-space-4, 16px) var(--ef-space-5, 24px);
+  padding: var(--ef-space-4, 16px);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -149,10 +168,11 @@
   text-decoration: none;
   color: var(--ef-text, #0B1220);
   font-weight: var(--ef-font-medium, 500);
-  transition: all var(--ef-transition-slow, 300ms cubic-bezier(0.4, 0, 0.2, 1));
+  transition: all 0.2s ease;
   position: relative;
   overflow: hidden;
-  box-shadow: var(--ef-shadow-sm, 0 1px 2px 0 rgba(0, 0, 0, 0.05));
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  min-height: 80px; /* Ensure consistent height */
 }
 
 .supplier-action-btn::before {
@@ -161,18 +181,17 @@
   top: 0;
   left: 0;
   right: 0;
-  height: 3px;
+  height: 2px; /* Reduced from 3px */
   background: linear-gradient(90deg, var(--ef-primary, #0B8073), var(--ef-success, #10b981));
   opacity: 0;
-  transition: opacity var(--ef-transition-fast, 150ms cubic-bezier(0.4, 0, 0.2, 1));
+  transition: opacity 0.2s ease;
 }
 
 .supplier-action-btn:hover {
-  background: var(--glass-bg-hover, rgba(255, 255, 255, 0.85));
+  background: rgba(255, 255, 255, 1);
   border-color: rgba(11, 128, 115, 0.3);
-  transform: translateY(-4px);
-  box-shadow: var(--ef-shadow-md, 0 4px 12px rgba(0, 0, 0, 0.08)),
-              0 8px 25px rgba(11, 128, 115, 0.15);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(11, 128, 115, 0.15);
 }
 
 .supplier-action-btn:hover::before {
@@ -180,7 +199,43 @@
 }
 
 .supplier-action-btn:active {
-  transform: translateY(-2px);
+  transform: translateY(-1px);
+}
+
+/* Enhanced icon styling for secondary action buttons */
+.supplier-action-btn .action-icon {
+  font-size: 24px;
+  line-height: 1;
+  display: block;
+  margin-bottom: var(--ef-space-1, 4px);
+  transition: transform 0.3s ease;
+}
+
+.supplier-action-btn:hover .action-icon {
+  transform: scale(1.15);
+}
+
+.supplier-action-btn .action-text {
+  font-size: var(--ef-text-sm, 14px);
+  font-weight: var(--ef-font-medium, 500);
+  line-height: 1.3;
+}
+
+@media (max-width: 768px) {
+  .supplier-actions-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .supplier-actions-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .supplier-action-btn {
+    min-height: 70px;
+    padding: var(--ef-space-3, 12px);
+  }
 }
 
 /* ===========================================
@@ -249,21 +304,27 @@
 }
 
 /* ===========================================
-   4. CARD SPACING - Glass Effect Enhancement
+   4. CARD SPACING - Glass Effect Enhancement - FIXED
    =========================================== */
 .supplier-dashboard-card {
-  margin-top: var(--ef-space-4, 16px);
-  background: var(--glass-bg-light, rgba(255, 255, 255, 0.85));
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  margin-top: var(--ef-space-5, 24px); /* Consistent spacing */
+  background: rgba(255, 255, 255, 0.95); /* Less transparency */
+  backdrop-filter: blur(8px); /* Reduced from 10px */
+  -webkit-backdrop-filter: blur(8px);
   border: 1px solid var(--ef-border, #E7EAF0);
   border-radius: var(--ef-radius-md, 10px);
-  box-shadow: var(--ef-shadow-md, 0 4px 12px rgba(0, 0, 0, 0.08));
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06); /* Lighter shadow */
   transition: all var(--ef-transition-base, 200ms cubic-bezier(0.4, 0, 0.2, 1));
+  padding: var(--ef-space-5, 24px); /* Consistent padding */
 }
 
 .supplier-dashboard-card:first-child {
   margin-top: 0;
+}
+
+.supplier-dashboard-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px); /* Subtle lift */
 }
 
 .supplier-dashboard-card h3 {
@@ -284,6 +345,13 @@
 
 .supplier-card-header h3 {
   margin: 0;
+}
+
+@media (max-width: 768px) {
+  .supplier-dashboard-card {
+    margin-top: var(--ef-space-4, 16px);
+    padding: var(--ef-space-4, 16px);
+  }
 }
 
 /* ===========================================
@@ -1859,7 +1927,7 @@ textarea:focus-visible {
 }
 
 /* ===========================================
-   37. QUICK ACTIONS VISUAL HIERARCHY
+   37. QUICK ACTIONS VISUAL HIERARCHY - FIXED
    =========================================== */
 .supplier-actions-primary {
   display: grid;
@@ -1869,47 +1937,68 @@ textarea:focus-visible {
 }
 
 .supplier-action-btn--large {
-  background: linear-gradient(135deg, var(--ef-primary, #0B8073) 0%, var(--ef-primary-hover, #097267) 100%);
+  /* Simplified gradient - less heavy */
+  background: linear-gradient(135deg, var(--ef-primary, #0B8073) 0%, #0a7267 100%);
   color: white;
   padding: var(--ef-space-5, 24px);
-  border-radius: var(--ef-radius-lg, 14px);
+  border-radius: var(--ef-radius-md, 10px); /* Reduced from lg */
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: var(--ef-space-2, 8px);
   text-decoration: none;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease; /* Faster, smoother */
   border: none;
   cursor: pointer;
   text-align: left;
-  width: 100%; /* Ensure button takes full width of grid cell */
-  min-height: 120px; /* Ensure consistent button height */
-  box-shadow: var(--ef-shadow-md, 0 4px 12px rgba(11, 128, 115, 0.2)); /* Add depth */
+  width: 100%;
+  min-height: 110px; /* Slightly reduced */
+  /* Simplified shadow - less dramatic */
+  box-shadow: 0 2px 8px rgba(11, 128, 115, 0.15);
 }
 
 .supplier-action-btn--large:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 30px rgba(11, 128, 115, 0.35);
+  transform: translateY(-2px); /* Reduced from -4px */
+  box-shadow: 0 6px 16px rgba(11, 128, 115, 0.25); /* Reduced intensity */
+}
+
+.supplier-action-btn--large:active {
+  transform: translateY(0); /* Better feedback */
 }
 
 .supplier-action-btn--large .action-icon {
-  font-size: 28px;
+  font-size: 32px; /* Slightly larger for better balance */
   margin-bottom: var(--ef-space-1, 4px);
+  line-height: 1;
+  display: block;
+  transition: transform 0.3s ease;
+}
+
+.supplier-action-btn--large:hover .action-icon {
+  transform: scale(1.1) rotate(5deg);
 }
 
 .supplier-action-btn--large .action-label {
   font-size: var(--ef-text-lg, 18px);
   font-weight: var(--ef-font-semibold, 600);
+  line-height: 1.3;
 }
 
 .supplier-action-btn--large .action-desc {
   font-size: var(--ef-text-sm, 14px);
-  opacity: 0.85;
+  opacity: 0.9;
+  line-height: 1.4;
 }
 
 @media (max-width: 640px) {
   .supplier-actions-primary {
     grid-template-columns: 1fr;
+    gap: var(--ef-space-3, 12px);
+  }
+  
+  .supplier-action-btn--large {
+    min-height: 100px;
+    padding: var(--ef-space-4, 16px);
   }
 }
 
@@ -2032,7 +2121,7 @@ textarea:focus-visible {
 }
 
 /* ===========================================
-   40. MOBILE SECTION NAVIGATION
+   40. MOBILE SECTION NAVIGATION - FIXED
    =========================================== */
 .dashboard-mobile-nav {
   display: none;
@@ -2045,7 +2134,9 @@ textarea:focus-visible {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
-  margin-bottom: var(--ef-space-4, 16px); /* Add spacing below nav */
+  margin-bottom: var(--ef-space-4, 16px);
+  /* Prevent scroll interference */
+  overscroll-behavior-x: contain;
 }
 
 .dashboard-mobile-nav::-webkit-scrollbar {
@@ -2073,6 +2164,8 @@ textarea:focus-visible {
   display: flex;
   align-items: center;
   gap: var(--ef-space-1, 4px);
+  /* Better touch target */
+  min-height: 44px;
 }
 
 .mobile-nav-pill:hover {
