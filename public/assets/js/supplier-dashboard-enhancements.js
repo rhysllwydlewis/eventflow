@@ -14,6 +14,8 @@
     const greetingEl = document.getElementById('welcome-greeting');
     if (!card || !greetingEl) return;
 
+    const NIGHT_THEME_HOUR = 21;
+
     const hour = new Date().getHours();
     let variant = 'afternoon';
     let greeting = 'Good day,';
@@ -24,7 +26,7 @@
       variant = 'afternoon';
       greeting = 'Good afternoon,';
     } else {
-      variant = hour < 21 ? 'evening' : 'night';
+      variant = hour < NIGHT_THEME_HOUR ? 'evening' : 'night';
       greeting = 'Good evening,';
     }
 
@@ -110,8 +112,8 @@
       });
     });
 
-    // Initial position after layout paint to get correct sizes
-    setTimeout(() => setActive(pills[0]), 50);
+    const LAYOUT_PAINT_DELAY = 50; // Wait for browser layout/paint to measure pill widths
+    setTimeout(() => setActive(pills[0]), LAYOUT_PAINT_DELAY);
   }
 
   /**
