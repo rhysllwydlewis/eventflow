@@ -204,7 +204,7 @@
 .hero-blob {
   filter: blur(90px) !important;
   opacity: 0.6;
-  mix-blend-mode: multiply;
+  mix-blend-mode: overlay;
 }
 
 .hero-blob-1 {
@@ -237,7 +237,6 @@
     transparent 0
   ) !important;
   background-size: 24px 24px !important;
-  mix-blend-mode: multiply;
 }
 
 /* ========================================
