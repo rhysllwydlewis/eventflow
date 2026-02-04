@@ -425,3 +425,105 @@ html[data-theme="dark"] .card:hover,
 html[data-theme="dark"] .pack:hover {
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
 }
+
+/* ========================================
+   TESTIMONIALS CAROUSEL STYLES
+   Extracted from inline styles for better maintainability
+   ======================================== */
+
+.ef-testimonials-section {
+  background: linear-gradient(135deg, #f8fafc 0%, #e5f3f1 100%);
+  padding: 4rem 0;
+}
+
+.ef-testimonials-carousel {
+  position: relative;
+  min-height: 200px;
+  margin: 2rem 0;
+}
+
+.ef-testimonial {
+  display: none;
+  opacity: 0;
+  transition: opacity 0.5s ease-in-out;
+  text-align: center;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.ef-testimonial.active {
+  display: block;
+  opacity: 1;
+}
+
+.ef-testimonial-content {
+  background: white;
+  padding: 2.5rem;
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.ef-testimonial-stars {
+  color: #f59e0b;
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.ef-testimonial-quote {
+  font-size: 1.125rem;
+  line-height: 1.75;
+  color: #1f2937;
+  margin-bottom: 1.5rem;
+  font-style: italic;
+}
+
+.ef-testimonial-author {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.ef-testimonial-author strong {
+  color: #0B8073;
+  font-size: 1rem;
+}
+
+.ef-testimonial-event {
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+.ef-testimonials-dots {
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 2rem;
+}
+
+.ef-testimonial-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #d1d5db;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  padding: 0;
+}
+
+.ef-testimonial-dot.active,
+.ef-testimonial-dot:hover {
+  background: #0B8073;
+  transform: scale(1.2);
+}
+
+@media (max-width: 768px) {
+  .ef-testimonial-content {
+    padding: 1.5rem;
+  }
+  
+  .ef-testimonial-quote {
+    font-size: 1rem;
+  }
+}
+
