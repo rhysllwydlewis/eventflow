@@ -7,10 +7,10 @@
    ========================================================================== */
 
 :root {
-  /* Hero section spacing */
-  --hero-padding-top: clamp(40px, 8vw, 72px);
-  --hero-padding-bottom: clamp(20px, 4vw, 40px);
-  --hero-gap: clamp(24px, 5vw, 72px);
+  /* Hero section spacing - AGGRESSIVELY REDUCED */
+  --hero-padding-top: clamp(24px, 4vw, 48px);
+  --hero-padding-bottom: clamp(16px, 3vw, 32px);
+  --hero-gap: clamp(16px, 3vw, 40px);
   
   /* Typography scaling */
   --hero-h1-size: clamp(26px, 4vw + 1rem, 52px);
@@ -604,10 +604,10 @@
 .hero-collage {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  grid-template-rows: 1.3fr 1fr 1fr;
+  grid-template-rows: 1.35fr 1fr 1fr;
   gap: 16px;
-  aspect-ratio: 16/13;
-  max-height: 85vh;
+  aspect-ratio: 16/14;
+  max-height: 90vh;
   max-width: 100%;
   overflow: hidden;
 }
