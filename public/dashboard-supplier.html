@@ -617,14 +617,40 @@ window.announceToSR = function(message) {
       <input type="hidden" name="id" id="pkg-id-hidden">
     </form>
   </div>
-</div><div class="card supplier-dashboard-card">
-  <h3>Subscription</h3>
+</div>
+
+<!-- Subscription Card -->
+<div class="card supplier-dashboard-card">
+  <div class="supplier-card-header">
+    <div class="supplier-card-header__content">
+      <h3>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20" style="display: inline-block; vertical-align: middle; margin-right: 8px;">
+          <rect x="2" y="5" width="20" height="14" rx="2"/>
+          <line x1="2" y1="10" x2="22" y2="10"/>
+        </svg>
+        Subscription
+      </h3>
+      <p class="small">Manage your plan and billing</p>
+    </div>
+  </div>
   <div id="supplier-subscription-card" class="section">
     <p class="small">Checking subscription status…</p>
   </div>
 </div>
+
+<!-- Lead Quality Card -->
 <div class="card supplier-dashboard-card">
-  <h3>Lead Quality Overview</h3>
+  <div class="supplier-card-header">
+    <div class="supplier-card-header__content">
+      <h3>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20" style="display: inline-block; vertical-align: middle; margin-right: 8px;">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+        </svg>
+        Lead Quality Overview
+      </h3>
+      <p class="small">Track the quality of your enquiries</p>
+    </div>
+  </div>
   <div id="lead-quality-breakdown" class="section">
     <div class="skeleton skeleton-text skeleton-text-long"></div>
     <div class="skeleton skeleton-text skeleton-text-medium"></div>
