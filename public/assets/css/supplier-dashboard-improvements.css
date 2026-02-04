@@ -393,8 +393,8 @@
   opacity: 1;
 }
 
-/* Mobile optimization - larger screens (tablets) */
-@media (max-width: 768px) and (min-width: 415px) {
+/* Mobile optimization - larger screens (tablets and large phones) */
+@media (min-width: 415px) and (max-width: 768px) {
   .supplier-actions-primary {
     display: flex;
     overflow-x: auto;
@@ -418,7 +418,7 @@
 }
 
 /* Mobile optimization - standard mobile (375px-414px) */
-@media (max-width: 414px) {
+@media (min-width: 375px) and (max-width: 414px) {
   .supplier-actions-primary {
     display: flex;
     overflow-x: auto;
@@ -473,10 +473,15 @@
   }
 }
 
-/* Mobile optimization - very small screens (320px-374px) */
+/* Mobile optimization - very small screens (up to 374px) */
 @media (max-width: 374px) {
   .supplier-actions-primary {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
     gap: var(--ef-space-2, 8px);
+    padding-bottom: var(--ef-space-2, 8px);
   }
 
   .supplier-action-btn--large {
