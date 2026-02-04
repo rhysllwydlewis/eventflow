@@ -587,7 +587,7 @@ window.announceToSR = function(message) {
     if (activeSection) {
       pills.forEach(p => p.classList.remove('active'));
       activeSection.pill.classList.add('active');
-      activeSection.pill.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+      // ✅ REMOVED scrollIntoView - no more feedback loop
     }
     
     ticking = false;
