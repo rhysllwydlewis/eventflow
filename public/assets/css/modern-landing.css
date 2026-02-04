@@ -50,18 +50,12 @@ html {
    MODERN 2026 COLOR PALETTE
    ======================================== */
 :root {
-  /* Base teal with richer accents */
+  /* Core teal theme colors only */
   --modern-primary: #0B8073;
   --modern-primary-light: #13B6A2;
   --modern-primary-dark: #085f55;
   
-  /* New rich accent colors for 2026 */
-  --modern-accent-purple: #8B5CF6;
-  --modern-accent-blue: #3B82F6;
-  --modern-accent-pink: #EC4899;
-  --modern-accent-amber: #F59E0B;
-  
-  /* Sophisticated neutrals */
+  /* Simplified neutrals */
   --modern-gray-50: #F8FAFC;
   --modern-gray-100: #F1F5F9;
   --modern-gray-200: #E2E8F0;
@@ -70,11 +64,11 @@ html {
   --modern-gray-700: #334155;
   --modern-gray-900: #0F172A;
   
-  /* Gradient mesh colors */
-  --gradient-mesh-1: rgba(139, 92, 246, 0.15);
-  --gradient-mesh-2: rgba(59, 130, 246, 0.12);
-  --gradient-mesh-3: rgba(16, 185, 129, 0.15);
-  --gradient-mesh-4: rgba(236, 72, 153, 0.1);
+  /* Simplified gradient mesh using only teal variations */
+  --gradient-mesh-1: rgba(11, 128, 115, 0.12);
+  --gradient-mesh-2: rgba(19, 182, 162, 0.10);
+  --gradient-mesh-3: rgba(16, 185, 129, 0.12);
+  --gradient-mesh-4: rgba(11, 128, 115, 0.08);
   
   /* Enhanced shadows */
   --modern-shadow-soft: 0 2px 8px rgba(15, 23, 42, 0.04), 
@@ -145,14 +139,13 @@ html {
   }
 }
 
-/* Enhanced logo with modern gradient */
+/* Enhanced logo with simplified teal gradient */
 .ef-logo-inner {
   background: conic-gradient(
     from 180deg,
     #9be7d9 0deg,
-    #13B6A2 90deg,
-    #0B8073 180deg,
-    #8B5CF6 270deg,
+    #13B6A2 120deg,
+    #0B8073 240deg,
     #9be7d9 360deg
   ) !important;
   box-shadow: 0 4px 16px rgba(11, 128, 115, 0.4),
@@ -268,8 +261,8 @@ html {
 
 .hero-blob-1 {
   background: linear-gradient(135deg,
-    rgba(139, 92, 246, 0.3),
-    rgba(59, 130, 246, 0.25)
+    rgba(11, 128, 115, 0.3),
+    rgba(19, 182, 162, 0.25)
   ) !important;
   animation: pulse-blob 15s ease-in-out infinite;
 }
@@ -277,7 +270,7 @@ html {
 .hero-blob-2 {
   background: linear-gradient(135deg,
     rgba(16, 185, 129, 0.3),
-    rgba(236, 72, 153, 0.2)
+    rgba(11, 128, 115, 0.2)
   ) !important;
   animation: pulse-blob 18s ease-in-out infinite 2s;
 }
@@ -323,15 +316,14 @@ html {
   background-clip: text;
 }
 
-/* Highlight text with modern gradient */
+/* Highlight text with simplified teal gradient */
 .hero-highlight-text {
   position: relative;
   display: inline-block;
   font-weight: 900;
   background: linear-gradient(135deg,
     var(--modern-primary) 0%,
-    var(--modern-primary-light) 50%,
-    var(--modern-accent-purple) 100%
+    var(--modern-primary-light) 100%
   );
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -347,7 +339,7 @@ html {
   height: 12px;
   background: linear-gradient(90deg,
     rgba(11, 128, 115, 0.15),
-    rgba(139, 92, 246, 0.15)
+    rgba(19, 182, 162, 0.15)
   );
   border-radius: 4px;
   z-index: -1;
@@ -561,12 +553,11 @@ html {
    FEATURED SECTIONS ENHANCEMENTS
    ======================================== */
 
-/* Stats section with gradient */
+/* Stats section with simplified teal gradient */
 .ef-section--gradient {
   background: linear-gradient(135deg,
     var(--modern-primary) 0%,
-    var(--modern-primary-light) 50%,
-    var(--modern-accent-purple) 100%
+    var(--modern-primary-light) 100%
   ) !important;
   position: relative;
   overflow: hidden;
