@@ -758,8 +758,20 @@ window.announceToSR = function(message) {
 
 <section class="card supplier-dashboard-card" role="region" aria-labelledby="messages-heading">
   <div class="supplier-card-header">
-    <h3 id="messages-heading">Messages</h3>
-    <span id="unreadMessageBadge" class="badge badge-info supplier-unread-badge" aria-label="0 unread messages">0 unread</span>
+    <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+      <div style="display: flex; align-items: center; gap: 1rem;">
+        <h3 id="messages-heading" style="margin: 0;">Messages</h3>
+        <span id="unreadMessageBadge" class="badge badge-info supplier-unread-badge" aria-label="0 unread messages">0 unread</span>
+      </div>
+      <button id="export-enquiries-btn" style="padding: 0.5rem 1rem; background: white; border: 1px solid #E5E7EB; border-radius: 6px; cursor: pointer; font-size: 0.875rem; display: flex; align-items: center; gap: 0.5rem; transition: all 0.2s;" onmouseover="this.style.background='#F9FAFB'; this.style.borderColor='#D1D5DB';" onmouseout="this.style.background='white'; this.style.borderColor='#E5E7EB';">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        <span>Export CSV</span>
+      </button>
+    </div>
   </div>
   <div id="threads-sup" class="section">
     <div class="skeleton skeleton-text skeleton-text-long"></div>
@@ -1622,6 +1634,203 @@ function escapeHtml(unsafe) {
   });
 })();
 </script>
+
+<!-- Notification Panel Dropdown -->
+<div id="notification-panel" style="display: none; position: fixed; top: 70px; right: 20px; width: 360px; max-width: calc(100vw - 40px); background: white; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.15); z-index: 1000; border: 1px solid #E5E7EB;">
+  <div style="padding: 1rem 1.5rem; border-bottom: 1px solid #E5E7EB; display: flex; justify-content: space-between; align-items: center;">
+    <h3 style="margin: 0; font-size: 1.125rem; font-weight: 600;">Notifications</h3>
+    <button id="close-notifications" style="background: none; border: none; cursor: pointer; padding: 0.25rem; color: #6B7280; font-size: 1.5rem;" aria-label="Close notifications">&times;</button>
+  </div>
+  <div id="notification-list" style="max-height: 400px; overflow-y: auto;">
+    <!-- Notifications will be dynamically populated here -->
+    <div style="padding: 2rem; text-align: center; color: #6B7280;">
+      <div style="font-size: 2rem; margin-bottom: 0.5rem;">🔔</div>
+      <p style="margin: 0;">No new notifications</p>
+    </div>
+  </div>
+  <div style="padding: 0.75rem 1.5rem; border-top: 1px solid #E5E7EB; text-align: center;">
+    <button style="background: none; border: none; color: #3B82F6; cursor: pointer; font-size: 0.875rem; font-weight: 500;" onclick="markAllNotificationsRead()">Mark all as read</button>
+  </div>
+</div>
+
+<script>
+// Notification Panel Management
+(function() {
+  const notificationBtn = document.getElementById('ef-notification-btn');
+  const notificationPanel = document.getElementById('notification-panel');
+  const closeBtn = document.getElementById('close-notifications');
+  
+  // Toggle notification panel
+  if (notificationBtn) {
+    notificationBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      const isVisible = notificationPanel.style.display !== 'none';
+      notificationPanel.style.display = isVisible ? 'none' : 'block';
+    });
+  }
+  
+  // Close notification panel
+  if (closeBtn) {
+    closeBtn.addEventListener('click', function() {
+      notificationPanel.style.display = 'none';
+    });
+  }
+  
+  // Close panel when clicking outside
+  document.addEventListener('click', function(e) {
+    if (notificationPanel && notificationPanel.style.display !== 'none') {
+      if (!notificationPanel.contains(e.target) && e.target !== notificationBtn) {
+        notificationPanel.style.display = 'none';
+      }
+    }
+  });
+  
+  // Mark all notifications as read
+  window.markAllNotificationsRead = function() {
+    // Future: Make API call to mark notifications as read
+    const badge = document.getElementById('ef-notification-badge');
+    if (badge) {
+      badge.style.display = 'none';
+      badge.textContent = '0';
+    }
+    if (typeof Toast !== 'undefined') {
+      Toast.success('All notifications marked as read');
+    }
+    notificationPanel.style.display = 'none';
+  };
+  
+  // Sample notification data structure for future implementation
+  window.addNotification = function(notification) {
+    const notificationList = document.getElementById('notification-list');
+    if (!notificationList) return;
+    
+    // Remove empty state if present
+    const emptyState = notificationList.querySelector('div[style*="No new notifications"]');
+    if (emptyState) {
+      notificationList.innerHTML = '';
+    }
+    
+    // Create notification item
+    const item = document.createElement('div');
+    item.style.cssText = 'padding: 1rem 1.5rem; border-bottom: 1px solid #E5E7EB; cursor: pointer; transition: background 0.2s;';
+    item.innerHTML = `
+      <div style="display: flex; gap: 0.75rem;">
+        <div style="font-size: 1.5rem;">${notification.icon || '📬'}</div>
+        <div style="flex: 1;">
+          <div style="font-weight: 600; margin-bottom: 0.25rem;">${notification.title}</div>
+          <p style="margin: 0; font-size: 0.875rem; color: #6B7280;">${notification.message}</p>
+          <div style="font-size: 0.75rem; color: #9CA3AF; margin-top: 0.25rem;">${notification.time}</div>
+        </div>
+      </div>
+    `;
+    item.addEventListener('mouseenter', function() { this.style.background = '#F9FAFB'; });
+    item.addEventListener('mouseleave', function() { this.style.background = 'white'; });
+    notificationList.insertBefore(item, notificationList.firstChild);
+    
+    // Update badge
+    const badge = document.getElementById('ef-notification-badge');
+    if (badge) {
+      const currentCount = parseInt(badge.textContent) || 0;
+      badge.textContent = currentCount + 1;
+      badge.style.display = 'inline-block';
+    }
+  };
+})();
+</script>
+
+<!-- Export Functionality -->
+<script>
+(function() {
+  const exportBtn = document.getElementById('export-enquiries-btn');
+  
+  if (exportBtn) {
+    exportBtn.addEventListener('click', async function() {
+      try {
+        // Show loading state
+        exportBtn.disabled = true;
+        exportBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation: spin 1s linear infinite;"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg><span>Exporting...</span>';
+        
+        // Fetch enquiries/threads
+        const response = await fetch('/api/threads/my', { credentials: 'include' });
+        if (!response.ok) {
+          throw new Error('Failed to fetch enquiries');
+        }
+        
+        const data = await response.json();
+        const threads = data.items || [];
+        
+        if (threads.length === 0) {
+          if (typeof Toast !== 'undefined') {
+            Toast.info('No enquiries to export');
+          } else {
+            alert('No enquiries to export');
+          }
+          return;
+        }
+        
+        // Generate CSV
+        const csvRows = [];
+        csvRows.push(['Date', 'Customer', 'Status', 'Last Message', 'Unread'].join(','));
+        
+        threads.forEach(thread => {
+          const date = thread.createdAt ? new Date(thread.createdAt).toLocaleDateString() : 'N/A';
+          const customer = thread.customerName || 'Unknown';
+          const status = thread.status || 'Open';
+          const lastMessage = (thread.lastMessage || 'No messages').replace(/,/g, ' ').substring(0, 100);
+          const unread = thread.unreadCount || 0;
+          
+          csvRows.push([
+            `"${date}"`,
+            `"${customer}"`,
+            `"${status}"`,
+            `"${lastMessage}"`,
+            unread
+          ].join(','));
+        });
+        
+        const csvContent = csvRows.join('\n');
+        
+        // Create download
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', `enquiries-${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        if (typeof Toast !== 'undefined') {
+          Toast.success(`Exported ${threads.length} enquiries to CSV`);
+        }
+      } catch (error) {
+        console.error('Error exporting enquiries:', error);
+        if (typeof Toast !== 'undefined') {
+          Toast.error('Failed to export enquiries');
+        } else {
+          alert('Failed to export enquiries');
+        }
+      } finally {
+        // Reset button
+        exportBtn.disabled = false;
+        exportBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span>Export CSV</span>';
+      }
+    });
+  }
+  
+  // Add spinning animation for loading state
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+  `;
+  document.head.appendChild(style);
+})();
+</script>
+
 <script src="/assets/js/keyboard-shortcuts.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
 <script src="/assets/js/utils/p3-features.js" defer></script>
