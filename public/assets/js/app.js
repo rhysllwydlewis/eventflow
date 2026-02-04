@@ -2951,12 +2951,16 @@ async function initDashSupplier() {
     }
     pkgsWrap.innerHTML = items
       .map(
-        p => `<div class="card package-card">
-      <img src="${p.image}" alt="${p.title} image">
+        p => `<div class="card package-card" data-package-id="${p.id || ''}">
+      <img src="${p.image || '/assets/images/package-placeholder.svg'}" alt="${p.title} image" onerror="this.src='/assets/images/package-placeholder.svg'">
       <div>
         <h3>${p.title}</h3>
         <div class="small"><span class="badge">${p.price_display || ''}</span> ${p.featured ? '<span class="badge">Featured</span>' : ''}</div>
         <p class="small">${p.description || ''}</p>
+        <div class="card-actions">
+          <button type="button" class="card-action-btn edit-btn" onclick="editPackage('${p.id || ''}', ${JSON.stringify(p).replace(/"/g, '&quot;')})">Edit</button>
+          <button type="button" class="card-action-btn delete-btn" onclick="deletePackage('${p.id || ''}')">Delete</button>
+        </div>
       </div>
     </div>`
       )
@@ -2964,6 +2968,17 @@ async function initDashSupplier() {
   }
   await loadSuppliers();
   await loadPackages();
+
+  // Initialize package form toggle
+  const togglePackageFormBtn = document.getElementById('toggle-package-form');
+  if (togglePackageFormBtn) {
+    togglePackageFormBtn.addEventListener('click', togglePackageForm);
+  }
+  
+  const cancelPackageFormBtn = document.getElementById('cancel-package-form');
+  if (cancelPackageFormBtn) {
+    cancelPackageFormBtn.addEventListener('click', togglePackageForm);
+  }
 
   const supForm = document.getElementById('supplier-form');
   if (supForm) {
@@ -3250,6 +3265,135 @@ async function initDashSupplier() {
     }
   })();
 }
+
+// Package Form Toggle, Edit, and Delete Functions
+function togglePackageForm() {
+  const formSection = document.getElementById('package-form-section');
+  const toggleBtn = document.getElementById('toggle-package-form');
+  const cancelBtn = document.getElementById('cancel-package-form');
+  
+  if (!formSection || !toggleBtn) return;
+  
+  const isExpanded = formSection.classList.contains('expanded');
+  
+  if (isExpanded) {
+    // Collapse form
+    formSection.classList.remove('expanded');
+    toggleBtn.setAttribute('aria-expanded', 'false');
+    toggleBtn.querySelector('.label').textContent = 'Create Package';
+    toggleBtn.classList.remove('active');
+    if (cancelBtn) cancelBtn.style.display = 'none';
+    
+    // Reset form
+    const form = document.getElementById('package-form');
+    if (form) form.reset();
+    document.getElementById('pkg-id-hidden').value = '';
+  } else {
+    // Expand form
+    formSection.classList.add('expanded');
+    toggleBtn.setAttribute('aria-expanded', 'true');
+    toggleBtn.querySelector('.label').textContent = 'Cancel';
+    toggleBtn.classList.add('active');
+    if (cancelBtn) cancelBtn.style.display = 'inline-block';
+    
+    // Scroll to form
+    setTimeout(() => {
+      formSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  }
+}
+
+function editPackage(packageId, packageData) {
+  // Expand the form section
+  const formSection = document.getElementById('package-form-section');
+  const toggleBtn = document.getElementById('toggle-package-form');
+  
+  if (formSection && !formSection.classList.contains('expanded')) {
+    formSection.classList.add('expanded');
+    if (toggleBtn) {
+      toggleBtn.setAttribute('aria-expanded', 'true');
+      toggleBtn.querySelector('.label').textContent = 'Cancel';
+      toggleBtn.classList.add('active');
+    }
+  }
+  
+  // Populate form with package data
+  try {
+    const pkg = typeof packageData === 'string' ? JSON.parse(packageData) : packageData;
+    
+    document.getElementById('pkg-id-hidden').value = pkg.id || '';
+    document.getElementById('pkg-title').value = pkg.title || '';
+    document.getElementById('pkg-price').value = pkg.price_display || '';
+    document.getElementById('pkg-desc').value = pkg.description || '';
+    document.getElementById('pkg-category').value = pkg.primaryCategoryKey || '';
+    document.getElementById('pkg-image').value = pkg.image || '';
+    
+    // Set supplier select if available
+    const supplierSelect = document.getElementById('pkg-supplier');
+    if (supplierSelect && pkg.supplierId) {
+      supplierSelect.value = pkg.supplierId;
+      document.getElementById('pkg-supplier-id-hidden').value = pkg.supplierId;
+    }
+    
+    // Set event type checkboxes
+    if (pkg.eventTypes && Array.isArray(pkg.eventTypes)) {
+      document.getElementById('pkg-event-wedding').checked = pkg.eventTypes.includes('wedding');
+      document.getElementById('pkg-event-other').checked = pkg.eventTypes.includes('other');
+    }
+    
+    // Update form heading
+    const heading = formSection.querySelector('.supplier-section-header');
+    if (heading) {
+      heading.textContent = 'Edit package';
+    }
+    
+    // Scroll to form
+    setTimeout(() => {
+      formSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  } catch (e) {
+    console.error('Error populating package form:', e);
+  }
+}
+
+async function deletePackage(packageId) {
+  if (!confirm('Are you sure you want to delete this package? This action cannot be undone.')) {
+    return;
+  }
+  
+  try {
+    const csrfToken = window.__CSRF_TOKEN__ || '';
+    const response = await fetch(`/api/me/packages/${encodeURIComponent(packageId)}`, {
+      method: 'DELETE',
+      headers: {
+        'X-CSRF-Token': csrfToken,
+      },
+      credentials: 'include',
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      alert(`Failed to delete package: ${errorData.error || 'Unknown error'}`);
+      return;
+    }
+    
+    // Reload packages list
+    const initFunc = window.initDashSupplier;
+    if (initFunc) {
+      // Reload just packages if possible, otherwise show success message
+      alert('Package deleted successfully!');
+      location.reload();
+    }
+  } catch (e) {
+    console.error('Error deleting package:', e);
+    alert('Failed to delete package. Please try again.');
+  }
+}
+
+// Make functions globally accessible
+window.togglePackageForm = togglePackageForm;
+window.editPackage = editPackage;
+window.deletePackage = deletePackage;
 
 async function initAdmin() {
   efMaybeShowOnboarding('admin');

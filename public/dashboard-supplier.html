@@ -467,66 +467,80 @@ window.announceToSR = function(message) {
 </script>
 
 <div class="card supplier-dashboard-card">
-  <h3>Your packages</h3>
-  <p class="small" id="pkg-limit-note">Checking your package allowance…</p>
-  <div id="my-packages" class="section">
+  <div class="supplier-section-header-wrapper" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--ef-space-4, 16px);">
+    <div>
+      <h3>Your packages</h3>
+      <p class="small" id="pkg-limit-note">Checking your package allowance…</p>
+    </div>
+    <button type="button" class="form-toggle-btn" id="toggle-package-form" data-test="toggle-package-form" aria-expanded="false" aria-controls="package-form-section">
+      <span class="icon" aria-hidden="true">+</span>
+      <span class="label">Create Package</span>
+    </button>
+  </div>
+  
+  <div id="my-packages" class="section" data-test="my-packages-list">
     <div class="skeleton skeleton-text skeleton-text-long"></div>
     <div class="skeleton skeleton-text skeleton-text-medium"></div>
   </div>
-  <h3 class="supplier-section-header">Create a package</h3>
-  <form id="package-form" action="#">
-    <div class="form-row supplier-form-grid">
-      <div><label>For supplier</label><select id="pkg-supplier"></select></div>
-      <div><label>Title</label><input id="pkg-title" name="title"></div>
-      <div><label>Price</label><input id="pkg-price" name="price" placeholder="e.g. £999 or £45 pp"></div>
-    </div>
-    <div class="form-row supplier-form-grid">
-      <div>
-        <label>Primary Category <span class="form-required">*</span></label>
-        <select id="pkg-category" name="primaryCategoryKey" required>
-          <option value="">Choose a category…</option>
-          <option value="venues">Venues</option>
-          <option value="photography">Photography</option>
-          <option value="catering">Catering</option>
-          <option value="flowers">Flowers & Décor</option>
-          <option value="hair-makeup">Hair & Makeup</option>
-          <option value="entertainment">Entertainment</option>
-          <option value="transport">Transport</option>
-          <option value="extras">Extras & Add-ons</option>
-        </select>
+  
+  <!-- Collapsible Package Form Section -->
+  <div id="package-form-section" class="form-section-collapsible" data-test="package-form-section">
+    <h3 class="supplier-section-header">Create a package</h3>
+    <form id="package-form" action="#">
+      <div class="form-row supplier-form-grid">
+        <div><label>For supplier</label><select id="pkg-supplier"></select></div>
+        <div><label>Title</label><input id="pkg-title" name="title"></div>
+        <div><label>Price</label><input id="pkg-price" name="price" placeholder="e.g. £999 or £45 pp"></div>
       </div>
-      <div class="form-group">
-        <label class="form-label">Event Types <span class="required">*</span></label>
-        <div class="checkbox-group">
-          <label class="checkbox-inline">
-            <input type="checkbox" id="pkg-event-wedding" name="eventTypes" value="wedding" class="form-checkbox">
-            <span class="checkbox-text">Wedding</span>
-          </label>
-          <label class="checkbox-inline">
-            <input type="checkbox" id="pkg-event-other" name="eventTypes" value="other" class="form-checkbox">
-            <span class="checkbox-text">Other Events</span>
-          </label>
+      <div class="form-row supplier-form-grid">
+        <div>
+          <label>Primary Category <span class="form-required">*</span></label>
+          <select id="pkg-category" name="primaryCategoryKey" required>
+            <option value="">Choose a category…</option>
+            <option value="venues">Venues</option>
+            <option value="photography">Photography</option>
+            <option value="catering">Catering</option>
+            <option value="flowers">Flowers & Décor</option>
+            <option value="hair-makeup">Hair & Makeup</option>
+            <option value="entertainment">Entertainment</option>
+            <option value="transport">Transport</option>
+            <option value="extras">Extras & Add-ons</option>
+          </select>
         </div>
-        <p class="form-help">Select at least one</p>
+        <div class="form-group">
+          <label class="form-label">Event Types <span class="required">*</span></label>
+          <div class="checkbox-group">
+            <label class="checkbox-inline">
+              <input type="checkbox" id="pkg-event-wedding" name="eventTypes" value="wedding" class="form-checkbox">
+              <span class="checkbox-text">Wedding</span>
+            </label>
+            <label class="checkbox-inline">
+              <input type="checkbox" id="pkg-event-other" name="eventTypes" value="other" class="form-checkbox">
+              <span class="checkbox-text">Other Events</span>
+            </label>
+          </div>
+          <p class="form-help">Select at least one</p>
+        </div>
       </div>
-    </div>
-    <div class="form-row"><label>Description</label><textarea id="pkg-desc" name="description" rows="4"></textarea></div>
-    <div class="form-row form-row-hidden">
-      <label>Image URL (optional)</label>
-      <input id="pkg-image" name="image" placeholder="your-website-url">
-    </div>
-    <div class="form-row">
-      <label>Upload image (optional)</label>
-      <div id="pkg-photo-drop" class="photo-drop-zone">Drag &amp; drop an image here, or click to choose a file.</div>
-      <div id="pkg-photo-preview" class="photo-preview-grid"></div>
-    </div>
-    <div class="form-actions supplier-form-actions">
-      <button class="cta" type="submit">Save package</button>
-      <span class="small" id="pkg-status"></span>
-    </div>
-    <input type="hidden" name="supplierId" id="pkg-supplier-id-hidden">
-    <input type="hidden" name="id" id="pkg-id-hidden">
-  </form>
+      <div class="form-row"><label>Description</label><textarea id="pkg-desc" name="description" rows="4"></textarea></div>
+      <div class="form-row form-row-hidden">
+        <label>Image URL (optional)</label>
+        <input id="pkg-image" name="image" placeholder="your-website-url">
+      </div>
+      <div class="form-row">
+        <label>Upload image (optional)</label>
+        <div id="pkg-photo-drop" class="photo-drop-zone">Drag &amp; drop an image here, or click to choose a file.</div>
+        <div id="pkg-photo-preview" class="photo-preview-grid"></div>
+      </div>
+      <div class="form-actions supplier-form-actions">
+        <button class="cta" type="submit">Save package</button>
+        <button type="button" class="cta secondary" id="cancel-package-form" style="display: none;">Cancel</button>
+        <span class="small" id="pkg-status"></span>
+      </div>
+      <input type="hidden" name="supplierId" id="pkg-supplier-id-hidden">
+      <input type="hidden" name="id" id="pkg-id-hidden">
+    </form>
+  </div>
 </div><div class="card supplier-dashboard-card">
   <h3>Subscription</h3>
   <div id="supplier-subscription-card" class="section">
