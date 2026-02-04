@@ -2696,8 +2696,8 @@ async function initDashSupplier() {
           )
           .join('');
 
-        return `<div class="supplier-card card" style="margin-bottom:10px">
-      <img src="${(s.photos && s.photos[0]) || '/assets/images/collage-venue.svg'}">
+        return `<div class="supplier-card card" style="margin-bottom:10px" data-supplier-id="${s.id || ''}">
+      <img src="${(s.photos && s.photos[0]) || '/assets/images/collage-venue.svg'}" onerror="this.src='/assets/images/collage-venue.svg'">
       <div>
         <h3>${s.name} ${proBadge} ${s.approved ? '<span class="badge">Approved</span>' : '<span class="badge" style="background:#FFF5E6;color:#8A5A00">Awaiting review</span>'}</h3>
         <div class="small">${s.location || 'Location not set'} · <span class="badge">${s.category}</span> ${s.price_display ? `· ${s.price_display}` : ''}</div>
@@ -2716,6 +2716,10 @@ async function initDashSupplier() {
             ${checklistHtml}
           </div>
         </details>
+        <div class="card-actions">
+          <button type="button" class="card-action-btn edit-btn" onclick="editProfile('${s.id || ''}')">Edit</button>
+          <button type="button" class="card-action-btn delete-btn" onclick="deleteProfile('${s.id || ''}')">Delete</button>
+        </div>
       </div>
     </div>`;
       })
@@ -2978,6 +2982,17 @@ async function initDashSupplier() {
   const cancelPackageFormBtn = document.getElementById('cancel-package-form');
   if (cancelPackageFormBtn) {
     cancelPackageFormBtn.addEventListener('click', togglePackageForm);
+  }
+  
+  // Initialize profile form toggle
+  const toggleProfileFormBtn = document.getElementById('toggle-profile-form');
+  if (toggleProfileFormBtn) {
+    toggleProfileFormBtn.addEventListener('click', toggleProfileForm);
+  }
+  
+  const cancelProfileFormBtn = document.getElementById('cancel-profile-form');
+  if (cancelProfileFormBtn) {
+    cancelProfileFormBtn.addEventListener('click', toggleProfileForm);
   }
 
   const supForm = document.getElementById('supplier-form');
@@ -3390,10 +3405,148 @@ async function deletePackage(packageId) {
   }
 }
 
+// Profile Form Toggle, Edit, and Delete Functions
+function toggleProfileForm() {
+  const formSection = document.getElementById('profile-form-section');
+  const toggleBtn = document.getElementById('toggle-profile-form');
+  const cancelBtn = document.getElementById('cancel-profile-form');
+  
+  if (!formSection || !toggleBtn) return;
+  
+  const isExpanded = formSection.classList.contains('expanded');
+  
+  if (isExpanded) {
+    // Collapse form
+    formSection.classList.remove('expanded');
+    toggleBtn.setAttribute('aria-expanded', 'false');
+    toggleBtn.querySelector('.label').textContent = 'Create Profile';
+    toggleBtn.classList.remove('active');
+    if (cancelBtn) cancelBtn.style.display = 'none';
+    
+    // Reset form
+    const form = document.getElementById('supplier-form');
+    if (form) form.reset();
+    document.getElementById('sup-id').value = '';
+    
+    // Reset form heading
+    const heading = formSection.querySelector('.supplier-section-header');
+    if (heading) {
+      heading.textContent = 'Create / Edit profile';
+    }
+  } else {
+    // Expand form
+    formSection.classList.add('expanded');
+    toggleBtn.setAttribute('aria-expanded', 'true');
+    toggleBtn.querySelector('.label').textContent = 'Cancel';
+    toggleBtn.classList.add('active');
+    if (cancelBtn) cancelBtn.style.display = 'inline-block';
+    
+    // Scroll to form
+    setTimeout(() => {
+      formSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  }
+}
+
+async function editProfile(supplierId) {
+  // Expand the form section
+  const formSection = document.getElementById('profile-form-section');
+  const toggleBtn = document.getElementById('toggle-profile-form');
+  
+  if (formSection && !formSection.classList.contains('expanded')) {
+    formSection.classList.add('expanded');
+    if (toggleBtn) {
+      toggleBtn.setAttribute('aria-expanded', 'true');
+      toggleBtn.querySelector('.label').textContent = 'Cancel';
+      toggleBtn.classList.add('active');
+    }
+  }
+  
+  // Fetch supplier data and populate form
+  try {
+    const response = await fetch(`/api/me/suppliers/${encodeURIComponent(supplierId)}`, {
+      credentials: 'include',
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch supplier data');
+    }
+    
+    const supplier = await response.json();
+    
+    // Populate form fields
+    document.getElementById('sup-id').value = supplier.id || '';
+    document.getElementById('sup-name').value = supplier.name || '';
+    document.getElementById('sup-category').value = supplier.category || '';
+    document.getElementById('sup-location').value = supplier.location || '';
+    document.getElementById('sup-price').value = supplier.price_display || '';
+    document.getElementById('sup-short').value = supplier.description_short || '';
+    document.getElementById('sup-long').value = supplier.description_long || '';
+    document.getElementById('sup-website').value = supplier.website || '';
+    document.getElementById('sup-license').value = supplier.license || '';
+    document.getElementById('sup-amenities').value = supplier.amenities || '';
+    document.getElementById('sup-max').value = supplier.maxGuests || '';
+    
+    if (supplier.venuePostcode) {
+      document.getElementById('sup-venue-postcode').value = supplier.venuePostcode;
+    }
+    
+    // Update form heading
+    const heading = formSection.querySelector('.supplier-section-header');
+    if (heading) {
+      heading.textContent = `Edit profile: ${supplier.name}`;
+    }
+    
+    // Store the editing supplier ID for later use
+    window.currentEditingSupplierId = supplierId;
+    
+    // Scroll to form
+    setTimeout(() => {
+      formSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  } catch (e) {
+    console.error('Error loading supplier for edit:', e);
+    alert('Failed to load supplier profile. Please try again.');
+  }
+}
+
+async function deleteProfile(supplierId) {
+  if (!confirm('Are you sure you want to delete this profile? This action cannot be undone.')) {
+    return;
+  }
+  
+  try {
+    const csrfToken = window.__CSRF_TOKEN__ || '';
+    const response = await fetch(`/api/me/suppliers/${encodeURIComponent(supplierId)}`, {
+      method: 'DELETE',
+      headers: {
+        'X-CSRF-Token': csrfToken,
+      },
+      credentials: 'include',
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      alert(`Failed to delete profile: ${errorData.error || 'Unknown error'}`);
+      return;
+    }
+    
+    // Reload the page to refresh the list
+    alert('Profile deleted successfully!');
+    location.reload();
+  } catch (e) {
+    console.error('Error deleting profile:', e);
+    alert('Failed to delete profile. Please try again.');
+  }
+}
+
 // Make functions globally accessible
 window.togglePackageForm = togglePackageForm;
 window.editPackage = editPackage;
 window.deletePackage = deletePackage;
+window.toggleProfileForm = toggleProfileForm;
+window.editProfile = editProfile;
+window.deleteProfile = deleteProfile;
 
 async function initAdmin() {
   efMaybeShowOnboarding('admin');

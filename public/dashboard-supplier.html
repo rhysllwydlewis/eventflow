@@ -261,122 +261,137 @@ window.announceToSR = function(message) {
 
 <h2 id="profiles-heading">Your supplier profiles</h2>
 <div class="card" role="region" aria-labelledby="profiles-heading">
-  <h3>Profile management</h3>
-  <p class="small">
-    Experimental: each profile gets a simple listing health score based on photos, description and details you&apos;ve added.
-  </p>
-  <div id="my-suppliers" class="section">
+  <div class="supplier-section-header-wrapper" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--ef-space-4, 16px);">
+    <div>
+      <h3>Profile management</h3>
+      <p class="small">
+        Experimental: each profile gets a simple listing health score based on photos, description and details you&apos;ve added.
+      </p>
+    </div>
+    <button type="button" class="form-toggle-btn" id="toggle-profile-form" data-test="toggle-profile-form" aria-expanded="false" aria-controls="profile-form-section">
+      <span class="icon" aria-hidden="true">+</span>
+      <span class="label">Create Profile</span>
+    </button>
+  </div>
+  
+  <div id="my-suppliers" class="section" data-test="my-suppliers-list">
     <div class="skeleton skeleton-text skeleton-text-long"></div>
     <div class="skeleton skeleton-text skeleton-text-medium"></div>
   </div>
-  <h3 class="supplier-section-header">Create / Edit profile</h3>
-<form id="supplier-form" action="#">
-  <input type="hidden" id="sup-id" name="id">
-  <div class="form-row supplier-form-grid">
-    <div>
-      <label for="sup-name">Business name</label>
-      <input id="sup-name" name="name">
-    </div>
-    <div>
-      <label>Category</label>
-      <select id="sup-category" name="category">
-        <option value="">Choose a category…</option>
-        <option>Venues</option>
-        <option>Catering</option>
-        <option>Photography</option>
-        <option>Entertainment</option>
-        <option>Flowers & décor</option>
-        <option>Transport</option>
-        <option>Extras & add-ons</option>
-      </select>
-    </div>
-    <div>
-      <label>Location</label>
-      <input id="sup-location" name="location" placeholder="City, region">
-    </div>
-    <div>
-      <label>Price display</label>
-      <input id="sup-price" name="price_display" placeholder="e.g. From £500 or ££">
-    </div>
-  </div>
+  
+  <!-- Collapsible Profile Form Section -->
+  <div id="profile-form-section" class="form-section-collapsible" data-test="profile-form-section">
+    <h3 class="supplier-section-header">Create / Edit profile</h3>
+    <form id="supplier-form" action="#">
+      <input type="hidden" id="sup-id" name="id">
+      <div class="form-row supplier-form-grid">
+        <div>
+          <label for="sup-name">Business name</label>
+          <input id="sup-name" name="name">
+        </div>
+        <div>
+          <label>Category</label>
+          <select id="sup-category" name="category">
+            <option value="">Choose a category…</option>
+            <option>Venues</option>
+            <option>Catering</option>
+            <option>Photography</option>
+            <option>Entertainment</option>
+            <option>Flowers & décor</option>
+            <option>Transport</option>
+            <option>Extras & add-ons</option>
+          </select>
+        </div>
+        <div>
+          <label>Location</label>
+          <input id="sup-location" name="location" placeholder="City, region">
+        </div>
+        <div>
+          <label>Price display</label>
+          <input id="sup-price" name="price_display" placeholder="e.g. From £500 or ££">
+        </div>
+      </div>
 
-  <div class="form-row">
-    <label>Short description</label>
-    <input id="sup-short" name="description_short">
-  </div>
+      <div class="form-row">
+        <label>Short description</label>
+        <input id="sup-short" name="description_short">
+      </div>
 
-  <div class="form-row">
-    <label>Long description</label>
-    <textarea id="sup-long" name="description_long" rows="4"></textarea>
-  </div>
+      <div class="form-row">
+        <label>Long description</label>
+        <textarea id="sup-long" name="description_long" rows="4"></textarea>
+      </div>
 
-  <div class="form-row">
-    <label>Website</label>
-    <input id="sup-website" name="website" placeholder="your-website-url">
-  </div>
+      <div class="form-row">
+        <label>Website</label>
+        <input id="sup-website" name="website" placeholder="your-website-url">
+      </div>
 
-  <div class="form-row">
-    <label>License / Insurance</label>
-    <input id="sup-license" name="license" placeholder="e.g. PLI £5m">
-  </div>
+      <div class="form-row">
+        <label>License / Insurance</label>
+        <input id="sup-license" name="license" placeholder="e.g. PLI £5m">
+      </div>
 
-  <div class="form-row">
-    <label>Amenities (comma-separated)</label>
-    <input id="sup-amenities" name="amenities" placeholder="Parking, Garden, PA system">
-  </div>
+      <div class="form-row">
+        <label>Amenities (comma-separated)</label>
+        <input id="sup-amenities" name="amenities" placeholder="Parking, Garden, PA system">
+      </div>
 
-  <div class="form-row">
-    <label>Max guests</label>
-    <input id="sup-max" name="maxGuests" type="number" min="0" step="1">
-  </div>
+      <div class="form-row">
+        <label>Max guests</label>
+        <input id="sup-max" name="maxGuests" type="number" min="0" step="1">
+      </div>
 
-  <div class="form-row form-row-hidden" id="venue-postcode-row">
-    <label for="sup-venue-postcode">Venue postcode <span class="form-required">*</span></label>
-    <input id="sup-venue-postcode" name="venuePostcode" placeholder="e.g. SW1A 1AA" aria-describedby="venue-postcode-help venue-postcode-error" aria-required="false">
-    <p class="small form-help-text" id="venue-postcode-help">Required for Venues category. Enter a valid UK postcode.</p>
-    <p class="small form-error-text" id="venue-postcode-error" role="alert" aria-live="polite"></p>
-  </div>
+      <div class="form-row form-row-hidden" id="venue-postcode-row">
+        <label for="sup-venue-postcode">Venue postcode <span class="form-required">*</span></label>
+        <input id="sup-venue-postcode" name="venuePostcode" placeholder="e.g. SW1A 1AA" aria-describedby="venue-postcode-help venue-postcode-error" aria-required="false">
+        <p class="small form-help-text" id="venue-postcode-help">Required for Venues category. Enter a valid UK postcode.</p>
+        <p class="small form-error-text" id="venue-postcode-error" role="alert" aria-live="polite"></p>
+      </div>
 
-  <div class="form-row form-row-hidden">
-    <label>Photos (one URL per line)</label>
-    <textarea id="sup-photos" name="photos" rows="3"></textarea>
-  </div>
+      <div class="form-row form-row-hidden">
+        <label>Photos (one URL per line)</label>
+        <textarea id="sup-photos" name="photos" rows="3"></textarea>
+      </div>
 
-  <div class="form-row">
-    <label>Upload photos</label>
-    <div id="sup-photo-drop" class="photo-drop-zone">
-      Drag &amp; drop images here, or click to choose files.
-    </div>
-    <div id="sup-photo-preview" class="photo-preview-grid"></div>
-    <p class="tiny">
-      You can upload multiple photos – they&apos;ll be shown on your public listing.
-    </p>
-  </div>
-
-  <!-- Profile Customization Link -->
-  <div class="form-row supplier-cta-section">
-    <div class="supplier-cta-banner">
-      <div class="supplier-cta-banner-content">
-        <h3 class="supplier-cta-banner-title">
-          ✨ Profile Customization 
-          <span class="supplier-cta-banner-badge">New</span>
-        </h3>
-        <p class="supplier-cta-banner-text">
-          Make your profile stand out with custom banners, taglines, highlights, and social media links
+      <div class="form-row">
+        <label>Upload photos</label>
+        <div id="sup-photo-drop" class="photo-drop-zone">
+          Drag &amp; drop images here, or click to choose files.
+        </div>
+        <div id="sup-photo-preview" class="photo-preview-grid"></div>
+        <p class="tiny">
+          You can upload multiple photos – they&apos;ll be shown on your public listing.
         </p>
       </div>
-      <a href="/supplier/profile-customization.html" class="supplier-cta-banner-button">
-        Customize Profile →
-      </a>
-    </div>
-  </div>
 
-  <div class="form-actions supplier-form-actions">
-    <button class="cta" id="sup-create" type="submit">Save profile</button>
-    <button type="button" id="sup-preview" class="cta secondary">👁️ Preview Profile</button>
-    <span class="small" id="sup-status"></span>
+      <!-- Profile Customization Link -->
+      <div class="form-row supplier-cta-section">
+        <div class="supplier-cta-banner">
+          <div class="supplier-cta-banner-content">
+            <h3 class="supplier-cta-banner-title">
+              ✨ Profile Customization 
+              <span class="supplier-cta-banner-badge">New</span>
+            </h3>
+            <p class="supplier-cta-banner-text">
+              Make your profile stand out with custom banners, taglines, highlights, and social media links
+            </p>
+          </div>
+          <a href="/supplier/profile-customization.html" class="supplier-cta-banner-button">
+            Customize Profile →
+          </a>
+        </div>
+      </div>
+
+      <div class="form-actions supplier-form-actions">
+        <button class="cta" id="sup-create" type="submit">Save profile</button>
+        <button type="button" id="sup-preview" class="cta secondary">👁️ Preview Profile</button>
+        <button type="button" class="cta secondary" id="cancel-profile-form" style="display: none;">Cancel</button>
+        <span class="small" id="sup-status"></span>
+      </div>
+    </form>
   </div>
-</form>
+</div>
 
 <script>
 // Show/hide venue postcode field based on category selection
