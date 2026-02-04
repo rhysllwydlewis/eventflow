@@ -402,13 +402,24 @@ function initBackToTop() {
     });
   }
 
+  // Throttle scroll event for better performance
+  let scrollTimeout;
   window.addEventListener('scroll', () => {
-    const btn = document.querySelector('.back-to-top');
-    if (window.scrollY > 500) {
-      btn.classList.add('visible');
-    } else {
-      btn.classList.remove('visible');
+    if (scrollTimeout) {
+      return; // Skip if already scheduled
     }
+    
+    scrollTimeout = setTimeout(() => {
+      const btn = document.querySelector('.back-to-top');
+      if (btn) {
+        if (window.scrollY > 500) {
+          btn.classList.add('visible');
+        } else {
+          btn.classList.remove('visible');
+        }
+      }
+      scrollTimeout = null;
+    }, 100); // Throttle to every 100ms
   });
 }
 

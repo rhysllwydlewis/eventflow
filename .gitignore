@@ -161,3 +161,4 @@ playwright-report/
 test-results/
 test-navbar-auth.js
 test-settings-persistence.js
+public/test-*.html

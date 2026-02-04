@@ -1800,7 +1800,8 @@ textarea:focus-visible {
   display: grid;
   grid-template-columns: 1fr auto;
   gap: var(--ef-space-6, 32px);
-  align-items: center;
+  align-items: start; /* Changed from center to start for better content alignment */
+  min-height: 200px; /* Ensure card doesn't collapse */
 }
 
 .supplier-welcome-greeting {
@@ -1812,6 +1813,7 @@ textarea:focus-visible {
 .supplier-welcome-quick-stats {
   display: flex;
   gap: var(--ef-space-3, 12px);
+  flex-shrink: 0; /* Prevent stats from shrinking */
 }
 
 .welcome-stat-card {
@@ -1823,6 +1825,11 @@ textarea:focus-visible {
   padding: var(--ef-space-3, 12px) var(--ef-space-4, 16px);
   text-align: center;
   min-width: 100px;
+  min-height: 60px; /* Prevent empty white box appearance */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--ef-space-1, 4px);
 }
 
 .welcome-stat-value {
@@ -1875,6 +1882,9 @@ textarea:focus-visible {
   border: none;
   cursor: pointer;
   text-align: left;
+  width: 100%; /* Ensure button takes full width of grid cell */
+  min-height: 120px; /* Ensure consistent button height */
+  box-shadow: var(--ef-shadow-md, 0 4px 12px rgba(11, 128, 115, 0.2)); /* Add depth */
 }
 
 .supplier-action-btn--large:hover {
@@ -2035,6 +2045,7 @@ textarea:focus-visible {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
+  margin-bottom: var(--ef-space-4, 16px); /* Add spacing below nav */
 }
 
 .dashboard-mobile-nav::-webkit-scrollbar {
