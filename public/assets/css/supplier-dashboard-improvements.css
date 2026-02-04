@@ -206,16 +206,39 @@
 /* Mobile adjustments */
 @media (max-width: 768px) {
   .supplier-welcome-card {
-    padding: var(--ef-space-5, 24px);
+    padding: var(--ef-space-4, 20px);
     margin-bottom: var(--ef-space-4, 16px);
   }
   
   .supplier-welcome-title {
-    font-size: var(--ef-text-xl, 20px);
+    font-size: var(--ef-text-lg, 18px);
   }
   
   .supplier-welcome-subtitle {
     font-size: var(--ef-text-sm, 14px);
+  }
+  
+  .supplier-welcome-quick-stats {
+    gap: var(--ef-space-4, 20px);
+  }
+}
+
+/* Very small mobile */
+@media (max-width: 374px) {
+  .supplier-welcome-card {
+    padding: var(--ef-space-3, 16px);
+  }
+  
+  .supplier-welcome-title {
+    font-size: var(--ef-text-base, 16px);
+  }
+  
+  .supplier-welcome-subtitle {
+    font-size: var(--ef-text-xs, 13px);
+  }
+  
+  .supplier-welcome-quick-stats {
+    gap: var(--ef-space-3, 16px);
   }
 }
 
@@ -400,20 +423,20 @@
     overflow-x: auto;
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
-    gap: var(--ef-space-3, 12px);
+    gap: var(--ef-space-2, 10px);
     padding-bottom: var(--ef-space-2, 8px);
   }
 
   .supplier-action-btn--large {
-    flex: 0 0 280px;
-    min-width: 280px;
+    flex: 0 0 260px;
+    min-width: 260px;
     scroll-snap-align: start;
-    min-height: 110px;
-    padding: var(--ef-btn-padding-y-md, 16px) var(--ef-btn-padding-x-lg, 20px);
+    min-height: 105px;
+    padding: var(--ef-btn-padding-y-md, 14px) var(--ef-btn-padding-x-md, 18px);
   }
   
   .supplier-action-btn--large .action-icon {
-    font-size: 32px;
+    font-size: 30px;
   }
 }
 
@@ -424,52 +447,52 @@
     overflow-x: auto;
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
-    gap: var(--ef-space-2, 10px);
+    gap: var(--ef-space-2, 8px);
     padding-bottom: var(--ef-space-2, 8px);
   }
 
   .supplier-action-btn--large {
-    flex: 0 0 calc(100vw - 110px);
-    min-width: calc(100vw - 110px);
-    max-width: 290px;
+    flex: 0 0 240px;
+    min-width: 240px;
+    max-width: 240px;
     scroll-snap-align: start;
-    min-height: 100px;
-    padding: var(--ef-btn-padding-y-md, 14px) var(--ef-btn-padding-x-md, 16px);
-    gap: var(--ef-space-1, 6px);
+    min-height: 95px;
+    padding: 12px 14px;
+    gap: 5px;
   }
   
   .supplier-action-btn--large .action-icon {
-    font-size: 28px;
+    font-size: 26px;
   }
   
   .supplier-action-btn--large .action-label {
-    font-size: var(--ef-text-sm, 14px);
+    font-size: 13px;
   }
   
   .supplier-action-btn--large .action-desc {
-    font-size: var(--ef-text-xs, 12px);
+    font-size: 11px;
     line-height: 1.2;
   }
   
   .quick-actions-arrow {
-    width: 40px;
-    height: 40px;
-    font-size: 18px;
+    width: 36px;
+    height: 36px;
+    font-size: 16px;
   }
   
   .quick-actions-nav {
-    gap: var(--ef-space-2, 8px);
+    gap: var(--ef-space-2, 6px);
   }
   
   /* Secondary action buttons - mobile optimization */
   .supplier-actions-grid {
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
     gap: var(--ef-space-2, 10px);
   }
   
   .supplier-action-btn {
-    min-height: 95px;
-    padding: 14px 16px;
+    min-height: 92px;
+    padding: 13px 15px;
   }
 }
 
@@ -480,53 +503,63 @@
     overflow-x: auto;
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
-    gap: var(--ef-space-2, 8px);
+    gap: var(--ef-space-1, 6px);
     padding-bottom: var(--ef-space-2, 8px);
   }
 
   .supplier-action-btn--large {
-    flex: 0 0 calc(100vw - 100px);
-    min-width: calc(100vw - 100px);
-    max-width: 250px;
-    min-height: 95px;
-    padding: 12px 14px;
+    flex: 0 0 200px;
+    min-width: 200px;
+    max-width: 200px;
+    min-height: 90px;
+    padding: 11px 12px;
     gap: 4px;
   }
   
   .supplier-action-btn--large .action-icon {
-    font-size: 24px;
+    font-size: 22px;
   }
   
   .supplier-action-btn--large .action-label {
-    font-size: 13px;
+    font-size: 12px;
   }
   
   .supplier-action-btn--large .action-desc {
-    font-size: 11px;
+    font-size: 10px;
     opacity: 0.85;
+    line-height: 1.1;
   }
   
   .quick-actions-arrow {
-    width: 36px;
-    height: 36px;
-    font-size: 16px;
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
   }
   
   .quick-actions-nav {
-    gap: 6px;
+    gap: 5px;
   }
   
   /* Secondary action buttons - mobile optimization */
   .supplier-actions-grid {
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
     gap: var(--ef-space-2, 8px);
   }
   
   .supplier-action-btn {
-    min-height: 90px;
-    padding: 12px 14px;
-    gap: var(--ef-space-1, 6px);
+    min-height: 88px;
+    padding: 11px 12px;
+    gap: var(--ef-space-1, 5px);
   }
+  
+  .supplier-action-btn .action-icon {
+    font-size: 22px;
+  }
+  
+  .supplier-action-btn .action-text {
+    font-size: 12px;
+  }
+}
   
   .supplier-action-btn .action-icon {
     font-size: 24px;
@@ -2997,6 +3030,62 @@ textarea:focus-visible {
 .radio-card-desc {
   font-size: var(--ef-text-sm, 14px);
   color: var(--ef-text-muted, #667085);
+}
+
+/* Mobile optimizations for modals and radio cards */
+@media (max-width: 768px) {
+  .modal {
+    max-width: calc(100vw - 32px);
+    margin: 16px;
+  }
+  
+  .modal-header,
+  .modal-body,
+  .modal-footer {
+    padding: var(--ef-space-3, 12px) var(--ef-space-4, 16px);
+  }
+  
+  .radio-cards {
+    grid-template-columns: 1fr;
+    gap: var(--ef-space-2, 10px);
+  }
+  
+  .radio-card {
+    padding: var(--ef-space-3, 14px);
+  }
+  
+  .radio-card-icon {
+    font-size: 24px;
+  }
+}
+
+@media (max-width: 374px) {
+  .modal {
+    max-width: calc(100vw - 24px);
+    margin: 12px;
+  }
+  
+  .modal-header,
+  .modal-body,
+  .modal-footer {
+    padding: var(--ef-space-2, 10px) var(--ef-space-3, 12px);
+  }
+  
+  .radio-card {
+    padding: var(--ef-space-2, 12px);
+  }
+  
+  .radio-card-icon {
+    font-size: 22px;
+  }
+  
+  .radio-card-label {
+    font-size: var(--ef-text-sm, 13px);
+  }
+  
+  .radio-card-desc {
+    font-size: var(--ef-text-xs, 12px);
+  }
 }
 
 /* Form select styling */
