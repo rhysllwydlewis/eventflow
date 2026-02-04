@@ -74,13 +74,10 @@ class WebSocketClient {
     }
 
     try {
-      // Calculate exponential backoff delay
-      const delay = this.baseReconnectDelay * Math.pow(2, this.reconnectAttempts);
-      
       // Explicitly set connection URL to current origin with /socket.io path
       const protocol = window.location.protocol === 'https:' ? 'https:' : 'http:';
       const socketUrl = `${protocol}//${window.location.host}`;
-      
+
       this.socket = io(socketUrl, {
         path: '/socket.io',
         transports: ['websocket', 'polling'],
@@ -127,7 +124,7 @@ class WebSocketClient {
       if (this.options.onDisconnect) {
         this.options.onDisconnect(reason);
       }
-      
+
       // Attempt to reconnect with exponential backoff
       this.attemptReconnect();
     });
@@ -164,32 +161,34 @@ class WebSocketClient {
       this.emit('typing:stopped', data);
     });
 
-    this.socket.on('connect_error', error => {
+    this.socket.on('connect_error', _error => {
       this.reconnectAttempts++;
-      
+
       // Only log first few errors to reduce console spam
       if (this.reconnectAttempts <= 2) {
-        console.warn(`WebSocket: Connection attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts} failed, retrying with exponential backoff...`);
+        console.warn(
+          `WebSocket: Connection attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts} failed, retrying with exponential backoff...`
+        );
       }
 
       if (this.reconnectAttempts >= this.maxReconnectAttempts) {
         this.maxRetriesReached = true;
-        
+
         // Show user-facing notification only once
         if (!this.userNotified) {
           this.userNotified = true;
           console.warn('WebSocket: Max retries reached, using polling fallback');
-          
+
           // Show a single user-facing notification
           if (typeof showToast === 'function') {
             showToast('Real-time updates temporarily unavailable. Using fallback mode.', 'info');
           } else if (typeof Toast !== 'undefined' && Toast.info) {
             Toast.info('Real-time updates temporarily unavailable. Using fallback mode.', {
-              duration: 5000
+              duration: 5000,
             });
           }
         }
-        
+
         if (this.options.onError) {
           this.options.onError(new Error('Failed to connect after multiple attempts'));
         }
@@ -199,20 +198,22 @@ class WebSocketClient {
       }
     });
   }
-  
+
   attemptReconnect() {
     // Don't reconnect if max retries reached
     if (this.maxRetriesReached || this.reconnectAttempts >= this.maxReconnectAttempts) {
       return;
     }
-    
+
     // Calculate exponential backoff delay: 1s, 2s, 4s, 8s, 16s
     const delay = this.baseReconnectDelay * Math.pow(2, this.reconnectAttempts);
-    
+
     if (this.reconnectAttempts < 2) {
-      console.log(`WebSocket: Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts + 1}/${this.maxReconnectAttempts})`);
+      console.log(
+        `WebSocket: Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts + 1}/${this.maxReconnectAttempts})`
+      );
     }
-    
+
     setTimeout(() => {
       if (!this.connected && !this.maxRetriesReached) {
         this.initConnection();

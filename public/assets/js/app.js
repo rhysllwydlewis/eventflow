@@ -2470,7 +2470,7 @@ function efMaybeShowOnboarding(page) {
   if (!shouldShow) {
     return;
   }
-  
+
   // For supplier dashboard, don't create a duplicate card
   // The welcome section already exists in the page, just ensure it's visible
   if (page === 'dash_supplier') {
@@ -2486,7 +2486,7 @@ function efMaybeShowOnboarding(page) {
     }
     return;
   }
-  
+
   // For other pages (customer, admin), create the onboarding card as before
   const container = document.querySelector('main .container');
   if (!container) {
@@ -2534,15 +2534,19 @@ async function initDashSupplier() {
   function initWelcomeDismiss() {
     const welcomeSection = document.getElementById('welcome-section');
     const dismissBtn = document.getElementById('welcome-dismiss-btn');
-    
-    if (!welcomeSection || !dismissBtn) return;
-    
+
+    if (!welcomeSection || !dismissBtn) {
+      return;
+    }
+
     // Check if welcome banner should be shown
     function shouldShowWelcome() {
       try {
         const dismissed = localStorage.getItem('ef_welcome_dismissed');
-        if (!dismissed) return true;
-        
+        if (!dismissed) {
+          return true;
+        }
+
         // Optionally show again after 30 days
         const dismissedTime = parseInt(dismissed, 10);
         const thirtyDays = 30 * 24 * 60 * 60 * 1000;
@@ -2551,15 +2555,15 @@ async function initDashSupplier() {
         return true;
       }
     }
-    
+
     // Hide welcome if previously dismissed
     if (!shouldShowWelcome()) {
       welcomeSection.style.display = 'none';
       return;
     }
-    
+
     // Dismiss handler
-    dismissBtn.addEventListener('click', function() {
+    dismissBtn.addEventListener('click', () => {
       try {
         localStorage.setItem('ef_welcome_dismissed', Date.now().toString());
       } catch (_) {
@@ -2571,7 +2575,7 @@ async function initDashSupplier() {
       }, 300);
     });
   }
-  
+
   // Initialize welcome dismiss functionality
   initWelcomeDismiss();
 
@@ -2978,18 +2982,18 @@ async function initDashSupplier() {
   if (togglePackageFormBtn) {
     togglePackageFormBtn.addEventListener('click', togglePackageForm);
   }
-  
+
   const cancelPackageFormBtn = document.getElementById('cancel-package-form');
   if (cancelPackageFormBtn) {
     cancelPackageFormBtn.addEventListener('click', togglePackageForm);
   }
-  
+
   // Initialize profile form toggle
   const toggleProfileFormBtn = document.getElementById('toggle-profile-form');
   if (toggleProfileFormBtn) {
     toggleProfileFormBtn.addEventListener('click', toggleProfileForm);
   }
-  
+
   const cancelProfileFormBtn = document.getElementById('cancel-profile-form');
   if (cancelProfileFormBtn) {
     cancelProfileFormBtn.addEventListener('click', toggleProfileForm);
@@ -3286,22 +3290,28 @@ function togglePackageForm() {
   const formSection = document.getElementById('package-form-section');
   const toggleBtn = document.getElementById('toggle-package-form');
   const cancelBtn = document.getElementById('cancel-package-form');
-  
-  if (!formSection || !toggleBtn) return;
-  
+
+  if (!formSection || !toggleBtn) {
+    return;
+  }
+
   const isExpanded = formSection.classList.contains('expanded');
-  
+
   if (isExpanded) {
     // Collapse form
     formSection.classList.remove('expanded');
     toggleBtn.setAttribute('aria-expanded', 'false');
     toggleBtn.querySelector('.label').textContent = 'Create Package';
     toggleBtn.classList.remove('active');
-    if (cancelBtn) cancelBtn.style.display = 'none';
-    
+    if (cancelBtn) {
+      cancelBtn.style.display = 'none';
+    }
+
     // Reset form
     const form = document.getElementById('package-form');
-    if (form) form.reset();
+    if (form) {
+      form.reset();
+    }
     document.getElementById('pkg-id-hidden').value = '';
   } else {
     // Expand form
@@ -3309,8 +3319,10 @@ function togglePackageForm() {
     toggleBtn.setAttribute('aria-expanded', 'true');
     toggleBtn.querySelector('.label').textContent = 'Cancel';
     toggleBtn.classList.add('active');
-    if (cancelBtn) cancelBtn.style.display = 'inline-block';
-    
+    if (cancelBtn) {
+      cancelBtn.style.display = 'inline-block';
+    }
+
     // Scroll to form
     setTimeout(() => {
       formSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -3322,7 +3334,7 @@ function editPackage(packageId, packageData) {
   // Expand the form section
   const formSection = document.getElementById('package-form-section');
   const toggleBtn = document.getElementById('toggle-package-form');
-  
+
   if (formSection && !formSection.classList.contains('expanded')) {
     formSection.classList.add('expanded');
     if (toggleBtn) {
@@ -3331,37 +3343,37 @@ function editPackage(packageId, packageData) {
       toggleBtn.classList.add('active');
     }
   }
-  
+
   // Populate form with package data
   try {
     const pkg = typeof packageData === 'string' ? JSON.parse(packageData) : packageData;
-    
+
     document.getElementById('pkg-id-hidden').value = pkg.id || '';
     document.getElementById('pkg-title').value = pkg.title || '';
     document.getElementById('pkg-price').value = pkg.price_display || '';
     document.getElementById('pkg-desc').value = pkg.description || '';
     document.getElementById('pkg-category').value = pkg.primaryCategoryKey || '';
     document.getElementById('pkg-image').value = pkg.image || '';
-    
+
     // Set supplier select if available
     const supplierSelect = document.getElementById('pkg-supplier');
     if (supplierSelect && pkg.supplierId) {
       supplierSelect.value = pkg.supplierId;
       document.getElementById('pkg-supplier-id-hidden').value = pkg.supplierId;
     }
-    
+
     // Set event type checkboxes
     if (pkg.eventTypes && Array.isArray(pkg.eventTypes)) {
       document.getElementById('pkg-event-wedding').checked = pkg.eventTypes.includes('wedding');
       document.getElementById('pkg-event-other').checked = pkg.eventTypes.includes('other');
     }
-    
+
     // Update form heading
     const heading = formSection.querySelector('.supplier-section-header');
     if (heading) {
       heading.textContent = 'Edit package';
     }
-    
+
     // Scroll to form
     setTimeout(() => {
       formSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -3375,7 +3387,7 @@ async function deletePackage(packageId) {
   if (!confirm('Are you sure you want to delete this package? This action cannot be undone.')) {
     return;
   }
-  
+
   try {
     const csrfToken = window.__CSRF_TOKEN__ || '';
     const response = await fetch(`/api/me/packages/${encodeURIComponent(packageId)}`, {
@@ -3385,13 +3397,13 @@ async function deletePackage(packageId) {
       },
       credentials: 'include',
     });
-    
+
     if (!response.ok) {
       const errorData = await response.json();
       alert(`Failed to delete package: ${errorData.error || 'Unknown error'}`);
       return;
     }
-    
+
     // Reload packages list
     const initFunc = window.initDashSupplier;
     if (initFunc) {
@@ -3410,24 +3422,30 @@ function toggleProfileForm() {
   const formSection = document.getElementById('profile-form-section');
   const toggleBtn = document.getElementById('toggle-profile-form');
   const cancelBtn = document.getElementById('cancel-profile-form');
-  
-  if (!formSection || !toggleBtn) return;
-  
+
+  if (!formSection || !toggleBtn) {
+    return;
+  }
+
   const isExpanded = formSection.classList.contains('expanded');
-  
+
   if (isExpanded) {
     // Collapse form
     formSection.classList.remove('expanded');
     toggleBtn.setAttribute('aria-expanded', 'false');
     toggleBtn.querySelector('.label').textContent = 'Create Profile';
     toggleBtn.classList.remove('active');
-    if (cancelBtn) cancelBtn.style.display = 'none';
-    
+    if (cancelBtn) {
+      cancelBtn.style.display = 'none';
+    }
+
     // Reset form
     const form = document.getElementById('supplier-form');
-    if (form) form.reset();
+    if (form) {
+      form.reset();
+    }
     document.getElementById('sup-id').value = '';
-    
+
     // Reset form heading
     const heading = formSection.querySelector('.supplier-section-header');
     if (heading) {
@@ -3439,8 +3457,10 @@ function toggleProfileForm() {
     toggleBtn.setAttribute('aria-expanded', 'true');
     toggleBtn.querySelector('.label').textContent = 'Cancel';
     toggleBtn.classList.add('active');
-    if (cancelBtn) cancelBtn.style.display = 'inline-block';
-    
+    if (cancelBtn) {
+      cancelBtn.style.display = 'inline-block';
+    }
+
     // Scroll to form
     setTimeout(() => {
       formSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -3452,7 +3472,7 @@ async function editProfile(supplierId) {
   // Expand the form section
   const formSection = document.getElementById('profile-form-section');
   const toggleBtn = document.getElementById('toggle-profile-form');
-  
+
   if (formSection && !formSection.classList.contains('expanded')) {
     formSection.classList.add('expanded');
     if (toggleBtn) {
@@ -3461,19 +3481,19 @@ async function editProfile(supplierId) {
       toggleBtn.classList.add('active');
     }
   }
-  
+
   // Fetch supplier data and populate form
   try {
     const response = await fetch(`/api/me/suppliers/${encodeURIComponent(supplierId)}`, {
       credentials: 'include',
     });
-    
+
     if (!response.ok) {
       throw new Error('Failed to fetch supplier data');
     }
-    
+
     const supplier = await response.json();
-    
+
     // Populate form fields
     document.getElementById('sup-id').value = supplier.id || '';
     document.getElementById('sup-name').value = supplier.name || '';
@@ -3486,20 +3506,20 @@ async function editProfile(supplierId) {
     document.getElementById('sup-license').value = supplier.license || '';
     document.getElementById('sup-amenities').value = supplier.amenities || '';
     document.getElementById('sup-max').value = supplier.maxGuests || '';
-    
+
     if (supplier.venuePostcode) {
       document.getElementById('sup-venue-postcode').value = supplier.venuePostcode;
     }
-    
+
     // Update form heading
     const heading = formSection.querySelector('.supplier-section-header');
     if (heading) {
       heading.textContent = `Edit profile: ${supplier.name}`;
     }
-    
+
     // Store the editing supplier ID for later use
     window.currentEditingSupplierId = supplierId;
-    
+
     // Scroll to form
     setTimeout(() => {
       formSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -3514,7 +3534,7 @@ async function deleteProfile(supplierId) {
   if (!confirm('Are you sure you want to delete this profile? This action cannot be undone.')) {
     return;
   }
-  
+
   try {
     const csrfToken = window.__CSRF_TOKEN__ || '';
     const response = await fetch(`/api/me/suppliers/${encodeURIComponent(supplierId)}`, {
@@ -3524,13 +3544,13 @@ async function deleteProfile(supplierId) {
       },
       credentials: 'include',
     });
-    
+
     if (!response.ok) {
       const errorData = await response.json();
       alert(`Failed to delete profile: ${errorData.error || 'Unknown error'}`);
       return;
     }
-    
+
     // Reload the page to refresh the list
     alert('Profile deleted successfully!');
     location.reload();
