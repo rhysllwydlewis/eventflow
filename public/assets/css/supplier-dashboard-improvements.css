@@ -3819,7 +3819,7 @@ html {
   justify-content: space-between;
   align-items: flex-start;
   gap: var(--ef-space-4, 16px);
-  margin-bottom: var(--ef-space-4, 20px);
+  margin-bottom: var(--ef-space-4, 16px);
   padding-bottom: var(--ef-space-4, 16px);
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
 }
@@ -3987,4 +3987,11 @@ html {
 
 .skeleton-text-short {
   width: 50%;
+}
+
+/* Header icon utility class */
+.supplier-card-header__icon {
+  display: inline-block;
+  vertical-align: middle;
+  margin-right: 8px;
 }
