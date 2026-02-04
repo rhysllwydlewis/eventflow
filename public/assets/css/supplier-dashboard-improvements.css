@@ -24,17 +24,35 @@
   backdrop-filter: blur(var(--glass-blur, 12px)) saturate(180%);
   -webkit-backdrop-filter: blur(var(--glass-blur, 12px)) saturate(180%);
   color: white;
-  margin-bottom: var(--ef-space-5, 24px); /* Consistent with other cards */
+  margin-bottom: var(--ef-space-5, 24px);
   padding: var(--ef-space-6, 32px);
   border-radius: var(--ef-radius-lg, 14px);
   border: 1px solid rgba(255, 255, 255, 0.18);
   box-shadow: 
-    0 8px 32px rgba(11, 128, 115, 0.2), /* Reduced intensity */
+    0 8px 32px rgba(11, 128, 115, 0.2),
     inset 0 1px 0 rgba(255, 255, 255, 0.15),
     inset 0 -1px 0 rgba(0, 0, 0, 0.05);
   position: relative;
   overflow: hidden;
   transition: var(--ef-transition-base, 200ms cubic-bezier(0.4, 0, 0.2, 1));
+}
+
+/* Improve content layout */
+.supplier-welcome-content {
+  margin-bottom: var(--ef-space-5, 24px);
+}
+
+.supplier-welcome-features {
+  margin-top: var(--ef-space-5, 24px);
+  padding-top: var(--ef-space-4, 16px);
+}
+
+.supplier-welcome-quick-stats {
+  display: flex;
+  gap: var(--ef-space-6, 32px);
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: var(--ef-space-4, 16px);
 }
 
 /* Time-based themes */
@@ -159,18 +177,25 @@
 .welcome-pro-tip {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 14px;
-  border-radius: 12px;
+  gap: var(--ef-space-2, 8px);
+  padding: var(--ef-btn-padding-y-sm, 10px) var(--ef-btn-padding-x-sm, 14px);
+  border-radius: var(--ef-radius-lg, 12px);
   background: rgba(255, 255, 255, 0.15);
   color: #fff;
-  margin-top: 10px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--ef-shadow-sm);
   animation: pulse-tip 2.8s ease-in-out infinite;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
 }
 
 .welcome-pro-tip .pro-tip-icon {
-  font-size: 18px;
+  font-size: var(--ef-icon-sm, 18px);
+  flex-shrink: 0;
+}
+
+.welcome-pro-tip .pro-tip-text {
+  font-size: var(--ef-text-sm, 14px);
+  line-height: var(--ef-leading-normal, 1.5);
 }
 
 @keyframes pulse-tip {
@@ -1309,12 +1334,15 @@ details[open] .faq-question::after {
     var(--ef-primary-hover, #097267) 100%);
   color: white;
   padding: var(--ef-space-5, 24px);
-  border-radius: var(--ef-radius-md, 10px);
+  border-radius: var(--ef-radius-lg, 12px);
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
   gap: var(--ef-space-4, 16px);
+  margin-top: var(--ef-space-5, 24px);
+  margin-bottom: var(--ef-space-5, 24px);
+  box-shadow: var(--ef-shadow-md);
 }
 
 .supplier-cta-banner-content {
