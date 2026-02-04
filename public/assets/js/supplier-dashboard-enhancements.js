@@ -6,6 +6,15 @@
 (function () {
   'use strict';
 
+  const NIGHT_THEME_HOUR = 21;
+  const LAYOUT_PAINT_DELAY = 50;
+  const THEME_CLASSES = [
+    'supplier-welcome-card--morning',
+    'supplier-welcome-card--afternoon',
+    'supplier-welcome-card--evening',
+    'supplier-welcome-card--night',
+  ];
+
   /**
    * Utility: time-based theme class for welcome card
    */
@@ -13,8 +22,6 @@
     const card = document.querySelector('.supplier-welcome-card');
     const greetingEl = document.getElementById('welcome-greeting');
     if (!card || !greetingEl) return;
-
-    const NIGHT_THEME_HOUR = 21;
 
     const hour = new Date().getHours();
     let variant = 'afternoon';
@@ -30,6 +37,7 @@
       greeting = 'Good evening,';
     }
 
+    THEME_CLASSES.forEach((cls) => card.classList.remove(cls));
     card.classList.add(`supplier-welcome-card--${variant}`);
     greetingEl.textContent = greeting;
   }
@@ -112,8 +120,8 @@
       });
     });
 
-    const LAYOUT_PAINT_DELAY = 50; // Wait for browser layout/paint to measure pill widths
-    setTimeout(() => setActive(pills[0]), LAYOUT_PAINT_DELAY);
+    // Wait for layout/paint to measure pill widths; rAF ensures post-paint
+    requestAnimationFrame(() => setTimeout(() => setActive(pills[0]), LAYOUT_PAINT_DELAY));
   }
 
   /**

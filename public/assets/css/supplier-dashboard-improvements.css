@@ -275,7 +275,8 @@
   top: 0;
   z-index: 5;
   backdrop-filter: blur(10px);
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.85));
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .mobile-nav-pills {
@@ -286,6 +287,7 @@
   scroll-snap-type: x proximity;
   -webkit-overflow-scrolling: touch;
   position: relative;
+  overscroll-behavior-x: contain; /* prevent scroll chaining / loops */
 }
 
 .mobile-nav-pills::before,
