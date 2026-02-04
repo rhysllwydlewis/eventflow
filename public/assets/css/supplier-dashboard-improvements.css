@@ -3493,8 +3493,7 @@ textarea:focus-visible {
 /* Ensure all text elements in compact welcome card are white */
 .supplier-welcome-card--compact .supplier-welcome-content,
 .supplier-welcome-card--compact .supplier-welcome-greeting,
-.supplier-welcome-card--compact .supplier-welcome-title,
-.supplier-welcome-card--compact .supplier-welcome-subtitle {
+.supplier-welcome-card--compact .supplier-welcome-title {
   color: white;
 }
 
