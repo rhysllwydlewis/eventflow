@@ -417,7 +417,7 @@
   color: #92400e;
   font-size: 13px;
   font-weight: 600;
-  margin-left: auto;
+  margin-inline-start: auto;
 }
 
 .dashboard-hero__tip svg {
