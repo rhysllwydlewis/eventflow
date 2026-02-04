@@ -140,25 +140,24 @@ window.announceToSR = function(message) {
   </div>
   <div class="supplier-welcome-quick-stats" id="welcome-quick-stats">
     <div class="welcome-stat-card">
-      <span class="welcome-stat-value" id="quick-stat-enquiries">0</span>
+      <span class="welcome-stat-value" id="quick-stat-enquiries" data-target="12">0</span>
       <span class="welcome-stat-label">Enquiries</span>
     </div>
     <div class="welcome-stat-card">
-      <span class="welcome-stat-value" id="quick-stat-profiles">0</span>
+      <span class="welcome-stat-value" id="quick-stat-profiles" data-target="4">0</span>
       <span class="welcome-stat-label">Profiles</span>
     </div>
   </div>
 </section>
 
 <script>
-// Set greeting based on time of day
+// Keep simple fallback for greeting when JS bundle is blocked
 (function() {
   const hour = new Date().getHours();
   let greeting = 'Good day,';
   if (hour < 12) greeting = 'Good morning,';
   else if (hour < 18) greeting = 'Good afternoon,';
   else greeting = 'Good evening,';
-  
   const greetingEl = document.getElementById('welcome-greeting');
   if (greetingEl) greetingEl.textContent = greeting;
 })();
