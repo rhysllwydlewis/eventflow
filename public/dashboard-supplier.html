@@ -330,8 +330,76 @@ window.announceToSR = function(message) {
 <!-- Enquiry Trend Chart -->
 <div id="enquiry-trend-chart"></div>
 
+<!-- Earnings Overview Section (Placeholder) -->
+<section id="earnings-overview" class="card" style="margin-top: 2rem; padding: 2rem;" aria-labelledby="earnings-heading">
+  <h2 id="earnings-heading" style="margin-bottom: 1rem; font-size: 1.5rem;">💰 Earnings Overview</h2>
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+    <div style="padding: 1rem; background: linear-gradient(135deg, #10B981 0%, #34D399 100%); border-radius: 8px; color: white;">
+      <div style="font-size: 0.875rem; opacity: 0.9; margin-bottom: 0.5rem;">Total Revenue</div>
+      <div style="font-size: 2rem; font-weight: 600;">£0.00</div>
+    </div>
+    <div style="padding: 1rem; background: linear-gradient(135deg, #3B82F6 0%, #60A5FA 100%); border-radius: 8px; color: white;">
+      <div style="font-size: 0.875rem; opacity: 0.9; margin-bottom: 0.5rem;">This Month</div>
+      <div style="font-size: 2rem; font-weight: 600;">£0.00</div>
+    </div>
+    <div style="padding: 1rem; background: linear-gradient(135deg, #F59E0B 0%, #FBBF24 100%); border-radius: 8px; color: white;">
+      <div style="font-size: 0.875rem; opacity: 0.9; margin-bottom: 0.5rem;">Pending</div>
+      <div style="font-size: 2rem; font-weight: 600;">£0.00</div>
+    </div>
+  </div>
+  <div style="padding: 1.5rem; background: #F9FAFB; border-radius: 8px; text-align: center;">
+    <p style="margin-bottom: 1rem; color: #6B7280;">Full earnings tracking and payment management coming soon!</p>
+    <p style="font-size: 0.875rem; color: #9CA3AF;">Track revenue, manage invoices, view payment history, and export financial reports.</p>
+  </div>
+</section>
+
 <!-- Profile Completeness Checklist -->
 <div id="profile-completeness-widget"></div>
+
+<!-- Calendar & Availability Widget -->
+<section id="availability-calendar" class="card" style="margin-top: 2rem; padding: 2rem;" aria-labelledby="calendar-heading">
+  <div class="supplier-card-header" style="border-bottom: 1px solid #E5E7EB; padding-bottom: 1rem; margin-bottom: 1.5rem;">
+    <div class="supplier-card-header__content">
+      <h2 id="calendar-heading" style="font-size: 1.5rem; margin: 0;">📅 Availability Calendar</h2>
+      <p class="small" style="margin: 0; color: #6B7280;">Manage your available dates and bookings</p>
+    </div>
+  </div>
+  
+  <div style="display: grid; grid-template-columns: 1fr auto; gap: 2rem; align-items: start;">
+    <div>
+      <div style="background: #F9FAFB; padding: 2rem; border-radius: 8px; text-align: center; min-height: 300px; display: flex; flex-direction: column; justify-content: center;">
+        <div style="font-size: 4rem; margin-bottom: 1rem;">📆</div>
+        <h3 style="font-size: 1.25rem; margin-bottom: 0.5rem;">Calendar Coming Soon</h3>
+        <p style="color: #6B7280; margin-bottom: 1rem;">Interactive calendar for managing bookings and availability</p>
+        <div style="display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap; font-size: 0.875rem;">
+          <span style="padding: 0.5rem 1rem; background: white; border-radius: 4px; border: 1px solid #E5E7EB;">✅ View bookings</span>
+          <span style="padding: 0.5rem 1rem; background: white; border-radius: 4px; border: 1px solid #E5E7EB;">🚫 Block dates</span>
+          <span style="padding: 0.5rem 1rem; background: white; border-radius: 4px; border: 1px solid #E5E7EB;">🔄 Recurring patterns</span>
+        </div>
+      </div>
+    </div>
+    
+    <div style="min-width: 250px;">
+      <h4 style="font-size: 1rem; margin-bottom: 1rem; color: #374151;">Upcoming Bookings</h4>
+      <div style="background: #F9FAFB; padding: 1.5rem; border-radius: 8px; text-align: center;">
+        <div style="font-size: 2rem; margin-bottom: 0.5rem;">📋</div>
+        <p style="font-size: 0.875rem; color: #6B7280; margin: 0;">No upcoming bookings</p>
+      </div>
+      
+      <h4 style="font-size: 1rem; margin: 1.5rem 0 1rem; color: #374151;">Quick Actions</h4>
+      <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+        <button style="padding: 0.75rem; background: white; border: 1px solid #E5E7EB; border-radius: 4px; cursor: pointer; text-align: left; transition: background 0.2s;" onmouseover="this.style.background='#F9FAFB'" onmouseout="this.style.background='white'">
+          <div style="font-weight: 600; margin-bottom: 0.25rem;">Block Date Range</div>
+          <div style="font-size: 0.75rem; color: #6B7280;">Mark dates as unavailable</div>
+        </button>
+        <button style="padding: 0.75rem; background: white; border: 1px solid #E5E7EB; border-radius: 4px; cursor: pointer; text-align: left; transition: background 0.2s;" onmouseover="this.style.background='#F9FAFB'" onmouseout="this.style.background='white'">
+          <div style="font-weight: 600; margin-bottom: 0.25rem;">Set Availability</div>
+          <div style="font-size: 0.75rem; color: #6B7280;">Configure weekly schedule</div>
+        </button>
+      </div>
+    </div>
+  </div>
+</section>
 
 <h2 id="profiles-heading">Your supplier profiles</h2>
 <div class="card" role="region" aria-labelledby="profiles-heading">
@@ -696,6 +764,33 @@ window.announceToSR = function(message) {
   <div id="threads-sup" class="section">
     <div class="skeleton skeleton-text skeleton-text-long"></div>
     <div class="skeleton skeleton-text skeleton-text-medium"></div>
+  </div>
+</section>
+
+<!-- Reviews & Ratings Section -->
+<section class="card supplier-dashboard-card" role="region" aria-labelledby="reviews-heading">
+  <div class="supplier-card-header">
+    <div class="supplier-card-header__content">
+      <h3 id="reviews-heading">⭐ Reviews & Ratings</h3>
+      <p class="small">Manage customer feedback and respond to reviews</p>
+    </div>
+  </div>
+  <div id="supplier-reviews-section" class="section">
+    <div style="padding: 2rem; text-align: center; background: #F9FAFB; border-radius: 8px;">
+      <div style="font-size: 3rem; margin-bottom: 1rem;">⭐⭐⭐⭐⭐</div>
+      <div style="font-size: 1.5rem; font-weight: 600; margin-bottom: 0.5rem;">No reviews yet</div>
+      <p style="color: #6B7280; margin-bottom: 1.5rem;">Reviews from customers will appear here once you complete your first booking.</p>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; max-width: 600px; margin: 0 auto;">
+        <div style="padding: 1rem; background: white; border-radius: 8px; border: 1px solid #E5E7EB;">
+          <div style="font-size: 0.875rem; color: #9CA3AF; margin-bottom: 0.25rem;">Average Rating</div>
+          <div style="font-size: 1.5rem; font-weight: 600;">0.0</div>
+        </div>
+        <div style="padding: 1rem; background: white; border-radius: 8px; border: 1px solid #E5E7EB;">
+          <div style="font-size: 0.875rem; color: #9CA3AF; margin-bottom: 0.25rem;">Total Reviews</div>
+          <div style="font-size: 1.5rem; font-weight: 600;">0</div>
+        </div>
+      </div>
+    </div>
   </div>
 </section>
 
