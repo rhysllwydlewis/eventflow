@@ -166,34 +166,39 @@ window.announceToSR = function(message) {
   <div id="supplier-pro-ribbon" class="pro-ribbon" style="display:none"></div>
 
 <!-- Welcome Section with Enhanced Card -->
-<section id="welcome-section" class="card supplier-welcome-card supplier-welcome-card--enhanced" aria-labelledby="welcome-heading" data-test="welcome-card">
+<section id="welcome-section" class="card supplier-welcome-card supplier-welcome-card--enhanced supplier-welcome-card--compact" aria-labelledby="welcome-heading" data-test="welcome-card">
+  <!-- Dismiss Button -->
+  <button class="welcome-dismiss-btn" id="welcome-dismiss-btn" aria-label="Dismiss welcome banner" title="Dismiss welcome banner" data-test="welcome-dismiss">×</button>
+  
   <div class="supplier-welcome-content">
     <p class="supplier-welcome-greeting" id="welcome-greeting" data-test="time-greeting">Good day,</p>
     <h1 id="welcome-heading" class="supplier-welcome-title">Supplier Dashboard</h1>
     <p class="small supplier-welcome-subtitle">Manage your supplier profiles, packages, and customer inquiries.</p>
-    <div id="what-you-can-do" class="supplier-welcome-features">
-      <h3 class="supplier-features-title">What you can do from here:</h3>
-      <ul class="supplier-features-list">
-        <li>Create and manage your supplier profiles</li>
-        <li>Add and edit service packages</li>
-        <li>Respond to customer inquiries and support tickets</li>
-        <li>Track conversations with potential clients</li>
-      </ul>
+  </div>
+  
+  <!-- Compact Stats Section -->
+  <div class="supplier-welcome-quick-stats welcome-stats-compact" id="welcome-quick-stats">
+    <div class="welcome-stat-item">
+      <span class="stat-icon" aria-hidden="true">📊</span>
+      <span class="welcome-stat-value stat-value" id="quick-stat-enquiries" data-target="12" data-test="stat-counter-enquiries">0</span>
+      <span class="welcome-stat-label stat-label">New Enquiries</span>
+    </div>
+    <div class="welcome-stat-item">
+      <span class="stat-icon" aria-hidden="true">👀</span>
+      <span class="welcome-stat-value stat-value" id="quick-stat-profiles" data-target="4" data-test="stat-counter-profiles">0</span>
+      <span class="welcome-stat-label stat-label">Profiles</span>
+    </div>
+    <div class="welcome-stat-item">
+      <span class="stat-icon" aria-hidden="true">⭐</span>
+      <span class="welcome-stat-value stat-value">4.8</span>
+      <span class="welcome-stat-label stat-label">Rating</span>
     </div>
   </div>
-  <div class="supplier-welcome-quick-stats" id="welcome-quick-stats">
-    <div class="welcome-stat-card">
-      <span class="welcome-stat-value" id="quick-stat-enquiries" data-target="12" data-test="stat-counter-enquiries">0</span>
-      <span class="welcome-stat-label">Enquiries</span>
-    </div>
-    <div class="welcome-stat-card">
-      <span class="welcome-stat-value" id="quick-stat-profiles" data-target="4" data-test="stat-counter-profiles">0</span>
-      <span class="welcome-stat-label">Profiles</span>
-    </div>
-    <div class="welcome-pro-tip" id="welcome-pro-tip" aria-live="polite" data-test="pro-tip">
-      <span class="pro-tip-icon" aria-hidden="true">💡</span>
-      <span class="pro-tip-text" id="pro-tip-text">Boost response speed to delight customers.</span>
-    </div>
+  
+  <!-- Compact Tip Section -->
+  <div class="welcome-pro-tip welcome-tip-compact" id="welcome-pro-tip" aria-live="polite" data-test="pro-tip">
+    <span class="pro-tip-icon tip-icon" aria-hidden="true">💡</span>
+    <span class="pro-tip-text" id="pro-tip-text">Boost response speed to delight customers.</span>
   </div>
 </section>
 

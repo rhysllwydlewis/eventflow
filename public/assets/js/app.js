@@ -2455,6 +2455,7 @@ async function openThread(id) {
 }
 
 function efMaybeShowOnboarding(page) {
+  // Check if this is a first-time visit that needs onboarding
   let shouldShow = false;
   try {
     const flag = localStorage.getItem('eventflow_onboarding_new');
@@ -2469,6 +2470,24 @@ function efMaybeShowOnboarding(page) {
   if (!shouldShow) {
     return;
   }
+  
+  // For supplier dashboard, don't create a duplicate card
+  // The welcome section already exists in the page, just ensure it's visible
+  if (page === 'dash_supplier') {
+    try {
+      // Clear any previous welcome dismissal to show it for first-time users
+      localStorage.removeItem('ef_welcome_dismissed');
+      const welcomeSection = document.getElementById('welcome-section');
+      if (welcomeSection) {
+        welcomeSection.style.display = '';
+      }
+    } catch (_) {
+      /* Ignore localStorage errors */
+    }
+    return;
+  }
+  
+  // For other pages (customer, admin), create the onboarding card as before
   const container = document.querySelector('main .container');
   if (!container) {
     return;
@@ -2483,12 +2502,6 @@ function efMaybeShowOnboarding(page) {
       '<ol class="small"><li>Start an event from <strong>Plan an Event</strong>.</li>' +
       '<li>Add a few suppliers to <strong>My Plan</strong>.</li>' +
       '<li>Use <strong>Conversations</strong> to keep messages in one place.</li></ol>';
-  } else if (page === 'dash_supplier') {
-    body =
-      '<p class="small">Quick tips:</p>' +
-      '<ol class="small"><li>Complete your supplier profile with photos and details.</li>' +
-      '<li>Create at least one clear package.</li>' +
-      '<li>Reply promptly to new enquiries from the Conversations card.</li></ol>';
   } else if (page === 'admin') {
     body =
       '<p class="small">Quick overview:</p>' +
@@ -2516,6 +2529,51 @@ function efMaybeShowOnboarding(page) {
 
 async function initDashSupplier() {
   efMaybeShowOnboarding('dash_supplier');
+
+  // Welcome banner dismiss functionality
+  function initWelcomeDismiss() {
+    const welcomeSection = document.getElementById('welcome-section');
+    const dismissBtn = document.getElementById('welcome-dismiss-btn');
+    
+    if (!welcomeSection || !dismissBtn) return;
+    
+    // Check if welcome banner should be shown
+    function shouldShowWelcome() {
+      try {
+        const dismissed = localStorage.getItem('ef_welcome_dismissed');
+        if (!dismissed) return true;
+        
+        // Optionally show again after 30 days
+        const dismissedTime = parseInt(dismissed, 10);
+        const thirtyDays = 30 * 24 * 60 * 60 * 1000;
+        return Date.now() - dismissedTime > thirtyDays;
+      } catch (_) {
+        return true;
+      }
+    }
+    
+    // Hide welcome if previously dismissed
+    if (!shouldShowWelcome()) {
+      welcomeSection.style.display = 'none';
+      return;
+    }
+    
+    // Dismiss handler
+    dismissBtn.addEventListener('click', function() {
+      try {
+        localStorage.setItem('ef_welcome_dismissed', Date.now().toString());
+      } catch (_) {
+        /* Ignore localStorage errors */
+      }
+      welcomeSection.classList.add('welcome-dismissed');
+      setTimeout(() => {
+        welcomeSection.style.display = 'none';
+      }, 300);
+    });
+  }
+  
+  // Initialize welcome dismiss functionality
+  initWelcomeDismiss();
 
   // Fetch CSRF token if not already available
   async function ensureCsrfToken() {
