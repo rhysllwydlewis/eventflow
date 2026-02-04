@@ -2455,6 +2455,16 @@ async function openThread(id) {
 }
 
 function efMaybeShowOnboarding(page) {
+  // Check if onboarding has been permanently dismissed
+  try {
+    const dismissed = localStorage.getItem('ef_onboarding_dismissed');
+    if (dismissed === '1') {
+      return;
+    }
+  } catch (_) {
+    /* Ignore localStorage errors */
+  }
+
   // Check if this is a first-time visit that needs onboarding
   let shouldShow = false;
   try {
@@ -2471,18 +2481,74 @@ function efMaybeShowOnboarding(page) {
     return;
   }
 
-  // For supplier dashboard, don't create a duplicate card
-  // The welcome section already exists in the page, just ensure it's visible
+  // For supplier dashboard, create a modern, engaging onboarding card
   if (page === 'dash_supplier') {
-    try {
-      // Clear any previous welcome dismissal to show it for first-time users
-      localStorage.removeItem('ef_welcome_dismissed');
-      const welcomeSection = document.getElementById('welcome-section');
-      if (welcomeSection) {
-        welcomeSection.style.display = '';
-      }
-    } catch (_) {
-      /* Ignore localStorage errors */
+    const container = document.querySelector('main .container');
+    if (!container) {
+      return;
+    }
+
+    const box = document.createElement('div');
+    box.className = 'card';
+    box.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+    box.style.color = '#ffffff';
+    box.style.padding = '2rem';
+    box.style.borderRadius = '12px';
+    box.style.boxShadow = '0 10px 40px rgba(102, 126, 234, 0.3)';
+    box.style.textAlign = 'center';
+    
+    box.innerHTML = `
+      <div style="font-size: 3rem; margin-bottom: 1rem;">🎉</div>
+      <h2 style="color: #ffffff; font-size: 1.75rem; font-weight: 700; margin-bottom: 0.75rem;">Welcome to Your Supplier Dashboard!</h2>
+      <p style="color: rgba(255, 255, 255, 0.95); font-size: 1.1rem; line-height: 1.6; margin-bottom: 1.5rem; max-width: 600px; margin-left: auto; margin-right: auto;">
+        You're all set to showcase your services and connect with event planners. Let's help you get started on your journey!
+      </p>
+      <div style="background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(10px); border-radius: 8px; padding: 1.25rem; margin-bottom: 1.5rem; text-align: left; max-width: 600px; margin-left: auto; margin-right: auto;">
+        <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem;">
+          <span style="font-size: 1.5rem;">✨</span>
+          <span style="color: rgba(255, 255, 255, 0.95); font-weight: 500;">Complete your supplier profile</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem;">
+          <span style="font-size: 1.5rem;">📦</span>
+          <span style="color: rgba(255, 255, 255, 0.95); font-weight: 500;">Add your first package or service</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+          <span style="font-size: 1.5rem;">💬</span>
+          <span style="color: rgba(255, 255, 255, 0.95); font-weight: 500;">Start engaging with customers</span>
+        </div>
+      </div>
+      <button type="button" class="cta" id="ef-onboarding-dismiss" style="background: #ffffff; color: #667eea; font-weight: 600; padding: 0.75rem 2rem; border-radius: 8px; border: none; cursor: pointer; font-size: 1rem; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); transition: transform 0.2s;">Got it! Let's go 🚀</button>
+    `;
+
+    const cards = container.querySelector('.cards');
+    if (cards && cards.parentNode === container) {
+      container.insertBefore(box, cards);
+    } else {
+      container.insertBefore(box, container.firstChild);
+    }
+
+    const btn = box.querySelector('#ef-onboarding-dismiss');
+    if (btn) {
+      // Add hover effect
+      btn.addEventListener('mouseenter', () => {
+        btn.style.transform = 'scale(1.05)';
+      });
+      btn.addEventListener('mouseleave', () => {
+        btn.style.transform = 'scale(1)';
+      });
+      
+      // Save permanent dismissal and remove card
+      btn.addEventListener('click', () => {
+        try {
+          localStorage.setItem('ef_onboarding_dismissed', '1');
+        } catch (_) {
+          /* Ignore localStorage errors */
+        }
+        box.style.transition = 'opacity 0.3s, transform 0.3s';
+        box.style.opacity = '0';
+        box.style.transform = 'scale(0.95)';
+        setTimeout(() => box.remove(), 300);
+      });
     }
     return;
   }
@@ -2523,61 +2589,19 @@ function efMaybeShowOnboarding(page) {
 
   const btn = box.querySelector('#ef-onboarding-dismiss');
   if (btn) {
-    btn.addEventListener('click', () => box.remove());
+    btn.addEventListener('click', () => {
+      try {
+        localStorage.setItem('ef_onboarding_dismissed', '1');
+      } catch (_) {
+        /* Ignore localStorage errors */
+      }
+      box.remove();
+    });
   }
 }
 
 async function initDashSupplier() {
   efMaybeShowOnboarding('dash_supplier');
-
-  // Welcome banner dismiss functionality
-  function initWelcomeDismiss() {
-    const welcomeSection = document.getElementById('welcome-section');
-    const dismissBtn = document.getElementById('welcome-dismiss-btn');
-
-    if (!welcomeSection || !dismissBtn) {
-      return;
-    }
-
-    // Check if welcome banner should be shown
-    function shouldShowWelcome() {
-      try {
-        const dismissed = localStorage.getItem('ef_welcome_dismissed');
-        if (!dismissed) {
-          return true;
-        }
-
-        // Optionally show again after 30 days
-        const dismissedTime = parseInt(dismissed, 10);
-        const thirtyDays = 30 * 24 * 60 * 60 * 1000;
-        return Date.now() - dismissedTime > thirtyDays;
-      } catch (_) {
-        return true;
-      }
-    }
-
-    // Hide welcome if previously dismissed
-    if (!shouldShowWelcome()) {
-      welcomeSection.style.display = 'none';
-      return;
-    }
-
-    // Dismiss handler
-    dismissBtn.addEventListener('click', () => {
-      try {
-        localStorage.setItem('ef_welcome_dismissed', Date.now().toString());
-      } catch (_) {
-        /* Ignore localStorage errors */
-      }
-      welcomeSection.classList.add('welcome-dismissed');
-      setTimeout(() => {
-        welcomeSection.style.display = 'none';
-      }, 300);
-    });
-  }
-
-  // Initialize welcome dismiss functionality
-  initWelcomeDismiss();
 
   // Fetch CSRF token if not already available
   async function ensureCsrfToken() {
