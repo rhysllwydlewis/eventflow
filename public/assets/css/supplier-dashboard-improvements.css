@@ -3510,7 +3510,7 @@ textarea:focus-visible {
   background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(16px) saturate(180%);
   -webkit-backdrop-filter: blur(16px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.5);
+  border: 1.5px solid rgba(255, 255, 255, 0.5);
   border-radius: 16px;
   box-shadow: 
     0 8px 32px rgba(0, 0, 0, 0.08),
@@ -3538,7 +3538,7 @@ textarea:focus-visible {
   background: rgba(248, 250, 252, 0.7);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.6);
+  border: 1.5px solid rgba(255, 255, 255, 0.6);
   padding: var(--ef-space-5, 24px);
   border-radius: 18px;
   box-shadow: 
@@ -3637,7 +3637,7 @@ textarea:focus-visible {
   background: rgba(255, 255, 255, 0.88);
   backdrop-filter: blur(16px) saturate(180%);
   -webkit-backdrop-filter: blur(16px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.5);
+  border: 1.5px solid rgba(255, 255, 255, 0.5);
   border-radius: 16px;
   box-shadow: 
     0 6px 24px rgba(0, 0, 0, 0.07),
@@ -3695,7 +3695,7 @@ textarea:focus {
 /* CTA buttons with modern gradient */
 .cta {
   background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  border: none;
+  border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 12px;
   box-shadow: 
     0 4px 16px rgba(16, 185, 129, 0.3),
@@ -3707,6 +3707,7 @@ textarea:focus {
 
 .cta:hover {
   background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  border-color: rgba(255, 255, 255, 0.25);
   transform: translateY(-2px);
   box-shadow: 
     0 8px 24px rgba(16, 185, 129, 0.4),
