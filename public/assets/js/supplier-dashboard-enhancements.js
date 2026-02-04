@@ -17,17 +17,14 @@
     const hour = new Date().getHours();
     let variant = 'afternoon';
     let greeting = 'Good day,';
-    if (hour >= 5 && hour < 12) {
+    if (hour < 12) {
       variant = 'morning';
       greeting = 'Good morning,';
-    } else if (hour >= 12 && hour < 17) {
+    } else if (hour < 18) {
       variant = 'afternoon';
       greeting = 'Good afternoon,';
-    } else if (hour >= 17 && hour < 21) {
-      variant = 'evening';
-      greeting = 'Good evening,';
     } else {
-      variant = 'night';
+      variant = hour < 21 ? 'evening' : 'night';
       greeting = 'Good evening,';
     }
 
@@ -113,7 +110,7 @@
       });
     });
 
-    // initial position
+    // Initial position after layout paint to get correct sizes
     setTimeout(() => setActive(pills[0]), 50);
   }
 
