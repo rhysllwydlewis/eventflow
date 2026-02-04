@@ -641,22 +641,42 @@
         <div class="container">
           <div class="ef-grid ef-grid--auto-sm" style="max-width: 900px; margin: 0 auto;">
             <div class="ef-card ef-card--center ef-card--hover">
-              <div class="ef-card__icon">✓</div>
+              <div class="ef-card__icon">
+                <svg class="ef-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                  <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
+              </div>
               <h3 class="ef-card__title">Verified Suppliers</h3>
               <p class="ef-card__text">All suppliers are verified and vetted</p>
             </div>
             <div class="ef-card ef-card--center ef-card--hover">
-              <div class="ef-card__icon">🔒</div>
+              <div class="ef-card__icon">
+                <svg class="ef-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+              </div>
               <h3 class="ef-card__title">Secure Messaging</h3>
               <p class="ef-card__text">Safe and private communication</p>
             </div>
             <div class="ef-card ef-card--center ef-card--hover">
-              <div class="ef-card__icon">💷</div>
+              <div class="ef-card__icon">
+                <svg class="ef-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <line x1="12" y1="1" x2="12" y2="23"></line>
+                  <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                </svg>
+              </div>
               <h3 class="ef-card__title">No Platform Fees</h3>
               <p class="ef-card__text">Direct bookings with suppliers</p>
             </div>
             <div class="ef-card ef-card--center ef-card--hover">
-              <div class="ef-card__icon">🇬🇧</div>
+              <div class="ef-card__icon">
+                <svg class="ef-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                  <circle cx="12" cy="10" r="3"></circle>
+                </svg>
+              </div>
               <h3 class="ef-card__title">UK Based Support</h3>
               <p class="ef-card__text">Local support when you need it</p>
             </div>
@@ -664,22 +684,53 @@
         </div>
       </section>
 
-      <!-- Testimonials Section -->
-      <section class="ef-section ef-section--muted" aria-label="Customer testimonials" id="testimonials-section">
+      <!-- Testimonials Section (P4-01) -->
+      <section class="ef-section ef-testimonials-section" aria-label="Customer testimonials" id="testimonials-section">
         <div class="container">
-          <div class="ef-section__header ef-section__header--center">
-            <span class="ef-section__kicker">Testimonials</span>
+          <div class="ef-section__header">
             <h2 class="ef-section__title">What Our Customers Say</h2>
+            <p class="ef-section__subtitle">Real experiences from real event planners</p>
           </div>
-          <div id="testimonials-carousel" class="testimonials-grid">
-            <!-- Placeholder card -->
-            <div class="ef-card ef-card--center" style="max-width: 600px; margin: 0 auto;" data-reveal>
-              <div class="ef-card__icon">✨</div>
-              <h3 class="ef-card__title" style="font-size: 1.5rem;">Testimonials Coming Soon</h3>
-              <p class="ef-card__text">
-                We're gathering feedback from our amazing customers. Check back soon to see what they have to say about their EventFlow experience!
-              </p>
+          
+          <div class="ef-testimonials-carousel" id="ef-testimonials-carousel">
+            <div class="ef-testimonial active">
+              <div class="ef-testimonial-content">
+                <div class="ef-testimonial-stars" aria-label="5 out of 5 stars">★★★★★</div>
+                <p class="ef-testimonial-quote">"EventFlow made planning our wedding so easy! We found amazing suppliers and managed everything in one place. Couldn't recommend it more!"</p>
+                <div class="ef-testimonial-author">
+                  <strong>Sarah & Tom</strong>
+                  <span class="ef-testimonial-event">Wedding, Manchester</span>
+                </div>
+              </div>
             </div>
+            
+            <div class="ef-testimonial">
+              <div class="ef-testimonial-content">
+                <div class="ef-testimonial-stars" aria-label="5 out of 5 stars">★★★★★</div>
+                <p class="ef-testimonial-quote">"As a supplier, EventFlow has brought me so many quality leads. The platform is easy to use and the support team is fantastic."</p>
+                <div class="ef-testimonial-author">
+                  <strong>James Wilson</strong>
+                  <span class="ef-testimonial-event">Wedding Photographer, London</span>
+                </div>
+              </div>
+            </div>
+            
+            <div class="ef-testimonial">
+              <div class="ef-testimonial-content">
+                <div class="ef-testimonial-stars" aria-label="5 out of 5 stars">★★★★★</div>
+                <p class="ef-testimonial-quote">"The budget tracking and planning tools saved us so much stress. Everything we needed was right there when we needed it."</p>
+                <div class="ef-testimonial-author">
+                  <strong>Emma Davies</strong>
+                  <span class="ef-testimonial-event">Birthday Party, Birmingham</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="ef-testimonials-dots" role="tablist" aria-label="Testimonial navigation">
+            <button type="button" role="tab" aria-selected="true" aria-label="View testimonial 1" data-testimonial="0" class="ef-testimonial-dot active"></button>
+            <button type="button" role="tab" aria-selected="false" aria-label="View testimonial 2" data-testimonial="1" class="ef-testimonial-dot"></button>
+            <button type="button" role="tab" aria-selected="false" aria-label="View testimonial 3" data-testimonial="2" class="ef-testimonial-dot"></button>
           </div>
         </div>
       </section>
@@ -695,7 +746,33 @@
             </p>
           </div>
           <div id="marketplace-preview" aria-live="polite">
-            <p class="small">Loading marketplace items...</p>
+            <!-- Skeleton loading UI -->
+            <div class="ef-grid ef-grid--3 ef-marketplace-skeleton">
+              <div class="ef-card ef-skeleton-card">
+                <div class="ef-skeleton-image"></div>
+                <div class="ef-skeleton-content">
+                  <div class="ef-skeleton-line ef-skeleton-title"></div>
+                  <div class="ef-skeleton-line ef-skeleton-text"></div>
+                  <div class="ef-skeleton-line ef-skeleton-text short"></div>
+                </div>
+              </div>
+              <div class="ef-card ef-skeleton-card">
+                <div class="ef-skeleton-image"></div>
+                <div class="ef-skeleton-content">
+                  <div class="ef-skeleton-line ef-skeleton-title"></div>
+                  <div class="ef-skeleton-line ef-skeleton-text"></div>
+                  <div class="ef-skeleton-line ef-skeleton-text short"></div>
+                </div>
+              </div>
+              <div class="ef-card ef-skeleton-card">
+                <div class="ef-skeleton-image"></div>
+                <div class="ef-skeleton-content">
+                  <div class="ef-skeleton-line ef-skeleton-title"></div>
+                  <div class="ef-skeleton-line ef-skeleton-text"></div>
+                  <div class="ef-skeleton-line ef-skeleton-text short"></div>
+                </div>
+              </div>
+            </div>
           </div>
           <div style="text-align: center; margin-top: var(--ef-space-5, 24px);">
             <a href="/marketplace" class="ef-btn ef-btn--primary">View All Marketplace Items</a>
@@ -705,42 +782,89 @@
 
       <!-- Latest Guides Section -->
       <section
-        class="section"
+        class="ef-section"
         aria-label="Planning guides"
         id="guides-section"
-        style="display: none"
       >
         <div class="container">
-          <div
-            class="small"
-            style="text-transform: uppercase; letter-spacing: 0.2em; color: #7e8794"
-          >
-            Helpful Guides
+          <div class="ef-section__header">
+            <span class="ef-section__kicker">Helpful Guides</span>
+            <h2 class="ef-section__title">Event Planning Resources</h2>
           </div>
-          <h2 style="margin-top: 0.5rem; margin-bottom: 1rem">Event Planning Resources</h2>
-          <div id="guides-list" class="cards" aria-live="polite">
-            <p class="small">Loading guides...</p>
+          <div id="guides-list" class="ef-grid ef-grid--3" aria-live="polite">
+            <!-- Featured Guide Cards -->
+            <div class="ef-card ef-card--hover">
+              <div class="ef-card__content">
+                <h3 class="ef-card__title">Wedding Planning 101</h3>
+                <p class="ef-card__text">
+                  Your complete guide to planning the perfect wedding, from setting a budget to choosing suppliers.
+                </p>
+              </div>
+              <a href="/blog" class="ef-card__link" aria-label="Read wedding planning guide">
+                <span>Read Guide</span>
+                <svg class="ef-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                  <polyline points="12 5 19 12 12 19"></polyline>
+                </svg>
+              </a>
+            </div>
+            <div class="ef-card ef-card--hover">
+              <div class="ef-card__content">
+                <h3 class="ef-card__title">Budgeting Tips</h3>
+                <p class="ef-card__text">
+                  Learn how to create a realistic event budget and stick to it without compromising on quality.
+                </p>
+              </div>
+              <a href="/blog" class="ef-card__link" aria-label="Read budgeting tips guide">
+                <span>Read Guide</span>
+                <svg class="ef-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                  <polyline points="12 5 19 12 12 19"></polyline>
+                </svg>
+              </a>
+            </div>
+            <div class="ef-card ef-card--hover">
+              <div class="ef-card__content">
+                <h3 class="ef-card__title">Choosing Your Venue</h3>
+                <p class="ef-card__text">
+                  Essential tips for selecting the perfect venue that fits your style, budget, and guest count.
+                </p>
+              </div>
+              <a href="/blog" class="ef-card__link" aria-label="Read venue selection guide">
+                <span>Read Guide</span>
+                <svg class="ef-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                  <polyline points="12 5 19 12 12 19"></polyline>
+                </svg>
+              </a>
+            </div>
           </div>
         </div>
       </section>
 
-      <section class="section" aria-labelledby="how-it-works">
+      <section class="ef-section" aria-labelledby="how-it-works">
         <div class="container">
-          <h2 id="how-it-works" class="sr-only">How it works</h2>
-          <div class="cards">
-            <div class="card card-hover" data-reveal>
-              <h3>1 · Tell us about your event</h3>
-              <p class="small">Type, location and date help us surface relevant suppliers.</p>
+          <div class="ef-section__header ef-section__header--center">
+            <span class="ef-section__kicker">Simple Process</span>
+            <h2 id="how-it-works" class="ef-section__title">How It Works</h2>
+          </div>
+          <div class="ef-grid ef-grid--3">
+            <div class="ef-card ef-card--center ef-card--hover" data-reveal>
+              <div class="ef-step-indicator">1</div>
+              <h3 class="ef-card__title">Tell us about your event</h3>
+              <p class="ef-card__text">Type, location and date help us surface relevant suppliers.</p>
             </div>
-            <div class="card card-hover" data-reveal>
-              <h3>2 · Compare suppliers</h3>
-              <p class="small">
+            <div class="ef-card ef-card--center ef-card--hover" data-reveal>
+              <div class="ef-step-indicator">2</div>
+              <h3 class="ef-card__title">Compare suppliers</h3>
+              <p class="ef-card__text">
                 Browse venues, catering, entertainment and more — add to your plan with one click.
               </p>
             </div>
-            <div class="card card-hover" data-reveal>
-              <h3>3 · Save &amp; message</h3>
-              <p class="small">
+            <div class="ef-card ef-card--center ef-card--hover" data-reveal>
+              <div class="ef-step-indicator">3</div>
+              <h3 class="ef-card__title">Save &amp; message</h3>
+              <p class="ef-card__text">
                 Create a free account to save your plan and start conversations with suppliers.
               </p>
             </div>
@@ -839,232 +963,13 @@
               Subscribe
             </button>
           </form>
+          <div id="newsletter-feedback" class="ef-form-feedback" aria-live="polite"></div>
           <p class="ef-newsletter-form__note">
             We respect your privacy. Unsubscribe at any time.
           </p>
         </div>
       </section>
     </main>
-
-    <!-- Testimonials Section (P4-01) -->
-    <section class="ef-section ef-testimonials-section" aria-label="Customer testimonials">
-      <div class="container">
-        <div class="ef-section__header">
-          <h2 class="ef-section__title">What Our Customers Say</h2>
-          <p class="ef-section__subtitle">Real experiences from real event planners</p>
-        </div>
-        
-        <div class="ef-testimonials-carousel" id="ef-testimonials-carousel">
-          <div class="ef-testimonial active">
-            <div class="ef-testimonial-content">
-              <div class="ef-testimonial-stars" aria-label="5 out of 5 stars">★★★★★</div>
-              <p class="ef-testimonial-quote">"EventFlow made planning our wedding so easy! We found amazing suppliers and managed everything in one place. Couldn't recommend it more!"</p>
-              <div class="ef-testimonial-author">
-                <strong>Sarah & Tom</strong>
-                <span class="ef-testimonial-event">Wedding, Manchester</span>
-              </div>
-            </div>
-          </div>
-          
-          <div class="ef-testimonial">
-            <div class="ef-testimonial-content">
-              <div class="ef-testimonial-stars" aria-label="5 out of 5 stars">★★★★★</div>
-              <p class="ef-testimonial-quote">"As a supplier, EventFlow has brought me so many quality leads. The platform is easy to use and the support team is fantastic."</p>
-              <div class="ef-testimonial-author">
-                <strong>James Wilson</strong>
-                <span class="ef-testimonial-event">Wedding Photographer, London</span>
-              </div>
-            </div>
-          </div>
-          
-          <div class="ef-testimonial">
-            <div class="ef-testimonial-content">
-              <div class="ef-testimonial-stars" aria-label="5 out of 5 stars">★★★★★</div>
-              <p class="ef-testimonial-quote">"The budget tracking and planning tools saved us so much stress. Everything we needed was right there when we needed it."</p>
-              <div class="ef-testimonial-author">
-                <strong>Emma Davies</strong>
-                <span class="ef-testimonial-event">Birthday Party, Birmingham</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <div class="ef-testimonials-dots" role="tablist" aria-label="Testimonial navigation">
-          <button type="button" role="tab" aria-selected="true" aria-label="View testimonial 1" data-testimonial="0" class="ef-testimonial-dot active"></button>
-          <button type="button" role="tab" aria-selected="false" aria-label="View testimonial 2" data-testimonial="1" class="ef-testimonial-dot"></button>
-          <button type="button" role="tab" aria-selected="false" aria-label="View testimonial 3" data-testimonial="2" class="ef-testimonial-dot"></button>
-        </div>
-      </div>
-    </section>
-    
-    <style>
-      /* Testimonials Section Styles */
-      .ef-testimonials-section {
-        background: linear-gradient(135deg, #f8fafc 0%, #e5f3f1 100%);
-        padding: 4rem 0;
-      }
-      
-      .ef-testimonials-carousel {
-        position: relative;
-        min-height: 200px;
-        margin: 2rem 0;
-      }
-      
-      .ef-testimonial {
-        display: none;
-        opacity: 0;
-        transition: opacity 0.5s ease-in-out;
-        text-align: center;
-        max-width: 800px;
-        margin: 0 auto;
-      }
-      
-      .ef-testimonial.active {
-        display: block;
-        opacity: 1;
-      }
-      
-      .ef-testimonial-content {
-        background: white;
-        padding: 2.5rem;
-        border-radius: 16px;
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-      }
-      
-      .ef-testimonial-stars {
-        color: #f59e0b;
-        font-size: 1.5rem;
-        margin-bottom: 1rem;
-      }
-      
-      .ef-testimonial-quote {
-        font-size: 1.125rem;
-        line-height: 1.75;
-        color: #1f2937;
-        margin-bottom: 1.5rem;
-        font-style: italic;
-      }
-      
-      .ef-testimonial-author {
-        display: flex;
-        flex-direction: column;
-        gap: 0.25rem;
-      }
-      
-      .ef-testimonial-author strong {
-        color: #0B8073;
-        font-size: 1rem;
-      }
-      
-      .ef-testimonial-event {
-        color: #6b7280;
-        font-size: 0.875rem;
-      }
-      
-      .ef-testimonials-dots {
-        display: flex;
-        justify-content: center;
-        gap: 0.75rem;
-        margin-top: 2rem;
-      }
-      
-      .ef-testimonial-dot {
-        width: 12px;
-        height: 12px;
-        border-radius: 50%;
-        background: #d1d5db;
-        border: none;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        padding: 0;
-      }
-      
-      .ef-testimonial-dot.active,
-      .ef-testimonial-dot:hover {
-        background: #0B8073;
-        transform: scale(1.2);
-      }
-      
-      @media (max-width: 768px) {
-        .ef-testimonial-content {
-          padding: 1.5rem;
-        }
-        
-        .ef-testimonial-quote {
-          font-size: 1rem;
-        }
-      }
-    </style>
-    
-    <script>
-      // Testimonials carousel functionality (P4-01)
-      (function() {
-        let currentTestimonial = 0;
-        let carouselInterval = null;
-        const testimonials = document.querySelectorAll('.ef-testimonial');
-        const dots = document.querySelectorAll('.ef-testimonial-dot');
-        
-        function showTestimonial(index) {
-          // Hide all testimonials
-          testimonials.forEach(t => {
-            t.classList.remove('active');
-            t.setAttribute('aria-hidden', 'true');
-          });
-          
-          // Update dots
-          dots.forEach((dot, i) => {
-            dot.classList.toggle('active', i === index);
-            dot.setAttribute('aria-selected', i === index ? 'true' : 'false');
-          });
-          
-          // Show selected testimonial
-          testimonials[index].classList.add('active');
-          testimonials[index].setAttribute('aria-hidden', 'false');
-          currentTestimonial = index;
-        }
-        
-        // Dot click handlers
-        dots.forEach((dot, index) => {
-          dot.addEventListener('click', () => {
-            showTestimonial(index);
-            // Reset interval on manual interaction
-            if (carouselInterval) {
-              clearInterval(carouselInterval);
-            }
-            startAutoRotation();
-          });
-        });
-        
-        // Auto-rotate testimonials every 5 seconds
-        function startAutoRotation() {
-          carouselInterval = setInterval(() => {
-            currentTestimonial = (currentTestimonial + 1) % testimonials.length;
-            showTestimonial(currentTestimonial);
-          }, 5000);
-        }
-        
-        startAutoRotation();
-        
-        // Pause rotation when section is not visible (Intersection Observer)
-        if ('IntersectionObserver' in window) {
-          const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-              if (!entry.isIntersecting && carouselInterval) {
-                clearInterval(carouselInterval);
-                carouselInterval = null;
-              } else if (entry.isIntersecting && !carouselInterval) {
-                startAutoRotation();
-              }
-            });
-          }, { threshold: 0.5 });
-          
-          const section = document.querySelector('.ef-testimonials-section');
-          if (section) {
-            observer.observe(section);
-          }
-        }
-      })();
-    </script>
 
     <footer class="footer" role="contentinfo">
       <div class="container ef-footer-content">
@@ -1160,6 +1065,7 @@
     <!-- Carousel must load before home-init.js -->
     <script src="/assets/js/components/carousel.js" defer></script>
     <script src="/assets/js/pages/home-init.js" defer></script>
+    <script src="/assets/js/home.js" defer></script>
     <script src="/assets/js/cookie-consent.js" defer></script>
     <script defer>
       // Initialize core utilities
