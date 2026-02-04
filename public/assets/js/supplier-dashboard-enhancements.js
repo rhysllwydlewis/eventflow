@@ -139,7 +139,7 @@
       if (!isDown || window.innerWidth > 768) return;
       e.preventDefault();
       const x = e.pageX - container.offsetLeft;
-      const walk = (x - startX) * 1;
+      const walk = x - startX;
       container.scrollLeft = scrollLeft - walk;
     });
   }
