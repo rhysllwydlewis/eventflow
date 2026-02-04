@@ -3377,6 +3377,12 @@ textarea:focus-visible {
   padding: var(--ef-space-4, 16px);
   margin-bottom: var(--ef-space-4, 16px);
   position: relative;
+  /* Ensure gradient background and white text are maintained */
+  background: linear-gradient(135deg, 
+    rgba(11, 128, 115, 0.85) 0%, 
+    rgba(10, 107, 95, 0.92) 100%
+  ) !important;
+  color: white !important;
 }
 
 /* Welcome dismiss button */
@@ -3445,6 +3451,7 @@ textarea:focus-visible {
   align-items: center;
   text-align: center;
   flex: 1;
+  color: white;
 }
 
 .welcome-stat-item .stat-icon {
@@ -3456,11 +3463,13 @@ textarea:focus-visible {
   font-size: var(--ef-text-lg, 18px);
   font-weight: var(--ef-font-bold, 700);
   margin-bottom: var(--ef-space-1, 4px);
+  color: white;
 }
 
 .welcome-stat-item .stat-label {
   font-size: var(--ef-text-xs, 12px);
   opacity: 0.9;
+  color: rgba(255, 255, 255, 0.9);
 }
 
 /* Compact tip section */
@@ -3473,9 +3482,22 @@ textarea:focus-visible {
   display: flex;
   align-items: center;
   gap: var(--ef-space-2, 8px);
+  color: white;
 }
 
 .welcome-tip-compact .tip-icon {
   font-size: 20px;
   flex-shrink: 0;
+}
+
+/* Ensure all text elements in compact welcome card are white */
+.supplier-welcome-card--compact .supplier-welcome-content,
+.supplier-welcome-card--compact .supplier-welcome-greeting,
+.supplier-welcome-card--compact .supplier-welcome-title,
+.supplier-welcome-card--compact .supplier-welcome-subtitle {
+  color: white;
+}
+
+.supplier-welcome-card--compact .supplier-welcome-subtitle {
+  color: rgba(255, 255, 255, 0.9);
 }
