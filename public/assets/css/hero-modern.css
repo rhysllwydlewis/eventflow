@@ -7,8 +7,8 @@
    ========================================================================== */
 
 :root {
-  /* Hero section spacing - AGGRESSIVELY REDUCED */
-  --hero-padding-top: clamp(24px, 4vw, 48px);
+  /* Hero section spacing - FURTHER REDUCED FOR MINIMAL TOP SPACE */
+  --hero-padding-top: clamp(20px, 3vw, 32px);
   --hero-padding-bottom: clamp(16px, 3vw, 32px);
   --hero-gap: clamp(16px, 3vw, 40px);
   
@@ -600,13 +600,17 @@
   }
 }
 
-/* Hero collage container */
+/* Hero collage container - 3 row layout:
+   Row 1: Video card (spans 2 columns) - compact
+   Row 2: Venues + Catering cards - significantly taller
+   Row 3: Entertainment + Photography cards - significantly taller
+   This creates a 2x2 grid of tall category cards below a compact video */
 .hero-collage {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  grid-template-rows: 1.35fr 1fr 1fr;
-  gap: 16px;
-  aspect-ratio: 16/14;
+  grid-template-rows: 0.9fr 1.8fr 1.8fr;
+  gap: 14px;
+  aspect-ratio: 16/20;  /* Taller ratio to accommodate larger category cards */
   max-height: 90vh;
   max-width: 100%;
   overflow: hidden;
