@@ -1140,7 +1140,12 @@ async function initPexelsCollage(settings) {
   };
 
   // Get all collage frames - support both new and old structures
-  let collageFrames = document.querySelectorAll('.hero-collage .hero-collage-card');
+  let collageFrames = document.querySelectorAll('.liquid-grid-container .liquid-card.category-item');
+
+  // Fallback to newer hero-collage structure
+  if (!collageFrames || collageFrames.length === 0) {
+    collageFrames = document.querySelectorAll('.hero-collage .hero-collage-card');
+  }
 
   // Fallback to old structure for backwards compatibility
   if (!collageFrames || collageFrames.length === 0) {
@@ -1440,7 +1445,7 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = [], heroVideoCo
   const videoElement = document.getElementById('hero-pexels-video');
   const videoSource = document.getElementById('hero-video-source');
   const videoCredit = document.getElementById('hero-video-credit');
-  const videoCard = document.querySelector('.hero-video-card');
+  const videoCard = document.querySelector('.liquid-card.hero-video') || document.querySelector('.hero-video-card');
 
   if (!videoElement || !videoSource) {
     return; // Video elements not present in HTML
@@ -1862,7 +1867,12 @@ async function initCollageWidget(widgetConfig) {
   };
 
   // Get all collage cards (new structure)
-  let collageFrames = document.querySelectorAll('.hero-collage .hero-collage-card');
+  let collageFrames = document.querySelectorAll('.liquid-grid-container .liquid-card.category-item');
+
+  // Fallback to newer hero-collage structure
+  if (!collageFrames || collageFrames.length === 0) {
+    collageFrames = document.querySelectorAll('.hero-collage .hero-collage-card');
+  }
 
   // Fallback to old structure for backwards compatibility
   if (!collageFrames || collageFrames.length === 0) {

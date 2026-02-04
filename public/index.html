@@ -176,6 +176,7 @@
     <link rel="preload" href="/assets/css/homepage-enhancements.css?v=18.2.0" as="style" />
     <link rel="preload" href="/assets/css/hero-modern.css?v=18.2.0" as="style" />
     <link rel="preload" href="/assets/css/modern-landing.css?v=18.2.0" as="style" />
+    <link rel="preload" href="/assets/css/liquid-glass-grid.css?v=18.2.0" as="style" />
 
     <!-- Critical Stylesheets - Load synchronously -->
     <link rel="stylesheet" href="/assets/css/tokens.css?v=18.2.0" />
@@ -188,6 +189,7 @@
     <link rel="stylesheet" href="/assets/css/ef-search-bar.css?v=18.2.0">
     <!-- Modern 2026 Aesthetic CSS -->
     <link rel="stylesheet" href="/assets/css/modern-landing.css?v=18.2.0" />
+    <link rel="stylesheet" href="/assets/css/liquid-glass-grid.css?v=18.2.0" />
     
     <!-- Non-critical CSS - Defer via preload -->
     <link rel="preload" href="/assets/css/navbar.css?v=18.2.0" as="style" onload="this.onload=null;this.rel='stylesheet'" />
@@ -495,9 +497,9 @@
             </div>
           </div>
           <div>
-            <div class="hero-collage ef-fade-up delay-3" aria-hidden="true">
-              <!-- Row 1: Video (no label, spans 2 columns) -->
-              <div class="hero-video-card">
+            <div class="liquid-grid-container ef-fade-up delay-3" aria-hidden="true">
+              <!-- Hero Video: 6 columns, 2 rows -->
+              <div class="liquid-card hero-video">
                 <!-- Video autoplay is controlled by JavaScript based on prefers-reduced-motion -->
                 <video id="hero-pexels-video" muted loop playsinline preload="metadata"
                        poster="/assets/images/hero-video-poster.jpg"
@@ -509,54 +511,56 @@
                 <span class="hero-video-credit" id="hero-video-credit">Video by Pexels</span>
               </div>
               
-              <!-- Row 2: Venues + Catering -->
-              <a href="/category.html?slug=venues" class="hero-collage-card" data-category="venues">
+              <!-- Category: Venues - 3 columns, 1 row -->
+              <a href="/category.html?slug=venues" class="liquid-card category-item" data-category="venues">
                 <img src="/assets/images/collage-venue.jpg" alt="Venues" id="collage-venues" 
                      width="400" height="300" loading="eager" fetchpriority="high" decoding="async"
-                     sizes="(max-width: 768px) 48vw, 25vw"
+                     sizes="(max-width: 768px) 100vw, 25vw"
                      onerror="this.style.background='linear-gradient(135deg, #667eea 0%, #764ba2 100%)'; this.style.minHeight='200px'; this.src=''; this.onerror=null;">
-                <span class="hero-collage-label">
-                  <span class="hero-collage-icon">🏛️</span>
+                <span class="category-label">
+                  <span class="category-icon">🏛️</span>
                   Venues
                 </span>
-                <span class="hero-collage-credit" id="credit-venues"></span>
+                <span class="category-credit" id="credit-venues"></span>
               </a>
               
-              <a href="/category.html?slug=catering" class="hero-collage-card" data-category="catering">
+              <!-- Category: Catering - 3 columns, 1 row -->
+              <a href="/category.html?slug=catering" class="liquid-card category-item" data-category="catering">
                 <img src="/assets/images/collage-catering.jpg" alt="Catering" id="collage-catering"
                      width="400" height="300" loading="eager" fetchpriority="high" decoding="async"
-                     sizes="(max-width: 768px) 48vw, 25vw"
+                     sizes="(max-width: 768px) 100vw, 25vw"
                      onerror="this.style.background='linear-gradient(135deg, #f093fb 0%, #f5576c 100%)'; this.style.minHeight='200px'; this.src=''; this.onerror=null;">
-                <span class="hero-collage-label">
-                  <span class="hero-collage-icon">🍽️</span>
+                <span class="category-label">
+                  <span class="category-icon">🍽️</span>
                   Catering
                 </span>
-                <span class="hero-collage-credit" id="credit-catering"></span>
+                <span class="category-credit" id="credit-catering"></span>
               </a>
               
-              <!-- Row 3: Entertainment + Photography -->
-              <a href="/category.html?slug=entertainment" class="hero-collage-card" data-category="entertainment">
+              <!-- Category: Entertainment - 3 columns, 1 row -->
+              <a href="/category.html?slug=entertainment" class="liquid-card category-item" data-category="entertainment">
                 <img src="/assets/images/collage-entertainment.jpg" alt="Entertainment" id="collage-entertainment"
                      width="400" height="300" loading="eager" fetchpriority="high" decoding="async"
-                     sizes="(max-width: 768px) 48vw, 25vw"
+                     sizes="(max-width: 768px) 100vw, 25vw"
                      onerror="this.style.background='linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)'; this.style.minHeight='200px'; this.src=''; this.onerror=null;">
-                <span class="hero-collage-label">
-                  <span class="hero-collage-icon">🎤</span>
+                <span class="category-label">
+                  <span class="category-icon">🎤</span>
                   Entertainment
                 </span>
-                <span class="hero-collage-credit" id="credit-entertainment"></span>
+                <span class="category-credit" id="credit-entertainment"></span>
               </a>
               
-              <a href="/category.html?slug=photography" class="hero-collage-card" data-category="photography">
+              <!-- Category: Photography - 3 columns, 1 row -->
+              <a href="/category.html?slug=photography" class="liquid-card category-item" data-category="photography">
                 <img src="/assets/images/collage-photography.jpg" alt="Photography" id="collage-photography"
                      width="400" height="300" loading="eager" fetchpriority="high" decoding="async"
-                     sizes="(max-width: 768px) 48vw, 25vw"
+                     sizes="(max-width: 768px) 100vw, 25vw"
                      onerror="this.style.background='linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)'; this.style.minHeight='200px'; this.src=''; this.onerror=null;">
-                <span class="hero-collage-label">
-                  <span class="hero-collage-icon">📸</span>
+                <span class="category-label">
+                  <span class="category-icon">📸</span>
                   Photography
                 </span>
-                <span class="hero-collage-credit" id="credit-photography"></span>
+                <span class="category-credit" id="credit-photography"></span>
               </a>
             </div>
           </div>
