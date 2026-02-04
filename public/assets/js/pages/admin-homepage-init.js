@@ -816,7 +816,7 @@
   const cancelCategoryBtn = document.getElementById('cancelCategoryBtn');
   const saveCategoryBtn = document.getElementById('saveCategoryBtn');
   const searchPexelsBtn = document.getElementById('searchPexelsBtn');
-  
+
   async function loadAllCategories() {
     try {
       const response = await fetch('/api/categories', {
@@ -837,22 +837,23 @@
 
   function renderCategoryCards() {
     if (allCategories.length === 0) {
-      categoryCardsGrid.innerHTML = '<div class="card"><p>No categories yet. Click "Add Category" to create one.</p></div>';
+      categoryCardsGrid.innerHTML =
+        '<div class="card"><p>No categories yet. Click "Add Category" to create one.</p></div>';
       return;
     }
 
     categoryCardsGrid.innerHTML = '';
-    
+
     allCategories.forEach(category => {
       const card = document.createElement('div');
       card.className = 'admin-category-card';
       card.dataset.id = category.id;
-      
+
       const hasImage = category.heroImage && category.heroImage.trim() !== '';
       const imagePreviewHtml = hasImage
         ? `<img src="${escapeHtml(category.heroImage)}" alt="${escapeHtml(category.name)}" />`
         : '<span>No image</span>';
-      
+
       card.innerHTML = `
         <div class="admin-category-card-header">
           <div class="admin-category-card-title">
@@ -881,21 +882,21 @@
           </div>
         </div>
       `;
-      
+
       categoryCardsGrid.appendChild(card);
     });
-    
+
     // Add event listeners
     document.querySelectorAll('.edit-category-btn').forEach(btn => {
       btn.addEventListener('click', () => openEditCategoryModal(btn.dataset.id));
     });
-    
+
     document.querySelectorAll('.delete-category-btn').forEach(btn => {
       btn.addEventListener('click', () => deleteCategory(btn.dataset.id));
     });
-    
+
     document.querySelectorAll('.visibility-toggle').forEach(toggle => {
-      toggle.addEventListener('change', (e) => {
+      toggle.addEventListener('change', e => {
         toggleCategoryVisibility(toggle.dataset.id, e.target.checked);
       });
     });
@@ -915,8 +916,10 @@
   function openEditCategoryModal(categoryId) {
     editingCategoryId = categoryId;
     const category = allCategories.find(c => c.id === categoryId);
-    if (!category) return;
-    
+    if (!category) {
+      return;
+    }
+
     document.getElementById('categoryModalTitle').textContent = 'Edit Category';
     document.getElementById('categoryId').value = category.id;
     document.getElementById('categoryName').value = category.name;
@@ -926,7 +929,7 @@
     document.getElementById('categoryHeroImage').value = category.heroImage || '';
     document.getElementById('categoryPexelsAttribution').value = category.pexelsAttribution || '';
     document.getElementById('categoryVisible').checked = category.visible !== false;
-    
+
     // Show selected image if exists
     if (category.heroImage) {
       document.getElementById('selectedImageThumbnail').src = category.heroImage;
@@ -935,7 +938,7 @@
     } else {
       document.getElementById('selectedImagePreview').style.display = 'none';
     }
-    
+
     clearPexelsResults();
     categoryModal.classList.add('show');
     categoryModal.style.display = 'flex';
@@ -955,12 +958,12 @@
     const heroImage = document.getElementById('categoryHeroImage').value.trim();
     const pexelsAttribution = document.getElementById('categoryPexelsAttribution').value.trim();
     const visible = document.getElementById('categoryVisible').checked;
-    
+
     if (!name || !slug) {
       alert('Name and slug are required');
       return;
     }
-    
+
     const categoryData = {
       name,
       slug,
@@ -970,14 +973,14 @@
       pexelsAttribution,
       visible,
     };
-    
+
     try {
       const csrfResponse = await fetch('/api/auth/csrf', {
         credentials: 'include',
       });
       const csrfData = await csrfResponse.json();
       const csrfToken = csrfData.csrfToken;
-      
+
       let response;
       if (editingCategoryId) {
         // Update existing category
@@ -1002,7 +1005,7 @@
           body: JSON.stringify(categoryData),
         });
       }
-      
+
       if (response.ok) {
         closeCategoryModalFunc();
         await loadAllCategories();
@@ -1019,19 +1022,21 @@
 
   async function deleteCategory(categoryId) {
     const category = allCategories.find(c => c.id === categoryId);
-    if (!category) return;
-    
+    if (!category) {
+      return;
+    }
+
     if (!confirm(`Are you sure you want to delete "${category.name}"?`)) {
       return;
     }
-    
+
     try {
       const csrfResponse = await fetch('/api/auth/csrf', {
         credentials: 'include',
       });
       const csrfData = await csrfResponse.json();
       const csrfToken = csrfData.csrfToken;
-      
+
       const response = await fetch(`/api/admin/categories/${categoryId}`, {
         method: 'DELETE',
         headers: {
@@ -1039,7 +1044,7 @@
         },
         credentials: 'include',
       });
-      
+
       if (response.ok) {
         await loadAllCategories();
         alert('Category deleted successfully!');
@@ -1060,7 +1065,7 @@
       });
       const csrfData = await csrfResponse.json();
       const csrfToken = csrfData.csrfToken;
-      
+
       const response = await fetch(`/api/admin/categories/${categoryId}/visibility`, {
         method: 'PUT',
         headers: {
@@ -1070,7 +1075,7 @@
         credentials: 'include',
         body: JSON.stringify({ visible }),
       });
-      
+
       if (response.ok) {
         // Update local state
         const category = allCategories.find(c => c.id === categoryId);
@@ -1098,19 +1103,19 @@
       alert('Please enter a search query');
       return;
     }
-    
+
     searchPexelsBtn.disabled = true;
     searchPexelsBtn.textContent = 'Searching...';
-    
+
     try {
       const response = await fetch(`/api/pexels/search?q=${encodeURIComponent(query)}&perPage=12`, {
         credentials: 'include',
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to search Pexels');
       }
-      
+
       const data = await response.json();
       displayPexelsResults(data.photos || []);
     } catch (error) {
@@ -1125,15 +1130,16 @@
   function displayPexelsResults(photos) {
     const resultsGrid = document.getElementById('pexelsResultsGrid');
     const resultsContainer = document.getElementById('pexelsResults');
-    
+
     if (photos.length === 0) {
       resultsContainer.style.display = 'block';
-      resultsGrid.innerHTML = '<p style="grid-column: 1 / -1; text-align: center; color: #6b7280;">No images found</p>';
+      resultsGrid.innerHTML =
+        '<p style="grid-column: 1 / -1; text-align: center; color: #6b7280;">No images found</p>';
       return;
     }
-    
+
     resultsGrid.innerHTML = '';
-    
+
     photos.forEach(photo => {
       const option = document.createElement('div');
       option.className = 'pexels-image-option';
@@ -1141,23 +1147,28 @@
         <img src="${photo.src.medium}" alt="Photo by ${escapeHtml(photo.photographer)}" />
         <div class="pexels-image-photographer">Photo by ${escapeHtml(photo.photographer)}</div>
       `;
-      
+
       option.addEventListener('click', () => {
         selectPexelsImage(photo);
         // Visual feedback
-        document.querySelectorAll('.pexels-image-option').forEach(opt => opt.classList.remove('selected'));
+        document
+          .querySelectorAll('.pexels-image-option')
+          .forEach(opt => opt.classList.remove('selected'));
         option.classList.add('selected');
       });
-      
+
       resultsGrid.appendChild(option);
     });
-    
+
     resultsContainer.style.display = 'block';
   }
 
   function selectPexelsImage(photo) {
-    const attribution = `Photo by <a href="${photo.photographer_url}" target="_blank">${photo.photographer}</a> on <a href="https://www.pexels.com" target="_blank">Pexels</a>`;
-    
+    // Escape photographer name for security
+    const escapedPhotographer = escapeHtml(photo.photographer);
+    const escapedPhotographerUrl = escapeHtml(photo.photographer_url);
+    const attribution = `Photo by <a href="${escapedPhotographerUrl}" target="_blank">${escapedPhotographer}</a> on <a href="https://www.pexels.com" target="_blank">Pexels</a>`;
+
     document.getElementById('categoryHeroImage').value = photo.src.large;
     document.getElementById('categoryPexelsAttribution').value = attribution;
     document.getElementById('selectedImageThumbnail').src = photo.src.medium;
@@ -1186,7 +1197,7 @@
   searchPexelsBtn.addEventListener('click', searchPexels);
 
   // Auto-generate slug from name
-  document.getElementById('categoryName').addEventListener('input', (e) => {
+  document.getElementById('categoryName').addEventListener('input', e => {
     const slugInput = document.getElementById('categorySlug');
     if (!editingCategoryId || slugInput.value === '') {
       slugInput.value = e.target.value
@@ -1197,7 +1208,7 @@
   });
 
   // Close modal when clicking outside
-  categoryModal.addEventListener('click', (e) => {
+  categoryModal.addEventListener('click', e => {
     if (e.target === categoryModal) {
       closeCategoryModalFunc();
     }

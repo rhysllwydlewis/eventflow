@@ -2688,7 +2688,7 @@ app.post(
       }
 
       const categories = await dbUnified.read('categories');
-      
+
       // Check if slug already exists
       if (categories.find(c => c.slug === slug)) {
         return res.status(400).json({ error: 'Category with this slug already exists' });
@@ -2696,7 +2696,7 @@ app.post(
 
       // Generate unique ID
       const newCategory = {
-        id: `cat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        id: `cat_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
         name,
         slug,
         description: description || '',
@@ -2747,13 +2747,27 @@ app.put(
       }
 
       // Update fields
-      if (name !== undefined) categories[categoryIndex].name = name;
-      if (slug !== undefined) categories[categoryIndex].slug = slug;
-      if (description !== undefined) categories[categoryIndex].description = description;
-      if (icon !== undefined) categories[categoryIndex].icon = icon;
-      if (heroImage !== undefined) categories[categoryIndex].heroImage = heroImage;
-      if (pexelsAttribution !== undefined) categories[categoryIndex].pexelsAttribution = pexelsAttribution;
-      if (visible !== undefined) categories[categoryIndex].visible = visible;
+      if (name !== undefined) {
+        categories[categoryIndex].name = name;
+      }
+      if (slug !== undefined) {
+        categories[categoryIndex].slug = slug;
+      }
+      if (description !== undefined) {
+        categories[categoryIndex].description = description;
+      }
+      if (icon !== undefined) {
+        categories[categoryIndex].icon = icon;
+      }
+      if (heroImage !== undefined) {
+        categories[categoryIndex].heroImage = heroImage;
+      }
+      if (pexelsAttribution !== undefined) {
+        categories[categoryIndex].pexelsAttribution = pexelsAttribution;
+      }
+      if (visible !== undefined) {
+        categories[categoryIndex].visible = visible;
+      }
 
       await dbUnified.write('categories', categories);
 
@@ -2815,13 +2829,20 @@ app.put(
       }
 
       const categories = await dbUnified.read('categories');
-      
+
       // Update order based on position in array
       orderedIds.forEach((id, index) => {
         const category = categories.find(c => c.id === id);
         if (category) {
           category.order = index + 1;
         }
+      });
+
+      // Handle orphaned categories (not in orderedIds) - assign them to the end
+      const orderedSet = new Set(orderedIds);
+      const orphanedCategories = categories.filter(c => !orderedSet.has(c.id));
+      orphanedCategories.forEach((category, index) => {
+        category.order = orderedIds.length + index + 1;
       });
 
       // Sort by order

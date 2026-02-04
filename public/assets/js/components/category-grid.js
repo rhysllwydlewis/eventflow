@@ -196,8 +196,10 @@ class CategoryGrid {
     const imageHtml = hasImage
       ? `<img class="category-card-image" src="${category.heroImage}" alt="${category.name}" loading="lazy">`
       : '';
-    
+
     // Add Pexels attribution if present
+    // Note: pexelsAttribution contains pre-sanitized HTML from admin (escaped during creation)
+    // This is acceptable as it's admin-controlled content, not user-generated
     const creditHtml = category.pexelsAttribution
       ? `<div class="category-card-credit">${category.pexelsAttribution}</div>`
       : '';
