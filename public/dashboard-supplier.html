@@ -330,25 +330,28 @@ window.announceToSR = function(message) {
 <!-- Enquiry Trend Chart -->
 <div id="enquiry-trend-chart"></div>
 
-<!-- Earnings Overview Section (Placeholder) -->
-<section id="earnings-overview" class="card" style="margin-top: 2rem; padding: 2rem;" aria-labelledby="earnings-heading">
-  <h2 id="earnings-heading" style="margin-bottom: 1rem; font-size: 1.5rem;">💰 Earnings Overview</h2>
-  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
-    <div style="padding: 1rem; background: linear-gradient(135deg, #10B981 0%, #34D399 100%); border-radius: 8px; color: white;">
-      <div style="font-size: 0.875rem; opacity: 0.9; margin-bottom: 0.5rem;">Total Revenue</div>
-      <div style="font-size: 2rem; font-weight: 600;">£0.00</div>
+<!-- Earnings Overview Section (Beta Preview) -->
+<section id="earnings-overview" class="card" style="margin-top: 2rem; padding: 2rem; background: linear-gradient(135deg, #F9FAFB 0%, #F3F4F6 100%); border: 2px dashed #D1D5DB;" aria-labelledby="earnings-heading">
+  <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
+    <h2 id="earnings-heading" style="margin: 0; font-size: 1.5rem; color: #6B7280;">💰 Earnings Overview</h2>
+    <span style="padding: 0.25rem 0.75rem; background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%); color: white; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; border-radius: 9999px;">Beta</span>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; opacity: 0.6;">
+    <div style="padding: 1rem; background: white; border-radius: 8px; border: 1px solid #E5E7EB;">
+      <div style="font-size: 0.875rem; color: #9CA3AF; margin-bottom: 0.5rem;">Total Revenue</div>
+      <div style="font-size: 2rem; font-weight: 600; color: #D1D5DB;">£0.00</div>
     </div>
-    <div style="padding: 1rem; background: linear-gradient(135deg, #3B82F6 0%, #60A5FA 100%); border-radius: 8px; color: white;">
-      <div style="font-size: 0.875rem; opacity: 0.9; margin-bottom: 0.5rem;">This Month</div>
-      <div style="font-size: 2rem; font-weight: 600;">£0.00</div>
+    <div style="padding: 1rem; background: white; border-radius: 8px; border: 1px solid #E5E7EB;">
+      <div style="font-size: 0.875rem; color: #9CA3AF; margin-bottom: 0.5rem;">This Month</div>
+      <div style="font-size: 2rem; font-weight: 600; color: #D1D5DB;">£0.00</div>
     </div>
-    <div style="padding: 1rem; background: linear-gradient(135deg, #F59E0B 0%, #FBBF24 100%); border-radius: 8px; color: white;">
-      <div style="font-size: 0.875rem; opacity: 0.9; margin-bottom: 0.5rem;">Pending</div>
-      <div style="font-size: 2rem; font-weight: 600;">£0.00</div>
+    <div style="padding: 1rem; background: white; border-radius: 8px; border: 1px solid #E5E7EB;">
+      <div style="font-size: 0.875rem; color: #9CA3AF; margin-bottom: 0.5rem;">Pending</div>
+      <div style="font-size: 2rem; font-weight: 600; color: #D1D5DB;">£0.00</div>
     </div>
   </div>
-  <div style="padding: 1.5rem; background: #F9FAFB; border-radius: 8px; text-align: center;">
-    <p style="margin-bottom: 1rem; color: #6B7280;">Full earnings tracking and payment management coming soon!</p>
+  <div style="padding: 1.5rem; background: white; border-radius: 8px; text-align: center; border: 1px solid #E5E7EB;">
+    <p style="margin-bottom: 0.75rem; color: #6B7280; font-weight: 500;">🚀 Earnings tracking coming soon!</p>
     <p style="font-size: 0.875rem; color: #9CA3AF;">Track revenue, manage invoices, view payment history, and export financial reports.</p>
   </div>
 </section>
@@ -905,7 +908,7 @@ window.announceToSR = function(message) {
   } from '/supplier/js/feature-access.js';
   
   import { createStatsGrid, createProfileChecklist } from '/assets/js/dashboard-widgets.js';
-  import { createPerformanceChart, createAnalyticsSummary, createEnquiryTrendChart } from '/assets/js/supplier-analytics-chart.js';
+  import { createPerformanceChart, createAnalyticsSummary, createEnquiryTrendChart, createLeadQualityWidget, loadReviewStats } from '/assets/js/supplier-analytics-chart.js';
   import { initCountUp } from '/assets/js/count-up-animation.js';
   
   // Initialize feature access control (non-blocking)
@@ -1017,6 +1020,12 @@ window.announceToSR = function(message) {
       
       // Create enquiry trend chart
       await createEnquiryTrendChart('enquiry-trend-chart');
+      
+      // Initialize Lead Quality widget
+      await createLeadQualityWidget('lead-quality-breakdown');
+      
+      // Initialize Reviews & Ratings section
+      await loadReviewStats('supplier-reviews-section');
       
       // Fetch supplier profiles to check completion
       let hasProfile = false;

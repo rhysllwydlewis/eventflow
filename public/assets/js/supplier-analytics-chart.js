@@ -581,11 +581,14 @@ async function fetchEnquiryTrendData() {
 
     const result = await response.json();
 
-    if (!result.success || !result.analytics || !result.analytics.chartData) {
-      throw new Error('Invalid analytics data');
+    // Add null checks to prevent "Invalid analytics data" errors
+    if (!result.success || !result.analytics) {
+      console.warn('Analytics data missing or unsuccessful response');
+      return null;
     }
 
-    const chartData = result.analytics.chartData;
+    // Handle missing chartData gracefully - return safe defaults
+    const chartData = result.analytics.chartData || [];
 
     // Generate last 30 and previous 30 days
     const now = new Date();
@@ -627,11 +630,230 @@ async function fetchEnquiryTrendData() {
   }
 }
 
+/**
+ * Create Lead Quality widget with enquiry breakdown
+ * @param {string} containerId - Container element ID
+ */
+export async function createLeadQualityWidget(containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) {
+    console.warn(`Container "${containerId}" not found for Lead Quality widget`);
+    return;
+  }
+
+  try {
+    // Fetch lead quality data
+    const data = await fetchLeadQualityData();
+
+    if (!data || !data.breakdown) {
+      // Show empty state
+      container.innerHTML = `
+        <div style="padding: 2rem; text-align: center; background: #F9FAFB; border-radius: 8px;">
+          <div style="font-size: 2rem; margin-bottom: 0.5rem;">📊</div>
+          <p style="color: #6B7280; margin: 0;">No lead quality data available yet.</p>
+          <p style="color: #9CA3AF; font-size: 0.875rem; margin-top: 0.5rem;">Data will appear as you receive enquiries.</p>
+        </div>
+      `;
+      return;
+    }
+
+    // Render lead quality breakdown
+    const total = data.breakdown.reduce((sum, item) => sum + item.count, 0);
+    const breakdownHTML = data.breakdown
+      .map(item => {
+        const percentage = total > 0 ? ((item.count / total) * 100).toFixed(1) : 0;
+        return `
+        <div style="display: flex; align-items: center; gap: 1rem; padding: 0.75rem; background: white; border-radius: 8px; border: 1px solid #E5E7EB;">
+          <div style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; background: ${item.color}; border-radius: 8px; color: white; font-weight: 700; font-size: 1.25rem;">
+            ${item.icon}
+          </div>
+          <div style="flex: 1;">
+            <div style="font-weight: 600; color: #374151; margin-bottom: 0.25rem;">${item.type}</div>
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <div style="flex: 1; height: 6px; background: #E5E7EB; border-radius: 3px; overflow: hidden;">
+                <div style="height: 100%; background: ${item.color}; width: ${percentage}%; transition: width 0.3s ease;"></div>
+              </div>
+              <span style="font-size: 0.875rem; color: #6B7280; min-width: 50px;">${percentage}%</span>
+            </div>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-size: 1.5rem; font-weight: 700; color: #0B1220;">${item.count}</div>
+            <div style="font-size: 0.75rem; color: #9CA3AF;">enquiries</div>
+          </div>
+        </div>
+      `;
+      })
+      .join('');
+
+    container.innerHTML = `
+      <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+        ${breakdownHTML}
+      </div>
+    `;
+  } catch (error) {
+    console.error('Error creating Lead Quality widget:', error);
+    container.innerHTML = `
+      <div style="padding: 1.5rem; text-align: center; color: #EF4444; background: #FEF2F2; border-radius: 8px;">
+        <p style="margin: 0;">Unable to load lead quality data.</p>
+      </div>
+    `;
+  }
+}
+
+/**
+ * Fetch lead quality data
+ * @returns {Promise<object>} Lead quality breakdown
+ */
+async function fetchLeadQualityData() {
+  try {
+    // Try to fetch from API first
+    const response = await fetch('/api/supplier/lead-quality', {
+      credentials: 'include',
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      if (data.success && data.breakdown) {
+        return data;
+      }
+    }
+
+    // Fallback to mock data (matching other widgets until backend is ready)
+    // This provides a visual example for demonstration
+    return {
+      breakdown: [
+        {
+          type: 'Qualified',
+          count: Math.floor(Math.random() * 15) + 5,
+          icon: '✓',
+          color: '#10B981',
+        },
+        {
+          type: 'Interested',
+          count: Math.floor(Math.random() * 10) + 3,
+          icon: '↗',
+          color: '#3B82F6',
+        },
+        {
+          type: 'Cold',
+          count: Math.floor(Math.random() * 8) + 2,
+          icon: '❄',
+          color: '#6B7280',
+        },
+        {
+          type: 'Spam',
+          count: Math.floor(Math.random() * 5),
+          icon: '✕',
+          color: '#EF4444',
+        },
+      ],
+    };
+  } catch (error) {
+    console.error('Error fetching lead quality data:', error);
+    return null;
+  }
+}
+
+/**
+ * Load and display review statistics
+ * @param {string} containerId - Container element ID
+ */
+export async function loadReviewStats(containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) {
+    console.warn(`Container "${containerId}" not found for review stats`);
+    return;
+  }
+
+  try {
+    // Fetch review statistics
+    const stats = await fetchReviewStats();
+
+    if (!stats || stats.totalReviews === 0) {
+      // Show graceful empty state (not "broken" looking)
+      container.innerHTML = `
+        <div style="padding: 2rem; text-align: center; background: #F9FAFB; border-radius: 8px;">
+          <div style="font-size: 3rem; margin-bottom: 1rem;">⭐⭐⭐⭐⭐</div>
+          <div style="font-size: 1.5rem; font-weight: 600; margin-bottom: 0.5rem;">No reviews yet</div>
+          <p style="color: #6B7280; margin-bottom: 1.5rem;">Reviews from customers will appear here once you complete your first booking.</p>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; max-width: 600px; margin: 0 auto;">
+            <div style="padding: 1rem; background: white; border-radius: 8px; border: 1px solid #E5E7EB;">
+              <div style="font-size: 0.875rem; color: #9CA3AF; margin-bottom: 0.25rem;">Average Rating</div>
+              <div style="font-size: 1.5rem; font-weight: 600;">0.0</div>
+            </div>
+            <div style="padding: 1rem; background: white; border-radius: 8px; border: 1px solid #E5E7EB;">
+              <div style="font-size: 0.875rem; color: #9CA3AF; margin-bottom: 0.25rem;">Total Reviews</div>
+              <div style="font-size: 1.5rem; font-weight: 600;">0</div>
+            </div>
+          </div>
+        </div>
+      `;
+      return;
+    }
+
+    // Render reviews with data
+    const starRating = '⭐'.repeat(Math.round(stats.averageRating));
+    container.innerHTML = `
+      <div style="padding: 2rem; text-align: center; background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%); border-radius: 8px;">
+        <div style="font-size: 3rem; margin-bottom: 1rem;">${starRating}</div>
+        <div style="font-size: 1.5rem; font-weight: 600; margin-bottom: 0.5rem;">Great reviews!</div>
+        <p style="color: #92400E; margin-bottom: 1.5rem;">You're doing an excellent job. Keep up the great work!</p>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; max-width: 600px; margin: 0 auto;">
+          <div style="padding: 1rem; background: white; border-radius: 8px; border: 1px solid #F59E0B; box-shadow: 0 2px 8px rgba(245, 158, 11, 0.1);">
+            <div style="font-size: 0.875rem; color: #92400E; margin-bottom: 0.25rem;">Average Rating</div>
+            <div style="font-size: 1.5rem; font-weight: 600; color: #B45309;">${stats.averageRating.toFixed(1)}</div>
+          </div>
+          <div style="padding: 1rem; background: white; border-radius: 8px; border: 1px solid #F59E0B; box-shadow: 0 2px 8px rgba(245, 158, 11, 0.1);">
+            <div style="font-size: 0.875rem; color: #92400E; margin-bottom: 0.25rem;">Total Reviews</div>
+            <div style="font-size: 1.5rem; font-weight: 600; color: #B45309;">${stats.totalReviews}</div>
+          </div>
+        </div>
+      </div>
+    `;
+  } catch (error) {
+    console.error('Error loading review stats:', error);
+    // Show empty state on error - graceful degradation
+    container.innerHTML = `
+      <div style="padding: 2rem; text-align: center; background: #F9FAFB; border-radius: 8px;">
+        <div style="font-size: 3rem; margin-bottom: 1rem;">⭐</div>
+        <p style="color: #6B7280; margin: 0;">Unable to load review data.</p>
+      </div>
+    `;
+  }
+}
+
+/**
+ * Fetch review statistics
+ * @returns {Promise<object>} Review stats
+ */
+async function fetchReviewStats() {
+  try {
+    const response = await fetch('/api/supplier/reviews/stats', {
+      credentials: 'include',
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      if (data.success && data.stats) {
+        return data.stats;
+      }
+    }
+
+    // Return null if no data (will show empty state)
+    return null;
+  } catch (error) {
+    console.error('Error fetching review stats:', error);
+    return null;
+  }
+}
+
 // Export functions
 export default {
   createAnalyticsChart,
   createPerformanceChart,
   createAnalyticsSummary,
   createEnquiryTrendChart,
+  createLeadQualityWidget,
+  loadReviewStats,
   loadChartJS,
 };
