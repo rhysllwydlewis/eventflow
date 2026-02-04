@@ -206,7 +206,8 @@ class WebSocketClient {
     }
 
     // Calculate exponential backoff delay: 1s, 2s, 4s, 8s, 16s
-    const delay = this.baseReconnectDelay * Math.pow(2, this.reconnectAttempts);
+    // Use (reconnectAttempts - 1) since it was already incremented in connect_error handler
+    const delay = this.baseReconnectDelay * Math.pow(2, Math.max(0, this.reconnectAttempts - 1));
 
     if (this.reconnectAttempts < 2) {
       console.log(

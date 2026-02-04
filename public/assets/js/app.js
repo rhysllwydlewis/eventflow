@@ -2700,7 +2700,7 @@ async function initDashSupplier() {
           )
           .join('');
 
-        return `<div class="supplier-card card" style="margin-bottom:10px" data-supplier-id="${s.id || ''}">
+        return `<div class="supplier-card card" style="margin-bottom:10px" data-supplier-id="${s.id ? s.id.replace(/"/g, '&quot;') : ''}">
       <img src="${(s.photos && s.photos[0]) || '/assets/images/collage-venue.svg'}" onerror="this.src='/assets/images/collage-venue.svg'">
       <div>
         <h3>${s.name} ${proBadge} ${s.approved ? '<span class="badge">Approved</span>' : '<span class="badge" style="background:#FFF5E6;color:#8A5A00">Awaiting review</span>'}</h3>
@@ -2721,8 +2721,8 @@ async function initDashSupplier() {
           </div>
         </details>
         <div class="card-actions">
-          <button type="button" class="card-action-btn edit-btn" onclick="editProfile('${s.id || ''}')">Edit</button>
-          <button type="button" class="card-action-btn delete-btn" onclick="deleteProfile('${s.id || ''}')">Delete</button>
+          <button type="button" class="card-action-btn edit-btn" data-action="edit-profile" data-profile-id="${s.id ? s.id.replace(/"/g, '&quot;') : ''}">Edit</button>
+          <button type="button" class="card-action-btn delete-btn" data-action="delete-profile" data-profile-id="${s.id ? s.id.replace(/"/g, '&quot;') : ''}">Delete</button>
         </div>
       </div>
     </div>`;
@@ -2959,15 +2959,15 @@ async function initDashSupplier() {
     }
     pkgsWrap.innerHTML = items
       .map(
-        p => `<div class="card package-card" data-package-id="${p.id || ''}">
+        p => `<div class="card package-card" data-package-id="${p.id ? p.id.replace(/"/g, '&quot;') : ''}">
       <img src="${p.image || '/assets/images/package-placeholder.svg'}" alt="${p.title} image" onerror="this.src='/assets/images/package-placeholder.svg'">
       <div>
         <h3>${p.title}</h3>
         <div class="small"><span class="badge">${p.price_display || ''}</span> ${p.featured ? '<span class="badge">Featured</span>' : ''}</div>
         <p class="small">${p.description || ''}</p>
         <div class="card-actions">
-          <button type="button" class="card-action-btn edit-btn" onclick="editPackage('${p.id || ''}', ${JSON.stringify(p).replace(/"/g, '&quot;')})">Edit</button>
-          <button type="button" class="card-action-btn delete-btn" onclick="deletePackage('${p.id || ''}')">Delete</button>
+          <button type="button" class="card-action-btn edit-btn" data-action="edit-package" data-package-id="${p.id ? p.id.replace(/"/g, '&quot;') : ''}">Edit</button>
+          <button type="button" class="card-action-btn delete-btn" data-action="delete-package" data-package-id="${p.id ? p.id.replace(/"/g, '&quot;') : ''}">Delete</button>
         </div>
       </div>
     </div>`
@@ -2998,6 +2998,43 @@ async function initDashSupplier() {
   if (cancelProfileFormBtn) {
     cancelProfileFormBtn.addEventListener('click', toggleProfileForm);
   }
+
+  // Add event delegation for Edit/Delete buttons on packages and profiles
+  document.addEventListener('click', e => {
+    const target = e.target;
+
+    // Handle package edit buttons
+    if (target.matches('[data-action="edit-package"]')) {
+      const packageId = target.getAttribute('data-package-id');
+      if (packageId) {
+        editPackage(packageId);
+      }
+    }
+
+    // Handle package delete buttons
+    if (target.matches('[data-action="delete-package"]')) {
+      const packageId = target.getAttribute('data-package-id');
+      if (packageId) {
+        deletePackage(packageId);
+      }
+    }
+
+    // Handle profile edit buttons
+    if (target.matches('[data-action="edit-profile"]')) {
+      const profileId = target.getAttribute('data-profile-id');
+      if (profileId) {
+        editProfile(profileId);
+      }
+    }
+
+    // Handle profile delete buttons
+    if (target.matches('[data-action="delete-profile"]')) {
+      const profileId = target.getAttribute('data-profile-id');
+      if (profileId) {
+        deleteProfile(profileId);
+      }
+    }
+  });
 
   const supForm = document.getElementById('supplier-form');
   if (supForm) {
@@ -3330,7 +3367,7 @@ function togglePackageForm() {
   }
 }
 
-function editPackage(packageId, packageData) {
+function editPackage(packageId) {
   // Expand the form section
   const formSection = document.getElementById('package-form-section');
   const toggleBtn = document.getElementById('toggle-package-form');
@@ -3344,43 +3381,53 @@ function editPackage(packageId, packageData) {
     }
   }
 
-  // Populate form with package data
-  try {
-    const pkg = typeof packageData === 'string' ? JSON.parse(packageData) : packageData;
+  // Fetch package data from API
+  fetch(`/api/me/packages/${encodeURIComponent(packageId)}`, {
+    credentials: 'include',
+  })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Failed to fetch package data');
+      }
+      return response.json();
+    })
+    .then(pkg => {
+      // Populate form with package data
+      document.getElementById('pkg-id-hidden').value = pkg.id || '';
+      document.getElementById('pkg-title').value = pkg.title || '';
+      document.getElementById('pkg-price').value = pkg.price_display || '';
+      document.getElementById('pkg-desc').value = pkg.description || '';
+      document.getElementById('pkg-category').value = pkg.primaryCategoryKey || '';
+      document.getElementById('pkg-image').value = pkg.image || '';
 
-    document.getElementById('pkg-id-hidden').value = pkg.id || '';
-    document.getElementById('pkg-title').value = pkg.title || '';
-    document.getElementById('pkg-price').value = pkg.price_display || '';
-    document.getElementById('pkg-desc').value = pkg.description || '';
-    document.getElementById('pkg-category').value = pkg.primaryCategoryKey || '';
-    document.getElementById('pkg-image').value = pkg.image || '';
+      // Set supplier select if available
+      const supplierSelect = document.getElementById('pkg-supplier');
+      if (supplierSelect && pkg.supplierId) {
+        supplierSelect.value = pkg.supplierId;
+        document.getElementById('pkg-supplier-id-hidden').value = pkg.supplierId;
+      }
 
-    // Set supplier select if available
-    const supplierSelect = document.getElementById('pkg-supplier');
-    if (supplierSelect && pkg.supplierId) {
-      supplierSelect.value = pkg.supplierId;
-      document.getElementById('pkg-supplier-id-hidden').value = pkg.supplierId;
-    }
+      // Set event type checkboxes
+      if (pkg.eventTypes && Array.isArray(pkg.eventTypes)) {
+        document.getElementById('pkg-event-wedding').checked = pkg.eventTypes.includes('wedding');
+        document.getElementById('pkg-event-other').checked = pkg.eventTypes.includes('other');
+      }
 
-    // Set event type checkboxes
-    if (pkg.eventTypes && Array.isArray(pkg.eventTypes)) {
-      document.getElementById('pkg-event-wedding').checked = pkg.eventTypes.includes('wedding');
-      document.getElementById('pkg-event-other').checked = pkg.eventTypes.includes('other');
-    }
+      // Update form heading
+      const heading = formSection.querySelector('.supplier-section-header');
+      if (heading) {
+        heading.textContent = 'Edit package';
+      }
 
-    // Update form heading
-    const heading = formSection.querySelector('.supplier-section-header');
-    if (heading) {
-      heading.textContent = 'Edit package';
-    }
-
-    // Scroll to form
-    setTimeout(() => {
-      formSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 100);
-  } catch (e) {
-    console.error('Error populating package form:', e);
-  }
+      // Scroll to form
+      setTimeout(() => {
+        formSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    })
+    .catch(e => {
+      console.error('Error loading package for edit:', e);
+      alert('Failed to load package data. Please try again.');
+    });
 }
 
 async function deletePackage(packageId) {
@@ -3514,7 +3561,12 @@ async function editProfile(supplierId) {
     // Update form heading
     const heading = formSection.querySelector('.supplier-section-header');
     if (heading) {
-      heading.textContent = `Edit profile: ${supplier.name}`;
+      // Truncate supplier name if too long (max 50 chars)
+      const displayName =
+        supplier.name && supplier.name.length > 50
+          ? `${supplier.name.substring(0, 47)}...`
+          : supplier.name || 'Unknown';
+      heading.textContent = `Edit profile: ${displayName}`;
     }
 
     // Store the editing supplier ID for later use
