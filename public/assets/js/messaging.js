@@ -13,6 +13,7 @@ class MessagingSystem {
     this.apiBase = '/api';
     this.badgeElement = null;
     this.lastUnreadCount = -1; // Initialize to -1 so first update (even 0) triggers animation
+    this._pollingNotificationShown = false; // Track if we've shown the polling notification
   }
 
   /**
@@ -23,7 +24,15 @@ class MessagingSystem {
    * @returns {Function} Unsubscribe function
    */
   listenToUserConversations(userId, userType, callback) {
-    console.warn('Real-time updates not available with MongoDB. Using polling instead.');
+    // Show user-facing notification only once
+    if (!this._pollingNotificationShown) {
+      this._pollingNotificationShown = true;
+      if (typeof Toast !== 'undefined' && Toast.info) {
+        Toast.info('Using polling for updates (refreshes every 5 seconds)', {
+          duration: 5000
+        });
+      }
+    }
 
     // Initial fetch
     this.fetchConversationsFromAPI(userId, userType, callback);
@@ -49,7 +58,7 @@ class MessagingSystem {
    * @returns {Function} Unsubscribe function
    */
   listenToMessages(conversationId, callback) {
-    console.warn('Real-time updates not available with MongoDB. Using polling instead.');
+    // Silently use polling - no need to notify for each conversation
 
     // Initial fetch
     this.fetchMessagesFromAPI(conversationId, callback);

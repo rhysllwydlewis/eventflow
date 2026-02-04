@@ -1,5 +1,26 @@
-<!DOCTYPE html><html lang='en-GB'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>Supplier dashboard — EventFlow</title><link rel='stylesheet' href='/assets/css/styles.css?v=18.2.0'><link rel='stylesheet' href='/assets/css/eventflow-17.0.0.css?v=18.2.0'><link rel='stylesheet' href='/assets/css/utilities.css?v=18.2.0'><link rel='stylesheet' href='/assets/css/components.css?v=18.2.0'><link rel='stylesheet' href='/assets/css/animations.css?v=18.2.0'><link rel='stylesheet' href='/assets/css/mobile-optimizations.css?v=18.2.0'><link rel='stylesheet' href='/assets/css/ui-ux-fixes.css?v=18.2.0'><link rel='stylesheet' href='/assets/css/navbar.css?v=18.2.0'><link rel='stylesheet' href='/assets/css/skeleton.css?v=18.2.0'><link rel='stylesheet' href='/assets/css/dashboard-animations.css?v=18.2.0'><link rel='stylesheet' href='/assets/css/p3-features.css?v=18.2.0'><link rel='stylesheet' href='/assets/css/liquid-glass.css?v=18.2.0'><link rel='stylesheet' href='/assets/css/supplier-dashboard-improvements.css?v=18.2.0'><script src="/assets/js/dashboard-guard.js?v=17.0.2"></script>
+<!DOCTYPE html><html lang='en-GB'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>Supplier dashboard — EventFlow</title><link rel='stylesheet' href='/assets/css/design-tokens.css?v=18.2.0'><link rel='stylesheet' href='/assets/css/styles.css?v=18.2.0'><link rel='stylesheet' href='/assets/css/eventflow-17.0.0.css?v=18.2.0'><link rel='stylesheet' href='/assets/css/utilities.css?v=18.2.0'><link rel='stylesheet' href='/assets/css/components.css?v=18.2.0'><link rel='stylesheet' href='/assets/css/animations.css?v=18.2.0'><link rel='stylesheet' href='/assets/css/mobile-optimizations.css?v=18.2.0'><link rel='stylesheet' href='/assets/css/ui-ux-fixes.css?v=18.2.0'><link rel='stylesheet' href='/assets/css/navbar.css?v=18.2.0'><link rel='stylesheet' href='/assets/css/skeleton.css?v=18.2.0'><link rel='stylesheet' href='/assets/css/dashboard-animations.css?v=18.2.0'><link rel='stylesheet' href='/assets/css/p3-features.css?v=18.2.0'><link rel='stylesheet' href='/assets/css/liquid-glass.css?v=18.2.0'><link rel='stylesheet' href='/assets/css/supplier-dashboard-improvements.css?v=18.2.0'><script src="/assets/js/dashboard-guard.js?v=17.0.2"></script>
 <script src="/assets/js/toast-notifications.js?v=18.2.0"></script>
+<script>
+// Global image error handler for supplier avatars and other images
+document.addEventListener('DOMContentLoaded', function() {
+  document.addEventListener('error', function(e) {
+    if (e.target.tagName === 'IMG') {
+      const img = e.target;
+      // Only handle once per image
+      if (img.dataset.errorHandled) return;
+      img.dataset.errorHandled = 'true';
+      
+      // Check if it's a supplier avatar or profile image
+      if (img.src && (img.src.includes('/uploads/suppliers/') || img.classList.contains('supplier-avatar') || img.classList.contains('profile-image'))) {
+        // Replace with placeholder
+        img.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"%3E%3Crect width="100" height="100" fill="%23e5e7eb"/%3E%3Cpath d="M50 45c8.284 0 15-6.716 15-15s-6.716-15-15-15-15 6.716-15 15 6.716 15 15 15zm0 5c-10 0-30 5-30 15v10h60V65c0-10-20-15-30-15z" fill="%239ca3af"/%3E%3C/svg%3E';
+        img.alt = 'Profile placeholder';
+        img.title = 'Image not available';
+      }
+    }
+  }, true);
+});
+</script>
   </head><body>
 <!-- Screen Reader Announcer -->
 <div id="sr-announcer" aria-live="polite" aria-atomic="true"></div>
@@ -1134,13 +1155,29 @@ function escapeHtml(unsafe) {
   let ws = null;
   let reconnectAttempts = 0;
   const MAX_RECONNECT_ATTEMPTS = 5;
-  const RECONNECT_DELAY = 3000;
+  const BASE_RECONNECT_DELAY = 3000;
   let originalTitle = document.title;
   let enquiryCount = 0;
+  let fallbackNotificationShown = false;
+  
+  // Show user-facing notification when real-time is unavailable
+  function showFallbackNotification() {
+    if (fallbackNotificationShown) return;
+    fallbackNotificationShown = true;
+    
+    if (typeof Toast !== 'undefined' && Toast.info) {
+      Toast.info('Real-time notifications temporarily unavailable. Refresh page to see new enquiries.', {
+        duration: 8000
+      });
+    }
+  }
   
   function initWebSocket() {
     if (typeof WebSocket === 'undefined') {
-      console.warn('WebSocket not supported');
+      if (reconnectAttempts === 0) {
+        console.info('WebSocket not supported in this browser');
+        showFallbackNotification();
+      }
       return;
     }
     
@@ -1152,8 +1189,11 @@ function escapeHtml(unsafe) {
       ws = new WebSocket(wsUrl);
       
       ws.onopen = function() {
-        console.log('WebSocket connected for enquiries');
+        if (reconnectAttempts > 0) {
+          console.info('WebSocket reconnected successfully');
+        }
         reconnectAttempts = 0;
+        fallbackNotificationShown = false;
         
         const user = window.AuthState?.getUser?.();
         if (user?.uid) {
@@ -1178,23 +1218,41 @@ function escapeHtml(unsafe) {
       };
       
       ws.onerror = function(error) {
-        console.error('WebSocket error:', error);
+        // Only log once per connection attempt
+        if (reconnectAttempts === 0) {
+          console.warn('WebSocket connection failed');
+        }
       };
       
       ws.onclose = function() {
-        console.log('WebSocket closed');
         attemptReconnect();
       };
     } catch (error) {
-      console.error('Failed to create WebSocket:', error);
+      if (reconnectAttempts === 0) {
+        console.error('Failed to create WebSocket:', error);
+      }
+      attemptReconnect();
     }
   }
   
   function attemptReconnect() {
     if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
       reconnectAttempts++;
-      console.log(`Reconnecting... attempt ${reconnectAttempts}`);
-      setTimeout(initWebSocket, RECONNECT_DELAY * reconnectAttempts);
+      
+      // Exponential backoff with jitter
+      const jitter = Math.random() * 1000;
+      const delay = Math.min(BASE_RECONNECT_DELAY * Math.pow(2, reconnectAttempts - 1) + jitter, 30000);
+      
+      // Only log every 3rd attempt to reduce noise
+      if (reconnectAttempts % 3 === 1) {
+        console.info(`Reconnecting in ${Math.round(delay / 1000)}s... (attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`);
+      }
+      
+      setTimeout(initWebSocket, delay);
+    } else {
+      // Max attempts reached - show user notification
+      console.warn('WebSocket connection failed after maximum attempts. Real-time updates unavailable.');
+      showFallbackNotification();
     }
   }
   
