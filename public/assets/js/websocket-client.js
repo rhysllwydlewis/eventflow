@@ -11,6 +11,7 @@ class WebSocketClient {
     this.reconnectAttempts = 0;
     this.maxReconnectAttempts = 5;
     this.reconnectDelay = 1000;
+    this.userNotified = false; // Track if user has been notified about connection issues
 
     this.options = {
       autoConnect: options.autoConnect !== false,
@@ -62,11 +63,18 @@ class WebSocketClient {
 
   initConnection() {
     try {
-      this.socket = io({
+      // Explicitly set connection URL to current origin with /socket.io path
+      const protocol = window.location.protocol === 'https:' ? 'https:' : 'http:';
+      const socketUrl = `${protocol}//${window.location.host}`;
+      
+      this.socket = io(socketUrl, {
+        path: '/socket.io',
         transports: ['websocket', 'polling'],
         reconnection: true,
         reconnectionDelay: this.reconnectDelay,
         reconnectionAttempts: this.maxReconnectAttempts,
+        timeout: 20000,
+        secure: window.location.protocol === 'https:',
       });
 
       this.setupEventHandlers();
@@ -83,6 +91,7 @@ class WebSocketClient {
       console.log('WebSocket connected');
       this.connected = true;
       this.reconnectAttempts = 0;
+      this.userNotified = false; // Reset notification flag on successful connection
 
       // Authenticate if we have user data
       const user = this.getCurrentUser();
@@ -137,11 +146,28 @@ class WebSocketClient {
     });
 
     this.socket.on('connect_error', error => {
-      console.error('WebSocket connection error:', error);
+      // Only log first error to reduce console spam
+      if (this.reconnectAttempts === 0) {
+        console.warn('WebSocket connection failed, retrying...');
+      }
       this.reconnectAttempts++;
 
       if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-        console.error('Max reconnection attempts reached');
+        // Show user-facing notification only once
+        if (!this.userNotified) {
+          this.userNotified = true;
+          console.warn('WebSocket unavailable after multiple attempts. Using polling fallback.');
+          
+          // Show a single user-facing notification
+          if (typeof showToast === 'function') {
+            showToast('Real-time updates temporarily unavailable. Using fallback mode.', 'info');
+          } else if (typeof Toast !== 'undefined' && Toast.info) {
+            Toast.info('Real-time updates temporarily unavailable. Using fallback mode.', {
+              duration: 5000
+            });
+          }
+        }
+        
         if (this.options.onError) {
           this.options.onError(new Error('Failed to connect after multiple attempts'));
         }

@@ -14,6 +14,7 @@ class MessagingSystem {
     this.badgeElement = null;
     this.lastUnreadCount = -1; // Initialize to -1 so first update (even 0) triggers animation
     this._pollingNotificationShown = false; // Track if we've shown the polling notification
+    this._unreadErrorLogged = false; // Track if we've logged unread count errors
   }
 
   /**
@@ -29,7 +30,7 @@ class MessagingSystem {
       this._pollingNotificationShown = true;
       if (typeof Toast !== 'undefined' && Toast.info) {
         Toast.info('Using polling for updates (refreshes every 5 seconds)', {
-          duration: 5000
+          duration: 5000,
         });
       }
     }
@@ -203,17 +204,27 @@ class MessagingSystem {
 
   async fetchUnreadCountFromAPI(userId, userType, callback) {
     try {
-      const response = await fetch(`/api/messages/unread?userId=${userId}&userType=${userType}`, {
+      // Use the authenticated endpoint - no need for userId/userType params
+      const response = await fetch('/api/messages/unread', {
         credentials: 'include',
       });
       if (response.ok) {
         const data = await response.json();
         callback(data.count || 0);
       } else {
+        // Gracefully handle non-200 responses without console spam
+        if (!this._unreadErrorLogged) {
+          this._unreadErrorLogged = true;
+          console.warn('Unable to fetch unread count, showing zero');
+        }
         callback(0);
       }
     } catch (error) {
-      console.error('Error fetching unread count:', error);
+      // Gracefully handle errors without console spam
+      if (!this._unreadErrorLogged) {
+        this._unreadErrorLogged = true;
+        console.warn('Unable to fetch unread count:', error.message);
+      }
       callback(0);
     }
   }
