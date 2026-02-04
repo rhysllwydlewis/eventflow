@@ -155,7 +155,8 @@ test.describe('Supplier Dashboard Improvements @backend', () => {
         return window.getComputedStyle(el).color;
       });
       // RGB equivalent of #0B8073 is rgb(11, 128, 115)
-      expect(buttonColor).toContain('11');
+      // Check for the teal color (should contain 'rgb(11, 128, 115)' or similar)
+      expect(buttonColor).toMatch(/rgb\(11,\s*128,\s*115\)/i);
       
       // Check for the new CTA text
       await expect(page.locator('text=Got it! Let\'s go 🚀')).toBeVisible();
