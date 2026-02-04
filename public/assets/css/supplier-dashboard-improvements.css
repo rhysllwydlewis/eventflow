@@ -3810,3 +3810,55 @@ html {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ============================================
+   STANDARDIZED CARD HEADERS
+   ============================================ */
+.supplier-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--ef-space-4, 16px);
+  margin-bottom: var(--ef-space-4, 20px);
+  padding-bottom: var(--ef-space-4, 16px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.supplier-card-header__content {
+  flex: 1;
+  min-width: 0;
+}
+
+.supplier-card-header__content h3 {
+  margin: 0 0 var(--ef-space-2, 8px) 0;
+  font-size: var(--ef-text-lg, 18px);
+  font-weight: 700;
+  color: var(--ef-text, #0B1220);
+}
+
+.supplier-card-header__content p {
+  margin: 0;
+}
+
+/* Enhanced form toggle button with SVG */
+.form-toggle-btn svg {
+  flex-shrink: 0;
+  transition: transform 0.3s ease;
+}
+
+.form-toggle-btn[aria-expanded="true"] svg {
+  transform: rotate(45deg);
+}
+
+/* Mobile optimization for card headers */
+@media (max-width: 640px) {
+  .supplier-card-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .form-toggle-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
