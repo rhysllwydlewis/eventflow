@@ -28,10 +28,10 @@ class CategoryGrid {
     style.textContent = `
       .category-grid {
         display: grid;
-        grid-template-columns: repeat(6, 1fr);
+        grid-template-columns: repeat(2, 1fr);
         gap: 28px;
         margin-top: 24px;
-        max-width: 1800px;
+        max-width: 1200px;
         margin-left: auto;
         margin-right: auto;
       }
@@ -44,7 +44,6 @@ class CategoryGrid {
         transition: transform 0.3s ease, box-shadow 0.3s ease;
         background-color: var(--color-card-bg, #ffffff);
         border: 1px solid var(--color-border, #dee2e6);
-        aspect-ratio: 1;
       }
 
       .category-card:hover {
@@ -94,19 +93,36 @@ class CategoryGrid {
         text-align: center;
         padding: 48px 24px;
         color: var(--color-text-secondary, #6c757d);
+        grid-column: 1 / -1;
       }
 
-      /* Responsive breakpoints for 6x6 grid */
-      @media (max-width: 1600px) {
-        .category-grid {
-          grid-template-columns: repeat(5, 1fr);
-        }
+      /* Pexels Attribution */
+      .category-card-credit {
+        position: absolute;
+        bottom: 8px;
+        right: 8px;
+        background: rgba(0, 0, 0, 0.7);
+        color: white;
+        font-size: 10px;
+        padding: 4px 8px;
+        border-radius: 4px;
+        z-index: 1;
       }
 
-      @media (max-width: 1200px) {
+      .category-card-credit a {
+        color: white;
+        text-decoration: none;
+      }
+
+      .category-card-credit a:hover {
+        text-decoration: underline;
+      }
+
+      /* Responsive breakpoints for 2x3 grid */
+      @media (max-width: 768px) {
         .category-grid {
-          grid-template-columns: repeat(4, 1fr);
-          gap: 24px;
+          grid-template-columns: 1fr;
+          gap: 20px;
         }
         
         .category-card-image {
@@ -127,26 +143,6 @@ class CategoryGrid {
         
         .category-card-description {
           font-size: 0.9rem;
-        }
-      }
-
-      @media (max-width: 992px) {
-        .category-grid {
-          grid-template-columns: repeat(3, 1fr);
-          gap: 20px;
-        }
-      }
-
-      @media (max-width: 768px) {
-        .category-grid {
-          grid-template-columns: repeat(2, 1fr);
-          gap: 16px;
-        }
-      }
-
-      @media (max-width: 480px) {
-        .category-grid {
-          grid-template-columns: 1fr;
         }
       }
     `;
@@ -200,9 +196,15 @@ class CategoryGrid {
     const imageHtml = hasImage
       ? `<img class="category-card-image" src="${category.heroImage}" alt="${category.name}" loading="lazy">`
       : '';
+    
+    // Add Pexels attribution if present
+    const creditHtml = category.pexelsAttribution
+      ? `<div class="category-card-credit">${category.pexelsAttribution}</div>`
+      : '';
 
     card.innerHTML = `
       ${imageHtml}
+      ${creditHtml}
       <div class="category-card-content">
         <div class="category-card-header">
           ${category.icon ? `<span class="category-card-icon">${category.icon}</span>` : ''}

@@ -2673,6 +2673,210 @@ app.delete(
   }
 );
 
+// Admin: Create new category
+app.post(
+  '/api/admin/categories',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    try {
+      const { name, slug, description, icon, heroImage, pexelsAttribution, visible } = req.body;
+
+      if (!name || !slug) {
+        return res.status(400).json({ error: 'Name and slug are required' });
+      }
+
+      const categories = await dbUnified.read('categories');
+      
+      // Check if slug already exists
+      if (categories.find(c => c.slug === slug)) {
+        return res.status(400).json({ error: 'Category with this slug already exists' });
+      }
+
+      // Generate unique ID
+      const newCategory = {
+        id: `cat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        name,
+        slug,
+        description: description || '',
+        icon: icon || '📁',
+        heroImage: heroImage || '',
+        pexelsAttribution: pexelsAttribution || '',
+        order: categories.length + 1,
+        visible: visible !== false,
+      };
+
+      categories.push(newCategory);
+      await dbUnified.write('categories', categories);
+
+      res.json({
+        ok: true,
+        category: newCategory,
+      });
+    } catch (error) {
+      console.error('Error creating category:', error);
+      res.status(500).json({ error: 'Failed to create category', details: error.message });
+    }
+  }
+);
+
+// Admin: Update category
+app.put(
+  '/api/admin/categories/:id',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    try {
+      const categoryId = req.params.id;
+      const { name, slug, description, icon, heroImage, pexelsAttribution, visible } = req.body;
+
+      const categories = await dbUnified.read('categories');
+      const categoryIndex = categories.findIndex(c => c.id === categoryId);
+
+      if (categoryIndex === -1) {
+        return res.status(404).json({ error: 'Category not found' });
+      }
+
+      // Check if slug already exists for another category
+      if (slug && slug !== categories[categoryIndex].slug) {
+        if (categories.find((c, idx) => c.slug === slug && idx !== categoryIndex)) {
+          return res.status(400).json({ error: 'Category with this slug already exists' });
+        }
+      }
+
+      // Update fields
+      if (name !== undefined) categories[categoryIndex].name = name;
+      if (slug !== undefined) categories[categoryIndex].slug = slug;
+      if (description !== undefined) categories[categoryIndex].description = description;
+      if (icon !== undefined) categories[categoryIndex].icon = icon;
+      if (heroImage !== undefined) categories[categoryIndex].heroImage = heroImage;
+      if (pexelsAttribution !== undefined) categories[categoryIndex].pexelsAttribution = pexelsAttribution;
+      if (visible !== undefined) categories[categoryIndex].visible = visible;
+
+      await dbUnified.write('categories', categories);
+
+      res.json({
+        ok: true,
+        category: categories[categoryIndex],
+      });
+    } catch (error) {
+      console.error('Error updating category:', error);
+      res.status(500).json({ error: 'Failed to update category', details: error.message });
+    }
+  }
+);
+
+// Admin: Delete category
+app.delete(
+  '/api/admin/categories/:id',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    try {
+      const categoryId = req.params.id;
+      const categories = await dbUnified.read('categories');
+      const categoryIndex = categories.findIndex(c => c.id === categoryId);
+
+      if (categoryIndex === -1) {
+        return res.status(404).json({ error: 'Category not found' });
+      }
+
+      const deletedCategory = categories[categoryIndex];
+      categories.splice(categoryIndex, 1);
+
+      await dbUnified.write('categories', categories);
+
+      res.json({
+        ok: true,
+        category: deletedCategory,
+      });
+    } catch (error) {
+      console.error('Error deleting category:', error);
+      res.status(500).json({ error: 'Failed to delete category', details: error.message });
+    }
+  }
+);
+
+// Admin: Reorder categories
+app.put(
+  '/api/admin/categories/reorder',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    try {
+      const { orderedIds } = req.body;
+
+      if (!Array.isArray(orderedIds)) {
+        return res.status(400).json({ error: 'orderedIds must be an array' });
+      }
+
+      const categories = await dbUnified.read('categories');
+      
+      // Update order based on position in array
+      orderedIds.forEach((id, index) => {
+        const category = categories.find(c => c.id === id);
+        if (category) {
+          category.order = index + 1;
+        }
+      });
+
+      // Sort by order
+      categories.sort((a, b) => (a.order || 0) - (b.order || 0));
+
+      await dbUnified.write('categories', categories);
+
+      res.json({
+        ok: true,
+        categories,
+      });
+    } catch (error) {
+      console.error('Error reordering categories:', error);
+      res.status(500).json({ error: 'Failed to reorder categories', details: error.message });
+    }
+  }
+);
+
+// Admin: Toggle category visibility
+app.put(
+  '/api/admin/categories/:id/visibility',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  async (req, res) => {
+    try {
+      const categoryId = req.params.id;
+      const { visible } = req.body;
+
+      if (typeof visible !== 'boolean') {
+        return res.status(400).json({ error: 'visible must be a boolean' });
+      }
+
+      const categories = await dbUnified.read('categories');
+      const categoryIndex = categories.findIndex(c => c.id === categoryId);
+
+      if (categoryIndex === -1) {
+        return res.status(404).json({ error: 'Category not found' });
+      }
+
+      categories[categoryIndex].visible = visible;
+
+      await dbUnified.write('categories', categories);
+
+      res.json({
+        ok: true,
+        category: categories[categoryIndex],
+      });
+    } catch (error) {
+      console.error('Error toggling category visibility:', error);
+      res.status(500).json({ error: 'Failed to toggle visibility', details: error.message });
+    }
+  }
+);
+
 // Admin: Upload package image
 app.post(
   '/api/admin/packages/:id/image',
