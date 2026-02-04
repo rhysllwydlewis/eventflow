@@ -176,10 +176,12 @@ class SupplierGalleryManager {
       removeBtn.style.padding = '0';
 
       removeBtn.addEventListener('click', () => {
-        // Remove from pending uploads
-        const index = this.pendingUploads.indexOf(file);
-        if (index > -1) {
-          this.pendingUploads.splice(index, 1);
+        // Remove from pending uploads - ensure pendingUploads is defined
+        if (this.pendingUploads && Array.isArray(this.pendingUploads)) {
+          const index = this.pendingUploads.indexOf(file);
+          if (index > -1) {
+            this.pendingUploads.splice(index, 1);
+          }
         }
         // Remove preview
         wrapper.remove();
