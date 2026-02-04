@@ -6,6 +6,162 @@
 (function () {
   'use strict';
 
+  const NIGHT_THEME_HOUR = 21;
+  const LAYOUT_PAINT_DELAY = 50;
+  const THEME_CLASSES = [
+    'supplier-welcome-card--morning',
+    'supplier-welcome-card--afternoon',
+    'supplier-welcome-card--evening',
+    'supplier-welcome-card--night',
+  ];
+
+  /**
+   * Utility: time-based theme class for welcome card
+   */
+  function applyTimeBasedGreeting() {
+    const card = document.querySelector('.supplier-welcome-card');
+    const greetingEl = document.getElementById('welcome-greeting');
+    if (!card || !greetingEl) return;
+
+    const hour = new Date().getHours();
+    let variant = 'afternoon';
+    let greeting = 'Good day,';
+    if (hour < 12) {
+      variant = 'morning';
+      greeting = 'Good morning,';
+    } else if (hour < 18) {
+      variant = 'afternoon';
+      greeting = 'Good afternoon,';
+    } else {
+      variant = hour < NIGHT_THEME_HOUR ? 'evening' : 'night';
+      greeting = 'Good evening,';
+    }
+
+    THEME_CLASSES.forEach((cls) => card.classList.remove(cls));
+    card.classList.add(`supplier-welcome-card--${variant}`);
+    greetingEl.textContent = greeting;
+  }
+
+  /**
+   * Utility: animate stat counters when visible
+   */
+  function setupStatCounters() {
+    const counters = document.querySelectorAll('.welcome-stat-value[data-target]');
+    if (!counters.length) return;
+
+    const animate = (el) => {
+      const target = parseInt(el.getAttribute('data-target'), 10) || 0;
+      const duration = 900;
+      const start = performance.now();
+      const initial = 0;
+
+      function frame(now) {
+        const progress = Math.min((now - start) / duration, 1);
+        const value = Math.floor(initial + (target - initial) * progress);
+        el.textContent = value.toLocaleString();
+        if (progress < 1) requestAnimationFrame(frame);
+      }
+      requestAnimationFrame(frame);
+    };
+
+    const observer = new IntersectionObserver(
+      (entries, obs) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            animate(entry.target);
+            obs.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.4 }
+    );
+
+    counters.forEach((c) => observer.observe(c));
+  }
+
+  /**
+   * Mobile nav indicator + snap scrolling
+   */
+  function setupMobileNav() {
+    const nav = document.querySelector('.mobile-nav-pills');
+    if (!nav) return;
+    const pills = nav.querySelectorAll('.mobile-nav-pill');
+    if (!pills.length) return;
+
+    let indicator = nav.querySelector('.mobile-nav-indicator');
+    if (!indicator) {
+      indicator = document.createElement('div');
+      indicator.className = 'mobile-nav-indicator';
+      nav.appendChild(indicator);
+    }
+
+    const moveIndicator = (pill) => {
+      const rect = pill.getBoundingClientRect();
+      const navRect = nav.getBoundingClientRect();
+      const width = rect.width;
+      const offset = rect.left - navRect.left + nav.scrollLeft;
+      indicator.style.width = `${width}px`;
+      indicator.style.transform = `translateX(${offset}px)`;
+    };
+
+    const setActive = (pill) => {
+      pills.forEach((p) => p.classList.toggle('active', p === pill));
+      moveIndicator(pill);
+    };
+
+    pills.forEach((pill) => {
+      pill.addEventListener('click', () => {
+        setActive(pill);
+        const targetId = pill.getAttribute('data-section');
+        const target = document.getElementById(targetId);
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+    });
+
+    // Wait for layout/paint to measure pill widths; rAF ensures post-paint
+    requestAnimationFrame(() => setTimeout(() => setActive(pills[0]), LAYOUT_PAINT_DELAY));
+  }
+
+  /**
+   * Quick actions horizontal scroll on mobile
+   */
+  function setupQuickActionsCarousel() {
+    const container = document.querySelector('.supplier-actions-primary');
+    if (!container) return;
+    const prev = document.getElementById('quick-actions-prev');
+    const next = document.getElementById('quick-actions-next');
+
+    const scrollByAmount = () => container.clientWidth * 0.9;
+    const scrollTo = (delta) => {
+      container.scrollTo({ left: container.scrollLeft + delta, behavior: 'smooth' });
+    };
+
+    if (prev) prev.addEventListener('click', () => scrollTo(-scrollByAmount()));
+    if (next) next.addEventListener('click', () => scrollTo(scrollByAmount()));
+
+    let isDown = false;
+    let startX;
+    let scrollLeft;
+
+    container.addEventListener('pointerdown', (e) => {
+      if (window.innerWidth > 768) return;
+      isDown = true;
+      startX = e.pageX - container.offsetLeft;
+      scrollLeft = container.scrollLeft;
+    });
+    container.addEventListener('pointerleave', () => (isDown = false));
+    container.addEventListener('pointerup', () => (isDown = false));
+    container.addEventListener('pointermove', (e) => {
+      if (!isDown || window.innerWidth > 768) return;
+      e.preventDefault();
+      const x = e.pageX - container.offsetLeft;
+      const walk = x - startX;
+      container.scrollLeft = scrollLeft - walk;
+    });
+  }
+
   /**
    * Add CSV export button to enquiries section
    */
@@ -106,10 +262,18 @@
   // Initialize when DOM is ready
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
+      applyTimeBasedGreeting();
+      setupStatCounters();
+      setupMobileNav();
+      setupQuickActionsCarousel();
       addExportButton();
       setupTrialConfetti();
     });
   } else {
+    applyTimeBasedGreeting();
+    setupStatCounters();
+    setupMobileNav();
+    setupQuickActionsCarousel();
     addExportButton();
     setupTrialConfetti();
   }
