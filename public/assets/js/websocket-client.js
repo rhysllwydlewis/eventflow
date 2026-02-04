@@ -81,7 +81,7 @@ class WebSocketClient {
       this.socket = io(socketUrl, {
         path: '/socket.io',
         transports: ['websocket', 'polling'],
-        reconnection: false, // Disable automatic reconnection, we'll handle it manually
+        reconnection: false, // Disable Socket.IO's built-in retry logic; we implement custom exponential backoff
         timeout: 20000,
         secure: window.location.protocol === 'https:',
       });
@@ -206,12 +206,12 @@ class WebSocketClient {
     }
 
     // Calculate exponential backoff delay: 1s, 2s, 4s, 8s, 16s
-    // Use (reconnectAttempts - 1) since it was already incremented in connect_error handler
-    const delay = this.baseReconnectDelay * Math.pow(2, Math.max(0, this.reconnectAttempts - 1));
+    // Use reconnectAttempts directly: attempt 1 = 2^0 = 1s, attempt 2 = 2^1 = 2s, etc.
+    const delay = this.baseReconnectDelay * Math.pow(2, this.reconnectAttempts - 1);
 
     if (this.reconnectAttempts < 2) {
       console.log(
-        `WebSocket: Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts + 1}/${this.maxReconnectAttempts})`
+        `WebSocket: Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`
       );
     }
 

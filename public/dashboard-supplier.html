@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', function() {
       if (img.dataset.errorHandled) return;
       img.dataset.errorHandled = 'true';
       
-      // Prevent the error from bubbling to console in production
+      // Prevent error propagation (note: browser console errors may still appear)
       e.stopPropagation();
       
       // Check if it's a supplier avatar, profile image, or package image

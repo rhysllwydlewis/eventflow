@@ -3558,13 +3558,15 @@ async function editProfile(supplierId) {
       document.getElementById('sup-venue-postcode').value = supplier.venuePostcode;
     }
 
-    // Update form heading
+    // Update form heading with truncated name if necessary
     const heading = formSection.querySelector('.supplier-section-header');
     if (heading) {
-      // Truncate supplier name if too long (max 50 chars)
+      // Truncate supplier name if too long to prevent UI issues
+      const MAX_DISPLAY_NAME_LENGTH = 50;
+      const TRUNCATE_SUFFIX_LENGTH = 3; // for "..."
       const displayName =
-        supplier.name && supplier.name.length > 50
-          ? `${supplier.name.substring(0, 47)}...`
+        supplier.name && supplier.name.length > MAX_DISPLAY_NAME_LENGTH
+          ? `${supplier.name.substring(0, MAX_DISPLAY_NAME_LENGTH - TRUNCATE_SUFFIX_LENGTH)}...`
           : supplier.name || 'Unknown';
       heading.textContent = `Edit profile: ${displayName}`;
     }
