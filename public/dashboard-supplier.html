@@ -280,6 +280,25 @@ window.announceToSR = function(message) {
         <span>View Earnings</span>
       </button>
 
+      <button class="dashboard-action-chip" onclick="document.getElementById('supplier-stats-grid').scrollIntoView({behavior:'smooth',block:'start'});">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="7" height="7"/>
+          <rect x="14" y="3" width="7" height="7"/>
+          <rect x="14" y="14" width="7" height="7"/>
+          <rect x="3" y="14" width="7" height="7"/>
+        </svg>
+        <span>View Stats</span>
+      </button>
+
+      <button class="dashboard-action-chip" onclick="window.location.href='mailto:support@eventflow.com?subject=Supplier Support Request';">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+          <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+        <span>Get Help</span>
+      </button>
+
       <!-- Pro Tip Badge -->
       <div class="dashboard-hero__tip" id="welcome-pro-tip" aria-live="polite" data-test="pro-tip">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
