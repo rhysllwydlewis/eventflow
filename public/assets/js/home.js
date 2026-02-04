@@ -31,6 +31,20 @@
   }
 
   // ========================================
+  // NEWSLETTER FORM FEEDBACK
+  // Note: Form submission handling is expected to be implemented 
+  // in a separate newsletter handler that will populate the 
+  // #newsletter-feedback element with success/error messages
+  // ========================================
+
+  // ========================================
+  // MARKETPLACE SKELETON LOADING
+  // Note: When marketplace content finishes loading, the loading script
+  // should add the 'loaded' class to .ef-marketplace-skeleton to hide it:
+  // document.querySelector('.ef-marketplace-skeleton')?.classList.add('loaded');
+  // ========================================
+
+  // ========================================
   // TESTIMONIALS CAROUSEL
   // ========================================
   
@@ -81,24 +95,24 @@
   // Start auto-rotation on load
   if (testimonials.length > 0 && dots.length > 0) {
     startAutoRotation();
-  }
-  
-  // Pause rotation when section is not visible (Intersection Observer)
-  if ('IntersectionObserver' in window) {
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (!entry.isIntersecting && carouselInterval) {
-          clearInterval(carouselInterval);
-          carouselInterval = null;
-        } else if (entry.isIntersecting && !carouselInterval) {
-          startAutoRotation();
-        }
-      });
-    }, { threshold: 0.5 });
     
-    const section = document.querySelector('.ef-testimonials-section');
-    if (section) {
-      observer.observe(section);
+    // Pause rotation when section is not visible (Intersection Observer)
+    if ('IntersectionObserver' in window) {
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (!entry.isIntersecting && carouselInterval) {
+            clearInterval(carouselInterval);
+            carouselInterval = null;
+          } else if (entry.isIntersecting && !carouselInterval) {
+            startAutoRotation();
+          }
+        });
+      }, { threshold: 0.5 });
+      
+      const section = document.querySelector('.ef-testimonials-section');
+      if (section) {
+        observer.observe(section);
+      }
     }
   }
 
