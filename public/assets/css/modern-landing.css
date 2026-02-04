@@ -1,0 +1,666 @@
+/**
+ * EventFlow Modern 2026 Aesthetic
+ * Comprehensive visual overhaul for landing page
+ * 
+ * Features:
+ * - Modern gradient mesh backgrounds
+ * - Glassmorphism navigation
+ * - Refined color palette & typography
+ * - Enhanced card aesthetics with hover effects
+ */
+
+/* ========================================
+   MODERN 2026 COLOR PALETTE
+   ======================================== */
+:root {
+  /* Base teal with richer accents */
+  --modern-primary: #0B8073;
+  --modern-primary-light: #13B6A2;
+  --modern-primary-dark: #085f55;
+  
+  /* New rich accent colors for 2026 */
+  --modern-accent-purple: #8B5CF6;
+  --modern-accent-blue: #3B82F6;
+  --modern-accent-pink: #EC4899;
+  --modern-accent-amber: #F59E0B;
+  
+  /* Sophisticated neutrals */
+  --modern-gray-50: #F8FAFC;
+  --modern-gray-100: #F1F5F9;
+  --modern-gray-200: #E2E8F0;
+  --modern-gray-300: #CBD5E1;
+  --modern-gray-500: #64748B;
+  --modern-gray-700: #334155;
+  --modern-gray-900: #0F172A;
+  
+  /* Gradient mesh colors */
+  --gradient-mesh-1: rgba(139, 92, 246, 0.15);
+  --gradient-mesh-2: rgba(59, 130, 246, 0.12);
+  --gradient-mesh-3: rgba(16, 185, 129, 0.15);
+  --gradient-mesh-4: rgba(236, 72, 153, 0.1);
+  
+  /* Enhanced shadows */
+  --modern-shadow-soft: 0 2px 8px rgba(15, 23, 42, 0.04), 
+                         0 8px 24px rgba(15, 23, 42, 0.06);
+  --modern-shadow-medium: 0 4px 12px rgba(15, 23, 42, 0.08),
+                          0 12px 32px rgba(15, 23, 42, 0.1);
+  --modern-shadow-large: 0 8px 24px rgba(15, 23, 42, 0.12),
+                         0 20px 48px rgba(15, 23, 42, 0.15);
+  --modern-shadow-hover: 0 12px 32px rgba(15, 23, 42, 0.15),
+                         0 24px 64px rgba(11, 128, 115, 0.12);
+  
+  /* Border radius updates */
+  --modern-radius-sm: 12px;
+  --modern-radius-md: 16px;
+  --modern-radius-lg: 24px;
+  --modern-radius-xl: 32px;
+  
+  /* Typography scale */
+  --modern-font-size-xs: 0.75rem;
+  --modern-font-size-sm: 0.875rem;
+  --modern-font-size-base: 1rem;
+  --modern-font-size-lg: 1.125rem;
+  --modern-font-size-xl: 1.25rem;
+  --modern-font-size-2xl: 1.5rem;
+  --modern-font-size-3xl: 1.875rem;
+  --modern-font-size-4xl: 2.25rem;
+  --modern-font-size-5xl: 3rem;
+  --modern-font-size-6xl: 3.75rem;
+}
+
+/* ========================================
+   GLASSMORPHISM NAVIGATION
+   ======================================== */
+
+/* Enhanced header with glassmorphism effect */
+.ef-header {
+  background: rgba(255, 255, 255, 0.75) !important;
+  backdrop-filter: blur(20px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.6) !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03),
+              0 4px 12px rgba(15, 23, 42, 0.04) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Scrolled state - stronger glass effect */
+.ef-header.scrolled {
+  background: rgba(255, 255, 255, 0.85) !important;
+  backdrop-filter: blur(24px) saturate(200%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(200%) !important;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05),
+              0 8px 24px rgba(15, 23, 42, 0.08) !important;
+}
+
+/* Enhanced logo with modern gradient */
+.ef-logo-inner {
+  background: conic-gradient(
+    from 180deg,
+    #9be7d9 0deg,
+    #13B6A2 90deg,
+    #0B8073 180deg,
+    #8B5CF6 270deg,
+    #9be7d9 360deg
+  ) !important;
+  box-shadow: 0 4px 16px rgba(11, 128, 115, 0.4),
+              0 0 0 2px rgba(255, 255, 255, 0.5) !important;
+}
+
+/* Modern navigation links */
+.ef-nav-link {
+  font-weight: 500;
+  color: var(--modern-gray-700) !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  padding: 8px 16px !important;
+  border-radius: var(--modern-radius-sm);
+}
+
+.ef-nav-link:hover {
+  color: var(--modern-primary) !important;
+  background: rgba(11, 128, 115, 0.06);
+  text-decoration: none !important;
+}
+
+.ef-nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%) scaleX(0);
+  width: 60%;
+  height: 2px;
+  background: linear-gradient(90deg, 
+    transparent,
+    var(--modern-primary),
+    transparent
+  );
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ef-nav-link:hover::after {
+  transform: translateX(-50%) scaleX(1);
+}
+
+/* ========================================
+   MODERN HERO SECTION - 2026 AESTHETIC
+   ======================================== */
+
+/* Hero with gradient mesh background */
+.hero-modern {
+  position: relative;
+  background: linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 50%, #E2E8F0 100%) !important;
+  overflow: hidden;
+  padding: clamp(64px, 10vw, 120px) 0 clamp(48px, 8vw, 96px) !important;
+}
+
+/* Animated gradient mesh orbs */
+.hero-modern::before {
+  content: '';
+  position: absolute;
+  top: -20%;
+  right: -10%;
+  width: 60%;
+  height: 80%;
+  background: radial-gradient(circle at center,
+    var(--gradient-mesh-1) 0%,
+    var(--gradient-mesh-2) 35%,
+    transparent 70%
+  );
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.8;
+  animation: float-mesh 20s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.hero-modern::after {
+  content: '';
+  position: absolute;
+  bottom: -15%;
+  left: -10%;
+  width: 50%;
+  height: 70%;
+  background: radial-gradient(circle at center,
+    var(--gradient-mesh-3) 0%,
+    var(--gradient-mesh-4) 40%,
+    transparent 70%
+  );
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.7;
+  animation: float-mesh 25s ease-in-out infinite reverse;
+  pointer-events: none;
+}
+
+@keyframes float-mesh {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  25% { transform: translate(-5%, 5%) scale(1.05); }
+  50% { transform: translate(5%, -5%) scale(0.95); }
+  75% { transform: translate(-3%, 3%) scale(1.02); }
+}
+
+/* Additional decorative mesh orb */
+.hero-blob {
+  filter: blur(90px) !important;
+  opacity: 0.6;
+  mix-blend-mode: multiply;
+}
+
+.hero-blob-1 {
+  background: linear-gradient(135deg,
+    rgba(139, 92, 246, 0.3),
+    rgba(59, 130, 246, 0.25)
+  ) !important;
+  animation: pulse-blob 15s ease-in-out infinite;
+}
+
+.hero-blob-2 {
+  background: linear-gradient(135deg,
+    rgba(16, 185, 129, 0.3),
+    rgba(236, 72, 153, 0.2)
+  ) !important;
+  animation: pulse-blob 18s ease-in-out infinite 2s;
+}
+
+@keyframes pulse-blob {
+  0%, 100% { transform: scale(1); opacity: 0.6; }
+  50% { transform: scale(1.15); opacity: 0.8; }
+}
+
+/* Modern grid texture overlay */
+.hero-grid-texture {
+  opacity: 0.04 !important;
+  background-image: radial-gradient(
+    circle at 1px 1px,
+    var(--modern-gray-900) 1px,
+    transparent 0
+  ) !important;
+  background-size: 24px 24px !important;
+  mix-blend-mode: multiply;
+}
+
+/* ========================================
+   ENHANCED TYPOGRAPHY
+   ======================================== */
+
+/* Hero headline with modern styling */
+.hero-modern h1 {
+  font-weight: 800 !important;
+  letter-spacing: -0.035em !important;
+  line-height: 1.1 !important;
+  color: var(--modern-gray-900);
+  margin-bottom: 24px !important;
+}
+
+.hero-line-1,
+.hero-line-2 {
+  display: block;
+  background: linear-gradient(135deg,
+    var(--modern-gray-900) 0%,
+    var(--modern-gray-700) 100%
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Highlight text with modern gradient */
+.hero-highlight-text {
+  position: relative;
+  display: inline-block;
+  font-weight: 900;
+  background: linear-gradient(135deg,
+    var(--modern-primary) 0%,
+    var(--modern-primary-light) 50%,
+    var(--modern-accent-purple) 100%
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  z-index: 1;
+}
+
+.hero-highlight-bg {
+  position: absolute;
+  bottom: 8px;
+  left: -4px;
+  right: -4px;
+  height: 12px;
+  background: linear-gradient(90deg,
+    rgba(11, 128, 115, 0.15),
+    rgba(139, 92, 246, 0.15)
+  );
+  border-radius: 4px;
+  z-index: -1;
+}
+
+/* Modern subcopy */
+.hero-modern-subcopy {
+  font-size: clamp(1rem, 2vw, 1.25rem) !important;
+  line-height: 1.6 !important;
+  color: var(--modern-gray-500) !important;
+  max-width: 600px;
+  margin-bottom: 32px !important;
+  font-weight: 400;
+}
+
+/* ========================================
+   HIGH-CONTRAST CTA BUTTONS
+   ======================================== */
+
+/* Primary CTA with modern gradient and effects */
+.hero-cta-primary {
+  background: linear-gradient(135deg,
+    var(--modern-primary) 0%,
+    var(--modern-primary-light) 100%
+  ) !important;
+  color: white !important;
+  font-weight: 600 !important;
+  padding: 16px 32px !important;
+  border-radius: var(--modern-radius-md) !important;
+  box-shadow: 0 4px 16px rgba(11, 128, 115, 0.25),
+              0 8px 32px rgba(11, 128, 115, 0.15),
+              inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  border: none;
+  position: relative;
+  overflow: hidden;
+  text-decoration: none !important;
+}
+
+.hero-cta-primary::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  transition: left 0.5s ease;
+}
+
+.hero-cta-primary:hover::before {
+  left: 100%;
+}
+
+.hero-cta-primary:hover {
+  transform: translateY(-3px) !important;
+  box-shadow: 0 8px 24px rgba(11, 128, 115, 0.35),
+              0 16px 48px rgba(11, 128, 115, 0.25),
+              inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+  text-decoration: none !important;
+}
+
+.hero-cta-primary:active {
+  transform: translateY(-1px) !important;
+}
+
+/* Secondary CTA with glassmorphism */
+.hero-cta-secondary {
+  background: rgba(255, 255, 255, 0.8) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  color: var(--modern-primary) !important;
+  font-weight: 600 !important;
+  padding: 16px 32px !important;
+  border-radius: var(--modern-radius-md) !important;
+  border: 2px solid rgba(11, 128, 115, 0.2) !important;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06),
+              inset 0 1px 0 rgba(255, 255, 255, 0.5) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  text-decoration: none !important;
+}
+
+.hero-cta-secondary:hover {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-color: var(--modern-primary) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.1),
+              inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+  text-decoration: none !important;
+}
+
+.hero-modern-ctas {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 32px;
+}
+
+/* ========================================
+   MODERN CARD AESTHETICS
+   ======================================== */
+
+/* Enhanced card styling */
+.ef-card,
+.card,
+.pack {
+  background: rgba(255, 255, 255, 0.9) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  border: 1px solid rgba(226, 232, 240, 0.6) !important;
+  border-radius: var(--modern-radius-lg) !important;
+  box-shadow: var(--modern-shadow-soft) !important;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Subtle gradient overlay on hover */
+.ef-card::before,
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg,
+    rgba(11, 128, 115, 0.02) 0%,
+    rgba(139, 92, 246, 0.02) 100%
+  );
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.ef-card:hover::before,
+.card:hover::before {
+  opacity: 1;
+}
+
+/* Enhanced hover effect with lift */
+.ef-card--hover:hover,
+.ef-card:hover,
+.card:hover {
+  transform: translateY(-8px) !important;
+  box-shadow: var(--modern-shadow-hover) !important;
+  border-color: rgba(11, 128, 115, 0.3) !important;
+}
+
+/* Ensure card content is above overlay */
+.ef-card > *,
+.card > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Category cards and feature cards */
+.hero-collage-card,
+.frame {
+  border-radius: var(--modern-radius-lg) !important;
+  box-shadow: var(--modern-shadow-soft) !important;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  border: 1px solid rgba(226, 232, 240, 0.5);
+  overflow: hidden;
+}
+
+.hero-collage-card:hover,
+.frame:hover {
+  transform: translateY(-6px) scale(1.02) !important;
+  box-shadow: var(--modern-shadow-large) !important;
+  border-color: rgba(11, 128, 115, 0.3);
+}
+
+/* Enhanced labels with glassmorphism */
+.hero-collage-label,
+.tag {
+  background: rgba(255, 255, 255, 0.85) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  border-radius: 999px !important;
+  padding: 8px 16px !important;
+  font-weight: 600 !important;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08),
+              inset 0 1px 0 rgba(255, 255, 255, 0.5) !important;
+}
+
+/* ========================================
+   FEATURED SECTIONS ENHANCEMENTS
+   ======================================== */
+
+/* Stats section with gradient */
+.ef-section--gradient {
+  background: linear-gradient(135deg,
+    var(--modern-primary) 0%,
+    var(--modern-primary-light) 50%,
+    var(--modern-accent-purple) 100%
+  ) !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.ef-section--gradient::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(circle at 20% 80%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.08) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+/* Trust badge cards */
+.ef-card--center {
+  text-align: center;
+}
+
+.ef-card__icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  line-height: 1;
+  color: var(--modern-primary);
+}
+
+.ef-card__icon svg {
+  width: 48px;
+  height: 48px;
+  stroke: var(--modern-primary);
+  stroke-width: 2;
+}
+
+.ef-card__title {
+  font-size: var(--modern-font-size-lg);
+  font-weight: 600;
+  color: var(--modern-gray-900);
+  margin: 0 0 8px 0;
+}
+
+.ef-card__text {
+  font-size: var(--modern-font-size-sm);
+  color: var(--modern-gray-500);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* ========================================
+   SEARCH BAR ENHANCEMENTS
+   ======================================== */
+
+.ef-search-bar {
+  background: rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border-radius: var(--modern-radius-lg) !important;
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.08),
+              0 12px 40px rgba(11, 128, 115, 0.12),
+              inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+  border: 1px solid rgba(226, 232, 240, 0.6);
+}
+
+.ef-search-bar__button {
+  background: linear-gradient(135deg,
+    var(--modern-primary) 0%,
+    var(--modern-primary-light) 100%
+  ) !important;
+  border-radius: var(--modern-radius-sm) !important;
+  box-shadow: 0 2px 8px rgba(11, 128, 115, 0.25) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.ef-search-bar__button:hover {
+  transform: scale(1.05) !important;
+  box-shadow: 0 4px 16px rgba(11, 128, 115, 0.35) !important;
+}
+
+/* Quick tags with modern styling */
+.ef-quick-tags__tag {
+  background: rgba(255, 255, 255, 0.8) !important;
+  backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(226, 232, 240, 0.6) !important;
+  border-radius: 999px !important;
+  padding: 8px 16px !important;
+  font-size: var(--modern-font-size-sm);
+  font-weight: 500;
+  color: var(--modern-gray-700) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 4px rgba(15, 23, 42, 0.04);
+}
+
+.ef-quick-tags__tag:hover {
+  background: rgba(255, 255, 255, 1) !important;
+  border-color: var(--modern-primary) !important;
+  color: var(--modern-primary) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(11, 128, 115, 0.15);
+}
+
+/* ========================================
+   RESPONSIVE ADJUSTMENTS
+   ======================================== */
+
+@media (max-width: 768px) {
+  .hero-modern {
+    padding: clamp(48px, 8vw, 80px) 0 clamp(32px, 6vw, 64px) !important;
+  }
+  
+  .hero-modern-ctas {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .hero-cta-primary,
+  .hero-cta-secondary {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+  }
+  
+  .ef-card--hover:hover,
+  .card:hover {
+    transform: translateY(-4px) !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .ef-header {
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+  }
+  
+  .hero-modern::before,
+  .hero-modern::after {
+    opacity: 0.5;
+  }
+}
+
+/* ========================================
+   ACCESSIBILITY & REDUCED MOTION
+   ======================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-modern::before,
+  .hero-modern::after,
+  .hero-blob,
+  .ef-card,
+  .card,
+  .hero-cta-primary,
+  .hero-cta-secondary,
+  .hero-collage-card {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Focus states for accessibility */
+.hero-cta-primary:focus-visible,
+.hero-cta-secondary:focus-visible {
+  outline: 3px solid var(--modern-primary);
+  outline-offset: 3px;
+}
+
+.ef-nav-link:focus-visible {
+  outline: 2px solid var(--modern-primary);
+  outline-offset: 2px;
+  border-radius: var(--modern-radius-sm);
+}
