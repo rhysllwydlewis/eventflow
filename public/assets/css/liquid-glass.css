@@ -374,3 +374,81 @@
     border: 2px solid currentColor;
   }
 }
+
+/* ===========================================
+   12. SECTION DIVIDER
+   =========================================== */
+.section-divider {
+  margin: 3rem 0 2rem;
+  position: relative;
+}
+
+.section-divider::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(11, 128, 115, 0.2), transparent);
+}
+
+.section-divider__label {
+  position: relative;
+  width: fit-content;
+  margin: 0 auto;
+  background: white;
+  padding: 0 1rem;
+  font-size: 0.75rem;
+  color: var(--ef-text-muted, #667085);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 600;
+}
+
+/* ===========================================
+   13. GLASS HEADER VARIANTS
+   =========================================== */
+.glass-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid;
+}
+
+.glass-header--teal {
+  background: linear-gradient(135deg, rgba(11, 128, 115, 0.05) 0%, rgba(16, 185, 129, 0.03) 100%);
+  border-bottom-color: rgba(11, 128, 115, 0.1);
+}
+
+.glass-header--purple {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(139, 92, 246, 0.03) 100%);
+  border-bottom-color: rgba(99, 102, 241, 0.1);
+}
+
+.glass-header--blue {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(37, 99, 235, 0.03) 100%);
+  border-bottom-color: rgba(59, 130, 246, 0.1);
+}
+
+.glass-header--red {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.05) 0%, rgba(220, 38, 38, 0.03) 100%);
+  border-bottom-color: rgba(239, 68, 68, 0.1);
+}
+
+.glass-header--gold {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.05) 0%, rgba(251, 191, 36, 0.03) 100%);
+  border-bottom-color: rgba(245, 158, 11, 0.1);
+}
+
+/* ===========================================
+   14. UTILITY CLASSES
+   =========================================== */
+.glass-btn--small {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+}
+
+.card--glass {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
