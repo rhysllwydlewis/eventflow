@@ -2498,26 +2498,26 @@ function efMaybeShowOnboarding(page) {
     box.style.textAlign = 'center';
     
     box.innerHTML = `
-      <div style="font-size: 3rem; margin-bottom: 1rem;">🎉</div>
+      <div style="font-size: 3rem; margin-bottom: 1rem;" role="img" aria-label="celebration">🎉</div>
       <h2 style="color: #ffffff; font-size: 1.75rem; font-weight: 700; margin-bottom: 0.75rem;">Welcome to Your Supplier Dashboard!</h2>
       <p style="color: rgba(255, 255, 255, 0.95); font-size: 1.1rem; line-height: 1.6; margin-bottom: 1.5rem; max-width: 600px; margin-left: auto; margin-right: auto;">
         You're all set to showcase your services and connect with event planners. Let's help you get started on your journey!
       </p>
       <div style="background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(10px); border-radius: 8px; padding: 1.25rem; margin-bottom: 1.5rem; text-align: left; max-width: 600px; margin-left: auto; margin-right: auto;">
         <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem;">
-          <span style="font-size: 1.5rem;">✨</span>
+          <span style="font-size: 1.5rem;" aria-hidden="true">✨</span>
           <span style="color: rgba(255, 255, 255, 0.95); font-weight: 500;">Complete your supplier profile</span>
         </div>
         <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem;">
-          <span style="font-size: 1.5rem;">📦</span>
+          <span style="font-size: 1.5rem;" aria-hidden="true">📦</span>
           <span style="color: rgba(255, 255, 255, 0.95); font-weight: 500;">Add your first package or service</span>
         </div>
         <div style="display: flex; align-items: center; gap: 0.75rem;">
-          <span style="font-size: 1.5rem;">💬</span>
+          <span style="font-size: 1.5rem;" aria-hidden="true">💬</span>
           <span style="color: rgba(255, 255, 255, 0.95); font-weight: 500;">Start engaging with customers</span>
         </div>
       </div>
-      <button type="button" class="cta" id="ef-onboarding-dismiss" style="background: #ffffff; color: #667eea; font-weight: 600; padding: 0.75rem 2rem; border-radius: 8px; border: none; cursor: pointer; font-size: 1rem; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); transition: transform 0.2s;">Got it! Let's go 🚀</button>
+      <button type="button" class="cta" id="ef-onboarding-dismiss" aria-label="Dismiss onboarding and start using dashboard" style="background: #ffffff; color: #667eea; font-weight: 600; padding: 0.75rem 2rem; border-radius: 8px; border: none; cursor: pointer; font-size: 1rem; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); transition: transform 0.2s;">Got it! Let's go 🚀</button>
     `;
 
     const cards = container.querySelector('.cards');

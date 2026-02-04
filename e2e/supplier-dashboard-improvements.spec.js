@@ -54,10 +54,13 @@ test.describe('Supplier Dashboard Improvements @backend', () => {
 
     await page.goto('/dashboard-supplier.html');
     await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(1000); // Wait for JS to execute
+
+    // Wait for the onboarding dismiss button to appear
+    const dismissButton = page.locator('#ef-onboarding-dismiss');
+    await expect(dismissButton).toBeVisible({ timeout: 5000 });
 
     // Check if onboarding card is displayed
-    const onboardingCard = page.locator('#ef-onboarding-dismiss').locator('..');
+    const onboardingCard = dismissButton.locator('..');
     
     if ((await onboardingCard.count()) > 0) {
       await expect(onboardingCard).toBeVisible();
@@ -79,14 +82,13 @@ test.describe('Supplier Dashboard Improvements @backend', () => {
 
     await page.goto('/dashboard-supplier.html');
     await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(1000);
 
     const dismissButton = page.locator('#ef-onboarding-dismiss');
+    await expect(dismissButton).toBeVisible({ timeout: 5000 });
     
     if ((await dismissButton.count()) > 0) {
       // Click the "Got it" button
       await dismissButton.click();
-      await page.waitForTimeout(500); // Wait for animation
       
       // Check if the card was removed
       const onboardingCard = page.locator('#ef-onboarding-dismiss').locator('..');
@@ -110,11 +112,10 @@ test.describe('Supplier Dashboard Improvements @backend', () => {
 
     await page.goto('/dashboard-supplier.html');
     await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(1000);
 
     // Onboarding card should not be visible
     const onboardingCard = page.locator('#ef-onboarding-dismiss');
-    expect(await onboardingCard.count()).toBe(0);
+    await expect(onboardingCard).not.toBeVisible();
   });
 
   test('onboarding card should have modern gradient design', async ({ page, context }) => {
@@ -126,9 +127,11 @@ test.describe('Supplier Dashboard Improvements @backend', () => {
 
     await page.goto('/dashboard-supplier.html');
     await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(1000);
 
-    const onboardingCard = page.locator('#ef-onboarding-dismiss').locator('..');
+    const dismissButton = page.locator('#ef-onboarding-dismiss');
+    await expect(dismissButton).toBeVisible({ timeout: 5000 });
+
+    const onboardingCard = dismissButton.locator('..');
     
     if ((await onboardingCard.count()) > 0) {
       // Check for gradient background
@@ -138,8 +141,8 @@ test.describe('Supplier Dashboard Improvements @backend', () => {
       
       expect(background).toContain('gradient');
       
-      // Check for emoji icon
-      await expect(page.locator('text=🎉')).toBeVisible();
+      // Check for emoji icon with accessibility attributes
+      await expect(page.locator('[role="img"][aria-label="celebration"]')).toBeVisible();
       
       // Check for the new CTA text
       await expect(page.locator('text=Got it! Let\'s go 🚀')).toBeVisible();
@@ -174,22 +177,22 @@ test.describe('Supplier Dashboard Improvements @backend', () => {
 
     await page.goto('/dashboard-supplier.html');
     await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(1000);
 
     const dismissButton = page.locator('#ef-onboarding-dismiss');
+    await expect(dismissButton).toBeVisible({ timeout: 5000 });
     
     if ((await dismissButton.count()) > 0) {
       // Hover over the button
       await dismissButton.hover();
-      await page.waitForTimeout(300); // Wait for transition
       
-      // The transform should be applied (though we can't directly test the exact value in all browsers)
+      // The transform should be applied (though exact value varies by browser)
       const transform = await dismissButton.evaluate(el => {
         return window.getComputedStyle(el).transform;
       });
       
-      // Just verify transform property exists (value varies by browser)
+      // Just verify transform property exists and is not 'none'
       expect(transform).toBeTruthy();
+      expect(transform).not.toBe('none');
     }
   });
 });
