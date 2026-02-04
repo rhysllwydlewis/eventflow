@@ -30,6 +30,23 @@ html {
 }
 
 /* ========================================
+   SPACING OPTIMIZATIONS
+   ======================================== */
+
+/* Reduce section padding for tighter layout */
+.ef-section {
+  padding: var(--ef-space-6, 40px) 0 !important;
+}
+
+.ef-section--sm {
+  padding: var(--ef-space-4, 20px) 0 !important;
+}
+
+.ef-section--lg {
+  padding: var(--ef-space-7, 56px) 0 !important;
+}
+
+/* ========================================
    MODERN 2026 COLOR PALETTE
    ======================================== */
 :root {
