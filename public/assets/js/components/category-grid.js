@@ -28,19 +28,23 @@ class CategoryGrid {
     style.textContent = `
       .category-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-        gap: 24px;
+        grid-template-columns: repeat(6, 1fr);
+        gap: 28px;
         margin-top: 24px;
+        max-width: 1800px;
+        margin-left: auto;
+        margin-right: auto;
       }
 
       .category-card {
         position: relative;
-        border-radius: 12px;
+        border-radius: 14px;
         overflow: hidden;
         cursor: pointer;
         transition: transform 0.3s ease, box-shadow 0.3s ease;
         background-color: var(--color-card-bg, #ffffff);
         border: 1px solid var(--color-border, #dee2e6);
+        aspect-ratio: 1;
       }
 
       .category-card:hover {
@@ -50,29 +54,29 @@ class CategoryGrid {
 
       .category-card-image {
         width: 100%;
-        height: 200px;
+        height: 240px;
         object-fit: cover;
         display: block;
       }
 
       .category-card-content {
-        padding: 20px;
+        padding: 24px;
       }
 
       .category-card-header {
         display: flex;
         align-items: center;
-        gap: 12px;
-        margin-bottom: 12px;
+        gap: 14px;
+        margin-bottom: 14px;
       }
 
       .category-card-icon {
-        font-size: 32px;
+        font-size: 38px;
         flex-shrink: 0;
       }
 
       .category-card-name {
-        font-size: 1.25rem;
+        font-size: 1.5rem;
         font-weight: 600;
         margin: 0;
         color: var(--color-text-primary, #212529);
@@ -80,7 +84,7 @@ class CategoryGrid {
       }
 
       .category-card-description {
-        font-size: 0.9rem;
+        font-size: 1.08rem;
         color: var(--color-text-secondary, #6c757d);
         margin: 0;
         line-height: 1.5;
@@ -92,7 +96,55 @@ class CategoryGrid {
         color: var(--color-text-secondary, #6c757d);
       }
 
+      /* Responsive breakpoints for 6x6 grid */
+      @media (max-width: 1600px) {
+        .category-grid {
+          grid-template-columns: repeat(5, 1fr);
+        }
+      }
+
+      @media (max-width: 1200px) {
+        .category-grid {
+          grid-template-columns: repeat(4, 1fr);
+          gap: 24px;
+        }
+        
+        .category-card-image {
+          height: 200px;
+        }
+        
+        .category-card-content {
+          padding: 20px;
+        }
+        
+        .category-card-icon {
+          font-size: 32px;
+        }
+        
+        .category-card-name {
+          font-size: 1.25rem;
+        }
+        
+        .category-card-description {
+          font-size: 0.9rem;
+        }
+      }
+
+      @media (max-width: 992px) {
+        .category-grid {
+          grid-template-columns: repeat(3, 1fr);
+          gap: 20px;
+        }
+      }
+
       @media (max-width: 768px) {
+        .category-grid {
+          grid-template-columns: repeat(2, 1fr);
+          gap: 16px;
+        }
+      }
+
+      @media (max-width: 480px) {
         .category-grid {
           grid-template-columns: 1fr;
         }
@@ -108,7 +160,8 @@ class CategoryGrid {
         throw new Error('Failed to load categories');
       }
       const data = await response.json();
-      this.categories = data.items || [];
+      // Filter to only show visible categories
+      this.categories = (data.items || []).filter(cat => cat.visible !== false);
       this.render();
     } catch (error) {
       console.error('Error loading categories:', error);
