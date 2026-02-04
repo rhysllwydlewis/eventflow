@@ -10,6 +10,9 @@ document.addEventListener('DOMContentLoaded', function() {
       if (img.dataset.errorHandled) return;
       img.dataset.errorHandled = 'true';
       
+      // Prevent the error from bubbling to console in production
+      e.stopPropagation();
+      
       // Check if it's a supplier avatar, profile image, or package image
       if (img.src && (
         img.src.includes('/uploads/suppliers/') || 
@@ -17,7 +20,8 @@ document.addEventListener('DOMContentLoaded', function() {
         img.classList.contains('supplier-avatar') || 
         img.classList.contains('profile-image') ||
         img.classList.contains('package-image') ||
-        img.closest('.package-card')
+        img.closest('.package-card') ||
+        img.closest('.supplier-card')
       )) {
         // Determine the appropriate placeholder based on context
         let placeholderSvg;
@@ -38,6 +42,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Maintain aspect ratio and theme styling
         img.style.objectFit = 'cover';
+        img.style.backgroundColor = '#f3f4f6';
       }
     }
   }, true);

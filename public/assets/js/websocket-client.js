@@ -10,8 +10,10 @@ class WebSocketClient {
     this.connected = false;
     this.reconnectAttempts = 0;
     this.maxReconnectAttempts = 5;
+    this.baseReconnectDelay = 1000; // Base delay for exponential backoff
     this.reconnectDelay = 1000;
     this.userNotified = false; // Track if user has been notified about connection issues
+    this.maxRetriesReached = false; // Track if max retries reached to stop further attempts
 
     this.options = {
       autoConnect: options.autoConnect !== false,
@@ -62,7 +64,19 @@ class WebSocketClient {
   }
 
   initConnection() {
+    // Stop if max retries already reached
+    if (this.maxRetriesReached) {
+      if (!this.userNotified) {
+        this.userNotified = true;
+        console.warn('WebSocket: Max retries reached, using polling fallback');
+      }
+      return;
+    }
+
     try {
+      // Calculate exponential backoff delay
+      const delay = this.baseReconnectDelay * Math.pow(2, this.reconnectAttempts);
+      
       // Explicitly set connection URL to current origin with /socket.io path
       const protocol = window.location.protocol === 'https:' ? 'https:' : 'http:';
       const socketUrl = `${protocol}//${window.location.host}`;
@@ -70,9 +84,7 @@ class WebSocketClient {
       this.socket = io(socketUrl, {
         path: '/socket.io',
         transports: ['websocket', 'polling'],
-        reconnection: true,
-        reconnectionDelay: this.reconnectDelay,
-        reconnectionAttempts: this.maxReconnectAttempts,
+        reconnection: false, // Disable automatic reconnection, we'll handle it manually
         timeout: 20000,
         secure: window.location.protocol === 'https:',
       });
@@ -90,8 +102,9 @@ class WebSocketClient {
     this.socket.on('connect', () => {
       console.log('WebSocket connected');
       this.connected = true;
-      this.reconnectAttempts = 0;
+      this.reconnectAttempts = 0; // Reset on successful connection
       this.userNotified = false; // Reset notification flag on successful connection
+      this.maxRetriesReached = false; // Reset max retries flag
 
       // Authenticate if we have user data
       const user = this.getCurrentUser();
@@ -105,12 +118,18 @@ class WebSocketClient {
     });
 
     this.socket.on('disconnect', reason => {
-      console.log('WebSocket disconnected:', reason);
+      // Reduce console noise - only log in development or first disconnect
+      if (this.reconnectAttempts === 0) {
+        console.log('WebSocket disconnected:', reason);
+      }
       this.connected = false;
 
       if (this.options.onDisconnect) {
         this.options.onDisconnect(reason);
       }
+      
+      // Attempt to reconnect with exponential backoff
+      this.attemptReconnect();
     });
 
     this.socket.on('auth:success', data => {
@@ -146,17 +165,20 @@ class WebSocketClient {
     });
 
     this.socket.on('connect_error', error => {
-      // Only log first error to reduce console spam
-      if (this.reconnectAttempts === 0) {
-        console.warn('WebSocket connection failed, retrying...');
-      }
       this.reconnectAttempts++;
+      
+      // Only log first few errors to reduce console spam
+      if (this.reconnectAttempts <= 2) {
+        console.warn(`WebSocket: Connection attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts} failed, retrying with exponential backoff...`);
+      }
 
       if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+        this.maxRetriesReached = true;
+        
         // Show user-facing notification only once
         if (!this.userNotified) {
           this.userNotified = true;
-          console.warn('WebSocket unavailable after multiple attempts. Using polling fallback.');
+          console.warn('WebSocket: Max retries reached, using polling fallback');
           
           // Show a single user-facing notification
           if (typeof showToast === 'function') {
@@ -171,8 +193,31 @@ class WebSocketClient {
         if (this.options.onError) {
           this.options.onError(new Error('Failed to connect after multiple attempts'));
         }
+      } else {
+        // Attempt reconnect with exponential backoff
+        this.attemptReconnect();
       }
     });
+  }
+  
+  attemptReconnect() {
+    // Don't reconnect if max retries reached
+    if (this.maxRetriesReached || this.reconnectAttempts >= this.maxReconnectAttempts) {
+      return;
+    }
+    
+    // Calculate exponential backoff delay: 1s, 2s, 4s, 8s, 16s
+    const delay = this.baseReconnectDelay * Math.pow(2, this.reconnectAttempts);
+    
+    if (this.reconnectAttempts < 2) {
+      console.log(`WebSocket: Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts + 1}/${this.maxReconnectAttempts})`);
+    }
+    
+    setTimeout(() => {
+      if (!this.connected && !this.maxRetriesReached) {
+        this.initConnection();
+      }
+    }, delay);
   }
 
   authenticate(userId) {
