@@ -2496,8 +2496,9 @@ function efMaybeShowOnboarding(page) {
     box.style.borderRadius = '16px';
     box.style.boxShadow = '0 12px 40px rgba(11, 128, 115, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.15)';
     box.style.textAlign = 'center';
-    box.style.backdropFilter = 'blur(20px) saturate(200%)';
-    box.style.webkitBackdropFilter = 'blur(20px) saturate(200%)';
+    const blurEffect = 'blur(20px) saturate(200%)';
+    box.style.backdropFilter = blurEffect;
+    box.style.webkitBackdropFilter = blurEffect;
     box.style.border = '1px solid rgba(255, 255, 255, 0.25)';
     
     box.innerHTML = `
@@ -2549,7 +2550,8 @@ function efMaybeShowOnboarding(page) {
         } catch (_) {
           /* Ignore localStorage errors */
         }
-        box.style.transition = 'opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+        const easing = 'cubic-bezier(0.4, 0, 0.2, 1)';
+        box.style.transition = `opacity 0.3s ${easing}, transform 0.3s ${easing}`;
         box.style.opacity = '0';
         box.style.transform = 'scale(0.95)';
         setTimeout(() => box.remove(), 300);
