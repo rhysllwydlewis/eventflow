@@ -1164,10 +1164,21 @@
   }
 
   function selectPexelsImage(photo) {
-    // Escape photographer name for security
+    // Escape photographer name and validate/encode URL for security
     const escapedPhotographer = escapeHtml(photo.photographer);
-    const escapedPhotographerUrl = escapeHtml(photo.photographer_url);
-    const attribution = `Photo by <a href="${escapedPhotographerUrl}" target="_blank">${escapedPhotographer}</a> on <a href="https://www.pexels.com" target="_blank">Pexels</a>`;
+    // For URLs in href attributes, use encodeURI and validate it's a proper URL
+    let photographerUrl = 'https://www.pexels.com'; // Default fallback
+    try {
+      const url = new URL(photo.photographer_url);
+      // Only allow https URLs from pexels.com
+      if (url.protocol === 'https:' && url.hostname.endsWith('pexels.com')) {
+        photographerUrl = encodeURI(photo.photographer_url);
+      }
+    } catch (e) {
+      console.warn('Invalid photographer URL:', photo.photographer_url);
+    }
+
+    const attribution = `Photo by <a href="${photographerUrl}" target="_blank" rel="noopener noreferrer">${escapedPhotographer}</a> on <a href="https://www.pexels.com" target="_blank" rel="noopener noreferrer">Pexels</a>`;
 
     document.getElementById('categoryHeroImage').value = photo.src.large;
     document.getElementById('categoryPexelsAttribution').value = attribution;

@@ -198,8 +198,9 @@ class CategoryGrid {
       : '';
 
     // Add Pexels attribution if present
-    // Note: pexelsAttribution contains pre-sanitized HTML from admin (escaped during creation)
-    // This is acceptable as it's admin-controlled content, not user-generated
+    // Note: pexelsAttribution is created by admin with validated URLs and escaped text
+    // URLs are validated to be from pexels.com domain only, and photographer names are HTML-escaped
+    // This is acceptable as admin-controlled content that has been properly sanitized
     const creditHtml = category.pexelsAttribution
       ? `<div class="category-card-credit">${category.pexelsAttribution}</div>`
       : '';
