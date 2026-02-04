@@ -2455,6 +2455,16 @@ async function openThread(id) {
 }
 
 function efMaybeShowOnboarding(page) {
+  // Check if onboarding has been permanently dismissed
+  try {
+    const dismissed = localStorage.getItem('ef_onboarding_dismissed');
+    if (dismissed === '1') {
+      return;
+    }
+  } catch (_) {
+    /* Ignore localStorage errors */
+  }
+
   // Check if this is a first-time visit that needs onboarding
   let shouldShow = false;
   try {
@@ -2471,18 +2481,81 @@ function efMaybeShowOnboarding(page) {
     return;
   }
 
-  // For supplier dashboard, don't create a duplicate card
-  // The welcome section already exists in the page, just ensure it's visible
+  // For supplier dashboard, create a modern, engaging onboarding card with liquid glass aesthetic
   if (page === 'dash_supplier') {
-    try {
-      // Clear any previous welcome dismissal to show it for first-time users
-      localStorage.removeItem('ef_welcome_dismissed');
-      const welcomeSection = document.getElementById('welcome-section');
-      if (welcomeSection) {
-        welcomeSection.style.display = '';
-      }
-    } catch (_) {
-      /* Ignore localStorage errors */
+    const container = document.querySelector('main .container');
+    if (!container) {
+      return;
+    }
+
+    const box = document.createElement('div');
+    box.className = 'card glass-card glass-card--teal glass-card--elevated';
+    box.style.background = 'linear-gradient(135deg, rgba(11, 128, 115, 0.85) 0%, rgba(10, 103, 93, 0.9) 100%)';
+    box.style.color = '#ffffff';
+    box.style.padding = '2rem';
+    box.style.borderRadius = '16px';
+    box.style.boxShadow = '0 12px 40px rgba(11, 128, 115, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.15)';
+    box.style.textAlign = 'center';
+    const blurEffect = 'blur(20px) saturate(200%)';
+    box.style.backdropFilter = blurEffect;
+    box.style.webkitBackdropFilter = blurEffect;
+    box.style.border = '1px solid rgba(255, 255, 255, 0.25)';
+    
+    box.innerHTML = `
+      <div style="font-size: 3rem; margin-bottom: 1rem;" role="img" aria-label="celebration">🎉</div>
+      <h2 style="color: #ffffff; font-size: 1.75rem; font-weight: 700; margin-bottom: 0.75rem;">Welcome to Your Supplier Dashboard!</h2>
+      <p style="color: rgba(255, 255, 255, 0.95); font-size: 1.1rem; line-height: 1.6; margin-bottom: 1.5rem; max-width: 600px; margin-left: auto; margin-right: auto;">
+        You're all set to showcase your services and connect with event planners. Let's help you get started on your journey!
+      </p>
+      <div style="background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 12px; padding: 1.25rem; margin-bottom: 1.5rem; text-align: left; max-width: 600px; margin-left: auto; margin-right: auto; box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1);">
+        <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem;">
+          <span style="font-size: 1.5rem;" aria-hidden="true">✨</span>
+          <span style="color: rgba(255, 255, 255, 0.98); font-weight: 500;">Complete your supplier profile</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem;">
+          <span style="font-size: 1.5rem;" aria-hidden="true">📦</span>
+          <span style="color: rgba(255, 255, 255, 0.98); font-weight: 500;">Add your first package or service</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+          <span style="font-size: 1.5rem;" aria-hidden="true">💬</span>
+          <span style="color: rgba(255, 255, 255, 0.98); font-weight: 500;">Start engaging with customers</span>
+        </div>
+      </div>
+      <button type="button" class="cta" id="ef-onboarding-dismiss" aria-label="Dismiss onboarding and start using dashboard" style="background: #ffffff; color: #0B8073; font-weight: 600; padding: 0.75rem 2rem; border-radius: 10px; border: none; cursor: pointer; font-size: 1rem; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);">Got it! Let's go 🚀</button>
+    `;
+
+    const cards = container.querySelector('.cards');
+    if (cards && cards.parentNode === container) {
+      container.insertBefore(box, cards);
+    } else {
+      container.insertBefore(box, container.firstChild);
+    }
+
+    const btn = box.querySelector('#ef-onboarding-dismiss');
+    if (btn) {
+      // Add hover effect with teal theme glow
+      btn.addEventListener('mouseenter', () => {
+        btn.style.transform = 'scale(1.05) translateY(-2px)';
+        btn.style.boxShadow = '0 8px 20px rgba(11, 128, 115, 0.3)';
+      });
+      btn.addEventListener('mouseleave', () => {
+        btn.style.transform = 'scale(1) translateY(0)';
+        btn.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+      });
+      
+      // Save permanent dismissal and remove card
+      btn.addEventListener('click', () => {
+        try {
+          localStorage.setItem('ef_onboarding_dismissed', '1');
+        } catch (_) {
+          /* Ignore localStorage errors */
+        }
+        const easing = 'cubic-bezier(0.4, 0, 0.2, 1)';
+        box.style.transition = `opacity 0.3s ${easing}, transform 0.3s ${easing}`;
+        box.style.opacity = '0';
+        box.style.transform = 'scale(0.95)';
+        setTimeout(() => box.remove(), 300);
+      });
     }
     return;
   }
@@ -2523,61 +2596,19 @@ function efMaybeShowOnboarding(page) {
 
   const btn = box.querySelector('#ef-onboarding-dismiss');
   if (btn) {
-    btn.addEventListener('click', () => box.remove());
+    btn.addEventListener('click', () => {
+      try {
+        localStorage.setItem('ef_onboarding_dismissed', '1');
+      } catch (_) {
+        /* Ignore localStorage errors */
+      }
+      box.remove();
+    });
   }
 }
 
 async function initDashSupplier() {
   efMaybeShowOnboarding('dash_supplier');
-
-  // Welcome banner dismiss functionality
-  function initWelcomeDismiss() {
-    const welcomeSection = document.getElementById('welcome-section');
-    const dismissBtn = document.getElementById('welcome-dismiss-btn');
-
-    if (!welcomeSection || !dismissBtn) {
-      return;
-    }
-
-    // Check if welcome banner should be shown
-    function shouldShowWelcome() {
-      try {
-        const dismissed = localStorage.getItem('ef_welcome_dismissed');
-        if (!dismissed) {
-          return true;
-        }
-
-        // Optionally show again after 30 days
-        const dismissedTime = parseInt(dismissed, 10);
-        const thirtyDays = 30 * 24 * 60 * 60 * 1000;
-        return Date.now() - dismissedTime > thirtyDays;
-      } catch (_) {
-        return true;
-      }
-    }
-
-    // Hide welcome if previously dismissed
-    if (!shouldShowWelcome()) {
-      welcomeSection.style.display = 'none';
-      return;
-    }
-
-    // Dismiss handler
-    dismissBtn.addEventListener('click', () => {
-      try {
-        localStorage.setItem('ef_welcome_dismissed', Date.now().toString());
-      } catch (_) {
-        /* Ignore localStorage errors */
-      }
-      welcomeSection.classList.add('welcome-dismissed');
-      setTimeout(() => {
-        welcomeSection.style.display = 'none';
-      }, 300);
-    });
-  }
-
-  // Initialize welcome dismiss functionality
-  initWelcomeDismiss();
 
   // Fetch CSRF token if not already available
   async function ensureCsrfToken() {
