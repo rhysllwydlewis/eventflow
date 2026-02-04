@@ -7,6 +7,30 @@
   'use strict';
 
   // ========================================
+  // HERO VIDEO FALLBACK
+  // Hide video container if no source is provided
+  // ========================================
+  
+  function initHeroVideo() {
+    const videoElement = document.getElementById('hero-pexels-video');
+    const videoSource = document.getElementById('hero-video-source');
+    const videoContainer = videoElement?.closest('.hero-video-card');
+    
+    if (videoElement && videoSource && videoContainer) {
+      // Check if video has a valid source
+      const src = videoSource.getAttribute('src');
+      if (!src || src.trim() === '') {
+        // No source provided, hide the video container
+        videoContainer.style.display = 'none';
+        console.info('Hero video hidden: No source provided');
+      } else {
+        // Valid source exists, ensure video is visible
+        videoContainer.style.display = 'block';
+      }
+    }
+  }
+
+  // ========================================
   // TESTIMONIALS CAROUSEL
   // ========================================
   
@@ -76,6 +100,16 @@
     if (section) {
       observer.observe(section);
     }
+  }
+
+  // ========================================
+  // INITIALIZE ON DOM READY
+  // ========================================
+  
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initHeroVideo);
+  } else {
+    initHeroVideo();
   }
 
 })();
