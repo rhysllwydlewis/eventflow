@@ -1850,12 +1850,17 @@ textarea:focus {
    31. ACCESSIBILITY - REDUCED MOTION
    =========================================== */
 @media (prefers-reduced-motion: reduce) {
+  /* Disable decorative animations */
   .supplier-welcome-card::before,
   .cta::before,
   .lead-quality-fill::after,
   .skeleton,
   .glass-progress__fill::after,
-  .ripple-effect,
+  .ripple-effect {
+    animation: none;
+  }
+  
+  /* Disable floating icon animation on large action buttons */
   .supplier-action-btn--large .action-icon {
     animation: none;
   }
@@ -2420,9 +2425,11 @@ textarea:focus-visible {
 /* ===========================================
    40. MOBILE SECTION NAVIGATION - FIXED
    =========================================== */
-/* Styles moved to section 3 (lines 404-490) for consolidation */
-/* Dashboard mobile nav container at line 356 */
-/* Mobile nav pills styling at lines 413-490 */
+/* Styles consolidated to section 3 for better organization:
+   - Dashboard mobile nav container starts at line 404
+   - Mobile nav pills styling at lines 413-487
+   - Responsive display toggle below at line 515
+*/
 
 @media (max-width: 768px) {
   .dashboard-mobile-nav {
