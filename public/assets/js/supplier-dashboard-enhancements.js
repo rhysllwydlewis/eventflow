@@ -8,6 +8,7 @@
 
   const NIGHT_THEME_HOUR = 21;
   const LAYOUT_PAINT_DELAY = 50;
+  const DRAG_SCROLL_MULTIPLIER = 2; // Faster scroll for responsive feel on mobile
   const THEME_CLASSES = [
     'supplier-welcome-card--morning',
     'supplier-welcome-card--afternoon',
@@ -33,12 +34,14 @@
   function applyTimeBasedGreeting() {
     const card = document.querySelector('.supplier-welcome-card');
     const greetingEl = document.getElementById('welcome-greeting');
-    if (!card || !greetingEl) return;
+    if (!card || !greetingEl) {
+      return;
+    }
 
     const hour = new Date().getHours();
     let variant = 'afternoon';
     let greeting = 'Good day,';
-    
+
     // Time-based gradients as per spec:
     // Morning (5am-12pm): golden
     // Afternoon (12pm-5pm): blue
@@ -55,10 +58,10 @@
       greeting = 'Good evening,';
     } else {
       variant = 'night';
-      greeting = 'Good evening,';
+      greeting = 'Good night,';
     }
 
-    THEME_CLASSES.forEach((cls) => card.classList.remove(cls));
+    THEME_CLASSES.forEach(cls => card.classList.remove(cls));
     card.classList.add(`supplier-welcome-card--${variant}`);
     greetingEl.textContent = greeting;
   }
@@ -68,7 +71,9 @@
    */
   function showRandomProTip() {
     const proTipText = document.getElementById('pro-tip-text');
-    if (!proTipText) return;
+    if (!proTipText) {
+      return;
+    }
 
     const randomTip = PRO_TIPS[Math.floor(Math.random() * PRO_TIPS.length)];
     proTipText.textContent = randomTip;
@@ -79,9 +84,11 @@
    */
   function setupStatCounters() {
     const counters = document.querySelectorAll('.welcome-stat-value[data-target]');
-    if (!counters.length) return;
+    if (!counters.length) {
+      return;
+    }
 
-    const animate = (el) => {
+    const animate = el => {
       const target = parseInt(el.getAttribute('data-target'), 10) || 0;
       const duration = 900;
       const start = performance.now();
@@ -91,14 +98,16 @@
         const progress = Math.min((now - start) / duration, 1);
         const value = Math.floor(initial + (target - initial) * progress);
         el.textContent = value.toLocaleString();
-        if (progress < 1) requestAnimationFrame(frame);
+        if (progress < 1) {
+          requestAnimationFrame(frame);
+        }
       }
       requestAnimationFrame(frame);
     };
 
     const observer = new IntersectionObserver(
       (entries, obs) => {
-        entries.forEach((entry) => {
+        entries.forEach(entry => {
           if (entry.isIntersecting) {
             animate(entry.target);
             obs.unobserve(entry.target);
@@ -108,7 +117,7 @@
       { threshold: 0.4 }
     );
 
-    counters.forEach((c) => observer.observe(c));
+    counters.forEach(c => observer.observe(c));
   }
 
   /**
@@ -116,9 +125,13 @@
    */
   function setupMobileNav() {
     const nav = document.querySelector('.mobile-nav-pills');
-    if (!nav) return;
+    if (!nav) {
+      return;
+    }
     const pills = nav.querySelectorAll('.mobile-nav-pill');
-    if (!pills.length) return;
+    if (!pills.length) {
+      return;
+    }
 
     let indicator = nav.querySelector('.mobile-nav-indicator');
     if (!indicator) {
@@ -128,7 +141,7 @@
       nav.appendChild(indicator);
     }
 
-    const moveIndicator = (pill) => {
+    const moveIndicator = pill => {
       const rect = pill.getBoundingClientRect();
       const navRect = nav.getBoundingClientRect();
       const width = rect.width;
@@ -137,10 +150,10 @@
       indicator.style.transform = `translateX(${offset}px)`;
     };
 
-    const setActive = (pill) => {
-      pills.forEach((p) => p.classList.toggle('active', p === pill));
+    const setActive = pill => {
+      pills.forEach(p => p.classList.toggle('active', p === pill));
       moveIndicator(pill);
-      
+
       // Announce to screen readers
       const sectionName = pill.textContent.trim();
       if (window.announceToSR) {
@@ -160,9 +173,9 @@
       });
 
       // Keyboard navigation
-      pill.addEventListener('keydown', (e) => {
+      pill.addEventListener('keydown', e => {
         let targetIndex = index;
-        
+
         if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
           e.preventDefault();
           targetIndex = index > 0 ? index - 1 : pills.length - 1;
@@ -183,7 +196,7 @@
         pills[targetIndex].click();
       });
 
-      // Set tabindex and role for accessibility
+      // Set tabindex and role for accessibility (first pill gets 0, others get -1)
       pill.setAttribute('role', 'tab');
       pill.setAttribute('tabindex', index === 0 ? '0' : '-1');
       pill.setAttribute('aria-label', pill.textContent.trim());
@@ -194,10 +207,12 @@
     nav.setAttribute('aria-label', 'Dashboard sections');
 
     // Wait for layout/paint to measure pill widths; rAF ensures post-paint
-    requestAnimationFrame(() => setTimeout(() => {
-      setActive(pills[0]);
-      pills[0].setAttribute('tabindex', '0');
-    }, LAYOUT_PAINT_DELAY));
+    requestAnimationFrame(() =>
+      setTimeout(() => {
+        setActive(pills[0]);
+        // tabindex already set to '0' in loop above
+      }, LAYOUT_PAINT_DELAY)
+    );
   }
 
   /**
@@ -205,12 +220,14 @@
    */
   function setupQuickActionsCarousel() {
     const container = document.querySelector('.supplier-actions-primary');
-    if (!container) return;
+    if (!container) {
+      return;
+    }
     const prev = document.getElementById('quick-actions-prev');
     const next = document.getElementById('quick-actions-next');
 
     const scrollByAmount = () => container.clientWidth * 0.9;
-    const scrollTo = (delta) => {
+    const scrollTo = delta => {
       container.scrollTo({ left: container.scrollLeft + delta, behavior: 'smooth' });
     };
 
@@ -228,31 +245,35 @@
     let startX;
     let scrollLeft;
 
-    container.addEventListener('pointerdown', (e) => {
-      if (window.innerWidth > 768) return;
+    container.addEventListener('pointerdown', e => {
+      if (window.innerWidth > 768) {
+        return;
+      }
       isDown = true;
       container.style.cursor = 'grabbing';
       container.style.userSelect = 'none';
       startX = e.pageX - container.offsetLeft;
       scrollLeft = container.scrollLeft;
     });
-    
+
     container.addEventListener('pointerleave', () => {
       isDown = false;
       container.style.cursor = 'grab';
     });
-    
+
     container.addEventListener('pointerup', () => {
       isDown = false;
       container.style.cursor = 'grab';
       container.style.userSelect = '';
     });
-    
-    container.addEventListener('pointermove', (e) => {
-      if (!isDown || window.innerWidth > 768) return;
+
+    container.addEventListener('pointermove', e => {
+      if (!isDown || window.innerWidth > 768) {
+        return;
+      }
       e.preventDefault();
       const x = e.pageX - container.offsetLeft;
-      const walk = (x - startX) * 2; // Multiply by 2 for faster scroll
+      const walk = (x - startX) * DRAG_SCROLL_MULTIPLIER;
       container.scrollLeft = scrollLeft - walk;
     });
 
@@ -262,9 +283,11 @@
     }
 
     // Add ripple effect to action buttons
-    const actionButtons = document.querySelectorAll('.supplier-action-btn--large, .supplier-action-btn');
+    const actionButtons = document.querySelectorAll(
+      '.supplier-action-btn--large, .supplier-action-btn'
+    );
     actionButtons.forEach(button => {
-      button.addEventListener('click', function(e) {
+      button.addEventListener('click', function (e) {
         // Only add ripple if not reduced motion
         if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
           return;
@@ -272,18 +295,18 @@
 
         const ripple = document.createElement('span');
         ripple.className = 'ripple-effect';
-        
+
         const rect = this.getBoundingClientRect();
         const size = Math.max(rect.width, rect.height);
         const x = e.clientX - rect.left - size / 2;
         const y = e.clientY - rect.top - size / 2;
-        
-        ripple.style.width = ripple.style.height = size + 'px';
-        ripple.style.left = x + 'px';
-        ripple.style.top = y + 'px';
-        
+
+        ripple.style.width = ripple.style.height = `${size}px`;
+        ripple.style.left = `${x}px`;
+        ripple.style.top = `${y}px`;
+
         this.appendChild(ripple);
-        
+
         setTimeout(() => ripple.remove(), 600);
       });
     });
@@ -302,7 +325,7 @@
     const observer = new MutationObserver(() => {
       // Look for enquiries section or stats
       const statsSection = document.querySelector('.stats-grid, .dashboard-stats, #stats-section');
-      
+
       if (statsSection) {
         // Double-check button doesn't exist
         if (document.getElementById('export-enquiries-btn')) {
@@ -316,20 +339,20 @@
         exportBtn.className = 'btn btn-secondary';
         exportBtn.innerHTML = '📥 Export Enquiries';
         exportBtn.style.marginTop = '1rem';
-        
+
         exportBtn.addEventListener('click', async () => {
           try {
             exportBtn.disabled = true;
             exportBtn.textContent = 'Exporting...';
-            
+
             const response = await fetch('/api/supplier/enquiries/export', {
               credentials: 'include',
             });
-            
+
             if (!response.ok) {
               throw new Error('Export failed');
             }
-            
+
             // Download the CSV file
             const blob = await response.blob();
             const url = window.URL.createObjectURL(blob);
@@ -340,10 +363,10 @@
             a.click();
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
-            
+
             exportBtn.disabled = false;
             exportBtn.innerHTML = '📥 Export Enquiries';
-            
+
             // Show success message
             alert('Enquiries exported successfully!');
           } catch (error) {
@@ -356,7 +379,7 @@
 
         // Add button after stats section
         statsSection.insertAdjacentElement('afterend', exportBtn);
-        
+
         observer.disconnect();
       }
     });

@@ -388,7 +388,7 @@
 
 /* Enhanced gradient hover effects for large action buttons */
 .supplier-action-btn--large {
-  background: linear-gradient(135deg, #0b8073 0%, #10b981 100%);
+  background: linear-gradient(135deg, var(--ef-primary, #0b8073) 0%, var(--ef-success, #10b981) 100%);
   transition: all 0.3s ease;
 }
 
@@ -497,7 +497,25 @@
   box-shadow: 0 2px 8px rgba(11, 128, 115, 0.3);
 }
 
+/* Badge styling for unread message count */
+.pill-badge {
+  background: rgba(255, 255, 255, 0.25);
+  padding: 2px 6px;
+  border-radius: var(--ef-radius-full, 9999px);
+  font-size: var(--ef-text-xs, 12px);
+  margin-left: 4px;
+}
+
+.mobile-nav-pill:not(.active) .pill-badge {
+  background: var(--ef-primary, #0B8073);
+  color: white;
+}
+
 @media (max-width: 768px) {
+  .dashboard-mobile-nav {
+    display: block;
+  }
+  
   .supplier-actions-grid {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -2402,71 +2420,16 @@ textarea:focus-visible {
 /* ===========================================
    40. MOBILE SECTION NAVIGATION - FIXED
    =========================================== */
-.dashboard-mobile-nav {
-  display: none;
-  position: sticky;
-  top: 60px;
-  z-index: 100;
-  background: white;
-  border-bottom: 1px solid var(--ef-border, #E7EAF0);
-  padding: var(--ef-space-2, 8px) 0;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-  margin-bottom: var(--ef-space-4, 16px);
-  /* Prevent scroll interference */
-  overscroll-behavior-x: contain;
+/* Styles moved to section 3 (lines 404-490) for consolidation */
+/* Dashboard mobile nav container at line 356 */
+/* Mobile nav pills styling at lines 413-490 */
+
+@media (max-width: 768px) {
+  .dashboard-mobile-nav {
+    display: block;
+  }
 }
 
-.dashboard-mobile-nav::-webkit-scrollbar {
-  display: none;
-}
-
-.mobile-nav-pills {
-  display: flex;
-  gap: var(--ef-space-2, 8px);
-  padding: 0 var(--ef-space-4, 16px);
-  min-width: max-content;
-}
-
-.mobile-nav-pill {
-  padding: var(--ef-space-2, 8px) var(--ef-space-4, 16px);
-  background: var(--ef-bg-subtle, #f3f4f6);
-  border: none;
-  border-radius: var(--ef-radius-full, 9999px);
-  font-size: var(--ef-text-sm, 14px);
-  font-weight: var(--ef-font-medium, 500);
-  color: var(--ef-text-muted, #667085);
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  gap: var(--ef-space-1, 4px);
-  /* Better touch target */
-  min-height: 44px;
-}
-
-.mobile-nav-pill:hover {
-  background: var(--ef-bg-muted, #e5e7eb);
-}
-
-.mobile-nav-pill.active {
-  background: var(--ef-primary, #0B8073);
-  color: white;
-}
-
-.pill-badge {
-  background: rgba(255, 255, 255, 0.25);
-  padding: 2px 6px;
-  border-radius: var(--ef-radius-full, 9999px);
-  font-size: var(--ef-text-xs, 12px);
-}
-
-.mobile-nav-pill:not(.active) .pill-badge {
-  background: var(--ef-primary, #0B8073);
-  color: white;
-}
 
 @media (max-width: 768px) {
   .dashboard-mobile-nav {
