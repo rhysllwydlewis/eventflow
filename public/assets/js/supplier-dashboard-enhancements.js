@@ -15,6 +15,18 @@
     'supplier-welcome-card--night',
   ];
 
+  // Curated pro tips list
+  const PRO_TIPS = [
+    'Boost response speed to delight customers.',
+    'Add high-quality photos to increase enquiries.',
+    'Complete your profile for better visibility.',
+    'Respond within 24 hours for better ratings.',
+    'Update your packages regularly to stay fresh.',
+    'Add detailed descriptions to build trust.',
+    'Showcase your best work in your gallery.',
+    'Engage with customer reviews promptly.',
+  ];
+
   /**
    * Utility: time-based theme class for welcome card
    */
@@ -26,20 +38,40 @@
     const hour = new Date().getHours();
     let variant = 'afternoon';
     let greeting = 'Good day,';
-    if (hour < 12) {
+    
+    // Time-based gradients as per spec:
+    // Morning (5am-12pm): golden
+    // Afternoon (12pm-5pm): blue
+    // Evening (5pm-9pm): purple
+    // Night (9pm-5am): indigo
+    if (hour >= 5 && hour < 12) {
       variant = 'morning';
       greeting = 'Good morning,';
-    } else if (hour < 18) {
+    } else if (hour >= 12 && hour < 17) {
       variant = 'afternoon';
       greeting = 'Good afternoon,';
+    } else if (hour >= 17 && hour < 21) {
+      variant = 'evening';
+      greeting = 'Good evening,';
     } else {
-      variant = hour < NIGHT_THEME_HOUR ? 'evening' : 'night';
+      variant = 'night';
       greeting = 'Good evening,';
     }
 
     THEME_CLASSES.forEach((cls) => card.classList.remove(cls));
     card.classList.add(`supplier-welcome-card--${variant}`);
     greetingEl.textContent = greeting;
+  }
+
+  /**
+   * Display random pro tip from curated list
+   */
+  function showRandomProTip() {
+    const proTipText = document.getElementById('pro-tip-text');
+    if (!proTipText) return;
+
+    const randomTip = PRO_TIPS[Math.floor(Math.random() * PRO_TIPS.length)];
+    proTipText.textContent = randomTip;
   }
 
   /**
@@ -80,7 +112,7 @@
   }
 
   /**
-   * Mobile nav indicator + snap scrolling
+   * Mobile nav indicator + snap scrolling + keyboard navigation
    */
   function setupMobileNav() {
     const nav = document.querySelector('.mobile-nav-pills');
@@ -92,6 +124,7 @@
     if (!indicator) {
       indicator = document.createElement('div');
       indicator.className = 'mobile-nav-indicator';
+      indicator.setAttribute('aria-hidden', 'true');
       nav.appendChild(indicator);
     }
 
@@ -107,9 +140,16 @@
     const setActive = (pill) => {
       pills.forEach((p) => p.classList.toggle('active', p === pill));
       moveIndicator(pill);
+      
+      // Announce to screen readers
+      const sectionName = pill.textContent.trim();
+      if (window.announceToSR) {
+        window.announceToSR(`Navigated to ${sectionName}`);
+      }
     };
 
-    pills.forEach((pill) => {
+    pills.forEach((pill, index) => {
+      // Click handler
       pill.addEventListener('click', () => {
         setActive(pill);
         const targetId = pill.getAttribute('data-section');
@@ -118,14 +158,50 @@
           target.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
       });
+
+      // Keyboard navigation
+      pill.addEventListener('keydown', (e) => {
+        let targetIndex = index;
+        
+        if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+          e.preventDefault();
+          targetIndex = index > 0 ? index - 1 : pills.length - 1;
+        } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+          e.preventDefault();
+          targetIndex = index < pills.length - 1 ? index + 1 : 0;
+        } else if (e.key === 'Home') {
+          e.preventDefault();
+          targetIndex = 0;
+        } else if (e.key === 'End') {
+          e.preventDefault();
+          targetIndex = pills.length - 1;
+        } else {
+          return; // Let other keys pass through
+        }
+
+        pills[targetIndex].focus();
+        pills[targetIndex].click();
+      });
+
+      // Set tabindex and role for accessibility
+      pill.setAttribute('role', 'tab');
+      pill.setAttribute('tabindex', index === 0 ? '0' : '-1');
+      pill.setAttribute('aria-label', pill.textContent.trim());
     });
 
+    // Set role for container
+    nav.setAttribute('role', 'tablist');
+    nav.setAttribute('aria-label', 'Dashboard sections');
+
     // Wait for layout/paint to measure pill widths; rAF ensures post-paint
-    requestAnimationFrame(() => setTimeout(() => setActive(pills[0]), LAYOUT_PAINT_DELAY));
+    requestAnimationFrame(() => setTimeout(() => {
+      setActive(pills[0]);
+      pills[0].setAttribute('tabindex', '0');
+    }, LAYOUT_PAINT_DELAY));
   }
 
   /**
-   * Quick actions horizontal scroll on mobile
+   * Quick actions horizontal scroll on mobile with drag support and ripple effects
    */
   function setupQuickActionsCarousel() {
     const container = document.querySelector('.supplier-actions-primary');
@@ -138,9 +214,16 @@
       container.scrollTo({ left: container.scrollLeft + delta, behavior: 'smooth' });
     };
 
-    if (prev) prev.addEventListener('click', () => scrollTo(-scrollByAmount()));
-    if (next) next.addEventListener('click', () => scrollTo(scrollByAmount()));
+    if (prev) {
+      prev.addEventListener('click', () => scrollTo(-scrollByAmount()));
+      prev.setAttribute('aria-label', 'Previous actions');
+    }
+    if (next) {
+      next.addEventListener('click', () => scrollTo(scrollByAmount()));
+      next.setAttribute('aria-label', 'Next actions');
+    }
 
+    // Touch/mouse drag support
     let isDown = false;
     let startX;
     let scrollLeft;
@@ -148,17 +231,61 @@
     container.addEventListener('pointerdown', (e) => {
       if (window.innerWidth > 768) return;
       isDown = true;
+      container.style.cursor = 'grabbing';
+      container.style.userSelect = 'none';
       startX = e.pageX - container.offsetLeft;
       scrollLeft = container.scrollLeft;
     });
-    container.addEventListener('pointerleave', () => (isDown = false));
-    container.addEventListener('pointerup', () => (isDown = false));
+    
+    container.addEventListener('pointerleave', () => {
+      isDown = false;
+      container.style.cursor = 'grab';
+    });
+    
+    container.addEventListener('pointerup', () => {
+      isDown = false;
+      container.style.cursor = 'grab';
+      container.style.userSelect = '';
+    });
+    
     container.addEventListener('pointermove', (e) => {
       if (!isDown || window.innerWidth > 768) return;
       e.preventDefault();
       const x = e.pageX - container.offsetLeft;
-      const walk = x - startX;
+      const walk = (x - startX) * 2; // Multiply by 2 for faster scroll
       container.scrollLeft = scrollLeft - walk;
+    });
+
+    // Set cursor on mobile
+    if (window.innerWidth <= 768) {
+      container.style.cursor = 'grab';
+    }
+
+    // Add ripple effect to action buttons
+    const actionButtons = document.querySelectorAll('.supplier-action-btn--large, .supplier-action-btn');
+    actionButtons.forEach(button => {
+      button.addEventListener('click', function(e) {
+        // Only add ripple if not reduced motion
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          return;
+        }
+
+        const ripple = document.createElement('span');
+        ripple.className = 'ripple-effect';
+        
+        const rect = this.getBoundingClientRect();
+        const size = Math.max(rect.width, rect.height);
+        const x = e.clientX - rect.left - size / 2;
+        const y = e.clientY - rect.top - size / 2;
+        
+        ripple.style.width = ripple.style.height = size + 'px';
+        ripple.style.left = x + 'px';
+        ripple.style.top = y + 'px';
+        
+        this.appendChild(ripple);
+        
+        setTimeout(() => ripple.remove(), 600);
+      });
     });
   }
 
@@ -263,6 +390,7 @@
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
       applyTimeBasedGreeting();
+      showRandomProTip();
       setupStatCounters();
       setupMobileNav();
       setupQuickActionsCarousel();
@@ -271,6 +399,7 @@
     });
   } else {
     applyTimeBasedGreeting();
+    showRandomProTip();
     setupStatCounters();
     setupMobileNav();
     setupQuickActionsCarousel();
