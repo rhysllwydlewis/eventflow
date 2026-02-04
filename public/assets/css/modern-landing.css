@@ -197,7 +197,7 @@ html {
   position: relative;
   background: linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 50%, #E2E8F0 100%) !important;
   overflow: hidden;
-  padding: clamp(64px, 10vw, 120px) 0 clamp(48px, 8vw, 96px) !important;
+  padding: clamp(32px, 4vw, 48px) 0 clamp(48px, 8vw, 96px) !important;
 }
 
 /* Animated gradient mesh orbs */

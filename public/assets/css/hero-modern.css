@@ -7,8 +7,8 @@
    ========================================================================== */
 
 :root {
-  /* Hero section spacing - AGGRESSIVELY REDUCED */
-  --hero-padding-top: clamp(24px, 4vw, 48px);
+  /* Hero section spacing - FURTHER REDUCED FOR MINIMAL TOP SPACE */
+  --hero-padding-top: clamp(20px, 3vw, 32px);
   --hero-padding-bottom: clamp(16px, 3vw, 32px);
   --hero-gap: clamp(16px, 3vw, 40px);
   
@@ -604,9 +604,9 @@
 .hero-collage {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  grid-template-rows: 1.35fr 1fr 1fr;
-  gap: 16px;
-  aspect-ratio: 16/14;
+  grid-template-rows: 0.8fr 1.6fr 1.6fr;
+  gap: 12px;
+  aspect-ratio: 16/22;
   max-height: 90vh;
   max-width: 100%;
   overflow: hidden;
