@@ -10,6 +10,9 @@ document.addEventListener('DOMContentLoaded', function() {
       if (img.dataset.errorHandled) return;
       img.dataset.errorHandled = 'true';
       
+      // Prevent error propagation (note: browser console errors may still appear)
+      e.stopPropagation();
+      
       // Check if it's a supplier avatar, profile image, or package image
       if (img.src && (
         img.src.includes('/uploads/suppliers/') || 
@@ -17,7 +20,8 @@ document.addEventListener('DOMContentLoaded', function() {
         img.classList.contains('supplier-avatar') || 
         img.classList.contains('profile-image') ||
         img.classList.contains('package-image') ||
-        img.closest('.package-card')
+        img.closest('.package-card') ||
+        img.closest('.supplier-card')
       )) {
         // Determine the appropriate placeholder based on context
         let placeholderSvg;
@@ -38,6 +42,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Maintain aspect ratio and theme styling
         img.style.objectFit = 'cover';
+        img.style.backgroundColor = '#f3f4f6';
       }
     }
   }, true);
@@ -166,34 +171,39 @@ window.announceToSR = function(message) {
   <div id="supplier-pro-ribbon" class="pro-ribbon" style="display:none"></div>
 
 <!-- Welcome Section with Enhanced Card -->
-<section id="welcome-section" class="card supplier-welcome-card supplier-welcome-card--enhanced" aria-labelledby="welcome-heading" data-test="welcome-card">
+<section id="welcome-section" class="card supplier-welcome-card supplier-welcome-card--enhanced supplier-welcome-card--compact" aria-labelledby="welcome-heading" data-test="welcome-card">
+  <!-- Dismiss Button -->
+  <button class="welcome-dismiss-btn" id="welcome-dismiss-btn" aria-label="Dismiss welcome banner" title="Dismiss welcome banner" data-test="welcome-dismiss">×</button>
+  
   <div class="supplier-welcome-content">
     <p class="supplier-welcome-greeting" id="welcome-greeting" data-test="time-greeting">Good day,</p>
     <h1 id="welcome-heading" class="supplier-welcome-title">Supplier Dashboard</h1>
     <p class="small supplier-welcome-subtitle">Manage your supplier profiles, packages, and customer inquiries.</p>
-    <div id="what-you-can-do" class="supplier-welcome-features">
-      <h3 class="supplier-features-title">What you can do from here:</h3>
-      <ul class="supplier-features-list">
-        <li>Create and manage your supplier profiles</li>
-        <li>Add and edit service packages</li>
-        <li>Respond to customer inquiries and support tickets</li>
-        <li>Track conversations with potential clients</li>
-      </ul>
+  </div>
+  
+  <!-- Compact Stats Section -->
+  <div class="supplier-welcome-quick-stats welcome-stats-compact" id="welcome-quick-stats">
+    <div class="welcome-stat-item">
+      <span class="stat-icon" aria-hidden="true">📊</span>
+      <span class="welcome-stat-value stat-value" id="quick-stat-enquiries" data-target="12" data-test="stat-counter-enquiries">0</span>
+      <span class="welcome-stat-label stat-label">New Enquiries</span>
+    </div>
+    <div class="welcome-stat-item">
+      <span class="stat-icon" aria-hidden="true">👀</span>
+      <span class="welcome-stat-value stat-value" id="quick-stat-profiles" data-target="4" data-test="stat-counter-profiles">0</span>
+      <span class="welcome-stat-label stat-label">Profiles</span>
+    </div>
+    <div class="welcome-stat-item">
+      <span class="stat-icon" aria-hidden="true">⭐</span>
+      <span class="welcome-stat-value stat-value">4.8</span>
+      <span class="welcome-stat-label stat-label">Rating</span>
     </div>
   </div>
-  <div class="supplier-welcome-quick-stats" id="welcome-quick-stats">
-    <div class="welcome-stat-card">
-      <span class="welcome-stat-value" id="quick-stat-enquiries" data-target="12" data-test="stat-counter-enquiries">0</span>
-      <span class="welcome-stat-label">Enquiries</span>
-    </div>
-    <div class="welcome-stat-card">
-      <span class="welcome-stat-value" id="quick-stat-profiles" data-target="4" data-test="stat-counter-profiles">0</span>
-      <span class="welcome-stat-label">Profiles</span>
-    </div>
-    <div class="welcome-pro-tip" id="welcome-pro-tip" aria-live="polite" data-test="pro-tip">
-      <span class="pro-tip-icon" aria-hidden="true">💡</span>
-      <span class="pro-tip-text" id="pro-tip-text">Boost response speed to delight customers.</span>
-    </div>
+  
+  <!-- Compact Tip Section -->
+  <div class="welcome-pro-tip welcome-tip-compact" id="welcome-pro-tip" aria-live="polite" data-test="pro-tip">
+    <span class="pro-tip-icon tip-icon" aria-hidden="true">💡</span>
+    <span class="pro-tip-text" id="pro-tip-text">Boost response speed to delight customers.</span>
   </div>
 </section>
 
@@ -256,122 +266,137 @@ window.announceToSR = function(message) {
 
 <h2 id="profiles-heading">Your supplier profiles</h2>
 <div class="card" role="region" aria-labelledby="profiles-heading">
-  <h3>Profile management</h3>
-  <p class="small">
-    Experimental: each profile gets a simple listing health score based on photos, description and details you&apos;ve added.
-  </p>
-  <div id="my-suppliers" class="section">
+  <div class="supplier-section-header-wrapper" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--ef-space-4, 16px);">
+    <div>
+      <h3>Profile management</h3>
+      <p class="small">
+        Experimental: each profile gets a simple listing health score based on photos, description and details you&apos;ve added.
+      </p>
+    </div>
+    <button type="button" class="form-toggle-btn" id="toggle-profile-form" data-test="toggle-profile-form" aria-expanded="false" aria-controls="profile-form-section">
+      <span class="icon" aria-hidden="true">+</span>
+      <span class="label">Create Profile</span>
+    </button>
+  </div>
+  
+  <div id="my-suppliers" class="section" data-test="my-suppliers-list">
     <div class="skeleton skeleton-text skeleton-text-long"></div>
     <div class="skeleton skeleton-text skeleton-text-medium"></div>
   </div>
-  <h3 class="supplier-section-header">Create / Edit profile</h3>
-<form id="supplier-form" action="#">
-  <input type="hidden" id="sup-id" name="id">
-  <div class="form-row supplier-form-grid">
-    <div>
-      <label for="sup-name">Business name</label>
-      <input id="sup-name" name="name">
-    </div>
-    <div>
-      <label>Category</label>
-      <select id="sup-category" name="category">
-        <option value="">Choose a category…</option>
-        <option>Venues</option>
-        <option>Catering</option>
-        <option>Photography</option>
-        <option>Entertainment</option>
-        <option>Flowers & décor</option>
-        <option>Transport</option>
-        <option>Extras & add-ons</option>
-      </select>
-    </div>
-    <div>
-      <label>Location</label>
-      <input id="sup-location" name="location" placeholder="City, region">
-    </div>
-    <div>
-      <label>Price display</label>
-      <input id="sup-price" name="price_display" placeholder="e.g. From £500 or ££">
-    </div>
-  </div>
+  
+  <!-- Collapsible Profile Form Section -->
+  <div id="profile-form-section" class="form-section-collapsible" data-test="profile-form-section">
+    <h3 class="supplier-section-header">Create / Edit profile</h3>
+    <form id="supplier-form" action="#">
+      <input type="hidden" id="sup-id" name="id">
+      <div class="form-row supplier-form-grid">
+        <div>
+          <label for="sup-name">Business name</label>
+          <input id="sup-name" name="name">
+        </div>
+        <div>
+          <label>Category</label>
+          <select id="sup-category" name="category">
+            <option value="">Choose a category…</option>
+            <option>Venues</option>
+            <option>Catering</option>
+            <option>Photography</option>
+            <option>Entertainment</option>
+            <option>Flowers & décor</option>
+            <option>Transport</option>
+            <option>Extras & add-ons</option>
+          </select>
+        </div>
+        <div>
+          <label>Location</label>
+          <input id="sup-location" name="location" placeholder="City, region">
+        </div>
+        <div>
+          <label>Price display</label>
+          <input id="sup-price" name="price_display" placeholder="e.g. From £500 or ££">
+        </div>
+      </div>
 
-  <div class="form-row">
-    <label>Short description</label>
-    <input id="sup-short" name="description_short">
-  </div>
+      <div class="form-row">
+        <label>Short description</label>
+        <input id="sup-short" name="description_short">
+      </div>
 
-  <div class="form-row">
-    <label>Long description</label>
-    <textarea id="sup-long" name="description_long" rows="4"></textarea>
-  </div>
+      <div class="form-row">
+        <label>Long description</label>
+        <textarea id="sup-long" name="description_long" rows="4"></textarea>
+      </div>
 
-  <div class="form-row">
-    <label>Website</label>
-    <input id="sup-website" name="website" placeholder="your-website-url">
-  </div>
+      <div class="form-row">
+        <label>Website</label>
+        <input id="sup-website" name="website" placeholder="your-website-url">
+      </div>
 
-  <div class="form-row">
-    <label>License / Insurance</label>
-    <input id="sup-license" name="license" placeholder="e.g. PLI £5m">
-  </div>
+      <div class="form-row">
+        <label>License / Insurance</label>
+        <input id="sup-license" name="license" placeholder="e.g. PLI £5m">
+      </div>
 
-  <div class="form-row">
-    <label>Amenities (comma-separated)</label>
-    <input id="sup-amenities" name="amenities" placeholder="Parking, Garden, PA system">
-  </div>
+      <div class="form-row">
+        <label>Amenities (comma-separated)</label>
+        <input id="sup-amenities" name="amenities" placeholder="Parking, Garden, PA system">
+      </div>
 
-  <div class="form-row">
-    <label>Max guests</label>
-    <input id="sup-max" name="maxGuests" type="number" min="0" step="1">
-  </div>
+      <div class="form-row">
+        <label>Max guests</label>
+        <input id="sup-max" name="maxGuests" type="number" min="0" step="1">
+      </div>
 
-  <div class="form-row form-row-hidden" id="venue-postcode-row">
-    <label for="sup-venue-postcode">Venue postcode <span class="form-required">*</span></label>
-    <input id="sup-venue-postcode" name="venuePostcode" placeholder="e.g. SW1A 1AA" aria-describedby="venue-postcode-help venue-postcode-error" aria-required="false">
-    <p class="small form-help-text" id="venue-postcode-help">Required for Venues category. Enter a valid UK postcode.</p>
-    <p class="small form-error-text" id="venue-postcode-error" role="alert" aria-live="polite"></p>
-  </div>
+      <div class="form-row form-row-hidden" id="venue-postcode-row">
+        <label for="sup-venue-postcode">Venue postcode <span class="form-required">*</span></label>
+        <input id="sup-venue-postcode" name="venuePostcode" placeholder="e.g. SW1A 1AA" aria-describedby="venue-postcode-help venue-postcode-error" aria-required="false">
+        <p class="small form-help-text" id="venue-postcode-help">Required for Venues category. Enter a valid UK postcode.</p>
+        <p class="small form-error-text" id="venue-postcode-error" role="alert" aria-live="polite"></p>
+      </div>
 
-  <div class="form-row form-row-hidden">
-    <label>Photos (one URL per line)</label>
-    <textarea id="sup-photos" name="photos" rows="3"></textarea>
-  </div>
+      <div class="form-row form-row-hidden">
+        <label>Photos (one URL per line)</label>
+        <textarea id="sup-photos" name="photos" rows="3"></textarea>
+      </div>
 
-  <div class="form-row">
-    <label>Upload photos</label>
-    <div id="sup-photo-drop" class="photo-drop-zone">
-      Drag &amp; drop images here, or click to choose files.
-    </div>
-    <div id="sup-photo-preview" class="photo-preview-grid"></div>
-    <p class="tiny">
-      You can upload multiple photos – they&apos;ll be shown on your public listing.
-    </p>
-  </div>
-
-  <!-- Profile Customization Link -->
-  <div class="form-row supplier-cta-section">
-    <div class="supplier-cta-banner">
-      <div class="supplier-cta-banner-content">
-        <h3 class="supplier-cta-banner-title">
-          ✨ Profile Customization 
-          <span class="supplier-cta-banner-badge">New</span>
-        </h3>
-        <p class="supplier-cta-banner-text">
-          Make your profile stand out with custom banners, taglines, highlights, and social media links
+      <div class="form-row">
+        <label>Upload photos</label>
+        <div id="sup-photo-drop" class="photo-drop-zone">
+          Drag &amp; drop images here, or click to choose files.
+        </div>
+        <div id="sup-photo-preview" class="photo-preview-grid"></div>
+        <p class="tiny">
+          You can upload multiple photos – they&apos;ll be shown on your public listing.
         </p>
       </div>
-      <a href="/supplier/profile-customization.html" class="supplier-cta-banner-button">
-        Customize Profile →
-      </a>
-    </div>
-  </div>
 
-  <div class="form-actions supplier-form-actions">
-    <button class="cta" id="sup-create" type="submit">Save profile</button>
-    <button type="button" id="sup-preview" class="cta secondary">👁️ Preview Profile</button>
-    <span class="small" id="sup-status"></span>
+      <!-- Profile Customization Link -->
+      <div class="form-row supplier-cta-section">
+        <div class="supplier-cta-banner">
+          <div class="supplier-cta-banner-content">
+            <h3 class="supplier-cta-banner-title">
+              ✨ Profile Customization 
+              <span class="supplier-cta-banner-badge">New</span>
+            </h3>
+            <p class="supplier-cta-banner-text">
+              Make your profile stand out with custom banners, taglines, highlights, and social media links
+            </p>
+          </div>
+          <a href="/supplier/profile-customization.html" class="supplier-cta-banner-button">
+            Customize Profile →
+          </a>
+        </div>
+      </div>
+
+      <div class="form-actions supplier-form-actions">
+        <button class="cta" id="sup-create" type="submit">Save profile</button>
+        <button type="button" id="sup-preview" class="cta secondary">👁️ Preview Profile</button>
+        <button type="button" class="cta secondary" id="cancel-profile-form" style="display: none;">Cancel</button>
+        <span class="small" id="sup-status"></span>
+      </div>
+    </form>
   </div>
-</form>
+</div>
 
 <script>
 // Show/hide venue postcode field based on category selection
@@ -462,66 +487,80 @@ window.announceToSR = function(message) {
 </script>
 
 <div class="card supplier-dashboard-card">
-  <h3>Your packages</h3>
-  <p class="small" id="pkg-limit-note">Checking your package allowance…</p>
-  <div id="my-packages" class="section">
+  <div class="supplier-section-header-wrapper" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--ef-space-4, 16px);">
+    <div>
+      <h3>Your packages</h3>
+      <p class="small" id="pkg-limit-note">Checking your package allowance…</p>
+    </div>
+    <button type="button" class="form-toggle-btn" id="toggle-package-form" data-test="toggle-package-form" aria-expanded="false" aria-controls="package-form-section">
+      <span class="icon" aria-hidden="true">+</span>
+      <span class="label">Create Package</span>
+    </button>
+  </div>
+  
+  <div id="my-packages" class="section" data-test="my-packages-list">
     <div class="skeleton skeleton-text skeleton-text-long"></div>
     <div class="skeleton skeleton-text skeleton-text-medium"></div>
   </div>
-  <h3 class="supplier-section-header">Create a package</h3>
-  <form id="package-form" action="#">
-    <div class="form-row supplier-form-grid">
-      <div><label>For supplier</label><select id="pkg-supplier"></select></div>
-      <div><label>Title</label><input id="pkg-title" name="title"></div>
-      <div><label>Price</label><input id="pkg-price" name="price" placeholder="e.g. £999 or £45 pp"></div>
-    </div>
-    <div class="form-row supplier-form-grid">
-      <div>
-        <label>Primary Category <span class="form-required">*</span></label>
-        <select id="pkg-category" name="primaryCategoryKey" required>
-          <option value="">Choose a category…</option>
-          <option value="venues">Venues</option>
-          <option value="photography">Photography</option>
-          <option value="catering">Catering</option>
-          <option value="flowers">Flowers & Décor</option>
-          <option value="hair-makeup">Hair & Makeup</option>
-          <option value="entertainment">Entertainment</option>
-          <option value="transport">Transport</option>
-          <option value="extras">Extras & Add-ons</option>
-        </select>
+  
+  <!-- Collapsible Package Form Section -->
+  <div id="package-form-section" class="form-section-collapsible" data-test="package-form-section">
+    <h3 class="supplier-section-header">Create a package</h3>
+    <form id="package-form" action="#">
+      <div class="form-row supplier-form-grid">
+        <div><label>For supplier</label><select id="pkg-supplier"></select></div>
+        <div><label>Title</label><input id="pkg-title" name="title"></div>
+        <div><label>Price</label><input id="pkg-price" name="price" placeholder="e.g. £999 or £45 pp"></div>
       </div>
-      <div class="form-group">
-        <label class="form-label">Event Types <span class="required">*</span></label>
-        <div class="checkbox-group">
-          <label class="checkbox-inline">
-            <input type="checkbox" id="pkg-event-wedding" name="eventTypes" value="wedding" class="form-checkbox">
-            <span class="checkbox-text">Wedding</span>
-          </label>
-          <label class="checkbox-inline">
-            <input type="checkbox" id="pkg-event-other" name="eventTypes" value="other" class="form-checkbox">
-            <span class="checkbox-text">Other Events</span>
-          </label>
+      <div class="form-row supplier-form-grid">
+        <div>
+          <label>Primary Category <span class="form-required">*</span></label>
+          <select id="pkg-category" name="primaryCategoryKey" required>
+            <option value="">Choose a category…</option>
+            <option value="venues">Venues</option>
+            <option value="photography">Photography</option>
+            <option value="catering">Catering</option>
+            <option value="flowers">Flowers & Décor</option>
+            <option value="hair-makeup">Hair & Makeup</option>
+            <option value="entertainment">Entertainment</option>
+            <option value="transport">Transport</option>
+            <option value="extras">Extras & Add-ons</option>
+          </select>
         </div>
-        <p class="form-help">Select at least one</p>
+        <div class="form-group">
+          <label class="form-label">Event Types <span class="required">*</span></label>
+          <div class="checkbox-group">
+            <label class="checkbox-inline">
+              <input type="checkbox" id="pkg-event-wedding" name="eventTypes" value="wedding" class="form-checkbox">
+              <span class="checkbox-text">Wedding</span>
+            </label>
+            <label class="checkbox-inline">
+              <input type="checkbox" id="pkg-event-other" name="eventTypes" value="other" class="form-checkbox">
+              <span class="checkbox-text">Other Events</span>
+            </label>
+          </div>
+          <p class="form-help">Select at least one</p>
+        </div>
       </div>
-    </div>
-    <div class="form-row"><label>Description</label><textarea id="pkg-desc" name="description" rows="4"></textarea></div>
-    <div class="form-row form-row-hidden">
-      <label>Image URL (optional)</label>
-      <input id="pkg-image" name="image" placeholder="your-website-url">
-    </div>
-    <div class="form-row">
-      <label>Upload image (optional)</label>
-      <div id="pkg-photo-drop" class="photo-drop-zone">Drag &amp; drop an image here, or click to choose a file.</div>
-      <div id="pkg-photo-preview" class="photo-preview-grid"></div>
-    </div>
-    <div class="form-actions supplier-form-actions">
-      <button class="cta" type="submit">Save package</button>
-      <span class="small" id="pkg-status"></span>
-    </div>
-    <input type="hidden" name="supplierId" id="pkg-supplier-id-hidden">
-    <input type="hidden" name="id" id="pkg-id-hidden">
-  </form>
+      <div class="form-row"><label>Description</label><textarea id="pkg-desc" name="description" rows="4"></textarea></div>
+      <div class="form-row form-row-hidden">
+        <label>Image URL (optional)</label>
+        <input id="pkg-image" name="image" placeholder="your-website-url">
+      </div>
+      <div class="form-row">
+        <label>Upload image (optional)</label>
+        <div id="pkg-photo-drop" class="photo-drop-zone">Drag &amp; drop an image here, or click to choose a file.</div>
+        <div id="pkg-photo-preview" class="photo-preview-grid"></div>
+      </div>
+      <div class="form-actions supplier-form-actions">
+        <button class="cta" type="submit">Save package</button>
+        <button type="button" class="cta secondary" id="cancel-package-form" style="display: none;">Cancel</button>
+        <span class="small" id="pkg-status"></span>
+      </div>
+      <input type="hidden" name="supplierId" id="pkg-supplier-id-hidden">
+      <input type="hidden" name="id" id="pkg-id-hidden">
+    </form>
+  </div>
 </div><div class="card supplier-dashboard-card">
   <h3>Subscription</h3>
   <div id="supplier-subscription-card" class="section">

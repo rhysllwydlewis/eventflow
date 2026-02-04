@@ -348,6 +348,12 @@ class MessagingManager {
       });
 
       if (!response.ok) {
+        // Silently handle 404 and other errors - just return 0
+        if (response.status === 404) {
+          // Endpoint not available, use fallback
+          this.updateBadge(0);
+          return 0;
+        }
         throw new Error('Failed to fetch unread count');
       }
 
@@ -363,7 +369,12 @@ class MessagingManager {
 
       return count;
     } catch (error) {
-      console.error('Error fetching unread count:', error);
+      // Gracefully handle errors without console spam
+      if (!this._unreadRefreshErrorLogged) {
+        this._unreadRefreshErrorLogged = true;
+        console.warn('Unable to refresh unread count, showing zero');
+      }
+      this.updateBadge(0);
       return 0;
     }
   }

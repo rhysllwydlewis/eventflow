@@ -2455,6 +2455,7 @@ async function openThread(id) {
 }
 
 function efMaybeShowOnboarding(page) {
+  // Check if this is a first-time visit that needs onboarding
   let shouldShow = false;
   try {
     const flag = localStorage.getItem('eventflow_onboarding_new');
@@ -2469,6 +2470,24 @@ function efMaybeShowOnboarding(page) {
   if (!shouldShow) {
     return;
   }
+
+  // For supplier dashboard, don't create a duplicate card
+  // The welcome section already exists in the page, just ensure it's visible
+  if (page === 'dash_supplier') {
+    try {
+      // Clear any previous welcome dismissal to show it for first-time users
+      localStorage.removeItem('ef_welcome_dismissed');
+      const welcomeSection = document.getElementById('welcome-section');
+      if (welcomeSection) {
+        welcomeSection.style.display = '';
+      }
+    } catch (_) {
+      /* Ignore localStorage errors */
+    }
+    return;
+  }
+
+  // For other pages (customer, admin), create the onboarding card as before
   const container = document.querySelector('main .container');
   if (!container) {
     return;
@@ -2483,12 +2502,6 @@ function efMaybeShowOnboarding(page) {
       '<ol class="small"><li>Start an event from <strong>Plan an Event</strong>.</li>' +
       '<li>Add a few suppliers to <strong>My Plan</strong>.</li>' +
       '<li>Use <strong>Conversations</strong> to keep messages in one place.</li></ol>';
-  } else if (page === 'dash_supplier') {
-    body =
-      '<p class="small">Quick tips:</p>' +
-      '<ol class="small"><li>Complete your supplier profile with photos and details.</li>' +
-      '<li>Create at least one clear package.</li>' +
-      '<li>Reply promptly to new enquiries from the Conversations card.</li></ol>';
   } else if (page === 'admin') {
     body =
       '<p class="small">Quick overview:</p>' +
@@ -2516,6 +2529,55 @@ function efMaybeShowOnboarding(page) {
 
 async function initDashSupplier() {
   efMaybeShowOnboarding('dash_supplier');
+
+  // Welcome banner dismiss functionality
+  function initWelcomeDismiss() {
+    const welcomeSection = document.getElementById('welcome-section');
+    const dismissBtn = document.getElementById('welcome-dismiss-btn');
+
+    if (!welcomeSection || !dismissBtn) {
+      return;
+    }
+
+    // Check if welcome banner should be shown
+    function shouldShowWelcome() {
+      try {
+        const dismissed = localStorage.getItem('ef_welcome_dismissed');
+        if (!dismissed) {
+          return true;
+        }
+
+        // Optionally show again after 30 days
+        const dismissedTime = parseInt(dismissed, 10);
+        const thirtyDays = 30 * 24 * 60 * 60 * 1000;
+        return Date.now() - dismissedTime > thirtyDays;
+      } catch (_) {
+        return true;
+      }
+    }
+
+    // Hide welcome if previously dismissed
+    if (!shouldShowWelcome()) {
+      welcomeSection.style.display = 'none';
+      return;
+    }
+
+    // Dismiss handler
+    dismissBtn.addEventListener('click', () => {
+      try {
+        localStorage.setItem('ef_welcome_dismissed', Date.now().toString());
+      } catch (_) {
+        /* Ignore localStorage errors */
+      }
+      welcomeSection.classList.add('welcome-dismissed');
+      setTimeout(() => {
+        welcomeSection.style.display = 'none';
+      }, 300);
+    });
+  }
+
+  // Initialize welcome dismiss functionality
+  initWelcomeDismiss();
 
   // Fetch CSRF token if not already available
   async function ensureCsrfToken() {
@@ -2638,8 +2700,8 @@ async function initDashSupplier() {
           )
           .join('');
 
-        return `<div class="supplier-card card" style="margin-bottom:10px">
-      <img src="${(s.photos && s.photos[0]) || '/assets/images/collage-venue.svg'}">
+        return `<div class="supplier-card card" style="margin-bottom:10px" data-supplier-id="${s.id ? s.id.replace(/"/g, '&quot;') : ''}">
+      <img src="${(s.photos && s.photos[0]) || '/assets/images/collage-venue.svg'}" onerror="this.src='/assets/images/collage-venue.svg'">
       <div>
         <h3>${s.name} ${proBadge} ${s.approved ? '<span class="badge">Approved</span>' : '<span class="badge" style="background:#FFF5E6;color:#8A5A00">Awaiting review</span>'}</h3>
         <div class="small">${s.location || 'Location not set'} · <span class="badge">${s.category}</span> ${s.price_display ? `· ${s.price_display}` : ''}</div>
@@ -2658,6 +2720,10 @@ async function initDashSupplier() {
             ${checklistHtml}
           </div>
         </details>
+        <div class="card-actions">
+          <button type="button" class="card-action-btn edit-btn" data-action="edit-profile" data-profile-id="${s.id ? s.id.replace(/"/g, '&quot;') : ''}">Edit</button>
+          <button type="button" class="card-action-btn delete-btn" data-action="delete-profile" data-profile-id="${s.id ? s.id.replace(/"/g, '&quot;') : ''}">Delete</button>
+        </div>
       </div>
     </div>`;
       })
@@ -2893,12 +2959,16 @@ async function initDashSupplier() {
     }
     pkgsWrap.innerHTML = items
       .map(
-        p => `<div class="card package-card">
-      <img src="${p.image}" alt="${p.title} image">
+        p => `<div class="card package-card" data-package-id="${p.id ? p.id.replace(/"/g, '&quot;') : ''}">
+      <img src="${p.image || '/assets/images/package-placeholder.svg'}" alt="${p.title} image" onerror="this.src='/assets/images/package-placeholder.svg'">
       <div>
         <h3>${p.title}</h3>
         <div class="small"><span class="badge">${p.price_display || ''}</span> ${p.featured ? '<span class="badge">Featured</span>' : ''}</div>
         <p class="small">${p.description || ''}</p>
+        <div class="card-actions">
+          <button type="button" class="card-action-btn edit-btn" data-action="edit-package" data-package-id="${p.id ? p.id.replace(/"/g, '&quot;') : ''}">Edit</button>
+          <button type="button" class="card-action-btn delete-btn" data-action="delete-package" data-package-id="${p.id ? p.id.replace(/"/g, '&quot;') : ''}">Delete</button>
+        </div>
       </div>
     </div>`
       )
@@ -2906,6 +2976,65 @@ async function initDashSupplier() {
   }
   await loadSuppliers();
   await loadPackages();
+
+  // Initialize package form toggle
+  const togglePackageFormBtn = document.getElementById('toggle-package-form');
+  if (togglePackageFormBtn) {
+    togglePackageFormBtn.addEventListener('click', togglePackageForm);
+  }
+
+  const cancelPackageFormBtn = document.getElementById('cancel-package-form');
+  if (cancelPackageFormBtn) {
+    cancelPackageFormBtn.addEventListener('click', togglePackageForm);
+  }
+
+  // Initialize profile form toggle
+  const toggleProfileFormBtn = document.getElementById('toggle-profile-form');
+  if (toggleProfileFormBtn) {
+    toggleProfileFormBtn.addEventListener('click', toggleProfileForm);
+  }
+
+  const cancelProfileFormBtn = document.getElementById('cancel-profile-form');
+  if (cancelProfileFormBtn) {
+    cancelProfileFormBtn.addEventListener('click', toggleProfileForm);
+  }
+
+  // Add event delegation for Edit/Delete buttons on packages and profiles
+  document.addEventListener('click', e => {
+    const target = e.target;
+
+    // Handle package edit buttons
+    if (target.matches('[data-action="edit-package"]')) {
+      const packageId = target.getAttribute('data-package-id');
+      if (packageId) {
+        editPackage(packageId);
+      }
+    }
+
+    // Handle package delete buttons
+    if (target.matches('[data-action="delete-package"]')) {
+      const packageId = target.getAttribute('data-package-id');
+      if (packageId) {
+        deletePackage(packageId);
+      }
+    }
+
+    // Handle profile edit buttons
+    if (target.matches('[data-action="edit-profile"]')) {
+      const profileId = target.getAttribute('data-profile-id');
+      if (profileId) {
+        editProfile(profileId);
+      }
+    }
+
+    // Handle profile delete buttons
+    if (target.matches('[data-action="delete-profile"]')) {
+      const profileId = target.getAttribute('data-profile-id');
+      if (profileId) {
+        deleteProfile(profileId);
+      }
+    }
+  });
 
   const supForm = document.getElementById('supplier-form');
   if (supForm) {
@@ -3192,6 +3321,306 @@ async function initDashSupplier() {
     }
   })();
 }
+
+// Package Form Toggle, Edit, and Delete Functions
+function togglePackageForm() {
+  const formSection = document.getElementById('package-form-section');
+  const toggleBtn = document.getElementById('toggle-package-form');
+  const cancelBtn = document.getElementById('cancel-package-form');
+
+  if (!formSection || !toggleBtn) {
+    return;
+  }
+
+  const isExpanded = formSection.classList.contains('expanded');
+
+  if (isExpanded) {
+    // Collapse form
+    formSection.classList.remove('expanded');
+    toggleBtn.setAttribute('aria-expanded', 'false');
+    toggleBtn.querySelector('.label').textContent = 'Create Package';
+    toggleBtn.classList.remove('active');
+    if (cancelBtn) {
+      cancelBtn.style.display = 'none';
+    }
+
+    // Reset form
+    const form = document.getElementById('package-form');
+    if (form) {
+      form.reset();
+    }
+    document.getElementById('pkg-id-hidden').value = '';
+  } else {
+    // Expand form
+    formSection.classList.add('expanded');
+    toggleBtn.setAttribute('aria-expanded', 'true');
+    toggleBtn.querySelector('.label').textContent = 'Cancel';
+    toggleBtn.classList.add('active');
+    if (cancelBtn) {
+      cancelBtn.style.display = 'inline-block';
+    }
+
+    // Scroll to form
+    setTimeout(() => {
+      formSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  }
+}
+
+function editPackage(packageId) {
+  // Expand the form section
+  const formSection = document.getElementById('package-form-section');
+  const toggleBtn = document.getElementById('toggle-package-form');
+
+  if (formSection && !formSection.classList.contains('expanded')) {
+    formSection.classList.add('expanded');
+    if (toggleBtn) {
+      toggleBtn.setAttribute('aria-expanded', 'true');
+      toggleBtn.querySelector('.label').textContent = 'Cancel';
+      toggleBtn.classList.add('active');
+    }
+  }
+
+  // Fetch package data from API
+  fetch(`/api/me/packages/${encodeURIComponent(packageId)}`, {
+    credentials: 'include',
+  })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Failed to fetch package data');
+      }
+      return response.json();
+    })
+    .then(pkg => {
+      // Populate form with package data
+      document.getElementById('pkg-id-hidden').value = pkg.id || '';
+      document.getElementById('pkg-title').value = pkg.title || '';
+      document.getElementById('pkg-price').value = pkg.price_display || '';
+      document.getElementById('pkg-desc').value = pkg.description || '';
+      document.getElementById('pkg-category').value = pkg.primaryCategoryKey || '';
+      document.getElementById('pkg-image').value = pkg.image || '';
+
+      // Set supplier select if available
+      const supplierSelect = document.getElementById('pkg-supplier');
+      if (supplierSelect && pkg.supplierId) {
+        supplierSelect.value = pkg.supplierId;
+        document.getElementById('pkg-supplier-id-hidden').value = pkg.supplierId;
+      }
+
+      // Set event type checkboxes
+      if (pkg.eventTypes && Array.isArray(pkg.eventTypes)) {
+        document.getElementById('pkg-event-wedding').checked = pkg.eventTypes.includes('wedding');
+        document.getElementById('pkg-event-other').checked = pkg.eventTypes.includes('other');
+      }
+
+      // Update form heading
+      const heading = formSection.querySelector('.supplier-section-header');
+      if (heading) {
+        heading.textContent = 'Edit package';
+      }
+
+      // Scroll to form
+      setTimeout(() => {
+        formSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    })
+    .catch(e => {
+      console.error('Error loading package for edit:', e);
+      alert('Failed to load package data. Please try again.');
+    });
+}
+
+async function deletePackage(packageId) {
+  if (!confirm('Are you sure you want to delete this package? This action cannot be undone.')) {
+    return;
+  }
+
+  try {
+    const csrfToken = window.__CSRF_TOKEN__ || '';
+    const response = await fetch(`/api/me/packages/${encodeURIComponent(packageId)}`, {
+      method: 'DELETE',
+      headers: {
+        'X-CSRF-Token': csrfToken,
+      },
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      alert(`Failed to delete package: ${errorData.error || 'Unknown error'}`);
+      return;
+    }
+
+    // Reload packages list
+    const initFunc = window.initDashSupplier;
+    if (initFunc) {
+      // Reload just packages if possible, otherwise show success message
+      alert('Package deleted successfully!');
+      location.reload();
+    }
+  } catch (e) {
+    console.error('Error deleting package:', e);
+    alert('Failed to delete package. Please try again.');
+  }
+}
+
+// Profile Form Toggle, Edit, and Delete Functions
+function toggleProfileForm() {
+  const formSection = document.getElementById('profile-form-section');
+  const toggleBtn = document.getElementById('toggle-profile-form');
+  const cancelBtn = document.getElementById('cancel-profile-form');
+
+  if (!formSection || !toggleBtn) {
+    return;
+  }
+
+  const isExpanded = formSection.classList.contains('expanded');
+
+  if (isExpanded) {
+    // Collapse form
+    formSection.classList.remove('expanded');
+    toggleBtn.setAttribute('aria-expanded', 'false');
+    toggleBtn.querySelector('.label').textContent = 'Create Profile';
+    toggleBtn.classList.remove('active');
+    if (cancelBtn) {
+      cancelBtn.style.display = 'none';
+    }
+
+    // Reset form
+    const form = document.getElementById('supplier-form');
+    if (form) {
+      form.reset();
+    }
+    document.getElementById('sup-id').value = '';
+
+    // Reset form heading
+    const heading = formSection.querySelector('.supplier-section-header');
+    if (heading) {
+      heading.textContent = 'Create / Edit profile';
+    }
+  } else {
+    // Expand form
+    formSection.classList.add('expanded');
+    toggleBtn.setAttribute('aria-expanded', 'true');
+    toggleBtn.querySelector('.label').textContent = 'Cancel';
+    toggleBtn.classList.add('active');
+    if (cancelBtn) {
+      cancelBtn.style.display = 'inline-block';
+    }
+
+    // Scroll to form
+    setTimeout(() => {
+      formSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  }
+}
+
+async function editProfile(supplierId) {
+  // Expand the form section
+  const formSection = document.getElementById('profile-form-section');
+  const toggleBtn = document.getElementById('toggle-profile-form');
+
+  if (formSection && !formSection.classList.contains('expanded')) {
+    formSection.classList.add('expanded');
+    if (toggleBtn) {
+      toggleBtn.setAttribute('aria-expanded', 'true');
+      toggleBtn.querySelector('.label').textContent = 'Cancel';
+      toggleBtn.classList.add('active');
+    }
+  }
+
+  // Fetch supplier data and populate form
+  try {
+    const response = await fetch(`/api/me/suppliers/${encodeURIComponent(supplierId)}`, {
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch supplier data');
+    }
+
+    const supplier = await response.json();
+
+    // Populate form fields
+    document.getElementById('sup-id').value = supplier.id || '';
+    document.getElementById('sup-name').value = supplier.name || '';
+    document.getElementById('sup-category').value = supplier.category || '';
+    document.getElementById('sup-location').value = supplier.location || '';
+    document.getElementById('sup-price').value = supplier.price_display || '';
+    document.getElementById('sup-short').value = supplier.description_short || '';
+    document.getElementById('sup-long').value = supplier.description_long || '';
+    document.getElementById('sup-website').value = supplier.website || '';
+    document.getElementById('sup-license').value = supplier.license || '';
+    document.getElementById('sup-amenities').value = supplier.amenities || '';
+    document.getElementById('sup-max').value = supplier.maxGuests || '';
+
+    if (supplier.venuePostcode) {
+      document.getElementById('sup-venue-postcode').value = supplier.venuePostcode;
+    }
+
+    // Update form heading with truncated name if necessary
+    const heading = formSection.querySelector('.supplier-section-header');
+    if (heading) {
+      // Truncate supplier name if too long to prevent UI issues
+      const MAX_DISPLAY_NAME_LENGTH = 50;
+      const TRUNCATE_SUFFIX_LENGTH = 3; // for "..."
+      const displayName =
+        supplier.name && supplier.name.length > MAX_DISPLAY_NAME_LENGTH
+          ? `${supplier.name.substring(0, MAX_DISPLAY_NAME_LENGTH - TRUNCATE_SUFFIX_LENGTH)}...`
+          : supplier.name || 'Unknown';
+      heading.textContent = `Edit profile: ${displayName}`;
+    }
+
+    // Store the editing supplier ID for later use
+    window.currentEditingSupplierId = supplierId;
+
+    // Scroll to form
+    setTimeout(() => {
+      formSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  } catch (e) {
+    console.error('Error loading supplier for edit:', e);
+    alert('Failed to load supplier profile. Please try again.');
+  }
+}
+
+async function deleteProfile(supplierId) {
+  if (!confirm('Are you sure you want to delete this profile? This action cannot be undone.')) {
+    return;
+  }
+
+  try {
+    const csrfToken = window.__CSRF_TOKEN__ || '';
+    const response = await fetch(`/api/me/suppliers/${encodeURIComponent(supplierId)}`, {
+      method: 'DELETE',
+      headers: {
+        'X-CSRF-Token': csrfToken,
+      },
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      alert(`Failed to delete profile: ${errorData.error || 'Unknown error'}`);
+      return;
+    }
+
+    // Reload the page to refresh the list
+    alert('Profile deleted successfully!');
+    location.reload();
+  } catch (e) {
+    console.error('Error deleting profile:', e);
+    alert('Failed to delete profile. Please try again.');
+  }
+}
+
+// Make functions globally accessible
+window.togglePackageForm = togglePackageForm;
+window.editPackage = editPackage;
+window.deletePackage = deletePackage;
+window.toggleProfileForm = toggleProfileForm;
+window.editProfile = editProfile;
+window.deleteProfile = deleteProfile;
 
 async function initAdmin() {
   efMaybeShowOnboarding('admin');
