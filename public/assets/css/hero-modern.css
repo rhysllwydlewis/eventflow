@@ -601,16 +601,16 @@
 }
 
 /* Hero collage container - 3 row layout:
-   Row 1: Video card (spans 2 columns) - moderate size
-   Row 2: Venues + Catering cards - moderately taller
-   Row 3: Entertainment + Photography cards - moderately taller
-   This creates a 2x2 grid of taller category cards below a video */
+   Row 1: Video card (spans 2 columns) - compact
+   Row 2: Venues + Catering cards - significantly taller
+   Row 3: Entertainment + Photography cards - significantly taller
+   This creates a 2x2 grid of tall category cards below a compact video */
 .hero-collage {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  grid-template-rows: 1fr 1.3fr 1.3fr;
+  grid-template-rows: 0.9fr 1.8fr 1.8fr;
   gap: 14px;
-  aspect-ratio: 16/16;  /* Square-ish ratio for balanced layout */
+  aspect-ratio: 16/20;  /* Taller ratio to accommodate larger category cards */
   max-height: 90vh;
   max-width: 100%;
   overflow: hidden;
