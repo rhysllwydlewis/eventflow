@@ -1170,8 +1170,14 @@
     let photographerUrl = 'https://www.pexels.com'; // Default fallback
     try {
       const url = new URL(photo.photographer_url);
-      // Only allow https URLs from pexels.com
-      if (url.protocol === 'https:' && url.hostname.endsWith('pexels.com')) {
+      // Only allow https URLs from exact pexels.com domain or its subdomains
+      // Must match: pexels.com or *.pexels.com (but not evil.com.pexels.com)
+      if (
+        url.protocol === 'https:' &&
+        (url.hostname === 'pexels.com' ||
+          url.hostname === 'www.pexels.com' ||
+          url.hostname.endsWith('.pexels.com'))
+      ) {
         photographerUrl = encodeURI(photo.photographer_url);
       }
     } catch (e) {
