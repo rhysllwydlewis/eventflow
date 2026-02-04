@@ -81,9 +81,49 @@ router.post('/trial/activate', authRequired, csrfProtection, async (req, res) =>
 
 /**
  * GET /api/supplier/analytics
- * Get real analytics for supplier
+ * Get real analytics for supplier using supplierAnalytics utility
  */
 router.get('/analytics', authRequired, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Check if user is a supplier
+    if (req.user.role !== 'supplier') {
+      return res.status(403).json({ error: 'Only suppliers can access analytics' });
+    }
+
+    // Get supplier record
+    const suppliers = await dbUnified.read('suppliers');
+    const supplier = suppliers.find(s => s.ownerUserId === userId);
+
+    if (!supplier) {
+      return res.status(404).json({ error: 'Supplier profile not found' });
+    }
+
+    const supplierId = supplier.id;
+
+    // Get analytics window from query parameter, default to 7 days
+    const days = parseInt(req.query.days) || 7;
+
+    // Use supplierAnalytics utility for real tracked data
+    const supplierAnalytics = require('../utils/supplierAnalytics');
+    const analytics = await supplierAnalytics.getSupplierAnalytics(supplierId, days);
+
+    res.json({
+      success: true,
+      analytics,
+    });
+  } catch (error) {
+    console.error('Error fetching analytics:', error);
+    res.status(500).json({ error: 'Failed to fetch analytics', details: error.message });
+  }
+});
+
+/**
+ * GET /api/supplier/analytics/legacy
+ * Get legacy analytics for supplier (count-based, for backwards compatibility)
+ */
+router.get('/analytics/legacy', authRequired, async (req, res) => {
   try {
     const userId = req.user.id;
 

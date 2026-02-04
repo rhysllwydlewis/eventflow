@@ -6280,6 +6280,10 @@ app.use('/api/profile', profileRoutes);
 const suppliersV2Routes = require('./routes/suppliers-v2');
 app.use('/api/me/suppliers', suppliersV2Routes);
 
+// ---------- Supplier Routes (analytics, trials, etc.) ----------
+const supplierRoutes = require('./routes/supplier');
+app.use('/api/supplier', supplierRoutes);
+
 // ---------- Notification Routes ----------
 const notificationRoutes = require('./routes/notifications');
 // WebSocket server will be passed when available (after server starts)
