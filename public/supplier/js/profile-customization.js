@@ -351,25 +351,25 @@
     const stockPhotoBtn = document.getElementById('select-stock-photo-btn');
     if (stockPhotoBtn && typeof window.PexelsSelector !== 'undefined') {
       const pexelsSelector = new window.PexelsSelector();
-      
+
       stockPhotoBtn.addEventListener('click', () => {
-        pexelsSelector.open((selectedImageUrl) => {
-          // Update banner preview
-          const bannerPreview = document.getElementById('sup-banner-preview');
-          if (bannerPreview) {
-            const imgContainer = document.createElement('div');
-            imgContainer.className = 'photo-preview-item';
-            imgContainer.style.cssText = 'width:100%;height:150px;border-radius:8px;overflow:hidden;';
-
-            const img = document.createElement('img');
-            img.src = selectedImageUrl;
-            img.alt = 'Selected banner';
-            img.style.cssText = 'width:100%;height:100%;object-fit:cover;';
-
-            imgContainer.appendChild(img);
-            bannerPreview.innerHTML = '';
-            bannerPreview.appendChild(imgContainer);
+        pexelsSelector.open(selectedImageUrl => {
+          // Validate URL is from Pexels CDN
+          if (!validatePexelsImageUrl(selectedImageUrl)) {
+            console.error('Invalid image URL from selector');
+            if (
+              window.EventFlowNotifications &&
+              typeof window.EventFlowNotifications.error === 'function'
+            ) {
+              window.EventFlowNotifications.error(
+                'Invalid image URL. Please try selecting another photo.'
+              );
+            }
+            return;
           }
+
+          // Update banner preview using DOM methods for security
+          updateBannerPreview(selectedImageUrl);
 
           // Update hidden input
           const bannerInput = document.getElementById('sup-banner');
@@ -378,11 +378,58 @@
           }
 
           // Show success notification if available
-          if (window.EventFlowNotifications && typeof window.EventFlowNotifications.success === 'function') {
+          if (
+            window.EventFlowNotifications &&
+            typeof window.EventFlowNotifications.success === 'function'
+          ) {
             window.EventFlowNotifications.success('Stock photo selected successfully!');
           }
         });
       });
+    }
+  }
+
+  // Update banner preview with validated image URL
+  function updateBannerPreview(imageUrl) {
+    const bannerPreview = document.getElementById('sup-banner-preview');
+    if (!bannerPreview) {
+      return;
+    }
+
+    // Clear existing preview using DOM methods
+    while (bannerPreview.firstChild) {
+      bannerPreview.removeChild(bannerPreview.firstChild);
+    }
+
+    // Create preview container
+    const container = document.createElement('div');
+    container.className = 'photo-preview-item';
+    container.style.cssText = 'width:100%;height:150px;border-radius:8px;overflow:hidden;';
+
+    // Create image element using DOM (safer than innerHTML)
+    const imgElement = document.createElement('img');
+    imgElement.alt = 'Selected banner';
+    imgElement.style.cssText = 'width:100%;height:100%;object-fit:cover;';
+
+    // Set src via DOM property (safe after validation)
+    imgElement.src = imageUrl;
+
+    container.appendChild(imgElement);
+    bannerPreview.appendChild(container);
+  }
+
+  // Validate image URL is from Pexels CDN
+  function validatePexelsImageUrl(url) {
+    try {
+      const urlObj = new URL(url);
+      // Use shared constant from pexels-selector.js
+      const allowedDomains = window.PEXELS_ALLOWED_DOMAINS || [
+        'images.pexels.com',
+        'www.pexels.com',
+      ];
+      return allowedDomains.includes(urlObj.hostname);
+    } catch (e) {
+      return false;
     }
   }
 
