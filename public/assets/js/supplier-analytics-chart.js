@@ -292,7 +292,7 @@ async function fetchAnalyticsData(days, supplierId = null) {
       }
     }
 
-    // Return empty data if no supplier ID or API fails
+    // Return empty data if no supplier ID exists or API fails
     const labels = [];
     const views = [];
     const enquiries = [];
