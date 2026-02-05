@@ -355,6 +355,153 @@ class SEOHelper {
         : undefined,
     };
   }
+
+  /**
+   * Generate supplier profile structured data (ProfessionalService schema)
+   * @param {Object} supplier - Supplier information
+   * @returns {Object} - Structured data object
+   */
+  generateSupplierProfile(supplier) {
+    const structuredData = {
+      '@context': 'https://schema.org',
+      '@type': 'ProfessionalService',
+      name: supplier.name,
+      description: supplier.description,
+    };
+
+    // Add URL if available
+    if (supplier.url) {
+      structuredData.url = this.getFullUrl(supplier.url);
+    }
+
+    // Add image if available
+    if (supplier.image) {
+      structuredData.image = this.getFullUrl(supplier.image);
+    }
+
+    // Add telephone if available
+    if (supplier.telephone || supplier.phone) {
+      structuredData.telephone = supplier.telephone || supplier.phone;
+    }
+
+    // Add email if available
+    if (supplier.email) {
+      structuredData.email = supplier.email;
+    }
+
+    // Add address if available
+    if (supplier.address) {
+      structuredData.address = {
+        '@type': 'PostalAddress',
+      };
+      if (supplier.address.street) structuredData.address.streetAddress = supplier.address.street;
+      if (supplier.address.city) structuredData.address.addressLocality = supplier.address.city;
+      if (supplier.address.region) structuredData.address.addressRegion = supplier.address.region;
+      if (supplier.address.postalCode)
+        structuredData.address.postalCode = supplier.address.postalCode;
+      if (supplier.address.country) structuredData.address.addressCountry = supplier.address.country;
+    }
+
+    // Add price range if available
+    if (supplier.priceRange) {
+      structuredData.priceRange = supplier.priceRange;
+    }
+
+    // Add aggregate rating if available
+    if (supplier.rating && supplier.reviewCount) {
+      structuredData.aggregateRating = {
+        '@type': 'AggregateRating',
+        ratingValue: supplier.rating,
+        reviewCount: supplier.reviewCount,
+      };
+    }
+
+    // Add service area if available
+    if (supplier.serviceArea) {
+      structuredData.areaServed = supplier.serviceArea;
+    }
+
+    return structuredData;
+  }
+
+  /**
+   * Generate product structured data (for packages)
+   * @param {Object} pkg - Package information
+   * @returns {Object} - Structured data object
+   */
+  generateProduct(pkg) {
+    const structuredData = {
+      '@context': 'https://schema.org',
+      '@type': 'Product',
+      name: pkg.name,
+      description: pkg.description,
+    };
+
+    // Add image if available
+    if (pkg.image) {
+      structuredData.image = this.getFullUrl(pkg.image);
+    }
+
+    // Add URL if available
+    if (pkg.url) {
+      structuredData.url = this.getFullUrl(pkg.url);
+    }
+
+    // Add brand/provider if available
+    if (pkg.brand || pkg.supplier) {
+      structuredData.brand = {
+        '@type': 'Brand',
+        name: pkg.brand || pkg.supplier,
+      };
+    }
+
+    // Add offer/pricing information if available
+    if (pkg.price || pkg.priceFrom) {
+      structuredData.offers = {
+        '@type': 'Offer',
+        priceCurrency: pkg.currency || 'GBP',
+      };
+
+      if (pkg.price) {
+        structuredData.offers.price = pkg.price;
+      } else if (pkg.priceFrom) {
+        structuredData.offers.price = pkg.priceFrom;
+        structuredData.offers.priceSpecification = {
+          '@type': 'PriceSpecification',
+          minPrice: pkg.priceFrom,
+        };
+      }
+
+      // Add availability if available
+      if (pkg.availability !== undefined) {
+        structuredData.offers.availability =
+          pkg.availability === true || pkg.availability === 'available'
+            ? 'https://schema.org/InStock'
+            : 'https://schema.org/OutOfStock';
+      }
+
+      // Add URL to the offer if available
+      if (pkg.url) {
+        structuredData.offers.url = this.getFullUrl(pkg.url);
+      }
+    }
+
+    // Add aggregate rating if available
+    if (pkg.rating && pkg.reviewCount) {
+      structuredData.aggregateRating = {
+        '@type': 'AggregateRating',
+        ratingValue: pkg.rating,
+        reviewCount: pkg.reviewCount,
+      };
+    }
+
+    // Add category if available
+    if (pkg.category) {
+      structuredData.category = pkg.category;
+    }
+
+    return structuredData;
+  }
 }
 
 // Create global instance
