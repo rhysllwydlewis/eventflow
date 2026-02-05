@@ -28,14 +28,17 @@ class CategoryGrid {
     style.textContent = `
       .category-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-        gap: 24px;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 28px;
         margin-top: 24px;
+        max-width: 1200px;
+        margin-left: auto;
+        margin-right: auto;
       }
 
       .category-card {
         position: relative;
-        border-radius: 12px;
+        border-radius: 14px;
         overflow: hidden;
         cursor: pointer;
         transition: transform 0.3s ease, box-shadow 0.3s ease;
@@ -50,29 +53,29 @@ class CategoryGrid {
 
       .category-card-image {
         width: 100%;
-        height: 200px;
+        height: 240px;
         object-fit: cover;
         display: block;
       }
 
       .category-card-content {
-        padding: 20px;
+        padding: 24px;
       }
 
       .category-card-header {
         display: flex;
         align-items: center;
-        gap: 12px;
-        margin-bottom: 12px;
+        gap: 14px;
+        margin-bottom: 14px;
       }
 
       .category-card-icon {
-        font-size: 32px;
+        font-size: 38px;
         flex-shrink: 0;
       }
 
       .category-card-name {
-        font-size: 1.25rem;
+        font-size: 1.5rem;
         font-weight: 600;
         margin: 0;
         color: var(--color-text-primary, #212529);
@@ -80,7 +83,7 @@ class CategoryGrid {
       }
 
       .category-card-description {
-        font-size: 0.9rem;
+        font-size: 1.08rem;
         color: var(--color-text-secondary, #6c757d);
         margin: 0;
         line-height: 1.5;
@@ -90,11 +93,56 @@ class CategoryGrid {
         text-align: center;
         padding: 48px 24px;
         color: var(--color-text-secondary, #6c757d);
+        grid-column: 1 / -1;
       }
 
+      /* Pexels Attribution */
+      .category-card-credit {
+        position: absolute;
+        bottom: 8px;
+        right: 8px;
+        background: rgba(0, 0, 0, 0.7);
+        color: white;
+        font-size: 10px;
+        padding: 4px 8px;
+        border-radius: 4px;
+        z-index: 1;
+      }
+
+      .category-card-credit a {
+        color: white;
+        text-decoration: none;
+      }
+
+      .category-card-credit a:hover {
+        text-decoration: underline;
+      }
+
+      /* Responsive breakpoints for 2x3 grid */
       @media (max-width: 768px) {
         .category-grid {
           grid-template-columns: 1fr;
+          gap: 20px;
+        }
+        
+        .category-card-image {
+          height: 200px;
+        }
+        
+        .category-card-content {
+          padding: 20px;
+        }
+        
+        .category-card-icon {
+          font-size: 32px;
+        }
+        
+        .category-card-name {
+          font-size: 1.25rem;
+        }
+        
+        .category-card-description {
+          font-size: 0.9rem;
         }
       }
     `;
@@ -108,7 +156,8 @@ class CategoryGrid {
         throw new Error('Failed to load categories');
       }
       const data = await response.json();
-      this.categories = data.items || [];
+      // Filter to only show visible categories
+      this.categories = (data.items || []).filter(cat => cat.visible !== false);
       this.render();
     } catch (error) {
       console.error('Error loading categories:', error);
@@ -148,8 +197,17 @@ class CategoryGrid {
       ? `<img class="category-card-image" src="${category.heroImage}" alt="${category.name}" loading="lazy">`
       : '';
 
+    // Add Pexels attribution if present
+    // Note: pexelsAttribution is created by admin with validated URLs and escaped text
+    // URLs are validated to be from pexels.com domain only, and photographer names are HTML-escaped
+    // This is acceptable as admin-controlled content that has been properly sanitized
+    const creditHtml = category.pexelsAttribution
+      ? `<div class="category-card-credit">${category.pexelsAttribution}</div>`
+      : '';
+
     card.innerHTML = `
       ${imageHtml}
+      ${creditHtml}
       <div class="category-card-content">
         <div class="category-card-header">
           ${category.icon ? `<span class="category-card-icon">${category.icon}</span>` : ''}

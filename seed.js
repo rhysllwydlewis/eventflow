@@ -203,7 +203,7 @@ async function seed(options = {}) {
     }
   }
 
-  // Categories
+  // Categories - 2x3 grid (6 visible cards)
   const existingCategories = await dbUnified.read('categories');
   if (!Array.isArray(existingCategories) || existingCategories.length === 0) {
     const categories = [
@@ -216,6 +216,7 @@ async function seed(options = {}) {
         heroImage: '/assets/images/collage-venue.jpg',
         icon: '⛪',
         order: 1,
+        visible: true,
       },
       {
         id: 'cat_catering',
@@ -225,6 +226,7 @@ async function seed(options = {}) {
         heroImage: '/assets/images/collage-catering.jpg',
         icon: '🍽️',
         order: 2,
+        visible: true,
       },
       {
         id: 'cat_entertainment',
@@ -234,33 +236,68 @@ async function seed(options = {}) {
         heroImage: '/assets/images/collage-entertainment.jpg',
         icon: '🎵',
         order: 3,
+        visible: true,
       },
       {
         id: 'cat_photography',
         name: 'Photography',
         slug: 'photography',
-        description: 'Professional photographers and videographers to capture every special moment',
+        description: 'Professional photographers to capture every special moment',
         heroImage: '/assets/images/collage-photography.jpg',
         icon: '📸',
         order: 4,
+        visible: true,
+      },
+      {
+        id: 'cat_videography',
+        name: 'Videography',
+        slug: 'videography',
+        description: 'Capture your special moments with professional video production',
+        heroImage: '',
+        icon: '🎥',
+        order: 5,
+        visible: true,
       },
       {
         id: 'cat_decor',
-        name: 'Decor & Styling',
-        slug: 'decor-styling',
-        description: 'Transform your venue with beautiful decorations, flowers, and styling',
+        name: 'Decorations',
+        slug: 'decorations',
+        description: 'Transform your venue with beautiful decorations and styling',
+        heroImage: '',
+        icon: '🎨',
+        order: 6,
+        visible: true,
+      },
+      // Additional categories (hidden by default, can be enabled via admin)
+      {
+        id: 'cat_floristry',
+        name: 'Floristry',
+        slug: 'floristry',
+        description: 'Stunning floral arrangements and bouquets for your event',
         heroImage: '',
         icon: '💐',
-        order: 5,
+        order: 7,
+        visible: false,
       },
       {
-        id: 'cat_av',
-        name: 'AV & Lighting',
-        slug: 'av-lighting',
-        description: 'Professional sound systems, lighting, and audiovisual equipment',
+        id: 'cat_music_djs',
+        name: 'Music & DJs',
+        slug: 'music-djs',
+        description: 'Professional DJs and music services to keep the party going',
+        heroImage: '',
+        icon: '🎧',
+        order: 8,
+        visible: false,
+      },
+      {
+        id: 'cat_lighting',
+        name: 'Lighting',
+        slug: 'lighting',
+        description: 'Create the perfect ambiance with professional lighting solutions',
         heroImage: '',
         icon: '💡',
-        order: 6,
+        order: 9,
+        visible: false,
       },
       {
         id: 'cat_transport',
@@ -269,29 +306,12 @@ async function seed(options = {}) {
         description: 'Luxury cars, coaches, and transportation services for your guests',
         heroImage: '',
         icon: '🚗',
-        order: 7,
-      },
-      {
-        id: 'cat_planning',
-        name: 'Event Planning',
-        slug: 'planning',
-        description: 'Expert planners and coordinators to bring your vision to life',
-        heroImage: '',
-        icon: '📋',
-        order: 8,
-      },
-      {
-        id: 'cat_cakes',
-        name: 'Cakes & Florals',
-        slug: 'cakes-florals',
-        description: 'Beautiful wedding cakes and stunning floral arrangements',
-        heroImage: '',
-        icon: '🎂',
-        order: 9,
+        order: 10,
+        visible: false,
       },
     ];
     await dbUnified.write('categories', categories);
-    console.log('Created demo categories');
+    console.log('Created categories for 2x3 grid (6 visible, 4 hidden)');
   }
 
   // Suppliers

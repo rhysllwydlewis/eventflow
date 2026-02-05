@@ -803,8 +803,436 @@
     }
   }
 
+  // ============================================
+  // CATEGORY CARDS MANAGEMENT SECTION
+  // ============================================
+
+  let allCategories = [];
+  let editingCategoryId = null;
+  const categoryCardsGrid = document.getElementById('categoryCardsGrid');
+  const categoryModal = document.getElementById('categoryModal');
+  const addCategoryBtn = document.getElementById('addCategoryBtn');
+  const closeCategoryModal = document.getElementById('closeCategoryModal');
+  const cancelCategoryBtn = document.getElementById('cancelCategoryBtn');
+  const saveCategoryBtn = document.getElementById('saveCategoryBtn');
+  const searchPexelsBtn = document.getElementById('searchPexelsBtn');
+
+  async function loadAllCategories() {
+    try {
+      const response = await fetch('/api/categories', {
+        credentials: 'include',
+      });
+      if (response.ok) {
+        const data = await response.json();
+        allCategories = data.items || [];
+        renderCategoryCards();
+      } else {
+        categoryCardsGrid.innerHTML = '<div class="card"><p>Failed to load categories</p></div>';
+      }
+    } catch (error) {
+      console.error('Error loading categories:', error);
+      categoryCardsGrid.innerHTML = '<div class="card"><p>Error loading categories</p></div>';
+    }
+  }
+
+  function renderCategoryCards() {
+    if (allCategories.length === 0) {
+      categoryCardsGrid.innerHTML =
+        '<div class="card"><p>No categories yet. Click "Add Category" to create one.</p></div>';
+      return;
+    }
+
+    categoryCardsGrid.innerHTML = '';
+
+    allCategories.forEach(category => {
+      const card = document.createElement('div');
+      card.className = 'admin-category-card';
+      card.dataset.id = category.id;
+
+      const hasImage = category.heroImage && category.heroImage.trim() !== '';
+      const imagePreviewHtml = hasImage
+        ? `<img src="${escapeHtml(category.heroImage)}" alt="${escapeHtml(category.name)}" />`
+        : '<span>No image</span>';
+
+      card.innerHTML = `
+        <div class="admin-category-card-header">
+          <div class="admin-category-card-title">
+            <span class="admin-category-card-icon">${escapeHtml(category.icon || '📁')}</span>
+            <span>${escapeHtml(category.name)}</span>
+          </div>
+          <div class="admin-category-card-actions">
+            <button class="admin-category-card-btn edit-category-btn" data-id="${category.id}">✏️ Edit</button>
+            <button class="admin-category-card-btn danger delete-category-btn" data-id="${category.id}">🗑️ Delete</button>
+          </div>
+        </div>
+        <div class="admin-category-card-body">
+          <div class="admin-category-card-image-preview ${hasImage ? '' : 'no-image'}">
+            ${imagePreviewHtml}
+          </div>
+          <p class="admin-category-card-description">${escapeHtml(category.description || 'No description')}</p>
+          <div class="admin-category-card-meta">
+            <span class="admin-category-card-slug">/${escapeHtml(category.slug)}</span>
+            <div class="admin-category-card-visibility">
+              <span style="font-size: 11px; font-weight: 600;">Visible:</span>
+              <label class="admin-category-card-visibility-toggle">
+                <input type="checkbox" class="visibility-toggle" data-id="${category.id}" ${category.visible !== false ? 'checked' : ''}>
+                <span class="admin-category-card-visibility-slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+      `;
+
+      categoryCardsGrid.appendChild(card);
+    });
+
+    // Add event listeners
+    document.querySelectorAll('.edit-category-btn').forEach(btn => {
+      btn.addEventListener('click', () => openEditCategoryModal(btn.dataset.id));
+    });
+
+    document.querySelectorAll('.delete-category-btn').forEach(btn => {
+      btn.addEventListener('click', () => deleteCategory(btn.dataset.id));
+    });
+
+    document.querySelectorAll('.visibility-toggle').forEach(toggle => {
+      toggle.addEventListener('change', e => {
+        toggleCategoryVisibility(toggle.dataset.id, e.target.checked);
+      });
+    });
+  }
+
+  function openAddCategoryModal() {
+    editingCategoryId = null;
+    document.getElementById('categoryModalTitle').textContent = 'Add Category';
+    document.getElementById('categoryForm').reset();
+    document.getElementById('categoryId').value = '';
+    document.getElementById('categoryVisible').checked = true;
+    clearPexelsResults();
+    categoryModal.classList.add('show');
+    categoryModal.style.display = 'flex';
+  }
+
+  function openEditCategoryModal(categoryId) {
+    editingCategoryId = categoryId;
+    const category = allCategories.find(c => c.id === categoryId);
+    if (!category) {
+      return;
+    }
+
+    document.getElementById('categoryModalTitle').textContent = 'Edit Category';
+    document.getElementById('categoryId').value = category.id;
+    document.getElementById('categoryName').value = category.name;
+    document.getElementById('categorySlug').value = category.slug;
+    document.getElementById('categoryDescription').value = category.description || '';
+    document.getElementById('categoryIcon').value = category.icon || '';
+    document.getElementById('categoryHeroImage').value = category.heroImage || '';
+    document.getElementById('categoryPexelsAttribution').value = category.pexelsAttribution || '';
+    document.getElementById('categoryVisible').checked = category.visible !== false;
+
+    // Show selected image if exists
+    if (category.heroImage) {
+      document.getElementById('selectedImageThumbnail').src = category.heroImage;
+      document.getElementById('selectedImageCredit').textContent = category.pexelsAttribution || '';
+      document.getElementById('selectedImagePreview').style.display = 'block';
+    } else {
+      document.getElementById('selectedImagePreview').style.display = 'none';
+    }
+
+    clearPexelsResults();
+    categoryModal.classList.add('show');
+    categoryModal.style.display = 'flex';
+  }
+
+  function closeCategoryModalFunc() {
+    categoryModal.classList.remove('show');
+    categoryModal.style.display = 'none';
+    editingCategoryId = null;
+  }
+
+  async function saveCategory() {
+    const name = document.getElementById('categoryName').value.trim();
+    const slug = document.getElementById('categorySlug').value.trim();
+    const description = document.getElementById('categoryDescription').value.trim();
+    const icon = document.getElementById('categoryIcon').value.trim();
+    const heroImage = document.getElementById('categoryHeroImage').value.trim();
+    const pexelsAttribution = document.getElementById('categoryPexelsAttribution').value.trim();
+    const visible = document.getElementById('categoryVisible').checked;
+
+    if (!name || !slug) {
+      alert('Name and slug are required');
+      return;
+    }
+
+    const categoryData = {
+      name,
+      slug,
+      description,
+      icon,
+      heroImage,
+      pexelsAttribution,
+      visible,
+    };
+
+    try {
+      const csrfResponse = await fetch('/api/auth/csrf', {
+        credentials: 'include',
+      });
+      const csrfData = await csrfResponse.json();
+      const csrfToken = csrfData.csrfToken;
+
+      let response;
+      if (editingCategoryId) {
+        // Update existing category
+        response = await fetch(`/api/admin/categories/${editingCategoryId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': csrfToken,
+          },
+          credentials: 'include',
+          body: JSON.stringify(categoryData),
+        });
+      } else {
+        // Create new category
+        response = await fetch('/api/admin/categories', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': csrfToken,
+          },
+          credentials: 'include',
+          body: JSON.stringify(categoryData),
+        });
+      }
+
+      if (response.ok) {
+        closeCategoryModalFunc();
+        await loadAllCategories();
+        alert('Category saved successfully!');
+      } else {
+        const errorData = await response.json();
+        alert(`Failed to save category: ${errorData.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Error saving category:', error);
+      alert('Failed to save category');
+    }
+  }
+
+  async function deleteCategory(categoryId) {
+    const category = allCategories.find(c => c.id === categoryId);
+    if (!category) {
+      return;
+    }
+
+    if (!confirm(`Are you sure you want to delete "${category.name}"?`)) {
+      return;
+    }
+
+    try {
+      const csrfResponse = await fetch('/api/auth/csrf', {
+        credentials: 'include',
+      });
+      const csrfData = await csrfResponse.json();
+      const csrfToken = csrfData.csrfToken;
+
+      const response = await fetch(`/api/admin/categories/${categoryId}`, {
+        method: 'DELETE',
+        headers: {
+          'X-CSRF-Token': csrfToken,
+        },
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        await loadAllCategories();
+        alert('Category deleted successfully!');
+      } else {
+        const errorData = await response.json();
+        alert(`Failed to delete category: ${errorData.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Error deleting category:', error);
+      alert('Failed to delete category');
+    }
+  }
+
+  async function toggleCategoryVisibility(categoryId, visible) {
+    try {
+      const csrfResponse = await fetch('/api/auth/csrf', {
+        credentials: 'include',
+      });
+      const csrfData = await csrfResponse.json();
+      const csrfToken = csrfData.csrfToken;
+
+      const response = await fetch(`/api/admin/categories/${categoryId}/visibility`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': csrfToken,
+        },
+        credentials: 'include',
+        body: JSON.stringify({ visible }),
+      });
+
+      if (response.ok) {
+        // Update local state
+        const category = allCategories.find(c => c.id === categoryId);
+        if (category) {
+          category.visible = visible;
+        }
+      } else {
+        const errorData = await response.json();
+        alert(`Failed to toggle visibility: ${errorData.error || 'Unknown error'}`);
+        // Revert toggle
+        const toggle = document.querySelector(`.visibility-toggle[data-id="${categoryId}"]`);
+        if (toggle) {
+          toggle.checked = !visible;
+        }
+      }
+    } catch (error) {
+      console.error('Error toggling visibility:', error);
+      alert('Failed to toggle visibility');
+    }
+  }
+
+  async function searchPexels() {
+    const query = document.getElementById('pexelsSearchQuery').value.trim();
+    if (!query) {
+      alert('Please enter a search query');
+      return;
+    }
+
+    searchPexelsBtn.disabled = true;
+    searchPexelsBtn.textContent = 'Searching...';
+
+    try {
+      const response = await fetch(`/api/pexels/search?q=${encodeURIComponent(query)}&perPage=12`, {
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to search Pexels');
+      }
+
+      const data = await response.json();
+      displayPexelsResults(data.photos || []);
+    } catch (error) {
+      console.error('Error searching Pexels:', error);
+      alert('Failed to search Pexels. Please check your API key configuration.');
+    } finally {
+      searchPexelsBtn.disabled = false;
+      searchPexelsBtn.textContent = 'Search';
+    }
+  }
+
+  function displayPexelsResults(photos) {
+    const resultsGrid = document.getElementById('pexelsResultsGrid');
+    const resultsContainer = document.getElementById('pexelsResults');
+
+    if (photos.length === 0) {
+      resultsContainer.style.display = 'block';
+      resultsGrid.innerHTML =
+        '<p style="grid-column: 1 / -1; text-align: center; color: #6b7280;">No images found</p>';
+      return;
+    }
+
+    resultsGrid.innerHTML = '';
+
+    photos.forEach(photo => {
+      const option = document.createElement('div');
+      option.className = 'pexels-image-option';
+      option.innerHTML = `
+        <img src="${photo.src.medium}" alt="Photo by ${escapeHtml(photo.photographer)}" />
+        <div class="pexels-image-photographer">Photo by ${escapeHtml(photo.photographer)}</div>
+      `;
+
+      option.addEventListener('click', () => {
+        selectPexelsImage(photo);
+        // Visual feedback
+        document
+          .querySelectorAll('.pexels-image-option')
+          .forEach(opt => opt.classList.remove('selected'));
+        option.classList.add('selected');
+      });
+
+      resultsGrid.appendChild(option);
+    });
+
+    resultsContainer.style.display = 'block';
+  }
+
+  function selectPexelsImage(photo) {
+    // Escape photographer name and validate/encode URL for security
+    const escapedPhotographer = escapeHtml(photo.photographer);
+    // For URLs in href attributes, use encodeURI and validate it's a proper URL
+    let photographerUrl = 'https://www.pexels.com'; // Default fallback
+    try {
+      const url = new URL(photo.photographer_url);
+      // Only allow https URLs from exact pexels.com domain or its subdomains
+      // Must match: pexels.com or *.pexels.com (but not evil.com.pexels.com)
+      if (
+        url.protocol === 'https:' &&
+        (url.hostname === 'pexels.com' ||
+          url.hostname === 'www.pexels.com' ||
+          url.hostname.endsWith('.pexels.com'))
+      ) {
+        photographerUrl = encodeURI(photo.photographer_url);
+      }
+    } catch (e) {
+      console.warn('Invalid photographer URL:', photo.photographer_url);
+    }
+
+    const attribution = `Photo by <a href="${photographerUrl}" target="_blank" rel="noopener noreferrer">${escapedPhotographer}</a> on <a href="https://www.pexels.com" target="_blank" rel="noopener noreferrer">Pexels</a>`;
+
+    document.getElementById('categoryHeroImage').value = photo.src.large;
+    document.getElementById('categoryPexelsAttribution').value = attribution;
+    document.getElementById('selectedImageThumbnail').src = photo.src.medium;
+    document.getElementById('selectedImageCredit').innerHTML = attribution;
+    document.getElementById('selectedImagePreview').style.display = 'block';
+  }
+
+  function clearPexelsResults() {
+    document.getElementById('pexelsResults').style.display = 'none';
+    document.getElementById('pexelsResultsGrid').innerHTML = '';
+    document.getElementById('pexelsSearchQuery').value = '';
+  }
+
+  // Clear selected image
+  document.getElementById('clearSelectedImage').addEventListener('click', () => {
+    document.getElementById('categoryHeroImage').value = '';
+    document.getElementById('categoryPexelsAttribution').value = '';
+    document.getElementById('selectedImagePreview').style.display = 'none';
+  });
+
+  // Category modal event listeners
+  addCategoryBtn.addEventListener('click', openAddCategoryModal);
+  closeCategoryModal.addEventListener('click', closeCategoryModalFunc);
+  cancelCategoryBtn.addEventListener('click', closeCategoryModalFunc);
+  saveCategoryBtn.addEventListener('click', saveCategory);
+  searchPexelsBtn.addEventListener('click', searchPexels);
+
+  // Auto-generate slug from name
+  document.getElementById('categoryName').addEventListener('input', e => {
+    const slugInput = document.getElementById('categorySlug');
+    if (!editingCategoryId || slugInput.value === '') {
+      slugInput.value = e.target.value
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '');
+    }
+  });
+
+  // Close modal when clicking outside
+  categoryModal.addEventListener('click', e => {
+    if (e.target === categoryModal) {
+      closeCategoryModalFunc();
+    }
+  });
+
   // Load all sections on page load
-  await Promise.all([loadCollageWidget(), loadCategories()]);
+  await Promise.all([loadCollageWidget(), loadCategories(), loadAllCategories()]);
 
   // ============================================
   // COLLAGE WIDGET EVENT LISTENERS
@@ -857,7 +1285,7 @@
 
   // Event listeners
   document.getElementById('refreshBtn').addEventListener('click', async () => {
-    await Promise.all([loadCollageWidget(), loadCategories()]);
+    await Promise.all([loadCollageWidget(), loadCategories(), loadAllCategories()]);
   });
 
   document.getElementById('backToDashboard').addEventListener('click', () => {
