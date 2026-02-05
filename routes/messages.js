@@ -1,7 +1,7 @@
 /**
  * Messages Routes
  * Handles customer-supplier messaging functionality
- * 
+ *
  * SECURITY NOTE: Message text is sanitized using validator.escape() to prevent XSS.
  * This escapes HTML entities (<, >, &, ", ', /) which is sufficient for text content.
  * For future enhancement, consider DOMPurify or sanitize-html if rich text is needed.
@@ -174,7 +174,7 @@ router.post('/threads', authRequired, csrfProtection, async (req, res) => {
       suppliers.find(s => s.id === supplierId) || users.find(u => u.id === supplierId);
 
     const now = new Date().toISOString();
-    
+
     // Sanitize message text if provided - stripLow before escape to remove control chars first
     let sanitizedMessage = null;
     let messagePreview = null;
@@ -238,8 +238,18 @@ router.post('/threads', authRequired, csrfProtection, async (req, res) => {
             await postmark.sendMail({
               to: supplierEmail,
               subject: `New message from ${customerName} - EventFlow`,
-              text: getMessageText(supplierName, customerName, sanitizedMessage, process.env.BASE_URL),
-              html: getMessageHtml(supplierName, customerName, sanitizedMessage, process.env.BASE_URL),
+              text: getMessageText(
+                supplierName,
+                customerName,
+                sanitizedMessage,
+                process.env.BASE_URL
+              ),
+              html: getMessageHtml(
+                supplierName,
+                customerName,
+                sanitizedMessage,
+                process.env.BASE_URL
+              ),
             });
           }
         } catch (emailError) {
@@ -268,10 +278,10 @@ router.post('/threads', authRequired, csrfProtection, async (req, res) => {
       details: { supplierId, packageId },
     });
 
-    res.status(201).json({ 
-      thread: newThread, 
+    res.status(201).json({
+      thread: newThread,
       message: initialMessage,
-      isExisting: false 
+      isExisting: false,
     });
   } catch (error) {
     console.error('Error creating thread:', error);
@@ -941,6 +951,29 @@ router.get('/conversations', authRequired, async (req, res) => {
 });
 
 /**
+ * GET /api/messages/unread
+ * Get unread message count for a user
+ */
+router.get('/unread', authRequired, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const threads = await dbUnified.read('threads');
+
+    let totalUnread = 0;
+    threads.forEach(t => {
+      if (t.unreadCount && t.unreadCount[userId]) {
+        totalUnread += t.unreadCount[userId];
+      }
+    });
+
+    res.json({ count: totalUnread });
+  } catch (error) {
+    console.error('Error fetching unread count:', error);
+    res.status(500).json({ error: 'Failed to fetch unread count', details: error.message });
+  }
+});
+
+/**
  * GET /api/messages/:conversationId
  * Alias for /api/messages/threads/:threadId/messages - Get messages in a conversation
  */
@@ -1122,29 +1155,6 @@ router.post('/:conversationId/read', authRequired, async (req, res) => {
   } catch (error) {
     console.error('Error marking messages as read:', error);
     res.status(500).json({ error: 'Failed to mark messages as read', details: error.message });
-  }
-});
-
-/**
- * GET /api/messages/unread
- * Get unread message count for a user
- */
-router.get('/unread', authRequired, async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const threads = await dbUnified.read('threads');
-
-    let totalUnread = 0;
-    threads.forEach(t => {
-      if (t.unreadCount && t.unreadCount[userId]) {
-        totalUnread += t.unreadCount[userId];
-      }
-    });
-
-    res.json({ count: totalUnread });
-  } catch (error) {
-    console.error('Error fetching unread count:', error);
-    res.status(500).json({ error: 'Failed to fetch unread count', details: error.message });
   }
 });
 

@@ -388,7 +388,7 @@ router.get('/enquiries/export', authRequired, async (req, res) => {
       const user = userMap[enq.customerId] || {};
       const date = new Date(enq.createdAt).toLocaleDateString('en-GB');
       const eventDate = enq.eventDate ? new Date(enq.eventDate).toLocaleDateString('en-GB') : 'N/A';
-      
+
       return [
         date,
         `"${user.name || 'N/A'}"`,
@@ -414,6 +414,84 @@ router.get('/enquiries/export', authRequired, async (req, res) => {
   } catch (error) {
     console.error('Error exporting enquiries:', error);
     res.status(500).json({ error: 'Failed to export enquiries', details: error.message });
+  }
+});
+
+/**
+ * GET /api/supplier/lead-quality
+ * Get lead quality breakdown for supplier
+ */
+router.get('/lead-quality', authRequired, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Check if user is a supplier
+    if (req.user.role !== 'supplier') {
+      return res.status(403).json({ error: 'Only suppliers can access lead quality data' });
+    }
+
+    // Get supplier record
+    const suppliers = await dbUnified.read('suppliers');
+    const supplier = suppliers.find(s => s.ownerUserId === userId);
+
+    if (!supplier) {
+      return res.status(404).json({ error: 'Supplier profile not found' });
+    }
+
+    const supplierId = supplier.id;
+
+    // Count threads by quality/status
+    const threads = await dbUnified.read('threads');
+    const supplierThreads = threads.filter(t => t.supplierId === supplierId);
+
+    // Lead quality thresholds
+    const MILLISECONDS_PER_DAY = 1000 * 60 * 60 * 24;
+    const HOT_LEAD_MIN_MESSAGES = 5;
+    const HOT_LEAD_MAX_DAYS = 2;
+    const HIGH_LEAD_MIN_MESSAGES = 3;
+    const HIGH_LEAD_MAX_DAYS = 7;
+    const GOOD_LEAD_MIN_MESSAGES = 1;
+    const GOOD_LEAD_MAX_DAYS = 14;
+
+    // Calculate breakdown based on thread status or engagement
+    const breakdown = [
+      { type: 'Hot', count: 0, icon: '🔥', color: '#EF4444' },
+      { type: 'High', count: 0, icon: '⭐', color: '#F59E0B' },
+      { type: 'Good', count: 0, icon: '✓', color: '#10B981' },
+      { type: 'Low', count: 0, icon: '◯', color: '#9CA3AF' },
+    ];
+
+    // Simple logic: categorize by message count and recency
+    supplierThreads.forEach(thread => {
+      const messageCount = thread.messageCount || 0;
+      const lastMessageAt = thread.lastMessageAt || thread.createdAt;
+      const daysSinceLastMessage =
+        (Date.now() - new Date(lastMessageAt).getTime()) / MILLISECONDS_PER_DAY;
+
+      if (messageCount >= HOT_LEAD_MIN_MESSAGES && daysSinceLastMessage < HOT_LEAD_MAX_DAYS) {
+        breakdown[0].count++; // Hot
+      } else if (
+        messageCount >= HIGH_LEAD_MIN_MESSAGES &&
+        daysSinceLastMessage < HIGH_LEAD_MAX_DAYS
+      ) {
+        breakdown[1].count++; // High
+      } else if (
+        messageCount >= GOOD_LEAD_MIN_MESSAGES &&
+        daysSinceLastMessage < GOOD_LEAD_MAX_DAYS
+      ) {
+        breakdown[2].count++; // Good
+      } else {
+        breakdown[3].count++; // Low
+      }
+    });
+
+    res.json({
+      success: true,
+      breakdown,
+    });
+  } catch (error) {
+    console.error('Error fetching lead quality:', error);
+    res.status(500).json({ error: 'Failed to fetch lead quality', details: error.message });
   }
 });
 

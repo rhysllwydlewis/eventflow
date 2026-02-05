@@ -1894,6 +1894,11 @@ function escapeHtml(unsafe) {
     updateBadge();
   });
   
+  // LEGACY WEBSOCKET CODE - DISABLED
+  // The messaging.js system now handles WebSocket connections.
+  // This legacy code is preserved but disabled to prevent conflicts.
+  // If you need to re-enable it, uncomment the lines below.
+  /*
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initWebSocket);
   } else {
@@ -1905,6 +1910,7 @@ function escapeHtml(unsafe) {
       ws.close();
     }
   });
+  */
 })();
 </script>
 
@@ -2013,6 +2019,7 @@ function escapeHtml(unsafe) {
 })();
 </script>
 
+<script src="/assets/js/notifications.js?v=18.2.0"></script>
 <script src="/assets/js/keyboard-shortcuts.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
 <script src="/assets/js/utils/p3-features.js" defer></script>
