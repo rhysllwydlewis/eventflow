@@ -8,9 +8,9 @@
 
 :root {
   /* Hero section spacing - FURTHER REDUCED FOR MINIMAL TOP SPACE */
-  --hero-padding-top: clamp(20px, 3vw, 32px);
+  --hero-padding-top: clamp(12px, 2vw, 24px);
   --hero-padding-bottom: clamp(16px, 3vw, 32px);
-  --hero-gap: clamp(16px, 3vw, 40px);
+  --hero-gap: clamp(24px, 4vw, 48px);
   
   /* Typography scaling */
   --hero-h1-size: clamp(26px, 4vw + 1rem, 52px);
@@ -595,8 +595,8 @@
   .hero-modern .hero-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 64px;
-    align-items: start;
+    gap: clamp(32px, 4vw, 56px);
+    align-items: center;
   }
 }
 
@@ -622,10 +622,9 @@
   position: relative;
   border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 2px solid rgba(255, 255, 255, 0.1);
 }
 
 .hero-video-card::before {
@@ -659,7 +658,6 @@
 .hero-video-card:hover {
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.16);
   transform: translateY(-2px);
-  border-color: rgba(255, 255, 255, 0.2);
 }
 
 .hero-video-card video {
@@ -735,20 +733,31 @@
   position: relative;
   border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   display: block;
   text-decoration: none;
   background: #f8fafc;
-  border: 2px solid rgba(255, 255, 255, 0.5);
 }
 
 .hero-collage-card:hover,
 .hero-collage-card:focus {
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.18);
-  transform: translateY(-6px) scale(1.02);
+  transform: translateY(-6px) scale(1.03);
   text-decoration: none;
-  border-color: rgba(16, 185, 129, 0.3);
+}
+
+/* Cinema Mode - dim other cards when hovering over collage */
+.hero-collage:hover .hero-collage-card:not(:hover) {
+  opacity: 0.7;
+  filter: grayscale(0.2);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Keep hovered card at full opacity */
+.hero-collage:hover .hero-collage-card:hover {
+  opacity: 1;
+  filter: none;
 }
 
 .hero-collage-card:focus {
@@ -798,11 +807,12 @@
 /* Category label pill - UPDATED to prevent blocking clicks */
 .hero-collage-label {
   position: absolute;
-  top: 12px;
+  bottom: 12px;
   left: 12px;
-  background: rgba(255, 255, 255, 0.75);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  top: auto;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   color: #0f172a;
   font-size: 11px;
   font-weight: 600;
@@ -814,7 +824,7 @@
   align-items: center;
   gap: 5px;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.6);
   pointer-events: none; /* CRITICAL: Prevent label from blocking card clicks */
   user-select: none; /* Prevent text selection */
 }
