@@ -18,9 +18,9 @@ const { csrfProtection } = require('../middleware/csrf');
  * Query params: q (search term), page (page number), perPage (results per page),
  *               orientation (portrait/landscape/square), size (large/medium/small),
  *               color (e.g., red, orange, yellow), locale (e.g., en-US, pt-BR)
- * Requires admin authentication
+ * Requires admin or supplier authentication
  */
-router.get('/search', authRequired, roleRequired('admin'), async (req, res) => {
+router.get('/search', authRequired, roleRequired(['admin', 'supplier']), async (req, res) => {
   try {
     const pexels = getPexelsService();
 
@@ -80,9 +80,9 @@ router.get('/search', authRequired, roleRequired('admin'), async (req, res) => {
  * GET /api/pexels/curated
  * Get curated stock photos (editor's picks)
  * Query params: page (page number), perPage (results per page)
- * Requires admin authentication
+ * Requires admin or supplier authentication
  */
-router.get('/curated', authRequired, roleRequired('admin'), async (req, res) => {
+router.get('/curated', authRequired, roleRequired(['admin', 'supplier']), async (req, res) => {
   try {
     const pexels = getPexelsService();
 
