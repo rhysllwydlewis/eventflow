@@ -6530,7 +6530,7 @@ app.use('/api/notifications', async (req, res, next) => {
   // Check if MongoDB is connected before accessing it
   let db = null;
   try {
-    if (mongoDb.isConnected && mongoDb.isConnected()) {
+    if (mongoDb.isConnected()) {
       db = await mongoDb.getDb();
     }
   } catch (error) {

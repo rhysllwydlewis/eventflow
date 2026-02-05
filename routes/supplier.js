@@ -527,13 +527,14 @@ router.get('/reviews/stats', authRequired, async (req, res) => {
         ? supplierReviews.reduce((sum, r) => sum + (Number(r.rating) || 0), 0) / totalReviews
         : 0;
 
-    // Calculate distribution
+    // Calculate distribution - only count valid integer ratings (1-5)
     const distribution = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
     supplierReviews.forEach(r => {
       const rating = Number(r.rating) || 0;
-      // Only count valid integer ratings (1-5)
-      if (Number.isInteger(rating) && rating >= 1 && rating <= 5) {
-        distribution[rating]++;
+      // Round to nearest integer for distribution bucketing
+      const roundedRating = Math.round(rating);
+      if (roundedRating >= 1 && roundedRating <= 5) {
+        distribution[roundedRating]++;
       }
     });
 
