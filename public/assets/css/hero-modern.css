@@ -596,7 +596,7 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: clamp(32px, 4vw, 56px);
-    align-items: center;
+    align-items: start;
   }
 }
 
