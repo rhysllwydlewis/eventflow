@@ -126,15 +126,6 @@
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  .ef-notification {
-    background: rgba(30, 41, 59, 0.75);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    color: rgba(255, 255, 255, 0.95);
-  }
-}
-
 /* Visible State */
 .ef-notification--visible {
   transform: translateX(0);
@@ -255,12 +246,6 @@
   word-wrap: break-word;
 }
 
-@media (prefers-color-scheme: dark) {
-  .ef-notification__message {
-    color: rgba(255, 255, 255, 0.95);
-  }
-}
-
 /* Close Button */
 .ef-notification__close {
   flex-shrink: 0;
@@ -290,19 +275,6 @@
 
 .ef-notification__close svg {
   display: block;
-}
-
-@media (prefers-color-scheme: dark) {
-  .ef-notification__close {
-    background: rgba(255, 255, 255, 0.15);
-    border-color: rgba(255, 255, 255, 0.25);
-    color: rgba(255, 255, 255, 0.7);
-  }
-  
-  .ef-notification__close:hover {
-    background: rgba(255, 255, 255, 0.25);
-    color: rgba(255, 255, 255, 0.95);
-  }
 }
 
 /* Mobile Responsive */
@@ -1067,13 +1039,6 @@ html[data-theme="dark"] .back-to-top:hover {
   opacity: 1;
 }
 
-@media (prefers-color-scheme: dark) {
-  .notification-dropdown {
-    background: rgba(30, 41, 59, 0.95);
-    border-color: rgba(255, 255, 255, 0.2);
-  }
-}
-
 .notification-header {
   display: flex;
   align-items: center;
@@ -1083,24 +1048,11 @@ html[data-theme="dark"] .back-to-top:hover {
   background: rgba(255, 255, 255, 0.5);
 }
 
-@media (prefers-color-scheme: dark) {
-  .notification-header {
-    background: rgba(255, 255, 255, 0.05);
-    border-bottom-color: rgba(255, 255, 255, 0.1);
-  }
-}
-
 .notification-header h3 {
   margin: 0;
   font-size: 16px;
   font-weight: 600;
   color: #1f2937;
-}
-
-@media (prefers-color-scheme: dark) {
-  .notification-header h3 {
-    color: rgba(255, 255, 255, 0.95);
-  }
 }
 
 .notification-mark-all {
@@ -1180,20 +1132,6 @@ html[data-theme="dark"] .back-to-top:hover {
   border-color: rgba(11, 128, 115, 0.25);
 }
 
-@media (prefers-color-scheme: dark) {
-  .notification-item {
-    background: rgba(255, 255, 255, 0.05);
-  }
-  
-  .notification-item:hover {
-    background: rgba(255, 255, 255, 0.1);
-  }
-  
-  .notification-item--unread {
-    background: rgba(11, 128, 115, 0.15);
-  }
-}
-
 .notification-item-icon {
   flex-shrink: 0;
   width: 36px;
@@ -1237,20 +1175,6 @@ html[data-theme="dark"] .back-to-top:hover {
   color: #9ca3af;
 }
 
-@media (prefers-color-scheme: dark) {
-  .notification-item-title {
-    color: rgba(255, 255, 255, 0.95);
-  }
-  
-  .notification-item-message {
-    color: rgba(255, 255, 255, 0.7);
-  }
-  
-  .notification-item-time {
-    color: rgba(255, 255, 255, 0.5);
-  }
-}
-
 .notification-item-mark-read,
 .notification-item-dismiss {
   flex-shrink: 0;
@@ -1285,13 +1209,6 @@ html[data-theme="dark"] .back-to-top:hover {
   border-top: 1px solid rgba(0, 0, 0, 0.08);
   text-align: center;
   background: rgba(255, 255, 255, 0.5);
-}
-
-@media (prefers-color-scheme: dark) {
-  .notification-footer {
-    background: rgba(255, 255, 255, 0.05);
-    border-top-color: rgba(255, 255, 255, 0.1);
-  }
 }
 
 .notification-view-all {
@@ -1385,13 +1302,6 @@ html[data-theme="dark"] .back-to-top:hover {
   }
 }
 
-@media (prefers-color-scheme: dark) {
-  .notification-toast {
-    background: rgba(30, 41, 59, 0.95);
-    border-color: rgba(255, 255, 255, 0.2);
-  }
-}
-
 .notification-toast-icon {
   flex-shrink: 0;
   width: 36px;
@@ -1422,16 +1332,6 @@ html[data-theme="dark"] .back-to-top:hover {
   font-size: 13px;
   color: #6b7280;
   line-height: 1.4;
-}
-
-@media (prefers-color-scheme: dark) {
-  .notification-toast-title {
-    color: rgba(255, 255, 255, 0.95);
-  }
-  
-  .notification-toast-message {
-    color: rgba(255, 255, 255, 0.7);
-  }
 }
 
 .notification-toast-close {
@@ -3807,30 +3707,6 @@ body > .ef-loading-overlay {
 
   .ef-loading-overlay {
     animation: none;
-  }
-}
-
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  .ef-loading-overlay {
-    background: rgba(11, 18, 32, 0.95);
-  }
-
-  .ef-spinner-icon {
-    border-color: rgba(22, 195, 173, 0.2);
-    border-top-color: #16c3ad;
-  }
-
-  .ef-loading-message {
-    color: #9ca3af;
-  }
-
-  /* Reduced motion in dark mode */
-  @media (prefers-reduced-motion: reduce) {
-    .ef-spinner-icon {
-      border-top-color: #16c3ad;
-      border-right-color: #16c3ad;
-    }
   }
 }
 
