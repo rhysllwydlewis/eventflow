@@ -495,4 +495,58 @@ router.get('/lead-quality', authRequired, async (req, res) => {
   }
 });
 
+/**
+ * GET /api/supplier/reviews/stats
+ * Get review statistics for the supplier dashboard
+ */
+router.get('/reviews/stats', authRequired, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Check if user is a supplier
+    if (req.user.role !== 'supplier') {
+      return res.status(403).json({ error: 'Only suppliers can access review stats' });
+    }
+
+    // Get supplier record
+    const suppliers = await dbUnified.read('suppliers');
+    const supplier = suppliers.find(s => s.ownerUserId === userId);
+
+    if (!supplier) {
+      return res.status(404).json({ error: 'Supplier profile not found' });
+    }
+
+    // Get reviews using dbUnified
+    const reviews = (await dbUnified.read('reviews')) || [];
+    const supplierReviews = reviews.filter(r => r.supplierId === supplier.id);
+
+    const totalReviews = supplierReviews.length;
+    const averageRating =
+      totalReviews > 0
+        ? supplierReviews.reduce((sum, r) => sum + (Number(r.rating) || 0), 0) / totalReviews
+        : 0;
+
+    // Calculate distribution
+    const distribution = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+    supplierReviews.forEach(r => {
+      const rating = Math.round(Number(r.rating) || 0);
+      if (distribution[rating] !== undefined) {
+        distribution[rating]++;
+      }
+    });
+
+    res.json({
+      success: true,
+      stats: {
+        totalReviews,
+        averageRating,
+        distribution,
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching review stats:', error);
+    res.status(500).json({ error: 'Failed to fetch review stats' });
+  }
+});
+
 module.exports = router;

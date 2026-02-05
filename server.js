@@ -6513,7 +6513,7 @@ app.use('/api/supplier', supplierRoutes);
 const notificationRoutes = require('./routes/notifications');
 // WebSocket server will be passed when available (after server starts)
 let notificationRouter;
-app.use('/api/notifications', (req, res, next) => {
+app.use('/api/notifications', async (req, res, next) => {
   // Determine which WebSocket server to use based on WEBSOCKET_MODE
   // Check environment variable directly (WEBSOCKET_MODE variable is defined later in the file)
   const wsMode = (process.env.WEBSOCKET_MODE || 'v2').toLowerCase();
@@ -6526,14 +6526,33 @@ app.use('/api/notifications', (req, res, next) => {
   }
   // wsMode === 'off' will result in webSocketServer === null
 
+  // CRITICAL FIX: Ensure DB is available before initializing
+  // Check if MongoDB is connected before accessing it
+  let db = null;
+  try {
+    if (mongoDb.isConnected && mongoDb.isConnected()) {
+      db = await mongoDb.getDb();
+    }
+  } catch (error) {
+    // DB not available yet
+    logger.warn('MongoDB not available for notifications endpoint', { error: error.message });
+  }
+
+  if (!db) {
+    // If DB is not ready, return 503 instead of crashing in constructor
+    return res
+      .status(503)
+      .json({ error: 'Service temporarily unavailable - Database not connected' });
+  }
+
   if (!notificationRouter && webSocketServer) {
-    notificationRouter = notificationRoutes(mongoDb.db, webSocketServer);
+    notificationRouter = notificationRoutes(db, webSocketServer);
   }
   if (notificationRouter) {
     notificationRouter(req, res, next);
   } else {
-    // Fallback if WebSocket not ready yet
-    const tempRouter = notificationRoutes(mongoDb.db, null);
+    // Fallback if WebSocket not ready yet but DB is ready
+    const tempRouter = notificationRoutes(db, null);
     tempRouter(req, res, next);
   }
 });
