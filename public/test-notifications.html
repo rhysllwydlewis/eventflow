@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notification System Test - EventFlow</title>
+  <link rel="stylesheet" href="/assets/css/styles.css">
+  <link rel="stylesheet" href="/assets/css/components.css">
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+    }
+    
+    .test-container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(20px);
+      padding: 40px;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+    
+    h1 {
+      margin: 0 0 10px 0;
+      color: #1f2937;
+      font-size: 32px;
+    }
+    
+    .subtitle {
+      color: #6b7280;
+      margin: 0 0 30px 0;
+      font-size: 16px;
+    }
+    
+    .test-section {
+      margin-top: 30px;
+    }
+    
+    .test-section h2 {
+      color: #4b5563;
+      font-size: 20px;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .test-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    
+    .test-btn {
+      padding: 16px 20px;
+      border: none;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      color: white;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+    
+    .test-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+    }
+    
+    .test-btn:active {
+      transform: translateY(0);
+    }
+    
+    .btn-success { background: linear-gradient(135deg, #10b981, #059669); }
+    .btn-error { background: linear-gradient(135deg, #ef4444, #dc2626); }
+    .btn-warning { background: linear-gradient(135deg, #f59e0b, #d97706); }
+    .btn-info { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+    .btn-purple { background: linear-gradient(135deg, #8b5cf6, #7c3aed); }
+    .btn-gray { background: linear-gradient(135deg, #6b7280, #4b5563); }
+    
+    .info-card {
+      background: rgba(59, 130, 246, 0.1);
+      border-left: 4px solid #3b82f6;
+      padding: 20px;
+      border-radius: 8px;
+      margin-top: 20px;
+    }
+    
+    .info-card h3 {
+      margin: 0 0 10px 0;
+      color: #3b82f6;
+      font-size: 18px;
+    }
+    
+    .info-card ul {
+      margin: 0;
+      padding-left: 20px;
+      color: #4b5563;
+    }
+    
+    .info-card li {
+      margin: 5px 0;
+    }
+    
+    .status-indicator {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      margin-right: 8px;
+      animation: pulse 2s infinite;
+    }
+    
+    .status-success { background: #10b981; }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+  </style>
+</head>
+<body>
+  <div class="test-container">
+    <h1>🎨 Notification System Test</h1>
+    <p class="subtitle">
+      <span class="status-indicator status-success"></span>
+      Testing glassmorphism notification system (Dark mode removed)
+    </p>
+    
+    <div class="test-section">
+      <h2>📢 Basic Notifications</h2>
+      <div class="test-grid">
+        <button class="test-btn btn-success" onclick="testSuccess()">
+          ✓ Success
+        </button>
+        <button class="test-btn btn-error" onclick="testError()">
+          ✗ Error
+        </button>
+        <button class="test-btn btn-warning" onclick="testWarning()">
+          ⚠ Warning
+        </button>
+        <button class="test-btn btn-info" onclick="testInfo()">
+          ℹ Info
+        </button>
+      </div>
+    </div>
+    
+    <div class="test-section">
+      <h2>🔥 Stress Tests</h2>
+      <div class="test-grid">
+        <button class="test-btn btn-purple" onclick="testSpam()">
+          Spam Test (10)
+        </button>
+        <button class="test-btn btn-purple" onclick="testLongMessage()">
+          Long Message
+        </button>
+        <button class="test-btn btn-gray" onclick="clearAll()">
+          Clear All
+        </button>
+      </div>
+    </div>
+    
+    <div class="test-section">
+      <h2>⏱️ Duration Tests</h2>
+      <div class="test-grid">
+        <button class="test-btn btn-info" onclick="testShort()">
+          2 Seconds
+        </button>
+        <button class="test-btn btn-info" onclick="testLong()">
+          10 Seconds
+        </button>
+        <button class="test-btn btn-info" onclick="testPersistent()">
+          Persistent (No auto-close)
+        </button>
+      </div>
+    </div>
+    
+    <div class="info-card">
+      <h3>✨ What to Look For</h3>
+      <ul>
+        <li><strong>Glassmorphism:</strong> Translucent white backgrounds with blur effect</li>
+        <li><strong>Animations:</strong> Smooth slide-in from right, fade-out</li>
+        <li><strong>Shake Effect:</strong> Error notifications should shake on appear</li>
+        <li><strong>Colored Glows:</strong> Green (success), Red (error), Amber (warning), Blue (info)</li>
+        <li><strong>Hover Effects:</strong> Notifications scale slightly on hover</li>
+        <li><strong>Max Limit:</strong> Only 5 notifications visible at once</li>
+        <li><strong>No Dark Mode:</strong> Should only show light theme</li>
+        <li><strong>Mobile Responsive:</strong> Full width on small screens</li>
+      </ul>
+    </div>
+    
+    <div class="info-card" style="background: rgba(16, 185, 129, 0.1); border-left-color: #10b981;">
+      <h3>✅ System Status</h3>
+      <ul>
+        <li id="status-system">Checking notification system...</li>
+        <li id="status-css">Checking CSS...</li>
+        <li id="status-responsive">Checking responsive design...</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Load notification system -->
+  <script src="/assets/js/notification-system.js"></script>
+  
+  <script>
+    // Test functions
+    function testSuccess() {
+      EventFlowNotifications.success('✓ Operation completed successfully!');
+    }
+
+    function testError() {
+      EventFlowNotifications.error('✗ Something went wrong. Please try again.');
+    }
+
+    function testWarning() {
+      EventFlowNotifications.warning('⚠ This action requires your attention.');
+    }
+
+    function testInfo() {
+      EventFlowNotifications.info('ℹ Here is some helpful information for you.');
+    }
+
+    function testSpam() {
+      for (let i = 1; i <= 10; i++) {
+        setTimeout(() => {
+          const types = ['success', 'error', 'warning', 'info'];
+          const messages = [
+            'Task completed',
+            'Error occurred',
+            'Warning issued',
+            'Info provided'
+          ];
+          const type = types[i % types.length];
+          const message = messages[i % messages.length];
+          EventFlowNotifications.show(`${message} #${i}`, type);
+        }, i * 150);
+      }
+    }
+
+    function testLongMessage() {
+      EventFlowNotifications.info('This is a very long notification message to test how the notification system handles text wrapping and maintains good visual appearance even with extended content that spans multiple lines. The glassmorphism effect should remain beautiful regardless of content length.');
+    }
+
+    function testShort() {
+      EventFlowNotifications.info('This notification will disappear in 2 seconds', 2000);
+    }
+
+    function testLong() {
+      EventFlowNotifications.warning('This notification will stay for 10 seconds', 10000);
+    }
+
+    function testPersistent() {
+      EventFlowNotifications.info('This notification will not auto-close. Click × to dismiss.', 0);
+    }
+
+    function clearAll() {
+      EventFlowNotifications.clearAll();
+    }
+
+    // Check system status
+    window.addEventListener('DOMContentLoaded', () => {
+      setTimeout(() => {
+        // Check if EventFlowNotifications is loaded
+        if (typeof EventFlowNotifications !== 'undefined') {
+          document.getElementById('status-system').innerHTML = 
+            '<span style="color: #10b981;">✓</span> EventFlowNotifications loaded successfully';
+        } else {
+          document.getElementById('status-system').innerHTML = 
+            '<span style="color: #ef4444;">✗</span> EventFlowNotifications not loaded';
+        }
+
+        // Check if glassmorphism CSS is available
+        const testEl = document.createElement('div');
+        testEl.className = 'ef-notification';
+        testEl.style.display = 'none';
+        document.body.appendChild(testEl);
+        const styles = window.getComputedStyle(testEl);
+        if (styles.backdropFilter && styles.backdropFilter !== 'none') {
+          document.getElementById('status-css').innerHTML = 
+            '<span style="color: #10b981;">✓</span> Glassmorphism CSS loaded (backdrop-filter supported)';
+        } else {
+          document.getElementById('status-css').innerHTML = 
+            '<span style="color: #f59e0b;">⚠</span> Glassmorphism CSS loaded (backdrop-filter not supported in this browser)';
+        }
+        document.body.removeChild(testEl);
+
+        // Check responsive
+        const isMobile = window.innerWidth < 640;
+        document.getElementById('status-responsive').innerHTML = 
+          `<span style="color: #10b981;">✓</span> Screen width: ${window.innerWidth}px ${isMobile ? '(Mobile)' : '(Desktop)'}`;
+
+        // Show welcome notification
+        setTimeout(() => {
+          EventFlowNotifications.success('Welcome! All systems operational. Click buttons above to test.');
+        }, 500);
+      }, 100);
+    });
+  </script>
+</body>
+</html>
