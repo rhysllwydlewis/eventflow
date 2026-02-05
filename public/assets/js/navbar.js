@@ -381,19 +381,6 @@
   // ==========================================
 
   function initNotificationSync() {
-    // Sync click handler for desktop notification bell
-    if (elements.notificationBtn) {
-      elements.notificationBtn.addEventListener('click', () => {
-        const dashboardUrl =
-          state.user?.role === 'admin'
-            ? '/admin.html'
-            : state.user?.role === 'supplier'
-              ? '/dashboard-supplier.html'
-              : '/dashboard-customer.html';
-        window.location.href = `${dashboardUrl}#notifications`;
-      });
-    }
-
     // Sync click handler for bottom dashboard button
     if (elements.bottomDashboard) {
       elements.bottomDashboard.addEventListener('click', e => {
