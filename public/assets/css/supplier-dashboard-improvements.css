@@ -4023,3 +4023,19 @@ html {
   vertical-align: middle;
   margin-right: 8px;
 }
+
+/* UI Fixes: Hide online status indicator and clean up quick actions */
+.online-status-float,
+.status-indicator.online {
+  display: none !important;
+}
+
+.dashboard-hero__actions {
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.dashboard-hero__actions > div:empty,
+.dashboard-actions > div:empty {
+  display: none !important;
+}
