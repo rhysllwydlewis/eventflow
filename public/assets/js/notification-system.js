@@ -80,7 +80,7 @@
       this.init();
 
       const actualDuration = duration !== null ? duration : CONFIG.defaultDuration;
-      const id = `notification-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      const id = `notification-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
 
       // Create notification element
       const notification = document.createElement('div');
