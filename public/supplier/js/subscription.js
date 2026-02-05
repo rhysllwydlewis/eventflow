@@ -632,36 +632,36 @@ function hideLoading() {
 }
 
 function showMessage(message) {
-  showNotification(message, 'info');
+  if (typeof window.EventFlowNotifications !== 'undefined') {
+    window.EventFlowNotifications.info(message);
+  } else {
+    console.warn('EventFlowNotifications not loaded:', message);
+  }
 }
 
 function showSuccess(message) {
-  showNotification(message, 'success');
+  if (typeof window.EventFlowNotifications !== 'undefined') {
+    window.EventFlowNotifications.success(message);
+  } else {
+    console.warn('EventFlowNotifications not loaded:', message);
+  }
 }
 
 function showError(message) {
-  showNotification(message, 'error');
+  if (typeof window.EventFlowNotifications !== 'undefined') {
+    window.EventFlowNotifications.error(message);
+  } else {
+    console.error('EventFlowNotifications not loaded:', message);
+  }
 }
 
 // eslint-disable-next-line no-unused-vars
 function showWarning(message) {
-  showNotification(message, 'warning');
-}
-
-function showNotification(message, type) {
-  const notification = document.createElement('div');
-  notification.className = `notification notification-${type}`;
-  notification.textContent = message;
-  document.body.appendChild(notification);
-
-  setTimeout(() => {
-    notification.classList.add('show');
-  }, 10);
-
-  setTimeout(() => {
-    notification.classList.remove('show');
-    setTimeout(() => notification.remove(), 300);
-  }, 5000);
+  if (typeof window.EventFlowNotifications !== 'undefined') {
+    window.EventFlowNotifications.warning(message);
+  } else {
+    console.warn('EventFlowNotifications not loaded:', message);
+  }
 }
 
 // Initialize on page load

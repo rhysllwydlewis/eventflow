@@ -396,7 +396,8 @@
   }
 
   function updateBellBadge() {
-    const badge = document.querySelector('.notification-badge');
+    // Support both old and new notification bell IDs
+    const badge = document.querySelector('.notification-badge, #ef-notification-badge, .ef-badge');
     if (badge) {
       if (state.unreadCount > 0) {
         badge.textContent = state.unreadCount > 99 ? '99+' : state.unreadCount;
@@ -487,7 +488,8 @@
   // ==========================================
 
   function initDropdown() {
-    const bell = document.getElementById('notification-bell');
+    // Support both old and new notification bell IDs
+    const bell = document.getElementById('notification-bell') || document.getElementById('ef-notification-btn');
     if (!bell) {
       return;
     }
@@ -521,7 +523,8 @@
       };
 
       // Toggle dropdown
-      bell.addEventListener('click', () => {
+      bell.addEventListener('click', (e) => {
+        e.stopPropagation();
         const isOpen = dropdown.classList.toggle('notification-dropdown--open');
 
         if (isOpen) {
