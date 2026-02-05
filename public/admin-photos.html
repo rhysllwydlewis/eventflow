@@ -2,6 +2,12 @@
 <html lang="en-GB">
 <head>
   <script src="/assets/js/dashboard-guard.js?v=17.0.2"></script>
+  
+  <!-- PHASE 2: Error boundary (must load before other components) -->
+  <script src="/assets/js/utils/global-error-handler.js" defer></script>
+  
+  <!-- PHASE 3: Core components -->
+  <script src="/assets/js/components/LoadingSpinner.js" defer></script>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Photo Moderation — EventFlow Admin</title>
@@ -221,7 +227,7 @@
     <script src="/assets/js/burger-menu.js" defer></script>
 
 
-<script src="/assets/js/admin-shared.js"></script>
+<script src="/assets/js/admin-shared.js" defer></script>
 <main id="main-content" class="section">
   <div class="container">
     <h1>Photo Moderation Queue</h1>
@@ -276,7 +282,7 @@
   </div>
 </footer>
 
-<script src="/assets/js/app.js"></script>
+<script src="/assets/js/app.js" defer></script>
 <script>
 (async function() {
   // Check admin authentication - using AdminShared if available, otherwise fall back to fetch

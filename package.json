@@ -26,7 +26,8 @@
     "audit": "npm audit --production",
     "prepare": "husky install",
     "release:tag": "git tag -a v$npm_package_version -m \"Release v$npm_package_version\" && git push origin v$npm_package_version",
-    "release:tag:interactive": "bash scripts/create-release-tag.sh"
+    "release:tag:interactive": "bash scripts/create-release-tag.sh",
+    "sitemap": "node scripts/generate-sitemap.js"
   },
   "dependencies": {
     "@sentry/node": "^8.0.0",
