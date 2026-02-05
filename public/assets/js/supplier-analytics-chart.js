@@ -288,11 +288,11 @@ async function fetchAnalyticsData(days, supplierId = null) {
           enquiries: data.enquiries,
         };
       } else {
-        console.warn('Failed to fetch analytics data, using mock data');
+        console.warn('Failed to fetch analytics data');
       }
     }
 
-    // Fallback to mock data if no supplier ID or API fails
+    // Return empty data if no supplier ID or API fails
     const labels = [];
     const views = [];
     const enquiries = [];
@@ -302,8 +302,8 @@ async function fetchAnalyticsData(days, supplierId = null) {
       const date = new Date(today);
       date.setDate(date.getDate() - i);
       labels.push(date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }));
-      views.push(Math.floor(Math.random() * 50) + 10);
-      enquiries.push(Math.floor(Math.random() * 10) + 1);
+      views.push(0);
+      enquiries.push(0);
     }
 
     return { labels, views, enquiries };

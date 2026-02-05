@@ -52,11 +52,6 @@ async function trackEvent(eventData) {
 
     events.push(event);
 
-    // Keep only last 50000 entries to prevent unbounded growth (efficient slicing)
-    if (events.length > 50000) {
-      events = events.slice(-50000);
-    }
-
     await dbUnified.write('events', events);
   } catch (error) {
     console.error('Failed to track supplier event:', error);
