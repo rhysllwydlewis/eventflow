@@ -20,7 +20,7 @@ const { csrfProtection } = require('../middleware/csrf');
  *               color (e.g., red, orange, yellow), locale (e.g., en-US, pt-BR)
  * Requires admin authentication
  */
-router.get('/search', authRequired, roleRequired('admin'), async (req, res) => {
+router.get('/search', authRequired, roleRequired(['admin', 'supplier']), async (req, res) => {
   try {
     const pexels = getPexelsService();
 
@@ -82,7 +82,7 @@ router.get('/search', authRequired, roleRequired('admin'), async (req, res) => {
  * Query params: page (page number), perPage (results per page)
  * Requires admin authentication
  */
-router.get('/curated', authRequired, roleRequired('admin'), async (req, res) => {
+router.get('/curated', authRequired, roleRequired(['admin', 'supplier']), async (req, res) => {
   try {
     const pexels = getPexelsService();
 

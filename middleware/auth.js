@@ -202,8 +202,8 @@ async function authRequired(req, res, next) {
 }
 
 /**
- * Middleware factory to require specific role
- * @param {string} role - Required role (admin, supplier, customer)
+ * Middleware factory to require specific role(s)
+ * @param {string|string[]} role - Required role(s) (admin, supplier, customer)
  * @returns {Function} Express middleware function
  */
 function roleRequired(role) {
@@ -214,11 +214,23 @@ function roleRequired(role) {
         message: 'Please log in to access this resource.',
       });
     }
-    if (req.user.role !== role) {
-      return res.status(403).json({
-        error: 'Forbidden',
-        message: `This action requires ${role} role. Your current role is ${req.user.role}.`,
-      });
+    
+    // Handle array of roles
+    if (Array.isArray(role)) {
+      if (!role.includes(req.user.role)) {
+        return res.status(403).json({
+          error: 'Forbidden',
+          message: `This action requires one of the following roles: ${role.join(', ')}. Your current role is ${req.user.role}.`,
+        });
+      }
+    } else {
+      // Handle single role (backward compatible)
+      if (req.user.role !== role) {
+        return res.status(403).json({
+          error: 'Forbidden',
+          message: `This action requires ${role} role. Your current role is ${req.user.role}.`,
+        });
+      }
     }
     next();
   };

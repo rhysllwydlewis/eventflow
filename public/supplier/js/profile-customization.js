@@ -346,6 +346,44 @@
         }
       });
     }
+
+    // Initialize Pexels stock photo selector
+    const stockPhotoBtn = document.getElementById('select-stock-photo-btn');
+    if (stockPhotoBtn && typeof window.PexelsSelector !== 'undefined') {
+      const pexelsSelector = new window.PexelsSelector();
+      
+      stockPhotoBtn.addEventListener('click', () => {
+        pexelsSelector.open((selectedImageUrl) => {
+          // Update banner preview
+          const bannerPreview = document.getElementById('sup-banner-preview');
+          if (bannerPreview) {
+            const imgContainer = document.createElement('div');
+            imgContainer.className = 'photo-preview-item';
+            imgContainer.style.cssText = 'width:100%;height:150px;border-radius:8px;overflow:hidden;';
+
+            const img = document.createElement('img');
+            img.src = selectedImageUrl;
+            img.alt = 'Selected banner';
+            img.style.cssText = 'width:100%;height:100%;object-fit:cover;';
+
+            imgContainer.appendChild(img);
+            bannerPreview.innerHTML = '';
+            bannerPreview.appendChild(imgContainer);
+          }
+
+          // Update hidden input
+          const bannerInput = document.getElementById('sup-banner');
+          if (bannerInput) {
+            bannerInput.value = selectedImageUrl;
+          }
+
+          // Show success notification if available
+          if (window.EventFlowNotifications && typeof window.EventFlowNotifications.success === 'function') {
+            window.EventFlowNotifications.success('Stock photo selected successfully!');
+          }
+        });
+      });
+    }
   }
 
   // Run init when DOM is ready
