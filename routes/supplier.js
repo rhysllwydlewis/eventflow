@@ -388,7 +388,7 @@ router.get('/enquiries/export', authRequired, async (req, res) => {
       const user = userMap[enq.customerId] || {};
       const date = new Date(enq.createdAt).toLocaleDateString('en-GB');
       const eventDate = enq.eventDate ? new Date(enq.eventDate).toLocaleDateString('en-GB') : 'N/A';
-      
+
       return [
         date,
         `"${user.name || 'N/A'}"`,
@@ -444,6 +444,15 @@ router.get('/lead-quality', authRequired, async (req, res) => {
     const threads = await dbUnified.read('threads');
     const supplierThreads = threads.filter(t => t.supplierId === supplierId);
 
+    // Lead quality thresholds
+    const MILLISECONDS_PER_DAY = 1000 * 60 * 60 * 24;
+    const HOT_LEAD_MIN_MESSAGES = 5;
+    const HOT_LEAD_MAX_DAYS = 2;
+    const HIGH_LEAD_MIN_MESSAGES = 3;
+    const HIGH_LEAD_MAX_DAYS = 7;
+    const GOOD_LEAD_MIN_MESSAGES = 1;
+    const GOOD_LEAD_MAX_DAYS = 14;
+
     // Calculate breakdown based on thread status or engagement
     const breakdown = [
       { type: 'Hot', count: 0, icon: '🔥', color: '#EF4444' },
@@ -454,15 +463,22 @@ router.get('/lead-quality', authRequired, async (req, res) => {
 
     // Simple logic: categorize by message count and recency
     supplierThreads.forEach(thread => {
-      const messages = thread.messageCount || 0;
+      const messageCount = thread.messageCount || 0;
       const lastMessageAt = thread.lastMessageAt || thread.createdAt;
-      const daysSinceLastMessage = (Date.now() - new Date(lastMessageAt).getTime()) / (1000 * 60 * 60 * 24);
+      const daysSinceLastMessage =
+        (Date.now() - new Date(lastMessageAt).getTime()) / MILLISECONDS_PER_DAY;
 
-      if (messages >= 5 && daysSinceLastMessage < 2) {
+      if (messageCount >= HOT_LEAD_MIN_MESSAGES && daysSinceLastMessage < HOT_LEAD_MAX_DAYS) {
         breakdown[0].count++; // Hot
-      } else if (messages >= 3 && daysSinceLastMessage < 7) {
+      } else if (
+        messageCount >= HIGH_LEAD_MIN_MESSAGES &&
+        daysSinceLastMessage < HIGH_LEAD_MAX_DAYS
+      ) {
         breakdown[1].count++; // High
-      } else if (messages >= 1 && daysSinceLastMessage < 14) {
+      } else if (
+        messageCount >= GOOD_LEAD_MIN_MESSAGES &&
+        daysSinceLastMessage < GOOD_LEAD_MAX_DAYS
+      ) {
         breakdown[2].count++; // Good
       } else {
         breakdown[3].count++; // Low
