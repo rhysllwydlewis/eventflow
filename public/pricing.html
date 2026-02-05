@@ -638,6 +638,13 @@
 </header>
 
 <!-- Load auth state manager first -->
+<!-- PHASE 2: Error boundary (must load before other components) -->
+<script src="/assets/js/utils/global-error-handler.js" defer></script>
+
+<!-- PHASE 3: Core components -->
+<script src="/assets/js/components/LoadingSpinner.js" defer></script>
+
+<!-- PHASE 4: Feature-specific -->
 <script src="/assets/js/utils/auth-state.js" defer></script>
 <!-- Burger menu - simple standalone implementation -->
 <script src="/assets/js/burger-menu.js" defer></script>

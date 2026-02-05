@@ -16,7 +16,14 @@
   <link rel="stylesheet" href="/assets/css/liquid-glass.css?v=18.1.0">
   <link rel="stylesheet" href="/assets/css/supplier-dashboard-improvements.css?v=18.1.0">
   <link rel="stylesheet" href="/assets/css/gallery.css?v=18.1.0">
-  <script src="/assets/js/toast-notifications.js?v=18.2.0"></script>
+  <!-- PHASE 2: Error boundary (must load before other components) -->
+  <script src="/assets/js/utils/global-error-handler.js" defer></script>
+  
+  <!-- PHASE 3: Core components -->
+  <script src="/assets/js/components/LoadingSpinner.js" defer></script>
+  
+  <!-- Toast Notifications (legacy, needed for gallery) -->
+  <script src="/assets/js/toast-notifications.js?v=18.2.0" defer></script>
 </head>
 <body>
 <a href="#main-content" class="skip-link">Skip to main content</a>
@@ -103,6 +110,7 @@
   </div>
 </header>
 
+<!-- PHASE 4: Feature-specific -->
 <script src="/assets/js/utils/auth-state.js" defer></script>
 <script src="/assets/js/burger-menu.js" defer></script>
 <script src="/assets/js/navbar.js" defer></script>

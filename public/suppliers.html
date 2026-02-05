@@ -135,6 +135,13 @@
   </div>
 </header>
 
+<!-- PHASE 2: Error boundary (must load before other components) -->
+<script src="/assets/js/utils/global-error-handler.js" defer></script>
+
+<!-- PHASE 3: Core components -->
+<script src="/assets/js/components/LoadingSpinner.js" defer></script>
+
+<!-- PHASE 4: Feature-specific -->
 <!-- Load auth state manager first -->
 <script src="/assets/js/utils/auth-state.js" defer></script>
 <!-- Burger menu - simple standalone implementation -->
@@ -245,8 +252,8 @@
     <script src="/assets/js/components/quote-request-modal.js" type="module" defer></script>
     <!-- Enhanced Suppliers Page -->
     <script src="/assets/js/pages/suppliers-init.js" type="module" defer></script>
-    <script src="/assets/js/utils/pexels-client.js"></script>
-    <script src="/assets/js/app.js"></script>
+    <script src="/assets/js/utils/pexels-client.js" defer></script>
+    <script src="/assets/js/app.js" defer></script>
     <script>window.__EF_PAGE__='results'</script>
   </div>
 </main>
