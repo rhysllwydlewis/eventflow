@@ -22,6 +22,8 @@ class MessagingSystem {
     this.messageCallbacks = new Map(); // conversationId -> callback
     this.typingTimeouts = new Map(); // conversationId -> timeoutId
     this._socketInitialized = false;
+    this._hasDisconnected = false; // Track if we've ever disconnected (to show reconnect toast)
+    this._typingDebounceTimers = new Map(); // Debounce typing status sends
   }
 
   /**
@@ -88,6 +90,7 @@ class MessagingSystem {
 
     this.socket.on('disconnect', () => {
       this.isConnected = false;
+      this._hasDisconnected = true; // Mark that we've disconnected
       console.log('Messaging WebSocket disconnected');
       
       // Emit connection status event
@@ -252,7 +255,21 @@ class MessagingSystem {
 
     // Clean up callbacks
     this.messageCallbacks.delete(conversationId);
-    this.typingTimeouts.delete(conversationId);
+    
+    // Clean up typing timeouts for this conversation
+    const typingTimeout = this.typingTimeouts.get(conversationId);
+    if (typingTimeout) {
+      clearTimeout(typingTimeout);
+      this.typingTimeouts.delete(conversationId);
+    }
+    
+    // Clean up debounce timers for this conversation
+    for (const [key, timer] of this._typingDebounceTimers.entries()) {
+      if (key.startsWith(conversationId)) {
+        clearTimeout(timer);
+        this._typingDebounceTimers.delete(key);
+      }
+    }
   }
 
   /**
@@ -260,7 +277,21 @@ class MessagingSystem {
    */
   sendTypingStatus(conversationId, isTyping) {
     if (this.isConnected && this.socket) {
+      // Debounce typing status sends to reduce WebSocket traffic
+      const debounceKey = `${conversationId}_${isTyping}`;
+      
+      // Clear existing debounce timer
+      if (this._typingDebounceTimers.has(debounceKey)) {
+        return; // Don't send if already sent recently
+      }
+      
       this.socket.emit('typing', { conversationId, isTyping });
+      
+      // Set debounce timer (1 second)
+      const debounceTimer = setTimeout(() => {
+        this._typingDebounceTimers.delete(debounceKey);
+      }, 1000);
+      this._typingDebounceTimers.set(debounceKey, debounceTimer);
       
       // Auto-stop typing after 3 seconds
       if (isTyping) {
@@ -275,6 +306,13 @@ class MessagingSystem {
         }, 3000);
         
         this.typingTimeouts.set(conversationId, timeout);
+      } else {
+        // Clear typing timeout when explicitly stopped
+        const existingTimeout = this.typingTimeouts.get(conversationId);
+        if (existingTimeout) {
+          clearTimeout(existingTimeout);
+          this.typingTimeouts.delete(conversationId);
+        }
       }
     }
   }
@@ -283,13 +321,14 @@ class MessagingSystem {
    * Start fallback polling with reduced frequency
    */
   startFallbackPolling() {
-    // Only start if not already polling and we have active subscriptions
-    if (this.pollingIntervals.length > 0 || this.activeConversations.size === 0) {
-      return;
+    // Only start if not already polling
+    if (this.pollingIntervals.length > 0) {
+      return; // Already polling
     }
 
-    // Show notification about fallback mode
-    if (typeof EFToast !== 'undefined') {
+    // Show notification about fallback mode (only once)
+    if (!this._pollingNotificationShown && typeof EFToast !== 'undefined') {
+      this._pollingNotificationShown = true;
       EFToast.info('Using fallback polling mode (30s intervals)', { duration: 4000 });
     }
 
@@ -656,6 +695,7 @@ class MessagingSystem {
    * Clean up all polling intervals
    */
   cleanup() {
+    // Clear all polling intervals
     this.pollingIntervals.forEach(interval => clearInterval(interval));
     this.pollingIntervals = [];
     
@@ -663,8 +703,13 @@ class MessagingSystem {
     this.typingTimeouts.forEach(timeout => clearTimeout(timeout));
     this.typingTimeouts.clear();
     
+    // Clear all debounce timers
+    this._typingDebounceTimers.forEach(timer => clearTimeout(timer));
+    this._typingDebounceTimers.clear();
+    
     // Leave all active conversations
-    this.activeConversations.forEach(conversationId => {
+    const conversationsToLeave = Array.from(this.activeConversations);
+    conversationsToLeave.forEach(conversationId => {
       this.leaveConversation(conversationId);
     });
     this.activeConversations.clear();
@@ -761,10 +806,12 @@ class MessagingManager {
   handleConnectionStatus({ status }) {
     this.updateConnectionIndicator(status);
     
+    // Only show toasts after initial connection (not on first connect)
     if (status === 'offline' && typeof EFToast !== 'undefined') {
       EFToast.warning('Connection lost - using fallback mode', { duration: 4000 });
-    } else if (status === 'online' && typeof EFToast !== 'undefined') {
-      EFToast.success('Connected - real-time messaging active', { duration: 3000 });
+    } else if (status === 'online' && this.messagingSystem._hasDisconnected && typeof EFToast !== 'undefined') {
+      // Only show reconnect success if we've previously disconnected
+      EFToast.success('Reconnected - real-time messaging active', { duration: 3000 });
     }
   }
 
@@ -806,22 +853,30 @@ class MessagingManager {
       style.id = 'messaging-connection-styles';
       style.textContent = `
         .messaging-connection-status {
+          position: fixed;
+          top: 70px;
+          right: 20px;
+          z-index: 1000;
           display: inline-flex;
           align-items: center;
           gap: 6px;
-          padding: 4px 12px;
-          border-radius: 12px;
+          padding: 6px 14px;
+          border-radius: 16px;
           font-size: 12px;
           font-weight: 500;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
           transition: all 0.3s ease;
+          backdrop-filter: blur(10px);
         }
         .messaging-connection-status--online {
-          background: #d4edda;
+          background: rgba(212, 237, 218, 0.95);
           color: #155724;
+          border: 1px solid rgba(40, 167, 69, 0.3);
         }
         .messaging-connection-status--offline {
-          background: #f8d7da;
+          background: rgba(248, 215, 218, 0.95);
           color: #721c24;
+          border: 1px solid rgba(220, 53, 69, 0.3);
         }
         .messaging-connection-status .status-dot {
           display: inline-block;
@@ -832,13 +887,27 @@ class MessagingManager {
         }
         .messaging-connection-status--online .status-dot {
           background: #28a745;
+          box-shadow: 0 0 6px rgba(40, 167, 69, 0.5);
         }
         .messaging-connection-status--offline .status-dot {
           background: #dc3545;
+          box-shadow: 0 0 6px rgba(220, 53, 69, 0.5);
+        }
+        .messaging-connection-status .status-text {
+          font-weight: 600;
+          letter-spacing: 0.3px;
         }
         @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.5; }
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.6; transform: scale(0.95); }
+        }
+        @media (max-width: 768px) {
+          .messaging-connection-status {
+            top: 60px;
+            right: 10px;
+            padding: 4px 10px;
+            font-size: 11px;
+          }
         }
       `;
       document.head.appendChild(style);
@@ -1002,6 +1071,111 @@ class MessagingManager {
     return setInterval(() => {
       this.refreshUnreadCount();
     }, interval);
+  }
+
+  /**
+   * Create a typing indicator element for a conversation
+   * @param {string} containerSelector - CSS selector for container element
+   * @returns {HTMLElement} Typing indicator element
+   */
+  createTypingIndicator(containerSelector) {
+    const container = document.querySelector(containerSelector);
+    if (!container) {
+      console.warn('Container not found for typing indicator:', containerSelector);
+      return null;
+    }
+
+    // Check if indicator already exists
+    let indicator = container.querySelector('.typing-indicator');
+    if (indicator) {
+      return indicator;
+    }
+
+    // Create indicator
+    indicator = document.createElement('div');
+    indicator.className = 'typing-indicator';
+    indicator.style.display = 'none';
+    indicator.innerHTML = `
+      <span class="typing-dot"></span>
+      <span class="typing-dot"></span>
+      <span class="typing-dot"></span>
+      <span class="typing-text">typing...</span>
+    `;
+
+    container.appendChild(indicator);
+
+    // Add styles if not already added
+    if (!document.getElementById('typing-indicator-styles')) {
+      const style = document.createElement('style');
+      style.id = 'typing-indicator-styles';
+      style.textContent = `
+        .typing-indicator {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          padding: 4px 8px;
+          color: #6b7280;
+          font-size: 13px;
+          font-style: italic;
+        }
+        .typing-dot {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: #9ca3af;
+          animation: typing-bounce 1.4s infinite ease-in-out;
+        }
+        .typing-dot:nth-child(1) {
+          animation-delay: -0.32s;
+        }
+        .typing-dot:nth-child(2) {
+          animation-delay: -0.16s;
+        }
+        @keyframes typing-bounce {
+          0%, 80%, 100% {
+            transform: scale(0);
+            opacity: 0.5;
+          }
+          40% {
+            transform: scale(1);
+            opacity: 1;
+          }
+        }
+        .typing-text {
+          margin-left: 4px;
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
+    return indicator;
+  }
+
+  /**
+   * Show typing indicator
+   * @param {HTMLElement} indicator - Typing indicator element
+   * @param {string} userName - Optional user name to display
+   */
+  showTypingIndicator(indicator, userName = null) {
+    if (!indicator) return;
+    
+    if (userName) {
+      const textSpan = indicator.querySelector('.typing-text');
+      if (textSpan) {
+        textSpan.textContent = `${userName} is typing...`;
+      }
+    }
+    
+    indicator.style.display = 'inline-flex';
+  }
+
+  /**
+   * Hide typing indicator
+   * @param {HTMLElement} indicator - Typing indicator element
+   */
+  hideTypingIndicator(indicator) {
+    if (!indicator) return;
+    indicator.style.display = 'none';
   }
 }
 
