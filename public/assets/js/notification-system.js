@@ -74,10 +74,9 @@
      * @param {string} message - The notification message
      * @param {string} type - Type: success, error, warning, info
      * @param {number} duration - Duration in ms (0 for persistent)
-     * @param {object} options - Additional options
      * @returns {HTMLElement} - The notification element
      */
-    show(message, type = 'info', duration = null, options = {}) {
+    show(message, type = 'info', duration = null) {
       this.init();
 
       const actualDuration = duration !== null ? duration : CONFIG.defaultDuration;
