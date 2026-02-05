@@ -608,10 +608,10 @@
 .hero-collage {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  grid-template-rows: 0.7fr 2fr 2fr;
+  grid-template-rows: 0.9fr 1.8fr 1.8fr;
   gap: 14px;
-  aspect-ratio: 16/22;  /* Taller ratio to accommodate larger category cards */
-  max-height: 95vh;
+  aspect-ratio: 16/20;  /* Taller ratio to accommodate larger category cards */
+  max-height: 90vh;
   max-width: 100%;
   overflow: hidden;
 }
