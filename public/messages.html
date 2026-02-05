@@ -488,6 +488,15 @@
     <script src="/assets/js/burger-menu.js" defer></script>
     <script src="/assets/js/navbar.js" defer></script>
 <script src="/assets/js/components.js" defer></script>
+<script src="/assets/js/toast-notifications.js"></script>
+<script type="module">
+  // Import messaging system for real-time updates
+  import messagingSystem, { MessagingManager } from '/assets/js/messaging.js';
+  
+  // Make available globally for inline script
+  window.messagingSystem = messagingSystem;
+  window.messagingManager = new MessagingManager();
+</script>
 
   <main id="main-content" class="messages-container">
     <div class="messages-header">
@@ -639,6 +648,78 @@
         setupSearchHandler();
         setupDateFilterHandler();
         loadThreads();
+        setupRealtimeUpdates();
+      }
+
+      function setupRealtimeUpdates() {
+        if (!window.messagingSystem) {
+          console.warn('Messaging system not available, using polling only');
+          // Set up polling fallback
+          setInterval(() => {
+            if (currentTab === 'inbox') {
+              loadThreads();
+            }
+          }, 30000); // Poll every 30 seconds
+          return;
+        }
+
+        // Initialize WebSocket
+        window.messagingSystem.initWebSocket();
+
+        // Listen for new messages - reload threads when received
+        window.addEventListener('messaging:connection', (event) => {
+          const { status } = event.detail;
+          if (status === 'online' && currentTab === 'inbox') {
+            // Refresh threads when connection is established
+            loadThreads();
+          }
+        });
+
+        // Get current user and listen for conversation updates
+        fetch('/api/auth/me', { credentials: 'include' })
+          .then(response => response.json())
+          .then(data => {
+            const user = data.user;
+            if (user && user.id) {
+              // Listen to user's conversations for real-time updates
+              window.messagingSystem.listenToUserConversations(
+                user.id,
+                user.type || 'customer',
+                (conversations) => {
+                  // Update threads array with new data
+                  if (currentTab === 'inbox') {
+                    threads = conversations || [];
+                    renderThreads();
+                    updateCounts();
+                  }
+                }
+              );
+
+              // Listen for unread count updates
+              window.messagingSystem.listenToUnreadCount(
+                user.id,
+                user.type || 'customer',
+                (count) => {
+                  updateInboxBadge(count);
+                }
+              );
+            }
+          })
+          .catch(error => {
+            console.error('Error getting user for real-time updates:', error);
+          });
+      }
+
+      function updateInboxBadge(count) {
+        const badge = document.getElementById('inboxCount');
+        if (badge) {
+          if (count > 0) {
+            badge.textContent = count;
+            badge.style.display = 'inline-flex';
+          } else {
+            badge.style.display = 'none';
+          }
+        }
       }
 
       function setupSearchHandler() {
