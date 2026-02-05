@@ -98,6 +98,7 @@ function openConversation(conversationId) {
       </div>
       <div class="modal-body" style="flex:1;overflow-y:auto;padding:1rem;">
         <div id="conversationMessages"><p class="small">Loading...</p></div>
+        <div id="typingIndicatorContainer" style="min-height:24px;padding:0.5rem 0;"></div>
       </div>
       <div class="modal-footer" style="padding:1rem;border-top:1px solid #e4e4e7;">
         <form id="sendMessageForm" style="display:flex;gap:0.5rem;">
@@ -176,6 +177,32 @@ function openConversation(conversationId) {
     // Listen to messages
     messagesUnsubscribe = messagingSystem.listenToMessages(conversationId, renderMessages);
 
+    // Set up typing indicator
+    const typingIndicator = messagingManager.createTypingIndicator('#typingIndicatorContainer');
+    
+    // Listen for typing status updates
+    const handleTyping = (event) => {
+      const { conversationId: typingConvId, userId, isTyping } = event.detail;
+      
+      // Only show typing for this conversation and not for current user
+      if (typingConvId === conversationId && userId !== user.id) {
+        if (isTyping && typingIndicator) {
+          messagingManager.showTypingIndicator(typingIndicator, 'Supplier');
+        } else if (typingIndicator) {
+          messagingManager.hideTypingIndicator(typingIndicator);
+        }
+      }
+    };
+    
+    window.addEventListener('messaging:typing', handleTyping);
+    
+    // Cleanup typing listener when modal closes
+    const originalCloseModal = closeModal;
+    closeModal = () => {
+      window.removeEventListener('messaging:typing', handleTyping);
+      originalCloseModal();
+    };
+
     // Mark messages as read
     messagingSystem.markMessagesAsRead(conversationId, user.id).catch(err => {
       console.error('Error marking messages as read:', err);
@@ -187,8 +214,8 @@ function openConversation(conversationId) {
     e.preventDefault();
 
     if (!currentUser) {
-      if (typeof Toast !== 'undefined') {
-        Toast.error('Please sign in to send messages');
+      if (typeof EFToast !== 'undefined') {
+        EFToast.error('Please sign in to send messages');
       }
       return;
     }
@@ -215,15 +242,41 @@ function openConversation(conversationId) {
       messageInput.value = '';
       submitBtn.disabled = false;
       submitBtn.textContent = 'Send';
+      
+      // Stop typing indicator when message sent
+      messagingSystem.sendTypingStatus(conversationId, false);
     } catch (error) {
       console.error('Error sending message:', error);
-      if (typeof Toast !== 'undefined') {
-        Toast.error(`Failed to send message: ${error.message}`);
+      if (typeof EFToast !== 'undefined') {
+        EFToast.error(`Failed to send message: ${error.message}`);
       }
 
       const submitBtn = e.target.querySelector('button[type="submit"]');
       submitBtn.disabled = false;
       submitBtn.textContent = 'Send';
+    }
+  });
+
+  // Send typing indicator when user types
+  const messageInput = modal.querySelector('#messageInput');
+  let typingTimeout = null;
+  
+  messageInput.addEventListener('input', () => {
+    if (currentUser && conversationId) {
+      messagingSystem.sendTypingStatus(conversationId, true);
+      
+      // Stop typing after user stops typing for 2 seconds
+      clearTimeout(typingTimeout);
+      typingTimeout = setTimeout(() => {
+        messagingSystem.sendTypingStatus(conversationId, false);
+      }, 2000);
+    }
+  });
+  
+  messageInput.addEventListener('blur', () => {
+    // Stop typing when input loses focus
+    if (currentUser && conversationId) {
+      messagingSystem.sendTypingStatus(conversationId, false);
     }
   });
 }
