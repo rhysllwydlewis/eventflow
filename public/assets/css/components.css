@@ -83,7 +83,253 @@
   justify-content: flex-end;
 }
 
-/* Toast Notification Component */
+/* ==================================================================
+   LIQUID GLASS NOTIFICATION SYSTEM (Glassmorphism)
+   ================================================================== */
+
+/* Notification Container */
+.ef-notification-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 420px;
+  pointer-events: none;
+}
+
+/* Base Notification Style with Glassmorphism */
+.ef-notification {
+  pointer-events: auto;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  border-radius: 16px;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  
+  /* Glassmorphism Core */
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+  
+  /* Animation Setup */
+  transform: translateX(450px);
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .ef-notification {
+    background: rgba(30, 41, 59, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: rgba(255, 255, 255, 0.95);
+  }
+}
+
+/* Visible State */
+.ef-notification--visible {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+/* Hiding State */
+.ef-notification--hiding {
+  transform: translateX(450px);
+  opacity: 0;
+}
+
+/* Shake Animation for Errors */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+  20%, 40%, 60%, 80% { transform: translateX(4px); }
+}
+
+.ef-notification--shake {
+  animation: shake 0.5s ease-in-out;
+}
+
+/* Icon Bubble with Glass Effect */
+.ef-notification__icon-bubble {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: inset 0 2px 6px rgba(255, 255, 255, 0.3);
+}
+
+.ef-notification__icon-bubble svg {
+  display: block;
+}
+
+/* Success Notification - Green Glow */
+.ef-notification--success {
+  box-shadow: 0 8px 32px 0 rgba(16, 185, 129, 0.25),
+              0 0 20px 0 rgba(16, 185, 129, 0.1);
+}
+
+.ef-notification--success .ef-notification__icon-bubble {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.ef-notification--success .ef-notification__icon-bubble svg {
+  color: #10b981;
+  stroke: #10b981;
+}
+
+/* Error Notification - Red Glow */
+.ef-notification--error {
+  box-shadow: 0 8px 32px 0 rgba(239, 68, 68, 0.25),
+              0 0 20px 0 rgba(239, 68, 68, 0.1);
+}
+
+.ef-notification--error .ef-notification__icon-bubble {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.ef-notification--error .ef-notification__icon-bubble svg {
+  color: #ef4444;
+  stroke: #ef4444;
+}
+
+/* Warning Notification - Amber Glow */
+.ef-notification--warning {
+  box-shadow: 0 8px 32px 0 rgba(245, 158, 11, 0.25),
+              0 0 20px 0 rgba(245, 158, 11, 0.1);
+}
+
+.ef-notification--warning .ef-notification__icon-bubble {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.ef-notification--warning .ef-notification__icon-bubble svg {
+  color: #f59e0b;
+  stroke: #f59e0b;
+}
+
+/* Info Notification - Blue Glow */
+.ef-notification--info {
+  box-shadow: 0 8px 32px 0 rgba(59, 130, 246, 0.25),
+              0 0 20px 0 rgba(59, 130, 246, 0.1);
+}
+
+.ef-notification--info .ef-notification__icon-bubble {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.ef-notification--info .ef-notification__icon-bubble svg {
+  color: #3b82f6;
+  stroke: #3b82f6;
+}
+
+/* Notification Content */
+.ef-notification__content {
+  flex: 1;
+  min-width: 0;
+}
+
+.ef-notification__message {
+  display: block;
+  color: #1f2937;
+  font-weight: 500;
+  word-wrap: break-word;
+}
+
+@media (prefers-color-scheme: dark) {
+  .ef-notification__message {
+    color: rgba(255, 255, 255, 0.95);
+  }
+}
+
+/* Close Button */
+.ef-notification__close {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #6b7280;
+}
+
+.ef-notification__close:hover {
+  background: rgba(255, 255, 255, 0.5);
+  color: #1f2937;
+  transform: scale(1.05);
+}
+
+.ef-notification__close:active {
+  transform: scale(0.95);
+}
+
+.ef-notification__close svg {
+  display: block;
+}
+
+@media (prefers-color-scheme: dark) {
+  .ef-notification__close {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.25);
+    color: rgba(255, 255, 255, 0.7);
+  }
+  
+  .ef-notification__close:hover {
+    background: rgba(255, 255, 255, 0.25);
+    color: rgba(255, 255, 255, 0.95);
+  }
+}
+
+/* Mobile Responsive */
+@media (max-width: 640px) {
+  .ef-notification-container {
+    top: 10px;
+    right: 10px;
+    left: 10px;
+    max-width: none;
+  }
+  
+  .ef-notification {
+    padding: 14px 16px;
+    font-size: 13px;
+  }
+  
+  .ef-notification__icon-bubble {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+/* ==================================================================
+   LEGACY TOAST STYLES (Backward Compatibility)
+   ================================================================== */
+
+/* Map old toast classes to new notification system */
 .toast-container {
   position: fixed;
   top: 1rem;

@@ -16,89 +16,47 @@
     return div.innerHTML;
   }
 
-  // Notification System
-  class NotificationManager {
-    constructor() {
-      this.container = this.createContainer();
-      this.notifications = [];
-    }
-
-    createContainer() {
-      const container = document.createElement('div');
-      container.id = 'notification-container';
-      container.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        z-index: 10000;
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-        max-width: 400px;
-      `;
-      document.body.appendChild(container);
-      return container;
-    }
-
-    show(message, type = 'info', duration = 5000) {
-      const notification = document.createElement('div');
-      notification.className = `notification notification-${type}`;
-
-      const icons = {
-        success: '✓',
-        error: '✗',
-        warning: '⚠',
-        info: 'ℹ',
-      };
-
-      notification.innerHTML = `
-        <div style="display: flex; align-items: center; gap: 12px;">
-          <div class="notification-icon">${icons[type] || icons.info}</div>
-          <div class="notification-content">${escapeHtml(message)}</div>
-          <button class="notification-close">×</button>
-        </div>
-      `;
-
-      // Add close button handler
-      const closeBtn = notification.querySelector('.notification-close');
-      if (closeBtn) {
-        closeBtn.addEventListener('click', () => {
-          notification.remove();
-        });
+  // Notification System - Use Centralized EventFlowNotifications
+  // This maintains backward compatibility for existing admin panel code
+  // that uses window.Notifications
+  window.Notifications = {
+    show: function (message, type, duration) {
+      // Ensure EventFlowNotifications is loaded
+      if (typeof window.EventFlowNotifications === 'undefined') {
+        console.error('EventFlowNotifications not loaded. Please include notification-system.js');
+        return null;
       }
-
-      this.container.appendChild(notification);
-      this.notifications.push(notification);
-
-      // Auto remove
-      if (duration > 0) {
-        setTimeout(() => {
-          notification.style.animation = 'slideOut 0.3s ease forwards';
-          setTimeout(() => notification.remove(), 300);
-        }, duration);
+      return window.EventFlowNotifications.show(message, type || 'info', duration);
+    },
+    success: function (message, duration) {
+      if (typeof window.EventFlowNotifications === 'undefined') {
+        console.error('EventFlowNotifications not loaded. Please include notification-system.js');
+        return null;
       }
-
-      return notification;
-    }
-
-    success(message) {
-      return this.show(message, 'success');
-    }
-
-    error(message) {
-      return this.show(message, 'error');
-    }
-
-    warning(message) {
-      return this.show(message, 'warning');
-    }
-
-    info(message) {
-      return this.show(message, 'info');
-    }
-  }
-
-  window.Notifications = new NotificationManager();
+      return window.EventFlowNotifications.success(message, duration);
+    },
+    error: function (message, duration) {
+      if (typeof window.EventFlowNotifications === 'undefined') {
+        console.error('EventFlowNotifications not loaded. Please include notification-system.js');
+        return null;
+      }
+      return window.EventFlowNotifications.error(message, duration);
+    },
+    warning: function (message, duration) {
+      if (typeof window.EventFlowNotifications === 'undefined') {
+        console.error('EventFlowNotifications not loaded. Please include notification-system.js');
+        return null;
+      }
+      return window.EventFlowNotifications.warning(message, duration);
+    },
+    info: function (message, duration) {
+      if (typeof window.EventFlowNotifications === 'undefined') {
+        console.error('EventFlowNotifications not loaded. Please include notification-system.js');
+        return null;
+      }
+      return window.EventFlowNotifications.info(message, duration);
+    },
+  };
 
   // Keyboard Shortcuts
   class KeyboardShortcuts {
