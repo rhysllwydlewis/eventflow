@@ -4,13 +4,19 @@
 
 The messaging system has been upgraded from inefficient polling (3-5 second intervals) to real-time WebSockets using Socket.IO, with intelligent fallback to reduced-frequency polling (30 second intervals) when WebSocket is unavailable.
 
-**Latest Updates (v1.1.0):**
-- ✅ Fixed critical bugs (reconnection toasts, polling accumulation, timeout cleanup)
-- ✅ Added typing indicator debouncing (max 1 per second)
-- ✅ Improved connection status indicator with fixed positioning
-- ✅ Added typing indicator UI helper methods
-- ✅ Enhanced customer-messages.js with typing indicators
-- ✅ Better memory leak prevention
+**Latest Version: 1.2.0** - Now with complete feature parity and inbox real-time updates!
+
+**Version Updates:**
+- **v1.2.0** (2026-02-05): Supplier typing indicators, inbox real-time updates, feature parity achieved
+- **v1.1.0**: Fixed critical bugs, improved connection indicator, added typing helpers
+- **v1.0.0**: Initial WebSocket implementation with 98.6% API reduction
+
+**v1.2.0 Highlights:**
+- ✅ Added typing indicators to supplier-messages.js (parity with customer-messages)
+- ✅ Real-time WebSocket updates for inbox page (messages.html)
+- ✅ Unread count badge updates in real-time
+- ✅ Fixed Toast → EFToast consistency
+- ✅ See MESSAGING_V1_2_IMPROVEMENTS.md for details
 
 ## Key Improvements
 
