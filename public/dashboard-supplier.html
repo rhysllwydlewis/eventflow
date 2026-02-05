@@ -151,6 +151,8 @@ window.announceToSR = function(message) {
 <script src="/assets/js/utils/auth-state.js" defer></script>
 <!-- Global error handler - catches all unhandled errors and API failures -->
 <script src="/assets/js/utils/global-error-handler.js" defer></script>
+<!-- Notification system for toast notifications -->
+<script src="/assets/js/notification-system.js" defer></script>
 <!-- Burger menu - simple standalone implementation -->
 <script src="/assets/js/burger-menu.js" defer></script>
 <script src="/assets/js/navbar.js" defer></script>
@@ -1081,6 +1083,11 @@ window.announceToSR = function(message) {
   import { createPerformanceChart, createAnalyticsSummary, createEnquiryTrendChart, createLeadQualityWidget, loadReviewStats } from '/assets/js/supplier-analytics-chart.js';
   import { initCountUp } from '/assets/js/count-up-animation.js';
   
+  // Module-level variable to store chart instance for real-time updates
+  let analyticsChartInstance = null;
+  // Store WebSocket client instance for cleanup
+  let wsClientInstance = null;
+  
   // Initialize feature access control (non-blocking)
   initializeFeatureAccess().catch(err => {
     console.error('Error initializing feature access:', err);
@@ -1186,7 +1193,7 @@ window.announceToSR = function(message) {
         }
       }
       
-      await createPerformanceChart('supplier-performance-chart', viewsData, enquiriesData, labels);
+      analyticsChartInstance = await createPerformanceChart('supplier-performance-chart', viewsData, enquiriesData, labels);
       
       // Create enquiry trend chart
       await createEnquiryTrendChart('enquiry-trend-chart');
@@ -1268,6 +1275,93 @@ window.announceToSR = function(message) {
       console.error('Error initializing supplier dashboard widgets:', error);
     }
   }
+  
+  // Real-time notification handler for WebSocket updates
+  function handleRealtimeNotification(data) {
+    try {
+      if (data.type === 'enquiry_received') {
+        // Show toast notification
+        if (typeof EventFlowNotifications !== 'undefined') {
+          EventFlowNotifications.info('New Enquiry Received! Dashboard updated.');
+        }
+        
+        // Update the enquiry counter in the hero section
+        const enquiriesElement = document.getElementById('quick-stat-enquiries');
+        if (enquiriesElement) {
+          const currentValue = parseInt(enquiriesElement.textContent) || 0;
+          enquiriesElement.textContent = currentValue + 1;
+          
+          // Also update the data-target attribute for consistency
+          enquiriesElement.setAttribute('data-target', currentValue + 1);
+        }
+        
+        // Update the chart if it exists
+        if (analyticsChartInstance && analyticsChartInstance.data && analyticsChartInstance.data.datasets) {
+          // Get the enquiries dataset (index 1)
+          const enquiriesDataset = analyticsChartInstance.data.datasets[1];
+          if (enquiriesDataset && enquiriesDataset.data && enquiriesDataset.data.length > 0) {
+            // Increment the last data point (today)
+            const lastIndex = enquiriesDataset.data.length - 1;
+            enquiriesDataset.data[lastIndex] = (enquiriesDataset.data[lastIndex] || 0) + 1;
+            
+            // Update the chart
+            analyticsChartInstance.update();
+          }
+        }
+      } else if (data.type === 'profile_view') {
+        // Update the views counter in the stats grid
+        // The stats grid is dynamically generated, so we need to find the element
+        const statsNumbers = document.querySelectorAll('.stat-number');
+        statsNumbers.forEach(element => {
+          const label = element.nextElementSibling;
+          // Check for Profile Views using data attribute or text content
+          if (label && label.textContent && (label.textContent.includes('Profile Views') || label.textContent.includes('Views (7d)'))) {
+            const currentValue = parseInt(element.textContent) || 0;
+            element.textContent = currentValue + 1;
+            element.setAttribute('data-target', currentValue + 1);
+          }
+        });
+        
+        // Update the chart if it exists
+        if (analyticsChartInstance && analyticsChartInstance.data && analyticsChartInstance.data.datasets) {
+          // Get the views dataset (index 0)
+          const viewsDataset = analyticsChartInstance.data.datasets[0];
+          if (viewsDataset && viewsDataset.data && viewsDataset.data.length > 0) {
+            // Increment the last data point (today)
+            const lastIndex = viewsDataset.data.length - 1;
+            viewsDataset.data[lastIndex] = (viewsDataset.data[lastIndex] || 0) + 1;
+            
+            // Update the chart
+            analyticsChartInstance.update();
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error handling real-time notification:', error);
+    }
+  }
+  
+  // Initialize WebSocket for real-time updates
+  window.addEventListener('load', () => {
+    // Initialize WebSocketClient if available
+    if (typeof WebSocketClient !== 'undefined') {
+      try {
+        wsClientInstance = new WebSocketClient({
+          onConnect: () => console.log('🟢 Live Dashboard Connected'),
+          onNotification: (data) => handleRealtimeNotification(data)
+        });
+      } catch (error) {
+        console.error('Error initializing WebSocket client:', error);
+      }
+    }
+  });
+  
+  // Cleanup WebSocket on page unload
+  window.addEventListener('beforeunload', () => {
+    if (wsClientInstance && typeof wsClientInstance.disconnect === 'function') {
+      wsClientInstance.disconnect();
+    }
+  });
   
   // Initialize widgets after page loads
   window.addEventListener('load', () => {
