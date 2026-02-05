@@ -9,6 +9,7 @@ const express = require('express');
 const { authRequired } = require('../middleware/auth');
 const { csrfProtection } = require('../middleware/csrf');
 const dbUnified = require('../db-unified');
+const logger = require('../utils/logger');
 
 const router = express.Router();
 
@@ -529,8 +530,9 @@ router.get('/reviews/stats', authRequired, async (req, res) => {
     // Calculate distribution
     const distribution = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
     supplierReviews.forEach(r => {
-      const rating = Math.round(Number(r.rating) || 0);
-      if (distribution[rating] !== undefined) {
+      const rating = Number(r.rating) || 0;
+      // Only count valid integer ratings (1-5)
+      if (Number.isInteger(rating) && rating >= 1 && rating <= 5) {
         distribution[rating]++;
       }
     });
@@ -544,7 +546,7 @@ router.get('/reviews/stats', authRequired, async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Error fetching review stats:', error);
+    logger.error('Error fetching review stats:', error);
     res.status(500).json({ error: 'Failed to fetch review stats' });
   }
 });
