@@ -111,6 +111,18 @@
 
   /**
    * Setup global fetch interceptor for automatic error handling
+   *
+   * Monkey-patches window.fetch to automatically handle and log all API errors.
+   *
+   * Behavior:
+   * - Successful responses (response.ok) are returned immediately without modification
+   * - Failed responses (4xx, 5xx) trigger automatic error logging and user notification,
+   *   then return the original response for further handling by calling code
+   * - Network errors trigger automatic logging and notification, then are re-thrown
+   *
+   * Note: For failed API responses, both this interceptor AND the calling code may
+   * display notifications. Calling code should check if automatic notification
+   * is sufficient before showing additional error messages.
    */
   function setupFetchInterceptor() {
     const originalFetch = window.fetch;
@@ -180,8 +192,8 @@
       colno: event.colno,
     });
 
-    // Show user notification
-    showUserError('An unexpected error occurred');
+    // Show user notification (in dev mode, show actual error for debugging)
+    showUserError(isDevelopment ? errorMessage : 'An unexpected error occurred');
 
     // Prevent default browser error handling (only in production for better UX)
     // In development, preserve full debugging capabilities
@@ -207,8 +219,8 @@
       promise: event.promise,
     });
 
-    // Show user notification
-    showUserError('An unexpected error occurred');
+    // Show user notification (in dev mode, show actual error for debugging)
+    showUserError(isDevelopment ? errorMessage : 'An unexpected error occurred');
 
     // Prevent default browser error handling (only in production for better UX)
     // In development, preserve full debugging capabilities
