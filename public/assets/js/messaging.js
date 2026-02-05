@@ -15,6 +15,315 @@ class MessagingSystem {
     this.lastUnreadCount = -1; // Initialize to -1 so first update (even 0) triggers animation
     this._pollingNotificationShown = false; // Track if we've shown the polling notification
     this._unreadErrorLogged = false; // Track if we've logged unread count errors
+    this.socket = null;
+    this.isConnected = false;
+    this.activeConversations = new Set(); // Track active conversation subscriptions
+    this.conversationCallbacks = new Map(); // conversationId -> callback
+    this.messageCallbacks = new Map(); // conversationId -> callback
+    this.typingTimeouts = new Map(); // conversationId -> timeoutId
+    this._socketInitialized = false;
+  }
+
+  /**
+   * Initialize WebSocket connection
+   */
+  initWebSocket() {
+    if (this._socketInitialized) {
+      return;
+    }
+
+    // Load Socket.IO from CDN if not already loaded
+    if (!window.io) {
+      const script = document.createElement('script');
+      script.src = 'https://cdn.socket.io/4.5.4/socket.io.min.js';
+      script.onload = () => {
+        this.connectWebSocket();
+      };
+      script.onerror = () => {
+        console.error('Failed to load Socket.IO - falling back to polling');
+        if (typeof EFToast !== 'undefined') {
+          EFToast.warning('Real-time messaging unavailable, using polling mode');
+        }
+      };
+      document.head.appendChild(script);
+    } else {
+      this.connectWebSocket();
+    }
+
+    this._socketInitialized = true;
+  }
+
+  /**
+   * Connect to WebSocket server
+   */
+  connectWebSocket() {
+    if (!window.io) {
+      console.error('Socket.IO not available');
+      return;
+    }
+
+    // Connect to WebSocket server
+    this.socket = window.io({
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionAttempts: 10,
+    });
+
+    this.socket.on('connect', () => {
+      this.isConnected = true;
+      console.log('Messaging WebSocket connected');
+      
+      // Emit connection status event
+      this.emitConnectionStatus('online');
+      
+      // Re-subscribe to active conversations
+      this.activeConversations.forEach(conversationId => {
+        this.socket.emit('subscribe_conversation', { conversationId });
+      });
+
+      // Stop polling since we're connected
+      this.stopFallbackPolling();
+    });
+
+    this.socket.on('disconnect', () => {
+      this.isConnected = false;
+      console.log('Messaging WebSocket disconnected');
+      
+      // Emit connection status event
+      this.emitConnectionStatus('offline');
+      
+      // Start fallback polling with reduced frequency
+      this.startFallbackPolling();
+    });
+
+    this.socket.on('connect_error', (error) => {
+      console.error('WebSocket connection error:', error);
+      if (typeof EFToast !== 'undefined') {
+        EFToast.error('Connection error - using polling mode', { duration: 3000 });
+      }
+    });
+
+    // Listen for new messages
+    this.socket.on('new_message', (data) => {
+      this.handleNewMessage(data);
+    });
+
+    // Listen for conversation updates
+    this.socket.on('conversation:updated', (data) => {
+      this.handleConversationUpdate(data);
+    });
+
+    // Listen for typing status
+    this.socket.on('typing:status', (data) => {
+      this.handleTypingStatus(data);
+    });
+
+    // Listen for read receipts
+    this.socket.on('message:read', (data) => {
+      this.handleMessageRead(data);
+    });
+
+    // Authenticate with user if available
+    const user = this.getUserFromStorage();
+    if (user && user.id) {
+      this.socket.emit('auth', { userId: user.id });
+    }
+  }
+
+  /**
+   * Get user from storage
+   */
+  getUserFromStorage() {
+    const authState = window.__authState || window.AuthStateManager;
+    if (authState && typeof authState.getUser === 'function') {
+      return authState.getUser();
+    }
+    try {
+      const userStr = localStorage.getItem('user');
+      return userStr ? JSON.parse(userStr) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Emit connection status as custom DOM event
+   */
+  emitConnectionStatus(status) {
+    const event = new CustomEvent('messaging:connection', {
+      detail: { status, timestamp: new Date() }
+    });
+    window.dispatchEvent(event);
+  }
+
+  /**
+   * Handle new message from WebSocket
+   */
+  handleNewMessage(data) {
+    const { conversationId, message } = data;
+    
+    // Call the message callback if registered
+    const callback = this.messageCallbacks.get(conversationId);
+    if (callback) {
+      // Fetch fresh messages to ensure consistency
+      this.fetchMessagesFromAPI(conversationId, callback);
+    }
+
+    // Trigger conversation list update
+    const conversationCallback = this.conversationCallbacks.get('all');
+    if (conversationCallback) {
+      const user = this.getUserFromStorage();
+      if (user) {
+        this.fetchConversationsFromAPI(user.id, user.type || 'customer', conversationCallback);
+      }
+    }
+
+    // Play notification sound if enabled
+    if (typeof EFToast !== 'undefined') {
+      EFToast.info('New message received', { duration: 3000 });
+    }
+  }
+
+  /**
+   * Handle conversation update from WebSocket
+   */
+  handleConversationUpdate(data) {
+    const { conversationId } = data;
+    
+    // Refresh conversation list
+    const callback = this.conversationCallbacks.get('all');
+    if (callback) {
+      const user = this.getUserFromStorage();
+      if (user) {
+        this.fetchConversationsFromAPI(user.id, user.type || 'customer', callback);
+      }
+    }
+  }
+
+  /**
+   * Handle typing status from WebSocket
+   */
+  handleTypingStatus(data) {
+    const { conversationId, userId, isTyping } = data;
+    
+    // Emit custom DOM event for UI to handle
+    const event = new CustomEvent('messaging:typing', {
+      detail: { conversationId, userId, isTyping }
+    });
+    window.dispatchEvent(event);
+  }
+
+  /**
+   * Handle message read from WebSocket
+   */
+  handleMessageRead(data) {
+    const { conversationId, messageId, userId } = data;
+    
+    // Emit custom DOM event for UI to handle
+    const event = new CustomEvent('messaging:read', {
+      detail: { conversationId, messageId, userId }
+    });
+    window.dispatchEvent(event);
+  }
+
+  /**
+   * Join a conversation room
+   */
+  joinConversation(conversationId) {
+    this.activeConversations.add(conversationId);
+    
+    if (this.isConnected && this.socket) {
+      this.socket.emit('subscribe_conversation', { conversationId });
+      console.log('Joined conversation:', conversationId);
+    }
+  }
+
+  /**
+   * Leave a conversation room
+   */
+  leaveConversation(conversationId) {
+    this.activeConversations.delete(conversationId);
+    
+    if (this.isConnected && this.socket) {
+      this.socket.emit('unsubscribe_conversation', { conversationId });
+      console.log('Left conversation:', conversationId);
+    }
+
+    // Clean up callbacks
+    this.messageCallbacks.delete(conversationId);
+    this.typingTimeouts.delete(conversationId);
+  }
+
+  /**
+   * Send typing status
+   */
+  sendTypingStatus(conversationId, isTyping) {
+    if (this.isConnected && this.socket) {
+      this.socket.emit('typing', { conversationId, isTyping });
+      
+      // Auto-stop typing after 3 seconds
+      if (isTyping) {
+        const existingTimeout = this.typingTimeouts.get(conversationId);
+        if (existingTimeout) {
+          clearTimeout(existingTimeout);
+        }
+        
+        const timeout = setTimeout(() => {
+          this.sendTypingStatus(conversationId, false);
+          this.typingTimeouts.delete(conversationId);
+        }, 3000);
+        
+        this.typingTimeouts.set(conversationId, timeout);
+      }
+    }
+  }
+
+  /**
+   * Start fallback polling with reduced frequency
+   */
+  startFallbackPolling() {
+    // Only start if not already polling and we have active subscriptions
+    if (this.pollingIntervals.length > 0 || this.activeConversations.size === 0) {
+      return;
+    }
+
+    // Show notification about fallback mode
+    if (typeof EFToast !== 'undefined') {
+      EFToast.info('Using fallback polling mode (30s intervals)', { duration: 4000 });
+    }
+
+    // Poll active conversations every 30 seconds (reduced load)
+    const pollInterval = setInterval(() => {
+      if (!this.isConnected) {
+        // Refresh all active conversations
+        this.activeConversations.forEach(conversationId => {
+          const callback = this.messageCallbacks.get(conversationId);
+          if (callback) {
+            this.fetchMessagesFromAPI(conversationId, callback);
+          }
+        });
+
+        // Refresh conversation list
+        const conversationCallback = this.conversationCallbacks.get('all');
+        if (conversationCallback) {
+          const user = this.getUserFromStorage();
+          if (user) {
+            this.fetchConversationsFromAPI(user.id, user.type || 'customer', conversationCallback);
+          }
+        }
+      }
+    }, 30000); // Poll every 30 seconds instead of 3-5
+
+    this.pollingIntervals.push(pollInterval);
+  }
+
+  /**
+   * Stop fallback polling
+   */
+  stopFallbackPolling() {
+    this.pollingIntervals.forEach(interval => clearInterval(interval));
+    this.pollingIntervals = [];
   }
 
   /**
@@ -25,30 +334,32 @@ class MessagingSystem {
    * @returns {Function} Unsubscribe function
    */
   listenToUserConversations(userId, userType, callback) {
-    // Show user-facing notification only once
-    if (!this._pollingNotificationShown) {
-      this._pollingNotificationShown = true;
-      if (typeof Toast !== 'undefined' && Toast.info) {
-        Toast.info('Using polling for updates (refreshes every 5 seconds)', {
-          duration: 5000,
-        });
-      }
-    }
+    // Initialize WebSocket if not already done
+    this.initWebSocket();
+
+    // Store callback for conversation updates
+    this.conversationCallbacks.set('all', callback);
 
     // Initial fetch
     this.fetchConversationsFromAPI(userId, userType, callback);
 
-    // Poll for updates
-    const pollInterval = setInterval(() => {
-      this.fetchConversationsFromAPI(userId, userType, callback);
-    }, 5000); // Poll every 5 seconds
+    // If WebSocket is connected, rely on real-time updates
+    // Otherwise, poll with reduced frequency (30s)
+    if (!this.isConnected) {
+      const pollInterval = setInterval(() => {
+        if (!this.isConnected) {
+          this.fetchConversationsFromAPI(userId, userType, callback);
+        }
+      }, 30000); // Poll every 30 seconds as fallback
 
-    this.pollingIntervals.push(pollInterval);
+      this.pollingIntervals.push(pollInterval);
+    }
 
     // Return unsubscribe function
     return () => {
-      clearInterval(pollInterval);
-      this.pollingIntervals = this.pollingIntervals.filter(i => i !== pollInterval);
+      this.conversationCallbacks.delete('all');
+      this.pollingIntervals.forEach(interval => clearInterval(interval));
+      this.pollingIntervals = [];
     };
   }
 
@@ -59,21 +370,33 @@ class MessagingSystem {
    * @returns {Function} Unsubscribe function
    */
   listenToMessages(conversationId, callback) {
-    // Silently use polling - no need to notify for each conversation
+    // Initialize WebSocket if not already done
+    this.initWebSocket();
+
+    // Join the conversation room
+    this.joinConversation(conversationId);
+
+    // Store callback for this conversation
+    this.messageCallbacks.set(conversationId, callback);
 
     // Initial fetch
     this.fetchMessagesFromAPI(conversationId, callback);
 
-    // Poll for updates
-    const pollInterval = setInterval(() => {
-      this.fetchMessagesFromAPI(conversationId, callback);
-    }, 3000); // Poll every 3 seconds for more responsive messaging
+    // If WebSocket is not connected, poll with reduced frequency
+    if (!this.isConnected) {
+      const pollInterval = setInterval(() => {
+        if (!this.isConnected) {
+          this.fetchMessagesFromAPI(conversationId, callback);
+        }
+      }, 30000); // Poll every 30 seconds as fallback
 
-    this.pollingIntervals.push(pollInterval);
+      this.pollingIntervals.push(pollInterval);
+    }
 
     // Return unsubscribe function
     return () => {
-      clearInterval(pollInterval);
+      this.leaveConversation(conversationId);
+      this.pollingIntervals.forEach(interval => clearInterval(interval));
       this.pollingIntervals = this.pollingIntervals.filter(i => i !== pollInterval);
     };
   }
@@ -85,7 +408,25 @@ class MessagingSystem {
    * @returns {Promise<string>} Message ID
    */
   async sendMessage(conversationId, messageData) {
-    return this.sendMessageViaAPI(conversationId, messageData);
+    try {
+      const messageId = await this.sendMessageViaAPI(conversationId, messageData);
+      
+      // Also emit via WebSocket if connected for immediate delivery
+      if (this.isConnected && this.socket) {
+        this.socket.emit('message:send', {
+          conversationId,
+          messageData,
+        });
+      }
+      
+      return messageId;
+    } catch (error) {
+      // Show error toast
+      if (typeof EFToast !== 'undefined') {
+        EFToast.error('Failed to send message. Please try again.', { duration: 5000 });
+      }
+      throw error;
+    }
   }
 
   /**
@@ -95,7 +436,12 @@ class MessagingSystem {
    * @returns {Promise<void>}
    */
   async markMessagesAsRead(conversationId, userId) {
-    return this.markMessagesAsReadViaAPI(conversationId, userId);
+    await this.markMessagesAsReadViaAPI(conversationId, userId);
+    
+    // Also emit via WebSocket if connected for immediate read receipt
+    if (this.isConnected && this.socket) {
+      this.socket.emit('thread:read', { threadId: conversationId });
+    }
   }
 
   /**
@@ -106,10 +452,20 @@ class MessagingSystem {
    * @returns {Function} Unsubscribe function
    */
   listenToUnreadCount(userId, userType, callback) {
-    // MongoDB API - Use polling
+    // Initialize WebSocket if not already done
+    this.initWebSocket();
+
+    // Initial fetch
     this.fetchUnreadCountFromAPI(userId, userType, callback);
 
-    // Poll for updates every 30 seconds
+    // Listen for real-time unread count updates via conversation updates
+    const handleUpdate = () => {
+      this.fetchUnreadCountFromAPI(userId, userType, callback);
+    };
+
+    window.addEventListener('messaging:connection', handleUpdate);
+
+    // Poll for updates every 30 seconds as fallback
     const pollInterval = setInterval(() => {
       this.fetchUnreadCountFromAPI(userId, userType, callback);
     }, 30000);
@@ -119,6 +475,7 @@ class MessagingSystem {
     // Return unsubscribe function
     return () => {
       clearInterval(pollInterval);
+      window.removeEventListener('messaging:connection', handleUpdate);
       this.pollingIntervals = this.pollingIntervals.filter(i => i !== pollInterval);
     };
   }
@@ -295,6 +652,24 @@ class MessagingSystem {
   cleanup() {
     this.pollingIntervals.forEach(interval => clearInterval(interval));
     this.pollingIntervals = [];
+    
+    // Clear all typing timeouts
+    this.typingTimeouts.forEach(timeout => clearTimeout(timeout));
+    this.typingTimeouts.clear();
+    
+    // Leave all active conversations
+    this.activeConversations.forEach(conversationId => {
+      this.leaveConversation(conversationId);
+    });
+    this.activeConversations.clear();
+    
+    // Disconnect WebSocket
+    if (this.socket) {
+      this.socket.disconnect();
+      this.socket = null;
+    }
+    
+    this.isConnected = false;
   }
 }
 
@@ -306,6 +681,177 @@ class MessagingManager {
     this.messagingSystem = new MessagingSystem();
     this.badgeElement = null;
     this.lastUnreadCount = 0;
+    this.typingUsers = new Map(); // conversationId -> Set of userIds
+    this.connectionStatusElement = null;
+    this._setupEventListeners();
+  }
+
+  /**
+   * Setup event listeners for messaging events
+   */
+  _setupEventListeners() {
+    // Listen for typing status updates
+    window.addEventListener('messaging:typing', (event) => {
+      this.handleTypingStatus(event.detail);
+    });
+
+    // Listen for read receipts
+    window.addEventListener('messaging:read', (event) => {
+      this.handleReadReceipt(event.detail);
+    });
+
+    // Listen for connection status changes
+    window.addEventListener('messaging:connection', (event) => {
+      this.handleConnectionStatus(event.detail);
+    });
+  }
+
+  /**
+   * Handle typing status update
+   */
+  handleTypingStatus({ conversationId, userId, isTyping }) {
+    if (!this.typingUsers.has(conversationId)) {
+      this.typingUsers.set(conversationId, new Set());
+    }
+
+    const typingSet = this.typingUsers.get(conversationId);
+    
+    if (isTyping) {
+      typingSet.add(userId);
+    } else {
+      typingSet.delete(userId);
+    }
+
+    // Clean up empty sets
+    if (typingSet.size === 0) {
+      this.typingUsers.delete(conversationId);
+    }
+
+    // Emit custom event for UI components
+    const event = new CustomEvent('messagingManager:typingUpdate', {
+      detail: { 
+        conversationId, 
+        typingUserIds: Array.from(typingSet),
+        isTyping: typingSet.size > 0
+      }
+    });
+    window.dispatchEvent(event);
+  }
+
+  /**
+   * Handle read receipt
+   */
+  handleReadReceipt({ conversationId, messageId, userId }) {
+    // Emit custom event for UI components
+    const event = new CustomEvent('messagingManager:readReceipt', {
+      detail: { conversationId, messageId, userId }
+    });
+    window.dispatchEvent(event);
+  }
+
+  /**
+   * Handle connection status change
+   */
+  handleConnectionStatus({ status }) {
+    this.updateConnectionIndicator(status);
+    
+    if (status === 'offline' && typeof EFToast !== 'undefined') {
+      EFToast.warning('Connection lost - using fallback mode', { duration: 4000 });
+    } else if (status === 'online' && typeof EFToast !== 'undefined') {
+      EFToast.success('Connected - real-time messaging active', { duration: 3000 });
+    }
+  }
+
+  /**
+   * Update connection status indicator
+   */
+  updateConnectionIndicator(status) {
+    if (!this.connectionStatusElement) {
+      // Try to find existing indicator
+      this.connectionStatusElement = document.getElementById('messaging-connection-status') ||
+                                      document.querySelector('[data-messaging-status]');
+      
+      // Create if doesn't exist
+      if (!this.connectionStatusElement) {
+        this.connectionStatusElement = document.createElement('div');
+        this.connectionStatusElement.id = 'messaging-connection-status';
+        this.connectionStatusElement.className = 'messaging-connection-status';
+        this.connectionStatusElement.setAttribute('aria-live', 'polite');
+        this.connectionStatusElement.setAttribute('aria-atomic', 'true');
+        
+        // Find a suitable container (messaging header, navbar, etc.)
+        const container = document.querySelector('.messaging-header') ||
+                         document.querySelector('.navbar') ||
+                         document.body;
+        container.appendChild(this.connectionStatusElement);
+      }
+    }
+
+    // Update the indicator
+    this.connectionStatusElement.className = `messaging-connection-status messaging-connection-status--${status}`;
+    this.connectionStatusElement.innerHTML = `
+      <span class="status-dot"></span>
+      <span class="status-text">${status === 'online' ? 'Online' : 'Offline'}</span>
+    `;
+
+    // Add styles if not already added
+    if (!document.getElementById('messaging-connection-styles')) {
+      const style = document.createElement('style');
+      style.id = 'messaging-connection-styles';
+      style.textContent = `
+        .messaging-connection-status {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 4px 12px;
+          border-radius: 12px;
+          font-size: 12px;
+          font-weight: 500;
+          transition: all 0.3s ease;
+        }
+        .messaging-connection-status--online {
+          background: #d4edda;
+          color: #155724;
+        }
+        .messaging-connection-status--offline {
+          background: #f8d7da;
+          color: #721c24;
+        }
+        .messaging-connection-status .status-dot {
+          display: inline-block;
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          animation: pulse 2s infinite;
+        }
+        .messaging-connection-status--online .status-dot {
+          background: #28a745;
+        }
+        .messaging-connection-status--offline .status-dot {
+          background: #dc3545;
+        }
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.5; }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+  }
+
+  /**
+   * Get typing status for a conversation
+   */
+  getTypingUsers(conversationId) {
+    return Array.from(this.typingUsers.get(conversationId) || []);
+  }
+
+  /**
+   * Check if anyone is typing in a conversation
+   */
+  isTyping(conversationId) {
+    const typingSet = this.typingUsers.get(conversationId);
+    return typingSet && typingSet.size > 0;
   }
 
   /**
