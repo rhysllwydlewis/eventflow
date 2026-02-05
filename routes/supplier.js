@@ -9,6 +9,7 @@ const express = require('express');
 const { authRequired } = require('../middleware/auth');
 const { csrfProtection } = require('../middleware/csrf');
 const dbUnified = require('../db-unified');
+const logger = require('../utils/logger');
 
 const router = express.Router();
 
@@ -492,6 +493,65 @@ router.get('/lead-quality', authRequired, async (req, res) => {
   } catch (error) {
     console.error('Error fetching lead quality:', error);
     res.status(500).json({ error: 'Failed to fetch lead quality', details: error.message });
+  }
+});
+
+/**
+ * GET /api/supplier/reviews/stats
+ * Get review statistics for the supplier dashboard
+ */
+router.get('/reviews/stats', authRequired, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Check if user is a supplier
+    if (req.user.role !== 'supplier') {
+      return res.status(403).json({ error: 'Only suppliers can access review stats' });
+    }
+
+    // Get supplier record
+    const suppliers = await dbUnified.read('suppliers');
+    const supplier = suppliers.find(s => s.ownerUserId === userId);
+
+    if (!supplier) {
+      return res.status(404).json({ error: 'Supplier profile not found' });
+    }
+
+    // Get reviews using dbUnified
+    const reviews = (await dbUnified.read('reviews')) || [];
+    const supplierReviews = reviews.filter(r => r.supplierId === supplier.id);
+
+    const totalReviews = supplierReviews.length;
+    const averageRating =
+      totalReviews > 0
+        ? Math.round(
+            (supplierReviews.reduce((sum, r) => sum + (Number(r.rating) || 0), 0) / totalReviews) *
+              100
+          ) / 100
+        : 0;
+
+    // Calculate distribution - only count valid integer ratings (1-5)
+    const distribution = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+    supplierReviews.forEach(r => {
+      const rating = Number(r.rating) || 0;
+      // Round to nearest integer for distribution bucketing
+      const roundedRating = Math.round(rating);
+      if (roundedRating >= 1 && roundedRating <= 5) {
+        distribution[roundedRating]++;
+      }
+    });
+
+    res.json({
+      success: true,
+      stats: {
+        totalReviews,
+        averageRating,
+        distribution,
+      },
+    });
+  } catch (error) {
+    logger.error('Error fetching review stats:', error);
+    res.status(500).json({ error: 'Failed to fetch review stats', details: error.message });
   }
 });
 
