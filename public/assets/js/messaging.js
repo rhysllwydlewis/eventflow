@@ -383,8 +383,9 @@ class MessagingSystem {
     this.fetchMessagesFromAPI(conversationId, callback);
 
     // If WebSocket is not connected, poll with reduced frequency
+    let pollInterval = null;
     if (!this.isConnected) {
-      const pollInterval = setInterval(() => {
+      pollInterval = setInterval(() => {
         if (!this.isConnected) {
           this.fetchMessagesFromAPI(conversationId, callback);
         }
@@ -396,8 +397,10 @@ class MessagingSystem {
     // Return unsubscribe function
     return () => {
       this.leaveConversation(conversationId);
-      this.pollingIntervals.forEach(interval => clearInterval(interval));
-      this.pollingIntervals = this.pollingIntervals.filter(i => i !== pollInterval);
+      if (pollInterval) {
+        clearInterval(pollInterval);
+        this.pollingIntervals = this.pollingIntervals.filter(i => i !== pollInterval);
+      }
     };
   }
 
@@ -440,7 +443,7 @@ class MessagingSystem {
     
     // Also emit via WebSocket if connected for immediate read receipt
     if (this.isConnected && this.socket) {
-      this.socket.emit('thread:read', { threadId: conversationId });
+      this.socket.emit('conversation:read', { conversationId });
     }
   }
 
@@ -459,8 +462,11 @@ class MessagingSystem {
     this.fetchUnreadCountFromAPI(userId, userType, callback);
 
     // Listen for real-time unread count updates via conversation updates
-    const handleUpdate = () => {
-      this.fetchUnreadCountFromAPI(userId, userType, callback);
+    // Only fetch when connection comes back online
+    const handleUpdate = (event) => {
+      if (event.detail.status === 'online') {
+        this.fetchUnreadCountFromAPI(userId, userType, callback);
+      }
     };
 
     window.addEventListener('messaging:connection', handleUpdate);
@@ -776,7 +782,7 @@ class MessagingManager {
         this.connectionStatusElement = document.createElement('div');
         this.connectionStatusElement.id = 'messaging-connection-status';
         this.connectionStatusElement.className = 'messaging-connection-status';
-        this.connectionStatusElement.setAttribute('aria-live', 'polite');
+        this.connectionStatusElement.setAttribute('aria-live', 'assertive');
         this.connectionStatusElement.setAttribute('aria-atomic', 'true');
         
         // Find a suitable container (messaging header, navbar, etc.)
