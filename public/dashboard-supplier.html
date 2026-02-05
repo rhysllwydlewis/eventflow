@@ -1085,6 +1085,8 @@ window.announceToSR = function(message) {
   
   // Module-level variable to store chart instance for real-time updates
   let analyticsChartInstance = null;
+  // Store WebSocket client instance for cleanup
+  let wsClientInstance = null;
   
   // Initialize feature access control (non-blocking)
   initializeFeatureAccess().catch(err => {
@@ -1312,7 +1314,8 @@ window.announceToSR = function(message) {
         const statsNumbers = document.querySelectorAll('.stat-number');
         statsNumbers.forEach(element => {
           const label = element.nextElementSibling;
-          if (label && label.textContent && label.textContent.includes('Profile Views')) {
+          // Check for Profile Views using data attribute or text content
+          if (label && label.textContent && (label.textContent.includes('Profile Views') || label.textContent.includes('Views (7d)'))) {
             const currentValue = parseInt(element.textContent) || 0;
             element.textContent = currentValue + 1;
             element.setAttribute('data-target', currentValue + 1);
@@ -1343,13 +1346,20 @@ window.announceToSR = function(message) {
     // Initialize WebSocketClient if available
     if (typeof WebSocketClient !== 'undefined') {
       try {
-        const wsClient = new WebSocketClient({
-          onConnect: () => console.log('🔴 Live Dashboard Connected'),
+        wsClientInstance = new WebSocketClient({
+          onConnect: () => console.log('🟢 Live Dashboard Connected'),
           onNotification: (data) => handleRealtimeNotification(data)
         });
       } catch (error) {
         console.error('Error initializing WebSocket client:', error);
       }
+    }
+  });
+  
+  // Cleanup WebSocket on page unload
+  window.addEventListener('beforeunload', () => {
+    if (wsClientInstance && typeof wsClientInstance.disconnect === 'function') {
+      wsClientInstance.disconnect();
     }
   });
   

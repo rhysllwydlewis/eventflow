@@ -12,7 +12,8 @@ describe('Dashboard WebSocket Real-time Updates Integration', () => {
   let dashboardContent;
 
   beforeAll(() => {
-    const dashboardPath = path.join(__dirname, '../../public/dashboard-supplier.html');
+    // Use path.resolve from project root for robustness
+    const dashboardPath = path.resolve(__dirname, '..', '..', 'public', 'dashboard-supplier.html');
     if (fs.existsSync(dashboardPath)) {
       dashboardContent = fs.readFileSync(dashboardPath, 'utf8');
     }
