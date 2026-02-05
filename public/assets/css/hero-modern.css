@@ -1070,6 +1070,12 @@
   .hero-cta-secondary::before {
     animation: none !important;
   }
+  
+  /* Disable cinema mode for reduced motion */
+  .hero-collage:hover .hero-collage-card:not(:hover) {
+    opacity: 1 !important;
+    filter: none !important;
+  }
 }
 
 /* ==========================================================================
