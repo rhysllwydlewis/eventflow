@@ -46,39 +46,154 @@
   }
 
   /**
+   * Check if an error message is benign and should be ignored
+   */
+  function isBenignError(errorMessage) {
+    if (typeof errorMessage !== 'string') {
+      return false;
+    }
+    // List of benign errors to ignore
+    const benignPatterns = [
+      'ResizeObserver loop limit exceeded',
+      'ResizeObserver loop completed with undelivered notifications',
+    ];
+    return benignPatterns.some(pattern => errorMessage.includes(pattern));
+  }
+
+  /**
+   * Show error notification using available notification system
+   */
+  function notifyError(message) {
+    const errorMessage = typeof message === 'string' ? message : 'An unexpected error occurred';
+
+    // Use EventFlowNotifications if available (PR #431)
+    if (
+      window.EventFlowNotifications &&
+      typeof window.EventFlowNotifications.error === 'function'
+    ) {
+      window.EventFlowNotifications.error(errorMessage);
+    } else if (window.Toast && typeof window.Toast.error === 'function') {
+      // Fallback to old Toast system
+      window.Toast.error(errorMessage, 'Error');
+    } else {
+      // Final fallback to console.warn (no alerts in production)
+      console.warn('⚠️ Error notification:', errorMessage);
+    }
+  }
+
+  /**
    * Show user-friendly error message
    */
-  function showUserError(error) {
-    // Check if Toast component is available
-    if (window.Toast && typeof window.Toast.error === 'function') {
-      window.Toast.error(
-        isDevelopment
-          ? `Error: ${error.message}`
-          : 'Something went wrong. Please refresh the page or contact support.',
-        'Error'
-      );
-    } else {
-      // Fallback to alert if Toast not available
-      alert(
-        isDevelopment
-          ? `Error: ${error.message}\n\nCheck console for details.`
-          : 'Something went wrong. Please refresh the page or contact support.'
-      );
+  function showUserError(message) {
+    const errorMessage =
+      typeof message === 'string' ? message : message?.message || 'An unexpected error occurred';
+
+    const displayMessage = isDevelopment
+      ? errorMessage
+      : 'Something went wrong. Please refresh the page or contact support.';
+
+    notifyError(displayMessage);
+  }
+
+  /**
+   * Parse error message from API response
+   */
+  async function parseErrorMessage(response, defaultMessage) {
+    try {
+      const data = await response.json();
+      return data.error || data.message || defaultMessage;
+    } catch (parseError) {
+      // If JSON parsing fails, use default error message
+      console.debug('Could not parse error response as JSON:', parseError);
+      return defaultMessage;
     }
+  }
+
+  /**
+   * Setup global fetch interceptor for automatic error handling
+   *
+   * Monkey-patches window.fetch to automatically handle and log all API errors.
+   *
+   * Behavior:
+   * - Successful responses (response.ok) are returned immediately without modification
+   * - Failed responses (4xx, 5xx) trigger automatic error logging and user notification,
+   *   then return the original response for further handling by calling code
+   * - Network errors trigger automatic logging and notification, then are re-thrown
+   *
+   * Note: For failed API responses, both this interceptor AND the calling code may
+   * display notifications. Calling code should check if automatic notification
+   * is sufficient before showing additional error messages.
+   */
+  function setupFetchInterceptor() {
+    const originalFetch = window.fetch;
+
+    window.fetch = async function (...args) {
+      try {
+        const response = await originalFetch.apply(this, args);
+
+        // Handle successful responses
+        if (response.ok) {
+          return response;
+        }
+
+        // Handle API errors (4xx, 5xx)
+        // Clone response to allow error parsing without consuming the original
+        const clonedResponse = response.clone();
+        const defaultMessage = `Request failed with status ${response.status}`;
+        const errorMessage = await parseErrorMessage(clonedResponse, defaultMessage);
+
+        // Log the error
+        logError(new Error(errorMessage), {
+          type: 'api_error',
+          status: response.status,
+          url: args[0],
+        });
+
+        // Show user notification
+        notifyError(errorMessage);
+
+        // Return original response so calling code can still handle it
+        return response;
+      } catch (error) {
+        // Handle network errors
+        logError(error, {
+          type: 'network_error',
+          url: args[0],
+        });
+
+        // Show user notification for network errors
+        const networkMessage = 'Network error. Please check your connection and try again.';
+        notifyError(networkMessage);
+
+        // Re-throw so calling code knows it failed
+        throw error;
+      }
+    };
+
+    console.log('✅ Fetch interceptor initialized');
   }
 
   /**
    * Handle global JavaScript errors
    */
   window.addEventListener('error', event => {
-    logError(event.error || new Error(event.message), {
+    const error = event.error || new Error(event.message);
+    const errorMessage = error.message || 'Unknown error';
+
+    // Ignore benign errors
+    if (isBenignError(errorMessage)) {
+      return;
+    }
+
+    logError(error, {
       type: 'global_error',
       filename: event.filename,
       lineno: event.lineno,
       colno: event.colno,
     });
 
-    showUserError(event.error || new Error(event.message));
+    // Show user notification (in dev mode, show actual error for debugging)
+    showUserError(isDevelopment ? errorMessage : 'An unexpected error occurred');
 
     // Prevent default browser error handling (only in production for better UX)
     // In development, preserve full debugging capabilities
@@ -92,13 +207,20 @@
    */
   window.addEventListener('unhandledrejection', event => {
     const error = event.reason instanceof Error ? event.reason : new Error(String(event.reason));
+    const errorMessage = error.message || 'Unknown error';
+
+    // Ignore benign errors
+    if (isBenignError(errorMessage)) {
+      return;
+    }
 
     logError(error, {
       type: 'unhandled_promise_rejection',
       promise: event.promise,
     });
 
-    showUserError(error);
+    // Show user notification (in dev mode, show actual error for debugging)
+    showUserError(isDevelopment ? errorMessage : 'An unexpected error occurred');
 
     // Prevent default browser error handling (only in production for better UX)
     // In development, preserve full debugging capabilities
@@ -113,6 +235,9 @@
   window.reportError = function (error, context) {
     logError(error, { ...context, type: 'manual_report' });
   };
+
+  // Initialize fetch interceptor
+  setupFetchInterceptor();
 
   console.log('✅ Global error handler initialized');
 })();
