@@ -4,6 +4,14 @@
 
 The messaging system has been upgraded from inefficient polling (3-5 second intervals) to real-time WebSockets using Socket.IO, with intelligent fallback to reduced-frequency polling (30 second intervals) when WebSocket is unavailable.
 
+**Latest Updates (v1.1.0):**
+- ✅ Fixed critical bugs (reconnection toasts, polling accumulation, timeout cleanup)
+- ✅ Added typing indicator debouncing (max 1 per second)
+- ✅ Improved connection status indicator with fixed positioning
+- ✅ Added typing indicator UI helper methods
+- ✅ Enhanced customer-messages.js with typing indicators
+- ✅ Better memory leak prevention
+
 ## Key Improvements
 
 ### 1. Real-Time Communication
@@ -178,6 +186,47 @@ if (messagingManager.isTyping(conversationId)) {
 window.addEventListener('messagingManager:typingUpdate', (event) => {
   const { conversationId, typingUserIds, isTyping } = event.detail;
   updateTypingUI(conversationId, typingUserIds);
+});
+```
+
+### Using Typing Indicator Helpers (New in v1.1.0)
+
+```javascript
+import { messagingManager } from './messaging.js';
+
+// Create typing indicator
+const typingIndicator = messagingManager.createTypingIndicator('#message-container');
+
+// Show typing indicator
+messagingManager.showTypingIndicator(typingIndicator, 'John Doe');
+
+// Hide typing indicator
+messagingManager.hideTypingIndicator(typingIndicator);
+
+// Integrate with typing events
+window.addEventListener('messaging:typing', (event) => {
+  const { conversationId, userId, isTyping } = event.detail;
+  if (conversationId === currentConversationId) {
+    if (isTyping) {
+      messagingManager.showTypingIndicator(typingIndicator);
+    } else {
+      messagingManager.hideTypingIndicator(typingIndicator);
+    }
+  }
+});
+
+// Send typing status while user types
+const messageInput = document.getElementById('messageInput');
+let typingTimeout = null;
+
+messageInput.addEventListener('input', () => {
+  messagingSystem.sendTypingStatus(conversationId, true);
+  
+  // Auto-stop after 2 seconds of no typing
+  clearTimeout(typingTimeout);
+  typingTimeout = setTimeout(() => {
+    messagingSystem.sendTypingStatus(conversationId, false);
+  }, 2000);
 });
 ```
 
