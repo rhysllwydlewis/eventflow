@@ -6513,6 +6513,8 @@ app.use('/api/supplier', supplierRoutes);
 const notificationRoutes = require('./routes/notifications');
 // WebSocket server will be passed when available (after server starts)
 let notificationRouter;
+let tempNotificationRouter; // Cache temp router to prevent memory leak
+let lastDbInstance; // Track DB instance to detect reconnections
 app.use('/api/notifications', async (req, res, next) => {
   // Determine which WebSocket server to use based on WEBSOCKET_MODE
   // Check environment variable directly (WEBSOCKET_MODE variable is defined later in the file)
@@ -6540,20 +6542,36 @@ app.use('/api/notifications', async (req, res, next) => {
 
   if (!db) {
     // If DB is not ready, return 503 instead of crashing in constructor
+    // Also clear cached routers since DB is unavailable
+    notificationRouter = null;
+    tempNotificationRouter = null;
+    lastDbInstance = null;
     return res
       .status(503)
       .json({ error: 'Service temporarily unavailable - Database not connected' });
   }
 
+  // Clear routers if DB instance changed (reconnection detected)
+  if (lastDbInstance && lastDbInstance !== db) {
+    notificationRouter = null;
+    tempNotificationRouter = null;
+  }
+  lastDbInstance = db;
+
+  // Initialize main router if WebSocket is available
   if (!notificationRouter && webSocketServer) {
     notificationRouter = notificationRoutes(db, webSocketServer);
   }
+
   if (notificationRouter) {
     notificationRouter(req, res, next);
   } else {
     // Fallback if WebSocket not ready yet but DB is ready
-    const tempRouter = notificationRoutes(db, null);
-    tempRouter(req, res, next);
+    // Cache temp router to prevent memory leak
+    if (!tempNotificationRouter) {
+      tempNotificationRouter = notificationRoutes(db, null);
+    }
+    tempNotificationRouter(req, res, next);
   }
 });
 

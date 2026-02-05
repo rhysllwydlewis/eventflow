@@ -524,7 +524,10 @@ router.get('/reviews/stats', authRequired, async (req, res) => {
     const totalReviews = supplierReviews.length;
     const averageRating =
       totalReviews > 0
-        ? supplierReviews.reduce((sum, r) => sum + (Number(r.rating) || 0), 0) / totalReviews
+        ? Math.round(
+            (supplierReviews.reduce((sum, r) => sum + (Number(r.rating) || 0), 0) / totalReviews) *
+              100
+          ) / 100
         : 0;
 
     // Calculate distribution - only count valid integer ratings (1-5)
@@ -548,7 +551,7 @@ router.get('/reviews/stats', authRequired, async (req, res) => {
     });
   } catch (error) {
     logger.error('Error fetching review stats:', error);
-    res.status(500).json({ error: 'Failed to fetch review stats' });
+    res.status(500).json({ error: 'Failed to fetch review stats', details: error.message });
   }
 });
 
