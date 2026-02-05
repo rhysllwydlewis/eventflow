@@ -417,4 +417,66 @@ router.get('/enquiries/export', authRequired, async (req, res) => {
   }
 });
 
+/**
+ * GET /api/supplier/lead-quality
+ * Get lead quality breakdown for supplier
+ */
+router.get('/lead-quality', authRequired, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Check if user is a supplier
+    if (req.user.role !== 'supplier') {
+      return res.status(403).json({ error: 'Only suppliers can access lead quality data' });
+    }
+
+    // Get supplier record
+    const suppliers = await dbUnified.read('suppliers');
+    const supplier = suppliers.find(s => s.ownerUserId === userId);
+
+    if (!supplier) {
+      return res.status(404).json({ error: 'Supplier profile not found' });
+    }
+
+    const supplierId = supplier.id;
+
+    // Count threads by quality/status
+    const threads = await dbUnified.read('threads');
+    const supplierThreads = threads.filter(t => t.supplierId === supplierId);
+
+    // Calculate breakdown based on thread status or engagement
+    const breakdown = [
+      { type: 'Hot', count: 0, icon: '🔥', color: '#EF4444' },
+      { type: 'High', count: 0, icon: '⭐', color: '#F59E0B' },
+      { type: 'Good', count: 0, icon: '✓', color: '#10B981' },
+      { type: 'Low', count: 0, icon: '◯', color: '#9CA3AF' },
+    ];
+
+    // Simple logic: categorize by message count and recency
+    supplierThreads.forEach(thread => {
+      const messages = thread.messageCount || 0;
+      const lastMessageAt = thread.lastMessageAt || thread.createdAt;
+      const daysSinceLastMessage = (Date.now() - new Date(lastMessageAt).getTime()) / (1000 * 60 * 60 * 24);
+
+      if (messages >= 5 && daysSinceLastMessage < 2) {
+        breakdown[0].count++; // Hot
+      } else if (messages >= 3 && daysSinceLastMessage < 7) {
+        breakdown[1].count++; // High
+      } else if (messages >= 1 && daysSinceLastMessage < 14) {
+        breakdown[2].count++; // Good
+      } else {
+        breakdown[3].count++; // Low
+      }
+    });
+
+    res.json({
+      success: true,
+      breakdown,
+    });
+  } catch (error) {
+    console.error('Error fetching lead quality:', error);
+    res.status(500).json({ error: 'Failed to fetch lead quality', details: error.message });
+  }
+});
+
 module.exports = router;

@@ -941,6 +941,29 @@ router.get('/conversations', authRequired, async (req, res) => {
 });
 
 /**
+ * GET /api/messages/unread
+ * Get unread message count for a user
+ */
+router.get('/unread', authRequired, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const threads = await dbUnified.read('threads');
+
+    let totalUnread = 0;
+    threads.forEach(t => {
+      if (t.unreadCount && t.unreadCount[userId]) {
+        totalUnread += t.unreadCount[userId];
+      }
+    });
+
+    res.json({ count: totalUnread });
+  } catch (error) {
+    console.error('Error fetching unread count:', error);
+    res.status(500).json({ error: 'Failed to fetch unread count', details: error.message });
+  }
+});
+
+/**
  * GET /api/messages/:conversationId
  * Alias for /api/messages/threads/:threadId/messages - Get messages in a conversation
  */
@@ -1122,29 +1145,6 @@ router.post('/:conversationId/read', authRequired, async (req, res) => {
   } catch (error) {
     console.error('Error marking messages as read:', error);
     res.status(500).json({ error: 'Failed to mark messages as read', details: error.message });
-  }
-});
-
-/**
- * GET /api/messages/unread
- * Get unread message count for a user
- */
-router.get('/unread', authRequired, async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const threads = await dbUnified.read('threads');
-
-    let totalUnread = 0;
-    threads.forEach(t => {
-      if (t.unreadCount && t.unreadCount[userId]) {
-        totalUnread += t.unreadCount[userId];
-      }
-    });
-
-    res.json({ count: totalUnread });
-  } catch (error) {
-    console.error('Error fetching unread count:', error);
-    res.status(500).json({ error: 'Failed to fetch unread count', details: error.message });
   }
 });
 
