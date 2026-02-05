@@ -46,6 +46,42 @@
   }
 
   /**
+   * Check if an error message is benign and should be ignored
+   */
+  function isBenignError(errorMessage) {
+    if (typeof errorMessage !== 'string') {
+      return false;
+    }
+    // List of benign errors to ignore
+    const benignPatterns = [
+      'ResizeObserver loop limit exceeded',
+      'ResizeObserver loop completed with undelivered notifications',
+    ];
+    return benignPatterns.some(pattern => errorMessage.includes(pattern));
+  }
+
+  /**
+   * Show error notification using available notification system
+   */
+  function notifyError(message) {
+    const errorMessage = typeof message === 'string' ? message : 'An unexpected error occurred';
+
+    // Use EventFlowNotifications if available (PR #431)
+    if (
+      window.EventFlowNotifications &&
+      typeof window.EventFlowNotifications.error === 'function'
+    ) {
+      window.EventFlowNotifications.error(errorMessage);
+    } else if (window.Toast && typeof window.Toast.error === 'function') {
+      // Fallback to old Toast system
+      window.Toast.error(errorMessage, 'Error');
+    } else {
+      // Final fallback to console.warn (no alerts in production)
+      console.warn('⚠️ Error notification:', errorMessage);
+    }
+  }
+
+  /**
    * Show user-friendly error message
    */
   function showUserError(message) {
@@ -56,18 +92,20 @@
       ? errorMessage
       : 'Something went wrong. Please refresh the page or contact support.';
 
-    // Use EventFlowNotifications if available (PR #431)
-    if (
-      window.EventFlowNotifications &&
-      typeof window.EventFlowNotifications.error === 'function'
-    ) {
-      window.EventFlowNotifications.error(displayMessage);
-    } else if (window.Toast && typeof window.Toast.error === 'function') {
-      // Fallback to old Toast system
-      window.Toast.error(displayMessage, 'Error');
-    } else {
-      // Final fallback to console.warn (no alerts in production)
-      console.warn('⚠️ Error notification:', displayMessage);
+    notifyError(displayMessage);
+  }
+
+  /**
+   * Parse error message from API response
+   */
+  async function parseErrorMessage(response, defaultMessage) {
+    try {
+      const data = await response.json();
+      return data.error || data.message || defaultMessage;
+    } catch (parseError) {
+      // If JSON parsing fails, use default error message
+      console.debug('Could not parse error response as JSON:', parseError);
+      return defaultMessage;
     }
   }
 
@@ -87,16 +125,10 @@
         }
 
         // Handle API errors (4xx, 5xx)
+        // Clone response to allow error parsing without consuming the original
         const clonedResponse = response.clone();
-        let errorMessage = `Request failed with status ${response.status}`;
-
-        try {
-          const data = await clonedResponse.json();
-          errorMessage = data.error || data.message || errorMessage;
-        } catch (parseError) {
-          // If JSON parsing fails, use default error message
-          console.debug('Could not parse error response as JSON:', parseError);
-        }
+        const defaultMessage = `Request failed with status ${response.status}`;
+        const errorMessage = await parseErrorMessage(clonedResponse, defaultMessage);
 
         // Log the error
         logError(new Error(errorMessage), {
@@ -106,12 +138,7 @@
         });
 
         // Show user notification
-        if (
-          window.EventFlowNotifications &&
-          typeof window.EventFlowNotifications.error === 'function'
-        ) {
-          window.EventFlowNotifications.error(errorMessage);
-        }
+        notifyError(errorMessage);
 
         // Return original response so calling code can still handle it
         return response;
@@ -124,12 +151,7 @@
 
         // Show user notification for network errors
         const networkMessage = 'Network error. Please check your connection and try again.';
-        if (
-          window.EventFlowNotifications &&
-          typeof window.EventFlowNotifications.error === 'function'
-        ) {
-          window.EventFlowNotifications.error(networkMessage);
-        }
+        notifyError(networkMessage);
 
         // Re-throw so calling code knows it failed
         throw error;
@@ -147,7 +169,7 @@
     const errorMessage = error.message || 'Unknown error';
 
     // Ignore benign errors
-    if (errorMessage.includes('ResizeObserver loop limit exceeded')) {
+    if (isBenignError(errorMessage)) {
       return;
     }
 
@@ -176,7 +198,7 @@
     const errorMessage = error.message || 'Unknown error';
 
     // Ignore benign errors
-    if (errorMessage.includes('ResizeObserver loop limit exceeded')) {
+    if (isBenignError(errorMessage)) {
       return;
     }
 
