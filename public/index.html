@@ -32,6 +32,8 @@
       content="https://event-flow.co.uk/assets/images/eventflow-og-image.jpg"
     />
     <meta property="og:site_name" content="EventFlow" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
@@ -147,9 +149,6 @@
       @media(min-width:1024px){.hero-grid{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center}}
       @media(min-width:768px) and (max-width:1023px){.hero-grid{display:grid;grid-template-columns:1.25fr .75fr;gap:28px;align-items:start}}
       h1{margin:0 0 6px;font-weight:700;letter-spacing:-0.025em;font-size:clamp(26px,4vw + 1rem,52px);line-height:1.12}
-      /* Skip link */
-      .skip-link{position:absolute;top:-40px;left:0;background:var(--ink);color:#fff;padding:8px;text-decoration:none;z-index:9999}
-      .skip-link:focus{top:0}
       /* Responsive */
       @media (max-width:767px){.container{width:100%;padding:0 16px}}
       @media (max-width:639px){.hero{padding:32px 0 20px}}
@@ -580,7 +579,7 @@
         </section>
       </noscript>
 
-      <section class="ef-section" aria-label="Featured packages">
+      <section class="ef-section ef-section--bordered" aria-label="Featured packages">
         <div class="container">
           <div class="ef-section__header">
             <span class="ef-section__kicker">Featured packages</span>
@@ -605,7 +604,7 @@
         </div>
       </section>
 
-      <section class="ef-section" aria-label="Browse suppliers by category">
+      <section class="ef-section ef-section--bordered" aria-label="Browse suppliers by category">
         <div class="container">
           <div class="ef-section__header">
             <span class="ef-section__kicker">Browse suppliers by category</span>
@@ -689,7 +688,7 @@
       </section>
 
       <!-- Testimonials Section (P4-01) -->
-      <section class="ef-section ef-testimonials-section" aria-label="Customer testimonials" id="testimonials-section">
+      <section class="ef-section ef-section--bordered ef-testimonials-section" aria-label="Customer testimonials" id="testimonials-section">
         <div class="container">
           <div class="ef-section__header">
             <h2 class="ef-section__title">What Our Customers Say</h2>
@@ -740,7 +739,7 @@
       </section>
 
       <!-- Marketplace Preview Section -->
-      <section class="ef-section" aria-label="Marketplace preview" id="marketplace-preview-section">
+      <section class="ef-section ef-section--bordered" aria-label="Marketplace preview" id="marketplace-preview-section">
         <div class="container">
           <div class="ef-section__header">
             <span class="ef-section__kicker">Marketplace</span>
@@ -786,7 +785,7 @@
 
       <!-- Latest Guides Section -->
       <section
-        class="ef-section"
+        class="ef-section ef-section--bordered"
         aria-label="Planning guides"
         id="guides-section"
       >
@@ -846,7 +845,7 @@
         </div>
       </section>
 
-      <section class="ef-section" aria-labelledby="how-it-works">
+      <section class="ef-section ef-section--bordered" aria-labelledby="how-it-works">
         <div class="container">
           <div class="ef-section__header ef-section__header--center">
             <span class="ef-section__kicker">Simple Process</span>
@@ -925,27 +924,8 @@
         </div>
       </section>
 
-      <!-- Marketplace Signposting Section -->
-      <section class="ef-section ef-section--subtle-gradient" aria-label="Event Marketplace">
-        <div class="container" style="max-width: 900px; text-align: center;">
-          <div class="ef-section__header ef-section__header--center">
-            <h2 class="ef-section__title" style="color: var(--ef-primary, #0B8073);">
-              Event Marketplace
-            </h2>
-            <p class="ef-section__subtitle" style="max-width: 700px; margin: 0 auto;">
-              Buy and sell pre-loved event items — dresses, décor, AV gear and more. UK-focused, no
-              platform fees.
-            </p>
-          </div>
-
-          <div style="margin-top: var(--ef-space-6, 32px);">
-            <a href="/marketplace" class="ef-btn ef-btn--primary">Visit the Marketplace</a>
-          </div>
-        </div>
-      </section>
-
       <!-- Newsletter Signup Section -->
-      <section class="ef-section ef-section--gradient" aria-label="Newsletter signup">
+      <section class="ef-section ef-section--bordered ef-section--gradient" aria-label="Newsletter signup">
         <div class="container" style="max-width: 700px;">
           <div class="ef-section__header ef-section__header--center">
             <h2 class="ef-section__title">Stay Updated</h2>
@@ -975,16 +955,54 @@
       </section>
     </main>
 
-    <footer class="footer" role="contentinfo">
-      <div class="container ef-footer-content">
-        <div>
-          <strong>EventFlow</strong><br /><span class="small">Event planning made simple.</span>
+    <footer class="footer ef-footer-modern" role="contentinfo">
+      <div class="container">
+        <div class="ef-footer-grid">
+          <!-- Column 1: Brand -->
+          <div class="ef-footer-column ef-footer-brand">
+            <div class="ef-footer-logo">
+              <strong>EventFlow</strong>
+            </div>
+            <p class="ef-footer-tagline">Event planning made simple.</p>
+            <p class="ef-footer-copyright">&copy; 2025 EventFlow. All rights reserved.</p>
+          </div>
+
+          <!-- Column 2: Platform -->
+          <div class="ef-footer-column">
+            <h3 class="ef-footer-heading">Platform</h3>
+            <ul class="ef-footer-links">
+              <li><a href="/start">Plan an Event</a></li>
+              <li><a href="/suppliers">Browse Suppliers</a></li>
+              <li><a href="/marketplace">Marketplace</a></li>
+              <li><a href="/pricing">Pricing</a></li>
+            </ul>
+          </div>
+
+          <!-- Column 3: Resources -->
+          <div class="ef-footer-column">
+            <h3 class="ef-footer-heading">Resources</h3>
+            <ul class="ef-footer-links">
+              <li><a href="/blog">Guides</a></li>
+              <li><a href="/faq">FAQ</a></li>
+              <li><a href="/for-suppliers">For Suppliers</a></li>
+            </ul>
+          </div>
+
+          <!-- Column 4: Legal -->
+          <div class="ef-footer-column">
+            <h3 class="ef-footer-heading">Legal</h3>
+            <ul class="ef-footer-links">
+              <li><a href="/legal">Legal Hub</a></li>
+              <li><a href="/privacy">Privacy Policy</a></li>
+              <li><a href="/terms">Terms of Service</a></li>
+              <li><a href="/contact">Contact</a></li>
+            </ul>
+          </div>
         </div>
-        <div class="version">Version: <span id="ef-version-label">loading…</span></div>
-        <div class="small">
-          <a href="/blog">Guides</a> · <a href="/marketplace">Marketplace</a> · <a href="/credits">Credits</a> ·
-          <a href="/contact">Contact</a> ·
-          <a href="/legal">Legal Hub</a>
+
+        <!-- Version -->
+        <div class="ef-footer-bottom">
+          <span class="version">Version: <span id="ef-version-label">loading…</span></span>
         </div>
       </div>
     </footer>

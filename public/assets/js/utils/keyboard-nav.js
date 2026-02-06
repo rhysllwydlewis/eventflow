@@ -22,11 +22,6 @@ class KeyboardNavigationHelper {
     // Only show focus rings for keyboard navigation, not mouse clicks
     this.setupFocusVisible();
 
-    // Setup skip links
-    if (this.options.enableSkipLinks) {
-      this.setupSkipLinks();
-    }
-
     // Setup keyboard shortcuts
     if (this.options.enableShortcuts) {
       this.setupKeyboardShortcuts();
@@ -77,24 +72,6 @@ class KeyboardNavigationHelper {
         outline-offset: 2px;
       }
 
-      /* Skip links */
-      .skip-link {
-        position: absolute;
-        top: -40px;
-        left: 0;
-        background: var(--ink, #0B8073);
-        color: white;
-        padding: 8px 16px;
-        text-decoration: none;
-        z-index: 10000;
-        border-radius: 0 0 4px 0;
-        font-weight: 600;
-      }
-
-      .skip-link:focus {
-        top: 0;
-      }
-
       /* Focusable elements styling */
       [tabindex="0"],
       [tabindex="-1"]:focus {
@@ -107,59 +84,6 @@ class KeyboardNavigationHelper {
       }
     `;
     document.head.appendChild(style);
-  }
-
-  /**
-   * Setup skip links for accessibility
-   */
-  setupSkipLinks() {
-    // Check if skip links already exist
-    if (document.querySelector('.skip-link')) {
-      return;
-    }
-
-    const skipLinks = [
-      { text: 'Skip to main content', target: 'main' },
-      { text: 'Skip to navigation', target: 'nav' },
-    ];
-
-    const container = document.createElement('div');
-    container.className = 'skip-links';
-    container.setAttribute('aria-label', 'Skip links');
-
-    skipLinks.forEach(({ text, target }) => {
-      const targetElement = document.querySelector(target);
-      if (!targetElement) {
-        return;
-      }
-
-      // Ensure target has an ID
-      if (!targetElement.id) {
-        targetElement.id = `skip-target-${target}`;
-      }
-
-      const link = document.createElement('a');
-      link.href = `#${targetElement.id}`;
-      link.className = 'skip-link';
-      link.textContent = text;
-
-      link.addEventListener('click', e => {
-        e.preventDefault();
-        targetElement.tabIndex = -1;
-        targetElement.focus();
-        targetElement.addEventListener(
-          'blur',
-          () => {
-            targetElement.removeAttribute('tabindex');
-          },
-          { once: true }
-        );
-      });
-
-      container.appendChild(link);
-    });
-
-    document.body.insertBefore(container, document.body.firstChild);
   }
 
   /**
