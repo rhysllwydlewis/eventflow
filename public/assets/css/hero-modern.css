@@ -11,11 +11,11 @@
   --hero-padding-top: clamp(12px, 2vw, 24px);
   --hero-padding-bottom: clamp(16px, 3vw, 32px);
   --hero-gap: clamp(24px, 4vw, 48px);
-  
+
   /* Typography scaling */
   --hero-h1-size: clamp(26px, 4vw + 1rem, 52px);
   --hero-subcopy-size: clamp(15px, 1vw + 0.5rem, 18px);
-  
+
   /* Collage styling */
   --collage-gap: clamp(10px, 2vw, 16px);
   --collage-radius: clamp(12px, 2vw, 20px);
@@ -55,7 +55,7 @@
   bottom: -112px;
   width: 320px;
   height: 320px;
-  background: rgba(56, 189, 248, 0.40);
+  background: rgba(56, 189, 248, 0.4);
 }
 
 .hero-grid-texture {
@@ -82,14 +82,14 @@
   .hero-modern .hero-grid > div:first-child {
     text-align: center;
   }
-  
+
   /* h1 already has display: flex and flex-direction: column (lines 118-119) */
   .hero-modern h1 {
     align-items: center; /* Centers flex children horizontally (cross-axis) */
     margin-left: auto;
     margin-right: auto;
   }
-  
+
   .hero-modern-subcopy {
     margin-left: auto;
     margin-right: auto;
@@ -150,8 +150,6 @@
   max-width: 660px;
 }
 
-
-
 /* Staggered entrance animations for search elements */
 @media (prefers-reduced-motion: no-preference) {
   .hero-modern-ctas {
@@ -159,8 +157,6 @@
     animation-delay: 500ms;
   }
 }
-
-
 
 /* Trust indicators */
 .hero-trust {
@@ -232,21 +228,21 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-2); /* 8px */
-  
+
   /* Fixed height for alignment */
   height: 48px;
   padding: 0 24px;
-  
+
   /* Typography */
   font-size: var(--hero-cta-size);
   font-weight: 600;
   line-height: 1;
   text-decoration: none;
   white-space: nowrap;
-  
+
   /* Shape */
   border-radius: 16px;
-  
+
   /* Transitions */
   transform: translateZ(0);
   will-change: transform, box-shadow;
@@ -270,7 +266,7 @@
   line-height: 1;
   text-decoration: none;
   white-space: nowrap;
-  box-shadow: 
+  box-shadow:
     0 2px 8px rgba(5, 150, 105, 0.2),
     0 4px 16px rgba(5, 150, 105, 0.25),
     inset 0 1px 1px rgba(255, 255, 255, 0.2);
@@ -285,7 +281,7 @@
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 100%);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, transparent 100%);
   opacity: 0;
   transition: opacity 0.3s;
 }
@@ -293,7 +289,7 @@
 .hero-cta-primary:hover {
   background: var(--gradient-primary-hover);
   transform: translateY(-2px) translateZ(0);
-  box-shadow: 
+  box-shadow:
     0 4px 12px rgba(5, 150, 105, 0.3),
     0 8px 24px rgba(5, 150, 105, 0.35),
     0 0 30px rgba(16, 185, 129, 0.3),
@@ -333,7 +329,7 @@
   line-height: 1;
   text-decoration: none;
   white-space: nowrap;
-  box-shadow: 
+  box-shadow:
     var(--glass-shadow-soft),
     inset 0 1px 1px rgba(255, 255, 255, 0.5);
   transform: translateZ(0);
@@ -347,7 +343,7 @@
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, rgba(16,185,129,0.1) 0%, transparent 100%);
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, transparent 100%);
   opacity: 0;
   transition: opacity 0.3s;
 }
@@ -356,7 +352,7 @@
   background: rgba(255, 255, 255, 0.85);
   border-color: rgba(16, 185, 129, 0.4);
   transform: translateY(-2px) translateZ(0);
-  box-shadow: 
+  box-shadow:
     var(--glass-shadow-medium),
     0 0 20px rgba(16, 185, 129, 0.1),
     inset 0 1px 2px rgba(255, 255, 255, 0.7);
@@ -396,7 +392,7 @@
     gap: 8px;
     width: 100%;
   }
-  
+
   .hero-cta-primary,
   .hero-cta-secondary {
     flex: 1;
@@ -407,7 +403,7 @@
     font-size: 13.5px;
     justify-content: center;
   }
-  
+
   /* Hide icon on primary button to save space */
   .hero-cta-primary svg {
     display: none;
@@ -429,7 +425,7 @@
     flex-direction: row;
     justify-content: center;
   }
-  
+
   .hero-cta-primary,
   .hero-cta-secondary {
     flex: 1;
@@ -450,7 +446,7 @@
   .hero-modern-ctas {
     justify-content: flex-start;
   }
-  
+
   .hero-cta-primary,
   .hero-cta-secondary {
     width: auto;
@@ -491,14 +487,28 @@
   .ef-fade-up {
     animation: efFadeUp 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
   }
-  .ef-fade-up.delay-1 { animation-delay: 80ms; }
-  .ef-fade-up.delay-2 { animation-delay: 160ms; }
-  .ef-fade-up.delay-3 { animation-delay: 240ms; }
-  .ef-fade-up.delay-4 { animation-delay: 320ms; }
-  
+  .ef-fade-up.delay-1 {
+    animation-delay: 80ms;
+  }
+  .ef-fade-up.delay-2 {
+    animation-delay: 160ms;
+  }
+  .ef-fade-up.delay-3 {
+    animation-delay: 240ms;
+  }
+  .ef-fade-up.delay-4 {
+    animation-delay: 320ms;
+  }
+
   @keyframes efFadeUp {
-    from { opacity: 0; transform: translateY(10px); }
-    to   { opacity: 1; transform: translateY(0); }
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
   .ef-float {
@@ -507,37 +517,47 @@
   .ef-float.slow {
     animation-duration: 10s;
   }
-  
+
   @keyframes efFloat {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-8px); }
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-8px);
+    }
   }
 
   .ef-pulse-soft {
     animation: efPulseSoft 3.2s ease-in-out infinite;
   }
-  
+
   @keyframes efPulseSoft {
-    0%, 100% { opacity: 0.65; }
-    50% { opacity: 1; }
+    0%,
+    100% {
+      opacity: 0.65;
+    }
+    50% {
+      opacity: 1;
+    }
   }
 
   /* Search button pulse animation */
   @keyframes searchPulse {
     0% {
-      box-shadow: 
+      box-shadow:
         0 2px 4px rgba(5, 150, 105, 0.2),
         0 4px 12px rgba(5, 150, 105, 0.3),
         0 0 0 0 rgba(16, 185, 129, 0.7);
     }
     50% {
-      box-shadow: 
+      box-shadow:
         0 2px 4px rgba(5, 150, 105, 0.2),
         0 4px 12px rgba(5, 150, 105, 0.3),
         0 0 0 8px rgba(16, 185, 129, 0);
     }
     100% {
-      box-shadow: 
+      box-shadow:
         0 2px 4px rgba(5, 150, 105, 0.2),
         0 4px 12px rgba(5, 150, 105, 0.3),
         0 0 0 0 rgba(16, 185, 129, 0);
@@ -547,23 +567,25 @@
 
 /* Spinning animation for video loading indicator */
 @keyframes pexels-spin {
-  0% { transform: translate(-50%, -50%) rotate(0deg); }
-  100% { transform: translate(-50%, -50%) rotate(360deg); }
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
 }
-
-
 
 /* Mobile responsive adjustments */
 @media (max-width: 640px) {
   .hero-modern h1 {
     font-size: 28px;
   }
-  
+
   /* Mobile text-lite version - hide second line for cleaner look */
   .hero-modern h1 .hero-line-2 {
     display: none;
   }
-  
+
   .hero-modern-subcopy {
     font-size: 16px;
     /* Truncate subcopy on mobile for text-lite version */
@@ -609,7 +631,7 @@
   grid-template-columns: 1fr 1fr;
   grid-template-rows: 3fr 3fr;
   gap: 12px;
-  aspect-ratio: 5/4;  /* Slightly wider ratio for better balance */
+  aspect-ratio: 5/4; /* Slightly wider ratio for better balance */
   max-height: 85vh;
   max-width: 100%;
   overflow: hidden;
@@ -671,7 +693,9 @@
   height: 100%;
   object-fit: cover;
   display: block;
-  transition: opacity 0.4s ease-in-out, transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transition:
+    opacity 0.4s ease-in-out,
+    transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   opacity: 0;
   pointer-events: none; /* CRITICAL: Prevent video element from intercepting clicks */
 }
@@ -690,7 +714,9 @@
   height: 100%;
   object-fit: cover;
   display: block;
-  transition: opacity 0.4s ease-in-out, transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transition:
+    opacity 0.4s ease-in-out,
+    transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   opacity: 1;
 }
 
@@ -784,10 +810,11 @@
   }
 
   .hero-collage {
-    margin-top: 48px;
-    aspect-ratio: 4/3;
-    max-height: 60vh;
-    grid-template-rows: auto auto auto;
+    margin-top: 24px; /* REDUCED from 48px for better mobile spacing */
+    aspect-ratio: unset; /* Remove fixed ratio to prevent cutoff */
+    max-height: none; /* Allow content to determine height */
+    grid-template-rows: 1fr 1fr; /* 2 rows for 4 cards (video hidden) */
+    overflow: visible; /* Changed from hidden to prevent clipping */
   }
 
   .hero-video-card {
@@ -800,7 +827,7 @@
 
   /* Hide photo credits on mobile for cleaner look */
   .hero-collage-credit {
-    display: none;
+    display: none !important; /* Force hide all credit text on mobile */
   }
 
   .hero-video-credit {
@@ -811,9 +838,9 @@
 /* Tablet adjustments */
 @media (min-width: 768px) and (max-width: 1023px) {
   .hero-collage {
-    aspect-ratio: 4/3;
+    /* Removed conflicting aspect-ratio and use grid-template-rows */
     max-height: 55vh;
-    grid-template-rows: 1fr 1fr 1fr;
+    grid-template-rows: 1fr 1fr; /* 2 rows for 4 cards */
   }
 
   .hero-video-card {
@@ -832,11 +859,13 @@
     gap: 10px; /* Reduced gap for small screens */
     aspect-ratio: unset; /* Remove fixed aspect ratio causing cutoff */
     max-height: none; /* Allow content to determine height */
-    grid-template-rows: minmax(160px, 200px) minmax(140px, 160px) minmax(140px, 160px); /* Better sizing */
+    grid-template-rows: 1fr 1fr; /* 2 rows for 4 cards (video hidden) */
     margin-left: auto;
     margin-right: auto;
     justify-content: center;
     padding: 0 4px; /* Small padding to prevent edge overflow */
+    overflow: visible; /* Prevent clipping */
+    contain: style; /* Reduced containment to prevent clipping */
   }
 
   .hero-video-card {
@@ -846,25 +875,49 @@
   }
 
   .hero-collage-card {
-    min-height: 140px; /* INCREASED - make photos TALLER */
-    aspect-ratio: 4/3; /* Taller aspect ratio for better mobile visibility */
+    min-height: 180px; /* Taller cards to show photos better */
+    aspect-ratio: unset; /* Remove aspect ratio to prevent cutoff */
     border-radius: 12px; /* Smaller radius on mobile */
     width: 100%; /* Ensure full width */
     max-width: 100%; /* Prevent overflow */
+    position: relative; /* For gradient overlay */
+  }
+
+  /* Add dark gradient overlay at bottom for readability */
+  .hero-collage-card::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 50%;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.4), transparent);
+    pointer-events: none;
+    z-index: 1;
+    border-radius: 0 0 12px 12px;
   }
 
   .hero-collage-label {
-    font-size: 10px;
-    padding: 4px 8px;
-    top: 8px;
+    font-size: 9px; /* Much smaller text */
+    padding: 3px 6px; /* Compact padding */
+    top: 8px; /* Position at top-left */
     left: 8px;
+    bottom: auto; /* Override bottom positioning */
     pointer-events: none; /* Ensure label doesn't block clicks */
+    z-index: 2; /* Above gradient overlay */
+  }
+
+  /* Hide all credit/attribution text on mobile */
+  .hero-collage-credit,
+  .hero-collage-credit a,
+  .hero-collage-credit span {
+    display: none !important;
   }
 
   .hero-collage-icon {
     font-size: 11px;
   }
-  
+
   /* Ensure images/videos fit properly on mobile */
   .hero-collage-card img,
   .hero-collage-card video {
@@ -880,7 +933,7 @@
    ============================================ */
 
 @media (max-width: 768px) and (-webkit-min-device-pixel-ratio: 2),
-       (max-width: 768px) and (min-resolution: 192dpi) {
+  (max-width: 768px) and (min-resolution: 192dpi) {
   /* High-DPI mobile devices get optimized rendering */
   .hero-collage-card img,
   .hero-video-card video {
@@ -897,11 +950,11 @@
   .hero-collage-card {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   }
-  
+
   .hero-video-card {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   }
-  
+
   /* Disable backdrop filters to reduce rendering cost */
   .hero-collage-label {
     backdrop-filter: none;
@@ -920,7 +973,7 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
-  
+
   /* Hero animations */
   .ef-fade-up,
   .ef-float,
@@ -929,7 +982,7 @@
     opacity: 1 !important;
     transform: none !important;
   }
-  
+
   /* Hero elements */
   .hero-video-card,
   .hero-collage-card,
@@ -956,20 +1009,20 @@
   .hero-video-card video {
     animation: none !important;
   }
-  
+
   /* Blobs and decorative elements */
   .hero-blob,
   .hero-blob-1,
   .hero-blob-2 {
     animation: none !important;
   }
-  
+
   /* Shimmer effects */
   .hero-cta-primary::before,
   .hero-cta-secondary::before {
     animation: none !important;
   }
-  
+
   /* Disable cinema mode for reduced motion */
   .hero-collage:hover .hero-collage-card:not(:hover) {
     opacity: 1 !important;
@@ -985,21 +1038,21 @@
   .hero-modern {
     background: #fff;
   }
-  
+
   .hero-modern h1 {
     color: #000;
   }
-  
+
   .hero-modern-subcopy {
     color: #333;
   }
-  
+
   .hero-cta-primary {
     background: #000;
     color: #fff;
     border: 2px solid #000;
   }
-  
+
   .hero-cta-secondary {
     background: #fff;
     color: #000;
@@ -1015,15 +1068,15 @@
   .hero-modern {
     background: Canvas;
   }
-  
+
   .hero-modern h1 {
     color: CanvasText;
   }
-  
+
   .hero-modern-subcopy {
     color: CanvasText;
   }
-  
+
   .hero-cta-primary,
   .hero-cta-secondary {
     border: 2px solid ButtonText;
@@ -1039,23 +1092,23 @@
     background: #fff !important;
     padding: 20px 0;
   }
-  
+
   .hero-collage,
   .hero-blob,
   .hero-bg-gradient {
     display: none !important;
   }
-  
+
   .hero-modern h1 {
     font-size: 24pt;
     color: #000;
   }
-  
+
   .hero-modern-subcopy {
     font-size: 12pt;
     color: #333;
   }
-  
+
   .hero-modern-ctas {
     display: none;
   }
@@ -1069,7 +1122,7 @@
   .hero-modern .container {
     max-width: 1400px;
   }
-  
+
   .hero-grid {
     gap: 80px;
   }
@@ -1083,11 +1136,11 @@
   .hero-modern {
     padding: 24px 0 16px;
   }
-  
+
   .hero-modern h1 {
     font-size: 22px;
   }
-  
+
   .hero-modern-subcopy {
     font-size: 14px;
   }
@@ -1119,7 +1172,7 @@
   .hero-collage {
     aspect-ratio: 4/3;
   }
-  
+
   .hero-collage-card {
     aspect-ratio: 16/10;
   }
@@ -1155,24 +1208,24 @@
   .hero-modern {
     background: #ffffff;
   }
-  
+
   .hero-modern h1,
   .hero-modern-subcopy {
     color: #000000;
   }
-  
+
   .hero-cta-primary {
     background: #000000;
     color: #ffffff;
     border: 2px solid #000000;
   }
-  
+
   .hero-cta-secondary {
     background: #ffffff;
     color: #000000;
     border: 2px solid #000000;
   }
-  
+
   .hero-blob,
   .hero-bg-gradient,
   .hero-grid-texture {
@@ -1190,12 +1243,12 @@
     forced-color-adjust: none;
     border: 2px solid CanvasText;
   }
-  
+
   .hero-cta-primary {
     background: Highlight;
     color: HighlightText;
   }
-  
+
   .hero-blob,
   .hero-bg-gradient {
     display: none;
@@ -1214,7 +1267,7 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
-  
+
   .hero-blob {
     animation: none;
   }

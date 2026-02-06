@@ -489,15 +489,38 @@
 
   function initDropdown() {
     // Support both old and new notification bell IDs
-    const bell = document.getElementById('notification-bell') || document.getElementById('ef-notification-btn');
+    const bell =
+      document.getElementById('notification-bell') ||
+      document.getElementById('ef-notification-btn');
     if (!bell) {
       console.warn('Notification bell button not found');
       return;
     }
 
-    // Position dropdown below bell
-    const positionDropdown = (dropdown) => {
-      const rect = bell.getBoundingClientRect();
+    // Position dropdown below bell - FIXED: Re-query DOM to avoid stale reference
+    const positionDropdown = dropdown => {
+      // Always get fresh reference to avoid stale DOM reference after cloning
+      const currentBell =
+        document.getElementById('ef-notification-btn') ||
+        document.getElementById('notification-bell');
+      if (!currentBell) {
+        console.warn('Bell not found during positioning');
+        // Fallback positioning if bell not found
+        dropdown.style.top = '64px';
+        dropdown.style.right = '16px';
+        return;
+      }
+
+      const rect = currentBell.getBoundingClientRect();
+
+      // Fallback positioning if getBoundingClientRect returns 0/0 (detached element)
+      if (rect.bottom === 0 && rect.right === 0) {
+        console.warn('Bell element appears detached, using fallback positioning');
+        dropdown.style.top = '64px';
+        dropdown.style.right = '16px';
+        return;
+      }
+
       dropdown.style.top = `${rect.bottom + 8}px`;
       dropdown.style.right = `${window.innerWidth - rect.right}px`;
     };
@@ -505,7 +528,7 @@
     // Create dropdown if it doesn't exist
     let dropdown = document.getElementById('notification-dropdown');
     let isNewDropdown = false;
-    
+
     if (!dropdown) {
       isNewDropdown = true;
       dropdown = document.createElement('div');
@@ -533,7 +556,7 @@
     bell.parentNode.replaceChild(newBell, bell);
 
     // Toggle dropdown - attach to the new button element
-    newBell.addEventListener('click', (e) => {
+    newBell.addEventListener('click', e => {
       e.stopPropagation();
       e.preventDefault();
       const isOpen = dropdown.classList.toggle('notification-dropdown--open');
@@ -547,7 +570,11 @@
     // Close on outside click (only attach once for new dropdowns)
     if (isNewDropdown) {
       document.addEventListener('click', e => {
-        if (!newBell.contains(e.target) && !dropdown.contains(e.target)) {
+        // Re-query bell to avoid stale reference
+        const currentBell =
+          document.getElementById('ef-notification-btn') ||
+          document.getElementById('notification-bell');
+        if (currentBell && !currentBell.contains(e.target) && !dropdown.contains(e.target)) {
           dropdown.classList.remove('notification-dropdown--open');
         }
       });

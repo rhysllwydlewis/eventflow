@@ -223,7 +223,10 @@ document.addEventListener('DOMContentLoaded', () => {
   if (authState) {
     // Subscribe to auth state changes
     authState.onchange(user => {
-      const notificationBell = document.getElementById('notification-bell');
+      // Support both old and new notification bell IDs
+      const notificationBell =
+        document.getElementById('ef-notification-btn') ||
+        document.getElementById('notification-bell');
       if (notificationBell) {
         notificationBell.style.display = user ? 'block' : 'none';
       }
@@ -2911,6 +2914,12 @@ function removeCreatorCredit(frame) {
 function addCreatorCredit(frame, media) {
   // Validate inputs
   if (!frame || !media) {
+    return;
+  }
+
+  // Skip adding credit text on mobile viewports (640px and below)
+  // CSS already hides it, but this prevents DOM creation entirely
+  if (window.innerWidth <= 640) {
     return;
   }
 
