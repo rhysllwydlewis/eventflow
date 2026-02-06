@@ -12,7 +12,7 @@ const IMAGE_CACHE = `${CACHE_VERSION}-images`;
 const STATIC_ASSETS = [
   '/',
   '/offline.html',
-  '/assets/css/style.css',
+  '/assets/css/styles.css',
   '/assets/js/utils/api.js',
   '/assets/js/utils/storage.js',
   '/assets/js/components/ErrorBoundary.js',
