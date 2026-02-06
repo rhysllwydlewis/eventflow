@@ -491,12 +491,23 @@
     // Support both old and new notification bell IDs
     const bell = document.getElementById('notification-bell') || document.getElementById('ef-notification-btn');
     if (!bell) {
+      console.warn('Notification bell button not found');
       return;
     }
 
+    // Position dropdown below bell
+    const positionDropdown = (dropdown) => {
+      const rect = bell.getBoundingClientRect();
+      dropdown.style.top = `${rect.bottom + 8}px`;
+      dropdown.style.right = `${window.innerWidth - rect.right}px`;
+    };
+
     // Create dropdown if it doesn't exist
     let dropdown = document.getElementById('notification-dropdown');
+    let isNewDropdown = false;
+    
     if (!dropdown) {
+      isNewDropdown = true;
       dropdown = document.createElement('div');
       dropdown.id = 'notification-dropdown';
       dropdown.className = 'notification-dropdown';
@@ -514,28 +525,29 @@
       `;
 
       document.body.appendChild(dropdown);
+    }
 
-      // Position dropdown below bell
-      const positionDropdown = () => {
-        const rect = bell.getBoundingClientRect();
-        dropdown.style.top = `${rect.bottom + 8}px`;
-        dropdown.style.right = `${window.innerWidth - rect.right}px`;
-      };
+    // Remove any existing click listeners by cloning and replacing the button
+    // This prevents duplicate event listeners if init is called multiple times
+    const newBell = bell.cloneNode(true);
+    bell.parentNode.replaceChild(newBell, bell);
 
-      // Toggle dropdown
-      bell.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const isOpen = dropdown.classList.toggle('notification-dropdown--open');
+    // Toggle dropdown - attach to the new button element
+    newBell.addEventListener('click', (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      const isOpen = dropdown.classList.toggle('notification-dropdown--open');
 
-        if (isOpen) {
-          positionDropdown();
-          fetchNotifications();
-        }
-      });
+      if (isOpen) {
+        positionDropdown(dropdown);
+        fetchNotifications();
+      }
+    });
 
-      // Close on outside click
+    // Close on outside click (only attach once for new dropdowns)
+    if (isNewDropdown) {
       document.addEventListener('click', e => {
-        if (!bell.contains(e.target) && !dropdown.contains(e.target)) {
+        if (!newBell.contains(e.target) && !dropdown.contains(e.target)) {
           dropdown.classList.remove('notification-dropdown--open');
         }
       });
@@ -605,40 +617,51 @@
   // ==========================================
 
   function init() {
-    const user = getUserFromStorage();
-    if (!user) {
-      // Not logged in, don't initialize notifications
-      return;
+    try {
+      const user = getUserFromStorage();
+      if (!user) {
+        // Not logged in, don't initialize notifications
+        console.log('Notification system: User not logged in, skipping initialization');
+        return;
+      }
+
+      console.log('Notification system: Initializing for user', user.id);
+
+      // Initialize WebSocket
+      initWebSocket();
+
+      // Initialize dropdown
+      initDropdown();
+
+      // Fetch initial notifications
+      fetchNotifications();
+
+      // Request desktop notification permission after a delay
+      setTimeout(() => {
+        requestDesktopPermission();
+      }, 5000);
+
+      // Expose methods for external use
+      window.__notificationSystem = {
+        fetch: fetchNotifications,
+        markAsRead,
+        markAllAsRead,
+        dismiss: dismissNotification,
+        delete: deleteNotification,
+        toggleSound: () => {
+          state.soundEnabled = !state.soundEnabled;
+          // Sync with localStorage so settings page stays in sync
+          localStorage.setItem('ef_notification_sound_enabled', state.soundEnabled);
+          return state.soundEnabled;
+        },
+        // Expose reinit for debugging
+        reinit: initDropdown,
+      };
+
+      console.log('Notification system: Initialization complete');
+    } catch (error) {
+      console.error('Notification system: Initialization failed', error);
     }
-
-    // Initialize WebSocket
-    initWebSocket();
-
-    // Initialize dropdown
-    initDropdown();
-
-    // Fetch initial notifications
-    fetchNotifications();
-
-    // Request desktop notification permission after a delay
-    setTimeout(() => {
-      requestDesktopPermission();
-    }, 5000);
-
-    // Expose methods for external use
-    window.__notificationSystem = {
-      fetch: fetchNotifications,
-      markAsRead,
-      markAllAsRead,
-      dismiss: dismissNotification,
-      delete: deleteNotification,
-      toggleSound: () => {
-        state.soundEnabled = !state.soundEnabled;
-        // Sync with localStorage so settings page stays in sync
-        localStorage.setItem('ef_notification_sound_enabled', state.soundEnabled);
-        return state.soundEnabled;
-      },
-    };
   }
 
   // Auto-initialize
