@@ -51,6 +51,44 @@ function initializeDependencies(deps) {
   logger = deps.logger;
 }
 
+/**
+ * Deferred middleware wrappers
+ * These are safe to reference in route definitions at require() time
+ * because they defer the actual middleware call to request time,
+ * when dependencies are guaranteed to be initialized.
+ */
+function applyAuthRequired(req, res, next) {
+  if (!authRequired) {
+    return res.status(503).json({ error: 'Auth service not initialized' });
+  }
+  return authRequired(req, res, next);
+}
+
+function applyRoleRequired(role) {
+  return (req, res, next) => {
+    if (!roleRequired) {
+      return res.status(503).json({ error: 'Role service not initialized' });
+    }
+    return roleRequired(role)(req, res, next);
+  };
+}
+
+function applyFeatureRequired(feature) {
+  return (req, res, next) => {
+    if (!featureRequired) {
+      return res.status(503).json({ error: 'Feature service not initialized' });
+    }
+    return featureRequired(feature)(req, res, next);
+  };
+}
+
+function applyCsrfProtection(req, res, next) {
+  if (!csrfProtection) {
+    return res.status(503).json({ error: 'CSRF service not initialized' });
+  }
+  return csrfProtection(req, res, next);
+}
+
 // ---------- Photo Upload Routes ----------
 
 /**
@@ -59,10 +97,10 @@ function initializeDependencies(deps) {
  */
 router.post(
   '/photos/upload',
-  featureRequired('photoUploads'),
-  authRequired,
+  applyFeatureRequired('photoUploads'),
+  applyAuthRequired,
   photoUpload.upload.array('files', 5), // Support up to 5 files for marketplace
-  csrfProtection,
+  applyCsrfProtection,
   async (req, res) => {
     try {
       if (!req.files || req.files.length === 0) {
@@ -225,9 +263,9 @@ router.post(
  */
 router.post(
   '/photos/upload/batch',
-  authRequired,
+  applyAuthRequired,
   photoUpload.upload.array('photos', 10),
-  csrfProtection,
+  applyCsrfProtection,
   async (req, res) => {
     try {
       if (!req.files || req.files.length === 0) {
@@ -367,7 +405,7 @@ router.post(
  * DELETE /api/photos/delete
  * Query: ?type=supplier|package&id=<supplierId|packageId>&photoUrl=<url>
  */
-router.delete('/photos/delete', authRequired, csrfProtection, async (req, res) => {
+router.delete('/photos/delete', applyAuthRequired, applyCsrfProtection, async (req, res) => {
   try {
     const { type, id, photoUrl } = req.query;
 
@@ -497,7 +535,7 @@ router.post(
  * POST /api/photos/crop
  * Body: { imageUrl, cropData: { x, y, width, height } }
  */
-router.post('/photos/crop', authRequired, csrfProtection, async (req, res) => {
+router.post('/photos/crop', applyAuthRequired, applyCsrfProtection, async (req, res) => {
   try {
     const { imageUrl, cropData } = req.body;
 
@@ -527,7 +565,7 @@ router.post('/photos/crop', authRequired, csrfProtection, async (req, res) => {
  * Get pending photos for moderation (admin only)
  * GET /api/photos/pending
  */
-router.get('/photos/pending', authRequired, roleRequired('admin'), async (req, res) => {
+router.get('/photos/pending', applyAuthRequired, applyRoleRequired('admin'), async (req, res) => {
   try {
     const pendingPhotos = [];
 
@@ -582,7 +620,7 @@ router.get('/photos/pending', authRequired, roleRequired('admin'), async (req, r
  * PUT /api/photos/:id
  * Edit photo metadata (caption, alt text, tags)
  */
-router.put('/photos/:id', authRequired, csrfProtection, async (req, res) => {
+router.put('/photos/:id', applyAuthRequired, applyCsrfProtection, async (req, res) => {
   try {
     const { id } = req.params;
     const { caption, altText, tags, isFeatured, watermark } = req.body;
@@ -646,7 +684,7 @@ router.post(
  * POST /api/photos/bulk-edit
  * Bulk update multiple photos
  */
-router.post('/photos/bulk-edit', authRequired, csrfProtection, async (req, res) => {
+router.post('/photos/bulk-edit', applyAuthRequired, applyCsrfProtection, async (req, res) => {
   try {
     const { photos } = req.body;
 
@@ -674,7 +712,7 @@ router.post('/photos/bulk-edit', authRequired, csrfProtection, async (req, res) 
  * POST /api/photos/:id/filters
  * Apply filters to photo (brightness, contrast, saturation)
  */
-router.post('/photos/:id/filters', authRequired, csrfProtection, async (req, res) => {
+router.post('/photos/:id/filters', applyAuthRequired, applyCsrfProtection, async (req, res) => {
   try {
     // eslint-disable-next-line no-unused-vars
     const { id: _id } = req.params; // Photo ID from URL (not currently used)
@@ -705,7 +743,7 @@ router.post('/photos/:id/filters', authRequired, csrfProtection, async (req, res
  * POST /api/photos/reorder
  * Update photo order in gallery
  */
-router.post('/photos/reorder', authRequired, csrfProtection, async (req, res) => {
+router.post('/photos/reorder', applyAuthRequired, applyCsrfProtection, async (req, res) => {
   try {
     const { photoOrder } = req.body;
 
@@ -728,7 +766,7 @@ router.post('/photos/reorder', authRequired, csrfProtection, async (req, res) =>
 
 // ---------- Admin Photo Management Routes ----------
 
-router.get('/admin/photos/pending', authRequired, roleRequired('admin'), async (req, res) => {
+router.get('/admin/photos/pending', applyAuthRequired, applyRoleRequired('admin'), async (req, res) => {
   const photos = await dbUnified.read('photos');
   const pendingPhotos = photos.filter(p => p.status === 'pending');
 
@@ -750,7 +788,7 @@ router.get('/admin/photos/pending', authRequired, roleRequired('admin'), async (
  * GET /api/admin/photos
  * Get photos for a specific supplier (admin view)
  */
-router.get('/admin/photos', authRequired, roleRequired('admin'), async (req, res) => {
+router.get('/admin/photos', applyAuthRequired, applyRoleRequired('admin'), async (req, res) => {
   try {
     const { supplierId } = req.query;
 
