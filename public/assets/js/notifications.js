@@ -488,6 +488,13 @@
   // ==========================================
 
   function initDropdown() {
+    // Prevent multiple initializations
+    if (window.__notificationDropdownInitialized) {
+      console.log('Notification dropdown already initialized');
+      return;
+    }
+    window.__notificationDropdownInitialized = true;
+
     // Support both old and new notification bell IDs
     const bell =
       document.getElementById('notification-bell') ||
