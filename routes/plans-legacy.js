@@ -215,7 +215,7 @@ router.post('/plans/guest', csrfProtection, async (req, res) => {
  * Body: { token: 'guest-token' }
  */
 router.post(
-  '/api/me/plans/claim',
+  '/me/plans/claim',
   authRequired,
   roleRequired('customer'),
   csrfProtection,

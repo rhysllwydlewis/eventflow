@@ -58,7 +58,7 @@ function initializeDependencies(deps) {
  * POST /api/photos/upload
  */
 router.post(
-  '/api/photos/upload',
+  '/photos/upload',
   featureRequired('photoUploads'),
   authRequired,
   photoUpload.upload.array('files', 5), // Support up to 5 files for marketplace
@@ -224,7 +224,7 @@ router.post(
  * Note: Accepts up to 10 files for supplier/package, marketplace listings capped at 5 images total
  */
 router.post(
-  '/api/photos/upload/batch',
+  '/photos/upload/batch',
   authRequired,
   photoUpload.upload.array('photos', 10),
   csrfProtection,
@@ -433,7 +433,7 @@ router.delete('/photos/delete', authRequired, csrfProtection, async (req, res) =
  * Body: { type, id, photoUrl, approved }
  */
 router.post(
-  '/api/photos/approve',
+  '/photos/approve',
   authRequired,
   roleRequired('admin'),
   csrfProtection,
@@ -611,7 +611,7 @@ router.put('/photos/:id', authRequired, csrfProtection, async (req, res) => {
  * Replace photo while keeping metadata
  */
 router.post(
-  '/api/photos/:id/replace',
+  '/photos/:id/replace',
   authRequired,
   photoUpload.upload.single('photo'),
   csrfProtection,
@@ -787,7 +787,7 @@ router.get('/admin/photos', authRequired, roleRequired('admin'), async (req, res
  * Approve a photo
  */
 router.post(
-  '/api/admin/photos/:id/approve',
+  '/admin/photos/:id/approve',
   authRequired,
   roleRequired('admin'),
   csrfProtection,
@@ -834,7 +834,7 @@ router.post(
  * Reject a photo
  */
 router.post(
-  '/api/admin/photos/:id/reject',
+  '/admin/photos/:id/reject',
   authRequired,
   roleRequired('admin'),
   csrfProtection,

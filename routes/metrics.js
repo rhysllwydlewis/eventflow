@@ -41,13 +41,13 @@ function initializeDependencies(deps) {
 
 // ---------- Metrics Routes ----------
 
-router.post('/api/metrics/track', csrfProtection, async (req, res) => {
+router.post('/metrics/track', csrfProtection, async (req, res) => {
   // In a real deployment you could log req.body here.
   res.json({ ok: true });
 });
 
 // Simple synthetic timeseries for admin charts
-router.get('/api/admin/metrics/timeseries', authRequired, roleRequired('admin'), async (_req, res) => {
+router.get('/admin/metrics/timeseries', authRequired, roleRequired('admin'), async (_req, res) => {
   const today = new Date();
   const days = 14;
   const series = [];
@@ -66,7 +66,7 @@ router.get('/api/admin/metrics/timeseries', authRequired, roleRequired('admin'),
 });
 
 // ---------- Admin ----------
-router.get('/api/admin/metrics', authRequired, roleRequired('admin'), async (_req, res) => {
+router.get('/admin/metrics', authRequired, roleRequired('admin'), async (_req, res) => {
   const users = await dbUnified.read('users');
   const suppliers = await dbUnified.read('suppliers');
   const plans = await dbUnified.read('plans');
@@ -90,7 +90,7 @@ router.get('/api/admin/metrics', authRequired, roleRequired('admin'), async (_re
 });
 
 router.post(
-  '/api/admin/reset-demo',
+  '/admin/reset-demo',
   authRequired,
   roleRequired('admin'),
   csrfProtection,

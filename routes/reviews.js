@@ -56,7 +56,7 @@ function initializeDependencies(deps) {
  * Body: { rating, title, comment, recommend, eventType, eventDate, photos }
  */
 router.post(
-  '/api/suppliers/:supplierId/reviews',
+  '/suppliers/:supplierId/reviews',
   featureRequired('reviews'),
   authRequired,
   csrfProtection,
@@ -123,7 +123,7 @@ router.post(
  * Body: { supplierId, rating, comment, eventType, eventDate }
  */
 router.post(
-  '/api/reviews',
+  '/reviews',
   featureRequired('reviews'),
   authRequired,
   csrfProtection,
@@ -324,7 +324,7 @@ router.post('/reviews/:reviewId/helpful', csrfProtection, async (req, res) => {
  * Body: { response: string }
  */
 router.post(
-  '/api/reviews/:reviewId/respond',
+  '/reviews/:reviewId/respond',
   authRequired,
   roleRequired('supplier'),
   csrfProtection,
@@ -371,7 +371,7 @@ router.post(
  * GET /api/supplier/dashboard/reviews
  */
 router.get(
-  '/api/supplier/dashboard/reviews',
+  '/supplier/dashboard/reviews',
   authRequired,
   roleRequired('supplier'),
   async (req, res) => {
@@ -471,7 +471,7 @@ router.get('/admin/reviews/pending', authRequired, roleRequired('admin'), async 
  * Body: { action: 'approve' | 'reject', reason?: string }
  */
 router.post(
-  '/api/admin/reviews/:reviewId/moderate',
+  '/admin/reviews/:reviewId/moderate',
   authRequired,
   roleRequired('admin'),
   csrfProtection,
@@ -509,7 +509,7 @@ router.post(
  * Body: { approved: boolean }
  */
 router.post(
-  '/api/admin/reviews/:reviewId/approve',
+  '/admin/reviews/:reviewId/approve',
   authRequired,
   roleRequired('admin'),
   csrfProtection,

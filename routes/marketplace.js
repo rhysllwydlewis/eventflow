@@ -247,127 +247,121 @@ router.get('/my-listings/:id', authRequired, async (req, res) => {
 });
 
 // Create marketplace listing (auth required)
-router.post(
-  '/api/marketplace/listings',
-  writeLimiter,
-  authRequired,
-  csrfProtection,
-  async (req, res) => {
-    try {
-      const { title, description, price, category, condition, location, images } = req.body || {};
+router.post('/listings', writeLimiter, authRequired, csrfProtection, async (req, res) => {
+  try {
+    const { title, description, price, category, condition, location, images } = req.body || {};
 
-      // Validation with detailed messages - check for undefined, null, or empty string (allow 0)
-      if (
-        !title ||
-        !description ||
-        price === undefined ||
-        price === null ||
-        price === '' ||
-        !category ||
-        !condition
-      ) {
-        logger.warn('Marketplace listing creation failed - missing fields', {
-          userId: req.user.id,
-          provided: {
-            title: !!title,
-            description: !!description,
-            price: price !== undefined && price !== null && price !== '',
-            category: !!category,
-            condition: !!condition,
-          },
-        });
-        return res.status(400).json({
-          error: 'Missing required fields',
-          message: 'Please provide title, description, price, category, and condition.',
-        });
-      }
-
-      if (title.length > 100) {
-        return res.status(400).json({
-          error: 'Title too long',
-          message: 'Title must be 100 characters or less.',
-        });
-      }
-
-      if (description.length > 1000) {
-        return res.status(400).json({
-          error: 'Description too long',
-          message: 'Description must be 1000 characters or less.',
-        });
-      }
-
-      const priceNum = parseFloat(price);
-      if (isNaN(priceNum) || priceNum < 0) {
-        return res.status(400).json({
-          error: 'Invalid price',
-          message: 'Please enter a valid price (must be a positive number).',
-        });
-      }
-
-      const validCategories = [
-        'attire',
-        'decor',
-        'av-equipment',
-        'photography',
-        'party-supplies',
-        'florals',
-      ];
-      if (!validCategories.includes(category)) {
-        return res.status(400).json({
-          error: 'Invalid category',
-          message: 'Please select a valid category from the list.',
-        });
-      }
-
-      const validConditions = ['new', 'like-new', 'good', 'fair'];
-      if (!validConditions.includes(condition)) {
-        return res.status(400).json({
-          error: 'Invalid condition',
-          message: 'Please select a valid condition from the list.',
-        });
-      }
-
-      const listing = {
-        id: uid('mkt'),
+    // Validation with detailed messages - check for undefined, null, or empty string (allow 0)
+    if (
+      !title ||
+      !description ||
+      price === undefined ||
+      price === null ||
+      price === '' ||
+      !category ||
+      !condition
+    ) {
+      logger.warn('Marketplace listing creation failed - missing fields', {
         userId: req.user.id,
-        title: String(title).slice(0, 100),
-        description: String(description).slice(0, 1000),
-        price: priceNum,
-        category,
-        condition,
-        location: location ? String(location).slice(0, 100) : '',
-        images: Array.isArray(images) ? images.slice(0, 5) : [],
-        approved: false, // Requires admin approval
-        status: 'pending', // pending, active, sold, removed
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-
-      const listings = await dbUnified.read('marketplace_listings');
-      listings.push(listing);
-      await dbUnified.write('marketplace_listings', listings);
-
-      logger.info('Marketplace listing created', {
-        listingId: listing.id,
-        userId: req.user.id,
-        category: listing.category,
+        provided: {
+          title: !!title,
+          description: !!description,
+          price: price !== undefined && price !== null && price !== '',
+          category: !!category,
+          condition: !!condition,
+        },
       });
-
-      res.json({
-        ok: true,
-        listing,
-        message: 'Listing submitted successfully! It will be reviewed by our team.',
-      });
-    } catch (error) {
-      logger.error('Error creating marketplace listing:', error);
-      sentry.captureException(error);
-      res.status(500).json({
-        error: 'Failed to create listing',
-        message: 'Unable to create your listing at this time. Please try again later.',
+      return res.status(400).json({
+        error: 'Missing required fields',
+        message: 'Please provide title, description, price, category, and condition.',
       });
     }
+
+    if (title.length > 100) {
+      return res.status(400).json({
+        error: 'Title too long',
+        message: 'Title must be 100 characters or less.',
+      });
+    }
+
+    if (description.length > 1000) {
+      return res.status(400).json({
+        error: 'Description too long',
+        message: 'Description must be 1000 characters or less.',
+      });
+    }
+
+    const priceNum = parseFloat(price);
+    if (isNaN(priceNum) || priceNum < 0) {
+      return res.status(400).json({
+        error: 'Invalid price',
+        message: 'Please enter a valid price (must be a positive number).',
+      });
+    }
+
+    const validCategories = [
+      'attire',
+      'decor',
+      'av-equipment',
+      'photography',
+      'party-supplies',
+      'florals',
+    ];
+    if (!validCategories.includes(category)) {
+      return res.status(400).json({
+        error: 'Invalid category',
+        message: 'Please select a valid category from the list.',
+      });
+    }
+
+    const validConditions = ['new', 'like-new', 'good', 'fair'];
+    if (!validConditions.includes(condition)) {
+      return res.status(400).json({
+        error: 'Invalid condition',
+        message: 'Please select a valid condition from the list.',
+      });
+    }
+
+    const listing = {
+      id: uid('mkt'),
+      userId: req.user.id,
+      title: String(title).slice(0, 100),
+      description: String(description).slice(0, 1000),
+      price: priceNum,
+      category,
+      condition,
+      location: location ? String(location).slice(0, 100) : '',
+      images: Array.isArray(images) ? images.slice(0, 5) : [],
+      approved: false, // Requires admin approval
+      status: 'pending', // pending, active, sold, removed
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    const listings = await dbUnified.read('marketplace_listings');
+    listings.push(listing);
+    await dbUnified.write('marketplace_listings', listings);
+
+    logger.info('Marketplace listing created', {
+      listingId: listing.id,
+      userId: req.user.id,
+      category: listing.category,
+    });
+
+    res.json({
+      ok: true,
+      listing,
+      message: 'Listing submitted successfully! It will be reviewed by our team.',
+    });
+  } catch (error) {
+    logger.error('Error creating marketplace listing:', error);
+    sentry.captureException(error);
+    res.status(500).json({
+      error: 'Failed to create listing',
+      message: 'Unable to create your listing at this time. Please try again later.',
+    });
   }
-);
+});
 
 // Get user's own marketplace listings
 router.get('/my-listings', authRequired, async (req, res) => {
@@ -399,90 +393,78 @@ router.get('/my-listings', authRequired, async (req, res) => {
 });
 
 // Update marketplace listing (owner only)
-router.put(
-  '/api/marketplace/listings/:id',
-  writeLimiter,
-  authRequired,
-  csrfProtection,
-  async (req, res) => {
-    try {
-      const listings = await dbUnified.read('marketplace_listings');
-      const listing = listings.find(l => l.id === req.params.id);
+router.put('/listings/:id', writeLimiter, authRequired, csrfProtection, async (req, res) => {
+  try {
+    const listings = await dbUnified.read('marketplace_listings');
+    const listing = listings.find(l => l.id === req.params.id);
 
-      if (!listing) {
-        return res.status(404).json({ error: 'Listing not found' });
-      }
-
-      if (listing.userId !== req.user.id && req.user.role !== 'admin') {
-        return res.status(403).json({ error: 'Not authorized' });
-      }
-
-      const { title, description, price, condition, location, status } = req.body || {};
-
-      if (title) {
-        listing.title = String(title).slice(0, 100);
-      }
-      if (description) {
-        listing.description = String(description).slice(0, 1000);
-      }
-      if (price !== undefined) {
-        const priceNum = parseFloat(price);
-        if (!isNaN(priceNum) && priceNum >= 0) {
-          listing.price = priceNum;
-        }
-      }
-      if (condition) {
-        listing.condition = condition;
-      }
-      if (location) {
-        listing.location = String(location).slice(0, 100);
-      }
-      if (status && ['active', 'sold', 'removed'].includes(status)) {
-        listing.status = status;
-      }
-
-      listing.updatedAt = new Date().toISOString();
-
-      await dbUnified.write('marketplace_listings', listings);
-      res.json({ ok: true, listing });
-    } catch (error) {
-      console.error('Error updating marketplace listing:', error);
-      sentry.captureException(error);
-      res.status(500).json({ error: 'Failed to update listing' });
+    if (!listing) {
+      return res.status(404).json({ error: 'Listing not found' });
     }
+
+    if (listing.userId !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+
+    const { title, description, price, condition, location, status } = req.body || {};
+
+    if (title) {
+      listing.title = String(title).slice(0, 100);
+    }
+    if (description) {
+      listing.description = String(description).slice(0, 1000);
+    }
+    if (price !== undefined) {
+      const priceNum = parseFloat(price);
+      if (!isNaN(priceNum) && priceNum >= 0) {
+        listing.price = priceNum;
+      }
+    }
+    if (condition) {
+      listing.condition = condition;
+    }
+    if (location) {
+      listing.location = String(location).slice(0, 100);
+    }
+    if (status && ['active', 'sold', 'removed'].includes(status)) {
+      listing.status = status;
+    }
+
+    listing.updatedAt = new Date().toISOString();
+
+    await dbUnified.write('marketplace_listings', listings);
+    res.json({ ok: true, listing });
+  } catch (error) {
+    console.error('Error updating marketplace listing:', error);
+    sentry.captureException(error);
+    res.status(500).json({ error: 'Failed to update listing' });
   }
-);
+});
 
 // Delete marketplace listing (owner only)
-router.delete(
-  '/api/marketplace/listings/:id',
-  writeLimiter,
-  authRequired,
-  csrfProtection,
-  async (req, res) => {
-    try {
-      let listings = await dbUnified.read('marketplace_listings');
-      const listing = listings.find(l => l.id === req.params.id);
+router.delete('/listings/:id', writeLimiter, authRequired, csrfProtection, async (req, res) => {
+  try {
+    let listings = await dbUnified.read('marketplace_listings');
+    const listing = listings.find(l => l.id === req.params.id);
 
-      if (!listing) {
-        return res.status(404).json({ error: 'Listing not found' });
-      }
-
-      if (listing.userId !== req.user.id && req.user.role !== 'admin') {
-        return res.status(403).json({ error: 'Not authorized' });
-      }
-
-      listings = listings.filter(l => l.id !== req.params.id);
-      await dbUnified.write('marketplace_listings', listings);
-
-      res.json({ ok: true });
-    } catch (error) {
-      console.error('Error deleting marketplace listing:', error);
-      sentry.captureException(error);
-      res.status(500).json({ error: 'Failed to delete listing' });
+    if (!listing) {
+      return res.status(404).json({ error: 'Listing not found' });
     }
+
+    if (listing.userId !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+
+    listings = listings.filter(l => l.id !== req.params.id);
+    await dbUnified.write('marketplace_listings', listings);
+
+    res.json({ ok: true });
+  } catch (error) {
+    console.error('Error deleting marketplace listing:', error);
+    sentry.captureException(error);
+    res.status(500).json({ error: 'Failed to delete listing' });
   }
-);
+});
 
 module.exports = router;
 module.exports.initializeDependencies = initializeDependencies;
