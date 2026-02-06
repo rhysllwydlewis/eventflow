@@ -6693,14 +6693,49 @@ app.use('/api/v2/reviews', reviewsV2Routes);
 // Mount all modular routes from routes/index.js
 const { mountRoutes } = require('./routes/index');
 mountRoutes(app, {
+  // System dependencies
   APP_VERSION,
   EMAIL_ENABLED,
   postmark,
   mongoDb,
   dbUnified,
   getToken,
+  
+  // Rate limiters
   authLimiter,
+  strictAuthLimiter,
+  passwordResetLimiter,
+  writeLimiter,
   healthCheckLimiter,
+  
+  // Authentication & authorization middleware
+  authRequired,
+  roleRequired,
+  getUserFromCookie,
+  featureRequired,
+  
+  // Security middleware
+  csrfProtection,
+  
+  // Services & systems
+  searchSystem,
+  reviewsSystem,
+  photoUpload,
+  cache,
+  
+  // Utilities
+  uid,
+  logger,
+  sentry,
+  sendMail,
+  verifyHCaptcha,
+  geocoding,
+  calculateLeadScore,
+  supplierIsProActive,
+  seed,
+  
+  // Analytics
+  supplierAnalytics: require('./utils/supplierAnalytics'),
 });
 
 // ---------- API Documentation & 404 Handler ----------
