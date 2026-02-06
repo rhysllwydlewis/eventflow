@@ -784,10 +784,11 @@
   }
 
   .hero-collage {
-    margin-top: 48px;
-    aspect-ratio: 4/3;
-    max-height: 60vh;
-    grid-template-rows: auto auto auto;
+    margin-top: 24px; /* REDUCED from 48px for better mobile spacing */
+    aspect-ratio: unset; /* Remove fixed ratio to prevent cutoff */
+    max-height: none; /* Allow content to determine height */
+    grid-template-rows: 1fr 1fr; /* 2 rows for 4 cards (video hidden) */
+    overflow: visible; /* Changed from hidden to prevent clipping */
   }
 
   .hero-video-card {
@@ -800,7 +801,7 @@
 
   /* Hide photo credits on mobile for cleaner look */
   .hero-collage-credit {
-    display: none;
+    display: none !important; /* Force hide all credit text on mobile */
   }
 
   .hero-video-credit {
@@ -811,9 +812,9 @@
 /* Tablet adjustments */
 @media (min-width: 768px) and (max-width: 1023px) {
   .hero-collage {
-    aspect-ratio: 4/3;
+    /* Removed conflicting aspect-ratio and use grid-template-rows */
     max-height: 55vh;
-    grid-template-rows: 1fr 1fr 1fr;
+    grid-template-rows: 1fr 1fr; /* 2 rows for 4 cards */
   }
 
   .hero-video-card {
@@ -832,11 +833,13 @@
     gap: 10px; /* Reduced gap for small screens */
     aspect-ratio: unset; /* Remove fixed aspect ratio causing cutoff */
     max-height: none; /* Allow content to determine height */
-    grid-template-rows: minmax(160px, 200px) minmax(140px, 160px) minmax(140px, 160px); /* Better sizing */
+    grid-template-rows: 1fr 1fr; /* 2 rows for 4 cards (video hidden) */
     margin-left: auto;
     margin-right: auto;
     justify-content: center;
     padding: 0 4px; /* Small padding to prevent edge overflow */
+    overflow: visible; /* Prevent clipping */
+    contain: style; /* Reduced containment to prevent clipping */
   }
 
   .hero-video-card {
@@ -846,19 +849,43 @@
   }
 
   .hero-collage-card {
-    min-height: 140px; /* INCREASED - make photos TALLER */
-    aspect-ratio: 4/3; /* Taller aspect ratio for better mobile visibility */
+    min-height: 180px; /* Taller cards to show photos better */
+    aspect-ratio: unset; /* Remove aspect ratio to prevent cutoff */
     border-radius: 12px; /* Smaller radius on mobile */
     width: 100%; /* Ensure full width */
     max-width: 100%; /* Prevent overflow */
+    position: relative; /* For gradient overlay */
+  }
+  
+  /* Add dark gradient overlay at bottom for readability */
+  .hero-collage-card::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 50%;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.4), transparent);
+    pointer-events: none;
+    z-index: 1;
+    border-radius: 0 0 12px 12px;
   }
 
   .hero-collage-label {
-    font-size: 10px;
-    padding: 4px 8px;
-    top: 8px;
+    font-size: 9px; /* Much smaller text */
+    padding: 3px 6px; /* Compact padding */
+    top: 8px; /* Position at top-left */
     left: 8px;
+    bottom: auto; /* Override bottom positioning */
     pointer-events: none; /* Ensure label doesn't block clicks */
+    z-index: 2; /* Above gradient overlay */
+  }
+
+  /* Hide all credit/attribution text on mobile */
+  .hero-collage-credit,
+  .hero-collage-credit a,
+  .hero-collage-credit span {
+    display: none !important;
   }
 
   .hero-collage-icon {

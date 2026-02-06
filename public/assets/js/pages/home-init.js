@@ -2915,6 +2915,12 @@ function addCreatorCredit(frame, media) {
     return;
   }
 
+  // Skip adding credit text on mobile viewports (640px and below)
+  // CSS already hides it, but this prevents DOM creation entirely
+  if (window.innerWidth <= 640) {
+    return;
+  }
+
   const isVideo = media.type === 'video';
   const creatorName = isVideo ? media.videographer : media.photographer;
   const creatorUrl = isVideo ? media.videographerUrl : media.photographerUrl;
