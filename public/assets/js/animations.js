@@ -145,7 +145,7 @@ class Counter {
       const elapsed = Date.now() - startTime;
       const progress = Math.min(elapsed / this.duration, 1);
 
-      // Inside the counter interval:
+      // Apply easing function to progress for smoother animation
       const easeProgress = easeOutQuart(progress);
       const current = this.start + (this.target - this.start) * easeProgress;
 
