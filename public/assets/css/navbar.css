@@ -1051,14 +1051,6 @@ body {
     min-width: 40px;
   }
 }
-  }
-  
-  #ef-bottom-menu {
-    min-width: 44px;
-    max-width: 50px;
-    padding: 5px 4px;
-  }
-}
 
 /* ========================================
    ACCESSIBILITY

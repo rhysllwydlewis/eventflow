@@ -258,8 +258,10 @@
       }
 
       // Show notification bell ONLY when logged in (desktop)
-      if (elements.notificationBtn) {
-        elements.notificationBtn.style.display = 'flex';
+      // Re-query DOM to avoid stale reference after notifications.js cloneNode
+      const btn = document.getElementById('ef-notification-btn');
+      if (btn) {
+        btn.style.display = 'flex';
       }
     } else {
       // User is logged out
