@@ -185,7 +185,7 @@ router.post(
  * GET /api/suppliers/:supplierId/reviews
  * Query: ?page=1&perPage=10&minRating=4&sortBy=date|rating|helpful&verifiedOnly=false
  */
-router.get('/api/suppliers/:supplierId/reviews', async (req, res) => {
+router.get('/suppliers/:supplierId/reviews', async (req, res) => {
   try {
     const { supplierId } = req.params;
     const { page, perPage, minRating, sortBy, verifiedOnly } = req.query;
@@ -213,7 +213,7 @@ router.get('/api/suppliers/:supplierId/reviews', async (req, res) => {
  * Get reviews for a supplier (Legacy endpoint)
  * GET /api/reviews/supplier/:supplierId
  */
-router.get('/api/reviews/supplier/:supplierId', async (req, res) => {
+router.get('/reviews/supplier/:supplierId', async (req, res) => {
   try {
     const { supplierId } = req.params;
     const { minRating, sortBy } = req.query;
@@ -239,7 +239,7 @@ router.get('/api/reviews/supplier/:supplierId', async (req, res) => {
  * Get rating distribution for a supplier
  * GET /api/reviews/supplier/:supplierId/distribution
  */
-router.get('/api/reviews/supplier/:supplierId/distribution', async (req, res) => {
+router.get('/reviews/supplier/:supplierId/distribution', async (req, res) => {
   try {
     const { supplierId } = req.params;
     const distribution = await reviewsSystem.getRatingDistribution(supplierId);
@@ -261,7 +261,7 @@ router.get('/api/reviews/supplier/:supplierId/distribution', async (req, res) =>
  * POST /api/reviews/:reviewId/vote
  * Body: { voteType: 'helpful' | 'unhelpful' }
  */
-router.post('/api/reviews/:reviewId/vote', csrfProtection, async (req, res) => {
+router.post('/reviews/:reviewId/vote', csrfProtection, async (req, res) => {
   try {
     const { reviewId } = req.params;
     const { voteType } = req.body;
@@ -293,7 +293,7 @@ router.post('/api/reviews/:reviewId/vote', csrfProtection, async (req, res) => {
  * Mark review as helpful (Legacy endpoint)
  * POST /api/reviews/:reviewId/helpful
  */
-router.post('/api/reviews/:reviewId/helpful', csrfProtection, async (req, res) => {
+router.post('/reviews/:reviewId/helpful', csrfProtection, async (req, res) => {
   try {
     const { reviewId } = req.params;
     const userId = req.user?.id || null;
@@ -403,7 +403,7 @@ router.get(
  * Get reviews for a specific supplier (admin view - includes all statuses)
  * GET /api/admin/reviews
  */
-router.get('/api/admin/reviews', authRequired, roleRequired('admin'), async (req, res) => {
+router.get('/admin/reviews', authRequired, roleRequired('admin'), async (req, res) => {
   try {
     const { supplierId } = req.query;
 
@@ -431,7 +431,7 @@ router.get('/api/admin/reviews', authRequired, roleRequired('admin'), async (req
  * Get flagged reviews for moderation (admin only)
  * GET /api/admin/reviews/flagged
  */
-router.get('/api/admin/reviews/flagged', authRequired, roleRequired('admin'), async (req, res) => {
+router.get('/admin/reviews/flagged', authRequired, roleRequired('admin'), async (req, res) => {
   try {
     const flagged = await reviewsSystem.getFlaggedReviews();
 
@@ -450,7 +450,7 @@ router.get('/api/admin/reviews/flagged', authRequired, roleRequired('admin'), as
  * Get pending reviews (admin only) - deprecated, use /flagged
  * GET /api/admin/reviews/pending
  */
-router.get('/api/admin/reviews/pending', authRequired, roleRequired('admin'), async (req, res) => {
+router.get('/admin/reviews/pending', authRequired, roleRequired('admin'), async (req, res) => {
   try {
     const flagged = await reviewsSystem.getFlaggedReviews();
 
@@ -541,7 +541,7 @@ router.post(
  * Delete a review
  * DELETE /api/reviews/:reviewId
  */
-router.delete('/api/reviews/:reviewId', authRequired, csrfProtection, async (req, res) => {
+router.delete('/reviews/:reviewId', authRequired, csrfProtection, async (req, res) => {
   try {
     const { reviewId } = req.params;
     const isAdmin = req.user.role === 'admin';

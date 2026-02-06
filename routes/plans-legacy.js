@@ -52,7 +52,7 @@ function planOwnerOnly(req, res, next) {
 
 // ---------- Plan Routes ----------
 
-router.get('/api/plan', authRequired, async (req, res) => {
+router.get('/plan', authRequired, async (req, res) => {
   if (req.user.role !== 'customer') {
     return res.status(403).json({ error: 'Customers only' });
   }
@@ -62,7 +62,7 @@ router.get('/api/plan', authRequired, async (req, res) => {
   res.json({ items });
 });
 
-router.post('/api/plan', authRequired, csrfProtection, async (req, res) => {
+router.post('/plan', authRequired, csrfProtection, async (req, res) => {
   if (req.user.role !== 'customer') {
     return res.status(403).json({ error: 'Customers only' });
   }
@@ -87,7 +87,7 @@ router.post('/api/plan', authRequired, csrfProtection, async (req, res) => {
   res.json({ ok: true });
 });
 
-router.delete('/api/plan/:supplierId', authRequired, csrfProtection, async (req, res) => {
+router.delete('/plan/:supplierId', authRequired, csrfProtection, async (req, res) => {
   if (req.user.role !== 'customer') {
     return res.status(403).json({ error: 'Customers only' });
   }
@@ -100,7 +100,7 @@ router.delete('/api/plan/:supplierId', authRequired, csrfProtection, async (req,
 
 // ---------- Notes Routes ----------
 
-router.get('/api/notes', authRequired, async (req, res) => {
+router.get('/notes', authRequired, async (req, res) => {
   if (req.user.role !== 'customer') {
     return res.status(403).json({ error: 'Customers only' });
   }
@@ -108,7 +108,7 @@ router.get('/api/notes', authRequired, async (req, res) => {
   res.json({ text: (n && n.text) || '' });
 });
 
-router.post('/api/notes', authRequired, csrfProtection, async (req, res) => {
+router.post('/notes', authRequired, csrfProtection, async (req, res) => {
   if (req.user.role !== 'customer') {
     return res.status(403).json({ error: 'Customers only' });
   }
@@ -131,7 +131,7 @@ router.post('/api/notes', authRequired, csrfProtection, async (req, res) => {
 
 // ---------- Plan Save & Get Routes ----------
 
-router.post('/api/me/plan/save', authRequired, planOwnerOnly, csrfProtection, async (req, res) => {
+router.post('/me/plan/save', authRequired, planOwnerOnly, csrfProtection, async (req, res) => {
   const { plan } = req.body || {};
   if (!plan) {
     return res.status(400).json({ error: 'Missing plan' });
@@ -148,7 +148,7 @@ router.post('/api/me/plan/save', authRequired, planOwnerOnly, csrfProtection, as
   res.json({ ok: true, plan: p });
 });
 
-router.get('/api/me/plan', authRequired, planOwnerOnly, async (req, res) => {
+router.get('/me/plan', authRequired, planOwnerOnly, async (req, res) => {
   const plans = await dbUnified.read('plans');
   const p = plans.find(x => x.userId === req.userId);
   if (!p) {
@@ -164,7 +164,7 @@ router.get('/api/me/plan', authRequired, planOwnerOnly, async (req, res) => {
  * POST /api/plans/guest
  * Returns: { ok: true, plan: {...}, token: 'secret-token' }
  */
-router.post('/api/plans/guest', csrfProtection, async (req, res) => {
+router.post('/plans/guest', csrfProtection, async (req, res) => {
   try {
     const { eventType, eventName, location, date, guests, budget, packages } = req.body || {};
 
@@ -265,7 +265,7 @@ router.post(
 
 // ---------- PDF Export ----------
 
-router.get('/api/plan/export/pdf', authRequired, planOwnerOnly, async (req, res) => {
+router.get('/plan/export/pdf', authRequired, planOwnerOnly, async (req, res) => {
   const plans = await dbUnified.read('plans');
   const p = plans.find(x => x.userId === req.userId);
   if (!p) {

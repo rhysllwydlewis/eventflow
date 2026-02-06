@@ -54,7 +54,7 @@ function initializeDependencies(deps) {
 // ---------- Marketplace Listings ----------
 
 // Get all marketplace listings (public)
-router.get('/api/marketplace/listings', async (req, res) => {
+router.get('/listings', async (req, res) => {
   try {
     const { category, condition, minPrice, maxPrice, search, sort, limit } = req.query;
 
@@ -172,7 +172,7 @@ router.get('/api/marketplace/listings', async (req, res) => {
 });
 
 // Get single marketplace listing (public)
-router.get('/api/marketplace/listings/:id', async (req, res) => {
+router.get('/listings/:id', async (req, res) => {
   try {
     const listings = await dbUnified.read('marketplace_listings');
     const listing = listings.find(l => l.id === req.params.id);
@@ -213,7 +213,7 @@ router.get('/api/marketplace/listings/:id', async (req, res) => {
  * GET /api/marketplace/my-listings/:id
  * Get a single listing owned by the authenticated user (including pending/unapproved)
  */
-router.get('/api/marketplace/my-listings/:id', authRequired, async (req, res) => {
+router.get('/my-listings/:id', authRequired, async (req, res) => {
   try {
     const listings = await dbUnified.read('marketplace_listings');
     const listing = listings.find(l => l.id === req.params.id);
@@ -370,7 +370,7 @@ router.post(
 );
 
 // Get user's own marketplace listings
-router.get('/api/marketplace/my-listings', authRequired, async (req, res) => {
+router.get('/my-listings', authRequired, async (req, res) => {
   try {
     logger.info('Fetching marketplace listings', {
       userId: req.user.id,
