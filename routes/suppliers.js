@@ -12,7 +12,6 @@ const router = express.Router();
 let dbUnified;
 let authRequired;
 let roleRequired;
-let searchSystem;
 let supplierAnalytics;
 let getUserFromCookie;
 let supplierIsProActive;
@@ -30,7 +29,6 @@ function initializeDependencies(deps) {
   dbUnified = deps.dbUnified;
   authRequired = deps.authRequired;
   roleRequired = deps.roleRequired;
-  searchSystem = deps.searchSystem;
   supplierAnalytics = deps.supplierAnalytics;
   getUserFromCookie = deps.getUserFromCookie;
   supplierIsProActive = deps.supplierIsProActive;
@@ -151,11 +149,11 @@ router.get('/suppliers/:id', async (req, res) => {
 
     supplierAnalytics
       .trackProfileView(req.params.id, userId, sessionId, isPreview)
-      .catch(err => console.error('Failed to track profile view:', err));
+      .catch(err => logger.error('Failed to track profile view:', err));
 
     res.json(s);
   } catch (error) {
-    console.error('Error fetching supplier:', error);
+    logger.error('Error fetching supplier:', error);
     res.status(500).json({ error: 'Failed to fetch supplier' });
   }
 });
