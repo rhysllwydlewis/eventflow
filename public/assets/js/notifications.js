@@ -531,10 +531,9 @@
     // This prevents duplicate event listeners if init is called multiple times
     const newBell = bell.cloneNode(true);
     bell.parentNode.replaceChild(newBell, bell);
-    const bellElement = newBell;
 
     // Toggle dropdown - attach to the new button element
-    bellElement.addEventListener('click', (e) => {
+    newBell.addEventListener('click', (e) => {
       e.stopPropagation();
       e.preventDefault();
       const isOpen = dropdown.classList.toggle('notification-dropdown--open');
@@ -548,7 +547,7 @@
     // Close on outside click (only attach once for new dropdowns)
     if (isNewDropdown) {
       document.addEventListener('click', e => {
-        if (!bellElement.contains(e.target) && !dropdown.contains(e.target)) {
+        if (!newBell.contains(e.target) && !dropdown.contains(e.target)) {
           dropdown.classList.remove('notification-dropdown--open');
         }
       });
