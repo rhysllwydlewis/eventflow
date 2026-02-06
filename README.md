@@ -36,8 +36,8 @@ A production-ready, feature-rich platform connecting event service suppliers (ph
 
    # Recommended (optional)
    EMAIL_ENABLED=true
-   FROM_EMAIL=no-reply@yourdomain.com
-   SENDGRID_API_KEY=your-api-key
+   POSTMARK_API_KEY=your-server-token
+   POSTMARK_FROM=admin@yourdomain.com
    ```
 
 3. **Deploy your app** - Push to your platform (Railway, Heroku, etc.)
@@ -570,8 +570,8 @@ BASE_URL=https://yourdomain.com
 
 ```env
 EMAIL_ENABLED=true
-FROM_EMAIL=no-reply@yourdomain.com
-SENDGRID_API_KEY=SG.your-api-key
+POSTMARK_API_KEY=your-server-token
+POSTMARK_FROM=admin@yourdomain.com
 ```
 
 **Optional - AWS S3:**
