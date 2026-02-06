@@ -79,10 +79,6 @@ function planOwnerOnly(req, res, next) {
   next();
 }
 
-function applyPlanOwnerOnly(req, res, next) {
-  return planOwnerOnly(req, res, next);
-}
-
 // ---------- Plan Routes ----------
 
 router.get('/plan', applyAuthRequired, async (req, res) => {
@@ -164,24 +160,30 @@ router.post('/notes', applyAuthRequired, applyCsrfProtection, async (req, res) =
 
 // ---------- Plan Save & Get Routes ----------
 
-router.post('/me/plan/save', applyAuthRequired, applyPlanOwnerOnly, applyCsrfProtection, async (req, res) => {
-  const { plan } = req.body || {};
-  if (!plan) {
-    return res.status(400).json({ error: 'Missing plan' });
+router.post(
+  '/me/plan/save',
+  applyAuthRequired,
+  planOwnerOnly,
+  applyCsrfProtection,
+  async (req, res) => {
+    const { plan } = req.body || {};
+    if (!plan) {
+      return res.status(400).json({ error: 'Missing plan' });
+    }
+    const plans = await dbUnified.read('plans');
+    let p = plans.find(x => x.userId === req.userId);
+    if (!p) {
+      p = { id: uid('pln'), userId: req.userId, plan };
+      plans.push(p);
+    } else {
+      p.plan = plan;
+    }
+    await dbUnified.write('plans', plans);
+    res.json({ ok: true, plan: p });
   }
-  const plans = await dbUnified.read('plans');
-  let p = plans.find(x => x.userId === req.userId);
-  if (!p) {
-    p = { id: uid('pln'), userId: req.userId, plan };
-    plans.push(p);
-  } else {
-    p.plan = plan;
-  }
-  await dbUnified.write('plans', plans);
-  res.json({ ok: true, plan: p });
-});
+);
 
-router.get('/me/plan', applyAuthRequired, applyPlanOwnerOnly, async (req, res) => {
+router.get('/me/plan', applyAuthRequired, planOwnerOnly, async (req, res) => {
   const plans = await dbUnified.read('plans');
   const p = plans.find(x => x.userId === req.userId);
   if (!p) {
@@ -298,7 +300,7 @@ router.post(
 
 // ---------- PDF Export ----------
 
-router.get('/plan/export/pdf', applyAuthRequired, applyPlanOwnerOnly, async (req, res) => {
+router.get('/plan/export/pdf', applyAuthRequired, planOwnerOnly, async (req, res) => {
   const plans = await dbUnified.read('plans');
   const p = plans.find(x => x.userId === req.userId);
   if (!p) {
