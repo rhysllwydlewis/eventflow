@@ -670,6 +670,7 @@ html {
     padding: clamp(48px, 8vw, 80px) 0 clamp(32px, 6vw, 64px) !important;
   }
   
+  /* Only use column layout on larger mobile/tablet screens */
   .hero-modern-ctas {
     flex-direction: column;
     width: 100%;
@@ -682,6 +683,30 @@ html {
     text-align: center;
     /* Ensure minimum touch target size */
     min-height: 44px;
+  }
+}
+
+/* Override for smaller screens - side-by-side layout to save vertical space */
+@media (max-width: 480px) {
+  .hero-modern-ctas {
+    flex-direction: row !important;
+    gap: 8px;
+    justify-content: center;
+  }
+  
+  .hero-cta-primary,
+  .hero-cta-secondary {
+    flex: 1;
+    min-width: 0;
+    width: auto;
+    height: 44px;
+    padding: 0 12px;
+    font-size: 14px;
+  }
+  
+  /* Hide icon on primary button to save space on small screens */
+  .hero-cta-primary svg {
+    display: none;
   }
   
   .ef-card--hover:hover,
