@@ -35,7 +35,7 @@ function initializeDependencies(deps) {
 
 // ---------- Search Routes ----------
 
-router.get('/api/search/suppliers', async (req, res) => {
+router.get('/suppliers', async (req, res) => {
   try {
     const results = await searchSystem.searchSuppliers(req.query);
 
@@ -58,7 +58,7 @@ router.get('/api/search/suppliers', async (req, res) => {
  * Get user's search history
  * GET /api/search/history
  */
-router.get('/api/search/history', authRequired, async (req, res) => {
+router.get('/history', authRequired, async (req, res) => {
   try {
     const limit = Number(req.query.limit) || 20;
     const history = await searchSystem.getUserSearchHistory(req.user.id, limit);
@@ -78,7 +78,7 @@ router.get('/api/search/history', authRequired, async (req, res) => {
  * Get all categories
  * GET /api/search/categories
  */
-router.get('/api/search/categories', async (req, res) => {
+router.get('/categories', async (req, res) => {
   try {
     const categories = await searchSystem.getCategories();
 
@@ -97,7 +97,7 @@ router.get('/api/search/categories', async (req, res) => {
  * Get all amenities
  * GET /api/search/amenities
  */
-router.get('/api/search/amenities', async (req, res) => {
+router.get('/amenities', async (req, res) => {
   try {
     const amenities = await searchSystem.getAmenities();
 

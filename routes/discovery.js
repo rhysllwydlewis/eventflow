@@ -39,7 +39,7 @@ function initializeDependencies(deps) {
  * Get trending suppliers
  * GET /api/discovery/trending
  */
-router.get('/api/discovery/trending', async (req, res) => {
+router.get('/trending', async (req, res) => {
   try {
     const limit = Number(req.query.limit) || 10;
     const trending = await searchSystem.getTrendingSuppliers(limit);
@@ -59,7 +59,7 @@ router.get('/api/discovery/trending', async (req, res) => {
  * Get new arrivals
  * GET /api/discovery/new
  */
-router.get('/api/discovery/new', async (req, res) => {
+router.get('/new', async (req, res) => {
   try {
     const limit = Number(req.query.limit) || 10;
     const newSuppliers = await searchSystem.getNewArrivals(limit);
@@ -79,7 +79,7 @@ router.get('/api/discovery/new', async (req, res) => {
  * Get popular packages
  * GET /api/discovery/popular-packages
  */
-router.get('/api/discovery/popular-packages', async (req, res) => {
+router.get('/popular-packages', async (req, res) => {
   try {
     const limit = Number(req.query.limit) || 10;
     const packages = await searchSystem.getPopularPackages(limit);
@@ -99,7 +99,7 @@ router.get('/api/discovery/popular-packages', async (req, res) => {
  * Get personalized recommendations
  * GET /api/discovery/recommendations
  */
-router.get('/api/discovery/recommendations', authRequired, async (req, res) => {
+router.get('/recommendations', authRequired, async (req, res) => {
   try {
     const limit = Number(req.query.limit) || 10;
     const recommendations = await searchSystem.getRecommendations(req.user.id, limit);

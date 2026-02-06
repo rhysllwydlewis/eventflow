@@ -56,7 +56,7 @@ function initializeDependencies(deps) {
 
 // ---------- Thread Routes ----------
 
-router.post('/api/threads/start', writeLimiter, authRequired, csrfProtection, async (req, res) => {
+router.post('/start', writeLimiter, authRequired, csrfProtection, async (req, res) => {
   const {
     supplierId,
     packageId,
@@ -195,7 +195,7 @@ router.post('/api/threads/start', writeLimiter, authRequired, csrfProtection, as
   res.json({ ok: true, thread });
 });
 
-router.get('/api/threads/my', authRequired, async (req, res) => {
+router.get('/my', authRequired, async (req, res) => {
   const ts = await dbUnified.read('threads');
   let items = [];
   if (req.user.role === 'customer') {
@@ -219,7 +219,7 @@ router.get('/api/threads/my', authRequired, async (req, res) => {
   res.json({ items });
 });
 
-router.get('/api/threads/:id/messages', authRequired, async (req, res) => {
+router.get('/:id/messages', authRequired, async (req, res) => {
   const t = (await dbUnified.read('threads')).find(x => x.id === req.params.id);
   if (!t) {
     return res.status(404).json({ error: 'Thread not found' });
@@ -238,76 +238,69 @@ router.get('/api/threads/:id/messages', authRequired, async (req, res) => {
   res.json({ items: msgs });
 });
 
-router.post(
-  '/api/threads/:id/messages',
-  writeLimiter,
-  authRequired,
-  csrfProtection,
-  async (req, res) => {
-    const { text, packageId } = req.body || {};
-    if (!text) {
-      return res.status(400).json({ error: 'Missing text' });
-    }
-    const t = (await dbUnified.read('threads')).find(x => x.id === req.params.id);
-    if (!t) {
-      return res.status(404).json({ error: 'Thread not found' });
-    }
-    if (req.user.role !== 'admin' && t.customerId !== req.user.id) {
-      const own = (await dbUnified.read('suppliers')).find(
-        s => s.id === t.supplierId && s.ownerUserId === req.user.id
-      );
-      if (!own) {
-        return res.status(403).json({ error: 'Forbidden' });
-      }
-    }
-    const msgs = await dbUnified.read('messages');
-    const entry = {
-      id: uid('msg'),
-      threadId: t.id,
-      fromUserId: req.user.id,
-      fromRole: req.user.role,
-      text: String(text).slice(0, 4000),
-      packageId: packageId || t.packageId || null,
-      supplierId: t.supplierId || null,
-      status: 'sent',
-      createdAt: new Date().toISOString(),
-    };
-    msgs.push(entry);
-    await dbUnified.write('messages', msgs);
-
-    // Update thread timestamp
-    const th = await dbUnified.read('threads');
-    const i = th.findIndex(x => x.id === t.id);
-    if (i >= 0) {
-      th[i].updatedAt = entry.createdAt;
-      await dbUnified.write('threads', th);
-    }
-
-    // Email notify other party (safe IIFE)
-    (async () => {
-      try {
-        const otherEmail =
-          req.user.role === 'customer'
-            ? ((await dbUnified.read('suppliers')).find(s => s.id === t.supplierId) || {}).email ||
-              null
-            : ((await dbUnified.read('users')).find(u => u.id === t.customerId) || {}).email ||
-              null;
-        const me = (await dbUnified.read('users')).find(u => u.id === req.user.id);
-        if (otherEmail && me && me.notify !== false) {
-          await sendMail(
-            otherEmail,
-            'New message on EventFlow',
-            `You have a new message in a conversation.\n\n${entry.text.slice(0, 500)}`
-          );
-        }
-      } catch (e) {
-        // dev-safe
-      }
-    })();
-
-    res.json({ ok: true, message: entry });
+router.post('/:id/messages', writeLimiter, authRequired, csrfProtection, async (req, res) => {
+  const { text, packageId } = req.body || {};
+  if (!text) {
+    return res.status(400).json({ error: 'Missing text' });
   }
-);
+  const t = (await dbUnified.read('threads')).find(x => x.id === req.params.id);
+  if (!t) {
+    return res.status(404).json({ error: 'Thread not found' });
+  }
+  if (req.user.role !== 'admin' && t.customerId !== req.user.id) {
+    const own = (await dbUnified.read('suppliers')).find(
+      s => s.id === t.supplierId && s.ownerUserId === req.user.id
+    );
+    if (!own) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+  }
+  const msgs = await dbUnified.read('messages');
+  const entry = {
+    id: uid('msg'),
+    threadId: t.id,
+    fromUserId: req.user.id,
+    fromRole: req.user.role,
+    text: String(text).slice(0, 4000),
+    packageId: packageId || t.packageId || null,
+    supplierId: t.supplierId || null,
+    status: 'sent',
+    createdAt: new Date().toISOString(),
+  };
+  msgs.push(entry);
+  await dbUnified.write('messages', msgs);
+
+  // Update thread timestamp
+  const th = await dbUnified.read('threads');
+  const i = th.findIndex(x => x.id === t.id);
+  if (i >= 0) {
+    th[i].updatedAt = entry.createdAt;
+    await dbUnified.write('threads', th);
+  }
+
+  // Email notify other party (safe IIFE)
+  (async () => {
+    try {
+      const otherEmail =
+        req.user.role === 'customer'
+          ? ((await dbUnified.read('suppliers')).find(s => s.id === t.supplierId) || {}).email ||
+            null
+          : ((await dbUnified.read('users')).find(u => u.id === t.customerId) || {}).email || null;
+      const me = (await dbUnified.read('users')).find(u => u.id === req.user.id);
+      if (otherEmail && me && me.notify !== false) {
+        await sendMail(
+          otherEmail,
+          'New message on EventFlow',
+          `You have a new message in a conversation.\n\n${entry.text.slice(0, 500)}`
+        );
+      }
+    } catch (e) {
+      // dev-safe
+    }
+  })();
+
+  res.json({ ok: true, message: entry });
+});
 
 module.exports = router;
 module.exports.initializeDependencies = initializeDependencies;

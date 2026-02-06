@@ -394,7 +394,7 @@ router.get('/api/marketplace/my-listings', authRequired, async (req, res) => {
       stack: error.stack,
     });
     sentry.captureException(error);
-    res.json({ error: 'Failed to fetch listings' });
+    res.status(500).json({ error: 'Failed to fetch listings' });
   }
 });
 

@@ -26,7 +26,14 @@ function initializeDependencies(deps) {
   }
 
   // Validate required dependencies
-  const required = ['dbUnified', 'authRequired', 'roleRequired', 'csrfProtection', 'cache', 'sentry'];
+  const required = [
+    'dbUnified',
+    'authRequired',
+    'roleRequired',
+    'csrfProtection',
+    'cache',
+    'sentry',
+  ];
 
   const missing = required.filter(key => deps[key] === undefined);
   if (missing.length > 0) {
@@ -43,7 +50,7 @@ function initializeDependencies(deps) {
 
 // ---------- Cache Routes ----------
 
-router.get('/api/admin/cache/stats', authRequired, roleRequired('admin'), async (_req, res) => {
+router.get('/stats', authRequired, roleRequired('admin'), async (_req, res) => {
   try {
     const cacheStats = cache.getStats();
     res.json({
@@ -58,7 +65,7 @@ router.get('/api/admin/cache/stats', authRequired, roleRequired('admin'), async 
 });
 
 // Query performance metrics endpoint (admin only)
-router.get('/api/admin/database/metrics', authRequired, roleRequired('admin'), async (_req, res) => {
+router.get('/database/metrics', authRequired, roleRequired('admin'), async (_req, res) => {
   try {
     const queryMetrics = dbUnified.getQueryMetrics ? dbUnified.getQueryMetrics() : {};
     res.json({
@@ -73,26 +80,20 @@ router.get('/api/admin/database/metrics', authRequired, roleRequired('admin'), a
 });
 
 // Cache clear endpoint (admin only)
-router.post(
-  '/api/admin/cache/clear',
-  authRequired,
-  roleRequired('admin'),
-  csrfProtection,
-  async (_req, res) => {
-    try {
-      await cache.clear();
-      res.json({
-        success: true,
-        message: 'Cache cleared successfully',
-        timestamp: new Date().toISOString(),
-      });
-    } catch (error) {
-      console.error('Error clearing cache:', error);
-      sentry.captureException(error);
-      res.status(500).json({ error: 'Failed to clear cache' });
-    }
+router.post('/clear', authRequired, roleRequired('admin'), csrfProtection, async (_req, res) => {
+  try {
+    await cache.clear();
+    res.json({
+      success: true,
+      message: 'Cache cleared successfully',
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error('Error clearing cache:', error);
+    sentry.captureException(error);
+    res.status(500).json({ error: 'Failed to clear cache' });
   }
-);
+});
 
 module.exports = router;
 module.exports.initializeDependencies = initializeDependencies;

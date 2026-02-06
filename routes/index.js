@@ -119,7 +119,7 @@ function mountRoutes(app, deps) {
   app.use('/api/supplier', supplierRoutes);
 
   // ===== NEW EXTRACTED ROUTES (from server.js refactor) =====
-  
+
   // Suppliers & Packages routes (Phase 1)
   if (deps && suppliersRoutes.initializeDependencies) {
     suppliersRoutes.initializeDependencies(deps);
@@ -185,6 +185,7 @@ function mountRoutes(app, deps) {
     cacheRoutes.initializeDependencies(deps);
   }
   app.use('/api/admin/cache', cacheRoutes);
+  app.use('/api/admin', cacheRoutes); // For /database/metrics route
 
   // Miscellaneous routes (Phase 7)
   if (deps && miscRoutes.initializeDependencies) {
