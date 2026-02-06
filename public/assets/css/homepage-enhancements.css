@@ -824,6 +824,11 @@ html[data-theme="dark"] .pack:hover {
   
   .ef-footer-links li a {
     font-size: 0.75rem !important;
+    /* Ensure adequate touch target despite small font */
+    padding: 6px 0 !important;
+    min-height: 32px;
+    display: inline-flex;
+    align-items: center;
   }
 }
 

@@ -602,7 +602,10 @@
     padding: 24px 0 !important;
   }
   
-  /* Override inline padding-top styles */
+  /* Override inline padding-top styles
+     Note: This is a surgical fix for existing inline styles in index.html.
+     Matches any element with 'padding-top: 4rem' in style attribute.
+     Future improvement: Remove inline styles in favor of CSS classes. */
   [style*="padding-top: 4rem"] {
     padding-top: 24px !important;
   }
