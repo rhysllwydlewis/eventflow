@@ -757,8 +757,73 @@ html[data-theme="dark"] .pack:hover {
 
 @media (max-width: 640px) {
   .ef-footer-grid {
-    grid-template-columns: 1fr;
-    gap: var(--ef-space-5, 24px);
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  
+  /* Brand column spans full width and center */
+  .ef-footer-column.ef-footer-brand {
+    grid-column: 1 / -1;
+    text-align: center;
+  }
+  
+  /* Reduce footer spacing on mobile */
+  .ef-footer-modern {
+    padding: 24px 0 16px !important;
+    margin-top: 24px !important;
+  }
+  
+  /* Reduce brand element sizes */
+  .ef-footer-logo {
+    font-size: 1.2rem !important;
+    margin-bottom: 4px !important;
+  }
+  
+  .ef-footer-tagline {
+    font-size: 0.8rem !important;
+    margin-bottom: 4px !important;
+  }
+  
+  .ef-footer-copyright {
+    font-size: 0.75rem !important;
+  }
+  
+  /* Reduce heading sizes */
+  .ef-footer-heading {
+    font-size: 0.8rem !important;
+    margin-bottom: 6px !important;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    opacity: 0.7;
+  }
+  
+  /* Reduce link spacing */
+  .ef-footer-links {
+    gap: 2px !important;
+  }
+  
+  .ef-footer-links li a {
+    font-size: 0.8rem !important;
+    padding: 2px 0 !important;
+  }
+  
+  /* Reduce bottom section spacing */
+  .ef-footer-bottom {
+    margin-top: 12px !important;
+  }
+  
+  .ef-footer-bottom .version {
+    font-size: 0.7rem !important;
+  }
+}
+
+@media (max-width: 375px) {
+  .ef-footer-grid {
+    gap: 12px;
+  }
+  
+  .ef-footer-links li a {
+    font-size: 0.75rem !important;
   }
 }
 

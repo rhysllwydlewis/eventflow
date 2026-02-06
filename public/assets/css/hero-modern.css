@@ -637,6 +637,9 @@
   overflow: hidden;
   /* Performance optimizations */
   contain: layout style paint;
+}
+
+.hero-collage:hover {
   will-change: transform;
 }
 
@@ -856,10 +859,11 @@
 /* Small mobile adjustments - IMPROVED FOR BETTER UX */
 @media (max-width: 640px) {
   .hero-collage {
-    gap: 10px; /* Reduced gap for small screens */
+    gap: 6px; /* Further reduced gap for compact layout */
     aspect-ratio: unset; /* Remove fixed aspect ratio causing cutoff */
     max-height: none; /* Allow content to determine height */
     grid-template-rows: 1fr 1fr; /* 2 rows for 4 cards (video hidden) */
+    margin-top: 16px; /* Reduced from 24px */
     margin-left: auto;
     margin-right: auto;
     justify-content: center;
@@ -869,13 +873,13 @@
   }
 
   .hero-video-card {
-    min-height: 160px;
-    max-height: 200px;
+    min-height: 120px; /* Reduced from 160px */
+    max-height: 150px; /* Reduced from 200px */
     border-radius: 12px; /* Smaller radius on mobile */
   }
 
   .hero-collage-card {
-    min-height: 180px; /* Taller cards to show photos better */
+    min-height: 130px; /* Reduced from 180px */
     aspect-ratio: unset; /* Remove aspect ratio to prevent cutoff */
     border-radius: 12px; /* Smaller radius on mobile */
     width: 100%; /* Ensure full width */
@@ -925,6 +929,13 @@
     height: 100%;
     object-fit: cover;
     display: block;
+  }
+}
+
+/* Extra small mobile adjustments */
+@media (max-width: 375px) {
+  .hero-collage-card {
+    min-height: 110px; /* Further reduced for very small screens */
   }
 }
 
