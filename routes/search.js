@@ -33,6 +33,19 @@ function initializeDependencies(deps) {
   searchSystem = deps.searchSystem;
 }
 
+/**
+ * Deferred middleware wrapper
+ * Safe to reference in route definitions at require() time
+ * because it defers the actual middleware call to request time,
+ * when dependencies are guaranteed to be initialized.
+ */
+function applyAuthRequired(req, res, next) {
+  if (!authRequired) {
+    return res.status(503).json({ error: 'Auth service not initialized' });
+  }
+  return authRequired(req, res, next);
+}
+
 // ---------- Search Routes ----------
 
 router.get('/suppliers', async (req, res) => {
@@ -58,7 +71,7 @@ router.get('/suppliers', async (req, res) => {
  * Get user's search history
  * GET /api/search/history
  */
-router.get('/history', authRequired, async (req, res) => {
+router.get('/history', applyAuthRequired, async (req, res) => {
   try {
     const limit = Number(req.query.limit) || 20;
     const history = await searchSystem.getUserSearchHistory(req.user.id, limit);

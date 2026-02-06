@@ -33,6 +33,19 @@ function initializeDependencies(deps) {
   searchSystem = deps.searchSystem;
 }
 
+/**
+ * Deferred middleware wrapper
+ * Safe to reference in route definitions at require() time
+ * because it defers the actual middleware call to request time,
+ * when dependencies are guaranteed to be initialized.
+ */
+function applyAuthRequired(req, res, next) {
+  if (!authRequired) {
+    return res.status(503).json({ error: 'Auth service not initialized' });
+  }
+  return authRequired(req, res, next);
+}
+
 // ---------- Discovery Routes ----------
 
 /**
@@ -99,7 +112,7 @@ router.get('/popular-packages', async (req, res) => {
  * Get personalized recommendations
  * GET /api/discovery/recommendations
  */
-router.get('/recommendations', authRequired, async (req, res) => {
+router.get('/recommendations', applyAuthRequired, async (req, res) => {
   try {
     const limit = Number(req.query.limit) || 10;
     const recommendations = await searchSystem.getRecommendations(req.user.id, limit);
