@@ -21,7 +21,6 @@ const cookieParser = require('cookie-parser');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const validator = require('validator');
-const PDFDocument = require('pdfkit');
 
 const APP_VERSION = 'v18.1.0';
 
