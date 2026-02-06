@@ -50,7 +50,7 @@ function initializeDependencies(deps) {
 
 // ---------- Venues Proximity Search ----------
 
-router.get('/api/venues/near', async (req, res) => {
+router.get('/venues/near', async (req, res) => {
   try {
     const { location, radiusMiles = 10 } = req.query;
 
@@ -139,7 +139,7 @@ router.get('/api/venues/near', async (req, res) => {
 
 // ---------- CAPTCHA Verification ----------
 
-router.post('/api/verify-captcha', writeLimiter, async (req, res) => {
+router.post('/verify-captcha', writeLimiter, async (req, res) => {
   const { token } = req.body || {};
   const result = await verifyHCaptcha(token);
 
@@ -153,7 +153,7 @@ router.post('/api/verify-captcha', writeLimiter, async (req, res) => {
 
 // ---------- Settings ----------
 
-router.get('/api/me/settings', authRequired, async (req, res) => {
+router.get('/me/settings', authRequired, async (req, res) => {
   const users = await dbUnified.read('users');
   const i = users.findIndex(u => u.id === req.user.id);
   if (i < 0) {
@@ -162,7 +162,7 @@ router.get('/api/me/settings', authRequired, async (req, res) => {
   res.json({ notify: users[i].notify !== false });
 });
 
-router.post('/api/me/settings', authRequired, csrfProtection, async (req, res) => {
+router.post('/me/settings', authRequired, csrfProtection, async (req, res) => {
   const users = await dbUnified.read('users');
   const i = users.findIndex(u => u.id === req.user.id);
   if (i < 0) {
@@ -175,7 +175,7 @@ router.post('/api/me/settings', authRequired, csrfProtection, async (req, res) =
 
 // ---------- Maintenance ----------
 
-router.get('/api/maintenance/message', async (req, res) => {
+router.get('/maintenance/message', async (req, res) => {
   try {
     const settings = (await dbUnified.read('settings')) || {};
     const maintenance = settings.maintenance || {
@@ -201,7 +201,7 @@ router.get('/api/maintenance/message', async (req, res) => {
 // ---------- CSP Reporting ----------
 
 // CSP Violation Reporting Endpoint
-router.post('/api/csp-report', express.json({ type: 'application/csp-report' }), (req, res) => {
+router.post('/csp-report', express.json({ type: 'application/csp-report' }), (req, res) => {
   console.warn('CSP Violation:', req.body);
   res.status(204).end();
 });
