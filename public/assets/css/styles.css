@@ -1646,9 +1646,9 @@ button, .cta{
 /* Modern focus styles using :focus-visible 
    (only shows on keyboard navigation, not mouse clicks) */
 :focus-visible {
-  outline: 3px solid #13B6A2;
-  outline-offset: 2px;
-  border-radius: 2px;
+  outline: 3px solid var(--accent, #13B6A2);
+  outline-offset: 3px;
+  border-radius: 4px;
 }
 
 /* Ensure all interactive elements have focus styles */
@@ -1658,8 +1658,8 @@ input:focus-visible,
 select:focus-visible,
 textarea:focus-visible,
 [tabindex]:focus-visible {
-  outline: 3px solid #13B6A2;
-  outline-offset: 2px;
+  outline: 3px solid var(--accent, #13B6A2);
+  outline-offset: 3px;
 }
 
 /* Fallback for browsers without :focus-visible support */
@@ -1668,8 +1668,8 @@ button:focus,
 input:focus,
 select:focus,
 textarea:focus {
-  outline: 3px solid #13B6A2;
-  outline-offset: 2px;
+  outline: 3px solid var(--accent, #13B6A2);
+  outline-offset: 3px;
 }
 
 /* Remove focus outline when clicked (not keyboard focused) 
@@ -1680,6 +1680,15 @@ input:focus:not(:focus-visible),
 select:focus:not(:focus-visible),
 textarea:focus:not(:focus-visible) {
   outline: none;
+}
+
+/* Special focus style for CTA buttons */
+.cta:focus-visible,
+.ef-btn:focus-visible,
+.hero-cta-base:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 3px;
+  box-shadow: 0 0 0 6px rgba(19, 182, 162, 0.4);
 }
 
 /* ============================================
