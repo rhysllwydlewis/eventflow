@@ -765,6 +765,7 @@ html[data-theme="dark"] .pack:hover {
   .ef-footer-column.ef-footer-brand {
     grid-column: 1 / -1;
     text-align: center;
+    padding-right: 0 !important; /* Override desktop padding for centered layout */
   }
   
   /* Reduce footer spacing on mobile */
