@@ -8,17 +8,24 @@ module.exports = {
   // Coverage configuration
   collectCoverage: true,
   coverageDirectory: 'coverage',
-  coverageReporters: ['text', 'lcov', 'html'],
+  coverageReporters: ['text', 'text-summary', 'lcov'],
   collectCoverageFrom: [
-    '**/*.js',
+    'routes/**/*.js',
+    'services/**/*.js',
+    'middleware/**/*.js',
+    '*.js',
     '!node_modules/**',
     '!coverage/**',
     '!tests/**',
     '!jest.config.js',
+    '!playwright.config.js',
     '!data/**',
     '!uploads/**',
     '!outbox/**',
-    '!public/uploads/**',
+    '!public/**',
+    '!scripts/**',
+    '!functions/**',
+    '!e2e/**',
   ],
 
   // Test patterns
