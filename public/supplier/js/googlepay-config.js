@@ -169,9 +169,9 @@ async function processGooglePayPayment(paymentsClient, amount, planId, planName)
       throw new Error('No payment token received from Google Pay');
     }
 
-    // Write payment data to Firestore for Firebase extension to process
-    // DO NOT process payment on frontend
-    const result = await writePaymentToFirestore(paymentData, amount, planId);
+    // Process payment data via server-side API
+    // NOTE: This will fail until server-side payment processing is implemented
+    const result = await processPaymentData(paymentData, amount, planId);
 
     return {
       success: true,
@@ -198,60 +198,44 @@ async function processGooglePayPayment(paymentsClient, amount, planId, planName)
 }
 
 /**
- * Write payment data to Firestore
- * Firebase "Make Payments with Google Pay" extension will process this
- * @param {object} paymentData - Payment data from Google Pay
- * @param {number} amount - Plan price
- * @param {string} planId - Plan identifier
+ * Process payment data via server-side API
+ * NOTE: This is a stub - payment processing needs to be implemented server-side
+ * @param {object} _paymentData - Payment data from Google Pay (unused, for future implementation)
+ * @param {number} _amount - Plan price (unused, for future implementation)
+ * @param {string} _planId - Plan identifier (unused, for future implementation)
  * @returns {Promise<object>}
  */
-async function writePaymentToFirestore(paymentData, amount, planId) {
-  // Import Firebase from the config
-  const { db, auth, collection, addDoc, serverTimestamp } =
-    await import('../../assets/js/firebase-config.js');
+async function processPaymentData(_paymentData, _amount, _planId) {
+  // TODO: Implement server-side payment processing API
+  // This function should call a server endpoint to process the payment
+  // The server should use Stripe (as indicated in project docs) instead of Google Pay
+  //
+  // Example implementation:
+  // const response = await fetch('/api/payments/process', {
+  //   method: 'POST',
+  //   credentials: 'include',
+  //   headers: { 'Content-Type': 'application/json' },
+  //   body: JSON.stringify({
+  //     paymentData,
+  //     amount,
+  //     planId,
+  //     supplierId: sessionStorage.getItem('selectedSupplierId'),
+  //   }),
+  // });
+  //
+  // if (!response.ok) {
+  //   throw new Error('Payment processing failed');
+  // }
+  //
+  // return await response.json();
 
-  const user = auth.currentUser;
-  if (!user) {
-    throw new Error('User not authenticated');
-  }
+  console.warn(
+    'Payment processing not yet implemented. Please use Stripe integration instead of Google Pay.'
+  );
 
-  // Get supplier ID from session storage
-  const supplierId = sessionStorage.getItem('selectedSupplierId');
-  if (!supplierId) {
-    throw new Error('No supplier selected');
-  }
-
-  // Extract payment token
-  const paymentToken = paymentData.paymentMethodData?.tokenizationData?.token;
-
-  // Parse the token if it's a string
-  let parsedToken;
-  try {
-    parsedToken = typeof paymentToken === 'string' ? JSON.parse(paymentToken) : paymentToken;
-  } catch (e) {
-    parsedToken = paymentToken;
-  }
-
-  // Write payment document as specified in requirements
-  const paymentDoc = {
-    psp: 'googlepay',
-    total: amount, // As number, not in smallest currency unit
-    currency: 'GBP',
-    paymentToken: parsedToken,
-    status: 'pending',
-    createdAt: serverTimestamp(),
-
-    // Additional metadata for subscription processing
-    userId: user.uid,
-    supplierId: supplierId,
-    planId: planId,
-  };
-
-  const docRef = await addDoc(collection(db, 'payments'), paymentDoc);
-
-  console.log('Payment request written to Firestore:', docRef.id);
-
-  return docRef;
+  throw new Error(
+    'Google Pay payment processing is not available. Please contact support or use an alternative payment method.'
+  );
 }
 
 /**

@@ -3,8 +3,6 @@
  * Manages premium feature access based on subscription tier
  */
 
-import { db, auth, onAuthStateChanged } from '../../assets/js/firebase-config.js';
-
 // Feature tiers
 const FEATURE_TIERS = {
   free: {
@@ -46,46 +44,55 @@ let currentSupplierId = null;
  * Initialize feature access control
  */
 export async function initializeFeatureAccess() {
-  return new Promise((resolve, reject) => {
-    onAuthStateChanged(auth, async user => {
-      if (!user) {
-        resolve();
-        return;
-      }
-
-      try {
-        // Get supplier tier
-        const tier = await getSupplierTier(user.uid);
-        currentSupplierTier = tier;
-        resolve();
-      } catch (error) {
-        console.error('Error initializing feature access:', error);
-        reject(error);
-      }
+  try {
+    // Check if user is authenticated via cookie-based auth
+    const authResponse = await fetch('/api/auth/me', {
+      credentials: 'include',
     });
-  });
+
+    if (!authResponse.ok) {
+      console.warn('Failed to fetch auth status');
+      return;
+    }
+
+    const authData = await authResponse.json();
+    if (!authData.user) {
+      return;
+    }
+
+    // Get supplier tier
+    const tier = await getSupplierTier(authData.user.id);
+    currentSupplierTier = tier;
+  } catch (error) {
+    console.error('Error initializing feature access:', error);
+    throw error;
+  }
 }
 
 /**
  * Get supplier tier for current user
+ * @param {string} _userId - User ID (unused, kept for API compatibility)
  */
-export async function getSupplierTier(userId) {
+export async function getSupplierTier(_userId) {
   try {
-    // Query suppliers collection for this user
-    const { collection, query, where, getDocs } =
-      await import('../../assets/js/firebase-config.js');
+    // Fetch supplier data from MongoDB-backed API
+    const response = await fetch('/api/me/suppliers', {
+      credentials: 'include',
+    });
 
-    const suppliersQuery = query(collection(db, 'suppliers'), where('ownerUserId', '==', userId));
-
-    const suppliersSnapshot = await getDocs(suppliersQuery);
-
-    if (suppliersSnapshot.empty) {
+    if (!response.ok) {
+      console.warn('Failed to fetch supplier data');
       return 'free';
     }
 
-    // Get the first supplier
-    const supplierData = suppliersSnapshot.docs[0].data();
-    currentSupplierId = suppliersSnapshot.docs[0].id;
+    const data = await response.json();
+    if (!data.items || data.items.length === 0) {
+      return 'free';
+    }
+
+    // Get the first supplier (in case user has multiple)
+    const supplierData = data.items[0];
+    currentSupplierId = supplierData.id;
 
     // Check subscription
     const subscription = supplierData.subscription;

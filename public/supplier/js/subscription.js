@@ -4,19 +4,6 @@
  */
 
 import {
-  db,
-  auth,
-  collection,
-  doc,
-  getDocs,
-  setDoc,
-  query,
-  where,
-  onAuthStateChanged,
-  Timestamp,
-} from '../../assets/js/firebase-config.js';
-
-import {
   initializeGooglePay,
   isGooglePayAvailable,
   processGooglePayPayment,
@@ -104,7 +91,6 @@ const PLANS = {
 };
 
 let paymentsClient = null;
-let currentUser = null;
 let currentSupplier = null;
 
 /**
@@ -112,27 +98,34 @@ let currentSupplier = null;
  */
 async function init() {
   try {
-    // Wait for auth state
-    onAuthStateChanged(auth, async user => {
-      if (!user) {
-        window.location.href = '/auth.html';
-        return;
-      }
-
-      currentUser = user;
-
-      // Load supplier data
-      await loadSupplierData();
-
-      // Initialize Google Pay
-      await initGooglePayAPI();
-
-      // Render subscription plans
-      renderSubscriptionPlans();
-
-      // Display current subscription status
-      displayCurrentSubscription();
+    // Check authentication via cookie-based auth
+    const authResponse = await fetch('/api/auth/me', {
+      credentials: 'include',
     });
+
+    if (!authResponse.ok) {
+      console.error('Failed to fetch auth status');
+      window.location.href = '/auth.html';
+      return;
+    }
+
+    const authData = await authResponse.json();
+    if (!authData.user) {
+      window.location.href = '/auth.html';
+      return;
+    }
+
+    // Load supplier data
+    await loadSupplierData();
+
+    // Initialize Google Pay
+    await initGooglePayAPI();
+
+    // Render subscription plans
+    renderSubscriptionPlans();
+
+    // Display current subscription status
+    displayCurrentSubscription();
   } catch (error) {
     console.error('Error initializing subscription page:', error);
     showError('Failed to load subscription page. Please try again.');
@@ -144,14 +137,18 @@ async function init() {
  */
 async function loadSupplierData() {
   try {
-    const suppliersQuery = query(
-      collection(db, 'suppliers'),
-      where('ownerUserId', '==', currentUser.uid)
-    );
+    const response = await fetch('/api/me/suppliers', {
+      credentials: 'include',
+    });
 
-    const suppliersSnapshot = await getDocs(suppliersQuery);
+    if (!response.ok) {
+      showError('Failed to load supplier data. Please try again.');
+      return;
+    }
 
-    if (suppliersSnapshot.empty) {
+    const data = await response.json();
+
+    if (!data.items || data.items.length === 0) {
       showError('No supplier profile found. Please create a supplier profile first.');
       setTimeout(() => {
         window.location.href = '/dashboard-supplier.html';
@@ -160,10 +157,7 @@ async function loadSupplierData() {
     }
 
     // Get the first supplier (in case user has multiple)
-    currentSupplier = {
-      id: suppliersSnapshot.docs[0].id,
-      ...suppliersSnapshot.docs[0].data(),
-    };
+    currentSupplier = data.items[0];
 
     // Store supplier ID for payment processing
     sessionStorage.setItem('selectedSupplierId', currentSupplier.id);
@@ -374,7 +368,7 @@ async function handleGooglePayClick(plan) {
     if (result.success) {
       showSuccess('Payment successful! Your subscription is being activated...');
 
-      // Wait a moment for the Firebase extension to process
+      // Redirect to dashboard
       setTimeout(() => {
         window.location.href = '/dashboard-supplier.html?subscription=success';
       }, 2000);
@@ -423,15 +417,16 @@ function displayCurrentSubscription() {
 
   let statusText = subscription.status.charAt(0).toUpperCase() + subscription.status.slice(1);
   if (subscription.status === 'trial') {
-    const daysLeft = Math.max(
-      0,
-      Math.ceil((subscription.trialEndDate.toDate() - new Date()) / (1000 * 60 * 60 * 24))
-    );
+    const trialEndDate =
+      subscription.trialEndDate instanceof Date
+        ? subscription.trialEndDate
+        : new Date(subscription.trialEndDate);
+    const daysLeft = Math.max(0, Math.ceil((trialEndDate - new Date()) / (1000 * 60 * 60 * 24)));
     statusText = `Trial (${daysLeft} days left)`;
   }
 
   const endDateStr = subscription.endDate
-    ? new Date(subscription.endDate.toDate()).toLocaleDateString('en-GB', {
+    ? new Date(subscription.endDate).toLocaleDateString('en-GB', {
         year: 'numeric',
         month: 'long',
         day: 'numeric',
@@ -440,7 +435,7 @@ function displayCurrentSubscription() {
 
   // Check if renewal is needed soon (within 14 days)
   const daysUntilRenewal = subscription.endDate
-    ? Math.ceil((subscription.endDate.toDate() - new Date()) / (1000 * 60 * 60 * 24))
+    ? Math.ceil((new Date(subscription.endDate) - new Date()) / (1000 * 60 * 60 * 24))
     : 0;
   const showRenewalPrompt =
     !subscription.autoRenew && daysUntilRenewal > 0 && daysUntilRenewal <= 14;
@@ -525,26 +520,30 @@ async function handleReactivateSubscription() {
   try {
     showLoading('Reactivating subscription...');
 
-    // Update supplier document to re-enable auto-renewal
-    const supplierRef = doc(db, 'suppliers', currentSupplier.id);
-    await setDoc(
-      supplierRef,
-      {
-        subscription: {
-          autoRenew: true,
-          cancelledAt: null,
-          lastUpdated: Timestamp.now(),
-        },
-      },
-      { merge: true }
+    // TODO: Call server-side API to reactivate subscription
+    // For now, show a message that this feature needs to be implemented
+    showError(
+      'Subscription reactivation is currently unavailable. Please contact support to reactivate your subscription.'
     );
 
-    showSuccess('Subscription reactivated successfully!');
-
-    // Reload the page to update status
-    setTimeout(() => {
-      window.location.reload();
-    }, 1500);
+    // When the API is implemented, it should:
+    // 1. Update the supplier document to re-enable auto-renewal
+    // 2. Clear the cancelledAt timestamp
+    // 3. Update the lastUpdated timestamp
+    //
+    // Example implementation:
+    // const response = await fetch(`/api/me/suppliers/${currentSupplier.id}/subscription/reactivate`, {
+    //   method: 'POST',
+    //   credentials: 'include',
+    //   headers: { 'Content-Type': 'application/json' },
+    // });
+    //
+    // if (response.ok) {
+    //   showSuccess('Subscription reactivated successfully!');
+    //   setTimeout(() => window.location.reload(), 1500);
+    // } else {
+    //   throw new Error('Failed to reactivate subscription');
+    // }
   } catch (error) {
     console.error('Error reactivating subscription:', error);
     showError('Failed to reactivate subscription. Please try again or contact support.');
@@ -558,7 +557,7 @@ async function handleReactivateSubscription() {
  */
 async function handleCancelSubscription() {
   const endDate = currentSupplier.subscription?.endDate
-    ? new Date(currentSupplier.subscription.endDate.toDate()).toLocaleDateString('en-GB', {
+    ? new Date(currentSupplier.subscription.endDate).toLocaleDateString('en-GB', {
         year: 'numeric',
         month: 'long',
         day: 'numeric',
@@ -574,33 +573,30 @@ async function handleCancelSubscription() {
   try {
     showLoading('Cancelling subscription...');
 
-    // Call Cloud Function to cancel subscription
-    const response = await fetch(
-      'https://europe-west2-eventflow-ffb12.cloudfunctions.net/cancelSubscription',
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          data: {
-            supplierId: currentSupplier.id,
-          },
-        }),
-      }
+    // TODO: Call server-side API to cancel subscription
+    // For now, show a message that this feature needs to be implemented
+    showError(
+      'Subscription cancellation is currently unavailable. Please contact support to cancel your subscription.'
     );
 
-    const result = await response.json();
-
-    if (result.result && result.result.success) {
-      showSuccess('Subscription cancelled successfully.');
-      // Reload the page to update status
-      setTimeout(() => {
-        window.location.reload();
-      }, 2000);
-    } else {
-      throw new Error(result.error?.message || 'Failed to cancel subscription');
-    }
+    // When the API is implemented, it should:
+    // 1. Update the supplier document to disable auto-renewal
+    // 2. Set the cancelledAt timestamp
+    // 3. Keep access until the end of the billing period
+    //
+    // Example implementation:
+    // const response = await fetch(`/api/me/suppliers/${currentSupplier.id}/subscription/cancel`, {
+    //   method: 'POST',
+    //   credentials: 'include',
+    //   headers: { 'Content-Type': 'application/json' },
+    // });
+    //
+    // if (response.ok) {
+    //   showSuccess('Subscription cancelled successfully.');
+    //   setTimeout(() => window.location.reload(), 2000);
+    // } else {
+    //   throw new Error('Failed to cancel subscription');
+    // }
   } catch (error) {
     console.error('Error cancelling subscription:', error);
     showError('Failed to cancel subscription. Please try again or contact support.');

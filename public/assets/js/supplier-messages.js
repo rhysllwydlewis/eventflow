@@ -223,7 +223,7 @@ function openConversation(conversationId) {
   document.body.appendChild(modal);
 
   // Close handlers
-  const closeModal = () => {
+  let closeModal = () => {
     if (messagesUnsubscribe) {
       messagesUnsubscribe();
     }
@@ -290,11 +290,11 @@ function openConversation(conversationId) {
 
     // Set up typing indicator
     const typingIndicator = messagingManager.createTypingIndicator('#typingIndicatorContainer');
-    
+
     // Listen for typing status updates
-    const handleTyping = (event) => {
+    const handleTyping = event => {
       const { conversationId: typingConvId, userId, isTyping } = event.detail;
-      
+
       // Only show typing for this conversation and not for current user
       if (typingConvId === conversationId && userId !== user.id) {
         if (isTyping && typingIndicator) {
@@ -304,9 +304,9 @@ function openConversation(conversationId) {
         }
       }
     };
-    
+
     window.addEventListener('messaging:typing', handleTyping);
-    
+
     // Cleanup typing listener when modal closes
     const originalCloseModal = closeModal;
     closeModal = () => {
@@ -353,7 +353,7 @@ function openConversation(conversationId) {
       messageInput.value = '';
       submitBtn.disabled = false;
       submitBtn.textContent = 'Send';
-      
+
       // Stop typing indicator when message sent
       messagingSystem.sendTypingStatus(conversationId, false);
     } catch (error) {
@@ -371,11 +371,11 @@ function openConversation(conversationId) {
   // Send typing indicator when user types
   const messageInput = modal.querySelector('#messageInput');
   let typingTimeout = null;
-  
+
   messageInput.addEventListener('input', () => {
     if (currentUser && conversationId) {
       messagingSystem.sendTypingStatus(conversationId, true);
-      
+
       // Stop typing after user stops typing for 2 seconds
       clearTimeout(typingTimeout);
       typingTimeout = setTimeout(() => {
@@ -383,7 +383,7 @@ function openConversation(conversationId) {
       }, 2000);
     }
   });
-  
+
   messageInput.addEventListener('blur', () => {
     // Stop typing when input loses focus
     if (currentUser && conversationId) {
