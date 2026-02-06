@@ -115,6 +115,37 @@ if (isDebugEnabled()) {
   }
 }
 
+/**
+ * Enhance existing counter animation with easing
+ * @param {HTMLElement} element - Element to animate
+ * @param {number} start - Starting value
+ * @param {number} end - Ending value
+ * @param {number} duration - Animation duration in milliseconds
+ * @param {string} suffix - Optional suffix (e.g., '+', '%')
+ */
+function animateValue(element, start, end, duration, suffix = '') {
+  const startTime = performance.now();
+  
+  function update(currentTime) {
+    const elapsed = currentTime - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    
+    // Easing function for smoother animation
+    const easeOutQuad = progress * (2 - progress);
+    
+    const current = Math.floor(start + (end - start) * easeOutQuad);
+    element.textContent = current.toLocaleString() + suffix;
+    
+    if (progress < 1) {
+      requestAnimationFrame(update);
+    } else {
+      element.textContent = end.toLocaleString() + suffix;
+    }
+  }
+  
+  requestAnimationFrame(update);
+}
+
 // Initialize homepage components on DOM ready
 document.addEventListener('DOMContentLoaded', () => {
   // Initialize category grid
@@ -1421,6 +1452,50 @@ async function initPexelsCollage(settings) {
     // Note: Default images are now showing. We don't recursively call
     // loadHeroCollageImages() here to avoid the initialization guard issue.
     // The defaults are sufficient fallback.
+  }
+}
+
+/**
+ * Helper function to check if user prefers reduced motion
+ * @returns {boolean} True if reduced motion is preferred
+ */
+function prefersReducedMotion() {
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+/**
+ * Enhanced hero video loader with retry logic
+ * @param {number} retries - Number of retry attempts (default: 3)
+ */
+async function loadHeroVideo(retries = 3) {
+  const video = document.getElementById('hero-pexels-video');
+  if (!video) return;
+  
+  try {
+    const response = await fetch('/api/config');
+    const config = await response.json();
+    
+    if (config.heroVideo?.enabled && config.heroVideo?.url) {
+      const source = document.getElementById('hero-video-source');
+      source.src = config.heroVideo.url;
+      
+      video.load();
+      
+      // Attempt autoplay if allowed
+      if (config.heroVideo.autoplay && !prefersReducedMotion()) {
+        video.play().catch(err => {
+          console.debug('Autoplay prevented:', err.message);
+        });
+      }
+    }
+  } catch (error) {
+    if (retries > 0) {
+      console.debug(`Hero video load failed, retrying... (${retries} attempts left)`);
+      setTimeout(() => loadHeroVideo(retries - 1), 1000);
+    } else {
+      console.debug('Hero video load failed after retries');
+      video.style.display = 'none';
+    }
   }
 }
 

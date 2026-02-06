@@ -570,6 +570,27 @@ html[data-theme="dark"] .pack:hover {
 }
 
 /* ========================================
+   HOVER EFFECTS FOR CARDS
+   Enhanced interactivity for trust badges and other cards
+   ======================================== */
+
+.ef-card--hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ef-card--hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
+}
+
+.ef-card--hover:hover .ef-card__icon {
+  color: var(--accent, #13B6A2);
+  transform: scale(1.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+
+/* ========================================
    SKELETON LOADING UI (Marketplace)
    Prevents layout shift while content loads
    ======================================== */
