@@ -1372,94 +1372,8 @@ app.get('/api/user', async (req, res) => {
 
 /**
  * Get venues near a location
- * GET /api/venues/near?location=Cardiff&radiusMiles=10
+ * (Route extracted to routes/misc.js)
  */
-app.get('/api/venues/near', async (req, res) => {
-  try {
-    const { location, radiusMiles = 10 } = req.query;
-
-    // Get all approved Venues category suppliers
-    let venues = (await dbUnified.read('suppliers')).filter(
-      s => s.approved && s.category === 'Venues'
-    );
-
-    // If no location provided, return all venues
-    if (!location || location.trim() === '') {
-      // Add distance as null for all venues
-      venues = venues.map(v => ({ ...v, distance: null }));
-
-      return res.json({
-        venues,
-        total: venues.length,
-        filtered: false,
-        message: 'Showing all venues (no location filter)',
-      });
-    }
-
-    // Try to geocode the location
-    const coords = await geocoding.geocodeLocation(location);
-
-    if (!coords) {
-      // Could not geocode - return all venues with a warning
-      venues = venues.map(v => ({ ...v, distance: null }));
-
-      return res.json({
-        venues,
-        total: venues.length,
-        filtered: false,
-        radiusMiles: parseFloat(radiusMiles) || 10,
-        warning: `Could not find location "${location}". Showing all venues.`,
-      });
-    }
-
-    // Filter venues by proximity
-    const radius = parseFloat(radiusMiles) || 10;
-
-    // Calculate distance for each venue that has coordinates
-    const venuesWithDistance = venues
-      .map(venue => {
-        if (
-          venue.latitude !== null &&
-          venue.latitude !== undefined &&
-          venue.longitude !== null &&
-          venue.longitude !== undefined
-        ) {
-          const distance = geocoding.calculateDistance(
-            coords.latitude,
-            coords.longitude,
-            venue.latitude,
-            venue.longitude
-          );
-          return { ...venue, distance };
-        }
-        // Venue without coordinates - exclude from proximity filter
-        return null;
-      })
-      .filter(v => v !== null);
-
-    // Filter by radius
-    const nearbyVenues = venuesWithDistance.filter(v => v.distance <= radius);
-
-    // Sort by distance
-    nearbyVenues.sort((a, b) => a.distance - b.distance);
-
-    res.json({
-      venues: nearbyVenues,
-      total: nearbyVenues.length,
-      filtered: true,
-      location: location,
-      coordinates: coords,
-      radiusMiles: radius,
-      message: `Found ${nearbyVenues.length} venues within ${radius} miles of ${location}`,
-    });
-  } catch (error) {
-    console.error('Venue proximity search error:', error);
-    res.status(500).json({
-      error: 'Failed to search venues',
-      details: error.message,
-    });
-  }
-});
 
 // AI event planning assistant
 app.post('/api/ai/plan', express.json(), csrfProtection, async (req, res) => {
@@ -1957,146 +1871,6 @@ app.delete(
 );
 
 // ---------- Photo Moderation ----------
-
-/**
- * GET /api/admin/photos/pending
- * Get all photos pending approval
- */
-app.get('/api/admin/photos/pending', authRequired, roleRequired('admin'), async (req, res) => {
-  const photos = await dbUnified.read('photos');
-  const pendingPhotos = photos.filter(p => p.status === 'pending');
-
-  // Enrich with supplier information
-  const suppliers = await dbUnified.read('suppliers');
-  const enrichedPhotos = pendingPhotos.map(photo => {
-    const supplier = suppliers.find(s => s.id === photo.supplierId);
-    return {
-      ...photo,
-      supplierName: supplier ? supplier.name : 'Unknown',
-      supplierCategory: supplier ? supplier.category : null,
-    };
-  });
-
-  res.json({ photos: enrichedPhotos });
-});
-
-/**
- * GET /api/admin/photos
- * Get photos for a specific supplier (admin view)
- */
-app.get('/api/admin/photos', authRequired, roleRequired('admin'), async (req, res) => {
-  try {
-    const { supplierId } = req.query;
-
-    if (!supplierId) {
-      return res.status(400).json({ error: 'supplierId query parameter is required' });
-    }
-
-    const suppliers = await dbUnified.read('suppliers');
-    const supplier = suppliers.find(s => s.id === supplierId);
-
-    if (!supplier) {
-      return res.status(404).json({ error: 'Supplier not found' });
-    }
-
-    // Get photos from photosGallery (includes approved and unapproved)
-    const photos = supplier.photosGallery || [];
-
-    res.json({
-      success: true,
-      photos: photos.map(p => ({
-        ...p,
-        id: p.id || `${supplierId}_${p.uploadedAt}`,
-        supplierId,
-      })),
-    });
-  } catch (error) {
-    console.error('Error fetching supplier photos:', error);
-    res.status(500).json({ error: 'Failed to fetch photos', details: error.message });
-  }
-});
-
-/**
- * POST /api/admin/photos/:id/approve
- * Approve a photo
- */
-app.post(
-  '/api/admin/photos/:id/approve',
-  authRequired,
-  roleRequired('admin'),
-  csrfProtection,
-  async (req, res) => {
-    const { id } = req.params;
-    const photos = await dbUnified.read('photos');
-    const photoIndex = photos.findIndex(p => p.id === id);
-
-    if (photoIndex === -1) {
-      return res.status(404).json({ error: 'Photo not found' });
-    }
-
-    const photo = photos[photoIndex];
-    const now = new Date().toISOString();
-
-    // Update photo status
-    photo.status = 'approved';
-    photo.approvedAt = now;
-    photo.approvedBy = req.user.id;
-
-    photos[photoIndex] = photo;
-    await dbUnified.write('photos', photos);
-
-    // Add photo to supplier's photos array if not already there
-    const suppliers = await dbUnified.read('suppliers');
-    const supplierIndex = suppliers.findIndex(s => s.id === photo.supplierId);
-
-    if (supplierIndex !== -1) {
-      if (!suppliers[supplierIndex].photos) {
-        suppliers[supplierIndex].photos = [];
-      }
-      if (!suppliers[supplierIndex].photos.includes(photo.url)) {
-        suppliers[supplierIndex].photos.push(photo.url);
-        await dbUnified.write('suppliers', suppliers);
-      }
-    }
-
-    res.json({ success: true, message: 'Photo approved successfully', photo });
-  }
-);
-
-/**
- * POST /api/admin/photos/:id/reject
- * Reject a photo
- */
-app.post(
-  '/api/admin/photos/:id/reject',
-  authRequired,
-  roleRequired('admin'),
-  csrfProtection,
-  async (req, res) => {
-    const { id } = req.params;
-    const { reason } = req.body;
-    const photos = await dbUnified.read('photos');
-    const photoIndex = photos.findIndex(p => p.id === id);
-
-    if (photoIndex === -1) {
-      return res.status(404).json({ error: 'Photo not found' });
-    }
-
-    const photo = photos[photoIndex];
-    const now = new Date().toISOString();
-
-    // Update photo status
-    photo.status = 'rejected';
-    photo.rejectedAt = now;
-    photo.rejectedBy = req.user.id;
-    photo.rejectionReason = reason || 'No reason provided';
-
-    photos[photoIndex] = photo;
-    await dbUnified.write('photos', photos);
-
-    res.json({ success: true, message: 'Photo rejected successfully', photo });
-  }
-);
 
 // ---------- Category browsing endpoints ----------
 
@@ -3125,17 +2899,7 @@ app.post(
   }
 );
 // ---------- CAPTCHA Verification ----------
-app.post('/api/verify-captcha', writeLimiter, async (req, res) => {
-  const { token } = req.body || {};
-  const result = await verifyHCaptcha(token);
-
-  if (result.success) {
-    return res.json(result);
-  } else {
-    const statusCode = result.error === 'CAPTCHA verification not configured' ? 500 : 400;
-    return res.status(statusCode).json(result);
-  }
-});
+// (Route extracted to routes/misc.js)
 
 // ---------- Threads & Messages ----------
 
@@ -3167,30 +2931,7 @@ app.post('/api/me/settings', authRequired, csrfProtection, async (req, res) => {
 // ---------- Meta & status ----------
 // Meta endpoint moved to routes/system.js
 
-// Lightweight metrics endpoints (no-op by default)
-app.post('/api/metrics/track', csrfProtection, async (req, res) => {
-  // In a real deployment you could log req.body here.
-  res.json({ ok: true });
-});
-
-// Simple synthetic timeseries for admin charts
-app.get('/api/admin/metrics/timeseries', authRequired, roleRequired('admin'), async (_req, res) => {
-  const today = new Date();
-  const days = 14;
-  const series = [];
-  for (let i = days - 1; i >= 0; i--) {
-    const d = new Date(today);
-    d.setDate(d.getDate() - i);
-    const iso = d.toISOString().slice(0, 10);
-    series.push({
-      date: iso,
-      visitors: 20 + ((i * 7) % 15),
-      signups: 3 + (i % 4),
-      plans: 1 + (i % 3),
-    });
-  }
-  res.json({ series });
-});
+// Lightweight metrics endpoints moved to routes/metrics.js
 
 // ---------- Admin ----------
 app.get('/api/admin/metrics', authRequired, roleRequired('admin'), async (_req, res) => {
@@ -4374,28 +4115,7 @@ const authRoutes = require('./routes/auth');
 app.use('/api/auth', authRoutes);
 
 // ---------- Public Maintenance Endpoint (must be before auth checks) ----------
-app.get('/api/maintenance/message', async (req, res) => {
-  try {
-    const settings = (await dbUnified.read('settings')) || {};
-    const maintenance = settings.maintenance || {
-      enabled: false,
-      message: "We're performing scheduled maintenance. We'll be back soon!",
-    };
-
-    // Return public maintenance information
-    res.json({
-      enabled: maintenance.enabled,
-      message: maintenance.message,
-    });
-  } catch (error) {
-    console.error('Error reading maintenance message:', error);
-    // Return default message on error
-    res.status(200).json({
-      enabled: false,
-      message: "We're performing scheduled maintenance. We'll be back soon!",
-    });
-  }
-});
+// (Route extracted to routes/system.js)
 
 // ---------- Webhook Routes ----------
 const webhookRoutes = require('./routes/webhooks');
@@ -4562,63 +4282,7 @@ const { auditLog, AUDIT_ACTIONS } = require('./middleware/audit');
 
 // Health and ready endpoints moved to routes/system.js
 
-// Cache statistics endpoint (admin only)
-app.get('/api/admin/cache/stats', authRequired, roleRequired('admin'), async (_req, res) => {
-  try {
-    const cacheStats = cache.getStats();
-    res.json({
-      cache: cacheStats,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (error) {
-    console.error('Error getting cache stats:', error);
-    sentry.captureException(error);
-    res.status(500).json({ error: 'Failed to get cache statistics' });
-  }
-});
-
-// Query performance metrics endpoint (admin only)
-app.get('/api/admin/database/metrics', authRequired, roleRequired('admin'), async (_req, res) => {
-  try {
-    const queryMetrics = dbUnified.getQueryMetrics ? dbUnified.getQueryMetrics() : {};
-    res.json({
-      metrics: queryMetrics,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (error) {
-    console.error('Error getting query metrics:', error);
-    sentry.captureException(error);
-    res.status(500).json({ error: 'Failed to get database metrics' });
-  }
-});
-
-// Cache clear endpoint (admin only)
-app.post(
-  '/api/admin/cache/clear',
-  authRequired,
-  roleRequired('admin'),
-  csrfProtection,
-  async (_req, res) => {
-    try {
-      await cache.clear();
-      res.json({
-        success: true,
-        message: 'Cache cleared successfully',
-        timestamp: new Date().toISOString(),
-      });
-    } catch (error) {
-      console.error('Error clearing cache:', error);
-      sentry.captureException(error);
-      res.status(500).json({ error: 'Failed to clear cache' });
-    }
-  }
-);
-
-// CSP Violation Reporting Endpoint
-app.post('/api/csp-report', express.json({ type: 'application/csp-report' }), (req, res) => {
-  console.warn('CSP Violation:', req.body);
-  res.status(204).end();
-});
+// Cache statistics, database metrics, and CSP reporting endpoints moved to routes/system.js
 
 // ---------- Subscription and Payment v2 Routes ----------
 const subscriptionsV2Routes = require('./routes/subscriptions-v2');
