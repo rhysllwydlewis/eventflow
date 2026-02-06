@@ -823,11 +823,46 @@
   }
 }
 
+/* Mobile-only icon navigation (hide text labels) */
 @media (max-width: 640px) {
+  /* Hide text labels on mobile, show only emojis/icons */
+  .mobile-nav-pill .pill-text {
+    display: none;
+  }
+  
+  /* Ensure proper touch target size (44px minimum) */
+  .mobile-nav-pill {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 10px 12px;
+    font-size: 18px; /* Larger emoji size for better visibility */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  /* Keep badge visible on mobile */
+  .mobile-nav-pill .pill-badge {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    font-size: 10px;
+    min-width: 16px;
+    height: 16px;
+    padding: 2px 4px;
+  }
+  
   .supplier-actions-grid {
     grid-template-columns: 1fr;
   }
-  
+}
+
+/* Tablet and desktop - show both icon and text */
+@media (min-width: 641px) {
+  .mobile-nav-pill .pill-text {
+    display: inline; /* Show text on larger screens */
+  }
+}
   .supplier-action-btn {
     min-height: 70px;
     padding: var(--ef-space-3, 12px);
