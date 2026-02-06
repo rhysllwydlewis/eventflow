@@ -54,9 +54,36 @@ function initializeDependencies(deps) {
   calculateLeadScore = deps.calculateLeadScore;
 }
 
+/**
+ * Deferred middleware wrappers
+ * These are safe to reference in route definitions at require() time
+ * because they defer the actual middleware call to request time,
+ * when dependencies are guaranteed to be initialized.
+ */
+function applyAuthRequired(req, res, next) {
+  if (!authRequired) {
+    return res.status(503).json({ error: 'Auth service not initialized' });
+  }
+  return authRequired(req, res, next);
+}
+
+function applyCsrfProtection(req, res, next) {
+  if (!csrfProtection) {
+    return res.status(503).json({ error: 'CSRF service not initialized' });
+  }
+  return csrfProtection(req, res, next);
+}
+
+function applyWriteLimiter(req, res, next) {
+  if (!writeLimiter) {
+    return res.status(503).json({ error: 'Rate limiter not initialized' });
+  }
+  return writeLimiter(req, res, next);
+}
+
 // ---------- Thread Routes ----------
 
-router.post('/start', writeLimiter, authRequired, csrfProtection, async (req, res) => {
+router.post('/start', applyWriteLimiter, applyAuthRequired, applyCsrfProtection, async (req, res) => {
   const {
     supplierId,
     packageId,
@@ -195,7 +222,7 @@ router.post('/start', writeLimiter, authRequired, csrfProtection, async (req, re
   res.json({ ok: true, thread });
 });
 
-router.get('/my', authRequired, async (req, res) => {
+router.get('/my', applyAuthRequired, async (req, res) => {
   const ts = await dbUnified.read('threads');
   let items = [];
   if (req.user.role === 'customer') {
@@ -219,7 +246,7 @@ router.get('/my', authRequired, async (req, res) => {
   res.json({ items });
 });
 
-router.get('/:id/messages', authRequired, async (req, res) => {
+router.get('/:id/messages', applyAuthRequired, async (req, res) => {
   const t = (await dbUnified.read('threads')).find(x => x.id === req.params.id);
   if (!t) {
     return res.status(404).json({ error: 'Thread not found' });
@@ -238,7 +265,7 @@ router.get('/:id/messages', authRequired, async (req, res) => {
   res.json({ items: msgs });
 });
 
-router.post('/:id/messages', writeLimiter, authRequired, csrfProtection, async (req, res) => {
+router.post('/:id/messages', applyWriteLimiter, applyAuthRequired, applyCsrfProtection, async (req, res) => {
   const { text, packageId } = req.body || {};
   if (!text) {
     return res.status(400).json({ error: 'Missing text' });

@@ -48,6 +48,44 @@ function initializeDependencies(deps) {
   reviewsSystem = deps.reviewsSystem;
 }
 
+/**
+ * Deferred middleware wrappers
+ * These are safe to reference in route definitions at require() time
+ * because they defer the actual middleware call to request time,
+ * when dependencies are guaranteed to be initialized.
+ */
+function applyAuthRequired(req, res, next) {
+  if (!authRequired) {
+    return res.status(503).json({ error: 'Auth service not initialized' });
+  }
+  return authRequired(req, res, next);
+}
+
+function applyRoleRequired(role) {
+  return (req, res, next) => {
+    if (!roleRequired) {
+      return res.status(503).json({ error: 'Role service not initialized' });
+    }
+    return roleRequired(role)(req, res, next);
+  };
+}
+
+function applyFeatureRequired(feature) {
+  return (req, res, next) => {
+    if (!featureRequired) {
+      return res.status(503).json({ error: 'Feature service not initialized' });
+    }
+    return featureRequired(feature)(req, res, next);
+  };
+}
+
+function applyCsrfProtection(req, res, next) {
+  if (!csrfProtection) {
+    return res.status(503).json({ error: 'CSRF service not initialized' });
+  }
+  return csrfProtection(req, res, next);
+}
+
 // ---------- Review Submission Routes ----------
 
 /**
@@ -57,9 +95,9 @@ function initializeDependencies(deps) {
  */
 router.post(
   '/suppliers/:supplierId/reviews',
-  featureRequired('reviews'),
-  authRequired,
-  csrfProtection,
+  applyFeatureRequired('reviews'),
+  applyAuthRequired,
+  applyCsrfProtection,
   async (req, res) => {
     try {
       const { supplierId } = req.params;
@@ -124,9 +162,9 @@ router.post(
  */
 router.post(
   '/reviews',
-  featureRequired('reviews'),
-  authRequired,
-  csrfProtection,
+  applyFeatureRequired('reviews'),
+  applyAuthRequired,
+  applyCsrfProtection,
   async (req, res) => {
     try {
       const { supplierId, rating, comment, eventType, eventDate } = req.body;
@@ -261,7 +299,7 @@ router.get('/reviews/supplier/:supplierId/distribution', async (req, res) => {
  * POST /api/reviews/:reviewId/vote
  * Body: { voteType: 'helpful' | 'unhelpful' }
  */
-router.post('/reviews/:reviewId/vote', csrfProtection, async (req, res) => {
+router.post('/reviews/:reviewId/vote', applyCsrfProtection, async (req, res) => {
   try {
     const { reviewId } = req.params;
     const { voteType } = req.body;
@@ -293,7 +331,7 @@ router.post('/reviews/:reviewId/vote', csrfProtection, async (req, res) => {
  * Mark review as helpful (Legacy endpoint)
  * POST /api/reviews/:reviewId/helpful
  */
-router.post('/reviews/:reviewId/helpful', csrfProtection, async (req, res) => {
+router.post('/reviews/:reviewId/helpful', applyCsrfProtection, async (req, res) => {
   try {
     const { reviewId } = req.params;
     const userId = req.user?.id || null;
@@ -325,9 +363,9 @@ router.post('/reviews/:reviewId/helpful', csrfProtection, async (req, res) => {
  */
 router.post(
   '/reviews/:reviewId/respond',
-  authRequired,
-  roleRequired('supplier'),
-  csrfProtection,
+  applyAuthRequired,
+  applyRoleRequired('supplier'),
+  applyCsrfProtection,
   async (req, res) => {
     try {
       const { reviewId } = req.params;
@@ -372,8 +410,8 @@ router.post(
  */
 router.get(
   '/supplier/dashboard/reviews',
-  authRequired,
-  roleRequired('supplier'),
+  applyAuthRequired,
+  applyRoleRequired('supplier'),
   async (req, res) => {
     try {
       // Get supplier ID from user's supplier profile
@@ -403,7 +441,7 @@ router.get(
  * Get reviews for a specific supplier (admin view - includes all statuses)
  * GET /api/admin/reviews
  */
-router.get('/admin/reviews', authRequired, roleRequired('admin'), async (req, res) => {
+router.get('/admin/reviews', applyAuthRequired, applyRoleRequired('admin'), async (req, res) => {
   try {
     const { supplierId } = req.query;
 
@@ -431,7 +469,7 @@ router.get('/admin/reviews', authRequired, roleRequired('admin'), async (req, re
  * Get flagged reviews for moderation (admin only)
  * GET /api/admin/reviews/flagged
  */
-router.get('/admin/reviews/flagged', authRequired, roleRequired('admin'), async (req, res) => {
+router.get('/admin/reviews/flagged', applyAuthRequired, applyRoleRequired('admin'), async (req, res) => {
   try {
     const flagged = await reviewsSystem.getFlaggedReviews();
 
@@ -450,7 +488,7 @@ router.get('/admin/reviews/flagged', authRequired, roleRequired('admin'), async 
  * Get pending reviews (admin only) - deprecated, use /flagged
  * GET /api/admin/reviews/pending
  */
-router.get('/admin/reviews/pending', authRequired, roleRequired('admin'), async (req, res) => {
+router.get('/admin/reviews/pending', applyAuthRequired, applyRoleRequired('admin'), async (req, res) => {
   try {
     const flagged = await reviewsSystem.getFlaggedReviews();
 
@@ -472,9 +510,9 @@ router.get('/admin/reviews/pending', authRequired, roleRequired('admin'), async 
  */
 router.post(
   '/admin/reviews/:reviewId/moderate',
-  authRequired,
-  roleRequired('admin'),
-  csrfProtection,
+  applyAuthRequired,
+  applyRoleRequired('admin'),
+  applyCsrfProtection,
   async (req, res) => {
     try {
       const { reviewId } = req.params;
@@ -541,7 +579,7 @@ router.post(
  * Delete a review
  * DELETE /api/reviews/:reviewId
  */
-router.delete('/reviews/:reviewId', authRequired, csrfProtection, async (req, res) => {
+router.delete('/reviews/:reviewId', applyAuthRequired, applyCsrfProtection, async (req, res) => {
   try {
     const { reviewId } = req.params;
     const isAdmin = req.user.role === 'admin';

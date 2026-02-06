@@ -51,6 +51,33 @@ function initializeDependencies(deps) {
   sentry = deps.sentry;
 }
 
+/**
+ * Deferred middleware wrappers
+ * These are safe to reference in route definitions at require() time
+ * because they defer the actual middleware call to request time,
+ * when dependencies are guaranteed to be initialized.
+ */
+function applyAuthRequired(req, res, next) {
+  if (!authRequired) {
+    return res.status(503).json({ error: 'Auth service not initialized' });
+  }
+  return authRequired(req, res, next);
+}
+
+function applyCsrfProtection(req, res, next) {
+  if (!csrfProtection) {
+    return res.status(503).json({ error: 'CSRF service not initialized' });
+  }
+  return csrfProtection(req, res, next);
+}
+
+function applyWriteLimiter(req, res, next) {
+  if (!writeLimiter) {
+    return res.status(503).json({ error: 'Rate limiter not initialized' });
+  }
+  return writeLimiter(req, res, next);
+}
+
 // ---------- Marketplace Listings ----------
 
 // Get all marketplace listings (public)
@@ -213,7 +240,7 @@ router.get('/listings/:id', async (req, res) => {
  * GET /api/marketplace/my-listings/:id
  * Get a single listing owned by the authenticated user (including pending/unapproved)
  */
-router.get('/my-listings/:id', authRequired, async (req, res) => {
+router.get('/my-listings/:id', applyAuthRequired, async (req, res) => {
   try {
     const listings = await dbUnified.read('marketplace_listings');
     const listing = listings.find(l => l.id === req.params.id);
@@ -247,7 +274,7 @@ router.get('/my-listings/:id', authRequired, async (req, res) => {
 });
 
 // Create marketplace listing (auth required)
-router.post('/listings', writeLimiter, authRequired, csrfProtection, async (req, res) => {
+router.post('/listings', applyWriteLimiter, applyAuthRequired, applyCsrfProtection, async (req, res) => {
   try {
     const { title, description, price, category, condition, location, images } = req.body || {};
 
@@ -364,7 +391,7 @@ router.post('/listings', writeLimiter, authRequired, csrfProtection, async (req,
 });
 
 // Get user's own marketplace listings
-router.get('/my-listings', authRequired, async (req, res) => {
+router.get('/my-listings', applyAuthRequired, async (req, res) => {
   try {
     logger.info('Fetching marketplace listings', {
       userId: req.user.id,
@@ -393,7 +420,7 @@ router.get('/my-listings', authRequired, async (req, res) => {
 });
 
 // Update marketplace listing (owner only)
-router.put('/listings/:id', writeLimiter, authRequired, csrfProtection, async (req, res) => {
+router.put('/listings/:id', applyWriteLimiter, applyAuthRequired, applyCsrfProtection, async (req, res) => {
   try {
     const listings = await dbUnified.read('marketplace_listings');
     const listing = listings.find(l => l.id === req.params.id);
@@ -442,7 +469,7 @@ router.put('/listings/:id', writeLimiter, authRequired, csrfProtection, async (r
 });
 
 // Delete marketplace listing (owner only)
-router.delete('/listings/:id', writeLimiter, authRequired, csrfProtection, async (req, res) => {
+router.delete('/listings/:id', applyWriteLimiter, applyAuthRequired, applyCsrfProtection, async (req, res) => {
   try {
     let listings = await dbUnified.read('marketplace_listings');
     const listing = listings.find(l => l.id === req.params.id);

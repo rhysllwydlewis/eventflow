@@ -48,6 +48,33 @@ function initializeDependencies(deps) {
   verifyHCaptcha = deps.verifyHCaptcha;
 }
 
+/**
+ * Deferred middleware wrappers
+ * These are safe to reference in route definitions at require() time
+ * because they defer the actual middleware call to request time,
+ * when dependencies are guaranteed to be initialized.
+ */
+function applyAuthRequired(req, res, next) {
+  if (!authRequired) {
+    return res.status(503).json({ error: 'Auth service not initialized' });
+  }
+  return authRequired(req, res, next);
+}
+
+function applyCsrfProtection(req, res, next) {
+  if (!csrfProtection) {
+    return res.status(503).json({ error: 'CSRF service not initialized' });
+  }
+  return csrfProtection(req, res, next);
+}
+
+function applyWriteLimiter(req, res, next) {
+  if (!writeLimiter) {
+    return res.status(503).json({ error: 'Rate limiter not initialized' });
+  }
+  return writeLimiter(req, res, next);
+}
+
 // ---------- Venues Proximity Search ----------
 
 router.get('/venues/near', async (req, res) => {
@@ -139,7 +166,7 @@ router.get('/venues/near', async (req, res) => {
 
 // ---------- CAPTCHA Verification ----------
 
-router.post('/verify-captcha', writeLimiter, async (req, res) => {
+router.post('/verify-captcha', applyWriteLimiter, async (req, res) => {
   const { token } = req.body || {};
   const result = await verifyHCaptcha(token);
 
@@ -153,7 +180,7 @@ router.post('/verify-captcha', writeLimiter, async (req, res) => {
 
 // ---------- Settings ----------
 
-router.get('/me/settings', authRequired, async (req, res) => {
+router.get('/me/settings', applyAuthRequired, async (req, res) => {
   const users = await dbUnified.read('users');
   const i = users.findIndex(u => u.id === req.user.id);
   if (i < 0) {
@@ -162,7 +189,7 @@ router.get('/me/settings', authRequired, async (req, res) => {
   res.json({ notify: users[i].notify !== false });
 });
 
-router.post('/me/settings', authRequired, csrfProtection, async (req, res) => {
+router.post('/me/settings', applyAuthRequired, applyCsrfProtection, async (req, res) => {
   const users = await dbUnified.read('users');
   const i = users.findIndex(u => u.id === req.user.id);
   if (i < 0) {

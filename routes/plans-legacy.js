@@ -41,6 +41,35 @@ function initializeDependencies(deps) {
 }
 
 /**
+ * Deferred middleware wrappers
+ * These are safe to reference in route definitions at require() time
+ * because they defer the actual middleware call to request time,
+ * when dependencies are guaranteed to be initialized.
+ */
+function applyAuthRequired(req, res, next) {
+  if (!authRequired) {
+    return res.status(503).json({ error: 'Auth service not initialized' });
+  }
+  return authRequired(req, res, next);
+}
+
+function applyRoleRequired(role) {
+  return (req, res, next) => {
+    if (!roleRequired) {
+      return res.status(503).json({ error: 'Role service not initialized' });
+    }
+    return roleRequired(role)(req, res, next);
+  };
+}
+
+function applyCsrfProtection(req, res, next) {
+  if (!csrfProtection) {
+    return res.status(503).json({ error: 'CSRF service not initialized' });
+  }
+  return csrfProtection(req, res, next);
+}
+
+/**
  * Middleware: Verify plan ownership
  */
 function planOwnerOnly(req, res, next) {
@@ -50,9 +79,13 @@ function planOwnerOnly(req, res, next) {
   next();
 }
 
+function applyPlanOwnerOnly(req, res, next) {
+  return planOwnerOnly(req, res, next);
+}
+
 // ---------- Plan Routes ----------
 
-router.get('/plan', authRequired, async (req, res) => {
+router.get('/plan', applyAuthRequired, async (req, res) => {
   if (req.user.role !== 'customer') {
     return res.status(403).json({ error: 'Customers only' });
   }
@@ -62,7 +95,7 @@ router.get('/plan', authRequired, async (req, res) => {
   res.json({ items });
 });
 
-router.post('/plan', authRequired, csrfProtection, async (req, res) => {
+router.post('/plan', applyAuthRequired, applyCsrfProtection, async (req, res) => {
   if (req.user.role !== 'customer') {
     return res.status(403).json({ error: 'Customers only' });
   }
@@ -87,7 +120,7 @@ router.post('/plan', authRequired, csrfProtection, async (req, res) => {
   res.json({ ok: true });
 });
 
-router.delete('/plan/:supplierId', authRequired, csrfProtection, async (req, res) => {
+router.delete('/plan/:supplierId', applyAuthRequired, applyCsrfProtection, async (req, res) => {
   if (req.user.role !== 'customer') {
     return res.status(403).json({ error: 'Customers only' });
   }
@@ -100,7 +133,7 @@ router.delete('/plan/:supplierId', authRequired, csrfProtection, async (req, res
 
 // ---------- Notes Routes ----------
 
-router.get('/notes', authRequired, async (req, res) => {
+router.get('/notes', applyAuthRequired, async (req, res) => {
   if (req.user.role !== 'customer') {
     return res.status(403).json({ error: 'Customers only' });
   }
@@ -108,7 +141,7 @@ router.get('/notes', authRequired, async (req, res) => {
   res.json({ text: (n && n.text) || '' });
 });
 
-router.post('/notes', authRequired, csrfProtection, async (req, res) => {
+router.post('/notes', applyAuthRequired, applyCsrfProtection, async (req, res) => {
   if (req.user.role !== 'customer') {
     return res.status(403).json({ error: 'Customers only' });
   }
@@ -131,7 +164,7 @@ router.post('/notes', authRequired, csrfProtection, async (req, res) => {
 
 // ---------- Plan Save & Get Routes ----------
 
-router.post('/me/plan/save', authRequired, planOwnerOnly, csrfProtection, async (req, res) => {
+router.post('/me/plan/save', applyAuthRequired, applyPlanOwnerOnly, applyCsrfProtection, async (req, res) => {
   const { plan } = req.body || {};
   if (!plan) {
     return res.status(400).json({ error: 'Missing plan' });
@@ -148,7 +181,7 @@ router.post('/me/plan/save', authRequired, planOwnerOnly, csrfProtection, async 
   res.json({ ok: true, plan: p });
 });
 
-router.get('/me/plan', authRequired, planOwnerOnly, async (req, res) => {
+router.get('/me/plan', applyAuthRequired, applyPlanOwnerOnly, async (req, res) => {
   const plans = await dbUnified.read('plans');
   const p = plans.find(x => x.userId === req.userId);
   if (!p) {
@@ -164,7 +197,7 @@ router.get('/me/plan', authRequired, planOwnerOnly, async (req, res) => {
  * POST /api/plans/guest
  * Returns: { ok: true, plan: {...}, token: 'secret-token' }
  */
-router.post('/plans/guest', csrfProtection, async (req, res) => {
+router.post('/plans/guest', applyCsrfProtection, async (req, res) => {
   try {
     const { eventType, eventName, location, date, guests, budget, packages } = req.body || {};
 
@@ -216,9 +249,9 @@ router.post('/plans/guest', csrfProtection, async (req, res) => {
  */
 router.post(
   '/me/plans/claim',
-  authRequired,
-  roleRequired('customer'),
-  csrfProtection,
+  applyAuthRequired,
+  applyRoleRequired('customer'),
+  applyCsrfProtection,
   async (req, res) => {
     try {
       const { token } = req.body || {};
@@ -265,7 +298,7 @@ router.post(
 
 // ---------- PDF Export ----------
 
-router.get('/plan/export/pdf', authRequired, planOwnerOnly, async (req, res) => {
+router.get('/plan/export/pdf', applyAuthRequired, applyPlanOwnerOnly, async (req, res) => {
   const plans = await dbUnified.read('plans');
   const p = plans.find(x => x.userId === req.userId);
   if (!p) {

@@ -48,9 +48,38 @@ function initializeDependencies(deps) {
   sentry = deps.sentry;
 }
 
+/**
+ * Deferred middleware wrappers
+ * These are safe to reference in route definitions at require() time
+ * because they defer the actual middleware call to request time,
+ * when dependencies are guaranteed to be initialized.
+ */
+function applyAuthRequired(req, res, next) {
+  if (!authRequired) {
+    return res.status(503).json({ error: 'Auth service not initialized' });
+  }
+  return authRequired(req, res, next);
+}
+
+function applyRoleRequired(role) {
+  return (req, res, next) => {
+    if (!roleRequired) {
+      return res.status(503).json({ error: 'Role service not initialized' });
+    }
+    return roleRequired(role)(req, res, next);
+  };
+}
+
+function applyCsrfProtection(req, res, next) {
+  if (!csrfProtection) {
+    return res.status(503).json({ error: 'CSRF service not initialized' });
+  }
+  return csrfProtection(req, res, next);
+}
+
 // ---------- Cache Routes ----------
 
-router.get('/stats', authRequired, roleRequired('admin'), async (_req, res) => {
+router.get('/stats', applyAuthRequired, applyRoleRequired('admin'), async (_req, res) => {
   try {
     const cacheStats = cache.getStats();
     res.json({
@@ -65,7 +94,7 @@ router.get('/stats', authRequired, roleRequired('admin'), async (_req, res) => {
 });
 
 // Query performance metrics endpoint (admin only)
-router.get('/database/metrics', authRequired, roleRequired('admin'), async (_req, res) => {
+router.get('/database/metrics', applyAuthRequired, applyRoleRequired('admin'), async (_req, res) => {
   try {
     const queryMetrics = dbUnified.getQueryMetrics ? dbUnified.getQueryMetrics() : {};
     res.json({
@@ -80,7 +109,7 @@ router.get('/database/metrics', authRequired, roleRequired('admin'), async (_req
 });
 
 // Cache clear endpoint (admin only)
-router.post('/clear', authRequired, roleRequired('admin'), csrfProtection, async (_req, res) => {
+router.post('/clear', applyAuthRequired, applyRoleRequired('admin'), applyCsrfProtection, async (_req, res) => {
   try {
     await cache.clear();
     res.json({

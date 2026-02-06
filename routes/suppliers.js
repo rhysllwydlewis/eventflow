@@ -26,6 +26,22 @@ function initializeDependencies(deps) {
     throw new Error('Suppliers routes: dependencies object is required');
   }
 
+  // Validate required dependencies
+  const required = [
+    'dbUnified',
+    'authRequired',
+    'roleRequired',
+    'supplierAnalytics',
+    'getUserFromCookie',
+    'supplierIsProActive',
+    'logger',
+  ];
+
+  const missing = required.filter(key => deps[key] === undefined);
+  if (missing.length > 0) {
+    throw new Error(`Suppliers routes: missing required dependencies: ${missing.join(', ')}`);
+  }
+
   dbUnified = deps.dbUnified;
   authRequired = deps.authRequired;
   roleRequired = deps.roleRequired;
@@ -33,6 +49,28 @@ function initializeDependencies(deps) {
   getUserFromCookie = deps.getUserFromCookie;
   supplierIsProActive = deps.supplierIsProActive;
   logger = deps.logger;
+}
+
+/**
+ * Deferred middleware wrappers
+ * These are safe to reference in route definitions at require() time
+ * because they defer the actual middleware call to request time,
+ * when dependencies are guaranteed to be initialized.
+ */
+function applyAuthRequired(req, res, next) {
+  if (!authRequired) {
+    return res.status(503).json({ error: 'Auth service not initialized' });
+  }
+  return authRequired(req, res, next);
+}
+
+function applyRoleRequired(role) {
+  return (req, res, next) => {
+    if (!roleRequired) {
+      return res.status(503).json({ error: 'Role service not initialized' });
+    }
+    return roleRequired(role)(req, res, next);
+  };
 }
 
 // Helper function to check if package is featured
@@ -179,7 +217,7 @@ router.get('/suppliers/:id/packages', async (req, res) => {
  * GET /api/me/suppliers
  * Get current user's suppliers (supplier role only)
  */
-router.get('/me/suppliers', authRequired, roleRequired('supplier'), async (req, res) => {
+router.get('/me/suppliers', applyAuthRequired, applyRoleRequired('supplier'), async (req, res) => {
   const listRaw = (await dbUnified.read('suppliers')).filter(s => s.ownerUserId === req.user.id);
   const list = listRaw.map(s => ({
     ...s,

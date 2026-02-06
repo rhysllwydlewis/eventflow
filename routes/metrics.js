@@ -39,15 +39,44 @@ function initializeDependencies(deps) {
   seed = deps.seed;
 }
 
+/**
+ * Deferred middleware wrappers
+ * These are safe to reference in route definitions at require() time
+ * because they defer the actual middleware call to request time,
+ * when dependencies are guaranteed to be initialized.
+ */
+function applyAuthRequired(req, res, next) {
+  if (!authRequired) {
+    return res.status(503).json({ error: 'Auth service not initialized' });
+  }
+  return authRequired(req, res, next);
+}
+
+function applyRoleRequired(role) {
+  return (req, res, next) => {
+    if (!roleRequired) {
+      return res.status(503).json({ error: 'Role service not initialized' });
+    }
+    return roleRequired(role)(req, res, next);
+  };
+}
+
+function applyCsrfProtection(req, res, next) {
+  if (!csrfProtection) {
+    return res.status(503).json({ error: 'CSRF service not initialized' });
+  }
+  return csrfProtection(req, res, next);
+}
+
 // ---------- Metrics Routes ----------
 
-router.post('/metrics/track', csrfProtection, async (req, res) => {
+router.post('/metrics/track', applyCsrfProtection, async (req, res) => {
   // In a real deployment you could log req.body here.
   res.json({ ok: true });
 });
 
 // Simple synthetic timeseries for admin charts
-router.get('/admin/metrics/timeseries', authRequired, roleRequired('admin'), async (_req, res) => {
+router.get('/admin/metrics/timeseries', applyAuthRequired, applyRoleRequired('admin'), async (_req, res) => {
   const today = new Date();
   const days = 14;
   const series = [];
@@ -66,7 +95,7 @@ router.get('/admin/metrics/timeseries', authRequired, roleRequired('admin'), asy
 });
 
 // ---------- Admin ----------
-router.get('/admin/metrics', authRequired, roleRequired('admin'), async (_req, res) => {
+router.get('/admin/metrics', applyAuthRequired, applyRoleRequired('admin'), async (_req, res) => {
   const users = await dbUnified.read('users');
   const suppliers = await dbUnified.read('suppliers');
   const plans = await dbUnified.read('plans');
@@ -91,9 +120,9 @@ router.get('/admin/metrics', authRequired, roleRequired('admin'), async (_req, r
 
 router.post(
   '/admin/reset-demo',
-  authRequired,
-  roleRequired('admin'),
-  csrfProtection,
+  applyAuthRequired,
+  applyRoleRequired('admin'),
+  applyCsrfProtection,
   async (req, res) => {
     try {
       // Clear key collections and rerun seeding
