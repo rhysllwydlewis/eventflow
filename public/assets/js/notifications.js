@@ -292,9 +292,8 @@
 
   function playNotificationSound() {
     try {
-      // Check if notification sounds are enabled
-      const soundEnabled = localStorage.getItem('ef_notification_sound_enabled');
-      if (soundEnabled === 'false') {
+      // Check if notification sounds are enabled (use state as single source of truth)
+      if (!state.soundEnabled) {
         return; // Don't play sound if disabled
       }
 
@@ -561,6 +560,8 @@
     // This prevents duplicate event listeners if init is called multiple times
     const newBell = bell.cloneNode(true);
     bell.parentNode.replaceChild(newBell, bell);
+    // FIX: Ensure the cloned bell inherits the visible state
+    newBell.style.display = 'flex';
 
     // Toggle dropdown - attach to the new button element
     newBell.addEventListener('click', e => {
@@ -689,7 +690,10 @@
           return state.soundEnabled;
         },
         // Expose reinit for debugging
-        reinit: initDropdown,
+        reinit: () => {
+          window.__notificationDropdownInitialized = false;
+          initDropdown();
+        },
       };
 
       console.log('Notification system: Initialization complete');
