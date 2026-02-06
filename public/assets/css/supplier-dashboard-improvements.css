@@ -2192,23 +2192,6 @@ textarea:focus {
   outline: none;
 }
 
-/* Skip link improvements */
-.skip-link {
-  position: absolute;
-  left: -9999px;
-  z-index: 9999;
-  padding: var(--ef-space-4, 16px);
-  background: var(--ef-primary, #0b8073);
-  color: white;
-  text-decoration: none;
-  font-weight: var(--ef-font-semibold, 600);
-  border-radius: 0 0 var(--ef-radius-md, 10px) 0;
-}
-
-.skip-link:focus {
-  left: 0;
-}
-
 /* ===========================================
    30. ACCESSIBILITY - COLOR CONTRAST
    =========================================== */
@@ -2527,26 +2510,6 @@ textarea:focus-visible {
   outline: none;
   border-color: var(--ef-primary, #0b8073);
   box-shadow: 0 0 0 3px rgba(11, 128, 115, 0.2);
-}
-
-/* Skip link styling */
-.skip-link {
-  position: absolute;
-  left: -9999px;
-  top: 0;
-  z-index: 10000;
-  padding: var(--ef-space-3, 12px) var(--ef-space-5, 24px);
-  background: var(--ef-primary, #0b8073);
-  color: white;
-  text-decoration: none;
-  font-weight: var(--ef-font-semibold, 600);
-  border-radius: 0 0 var(--ef-radius-md, 10px) 0;
-}
-
-.skip-link:focus {
-  left: 0;
-  outline: 3px solid white;
-  outline-offset: -3px;
 }
 
 /* ===========================================
