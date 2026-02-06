@@ -169,9 +169,9 @@ async function processGooglePayPayment(paymentsClient, amount, planId, planName)
       throw new Error('No payment token received from Google Pay');
     }
 
-    // Write payment data to Firestore for Firebase extension to process
-    // DO NOT process payment on frontend
-    const result = await writePaymentToFirestore(paymentData, amount, planId);
+    // Process payment data via server-side API
+    // NOTE: This will fail until server-side payment processing is implemented
+    const result = await processPaymentData(paymentData, amount, planId);
 
     return {
       success: true,
@@ -198,14 +198,14 @@ async function processGooglePayPayment(paymentsClient, amount, planId, planName)
 }
 
 /**
- * Write payment data to server
- * Server-side API will process the payment
+ * Process payment data via server-side API
+ * NOTE: This is a stub - payment processing needs to be implemented server-side
  * @param {object} _paymentData - Payment data from Google Pay (unused, for future implementation)
  * @param {number} _amount - Plan price (unused, for future implementation)
  * @param {string} _planId - Plan identifier (unused, for future implementation)
  * @returns {Promise<object>}
  */
-async function writePaymentToFirestore(_paymentData, _amount, _planId) {
+async function processPaymentData(_paymentData, _amount, _planId) {
   // TODO: Implement server-side payment processing API
   // This function should call a server endpoint to process the payment
   // The server should use Stripe (as indicated in project docs) instead of Google Pay

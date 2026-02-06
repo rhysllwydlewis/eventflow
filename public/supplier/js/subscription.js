@@ -368,7 +368,7 @@ async function handleGooglePayClick(plan) {
     if (result.success) {
       showSuccess('Payment successful! Your subscription is being activated...');
 
-      // Wait a moment for the Firebase extension to process
+      // Redirect to dashboard
       setTimeout(() => {
         window.location.href = '/dashboard-supplier.html?subscription=success';
       }, 2000);
