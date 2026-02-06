@@ -1425,6 +1425,46 @@ async function initPexelsCollage(settings) {
 }
 
 /**
+ * Video loading with retry logic and exponential backoff
+ * @param {string} videoUrl - URL to fetch video data from
+ * @param {number} maxRetries - Maximum number of retry attempts (default: 3)
+ * @returns {Promise<Object|null>} Video data or null if all retries failed
+ */
+async function loadHeroVideoWithRetry(videoUrl, maxRetries = 3) {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await fetch(videoUrl);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      
+      const data = await response.json();
+      if (data.videos && data.videos.length > 0) {
+        if (window.__videoMetrics__) {
+          window.__videoMetrics__.heroVideoSuccesses++;
+        }
+        return data; // Success!
+      }
+    } catch (error) {
+      console.warn(`Hero video load attempt ${attempt}/${maxRetries} failed:`, error);
+      if (window.__videoMetrics__) {
+        window.__videoMetrics__.heroVideoFailures++;
+      }
+      
+      if (attempt < maxRetries) {
+        // Exponential backoff: 1s, 2s, 4s
+        await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt - 1) * 1000));
+      }
+    }
+  }
+  
+  // All retries failed
+  if (window.__videoMetrics__) {
+    window.__videoMetrics__.lastError = 'Hero video failed after 3 attempts';
+  }
+  console.error('Hero video failed to load after all retries');
+  return null;
+}
+
+/**
  * Initialize hero video element with Pexels video
  * Features:
  * - Supports both Pexels API and uploaded videos
@@ -1524,7 +1564,7 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = [], heroVideoCo
     }
 
     if ((source === 'pexels' || source === 'uploads') && useVideos) {
-      // Fetch Pexels video
+      // Fetch Pexels video with retry logic
       const eventQueries = ['wedding', 'party', 'corporate event', 'celebration', 'event venue'];
       const randomQuery = eventQueries[Math.floor(Math.random() * eventQueries.length)];
 
@@ -1537,19 +1577,13 @@ async function initHeroVideo(source, mediaTypes, uploadGallery = [], heroVideoCo
         console.log('[Hero Video] Fetching Pexels video with query:', randomQuery);
       }
 
-      const response = await fetch(
-        `/api/admin/public/pexels-video?query=${encodeURIComponent(randomQuery)}`
-      );
+      const videoUrl = `/api/admin/public/pexels-video?query=${encodeURIComponent(randomQuery)}`;
+      const data = await loadHeroVideoWithRetry(videoUrl);
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        if (isDebugEnabled()) {
-          console.warn('[Hero Video] API error:', response.status, errorText);
-        }
-        throw new Error(`Failed to fetch video: ${response.status}`);
+      if (!data) {
+        // All retries failed
+        throw new Error('Failed to fetch video after retries');
       }
-
-      const data = await response.json();
 
       if (isDebugEnabled()) {
         console.log('[Hero Video] API response:', {

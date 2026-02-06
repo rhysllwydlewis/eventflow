@@ -135,13 +135,18 @@ class Counter {
   }
 
   animate() {
+    // Easing function for smoother animation
+    function easeOutQuart(t) {
+      return 1 - Math.pow(1 - t, 4);
+    }
+
     const startTime = Date.now();
     const step = () => {
       const elapsed = Date.now() - startTime;
       const progress = Math.min(elapsed / this.duration, 1);
 
-      // Easing function (ease-out)
-      const easeProgress = 1 - Math.pow(1 - progress, 3);
+      // Inside the counter interval:
+      const easeProgress = easeOutQuart(progress);
       const current = this.start + (this.target - this.start) * easeProgress;
 
       this.element.textContent = this.format(current);
