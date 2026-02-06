@@ -832,4 +832,37 @@ html[data-theme="dark"] .pack:hover {
   font-size: 0.75rem;
 }
 
+/* Enhanced step indicators */
+.ef-step-indicator {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #0B8073 0%, #13B6A2 100%);
+  color: white;
+  font-size: 28px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px auto;
+  box-shadow: 0 4px 12px rgba(11, 128, 115, 0.25);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.ef-step-indicator:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(11, 128, 115, 0.35);
+}
+
+/* Trust badge icon hover */
+.ef-card--hover:hover .ef-card__icon {
+  color: #0B8073;
+  transition: color 0.3s ease;
+}
+
+.ef-card__icon {
+  color: inherit;
+  transition: color 0.3s ease;
+}
+
 

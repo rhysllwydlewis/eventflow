@@ -1,5 +1,29 @@
 /* EventFlow Animations CSS - Animation library and keyframes */
 
+/* Respect user's motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  
+  /* Disable floating animations */
+  .ef-float,
+  .hero-blob {
+    animation: none !important;
+  }
+  
+  /* Disable fade-up animations */
+  .ef-fade-up {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
 /* Keyframe Animations */
 @keyframes fadeIn {
   from {
