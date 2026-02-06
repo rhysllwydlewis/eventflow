@@ -154,7 +154,7 @@ const options = {
       { name: 'User', description: 'User profile and preferences' },
     ],
   },
-  apis: ['./server.js', './docs/*.js'], // paths to files with API annotations
+  apis: ['./server.js', './routes/*.js', './docs/*.js'], // paths to files with API annotations
 };
 
 const swaggerSpec = swaggerJsdoc(options);

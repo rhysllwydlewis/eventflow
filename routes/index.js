@@ -31,6 +31,20 @@ const guestsRoutes = require('./guests');
 const savedRoutes = require('./saved');
 const supplierRoutes = require('./supplier');
 
+// New extracted route modules
+const suppliersRoutes = require('./suppliers');
+const categoriesRoutes = require('./categories');
+const plansLegacyRoutes = require('./plans-legacy');
+const threadsRoutes = require('./threads');
+const marketplaceRoutes = require('./marketplace');
+const discoveryRoutes = require('./discovery');
+const searchRoutes = require('./search');
+const reviewsRoutes = require('./reviews');
+const photosRoutes = require('./photos');
+const metricsRoutes = require('./metrics');
+const cacheRoutes = require('./cache');
+const miscRoutes = require('./misc');
+
 /**
  * Mount all route modules
  * @param {Object} app - Express app instance
@@ -103,6 +117,81 @@ function mountRoutes(app, deps) {
 
   // Supplier routes (trial activation, analytics)
   app.use('/api/supplier', supplierRoutes);
+
+  // ===== NEW EXTRACTED ROUTES (from server.js refactor) =====
+
+  // Suppliers & Packages routes (Phase 1)
+  if (deps && suppliersRoutes.initializeDependencies) {
+    suppliersRoutes.initializeDependencies(deps);
+  }
+  app.use('/api', suppliersRoutes);
+
+  // Categories routes (Phase 2)
+  if (deps && categoriesRoutes.initializeDependencies) {
+    categoriesRoutes.initializeDependencies(deps);
+  }
+  app.use('/api/categories', categoriesRoutes);
+
+  // Plans Legacy & Notes routes (Phase 3)
+  if (deps && plansLegacyRoutes.initializeDependencies) {
+    plansLegacyRoutes.initializeDependencies(deps);
+  }
+  app.use('/api', plansLegacyRoutes);
+
+  // Threads routes (Phase 4)
+  if (deps && threadsRoutes.initializeDependencies) {
+    threadsRoutes.initializeDependencies(deps);
+  }
+  app.use('/api/threads', threadsRoutes);
+
+  // Marketplace routes (Phase 4)
+  if (deps && marketplaceRoutes.initializeDependencies) {
+    marketplaceRoutes.initializeDependencies(deps);
+  }
+  app.use('/api/marketplace', marketplaceRoutes);
+
+  // Discovery routes (Phase 5)
+  if (deps && discoveryRoutes.initializeDependencies) {
+    discoveryRoutes.initializeDependencies(deps);
+  }
+  app.use('/api/discovery', discoveryRoutes);
+
+  // Search routes (Phase 5)
+  if (deps && searchRoutes.initializeDependencies) {
+    searchRoutes.initializeDependencies(deps);
+  }
+  app.use('/api/search', searchRoutes);
+
+  // Reviews routes (Phase 5)
+  if (deps && reviewsRoutes.initializeDependencies) {
+    reviewsRoutes.initializeDependencies(deps);
+  }
+  app.use('/api', reviewsRoutes);
+
+  // Photos routes (Phase 6)
+  if (deps && photosRoutes.initializeDependencies) {
+    photosRoutes.initializeDependencies(deps);
+  }
+  app.use('/api', photosRoutes);
+
+  // Metrics routes (Phase 7)
+  if (deps && metricsRoutes.initializeDependencies) {
+    metricsRoutes.initializeDependencies(deps);
+  }
+  app.use('/api', metricsRoutes);
+
+  // Cache routes (Phase 7)
+  if (deps && cacheRoutes.initializeDependencies) {
+    cacheRoutes.initializeDependencies(deps);
+  }
+  app.use('/api/admin/cache', cacheRoutes);
+  app.use('/api/admin', cacheRoutes); // For /database/metrics route
+
+  // Miscellaneous routes (Phase 7)
+  if (deps && miscRoutes.initializeDependencies) {
+    miscRoutes.initializeDependencies(deps);
+  }
+  app.use('/api', miscRoutes);
 }
 
 module.exports = {
