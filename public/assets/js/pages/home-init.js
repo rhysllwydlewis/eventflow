@@ -224,7 +224,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Subscribe to auth state changes
     authState.onchange(user => {
       // Support both old and new notification bell IDs
-      const notificationBell = document.getElementById('ef-notification-btn') || document.getElementById('notification-bell');
+      const notificationBell =
+        document.getElementById('ef-notification-btn') ||
+        document.getElementById('notification-bell');
       if (notificationBell) {
         notificationBell.style.display = user ? 'block' : 'none';
       }
