@@ -43,8 +43,12 @@ const {
   roleRequired,
   getUserFromCookie,
   clearAuthCookie,
+  userExtractionMiddleware,
 } = require('./middleware/auth');
 const { featureRequired } = require('./middleware/features');
+const { apiCacheControlMiddleware, staticCachingMiddleware } = require('./middleware/cache');
+const { noindexMiddleware } = require('./middleware/seo');
+const { adminPageProtectionMiddleware } = require('./middleware/adminPages');
 
 // Utility modules
 const validators = require('./utils/validators');
@@ -308,15 +312,8 @@ async function sendMail(toOrOpts, subject, text) {
   return emailConfig.sendMail(toOrOpts, subject, text);
 }
 
-// User extraction middleware
-app.use((req, res, next) => {
-  const u = getUserFromCookie(req);
-  if (u) {
-    req.user = u;
-    req.userId = u.id;
-  }
-  next();
-});
+// User extraction middleware - extracts user from JWT cookie
+app.use(userExtractionMiddleware);
 
 // Maintenance mode check - blocks non-admin users if enabled
 // Must come after user extraction so it can check user role
@@ -325,29 +322,7 @@ app.use(maintenanceMode);
 
 // ---------- API Cache Control Middleware ----------
 // SECURITY: Prevent service worker and intermediaries from caching sensitive API responses
-// This middleware sets Cache-Control headers for API endpoints to prevent stale security risks
-app.use('/api', (req, res, next) => {
-  // Allowlist of safe cacheable API endpoints (public, non-sensitive data)
-  // NOTE: Only endpoints returning truly public data should be here
-  // Health/ready/performance endpoints expose internal config and should NOT be cached
-  const SAFE_CACHEABLE_ENDPOINTS = [
-    '/api/config', // Public config (Google Maps key, version)
-    '/api/meta', // App metadata (version, node version, env)
-  ];
-
-  // Check if this is a safe cacheable endpoint
-  const isSafeCacheable = SAFE_CACHEABLE_ENDPOINTS.includes(req.path);
-
-  // For safe endpoints, allow downstream handlers to set their own cache headers
-  // For all other API endpoints, set no-store to prevent caching
-  if (!isSafeCacheable) {
-    // Set default no-store header for sensitive endpoints
-    // This prevents caching by browsers, service workers, and intermediaries
-    res.setHeader('Cache-Control', 'no-store, private');
-  }
-
-  next();
-});
+app.use('/api', apiCacheControlMiddleware());
 
 // ---------- Static File Serving ----------
 // Serve static files early in the middleware chain (before API routes)
@@ -356,63 +331,10 @@ app.use('/api', (req, res, next) => {
 // ---------- SEO: Noindex Middleware for Non-Public Pages ----------
 // Add X-Robots-Tag header to prevent indexing of authenticated/private pages
 // This MUST come before express.static() so it intercepts HTML file requests
-app.use((req, res, next) => {
-  // List of non-public pages that should not be indexed
-  const noindexPaths = [
-    '/auth.html',
-    '/reset-password.html',
-    '/dashboard.html',
-    '/dashboard-customer.html',
-    '/dashboard-supplier.html',
-    '/messages.html',
-    '/guests.html',
-    '/checkout.html',
-    '/my-marketplace-listings.html',
-  ];
+app.use(noindexMiddleware());
 
-  // Check if path matches a noindex page (exact match)
-  if (noindexPaths.includes(req.path)) {
-    res.setHeader('X-Robots-Tag', 'noindex, nofollow');
-    logger.info(`X-Robots-Tag noindex applied to ${req.path}`);
-  }
-
-  // Also apply to admin pages (already blocked by middleware, but extra defense)
-  if (req.path.startsWith('/admin') && req.path.endsWith('.html')) {
-    res.setHeader('X-Robots-Tag', 'noindex, nofollow');
-  }
-
-  next();
-});
-
-// Static assets with caching strategy (fixes poor cache headers)
-app.use((req, res, next) => {
-  // Short-term caching for HTML pages (5 minutes)
-  if (req.path.endsWith('.html') || req.path === '/') {
-    res.setHeader('Cache-Control', 'public, max-age=300, must-revalidate');
-    return next();
-  }
-
-  // Cache versioned assets (with hash in filename) for 1 year
-  // Matches common hash patterns: 8, 12, or 16 hex characters (webpack, vite, etc.)
-  // Separate patterns allow for precise matching without overly permissive patterns
-  if (
-    req.path.match(/\.[0-9a-f]{8}\.(css|js|jpg|jpeg|png|gif|webp|svg|woff|woff2|ttf|eot)$/i) ||
-    req.path.match(/\.[0-9a-f]{12}\.(css|js|jpg|jpeg|png|gif|webp|svg|woff|woff2|ttf|eot)$/i) ||
-    req.path.match(/\.[0-9a-f]{16}\.(css|js|jpg|jpeg|png|gif|webp|svg|woff|woff2|ttf|eot)$/i)
-  ) {
-    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
-    return next();
-  }
-
-  // Cache static assets (images, fonts, CSS, JS) for 1 week
-  if (req.path.match(/\.(css|js|jpg|jpeg|png|gif|webp|svg|woff|woff2|ttf|eot|ico)$/i)) {
-    res.setHeader('Cache-Control', 'public, max-age=604800, must-revalidate');
-    return next();
-  }
-
-  // Default: no special caching
-  next();
-});
+// Static assets with caching strategy
+app.use(staticCachingMiddleware());
 
 // Dynamic verification route - CRITICAL: Must be before express.static()
 // This ensures /verify is handled by the backend route, not static file serving
@@ -520,60 +442,7 @@ if (process.env.NODE_ENV === 'production') {
 // CRITICAL: This middleware MUST come before express.static()
 // Protects all admin HTML pages from unauthorized access at the server level
 // Client-side dashboard-guard.js remains as a fallback, but server is primary enforcement
-
-// Allowlist of valid admin pages (for security - no regex matching)
-const ADMIN_PAGES = [
-  '/admin.html',
-  '/admin-audit.html',
-  '/admin-content.html',
-  '/admin-homepage.html',
-  '/admin-marketplace.html',
-  '/admin-packages.html',
-  '/admin-payments.html',
-  '/admin-pexels.html',
-  '/admin-photos.html',
-  '/admin-reports.html',
-  '/admin-settings.html',
-  '/admin-supplier-detail.html',
-  '/admin-suppliers.html',
-  '/admin-tickets.html',
-  '/admin-user-detail.html',
-  '/admin-users.html',
-];
-
-app.use((req, res, next) => {
-  // Check if requesting an admin HTML page (using allowlist for security)
-  if (ADMIN_PAGES.includes(req.path)) {
-    const user = getUserFromCookie(req);
-
-    // Not authenticated - redirect to login with sanitized return path
-    if (!user) {
-      logger.info(`Admin page access denied (not authenticated): ${req.path}`, {
-        ip: req.ip,
-        userAgent: req.get('user-agent'),
-      });
-      // Redirect path is already validated by allowlist check above
-      return res.redirect(`/auth.html?redirect=${encodeURIComponent(req.path)}`);
-    }
-
-    // Authenticated but not admin - redirect to dashboard with message
-    if (user.role !== 'admin') {
-      logger.warn(`Admin page access denied (insufficient role): ${req.path}`, {
-        userId: user.id,
-        userRole: user.role,
-        ip: req.ip,
-      });
-      return res.redirect('/dashboard.html?msg=admin_required');
-    }
-
-    // Admin user - allow access
-    logger.info(`Admin page access granted: ${req.path}`, {
-      userId: user.id,
-      userRole: user.role,
-    });
-  }
-  next();
-});
+app.use(adminPageProtectionMiddleware());
 
 // ---------- Template Rendering Middleware ----------
 // CRITICAL: Must come before express.static() to process HTML files with placeholders

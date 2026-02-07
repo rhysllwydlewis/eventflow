@@ -237,6 +237,23 @@ function roleRequired(role) {
 }
 
 /**
+ * Middleware to extract user from JWT cookie
+ * Sets req.user and req.userId if valid token exists
+ * Non-blocking - continues even if no valid token
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next function
+ */
+function userExtractionMiddleware(req, res, next) {
+  const u = getUserFromCookie(req);
+  if (u) {
+    req.user = u;
+    req.userId = u.id;
+  }
+  next();
+}
+
+/**
  * Middleware to check if user owns a plan
  * @param {Object} req - Express request object
  * @param {Object} res - Express response object
@@ -257,6 +274,7 @@ module.exports = {
   setAuthCookie,
   clearAuthCookie,
   getUserFromCookie,
+  userExtractionMiddleware,
   authRequired,
   roleRequired,
   planOwnerOnly,
