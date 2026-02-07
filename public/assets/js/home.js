@@ -11,16 +11,12 @@
   // Hide video container if no source is provided
   // ========================================
 
-  // Check if running in development environment
-  function isDevelopmentEnvironment() {
-    const hostname = window.location.hostname;
-    return (
-      hostname === 'localhost' ||
-      hostname === '127.0.0.1' ||
-      hostname === '::1' ||
-      hostname.endsWith('.local')
-    );
-  }
+  // Check if running in development environment (constant as environment doesn't change at runtime)
+  const IS_DEVELOPMENT =
+    window.location.hostname === 'localhost' ||
+    window.location.hostname === '127.0.0.1' ||
+    window.location.hostname === '::1' ||
+    window.location.hostname.endsWith('.local');
 
   function initHeroVideo() {
     const videoElement = document.getElementById('hero-pexels-video');
@@ -34,7 +30,7 @@
         // No source provided, hide the video container
         videoContainer.style.display = 'none';
         // Only log in development to avoid cluttering production console
-        if (isDevelopmentEnvironment()) {
+        if (IS_DEVELOPMENT) {
           console.info('Hero video hidden: No source provided');
         }
       } else {

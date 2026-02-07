@@ -75,7 +75,7 @@ export function trackQuoteRequestStarted(supplierCount) {
   if (typeof window.gtag === 'function') {
     window.gtag('event', 'begin_checkout', {
       value: supplierCount,
-      currency: 'GBP',
+      currency: 'GBP', // Fixed currency - EventFlow operates in UK market
     });
   }
   console.log('Quote request started:', { supplierCount });
