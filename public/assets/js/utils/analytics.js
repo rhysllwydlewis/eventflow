@@ -66,3 +66,17 @@ export function trackShortlistAdd(type, id) {
   }
   console.log('Shortlist add tracked:', { type, id });
 }
+
+/**
+ * Track quote request started
+ * @param {number} supplierCount - Number of suppliers in the quote request
+ */
+export function trackQuoteRequestStarted(supplierCount) {
+  if (typeof window.gtag === 'function') {
+    window.gtag('event', 'begin_checkout', {
+      value: supplierCount,
+      currency: 'GBP',
+    });
+  }
+  console.log('Quote request started:', { supplierCount });
+}

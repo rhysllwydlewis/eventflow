@@ -4,7 +4,7 @@
  */
 
 import shortlistManager from '../utils/shortlist-manager.js';
-import { trackQuoteRequestStarted } from '../../../../utils/analytics.js';
+import { trackQuoteRequestStarted } from '../utils/analytics.js';
 
 class ShortlistDrawer {
   constructor() {

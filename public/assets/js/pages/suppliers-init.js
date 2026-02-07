@@ -3,13 +3,13 @@
  * URL-driven filters, search integration, shortlist and quote features
  */
 
-import { getFiltersFromURL, updateURL, handlePopState } from '../../../utils/url-state.js';
+import { getFiltersFromURL, updateURL, handlePopState } from '../utils/url-state.js';
 import {
   trackSearch,
   trackFilterChange,
   trackResultClick,
   trackShortlistAdd,
-} from '../../../utils/analytics.js';
+} from '../utils/analytics.js';
 import shortlistManager from '../utils/shortlist-manager.js';
 
 // HTML escaping utility
