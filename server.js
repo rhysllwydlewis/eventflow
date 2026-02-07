@@ -2188,25 +2188,9 @@ app.post(
 // ---------- Plan & Notes (customer) ----------
 
 // ---------- Settings ----------
-app.get('/api/me/settings', authRequired, async (req, res) => {
-  const users = await dbUnified.read('users');
-  const i = users.findIndex(u => u.id === req.user.id);
-  if (i < 0) {
-    return res.status(404).json({ error: 'Not found' });
-  }
-  res.json({ notify: users[i].notify !== false });
-});
-
-app.post('/api/me/settings', authRequired, csrfProtection, async (req, res) => {
-  const users = await dbUnified.read('users');
-  const i = users.findIndex(u => u.id === req.user.id);
-  if (i < 0) {
-    return res.status(404).json({ error: 'Not found' });
-  }
-  users[i].notify = !!(req.body && req.body.notify);
-  await dbUnified.write('users', users);
-  res.json({ ok: true, notify: users[i].notify });
-});
+// Settings routes (GET/POST /api/me/settings) moved to routes/settings.js
+const settingsRoutes = require('./routes/settings');
+app.use('/api/me/settings', settingsRoutes);
 
 // ---------- Meta & status ----------
 // Meta endpoint moved to routes/system.js
