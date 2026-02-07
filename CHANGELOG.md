@@ -5,6 +5,26 @@ All notable changes to EventFlow will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- **Server Architecture Refactoring**: Modular architecture with 24% reduction in server.js size
+  - Extracted inline middleware to dedicated files (`middleware/seo.js`, `middleware/adminPages.js`)
+  - Enhanced `middleware/auth.js` with `userExtractionMiddleware()`
+  - Enhanced `middleware/cache.js` with API cache control and static caching middleware
+  - Extracted route handlers to modular files (`routes/static.js`, `routes/dashboard.js`, `routes/settings.js`)
+  - Enhanced `routes/photos.js` with GET /photos/:id endpoint for MongoDB photo serving
+  - Removed duplicate route definitions (auth, photos, public stats)
+  - Reduced server.js from 4904 lines (152KB) to 3760 lines (117KB)
+  - Improved code maintainability and organization
+  - Preserved all existing functionality and backward compatibility
+  - Maintained deferred middleware patterns for MongoDB initialization
+
+### Added
+
+- **Documentation**: Created `REFACTORING_SUMMARY.md` documenting architecture improvements
+
 ## [18.1.0] - 2026-01-24
 
 ### Added
