@@ -89,6 +89,24 @@ function applyCsrfProtection(req, res, next) {
   return csrfProtection(req, res, next);
 }
 
+function applyPhotoUploadArray(fieldName, maxCount) {
+  return (req, res, next) => {
+    if (!photoUpload) {
+      return res.status(503).json({ error: 'Photo upload service not initialized' });
+    }
+    return photoUpload.upload.array(fieldName, maxCount)(req, res, next);
+  };
+}
+
+function applyPhotoUploadSingle(fieldName) {
+  return (req, res, next) => {
+    if (!photoUpload) {
+      return res.status(503).json({ error: 'Photo upload service not initialized' });
+    }
+    return photoUpload.upload.single(fieldName)(req, res, next);
+  };
+}
+
 // ---------- Photo Upload Routes ----------
 
 /**
@@ -99,7 +117,7 @@ router.post(
   '/photos/upload',
   applyFeatureRequired('photoUploads'),
   applyAuthRequired,
-  photoUpload.upload.array('files', 5), // Support up to 5 files for marketplace
+  applyPhotoUploadArray('files', 5), // Support up to 5 files for marketplace
   applyCsrfProtection,
   async (req, res) => {
     try {
@@ -264,7 +282,7 @@ router.post(
 router.post(
   '/photos/upload/batch',
   applyAuthRequired,
-  photoUpload.upload.array('photos', 10),
+  applyPhotoUploadArray('photos', 10),
   applyCsrfProtection,
   async (req, res) => {
     try {
@@ -472,9 +490,9 @@ router.delete('/photos/delete', applyAuthRequired, applyCsrfProtection, async (r
  */
 router.post(
   '/photos/approve',
-  authRequired,
-  roleRequired('admin'),
-  csrfProtection,
+  applyAuthRequired,
+  applyRoleRequired('admin'),
+  applyCsrfProtection,
   async (req, res) => {
     try {
       const { type, id, photoUrl, approved } = req.body;
@@ -650,9 +668,9 @@ router.put('/photos/:id', applyAuthRequired, applyCsrfProtection, async (req, re
  */
 router.post(
   '/photos/:id/replace',
-  authRequired,
-  photoUpload.upload.single('photo'),
-  csrfProtection,
+  applyAuthRequired,
+  applyPhotoUploadSingle('photo'),
+  applyCsrfProtection,
   async (req, res) => {
     try {
       const { id } = req.params;
@@ -766,23 +784,28 @@ router.post('/photos/reorder', applyAuthRequired, applyCsrfProtection, async (re
 
 // ---------- Admin Photo Management Routes ----------
 
-router.get('/admin/photos/pending', applyAuthRequired, applyRoleRequired('admin'), async (req, res) => {
-  const photos = await dbUnified.read('photos');
-  const pendingPhotos = photos.filter(p => p.status === 'pending');
+router.get(
+  '/admin/photos/pending',
+  applyAuthRequired,
+  applyRoleRequired('admin'),
+  async (req, res) => {
+    const photos = await dbUnified.read('photos');
+    const pendingPhotos = photos.filter(p => p.status === 'pending');
 
-  // Enrich with supplier information
-  const suppliers = await dbUnified.read('suppliers');
-  const enrichedPhotos = pendingPhotos.map(photo => {
-    const supplier = suppliers.find(s => s.id === photo.supplierId);
-    return {
-      ...photo,
-      supplierName: supplier ? supplier.name : 'Unknown',
-      supplierCategory: supplier ? supplier.category : null,
-    };
-  });
+    // Enrich with supplier information
+    const suppliers = await dbUnified.read('suppliers');
+    const enrichedPhotos = pendingPhotos.map(photo => {
+      const supplier = suppliers.find(s => s.id === photo.supplierId);
+      return {
+        ...photo,
+        supplierName: supplier ? supplier.name : 'Unknown',
+        supplierCategory: supplier ? supplier.category : null,
+      };
+    });
 
-  res.json({ photos: enrichedPhotos });
-});
+    res.json({ photos: enrichedPhotos });
+  }
+);
 
 /**
  * GET /api/admin/photos
@@ -826,9 +849,9 @@ router.get('/admin/photos', applyAuthRequired, applyRoleRequired('admin'), async
  */
 router.post(
   '/admin/photos/:id/approve',
-  authRequired,
-  roleRequired('admin'),
-  csrfProtection,
+  applyAuthRequired,
+  applyRoleRequired('admin'),
+  applyCsrfProtection,
   async (req, res) => {
     const { id } = req.params;
     const photos = await dbUnified.read('photos');
@@ -873,9 +896,9 @@ router.post(
  */
 router.post(
   '/admin/photos/:id/reject',
-  authRequired,
-  roleRequired('admin'),
-  csrfProtection,
+  applyAuthRequired,
+  applyRoleRequired('admin'),
+  applyCsrfProtection,
   async (req, res) => {
     const { id } = req.params;
     const { reason } = req.body;
