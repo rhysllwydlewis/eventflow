@@ -469,39 +469,49 @@ router.get('/admin/reviews', applyAuthRequired, applyRoleRequired('admin'), asyn
  * Get flagged reviews for moderation (admin only)
  * GET /api/admin/reviews/flagged
  */
-router.get('/admin/reviews/flagged', applyAuthRequired, applyRoleRequired('admin'), async (req, res) => {
-  try {
-    const flagged = await reviewsSystem.getFlaggedReviews();
+router.get(
+  '/admin/reviews/flagged',
+  applyAuthRequired,
+  applyRoleRequired('admin'),
+  async (req, res) => {
+    try {
+      const flagged = await reviewsSystem.getFlaggedReviews();
 
-    res.json({
-      success: true,
-      count: flagged.length,
-      reviews: flagged,
-    });
-  } catch (error) {
-    console.error('Get flagged reviews error:', error);
-    res.status(500).json({ error: 'Failed to get flagged reviews', details: error.message });
+      res.json({
+        success: true,
+        count: flagged.length,
+        reviews: flagged,
+      });
+    } catch (error) {
+      console.error('Get flagged reviews error:', error);
+      res.status(500).json({ error: 'Failed to get flagged reviews', details: error.message });
+    }
   }
-});
+);
 
 /**
  * Get pending reviews (admin only) - deprecated, use /flagged
  * GET /api/admin/reviews/pending
  */
-router.get('/admin/reviews/pending', applyAuthRequired, applyRoleRequired('admin'), async (req, res) => {
-  try {
-    const flagged = await reviewsSystem.getFlaggedReviews();
+router.get(
+  '/admin/reviews/pending',
+  applyAuthRequired,
+  applyRoleRequired('admin'),
+  async (req, res) => {
+    try {
+      const flagged = await reviewsSystem.getFlaggedReviews();
 
-    res.json({
-      success: true,
-      count: flagged.length,
-      reviews: flagged,
-    });
-  } catch (error) {
-    console.error('Get pending reviews error:', error);
-    res.status(500).json({ error: 'Failed to get pending reviews', details: error.message });
+      res.json({
+        success: true,
+        count: flagged.length,
+        reviews: flagged,
+      });
+    } catch (error) {
+      console.error('Get pending reviews error:', error);
+      res.status(500).json({ error: 'Failed to get pending reviews', details: error.message });
+    }
   }
-});
+);
 
 /**
  * Moderate a review (admin only) - approve or reject
@@ -548,9 +558,9 @@ router.post(
  */
 router.post(
   '/admin/reviews/:reviewId/approve',
-  authRequired,
-  roleRequired('admin'),
-  csrfProtection,
+  applyAuthRequired,
+  applyRoleRequired('admin'),
+  applyCsrfProtection,
   async (req, res) => {
     try {
       const { reviewId } = req.params;
