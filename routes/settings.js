@@ -9,6 +9,7 @@ const express = require('express');
 const { authRequired } = require('../middleware/auth');
 const { csrfProtection } = require('../middleware/csrf');
 const dbUnified = require('../db-unified');
+const logger = require('../utils/logger');
 
 const router = express.Router();
 
@@ -25,7 +26,7 @@ router.get('/', authRequired, async (req, res) => {
     }
     res.json({ notify: users[i].notify !== false });
   } catch (error) {
-    console.error('Error fetching user settings:', error);
+    logger.error('Error fetching user settings:', error);
     res.status(500).json({ error: 'Failed to fetch settings' });
   }
 });
@@ -45,7 +46,7 @@ router.post('/', authRequired, csrfProtection, async (req, res) => {
     await dbUnified.write('users', users);
     res.json({ ok: true, notify: users[i].notify });
   } catch (error) {
-    console.error('Error updating user settings:', error);
+    logger.error('Error updating user settings:', error);
     res.status(500).json({ error: 'Failed to update settings' });
   }
 });

@@ -9,6 +9,7 @@ const express = require('express');
 const path = require('path');
 const { generateSitemap, generateRobotsTxt } = require('../sitemap');
 const { authLimiter } = require('../middleware/rateLimit');
+const logger = require('../utils/logger');
 const sentry = require('../utils/sentry');
 
 const router = express.Router();
@@ -34,7 +35,7 @@ router.get('/sitemap.xml', async (req, res) => {
     res.header('Content-Type', 'application/xml');
     res.send(sitemap);
   } catch (error) {
-    console.error('Error generating sitemap:', error);
+    logger.error('Error generating sitemap:', error);
     sentry.captureException(error);
     res.status(500).send('Error generating sitemap');
   }
@@ -51,7 +52,7 @@ router.get('/robots.txt', (req, res) => {
     res.header('Content-Type', 'text/plain');
     res.send(robotsTxt);
   } catch (error) {
-    console.error('Error generating robots.txt:', error);
+    logger.error('Error generating robots.txt:', error);
     sentry.captureException(error);
     res.status(500).send('Error generating robots.txt');
   }
