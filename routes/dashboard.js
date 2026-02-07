@@ -7,33 +7,41 @@
 
 const express = require('express');
 const path = require('path');
-const { authRequired, roleRequired } = require('../middleware/auth');
-const { authLimiter } = require('../middleware/rateLimit');
+const { authRequired } = require('../middleware/auth');
 
 const router = express.Router();
 
 /**
  * GET /dashboard/customer
- * Serve customer dashboard HTML page
+ * Redirect customer to their dashboard
  */
-router.get('/dashboard/customer', authLimiter, authRequired, roleRequired('customer'), (req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'public', 'dashboard-customer.html'));
+router.get('/dashboard/customer', authRequired, async (req, res) => {
+  if (req.user.role !== 'customer') {
+    return res.redirect('/auth.html');
+  }
+  res.redirect('/dashboard-customer.html');
 });
 
 /**
  * GET /dashboard/supplier
- * Serve supplier dashboard HTML page
+ * Redirect supplier to their dashboard
  */
-router.get('/dashboard/supplier', authLimiter, authRequired, roleRequired('supplier'), (req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'public', 'dashboard-supplier.html'));
+router.get('/dashboard/supplier', authRequired, async (req, res) => {
+  if (req.user.role !== 'supplier') {
+    return res.redirect('/auth.html');
+  }
+  res.redirect('/dashboard-supplier.html');
 });
 
 /**
  * GET /admin
- * Serve admin dashboard HTML page
+ * Redirect to admin dashboard
  */
-router.get('/admin', authLimiter, authRequired, roleRequired('admin'), (req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'public', 'admin.html'));
+router.get('/admin', authRequired, async (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.redirect('/auth.html');
+  }
+  res.redirect('/admin.html');
 });
 
 module.exports = router;

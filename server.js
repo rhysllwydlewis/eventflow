@@ -1233,12 +1233,7 @@ app.delete(
 
 // ---------- Category browsing endpoints ----------
 
-// Cache for public stats
-const publicStatsCache = null;
-const publicStatsCacheTime = 0;
-const PUBLIC_STATS_CACHE_TTL = 300000; // 5 minutes in milliseconds
-
-// Public stats route moved to routes/public.js
+// Public stats route moved to routes/public.js (with its own cache)
 const publicRoutes = require('./routes/public');
 app.use('/api/public', publicRoutes);
 
