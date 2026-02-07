@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Improved code maintainability and organization
   - Preserved all existing functionality and backward compatibility
   - Maintained deferred middleware patterns for MongoDB initialization
+  - Improved logging consistency by replacing console.error with Winston logger in new route files
 
 ### Added
 
