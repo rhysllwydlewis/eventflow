@@ -1153,7 +1153,7 @@ router.post('/:conversationId', applyAuthRequired, applyCsrfProtection, async (r
  * POST /api/messages/:conversationId/read
  * Mark messages in a conversation as read
  */
-router.post('/:conversationId/read', applyAuthRequired, async (req, res) => {
+router.post('/:conversationId/read', applyAuthRequired, applyCsrfProtection, async (req, res) => {
   try {
     const userId = req.user.id;
     const { conversationId } = req.params;

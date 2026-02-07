@@ -466,8 +466,8 @@ router.post('/:id/read', applyAuthRequired, applyCsrfProtection, ensureServices,
  */
 router.post(
   '/threads/:threadId/read',
-  authRequired,
-  csrfProtection,
+  applyAuthRequired,
+  applyCsrfProtection,
   ensureServices,
   async (req, res) => {
     try {
@@ -585,9 +585,9 @@ router.get('/notifications', applyAuthRequired, ensureServices, async (req, res)
  */
 router.post(
   '/notifications',
-  authRequired,
+  applyAuthRequired,
   applyRoleRequired('admin'),
-  csrfProtection,
+  applyCsrfProtection,
   ensureServices,
   async (req, res) => {
     try {
@@ -630,8 +630,8 @@ router.post(
  */
 router.post(
   '/notifications/preferences',
-  authRequired,
-  csrfProtection,
+  applyAuthRequired,
+  applyCsrfProtection,
   ensureServices,
   async (req, res) => {
     try {
@@ -686,8 +686,8 @@ router.get('/notifications/preferences', applyAuthRequired, ensureServices, asyn
  */
 router.post(
   '/notifications/:id/read',
-  authRequired,
-  csrfProtection,
+  applyAuthRequired,
+  applyCsrfProtection,
   ensureServices,
   async (req, res) => {
     try {
@@ -722,8 +722,8 @@ router.post(
  */
 router.delete(
   '/notifications/:id',
-  authRequired,
-  csrfProtection,
+  applyAuthRequired,
+  applyCsrfProtection,
   ensureServices,
   async (req, res) => {
     try {
