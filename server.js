@@ -1234,8 +1234,8 @@ app.delete(
 // ---------- Category browsing endpoints ----------
 
 // Cache for public stats
-let publicStatsCache = null;
-let publicStatsCacheTime = 0;
+const publicStatsCache = null;
+const publicStatsCacheTime = 0;
 const PUBLIC_STATS_CACHE_TTL = 300000; // 5 minutes in milliseconds
 
 // Public stats route moved to routes/public.js
@@ -3016,13 +3016,11 @@ app.post(
 const photosRoutes = require('./routes/photos');
 app.use('/api', photosRoutes);
 
-// ---------- Static & SEO Routes (verify, sitemap, robots.txt) ----------
-const staticRoutes = require('./routes/static');
-app.use('/', staticRoutes);
+// ---------- Static & SEO Routes ----------
+// Already mounted at line 345
 
 // ---------- Dashboard & Page Routes ----------
-const dashboardRoutes = require('./routes/dashboard');
-app.use('/', dashboardRoutes);
+// Already mounted at line 2596
 
 // ---------- Auth Routes ----------
 const authRoutes = require('./routes/auth');
