@@ -8,6 +8,7 @@
 const express = require('express');
 const path = require('path');
 const { authRequired, roleRequired } = require('../middleware/auth');
+const { authLimiter } = require('../middleware/rateLimit');
 
 const router = express.Router();
 
@@ -15,7 +16,7 @@ const router = express.Router();
  * GET /dashboard/customer
  * Serve customer dashboard HTML page
  */
-router.get('/dashboard/customer', authRequired, roleRequired('customer'), (req, res) => {
+router.get('/dashboard/customer', authLimiter, authRequired, roleRequired('customer'), (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'dashboard-customer.html'));
 });
 
@@ -23,7 +24,7 @@ router.get('/dashboard/customer', authRequired, roleRequired('customer'), (req, 
  * GET /dashboard/supplier
  * Serve supplier dashboard HTML page
  */
-router.get('/dashboard/supplier', authRequired, roleRequired('supplier'), (req, res) => {
+router.get('/dashboard/supplier', authLimiter, authRequired, roleRequired('supplier'), (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'dashboard-supplier.html'));
 });
 
@@ -31,7 +32,7 @@ router.get('/dashboard/supplier', authRequired, roleRequired('supplier'), (req, 
  * GET /admin
  * Serve admin dashboard HTML page
  */
-router.get('/admin', authRequired, roleRequired('admin'), (req, res) => {
+router.get('/admin', authLimiter, authRequired, roleRequired('admin'), (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'admin.html'));
 });
 
