@@ -30,6 +30,9 @@ const plansRoutes = require('./plans');
 const guestsRoutes = require('./guests');
 const savedRoutes = require('./saved');
 const supplierRoutes = require('./supplier');
+const supplierAdminRoutes = require('./supplier-admin');
+const supplierManagementRoutes = require('./supplier-management');
+const suppliersV2Routes = require('./suppliers-v2');
 
 // New extracted route modules
 const suppliersRoutes = require('./suppliers');
@@ -118,6 +121,25 @@ function mountRoutes(app, deps) {
 
   // Supplier routes (trial activation, analytics)
   app.use('/api/supplier', supplierRoutes);
+
+  // Supplier Admin routes (admin-only supplier management)
+  if (deps && supplierAdminRoutes.initializeDependencies) {
+    supplierAdminRoutes.initializeDependencies(deps);
+  }
+  app.use('/api/admin', supplierAdminRoutes);
+
+  // Supplier Management routes (supplier owner CRUD and analytics)
+  if (deps && supplierManagementRoutes.initializeDependencies) {
+    supplierManagementRoutes.initializeDependencies(deps);
+  }
+  app.use('/api/me/suppliers', supplierManagementRoutes);
+  app.use('/api/me', supplierManagementRoutes); // For /api/me/subscription/upgrade
+
+  // Suppliers V2 routes (photo gallery management)
+  if (deps && suppliersV2Routes.initializeDependencies) {
+    suppliersV2Routes.initializeDependencies(deps);
+  }
+  app.use('/api/me/suppliers', suppliersV2Routes);
 
   // ===== NEW EXTRACTED ROUTES (from server.js refactor) =====
 
