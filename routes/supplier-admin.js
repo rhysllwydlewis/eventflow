@@ -14,6 +14,7 @@ let authRequired;
 let roleRequired;
 let csrfProtection;
 let supplierIsProActive;
+let AI_ENABLED;
 
 /**
  * Initialize dependencies from server.js
@@ -31,6 +32,7 @@ function initializeDependencies(deps) {
     'roleRequired',
     'csrfProtection',
     'supplierIsProActive',
+    'AI_ENABLED',
   ];
 
   const missing = required.filter(key => deps[key] === undefined);
@@ -43,6 +45,7 @@ function initializeDependencies(deps) {
   roleRequired = deps.roleRequired;
   csrfProtection = deps.csrfProtection;
   supplierIsProActive = deps.supplierIsProActive;
+  AI_ENABLED = deps.AI_ENABLED;
 }
 
 /**
@@ -364,6 +367,60 @@ router.delete(
       console.error('Error removing badge:', error);
       res.status(500).json({ error: 'Failed to remove badge' });
     }
+  }
+);
+
+/**
+ * POST /api/admin/suppliers/smart-tags
+ * Auto-categorization and scoring for all suppliers
+ */
+router.post(
+  '/suppliers/smart-tags',
+  applyAuthRequired,
+  applyRoleRequired('admin'),
+  applyCsrfProtection,
+  async (req, res) => {
+    const all = await dbUnified.read('suppliers');
+    const now = new Date().toISOString();
+    const updated = [];
+
+    all.forEach(s => {
+      const tags = [];
+      if (s.category) {
+        tags.push(s.category);
+      }
+      if (Array.isArray(s.amenities)) {
+        s.amenities.slice(0, 3).forEach(a => tags.push(a));
+      }
+      if (s.location) {
+        tags.push(s.location.split(',')[0].trim());
+      }
+
+      let score = 40;
+      if (Array.isArray(s.photos) && s.photos.length) {
+        score += 20;
+      }
+      if ((s.description_short || '').length > 40) {
+        score += 15;
+      }
+      if ((s.description_long || '').length > 80) {
+        score += 15;
+      }
+      if (Array.isArray(s.amenities) && s.amenities.length >= 3) {
+        score += 10;
+      }
+      if (score > 100) {
+        score = 100;
+      }
+
+      s.aiTags = tags;
+      s.aiScore = score;
+      s.aiUpdatedAt = now;
+      updated.push({ id: s.id, aiTags: tags, aiScore: score });
+    });
+
+    await dbUnified.write('suppliers', all);
+    res.json({ ok: true, items: updated, aiEnabled: AI_ENABLED });
   }
 );
 

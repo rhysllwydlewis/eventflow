@@ -863,56 +863,7 @@ app.post('/api/ai/plan', express.json(), csrfProtection, async (req, res) => {
   }
 });
 
-// Admin-only: auto-categorisation & scoring for suppliers
-app.post(
-  '/api/admin/suppliers/smart-tags',
-  authRequired,
-  roleRequired('admin'),
-  csrfProtection,
-  async (req, res) => {
-    const all = await dbUnified.read('suppliers');
-    const now = new Date().toISOString();
-    const updated = [];
-
-    all.forEach(s => {
-      const tags = [];
-      if (s.category) {
-        tags.push(s.category);
-      }
-      if (Array.isArray(s.amenities)) {
-        s.amenities.slice(0, 3).forEach(a => tags.push(a));
-      }
-      if (s.location) {
-        tags.push(s.location.split(',')[0].trim());
-      }
-
-      let score = 40;
-      if (Array.isArray(s.photos) && s.photos.length) {
-        score += 20;
-      }
-      if ((s.description_short || '').length > 40) {
-        score += 15;
-      }
-      if ((s.description_long || '').length > 80) {
-        score += 15;
-      }
-      if (Array.isArray(s.amenities) && s.amenities.length >= 3) {
-        score += 10;
-      }
-      if (score > 100) {
-        score = 100;
-      }
-
-      s.aiTags = tags;
-      s.aiScore = score;
-      s.aiUpdatedAt = now;
-      updated.push({ id: s.id, aiTags: tags, aiScore: score });
-    });
-
-    await dbUnified.write('suppliers', all);
-    res.json({ ok: true, items: updated, aiEnabled: AI_ENABLED });
-  }
-);
+// Admin-only: auto-categorisation & scoring for suppliers moved to routes/supplier-admin.js
 
 // ---------- Badge Management ----------
 
@@ -1869,6 +1820,7 @@ mountRoutes(app, {
   calculateLeadScore,
   supplierIsProActive,
   seed,
+  AI_ENABLED,
 
   // Node.js built-ins for package routes
   path,

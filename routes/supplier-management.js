@@ -41,7 +41,9 @@ function initializeDependencies(deps) {
 
   const missing = required.filter(key => deps[key] === undefined);
   if (missing.length > 0) {
-    throw new Error(`Supplier Management routes: missing required dependencies: ${missing.join(', ')}`);
+    throw new Error(
+      `Supplier Management routes: missing required dependencies: ${missing.join(', ')}`
+    );
   }
 
   dbUnified = deps.dbUnified;
@@ -94,46 +96,41 @@ function applyWriteLimiter(req, res, next) {
  * GET /api/me/suppliers/:id/analytics
  * Get analytics for a specific supplier (owner only)
  */
-router.get(
-  '/:id/analytics',
-  applyAuthRequired,
-  applyRoleRequired('supplier'),
-  async (req, res) => {
-    try {
-      const supplierId = req.params.id;
-      const period = parseInt(req.query.period) || 7; // Default 7 days
+router.get('/:id/analytics', applyAuthRequired, applyRoleRequired('supplier'), async (req, res) => {
+  try {
+    const supplierId = req.params.id;
+    const period = parseInt(req.query.period) || 7; // Default 7 days
 
-      // Verify ownership
-      const suppliers = await dbUnified.read('suppliers');
-      const supplier = suppliers.find(s => s.id === supplierId && s.ownerUserId === req.user.id);
-      if (!supplier) {
-        return res.status(404).json({ error: 'Supplier not found' });
-      }
-
-      // Get analytics from the supplier analytics utility
-      const analytics = await supplierAnalytics.getSupplierAnalytics(supplierId, period);
-
-      // Format response to match expected structure
-      const labels = analytics.dailyData.map(d => d.label);
-      const views = analytics.dailyData.map(d => d.views);
-      const enquiries = analytics.dailyData.map(d => d.enquiries);
-
-      res.json({
-        period: analytics.period,
-        labels,
-        views,
-        enquiries,
-        totalViews: analytics.totalViews,
-        totalEnquiries: analytics.totalEnquiries,
-        responseRate: analytics.responseRate,
-        avgResponseTime: analytics.avgResponseTime,
-      });
-    } catch (error) {
-      console.error('Error fetching supplier analytics:', error);
-      res.status(500).json({ error: 'Failed to fetch analytics' });
+    // Verify ownership
+    const suppliers = await dbUnified.read('suppliers');
+    const supplier = suppliers.find(s => s.id === supplierId && s.ownerUserId === req.user.id);
+    if (!supplier) {
+      return res.status(404).json({ error: 'Supplier not found' });
     }
+
+    // Get analytics from the supplier analytics utility
+    const analytics = await supplierAnalytics.getSupplierAnalytics(supplierId, period);
+
+    // Format response to match expected structure
+    const labels = analytics.dailyData.map(d => d.label);
+    const views = analytics.dailyData.map(d => d.views);
+    const enquiries = analytics.dailyData.map(d => d.enquiries);
+
+    res.json({
+      period: analytics.period,
+      labels,
+      views,
+      enquiries,
+      totalViews: analytics.totalViews,
+      totalEnquiries: analytics.totalEnquiries,
+      responseRate: analytics.responseRate,
+      avgResponseTime: analytics.avgResponseTime,
+    });
+  } catch (error) {
+    console.error('Error fetching supplier analytics:', error);
+    res.status(500).json({ error: 'Failed to fetch analytics' });
   }
-);
+});
 
 /**
  * POST /api/me/suppliers/:id/badges/evaluate
@@ -143,6 +140,7 @@ router.post(
   '/:id/badges/evaluate',
   applyAuthRequired,
   applyRoleRequired('supplier'),
+  applyCsrfProtection,
   async (req, res) => {
     try {
       const supplierId = req.params.id;
