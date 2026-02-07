@@ -6,18 +6,110 @@
 'use strict';
 
 const express = require('express');
-const fs = require('fs').promises;
-const path = require('path');
 const router = express.Router();
-const dbUnified = require('../db-unified');
-const { authRequired } = require('../middleware/auth');
-const { csrfProtection } = require('../middleware/csrf');
+
+// Dependencies injected by server.js
+let dbUnified;
+let authRequired;
+let csrfProtection;
+let featureRequired;
+let path;
+let fs;
+let DATA_DIR;
+
+/**
+ * Initialize dependencies from server.js
+ * @param {Object} deps - Dependencies object
+ */
+function initializeDependencies(deps) {
+  if (!deps) {
+    throw new Error('Suppliers V2 routes: dependencies object is required');
+  }
+
+  // Validate required dependencies
+  const required = [
+    'dbUnified',
+    'authRequired',
+    'csrfProtection',
+    'featureRequired',
+    'path',
+    'fs',
+    'DATA_DIR',
+  ];
+
+  const missing = required.filter(key => deps[key] === undefined);
+  if (missing.length > 0) {
+    throw new Error(`Suppliers V2 routes: missing required dependencies: ${missing.join(', ')}`);
+  }
+
+  dbUnified = deps.dbUnified;
+  authRequired = deps.authRequired;
+  csrfProtection = deps.csrfProtection;
+  featureRequired = deps.featureRequired;
+  path = deps.path;
+  fs = deps.fs;
+  DATA_DIR = deps.DATA_DIR;
+}
+
+/**
+ * Deferred middleware wrappers
+ * These are safe to reference in route definitions at require() time
+ * because they defer the actual middleware call to request time,
+ * when dependencies are guaranteed to be initialized.
+ */
+function applyAuthRequired(req, res, next) {
+  if (!authRequired) {
+    return res.status(503).json({ error: 'Auth service not initialized' });
+  }
+  return authRequired(req, res, next);
+}
+
+function applyCsrfProtection(req, res, next) {
+  if (!csrfProtection) {
+    return res.status(503).json({ error: 'CSRF service not initialized' });
+  }
+  return csrfProtection(req, res, next);
+}
+
+function applyFeatureRequired(feature) {
+  return (req, res, next) => {
+    if (!featureRequired) {
+      return res.status(503).json({ error: 'Feature service not initialized' });
+    }
+    return featureRequired(feature)(req, res, next);
+  };
+}
+
+/**
+ * Helper function to save base64 image
+ */
+function saveImageBase64(base64, ownerType, ownerId) {
+  try {
+    const match = base64.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
+    if (!match) {
+      return null;
+    }
+    const ext = match[1].split('/')[1];
+    const buffer = Buffer.from(match[2], 'base64');
+    const UP_ROOT = path.join(DATA_DIR, 'uploads');
+    const folder = path.join(UP_ROOT, ownerType, ownerId);
+    if (!fs.existsSync(folder)) {
+      fs.mkdirSync(folder, { recursive: true });
+    }
+    const filename = `img_${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+    const filePath = path.join(folder, filename);
+    fs.writeFileSync(filePath, buffer);
+    return `/uploads/${ownerType}/${ownerId}/${filename}`;
+  } catch (e) {
+    return null;
+  }
+}
 
 /**
  * GET /api/me/suppliers/:id/photos
  * List all photos for a supplier
  */
-router.get('/:id/photos', authRequired, async (req, res) => {
+router.get('/:id/photos', applyAuthRequired, async (req, res) => {
   try {
     const { id } = req.params;
     const userId = req.user.id;
@@ -54,10 +146,42 @@ router.get('/:id/photos', authRequired, async (req, res) => {
 });
 
 /**
+ * POST /api/me/suppliers/:id/photos
+ * Upload a photo to supplier gallery (base64)
+ */
+router.post(
+  '/:id/photos',
+  applyFeatureRequired('photoUploads'),
+  applyAuthRequired,
+  applyCsrfProtection,
+  async (req, res) => {
+    const { image } = req.body || {};
+    if (!image) {
+      return res.status(400).json({ error: 'Missing image' });
+    }
+    const suppliers = await dbUnified.read('suppliers');
+    const s = suppliers.find(x => x.id === req.params.id && x.ownerUserId === req.userId);
+    if (!s) {
+      return res.status(403).json({ error: 'Not owner' });
+    }
+    const url = saveImageBase64(image, 'suppliers', req.params.id);
+    if (!url) {
+      return res.status(400).json({ error: 'Invalid image' });
+    }
+    if (!s.photosGallery) {
+      s.photosGallery = [];
+    }
+    s.photosGallery.push({ url, approved: false, uploadedAt: Date.now() });
+    await dbUnified.write('suppliers', suppliers);
+    res.json({ ok: true, url });
+  }
+);
+
+/**
  * DELETE /api/me/suppliers/:id/photos/:photoId
  * Delete a specific photo from supplier gallery
  */
-router.delete('/:id/photos/:photoId', authRequired, csrfProtection, async (req, res) => {
+router.delete('/:id/photos/:photoId', applyAuthRequired, applyCsrfProtection, async (req, res) => {
   try {
     const { id, photoId } = req.params;
     const userId = req.user.id;
@@ -97,8 +221,8 @@ router.delete('/:id/photos/:photoId', authRequired, csrfProtection, async (req, 
 
     // Optionally delete file from filesystem
     if (removedPhoto.url && removedPhoto.url.startsWith('/uploads/')) {
-      const publicDir = path.join(__dirname, '..', 'public');
-      const filePath = path.join(publicDir, removedPhoto.url);
+      const publicDir = path.join(DATA_DIR, 'uploads');
+      const filePath = path.join(publicDir, removedPhoto.url.replace('/uploads/', ''));
 
       // Security: Verify resolved path is within public directory to prevent path traversal
       const resolvedPath = path.resolve(filePath);
@@ -106,7 +230,7 @@ router.delete('/:id/photos/:photoId', authRequired, csrfProtection, async (req, 
 
       if (resolvedPath.startsWith(resolvedPublicDir)) {
         try {
-          await fs.unlink(filePath);
+          await require('fs').promises.unlink(filePath);
         } catch (err) {
           // File may not exist, log but don't fail
           console.warn('Could not delete photo file:', err.message);
@@ -128,3 +252,4 @@ router.delete('/:id/photos/:photoId', authRequired, csrfProtection, async (req, 
 });
 
 module.exports = router;
+module.exports.initializeDependencies = initializeDependencies;
