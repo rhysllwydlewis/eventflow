@@ -161,9 +161,75 @@ function conditionalCacheMiddleware(condition, options = {}) {
   };
 }
 
+/**
+ * API Cache Control Middleware
+ * Prevents service workers and intermediaries from caching sensitive API responses
+ * Applies to all /api endpoints except safe cacheable endpoints
+ * @returns {Function} Express middleware
+ */
+function apiCacheControlMiddleware() {
+  // Allowlist of safe cacheable API endpoints (public, non-sensitive data)
+  const SAFE_CACHEABLE_ENDPOINTS = [
+    '/api/config', // Public config (Google Maps key, version)
+    '/api/meta', // App metadata (version, node version, env)
+  ];
+
+  return (req, res, next) => {
+    // Check if this is a safe cacheable endpoint
+    const isSafeCacheable = SAFE_CACHEABLE_ENDPOINTS.includes(req.path);
+
+    // For safe endpoints, allow downstream handlers to set their own cache headers
+    // For all other API endpoints, set no-store to prevent caching
+    if (!isSafeCacheable) {
+      // Set default no-store header for sensitive endpoints
+      // This prevents caching by browsers, service workers, and intermediaries
+      res.setHeader('Cache-Control', 'no-store, private');
+    }
+
+    next();
+  };
+}
+
+/**
+ * Static Asset Caching Middleware
+ * Sets appropriate Cache-Control headers based on file type and naming patterns
+ * @returns {Function} Express middleware
+ */
+function staticCachingMiddleware() {
+  return (req, res, next) => {
+    // Short-term caching for HTML pages (5 minutes)
+    if (req.path.endsWith('.html') || req.path === '/') {
+      res.setHeader('Cache-Control', 'public, max-age=300, must-revalidate');
+      return next();
+    }
+
+    // Cache versioned assets (with hash in filename) for 1 year
+    // Matches common hash patterns: 8, 12, or 16 hex characters (webpack, vite, etc.)
+    if (
+      req.path.match(/\.[0-9a-f]{8}\.(css|js|jpg|jpeg|png|gif|webp|svg|woff|woff2|ttf|eot)$/i) ||
+      req.path.match(/\.[0-9a-f]{12}\.(css|js|jpg|jpeg|png|gif|webp|svg|woff|woff2|ttf|eot)$/i) ||
+      req.path.match(/\.[0-9a-f]{16}\.(css|js|jpg|jpeg|png|gif|webp|svg|woff|woff2|ttf|eot)$/i)
+    ) {
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      return next();
+    }
+
+    // Cache static assets (images, fonts, CSS, JS) for 1 week
+    if (req.path.match(/\.(css|js|jpg|jpeg|png|gif|webp|svg|woff|woff2|ttf|eot|ico)$/i)) {
+      res.setHeader('Cache-Control', 'public, max-age=604800, must-revalidate');
+      return next();
+    }
+
+    // Default: no special caching
+    next();
+  };
+}
+
 module.exports = {
   cacheMiddleware,
   invalidateCacheMiddleware,
   cacheWarmingMiddleware,
   conditionalCacheMiddleware,
+  apiCacheControlMiddleware,
+  staticCachingMiddleware,
 };

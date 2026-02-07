@@ -162,3 +162,6 @@ test-results/
 test-navbar-auth.js
 test-settings-persistence.js
 public/test-*.html
+
+# Archive/backup files from refactoring
+.archive/
