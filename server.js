@@ -1652,13 +1652,6 @@ app.use('/api/v2/admin', adminV2Routes);
 const reportsRoutes = require('./routes/reports');
 app.use('/api', reportsRoutes);
 
-// ---------- Messages Routes ----------
-const messagesRoutes = require('./routes/messages');
-app.use('/api/messages', messagesRoutes);
-
-// ---------- Messages v2 Routes (Real-time Messaging System) ----------
-const messagingV2Routes = require('./routes/messaging-v2');
-app.use('/api/v2/messages', messagingV2Routes);
 
 // ---------- Tickets Routes ----------
 const ticketsRoutes = require('./routes/tickets');
@@ -1802,6 +1795,7 @@ mountRoutes(app, {
 
   // Security middleware
   csrfProtection,
+  auditLog,
 
   // Services & systems
   searchSystem,

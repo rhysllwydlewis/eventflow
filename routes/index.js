@@ -14,6 +14,7 @@ const publicRoutes = require('./public');
 const authRoutes = require('./auth');
 const adminRoutes = require('./admin');
 const messagesRoutes = require('./messages');
+const messagingV2Routes = require('./messaging-v2');
 const newsletterRoutes = require('./newsletter');
 const paymentsRoutes = require('./payments');
 const pexelsRoutes = require('./pexels');
@@ -71,7 +72,16 @@ function mountRoutes(app, deps) {
   app.use('/api/admin', adminRoutes);
 
   // Messages routes
+  if (deps && messagesRoutes.initializeDependencies) {
+    messagesRoutes.initializeDependencies(deps);
+  }
   app.use('/api/messages', messagesRoutes);
+
+  // Messages v2 routes (Real-time Messaging System)
+  if (deps && messagingV2Routes.initializeDependencies) {
+    messagingV2Routes.initializeDependencies(deps);
+  }
+  app.use('/api/v2/messages', messagingV2Routes);
 
   // Newsletter routes (public, no auth required)
   app.use('/api/newsletter', newsletterRoutes);
