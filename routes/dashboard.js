@@ -15,10 +15,7 @@ const router = express.Router();
  * GET /dashboard/customer
  * Serve customer dashboard HTML page
  */
-router.get('/dashboard/customer', authRequired, (req, res) => {
-  if (req.user.role !== 'customer') {
-    return res.redirect('/auth.html');
-  }
+router.get('/dashboard/customer', authRequired, roleRequired('customer'), (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'dashboard-customer.html'));
 });
 
@@ -26,10 +23,7 @@ router.get('/dashboard/customer', authRequired, (req, res) => {
  * GET /dashboard/supplier
  * Serve supplier dashboard HTML page
  */
-router.get('/dashboard/supplier', authRequired, (req, res) => {
-  if (req.user.role !== 'supplier') {
-    return res.redirect('/auth.html');
-  }
+router.get('/dashboard/supplier', authRequired, roleRequired('supplier'), (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'dashboard-supplier.html'));
 });
 
@@ -37,10 +31,7 @@ router.get('/dashboard/supplier', authRequired, (req, res) => {
  * GET /admin
  * Serve admin dashboard HTML page
  */
-router.get('/admin', authRequired, (req, res) => {
-  if (req.user.role !== 'admin') {
-    return res.redirect('/auth.html');
-  }
+router.get('/admin', authRequired, roleRequired('admin'), (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'admin.html'));
 });
 
