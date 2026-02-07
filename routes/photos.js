@@ -925,5 +925,46 @@ router.post(
   }
 );
 
+/**
+ * GET /api/photos/:id
+ * Serve photo from MongoDB
+ * This endpoint serves the actual photo binary data
+ */
+router.get('/photos/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Check if MongoDB is available
+    const databaseConfig = require('../config/database');
+    if (!databaseConfig.isMongoAvailable()) {
+      return res.status(503).json({ error: 'Photo storage not available' });
+    }
+
+    const mongoDb = databaseConfig.mongoDb;
+    const db = await mongoDb.getDb();
+    const collection = db.collection('photos');
+
+    const photo = await collection.findOne({ _id: id });
+
+    if (!photo) {
+      return res.status(404).json({ error: 'Photo not found' });
+    }
+
+    // Convert base64 back to buffer
+    const imageBuffer = Buffer.from(photo.data, 'base64');
+
+    // Set appropriate headers
+    res.setHeader('Content-Type', photo.mimeType || 'image/jpeg');
+    res.setHeader('Cache-Control', 'public, max-age=31536000'); // Cache for 1 year
+    res.setHeader('Content-Length', imageBuffer.length);
+
+    // Send the image
+    res.send(imageBuffer);
+  } catch (error) {
+    console.error('Error serving photo from MongoDB:', error);
+    res.status(500).json({ error: 'Failed to retrieve photo' });
+  }
+});
+
 module.exports = router;
 module.exports.initializeDependencies = initializeDependencies;

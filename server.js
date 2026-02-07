@@ -3016,6 +3016,14 @@ app.post(
 const photosRoutes = require('./routes/photos');
 app.use('/api', photosRoutes);
 
+// ---------- Static & SEO Routes (verify, sitemap, robots.txt) ----------
+const staticRoutes = require('./routes/static');
+app.use('/', staticRoutes);
+
+// ---------- Dashboard & Page Routes ----------
+const dashboardRoutes = require('./routes/dashboard');
+app.use('/', dashboardRoutes);
+
 // ---------- Auth Routes ----------
 const authRoutes = require('./routes/auth');
 app.use('/api/auth', authRoutes);
@@ -3142,43 +3150,7 @@ app.use('/api/notifications', async (req, res, next) => {
 });
 
 // ---------- Photo Serving from MongoDB ----------
-/**
- * GET /api/photos/:id
- * Serve photo from MongoDB
- */
-app.get('/api/photos/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    // Check if MongoDB is available
-    if (!databaseConfig.isMongoAvailable()) {
-      return res.status(503).json({ error: 'Photo storage not available' });
-    }
-
-    const db = await mongoDb.getDb();
-    const collection = db.collection('photos');
-
-    const photo = await collection.findOne({ _id: id });
-
-    if (!photo) {
-      return res.status(404).json({ error: 'Photo not found' });
-    }
-
-    // Convert base64 back to buffer
-    const imageBuffer = Buffer.from(photo.data, 'base64');
-
-    // Set appropriate headers
-    res.setHeader('Content-Type', photo.mimeType || 'image/jpeg');
-    res.setHeader('Cache-Control', 'public, max-age=31536000'); // Cache for 1 year
-    res.setHeader('Content-Length', imageBuffer.length);
-
-    // Send the image
-    res.send(imageBuffer);
-  } catch (error) {
-    console.error('Error serving photo from MongoDB:', error);
-    res.status(500).json({ error: 'Failed to retrieve photo' });
-  }
-});
+// GET /api/photos/:id route moved to routes/photos.js
 
 // ---------- Audit Logging ----------
 const { auditLog, AUDIT_ACTIONS } = require('./middleware/audit');
