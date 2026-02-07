@@ -62,23 +62,23 @@ router.get('/robots.txt', (req, res) => {
  * Redirect to homepage
  */
 router.get('/index.html', (req, res) => {
-  res.redirect('/');
+  res.redirect(301, '/');
 });
 
 /**
  * GET /marketplace.html
- * Redirect to suppliers page
+ * Redirect to canonical marketplace URL
  */
 router.get('/marketplace.html', (req, res) => {
-  res.redirect('/suppliers.html');
+  res.redirect(301, '/marketplace');
 });
 
 /**
  * GET /suppliers.html
- * Redirect to marketplace
+ * Redirect to canonical suppliers URL
  */
 router.get('/suppliers.html', (req, res) => {
-  res.redirect('/marketplace.html');
+  res.redirect(301, '/suppliers');
 });
 
 module.exports = router;
