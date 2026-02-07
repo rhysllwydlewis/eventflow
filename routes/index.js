@@ -33,6 +33,7 @@ const supplierRoutes = require('./supplier');
 
 // New extracted route modules
 const suppliersRoutes = require('./suppliers');
+const packagesRoutes = require('./packages');
 const categoriesRoutes = require('./categories');
 const plansLegacyRoutes = require('./plans-legacy');
 const threadsRoutes = require('./threads');
@@ -125,6 +126,12 @@ function mountRoutes(app, deps) {
     suppliersRoutes.initializeDependencies(deps);
   }
   app.use('/api', suppliersRoutes);
+
+  // Packages routes (Phase 1 - Step 1)
+  if (deps && packagesRoutes.initializeDependencies) {
+    packagesRoutes.initializeDependencies(deps);
+  }
+  app.use('/api', packagesRoutes);
 
   // Categories routes (Phase 2)
   if (deps && categoriesRoutes.initializeDependencies) {

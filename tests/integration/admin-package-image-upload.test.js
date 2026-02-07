@@ -7,22 +7,22 @@ const fs = require('fs');
 
 describe('Admin Package Image Upload Error Handling', () => {
   describe('Endpoint Structure Verification', () => {
-    it('should have package image upload endpoint in server.js', () => {
-      const serverContent = fs.readFileSync('server.js', 'utf8');
+    it('should have package image upload endpoint in routes/packages.js', () => {
+      const packagesContent = fs.readFileSync('routes/packages.js', 'utf8');
 
       // Verify the package image upload endpoint exists
-      expect(serverContent).toContain('app.post(');
-      expect(serverContent).toContain("'/api/admin/packages/:id/image'");
-      expect(serverContent).toContain("photoUpload.upload.single('image')");
+      expect(packagesContent).toContain('router.post(');
+      expect(packagesContent).toContain("'/admin/packages/:id/image'");
+      expect(packagesContent).toContain("applyPhotoUploadSingle('image')");
     });
 
     it('should have ValidationError handling in package image endpoint', () => {
-      const serverContent = fs.readFileSync('server.js', 'utf8');
+      const packagesContent = fs.readFileSync('routes/packages.js', 'utf8');
 
       // Find the package image upload endpoint
-      const packageImageStart = serverContent.indexOf("'/api/admin/packages/:id/image'");
-      const nextEndpointStart = serverContent.indexOf('app.post(', packageImageStart + 100);
-      const packageImageEndpoint = serverContent.substring(packageImageStart, nextEndpointStart);
+      const packageImageStart = packagesContent.indexOf("'/admin/packages/:id/image'");
+      const packageImageEnd = packagesContent.indexOf('module.exports', packageImageStart);
+      const packageImageEndpoint = packagesContent.substring(packageImageStart, packageImageEnd);
 
       // Verify error handling exists
       expect(packageImageEndpoint).toContain("error.name === 'ValidationError'");
@@ -31,12 +31,12 @@ describe('Admin Package Image Upload Error Handling', () => {
     });
 
     it('should have Sharp error handling in package image endpoint', () => {
-      const serverContent = fs.readFileSync('server.js', 'utf8');
+      const packagesContent = fs.readFileSync('routes/packages.js', 'utf8');
 
       // Find the package image upload endpoint
-      const packageImageStart = serverContent.indexOf("'/api/admin/packages/:id/image'");
-      const nextEndpointStart = serverContent.indexOf('app.post(', packageImageStart + 100);
-      const packageImageEndpoint = serverContent.substring(packageImageStart, nextEndpointStart);
+      const packageImageStart = packagesContent.indexOf("'/admin/packages/:id/image'");
+      const packageImageEnd = packagesContent.indexOf('module.exports', packageImageStart);
+      const packageImageEndpoint = packagesContent.substring(packageImageStart, packageImageEnd);
 
       // Verify Sharp error handling exists
       expect(packageImageEndpoint).toContain("error.name === 'SharpProcessingError'");
@@ -44,12 +44,12 @@ describe('Admin Package Image Upload Error Handling', () => {
     });
 
     it('should have MongoDB/storage error handling in package image endpoint', () => {
-      const serverContent = fs.readFileSync('server.js', 'utf8');
+      const packagesContent = fs.readFileSync('routes/packages.js', 'utf8');
 
       // Find the package image upload endpoint
-      const packageImageStart = serverContent.indexOf("'/api/admin/packages/:id/image'");
-      const nextEndpointStart = serverContent.indexOf('app.post(', packageImageStart + 100);
-      const packageImageEndpoint = serverContent.substring(packageImageStart, nextEndpointStart);
+      const packageImageStart = packagesContent.indexOf("'/admin/packages/:id/image'");
+      const packageImageEnd = packagesContent.indexOf('module.exports', packageImageStart);
+      const packageImageEndpoint = packagesContent.substring(packageImageStart, packageImageEnd);
 
       // Verify MongoDB/storage error handling exists
       expect(packageImageEndpoint).toContain("error.name === 'MongoDBStorageError'");
@@ -58,12 +58,12 @@ describe('Admin Package Image Upload Error Handling', () => {
     });
 
     it('should have logging in package image endpoint', () => {
-      const serverContent = fs.readFileSync('server.js', 'utf8');
+      const packagesContent = fs.readFileSync('routes/packages.js', 'utf8');
 
       // Find the package image upload endpoint
-      const packageImageStart = serverContent.indexOf("'/api/admin/packages/:id/image'");
-      const nextEndpointStart = serverContent.indexOf('app.post(', packageImageStart + 100);
-      const packageImageEndpoint = serverContent.substring(packageImageStart, nextEndpointStart);
+      const packageImageStart = packagesContent.indexOf("'/admin/packages/:id/image'");
+      const packageImageEnd = packagesContent.indexOf('module.exports', packageImageStart);
+      const packageImageEndpoint = packagesContent.substring(packageImageStart, packageImageEnd);
 
       // Verify logging exists
       expect(packageImageEndpoint).toContain('logger.info');
@@ -200,12 +200,12 @@ describe('Admin Package Image Upload Error Handling', () => {
 
   describe('Error Response Structure', () => {
     it('should return proper error response structure for validation errors', () => {
-      const serverContent = fs.readFileSync('server.js', 'utf8');
+      const packagesContent = fs.readFileSync('routes/packages.js', 'utf8');
 
       // Find the package image upload endpoint
-      const packageImageStart = serverContent.indexOf("'/api/admin/packages/:id/image'");
-      const nextEndpointStart = serverContent.indexOf('app.post(', packageImageStart + 100);
-      const packageImageEndpoint = serverContent.substring(packageImageStart, nextEndpointStart);
+      const packageImageStart = packagesContent.indexOf("'/admin/packages/:id/image'");
+      const packageImageEnd = packagesContent.indexOf('module.exports', packageImageStart);
+      const packageImageEndpoint = packagesContent.substring(packageImageStart, packageImageEnd);
 
       // Verify error response uses formatValidationErrorResponse helper
       expect(packageImageEndpoint).toContain('uploadValidation.formatValidationErrorResponse');
@@ -231,12 +231,12 @@ describe('Admin Package Image Upload Error Handling', () => {
     });
 
     it('should log magic bytes when file type validation fails', () => {
-      const serverContent = fs.readFileSync('server.js', 'utf8');
+      const packagesContent = fs.readFileSync('routes/packages.js', 'utf8');
 
       // Find the package image upload endpoint
-      const packageImageStart = serverContent.indexOf("'/api/admin/packages/:id/image'");
-      const nextEndpointStart = serverContent.indexOf('app.post(', packageImageStart + 100);
-      const packageImageEndpoint = serverContent.substring(packageImageStart, nextEndpointStart);
+      const packageImageStart = packagesContent.indexOf("'/admin/packages/:id/image'");
+      const packageImageEnd = packagesContent.indexOf('module.exports', packageImageStart);
+      const packageImageEndpoint = packagesContent.substring(packageImageStart, packageImageEnd);
 
       // Verify magic bytes logging
       expect(packageImageEndpoint).toContain('magicBytes');
@@ -245,12 +245,12 @@ describe('Admin Package Image Upload Error Handling', () => {
     });
 
     it('should use appropriate HTTP status codes', () => {
-      const serverContent = fs.readFileSync('server.js', 'utf8');
+      const packagesContent = fs.readFileSync('routes/packages.js', 'utf8');
 
       // Find the package image upload endpoint
-      const packageImageStart = serverContent.indexOf("'/api/admin/packages/:id/image'");
-      const nextEndpointStart = serverContent.indexOf('app.post(', packageImageStart + 100);
-      const packageImageEndpoint = serverContent.substring(packageImageStart, nextEndpointStart);
+      const packageImageStart = packagesContent.indexOf("'/admin/packages/:id/image'");
+      const packageImageEnd = packagesContent.indexOf('module.exports', packageImageStart);
+      const packageImageEndpoint = packagesContent.substring(packageImageStart, packageImageEnd);
 
       // Verify status codes
       expect(packageImageEndpoint).toContain('res.status(400)'); // Validation errors
