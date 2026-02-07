@@ -13,35 +13,35 @@ const router = express.Router();
 
 /**
  * GET /dashboard/customer
- * Redirect customer to their dashboard
+ * Serve customer dashboard HTML page
  */
 router.get('/dashboard/customer', authRequired, async (req, res) => {
   if (req.user.role !== 'customer') {
     return res.redirect('/auth.html');
   }
-  res.redirect('/dashboard-customer.html');
+  res.sendFile(path.join(__dirname, '..', 'public', 'dashboard-customer.html'));
 });
 
 /**
  * GET /dashboard/supplier
- * Redirect supplier to their dashboard
+ * Serve supplier dashboard HTML page
  */
 router.get('/dashboard/supplier', authRequired, async (req, res) => {
   if (req.user.role !== 'supplier') {
     return res.redirect('/auth.html');
   }
-  res.redirect('/dashboard-supplier.html');
+  res.sendFile(path.join(__dirname, '..', 'public', 'dashboard-supplier.html'));
 });
 
 /**
  * GET /admin
- * Redirect to admin dashboard
+ * Serve admin dashboard HTML page
  */
 router.get('/admin', authRequired, async (req, res) => {
   if (req.user.role !== 'admin') {
     return res.redirect('/auth.html');
   }
-  res.redirect('/admin.html');
+  res.sendFile(path.join(__dirname, '..', 'public', 'admin.html'));
 });
 
 module.exports = router;
