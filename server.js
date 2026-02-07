@@ -1730,7 +1730,7 @@ const profileRoutes = require('./routes/profile');
 app.use('/api/profile', profileRoutes);
 
 // ---------- Suppliers V2 Routes ----------
-// Suppliers V2 routes (photo gallery) moved to routes/index.js
+// Suppliers V2 routes (photo gallery) moved to routes/suppliers-v2.js and mounted in routes/index.js
 
 // ---------- Supplier Routes (analytics, trials, etc.) ----------
 const supplierRoutes = require('./routes/supplier');
