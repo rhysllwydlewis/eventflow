@@ -132,8 +132,10 @@ function mountRoutes(app, deps) {
   if (deps && supplierManagementRoutes.initializeDependencies) {
     supplierManagementRoutes.initializeDependencies(deps);
   }
+  // Mount at /api/me/suppliers for routes like POST /api/me/suppliers, PATCH /api/me/suppliers/:id
   app.use('/api/me/suppliers', supplierManagementRoutes);
-  app.use('/api/me', supplierManagementRoutes); // For /api/me/subscription/upgrade
+  // Also mount at /api/me for /api/me/subscription/upgrade route
+  app.use('/api/me', supplierManagementRoutes);
 
   // Suppliers V2 routes (photo gallery management)
   if (deps && suppliersV2Routes.initializeDependencies) {
