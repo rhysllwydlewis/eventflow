@@ -735,133 +735,7 @@ app.get('/api/admin/export/all', authRequired, roleRequired('admin'), async (_re
  */
 
 // AI event planning assistant
-app.post('/api/ai/plan', express.json(), csrfProtection, async (req, res) => {
-  const body = req.body || {};
-  const promptText = String(body.prompt || '').trim();
-  const plan = body.plan || {};
-  const hasOpenAI = AI_ENABLED && !!openaiClient;
-
-  const summaryBits = [];
-  if (plan && typeof plan === 'object') {
-    if (Array.isArray(plan.guests) && plan.guests.length) {
-      summaryBits.push(`${plan.guests.length} guests in the list`);
-    }
-    if (Array.isArray(plan.tasks) && plan.tasks.length) {
-      summaryBits.push(`${plan.tasks.length} planning tasks`);
-    }
-    if (Array.isArray(plan.timeline) && plan.timeline.length) {
-      summaryBits.push(`${plan.timeline.length} timeline items`);
-    }
-  }
-
-  const basePrompt = [
-    'You are an experienced UK wedding and event planner.',
-    'Return a short, structured JSON object with suggestions only – no explanation text.',
-    '',
-    'User description:',
-    promptText || '(User did not provide extra description.)',
-    '',
-    'Current plan summary:',
-    summaryBits.length ? `- ${summaryBits.join('\n- ')}` : 'No existing plan data.',
-    '',
-    'Your JSON must use this structure:',
-    '{',
-    '  "checklist": [ "string task 1", "string task 2" ],',
-    '  "timeline": [ { "time": "14:00", "item": "Thing", "owner": "Who" } ],',
-    '  "suppliers": [ { "category": "Venues", "suggestion": "Tip or type of supplier" } ],',
-    '  "budget": [ { "item": "Venue", "estimate": "£2000" } ],',
-    '  "styleIdeas": [ "One-sentence styling idea" ],',
-    '  "messages": [ "Friendly message the user could send to a supplier" ]',
-    '}',
-  ].join('\n');
-
-  if (!hasOpenAI) {
-    // Fallback: simple deterministic suggestions so the feature still works without OpenAI configured.
-    const fallback = {
-      checklist: [
-        'Lock in your venue date',
-        'Confirm catering numbers and dietary requirements',
-        'Book photographer / videographer',
-        'Create a draft day-of timeline',
-      ],
-      timeline: [
-        { time: '13:00', item: 'Guests arrive', owner: 'Venue' },
-        { time: '14:00', item: 'Ceremony', owner: 'Registrar / celebrant' },
-        { time: '15:00', item: 'Drinks reception & photos', owner: 'Venue / photographer' },
-        { time: '17:30', item: 'Wedding breakfast', owner: 'Catering' },
-        { time: '20:00', item: 'First dance & evening guests', owner: 'Band / DJ' },
-      ],
-      suppliers: [
-        {
-          category: 'Venues',
-          suggestion: 'Shortlist 2–3 venues within 30 minutes of where most guests live.',
-        },
-        {
-          category: 'Catering',
-          suggestion: 'Ask for sample menus that cover vegan and gluten-free options.',
-        },
-        {
-          category: 'Photography',
-          suggestion: 'Look for photographers who have shot at your chosen venue before.',
-        },
-      ],
-      budget: [
-        { item: 'Venue & hire', estimate: '≈ 40% of your total budget' },
-        { item: 'Food & drink', estimate: '≈ 25% of your total budget' },
-        { item: 'Photography / video', estimate: '≈ 10–15% of your total budget' },
-      ],
-      styleIdeas: [
-        'Soft green and white palette with lots of candlelight.',
-        'Personal touches like table names based on places you have travelled together.',
-      ],
-      messages: [
-        'Hi! We are planning a wedding around [DATE] for around [GUESTS] guests near [LOCATION]. Are you available, and could you share a sample package or pricing?',
-        'Hi! We love your work and are planning an event in [MONTH/YEAR]. Could you let us know your availability and typical pricing for this kind of day?',
-      ],
-    };
-    return res.json({ from: 'fallback', data: fallback });
-  }
-
-  try {
-    const completion = await openaiClient.chat.completions.create({
-      model: process.env.OPENAI_MODEL || 'gpt-4.1-mini',
-      messages: [
-        {
-          role: 'system',
-          content: 'You are a concise, practical wedding and event planning assistant.',
-        },
-        { role: 'user', content: basePrompt },
-      ],
-      temperature: 0.6,
-    });
-
-    const raw =
-      (completion &&
-        completion.choices &&
-        completion.choices[0] &&
-        completion.choices[0].message &&
-        completion.choices[0].message.content) ||
-      '';
-    let parsed = null;
-    try {
-      parsed = JSON.parse(raw);
-    } catch (_e) {
-      // If the model returns text instead of JSON, fall back to a safe minimal object.
-      parsed = {
-        checklist: [],
-        timeline: [],
-        suppliers: [],
-        budget: [],
-        styleIdeas: [],
-        messages: [],
-      };
-    }
-    return res.json({ from: 'openai', data: parsed });
-  } catch (err) {
-    console.error('OpenAI planning error', err);
-    return res.status(500).json({ error: 'AI planning request failed.' });
-  }
-});
+// (Route extracted to routes/ai.js)
 
 // Admin-only: auto-categorisation & scoring for suppliers moved to routes/supplier-admin.js
 
@@ -1663,6 +1537,14 @@ app.use('/api/pexels', pexelsRoutes);
 
 // ---------- AI Routes ----------
 const aiRoutes = require('./routes/ai');
+// Initialize AI routes with dependencies
+if (aiRoutes.initializeDependencies) {
+  aiRoutes.initializeDependencies({
+    openaiClient,
+    AI_ENABLED,
+    csrfProtection,
+  });
+}
 app.use('/api/ai', aiRoutes);
 
 // ---------- Payment Routes ----------
