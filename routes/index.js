@@ -49,6 +49,7 @@ const photosRoutes = require('./photos');
 const metricsRoutes = require('./metrics');
 const cacheRoutes = require('./cache');
 const miscRoutes = require('./misc');
+const notificationsRoutes = require('./notifications');
 
 /**
  * Mount all route modules
@@ -233,6 +234,12 @@ function mountRoutes(app, deps) {
     miscRoutes.initializeDependencies(deps);
   }
   app.use('/api', miscRoutes);
+
+  // Notifications routes (Step 4 - Server.js refactoring)
+  if (deps && notificationsRoutes.initializeDependencies) {
+    notificationsRoutes.initializeDependencies(deps);
+  }
+  app.use('/api/notifications', notificationsRoutes);
 }
 
 module.exports = {

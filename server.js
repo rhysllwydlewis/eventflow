@@ -1680,72 +1680,6 @@ app.use('/api/profile', profileRoutes);
 const supplierRoutes = require('./routes/supplier');
 app.use('/api/supplier', supplierRoutes);
 
-// ---------- Notification Routes ----------
-const notificationRoutes = require('./routes/notifications');
-// WebSocket server will be passed when available (after server starts)
-let notificationRouter;
-let tempNotificationRouter; // Cache temp router to prevent memory leak
-let lastDbInstance; // Track DB instance to detect reconnections
-app.use('/api/notifications', async (req, res, next) => {
-  // Determine which WebSocket server to use based on WEBSOCKET_MODE
-  // Check environment variable directly (WEBSOCKET_MODE variable is defined later in the file)
-  const wsMode = (process.env.WEBSOCKET_MODE || 'v2').toLowerCase();
-
-  let webSocketServer = null;
-  if (wsMode === 'v2') {
-    webSocketServer = global.wsServerV2;
-  } else if (wsMode === 'v1') {
-    webSocketServer = global.wsServer;
-  }
-  // wsMode === 'off' will result in webSocketServer === null
-
-  // CRITICAL FIX: Ensure DB is available before initializing
-  // Check if MongoDB is connected before accessing it
-  let db = null;
-  try {
-    if (mongoDb.isConnected()) {
-      db = await mongoDb.getDb();
-    }
-  } catch (error) {
-    // DB not available yet
-    logger.warn('MongoDB not available for notifications endpoint', { error: error.message });
-  }
-
-  if (!db) {
-    // If DB is not ready, return 503 instead of crashing in constructor
-    // Also clear cached routers since DB is unavailable
-    notificationRouter = null;
-    tempNotificationRouter = null;
-    lastDbInstance = null;
-    return res
-      .status(503)
-      .json({ error: 'Service temporarily unavailable - Database not connected' });
-  }
-
-  // Clear routers if DB instance changed (reconnection detected)
-  if (lastDbInstance && lastDbInstance !== db) {
-    notificationRouter = null;
-    tempNotificationRouter = null;
-  }
-  lastDbInstance = db;
-
-  // Initialize main router if WebSocket is available
-  if (!notificationRouter && webSocketServer) {
-    notificationRouter = notificationRoutes(db, webSocketServer);
-  }
-
-  if (notificationRouter) {
-    notificationRouter(req, res, next);
-  } else {
-    // Fallback if WebSocket not ready yet but DB is ready
-    // Cache temp router to prevent memory leak
-    if (!tempNotificationRouter) {
-      tempNotificationRouter = notificationRoutes(db, null);
-    }
-    tempNotificationRouter(req, res, next);
-  }
-});
-
 // ---------- Photo Serving from MongoDB ----------
 // GET /api/photos/:id route moved to routes/photos.js
 
@@ -1815,6 +1749,7 @@ mountRoutes(app, {
   supplierIsProActive,
   seed,
   AI_ENABLED,
+  getWebSocketServer,
 
   // Node.js built-ins for package routes
   path,
@@ -1955,6 +1890,21 @@ const WebSocketServer = require('./websocket-server');
 const WebSocketServerV2 = require('./websocket-server-v2');
 let wsServer;
 let wsServerV2;
+
+/**
+ * Get the current WebSocket server based on WEBSOCKET_MODE
+ * Used by notification routes to access WebSocket for real-time delivery
+ * @returns {Object|null} WebSocket server instance or null if not initialized
+ */
+function getWebSocketServer() {
+  const wsMode = (process.env.WEBSOCKET_MODE || 'v2').toLowerCase();
+  if (wsMode === 'v2') {
+    return global.wsServerV2 || wsServerV2 || null;
+  } else if (wsMode === 'v1') {
+    return global.wsServer || wsServer || null;
+  }
+  return null;
+}
 
 // Initialize v1 WebSocket Server (legacy notifications)
 if (WEBSOCKET_MODE === 'v1') {
