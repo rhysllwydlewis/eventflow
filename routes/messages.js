@@ -11,12 +11,59 @@
 
 const express = require('express');
 const validator = require('validator');
-const { authRequired } = require('../middleware/auth');
-const { csrfProtection } = require('../middleware/csrf');
-const { auditLog } = require('../middleware/audit');
-const dbUnified = require('../db-unified');
-const { uid } = require('../store');
-const postmark = require('../utils/postmark');
+
+// Dependencies injected by server.js
+let dbUnified;
+let authRequired;
+let csrfProtection;
+let auditLog;
+let uid;
+let postmark;
+
+/**
+ * Initialize dependencies from server.js
+ * @param {Object} deps - Dependencies object
+ */
+function initializeDependencies(deps) {
+  if (!deps) {
+    throw new Error('Messages routes: dependencies object is required');
+  }
+
+  // Validate required dependencies
+  const required = ['dbUnified', 'authRequired', 'csrfProtection', 'auditLog', 'uid', 'postmark'];
+
+  const missing = required.filter(key => deps[key] === undefined);
+  if (missing.length > 0) {
+    throw new Error(`Messages routes: missing required dependencies: ${missing.join(', ')}`);
+  }
+
+  dbUnified = deps.dbUnified;
+  authRequired = deps.authRequired;
+  csrfProtection = deps.csrfProtection;
+  auditLog = deps.auditLog;
+  uid = deps.uid;
+  postmark = deps.postmark;
+}
+
+/**
+ * Deferred middleware wrappers
+ * These are safe to reference in route definitions at require() time
+ * because they defer the actual middleware call to request time,
+ * when dependencies are guaranteed to be initialized.
+ */
+function applyAuthRequired(req, res, next) {
+  if (!authRequired) {
+    return res.status(503).json({ error: 'Auth service not initialized' });
+  }
+  return authRequired(req, res, next);
+}
+
+function applyCsrfProtection(req, res, next) {
+  if (!csrfProtection) {
+    return res.status(503).json({ error: 'CSRF service not initialized' });
+  }
+  return csrfProtection(req, res, next);
+}
 
 function getMessageText(recipientName, senderName, text, baseUrl) {
   const msgPreview = text.trim().substring(0, 200);
@@ -54,7 +101,7 @@ const router = express.Router();
  * List all conversation threads for the current user
  * Query params: status (open/closed/archived), unreadOnly (boolean)
  */
-router.get('/threads', authRequired, async (req, res) => {
+router.get('/threads', applyAuthRequired, async (req, res) => {
   try {
     const userId = req.user.id;
     const userRole = req.user.role;
@@ -104,7 +151,7 @@ router.get('/threads', authRequired, async (req, res) => {
  * GET /api/messages/threads/:threadId
  * Get details of a specific thread
  */
-router.get('/threads/:threadId', authRequired, async (req, res) => {
+router.get('/threads/:threadId', applyAuthRequired, async (req, res) => {
   try {
     const userId = req.user.id;
     const userRole = req.user.role;
@@ -139,7 +186,7 @@ router.get('/threads/:threadId', authRequired, async (req, res) => {
  * Create a new conversation thread
  * Body: { supplierId, packageId?, subject?, eventType?, eventDate?, eventLocation?, guests?, message? }
  */
-router.post('/threads', authRequired, csrfProtection, async (req, res) => {
+router.post('/threads', applyAuthRequired, applyCsrfProtection, async (req, res) => {
   try {
     const userId = req.user.id;
     const userRole = req.user.role;
@@ -293,7 +340,7 @@ router.post('/threads', authRequired, csrfProtection, async (req, res) => {
  * GET /api/messages/threads/:threadId/messages
  * Get all messages in a thread
  */
-router.get('/threads/:threadId/messages', authRequired, async (req, res) => {
+router.get('/threads/:threadId/messages', applyAuthRequired, async (req, res) => {
   try {
     const userId = req.user.id;
     const userRole = req.user.role;
@@ -339,7 +386,7 @@ router.get('/threads/:threadId/messages', authRequired, async (req, res) => {
  * Send a new message in a thread
  * Body: { text, isDraft? }
  */
-router.post('/threads/:threadId/messages', authRequired, csrfProtection, async (req, res) => {
+router.post('/threads/:threadId/messages', applyAuthRequired, applyCsrfProtection, async (req, res) => {
   try {
     const userId = req.user.id;
     const userRole = req.user.role;
@@ -490,7 +537,7 @@ router.post('/threads/:threadId/messages', authRequired, csrfProtection, async (
  * Update a message (for editing drafts)
  * Body: { text, isDraft? }
  */
-router.put('/:messageId', authRequired, csrfProtection, async (req, res) => {
+router.put('/:messageId', applyAuthRequired, applyCsrfProtection, async (req, res) => {
   try {
     const userId = req.user.id;
     const { messageId } = req.params;
@@ -563,7 +610,7 @@ router.put('/:messageId', authRequired, csrfProtection, async (req, res) => {
  * POST /api/messages/threads/:threadId/mark-read
  * Mark all messages in a thread as read for the current user
  */
-router.post('/threads/:threadId/mark-read', authRequired, csrfProtection, async (req, res) => {
+router.post('/threads/:threadId/mark-read', applyAuthRequired, applyCsrfProtection, async (req, res) => {
   try {
     const userId = req.user.id;
     const userRole = req.user.role;
@@ -625,7 +672,7 @@ router.post('/threads/:threadId/mark-read', authRequired, csrfProtection, async 
  * POST /api/messages/threads/:threadId/mark-unread
  * Mark a thread as unread for the current user
  */
-router.post('/threads/:threadId/mark-unread', authRequired, csrfProtection, async (req, res) => {
+router.post('/threads/:threadId/mark-unread', applyAuthRequired, applyCsrfProtection, async (req, res) => {
   try {
     const userId = req.user.id;
     const userRole = req.user.role;
@@ -668,7 +715,7 @@ router.post('/threads/:threadId/mark-unread', authRequired, csrfProtection, asyn
  * GET /api/messages/drafts
  * Get all draft messages for the current user
  */
-router.get('/drafts', authRequired, async (req, res) => {
+router.get('/drafts', applyAuthRequired, async (req, res) => {
   try {
     const userId = req.user.id;
 
@@ -693,7 +740,7 @@ router.get('/drafts', authRequired, async (req, res) => {
  * GET /api/messages/sent
  * Get all sent messages for the current user
  */
-router.get('/sent', authRequired, async (req, res) => {
+router.get('/sent', applyAuthRequired, async (req, res) => {
   try {
     const userId = req.user.id;
 
@@ -718,7 +765,7 @@ router.get('/sent', authRequired, async (req, res) => {
  * DELETE /api/messages/:messageId
  * Delete a draft message
  */
-router.delete('/:messageId', authRequired, csrfProtection, async (req, res) => {
+router.delete('/:messageId', applyAuthRequired, applyCsrfProtection, async (req, res) => {
   try {
     const userId = req.user.id;
     const { messageId } = req.params;
@@ -756,7 +803,7 @@ router.delete('/:messageId', authRequired, csrfProtection, async (req, res) => {
  * POST /api/messages/:messageId/reactions
  * Toggle a reaction on a message
  */
-router.post('/:messageId/reactions', authRequired, csrfProtection, async (req, res) => {
+router.post('/:messageId/reactions', applyAuthRequired, applyCsrfProtection, async (req, res) => {
   try {
     const userId = req.user.id;
     const { messageId } = req.params;
@@ -811,7 +858,7 @@ router.post('/:messageId/reactions', authRequired, csrfProtection, async (req, r
  * POST /api/messages/threads/:threadId/archive
  * Archive a thread
  */
-router.post('/threads/:threadId/archive', authRequired, csrfProtection, async (req, res) => {
+router.post('/threads/:threadId/archive', applyAuthRequired, applyCsrfProtection, async (req, res) => {
   try {
     const userId = req.user.id;
     const userRole = req.user.role;
@@ -850,7 +897,7 @@ router.post('/threads/:threadId/archive', authRequired, csrfProtection, async (r
  * POST /api/messages/threads/:threadId/unarchive
  * Unarchive a thread
  */
-router.post('/threads/:threadId/unarchive', authRequired, csrfProtection, async (req, res) => {
+router.post('/threads/:threadId/unarchive', applyAuthRequired, applyCsrfProtection, async (req, res) => {
   try {
     const userId = req.user.id;
     const userRole = req.user.role;
@@ -893,7 +940,7 @@ router.post('/threads/:threadId/unarchive', authRequired, csrfProtection, async 
  * GET /api/messages/conversations
  * Alias for /api/messages/threads - List all conversations for the current user
  */
-router.get('/conversations', authRequired, async (req, res) => {
+router.get('/conversations', applyAuthRequired, async (req, res) => {
   try {
     const userId = req.user.id;
     const userRole = req.user.role;
@@ -954,7 +1001,7 @@ router.get('/conversations', authRequired, async (req, res) => {
  * GET /api/messages/unread
  * Get unread message count for a user
  */
-router.get('/unread', authRequired, async (req, res) => {
+router.get('/unread', applyAuthRequired, async (req, res) => {
   try {
     const userId = req.user.id;
     const threads = await dbUnified.read('threads');
@@ -977,7 +1024,7 @@ router.get('/unread', authRequired, async (req, res) => {
  * GET /api/messages/:conversationId
  * Alias for /api/messages/threads/:threadId/messages - Get messages in a conversation
  */
-router.get('/:conversationId', authRequired, async (req, res) => {
+router.get('/:conversationId', applyAuthRequired, async (req, res) => {
   try {
     const userId = req.user.id;
     const userRole = req.user.role;
@@ -1022,7 +1069,7 @@ router.get('/:conversationId', authRequired, async (req, res) => {
  * POST /api/messages/:conversationId
  * Send a message in a conversation
  */
-router.post('/:conversationId', authRequired, csrfProtection, async (req, res) => {
+router.post('/:conversationId', applyAuthRequired, applyCsrfProtection, async (req, res) => {
   try {
     const userId = req.user.id;
     const userRole = req.user.role;
@@ -1106,7 +1153,7 @@ router.post('/:conversationId', authRequired, csrfProtection, async (req, res) =
  * POST /api/messages/:conversationId/read
  * Mark messages in a conversation as read
  */
-router.post('/:conversationId/read', authRequired, async (req, res) => {
+router.post('/:conversationId/read', applyAuthRequired, applyCsrfProtection, async (req, res) => {
   try {
     const userId = req.user.id;
     const { conversationId } = req.params;
@@ -1159,3 +1206,4 @@ router.post('/:conversationId/read', authRequired, async (req, res) => {
 });
 
 module.exports = router;
+module.exports.initializeDependencies = initializeDependencies;

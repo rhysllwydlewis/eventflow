@@ -6,9 +6,16 @@
 'use strict';
 
 const express = require('express');
-const { authRequired, roleRequired } = require('../middleware/auth');
-const { csrfProtection } = require('../middleware/csrf');
-const logger = require('../utils/logger');
+
+// Dependencies injected by server.js
+let authRequired;
+let roleRequired;
+let csrfProtection;
+let logger;
+let mongoDb;
+let wsServerV2;
+
+// Service classes (imported directly as they're not instantiated until we have mongoDb)
 const MessagingService = require('../services/messagingService');
 const { NotificationService } = require('../services/notificationService');
 const { PresenceService } = require('../services/presenceService');
@@ -20,20 +27,77 @@ let messagingService;
 let notificationService;
 let presenceService;
 
+/**
+ * Initialize dependencies from server.js
+ * @param {Object} deps - Dependencies object
+ */
+function initializeDependencies(deps) {
+  if (!deps) {
+    throw new Error('Messaging v2 routes: dependencies object is required');
+  }
+
+  // Validate required dependencies
+  const required = ['authRequired', 'roleRequired', 'csrfProtection', 'logger', 'mongoDb'];
+
+  const missing = required.filter(key => deps[key] === undefined);
+  if (missing.length > 0) {
+    throw new Error(`Messaging v2 routes: missing required dependencies: ${missing.join(', ')}`);
+  }
+
+  authRequired = deps.authRequired;
+  roleRequired = deps.roleRequired;
+  csrfProtection = deps.csrfProtection;
+  logger = deps.logger;
+  mongoDb = deps.mongoDb;
+  // wsServerV2 is optional (may not be available in all environments)
+  wsServerV2 = deps.wsServerV2;
+}
+
+/**
+ * Deferred middleware wrappers
+ * These are safe to reference in route definitions at require() time
+ * because they defer the actual middleware call to request time,
+ * when dependencies are guaranteed to be initialized.
+ */
+function applyAuthRequired(req, res, next) {
+  if (!authRequired) {
+    return res.status(503).json({ error: 'Auth service not initialized' });
+  }
+  return authRequired(req, res, next);
+}
+
+function applyRoleRequired(role) {
+  return (req, res, next) => {
+    if (!roleRequired) {
+      return res.status(503).json({ error: 'Role service not initialized' });
+    }
+    return roleRequired(role)(req, res, next);
+  };
+}
+
+function applyCsrfProtection(req, res, next) {
+  if (!csrfProtection) {
+    return res.status(503).json({ error: 'CSRF service not initialized' });
+  }
+  return csrfProtection(req, res, next);
+}
+
 // Initialize services
 function initializeServices(db, wsServer) {
   if (db && !messagingService) {
     messagingService = new MessagingService(db);
     notificationService = new NotificationService(db, wsServer);
     presenceService = new PresenceService();
-    logger.info('Messaging v2 services initialized');
+    if (logger) {
+      logger.info('Messaging v2 services initialized');
+    }
   }
 }
 
 // Middleware to ensure services are initialized
 function ensureServices(req, res, next) {
-  const db = req.app.locals.db || global.mongoDb?.db;
-  const wsServer = req.app.get('wsServerV2') || global.wsServerV2;
+  const db = req.app.locals.db || mongoDb?.db || global.mongoDb?.db;
+  const wsServer = req.app.get('wsServerV2') || wsServerV2 || global.wsServerV2;
 
   if (db) {
     initializeServices(db, wsServer);
@@ -57,7 +121,7 @@ function ensureServices(req, res, next) {
  * POST /api/v2/messages/threads
  * Create a new conversation thread
  */
-router.post('/threads', authRequired, csrfProtection, ensureServices, async (req, res) => {
+router.post('/threads', applyAuthRequired, applyCsrfProtection, ensureServices, async (req, res) => {
   try {
     const { participants, subject, metadata } = req.body;
 
@@ -115,7 +179,7 @@ router.post('/threads', authRequired, csrfProtection, ensureServices, async (req
  * GET /api/v2/messages/threads
  * List threads for logged-in user
  */
-router.get('/threads', authRequired, ensureServices, async (req, res) => {
+router.get('/threads', applyAuthRequired, ensureServices, async (req, res) => {
   try {
     const { status, limit = 50, skip = 0 } = req.query;
 
@@ -155,7 +219,7 @@ router.get('/threads', authRequired, ensureServices, async (req, res) => {
  * GET /api/v2/messages/threads/:id
  * Get thread details
  */
-router.get('/threads/:id', authRequired, ensureServices, async (req, res) => {
+router.get('/threads/:id', applyAuthRequired, ensureServices, async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -197,7 +261,7 @@ router.get('/threads/:id', authRequired, ensureServices, async (req, res) => {
  * DELETE /api/v2/messages/threads/:id
  * Delete/archive thread
  */
-router.delete('/threads/:id', authRequired, csrfProtection, ensureServices, async (req, res) => {
+router.delete('/threads/:id', applyAuthRequired, applyCsrfProtection, ensureServices, async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -224,7 +288,7 @@ router.delete('/threads/:id', authRequired, csrfProtection, ensureServices, asyn
  * GET /api/v2/messages/:threadId
  * Get message history for a thread
  */
-router.get('/:threadId', authRequired, ensureServices, async (req, res) => {
+router.get('/:threadId', applyAuthRequired, ensureServices, async (req, res) => {
   try {
     const { threadId } = req.params;
     const { limit = 100, skip = 0, before } = req.query;
@@ -277,7 +341,7 @@ router.get('/:threadId', authRequired, ensureServices, async (req, res) => {
  * POST /api/v2/messages/:threadId
  * Send message in thread
  */
-router.post('/:threadId', authRequired, csrfProtection, ensureServices, async (req, res) => {
+router.post('/:threadId', applyAuthRequired, applyCsrfProtection, ensureServices, async (req, res) => {
   try {
     const { threadId } = req.params;
     const { content, attachments } = req.body;
@@ -349,7 +413,7 @@ router.post('/:threadId', authRequired, csrfProtection, ensureServices, async (r
  * POST /api/v2/messages/:id/reactions
  * Add reaction to message
  */
-router.post('/:id/reactions', authRequired, csrfProtection, ensureServices, async (req, res) => {
+router.post('/:id/reactions', applyAuthRequired, applyCsrfProtection, ensureServices, async (req, res) => {
   try {
     const { id } = req.params;
     const { emoji } = req.body;
@@ -377,7 +441,7 @@ router.post('/:id/reactions', authRequired, csrfProtection, ensureServices, asyn
  * POST /api/v2/messages/:id/read
  * Mark message as read
  */
-router.post('/:id/read', authRequired, csrfProtection, ensureServices, async (req, res) => {
+router.post('/:id/read', applyAuthRequired, applyCsrfProtection, ensureServices, async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -402,8 +466,8 @@ router.post('/:id/read', authRequired, csrfProtection, ensureServices, async (re
  */
 router.post(
   '/threads/:threadId/read',
-  authRequired,
-  csrfProtection,
+  applyAuthRequired,
+  applyCsrfProtection,
   ensureServices,
   async (req, res) => {
     try {
@@ -434,7 +498,7 @@ router.post(
  * GET /api/v2/presence/:userId
  * Get user presence
  */
-router.get('/presence/:userId', authRequired, ensureServices, async (req, res) => {
+router.get('/presence/:userId', applyAuthRequired, ensureServices, async (req, res) => {
   try {
     const { userId } = req.params;
 
@@ -459,7 +523,7 @@ router.get('/presence/:userId', authRequired, ensureServices, async (req, res) =
  * GET /api/v2/presence
  * Get presence for current user's contacts
  */
-router.get('/presence', authRequired, ensureServices, async (req, res) => {
+router.get('/presence', applyAuthRequired, ensureServices, async (req, res) => {
   try {
     const { userIds } = req.query;
 
@@ -491,7 +555,7 @@ router.get('/presence', authRequired, ensureServices, async (req, res) => {
  * GET /api/v2/notifications
  * List notifications for current user
  */
-router.get('/notifications', authRequired, ensureServices, async (req, res) => {
+router.get('/notifications', applyAuthRequired, ensureServices, async (req, res) => {
   try {
     const { unreadOnly, limit = 50, skip = 0 } = req.query;
 
@@ -521,9 +585,9 @@ router.get('/notifications', authRequired, ensureServices, async (req, res) => {
  */
 router.post(
   '/notifications',
-  authRequired,
-  roleRequired('admin'),
-  csrfProtection,
+  applyAuthRequired,
+  applyRoleRequired('admin'),
+  applyCsrfProtection,
   ensureServices,
   async (req, res) => {
     try {
@@ -566,8 +630,8 @@ router.post(
  */
 router.post(
   '/notifications/preferences',
-  authRequired,
-  csrfProtection,
+  applyAuthRequired,
+  applyCsrfProtection,
   ensureServices,
   async (req, res) => {
     try {
@@ -599,7 +663,7 @@ router.post(
  * GET /api/v2/notifications/preferences
  * Get notification preferences
  */
-router.get('/notifications/preferences', authRequired, ensureServices, async (req, res) => {
+router.get('/notifications/preferences', applyAuthRequired, ensureServices, async (req, res) => {
   try {
     const preferences = await notificationService.getUserPreferences(req.user.id);
 
@@ -622,8 +686,8 @@ router.get('/notifications/preferences', authRequired, ensureServices, async (re
  */
 router.post(
   '/notifications/:id/read',
-  authRequired,
-  csrfProtection,
+  applyAuthRequired,
+  applyCsrfProtection,
   ensureServices,
   async (req, res) => {
     try {
@@ -658,8 +722,8 @@ router.post(
  */
 router.delete(
   '/notifications/:id',
-  authRequired,
-  csrfProtection,
+  applyAuthRequired,
+  applyCsrfProtection,
   ensureServices,
   async (req, res) => {
     try {
@@ -693,7 +757,7 @@ router.delete(
  * GET /api/v2/messaging/status
  * Get WebSocket server health and statistics (admin only)
  */
-router.get('/messaging/status', authRequired, roleRequired('admin'), async (req, res) => {
+router.get('/messaging/status', applyAuthRequired, applyRoleRequired('admin'), async (req, res) => {
   try {
     const wsServer = req.app.get('wsServerV2') || global.wsServerV2;
 
@@ -730,7 +794,7 @@ router.get('/messaging/status', authRequired, roleRequired('admin'), async (req,
  * GET /api/v2/messages/limits
  * Get remaining message and thread limits for the current user
  */
-router.get('/limits', authRequired, ensureServices, async (req, res) => {
+router.get('/limits', applyAuthRequired, ensureServices, async (req, res) => {
   try {
     const subscriptionTier = req.user.subscriptionTier || 'free';
 
@@ -753,3 +817,4 @@ router.get('/limits', authRequired, ensureServices, async (req, res) => {
 });
 
 module.exports = router;
+module.exports.initializeDependencies = initializeDependencies;
