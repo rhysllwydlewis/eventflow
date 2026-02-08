@@ -8,6 +8,9 @@
 const express = require('express');
 const router = express.Router();
 
+// Service class loaded at module level for efficiency
+const NotificationService = require('../services/notification.service');
+
 // Dependencies injected by server.js
 let authRequired;
 let logger;
@@ -74,7 +77,6 @@ async function getNotificationService() {
   const websocketServer = getWebSocketServer ? getWebSocketServer() : null;
 
   // Create and return notification service
-  const NotificationService = require('../services/notification.service');
   return new NotificationService(db, websocketServer);
 }
 
@@ -89,7 +91,20 @@ function handleNotificationError(error, res, logMessage) {
     });
   }
   logger.error(logMessage, error);
-  const errorMessage = logMessage.replace('Error ', 'Failed to ').replace(/ing$/, '');
+
+  // Map error messages to consistent format
+  const errorMessageMap = {
+    'Error fetching notifications': 'Failed to fetch notifications',
+    'Error fetching unread count': 'Failed to fetch unread count',
+    'Error marking notification as read': 'Failed to mark notification as read',
+    'Error marking all notifications as read': 'Failed to mark all notifications as read',
+    'Error dismissing notification': 'Failed to dismiss notification',
+    'Error deleting notification': 'Failed to delete notification',
+    'Error deleting all notifications': 'Failed to delete all notifications',
+    'Error creating test notification': 'Failed to create test notification',
+  };
+
+  const errorMessage = errorMessageMap[logMessage] || 'Failed to process request';
   res.status(500).json({ error: errorMessage });
 }
 
