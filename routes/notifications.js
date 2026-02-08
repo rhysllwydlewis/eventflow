@@ -58,7 +58,7 @@ async function getNotificationService() {
   // Get current DB connection
   let db = null;
   try {
-    if (mongoDb && mongoDb.isConnected()) {
+    if (mongoDb.isConnected()) {
       db = await mongoDb.getDb();
     }
   } catch (error) {
@@ -79,6 +79,21 @@ async function getNotificationService() {
 }
 
 /**
+ * Error handler middleware for notification routes
+ * Handles database connection errors and logs other errors
+ */
+function handleNotificationError(error, res, logMessage) {
+  if (error.message === 'Database not connected') {
+    return res.status(503).json({
+      error: 'Service temporarily unavailable - Database not connected',
+    });
+  }
+  logger.error(logMessage, error);
+  const errorMessage = logMessage.replace('Error ', 'Failed to ').replace(/ing$/, '');
+  res.status(500).json({ error: errorMessage });
+}
+
+/**
  * GET /api/notifications
  * Get notifications for the current user
  */
@@ -86,13 +101,7 @@ router.get('/', applyAuthRequired, async (req, res) => {
   try {
     const notificationService = await getNotificationService();
     const userId = req.user.id;
-    const {
-      limit = 50,
-      skip = 0,
-      unreadOnly = 'false',
-      type = null,
-      priority = null,
-    } = req.query;
+    const { limit = 50, skip = 0, unreadOnly = 'false', type = null, priority = null } = req.query;
 
     const result = await notificationService.getForUser(userId, {
       limit: parseInt(limit, 10),
@@ -104,13 +113,7 @@ router.get('/', applyAuthRequired, async (req, res) => {
 
     res.json(result);
   } catch (error) {
-    if (error.message === 'Database not connected') {
-      return res.status(503).json({
-        error: 'Service temporarily unavailable - Database not connected',
-      });
-    }
-    logger.error('Error fetching notifications:', error);
-    res.status(500).json({ error: 'Failed to fetch notifications' });
+    handleNotificationError(error, res, 'Error fetching notifications');
   }
 });
 
@@ -126,13 +129,7 @@ router.get('/unread-count', applyAuthRequired, async (req, res) => {
 
     res.json({ count });
   } catch (error) {
-    if (error.message === 'Database not connected') {
-      return res.status(503).json({
-        error: 'Service temporarily unavailable - Database not connected',
-      });
-    }
-    logger.error('Error fetching unread count:', error);
-    res.status(500).json({ error: 'Failed to fetch unread count' });
+    handleNotificationError(error, res, 'Error fetching unread count');
   }
 });
 
@@ -154,13 +151,7 @@ router.put('/:id/read', applyAuthRequired, async (req, res) => {
       res.status(404).json({ error: 'Notification not found' });
     }
   } catch (error) {
-    if (error.message === 'Database not connected') {
-      return res.status(503).json({
-        error: 'Service temporarily unavailable - Database not connected',
-      });
-    }
-    logger.error('Error marking notification as read:', error);
-    res.status(500).json({ error: 'Failed to mark notification as read' });
+    handleNotificationError(error, res, 'Error marking notification as read');
   }
 });
 
@@ -176,13 +167,7 @@ router.put('/mark-all-read', applyAuthRequired, async (req, res) => {
 
     res.json({ success: true, count, message: `${count} notifications marked as read` });
   } catch (error) {
-    if (error.message === 'Database not connected') {
-      return res.status(503).json({
-        error: 'Service temporarily unavailable - Database not connected',
-      });
-    }
-    logger.error('Error marking all notifications as read:', error);
-    res.status(500).json({ error: 'Failed to mark all notifications as read' });
+    handleNotificationError(error, res, 'Error marking all notifications as read');
   }
 });
 
@@ -204,13 +189,7 @@ router.put('/:id/dismiss', applyAuthRequired, async (req, res) => {
       res.status(404).json({ error: 'Notification not found' });
     }
   } catch (error) {
-    if (error.message === 'Database not connected') {
-      return res.status(503).json({
-        error: 'Service temporarily unavailable - Database not connected',
-      });
-    }
-    logger.error('Error dismissing notification:', error);
-    res.status(500).json({ error: 'Failed to dismiss notification' });
+    handleNotificationError(error, res, 'Error dismissing notification');
   }
 });
 
@@ -232,13 +211,7 @@ router.delete('/:id', applyAuthRequired, async (req, res) => {
       res.status(404).json({ error: 'Notification not found' });
     }
   } catch (error) {
-    if (error.message === 'Database not connected') {
-      return res.status(503).json({
-        error: 'Service temporarily unavailable - Database not connected',
-      });
-    }
-    logger.error('Error deleting notification:', error);
-    res.status(500).json({ error: 'Failed to delete notification' });
+    handleNotificationError(error, res, 'Error deleting notification');
   }
 });
 
@@ -254,13 +227,7 @@ router.delete('/', applyAuthRequired, async (req, res) => {
 
     res.json({ success: true, count, message: `${count} notifications deleted` });
   } catch (error) {
-    if (error.message === 'Database not connected') {
-      return res.status(503).json({
-        error: 'Service temporarily unavailable - Database not connected',
-      });
-    }
-    logger.error('Error deleting all notifications:', error);
-    res.status(500).json({ error: 'Failed to delete all notifications' });
+    handleNotificationError(error, res, 'Error deleting all notifications');
   }
 });
 
@@ -273,11 +240,7 @@ if (process.env.NODE_ENV !== 'production') {
     try {
       const notificationService = await getNotificationService();
       const userId = req.user.id;
-      const {
-        type = 'system',
-        title = 'Test Notification',
-        message = 'This is a test',
-      } = req.body;
+      const { type = 'system', title = 'Test Notification', message = 'This is a test' } = req.body;
 
       const notification = await notificationService.create({
         userId,
@@ -289,13 +252,7 @@ if (process.env.NODE_ENV !== 'production') {
 
       res.json({ success: true, notification });
     } catch (error) {
-      if (error.message === 'Database not connected') {
-        return res.status(503).json({
-          error: 'Service temporarily unavailable - Database not connected',
-        });
-      }
-      logger.error('Error creating test notification:', error);
-      res.status(500).json({ error: 'Failed to create test notification' });
+      handleNotificationError(error, res, 'Error creating test notification');
     }
   });
 }
