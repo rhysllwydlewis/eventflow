@@ -1702,6 +1702,26 @@ app.use('/api/v2', subscriptionsV2Routes); // For /api/v2/invoices, /api/v2/admi
 const reviewsV2Routes = require('./routes/reviews-v2');
 app.use('/api/v2/reviews', reviewsV2Routes);
 
+// ---------- WebSocket Server Accessor ----------
+// Forward declaration of function to get WebSocket server
+// This is defined early so it can be passed to routes via mountRoutes
+// The actual WebSocket servers (wsServer, wsServerV2) are initialized later
+// after the HTTP server is created
+/**
+ * Get the current WebSocket server based on WEBSOCKET_MODE
+ * Used by notification routes to access WebSocket for real-time delivery
+ * @returns {Object|null} WebSocket server instance or null if not initialized
+ */
+function getWebSocketServer() {
+  const wsMode = (process.env.WEBSOCKET_MODE || 'v2').toLowerCase();
+  if (wsMode === 'v2') {
+    return global.wsServerV2 || null;
+  } else if (wsMode === 'v1') {
+    return global.wsServer || null;
+  }
+  return null;
+}
+
 // ---------- Mount Modular Routes ----------
 // Mount all modular routes from routes/index.js
 const { mountRoutes } = require('./routes/index');
@@ -1890,21 +1910,6 @@ const WebSocketServer = require('./websocket-server');
 const WebSocketServerV2 = require('./websocket-server-v2');
 let wsServer;
 let wsServerV2;
-
-/**
- * Get the current WebSocket server based on WEBSOCKET_MODE
- * Used by notification routes to access WebSocket for real-time delivery
- * @returns {Object|null} WebSocket server instance or null if not initialized
- */
-function getWebSocketServer() {
-  const wsMode = (process.env.WEBSOCKET_MODE || 'v2').toLowerCase();
-  if (wsMode === 'v2') {
-    return global.wsServerV2 || wsServerV2 || null;
-  } else if (wsMode === 'v1') {
-    return global.wsServer || wsServer || null;
-  }
-  return null;
-}
 
 // Initialize v1 WebSocket Server (legacy notifications)
 if (WEBSOCKET_MODE === 'v1') {
