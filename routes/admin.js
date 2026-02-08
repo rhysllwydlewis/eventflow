@@ -654,8 +654,8 @@ router.get('/users/search', authRequired, roleRequired('admin'), async (req, res
  * GET /api/admin/marketing-export
  * Export marketing opt-in users as CSV
  */
-router.get('/marketing-export', authRequired, roleRequired('admin'), (req, res) => {
-  const users = read('users').filter(u => u.marketingOptIn);
+router.get('/marketing-export', authRequired, roleRequired('admin'), async (req, res) => {
+  const users = (await dbUnified.read('users')).filter(u => u.marketingOptIn);
   const header = 'name,email,role\n';
   const rows = users
     .map(u => {
@@ -675,8 +675,8 @@ router.get('/marketing-export', authRequired, roleRequired('admin'), (req, res) 
  * GET /api/admin/users-export
  * Export all users as CSV
  */
-router.get('/users-export', authRequired, roleRequired('admin'), (req, res) => {
-  const users = read('users');
+router.get('/users-export', authRequired, roleRequired('admin'), async (req, res) => {
+  const users = await dbUnified.read('users');
   const header = 'id,name,email,role,verified,marketingOptIn,createdAt,lastLoginAt\n';
   const rows = users
     .map(u => {
@@ -696,17 +696,17 @@ router.get('/users-export', authRequired, roleRequired('admin'), (req, res) => {
  * GET /api/admin/export/all
  * Export all core collections as JSON
  */
-router.get('/export/all', authRequired, roleRequired('admin'), (_req, res) => {
+router.get('/export/all', authRequired, roleRequired('admin'), async (_req, res) => {
   const payload = {
     exportedAt: new Date().toISOString(),
-    users: read('users'),
-    suppliers: read('suppliers'),
-    packages: read('packages'),
-    plans: read('plans'),
-    notes: read('notes'),
-    events: read('events'),
-    threads: read('threads'),
-    messages: read('messages'),
+    users: await dbUnified.read('users'),
+    suppliers: await dbUnified.read('suppliers'),
+    packages: await dbUnified.read('packages'),
+    plans: await dbUnified.read('plans'),
+    notes: await dbUnified.read('notes'),
+    events: await dbUnified.read('events'),
+    threads: await dbUnified.read('threads'),
+    messages: await dbUnified.read('messages'),
   };
   const json = JSON.stringify(payload, null, 2);
   res.setHeader('Content-Type', 'application/json; charset=utf-8');

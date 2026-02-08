@@ -448,40 +448,10 @@ app.get('/api/admin/users', authRequired, roleRequired('admin'), async (req, res
 });
 
 // Admin: export only marketing-opt-in users as CSV
-app.get('/api/admin/marketing-export', authRequired, roleRequired('admin'), async (req, res) => {
-  const users = (await dbUnified.read('users')).filter(u => u.marketingOptIn);
-  const header = 'name,email,role\n';
-  const rows = users
-    .map(u => {
-      const name = (u.name || '').replace(/"/g, '""');
-      const email = (u.email || '').replace(/"/g, '""');
-      const role = (u.role || '').replace(/"/g, '""');
-      return `"${name}","${email}","${role}"`;
-    })
-    .join('\n');
-  const csv = header + rows + (rows ? '\n' : '');
-  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-  res.setHeader('Content-Disposition', 'attachment; filename="eventflow-marketing.csv"');
-  res.send(csv);
-});
+// Moved to routes/admin.js
 
 // Admin: export all users as CSV
-app.get('/api/admin/users-export', authRequired, roleRequired('admin'), async (req, res) => {
-  const users = await dbUnified.read('users');
-  const header = 'id,name,email,role,verified,marketingOptIn,createdAt,lastLoginAt\n';
-  const rows = users
-    .map(u => {
-      const esc = v => String(v ?? '').replace(/"/g, '""');
-      const verified = u.verified ? 'yes' : 'no';
-      const marketing = u.marketingOptIn ? 'yes' : 'no';
-      return `"${esc(u.id)}","${esc(u.name)}","${esc(u.email)}","${esc(u.role)}","${verified}","${marketing}","${esc(u.createdAt)}","${esc(u.lastLoginAt || '')}"`;
-    })
-    .join('\n');
-  const csv = header + rows + (rows ? '\n' : '');
-  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-  res.setHeader('Content-Disposition', 'attachment; filename="eventflow-users.csv"');
-  res.send(csv);
-});
+// Moved to routes/admin.js
 
 /**
  * POST /api/admin/users
@@ -711,23 +681,7 @@ app.post(
 );
 
 // Admin: export all core collections as JSON
-app.get('/api/admin/export/all', authRequired, roleRequired('admin'), async (_req, res) => {
-  const payload = {
-    exportedAt: new Date().toISOString(),
-    users: await dbUnified.read('users'),
-    suppliers: await dbUnified.read('suppliers'),
-    packages: await dbUnified.read('packages'),
-    plans: await dbUnified.read('plans'),
-    notes: await dbUnified.read('notes'),
-    events: await dbUnified.read('events'),
-    threads: await dbUnified.read('threads'),
-    messages: await dbUnified.read('messages'),
-  };
-  const json = JSON.stringify(payload, null, 2);
-  res.setHeader('Content-Type', 'application/json; charset=utf-8');
-  res.setHeader('Content-Disposition', 'attachment; filename="eventflow-export.json"');
-  res.send(json);
-});
+// Moved to routes/admin.js
 
 /**
  * Get venues near a location
@@ -1525,7 +1479,6 @@ app.use('/api/v2/admin', adminV2Routes);
 // ---------- Content Reporting System ----------
 const reportsRoutes = require('./routes/reports');
 app.use('/api', reportsRoutes);
-
 
 // ---------- Tickets Routes ----------
 const ticketsRoutes = require('./routes/tickets');
