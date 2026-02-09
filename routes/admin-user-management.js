@@ -74,7 +74,8 @@ function validateJWTSecret() {
   if (weakSecrets.some(weak => JWT_SECRET.toLowerCase().includes(weak))) {
     return {
       error: 'JWT secret contains weak or placeholder values',
-      message: 'JWT_SECRET contains a weak or placeholder value',
+      message:
+        'JWT_SECRET must not contain common weak values. Generate a secure secret using: openssl rand -base64 32',
     };
   }
 
@@ -1838,7 +1839,6 @@ router.post(
   }
 );
 
-
 // ---------- User Detail Operations ----------
 
 /**
@@ -2682,6 +2682,5 @@ router.get('/users/segments', authRequired, roleRequired('admin'), async (req, r
     res.status(500).json({ error: 'Failed to generate user segments', details: error.message });
   }
 });
-
 
 module.exports = router;
