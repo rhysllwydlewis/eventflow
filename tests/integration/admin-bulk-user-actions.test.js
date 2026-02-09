@@ -9,7 +9,11 @@ describe('Admin Bulk User Actions', () => {
   let adminRoutesContent;
 
   beforeAll(() => {
-    adminRoutesContent = fs.readFileSync(path.join(__dirname, '../../routes/admin.js'), 'utf8');
+    // User management routes are now in admin-user-management.js
+    adminRoutesContent = fs.readFileSync(
+      path.join(__dirname, '../../routes/admin-user-management.js'),
+      'utf8'
+    );
   });
 
   describe('POST /api/admin/users/bulk-delete', () => {
