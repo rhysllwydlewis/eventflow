@@ -11,10 +11,9 @@ const express = require('express');
 const multer = require('multer');
 const { read, write, uid } = require('../store');
 const { authRequired, roleRequired } = require('../middleware/auth');
-const { auditLog, auditMiddleware, AUDIT_ACTIONS } = require('../middleware/audit');
+const { auditLog, AUDIT_ACTIONS } = require('../middleware/audit');
 const { csrfProtection } = require('../middleware/csrf');
 const { writeLimiter } = require('../middleware/rateLimit');
-const postmark = require('../utils/postmark');
 const dbUnified = require('../db-unified');
 
 const router = express.Router();
@@ -65,39 +64,6 @@ let seedFn = null;
 function setHelperFunctions(supplierIsProActive, seed) {
   supplierIsProActiveFn = supplierIsProActive;
   seedFn = seed;
-}
-
-/**
- * Validate JWT secret is properly configured
- * @returns {Object|null} Error object if invalid, null if valid
- */
-function validateJWTSecret() {
-  const JWT_SECRET = process.env.JWT_SECRET;
-  const weakSecrets = ['change_me', 'your-secret-key', 'secret', 'password'];
-
-  if (!JWT_SECRET) {
-    return {
-      error: 'JWT secret not configured',
-      message: 'A secure JWT_SECRET environment variable is required',
-    };
-  }
-
-  if (JWT_SECRET.length < 32) {
-    return {
-      error: 'JWT secret too short',
-      message: 'JWT_SECRET must be at least 32 characters long for security',
-    };
-  }
-
-  if (weakSecrets.some(weak => JWT_SECRET.toLowerCase().includes(weak))) {
-    return {
-      error: 'JWT secret contains weak or placeholder values',
-      message:
-        'JWT_SECRET must not contain common weak values. Generate a secure secret using: openssl rand -base64 32',
-    };
-  }
-
-  return null; // Valid
 }
 
 /**
@@ -1702,7 +1668,6 @@ router.get('/dashboard/counts', authRequired, roleRequired('admin'), async (req,
     });
   }
 });
-
 
 // ---------- Content Management ----------
 
