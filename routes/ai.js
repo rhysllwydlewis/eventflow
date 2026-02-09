@@ -60,7 +60,7 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
  * Generate event planning suggestions based on user input
  * Body: { eventType, location, budget, guests, eventDate }
  */
-router.post('/suggestions', authRequired, async (req, res) => {
+router.post('/suggestions', authRequired, applyCsrfProtection, async (req, res) => {
   try {
     const { eventType, location, budget, guests } = req.body;
 
