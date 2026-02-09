@@ -37,6 +37,18 @@ function parseDuration(duration) {
   }
 }
 
+// Helper function to generate URL-friendly slugs from titles
+function generateSlug(title) {
+  if (!title) {
+    return '';
+  }
+  return String(title)
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
 /**
  * Check if JWT secret is valid for impersonation
  * @returns {Object|null} Error object if invalid, null if valid
@@ -69,6 +81,10 @@ function validateJWTSecret() {
   return null;
 }
 
+/**
+ * GET /api/admin/users
+ * List all users (without password hashes)
+ */
 router.get('/users', authRequired, roleRequired('admin'), async (req, res) => {
   try {
     const allUsers = await dbUnified.read('users');
@@ -712,28 +728,6 @@ router.post(
     }
   }
 );
-
-// Helper function to parse duration strings like "7d", "1h", "30m"
-function parseDuration(duration) {
-  const match = duration.match(/^(\d+)([dhm])$/);
-  if (!match) {
-    return 0;
-  }
-
-  const value = parseInt(match[1], 10);
-  const unit = match[2];
-
-  switch (unit) {
-    case 'd':
-      return value * 24 * 60 * 60 * 1000; // days
-    case 'h':
-      return value * 60 * 60 * 1000; // hours
-    case 'm':
-      return value * 60 * 1000; // minutes
-    default:
-      return 0;
-  }
-}
 
 /**
  * POST /api/admin/users/bulk-delete
