@@ -1472,6 +1472,10 @@ app.use('/api/webhooks', webhookRoutes);
 const adminRoutes = require('./routes/admin');
 app.use('/api/admin', adminRoutes);
 
+// ---------- Admin User Management Routes ----------
+const adminUserManagementRoutes = require('./routes/admin-user-management');
+app.use('/api/admin', adminUserManagementRoutes);
+
 // ---------- Admin v2 Routes (RBAC with granular permissions) ----------
 const adminV2Routes = require('./routes/admin-v2');
 app.use('/api/v2/admin', adminV2Routes);
