@@ -7,6 +7,7 @@
 
 const express = require('express');
 const { authRequired } = require('../middleware/auth');
+const { aiLimiter } = require('../middleware/rateLimits');
 const dbUnified = require('../db-unified');
 
 const router = express.Router();
@@ -60,7 +61,7 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
  * Generate event planning suggestions based on user input
  * Body: { eventType, location, budget, guests, eventDate }
  */
-router.post('/suggestions', authRequired, applyCsrfProtection, async (req, res) => {
+router.post('/suggestions', aiLimiter, authRequired, applyCsrfProtection, async (req, res) => {
   try {
     const { eventType, location, budget, guests } = req.body;
 
@@ -315,7 +316,7 @@ function estimateBudget(eventType, guests) {
  * Body: { prompt, plan }
  * Note: Requires global express.json() middleware configured in server.js
  */
-router.post('/plan', authRequired, applyCsrfProtection, async (req, res) => {
+router.post('/plan', aiLimiter, authRequired, applyCsrfProtection, async (req, res) => {
   const body = req.body || {};
   const promptText = String(body.prompt || '').trim();
   const plan = body.plan || {};

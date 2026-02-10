@@ -9,7 +9,7 @@ const auth = require('./auth');
 const security = require('./security');
 const errorHandler = require('./errorHandler');
 const validation = require('./validation');
-const rateLimit = require('./rateLimit');
+const rateLimits = require('./rateLimits');
 const csrf = require('./csrf');
 const apiVersioning = require('./api-versioning');
 const pagination = require('./pagination');
@@ -35,7 +35,7 @@ module.exports = {
   ...validation,
 
   // Rate Limiting
-  ...rateLimit,
+  ...rateLimits,
 
   // CSRF Protection
   ...csrf,

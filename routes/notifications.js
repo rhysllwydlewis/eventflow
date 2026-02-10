@@ -6,6 +6,7 @@
 'use strict';
 
 const express = require('express');
+const { notificationLimiter } = require('../middleware/rateLimits');
 const router = express.Router();
 
 // Service class loaded at module level for efficiency
@@ -121,7 +122,7 @@ function handleNotificationError(error, res, logMessage) {
  * GET /api/notifications
  * Get notifications for the current user
  */
-router.get('/', applyAuthRequired, async (req, res) => {
+router.get('/', notificationLimiter, applyAuthRequired, async (req, res) => {
   try {
     const notificationService = await getNotificationService();
     const userId = req.user.id;
@@ -145,7 +146,7 @@ router.get('/', applyAuthRequired, async (req, res) => {
  * GET /api/notifications/unread-count
  * Get unread notification count for the current user
  */
-router.get('/unread-count', applyAuthRequired, async (req, res) => {
+router.get('/unread-count', notificationLimiter, applyAuthRequired, async (req, res) => {
   try {
     const notificationService = await getNotificationService();
     const userId = req.user.id;
@@ -161,99 +162,129 @@ router.get('/unread-count', applyAuthRequired, async (req, res) => {
  * PUT /api/notifications/:id/read
  * Mark a notification as read
  */
-router.put('/:id/read', applyAuthRequired, applyCsrfProtection, async (req, res) => {
-  try {
-    const notificationService = await getNotificationService();
-    const userId = req.user.id;
-    const { id } = req.params;
+router.put(
+  '/:id/read',
+  notificationLimiter,
+  applyAuthRequired,
+  applyCsrfProtection,
+  async (req, res) => {
+    try {
+      const notificationService = await getNotificationService();
+      const userId = req.user.id;
+      const { id } = req.params;
 
-    const success = await notificationService.markAsRead(id, userId);
+      const success = await notificationService.markAsRead(id, userId);
 
-    if (success) {
-      res.json({ success: true, message: 'Notification marked as read' });
-    } else {
-      res.status(404).json({ error: 'Notification not found' });
+      if (success) {
+        res.json({ success: true, message: 'Notification marked as read' });
+      } else {
+        res.status(404).json({ error: 'Notification not found' });
+      }
+    } catch (error) {
+      handleNotificationError(error, res, 'Error marking notification as read');
     }
-  } catch (error) {
-    handleNotificationError(error, res, 'Error marking notification as read');
   }
-});
+);
 
 /**
  * PUT /api/notifications/mark-all-read
  * Mark all notifications as read for the current user
  */
-router.put('/mark-all-read', applyAuthRequired, applyCsrfProtection, async (req, res) => {
-  try {
-    const notificationService = await getNotificationService();
-    const userId = req.user.id;
-    const count = await notificationService.markAllAsRead(userId);
+router.put(
+  '/mark-all-read',
+  notificationLimiter,
+  applyAuthRequired,
+  applyCsrfProtection,
+  async (req, res) => {
+    try {
+      const notificationService = await getNotificationService();
+      const userId = req.user.id;
+      const count = await notificationService.markAllAsRead(userId);
 
-    res.json({ success: true, count, message: `${count} notifications marked as read` });
-  } catch (error) {
-    handleNotificationError(error, res, 'Error marking all notifications as read');
+      res.json({ success: true, count, message: `${count} notifications marked as read` });
+    } catch (error) {
+      handleNotificationError(error, res, 'Error marking all notifications as read');
+    }
   }
-});
+);
 
 /**
  * PUT /api/notifications/:id/dismiss
  * Dismiss a notification
  */
-router.put('/:id/dismiss', applyAuthRequired, applyCsrfProtection, async (req, res) => {
-  try {
-    const notificationService = await getNotificationService();
-    const userId = req.user.id;
-    const { id } = req.params;
+router.put(
+  '/:id/dismiss',
+  notificationLimiter,
+  applyAuthRequired,
+  applyCsrfProtection,
+  async (req, res) => {
+    try {
+      const notificationService = await getNotificationService();
+      const userId = req.user.id;
+      const { id } = req.params;
 
-    const success = await notificationService.dismiss(id, userId);
+      const success = await notificationService.dismiss(id, userId);
 
-    if (success) {
-      res.json({ success: true, message: 'Notification dismissed' });
-    } else {
-      res.status(404).json({ error: 'Notification not found' });
+      if (success) {
+        res.json({ success: true, message: 'Notification dismissed' });
+      } else {
+        res.status(404).json({ error: 'Notification not found' });
+      }
+    } catch (error) {
+      handleNotificationError(error, res, 'Error dismissing notification');
     }
-  } catch (error) {
-    handleNotificationError(error, res, 'Error dismissing notification');
   }
-});
+);
 
 /**
  * DELETE /api/notifications/:id
  * Delete a notification
  */
-router.delete('/:id', applyAuthRequired, applyCsrfProtection, async (req, res) => {
-  try {
-    const notificationService = await getNotificationService();
-    const userId = req.user.id;
-    const { id } = req.params;
+router.delete(
+  '/:id',
+  notificationLimiter,
+  applyAuthRequired,
+  applyCsrfProtection,
+  async (req, res) => {
+    try {
+      const notificationService = await getNotificationService();
+      const userId = req.user.id;
+      const { id } = req.params;
 
-    const success = await notificationService.delete(id, userId);
+      const success = await notificationService.delete(id, userId);
 
-    if (success) {
-      res.json({ success: true, message: 'Notification deleted' });
-    } else {
-      res.status(404).json({ error: 'Notification not found' });
+      if (success) {
+        res.json({ success: true, message: 'Notification deleted' });
+      } else {
+        res.status(404).json({ error: 'Notification not found' });
+      }
+    } catch (error) {
+      handleNotificationError(error, res, 'Error deleting notification');
     }
-  } catch (error) {
-    handleNotificationError(error, res, 'Error deleting notification');
   }
-});
+);
 
 /**
  * DELETE /api/notifications
  * Delete all notifications for the current user
  */
-router.delete('/', applyAuthRequired, applyCsrfProtection, async (req, res) => {
-  try {
-    const notificationService = await getNotificationService();
-    const userId = req.user.id;
-    const count = await notificationService.deleteAll(userId);
+router.delete(
+  '/',
+  notificationLimiter,
+  applyAuthRequired,
+  applyCsrfProtection,
+  async (req, res) => {
+    try {
+      const notificationService = await getNotificationService();
+      const userId = req.user.id;
+      const count = await notificationService.deleteAll(userId);
 
-    res.json({ success: true, count, message: `${count} notifications deleted` });
-  } catch (error) {
-    handleNotificationError(error, res, 'Error deleting all notifications');
+      res.json({ success: true, count, message: `${count} notifications deleted` });
+    } catch (error) {
+      handleNotificationError(error, res, 'Error deleting all notifications');
+    }
   }
-});
+);
 
 /**
  * POST /api/notifications/test

@@ -10,7 +10,7 @@ const router = express.Router();
 const dbUnified = require('../db-unified');
 const { getUserFromCookie, authRequired } = require('../middleware/auth');
 const { csrfProtection } = require('../middleware/csrf');
-const { writeLimiter } = require('../middleware/rateLimit');
+const { writeLimiter } = require('../middleware/rateLimits');
 const validator = require('validator');
 
 // Whitelist of allowed event types
