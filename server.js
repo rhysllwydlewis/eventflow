@@ -1050,6 +1050,41 @@ async function startServer() {
           autoMigrateFromLocal: true, // Auto-migrate from local storage if detected
         });
         console.log('   ✅ Database seeding complete');
+        
+        // 4b. Validate admin authentication configuration
+        console.log('');
+        console.log('🔐 Validating admin authentication configuration...');
+        const domainAdmin = require('./middleware/domain-admin');
+        
+        // Validate ADMIN_DOMAINS format
+        const domainsValidation = domainAdmin.validateAdminDomainsFormat();
+        if (!domainsValidation.valid) {
+          console.error('');
+          console.error('❌ CRITICAL: Invalid ADMIN_DOMAINS configuration');
+          console.error(`   ${domainsValidation.error}`);
+          console.error('');
+          console.error('Fix the ADMIN_DOMAINS environment variable and restart.');
+          process.exit(1);
+        }
+        
+        // Log admin configuration
+        domainAdmin.logAdminAuthConfig();
+        
+        // Check owner password in production
+        if (process.env.NODE_ENV === 'production') {
+          const ownerPassword = process.env.OWNER_PASSWORD;
+          if (!ownerPassword || ownerPassword === 'Admin123!') {
+            console.warn('');
+            console.warn('⚠️  WARNING: Using default or no owner password in production!');
+            console.warn('   Set OWNER_PASSWORD environment variable to a strong password.');
+            console.warn('   Current default password is INSECURE for production use.');
+            console.warn('');
+          } else {
+            console.log('   ✅ Owner password configured');
+          }
+        }
+        
+        console.log('   ✅ Admin authentication configuration valid');
       } catch (error) {
         console.error('');
         console.error('='.repeat(70));
