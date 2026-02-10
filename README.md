@@ -966,19 +966,6 @@ Interactive API documentation powered by Swagger/OpenAPI 3.0:
 - AI-powered features
 - Admin operations
 
-## 🧪 Testing
-
-```bash
-# Run tests (when implemented)
-npm test
-
-# Run linter
-npm run lint
-
-# Security audit
-npm audit
-```
-
 ## 🤝 Contributing
 
 1. Fork the repository
