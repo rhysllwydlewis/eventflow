@@ -14,6 +14,7 @@
   <link rel="stylesheet" href="/assets/css/ui-ux-fixes.css?v=18.0.0">
     <link rel="stylesheet" href="/assets/css/navbar.css?v=18.0.0" />
   <link rel="stylesheet" href="/assets/css/p3-features.css?v=18.1.1" />
+  <link rel="stylesheet" href="/assets/css/auth.css?v=18.1.1" />
   <link rel="icon" href="/favicon.svg">
 </head>
 <body>
@@ -300,6 +301,8 @@
       </form>
     </section>
     <!-- Load utilities -->
+    <script src="/assets/js/utils/api-client.js" defer></script>
+    <script src="/assets/js/utils/auth-helpers.js" defer></script>
     <script src="/assets/js/utils/form-validator.js" defer></script>
     <script src="/assets/js/components/ErrorBoundary.js" defer></script>
     <script src="/assets/js/utils/keyboard-nav.js" defer></script>
@@ -309,18 +312,28 @@
     <script src="/assets/js/app.js" defer></script>
     <script>window.__EF_PAGE__='auth'</script>
     
-    <!-- Fetch CSRF token on page load -->
+    <!-- Fetch CSRF token on page load using api-client -->
     <script>
       (async function() {
-        try {
-          const response = await fetch('/api/csrf-token', {
-            method: 'GET',
-            credentials: 'include'
+        // Wait for api-client to load
+        function waitForApiClient() {
+          return new Promise((resolve) => {
+            if (window.apiClient) {
+              resolve();
+            } else {
+              setTimeout(() => waitForApiClient().then(resolve), 50);
+            }
           });
+        }
+        
+        try {
+          await waitForApiClient();
+          const response = await window.apiClient.get('csrf-token');
           if (response.ok) {
             const data = await response.json();
-            window.__CSRF_TOKEN__ = data.csrfToken;
-            console.log('CSRF token fetched successfully');
+            window.csrfToken = data.csrfToken;
+            window.__CSRF_TOKEN__ = data.csrfToken; // Backward compatibility
+            console.log('✅ CSRF token fetched via api-client');
           } else {
             console.error('Failed to fetch CSRF token:', response.statusText);
           }

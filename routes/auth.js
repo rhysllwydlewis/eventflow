@@ -383,24 +383,55 @@ router.post(
  */
 router.post('/login', authLimiter, (req, res) => {
   const { email, password, remember } = req.body || {};
+
+  console.log(`[LOGIN] Attempt for email: ${email}`);
+
   if (!email || !password) {
+    console.warn('[LOGIN] Missing email or password');
     return res.status(400).json({ error: 'Missing fields' });
   }
 
   const user = read('users').find(
     u => (u.email || '').toLowerCase() === String(email).toLowerCase()
   );
+
   if (!user) {
+    console.warn(`[LOGIN] User not found: ${email}`);
     return res.status(401).json({ error: 'Invalid email or password' });
   }
-  if (!bcrypt.compareSync(password, user.passwordHash)) {
+
+  console.log(
+    `[LOGIN] Found user: ${user.email}, verified: ${user.verified}, hasHash: ${!!user.passwordHash}`
+  );
+
+  // Check password hash exists and is valid
+  if (!user.passwordHash) {
+    console.error(`[LOGIN] ❌ No password hash for user: ${email}`);
     return res.status(401).json({ error: 'Invalid email or password' });
   }
+
+  // Try to compare password
+  let passwordMatches = false;
+  try {
+    passwordMatches = bcrypt.compareSync(password, user.passwordHash);
+    console.log(`[LOGIN] Password match: ${passwordMatches}`);
+  } catch (error) {
+    console.error(`[LOGIN] Password comparison error for ${email}:`, error.message);
+    return res.status(401).json({ error: 'Invalid email or password' });
+  }
+
+  if (!passwordMatches) {
+    console.warn(`[LOGIN] ❌ Invalid password for user: ${email}`);
+    return res.status(401).json({ error: 'Invalid email or password' });
+  }
+
   if (user.verified === false) {
+    console.warn(`[LOGIN] ❌ Email not verified for user: ${email}`);
     return res.status(403).json({ error: 'Please verify your email address before signing in.' });
   }
 
-  // Update last login timestamp (non-blocking)
+  // Update last login timestamp
+  console.log(`[LOGIN] ✅ Successful login for: ${email}`);
   updateLastLogin(user.id);
 
   const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, {
@@ -419,10 +450,15 @@ router.post('/login', authLimiter, (req, res) => {
 /**
  * POST /api/auth/forgot
  * Request password reset token
+ * Enhanced with logging for debugging
  */
 router.post('/forgot', authLimiter, async (req, res) => {
   const { email } = req.body || {};
+
+  console.log(`[PASSWORD RESET] Request for email: ${email}`);
+
   if (!email) {
+    console.warn('[PASSWORD RESET] Missing email in request');
     return res.status(400).json({ error: 'Missing email' });
   }
 
@@ -431,37 +467,47 @@ router.post('/forgot', authLimiter, async (req, res) => {
   const idx = users.findIndex(u => (u.email || '').toLowerCase() === String(email).toLowerCase());
 
   if (idx === -1) {
+    console.warn(`[PASSWORD RESET] User not found: ${email}`);
     // Always respond success so we don't leak which emails exist
-    return res.json({ ok: true });
-  }
-
-  const user = users[idx];
-  const token = uid('reset');
-  const expires = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // 1 hour
-
-  // Send password reset email via Postmark BEFORE saving token
-  // This ensures we only generate tokens when email can be sent
-  try {
-    console.log(`📧 Attempting to send password reset email to ${user.email}`);
-    await postmark.sendPasswordResetEmail(user, token);
-    console.log(`✅ Password reset email sent successfully to ${user.email}`);
-  } catch (emailError) {
-    console.error('❌ Failed to send password reset email:', emailError.message);
-
-    // Still return success to prevent email enumeration
-    // But log the error for debugging
     return res.json({
       ok: true,
-      // Don't expose error to client for security
+      message: 'If an account exists with that email, you will receive a password reset link.',
     });
   }
 
-  // Only save reset token after email is successfully sent
-  users[idx].resetToken = token;
-  users[idx].resetTokenExpiresAt = expires;
-  write('users', users);
+  const user = users[idx];
+  console.log(`[PASSWORD RESET] Found user: ${user.email}, verified: ${user.verified}`);
 
-  res.json({ ok: true });
+  // Generate password reset token with JWT for better security
+  try {
+    const resetToken = tokenUtils.generatePasswordResetToken(user.email);
+    console.log(`[PASSWORD RESET] Generated token for ${user.email}`);
+
+    // Save token with expiration (1 hour)
+    const expires = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+    users[idx].resetToken = resetToken;
+    users[idx].resetTokenExpiresAt = expires;
+    write('users', users);
+    console.log(`[PASSWORD RESET] Token saved for ${user.email}, expires: ${expires}`);
+
+    // Send password reset email
+    console.log(`[PASSWORD RESET] Sending email to ${user.email}...`);
+    await postmark.sendPasswordResetEmail(user, resetToken);
+    console.log(`[PASSWORD RESET] ✅ Email sent successfully to ${user.email}`);
+
+    res.json({
+      ok: true,
+      message: 'Password reset email sent if account exists',
+    });
+  } catch (emailError) {
+    console.error(`[PASSWORD RESET] ❌ Failed to send email to ${user.email}:`, emailError.message);
+
+    // Still return success to prevent email enumeration
+    res.json({
+      ok: true,
+      message: 'Password reset email sent if account exists',
+    });
+  }
 });
 
 /**
@@ -740,56 +786,108 @@ router.post('/verify-email', authLimiter, validateToken({ required: true }), asy
 
 /**
  * POST /api/auth/reset-password
- * Complete password reset with token
+ * Verify reset token and update password
+ * Enhanced with logging for debugging
  */
 router.post('/reset-password', authLimiter, async (req, res) => {
   const { token, password } = req.body || {};
 
+  console.log(`[PASSWORD RESET VERIFY] Request with token: ${token?.substring(0, 20)}...`);
+
   if (!token || !password) {
+    console.warn('[PASSWORD RESET VERIFY] Missing token or password');
     return res.status(400).json({ error: 'Missing token or password' });
   }
 
-  // Validate password strength (min 8 characters)
+  // Validate password strength
   if (!passwordOk(password)) {
     return res
       .status(400)
       .json({ error: 'Password must be at least 8 characters with a letter and number' });
   }
 
-  const users = read('users');
-  const idx = users.findIndex(u => u.resetToken === token);
+  try {
+    const users = read('users');
+    let user = null;
+    let userIdx = -1;
 
-  if (idx === -1) {
-    return res.status(400).json({ error: 'Invalid or expired reset token' });
-  }
+    // Try JWT token first
+    console.log('[PASSWORD RESET VERIFY] Checking if JWT token...');
+    const validation = tokenUtils.validatePasswordResetToken(token);
 
-  const user = users[idx];
+    if (validation.valid) {
+      console.log(`[PASSWORD RESET VERIFY] Valid JWT token for: ${validation.email}`);
+      userIdx = users.findIndex(
+        u => (u.email || '').toLowerCase() === String(validation.email).toLowerCase()
+      );
+    } else {
+      console.log('[PASSWORD RESET VERIFY] Not a valid JWT, trying legacy token...');
+      // Try legacy reset token
+      userIdx = users.findIndex(u => u.resetToken === token);
 
-  // Check if token has expired - CRITICAL CHECK
-  if (user.resetTokenExpiresAt) {
-    const expiresAt = new Date(user.resetTokenExpiresAt);
-    if (expiresAt < new Date()) {
+      if (userIdx !== -1) {
+        user = users[userIdx];
+        console.log(`[PASSWORD RESET VERIFY] Found legacy token for: ${user.email}`);
+
+        // Check if expired
+        if (user.resetTokenExpiresAt) {
+          const expiresAt = new Date(user.resetTokenExpiresAt);
+          if (expiresAt < new Date()) {
+            console.warn(`[PASSWORD RESET VERIFY] Legacy token expired for: ${user.email}`);
+            return res.status(400).json({
+              error: 'Password reset link has expired. Please request a new one.',
+              canRequestNew: true,
+            });
+          }
+        } else {
+          // If no expiry set, reject for security
+          console.warn(`[PASSWORD RESET VERIFY] Legacy token without expiry for: ${user.email}`);
+          return res.status(400).json({ error: 'Invalid reset token format' });
+        }
+      }
+    }
+
+    if (userIdx === -1) {
+      console.warn('[PASSWORD RESET VERIFY] Invalid or expired token');
       return res.status(400).json({
-        error: 'Reset token has expired. Please request a new one.',
-        canRequestNew: true,
+        error: 'Invalid or expired password reset link',
       });
     }
-  } else {
-    // If no expiry set, reject for security
-    return res.status(400).json({ error: 'Invalid reset token format' });
+
+    user = users[userIdx];
+    console.log(`[PASSWORD RESET VERIFY] Resetting password for: ${user.email}`);
+
+    // Hash new password
+    const hashedPassword = bcrypt.hashSync(password, 10);
+
+    // Update user
+    users[userIdx].passwordHash = hashedPassword;
+    users[userIdx].passwordResetRequired = false;
+    users[userIdx].passwordChangedAt = new Date().toISOString();
+    delete users[userIdx].resetToken;
+    delete users[userIdx].resetTokenExpiresAt;
+    write('users', users);
+
+    console.log(`[PASSWORD RESET VERIFY] ✅ Password updated for: ${user.email}`);
+
+    // Send confirmation email
+    try {
+      await postmark.sendPasswordResetConfirmation(user);
+      console.log(`[PASSWORD RESET VERIFY] Confirmation email sent to: ${user.email}`);
+    } catch (emailError) {
+      console.error('Failed to send confirmation email:', emailError.message);
+      // Don't fail the reset if confirmation email fails
+    }
+
+    res.json({
+      ok: true,
+      message: 'Password updated successfully. You can now log in.',
+      user: { id: user.id, email: user.email },
+    });
+  } catch (error) {
+    console.error('[PASSWORD RESET VERIFY] Unexpected error:', error);
+    res.status(500).json({ error: 'Failed to reset password' });
   }
-
-  // Update password, clear reset token, and set passwordChangedAt
-  users[idx].passwordHash = bcrypt.hashSync(password, 10);
-  users[idx].passwordResetRequired = false;
-  users[idx].passwordChangedAt = new Date().toISOString();
-  delete users[idx].resetToken;
-  delete users[idx].resetTokenExpiresAt;
-  write('users', users);
-
-  console.log(`✅ Password reset successful for ${user.email}`);
-
-  res.json({ ok: true, message: 'Password reset successful' });
 });
 
 /**

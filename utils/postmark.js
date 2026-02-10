@@ -426,6 +426,28 @@ async function sendWelcomeEmail(user) {
 }
 
 /**
+ * Send password reset confirmation email
+ * @param {Object} user - User object with email, name
+ * @returns {Promise<Object>} Send result
+ * @throws {Error} If email sending fails
+ */
+async function sendPasswordResetConfirmation(user) {
+  console.log(`📧 Sending password reset confirmation to ${user.email}`);
+
+  return sendMail({
+    to: user.email,
+    subject: 'Your password has been reset',
+    template: 'password-reset-confirmation',
+    templateData: {
+      name: user.name || 'there',
+      resetTime: new Date().toLocaleString(),
+    },
+    tags: ['password-reset-confirmation', 'transactional'],
+    messageStream: 'outbound',
+  });
+}
+
+/**
  * Send marketing email (respects user preferences)
  * @param {Object} user - User object with email, name, notify_marketing
  * @param {string} subject - Email subject
@@ -530,6 +552,7 @@ module.exports = {
   sendMail,
   sendVerificationEmail,
   sendPasswordResetEmail,
+  sendPasswordResetConfirmation,
   sendWelcomeEmail,
   sendMarketingEmail,
   sendNotificationEmail,
