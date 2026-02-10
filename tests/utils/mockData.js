@@ -64,7 +64,6 @@ function generateMockPackage(overrides = {}) {
  * @returns {Object} Mock review data
  */
 function generateMockReview(overrides = {}) {
-  const id = Math.floor(Math.random() * 100000);
   const comments = [
     'Excellent service!',
     'Great experience, highly recommend',
