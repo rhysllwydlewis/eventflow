@@ -52,7 +52,16 @@ class DateManagementService {
         return null;
       }
       
+      // Sanitize filePath to prevent command injection
+      // Only allow alphanumeric, dash, underscore, slash, dot
+      // This prevents shell metacharacters like ; | & $ ` \ etc.
+      if (!/^[a-zA-Z0-9/_.-]+$/.test(filePath)) {
+        this.logger.error(`Invalid file path format (contains potentially unsafe characters): ${filePath}`);
+        return null;
+      }
+      
       // Get last commit date for this path
+      // Using -- before path ensures it's treated as a file path, not a git option
       const command = `git log -1 --format=%cI -- "${filePath}"`;
       const result = execSync(command, { 
         cwd: repoRoot,
