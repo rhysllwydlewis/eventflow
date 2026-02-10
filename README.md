@@ -159,7 +159,7 @@ EventFlow implements industry-standard security practices:
 ### Security & Performance
 
 - ✅ **Rate Limiting** - Protects against abuse with endpoint-specific limits
-  - Authentication: 5 requests / 15 minutes
+  - Authentication: 10 requests / 15 minutes
   - AI/OpenAI: 50 requests / hour
   - File Uploads: 20 requests / 15 minutes
   - Search/Discovery: 30 requests / minute

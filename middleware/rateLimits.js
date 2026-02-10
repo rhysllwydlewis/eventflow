@@ -11,11 +11,11 @@ const rateLimit = require('express-rate-limit');
 /**
  * Strict rate limit for authentication endpoints
  * Protects against brute force attacks and credential stuffing
- * 5 requests per 15 minutes
+ * 10 requests per 15 minutes - balances security with user experience
  */
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // 5 requests per window
+  max: 10, // 10 requests per window
   message: 'Too many authentication attempts, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,

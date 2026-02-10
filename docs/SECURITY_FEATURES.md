@@ -24,7 +24,7 @@ Rate limiters are configured in `middleware/rateLimits.js` with the following co
 
 - **Limiter**: `authLimiter`
 - **Window**: 15 minutes
-- **Max Requests**: 5
+- **Max Requests**: 10
 - **Applied To**: Login, registration, password reset endpoints
 - **Purpose**: Prevents brute force attacks and credential stuffing
 
@@ -476,15 +476,15 @@ To test rate limiting:
 Example:
 
 ```bash
-# Test auth limiter (5 requests per 15 minutes)
-for i in {1..6}; do
+# Test auth limiter (10 requests per 15 minutes)
+for i in {1..11}; do
   curl -X POST https://event-flow.co.uk/api/v1/auth/login \
     -H "Content-Type: application/json" \
     -d '{"email":"test@example.com","password":"test123"}'
   echo ""
 done
 
-# The 6th request should return 429 Too Many Requests
+# The 11th request should return 429 Too Many Requests
 ```
 
 ---
