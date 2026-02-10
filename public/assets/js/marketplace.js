@@ -223,12 +223,6 @@
     `;
     
     resultsContainer.innerHTML = skeletonHTML;
-  }">
-            <p>Unable to load listings. Please try again later.</p>
-          </div>
-        `;
-      }
-    }
   }
 
   // Render listings
