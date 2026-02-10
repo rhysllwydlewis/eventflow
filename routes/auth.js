@@ -21,7 +21,6 @@ const { passwordOk } = require('../middleware/validation');
 const { authLimiter, resendEmailLimiter } = require('../middleware/rateLimits');
 const { csrfProtection } = require('../middleware/csrf');
 const { featureRequired, getFeatureFlags } = require('../middleware/features');
-const { auditLog } = require('../middleware/audit');
 const postmark = require('../utils/postmark');
 const tokenUtils = require('../utils/token');
 const { validateToken } = require('../middleware/token');
@@ -496,18 +495,6 @@ router.post('/forgot', authLimiter, async (req, res) => {
     await postmark.sendPasswordResetEmail(user, resetToken);
     console.log(`[PASSWORD RESET] ✅ Email sent successfully to ${user.email}`);
 
-    // Log the password reset request
-    await auditLog({
-      adminId: user.id,
-      adminEmail: user.email,
-      action: 'password_reset_request',
-      targetType: 'user',
-      targetId: user.id,
-      details: { email: user.email },
-      ipAddress: req.ip,
-      userAgent: req.get('user-agent'),
-    });
-
     res.json({
       ok: true,
       message: 'Password reset email sent if account exists',
@@ -882,18 +869,6 @@ router.post('/reset-password', authLimiter, async (req, res) => {
     write('users', users);
 
     console.log(`[PASSWORD RESET VERIFY] ✅ Password updated for: ${user.email}`);
-
-    // Log the password reset
-    await auditLog({
-      adminId: user.id,
-      adminEmail: user.email,
-      action: 'password_reset_complete',
-      targetType: 'user',
-      targetId: user.id,
-      details: { email: user.email },
-      ipAddress: req.ip,
-      userAgent: req.get('user-agent'),
-    });
 
     // Send confirmation email
     try {
