@@ -40,7 +40,7 @@ class MessageSupplierPanel {
 
   async checkAuthentication() {
     try {
-      const response = await fetch('/api/auth/me', {
+      const response = await fetch('/api/v1/auth/me', {
         credentials: 'include',
       });
       if (!response.ok) {
@@ -391,13 +391,13 @@ class MessageSupplierPanel {
 
     try {
       // Get CSRF token
-      const csrfResponse = await fetch('/api/csrf-token', {
+      const csrfResponse = await fetch('/api/v1/csrf-token', {
         credentials: 'include',
       });
       const csrfData = await csrfResponse.json();
 
       // Start thread and send message
-      const response = await fetch('/api/threads/start', {
+      const response = await fetch('/api/v1/threads/start', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -74,7 +74,7 @@
       }
 
       // Get Stripe publishable key from backend
-      const response = await fetch('/api/payments/config', {
+      const response = await fetch('/api/v1/payments/config', {
         credentials: 'include',
       });
 
@@ -121,7 +121,7 @@
   // Check authentication
   async function checkAuth() {
     try {
-      const response = await fetch('/api/auth/me', {
+      const response = await fetch('/api/v1/auth/me', {
         credentials: 'include',
       });
 
@@ -292,7 +292,7 @@
       // Fetch CSRF token if not already available
       if (!window.__CSRF_TOKEN__) {
         try {
-          const csrfResponse = await fetch('/api/csrf-token', { credentials: 'include' });
+          const csrfResponse = await fetch('/api/v1/csrf-token', { credentials: 'include' });
           const csrfData = await csrfResponse.json();
           if (csrfData && csrfData.csrfToken) {
             window.__CSRF_TOKEN__ = csrfData.csrfToken;
@@ -311,7 +311,7 @@
         headers['X-CSRF-Token'] = window.__CSRF_TOKEN__;
       }
 
-      const response = await fetch('/api/payments/create-checkout-session', {
+      const response = await fetch('/api/v1/payments/create-checkout-session', {
         method: 'POST',
         headers: headers,
         credentials: 'include',

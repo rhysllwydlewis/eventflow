@@ -9,7 +9,7 @@
   // Check authentication and get user info
   async function checkAuthAndUpdateButtons() {
     try {
-      const response = await fetch('/api/auth/me', {
+      const response = await fetch('/api/v1/auth/me', {
         credentials: 'include',
       });
 

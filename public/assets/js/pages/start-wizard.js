@@ -137,7 +137,7 @@
    */
   async function loadCategories() {
     try {
-      const response = await fetch('/api/categories');
+      const response = await fetch('/api/v1/categories');
       const data = await response.json();
       // Categories loaded successfully
       console.log('Categories loaded:', data.items.length);
@@ -163,7 +163,7 @@
             radiusMiles: '10',
           });
 
-          const response = await fetch(`/api/venues/near?${params}`);
+          const response = await fetch(`/api/v1/venues/near?${params}`);
           const data = await response.json();
 
           // Convert venues to package format for display
@@ -191,7 +191,7 @@
         approved: 'true',
       });
 
-      const response = await fetch(`/api/packages/search?${params}`);
+      const response = await fetch(`/api/v1/packages/search?${params}`);
       const data = await response.json();
       availablePackages[categoryKey] = data.items || [];
       return data.items || [];
@@ -940,7 +940,7 @@
       }
 
       if (!isLoggedIn) {
-        const authResponse = await fetch('/api/auth/me', { credentials: 'include' });
+        const authResponse = await fetch('/api/v1/auth/me', { credentials: 'include' });
         isLoggedIn = authResponse.ok;
         if (isLoggedIn) {
           const authData = await authResponse.json();
@@ -1008,7 +1008,7 @@
   async function savePlanToBackend(planData) {
     const csrfToken = await getCsrfToken();
 
-    const response = await fetch('/api/me/plans', {
+    const response = await fetch('/api/v1/me/plans', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -1096,7 +1096,7 @@
 
     // Fetch from API as last resort
     try {
-      const response = await fetch('/api/csrf-token', { credentials: 'include' });
+      const response = await fetch('/api/v1/csrf-token', { credentials: 'include' });
       if (response.ok) {
         const data = await response.json();
         return data.csrfToken || '';

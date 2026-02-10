@@ -17,7 +17,7 @@ const messagingManager = new MessagingManager();
 // Get current user
 async function getCurrentUser() {
   try {
-    const response = await fetch('/api/auth/me', {
+    const response = await fetch('/api/v1/auth/me', {
       credentials: 'include',
     });
     if (!response.ok) {
@@ -34,7 +34,7 @@ async function getCurrentUser() {
 // Get user's suppliers
 async function getUserSuppliers() {
   try {
-    const response = await fetch('/api/me/suppliers');
+    const response = await fetch('/api/v1/me/suppliers');
     if (!response.ok) {
       return [];
     }
@@ -49,7 +49,7 @@ async function getUserSuppliers() {
 // Get supplier profile for quality scoring
 async function getSupplierProfile() {
   try {
-    const response = await fetch('/api/me/suppliers');
+    const response = await fetch('/api/v1/me/suppliers');
     if (!response.ok) {
       return null;
     }

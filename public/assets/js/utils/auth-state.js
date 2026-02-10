@@ -68,7 +68,7 @@
       // Note: This makes an API call on every initialization for security,
       // trading a small performance cost for proper HttpOnly cookie support.
       try {
-        const response = await fetch('/api/auth/me', {
+        const response = await fetch('/api/v1/auth/me', {
           credentials: 'include',
           headers: {
             'Cache-Control': 'no-cache',

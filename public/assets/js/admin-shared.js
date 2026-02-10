@@ -354,7 +354,7 @@ const AdminShared = (function () {
   // Fetch CSRF token
   async function fetchCSRFToken() {
     try {
-      const data = await fetch('/api/csrf-token', { credentials: 'include' }).then(r => r.json());
+      const data = await fetch('/api/v1/csrf-token', { credentials: 'include' }).then(r => r.json());
       if (data && data.csrfToken) {
         window.__CSRF_TOKEN__ = data.csrfToken;
       }

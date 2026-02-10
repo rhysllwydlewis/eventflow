@@ -430,7 +430,7 @@
      */
     async voteOnReview(reviewId, voteType) {
       try {
-        const response = await fetch(`/api/reviews/${reviewId}/vote`, {
+        const response = await fetch(`/api/v1/reviews/${reviewId}/vote`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -793,7 +793,7 @@
           eventType: formData.get('eventType'),
         };
 
-        const response = await fetch(`/api/suppliers/${this.currentSupplierId}/reviews`, {
+        const response = await fetch(`/api/v1/suppliers/${this.currentSupplierId}/reviews`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

@@ -165,7 +165,7 @@ async function searchSuppliers(filters, page = 1) {
   params.set('limit', 20);
 
   try {
-    const response = await fetch(`/api/v2/search/suppliers?${params.toString()}`, {
+    const response = await fetch(`/api/v1/v2/search/suppliers?${params.toString()}`, {
       credentials: 'include',
     });
 

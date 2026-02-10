@@ -855,7 +855,7 @@ async function loadHeroCollageImages() {
       console.log('[Collage Debug] Fetching homepage settings...');
     }
 
-    const settingsResponse = await fetch('/api/public/homepage-settings', {
+    const settingsResponse = await fetch('/api/v1/public/homepage-settings', {
       signal: controller.signal,
     });
 
@@ -2016,7 +2016,7 @@ async function initCollageWidget(widgetConfig) {
             videos: String(requestVideos),
           });
 
-          const response = await fetch(`/api/admin/public/pexels-collage?${params.toString()}`);
+          const response = await fetch(`/api/v1/admin/public/pexels-collage?${params.toString()}`);
 
           if (!response.ok) {
             if (isDebugEnabled()) {
@@ -2995,7 +2995,7 @@ function addCreatorCredit(frame, media) {
  */
 async function fetchPublicStats() {
   try {
-    const response = await fetch('/api/public/stats');
+    const response = await fetch('/api/v1/public/stats');
     if (!response.ok) {
       // Silently handle 404s (endpoint not available in static/dev mode)
       if (response.status === 404) {
@@ -3076,7 +3076,7 @@ async function fetchMarketplacePreview() {
   `;
 
   try {
-    const response = await fetch(`/api/marketplace/listings?limit=${MARKETPLACE_PREVIEW_LIMIT}`);
+    const response = await fetch(`/api/v1/marketplace/listings?limit=${MARKETPLACE_PREVIEW_LIMIT}`);
     if (!response.ok) {
       // Silently handle 404s (endpoint not available in static/dev mode)
       if (response.status === 404) {
@@ -3234,7 +3234,7 @@ async function fetchTestimonials() {
   }
 
   try {
-    const response = await fetch('/api/reviews?limit=6&sort=rating');
+    const response = await fetch('/api/v1/reviews?limit=6&sort=rating');
 
     if (!response.ok) {
       // Gracefully hide section if endpoint fails
@@ -3331,7 +3331,7 @@ function initHeroSearch() {
 
     searchTimeout = setTimeout(async () => {
       try {
-        const response = await fetch(`/api/search?q=${encodeURIComponent(query)}&limit=5`);
+        const response = await fetch(`/api/v1/search?q=${encodeURIComponent(query)}&limit=5`);
         if (!response.ok) {
           throw new Error('Search failed');
         }
@@ -3417,7 +3417,7 @@ function initNewsletterForm() {
     }
 
     try {
-      const response = await fetch('/api/newsletter/subscribe', {
+      const response = await fetch('/api/v1/newsletter/subscribe', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -43,7 +43,7 @@
    */
   async function checkAuth() {
     try {
-      const res = await fetch('/api/user', {
+      const res = await fetch('/api/v1/user', {
         credentials: 'include',
         headers: {
           'Cache-Control': 'no-cache',
@@ -94,7 +94,7 @@
    */
   async function loadListingForEdit(listingId) {
     try {
-      const res = await fetch(`/api/marketplace/my-listings/${listingId}`, {
+      const res = await fetch(`/api/v1/marketplace/my-listings/${listingId}`, {
         credentials: 'include',
       });
 
@@ -357,7 +357,7 @@
             formData.append('files', img.file);
 
             try {
-              const uploadRes = await fetch(`/api/photos/upload?type=marketplace&id=${listingId}`, {
+              const uploadRes = await fetch(`/api/v1/photos/upload?type=marketplace&id=${listingId}`, {
                 method: 'POST',
                 credentials: 'include',
                 headers: { 'X-CSRF-Token': csrfToken },

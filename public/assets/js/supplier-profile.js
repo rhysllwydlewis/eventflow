@@ -36,7 +36,7 @@
     showLoadingState(reviewsContainer);
 
     try {
-      const response = await fetch(`/api/reviews?supplierId=${supplierId}`, {
+      const response = await fetch(`/api/v1/reviews?supplierId=${supplierId}`, {
         credentials: 'include',
       });
 

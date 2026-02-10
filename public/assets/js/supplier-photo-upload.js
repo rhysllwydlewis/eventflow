@@ -20,7 +20,7 @@ class SupplierPhotoUpload {
   async ensureCsrfToken() {
     if (!window.__CSRF_TOKEN__) {
       try {
-        const resp = await fetch('/api/csrf-token', { credentials: 'include' });
+        const resp = await fetch('/api/v1/csrf-token', { credentials: 'include' });
         if (resp.ok) {
           const data = await resp.json();
           window.__CSRF_TOKEN__ = data.csrfToken;

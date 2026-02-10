@@ -1,7 +1,7 @@
 (async function () {
   // Check admin authentication
   try {
-    const response = await fetch('/api/auth/me', {
+    const response = await fetch('/api/v1/auth/me', {
       credentials: 'include',
     });
     const data = await response.json();
@@ -41,7 +41,7 @@
 
   async function loadCollageWidget() {
     try {
-      const response = await fetch('/api/admin/homepage/collage-widget', {
+      const response = await fetch('/api/v1/admin/homepage/collage-widget', {
         credentials: 'include',
       });
       if (response.ok) {
@@ -190,7 +190,7 @@
   async function saveCollageWidget() {
     try {
       // Get CSRF token
-      const csrfResponse = await fetch('/api/csrf-token', {
+      const csrfResponse = await fetch('/api/v1/csrf-token', {
         credentials: 'include',
       });
       const csrfData = await csrfResponse.json();
@@ -301,7 +301,7 @@
       }
 
       // Save configuration
-      const response = await fetch('/api/admin/homepage/collage-widget', {
+      const response = await fetch('/api/v1/admin/homepage/collage-widget', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -369,7 +369,7 @@
 
   async function loadCollageMedia() {
     try {
-      const response = await fetch('/api/admin/homepage/collage-media', {
+      const response = await fetch('/api/v1/admin/homepage/collage-media', {
         credentials: 'include',
       });
       if (response.ok) {
@@ -460,7 +460,7 @@
 
     try {
       // Get CSRF token
-      const csrfResponse = await fetch('/api/csrf-token', {
+      const csrfResponse = await fetch('/api/v1/csrf-token', {
         credentials: 'include',
       });
       const csrfData = await csrfResponse.json();
@@ -474,7 +474,7 @@
       // Show progress
       showUploadProgress(files.length);
 
-      const response = await fetch('/api/admin/homepage/collage-media', {
+      const response = await fetch('/api/v1/admin/homepage/collage-media', {
         method: 'POST',
         headers: {
           'X-CSRF-Token': csrfData.csrfToken,
@@ -504,7 +504,7 @@
   async function deleteCollageMedia(filename) {
     try {
       // Get CSRF token
-      const csrfResponse = await fetch('/api/csrf-token', {
+      const csrfResponse = await fetch('/api/v1/csrf-token', {
         credentials: 'include',
       });
       const csrfData = await csrfResponse.json();
@@ -579,7 +579,7 @@
 
   async function loadCategories() {
     try {
-      const response = await fetch('/api/categories', {
+      const response = await fetch('/api/v1/categories', {
         credentials: 'include',
       });
       if (response.ok) {
@@ -711,13 +711,13 @@
 
     try {
       // Get CSRF token
-      const csrfResponse = await fetch('/api/csrf-token', {
+      const csrfResponse = await fetch('/api/v1/csrf-token', {
         credentials: 'include',
       });
       const csrfData = await csrfResponse.json();
       const csrfToken = csrfData.csrfToken;
 
-      const response = await fetch(`/api/admin/categories/${categoryId}/hero-image`, {
+      const response = await fetch(`/api/v1/admin/categories/${categoryId}/hero-image`, {
         method: 'POST',
         headers: {
           'X-CSRF-Token': csrfToken,
@@ -746,13 +746,13 @@
 
     try {
       // Get CSRF token
-      const csrfResponse = await fetch('/api/csrf-token', {
+      const csrfResponse = await fetch('/api/v1/csrf-token', {
         credentials: 'include',
       });
       const csrfData = await csrfResponse.json();
       const csrfToken = csrfData.csrfToken;
 
-      const response = await fetch(`/api/admin/categories/${categoryId}/hero-image`, {
+      const response = await fetch(`/api/v1/admin/categories/${categoryId}/hero-image`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -819,7 +819,7 @@
 
   async function loadAllCategories() {
     try {
-      const response = await fetch('/api/categories', {
+      const response = await fetch('/api/v1/categories', {
         credentials: 'include',
       });
       if (response.ok) {
@@ -975,7 +975,7 @@
     };
 
     try {
-      const csrfResponse = await fetch('/api/auth/csrf', {
+      const csrfResponse = await fetch('/api/v1/auth/csrf', {
         credentials: 'include',
       });
       const csrfData = await csrfResponse.json();
@@ -984,7 +984,7 @@
       let response;
       if (editingCategoryId) {
         // Update existing category
-        response = await fetch(`/api/admin/categories/${editingCategoryId}`, {
+        response = await fetch(`/api/v1/admin/categories/${editingCategoryId}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -995,7 +995,7 @@
         });
       } else {
         // Create new category
-        response = await fetch('/api/admin/categories', {
+        response = await fetch('/api/v1/admin/categories', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -1031,13 +1031,13 @@
     }
 
     try {
-      const csrfResponse = await fetch('/api/auth/csrf', {
+      const csrfResponse = await fetch('/api/v1/auth/csrf', {
         credentials: 'include',
       });
       const csrfData = await csrfResponse.json();
       const csrfToken = csrfData.csrfToken;
 
-      const response = await fetch(`/api/admin/categories/${categoryId}`, {
+      const response = await fetch(`/api/v1/admin/categories/${categoryId}`, {
         method: 'DELETE',
         headers: {
           'X-CSRF-Token': csrfToken,
@@ -1060,13 +1060,13 @@
 
   async function toggleCategoryVisibility(categoryId, visible) {
     try {
-      const csrfResponse = await fetch('/api/auth/csrf', {
+      const csrfResponse = await fetch('/api/v1/auth/csrf', {
         credentials: 'include',
       });
       const csrfData = await csrfResponse.json();
       const csrfToken = csrfData.csrfToken;
 
-      const response = await fetch(`/api/admin/categories/${categoryId}/visibility`, {
+      const response = await fetch(`/api/v1/admin/categories/${categoryId}/visibility`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -1108,7 +1108,7 @@
     searchPexelsBtn.textContent = 'Searching...';
 
     try {
-      const response = await fetch(`/api/pexels/search?q=${encodeURIComponent(query)}&perPage=12`, {
+      const response = await fetch(`/api/v1/pexels/search?q=${encodeURIComponent(query)}&perPage=12`, {
         credentials: 'include',
       });
 

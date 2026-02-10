@@ -345,7 +345,7 @@
             exportBtn.disabled = true;
             exportBtn.textContent = 'Exporting...';
 
-            const response = await fetch('/api/supplier/enquiries/export', {
+            const response = await fetch('/api/v1/supplier/enquiries/export', {
               credentials: 'include',
             });
 

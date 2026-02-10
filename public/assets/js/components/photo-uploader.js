@@ -4,7 +4,7 @@
  *
  * Usage:
  *   const uploader = new PhotoUploader({
- *     uploadUrl: '/api/photos/upload',
+ *     uploadUrl: '/api/v1/photos/upload',
  *     maxFiles: 10,
  *     maxFileSize: 10 * 1024 * 1024, // 10MB
  *     onSuccess: (response) => { ... },
@@ -14,7 +14,7 @@
 
 class PhotoUploader {
   constructor(options = {}) {
-    this.uploadUrl = options.uploadUrl || '/api/photos/upload';
+    this.uploadUrl = options.uploadUrl || '/api/v1/photos/upload';
     this.maxFiles = options.maxFiles || 10;
     this.maxFileSize = options.maxFileSize || 10 * 1024 * 1024; // 10MB default
     this.acceptedTypes = options.acceptedTypes || [

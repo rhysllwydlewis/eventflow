@@ -151,7 +151,7 @@ class CategoryGrid {
 
   async loadCategories() {
     try {
-      const response = await fetch('/api/categories');
+      const response = await fetch('/api/v1/categories');
       if (!response.ok) {
         throw new Error('Failed to load categories');
       }
