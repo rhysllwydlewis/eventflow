@@ -40,6 +40,8 @@
   <link rel="stylesheet" href="/assets/css/animations.css?v=18.0.0">
   <link rel="stylesheet" href="/assets/css/mobile-optimizations.css?v=18.0.0">
   <link rel="stylesheet" href="/assets/css/wizard.css?v=18.0.0">
+  <link rel="stylesheet" href="/assets/css/wizard-mobile.css?v=18.0.0">
+  <link rel="stylesheet" href="/assets/css/wizard-animations.css?v=18.0.0">
     <link rel="stylesheet" href="/assets/css/navbar.css?v=18.0.0" />
   <link rel="icon" href="/favicon.svg">
   <link rel="stylesheet" href="/assets/css/ui-ux-fixes.css?v=18.0.0">
@@ -144,11 +146,10 @@
   <div class="container" style="display: flex; gap: 2rem; align-items: flex-start;">
     <!-- Main wizard area -->
     <div style="flex: 1; min-width: 0;">
-      <h1>Start planning your event</h1>
       <!-- Template Selector (initially shown) -->
       <div id="template-selector-container" class="card" style="margin-bottom: 1rem; display: none;"></div>
       
-      <h2 class="sr-only">Event details wizard</h2>
+      <h2 class="sr-only">Event planning wizard</h2>
       <div id="wizard-container">
         <!-- Wizard steps will be rendered here -->
       </div>
@@ -164,6 +165,7 @@
 
 <script src="/assets/js/utils/pexels-client.js"></script>
 <script src="/assets/js/utils/wizard-state.js"></script>
+<script src="/assets/js/pages/start-wizard-validation.js"></script>
 <script src="/assets/js/templates.js"></script>
 <script src="/assets/js/pages/start-wizard.js"></script>
 <script>
