@@ -10,7 +10,8 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const validator = require('validator');
 
-const { read, write, uid } = require('../store');
+const dbUnified = require('../db-unified');
+const { uid } = require('../store');
 const {
   authRequired,
   setAuthCookie,
@@ -46,13 +47,13 @@ function setSendMailFunction(fn) {
  * Helper function to update user's last login timestamp
  * @param {string} userId - User ID
  */
-function updateLastLogin(userId) {
+async function updateLastLogin(userId) {
   try {
-    const allUsers = read('users');
+    const allUsers = await dbUnified.read('users');
     const idx = allUsers.findIndex(u => u.id === userId);
     if (idx !== -1) {
       allUsers[idx].lastLoginAt = new Date().toISOString();
-      write('users', allUsers);
+      await dbUnified.write('users', allUsers);
     }
   } catch (e) {
     console.error('Failed to update lastLoginAt', e);
@@ -196,7 +197,7 @@ router.post(
       return res.status(400).json({ error: 'Company name is required for suppliers' });
     }
 
-    const users = read('users');
+    const users = await dbUnified.read('users');
     
     // Check if this is the owner email trying to register
     // Owner account should only be created through seed, not registration
@@ -331,10 +332,10 @@ router.post(
 
     // Only save user after email is successfully sent
     users.push(user);
-    write('users', users);
+    await dbUnified.write('users', users);
 
     // Update last login timestamp (non-blocking)
-    updateLastLogin(user.id);
+    await updateLastLogin(user.id);
 
     const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, {
       expiresIn: '7d',
@@ -421,7 +422,7 @@ router.post(
  *       429:
  *         description: Rate limit exceeded
  */
-router.post('/login', authLimiter, (req, res) => {
+router.post('/login', authLimiter, async (req, res) => {
   const { email, password, remember } = req.body || {};
 
   console.log(`[LOGIN] Attempt for email: ${email}`);
@@ -431,7 +432,8 @@ router.post('/login', authLimiter, (req, res) => {
     return res.status(400).json({ error: 'Missing fields' });
   }
 
-  const user = read('users').find(
+  const users = await dbUnified.read('users');
+  const user = users.find(
     u => (u.email || '').toLowerCase() === String(email).toLowerCase()
   );
 
@@ -472,7 +474,7 @@ router.post('/login', authLimiter, (req, res) => {
 
   // Update last login timestamp
   console.log(`[LOGIN] ✅ Successful login for: ${email}`);
-  updateLastLogin(user.id);
+  await updateLastLogin(user.id);
 
   const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, {
     expiresIn: '7d',
@@ -503,7 +505,7 @@ router.post('/forgot', authLimiter, async (req, res) => {
   }
 
   // Look up user by email (case-insensitive)
-  const users = read('users');
+  const users = await dbUnified.read('users');
   const idx = users.findIndex(u => (u.email || '').toLowerCase() === String(email).toLowerCase());
 
   if (idx === -1) {
@@ -527,7 +529,7 @@ router.post('/forgot', authLimiter, async (req, res) => {
     const expires = new Date(Date.now() + 60 * 60 * 1000).toISOString();
     users[idx].resetToken = resetToken;
     users[idx].resetTokenExpiresAt = expires;
-    write('users', users);
+    await dbUnified.write('users', users);
     console.log(`[PASSWORD RESET] Token saved for ${user.email}, expires: ${expires}`);
 
     // Send password reset email
@@ -587,7 +589,7 @@ router.get('/verify', async (req, res) => {
     }
 
     // Find user by email from JWT
-    const users = read('users');
+    const users = await dbUnified.read('users');
     const idx = users.findIndex(u => u.email.toLowerCase() === validation.email.toLowerCase());
 
     if (idx === -1) {
@@ -619,7 +621,7 @@ router.get('/verify', async (req, res) => {
       console.log(`🔐 Auto-promoted ${user.email} from ${previousRole} to admin (admin domain verified)`);
     }
     
-    write('users', users);
+    await dbUnified.write('users', users);
     console.log(`✅ User verified successfully via JWT: ${user.email}`);
 
     // Send welcome email (non-blocking)
@@ -646,22 +648,22 @@ router.get('/verify', async (req, res) => {
 
   // Handle legacy tokens
   console.log('⚠️ Processing legacy verification token');
-  const users = read('users');
-  const idx = users.findIndex(u => u.verificationToken === token);
+  const legacyUsers = await dbUnified.read('users');
+  const legacyIdx = legacyUsers.findIndex(u => u.verificationToken === token);
 
-  if (idx === -1) {
+  if (legacyIdx === -1) {
     console.error(`❌ Verification failed: Invalid token - ${token.substring(0, 10)}...`);
     return res.status(400).json({ error: 'Invalid or expired token' });
   }
 
-  const user = users[idx];
-  console.log(`📧 Found user for verification: ${user.email}`);
+  const legacyUser = legacyUsers[legacyIdx];
+  console.log(`📧 Found user for verification: ${legacyUser.email}`);
 
   // Check if token has expired
-  if (user.verificationTokenExpiresAt) {
-    const expiresAt = new Date(user.verificationTokenExpiresAt);
+  if (legacyUser.verificationTokenExpiresAt) {
+    const expiresAt = new Date(legacyUser.verificationTokenExpiresAt);
     if (expiresAt < new Date()) {
-      console.error(`❌ Verification failed: Token expired for ${user.email}`);
+      console.error(`❌ Verification failed: Token expired for ${legacyUser.email}`);
       return res
         .status(400)
         .json({ error: 'Verification token has expired. Please request a new one.' });
@@ -669,19 +671,19 @@ router.get('/verify', async (req, res) => {
   }
 
   // Mark user as verified and clear token
-  users[idx].verified = true;
-  delete users[idx].verificationToken;
-  delete users[idx].verificationTokenExpiresAt;
+  legacyUsers[legacyIdx].verified = true;
+  delete legacyUsers[legacyIdx].verificationToken;
+  delete legacyUsers[legacyIdx].verificationTokenExpiresAt;
   
   // Check if this user should be auto-promoted to admin (domain-based)
-  if (domainAdmin.shouldUpgradeToAdminOnVerification(user.email)) {
-    const previousRole = users[idx].role;
-    users[idx].role = 'admin';
-    console.log(`🔐 Auto-promoted ${user.email} from ${previousRole} to admin (admin domain verified)`);
+  if (domainAdmin.shouldUpgradeToAdminOnVerification(legacyUser.email)) {
+    const previousRole = legacyUsers[legacyIdx].role;
+    legacyUsers[legacyIdx].role = 'admin';
+    console.log(`🔐 Auto-promoted ${legacyUser.email} from ${previousRole} to admin (admin domain verified)`);
   }
   
-  write('users', users);
-  console.log(`✅ User verified successfully: ${user.email}`);
+  await dbUnified.write('users', legacyUsers);
+  console.log(`✅ User verified successfully: ${legacyUser.email}`);
 
   // Send welcome email after successful verification (non-blocking)
   (async () => {
@@ -711,7 +713,7 @@ router.post('/verify-email', authLimiter, validateToken({ required: true }), asy
 
   // Handle JWT tokens
   if (validation.isJWT && validation.valid) {
-    const users = read('users');
+    const users = await dbUnified.read('users');
     const idx = users.findIndex(u => u.email.toLowerCase() === validation.email.toLowerCase());
 
     if (idx === -1) {
@@ -745,7 +747,7 @@ router.post('/verify-email', authLimiter, validateToken({ required: true }), asy
     users[idx].verified = true;
     delete users[idx].verificationToken;
     delete users[idx].verificationTokenExpiresAt;
-    write('users', users);
+    await dbUnified.write('users', users);
 
     console.log(`✅ User verified successfully via POST: ${user.email}`);
 
@@ -776,7 +778,7 @@ router.post('/verify-email', authLimiter, validateToken({ required: true }), asy
   if (!validation.isJWT && validation.legacyToken) {
     console.log('⚠️ Processing legacy token via POST endpoint');
 
-    const users = read('users');
+    const users = await dbUnified.read('users');
     const idx = users.findIndex(u => u.verificationToken === validation.legacyToken);
 
     if (idx === -1) {
@@ -807,7 +809,7 @@ router.post('/verify-email', authLimiter, validateToken({ required: true }), asy
     users[idx].verified = true;
     delete users[idx].verificationToken;
     delete users[idx].verificationTokenExpiresAt;
-    write('users', users);
+    await dbUnified.write('users', users);
 
     console.log(`✅ User verified via legacy token: ${user.email}`);
 
@@ -863,7 +865,7 @@ router.post('/reset-password', authLimiter, async (req, res) => {
   }
 
   try {
-    const users = read('users');
+    const users = await dbUnified.read('users');
     let user = null;
     let userIdx = -1;
 
@@ -922,7 +924,7 @@ router.post('/reset-password', authLimiter, async (req, res) => {
     users[userIdx].passwordChangedAt = new Date().toISOString();
     delete users[userIdx].resetToken;
     delete users[userIdx].resetTokenExpiresAt;
-    write('users', users);
+    await dbUnified.write('users', users);
 
     console.log(`[PASSWORD RESET VERIFY] ✅ Password updated for: ${user.email}`);
 
@@ -976,7 +978,7 @@ router.get('/logout', authLimiter, (_req, res) => {
  * GET /api/auth/me
  * Get current authenticated user
  */
-router.get('/me', (req, res) => {
+router.get('/me', async (req, res) => {
   // Set cache control headers to prevent caching of auth state
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
   res.setHeader('Pragma', 'no-cache');
@@ -986,7 +988,8 @@ router.get('/me', (req, res) => {
   if (!p) {
     return res.json({ user: null });
   }
-  const u = read('users').find(x => x.id === p.id);
+  const users = await dbUnified.read('users');
+  const u = users.find(x => x.id === p.id);
   res.json({
     user: u
       ? {
@@ -1018,10 +1021,10 @@ router.get('/me', (req, res) => {
  * PUT /api/auth/preferences
  * Update user notification preferences
  */
-router.put('/preferences', authRequired, csrfProtection, (req, res) => {
+router.put('/preferences', authRequired, csrfProtection, async (req, res) => {
   const { notify_account, notify_marketing } = req.body || {};
 
-  const users = read('users');
+  const users = await dbUnified.read('users');
   const idx = users.findIndex(u => u.id === req.user.id);
 
   if (idx === -1) {
@@ -1039,7 +1042,7 @@ router.put('/preferences', authRequired, csrfProtection, (req, res) => {
     users[idx].marketingOptIn = notify_marketing; // Update deprecated field for backward compatibility
   }
 
-  write('users', users);
+  await dbUnified.write('users', users);
 
   res.json({
     ok: true,
@@ -1055,7 +1058,7 @@ router.put('/preferences', authRequired, csrfProtection, (req, res) => {
  * Unsubscribe user from marketing emails
  * Requires email and secure token for verification
  */
-router.get('/unsubscribe', (req, res) => {
+router.get('/unsubscribe', async (req, res) => {
   const { email, token } = req.query || {};
 
   if (!email || !token) {
@@ -1072,7 +1075,7 @@ router.get('/unsubscribe', (req, res) => {
     return res.status(400).json({ error: 'Invalid unsubscribe token' });
   }
 
-  const users = read('users');
+  const users = await dbUnified.read('users');
   const idx = users.findIndex(u => u.email.toLowerCase() === String(email).toLowerCase());
 
   if (idx === -1) {
@@ -1086,7 +1089,7 @@ router.get('/unsubscribe', (req, res) => {
   // Disable marketing emails
   users[idx].notify_marketing = false;
   users[idx].marketingOptIn = false; // Update deprecated field
-  write('users', users);
+  await dbUnified.write('users', users);
 
   res.json({
     ok: true,
@@ -1112,7 +1115,7 @@ router.post('/resend-verification', resendEmailLimiter, async (req, res) => {
   }
 
   // Look up user by email (case-insensitive)
-  const users = read('users');
+  const users = await dbUnified.read('users');
   const idx = users.findIndex(u => (u.email || '').toLowerCase() === String(email).toLowerCase());
 
   if (idx === -1) {
@@ -1161,7 +1164,7 @@ router.post('/resend-verification', resendEmailLimiter, async (req, res) => {
   // Only update token after email is successfully sent
   users[idx].verificationToken = verificationToken;
   users[idx].verificationTokenExpiresAt = tokenExpiresAt;
-  write('users', users);
+  await dbUnified.write('users', users);
 
   res.json({
     ok: true,
@@ -1187,7 +1190,7 @@ router.put('/profile', authRequired, csrfProtection, async (req, res) => {
     website,
   } = req.body;
 
-  const users = read('users');
+  const users = await dbUnified.read('users');
   const idx = users.findIndex(u => u.id === req.user.id);
 
   if (idx === -1) {
@@ -1247,7 +1250,7 @@ router.put('/profile', authRequired, csrfProtection, async (req, res) => {
   user.updatedAt = new Date().toISOString();
 
   users[idx] = user;
-  write('users', users);
+  await dbUnified.write('users', users);
 
   // Return updated user info
   res.json({
