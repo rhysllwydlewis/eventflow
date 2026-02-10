@@ -24,7 +24,7 @@ const router = express.Router();
  */
 router.get('/user', authRequired, roleRequired('admin'), (req, res) => {
   const { email } = req.query;
-  
+
   if (!email) {
     return res.status(400).json({ error: 'email query parameter required' });
   }
@@ -60,10 +60,12 @@ router.get('/user', authRequired, roleRequired('admin'), (req, res) => {
       issues: [
         !user.verified ? '⚠️ Email not verified' : null,
         !user.passwordHash ? '❌ No password hash found' : null,
-        user.passwordHash && !user.passwordHash.startsWith('$2') ? '❌ Invalid bcrypt hash format' : null,
+        user.passwordHash && !user.passwordHash.startsWith('$2')
+          ? '❌ Invalid bcrypt hash format'
+          : null,
         user.verified === false ? '❌ Account marked as unverified' : null,
       ].filter(Boolean),
-    }
+    },
   });
 });
 
@@ -72,9 +74,10 @@ router.get('/user', authRequired, roleRequired('admin'), (req, res) => {
  * Emergency endpoint to fix user password
  * Admin only - for recovering accounts with bad password hashes
  */
-router.post('/fix-password', 
-  authRequired, 
-  roleRequired('admin'), 
+router.post(
+  '/fix-password',
+  authRequired,
+  roleRequired('admin'),
   csrfProtection,
   express.json(),
   async (req, res) => {
@@ -89,9 +92,7 @@ router.post('/fix-password',
     }
 
     const users = read('users');
-    const idx = users.findIndex(
-      u => (u.email || '').toLowerCase() === String(email).toLowerCase()
-    );
+    const idx = users.findIndex(u => (u.email || '').toLowerCase() === String(email).toLowerCase());
 
     if (idx === -1) {
       return res.status(404).json({ error: 'User not found' });
@@ -100,7 +101,7 @@ router.post('/fix-password',
     try {
       // Hash the new password
       const hashedPassword = bcrypt.hashSync(newPassword, 10);
-      
+
       // Update user
       users[idx].passwordHash = hashedPassword;
       write('users', users);
@@ -127,7 +128,7 @@ router.post('/fix-password',
           id: users[idx].id,
           email: users[idx].email,
           name: users[idx].name,
-        }
+        },
       });
     } catch (error) {
       console.error('Error fixing password:', error);
@@ -141,7 +142,8 @@ router.post('/fix-password',
  * Emergency endpoint to verify user email
  * Admin only - for account recovery
  */
-router.post('/verify-user',
+router.post(
+  '/verify-user',
   authRequired,
   roleRequired('admin'),
   csrfProtection,
@@ -154,9 +156,7 @@ router.post('/verify-user',
     }
 
     const users = read('users');
-    const idx = users.findIndex(
-      u => (u.email || '').toLowerCase() === String(email).toLowerCase()
-    );
+    const idx = users.findIndex(u => (u.email || '').toLowerCase() === String(email).toLowerCase());
 
     if (idx === -1) {
       return res.status(404).json({ error: 'User not found' });
@@ -187,7 +187,7 @@ router.post('/verify-user',
         id: users[idx].id,
         email: users[idx].email,
         verified: true,
-      }
+      },
     });
   }
 );
@@ -197,7 +197,8 @@ router.post('/verify-user',
  * Test email sending and verify Postmark is working
  * Admin only
  */
-router.post('/test-email',
+router.post(
+  '/test-email',
   authRequired,
   roleRequired('admin'),
   csrfProtection,
@@ -211,7 +212,7 @@ router.post('/test-email',
 
     try {
       console.log(`🧪 Testing email send to: ${email}`);
-      
+
       // Find user
       const user = read('users').find(
         u => (u.email || '').toLowerCase() === String(email).toLowerCase()
@@ -260,81 +261,81 @@ router.post('/test-email',
  * POST /api/v1/admin/debug/login-test
  * Test login without actually logging in
  * Returns diagnostics about why login might fail
+ * Admin only - to prevent credential enumeration
  */
-router.post('/login-test',
-  express.json(),
-  (req, res) => {
-    const { email, password } = req.body;
+router.post('/login-test', authRequired, roleRequired('admin'), express.json(), (req, res) => {
+  const { email, password } = req.body;
 
-    if (!email || !password) {
-      return res.status(400).json({ error: 'email and password required' });
-    }
-
-    console.log(`[LOGIN TEST] Testing login for: ${email}`);
-
-    const user = read('users').find(
-      u => (u.email || '').toLowerCase() === String(email).toLowerCase()
-    );
-
-    const diagnostics = {
-      email: email,
-      found: !!user,
-      verified: user?.verified,
-      hasPasswordHash: !!user?.passwordHash,
-      hashValid: user?.passwordHash?.startsWith('$2'),
-      passwordMatches: false,
-      canLogin: false,
-      issues: []
-    };
-
-    if (!user) {
-      diagnostics.issues.push('❌ User not found');
-      return res.status(200).json(diagnostics);
-    }
-
-    if (!user.verified) {
-      diagnostics.issues.push('❌ Email not verified');
-    }
-
-    if (!user.passwordHash) {
-      diagnostics.issues.push('❌ No password hash stored');
-    } else if (!user.passwordHash.startsWith('$2')) {
-      diagnostics.issues.push('❌ Invalid bcrypt hash format');
-    } else {
-      // Test password
-      try {
-        const matches = bcrypt.compareSync(password, user.passwordHash);
-        diagnostics.passwordMatches = matches;
-        
-        if (!matches) {
-          diagnostics.issues.push('❌ Password does not match');
-        }
-      } catch (error) {
-        diagnostics.issues.push(`❌ Password comparison error: ${error.message}`);
-      }
-    }
-
-    diagnostics.canLogin = user.verified && 
-                           !!user.passwordHash && 
-                           user.passwordHash.startsWith('$2') &&
-                           diagnostics.passwordMatches;
-
-    res.json(diagnostics);
+  if (!email || !password) {
+    return res.status(400).json({ error: 'email and password required' });
   }
-);
+
+  console.log(`[LOGIN TEST] Testing login for: ${email}`);
+
+  const user = read('users').find(
+    u => (u.email || '').toLowerCase() === String(email).toLowerCase()
+  );
+
+  const diagnostics = {
+    email: email,
+    found: !!user,
+    verified: user?.verified,
+    hasPasswordHash: !!user?.passwordHash,
+    hashValid: user?.passwordHash?.startsWith('$2'),
+    passwordMatches: false,
+    canLogin: false,
+    issues: [],
+  };
+
+  if (!user) {
+    diagnostics.issues.push('❌ User not found');
+    return res.status(200).json(diagnostics);
+  }
+
+  if (!user.verified) {
+    diagnostics.issues.push('❌ Email not verified');
+  }
+
+  if (!user.passwordHash) {
+    diagnostics.issues.push('❌ No password hash stored');
+  } else if (!user.passwordHash.startsWith('$2')) {
+    diagnostics.issues.push('❌ Invalid bcrypt hash format');
+  } else {
+    // Test password
+    try {
+      const matches = bcrypt.compareSync(password, user.passwordHash);
+      diagnostics.passwordMatches = matches;
+
+      if (!matches) {
+        diagnostics.issues.push('❌ Password does not match');
+      }
+    } catch (error) {
+      diagnostics.issues.push(`❌ Password comparison error: ${error.message}`);
+    }
+  }
+
+  diagnostics.canLogin =
+    user.verified &&
+    !!user.passwordHash &&
+    user.passwordHash.startsWith('$2') &&
+    diagnostics.passwordMatches;
+
+  res.json(diagnostics);
+});
 
 /**
  * POST /api/v1/admin/debug/audit-users
  * Audit all users and identify issues
  * Admin only
  */
-router.post('/audit-users',
+router.post(
+  '/audit-users',
   authRequired,
   roleRequired('admin'),
   csrfProtection,
   async (req, res) => {
     const users = read('users');
-    
+
     const audit = {
       totalUsers: users.length,
       issues: {
@@ -343,7 +344,7 @@ router.post('/audit-users',
         notVerified: [],
         noEmail: [],
       },
-      summary: {}
+      summary: {},
     };
 
     users.forEach(user => {

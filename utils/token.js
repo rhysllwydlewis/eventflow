@@ -25,6 +25,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'change_me_in_production';
 const TOKEN_EXPIRY_HOURS = parseInt(process.env.TOKEN_EXPIRY_HOURS || '24', 10);
 const TOKEN_GRACE_PERIOD_MINUTES = parseInt(process.env.TOKEN_GRACE_PERIOD_MINUTES || '5', 10);
 const TOKEN_VERSION = 1; // Increment this to invalidate all existing tokens
+const PENDING_USER_ID = 'pending'; // Used for email verification tokens when user ID is not yet assigned
 
 // Warn if using default secret in production
 if (JWT_SECRET === 'change_me_in_production' && process.env.NODE_ENV === 'production') {
@@ -434,7 +435,7 @@ function generateEmailVerificationToken(email, options = {}) {
   // Create a minimal user object if just email is provided
   if (typeof email === 'string') {
     return generateVerificationToken(
-      { email: email, id: 'pending' },
+      { email: email, id: PENDING_USER_ID },
       { ...options, type: TOKEN_TYPES.EMAIL_VERIFICATION }
     );
   }
@@ -464,4 +465,5 @@ module.exports = {
   TOKEN_VERSION,
   TOKEN_EXPIRY_HOURS,
   TOKEN_GRACE_PERIOD_MINUTES,
+  PENDING_USER_ID,
 };

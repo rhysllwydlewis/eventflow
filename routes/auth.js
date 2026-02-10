@@ -384,7 +384,7 @@ router.post(
  */
 router.post('/login', authLimiter, (req, res) => {
   const { email, password, remember } = req.body || {};
-  
+
   console.log(`[LOGIN] Attempt for email: ${email}`);
 
   if (!email || !password) {
@@ -401,7 +401,9 @@ router.post('/login', authLimiter, (req, res) => {
     return res.status(401).json({ error: 'Invalid email or password' });
   }
 
-  console.log(`[LOGIN] Found user: ${user.email}, verified: ${user.verified}, hasHash: ${!!user.passwordHash}`);
+  console.log(
+    `[LOGIN] Found user: ${user.email}, verified: ${user.verified}, hasHash: ${!!user.passwordHash}`
+  );
 
   // Check password hash exists and is valid
   if (!user.passwordHash) {
@@ -453,7 +455,7 @@ router.post('/login', authLimiter, (req, res) => {
  */
 router.post('/forgot', authLimiter, async (req, res) => {
   const { email } = req.body || {};
-  
+
   console.log(`[PASSWORD RESET] Request for email: ${email}`);
 
   if (!email) {
@@ -468,7 +470,10 @@ router.post('/forgot', authLimiter, async (req, res) => {
   if (idx === -1) {
     console.warn(`[PASSWORD RESET] User not found: ${email}`);
     // Always respond success so we don't leak which emails exist
-    return res.json({ ok: true, message: 'If an account exists with that email, you will receive a password reset link.' });
+    return res.json({
+      ok: true,
+      message: 'If an account exists with that email, you will receive a password reset link.',
+    });
   }
 
   const user = users[idx];
@@ -505,16 +510,15 @@ router.post('/forgot', authLimiter, async (req, res) => {
 
     res.json({
       ok: true,
-      message: 'Password reset email sent if account exists'
+      message: 'Password reset email sent if account exists',
     });
-
   } catch (emailError) {
     console.error(`[PASSWORD RESET] ❌ Failed to send email to ${user.email}:`, emailError.message);
-    
+
     // Still return success to prevent email enumeration
     res.json({
       ok: true,
-      message: 'Password reset email sent if account exists'
+      message: 'Password reset email sent if account exists',
     });
   }
 });
@@ -808,10 +812,6 @@ router.post('/reset-password', authLimiter, async (req, res) => {
     return res.status(400).json({ error: 'Missing token or password' });
   }
 
-  if (password.length < 8) {
-    return res.status(400).json({ error: 'Password must be at least 8 characters' });
-  }
-
   // Validate password strength
   if (!passwordOk(password)) {
     return res
@@ -827,7 +827,7 @@ router.post('/reset-password', authLimiter, async (req, res) => {
     // Try JWT token first
     console.log('[PASSWORD RESET VERIFY] Checking if JWT token...');
     const validation = tokenUtils.validatePasswordResetToken(token);
-    
+
     if (validation.valid) {
       console.log(`[PASSWORD RESET VERIFY] Valid JWT token for: ${validation.email}`);
       userIdx = users.findIndex(
@@ -837,11 +837,11 @@ router.post('/reset-password', authLimiter, async (req, res) => {
       console.log('[PASSWORD RESET VERIFY] Not a valid JWT, trying legacy token...');
       // Try legacy reset token
       userIdx = users.findIndex(u => u.resetToken === token);
-      
+
       if (userIdx !== -1) {
         user = users[userIdx];
         console.log(`[PASSWORD RESET VERIFY] Found legacy token for: ${user.email}`);
-        
+
         // Check if expired
         if (user.resetTokenExpiresAt) {
           const expiresAt = new Date(user.resetTokenExpiresAt);
@@ -863,7 +863,7 @@ router.post('/reset-password', authLimiter, async (req, res) => {
     if (userIdx === -1) {
       console.warn('[PASSWORD RESET VERIFY] Invalid or expired token');
       return res.status(400).json({
-        error: 'Invalid or expired password reset link'
+        error: 'Invalid or expired password reset link',
       });
     }
 
@@ -907,9 +907,8 @@ router.post('/reset-password', authLimiter, async (req, res) => {
     res.json({
       ok: true,
       message: 'Password updated successfully. You can now log in.',
-      user: { id: user.id, email: user.email }
+      user: { id: user.id, email: user.email },
     });
-
   } catch (error) {
     console.error('[PASSWORD RESET VERIFY] Unexpected error:', error);
     res.status(500).json({ error: 'Failed to reset password' });

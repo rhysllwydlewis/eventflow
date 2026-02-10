@@ -11,6 +11,7 @@ The emergency authentication debugging system provides admin-only endpoints to d
 ### Users Can't Log In
 
 **Symptoms:**
+
 - User receives "Invalid email or password" error (401)
 - User has correct credentials but can't log in
 - Login fails with password comparison error
@@ -18,17 +19,19 @@ The emergency authentication debugging system provides admin-only endpoints to d
 **Diagnosis Steps:**
 
 1. **Test login without actual authentication:**
+
    ```bash
    POST /api/v1/admin/debug/login-test
    Content-Type: application/json
-   
+
    {
      "email": "user@example.com",
      "password": "TheirPassword123"
    }
    ```
-   
+
    **Response Example:**
+
    ```json
    {
      "email": "user@example.com",
@@ -38,18 +41,18 @@ The emergency authentication debugging system provides admin-only endpoints to d
      "hashValid": true,
      "passwordMatches": false,
      "canLogin": false,
-     "issues": [
-       "❌ Password does not match"
-     ]
+     "issues": ["❌ Password does not match"]
    }
    ```
 
 2. **Inspect user record:**
+
    ```bash
    GET /api/v1/admin/debug/user?email=user@example.com
    ```
-   
+
    **Response Example:**
+
    ```json
    {
      "debug_info": {
@@ -75,6 +78,7 @@ The emergency authentication debugging system provides admin-only endpoints to d
 #### Issue 1: No Password Hash
 
 **Symptoms:**
+
 ```json
 {
   "hasPasswordHash": false,
@@ -83,6 +87,7 @@ The emergency authentication debugging system provides admin-only endpoints to d
 ```
 
 **Fix:**
+
 ```bash
 POST /api/v1/admin/debug/fix-password
 Content-Type: application/json
@@ -95,6 +100,7 @@ X-CSRF-Token: <csrf-token>
 ```
 
 **Response:**
+
 ```json
 {
   "ok": true,
@@ -111,6 +117,7 @@ X-CSRF-Token: <csrf-token>
 #### Issue 2: Invalid Bcrypt Hash
 
 **Symptoms:**
+
 ```json
 {
   "passwordHashValid": false,
@@ -123,6 +130,7 @@ X-CSRF-Token: <csrf-token>
 #### Issue 3: Email Not Verified
 
 **Symptoms:**
+
 ```json
 {
   "verified": false,
@@ -131,6 +139,7 @@ X-CSRF-Token: <csrf-token>
 ```
 
 **Fix:**
+
 ```bash
 POST /api/v1/admin/debug/verify-user
 Content-Type: application/json
@@ -142,6 +151,7 @@ X-CSRF-Token: <csrf-token>
 ```
 
 **Response:**
+
 ```json
 {
   "ok": true,
@@ -159,6 +169,7 @@ X-CSRF-Token: <csrf-token>
 ### Password Reset Not Working
 
 **Symptoms:**
+
 - User doesn't receive password reset email
 - Reset link says "expired" or "invalid"
 - Password reset flow fails silently
@@ -166,17 +177,19 @@ X-CSRF-Token: <csrf-token>
 **Diagnosis Steps:**
 
 1. **Test email system:**
+
    ```bash
    POST /api/v1/admin/debug/test-email
    Content-Type: application/json
    X-CSRF-Token: <csrf-token>
-   
+
    {
      "email": "user@example.com"
    }
    ```
-   
+
    **Response Example:**
+
    ```json
    {
      "ok": true,
@@ -187,6 +200,7 @@ X-CSRF-Token: <csrf-token>
 
 2. **Check server logs for password reset flow:**
    Look for these log entries:
+
    ```
    [PASSWORD RESET] Request for email: user@example.com
    [PASSWORD RESET] Found user: user@example.com, verified: true
@@ -203,10 +217,12 @@ X-CSRF-Token: <csrf-token>
 #### Issue 1: Postmark Not Configured
 
 **Symptoms:**
+
 - Emails saved to `/outbox` folder instead of being sent
 - Log message: "⚠️ Postmark not configured"
 
 **Fix:**
+
 1. Set `POSTMARK_API_KEY` in `.env` file
 2. Set `POSTMARK_FROM` to a verified sender email
 3. Restart the server
@@ -214,6 +230,7 @@ X-CSRF-Token: <csrf-token>
 #### Issue 2: Invalid Email Template
 
 **Symptoms:**
+
 - Error: "Failed to load email template: password-reset"
 
 **Fix:**
@@ -222,6 +239,7 @@ Ensure `/email-templates/password-reset.html` exists and is readable.
 #### Issue 3: Token Expired
 
 **Symptoms:**
+
 - User clicks reset link and sees "expired" error
 - Tokens expire after 1 hour by default
 
@@ -235,6 +253,7 @@ User needs to request a new password reset link via `/api/v1/auth/forgot`.
 **Purpose:** Identify all users with authentication issues across the entire database.
 
 **Usage:**
+
 ```bash
 POST /api/v1/admin/debug/audit-users
 Content-Type: application/json
@@ -242,6 +261,7 @@ X-CSRF-Token: <csrf-token>
 ```
 
 **Response Example:**
+
 ```json
 {
   "totalUsers": 150,
@@ -251,9 +271,7 @@ X-CSRF-Token: <csrf-token>
       { "id": "usr_def456", "email": "user2@example.com" }
     ],
     "invalidBcryptHash": [],
-    "notVerified": [
-      { "id": "usr_ghi789", "email": "user3@example.com" }
-    ],
+    "notVerified": [{ "id": "usr_ghi789", "email": "user3@example.com" }],
     "noEmail": []
   },
   "summary": {
@@ -266,6 +284,7 @@ X-CSRF-Token: <csrf-token>
 ```
 
 **Interpretation:**
+
 - `noPasswordHash`: Users who can't log in (no password set)
 - `invalidBcryptHash`: Users with corrupted password hashes
 - `notVerified`: Users who haven't verified their email
@@ -273,6 +292,7 @@ X-CSRF-Token: <csrf-token>
 
 **Bulk Fixes:**
 For users with issues, use the individual fix endpoints:
+
 1. `/debug/fix-password` for password hash issues
 2. `/debug/verify-user` for verification issues
 
@@ -287,9 +307,11 @@ For users with issues, use the individual fix endpoints:
 **Authentication:** Requires admin role.
 
 **Query Parameters:**
+
 - `email` (required): User's email address
 
 **Response Fields:**
+
 - `debug_info`: User metadata and diagnostics
 - `diagnostics.readyToLogin`: Boolean indicating if user can log in
 - `diagnostics.issues`: Array of issues preventing login
@@ -303,6 +325,7 @@ For users with issues, use the individual fix endpoints:
 **Authentication:** Requires admin role + CSRF token.
 
 **Request Body:**
+
 ```json
 {
   "email": "user@example.com",
@@ -311,6 +334,7 @@ For users with issues, use the individual fix endpoints:
 ```
 
 **Validation:**
+
 - Password must be at least 8 characters
 - Email must exist in database
 
@@ -325,6 +349,7 @@ For users with issues, use the individual fix endpoints:
 **Authentication:** Requires admin role + CSRF token.
 
 **Request Body:**
+
 ```json
 {
   "email": "user@example.com"
@@ -332,6 +357,7 @@ For users with issues, use the individual fix endpoints:
 ```
 
 **Side Effects:**
+
 - Sets `verified: true`
 - Removes `verificationToken` and `verificationTokenExpiresAt`
 
@@ -346,6 +372,7 @@ For users with issues, use the individual fix endpoints:
 **Authentication:** Requires admin role + CSRF token.
 
 **Request Body:**
+
 ```json
 {
   "email": "user@example.com"
@@ -353,11 +380,13 @@ For users with issues, use the individual fix endpoints:
 ```
 
 **What it does:**
+
 1. Generates a test verification token
 2. Sends verification email via Postmark
 3. Returns token for manual verification
 
 **Use Cases:**
+
 - Verify Postmark configuration
 - Test email template rendering
 - Debug email delivery issues
@@ -368,11 +397,12 @@ For users with issues, use the individual fix endpoints:
 
 ### POST /api/v1/admin/debug/login-test
 
-**Purpose:** Test login without actually logging in.
+**Purpose:** Test login without actually logging in (diagnostics only).
 
-**Authentication:** None required (public endpoint for diagnostics).
+**Authentication:** Requires admin role.
 
 **Request Body:**
+
 ```json
 {
   "email": "user@example.com",
@@ -381,6 +411,7 @@ For users with issues, use the individual fix endpoints:
 ```
 
 **Response:**
+
 ```json
 {
   "email": "user@example.com",
@@ -394,7 +425,7 @@ For users with issues, use the individual fix endpoints:
 }
 ```
 
-**Note:** This endpoint is safe because it doesn't actually authenticate or create a session.
+**Note:** This endpoint requires admin authentication to prevent credential enumeration attacks.
 
 ---
 
@@ -417,6 +448,7 @@ The following existing auth endpoints have been enhanced with comprehensive logg
 ### POST /api/v1/auth/login
 
 **Enhanced Logging:**
+
 ```
 [LOGIN] Attempt for email: user@example.com
 [LOGIN] Found user: user@example.com, verified: true, hasHash: true
@@ -425,6 +457,7 @@ The following existing auth endpoints have been enhanced with comprehensive logg
 ```
 
 **Error Handling:**
+
 - Logs missing password hash
 - Logs password comparison errors
 - Logs verification status
@@ -434,12 +467,14 @@ The following existing auth endpoints have been enhanced with comprehensive logg
 ### POST /api/v1/auth/forgot
 
 **Enhanced Features:**
+
 - Uses JWT tokens instead of random tokens
 - Comprehensive logging at each step
 - Creates audit log entries
 - Better error messages
 
 **Logging:**
+
 ```
 [PASSWORD RESET] Request for email: user@example.com
 [PASSWORD RESET] Found user: user@example.com, verified: true
@@ -454,12 +489,14 @@ The following existing auth endpoints have been enhanced with comprehensive logg
 ### POST /api/v1/auth/reset-password
 
 **Enhanced Features:**
+
 - Supports both JWT and legacy tokens
 - Sends password reset confirmation email
 - Comprehensive logging
 - Creates audit log entries
 
 **Logging:**
+
 ```
 [PASSWORD RESET VERIFY] Request with token: eyJhbGciOiJIUzI1NiI...
 [PASSWORD RESET VERIFY] Checking if JWT token...
@@ -476,6 +513,7 @@ The following existing auth endpoints have been enhanced with comprehensive logg
 ### Admin-Only Access
 
 All debug endpoints (except `/login-test`) require:
+
 1. Valid admin authentication (JWT cookie)
 2. Admin role verification
 3. CSRF token (for POST requests)
@@ -483,6 +521,7 @@ All debug endpoints (except `/login-test`) require:
 ### Audit Logging
 
 All admin actions are logged to the `audit_logs` collection with:
+
 - Admin ID and email
 - Action type
 - Target user
@@ -492,6 +531,7 @@ All admin actions are logged to the `audit_logs` collection with:
 ### Rate Limiting
 
 Auth endpoints are protected by rate limiting:
+
 - Login: 10 requests per 15 minutes
 - Password reset: 10 requests per 15 minutes
 
@@ -511,6 +551,7 @@ Auth endpoints are protected by rate limiting:
 **Cause:** POST request doesn't include CSRF token.
 
 **Fix:**
+
 1. Get CSRF token from `/api/v1/csrf-token`
 2. Include in `X-CSRF-Token` header
 
@@ -519,6 +560,7 @@ Auth endpoints are protected by rate limiting:
 **Cause:** Admin not logged in or JWT expired.
 
 **Fix:**
+
 1. Log in as admin via `/api/v1/auth/login`
 2. Ensure `token` cookie is set
 
@@ -532,11 +574,13 @@ Ensure the logged-in user has `role: "admin"` in their user record.
 ### Issue: Email test fails with "Postmark send error"
 
 **Causes:**
+
 1. Invalid Postmark API key
 2. Unverified sender email
 3. Network connectivity issues
 
 **Fix:**
+
 1. Verify `POSTMARK_API_KEY` in `.env`
 2. Ensure `POSTMARK_FROM` is verified in Postmark dashboard
 3. Check server internet connectivity
@@ -552,6 +596,7 @@ Before making changes, always use `/debug/login-test` to understand the exact is
 ### 2. Check Audit Logs
 
 Review audit logs regularly to track:
+
 - Password reset requests
 - Admin interventions
 - Failed login attempts
@@ -559,6 +604,7 @@ Review audit logs regularly to track:
 ### 3. Communicate with Users
 
 After fixing a user's account:
+
 1. Inform them their password has been reset
 2. Provide the temporary password securely
 3. Ask them to change it immediately
@@ -570,6 +616,7 @@ Regularly test email delivery with `/debug/test-email` to ensure Postmark is wor
 ### 5. Document Interventions
 
 When manually fixing user accounts, document:
+
 - Date and time
 - Reason for intervention
 - Actions taken
@@ -580,6 +627,7 @@ When manually fixing user accounts, document:
 ## Support
 
 For additional help:
+
 - Check server logs in `/logs` directory
 - Review audit logs in `audit_logs` collection
 - Check Postmark dashboard for email delivery status
@@ -592,6 +640,7 @@ For additional help:
 ### Version 1.0 (February 2024)
 
 Initial release with:
+
 - 6 debug endpoints
 - Enhanced auth logging
 - JWT-based password reset tokens
