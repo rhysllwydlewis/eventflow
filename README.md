@@ -134,6 +134,35 @@ Getting "502 Bad Gateway" or "connection refused" errors? This usually means Mon
 - **Analytics Dashboard** - User signups, activity metrics, platform statistics
 - **GDPR Compliance** - User data management and privacy controls
 
+### Admin Authentication
+
+EventFlow implements a gold-standard admin authentication system with two mechanisms:
+
+**1. Protected Owner Account**
+
+- Single, protected admin account that cannot be deleted or demoted
+- Automatically created on server startup
+- Pre-verified (no email verification required)
+- Configured via environment variables (OWNER_EMAIL, OWNER_PASSWORD)
+
+**2. Domain-Based Admin Promotion**
+
+- Automatic admin role for verified emails from trusted domains
+- Configured via ADMIN_DOMAINS environment variable (e.g., `your-company.com`)
+- Requires email verification before promotion (security)
+- Supports multiple domains (comma-separated)
+
+**Quick Setup:**
+
+```bash
+# .env
+OWNER_EMAIL=admin@your-company.com
+OWNER_PASSWORD=your-strong-password
+ADMIN_DOMAINS=your-company.com
+```
+
+📚 **[Complete Admin Setup Guide →](docs/ADMIN_SETUP.md)**
+
 ### Messaging System
 
 - **Customer-Supplier Communication** - Direct messaging between customers and suppliers

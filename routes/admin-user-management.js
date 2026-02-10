@@ -15,6 +15,7 @@ const dbUnified = require('../db-unified');
 const validator = require('validator');
 const bcrypt = require('bcryptjs');
 const { passwordOk } = require('../utils/validators');
+const domainAdmin = require('../middleware/domain-admin');
 
 const router = express.Router();
 
@@ -459,6 +460,16 @@ router.post(
     if (user.id === req.user.id) {
       return res.status(400).json({ error: 'You cannot suspend your own account' });
     }
+    
+    // ⚠️ SECURITY: Prevent suspension of the owner account
+    const isOwner = domainAdmin.isOwnerEmail(user.email) || user.isOwner;
+    if (isOwner) {
+      return res.status(403).json({ 
+        error: 'Cannot suspend owner account',
+        message: 'The owner account is protected and cannot be suspended.',
+        code: 'OWNER_ACCOUNT_PROTECTED'
+      });
+    }
 
     user.suspended = !!suspended;
     user.suspendedAt = suspended ? now : null;
@@ -523,6 +534,16 @@ router.post('/users/:id/ban', authRequired, roleRequired('admin'), csrfProtectio
   // Prevent admins from banning themselves
   if (user.id === req.user.id) {
     return res.status(400).json({ error: 'You cannot ban your own account' });
+  }
+  
+  // ⚠️ SECURITY: Prevent banning of the owner account
+  const isOwner = domainAdmin.isOwnerEmail(user.email) || user.isOwner;
+  if (isOwner) {
+    return res.status(403).json({ 
+      error: 'Cannot ban owner account',
+      message: 'The owner account is protected and cannot be banned.',
+      code: 'OWNER_ACCOUNT_PROTECTED'
+    });
   }
 
   user.banned = !!banned;
@@ -855,8 +876,9 @@ router.post(
             return;
           }
 
-          // Prevent deletion of the owner account
-          if (user.email === 'admin@event-flow.co.uk' || user.isOwner) {
+          // ⚠️ SECURITY: Prevent deletion of the owner account
+          const isOwner = domainAdmin.isOwnerEmail(user.email) || user.isOwner;
+          if (isOwner) {
             return;
           }
 
@@ -1533,6 +1555,18 @@ router.put('/users/:id', authRequired, roleRequired('admin'), csrfProtection, (r
   }
 
   const user = users[userIndex];
+  
+  // ⚠️ SECURITY: Protect owner account from modifications
+  const isOwner = domainAdmin.isOwnerEmail(user.email) || user.isOwner;
+  if (isOwner) {
+    // Owner account cannot be modified through this endpoint
+    // Only specific fields can be updated by owner themselves in profile settings
+    return res.status(403).json({ 
+      error: 'Cannot modify owner account',
+      message: 'The owner account is protected from administrative changes. Owner can update their own profile through account settings.',
+      code: 'OWNER_ACCOUNT_PROTECTED'
+    });
+  }
 
   // Store previous version for history (excluding sensitive data)
   if (!user.versionHistory) {
@@ -1560,6 +1594,7 @@ router.put('/users/:id', authRequired, roleRequired('admin'), csrfProtection, (r
     user.name = name;
   }
   if (email !== undefined) {
+    // Prevent email change for protected accounts
     user.email = email;
   }
   if (role !== undefined) {
@@ -1611,9 +1646,14 @@ router.delete('/users/:id', authRequired, roleRequired('admin'), csrfProtection,
     return res.status(400).json({ error: 'You cannot delete your own account' });
   }
 
-  // Prevent deletion of the owner account
-  if (user.email === 'admin@event-flow.co.uk' || user.isOwner) {
-    return res.status(403).json({ error: 'Cannot delete the owner account' });
+  // ⚠️ SECURITY: Prevent deletion of the owner account
+  const isOwner = domainAdmin.isOwnerEmail(user.email) || user.isOwner;
+  if (isOwner) {
+    return res.status(403).json({ 
+      error: 'Cannot delete owner account',
+      message: 'The owner account is protected and cannot be deleted.',
+      code: 'OWNER_ACCOUNT_PROTECTED'
+    });
   }
 
   // Remove the user

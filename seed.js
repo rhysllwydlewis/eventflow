@@ -107,9 +107,11 @@ async function seed(options = {}) {
     let usersModified = false;
 
     // Always ensure owner account exists (protected from deletion)
-    const ownerEmail = 'admin@event-flow.co.uk';
+    const ownerEmail = process.env.OWNER_EMAIL || 'admin@event-flow.co.uk';
     const ownerPassword = process.env.OWNER_PASSWORD || 'Admin123!'; // Default for dev only
-    const ownerExists = existingUsers.find(u => u.email === ownerEmail);
+    const ownerExists = existingUsers.find(
+      u => u.email.toLowerCase() === ownerEmail.toLowerCase()
+    );
     if (!ownerExists) {
       const owner = {
         id: uid('usr'),
@@ -119,17 +121,31 @@ async function seed(options = {}) {
         passwordHash: bcrypt.hashSync(ownerPassword, 10),
         createdAt: now,
         notify: true,
+        notify_account: true, // Transactional emails enabled
+        notify_marketing: false, // No marketing emails for owner
         marketingOptIn: false,
-        verified: true,
+        verified: true, // Owner is always verified (skip email verification)
         isOwner: true, // Special flag to protect from deletion
       };
       existingUsers.push(owner);
       usersModified = true;
-      console.log(`Created owner account: ${ownerEmail}`);
+      console.log(`✅ Created owner account: ${ownerEmail}`);
       if (!process.env.OWNER_PASSWORD && process.env.NODE_ENV === 'production') {
         console.warn(
-          'WARNING: Using default owner password in production. Set OWNER_PASSWORD environment variable.'
+          '⚠️  WARNING: Using default owner password in production. Set OWNER_PASSWORD environment variable.'
         );
+      }
+    } else {
+      // Owner exists - ensure it has the correct flags
+      const ownerIdx = existingUsers.findIndex(
+        u => u.email.toLowerCase() === ownerEmail.toLowerCase()
+      );
+      if (!existingUsers[ownerIdx].isOwner || !existingUsers[ownerIdx].verified) {
+        existingUsers[ownerIdx].isOwner = true;
+        existingUsers[ownerIdx].verified = true;
+        existingUsers[ownerIdx].role = 'admin';
+        usersModified = true;
+        console.log(`✅ Updated owner account flags: ${ownerEmail}`);
       }
     }
 
