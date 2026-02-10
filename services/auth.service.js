@@ -396,6 +396,7 @@ class AuthService {
    * @private
    */
   _sanitizeUser(user) {
+    // eslint-disable-next-line no-unused-vars
     const { passwordHash, resetToken, verificationToken, ...sanitized } = user;
     return sanitized;
   }

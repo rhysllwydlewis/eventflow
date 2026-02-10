@@ -6,8 +6,7 @@
 'use strict';
 
 const bcrypt = require('bcryptjs');
-const validator = require('validator');
-const { NotFoundError, ValidationError, AuthorizationError, ConflictError } = require('../errors');
+const { NotFoundError, ValidationError, AuthorizationError } = require('../errors');
 const { passwordOk } = require('../middleware/validation');
 const logger = require('../utils/logger');
 const { paginationHelper } = require('../utils/database');
@@ -272,6 +271,7 @@ class UserService {
    * @private
    */
   _sanitizeUser(user) {
+    // eslint-disable-next-line no-unused-vars
     const {
       passwordHash,
       resetToken,

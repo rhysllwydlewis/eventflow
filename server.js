@@ -61,6 +61,7 @@ const databaseConfig = require('./config/database');
 const emailConfig = require('./config/email');
 const stripeConfig = require('./config/stripe');
 const storageConfig = require('./config/storage');
+const { addDatabaseIndexes } = require('./utils/database');
 
 // Middleware modules
 const security = require('./middleware/security');
@@ -1025,6 +1026,17 @@ async function startServer() {
           initializeWebSocketV2(db);
         } catch (error) {
           console.warn('   ⚠️  WebSocket v2 initialization deferred (MongoDB not available yet)');
+        }
+
+        // Create database indexes for query optimization
+        console.log('');
+        console.log('🔍 Creating database indexes...');
+        try {
+          await addDatabaseIndexes();
+          console.log('   ✅ Database indexes created');
+        } catch (indexError) {
+          console.warn('   ⚠️  Could not create all database indexes:', indexError.message);
+          console.warn('   Server will continue running, but queries may be slower');
         }
 
         // 4a. Seed database with initial data
