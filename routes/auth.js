@@ -24,6 +24,7 @@ const { featureRequired, getFeatureFlags } = require('../middleware/features');
 const postmark = require('../utils/postmark');
 const tokenUtils = require('../utils/token');
 const { validateToken } = require('../middleware/token');
+const domainAdmin = require('../middleware/domain-admin');
 
 const router = express.Router();
 
@@ -196,7 +197,24 @@ router.post(
     }
 
     const users = read('users');
-    if (users.find(u => u.email.toLowerCase() === String(email).toLowerCase())) {
+    
+    // Check if this is the owner email trying to register
+    // Owner account should only be created through seed, not registration
+    if (domainAdmin.isOwnerEmail(email)) {
+      const ownerExists = users.find(
+        u => u.email.toLowerCase() === email.toLowerCase()
+      );
+      if (ownerExists) {
+        return res.status(409).json({ 
+          error: 'Email already registered',
+          message: 'This email is reserved for the system owner account.'
+        });
+      } else {
+        // Owner doesn't exist yet - this shouldn't happen normally (seed creates it)
+        // But we'll allow it and create them as owner
+        console.warn('⚠️  Owner account being created through registration (should use seed)');
+      }
+    } else if (users.find(u => u.email.toLowerCase() === String(email).toLowerCase())) {
       return res.status(409).json({ error: 'Email already registered' });
     }
 
@@ -238,6 +256,22 @@ router.post(
       badges.push('founder');
       console.log(`🏆 Founder badge awarded to ${email} (registered within 6 months of launch)`);
     }
+    
+    // Determine role using domain-admin logic
+    // Owner email: always admin, always verified (skip verification email)
+    // Admin domain: initial role as requested, upgrade to admin AFTER verification
+    // Regular user: use requested role
+    const isOwner = domainAdmin.isOwnerEmail(email);
+    const roleDecision = domainAdmin.determineRole(email, roleFinal, false); // Not verified yet
+    
+    // Log admin domain detection
+    if (roleDecision.willUpgradeOnVerification) {
+      console.log(`🔐 Admin domain detected: ${email} will be promoted to admin after verification`);
+    }
+    
+    if (isOwner) {
+      console.log(`👑 Owner account registration: ${email}`);
+    }
 
     // Create user object first (needed for JWT token generation)
     const user = {
@@ -246,7 +280,7 @@ router.post(
       firstName: String(userFirstName).trim().slice(0, 40),
       lastName: String(userLastName).trim().slice(0, 40),
       email: String(email).toLowerCase(),
-      role: roleFinal,
+      role: isOwner ? 'admin' : roleDecision.role, // Owner gets admin immediately
       passwordHash: bcrypt.hashSync(password, 10),
       location: String(location).trim().slice(0, 100),
       postcode: postcode ? String(postcode).trim().slice(0, 10) : undefined,
@@ -259,7 +293,8 @@ router.post(
       notify_account: true, // Transactional emails enabled by default
       notify_marketing: !!(req.body && req.body.marketingOptIn), // Marketing emails opt-in
       marketingOptIn: !!(req.body && req.body.marketingOptIn), // Deprecated, kept for backward compatibility
-      verified: false,
+      verified: isOwner, // Owner is pre-verified, others need verification
+      isOwner: isOwner, // Special flag to protect owner account
       createdAt: new Date().toISOString(),
     };
 
@@ -274,19 +309,24 @@ router.post(
 
     // Send verification email via Postmark BEFORE saving user
     // This ensures we only create accounts when email can be sent
-    try {
-      console.log(`📧 Attempting to send verification email to ${user.email}`);
-      await postmark.sendVerificationEmail(user, verificationToken);
-      console.log(`✅ Verification email sent successfully to ${user.email}`);
-    } catch (emailError) {
-      console.error('❌ Failed to send verification email:', emailError.message);
+    // EXCEPT for owner email - skip verification email for owner
+    if (!isOwner) {
+      try {
+        console.log(`📧 Attempting to send verification email to ${user.email}`);
+        await postmark.sendVerificationEmail(user, verificationToken);
+        console.log(`✅ Verification email sent successfully to ${user.email}`);
+      } catch (emailError) {
+        console.error('❌ Failed to send verification email:', emailError.message);
 
-      // If email sending fails, don't create the user account
-      // This prevents orphaned unverified accounts
-      return res.status(500).json({
-        error: 'Failed to send verification email. Please try again later.',
-        details: process.env.NODE_ENV === 'development' ? emailError.message : undefined,
-      });
+        // If email sending fails, don't create the user account
+        // This prevents orphaned unverified accounts
+        return res.status(500).json({
+          error: 'Failed to send verification email. Please try again later.',
+          details: process.env.NODE_ENV === 'development' ? emailError.message : undefined,
+        });
+      }
+    } else {
+      console.log(`✅ Owner account - skipping verification email`);
     }
 
     // Only save user after email is successfully sent
@@ -571,6 +611,14 @@ router.get('/verify', async (req, res) => {
     users[idx].verified = true;
     delete users[idx].verificationToken;
     delete users[idx].verificationTokenExpiresAt;
+    
+    // Check if this user should be auto-promoted to admin (domain-based)
+    if (domainAdmin.shouldUpgradeToAdminOnVerification(user.email)) {
+      const previousRole = users[idx].role;
+      users[idx].role = 'admin';
+      console.log(`🔐 Auto-promoted ${user.email} from ${previousRole} to admin (admin domain verified)`);
+    }
+    
     write('users', users);
     console.log(`✅ User verified successfully via JWT: ${user.email}`);
 
@@ -624,6 +672,14 @@ router.get('/verify', async (req, res) => {
   users[idx].verified = true;
   delete users[idx].verificationToken;
   delete users[idx].verificationTokenExpiresAt;
+  
+  // Check if this user should be auto-promoted to admin (domain-based)
+  if (domainAdmin.shouldUpgradeToAdminOnVerification(user.email)) {
+    const previousRole = users[idx].role;
+    users[idx].role = 'admin';
+    console.log(`🔐 Auto-promoted ${user.email} from ${previousRole} to admin (admin domain verified)`);
+  }
+  
   write('users', users);
   console.log(`✅ User verified successfully: ${user.email}`);
 
