@@ -131,7 +131,7 @@ async function searchListings(filters, page = 1) {
 
   try {
     // Use the v2 packages search endpoint for marketplace
-    const response = await fetch(`/api/v1/v2/search/packages?${params.toString()}`, {
+    const response = await fetch(`/api/v2/search/packages?${params.toString()}`, {
       credentials: 'include',
     });
 
