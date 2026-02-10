@@ -1,15 +1,46 @@
 /* EventFlow v3.3.1 — Refactored server.js (modular architecture)
- * Features: Auth (JWT cookie), Suppliers, Packages, Plans/Notes, Threads/Messages,
- * Admin approvals + metrics, Settings, Featured packages, Sitemap.
- * Email: safe dev mode by default (writes .eml files to /outbox).
  *
- * REFACTORED ARCHITECTURE:
- * - Configuration extracted to config/ folder
- * - Middleware extracted to middleware/ folder
- * - Services extracted to services/ folder
- * - Utilities extracted to utils/ folder
- * - Winston logger for structured logging
- * - Maintains 100% backward compatibility
+ * ARCHITECTURE OVERVIEW:
+ * This file is the main entry point for the EventFlow application.
+ * All route handlers have been extracted to the routes/ directory for better maintainability.
+ *
+ * KEY FEATURES:
+ * - Authentication: JWT cookie-based auth with role-based access control
+ * - Database: MongoDB-first with local storage fallback (via dbUnified)
+ * - Security: CSRF protection, rate limiting, input sanitization, Helmet.js
+ * - Real-time: WebSocket support for notifications and messaging
+ * - Payments: Stripe integration for subscriptions
+ * - AI: OpenAI integration for event planning assistance (optional)
+ * - Email: Postmark for transactional emails, dev mode writes to /outbox
+ *
+ * STRUCTURE:
+ * 1. Dependencies & Configuration
+ * 2. Middleware Setup (security, logging, parsing, sessions)
+ * 3. Database Connection
+ * 4. Route Mounting (all routes are in routes/ modules)
+ * 5. Error Handling
+ * 6. Server Startup
+ *
+ * ROUTE MODULES (routes/):
+ * - auth.js: Registration, login, logout, password reset
+ * - admin.js: Admin operations (exports, metrics, settings)
+ * - admin-user-management.js: User management (CRUD, roles, impersonation)
+ * - admin-config.js: Badge and category management
+ * - packages.js: Package CRUD operations
+ * - suppliers.js: Supplier management
+ * - messaging.js: Thread and message operations
+ * - notifications.js: User notifications
+ * - ai.js: AI-powered event planning
+ * - reviews.js: Review and rating system
+ * - media.js: Photo upload and management
+ * - discovery.js: Trending and recommendations
+ * - search.js: Search functionality
+ * - and more... (see routes/index.js for complete list)
+ *
+ * DEVELOPMENT:
+ * - Run with: npm run dev
+ * - Test with: npm test
+ * - Lint with: npm run lint
  */
 
 'use strict';
