@@ -269,7 +269,7 @@ class DateManagementService {
         try {
           const auditLogs = await this.dbUnified.read('audit_logs');
           auditLogs.push({
-            id: `audit_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            id: `audit_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
             userId,
             action: manual ? 'MANUAL_DATE_UPDATE' : 'AUTO_DATE_UPDATE',
             details: {
@@ -478,7 +478,7 @@ class DateManagementService {
       
       for (const admin of admins) {
         notifications.push({
-          id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          id: `notif_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
           userId: admin.id,
           type: 'system',
           title: 'Legal Document Dates Updated',
