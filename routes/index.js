@@ -13,6 +13,7 @@ const systemRoutes = require('./system');
 const publicRoutes = require('./public');
 const authRoutes = require('./auth');
 const adminRoutes = require('./admin');
+const adminDebugRoutes = require('./admin-debug');
 const messagesRoutes = require('./messages');
 const messagingV2Routes = require('./messaging-v2');
 const newsletterRoutes = require('./newsletter');
@@ -76,6 +77,10 @@ function mountRoutes(app, deps) {
   // Admin routes
   app.use('/api/v1/admin', adminRoutes);
   app.use('/api/admin', adminRoutes); // Backward compatibility
+
+  // Admin debug routes (emergency auth debugging)
+  app.use('/api/v1/admin/debug', adminDebugRoutes);
+  app.use('/api/admin/debug', adminDebugRoutes); // Backward compatibility
 
   // Messages routes
   if (deps && messagesRoutes.initializeDependencies) {

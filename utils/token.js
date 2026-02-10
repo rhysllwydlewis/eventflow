@@ -376,10 +376,78 @@ function debugToken(token) {
   }
 }
 
+/**
+ * Generate a password reset token
+ * @param {string} email - User email address
+ * @param {Object} options - Optional settings
+ * @param {number} options.expiresInHours - Override default expiration (hours, default: 1)
+ * @returns {string} JWT token
+ */
+function generatePasswordResetToken(email, options = {}) {
+  if (!email || typeof email !== 'string') {
+    throw new Error('Email is required for password reset token');
+  }
+
+  const expiresInHours = options.expiresInHours || 1; // Default 1 hour for password reset
+
+  const payload = {
+    email: email.toLowerCase(),
+    type: TOKEN_TYPES.PASSWORD_RESET,
+    ver: TOKEN_VERSION,
+    iat: Math.floor(Date.now() / 1000),
+  };
+
+  const token = jwt.sign(payload, JWT_SECRET, {
+    expiresIn: `${expiresInHours}h`,
+    algorithm: 'HS256',
+  });
+
+  console.log(`🔐 Generated password reset token for ${maskEmail(email)}`);
+  console.log(`   Expires: ${expiresInHours}h`);
+  console.log(`   Version: ${TOKEN_VERSION}`);
+
+  return token;
+}
+
+/**
+ * Validate a password reset token
+ * @param {string} token - JWT token to validate
+ * @param {Object} options - Validation options
+ * @param {boolean} options.allowGracePeriod - Allow expired tokens within grace period (default: false for resets)
+ * @returns {Object} Decoded token payload or validation error
+ */
+function validatePasswordResetToken(token, options = {}) {
+  return validateVerificationToken(token, {
+    allowGracePeriod: options.allowGracePeriod !== undefined ? options.allowGracePeriod : false,
+    expectedType: TOKEN_TYPES.PASSWORD_RESET,
+  });
+}
+
+/**
+ * Generate email verification token (alias for backward compatibility)
+ * @param {string} email - User email
+ * @param {Object} options - Optional settings
+ * @returns {string} JWT token
+ */
+function generateEmailVerificationToken(email, options = {}) {
+  // For email verification tokens, we need the user object format
+  // Create a minimal user object if just email is provided
+  if (typeof email === 'string') {
+    return generateVerificationToken(
+      { email: email, id: 'pending' },
+      { ...options, type: TOKEN_TYPES.EMAIL_VERIFICATION }
+    );
+  }
+  return generateVerificationToken(email, options);
+}
+
 module.exports = {
   // Core functions
   generateVerificationToken,
   validateVerificationToken,
+  generatePasswordResetToken,
+  validatePasswordResetToken,
+  generateEmailVerificationToken,
 
   // Utility functions
   isJWTToken,
