@@ -1,6 +1,12 @@
 (function () {
-  // Constants
-  const OWNER_EMAIL = 'admin@event-flow.co.uk'; // Owner account always has admin role
+  // Constants - Will be dynamically loaded from backend for security
+  let OWNER_EMAIL = 'admin@event-flow.co.uk'; // Default, will be updated from backend
+  
+  // Helper to check if email is owner (case-insensitive)
+  function isOwnerEmail(email) {
+    if (!email || !OWNER_EMAIL) return false;
+    return email.toLowerCase() === OWNER_EMAIL.toLowerCase();
+  }
 
   // Defensive error logging wrapper
   function safeExecute(fn, context) {
@@ -110,40 +116,47 @@
         ? '<span class="badge badge-yes">Yes</span>'
         : '<span class="badge badge-no">No</span>';
 
-      const isOwner = u.email === OWNER_EMAIL;
+      const isOwner = isOwnerEmail(u.email) || u.isOwner;
       const isAdmin = u.role === 'admin';
 
       let actions = '<div style="display:flex;gap:4px;flex-wrap:wrap;">';
-      actions += `<button data-action="editUser" data-id="${u.id}">Edit</button>`;
+      
+      // Owner accounts have special protection
+      if (isOwner) {
+        actions += `<button disabled style="opacity:0.5;cursor:not-allowed;" title="Owner account is protected">Edit</button>`;
+        actions += `<span style="color:#888;font-size:0.9em;padding:4px;">Protected Account</span>`;
+      } else {
+        actions += `<button data-action="editUser" data-id="${u.id}">Edit</button>`;
 
-      // Manual verification button for unverified users (not shown for owner account)
-      if (!u.verified && !isOwner) {
-        actions += `<button data-action="verifyUser" data-id="${u.id}">Verify Email</button>`;
-      }
+        // Manual verification button for unverified users
+        if (!u.verified) {
+          actions += `<button data-action="verifyUser" data-id="${u.id}">Verify Email</button>`;
+        }
 
-      // Admin privilege toggle (only for non-owner accounts)
-      if (!isOwner) {
+        // Admin privilege toggle (only for non-owner accounts)
         if (isAdmin) {
           actions += `<button data-action="revokeAdmin" data-id="${u.id}">Revoke Admin</button>`;
         } else {
           actions += `<button data-action="grantAdmin" data-id="${u.id}">Grant Admin</button>`;
         }
-      }
 
-      // Delete button (disabled for owner)
-      if (!isOwner) {
+        // Delete button
         actions += `<button data-action="deleteUser" data-id="${u.id}">Delete</button>`;
       }
 
       actions += '</div>';
+      
+      // Enhanced role display with owner badge
+      let roleDisplay = u.role || '';
+      if (isOwner) {
+        roleDisplay += ' <span class="badge" style="background:#9f1239;color:#fff;font-weight:600;" title="Protected account - cannot be deleted or demoted">👑 OWNER</span>';
+      }
 
       rows +=
-        `<tr>` +
+        `<tr ${isOwner ? 'style="background-color:#fef2f2;"' : ''}>` +
         `<td>${u.name || ''}</td>` +
         `<td>${u.email || ''}</td>` +
-        `<td>${u.role || ''}${
-          isOwner ? ' <span class="badge" style="background:#9f1239;color:#fff;">OWNER</span>' : ''
-        }</td>` +
+        `<td>${roleDisplay}</td>` +
         `<td>${verifiedBadge}</td>` +
         `<td>${joined}</td>` +
         `<td>${last}</td>` +
