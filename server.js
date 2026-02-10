@@ -1,15 +1,46 @@
-/* EventFlow v3.3.1 — Refactored server.js (modular architecture)
- * Features: Auth (JWT cookie), Suppliers, Packages, Plans/Notes, Threads/Messages,
- * Admin approvals + metrics, Settings, Featured packages, Sitemap.
- * Email: safe dev mode by default (writes .eml files to /outbox).
+/* EventFlow v18.1.0 — Refactored server.js (modular architecture)
  *
- * REFACTORED ARCHITECTURE:
- * - Configuration extracted to config/ folder
- * - Middleware extracted to middleware/ folder
- * - Services extracted to services/ folder
- * - Utilities extracted to utils/ folder
- * - Winston logger for structured logging
- * - Maintains 100% backward compatibility
+ * ARCHITECTURE OVERVIEW:
+ * This file is the main entry point for the EventFlow application.
+ * All route handlers have been extracted to the routes/ directory for better maintainability.
+ *
+ * KEY FEATURES:
+ * - Authentication: JWT cookie-based auth with role-based access control
+ * - Database: MongoDB-first with local storage fallback (via dbUnified)
+ * - Security: CSRF protection, rate limiting, input sanitization, Helmet.js
+ * - Real-time: WebSocket support for notifications and messaging
+ * - Payments: Stripe integration for subscriptions
+ * - AI: OpenAI integration for event planning assistance (optional)
+ * - Email: Postmark for transactional emails, dev mode writes to /outbox
+ *
+ * STRUCTURE:
+ * 1. Dependencies & Configuration
+ * 2. Middleware Setup (security, logging, parsing, sessions)
+ * 3. Database Connection
+ * 4. Route Mounting (all routes are in routes/ modules)
+ * 5. Error Handling
+ * 6. Server Startup
+ *
+ * ROUTE MODULES (routes/):
+ * - auth.js: Registration, login, logout, password reset
+ * - admin.js: Admin operations (exports, metrics, settings)
+ * - admin-user-management.js: User management (CRUD, roles, impersonation)
+ * - admin-config.js: Badge and category management
+ * - packages.js: Package CRUD operations
+ * - suppliers.js: Supplier management
+ * - messaging.js: Thread and message operations
+ * - notifications.js: User notifications
+ * - ai.js: AI-powered event planning
+ * - reviews.js: Review and rating system
+ * - media.js: Photo upload and management
+ * - discovery.js: Trending and recommendations
+ * - search.js: Search functionality
+ * - and more... (see routes/index.js for complete list)
+ *
+ * DEVELOPMENT:
+ * - Run with: npm run dev
+ * - Test with: npm test
+ * - Lint with: npm run lint
  */
 
 'use strict';
@@ -18,9 +49,7 @@ const path = require('path');
 const fs = require('fs');
 const express = require('express');
 const cookieParser = require('cookie-parser');
-const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const validator = require('validator');
 
 const APP_VERSION = 'v18.1.0';
 
@@ -179,9 +208,7 @@ const cache = require('./cache');
 // Sitemap generator
 const { generateSitemap, generateRobotsTxt } = require('./sitemap');
 
-// Constants for user management
-const VALID_USER_ROLES = ['customer', 'supplier', 'admin'];
-const MAX_NAME_LENGTH = 80;
+// Constants
 const OWNER_EMAIL = 'admin@event-flow.co.uk'; // Owner account always has admin role
 
 // Helper functions (re-export from utils for backward compatibility)
@@ -414,401 +441,23 @@ app.use(
   express.static(path.join(__dirname, 'uploads'))
 );
 
-// ---------- AUTH ----------
-// Auth routes (register, login, verify, logout, etc.) moved to routes/auth.js
+// ==================== ROUTE MOUNTING ====================
+// All API routes have been extracted to the routes/ directory
+// Routes are mounted via routes/index.js mountRoutes() function
 
-// System routes (health, config, meta, etc.) are now in routes/system.js
-
-// Admin: list users (without password hashes)
-app.get('/api/admin/users', authRequired, roleRequired('admin'), async (req, res) => {
-  const users = (await dbUnified.read('users')).map(u => ({
-    id: u.id,
-    name: u.name,
-    email: u.email,
-    role: u.role,
-    verified: !!u.verified,
-    marketingOptIn: !!u.marketingOptIn,
-    createdAt: u.createdAt,
-    lastLoginAt: u.lastLoginAt || null,
-  }));
-  // Sort newest first by createdAt
-  users.sort((a, b) => {
-    if (!a.createdAt && !b.createdAt) {
-      return 0;
-    }
-    if (!a.createdAt) {
-      return 1;
-    }
-    if (!b.createdAt) {
-      return -1;
-    }
-    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-  });
-  res.json({ items: users });
-});
-
-// Admin: export only marketing-opt-in users as CSV
-// Moved to routes/admin.js
-
-// Admin: export all users as CSV
-// Moved to routes/admin.js
-
-/**
- * POST /api/admin/users
- * Create a new user (admin only)
- */
-app.post(
-  '/api/admin/users',
-  authRequired,
-  roleRequired('admin'),
-  csrfProtection,
-  async (req, res) => {
-    const { name, email, password, role = 'customer' } = req.body || {};
-
-    // Validate required fields
-    if (!name || !email || !password) {
-      return res
-        .status(400)
-        .json({ error: 'Missing required fields: name, email, and password are required' });
-    }
-
-    // Validate email format
-    if (!validator.isEmail(String(email))) {
-      return res.status(400).json({ error: 'Invalid email format' });
-    }
-
-    // Validate password strength
-    if (!passwordOk(password)) {
-      return res.status(400).json({
-        error: 'Password must be at least 8 characters with uppercase, lowercase, and number',
-      });
-    }
-
-    // Validate role
-    const roleFinal = VALID_USER_ROLES.includes(role) ? role : 'customer';
-
-    // Check if user already exists
-    const users = await dbUnified.read('users');
-    if (users.find(u => u.email.toLowerCase() === String(email).toLowerCase())) {
-      return res.status(409).json({ error: 'A user with this email already exists' });
-    }
-
-    // Create new user
-    const user = {
-      id: uid('usr'),
-      name: String(name).trim().slice(0, MAX_NAME_LENGTH),
-      email: String(email).toLowerCase(),
-      role: roleFinal,
-      passwordHash: bcrypt.hashSync(password, 10),
-      notify: true,
-      marketingOptIn: false,
-      verified: true, // Admin-created users are pre-verified
-      createdAt: new Date().toISOString(),
-      createdBy: req.user.id, // Track who created the user
-    };
-
-    users.push(user);
-    await dbUnified.write('users', users);
-
-    // Create audit log
-    auditLog({
-      adminId: req.user.id,
-      adminEmail: req.user.email,
-      action: AUDIT_ACTIONS.USER_CREATED,
-      targetType: 'user',
-      targetId: user.id,
-      details: {
-        email: user.email,
-        name: user.name,
-        role: user.role,
-      },
-    });
-
-    res.json({
-      success: true,
-      message: 'User created successfully',
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        verified: user.verified,
-      },
-    });
-  }
-);
-
-/**
- * POST /api/admin/users/:id/grant-admin
- * Grant admin privileges to a user
- */
-app.post(
-  '/api/admin/users/:id/grant-admin',
-  authRequired,
-  roleRequired('admin'),
-  csrfProtection,
-  async (req, res) => {
-    const { id } = req.params;
-    const users = await dbUnified.read('users');
-    const userIndex = users.findIndex(u => u.id === id);
-
-    if (userIndex === -1) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    const user = users[userIndex];
-    const now = new Date().toISOString();
-
-    // Check if user already has admin role
-    if (user.role === 'admin') {
-      return res.status(400).json({ error: 'User already has admin privileges' });
-    }
-
-    // Store previous role
-    user.previousRole = user.role;
-    user.role = 'admin';
-    user.adminGrantedAt = now;
-    user.adminGrantedBy = req.user.id;
-    user.updatedAt = now;
-
-    users[userIndex] = user;
-    await dbUnified.write('users', users);
-
-    // Create audit log
-    auditLog({
-      adminId: req.user.id,
-      adminEmail: req.user.email,
-      action: AUDIT_ACTIONS.USER_ROLE_CHANGED,
-      targetType: 'user',
-      targetId: user.id,
-      details: {
-        email: user.email,
-        previousRole: user.previousRole,
-        newRole: 'admin',
-      },
-    });
-
-    res.json({
-      success: true,
-      message: 'Admin privileges granted successfully',
-      user: {
-        id: user.id,
-        email: user.email,
-        role: user.role,
-      },
-    });
-  }
-);
-
-/**
- * POST /api/admin/users/:id/revoke-admin
- * Revoke admin privileges from a user
- */
-app.post(
-  '/api/admin/users/:id/revoke-admin',
-  authRequired,
-  roleRequired('admin'),
-  csrfProtection,
-  async (req, res) => {
-    const { id } = req.params;
-    const { newRole = 'customer' } = req.body;
-    const users = await dbUnified.read('users');
-    const userIndex = users.findIndex(u => u.id === id);
-
-    if (userIndex === -1) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    const user = users[userIndex];
-    const now = new Date().toISOString();
-
-    // Check if user has admin role
-    if (user.role !== 'admin') {
-      return res.status(400).json({ error: 'User does not have admin privileges' });
-    }
-
-    // Prevent revoking own admin privileges
-    if (user.id === req.user.id) {
-      return res.status(400).json({ error: 'You cannot revoke your own admin privileges' });
-    }
-
-    // Prevent revoking owner's admin privileges
-    if (user.email === 'admin@event-flow.co.uk' || user.isOwner) {
-      return res
-        .status(403)
-        .json({ error: 'Cannot revoke admin privileges from the owner account' });
-    }
-
-    // Validate newRole
-    if (!['customer', 'supplier'].includes(newRole)) {
-      return res.status(400).json({ error: 'Invalid role. Must be customer or supplier' });
-    }
-
-    // Store previous role
-    user.previousRole = user.role;
-    user.role = newRole;
-    user.adminRevokedAt = now;
-    user.adminRevokedBy = req.user.id;
-    user.updatedAt = now;
-
-    users[userIndex] = user;
-    await dbUnified.write('users', users);
-
-    // Create audit log
-    auditLog({
-      adminId: req.user.id,
-      adminEmail: req.user.email,
-      action: AUDIT_ACTIONS.USER_ROLE_CHANGED,
-      targetType: 'user',
-      targetId: user.id,
-      details: {
-        email: user.email,
-        previousRole: 'admin',
-        newRole: newRole,
-      },
-    });
-
-    res.json({
-      success: true,
-      message: 'Admin privileges revoked successfully',
-      user: {
-        id: user.id,
-        email: user.email,
-        role: user.role,
-      },
-    });
-  }
-);
-
-// Admin: export all core collections as JSON
-// Moved to routes/admin.js
-
-/**
- * Get venues near a location
- * (Route extracted to routes/misc.js)
- */
-
-// AI event planning assistant
-// (Route extracted to routes/ai.js)
-
-// Admin-only: auto-categorisation & scoring for suppliers moved to routes/supplier-admin.js
-
-// ---------- Badge & Category Management ----------
-// Badge and category management routes moved to routes/admin-config.js
-
-// ---------- Photo Moderation ----------
-
-// ---------- Category browsing endpoints ----------
-
-// Public stats route moved to routes/public.js (with its own cache)
+// Public routes (no authentication required)
 const publicRoutes = require('./routes/public');
 app.use('/api/public', publicRoutes);
 
-// Category management routes moved to routes/admin-config.js
-
-// Admin: Upload package image moved to routes/packages.js
-
-// ---------- Supplier dashboard ----------
-/**
- * GET /api/me/suppliers/:id/analytics
- * Get analytics data for a supplier using real event tracking
- */
-// Supplier analytics and badge evaluation routes moved to routes/supplier-management.js
-
-// Mark all suppliers owned by the current user as Pro moved to routes/supplier-management.js
-
-// Supplier CRUD routes (POST, PATCH) moved to routes/supplier-management.js
-
-// Package routes moved to routes/packages.js
-
-// Package routes moved to routes/packages.js
-
-// ---------- CAPTCHA Verification ----------
-// (Route extracted to routes/misc.js)
-
-// ---------- Threads & Messages ----------
-
-// ---------- Marketplace Listings ----------
-
-// ---------- Plan & Notes (customer) ----------
-
-// ---------- Settings ----------
-// Settings routes (GET/POST /api/me/settings) moved to routes/settings.js
+// Settings routes
 const settingsRoutes = require('./routes/settings');
 app.use('/api/me/settings', settingsRoutes);
 
-// ---------- Meta & status ----------
-// Meta endpoint moved to routes/system.js
-
-// Lightweight metrics endpoints moved to routes/metrics.js
-
-// ---------- Admin ----------
-app.get('/api/admin/metrics', authRequired, roleRequired('admin'), async (_req, res) => {
-  const users = await dbUnified.read('users');
-  const suppliers = await dbUnified.read('suppliers');
-  const plans = await dbUnified.read('plans');
-  const msgs = await dbUnified.read('messages');
-  const pkgs = await dbUnified.read('packages');
-  const threads = await dbUnified.read('threads');
-  res.json({
-    counts: {
-      usersTotal: users.length,
-      usersByRole: users.reduce((a, u) => {
-        a[u.role] = (a[u.role] || 0) + 1;
-        return a;
-      }, {}),
-      suppliersTotal: suppliers.length,
-      packagesTotal: pkgs.length,
-      plansTotal: plans.length,
-      messagesTotal: msgs.length,
-      threadsTotal: threads.length,
-    },
-  });
-});
-
-app.post(
-  '/api/admin/reset-demo',
-  authRequired,
-  roleRequired('admin'),
-  csrfProtection,
-  async (req, res) => {
-    try {
-      // Clear key collections and rerun seeding
-      const collections = [
-        'users',
-        'suppliers',
-        'packages',
-        'plans',
-        'notes',
-        'messages',
-        'threads',
-        'events',
-      ];
-      for (const name of collections) {
-        await dbUnified.write(name, []);
-      }
-      await seed();
-      res.json({ ok: true });
-    } catch (err) {
-      console.error('Reset demo failed', err);
-      res.status(500).json({ error: 'Reset demo failed' });
-    }
-  }
-);
-
-// Admin supplier management routes moved to routes/supplier-admin.js
-
-// Package routes moved to routes/packages.js
-
-// ---------- Protected HTML routes ----------
-// Dashboard routes moved to routes/dashboard.js
+// Dashboard routes (protected HTML routes)
 const dashboardRoutes = require('./routes/dashboard');
 app.use('/', dashboardRoutes);
 
-// ---------- Healthcheck & plan save system ----------
-
-// --- IMAGE STORAGE (V9.3) ---
-// fs and path are already required at the top of this file
+// ==================== IMAGE STORAGE ====================
 const UP_ROOT = path.join(DATA_DIR, 'uploads');
 
 function ensureDirs() {
@@ -821,66 +470,41 @@ function ensureDirs() {
 }
 ensureDirs();
 
-// saveImageBase64 function moved to routes/suppliers-v2.js and routes/packages.js
-
-// Supplier image upload route moved to routes/suppliers-v2.js
-
-// Package image upload moved to routes/packages.js
-
-// ---------- Advanced Search & Discovery ----------
-
-// ---------- Reviews and Ratings System ----------
-
-// ---------- Photo Upload & Management ----------
-
-// ---------- Photo Upload & Management ----------
-// Photo upload routes (upload, batch upload, management, etc.) moved to routes/photos.js
-// Mounted via routes/index.js
-
-// ---------- Static & SEO Routes ----------
-// Already mounted at line 345
-
-// ---------- Dashboard & Page Routes ----------
-// Already mounted at line 2596
-
-// ---------- Auth Routes ----------
+// ==================== ADDITIONAL ROUTES ====================
+// Auth routes
 const authRoutes = require('./routes/auth');
 app.use('/api/auth', authRoutes);
 
-// ---------- Public Maintenance Endpoint (must be before auth checks) ----------
-// (Route extracted to routes/system.js)
-
-// ---------- Webhook Routes ----------
+// Webhook routes
 const webhookRoutes = require('./routes/webhooks');
 app.use('/api/webhooks', webhookRoutes);
 
-// ---------- Admin Routes ----------
+// Admin routes
 const adminRoutes = require('./routes/admin');
 app.use('/api/admin', adminRoutes);
 
-// ---------- Admin User Management Routes ----------
+// Admin user management routes
 const adminUserManagementRoutes = require('./routes/admin-user-management');
 app.use('/api/admin', adminUserManagementRoutes);
 
-// ---------- Admin v2 Routes (RBAC with granular permissions) ----------
+// Admin V2 routes (RBAC with granular permissions)
 const adminV2Routes = require('./routes/admin-v2');
 app.use('/api/v2/admin', adminV2Routes);
 
-// ---------- Content Reporting System ----------
+// Reports routes
 const reportsRoutes = require('./routes/reports');
 app.use('/api', reportsRoutes);
 
-// ---------- Tickets Routes ----------
+// Tickets routes
 const ticketsRoutes = require('./routes/tickets');
 app.use('/api/tickets', ticketsRoutes);
 
-// ---------- Pexels Stock Photos Routes ----------
+// Pexels image search routes
 const pexelsRoutes = require('./routes/pexels');
 app.use('/api/pexels', pexelsRoutes);
 
-// ---------- AI Routes ----------
+// AI routes
 const aiRoutes = require('./routes/ai');
-// Initialize AI routes with dependencies
 if (aiRoutes.initializeDependencies) {
   aiRoutes.initializeDependencies({
     openaiClient,
@@ -890,48 +514,33 @@ if (aiRoutes.initializeDependencies) {
 }
 app.use('/api/ai', aiRoutes);
 
-// ---------- Payment Routes ----------
+// Payment routes
 const paymentRoutes = require('./routes/payments');
 app.use('/api/payments', paymentRoutes);
 
-// ---------- Profile Routes ----------
+// Profile routes
 const profileRoutes = require('./routes/profile');
 app.use('/api/profile', profileRoutes);
 
-// ---------- Suppliers V2 Routes ----------
-// Suppliers V2 routes (photo gallery) moved to routes/suppliers-v2.js and mounted in routes/index.js
-
-// ---------- Supplier Routes (analytics, trials, etc.) ----------
+// Supplier routes
 const supplierRoutes = require('./routes/supplier');
 app.use('/api/supplier', supplierRoutes);
 
-// ---------- Photo Serving from MongoDB ----------
-// GET /api/photos/:id route moved to routes/photos.js
-
-// ---------- Audit Logging ----------
+// Audit logging middleware
 const { auditLog, AUDIT_ACTIONS } = require('./middleware/audit');
 
-// Note: Admin audit endpoints moved to routes/admin.js for consolidation
-// GET /api/admin/audit and GET /api/admin/audit-logs are now in routes/admin.js
-
-// Health and ready endpoints moved to routes/system.js
-
-// Cache statistics, database metrics, and CSP reporting endpoints moved to routes/system.js
-
-// ---------- Subscription and Payment v2 Routes ----------
+// Subscription and Payment V2 routes
 const subscriptionsV2Routes = require('./routes/subscriptions-v2');
 app.use('/api/v2/subscriptions', subscriptionsV2Routes);
 app.use('/api/v2', subscriptionsV2Routes); // For /api/v2/invoices, /api/v2/admin, and /api/v2/webhooks/stripe
 
-// ---------- Reviews v2 Routes ----------
+// Reviews V2 routes
 const reviewsV2Routes = require('./routes/reviews-v2');
 app.use('/api/v2/reviews', reviewsV2Routes);
 
-// ---------- WebSocket Server Accessor ----------
+// ==================== WEBSOCKET SERVER ACCESSOR ====================
 // Forward declaration of function to get WebSocket server
-// This is defined early so it can be passed to routes via mountRoutes
-// The actual WebSocket servers (wsServer, wsServerV2) are initialized later
-// after the HTTP server is created
+// The actual WebSocket servers (wsServer, wsServerV2) are initialized later after HTTP server creation
 /**
  * Get the current WebSocket server based on WEBSOCKET_MODE
  * Used by notification routes to access WebSocket for real-time delivery
