@@ -313,8 +313,9 @@ function estimateBudget(eventType, guests) {
  * AI-powered event planning assistant
  * Generates suggestions for checklist, timeline, suppliers, budget, style ideas, and messages
  * Body: { prompt, plan }
+ * Note: Requires global express.json() middleware configured in server.js
  */
-router.post('/plan', express.json(), applyCsrfProtection, async (req, res) => {
+router.post('/plan', authRequired, applyCsrfProtection, async (req, res) => {
   const body = req.body || {};
   const promptText = String(body.prompt || '').trim();
   const plan = body.plan || {};

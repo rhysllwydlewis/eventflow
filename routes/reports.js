@@ -28,7 +28,7 @@ const reportLimiter = rateLimit({
  * Create a new report
  * Body: { type, targetId, reason, details }
  */
-router.post('/', authRequired, reportLimiter, (req, res) => {
+router.post('/', authRequired, csrfProtection, reportLimiter, (req, res) => {
   const { type, targetId, reason, details } = req.body;
 
   // Validate input

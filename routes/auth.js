@@ -730,7 +730,7 @@ router.get('/me', (req, res) => {
  * PUT /api/auth/preferences
  * Update user notification preferences
  */
-router.put('/preferences', authRequired, (req, res) => {
+router.put('/preferences', authRequired, csrfProtection, (req, res) => {
   const { notify_account, notify_marketing } = req.body || {};
 
   const users = read('users');
@@ -885,7 +885,7 @@ router.post('/resend-verification', resendEmailLimiter, async (req, res) => {
  * PUT /api/auth/profile
  * Update current user's profile information
  */
-router.put('/profile', authRequired, async (req, res) => {
+router.put('/profile', authRequired, csrfProtection, async (req, res) => {
   const {
     name,
     firstName,

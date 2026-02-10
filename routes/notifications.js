@@ -16,6 +16,7 @@ let authRequired;
 let logger;
 let mongoDb;
 let getWebSocketServer;
+let csrfProtection;
 
 /**
  * Initialize dependencies from server.js
@@ -27,7 +28,7 @@ function initializeDependencies(deps) {
   }
 
   // Validate required dependencies
-  const required = ['authRequired', 'logger', 'mongoDb', 'getWebSocketServer'];
+  const required = ['authRequired', 'logger', 'mongoDb', 'getWebSocketServer', 'csrfProtection'];
 
   const missing = required.filter(key => deps[key] === undefined);
   if (missing.length > 0) {
@@ -38,6 +39,7 @@ function initializeDependencies(deps) {
   logger = deps.logger;
   mongoDb = deps.mongoDb;
   getWebSocketServer = deps.getWebSocketServer;
+  csrfProtection = deps.csrfProtection;
 }
 
 /**
@@ -51,6 +53,13 @@ function applyAuthRequired(req, res, next) {
     return res.status(503).json({ error: 'Auth service not initialized' });
   }
   return authRequired(req, res, next);
+}
+
+function applyCsrfProtection(req, res, next) {
+  if (!csrfProtection) {
+    return res.status(503).json({ error: 'CSRF service not initialized' });
+  }
+  return csrfProtection(req, res, next);
 }
 
 /**
@@ -152,7 +161,7 @@ router.get('/unread-count', applyAuthRequired, async (req, res) => {
  * PUT /api/notifications/:id/read
  * Mark a notification as read
  */
-router.put('/:id/read', applyAuthRequired, async (req, res) => {
+router.put('/:id/read', applyAuthRequired, applyCsrfProtection, async (req, res) => {
   try {
     const notificationService = await getNotificationService();
     const userId = req.user.id;
@@ -174,7 +183,7 @@ router.put('/:id/read', applyAuthRequired, async (req, res) => {
  * PUT /api/notifications/mark-all-read
  * Mark all notifications as read for the current user
  */
-router.put('/mark-all-read', applyAuthRequired, async (req, res) => {
+router.put('/mark-all-read', applyAuthRequired, applyCsrfProtection, async (req, res) => {
   try {
     const notificationService = await getNotificationService();
     const userId = req.user.id;
@@ -190,7 +199,7 @@ router.put('/mark-all-read', applyAuthRequired, async (req, res) => {
  * PUT /api/notifications/:id/dismiss
  * Dismiss a notification
  */
-router.put('/:id/dismiss', applyAuthRequired, async (req, res) => {
+router.put('/:id/dismiss', applyAuthRequired, applyCsrfProtection, async (req, res) => {
   try {
     const notificationService = await getNotificationService();
     const userId = req.user.id;
@@ -212,7 +221,7 @@ router.put('/:id/dismiss', applyAuthRequired, async (req, res) => {
  * DELETE /api/notifications/:id
  * Delete a notification
  */
-router.delete('/:id', applyAuthRequired, async (req, res) => {
+router.delete('/:id', applyAuthRequired, applyCsrfProtection, async (req, res) => {
   try {
     const notificationService = await getNotificationService();
     const userId = req.user.id;
@@ -234,7 +243,7 @@ router.delete('/:id', applyAuthRequired, async (req, res) => {
  * DELETE /api/notifications
  * Delete all notifications for the current user
  */
-router.delete('/', applyAuthRequired, async (req, res) => {
+router.delete('/', applyAuthRequired, applyCsrfProtection, async (req, res) => {
   try {
     const notificationService = await getNotificationService();
     const userId = req.user.id;
@@ -251,7 +260,7 @@ router.delete('/', applyAuthRequired, async (req, res) => {
  * Create a test notification (development only)
  */
 if (process.env.NODE_ENV !== 'production') {
-  router.post('/test', applyAuthRequired, async (req, res) => {
+  router.post('/test', applyAuthRequired, applyCsrfProtection, async (req, res) => {
     try {
       const notificationService = await getNotificationService();
       const userId = req.user.id;
