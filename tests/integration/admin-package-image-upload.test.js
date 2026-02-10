@@ -74,12 +74,12 @@ describe('Admin Package Image Upload Error Handling', () => {
 
   describe('Category Hero Image Upload Error Handling', () => {
     it('should have category hero image upload endpoint with similar error handling', () => {
-      const serverContent = fs.readFileSync('server.js', 'utf8');
+      const adminConfigContent = fs.readFileSync('routes/admin-config.js', 'utf8');
 
       // Find the category hero image upload endpoint
-      const categoryImageStart = serverContent.indexOf("'/api/admin/categories/:id/hero-image'");
-      const nextEndpointStart = serverContent.indexOf('app.', categoryImageStart + 100);
-      const categoryImageEndpoint = serverContent.substring(categoryImageStart, nextEndpointStart);
+      const categoryImageStart = adminConfigContent.indexOf("'/categories/:id/hero-image'");
+      const nextEndpointStart = adminConfigContent.indexOf('router.', categoryImageStart + 100);
+      const categoryImageEndpoint = adminConfigContent.substring(categoryImageStart, nextEndpointStart);
 
       // Verify error handling exists
       expect(categoryImageEndpoint).toContain("error.name === 'ValidationError'");
@@ -261,12 +261,12 @@ describe('Admin Package Image Upload Error Handling', () => {
 
   describe('Category Hero Image Enhanced Error Handling', () => {
     it('should have enhanced error details in category hero image endpoint', () => {
-      const serverContent = fs.readFileSync('server.js', 'utf8');
+      const adminConfigContent = fs.readFileSync('routes/admin-config.js', 'utf8');
 
       // Find the category hero image upload endpoint
-      const categoryImageStart = serverContent.indexOf("'/api/admin/categories/:id/hero-image'");
-      const nextEndpointStart = serverContent.indexOf('app.', categoryImageStart + 100);
-      const categoryImageEndpoint = serverContent.substring(categoryImageStart, nextEndpointStart);
+      const categoryImageStart = adminConfigContent.indexOf("'/categories/:id/hero-image'");
+      const nextEndpointStart = adminConfigContent.indexOf('router.', categoryImageStart + 100);
+      const categoryImageEndpoint = adminConfigContent.substring(categoryImageStart, nextEndpointStart);
 
       // Verify enhanced error handling uses helper function
       expect(categoryImageEndpoint).toContain('uploadValidation.formatValidationErrorResponse');
