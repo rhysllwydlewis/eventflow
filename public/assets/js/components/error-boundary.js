@@ -21,12 +21,12 @@ class ErrorBoundary {
     console.error(`[ErrorBoundary] ${this.container.id}:`, error);
     
     this.container.innerHTML = `
-      <div class="error-boundary">
-        <div class="error-boundary-icon">⚠️</div>
+      <div class="error-boundary" role="alert" aria-live="polite">
+        <div class="error-boundary-icon" aria-hidden="true">⚠️</div>
         <h3 class="error-boundary-title">${this.options.title}</h3>
         <p class="error-boundary-message">${this.options.message}</p>
         ${this.options.showRetry ? `
-          <button class="error-boundary-retry cta secondary">
+          <button class="error-boundary-retry cta secondary" aria-label="Retry loading content">
             Try Again
           </button>
         ` : ''}
