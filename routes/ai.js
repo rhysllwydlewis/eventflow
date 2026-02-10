@@ -314,7 +314,7 @@ function estimateBudget(eventType, guests) {
  * Generates suggestions for checklist, timeline, suppliers, budget, style ideas, and messages
  * Body: { prompt, plan }
  */
-router.post('/plan', authRequired, express.json(), applyCsrfProtection, async (req, res) => {
+router.post('/plan', express.json(), authRequired, applyCsrfProtection, async (req, res) => {
   const body = req.body || {};
   const promptText = String(body.prompt || '').trim();
   const plan = body.plan || {};
