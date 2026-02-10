@@ -1,4 +1,4 @@
-/* EventFlow v3.3.1 — Refactored server.js (modular architecture)
+/* EventFlow v18.1.0 — Refactored server.js (modular architecture)
  *
  * ARCHITECTURE OVERVIEW:
  * This file is the main entry point for the EventFlow application.
