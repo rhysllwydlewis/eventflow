@@ -7,7 +7,7 @@
 
 const express = require('express');
 const { authRequired } = require('../middleware/auth');
-const { writeLimiter } = require('../middleware/rateLimit');
+const { writeLimiter } = require('../middleware/rateLimits');
 const { csrfProtection } = require('../middleware/csrf');
 const dbUnified = require('../db-unified');
 const { uid } = require('../store');

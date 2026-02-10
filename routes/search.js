@@ -6,6 +6,7 @@
 'use strict';
 
 const express = require('express');
+const { searchLimiter } = require('../middleware/rateLimits');
 const router = express.Router();
 
 // These will be injected by server.js during route mounting
@@ -48,7 +49,7 @@ function applyAuthRequired(req, res, next) {
 
 // ---------- Search Routes ----------
 
-router.get('/suppliers', async (req, res) => {
+router.get('/suppliers', searchLimiter, async (req, res) => {
   try {
     const results = await searchSystem.searchSuppliers(req.query);
 
@@ -71,7 +72,7 @@ router.get('/suppliers', async (req, res) => {
  * Get user's search history
  * GET /api/search/history
  */
-router.get('/history', applyAuthRequired, async (req, res) => {
+router.get('/history', searchLimiter, applyAuthRequired, async (req, res) => {
   try {
     const limit = Number(req.query.limit) || 20;
     const history = await searchSystem.getUserSearchHistory(req.user.id, limit);

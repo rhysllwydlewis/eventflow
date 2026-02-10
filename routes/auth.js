@@ -18,7 +18,7 @@ const {
   getUserFromCookie,
 } = require('../middleware/auth');
 const { passwordOk } = require('../middleware/validation');
-const { authLimiter, resendEmailLimiter } = require('../middleware/rateLimit');
+const { authLimiter, resendEmailLimiter } = require('../middleware/rateLimits');
 const { csrfProtection } = require('../middleware/csrf');
 const { featureRequired, getFeatureFlags } = require('../middleware/features');
 const postmark = require('../utils/postmark');

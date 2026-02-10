@@ -6,6 +6,7 @@
 'use strict';
 
 const express = require('express');
+const { uploadLimiter } = require('../middleware/rateLimits');
 const router = express.Router();
 
 // These will be injected by server.js during route mounting
@@ -115,6 +116,7 @@ function applyPhotoUploadSingle(fieldName) {
  */
 router.post(
   '/photos/upload',
+  uploadLimiter,
   applyFeatureRequired('photoUploads'),
   applyAuthRequired,
   applyPhotoUploadArray('files', 5), // Support up to 5 files for marketplace
@@ -281,6 +283,7 @@ router.post(
  */
 router.post(
   '/photos/upload/batch',
+  uploadLimiter,
   applyAuthRequired,
   applyPhotoUploadArray('photos', 10),
   applyCsrfProtection,

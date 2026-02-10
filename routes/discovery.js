@@ -6,6 +6,7 @@
 'use strict';
 
 const express = require('express');
+const { searchLimiter } = require('../middleware/rateLimits');
 const router = express.Router();
 
 // These will be injected by server.js during route mounting
@@ -52,7 +53,7 @@ function applyAuthRequired(req, res, next) {
  * Get trending suppliers
  * GET /api/discovery/trending
  */
-router.get('/trending', async (req, res) => {
+router.get('/trending', searchLimiter, async (req, res) => {
   try {
     const limit = Number(req.query.limit) || 10;
     const trending = await searchSystem.getTrendingSuppliers(limit);
@@ -72,7 +73,7 @@ router.get('/trending', async (req, res) => {
  * Get new arrivals
  * GET /api/discovery/new
  */
-router.get('/new', async (req, res) => {
+router.get('/new', searchLimiter, async (req, res) => {
   try {
     const limit = Number(req.query.limit) || 10;
     const newSuppliers = await searchSystem.getNewArrivals(limit);
@@ -92,7 +93,7 @@ router.get('/new', async (req, res) => {
  * Get popular packages
  * GET /api/discovery/popular-packages
  */
-router.get('/popular-packages', async (req, res) => {
+router.get('/popular-packages', searchLimiter, async (req, res) => {
   try {
     const limit = Number(req.query.limit) || 10;
     const packages = await searchSystem.getPopularPackages(limit);
@@ -112,7 +113,7 @@ router.get('/popular-packages', async (req, res) => {
  * Get personalized recommendations
  * GET /api/discovery/recommendations
  */
-router.get('/recommendations', applyAuthRequired, async (req, res) => {
+router.get('/recommendations', searchLimiter, applyAuthRequired, async (req, res) => {
   try {
     const limit = Number(req.query.limit) || 10;
     const recommendations = await searchSystem.getRecommendations(req.user.id, limit);

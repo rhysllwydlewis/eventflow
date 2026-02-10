@@ -8,7 +8,7 @@
 const express = require('express');
 const path = require('path');
 const { generateSitemap, generateRobotsTxt } = require('../sitemap');
-const { authLimiter } = require('../middleware/rateLimit');
+const { authLimiter } = require('../middleware/rateLimits');
 const logger = require('../utils/logger');
 const sentry = require('../utils/sentry');
 

@@ -447,11 +447,13 @@ app.use(
 
 // Public routes (no authentication required)
 const publicRoutes = require('./routes/public');
-app.use('/api/public', publicRoutes);
+app.use('/api/v1/public', publicRoutes);
+app.use('/api/public', publicRoutes); // Backward compatibility
 
 // Settings routes
 const settingsRoutes = require('./routes/settings');
-app.use('/api/me/settings', settingsRoutes);
+app.use('/api/v1/me/settings', settingsRoutes);
+app.use('/api/me/settings', settingsRoutes); // Backward compatibility
 
 // Dashboard routes (protected HTML routes)
 const dashboardRoutes = require('./routes/dashboard');
@@ -473,19 +475,23 @@ ensureDirs();
 // ==================== ADDITIONAL ROUTES ====================
 // Auth routes
 const authRoutes = require('./routes/auth');
-app.use('/api/auth', authRoutes);
+app.use('/api/v1/auth', authRoutes);
+app.use('/api/auth', authRoutes); // Backward compatibility
 
 // Webhook routes
 const webhookRoutes = require('./routes/webhooks');
-app.use('/api/webhooks', webhookRoutes);
+app.use('/api/v1/webhooks', webhookRoutes);
+app.use('/api/webhooks', webhookRoutes); // Backward compatibility
 
 // Admin routes
 const adminRoutes = require('./routes/admin');
-app.use('/api/admin', adminRoutes);
+app.use('/api/v1/admin', adminRoutes);
+app.use('/api/admin', adminRoutes); // Backward compatibility
 
 // Admin user management routes
 const adminUserManagementRoutes = require('./routes/admin-user-management');
-app.use('/api/admin', adminUserManagementRoutes);
+app.use('/api/v1/admin', adminUserManagementRoutes);
+app.use('/api/admin', adminUserManagementRoutes); // Backward compatibility
 
 // Admin V2 routes (RBAC with granular permissions)
 const adminV2Routes = require('./routes/admin-v2');
@@ -493,15 +499,18 @@ app.use('/api/v2/admin', adminV2Routes);
 
 // Reports routes
 const reportsRoutes = require('./routes/reports');
-app.use('/api', reportsRoutes);
+app.use('/api/v1', reportsRoutes);
+app.use('/api', reportsRoutes); // Backward compatibility
 
 // Tickets routes
 const ticketsRoutes = require('./routes/tickets');
-app.use('/api/tickets', ticketsRoutes);
+app.use('/api/v1/tickets', ticketsRoutes);
+app.use('/api/tickets', ticketsRoutes); // Backward compatibility
 
 // Pexels image search routes
 const pexelsRoutes = require('./routes/pexels');
-app.use('/api/pexels', pexelsRoutes);
+app.use('/api/v1/pexels', pexelsRoutes);
+app.use('/api/pexels', pexelsRoutes); // Backward compatibility
 
 // AI routes
 const aiRoutes = require('./routes/ai');
@@ -512,19 +521,23 @@ if (aiRoutes.initializeDependencies) {
     csrfProtection,
   });
 }
-app.use('/api/ai', aiRoutes);
+app.use('/api/v1/ai', aiRoutes);
+app.use('/api/ai', aiRoutes); // Backward compatibility
 
 // Payment routes
 const paymentRoutes = require('./routes/payments');
-app.use('/api/payments', paymentRoutes);
+app.use('/api/v1/payments', paymentRoutes);
+app.use('/api/payments', paymentRoutes); // Backward compatibility
 
 // Profile routes
 const profileRoutes = require('./routes/profile');
-app.use('/api/profile', profileRoutes);
+app.use('/api/v1/profile', profileRoutes);
+app.use('/api/profile', profileRoutes); // Backward compatibility
 
 // Supplier routes
 const supplierRoutes = require('./routes/supplier');
-app.use('/api/supplier', supplierRoutes);
+app.use('/api/v1/supplier', supplierRoutes);
+app.use('/api/supplier', supplierRoutes); // Backward compatibility
 
 // Audit logging middleware
 const { auditLog, AUDIT_ACTIONS } = require('./middleware/audit');
