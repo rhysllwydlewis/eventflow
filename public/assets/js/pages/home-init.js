@@ -846,6 +846,13 @@ async function loadHeroCollageImages() {
     return;
   }
 
+  // Issue 4 Fix: Add loading state immediately with opacity transition
+  const collageFrames = document.querySelectorAll('.hero-collage-card');
+  collageFrames.forEach(frame => {
+    frame.classList.add('collage-loading');
+    frame.style.transition = 'opacity 0.3s ease';
+  });
+
   try {
     // Add AbortController with 5 second timeout (increased from 2s for slower connections)
     const controller = new AbortController();
@@ -941,7 +948,18 @@ async function loadHeroCollageImages() {
         );
       }
     }
+    
+    // Issue 4 Fix: Remove loading state on error
+    collageFrames.forEach(frame => {
+      frame.classList.remove('collage-loading');
+    });
   }
+
+  // Issue 4 Fix: Remove loading state and add loaded class on success
+  collageFrames.forEach(frame => {
+    frame.classList.remove('collage-loading');
+    frame.classList.add('collage-loaded');
+  });
 
   // If collage widget is not enabled or failed, default images will remain
 }
