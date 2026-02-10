@@ -50,6 +50,7 @@ const metricsRoutes = require('./metrics');
 const cacheRoutes = require('./cache');
 const miscRoutes = require('./misc');
 const notificationsRoutes = require('./notifications');
+const adminConfigRoutes = require('./admin-config');
 
 /**
  * Mount all route modules
@@ -240,6 +241,12 @@ function mountRoutes(app, deps) {
     notificationsRoutes.initializeDependencies(deps);
   }
   app.use('/api/notifications', notificationsRoutes);
+
+  // Admin Config routes (Step 8 - Badge & Category Management)
+  if (deps && adminConfigRoutes.initializeDependencies) {
+    adminConfigRoutes.initializeDependencies(deps);
+  }
+  app.use('/api/admin', adminConfigRoutes);
 }
 
 module.exports = {
