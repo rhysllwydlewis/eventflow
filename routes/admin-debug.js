@@ -223,9 +223,7 @@ router.post(
       }
 
       // Generate test token
-      const testToken = tokenUtils.generateEmailVerificationToken(user.email, {
-        type: tokenUtils.TOKEN_TYPES.EMAIL_VERIFICATION,
-      });
+      const testToken = tokenUtils.generateEmailVerificationToken(user.email);
 
       // Send test email
       await postmark.sendVerificationEmail(user, testToken);
