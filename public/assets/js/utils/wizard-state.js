@@ -9,6 +9,10 @@
 
   const STORAGE_KEY = 'eventflow_plan_builder_v1';
   const LEGACY_KEY = 'eventflow_start';
+  const AUTOSAVE_DELAY_MS = 2000; // 2 seconds debounce
+
+  let autosaveTimeout = null;
+  let autosaveCallback = null;
 
   /**
    * Default state structure
@@ -72,14 +76,24 @@
   /**
    * Save the wizard state to localStorage
    * @param {Object} state - State to save
+   * @param {boolean} triggerAutosave - Whether to trigger autosave callback
    */
-  function saveState(state) {
+  function saveState(state, triggerAutosave = true) {
     try {
       const updated = {
         ...state,
         lastUpdated: new Date().toISOString(),
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      
+      // Trigger autosave indicator if enabled
+      if (triggerAutosave && autosaveCallback) {
+        clearTimeout(autosaveTimeout);
+        autosaveTimeout = setTimeout(() => {
+          autosaveCallback(updated);
+        }, AUTOSAVE_DELAY_MS);
+      }
+      
       return true;
     } catch (err) {
       console.error('Error saving wizard state:', err);
@@ -245,6 +259,24 @@
     };
   }
 
+  /**
+   * Set autosave callback function
+   * @param {Function} callback - Function to call after state save
+   */
+  function setAutosaveCallback(callback) {
+    autosaveCallback = callback;
+  }
+
+  /**
+   * Get time since last update
+   * @returns {number} Milliseconds since last update
+   */
+  function getTimeSinceLastUpdate() {
+    const state = getState();
+    if (!state.lastUpdated) return Infinity;
+    return Date.now() - new Date(state.lastUpdated).getTime();
+  }
+
   // Expose public API
   window.WizardState = {
     getState,
@@ -260,5 +292,7 @@
     getPreviousStep,
     isReadyForPlanCreation,
     exportForPlanCreation,
+    setAutosaveCallback,
+    getTimeSinceLastUpdate,
   };
 })(window);

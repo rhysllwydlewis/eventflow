@@ -1,0 +1,293 @@
+/**
+ * Wizard Mobile Optimizations
+ * Mobile-first responsive enhancements for the planning wizard
+ */
+
+/* Mobile-specific layout adjustments */
+@media (max-width: 768px) {
+  /* Force full-width container on mobile */
+  #main-content > .container,
+  .section > .container[style*="display: flex"],
+  main.section > .container {
+    flex-direction: column !important;
+    gap: 1rem !important;
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+  
+  /* Hide desktop sidebar completely */
+  #plan-summary,
+  .wizard-sidebar {
+    display: none !important;
+    width: 0 !important;
+    min-width: 0 !important;
+    max-width: 0 !important;
+    overflow: hidden !important;
+  }
+  
+  /* Ensure main wizard content takes full width */
+  #main-content > .container > div:first-child,
+  main.section > .container > div:first-child,
+  .section > .container > div[style*="flex: 1"] {
+    width: 100% !important;
+    min-width: 100% !important;
+    flex: 1 1 100% !important;
+  }
+
+  /* Wizard card mobile adjustments */
+  .wizard-card {
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+    border-radius: 12px;
+  }
+
+  .wizard-card h2 {
+    font-size: 1.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  /* Progress bar mobile */
+  .wizard-progress {
+    margin-bottom: 0.75rem;
+  }
+
+  .wizard-step-indicator {
+    font-size: 0.8125rem;
+    margin-bottom: 1rem;
+  }
+
+  /* Event type options mobile */
+  .wizard-options {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+    margin: 1.5rem 0;
+  }
+
+  .wizard-option {
+    min-height: 260px;
+  }
+
+  .wizard-option-image-container {
+    height: 180px;
+  }
+
+  .wizard-option-label {
+    font-size: 1rem;
+    padding: 0.875rem;
+  }
+
+  /* Form inputs mobile */
+  .form-row {
+    margin-bottom: 1rem;
+  }
+
+  .form-row label {
+    font-size: 0.9375rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .form-row input,
+  .form-row select,
+  .form-row textarea {
+    font-size: 16px; /* Prevents zoom on iOS */
+    padding: 0.875rem;
+    min-height: 44px; /* Touch target minimum */
+  }
+
+  /* Package grid mobile */
+  .wizard-package-grid {
+    grid-template-columns: 1fr;
+    gap: 0.875rem;
+  }
+
+  .wizard-package-card {
+    border-radius: 10px;
+  }
+
+  .wizard-package-card img {
+    height: 160px;
+  }
+
+  /* Navigation buttons mobile */
+  .wizard-actions {
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+    position: relative;
+    padding-bottom: 1rem;
+  }
+
+  .wizard-actions button,
+  .wizard-actions .cta {
+    width: 100%;
+    min-height: 48px;
+    font-size: 1rem;
+    border-radius: 10px;
+  }
+
+  /* Reverse button order on mobile - primary action on top */
+  .wizard-actions {
+    display: flex;
+    flex-direction: column-reverse;
+  }
+
+  .wizard-skip {
+    order: -1; /* Skip button goes to bottom */
+    padding: 0.75rem;
+    margin-top: 0.5rem;
+  }
+
+  /* Review section mobile */
+  .wizard-review-section {
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 10px;
+  }
+
+  .wizard-review-section h3 {
+    font-size: 1rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .wizard-review-section p {
+    font-size: 0.9375rem;
+  }
+
+  /* Welcome screen mobile */
+  .wizard-welcome {
+    padding: 1.5rem 1rem;
+  }
+
+  .wizard-welcome h1 {
+    font-size: 1.75rem;
+    margin-bottom: 1rem;
+  }
+
+  .wizard-welcome-benefits {
+    gap: 0.75rem;
+    margin: 1.5rem 0;
+  }
+
+  .wizard-benefit {
+    padding: 0.875rem;
+    border-radius: 10px;
+  }
+
+  /* Success screen mobile */
+  .wizard-success {
+    padding: 1.5rem 1rem;
+    text-align: center;
+  }
+
+  .wizard-success h2 {
+    font-size: 1.75rem;
+    margin-bottom: 1rem;
+  }
+
+  .wizard-success-icon {
+    font-size: 3.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .wizard-success-actions {
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+  }
+
+  .wizard-success-actions button,
+  .wizard-success-actions .cta {
+    width: 100%;
+    min-height: 48px;
+  }
+}
+
+/* Tablet optimizations (768px - 1024px) */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .wizard-card {
+    padding: 1.75rem;
+  }
+
+  .wizard-options {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .wizard-package-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  #plan-summary {
+    width: 240px;
+  }
+}
+
+/* Extra small mobile (< 375px) */
+@media (max-width: 374px) {
+  .wizard-card {
+    padding: 1rem;
+  }
+
+  .wizard-card h2 {
+    font-size: 1.375rem;
+  }
+
+  .wizard-option {
+    min-height: 240px;
+  }
+
+  .wizard-option-image-container {
+    height: 160px;
+  }
+
+  .wizard-actions button,
+  .wizard-actions .cta {
+    min-height: 44px;
+    font-size: 0.9375rem;
+  }
+}
+
+/* Touch-friendly enhancements */
+@media (hover: none) and (pointer: coarse) {
+  /* Increase tap targets for touch devices */
+  .wizard-option,
+  .wizard-package-card,
+  .wizard-actions button {
+    min-height: 44px;
+  }
+
+  /* Remove hover effects on touch devices */
+  .wizard-option:hover,
+  .wizard-package-card:hover {
+    transform: none;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Make selected state more obvious */
+  .wizard-option.selected,
+  .wizard-package-card.selected {
+    border-width: 3px;
+    box-shadow: 0 0 0 4px rgba(11, 128, 115, 0.15);
+  }
+}
+
+/* Landscape mobile */
+@media (max-width: 768px) and (orientation: landscape) {
+  .wizard-card {
+    padding: 1rem;
+  }
+
+  .wizard-option-image-container {
+    height: 140px;
+  }
+
+  .wizard-package-card img {
+    height: 140px;
+  }
+}
+
+/* Mobile bottom padding for bottom nav */
+@media (max-width: 768px) {
+  #main-content {
+    padding-bottom: 80px; /* Space for bottom nav */
+  }
+}
