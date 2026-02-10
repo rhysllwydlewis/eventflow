@@ -8,20 +8,19 @@
 
   // Available categories for wizard steps (in order)
   const CATEGORIES = [
-    { key: 'venues', name: 'Venues', icon: '🏛️' },
-    { key: 'photography', name: 'Photography', icon: '📸' },
-    { key: 'catering', name: 'Catering', icon: '🍽️' },
-    { key: 'flowers', name: 'Flowers & Décor', icon: '💐' },
-    { key: 'hair-makeup', name: 'Hair & Makeup', icon: '💄' },
-    { key: 'entertainment', name: 'Entertainment', icon: '🎵' },
-    { key: 'transport', name: 'Transport', icon: '🚗' },
+    { key: 'venues', name: 'Venues', icon: '🏛️', step: 3 },
+    { key: 'photography', name: 'Photography', icon: '📸', step: 4 },
+    { key: 'catering', name: 'Catering', icon: '🍽️', step: 5 },
+    { key: 'flowers', name: 'Flowers & Décor', icon: '💐', step: 6 },
   ];
 
   const WIZARD_DATA_EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours
+  const TOTAL_STEPS = 8; // welcome, event type, event basics, 4 categories, review, success
 
-  let currentStep = 0;
+  let currentStep = -1; // Start at -1 for welcome screen
   let wizardState = null;
   const availablePackages = {}; // { categoryKey: [packages] }
+  let hasShownWelcome = false;
 
   /**
    * Initialize the wizard
@@ -37,7 +36,20 @@
     restoreWizardState();
 
     wizardState = window.WizardState.getState();
-    currentStep = wizardState.currentStep || 0;
+    
+    // Set up autosave callback
+    window.WizardState.setAutosaveCallback(handleAutosave);
+    
+    // Check if user has started wizard before
+    const timeSinceUpdate = window.WizardState.getTimeSinceLastUpdate();
+    hasShownWelcome = timeSinceUpdate < WIZARD_DATA_EXPIRY_MS && wizardState.wizardStartedAt;
+    
+    // Determine starting step
+    if (hasShownWelcome && wizardState.currentStep >= 0) {
+      currentStep = wizardState.currentStep;
+    } else {
+      currentStep = -1; // Show welcome screen
+    }
 
     // Parse URL params and prefill wizard state if present
     const urlParams = new URLSearchParams(window.location.search);
@@ -83,6 +95,41 @@
 
     // Render plan summary
     renderPlanSummary();
+  }
+
+  /**
+   * Handle autosave callback
+   */
+  function handleAutosave(state) {
+    showAutosaveIndicator();
+  }
+
+  /**
+   * Show autosave indicator briefly
+   */
+  function showAutosaveIndicator() {
+    const summary = document.getElementById('plan-summary');
+    if (!summary) return;
+
+    // Check if indicator already exists
+    let indicator = summary.querySelector('.wizard-autosave');
+    if (!indicator) {
+      indicator = document.createElement('div');
+      indicator.className = 'wizard-autosave';
+      indicator.innerHTML = `
+        <span class="wizard-autosave-icon">✓</span>
+        <span class="wizard-autosave-text">All changes saved</span>
+      `;
+      summary.appendChild(indicator);
+    }
+
+    // Show indicator
+    indicator.style.display = 'flex';
+
+    // Hide after 3 seconds
+    setTimeout(() => {
+      indicator.style.display = 'none';
+    }, 3000);
   }
 
   /**
@@ -166,33 +213,126 @@
 
     let html = '';
 
-    // Progress indicator
-    const totalSteps = 2 + CATEGORIES.length + 1; // event type + location + categories + review
-    const progressPercent = Math.round((stepIndex / (totalSteps - 1)) * 100);
-
-    html += `
-      <div class="wizard-progress">
-        <div class="wizard-progress-bar" style="width: ${progressPercent}%"></div>
-      </div>
-      <div class="wizard-step-indicator">Step ${stepIndex + 1} of ${totalSteps}</div>
-    `;
-
-    // Step content
-    if (stepIndex === 0) {
-      html += renderEventTypeStep();
-    } else if (stepIndex === 1) {
-      html += renderLocationStep();
-    } else if (stepIndex >= 2 && stepIndex < totalSteps - 1) {
-      const categoryIndex = stepIndex - 2;
-      html += renderCategoryStep(CATEGORIES[categoryIndex]);
+    // Step-specific rendering
+    if (stepIndex === -1) {
+      // Welcome screen (no progress indicator)
+      html += renderWelcomeScreen();
     } else {
-      html += renderReviewStep();
+      // Add progress indicator for all other steps
+      html += renderProgressIndicator(stepIndex);
+
+      // Render step content
+      if (stepIndex === 0) {
+        html += renderEventTypeStep();
+      } else if (stepIndex === 1) {
+        html += renderEventBasicsStep();
+      } else if (stepIndex >= 2 && stepIndex < 2 + CATEGORIES.length) {
+        const categoryIndex = stepIndex - 2;
+        html += renderCategoryStep(CATEGORIES[categoryIndex]);
+      } else if (stepIndex === 2 + CATEGORIES.length) {
+        html += renderReviewStep();
+      } else if (stepIndex === 2 + CATEGORIES.length + 1) {
+        html += renderSuccessScreen();
+      }
     }
 
     container.innerHTML = html;
 
     // Attach event listeners
     attachStepListeners(stepIndex);
+  }
+
+  /**
+   * Render welcome screen
+   */
+  function renderWelcomeScreen() {
+    return `
+      <div class="wizard-card wizard-welcome">
+        <h1>Plan Your Perfect Event</h1>
+        <p class="wizard-welcome-subtitle">Let us help you create an amazing event in just a few minutes</p>
+        
+        <div class="wizard-welcome-benefits">
+          <div class="wizard-benefit">
+            <div class="wizard-benefit-icon">⏱️</div>
+            <div class="wizard-benefit-text">Takes about 5 minutes to complete</div>
+          </div>
+          <div class="wizard-benefit">
+            <div class="wizard-benefit-icon">📝</div>
+            <div class="wizard-benefit-text">We'll ask 6 simple questions about your event</div>
+          </div>
+          <div class="wizard-benefit">
+            <div class="wizard-benefit-icon">💾</div>
+            <div class="wizard-benefit-text">Your progress is automatically saved</div>
+          </div>
+          <div class="wizard-benefit">
+            <div class="wizard-benefit-icon">⏭️</div>
+            <div class="wizard-benefit-text">Skip any step you're unsure about</div>
+          </div>
+        </div>
+
+        <div class="wizard-welcome-actions">
+          <button class="cta wizard-get-started" type="button">Get Started</button>
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Render progress indicator with step circles
+   * @param {number} stepIndex - Current step (0-based)
+   */
+  function renderProgressIndicator(stepIndex) {
+    const totalSteps = TOTAL_STEPS - 2; // Exclude welcome and success
+    const progressPercent = Math.round(((stepIndex + 1) / totalSteps) * 100);
+    
+    // Step titles
+    const stepTitles = [
+      'Event Type',
+      'Event Basics',
+      'Venues',
+      'Photography',
+      'Catering',
+      'Flowers & Décor',
+      'Review',
+    ];
+
+    const currentTitle = stepTitles[stepIndex] || 'Planning';
+
+    // Generate step circles (show max 7 circles for cleaner UI)
+    let circlesHTML = '';
+    const maxCircles = Math.min(7, totalSteps);
+    
+    for (let i = 0; i < maxCircles; i++) {
+      const isCompleted = i < stepIndex;
+      const isCurrent = i === stepIndex;
+      const isUpcoming = i > stepIndex;
+      
+      let circleClass = 'wizard-step-circle';
+      if (isCompleted) circleClass += ' completed';
+      if (isCurrent) circleClass += ' current';
+      if (isUpcoming) circleClass += ' upcoming';
+      
+      circlesHTML += `<div class="${circleClass}">${isCompleted ? '✓' : i + 1}</div>`;
+      
+      // Add connector between circles (except after last)
+      if (i < maxCircles - 1) {
+        const connectorClass = isCompleted ? 'wizard-step-connector completed' : 'wizard-step-connector';
+        circlesHTML += `<div class="${connectorClass}"></div>`;
+      }
+    }
+
+    return `
+      <div class="wizard-progress-container">
+        <div class="wizard-progress-info">
+          <span class="wizard-progress-percentage">${progressPercent}% Complete</span>
+          <span class="wizard-step-indicator">Step ${stepIndex + 1} of ${totalSteps}</span>
+        </div>
+        <div class="wizard-progress">
+          <div class="wizard-progress-bar" style="width: ${progressPercent}%"></div>
+        </div>
+        <div class="wizard-step-title">${currentTitle}</div>
+      </div>
+    `;
   }
 
   /**
@@ -203,7 +343,7 @@
     return `
       <div class="wizard-card">
         <h2>What type of event are you planning?</h2>
-        <p class="small">This helps us show you the most relevant suppliers.</p>
+        <p class="small">This helps us show you the most relevant suppliers and packages.</p>
         
         <div class="wizard-options">
           <button class="wizard-option ${state.eventType === 'Wedding' ? 'selected' : ''}" 
@@ -212,6 +352,20 @@
               <img class="wizard-option-image" id="wedding-image" alt="Wedding" />
             </div>
             <span class="wizard-option-label">Wedding</span>
+          </button>
+          <button class="wizard-option ${state.eventType === 'Corporate' ? 'selected' : ''}" 
+                  data-value="Corporate" type="button" id="event-type-corporate">
+            <div class="wizard-option-image-container">
+              <img class="wizard-option-image" id="corporate-image" alt="Corporate Event" />
+            </div>
+            <span class="wizard-option-label">Corporate Event</span>
+          </button>
+          <button class="wizard-option ${state.eventType === 'Birthday' ? 'selected' : ''}" 
+                  data-value="Birthday" type="button" id="event-type-birthday">
+            <div class="wizard-option-image-container">
+              <img class="wizard-option-image" id="birthday-image" alt="Birthday Party" />
+            </div>
+            <span class="wizard-option-label">Birthday Party</span>
           </button>
           <button class="wizard-option ${state.eventType === 'Other' ? 'selected' : ''}" 
                   data-value="Other" type="button" id="event-type-other">
@@ -223,8 +377,8 @@
         </div>
 
         <div class="wizard-actions">
-          <button class="cta secondary wizard-back">Back</button>
-          <button class="cta wizard-next" disabled>Continue</button>
+          <button class="cta secondary wizard-back" type="button">Back</button>
+          <button class="cta wizard-next" type="button" ${!state.eventType ? 'disabled' : ''}>Continue</button>
         </div>
       </div>
     `;
@@ -234,66 +388,89 @@
    * Load event type images from Pexels CDN
    */
   async function loadEventTypeImages() {
-    const weddingImg = document.getElementById('wedding-image');
-    const otherImg = document.getElementById('other-event-image');
+    const images = {
+      wedding: document.getElementById('wedding-image'),
+      corporate: document.getElementById('corporate-image'),
+      birthday: document.getElementById('birthday-image'),
+      other: document.getElementById('other-event-image'),
+    };
 
-    if (weddingImg) {
-      // Wedding couple ceremony - Pexels photo
-      weddingImg.src =
-        'https://images.pexels.com/photos/265885/pexels-photo-265885.jpeg?auto=compress&cs=tinysrgb&w=600';
-      weddingImg.alt = 'Wedding couple getting married';
+    if (images.wedding) {
+      images.wedding.src = 'https://images.pexels.com/photos/265885/pexels-photo-265885.jpeg?auto=compress&cs=tinysrgb&w=600';
+      images.wedding.alt = 'Wedding couple getting married';
     }
 
-    if (otherImg) {
-      // Elegant gala dinner party - Pexels photo
-      otherImg.src =
-        'https://images.pexels.com/photos/2306281/pexels-photo-2306281.jpeg?auto=compress&cs=tinysrgb&w=600';
-      otherImg.alt = 'Elegant gala dinner party';
+    if (images.corporate) {
+      images.corporate.src = 'https://images.pexels.com/photos/1181396/pexels-photo-1181396.jpeg?auto=compress&cs=tinysrgb&w=600';
+      images.corporate.alt = 'Corporate business event';
+    }
+
+    if (images.birthday) {
+      images.birthday.src = 'https://images.pexels.com/photos/1543762/pexels-photo-1543762.jpeg?auto=compress&cs=tinysrgb&w=600';
+      images.birthday.alt = 'Birthday celebration';
+    }
+
+    if (images.other) {
+      images.other.src = 'https://images.pexels.com/photos/2306281/pexels-photo-2306281.jpeg?auto=compress&cs=tinysrgb&w=600';
+      images.other.alt = 'Elegant gala dinner party';
     }
   }
 
   /**
-   * Render location & details step
+   * Render event basics step (name, date, location, guests, budget)
    */
-  function renderLocationStep() {
+  function renderEventBasicsStep() {
     const state = window.WizardState.getState();
     return `
       <div class="wizard-card">
-        <h2>Where will your ${state.eventType || 'event'} be?</h2>
-        <p class="small">Location helps us find local suppliers. You can skip this step if you're not sure yet.</p>
+        <h2>Let's start with the basics</h2>
+        <p class="small">Tell us about your ${state.eventType || 'event'}. Don't worry, you can skip any field you're not sure about yet.</p>
         
         <div class="form-row">
-          <label for="wizard-location">Location</label>
+          <label for="wizard-event-name">What's your event called? <span class="small">(optional)</span></label>
+          <input type="text" id="wizard-event-name" placeholder="e.g., Sarah & John's Wedding" 
+                 value="${escapeHtml(state.eventName || '')}">
+          <span class="helper-text">Give your event a memorable name</span>
+        </div>
+
+        <div class="form-row">
+          <label for="wizard-date">When are you planning your event? <span class="small">(optional)</span></label>
+          <input type="date" id="wizard-date" value="${state.date || ''}">
+          <span class="helper-text">This helps us check supplier availability</span>
+        </div>
+
+        <div class="form-row">
+          <label for="wizard-location">Where will it take place?</label>
           <input type="text" id="wizard-location" placeholder="Town, city or postcode" 
                  value="${escapeHtml(state.location || '')}">
+          <span class="helper-text">Helps us find local suppliers near you</span>
         </div>
 
         <div class="form-row">
-          <label for="wizard-date">Event Date <span class="small">(optional)</span></label>
-          <input type="date" id="wizard-date" value="${state.date || ''}">
-        </div>
-
-        <div class="form-row">
-          <label for="wizard-guests">Guest Count <span class="small">(approximate)</span></label>
-          <input type="number" id="wizard-guests" min="1" placeholder="e.g. 60" 
+          <label for="wizard-guests">How many guests? <span class="small">(approximate)</span></label>
+          <input type="number" id="wizard-guests" min="1" placeholder="e.g., 60" 
                  value="${state.guests || ''}">
+          <span class="helper-text">Just an estimate is fine</span>
         </div>
 
         <div class="form-row">
-          <label for="wizard-budget">Budget</label>
+          <label for="wizard-budget">What's your budget?</label>
           <select id="wizard-budget">
             <option value="">Not sure yet</option>
             <option ${state.budget === 'Up to £1,000' ? 'selected' : ''}>Up to £1,000</option>
             <option ${state.budget === '£1,000–£3,000' ? 'selected' : ''}>£1,000–£3,000</option>
-            <option ${state.budget === '£3,000–£10,000' ? 'selected' : ''}>£3,000–£10,000</option>
-            <option ${state.budget === '£10,000+' ? 'selected' : ''}>£10,000+</option>
+            <option ${state.budget === '£3,000–£5,000' ? 'selected' : ''}>£3,000–£5,000</option>
+            <option ${state.budget === '£5,000–£10,000' ? 'selected' : ''}>£5,000–£10,000</option>
+            <option ${state.budget === '£10,000–£20,000' ? 'selected' : ''}>£10,000–£20,000</option>
+            <option ${state.budget === '£20,000+' ? 'selected' : ''}>£20,000+</option>
           </select>
+          <span class="helper-text">Helps us recommend packages within your range</span>
         </div>
 
         <div class="wizard-actions">
-          <button class="cta secondary wizard-back">Back</button>
-          <button class="cta wizard-next">Continue</button>
-          <button class="wizard-skip">Skip</button>
+          <button class="cta secondary wizard-back" type="button">Back</button>
+          <button class="cta wizard-next" type="button">Continue</button>
+          <button class="wizard-skip" type="button">Skip for now</button>
         </div>
       </div>
     `;
@@ -346,35 +523,76 @@
 
     return `
       <div class="wizard-card">
-        <h2>Review Your Selections</h2>
+        <h2>Review Your Event Plan</h2>
         <p class="small">Here's what you've chosen. Ready to create your plan?</p>
         
         <div class="wizard-review">
           <div class="wizard-review-section">
-            <h3>Event Details</h3>
+            <h3>📋 Event Details</h3>
             <p><strong>Type:</strong> ${escapeHtml(state.eventType || 'Not specified')}</p>
+            ${state.eventName ? `<p><strong>Name:</strong> ${escapeHtml(state.eventName)}</p>` : ''}
             ${state.location ? `<p><strong>Location:</strong> ${escapeHtml(state.location)}</p>` : ''}
-            ${state.date ? `<p><strong>Date:</strong> ${state.date}</p>` : ''}
+            ${state.date ? `<p><strong>Date:</strong> ${formatDate(state.date)}</p>` : ''}
             ${state.guests ? `<p><strong>Guests:</strong> ${state.guests}</p>` : ''}
             ${state.budget ? `<p><strong>Budget:</strong> ${escapeHtml(state.budget)}</p>` : ''}
+            <a href="#" class="wizard-review-edit" data-step="1">✏️ Edit details</a>
           </div>
 
           <div class="wizard-review-section">
-            <h3>Selected Packages</h3>
+            <h3>🎯 Selected Services</h3>
             ${
               selectedPackages.length > 0
-                ? `<p>${selectedPackages.length} package(s) selected</p>`
-                : '<p class="small">No packages selected yet</p>'
+                ? `<p>You've selected <strong>${selectedPackages.length} package(s)</strong> for your event.</p>
+                   <p class="small">These will be added to your event plan for easy reference.</p>`
+                : '<p class="small">No packages selected yet. You can browse suppliers after creating your plan.</p>'
             }
           </div>
         </div>
 
         <div class="wizard-actions">
-          <button class="cta secondary wizard-back">Back</button>
-          <button class="cta wizard-create-plan">Create My Plan</button>
+          <button class="cta secondary wizard-back" type="button">Back</button>
+          <button class="cta wizard-create-plan" type="button">Create My Plan 🎉</button>
         </div>
       </div>
     `;
+  }
+
+  /**
+   * Render success screen
+   */
+  function renderSuccessScreen() {
+    const state = window.WizardState.getState();
+    
+    return `
+      <div class="wizard-card wizard-success">
+        <span class="wizard-success-icon">🎉</span>
+        <h2>Congratulations!</h2>
+        <p class="wizard-success-message">Your event plan has been created successfully. You're all set to start organizing your ${state.eventType || 'event'}!</p>
+        
+        <div class="wizard-success-summary">
+          <h3>What's Next?</h3>
+          <p>Browse suppliers, invite guests, or download your plan summary to get started.</p>
+        </div>
+
+        <div class="wizard-success-actions">
+          <button class="cta" type="button" onclick="location.href='/suppliers'">Browse Suppliers</button>
+          <button class="cta secondary" type="button" onclick="location.href='/dashboard-customer.html'">Go to Dashboard</button>
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Format date for display
+   */
+  function formatDate(dateString) {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-GB', { 
+      day: 'numeric', 
+      month: 'long', 
+      year: 'numeric' 
+    });
   }
 
   /**
@@ -421,21 +639,55 @@
    * @param {number} stepIndex - Current step
    */
   function attachStepListeners(stepIndex) {
+    // Welcome screen
+    if (stepIndex === -1) {
+      const getStartedBtn = document.querySelector('.wizard-get-started');
+      if (getStartedBtn) {
+        getStartedBtn.addEventListener('click', () => {
+          hasShownWelcome = true;
+          currentStep = 0;
+          window.WizardState.saveStep(0, { wizardStartedAt: new Date().toISOString() });
+          renderStep(currentStep);
+          renderPlanSummary();
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+      }
+      return;
+    }
+
     // Event type selection
     if (stepIndex === 0) {
       // Load event type images from Pexels
       loadEventTypeImages();
 
       const options = document.querySelectorAll('.wizard-option');
+      const nextBtn = document.querySelector('.wizard-next');
+      
       options.forEach(opt => {
         opt.addEventListener('click', function () {
           options.forEach(o => o.classList.remove('selected'));
           this.classList.add('selected');
           const value = this.getAttribute('data-value');
           window.WizardState.saveStep(0, { eventType: value });
-          document.querySelector('.wizard-next').disabled = false;
+          if (nextBtn) nextBtn.disabled = false;
+          renderPlanSummary();
         });
       });
+    }
+
+    // Event basics - setup validation
+    if (stepIndex === 1) {
+      if (window.WizardValidation) {
+        const eventNameField = document.getElementById('wizard-event-name');
+        const locationField = document.getElementById('wizard-location');
+        const dateField = document.getElementById('wizard-date');
+        const guestsField = document.getElementById('wizard-guests');
+
+        if (eventNameField) window.WizardValidation.setupFieldValidation(eventNameField, 'eventName');
+        if (locationField) window.WizardValidation.setupFieldValidation(locationField, 'location');
+        if (dateField) window.WizardValidation.setupFieldValidation(dateField, 'date');
+        if (guestsField) window.WizardValidation.setupFieldValidation(guestsField, 'guests');
+      }
     }
 
     // Category step - load packages
@@ -446,6 +698,28 @@
       loadPackagesForCategory(category.key, state.eventType).then(packages => {
         renderPackageList(category.key, packages);
       });
+    }
+
+    // Review step - edit links
+    if (stepIndex === 2 + CATEGORIES.length) {
+      const editLinks = document.querySelectorAll('.wizard-review-edit');
+      editLinks.forEach(link => {
+        link.addEventListener('click', (e) => {
+          e.preventDefault();
+          const targetStep = parseInt(link.getAttribute('data-step'), 10);
+          if (!isNaN(targetStep)) {
+            currentStep = targetStep;
+            renderStep(currentStep);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }
+        });
+      });
+    }
+
+    // Success screen - no listeners needed (uses inline onclick)
+    if (stepIndex === 2 + CATEGORIES.length + 1) {
+      // Trigger confetti or celebration animation
+      triggerCelebration();
     }
 
     // Next button
@@ -470,6 +744,28 @@
     const createBtn = document.querySelector('.wizard-create-plan');
     if (createBtn) {
       createBtn.addEventListener('click', handleCreatePlan);
+    }
+  }
+
+  /**
+   * Trigger celebration animation
+   */
+  function triggerCelebration() {
+    // Simple confetti effect (can be enhanced)
+    const colors = ['#0B8073', '#13B6A2', '#10b981', '#34d399'];
+    
+    for (let i = 0; i < 30; i++) {
+      setTimeout(() => {
+        const confetti = document.createElement('div');
+        confetti.className = 'wizard-confetti';
+        confetti.style.left = Math.random() * 100 + '%';
+        confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+        confetti.style.animationDelay = Math.random() * 0.3 + 's';
+        confetti.style.animationDuration = (Math.random() * 2 + 2) + 's';
+        document.body.appendChild(confetti);
+        
+        setTimeout(() => confetti.remove(), 4000);
+      }, i * 50);
     }
   }
 
@@ -548,12 +844,14 @@
   function handleNext() {
     // Save current step data
     if (currentStep === 1) {
+      const eventName = document.getElementById('wizard-event-name')?.value || '';
       const location = document.getElementById('wizard-location')?.value || '';
       const date = document.getElementById('wizard-date')?.value || '';
       const guests = document.getElementById('wizard-guests')?.value || null;
       const budget = document.getElementById('wizard-budget')?.value || '';
 
       window.WizardState.saveStep(1, {
+        eventName,
         location,
         date,
         guests: guests ? parseInt(guests, 10) : null,
@@ -562,8 +860,9 @@
     }
 
     // Move to next step
-    const totalSteps = 2 + CATEGORIES.length + 1;
-    currentStep = Math.min(currentStep + 1, totalSteps - 1);
+    const maxStep = 2 + CATEGORIES.length; // Review step
+    currentStep = Math.min(currentStep + 1, maxStep);
+    
     renderStep(currentStep);
     renderPlanSummary();
 
@@ -590,19 +889,23 @@
    * Handle back button
    */
   function handleBack() {
-    // Special handling for step 1 (first step with back button)
+    // Special handling for going back from first step
     if (currentStep === 0) {
       // Check if user has entered any data
       if (hasFormData()) {
-        const confirmed = confirm('Leave wizard? Your progress will be lost.');
+        const confirmed = confirm('Leave wizard? Your progress will be saved for later.');
         if (!confirmed) {
           return;
         }
-        // Clear wizard state if leaving
-        window.WizardState.clearState();
       }
-      // Navigate to homepage
-      window.location.href = '/';
+      // Go back to welcome screen or homepage
+      if (hasShownWelcome) {
+        currentStep = -1;
+        renderStep(currentStep);
+      } else {
+        window.location.href = '/';
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
 
@@ -624,7 +927,7 @@
 
     // Disable button
     createBtn.disabled = true;
-    createBtn.textContent = 'Creating...';
+    createBtn.innerHTML = '<span class="wizard-loading"></span> Creating...';
 
     try {
       // Check authentication using AuthState if available
@@ -657,7 +960,7 @@
         }
 
         // Redirect to auth with return URL
-        const returnUrl = encodeURIComponent('/start-wizard.html?restore=true');
+        const returnUrl = encodeURIComponent('/start.html?restore=true');
         location.href = `/auth.html?returnTo=${returnUrl}`;
         return;
       }
@@ -665,23 +968,25 @@
       // User is authenticated - save to backend
       await savePlanToBackend(planData);
 
-      // Clear wizard state and localStorage
-      window.WizardState.clearState();
-      try {
-        localStorage.removeItem('eventflow_wizard_pending');
-        localStorage.removeItem('eventflow_wizard_timestamp');
-      } catch (e) {
-        console.error('Failed to clear localStorage:', e);
-      }
+      // Mark wizard as completed
+      window.WizardState.markCompleted();
 
-      // Success!
-      if (window.showNotification) {
-        window.showNotification('Your event plan has been created!', 'success');
-      } else {
-        alert('Your plan has been created!');
-      }
+      // Show success screen
+      currentStep = 2 + CATEGORIES.length + 1;
+      renderStep(currentStep);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
 
-      location.href = '/dashboard-customer.html';
+      // Clear wizard state after showing success (delayed)
+      setTimeout(() => {
+        window.WizardState.clearState();
+        try {
+          localStorage.removeItem('eventflow_wizard_pending');
+          localStorage.removeItem('eventflow_wizard_timestamp');
+        } catch (e) {
+          console.error('Failed to clear localStorage:', e);
+        }
+      }, 3000);
+      
     } catch (err) {
       console.error('Error creating plan:', err);
 
@@ -692,7 +997,7 @@
       }
 
       createBtn.disabled = false;
-      createBtn.textContent = 'Create My Plan';
+      createBtn.textContent = 'Create My Plan 🎉';
     }
   }
 
