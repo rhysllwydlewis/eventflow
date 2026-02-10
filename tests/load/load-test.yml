@@ -1,0 +1,131 @@
+config:
+  target: "{{ $processEnvironment.API_URL || 'http://localhost:3000' }}"
+  phases:
+    - duration: 60
+      arrivalRate: 10
+      name: "Warm up"
+    - duration: 120
+      arrivalRate: 50
+      name: "Sustained load"
+    - duration: 60
+      arrivalRate: 100
+      name: "Spike"
+  defaults:
+    headers:
+      Content-Type: "application/json"
+  processor: "./helpers.js"
+
+scenarios:
+  - name: "Auth Flow - Registration"
+    weight: 2
+    flow:
+      - post:
+          url: "/api/v1/auth/register"
+          json:
+            email: "loadtest{{ $randomNumber(1, 100000) }}@example.com"
+            password: "TestPassword123!"
+            username: "user{{ $randomNumber(1, 100000) }}"
+            name: "Load Test User"
+          capture:
+            json: "$.token"
+            as: "authToken"
+
+  - name: "Auth Flow - Login"
+    weight: 3
+    flow:
+      - post:
+          url: "/api/v1/auth/login"
+          json:
+            email: "testuser@example.com"
+            password: "TestPassword123!"
+
+  - name: "Search Flow - Suppliers"
+    weight: 5
+    flow:
+      - get:
+          url: "/api/v1/search?q=photography"
+      - get:
+          url: "/api/v1/search?q=venue&location=New%20York"
+
+  - name: "Discovery Flow - Trending"
+    weight: 4
+    flow:
+      - get:
+          url: "/api/v1/discovery/trending"
+      - get:
+          url: "/api/v1/discovery/new-arrivals"
+      - get:
+          url: "/api/v1/discovery/popular"
+
+  - name: "Package CRUD Flow"
+    weight: 3
+    flow:
+      - get:
+          url: "/api/v1/packages"
+      - get:
+          url: "/api/v1/packages?category=Photography"
+
+  - name: "Supplier Details Flow"
+    weight: 4
+    flow:
+      - get:
+          url: "/api/v1/suppliers"
+      - think: 2
+      - get:
+          url: "/api/v1/search?category=venue"
+
+  - name: "AI Request Flow"
+    weight: 1
+    flow:
+      - function: "addAuthHeader"
+      - post:
+          url: "/api/v1/ai/generate-plan"
+          json:
+            eventDetails:
+              eventType: "Wedding"
+              guestCount: 150
+              budget: 25000
+              location: "New York, NY"
+          beforeRequest: "addCsrfToken"
+
+  - name: "Static Assets Flow"
+    weight: 2
+    flow:
+      - get:
+          url: "/"
+      - get:
+          url: "/api/health"
+      - get:
+          url: "/api/v1/categories"
+
+  - name: "Notification Flow"
+    weight: 2
+    flow:
+      - function: "addAuthHeader"
+      - get:
+          url: "/api/v1/notifications"
+      - get:
+          url: "/api/v1/notifications/unread-count"
+
+  - name: "Review Flow"
+    weight: 2
+    flow:
+      - get:
+          url: "/api/v1/reviews?supplierId=test-supplier-id"
+      - think: 1
+
+  - name: "Mixed Load - Realistic User Journey"
+    weight: 5
+    flow:
+      - get:
+          url: "/"
+      - think: 2
+      - get:
+          url: "/api/v1/search?q=wedding"
+      - think: 3
+      - get:
+          url: "/api/v1/discovery/trending"
+      - think: 2
+      - get:
+          url: "/api/v1/packages?category=Photography"
+      - think: 1
