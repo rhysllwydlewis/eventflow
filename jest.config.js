@@ -37,13 +37,13 @@ module.exports = {
   // Ignore patterns
   testPathIgnorePatterns: ['/node_modules/', '/data/', '/uploads/'],
 
-  // Coverage thresholds (adjusted to realistic levels based on current codebase)
+  // Coverage thresholds (target 70% for production-grade code)
   coverageThreshold: {
     global: {
-      branches: 3,
-      functions: 2,
-      lines: 3,
-      statements: 3,
+      branches: 70,
+      functions: 70,
+      lines: 70,
+      statements: 70,
     },
   },
 

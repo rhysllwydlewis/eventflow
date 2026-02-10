@@ -52,6 +52,45 @@ function applyAuthRequired(req, res, next) {
 /**
  * Get trending suppliers
  * GET /api/discovery/trending
+ *
+ * @swagger
+ * /api/v1/discovery/trending:
+ *   get:
+ *     summary: Get trending suppliers
+ *     description: Retrieve list of trending event service suppliers
+ *     tags:
+ *       - Discovery
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *           minimum: 1
+ *           maximum: 50
+ *         description: Maximum number of suppliers to return
+ *     responses:
+ *       200:
+ *         description: Trending suppliers retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 count:
+ *                   type: integer
+ *                   example: 10
+ *                 suppliers:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Supplier'
+ *       429:
+ *         description: Rate limit exceeded
+ *       500:
+ *         description: Server error
  */
 router.get('/trending', searchLimiter, async (req, res) => {
   try {
@@ -72,6 +111,45 @@ router.get('/trending', searchLimiter, async (req, res) => {
 /**
  * Get new arrivals
  * GET /api/discovery/new
+ *
+ * @swagger
+ * /api/v1/discovery/new:
+ *   get:
+ *     summary: Get new suppliers
+ *     description: Retrieve recently added event service suppliers
+ *     tags:
+ *       - Discovery
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *           minimum: 1
+ *           maximum: 50
+ *         description: Maximum number of suppliers to return
+ *     responses:
+ *       200:
+ *         description: New suppliers retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 count:
+ *                   type: integer
+ *                   example: 10
+ *                 suppliers:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Supplier'
+ *       429:
+ *         description: Rate limit exceeded
+ *       500:
+ *         description: Server error
  */
 router.get('/new', searchLimiter, async (req, res) => {
   try {
@@ -92,6 +170,45 @@ router.get('/new', searchLimiter, async (req, res) => {
 /**
  * Get popular packages
  * GET /api/discovery/popular-packages
+ *
+ * @swagger
+ * /api/v1/discovery/popular-packages:
+ *   get:
+ *     summary: Get popular packages
+ *     description: Retrieve most popular event packages
+ *     tags:
+ *       - Discovery
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *           minimum: 1
+ *           maximum: 50
+ *         description: Maximum number of packages to return
+ *     responses:
+ *       200:
+ *         description: Popular packages retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 count:
+ *                   type: integer
+ *                   example: 10
+ *                 packages:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Package'
+ *       429:
+ *         description: Rate limit exceeded
+ *       500:
+ *         description: Server error
  */
 router.get('/popular-packages', searchLimiter, async (req, res) => {
   try {

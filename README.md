@@ -785,18 +785,186 @@ doctl apps create --spec .do/app.yaml
 
 See [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) for detailed instructions.
 
-## 🧪 Testing
+## 🧪 Testing & Quality Assurance
+
+EventFlow includes a comprehensive testing framework to ensure code quality and reliability.
+
+### Test Infrastructure
+
+- **Framework:** Jest with Supertest for integration testing
+- **Coverage Target:** 70% for all code (branches, functions, lines, statements)
+- **Test Types:** Unit tests, integration tests, end-to-end tests
+
+### Running Tests
 
 ```bash
-# Run tests (when implemented)
+# Run all tests with coverage
 npm test
 
-# Run linter
-npm run lint
+# Run tests in watch mode (development)
+npm run test:watch
 
-# Security audit
-npm audit
+# Run only unit tests
+npm run test:unit
+
+# Run only integration tests
+npm run test:integration
+
+# Run e2e tests with Playwright
+npm run test:e2e
 ```
+
+### Test Structure
+
+```
+tests/
+├── fixtures/           # Test data (users, packages, suppliers)
+├── utils/              # Test helpers and mock data generators
+├── integration/        # Integration tests for routes
+│   ├── auth.test.js           # Authentication (25 tests)
+│   ├── packages.test.js       # Package management
+│   ├── suppliers.test.js      # Supplier operations
+│   ├── messaging.test.js      # Messaging system
+│   ├── notifications.test.js  # Notifications
+│   ├── ai.test.js             # AI features
+│   └── ...                    # 40+ test files
+└── unit/               # Unit tests for utilities
+```
+
+### Integration Test Examples
+
+```javascript
+// tests/integration/auth.test.js validates:
+// ✓ Registration endpoint structure
+// ✓ Login authentication flow
+// ✓ Rate limiting enforcement
+// ✓ Input validation (email, password)
+// ✓ CSRF protection
+// ✓ Secure cookie options
+// ✓ Password hashing (bcrypt)
+// ✓ JWT token generation
+```
+
+### Load Testing
+
+EventFlow includes Artillery for load testing critical endpoints.
+
+```bash
+# Run load tests against local/staging server
+npm run load-test
+
+# Generate HTML report
+npm run load-test:report
+```
+
+**Load Test Scenarios (tests/load/load-test.yml):**
+
+- Authentication flows (registration, login)
+- Search & discovery endpoints
+- Package CRUD operations
+- AI-powered features
+- File uploads
+- Real-time notifications
+- Mixed traffic patterns (realistic user journeys)
+
+**Load Test Configuration:**
+
+- Warm-up: 60s @ 10 req/s
+- Sustained: 120s @ 50 req/s
+- Spike: 60s @ 100 req/s
+
+## 📊 Monitoring & Logging
+
+### Winston Logger
+
+Structured logging with multiple transports:
+
+```javascript
+const logger = require('./utils/logger');
+
+// Log levels: error, warn, info, debug
+logger.info('Server starting...');
+logger.error('An error occurred', { error: err });
+```
+
+**Features:**
+
+- Console output (colorized in development)
+- File rotation (5 files × 5MB each)
+- JSON format for structured logs
+- Environment-aware logging levels
+- Automatic error stack traces
+
+### Morgan HTTP Logging
+
+HTTP request/response logging middleware:
+
+```bash
+# Development format (concise)
+GET /api/packages 200 45.123 ms
+
+# Production format (detailed)
+2026-02-10T16:49:12.481Z GET /api/packages 200 45.123 ms - 1234
+```
+
+**Features:**
+
+- Request method, URL, status code
+- Response time tracking
+- Content-length tracking
+- ISO timestamps in production
+- Custom tokens for extended info
+
+### Log Files
+
+```
+logs/
+├── error.log      # Error-level logs only
+└── combined.log   # All logs (info, warn, error)
+```
+
+**Configuration:**
+
+- Logs directory automatically created
+- Files rotate at 5MB
+- Keep 5 recent files
+- Excluded from git (.gitignore)
+
+### Health Monitoring
+
+```bash
+# Check API health
+curl https://yourdomain.com/api/health
+
+# Response includes:
+# - Status (ok/degraded)
+# - Database connection status
+# - Uptime
+# - Memory usage
+# - Environment
+```
+
+## 📖 API Documentation
+
+Interactive API documentation powered by Swagger/OpenAPI 3.0:
+
+- **URL:** `https://yourdomain.com/api-docs`
+- **Format:** OpenAPI 3.0
+- **Features:**
+  - Try-it-out functionality
+  - Request/response examples
+  - Authentication flows
+  - Schema definitions
+
+**Documented Endpoints:**
+
+- Authentication (registration, login, password reset)
+- Discovery (trending, new arrivals, popular)
+- Packages (CRUD operations)
+- Suppliers (management, search)
+- Reviews & Ratings
+- AI-powered features
+- Admin operations
 
 ## 🤝 Contributing
 

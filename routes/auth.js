@@ -61,6 +61,72 @@ function updateLastLogin(userId) {
 /**
  * POST /api/auth/register
  * Register a new user account
+ *
+ * @swagger
+ * /api/v1/auth/register:
+ *   post:
+ *     summary: Register a new user
+ *     description: Create a new user account with email and password
+ *     tags:
+ *       - Authentication
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: user@example.com
+ *               password:
+ *                 type: string
+ *                 format: password
+ *                 minLength: 8
+ *                 example: SecurePassword123!
+ *               firstName:
+ *                 type: string
+ *                 example: John
+ *               lastName:
+ *                 type: string
+ *                 example: Doe
+ *               role:
+ *                 type: string
+ *                 enum: [customer, supplier]
+ *                 example: customer
+ *               location:
+ *                 type: string
+ *                 example: New York, NY
+ *     responses:
+ *       201:
+ *         description: User registered successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 token:
+ *                   type: string
+ *                   example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+ *                 user:
+ *                   $ref: '#/components/schemas/User'
+ *       400:
+ *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       429:
+ *         description: Rate limit exceeded
+ *       503:
+ *         description: Feature temporarily unavailable
  */
 router.post(
   '/register',
@@ -246,6 +312,74 @@ router.post(
 /**
  * POST /api/auth/login
  * Authenticate user and create session
+ *
+ * @swagger
+ * /api/v1/auth/login:
+ *   post:
+ *     summary: Login user
+ *     description: Authenticate user with email and password, returns JWT token
+ *     tags:
+ *       - Authentication
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: user@example.com
+ *               password:
+ *                 type: string
+ *                 format: password
+ *                 example: SecurePassword123!
+ *               remember:
+ *                 type: boolean
+ *                 description: Keep user logged in for 7 days
+ *                 example: true
+ *     responses:
+ *       200:
+ *         description: Login successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 ok:
+ *                   type: boolean
+ *                   example: true
+ *                 user:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                       example: usr_abc123
+ *                     name:
+ *                       type: string
+ *                       example: John Doe
+ *                     email:
+ *                       type: string
+ *                       example: user@example.com
+ *                     role:
+ *                       type: string
+ *                       example: customer
+ *       400:
+ *         description: Missing required fields
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Invalid credentials
+ *       403:
+ *         description: Email not verified
+ *       429:
+ *         description: Rate limit exceeded
  */
 router.post('/login', authLimiter, (req, res) => {
   const { email, password, remember } = req.body || {};
