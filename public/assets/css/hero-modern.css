@@ -26,6 +26,8 @@
   position: relative;
   overflow: hidden;
   background: linear-gradient(to bottom, #f8fafc 0%, #f8fafc 50%, #f1f5f9 100%);
+  /* Issue 1 Fix: Add responsive margin-bottom for proper spacing */
+  margin-bottom: clamp(3rem, 6vw, 5rem);
 }
 
 /* Background decorative elements */
@@ -727,6 +729,25 @@
   opacity: 0;
 }
 
+/* Issue 4 Fix: Collage loading states to prevent flash */
+.hero-collage-card.collage-loading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.hero-collage-card.collage-loaded {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { 
+    opacity: 0.6; 
+  }
+  to { 
+    opacity: 1; 
+  }
+}
+
 .hero-collage-card:hover img,
 .hero-collage-card:focus img {
   transform: scale(1.1);
@@ -936,6 +957,17 @@
 @media (max-width: 375px) {
   .hero-collage-card {
     min-height: 110px; /* Further reduced for very small screens */
+  }
+}
+
+/* Issue 1 Fix: Mobile spacing overrides for hero section */
+@media (max-width: 768px) {
+  .hero-modern {
+    margin-bottom: 2.5rem;
+  }
+  
+  .hero-collage {
+    margin-bottom: 1.5rem;
   }
 }
 

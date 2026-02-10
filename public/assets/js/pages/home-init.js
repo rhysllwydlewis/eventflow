@@ -381,57 +381,33 @@ async function loadPackagesCarousel({ endpoint, containerId, emptyMessage }) {
     return;
   }
 
-  // Show skeleton cards while loading
-  container.innerHTML = `
-    <div class="skeleton-carousel">
-      <div class="skeleton-card"></div>
-      <div class="skeleton-card"></div>
-      <div class="skeleton-card"></div>
-    </div>
-  `;
-
-  // Set up early fallback (5 seconds) before abort timeout
-  const fallbackTimeoutId = setTimeout(() => {
-    const skeletonStillShowing = container.querySelector('.skeleton-carousel');
-    if (skeletonStillShowing) {
-      // Still loading after 5 seconds, show fallback CTA
-      container.innerHTML = `
-        <div class="card" style="text-align: center; padding: 24px;">
-          <p class="small" style="margin-bottom: 12px; color: #667085;">
-            ${emptyMessage || 'Packages are taking longer to load than expected.'}
-          </p>
-          <a href="/marketplace.html" class="cta secondary" style="display: inline-block; text-decoration: none;">
-            Browse Marketplace
-          </a>
-        </div>
-      `;
-    }
-  }, 5000);
-
-  // Create AbortController for timeout (8 seconds)
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 8000);
+  // Issue 5 & 6 Fix: Use error boundary and loading state
+  const errorBoundary = new ErrorBoundary(containerId, {
+    title: 'Could not load packages',
+    message: 'Please refresh the page to try again.',
+    showRetry: true,
+    retryCallback: () => loadPackagesCarousel({ endpoint, containerId, emptyMessage })
+  });
+  
+  // Show loading skeleton
+  LoadingState.show(containerId, 'card', 3);
 
   try {
-    const response = await fetch(endpoint, { signal: controller.signal });
-    clearTimeout(timeoutId);
-    clearTimeout(fallbackTimeoutId); // Clear early fallback since data arrived
+    // Issue 7 Fix: Use fetch with retry
+    const response = await fetchWithRetry(endpoint, {}, 3, 1000);
 
     if (!response.ok) {
       // Silently handle 404s (endpoint not available in static/dev mode)
       if (response.status === 404) {
+        LoadingState.hide(containerId);
         container.innerHTML = `<p class="small">${emptyMessage}</p>`;
         return;
       }
-      // Log other errors only in development
-      if (isDevelopmentEnvironment()) {
-        console.error(`Failed to load packages from ${endpoint} (HTTP ${response.status})`);
-      }
-      container.innerHTML = `<p class="small">${emptyMessage}</p>`;
-      return;
+      throw new Error(`HTTP ${response.status}`);
     }
 
     const data = await response.json();
+    LoadingState.hide(containerId);
 
     if (!data.items || data.items.length === 0) {
       // Enhanced empty state with call-to-action
@@ -471,31 +447,11 @@ async function loadPackagesCarousel({ endpoint, containerId, emptyMessage }) {
       renderPackageFallback(container, data.items);
     }
   } catch (error) {
-    clearTimeout(timeoutId);
-    clearTimeout(fallbackTimeoutId); // Clear early fallback
-
-    // Only log timeout errors and network errors, not expected 404s
-    if (isDevelopmentEnvironment() && error.name !== 'AbortError') {
+    // Issue 5 Fix: Use error boundary for errors
+    if (isDevelopmentEnvironment()) {
       console.error(`Failed to load packages from ${endpoint}:`, error);
     }
-
-    // Show error with retry button for timeout/network errors
-    const errorMessage =
-      error.name === 'AbortError' ? 'Request timed out' : 'Unable to load packages';
-    container.innerHTML = `
-      <div style="text-align: center; padding: 2rem;">
-        <p class="small">${errorMessage}. Please try again.</p>
-        <button class="cta secondary retry-packages-btn" aria-label="Retry loading packages">
-          Retry
-        </button>
-      </div>
-    `;
-
-    // Attach retry handler
-    const retryBtn = container.querySelector('.retry-packages-btn');
-    if (retryBtn) {
-      retryBtn.addEventListener('click', () => location.reload());
-    }
+    errorBoundary.show(error);
   }
 }
 
@@ -846,6 +802,13 @@ async function loadHeroCollageImages() {
     return;
   }
 
+  // Issue 4 Fix: Add loading state immediately with opacity transition
+  const collageFrames = document.querySelectorAll('.hero-collage-card');
+  collageFrames.forEach(frame => {
+    frame.classList.add('collage-loading');
+    frame.style.transition = 'opacity 0.3s ease';
+  });
+
   try {
     // Add AbortController with 5 second timeout (increased from 2s for slower connections)
     const controller = new AbortController();
@@ -941,7 +904,18 @@ async function loadHeroCollageImages() {
         );
       }
     }
+    
+    // Issue 4 Fix: Remove loading state on error
+    collageFrames.forEach(frame => {
+      frame.classList.remove('collage-loading');
+    });
   }
+
+  // Issue 4 Fix: Remove loading state and add loaded class on success
+  collageFrames.forEach(frame => {
+    frame.classList.remove('collage-loading');
+    frame.classList.add('collage-loaded');
+  });
 
   // If collage widget is not enabled or failed, default images will remain
 }
@@ -3068,31 +3042,35 @@ async function fetchMarketplacePreview() {
 
   const MARKETPLACE_PREVIEW_LIMIT = 4;
 
+  // Issue 5 & 6 Fix: Use error boundary and loading state
+  const errorBoundary = new ErrorBoundary('marketplace-preview', {
+    title: 'Could not load marketplace items',
+    message: 'Please refresh the page to try again.',
+    showRetry: true,
+    retryCallback: fetchMarketplacePreview
+  });
+  
   // Show loading skeleton
-  container.innerHTML = `
-    <div class="skeleton-carousel">
-      ${Array(MARKETPLACE_PREVIEW_LIMIT).fill('<div class="skeleton-card"></div>').join('')}
-    </div>
-  `;
+  LoadingState.show('marketplace-preview', 'card', MARKETPLACE_PREVIEW_LIMIT);
 
   try {
-    const response = await fetch(`/api/v1/marketplace/listings?limit=${MARKETPLACE_PREVIEW_LIMIT}`);
+    // Issue 7 Fix: Use fetch with retry
+    const response = await fetchWithRetry(`/api/v1/marketplace/listings?limit=${MARKETPLACE_PREVIEW_LIMIT}`, {}, 3);
+    
     if (!response.ok) {
       // Silently handle 404s (endpoint not available in static/dev mode)
       if (response.status === 404) {
+        LoadingState.hide('marketplace-preview');
         container.innerHTML = '<p class="small">Marketplace not available yet.</p>';
         return;
       }
-      // Log other errors only in development
-      if (isDevelopmentEnvironment()) {
-        console.error(`Failed to load marketplace preview (HTTP ${response.status})`);
-      }
-      container.innerHTML = '<p class="small">Unable to load marketplace items.</p>';
-      return;
+      throw new Error(`HTTP ${response.status}`);
     }
 
     const data = await response.json();
     const listings = data.listings || [];
+    
+    LoadingState.hide('marketplace-preview');
 
     if (listings.length === 0) {
       container.innerHTML = '<p class="small">No marketplace items available yet.</p>';
@@ -3134,15 +3112,11 @@ async function fetchMarketplacePreview() {
       </div>
     `;
   } catch (error) {
-    // Only log network errors and parse errors, not expected 404s
-    if (isDevelopmentEnvironment() && error.name !== 'AbortError') {
+    // Issue 5 Fix: Use error boundary for errors
+    if (isDevelopmentEnvironment()) {
       console.error('Failed to load marketplace preview:', error);
     }
-    // Hide the entire section gracefully
-    const section = document.getElementById('marketplace-preview-section');
-    if (section) {
-      section.style.display = 'none';
-    }
+    errorBoundary.show(error);
   }
 }
 

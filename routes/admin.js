@@ -13,7 +13,7 @@ const { read, write, uid } = require('../store');
 const { authRequired, roleRequired } = require('../middleware/auth');
 const { auditLog, AUDIT_ACTIONS } = require('../middleware/audit');
 const { csrfProtection } = require('../middleware/csrf');
-const { writeLimiter } = require('../middleware/rateLimits');
+const { writeLimiter, apiLimiter } = require('../middleware/rateLimits');
 const dbUnified = require('../db-unified');
 
 const router = express.Router();
@@ -4742,6 +4742,64 @@ router.post('/content-dates/schedule', writeLimiter, authRequired, roleRequired(
     res.status(500).json({ 
       error: 'Failed to update schedule',
       message: error.message
+    });
+  }
+});
+
+/**
+ * GET /api/admin/content-dates/health
+ * Issue 3 Fix: Health check endpoint for date automation system
+ */
+router.get('/content-dates/health', apiLimiter, authRequired, roleRequired('admin'), async (req, res) => {
+  try {
+    const dateService = req.app.locals.dateService;
+    const fs = require('fs').promises;
+    const path = require('path');
+    
+    if (!dateService) {
+      return res.status(503).json({ 
+        success: false,
+        error: 'Date management service not available'
+      });
+    }
+    
+    // Get service config and status
+    const { getConfig } = require('../config/content-config');
+    const config = getConfig();
+    const changeCheck = await dateService.hasLegalContentChanged();
+    
+    // Test if config file is writable
+    let configWritable = false;
+    try {
+      const configPath = path.join(__dirname, '../config/content-config.js');
+      await fs.access(configPath, fs.constants.W_OK);
+      configWritable = true;
+    } catch (err) {
+      configWritable = false;
+    }
+    
+    res.json({
+      success: true,
+      health: {
+        serviceLoaded: !!dateService,
+        autoUpdateEnabled: config.dates.autoUpdateEnabled,
+        lastAutoCheck: config.dates.lastAutoCheck,
+        lastManualUpdate: config.dates.lastManualUpdate,
+        gitAvailable: changeCheck.reason !== 'No git history available',
+        contentUpToDate: !changeCheck.changed,
+        configWritable: configWritable,
+        currentDates: {
+          legalLastUpdated: config.dates.legalLastUpdated,
+          legalEffectiveDate: config.dates.legalEffectiveDate,
+          currentYear: config.dates.currentYear
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Error checking health:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
     });
   }
 });

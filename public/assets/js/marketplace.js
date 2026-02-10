@@ -8,6 +8,10 @@
 
   let allListings = [];
   let currentUser = null;
+  
+  // Issue 2 Fix: Initialization guards to prevent multiple calls
+  let isInitialized = false;
+  let isLoadingListings = false;
 
   // Wait for DOM to be ready
   if (document.readyState === 'loading') {
@@ -17,6 +21,13 @@
   }
 
   async function init() {
+    // Issue 2 Fix: Prevent multiple initializations
+    if (isInitialized) {
+      console.warn('[Marketplace] Already initialized');
+      return;
+    }
+    isInitialized = true;
+    
     await checkAuth();
     await loadListings();
     initLocationModal();
@@ -109,7 +120,17 @@
 
   // Load marketplace listings
   async function loadListings() {
+    // Issue 2 Fix: Prevent multiple simultaneous loading calls
+    if (isLoadingListings) {
+      console.log('[Marketplace] Already loading, skipping...');
+      return;
+    }
+    isLoadingListings = true;
+    
     try {
+      // Issue 2 Fix: Show loading skeleton immediately
+      showLoadingSkeleton();
+      
       const params = new URLSearchParams();
       const categoryFilter = document.getElementById('marketplace-filter-category');
       const priceFilter = document.getElementById('marketplace-filter-price');
@@ -176,7 +197,32 @@
           </div>
         `;
       }
+    } finally {
+      isLoadingListings = false;
     }
+  }
+  
+  // Issue 2 Fix: Show loading skeleton while fetching data
+  function showLoadingSkeleton() {
+    const resultsContainer = document.getElementById('marketplace-results');
+    if (!resultsContainer) return;
+    
+    const skeletonHTML = `
+      <div class="marketplace-skeleton">
+        ${Array(6).fill(0).map(() => `
+          <div class="marketplace-skeleton-card">
+            <div class="skeleton-image"></div>
+            <div class="skeleton-content">
+              <div class="skeleton-text skeleton-title"></div>
+              <div class="skeleton-text"></div>
+              <div class="skeleton-text skeleton-short"></div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+    
+    resultsContainer.innerHTML = skeletonHTML;
   }
 
   // Render listings
