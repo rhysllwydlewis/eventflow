@@ -1085,6 +1085,29 @@ async function startServer() {
         }
         
         console.log('   ✅ Admin authentication configuration valid');
+        
+        // 4c. Initialize Date Management Service
+        console.log('');
+        console.log('📅 Initializing Date Management Service...');
+        try {
+          const DateManagementService = require('./services/dateManagementService');
+          const dateService = new DateManagementService(dbUnified, logger);
+          
+          // Schedule monthly automated checks
+          const scheduleResult = dateService.scheduleMonthlyUpdate();
+          
+          // Make available to routes via app.locals
+          app.locals.dateService = dateService;
+          
+          console.log('   ✅ Date Management Service initialized');
+          console.log(`   ✅ Monthly checks scheduled: ${scheduleResult.scheduled ? 'Yes' : 'No'}`);
+          if (scheduleResult.nextRun) {
+            console.log(`   ⏰ Next scheduled check: ${scheduleResult.nextRun.toISOString()}`);
+          }
+        } catch (dateServiceError) {
+          console.warn('   ⚠️  Date Management Service failed to initialize:', dateServiceError.message);
+          console.warn('   Date automation features will not be available');
+        }
       } catch (error) {
         console.error('');
         console.error('='.repeat(70));

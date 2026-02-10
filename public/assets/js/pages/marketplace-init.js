@@ -130,8 +130,8 @@ async function searchListings(filters, page = 1) {
   params.set('limit', 20);
 
   try {
-    // Use the v2 packages search endpoint for marketplace
-    const response = await fetch(`/api/v2/search/packages?${params.toString()}`, {
+    // Use the marketplace listings endpoint
+    const response = await fetch(`/api/marketplace/listings?${params.toString()}`, {
       credentials: 'include',
     });
 
@@ -140,7 +140,15 @@ async function searchListings(filters, page = 1) {
     }
 
     const result = await response.json();
-    return result.data || { results: [], pagination: { total: 0, page: 1, totalPages: 1 } };
+    // Backend returns { listings: [...] } not { data: { results: [...] } }
+    return {
+      results: result.listings || [],
+      pagination: {
+        total: result.listings ? result.listings.length : 0,
+        page: 1,
+        totalPages: 1
+      }
+    };
   } catch (error) {
     console.error('Search error:', error);
     return { results: [], pagination: { total: 0, page: 1, totalPages: 1 } };

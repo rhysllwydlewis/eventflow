@@ -26,6 +26,11 @@ const contentConfig = {
     legalEffectiveDate: 'January 2026',
     // Sitemap last modification date
     sitemapLastMod: new Date().toISOString().split('T')[0], // YYYY-MM-DD format
+    
+    // Automation fields for date management service
+    autoUpdateEnabled: true, // Enable/disable automated monthly updates
+    lastAutoCheck: null, // Last time automated check ran
+    lastManualUpdate: null, // Last time admin manually updated dates
   },
 
   // Company Information
