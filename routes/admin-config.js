@@ -544,6 +544,57 @@ router.post(
 );
 
 /**
+ * PUT /api/admin/categories/reorder
+ * Reorder categories
+ * Note: Must be defined before /categories/:id to prevent route conflicts
+ */
+router.put(
+  '/categories/reorder',
+  applyAuthRequired,
+  applyRoleRequired('admin'),
+  applyCsrfProtection,
+  async (req, res) => {
+    try {
+      const { orderedIds } = req.body;
+
+      if (!Array.isArray(orderedIds)) {
+        return res.status(400).json({ error: 'orderedIds must be an array' });
+      }
+
+      const categories = await dbUnified.read('categories');
+
+      // Update order based on position in array
+      orderedIds.forEach((id, index) => {
+        const category = categories.find(c => c.id === id);
+        if (category) {
+          category.order = index + 1;
+        }
+      });
+
+      // Handle orphaned categories (not in orderedIds) - assign them to the end
+      const orderedSet = new Set(orderedIds);
+      const orphanedCategories = categories.filter(c => !orderedSet.has(c.id));
+      orphanedCategories.forEach((category, index) => {
+        category.order = orderedIds.length + index + 1;
+      });
+
+      // Sort by order
+      categories.sort((a, b) => (a.order || 0) - (b.order || 0));
+
+      await dbUnified.write('categories', categories);
+
+      res.json({
+        ok: true,
+        categories,
+      });
+    } catch (error) {
+      console.error('Error reordering categories:', error);
+      res.status(500).json({ error: 'Failed to reorder categories', details: error.message });
+    }
+  }
+);
+
+/**
  * PUT /api/admin/categories/:id
  * Update a category
  */
@@ -638,56 +689,6 @@ router.delete(
     } catch (error) {
       console.error('Error deleting category:', error);
       res.status(500).json({ error: 'Failed to delete category', details: error.message });
-    }
-  }
-);
-
-/**
- * PUT /api/admin/categories/reorder
- * Reorder categories
- */
-router.put(
-  '/categories/reorder',
-  applyAuthRequired,
-  applyRoleRequired('admin'),
-  applyCsrfProtection,
-  async (req, res) => {
-    try {
-      const { orderedIds } = req.body;
-
-      if (!Array.isArray(orderedIds)) {
-        return res.status(400).json({ error: 'orderedIds must be an array' });
-      }
-
-      const categories = await dbUnified.read('categories');
-
-      // Update order based on position in array
-      orderedIds.forEach((id, index) => {
-        const category = categories.find(c => c.id === id);
-        if (category) {
-          category.order = index + 1;
-        }
-      });
-
-      // Handle orphaned categories (not in orderedIds) - assign them to the end
-      const orderedSet = new Set(orderedIds);
-      const orphanedCategories = categories.filter(c => !orderedSet.has(c.id));
-      orphanedCategories.forEach((category, index) => {
-        category.order = orderedIds.length + index + 1;
-      });
-
-      // Sort by order
-      categories.sort((a, b) => (a.order || 0) - (b.order || 0));
-
-      await dbUnified.write('categories', categories);
-
-      res.json({
-        ok: true,
-        categories,
-      });
-    } catch (error) {
-      console.error('Error reordering categories:', error);
-      res.status(500).json({ error: 'Failed to reorder categories', details: error.message });
     }
   }
 );
