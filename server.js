@@ -410,96 +410,23 @@ app.use(
   express.static(path.join(__dirname, 'uploads'))
 );
 
-// ---------- AUTH ----------
-// Auth routes (register, login, verify, logout, etc.) moved to routes/auth.js
+// ==================== ROUTE MOUNTING ====================
+// All API routes have been extracted to the routes/ directory
+// Routes are mounted via routes/index.js mountRoutes() function
 
-// System routes (health, config, meta, etc.) are now in routes/system.js
-
-// Admin: export only marketing-opt-in users as CSV
-// Moved to routes/admin.js
-
-// Admin: export all users as CSV
-// Moved to routes/admin.js
-
-// Admin: export all core collections as JSON
-// Moved to routes/admin.js
-
-/**
- * Get venues near a location
- * (Route extracted to routes/misc.js)
- */
-
-// AI event planning assistant
-// (Route extracted to routes/ai.js)
-
-// Admin-only: auto-categorisation & scoring for suppliers moved to routes/supplier-admin.js
-
-// ---------- Badge & Category Management ----------
-// Badge and category management routes moved to routes/admin-config.js
-
-// ---------- Photo Moderation ----------
-
-// ---------- Category browsing endpoints ----------
-
-// Public stats route moved to routes/public.js (with its own cache)
+// Public routes (no authentication required)
 const publicRoutes = require('./routes/public');
 app.use('/api/public', publicRoutes);
 
-// Category management routes moved to routes/admin-config.js
-
-// Admin: Upload package image moved to routes/packages.js
-
-// ---------- Supplier dashboard ----------
-/**
- * GET /api/me/suppliers/:id/analytics
- * Get analytics data for a supplier using real event tracking
- */
-// Supplier analytics and badge evaluation routes moved to routes/supplier-management.js
-
-// Mark all suppliers owned by the current user as Pro moved to routes/supplier-management.js
-
-// Supplier CRUD routes (POST, PATCH) moved to routes/supplier-management.js
-
-// Package routes moved to routes/packages.js
-
-// Package routes moved to routes/packages.js
-
-// ---------- CAPTCHA Verification ----------
-// (Route extracted to routes/misc.js)
-
-// ---------- Threads & Messages ----------
-
-// ---------- Marketplace Listings ----------
-
-// ---------- Plan & Notes (customer) ----------
-
-// ---------- Settings ----------
-// Settings routes (GET/POST /api/me/settings) moved to routes/settings.js
+// Settings routes
 const settingsRoutes = require('./routes/settings');
 app.use('/api/me/settings', settingsRoutes);
 
-// ---------- Meta & status ----------
-// Meta endpoint moved to routes/system.js
-
-// Lightweight metrics endpoints moved to routes/metrics.js
-
-// ---------- Admin ----------
-// Admin metrics endpoint moved to routes/admin.js
-// Admin reset-demo endpoint moved to routes/admin.js
-
-// Admin supplier management routes moved to routes/supplier-admin.js
-
-// Package routes moved to routes/packages.js
-
-// ---------- Protected HTML routes ----------
-// Dashboard routes moved to routes/dashboard.js
+// Dashboard routes (protected HTML routes)
 const dashboardRoutes = require('./routes/dashboard');
 app.use('/', dashboardRoutes);
 
-// ---------- Healthcheck & plan save system ----------
-
-// --- IMAGE STORAGE (V9.3) ---
-// fs and path are already required at the top of this file
+// ==================== IMAGE STORAGE ====================
 const UP_ROOT = path.join(DATA_DIR, 'uploads');
 
 function ensureDirs() {
@@ -512,66 +439,41 @@ function ensureDirs() {
 }
 ensureDirs();
 
-// saveImageBase64 function moved to routes/suppliers-v2.js and routes/packages.js
-
-// Supplier image upload route moved to routes/suppliers-v2.js
-
-// Package image upload moved to routes/packages.js
-
-// ---------- Advanced Search & Discovery ----------
-
-// ---------- Reviews and Ratings System ----------
-
-// ---------- Photo Upload & Management ----------
-
-// ---------- Photo Upload & Management ----------
-// Photo upload routes (upload, batch upload, management, etc.) moved to routes/photos.js
-// Mounted via routes/index.js
-
-// ---------- Static & SEO Routes ----------
-// Already mounted at line 345
-
-// ---------- Dashboard & Page Routes ----------
-// Already mounted at line 2596
-
-// ---------- Auth Routes ----------
+// ==================== ADDITIONAL ROUTES ====================
+// Auth routes
 const authRoutes = require('./routes/auth');
 app.use('/api/auth', authRoutes);
 
-// ---------- Public Maintenance Endpoint (must be before auth checks) ----------
-// (Route extracted to routes/system.js)
-
-// ---------- Webhook Routes ----------
+// Webhook routes
 const webhookRoutes = require('./routes/webhooks');
 app.use('/api/webhooks', webhookRoutes);
 
-// ---------- Admin Routes ----------
+// Admin routes
 const adminRoutes = require('./routes/admin');
 app.use('/api/admin', adminRoutes);
 
-// ---------- Admin User Management Routes ----------
+// Admin user management routes
 const adminUserManagementRoutes = require('./routes/admin-user-management');
 app.use('/api/admin', adminUserManagementRoutes);
 
-// ---------- Admin v2 Routes (RBAC with granular permissions) ----------
+// Admin V2 routes (RBAC with granular permissions)
 const adminV2Routes = require('./routes/admin-v2');
 app.use('/api/v2/admin', adminV2Routes);
 
-// ---------- Content Reporting System ----------
+// Reports routes
 const reportsRoutes = require('./routes/reports');
 app.use('/api', reportsRoutes);
 
-// ---------- Tickets Routes ----------
+// Tickets routes
 const ticketsRoutes = require('./routes/tickets');
 app.use('/api/tickets', ticketsRoutes);
 
-// ---------- Pexels Stock Photos Routes ----------
+// Pexels image search routes
 const pexelsRoutes = require('./routes/pexels');
 app.use('/api/pexels', pexelsRoutes);
 
-// ---------- AI Routes ----------
+// AI routes
 const aiRoutes = require('./routes/ai');
-// Initialize AI routes with dependencies
 if (aiRoutes.initializeDependencies) {
   aiRoutes.initializeDependencies({
     openaiClient,
@@ -581,48 +483,33 @@ if (aiRoutes.initializeDependencies) {
 }
 app.use('/api/ai', aiRoutes);
 
-// ---------- Payment Routes ----------
+// Payment routes
 const paymentRoutes = require('./routes/payments');
 app.use('/api/payments', paymentRoutes);
 
-// ---------- Profile Routes ----------
+// Profile routes
 const profileRoutes = require('./routes/profile');
 app.use('/api/profile', profileRoutes);
 
-// ---------- Suppliers V2 Routes ----------
-// Suppliers V2 routes (photo gallery) moved to routes/suppliers-v2.js and mounted in routes/index.js
-
-// ---------- Supplier Routes (analytics, trials, etc.) ----------
+// Supplier routes
 const supplierRoutes = require('./routes/supplier');
 app.use('/api/supplier', supplierRoutes);
 
-// ---------- Photo Serving from MongoDB ----------
-// GET /api/photos/:id route moved to routes/photos.js
-
-// ---------- Audit Logging ----------
+// Audit logging middleware
 const { auditLog, AUDIT_ACTIONS } = require('./middleware/audit');
 
-// Note: Admin audit endpoints moved to routes/admin.js for consolidation
-// GET /api/admin/audit and GET /api/admin/audit-logs are now in routes/admin.js
-
-// Health and ready endpoints moved to routes/system.js
-
-// Cache statistics, database metrics, and CSP reporting endpoints moved to routes/system.js
-
-// ---------- Subscription and Payment v2 Routes ----------
+// Subscription and Payment V2 routes
 const subscriptionsV2Routes = require('./routes/subscriptions-v2');
 app.use('/api/v2/subscriptions', subscriptionsV2Routes);
 app.use('/api/v2', subscriptionsV2Routes); // For /api/v2/invoices, /api/v2/admin, and /api/v2/webhooks/stripe
 
-// ---------- Reviews v2 Routes ----------
+// Reviews V2 routes
 const reviewsV2Routes = require('./routes/reviews-v2');
 app.use('/api/v2/reviews', reviewsV2Routes);
 
-// ---------- WebSocket Server Accessor ----------
+// ==================== WEBSOCKET SERVER ACCESSOR ====================
 // Forward declaration of function to get WebSocket server
-// This is defined early so it can be passed to routes via mountRoutes
-// The actual WebSocket servers (wsServer, wsServerV2) are initialized later
-// after the HTTP server is created
+// The actual WebSocket servers (wsServer, wsServerV2) are initialized later after HTTP server creation
 /**
  * Get the current WebSocket server based on WEBSOCKET_MODE
  * Used by notification routes to access WebSocket for real-time delivery
