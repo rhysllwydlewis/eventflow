@@ -1,0 +1,311 @@
+/**
+ * Auth Page Enhancements
+ * Liquid glass design system for authentication forms
+ */
+
+/* Auth container with liquid glass effect */
+.auth-container {
+  max-width: 480px;
+  margin: 2rem auto;
+  padding: 2rem;
+}
+
+/* Enhanced auth card with liquid glass */
+.auth-card {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 16px;
+  border: 1px solid rgba(11, 128, 115, 0.1);
+  box-shadow: 
+    0 10px 30px rgba(15, 23, 42, 0.08),
+    0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+  padding: 2rem;
+  transition: all 0.3s ease;
+}
+
+.auth-card:hover {
+  box-shadow: 
+    0 15px 40px rgba(15, 23, 42, 0.12),
+    0 0 0 1px rgba(11, 128, 115, 0.2) inset;
+  transform: translateY(-2px);
+}
+
+/* Loading overlay with spinner */
+.auth-loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  z-index: 10;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.auth-loading-overlay.is-active {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.auth-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(11, 128, 115, 0.2);
+  border-top-color: #0B8073;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Enhanced status messages */
+.auth-status {
+  padding: 0.875rem 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  display: none;
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.auth-status.is-visible {
+  display: block;
+}
+
+.auth-status.is-error {
+  background: #FEE2E2;
+  color: #991B1B;
+  border: 1px solid #FCA5A5;
+}
+
+.auth-status.is-success {
+  background: #D1FAE5;
+  color: #065F46;
+  border: 1px solid #6EE7B7;
+}
+
+.auth-status.is-warning {
+  background: #FEF3C7;
+  color: #92400E;
+  border: 1px solid #FCD34D;
+}
+
+.auth-status.is-info {
+  background: #DBEAFE;
+  color: #1E40AF;
+  border: 1px solid #93C5FD;
+}
+
+/* Rate limit counter */
+.auth-rate-limit {
+  background: #FEF3C7;
+  border: 1px solid #FCD34D;
+  padding: 0.875rem 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  display: none;
+  animation: slideDown 0.3s ease;
+}
+
+.auth-rate-limit.is-visible {
+  display: block;
+}
+
+.auth-rate-limit-text {
+  color: #92400E;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+.auth-rate-limit-timer {
+  color: #78350F;
+  font-size: 1.25rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Enhanced button states */
+.auth-btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.auth-btn.is-loading::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 20px;
+  height: 20px;
+  margin: -10px 0 0 -10px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+/* Password strength always visible */
+#password-strength-container {
+  display: block !important;
+  margin-top: 0.75rem;
+  opacity: 1;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Connection error with retry button */
+.auth-connection-error {
+  background: #FEE2E2;
+  border: 1px solid #FCA5A5;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  display: none;
+}
+
+.auth-connection-error.is-visible {
+  display: block;
+  animation: slideDown 0.3s ease;
+}
+
+.auth-connection-error-text {
+  color: #991B1B;
+  font-size: 0.9375rem;
+  margin-bottom: 0.75rem;
+}
+
+.auth-retry-btn {
+  background: #DC2626;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.auth-retry-btn:hover {
+  background: #B91C1C;
+}
+
+.auth-retry-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Help link styling */
+.auth-help-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  color: #0B8073;
+  font-size: 0.875rem;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s ease;
+  margin-top: 1rem;
+}
+
+.auth-help-link:hover {
+  color: #13B6A2;
+  text-decoration: underline;
+}
+
+.auth-help-icon {
+  width: 16px;
+  height: 16px;
+}
+
+/* Success animation */
+@keyframes successPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.8;
+  }
+}
+
+.auth-success-animation {
+  animation: successPulse 0.6s ease;
+}
+
+/* Accessibility improvements */
+.auth-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Mobile optimizations */
+@media (max-width: 640px) {
+  .auth-container {
+    padding: 1rem;
+    margin: 1rem auto;
+  }
+  
+  .auth-card {
+    padding: 1.5rem;
+  }
+  
+  .auth-status,
+  .auth-rate-limit {
+    padding: 0.75rem;
+    font-size: 0.875rem;
+  }
+}
+
+/* Dark mode support (if implemented) */
+@media (prefers-color-scheme: dark) {
+  .auth-card {
+    background: rgba(15, 23, 42, 0.9);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+  
+  .auth-loading-overlay {
+    background: rgba(15, 23, 42, 0.9);
+  }
+}
