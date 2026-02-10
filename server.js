@@ -18,9 +18,7 @@ const path = require('path');
 const fs = require('fs');
 const express = require('express');
 const cookieParser = require('cookie-parser');
-const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const validator = require('validator');
 
 const APP_VERSION = 'v18.1.0';
 
@@ -179,9 +177,7 @@ const cache = require('./cache');
 // Sitemap generator
 const { generateSitemap, generateRobotsTxt } = require('./sitemap');
 
-// Constants for user management
-const VALID_USER_ROLES = ['customer', 'supplier', 'admin'];
-const MAX_NAME_LENGTH = 80;
+// Constants
 const OWNER_EMAIL = 'admin@event-flow.co.uk'; // Owner account always has admin role
 
 // Helper functions (re-export from utils for backward compatibility)
@@ -419,266 +415,11 @@ app.use(
 
 // System routes (health, config, meta, etc.) are now in routes/system.js
 
-// Admin: list users (without password hashes)
-app.get('/api/admin/users', authRequired, roleRequired('admin'), async (req, res) => {
-  const users = (await dbUnified.read('users')).map(u => ({
-    id: u.id,
-    name: u.name,
-    email: u.email,
-    role: u.role,
-    verified: !!u.verified,
-    marketingOptIn: !!u.marketingOptIn,
-    createdAt: u.createdAt,
-    lastLoginAt: u.lastLoginAt || null,
-  }));
-  // Sort newest first by createdAt
-  users.sort((a, b) => {
-    if (!a.createdAt && !b.createdAt) {
-      return 0;
-    }
-    if (!a.createdAt) {
-      return 1;
-    }
-    if (!b.createdAt) {
-      return -1;
-    }
-    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-  });
-  res.json({ items: users });
-});
-
 // Admin: export only marketing-opt-in users as CSV
 // Moved to routes/admin.js
 
 // Admin: export all users as CSV
 // Moved to routes/admin.js
-
-/**
- * POST /api/admin/users
- * Create a new user (admin only)
- */
-app.post(
-  '/api/admin/users',
-  authRequired,
-  roleRequired('admin'),
-  csrfProtection,
-  async (req, res) => {
-    const { name, email, password, role = 'customer' } = req.body || {};
-
-    // Validate required fields
-    if (!name || !email || !password) {
-      return res
-        .status(400)
-        .json({ error: 'Missing required fields: name, email, and password are required' });
-    }
-
-    // Validate email format
-    if (!validator.isEmail(String(email))) {
-      return res.status(400).json({ error: 'Invalid email format' });
-    }
-
-    // Validate password strength
-    if (!passwordOk(password)) {
-      return res.status(400).json({
-        error: 'Password must be at least 8 characters with uppercase, lowercase, and number',
-      });
-    }
-
-    // Validate role
-    const roleFinal = VALID_USER_ROLES.includes(role) ? role : 'customer';
-
-    // Check if user already exists
-    const users = await dbUnified.read('users');
-    if (users.find(u => u.email.toLowerCase() === String(email).toLowerCase())) {
-      return res.status(409).json({ error: 'A user with this email already exists' });
-    }
-
-    // Create new user
-    const user = {
-      id: uid('usr'),
-      name: String(name).trim().slice(0, MAX_NAME_LENGTH),
-      email: String(email).toLowerCase(),
-      role: roleFinal,
-      passwordHash: bcrypt.hashSync(password, 10),
-      notify: true,
-      marketingOptIn: false,
-      verified: true, // Admin-created users are pre-verified
-      createdAt: new Date().toISOString(),
-      createdBy: req.user.id, // Track who created the user
-    };
-
-    users.push(user);
-    await dbUnified.write('users', users);
-
-    // Create audit log
-    auditLog({
-      adminId: req.user.id,
-      adminEmail: req.user.email,
-      action: AUDIT_ACTIONS.USER_CREATED,
-      targetType: 'user',
-      targetId: user.id,
-      details: {
-        email: user.email,
-        name: user.name,
-        role: user.role,
-      },
-    });
-
-    res.json({
-      success: true,
-      message: 'User created successfully',
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        verified: user.verified,
-      },
-    });
-  }
-);
-
-/**
- * POST /api/admin/users/:id/grant-admin
- * Grant admin privileges to a user
- */
-app.post(
-  '/api/admin/users/:id/grant-admin',
-  authRequired,
-  roleRequired('admin'),
-  csrfProtection,
-  async (req, res) => {
-    const { id } = req.params;
-    const users = await dbUnified.read('users');
-    const userIndex = users.findIndex(u => u.id === id);
-
-    if (userIndex === -1) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    const user = users[userIndex];
-    const now = new Date().toISOString();
-
-    // Check if user already has admin role
-    if (user.role === 'admin') {
-      return res.status(400).json({ error: 'User already has admin privileges' });
-    }
-
-    // Store previous role
-    user.previousRole = user.role;
-    user.role = 'admin';
-    user.adminGrantedAt = now;
-    user.adminGrantedBy = req.user.id;
-    user.updatedAt = now;
-
-    users[userIndex] = user;
-    await dbUnified.write('users', users);
-
-    // Create audit log
-    auditLog({
-      adminId: req.user.id,
-      adminEmail: req.user.email,
-      action: AUDIT_ACTIONS.USER_ROLE_CHANGED,
-      targetType: 'user',
-      targetId: user.id,
-      details: {
-        email: user.email,
-        previousRole: user.previousRole,
-        newRole: 'admin',
-      },
-    });
-
-    res.json({
-      success: true,
-      message: 'Admin privileges granted successfully',
-      user: {
-        id: user.id,
-        email: user.email,
-        role: user.role,
-      },
-    });
-  }
-);
-
-/**
- * POST /api/admin/users/:id/revoke-admin
- * Revoke admin privileges from a user
- */
-app.post(
-  '/api/admin/users/:id/revoke-admin',
-  authRequired,
-  roleRequired('admin'),
-  csrfProtection,
-  async (req, res) => {
-    const { id } = req.params;
-    const { newRole = 'customer' } = req.body;
-    const users = await dbUnified.read('users');
-    const userIndex = users.findIndex(u => u.id === id);
-
-    if (userIndex === -1) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    const user = users[userIndex];
-    const now = new Date().toISOString();
-
-    // Check if user has admin role
-    if (user.role !== 'admin') {
-      return res.status(400).json({ error: 'User does not have admin privileges' });
-    }
-
-    // Prevent revoking own admin privileges
-    if (user.id === req.user.id) {
-      return res.status(400).json({ error: 'You cannot revoke your own admin privileges' });
-    }
-
-    // Prevent revoking owner's admin privileges
-    if (user.email === 'admin@event-flow.co.uk' || user.isOwner) {
-      return res
-        .status(403)
-        .json({ error: 'Cannot revoke admin privileges from the owner account' });
-    }
-
-    // Validate newRole
-    if (!['customer', 'supplier'].includes(newRole)) {
-      return res.status(400).json({ error: 'Invalid role. Must be customer or supplier' });
-    }
-
-    // Store previous role
-    user.previousRole = user.role;
-    user.role = newRole;
-    user.adminRevokedAt = now;
-    user.adminRevokedBy = req.user.id;
-    user.updatedAt = now;
-
-    users[userIndex] = user;
-    await dbUnified.write('users', users);
-
-    // Create audit log
-    auditLog({
-      adminId: req.user.id,
-      adminEmail: req.user.email,
-      action: AUDIT_ACTIONS.USER_ROLE_CHANGED,
-      targetType: 'user',
-      targetId: user.id,
-      details: {
-        email: user.email,
-        previousRole: 'admin',
-        newRole: newRole,
-      },
-    });
-
-    res.json({
-      success: true,
-      message: 'Admin privileges revoked successfully',
-      user: {
-        id: user.id,
-        email: user.email,
-        role: user.role,
-      },
-    });
-  }
-);
 
 // Admin: export all core collections as JSON
 // Moved to routes/admin.js
@@ -743,58 +484,8 @@ app.use('/api/me/settings', settingsRoutes);
 // Lightweight metrics endpoints moved to routes/metrics.js
 
 // ---------- Admin ----------
-app.get('/api/admin/metrics', authRequired, roleRequired('admin'), async (_req, res) => {
-  const users = await dbUnified.read('users');
-  const suppliers = await dbUnified.read('suppliers');
-  const plans = await dbUnified.read('plans');
-  const msgs = await dbUnified.read('messages');
-  const pkgs = await dbUnified.read('packages');
-  const threads = await dbUnified.read('threads');
-  res.json({
-    counts: {
-      usersTotal: users.length,
-      usersByRole: users.reduce((a, u) => {
-        a[u.role] = (a[u.role] || 0) + 1;
-        return a;
-      }, {}),
-      suppliersTotal: suppliers.length,
-      packagesTotal: pkgs.length,
-      plansTotal: plans.length,
-      messagesTotal: msgs.length,
-      threadsTotal: threads.length,
-    },
-  });
-});
-
-app.post(
-  '/api/admin/reset-demo',
-  authRequired,
-  roleRequired('admin'),
-  csrfProtection,
-  async (req, res) => {
-    try {
-      // Clear key collections and rerun seeding
-      const collections = [
-        'users',
-        'suppliers',
-        'packages',
-        'plans',
-        'notes',
-        'messages',
-        'threads',
-        'events',
-      ];
-      for (const name of collections) {
-        await dbUnified.write(name, []);
-      }
-      await seed();
-      res.json({ ok: true });
-    } catch (err) {
-      console.error('Reset demo failed', err);
-      res.status(500).json({ error: 'Reset demo failed' });
-    }
-  }
-);
+// Admin metrics endpoint moved to routes/admin.js
+// Admin reset-demo endpoint moved to routes/admin.js
 
 // Admin supplier management routes moved to routes/supplier-admin.js
 
