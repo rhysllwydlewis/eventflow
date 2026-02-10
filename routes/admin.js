@@ -13,7 +13,7 @@ const { read, write, uid } = require('../store');
 const { authRequired, roleRequired } = require('../middleware/auth');
 const { auditLog, AUDIT_ACTIONS } = require('../middleware/audit');
 const { csrfProtection } = require('../middleware/csrf');
-const { writeLimiter } = require('../middleware/rateLimits');
+const { writeLimiter, apiLimiter } = require('../middleware/rateLimits');
 const dbUnified = require('../db-unified');
 
 const router = express.Router();
@@ -4750,7 +4750,7 @@ router.post('/content-dates/schedule', writeLimiter, authRequired, roleRequired(
  * GET /api/admin/content-dates/health
  * Issue 3 Fix: Health check endpoint for date automation system
  */
-router.get('/content-dates/health', authRequired, roleRequired('admin'), async (req, res) => {
+router.get('/content-dates/health', apiLimiter, authRequired, roleRequired('admin'), async (req, res) => {
   try {
     const dateService = req.app.locals.dateService;
     const fs = require('fs').promises;
