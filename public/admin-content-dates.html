@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang='en-GB'>
+<head>
+  <script src="/assets/js/dashboard-guard.js?v=17.0.2"></script>
+<meta charset='utf-8'>
+<meta name='viewport' content='width=device-width,initial-scale=1'>
+<title>Content Date Management — EventFlow Admin</title>
+<link rel='stylesheet' href='/assets/css/styles.css?v=18.0.0'>
+<link rel='stylesheet' href='/assets/css/eventflow-17.0.0.css?v=18.0.0'>
+  <link rel="stylesheet" href="/assets/css/admin.css?v=18.0.0">
+  <link rel="stylesheet" href="/assets/css/admin-enhanced.css?v=18.0.0">
+  <link rel="stylesheet" href="/assets/css/admin-navbar.css?v=18.0.0">
+  <link rel="stylesheet" href="/assets/css/admin-cards.css?v=18.0.0">
+<link rel='stylesheet' href='/assets/css/utilities.css?v=18.0.0'>
+<link rel='stylesheet' href='/assets/css/components.css?v=18.0.0'>
+<link rel='stylesheet' href='/assets/css/animations.css?v=18.0.0'>
+<link rel='icon' href='/favicon.svg'>
+<script src="/assets/js/admin-navbar.js" defer></script>
+  <link rel="stylesheet" href="/assets/css/mobile-optimizations.css?v=18.0.0">
+  <link rel="stylesheet" href="/assets/css/ui-ux-fixes.css?v=18.0.0">
+  <link rel="stylesheet" href="/assets/css/admin-ui-improvements.css?v=18.1.0">
+<style>
+  .status-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+  .status-badge.enabled {
+    background: #d1fae5;
+    color: #065f46;
+  }
+  .status-badge.disabled {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+  .status-badge.changed {
+    background: #fef3c7;
+    color: #92400e;
+  }
+  .status-badge.uptodate {
+    background: #dbeafe;
+    color: #1e40af;
+  }
+  .info-card {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  .info-card h3 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    color: #111827;
+  }
+  .info-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #f3f4f6;
+  }
+  .info-row:last-child {
+    border-bottom: none;
+  }
+  .info-label {
+    font-weight: 600;
+    color: #6b7280;
+  }
+  .info-value {
+    color: #111827;
+  }
+  .article-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .article-item {
+    padding: 0.75rem;
+    border-bottom: 1px solid #f3f4f6;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .article-item:last-child {
+    border-bottom: none;
+  }
+  .article-name {
+    font-weight: 500;
+    color: #111827;
+    text-transform: capitalize;
+  }
+  .article-date {
+    color: #6b7280;
+    font-size: 0.875rem;
+  }
+</style>
+</head>
+<body class="has-admin-navbar">
+<!-- Modern Top Navbar -->
+<nav class="admin-top-navbar">
+  <div class="admin-navbar-content">
+    <!-- Brand -->
+    <div class="admin-navbar-brand">
+      <a href="/admin.html" class="admin-navbar-logo">EventFlow</a>
+      <span class="admin-navbar-title">Admin Panel</span>
+    </div>
+
+    <!-- Mobile Hamburger -->
+    <button class="admin-hamburger" id="adminHamburger" aria-label="Toggle menu">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+
+    <!-- Navigation Links -->
+    <div class="admin-navbar-nav" id="adminNavbarNav">
+      <a href="/admin.html" class="admin-nav-btn">
+        <span class="nav-icon">📊</span>
+        <span class="nav-label">Dashboard</span>
+      </a>
+      <a href="/admin-users.html" class="admin-nav-btn">
+        <span class="nav-icon">👥</span>
+        <span class="nav-label">Users</span>
+      </a>
+      <a href="/admin-content.html" class="admin-nav-btn">
+        <span class="nav-icon">📝</span>
+        <span class="nav-label">Content</span>
+      </a>
+      <a href="/admin-content-dates.html" class="admin-nav-btn active">
+        <span class="nav-icon">📅</span>
+        <span class="nav-label">Content Dates</span>
+      </a>
+      <a href="/admin-settings.html" class="admin-nav-btn">
+        <span class="nav-icon">⚙️</span>
+        <span class="nav-label">Settings</span>
+      </a>
+    </div>
+
+    <!-- User Menu -->
+    <div class="admin-navbar-user">
+      <button class="admin-user-btn" id="adminUserBtn">
+        <span class="user-icon">👤</span>
+        <span class="user-name" id="adminUserName">Admin</span>
+      </button>
+      <div class="admin-user-dropdown" id="adminUserDropdown">
+        <a href="/dashboard.html" class="dropdown-item">
+          <span class="dropdown-icon">🏠</span>
+          User Dashboard
+        </a>
+        <a href="/settings.html" class="dropdown-item">
+          <span class="dropdown-icon">⚙️</span>
+          Settings
+        </a>
+        <button class="dropdown-item" id="logoutBtn">
+          <span class="dropdown-icon">🚪</span>
+          Logout
+        </button>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<div class="admin-container">
+  <header class="admin-header">
+    <h1>Content Date Management</h1>
+    <p>Automate legal document and guide date updates using git history</p>
+  </header>
+
+  <div class="admin-content">
+    <!-- Status Card -->
+    <div class="info-card">
+      <h3>🔄 Automation Status</h3>
+      <div id="statusContent">
+        <p style="text-align: center; color: #6b7280;">Loading...</p>
+      </div>
+    </div>
+
+    <!-- Current Dates Card -->
+    <div class="info-card">
+      <h3>📆 Current Legal Document Dates</h3>
+      <div id="currentDatesContent">
+        <p style="text-align: center; color: #6b7280;">Loading...</p>
+      </div>
+    </div>
+
+    <!-- Update Form Card -->
+    <div class="info-card">
+      <h3>✏️ Manual Update</h3>
+      <p style="color: #6b7280; margin-bottom: 1rem;">Manually override the legal document dates. Format: "Month YYYY" (e.g., "February 2026")</p>
+      
+      <form id="updateDatesForm">
+        <div style="margin-bottom: 1rem;">
+          <label for="lastUpdated" style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Last Updated Date</label>
+          <input type="text" id="lastUpdated" placeholder="e.g., February 2026" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px;">
+        </div>
+        
+        <div style="margin-bottom: 1rem;">
+          <label for="effectiveDate" style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Effective Date</label>
+          <input type="text" id="effectiveDate" placeholder="e.g., February 2026" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px;">
+        </div>
+        
+        <div style="display: flex; gap: 0.5rem;">
+          <button type="submit" class="btn btn-primary" id="updateBtn">Update Dates</button>
+          <button type="button" class="btn btn-secondary" id="checkNowBtn">Check for Updates Now</button>
+        </div>
+      </form>
+      
+      <div id="updateMessage" style="margin-top: 1rem; display: none; padding: 0.75rem; border-radius: 4px;"></div>
+    </div>
+
+    <!-- Automation Control Card -->
+    <div class="info-card">
+      <h3>⚙️ Automation Settings</h3>
+      <p style="color: #6b7280; margin-bottom: 1rem;">Enable or disable automated monthly date checks (runs on 1st of each month at 2:00 AM)</p>
+      
+      <div style="display: flex; gap: 0.5rem; align-items: center;">
+        <label class="switch">
+          <input type="checkbox" id="autoUpdateToggle">
+          <span class="slider round"></span>
+        </label>
+        <span id="autoUpdateLabel">Loading...</span>
+      </div>
+      
+      <div id="scheduleInfo" style="margin-top: 1rem; padding: 0.75rem; background: #f9fafb; border-radius: 4px; color: #6b7280; font-size: 0.875rem;">
+        Loading schedule information...
+      </div>
+    </div>
+
+    <!-- Article Dates Card -->
+    <div class="info-card">
+      <h3>📝 Guide & Article Dates</h3>
+      <p style="color: #6b7280; margin-bottom: 1rem;">Automatically tracked from git commit history</p>
+      
+      <div id="articleDatesContent">
+        <p style="text-align: center; color: #6b7280;">Loading...</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .switch {
+    position: relative;
+    display: inline-block;
+    width: 48px;
+    height: 24px;
+  }
+  .switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+  .slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+  }
+  .slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .4s;
+  }
+  input:checked + .slider {
+    background-color: #10b981;
+  }
+  input:checked + .slider:before {
+    transform: translateX(24px);
+  }
+  .slider.round {
+    border-radius: 24px;
+  }
+  .slider.round:before {
+    border-radius: 50%;
+  }
+</style>
+
+<script src="/assets/js/utils/api-client.js"></script>
+<script>
+(async function() {
+  let csrfToken = '';
+  let currentConfig = {};
+
+  // Fetch CSRF token
+  async function fetchCsrfToken() {
+    try {
+      const response = await fetch('/api/v1/csrf-token', { credentials: 'include' });
+      const data = await response.json();
+      csrfToken = data.token;
+    } catch (error) {
+      console.error('Failed to fetch CSRF token:', error);
+    }
+  }
+
+  // Load content dates
+  async function loadContentDates() {
+    try {
+      const response = await fetch('/api/admin/content-dates', { credentials: 'include' });
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to load content dates');
+      }
+      
+      currentConfig = data.config;
+      
+      // Update status
+      const statusHtml = `
+        <div class="info-row">
+          <span class="info-label">Automated Updates</span>
+          <span class="status-badge ${data.config.autoUpdateEnabled ? 'enabled' : 'disabled'}">
+            ${data.config.autoUpdateEnabled ? 'Enabled' : 'Disabled'}
+          </span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Content Status</span>
+          <span class="status-badge ${data.changeCheck.changed ? 'changed' : 'uptodate'}">
+            ${data.changeCheck.reason}
+          </span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Next Scheduled Check</span>
+          <span class="info-value">${data.status.nextRun ? new Date(data.status.nextRun).toLocaleString() : 'Not scheduled'}</span>
+        </div>
+      `;
+      document.getElementById('statusContent').innerHTML = statusHtml;
+      
+      // Update current dates
+      const datesHtml = `
+        <div class="info-row">
+          <span class="info-label">Last Updated</span>
+          <span class="info-value">${data.config.legalLastUpdated}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Effective Date</span>
+          <span class="info-value">${data.config.legalEffectiveDate}</span>
+        </div>
+        ${data.changeCheck.gitDate ? `
+        <div class="info-row">
+          <span class="info-label">Git Detected Date</span>
+          <span class="info-value">${data.changeCheck.gitDate}</span>
+        </div>
+        ` : ''}
+        ${data.config.lastAutoCheck ? `
+        <div class="info-row">
+          <span class="info-label">Last Auto Check</span>
+          <span class="info-value">${new Date(data.config.lastAutoCheck).toLocaleString()}</span>
+        </div>
+        ` : ''}
+      `;
+      document.getElementById('currentDatesContent').innerHTML = datesHtml;
+      
+      // Update toggle
+      document.getElementById('autoUpdateToggle').checked = data.config.autoUpdateEnabled;
+      document.getElementById('autoUpdateLabel').textContent = data.config.autoUpdateEnabled ? 'Enabled' : 'Disabled';
+      
+      // Update schedule info
+      const scheduleHtml = data.status.scheduled
+        ? `✅ Automated checks are scheduled to run on the 1st of each month at 2:00 AM.<br>Next run: ${new Date(data.status.nextRun).toLocaleString()}`
+        : '❌ Automated checks are not currently scheduled.';
+      document.getElementById('scheduleInfo').innerHTML = scheduleHtml;
+      
+    } catch (error) {
+      console.error('Failed to load content dates:', error);
+      document.getElementById('statusContent').innerHTML = `<p style="color: #ef4444;">Error: ${error.message}</p>`;
+    }
+  }
+
+  // Load article dates
+  async function loadArticleDates() {
+    try {
+      const response = await fetch('/api/admin/content-dates/articles', { credentials: 'include' });
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to load article dates');
+      }
+      
+      if (data.articles.length === 0) {
+        document.getElementById('articleDatesContent').innerHTML = '<p style="color: #6b7280;">No articles found</p>';
+        return;
+      }
+      
+      const articlesHtml = `
+        <ul class="article-list">
+          ${data.articles.map(article => `
+            <li class="article-item">
+              <span class="article-name">${article.name}</span>
+              <span class="article-date">${article.lastModifiedFormatted}</span>
+            </li>
+          `).join('')}
+        </ul>
+      `;
+      document.getElementById('articleDatesContent').innerHTML = articlesHtml;
+      
+    } catch (error) {
+      console.error('Failed to load article dates:', error);
+      document.getElementById('articleDatesContent').innerHTML = `<p style="color: #ef4444;">Error: ${error.message}</p>`;
+    }
+  }
+
+  // Update dates
+  document.getElementById('updateDatesForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const lastUpdated = document.getElementById('lastUpdated').value.trim();
+    const effectiveDate = document.getElementById('effectiveDate').value.trim();
+    
+    if (!lastUpdated && !effectiveDate) {
+      showMessage('Please provide at least one date to update', 'error');
+      return;
+    }
+    
+    const updateBtn = document.getElementById('updateBtn');
+    updateBtn.disabled = true;
+    updateBtn.textContent = 'Updating...';
+    
+    try {
+      const response = await fetch('/api/admin/content-dates', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'CSRF-Token': csrfToken
+        },
+        credentials: 'include',
+        body: JSON.stringify({ lastUpdated, effectiveDate })
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || data.error || 'Update failed');
+      }
+      
+      showMessage('✅ Dates updated successfully!', 'success');
+      document.getElementById('lastUpdated').value = '';
+      document.getElementById('effectiveDate').value = '';
+      await loadContentDates();
+      
+    } catch (error) {
+      console.error('Failed to update dates:', error);
+      showMessage(`❌ Error: ${error.message}`, 'error');
+    } finally {
+      updateBtn.disabled = false;
+      updateBtn.textContent = 'Update Dates';
+    }
+  });
+
+  // Check now
+  document.getElementById('checkNowBtn').addEventListener('click', async () => {
+    const btn = document.getElementById('checkNowBtn');
+    btn.disabled = true;
+    btn.textContent = 'Checking...';
+    
+    try {
+      const response = await fetch('/api/admin/content-dates/check-now', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'CSRF-Token': csrfToken
+        },
+        credentials: 'include'
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || data.error || 'Check failed');
+      }
+      
+      showMessage(`✅ ${data.message}`, 'success');
+      await loadContentDates();
+      
+    } catch (error) {
+      console.error('Failed to check dates:', error);
+      showMessage(`❌ Error: ${error.message}`, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Check for Updates Now';
+    }
+  });
+
+  // Toggle automation
+  document.getElementById('autoUpdateToggle').addEventListener('change', async (e) => {
+    const enabled = e.target.checked;
+    
+    try {
+      const response = await fetch('/api/admin/content-dates/schedule', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'CSRF-Token': csrfToken
+        },
+        credentials: 'include',
+        body: JSON.stringify({ enabled })
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || data.error || 'Toggle failed');
+      }
+      
+      showMessage(`✅ Automation ${enabled ? 'enabled' : 'disabled'}`, 'success');
+      document.getElementById('autoUpdateLabel').textContent = enabled ? 'Enabled' : 'Disabled';
+      await loadContentDates();
+      
+    } catch (error) {
+      console.error('Failed to toggle automation:', error);
+      showMessage(`❌ Error: ${error.message}`, 'error');
+      e.target.checked = !enabled; // Revert toggle
+    }
+  });
+
+  function showMessage(message, type) {
+    const msgEl = document.getElementById('updateMessage');
+    msgEl.textContent = message;
+    msgEl.style.display = 'block';
+    msgEl.style.background = type === 'success' ? '#d1fae5' : '#fee2e2';
+    msgEl.style.color = type === 'success' ? '#065f46' : '#991b1b';
+    
+    setTimeout(() => {
+      msgEl.style.display = 'none';
+    }, 5000);
+  }
+
+  // Initialize
+  await fetchCsrfToken();
+  await loadContentDates();
+  await loadArticleDates();
+})();
+</script>
+</body>
+</html>

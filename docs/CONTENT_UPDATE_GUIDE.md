@@ -59,15 +59,132 @@ dates: {
 3. Commit and deploy the changes
 4. The changes will be reflected immediately on all pages using these placeholders
 
-### Method 2: Admin Panel (Coming Soon)
+### Method 2: Admin Panel - Content Date Management
 
-The admin panel will provide a user-friendly interface for non-technical staff to update content dates:
+The admin panel provides a user-friendly interface for non-technical staff to update content dates:
 
 1. Log into EventFlow admin dashboard
-2. Navigate to Settings > Content Management
-3. Update legal dates in the form
-4. Click "Save Changes"
-5. Changes take effect immediately
+2. Navigate to **Content Dates** in the admin navigation
+3. View current legal document dates and git-detected changes
+4. Update legal dates manually if needed using the form
+5. Click "Update Dates" to save changes
+6. Changes take effect immediately
+
+**Admin Panel URL:** `/admin-content-dates.html`
+
+## Automated Date Management System
+
+### Overview
+
+EventFlow now includes an **automated date management system** that tracks changes to legal documents using git history and automatically updates dates when content changes are detected.
+
+### How It Works
+
+1. **Git-based Tracking:** The system monitors git commit history for legal document files:
+   - `public/terms.html`
+   - `public/privacy.html`
+   - `public/legal.html`
+   - `public/cookies.html`
+   - `public/acceptable-use.html`
+
+2. **Monthly Automated Checks:** On the 1st of each month at 2:00 AM, the system:
+   - Checks if any legal documents have been modified since the last date update
+   - Compares git commit dates against current config dates
+   - If changes are detected, automatically updates the dates in `config/content-config.js`
+   - Sends notifications to all admin users
+
+3. **Manual Override:** Admins can:
+   - Manually update dates at any time via the admin panel
+   - Trigger an immediate check without waiting for the scheduled time
+   - Enable or disable automated updates
+   - View all article/guide dates tracked from git history
+
+### Using the Admin Panel
+
+#### Viewing Current Status
+
+The Content Date Management panel (`/admin-content-dates.html`) displays:
+
+- **Automation Status:** Whether automated updates are enabled
+- **Content Status:** Whether legal documents have changed since last update
+- **Current Dates:** Legal last updated and effective dates
+- **Git Detected Date:** Most recent commit date for legal files
+- **Next Scheduled Check:** When the next automated check will run
+
+#### Manually Updating Dates
+
+1. Navigate to the "Manual Update" section
+2. Enter dates in format: "Month YYYY" (e.g., "February 2026")
+3. Fill in either or both fields:
+   - **Last Updated Date:** When the document was last revised
+   - **Effective Date:** When changes take effect
+4. Click "Update Dates"
+5. System will:
+   - Update `config/content-config.js` automatically
+   - Create an audit log entry
+   - Notify other admins of the change
+
+#### Checking for Updates Immediately
+
+Instead of waiting for the monthly scheduled check:
+
+1. Click "Check for Updates Now" button
+2. System will:
+   - Check git history for changes
+   - Update dates if content has changed
+   - Display result message
+   - Send notifications if updates were made
+
+#### Enabling/Disabling Automation
+
+Use the toggle switch in the "Automation Settings" section:
+
+- **Enabled:** Monthly checks will run automatically on the 1st at 2:00 AM
+- **Disabled:** No automated checks will run (manual updates still work)
+
+Changes are saved immediately and an audit log entry is created.
+
+#### Viewing Article/Guide Dates
+
+The panel automatically displays all guides and articles with their last modification dates from git history. This helps track content freshness across the site.
+
+### Configuration Options
+
+In `/config/content-config.js`:
+
+```javascript
+dates: {
+  currentYear: getCurrentYear(),
+  copyrightYear: getCurrentYear(),
+  legalLastUpdated: 'January 2026',
+  legalEffectiveDate: 'January 2026',
+  sitemapLastMod: new Date().toISOString().split('T')[0],
+  
+  // Automation settings
+  autoUpdateEnabled: true,        // Enable/disable monthly checks
+  lastAutoCheck: null,            // Last automated check timestamp
+  lastManualUpdate: null,         // Last manual update timestamp
+}
+```
+
+### Benefits
+
+✅ **Zero Manual Work:** Dates update automatically when you commit legal document changes
+✅ **Audit Trail:** Git history provides complete change tracking
+✅ **Admin Notifications:** All admins are notified of date changes
+✅ **Manual Override:** Complete control when automation isn't suitable
+✅ **No Forgotten Updates:** System reminds you when content has changed
+
+### When Manual Updates Are Still Needed
+
+You should manually update dates when:
+
+- Legal review occurs without file changes
+- Consulting with legal counsel results in a "no changes needed" decision
+- Substantive legal interpretation changes without text modifications
+- You want to update the effective date to a future date
+
+For all other cases, the automation handles updates seamlessly.
 
 ## Using Placeholders
 

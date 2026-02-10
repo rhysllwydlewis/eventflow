@@ -4511,5 +4511,280 @@ router.get('/analytics/competitors', authRequired, roleRequired('admin'), async 
  * Get user segmentation for marketing and analytics
  */
 
+// ---------- Content Date Management Routes ----------
+
+/**
+ * GET /api/admin/content-dates
+ * Get current date configuration and git-based dates
+ */
+router.get('/content-dates', authRequired, roleRequired('admin'), async (req, res) => {
+  try {
+    // Get date service from app.locals (injected by server.js)
+    const dateService = req.app.locals.dateService;
+    
+    if (!dateService) {
+      return res.status(503).json({ 
+        error: 'Date management service not available',
+        message: 'The date management service is not initialized'
+      });
+    }
+    
+    // Get current config
+    const { getConfig } = require('../config/content-config.js');
+    const config = getConfig();
+    
+    // Get change detection info
+    const changeCheck = await dateService.hasLegalContentChanged();
+    
+    // Get service status
+    const status = dateService.getStatus();
+    
+    res.json({
+      success: true,
+      config: config.dates,
+      changeCheck,
+      status,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Error getting content dates:', error);
+    res.status(500).json({ 
+      error: 'Failed to get content dates',
+      message: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/admin/content-dates
+ * Manually update legal dates (admin override)
+ */
+router.post('/content-dates', writeLimiter, authRequired, roleRequired('admin'), csrfProtection, async (req, res) => {
+  try {
+    const dateService = req.app.locals.dateService;
+    
+    if (!dateService) {
+      return res.status(503).json({ 
+        error: 'Date management service not available'
+      });
+    }
+    
+    const { lastUpdated, effectiveDate } = req.body;
+    
+    if (!lastUpdated && !effectiveDate) {
+      return res.status(400).json({
+        error: 'Missing required fields',
+        message: 'Please provide lastUpdated or effectiveDate'
+      });
+    }
+    
+    // Validate date format (e.g., "February 2026")
+    const datePattern = /^(January|February|March|April|May|June|July|August|September|October|November|December) \d{4}$/;
+    
+    if (lastUpdated && !datePattern.test(lastUpdated)) {
+      return res.status(400).json({
+        error: 'Invalid date format',
+        message: 'Date must be in format "Month YYYY" (e.g., "February 2026")'
+      });
+    }
+    
+    if (effectiveDate && !datePattern.test(effectiveDate)) {
+      return res.status(400).json({
+        error: 'Invalid date format',
+        message: 'Date must be in format "Month YYYY" (e.g., "February 2026")'
+      });
+    }
+    
+    // Update dates
+    const result = await dateService.updateLegalDates({
+      lastUpdated,
+      effectiveDate,
+      manual: true,
+      userId: req.user.id
+    });
+    
+    if (result.success) {
+      // Create audit log
+      auditLog({
+        adminId: req.user.id,
+        adminEmail: req.user.email,
+        action: 'MANUAL_DATE_UPDATE',
+        targetType: 'content_dates',
+        targetId: 'legal_dates',
+        details: { lastUpdated, effectiveDate }
+      });
+      
+      // Notify other admins
+      await dateService.notifyAdmins({
+        type: 'MANUAL_UPDATE',
+        userId: req.user.id,
+        userEmail: req.user.email,
+        lastUpdated,
+        effectiveDate,
+        timestamp: new Date().toISOString()
+      });
+      
+      res.json({
+        success: true,
+        message: 'Legal dates updated successfully',
+        ...result
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        error: 'Failed to update dates',
+        message: result.error
+      });
+    }
+  } catch (error) {
+    console.error('Error updating content dates:', error);
+    res.status(500).json({ 
+      error: 'Failed to update dates',
+      message: error.message
+    });
+  }
+});
+
+/**
+ * GET /api/admin/content-dates/articles
+ * Get all article dates from git history
+ */
+router.get('/content-dates/articles', authRequired, roleRequired('admin'), async (req, res) => {
+  try {
+    const dateService = req.app.locals.dateService;
+    
+    if (!dateService) {
+      return res.status(503).json({ 
+        error: 'Date management service not available'
+      });
+    }
+    
+    const articles = await dateService.getArticleDates();
+    
+    res.json({
+      success: true,
+      articles,
+      count: articles.length,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Error getting article dates:', error);
+    res.status(500).json({ 
+      error: 'Failed to get article dates',
+      message: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/admin/content-dates/schedule
+ * Enable/disable automated monthly updates
+ */
+router.post('/content-dates/schedule', writeLimiter, authRequired, roleRequired('admin'), csrfProtection, async (req, res) => {
+  try {
+    const dateService = req.app.locals.dateService;
+    
+    if (!dateService) {
+      return res.status(503).json({ 
+        error: 'Date management service not available'
+      });
+    }
+    
+    const { enabled } = req.body;
+    
+    if (typeof enabled !== 'boolean') {
+      return res.status(400).json({
+        error: 'Invalid parameter',
+        message: 'enabled must be a boolean'
+      });
+    }
+    
+    // Update config file
+    const configPath = require('path').resolve(__dirname, '../config/content-config.js');
+    let configContent = require('fs').readFileSync(configPath, 'utf8');
+    
+    configContent = configContent.replace(
+      /autoUpdateEnabled:\s*(?:true|false)/,
+      `autoUpdateEnabled: ${enabled}`
+    );
+    
+    require('fs').writeFileSync(configPath, configContent, 'utf8');
+    
+    // Clear require cache
+    delete require.cache[require.resolve('../config/content-config.js')];
+    
+    // Restart or stop scheduler based on enabled state
+    let scheduleResult;
+    if (enabled) {
+      scheduleResult = dateService.scheduleMonthlyUpdate();
+    } else {
+      scheduleResult = dateService.cancelScheduledUpdate();
+    }
+    
+    // Create audit log
+    auditLog({
+      adminId: req.user.id,
+      adminEmail: req.user.email,
+      action: enabled ? 'ENABLE_AUTO_DATES' : 'DISABLE_AUTO_DATES',
+      targetType: 'content_dates',
+      targetId: 'automation',
+      details: { enabled }
+    });
+    
+    res.json({
+      success: true,
+      message: `Automated updates ${enabled ? 'enabled' : 'disabled'} successfully`,
+      enabled,
+      schedule: scheduleResult
+    });
+  } catch (error) {
+    console.error('Error updating schedule:', error);
+    res.status(500).json({ 
+      error: 'Failed to update schedule',
+      message: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/admin/content-dates/check-now
+ * Manually trigger a date check (without waiting for scheduled time)
+ */
+router.post('/content-dates/check-now', writeLimiter, authRequired, roleRequired('admin'), csrfProtection, async (req, res) => {
+  try {
+    const dateService = req.app.locals.dateService;
+    
+    if (!dateService) {
+      return res.status(503).json({ 
+        error: 'Date management service not available'
+      });
+    }
+    
+    const result = await dateService.performMonthlyCheck();
+    
+    // Create audit log
+    auditLog({
+      adminId: req.user.id,
+      adminEmail: req.user.email,
+      action: 'MANUAL_DATE_CHECK',
+      targetType: 'content_dates',
+      targetId: 'check',
+      details: result
+    });
+    
+    res.json({
+      success: true,
+      message: result.performed ? 'Date check completed and dates updated' : 'Date check completed, no update needed',
+      result
+    });
+  } catch (error) {
+    console.error('Error performing date check:', error);
+    res.status(500).json({ 
+      error: 'Failed to perform date check',
+      message: error.message
+    });
+  }
+});
+
 module.exports = router;
 module.exports.setHelperFunctions = setHelperFunctions;
