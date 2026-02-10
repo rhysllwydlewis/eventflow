@@ -156,7 +156,21 @@ EventFlow implements industry-standard security practices:
 - **HSTS**: HTTP Strict Transport Security enabled with 1-year max-age
 - **Secure Cookies**: Authentication cookies use `httpOnly`, `secure` (production), and `sameSite` flags
 
-### Security Headers (via Helmet)
+### Security & Performance
+
+- ✅ **Rate Limiting** - Protects against abuse with endpoint-specific limits
+  - Authentication: 5 requests / 15 minutes
+  - AI/OpenAI: 50 requests / hour
+  - File Uploads: 20 requests / 15 minutes
+  - Search/Discovery: 30 requests / minute
+  - Notifications: 50 requests / 5 minutes
+- ✅ **Input Validation** - Express-validator for all user inputs
+- ✅ **Security Headers** - Helmet.js with CSP, HSTS, and other protections
+- ✅ **API Versioning** - `/api/v1/` prefix with backward compatibility
+- ✅ **CSRF Protection** - Token-based protection for all state-changing operations
+- ✅ **MongoDB Sanitization** - Prevents NoSQL injection attacks
+- ✅ **Password Hashing** - Bcrypt with salt rounds
+- 📚 **[Full Security Documentation →](docs/SECURITY_FEATURES.md)** Headers (via Helmet)
 
 - **Content Security Policy (CSP)**: Restricts resource loading to trusted domains
 - **X-Frame-Options**: Prevents clickjacking with `DENY`
