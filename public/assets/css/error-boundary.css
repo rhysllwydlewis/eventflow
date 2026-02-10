@@ -1,0 +1,62 @@
+/* Error Boundary Component CSS - Issue 5 Fix */
+
+.error-boundary {
+  text-align: center;
+  padding: 3rem 2rem;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+  margin: 2rem 0;
+}
+
+.error-boundary-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.error-boundary-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #991b1b;
+  margin-bottom: 0.5rem;
+}
+
+.error-boundary-message {
+  color: #7f1d1d;
+  margin-bottom: 1.5rem;
+}
+
+.error-boundary-retry {
+  margin-top: 1rem;
+}
+
+/* Dark theme support */
+@media (prefers-color-scheme: dark) {
+  .error-boundary {
+    background: #450a0a;
+    border-color: #7f1d1d;
+  }
+  
+  .error-boundary-title {
+    color: #fca5a5;
+  }
+  
+  .error-boundary-message {
+    color: #fecaca;
+  }
+}
+
+/* Mobile adjustments */
+@media (max-width: 640px) {
+  .error-boundary {
+    padding: 2rem 1.5rem;
+  }
+  
+  .error-boundary-icon {
+    font-size: 2.5rem;
+  }
+  
+  .error-boundary-title {
+    font-size: 1.125rem;
+  }
+}
