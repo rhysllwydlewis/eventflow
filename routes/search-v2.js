@@ -648,7 +648,7 @@ router.get('/performance', authRequired, roleRequired('admin'), async (req, res)
  * POST /api/v2/search/cache/clear
  * Clear search cache
  */
-router.post('/cache/clear', authRequired, roleRequired('admin'), csrfProtection, async (req, res) => {
+router.post('/cache/clear', authRequired, csrfProtection, roleRequired('admin'), async (req, res) => {
   try {
     await clearSearchCache();
 
