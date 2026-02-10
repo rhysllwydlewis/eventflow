@@ -21,6 +21,16 @@ const audit = require('./audit');
 const token = require('./token');
 const cache = require('./cache');
 
+/**
+ * Async handler wrapper for Express routes
+ * Automatically catches async errors and passes them to error handler
+ * @param {Function} fn - Async route handler
+ * @returns {Function} - Express middleware
+ */
+const asyncHandler = fn => (req, res, next) => {
+  Promise.resolve(fn(req, res, next)).catch(next);
+};
+
 module.exports = {
   // Authentication & Authorization
   ...auth,
@@ -66,4 +76,7 @@ module.exports = {
 
   // Cache
   ...cache,
+
+  // Utilities
+  asyncHandler,
 };
