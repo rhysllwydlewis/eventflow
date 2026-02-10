@@ -9,6 +9,7 @@ const express = require('express');
 const PDFDocument = require('pdfkit');
 const { authRequired, roleRequired } = require('../middleware/auth');
 const { writeLimiter } = require('../middleware/rateLimit');
+const { csrfProtection } = require('../middleware/csrf');
 const subscriptionService = require('../services/subscriptionService');
 const paymentService = require('../services/paymentService');
 const { processWebhookEvent } = require('../webhooks/stripeWebhookHandler');
@@ -104,7 +105,7 @@ router.get('/plans', async (req, res) => {
  *       200:
  *         description: Subscription created
  */
-router.post('/', authRequired, writeLimiter, ensureStripeEnabled, async (req, res) => {
+router.post('/', authRequired, csrfProtection, writeLimiter, ensureStripeEnabled, async (req, res) => {
   try {
     const { plan, priceId, trialDays } = req.body;
 
@@ -193,7 +194,7 @@ router.post('/', authRequired, writeLimiter, ensureStripeEnabled, async (req, re
  *     security:
  *       - bearerAuth: []
  */
-router.post('/:id/upgrade', authRequired, writeLimiter, ensureStripeEnabled, async (req, res) => {
+router.post('/:id/upgrade', authRequired, csrfProtection, writeLimiter, ensureStripeEnabled, async (req, res) => {
   try {
     const { id } = req.params;
     const { newPlan, newPriceId } = req.body;
@@ -290,7 +291,7 @@ router.post('/:id/upgrade', authRequired, writeLimiter, ensureStripeEnabled, asy
  *     security:
  *       - bearerAuth: []
  */
-router.post('/:id/downgrade', authRequired, writeLimiter, ensureStripeEnabled, async (req, res) => {
+router.post('/:id/downgrade', authRequired, csrfProtection, writeLimiter, ensureStripeEnabled, async (req, res) => {
   try {
     const { id } = req.params;
     const { newPlan } = req.body;
@@ -380,7 +381,7 @@ router.post('/:id/downgrade', authRequired, writeLimiter, ensureStripeEnabled, a
  *     security:
  *       - bearerAuth: []
  */
-router.post('/:id/cancel', authRequired, writeLimiter, async (req, res) => {
+router.post('/:id/cancel', authRequired, csrfProtection, writeLimiter, async (req, res) => {
   try {
     const { id } = req.params;
     const { reason, immediately } = req.body;
@@ -588,6 +589,7 @@ router.get('/invoices', authRequired, async (req, res) => {
 router.post(
   '/invoices/:id/pay',
   authRequired,
+  csrfProtection,
   writeLimiter,
   ensureStripeEnabled,
   async (req, res) => {

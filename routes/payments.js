@@ -372,6 +372,7 @@ router.post(
 router.post(
   '/create-portal-session',
   authRequired,
+  csrfProtection,
   writeLimiter,
   ensureStripeEnabled,
   async (req, res) => {

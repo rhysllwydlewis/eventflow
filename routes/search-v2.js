@@ -10,6 +10,7 @@ const express = require('express');
 const router = express.Router();
 const dbUnified = require('../db-unified');
 const { authRequired, roleRequired, getUserFromCookie } = require('../middleware/auth');
+const { csrfProtection } = require('../middleware/csrf');
 const {
   searchCacheMiddleware,
   clearSearchCache,
@@ -207,7 +208,7 @@ router.post('/advanced', async (req, res) => {
  * POST /api/v2/search/saved
  * Save a search for quick access
  */
-router.post('/saved', authRequired, async (req, res) => {
+router.post('/saved', authRequired, csrfProtection, async (req, res) => {
   try {
     const { name, criteria, description } = req.body;
 
@@ -285,7 +286,7 @@ router.get('/saved', authRequired, async (req, res) => {
  * DELETE /api/v2/search/saved/:id
  * Delete a saved search
  */
-router.delete('/saved/:id', authRequired, async (req, res) => {
+router.delete('/saved/:id', authRequired, csrfProtection, async (req, res) => {
   try {
     const { id } = req.params;
     const savedSearches = (await dbUnified.read('savedSearches')) || [];
@@ -647,7 +648,7 @@ router.get('/performance', authRequired, roleRequired('admin'), async (req, res)
  * POST /api/v2/search/cache/clear
  * Clear search cache
  */
-router.post('/cache/clear', authRequired, roleRequired('admin'), async (req, res) => {
+router.post('/cache/clear', authRequired, roleRequired('admin'), csrfProtection, async (req, res) => {
   try {
     await clearSearchCache();
 
