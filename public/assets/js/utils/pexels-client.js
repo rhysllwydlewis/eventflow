@@ -87,7 +87,7 @@ class PexelsClient {
     }
 
     try {
-      const response = await fetch(`/api/pexels/curated?per_page=${perPage}`);
+      const response = await fetch(`/api/v1/pexels/curated?per_page=${perPage}`);
 
       if (!response.ok) {
         throw new Error(`Pexels API error: ${response.status}`);

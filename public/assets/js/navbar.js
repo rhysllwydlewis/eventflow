@@ -68,7 +68,7 @@
 
   async function initCsrfToken() {
     try {
-      const response = await fetch('/api/csrf-token', { credentials: 'include' });
+      const response = await fetch('/api/v1/csrf-token', { credentials: 'include' });
       if (response.ok) {
         const data = await response.json();
         state.csrfToken = data.csrfToken;
@@ -150,7 +150,7 @@
     // Call logout API
     if (state.csrfToken) {
       try {
-        await fetch('/api/auth/logout', {
+        await fetch('/api/v1/auth/logout', {
           method: 'POST',
           headers: {
             'X-CSRF-Token': state.csrfToken,

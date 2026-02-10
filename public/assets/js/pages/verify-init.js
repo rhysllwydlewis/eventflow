@@ -112,7 +112,7 @@
         resendBtn.textContent = 'Sending...';
 
         try {
-          const response = await fetch('/api/auth/resend-verification', {
+          const response = await fetch('/api/v1/auth/resend-verification', {
             method: 'POST',
             headers: getHeadersWithCsrf({ 'Content-Type': 'application/json' }),
             credentials: 'include',
@@ -165,7 +165,7 @@
   // Get current user to determine redirect destination
   async function getCurrentUser() {
     try {
-      const response = await fetch('/api/auth/me', {
+      const response = await fetch('/api/v1/auth/me', {
         credentials: 'include',
       });
       if (response.ok) {
@@ -186,7 +186,7 @@
       try {
         console.log(`📧 Verification attempt ${attempt + 1}/${retries + 1}`);
 
-        const response = await fetch(`/api/auth/verify?token=${encodeURIComponent(token)}`, {
+        const response = await fetch(`/api/v1/auth/verify?token=${encodeURIComponent(token)}`, {
           credentials: 'include',
           headers: {
             Accept: 'application/json',

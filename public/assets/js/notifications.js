@@ -110,7 +110,7 @@
         unreadOnly: options.unreadOnly || false,
       });
 
-      const response = await fetch(`/api/notifications?${query}`, {
+      const response = await fetch(`/api/v1/notifications?${query}`, {
         credentials: 'include',
       });
 
@@ -132,7 +132,7 @@
 
   async function markAsRead(notificationId) {
     try {
-      const response = await fetch(`/api/notifications/${notificationId}/read`, {
+      const response = await fetch(`/api/v1/notifications/${notificationId}/read`, {
         method: 'PUT',
         credentials: 'include',
       });
@@ -155,7 +155,7 @@
 
   async function markAllAsRead() {
     try {
-      const response = await fetch('/api/notifications/mark-all-read', {
+      const response = await fetch('/api/v1/notifications/mark-all-read', {
         method: 'PUT',
         credentials: 'include',
       });
@@ -177,7 +177,7 @@
 
   async function dismissNotification(notificationId) {
     try {
-      const response = await fetch(`/api/notifications/${notificationId}/dismiss`, {
+      const response = await fetch(`/api/v1/notifications/${notificationId}/dismiss`, {
         method: 'PUT',
         credentials: 'include',
       });
@@ -194,7 +194,7 @@
 
   async function deleteNotification(notificationId) {
     try {
-      const response = await fetch(`/api/notifications/${notificationId}`, {
+      const response = await fetch(`/api/v1/notifications/${notificationId}`, {
         method: 'DELETE',
         credentials: 'include',
       });

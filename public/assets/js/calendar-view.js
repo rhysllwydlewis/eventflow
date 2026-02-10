@@ -28,7 +28,7 @@
     // Fetch events from API
     let events = [];
     try {
-      const response = await fetch('/api/me/plans', {
+      const response = await fetch('/api/v1/me/plans', {
         credentials: 'include',
       });
 

@@ -126,7 +126,7 @@
   // ============================================
   async function fetchCsrfToken() {
     try {
-      const resp = await fetch('/api/csrf-token', { credentials: 'include' });
+      const resp = await fetch('/api/v1/csrf-token', { credentials: 'include' });
       if (!resp.ok) {
         return null;
       }
@@ -147,7 +147,7 @@
   async function me() {
     try {
       // Add cache-busting to /api/auth/me calls
-      const resp = await fetch(`/api/auth/me?_=${Date.now()}`, {
+      const resp = await fetch(`/api/v1/auth/me?_=${Date.now()}`, {
         credentials: 'include',
         headers: {
           Accept: 'application/json',
@@ -178,7 +178,7 @@
     // Perform logout request
     if (token) {
       try {
-        await fetch('/api/auth/logout', {
+        await fetch('/api/v1/auth/logout', {
           method: 'POST',
           credentials: 'include',
           headers: { 'X-CSRF-Token': token },
@@ -208,7 +208,7 @@
       // Retry logout once
       if (token) {
         try {
-          await fetch('/api/auth/logout', {
+          await fetch('/api/v1/auth/logout', {
             method: 'POST',
             credentials: 'include',
             headers: { 'X-CSRF-Token': token },

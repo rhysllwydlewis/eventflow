@@ -1511,21 +1511,21 @@
       const dlUsers = document.getElementById('downloadUsersCsv');
       if (dlUsers) {
         dlUsers.addEventListener('click', () => {
-          window.location.href = '/api/admin/users-export';
+          window.location.href = '/api/v1/admin/users-export';
         });
       }
 
       const dlMarketing = document.getElementById('downloadMarketingCsv');
       if (dlMarketing) {
         dlMarketing.addEventListener('click', () => {
-          window.location.href = '/api/admin/marketing-export';
+          window.location.href = '/api/v1/admin/marketing-export';
         });
       }
 
       const dlJson = document.getElementById('downloadAllJson');
       if (dlJson) {
         dlJson.addEventListener('click', () => {
-          window.location.href = '/api/admin/export/all';
+          window.location.href = '/api/v1/admin/export/all';
         });
       }
 

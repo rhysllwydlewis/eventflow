@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Load category and packages
-  fetch(`/api/categories/${slug}`)
+  fetch(`/api/v1/categories/${slug}`)
     .then(res => {
       if (!res.ok) {
         throw new Error('Category not found');

@@ -242,7 +242,7 @@ async function me() {
 
   // Fallback to direct API call (should not happen if auth-state.js is loaded)
   try {
-    const r = await fetch('/api/auth/me', {
+    const r = await fetch('/api/v1/auth/me', {
       credentials: 'include',
     });
     // Treat 401/403 as expected guest state, not an error
@@ -257,7 +257,7 @@ async function me() {
 }
 async function listSuppliers(params = {}) {
   const q = new URLSearchParams(params).toString();
-  const r = await fetch(`/api/suppliers${q ? `?${q}` : ''}`, {
+  const r = await fetch(`/api/v1/suppliers${q ? `?${q}` : ''}`, {
     credentials: 'include',
   });
   const d = await r.json();
@@ -426,7 +426,7 @@ async function initResults() {
     container.querySelectorAll('[data-add]').forEach(btn => {
       btn.addEventListener('click', async () => {
         const id = btn.getAttribute('data-add');
-        const r = await fetch('/api/plan', {
+        const r = await fetch('/api/v1/plan', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -539,7 +539,7 @@ async function initSupplier() {
     return;
   }
 
-  const r = await fetch(`/api/suppliers/${encodeURIComponent(id)}`, {
+  const r = await fetch(`/api/v1/suppliers/${encodeURIComponent(id)}`, {
     credentials: 'include',
   });
   if (!r.ok) {
@@ -555,7 +555,7 @@ async function initSupplier() {
   // Fetch packages with error handling
   let pkgs = { items: [] };
   try {
-    const pkgsRes = await fetch(`/api/suppliers/${encodeURIComponent(id)}/packages`, {
+    const pkgsRes = await fetch(`/api/v1/suppliers/${encodeURIComponent(id)}/packages`, {
       credentials: 'include',
     });
     if (pkgsRes.ok) {
@@ -950,7 +950,7 @@ async function initSupplier() {
     if (user && user.role === 'customer') {
       // For authenticated users, check server-side plan
       try {
-        const planResp = await fetch('/api/plan', {
+        const planResp = await fetch('/api/v1/plan', {
           credentials: 'include',
         });
         if (planResp.ok) {
@@ -990,7 +990,7 @@ async function initSupplier() {
       if (currentlyInPlan) {
         // Remove from plan
         try {
-          const r = await fetch(`/api/plan/${encodeURIComponent(s.id)}`, {
+          const r = await fetch(`/api/v1/plan/${encodeURIComponent(s.id)}`, {
             method: 'DELETE',
             headers: {
               'X-CSRF-Token': window.__CSRF_TOKEN__ || '',
@@ -1011,7 +1011,7 @@ async function initSupplier() {
       } else {
         // Add to plan
         try {
-          const r = await fetch('/api/plan', {
+          const r = await fetch('/api/v1/plan', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -1065,7 +1065,7 @@ async function initSupplier() {
           return;
         }
         const payload = { supplierId: s.id, text: msg };
-        const r = await fetch('/api/threads', {
+        const r = await fetch('/api/v1/threads', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -1106,7 +1106,7 @@ async function initSupplier() {
       }
 
       try {
-        const res = await fetch('/api/me/saved', { credentials: 'include' });
+        const res = await fetch('/api/v1/me/saved', { credentials: 'include' });
         if (res.ok) {
           const data = await res.json();
           const isSaved = data.savedItems.some(
@@ -1133,7 +1133,7 @@ async function initSupplier() {
       try {
         if (isSaved) {
           // Find and unsave
-          const res = await fetch('/api/me/saved', { credentials: 'include' });
+          const res = await fetch('/api/v1/me/saved', { credentials: 'include' });
           if (res.ok) {
             const data = await res.json();
             const savedItem = data.savedItems.find(
@@ -1141,7 +1141,7 @@ async function initSupplier() {
             );
 
             if (savedItem) {
-              const deleteRes = await fetch(`/api/me/saved/${savedItem.id}`, {
+              const deleteRes = await fetch(`/api/v1/me/saved/${savedItem.id}`, {
                 method: 'DELETE',
                 headers: { 'X-CSRF-Token': window.__CSRF_TOKEN__ || '' },
                 credentials: 'include',
@@ -1155,7 +1155,7 @@ async function initSupplier() {
           }
         } else {
           // Save
-          const saveRes = await fetch('/api/me/saved', {
+          const saveRes = await fetch('/api/v1/me/saved', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -1425,7 +1425,7 @@ function initContactFormValidation(supplierId, supplierName) {
         supplierId: supplierId,
       };
 
-      const response = await fetch('/api/contact-supplier', {
+      const response = await fetch('/api/v1/contact-supplier', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1692,7 +1692,7 @@ async function initPlan() {
   // For authenticated users, always fetch from server
   if (user && user.role === 'customer') {
     try {
-      const r = await fetch('/api/plan', {
+      const r = await fetch('/api/v1/plan', {
         credentials: 'include',
       });
       if (r.ok) {
@@ -1775,7 +1775,7 @@ async function initPlan() {
         aiOut.innerHTML = '<p class="small">Thinking about your event…</p>';
 
         try {
-          const r = await fetch('/api/ai/plan', {
+          const r = await fetch('/api/v1/ai/plan', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -2269,7 +2269,7 @@ async function renderThreads(targetEl) {
   }
 
   try {
-    const r = await fetch('/api/threads/my', {
+    const r = await fetch('/api/v1/threads/my', {
       credentials: 'include',
     });
     if (!r.ok) {
@@ -2371,7 +2371,7 @@ async function openThread(id) {
 
   async function load(scroll) {
     try {
-      const r = await fetch(`/api/threads/${encodeURIComponent(id)}/messages`, {
+      const r = await fetch(`/api/v1/threads/${encodeURIComponent(id)}/messages`, {
         credentials: 'include',
       });
       if (!r.ok) {
@@ -2424,7 +2424,7 @@ async function openThread(id) {
     }
     status.textContent = 'Sending…';
     try {
-      const r = await fetch(`/api/threads/${encodeURIComponent(id)}/messages`, {
+      const r = await fetch(`/api/v1/threads/${encodeURIComponent(id)}/messages`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -2614,7 +2614,7 @@ async function initDashSupplier() {
   async function ensureCsrfToken() {
     if (!window.__CSRF_TOKEN__) {
       try {
-        const resp = await fetch('/api/csrf-token', { credentials: 'include' });
+        const resp = await fetch('/api/v1/csrf-token', { credentials: 'include' });
         if (resp.ok) {
           const data = await resp.json();
           window.__CSRF_TOKEN__ = data.csrfToken;
@@ -2633,7 +2633,7 @@ async function initDashSupplier() {
   try {
     const params = new URLSearchParams(location.search);
     if (params.get('billing') === 'success') {
-      fetch('/api/me/subscription/upgrade', {
+      fetch('/api/v1/me/subscription/upgrade', {
         method: 'POST',
         headers: { 'X-CSRF-Token': window.__CSRF_TOKEN__ || '' },
         credentials: 'include',
@@ -3283,7 +3283,7 @@ async function initDashSupplier() {
       return;
     }
     try {
-      const r = await fetch('/api/billing/config');
+      const r = await fetch('/api/v1/billing/config');
       if (!r.ok) {
         host.innerHTML = '<p class="small">Billing status is currently unavailable.</p>';
         return;
@@ -3323,7 +3323,7 @@ async function initDashSupplier() {
             status.textContent = 'Redirecting to secure checkout…';
           }
           try {
-            const resp = await fetch('/api/billing/checkout', {
+            const resp = await fetch('/api/v1/billing/checkout', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -3413,7 +3413,7 @@ function editPackage(packageId) {
   }
 
   // Fetch package data from API
-  fetch(`/api/me/packages/${encodeURIComponent(packageId)}`, {
+  fetch(`/api/v1/me/packages/${encodeURIComponent(packageId)}`, {
     credentials: 'include',
   })
     .then(response => {
@@ -3468,7 +3468,7 @@ async function deletePackage(packageId) {
 
   try {
     const csrfToken = window.__CSRF_TOKEN__ || '';
-    const response = await fetch(`/api/me/packages/${encodeURIComponent(packageId)}`, {
+    const response = await fetch(`/api/v1/me/packages/${encodeURIComponent(packageId)}`, {
       method: 'DELETE',
       headers: {
         'X-CSRF-Token': csrfToken,
@@ -3562,7 +3562,7 @@ async function editProfile(supplierId) {
 
   // Fetch supplier data and populate form
   try {
-    const response = await fetch(`/api/me/suppliers/${encodeURIComponent(supplierId)}`, {
+    const response = await fetch(`/api/v1/me/suppliers/${encodeURIComponent(supplierId)}`, {
       credentials: 'include',
     });
 
@@ -3622,7 +3622,7 @@ async function deleteProfile(supplierId) {
 
   try {
     const csrfToken = window.__CSRF_TOKEN__ || '';
-    const response = await fetch(`/api/me/suppliers/${encodeURIComponent(supplierId)}`, {
+    const response = await fetch(`/api/v1/me/suppliers/${encodeURIComponent(supplierId)}`, {
       method: 'DELETE',
       headers: {
         'X-CSRF-Token': csrfToken,
@@ -3669,7 +3669,7 @@ async function initAdmin() {
       const originalLabel = resetBtn.textContent;
       resetBtn.textContent = 'Resetting…';
       try {
-        const r = await fetch('/api/admin/reset-demo', {
+        const r = await fetch('/api/v1/admin/reset-demo', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -3887,7 +3887,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!label) {
         return;
       }
-      const r = await fetch('/api/meta', {
+      const r = await fetch('/api/v1/meta', {
         credentials: 'include',
       });
       if (!r.ok) {
@@ -4017,7 +4017,7 @@ document.addEventListener('DOMContentLoaded', () => {
           return;
         }
         try {
-          await fetch('/api/auth/forgot', {
+          await fetch('/api/v1/auth/forgot', {
             method: 'POST',
             headers: getHeadersWithCsrf({ 'Content-Type': 'application/json' }),
             credentials: 'include',
@@ -4383,7 +4383,7 @@ document.addEventListener('DOMContentLoaded', () => {
           resendBtn.textContent = 'Sending...';
 
           try {
-            const r = await fetch('/api/auth/resend-verification', {
+            const r = await fetch('/api/v1/auth/resend-verification', {
               method: 'POST',
               headers: getHeadersWithCsrf({ 'Content-Type': 'application/json' }),
               credentials: 'include',
@@ -4464,7 +4464,7 @@ document.addEventListener('DOMContentLoaded', () => {
           loginBtn.textContent = 'Signing in…';
         }
         try {
-          const r = await fetch('/api/auth/login', {
+          const r = await fetch('/api/v1/auth/login', {
             method: 'POST',
             headers: getHeadersWithCsrf({ 'Content-Type': 'application/json' }),
             credentials: 'include',
@@ -4709,7 +4709,7 @@ document.addEventListener('DOMContentLoaded', () => {
             socials,
           };
 
-          const r = await fetch('/api/auth/register', {
+          const r = await fetch('/api/v1/auth/register', {
             method: 'POST',
             headers: getHeadersWithCsrf({ 'Content-Type': 'application/json' }),
             credentials: 'include',
@@ -4744,7 +4744,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const formData = new FormData();
                 formData.append('avatar', avatarInput.files[0]);
 
-                const uploadRes = await fetch('/api/profile/avatar', {
+                const uploadRes = await fetch('/api/v1/profile/avatar', {
                   method: 'POST',
                   credentials: 'include',
                   body: formData,
@@ -4797,7 +4797,7 @@ document.addEventListener('DOMContentLoaded', () => {
                       resendBtn.disabled = true;
                       resendBtn.textContent = 'Sending...';
                       try {
-                        const resendResp = await fetch('/api/auth/resend-verification', {
+                        const resendResp = await fetch('/api/v1/auth/resend-verification', {
                           method: 'POST',
                           headers: getHeadersWithCsrf({ 'Content-Type': 'application/json' }),
                           credentials: 'include',
@@ -4835,7 +4835,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     resendBtn.disabled = true;
                     resendBtn.textContent = 'Sending...';
                     try {
-                      const resendResp = await fetch('/api/auth/resend-verification', {
+                      const resendResp = await fetch('/api/v1/auth/resend-verification', {
                         method: 'POST',
                         headers: getHeadersWithCsrf({ 'Content-Type': 'application/json' }),
                         credentials: 'include',
@@ -4908,7 +4908,7 @@ function createResendVerificationForm(containerId, initialEmail = '') {
       resendBtn.disabled = true;
       resendBtn.textContent = 'Sending...';
       try {
-        const resendResp = await fetch('/api/auth/resend-verification', {
+        const resendResp = await fetch('/api/v1/auth/resend-verification', {
           method: 'POST',
           headers: getHeadersWithCsrf({ 'Content-Type': 'application/json' }),
           credentials: 'include',
@@ -4964,7 +4964,7 @@ async function initVerify() {
           resendBtn.disabled = true;
           resendBtn.textContent = 'Sending...';
           try {
-            const resendResp = await fetch('/api/auth/resend-verification', {
+            const resendResp = await fetch('/api/v1/auth/resend-verification', {
               method: 'POST',
               headers: getHeadersWithCsrf({ 'Content-Type': 'application/json' }),
               credentials: 'include',
@@ -4990,7 +4990,7 @@ async function initVerify() {
   }
 
   try {
-    const r = await fetch(`/api/auth/verify?token=${encodeURIComponent(token)}`, {
+    const r = await fetch(`/api/v1/auth/verify?token=${encodeURIComponent(token)}`, {
       credentials: 'include',
     });
     const data = await r.json();
@@ -5026,7 +5026,7 @@ async function initVerify() {
             resendBtn.disabled = true;
             resendBtn.textContent = 'Sending...';
             try {
-              const resendResp = await fetch('/api/auth/resend-verification', {
+              const resendResp = await fetch('/api/v1/auth/resend-verification', {
                 method: 'POST',
                 headers: getHeadersWithCsrf({ 'Content-Type': 'application/json' }),
                 credentials: 'include',
@@ -5071,7 +5071,7 @@ async function initVerify() {
 // Settings page
 async function initSettings() {
   try {
-    const r = await fetch('/api/me/settings', {
+    const r = await fetch('/api/v1/me/settings', {
       credentials: 'include',
     });
 
@@ -5104,7 +5104,7 @@ async function initSettings() {
     const saveBtn = document.getElementById('save-settings');
     if (saveBtn) {
       saveBtn.addEventListener('click', async () => {
-        const rr = await fetch('/api/me/settings', {
+        const rr = await fetch('/api/v1/me/settings', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -5161,7 +5161,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (window.__CSRF_TOKEN__) {
       hasSent = true;
-      fetch('/api/metrics/track', {
+      fetch('/api/v1/metrics/track', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': window.__CSRF_TOKEN__ },
         credentials: 'include',
@@ -5201,7 +5201,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // Admin charts
 async function adminCharts() {
   try {
-    const r = await fetch('/api/admin/metrics/timeseries', {
+    const r = await fetch('/api/v1/admin/metrics/timeseries', {
       credentials: 'include',
     });
     if (!r.ok) {
@@ -5252,11 +5252,11 @@ document.addEventListener('DOMContentLoaded', () => {
   if (window.__EF_PAGE__ === 'dash_supplier') {
     (async () => {
       try {
-        const me = await fetch('/api/me/suppliers', {
+        const me = await fetch('/api/v1/me/suppliers', {
           credentials: 'include',
         });
         const ms = await me.json();
-        const pk = await fetch('/api/me/packages', {
+        const pk = await fetch('/api/v1/me/packages', {
           credentials: 'include',
         });
         const mp = await pk.json();
@@ -5331,7 +5331,7 @@ function efInitVenueMap() {
 
   // Fetch Google Maps API key from server
   let mapsApiKey = '';
-  fetch('/api/config')
+  fetch('/api/v1/config')
     .then(res => res.json())
     .then(config => {
       mapsApiKey = config.googleMapsApiKey || '';

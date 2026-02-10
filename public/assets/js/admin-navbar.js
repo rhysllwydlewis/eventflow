@@ -103,7 +103,7 @@
     }
 
     // Try to fetch database status from API
-    fetch('/api/admin/db-status', {
+    fetch('/api/v1/admin/db-status', {
       credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
@@ -171,7 +171,7 @@
 
   function updateBadgeCounts() {
     // Fetch badge counts from dedicated endpoint
-    fetch('/api/admin/badge-counts', {
+    fetch('/api/v1/admin/badge-counts', {
       credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
@@ -300,7 +300,7 @@
       if (confirm('Are you sure you want to sign out?')) {
         try {
           // Call POST logout endpoint with CSRF token if available
-          await fetch('/api/auth/logout', {
+          await fetch('/api/v1/auth/logout', {
             method: 'POST',
             headers: { 'X-CSRF-Token': window.__CSRF_TOKEN__ || '' },
             credentials: 'include',

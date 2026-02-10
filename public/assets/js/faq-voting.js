@@ -77,7 +77,7 @@
    */
   async function handleVote(faqId, helpful, voteSection) {
     try {
-      const response = await fetch('/api/public/faq/vote', {
+      const response = await fetch('/api/v1/public/faq/vote', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

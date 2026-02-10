@@ -205,7 +205,7 @@
     async update() {
       try {
         // Update badge counts
-        const response = await fetch('/api/admin/badge-counts');
+        const response = await fetch('/api/v1/admin/badge-counts');
         if (response.ok) {
           const counts = await response.json();
           this.updateBadges(counts);

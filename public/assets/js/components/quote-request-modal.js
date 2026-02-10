@@ -232,7 +232,7 @@ class QuoteRequestModal {
       };
 
       const token = this.getCsrfToken();
-      const response = await fetch('/api/quote-requests', {
+      const response = await fetch('/api/v1/quote-requests', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

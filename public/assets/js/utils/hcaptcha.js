@@ -124,7 +124,7 @@ export function resetHCaptcha(widgetId) {
  */
 export async function verifyHCaptcha(token) {
   try {
-    const response = await fetch('/api/verify-captcha', {
+    const response = await fetch('/api/v1/verify-captcha', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

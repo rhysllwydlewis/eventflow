@@ -17,7 +17,7 @@ class SupplierGalleryManager {
   async ensureCsrfToken() {
     if (!window.__CSRF_TOKEN__) {
       try {
-        const resp = await fetch('/api/csrf-token', { credentials: 'include' });
+        const resp = await fetch('/api/v1/csrf-token', { credentials: 'include' });
         if (resp.ok) {
           const data = await resp.json();
           window.__CSRF_TOKEN__ = data.csrfToken;
@@ -215,7 +215,7 @@ class SupplierGalleryManager {
         if (!supplierId || supplierId.trim() === '') {
           // Create new supplier
           const csrfToken = await this.ensureCsrfToken();
-          const response = await fetch('/api/me/suppliers', {
+          const response = await fetch('/api/v1/me/suppliers', {
             method: 'POST',
             credentials: 'include',
             headers: {
@@ -279,7 +279,7 @@ class SupplierGalleryManager {
         } else if (id) {
           // If editing existing supplier, update it
           const csrfToken = await this.ensureCsrfToken();
-          const updateResponse = await fetch(`/api/me/suppliers/${encodeURIComponent(id)}`, {
+          const updateResponse = await fetch(`/api/v1/me/suppliers/${encodeURIComponent(id)}`, {
             method: 'PATCH',
             credentials: 'include',
             headers: {

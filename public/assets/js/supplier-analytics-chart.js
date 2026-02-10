@@ -571,7 +571,7 @@ export async function createEnquiryTrendChart(containerId) {
 async function fetchEnquiryTrendData() {
   try {
     // Fetch analytics data for 60 days
-    const response = await fetch('/api/supplier/analytics?days=60', {
+    const response = await fetch('/api/v1/supplier/analytics?days=60', {
       credentials: 'include',
     });
 
@@ -707,7 +707,7 @@ export async function createLeadQualityWidget(containerId) {
 async function fetchLeadQualityData() {
   try {
     // Try to fetch from API first
-    const response = await fetch('/api/supplier/lead-quality', {
+    const response = await fetch('/api/v1/supplier/lead-quality', {
       credentials: 'include',
     });
 
@@ -828,7 +828,7 @@ export async function loadReviewStats(containerId) {
  */
 async function fetchReviewStats() {
   try {
-    const response = await fetch('/api/supplier/reviews/stats', {
+    const response = await fetch('/api/v1/supplier/reviews/stats', {
       credentials: 'include',
     });
 

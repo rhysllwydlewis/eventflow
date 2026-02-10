@@ -152,7 +152,7 @@
 
   async function loadDraft(draftId) {
     try {
-      const response = await fetch('/api/messages/drafts', {
+      const response = await fetch('/api/v1/messages/drafts', {
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
@@ -188,7 +188,7 @@
 
   async function loadCurrentUser() {
     try {
-      const response = await fetch('/api/auth/me', {
+      const response = await fetch('/api/v1/auth/me', {
         credentials: 'include',
       });
       if (response.ok) {
@@ -334,7 +334,7 @@
 
   async function loadThread() {
     try {
-      const response = await fetch(`/api/messages/threads/${threadId}`, {
+      const response = await fetch(`/api/v1/messages/threads/${threadId}`, {
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
@@ -361,7 +361,7 @@
 
   async function loadMessages() {
     try {
-      const response = await fetch(`/api/messages/threads/${threadId}/messages`, {
+      const response = await fetch(`/api/v1/messages/threads/${threadId}/messages`, {
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
@@ -400,7 +400,7 @@
     sendBtn.innerHTML = `<span class="loading-spinner"></span> ${isDraft ? 'Saving...' : 'Sending...'}`;
 
     try {
-      const response = await fetch(`/api/messages/threads/${threadId}/messages`, {
+      const response = await fetch(`/api/v1/messages/threads/${threadId}/messages`, {
         method: 'POST',
         credentials: 'include',
         headers: {
@@ -448,7 +448,7 @@
 
   async function markAsRead() {
     try {
-      await fetch(`/api/messages/threads/${threadId}/mark-read`, {
+      await fetch(`/api/v1/messages/threads/${threadId}/mark-read`, {
         method: 'POST',
         credentials: 'include',
         headers: {
@@ -731,7 +731,7 @@
     }
 
     try {
-      const response = await fetch(`/api/messages/threads/${threadId}/${action}`, {
+      const response = await fetch(`/api/v1/messages/threads/${threadId}/${action}`, {
         method: 'POST',
         credentials: 'include',
         headers: {
@@ -826,7 +826,7 @@
 
   async function toggleReaction(messageId, emoji) {
     try {
-      const response = await fetch(`/api/messages/${messageId}/reactions`, {
+      const response = await fetch(`/api/v1/messages/${messageId}/reactions`, {
         method: 'POST',
         credentials: 'include',
         headers: {

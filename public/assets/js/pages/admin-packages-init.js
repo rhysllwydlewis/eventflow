@@ -12,7 +12,7 @@
   const PLACEHOLDER_IMAGE = '/assets/images/placeholders/package-event.svg';
 
   // Fetch CSRF token on page load
-  fetch('/api/csrf-token', {
+  fetch('/api/v1/csrf-token', {
     credentials: 'include',
   })
     .then(r => r.json())
@@ -545,7 +545,7 @@
       if (currentImageFile) {
         // Use cached CSRF token
         if (!csrfToken) {
-          const csrfResponse = await fetch('/api/csrf-token', {
+          const csrfResponse = await fetch('/api/v1/csrf-token', {
             credentials: 'include',
           });
           const csrfData = await csrfResponse.json();
@@ -565,7 +565,7 @@
         const formData = new FormData();
         formData.append('image', currentImageFile);
 
-        const uploadResponse = await fetch(`/api/admin/packages/${packageId}/image`, {
+        const uploadResponse = await fetch(`/api/v1/admin/packages/${packageId}/image`, {
           method: 'POST',
           headers: {
             'X-CSRF-Token': csrfToken,

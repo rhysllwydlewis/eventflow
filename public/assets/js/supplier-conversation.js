@@ -6,7 +6,7 @@
 // Get current user
 async function getCurrentUser() {
   try {
-    const response = await fetch('/api/auth/me');
+    const response = await fetch('/api/v1/auth/me');
     if (!response.ok) {
       return null;
     }
@@ -68,7 +68,7 @@ function setupFirebaseConversation(originalButton) {
     // Get supplier info
     let supplierInfo = null;
     try {
-      const response = await fetch(`/api/suppliers/${supplierId}`);
+      const response = await fetch(`/api/v1/suppliers/${supplierId}`);
       if (response.ok) {
         const data = await response.json();
         supplierInfo = data;
@@ -138,7 +138,7 @@ function openFirebaseConversationModal(user, supplierId, supplierInfo) {
       submitBtn.textContent = 'Sending...';
 
       // Send message via MongoDB API
-      const response = await fetch('/api/threads/start', {
+      const response = await fetch('/api/v1/threads/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

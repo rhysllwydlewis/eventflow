@@ -34,7 +34,7 @@
    */
   async function checkAuth() {
     try {
-      const res = await fetch('/api/user', {
+      const res = await fetch('/api/v1/user', {
         credentials: 'include',
         headers: {
           'Cache-Control': 'no-cache',
@@ -198,7 +198,7 @@
     }
 
     try {
-      const res = await fetch('/api/marketplace/my-listings', {
+      const res = await fetch('/api/v1/marketplace/my-listings', {
         credentials: 'include',
         headers: {
           'Cache-Control': 'no-cache',
@@ -344,7 +344,7 @@
     }
 
     try {
-      const res = await fetch(`/api/marketplace/listings/${id}`, {
+      const res = await fetch(`/api/v1/marketplace/listings/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -376,7 +376,7 @@
     }
 
     try {
-      const res = await fetch(`/api/marketplace/listings/${id}`, {
+      const res = await fetch(`/api/v1/marketplace/listings/${id}`, {
         method: 'DELETE',
         credentials: 'include',
         headers: {

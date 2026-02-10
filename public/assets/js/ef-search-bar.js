@@ -53,7 +53,7 @@ class EFSearchBar {
       // Get CSRF token from cookie
       const token = this.getCsrfToken();
 
-      await fetch('/api/analytics/event', {
+      await fetch('/api/v1/analytics/event', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

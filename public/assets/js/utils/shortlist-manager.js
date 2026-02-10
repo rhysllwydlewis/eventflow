@@ -56,7 +56,7 @@ class ShortlistManager {
   async checkAuth() {
     try {
       // Try common auth endpoints
-      const response = await fetch('/api/auth/me', {
+      const response = await fetch('/api/v1/auth/me', {
         credentials: 'include',
       });
       if (response.ok) {
@@ -64,7 +64,7 @@ class ShortlistManager {
       }
 
       // Fallback to /api/user endpoint
-      const fallbackResponse = await fetch('/api/user', {
+      const fallbackResponse = await fetch('/api/v1/user', {
         credentials: 'include',
       });
       return fallbackResponse.ok;
@@ -78,7 +78,7 @@ class ShortlistManager {
    */
   async loadFromServer() {
     try {
-      const response = await fetch('/api/shortlist', {
+      const response = await fetch('/api/v1/shortlist', {
         credentials: 'include',
       });
 
@@ -201,7 +201,7 @@ class ShortlistManager {
     // Sync to server if authenticated
     if (this.isAuthenticated) {
       try {
-        const response = await fetch('/api/shortlist', {
+        const response = await fetch('/api/v1/shortlist', {
           method: 'POST',
           headers: this.addCsrfHeaders({
             'Content-Type': 'application/json',
@@ -238,7 +238,7 @@ class ShortlistManager {
     // Sync to server if authenticated
     if (this.isAuthenticated) {
       try {
-        await fetch(`/api/shortlist/${type}/${id}`, {
+        await fetch(`/api/v1/shortlist/${type}/${id}`, {
           method: 'DELETE',
           headers: this.addCsrfHeaders({}),
           credentials: 'include',
@@ -261,7 +261,7 @@ class ShortlistManager {
 
     if (this.isAuthenticated) {
       try {
-        await fetch('/api/shortlist', {
+        await fetch('/api/v1/shortlist', {
           method: 'DELETE',
           headers: this.addCsrfHeaders({}),
           credentials: 'include',

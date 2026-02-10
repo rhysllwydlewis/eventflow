@@ -55,7 +55,7 @@
       queryParams.append('eventType', params.eventType);
     }
 
-    const response = await fetch(`/api/public/recommendations?${queryParams}`);
+    const response = await fetch(`/api/v1/public/recommendations?${queryParams}`);
 
     if (!response.ok) {
       throw new Error('Failed to fetch recommendations');

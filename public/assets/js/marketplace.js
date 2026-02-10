@@ -35,7 +35,7 @@
   // Check if user is logged in
   async function checkAuth() {
     try {
-      const res = await fetch('/api/user', { credentials: 'include' });
+      const res = await fetch('/api/v1/user', { credentials: 'include' });
       if (res.ok) {
         const data = await res.json();
         // Handle both wrapped ({user: ...}) and unwrapped response formats
@@ -150,7 +150,7 @@
         }
       }
 
-      const res = await fetch(`/api/marketplace/listings?${params.toString()}`);
+      const res = await fetch(`/api/v1/marketplace/listings?${params.toString()}`);
       if (!res.ok) {
         throw new Error('Failed to fetch listings');
       }
@@ -413,7 +413,7 @@
 
     try {
       // Get listing to find seller ID
-      const res = await fetch(`/api/marketplace/listings/${listingId}`);
+      const res = await fetch(`/api/v1/marketplace/listings/${listingId}`);
       if (!res.ok) {
         throw new Error('Failed to fetch listing');
       }
@@ -428,7 +428,7 @@
       const { listing } = await res.json();
 
       // Start a thread with the seller
-      const threadRes = await fetch('/api/threads/start', {
+      const threadRes = await fetch('/api/v1/threads/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -464,7 +464,7 @@
     // Fetch CSRF token first
     let csrfToken = '';
     try {
-      const csrfRes = await fetch('/api/csrf-token', { credentials: 'include' });
+      const csrfRes = await fetch('/api/v1/csrf-token', { credentials: 'include' });
       if (csrfRes.ok) {
         const csrfData = await csrfRes.json();
         csrfToken = csrfData.csrfToken;
@@ -662,7 +662,7 @@
       };
 
       try {
-        const res = await fetch('/api/marketplace/listings', {
+        const res = await fetch('/api/v1/marketplace/listings', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
