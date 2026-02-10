@@ -203,12 +203,22 @@ class DateManagementService {
         userId = 'system'
       } = options;
       
-      // Validate dates if provided
+      // Validate dates if provided (defense in depth)
       if (lastUpdated && typeof lastUpdated !== 'string') {
         throw new Error('lastUpdated must be a string (e.g., "February 2026")');
       }
       if (effectiveDate && typeof effectiveDate !== 'string') {
         throw new Error('effectiveDate must be a string (e.g., "February 2026")');
+      }
+      
+      // Additional validation: ensure format is safe (defense in depth)
+      // Even though routes validate, we validate again to prevent injection
+      const datePattern = /^(January|February|March|April|May|June|July|August|September|October|November|December) \d{4}$/;
+      if (lastUpdated && !datePattern.test(lastUpdated)) {
+        throw new Error('Invalid date format for lastUpdated (must be "Month YYYY")');
+      }
+      if (effectiveDate && !datePattern.test(effectiveDate)) {
+        throw new Error('Invalid date format for effectiveDate (must be "Month YYYY")');
       }
       
       // Read current config file
