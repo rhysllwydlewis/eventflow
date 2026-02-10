@@ -7,6 +7,7 @@
 
 const logger = require('../utils/logger');
 const sentry = require('../utils/sentry');
+const { BaseError } = require('../errors');
 
 /**
  * 404 Handler - Must be added after all routes
@@ -146,7 +147,34 @@ function getErrorMessage(err, isProduction) {
  * @param {Function} _next - Express next function (unused)
  */
 function errorHandler(err, req, res, _next) {
-  // Get status code
+  // Handle BaseError instances with their built-in status codes
+  if (err instanceof BaseError) {
+    logger.error('Error:', {
+      name: err.name,
+      message: err.message,
+      statusCode: err.statusCode,
+      stack: process.env.NODE_ENV === 'production' ? undefined : err.stack,
+      path: req.path,
+      method: req.method,
+    });
+
+    // Capture server errors in Sentry
+    if (err.statusCode >= 500) {
+      sentry.captureException(err, {
+        tags: {
+          path: req.path,
+          method: req.method,
+          statusCode: err.statusCode,
+        },
+      });
+    }
+
+    return res.status(err.statusCode).json({
+      error: err.toJSON(),
+    });
+  }
+
+  // Handle other errors with legacy logic
   const statusCode = getErrorStatusCode(err);
   const isProduction = process.env.NODE_ENV === 'production';
 
