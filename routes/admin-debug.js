@@ -245,7 +245,9 @@ router.post(
       res.json({
         ok: true,
         message: `Test email sent to ${email}`,
-        testToken: testToken, // Return for testing purposes
+        // SECURITY NOTE: Test token returned for development/debugging only
+        // In production, ensure this endpoint is only accessible to admins
+        testToken: process.env.NODE_ENV === 'production' ? undefined : testToken,
       });
     } catch (error) {
       console.error('Email test failed:', error);
@@ -263,65 +265,72 @@ router.post(
  * Returns diagnostics about why login might fail
  * Admin only - to prevent credential enumeration
  */
-router.post('/login-test', authRequired, roleRequired('admin'), express.json(), (req, res) => {
-  const { email, password } = req.body;
+router.post(
+  '/login-test',
+  authRequired,
+  roleRequired('admin'),
+  csrfProtection,
+  express.json(),
+  (req, res) => {
+    const { email, password } = req.body;
 
-  if (!email || !password) {
-    return res.status(400).json({ error: 'email and password required' });
-  }
-
-  console.log(`[LOGIN TEST] Testing login for: ${email}`);
-
-  const user = read('users').find(
-    u => (u.email || '').toLowerCase() === String(email).toLowerCase()
-  );
-
-  const diagnostics = {
-    email: email,
-    found: !!user,
-    verified: user?.verified,
-    hasPasswordHash: !!user?.passwordHash,
-    hashValid: user?.passwordHash?.startsWith('$2'),
-    passwordMatches: false,
-    canLogin: false,
-    issues: [],
-  };
-
-  if (!user) {
-    diagnostics.issues.push('❌ User not found');
-    return res.status(200).json(diagnostics);
-  }
-
-  if (!user.verified) {
-    diagnostics.issues.push('❌ Email not verified');
-  }
-
-  if (!user.passwordHash) {
-    diagnostics.issues.push('❌ No password hash stored');
-  } else if (!user.passwordHash.startsWith('$2')) {
-    diagnostics.issues.push('❌ Invalid bcrypt hash format');
-  } else {
-    // Test password
-    try {
-      const matches = bcrypt.compareSync(password, user.passwordHash);
-      diagnostics.passwordMatches = matches;
-
-      if (!matches) {
-        diagnostics.issues.push('❌ Password does not match');
-      }
-    } catch (error) {
-      diagnostics.issues.push(`❌ Password comparison error: ${error.message}`);
+    if (!email || !password) {
+      return res.status(400).json({ error: 'email and password required' });
     }
+
+    console.log(`[LOGIN TEST] Testing login for: ${email}`);
+
+    const user = read('users').find(
+      u => (u.email || '').toLowerCase() === String(email).toLowerCase()
+    );
+
+    const diagnostics = {
+      email: email,
+      found: !!user,
+      verified: user?.verified,
+      hasPasswordHash: !!user?.passwordHash,
+      hashValid: user?.passwordHash?.startsWith('$2'),
+      passwordMatches: false,
+      canLogin: false,
+      issues: [],
+    };
+
+    if (!user) {
+      diagnostics.issues.push('❌ User not found');
+      return res.status(200).json(diagnostics);
+    }
+
+    if (!user.verified) {
+      diagnostics.issues.push('❌ Email not verified');
+    }
+
+    if (!user.passwordHash) {
+      diagnostics.issues.push('❌ No password hash stored');
+    } else if (!user.passwordHash.startsWith('$2')) {
+      diagnostics.issues.push('❌ Invalid bcrypt hash format');
+    } else {
+      // Test password
+      try {
+        const matches = bcrypt.compareSync(password, user.passwordHash);
+        diagnostics.passwordMatches = matches;
+
+        if (!matches) {
+          diagnostics.issues.push('❌ Password does not match');
+        }
+      } catch (error) {
+        diagnostics.issues.push(`❌ Password comparison error: ${error.message}`);
+      }
+    }
+
+    diagnostics.canLogin =
+      user.verified &&
+      !!user.passwordHash &&
+      user.passwordHash.startsWith('$2') &&
+      diagnostics.passwordMatches;
+
+    res.json(diagnostics);
   }
-
-  diagnostics.canLogin =
-    user.verified &&
-    !!user.passwordHash &&
-    user.passwordHash.startsWith('$2') &&
-    diagnostics.passwordMatches;
-
-  res.json(diagnostics);
-});
+);
 
 /**
  * POST /api/v1/admin/debug/audit-users
