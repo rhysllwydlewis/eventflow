@@ -135,6 +135,37 @@
   <div id="progress-ring-widget"></div>
 </div>
 
+<!-- Budget Settings Card -->
+<div class="card" style="margin-bottom: 1.5rem;">
+  <h3 style="margin:0 0 0.5rem 0;font-size:1.25rem;color:#0B1220;">💰 Budget Settings</h3>
+  <p class="small" style="color:#667085;margin:0 0 1rem 0;">Set your total event budget to track spending accurately.</p>
+  
+  <form id="budget-settings-form" style="display:flex;gap:0.75rem;align-items:end;flex-wrap:wrap;">
+    <div style="flex:1;min-width:200px;">
+      <label for="custom-budget-input" style="display:block;margin-bottom:0.25rem;font-size:0.9rem;color:#344054;font-weight:500;">
+        Total Budget (£)
+      </label>
+      <input 
+        type="number" 
+        id="custom-budget-input" 
+        min="0" 
+        step="100" 
+        placeholder="5000" 
+        style="width:100%;padding:0.75rem;border:1px solid #D0D5DD;border-radius:6px;font-size:1rem;"
+      >
+    </div>
+    <button type="submit" class="cta" style="white-space:nowrap;padding:0.75rem 1.5rem;">
+      Update Budget
+    </button>
+  </form>
+  
+  <div id="budget-status" style="margin-top:1rem;padding:0.75rem;background:#F9FAFB;border-radius:6px;display:none;">
+    <p class="small" style="margin:0;color:#059669;">
+      ✅ Budget updated successfully!
+    </p>
+  </div>
+</div>
+
 <!-- Upcoming Events Timeline -->
 <div id="upcoming-events-timeline"></div>
 
@@ -364,16 +395,30 @@ async function calculateRealBudget(plans) {
     }
   }
   
-  // Get total budget from plan or calculate based on spent
+  // Get total budget - CHECK CUSTOM BUDGET FIRST
   let totalBudget = BUDGET_CONFIG.DEFAULT_TOTAL_BUDGET;
-  
-  // Check if user has set a custom budget in their plan
   const planWithBudget = plans.find(p => p.budget && parseFloat(p.budget) > 0);
-  if (planWithBudget) {
+  
+  // Priority 1: Check localStorage for custom budget (with error handling)
+  try {
+    const customBudget = localStorage.getItem('eventflow_custom_budget');
+    if (customBudget && parseFloat(customBudget) > 0) {
+      totalBudget = parseFloat(customBudget);
+    }
+  } catch (err) {
+    console.error('Failed to read custom budget from localStorage:', err);
+    // Continue with default budget
+  }
+  
+  // Priority 2: Check if user set budget in plan (only if custom budget not set)
+  if (totalBudget === BUDGET_CONFIG.DEFAULT_TOTAL_BUDGET && planWithBudget) {
     totalBudget = parseFloat(planWithBudget.budget);
-  } else if (totalSpent > 0) {
-    // If spending but no budget set, ensure budget is reasonable
-    totalBudget = Math.max(BUDGET_CONFIG.DEFAULT_TOTAL_BUDGET, totalSpent * BUDGET_CONFIG.BUDGET_BUFFER_MULTIPLIER);
+  }
+  
+  // Priority 3: If spending but no budget set, use default
+  if (totalBudget === BUDGET_CONFIG.DEFAULT_TOTAL_BUDGET && totalSpent > 0) {
+    // Show warning instead of auto-expanding
+    console.warn('User is spending without a budget set. Total spent:', totalSpent);
   }
   
   const remaining = Math.max(0, totalBudget - totalSpent);
@@ -399,7 +444,39 @@ async function initCustomerDashboardWidgets() {
       }
     } catch (err) {
       console.error('Error fetching plans:', err);
-      // Continue with empty plans array
+      
+      // Show error state with retry option
+      const statsGrid = document.getElementById('customer-stats-grid');
+      if (statsGrid) {
+        statsGrid.innerHTML = `
+          <div class="card" style="padding: 2rem; text-align: center; background: #FEF2F2; border: 1px solid #FCA5A5;">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">⚠️</div>
+            <h3 style="margin: 0 0 0.5rem 0; color: #991B1B;">Unable to Load Dashboard</h3>
+            <p style="color: #7F1D1D; margin: 0 0 1.5rem 0;">There was a problem connecting to our servers.</p>
+            <button id="dashboard-error-retry" class="cta" style="background: #DC2626;">
+              🔄 Retry
+            </button>
+          </div>
+        `;
+        
+        // Add event listener for retry button
+        document.getElementById('dashboard-error-retry')?.addEventListener('click', () => {
+          window.location.reload();
+        });
+      }
+      
+      // Show error in other widgets too
+      const budgetWidget = document.getElementById('budget-tracker-widget');
+      if (budgetWidget) {
+        budgetWidget.innerHTML = '<p style="color: #991B1B; text-align: center; padding: 2rem;">Unable to load budget data</p>';
+      }
+      
+      const progressWidget = document.getElementById('progress-ring-widget');
+      if (progressWidget) {
+        progressWidget.innerHTML = '<p style="color: #991B1B; text-align: center; padding: 2rem;">Unable to load progress</p>';
+      }
+      
+      return; // Don't continue with empty data
     }
     
     // Count saved suppliers (from localStorage or API)
@@ -407,7 +484,9 @@ async function initCustomerDashboardWidgets() {
     try {
       savedSuppliers = JSON.parse(localStorage.getItem('eventflow_saved_suppliers') || '[]');
     } catch (err) {
-      console.error('Error reading saved suppliers:', err);
+      console.error('Error reading saved suppliers from localStorage:', err);
+      // Continue with empty array
+    }
       savedSuppliers = [];
     }
     
@@ -463,19 +542,21 @@ async function initCustomerDashboardWidgets() {
     // Calculate real progress based on completion criteria
     let progressPercentage = 0;
     let completedSteps = 0;
-    let totalSteps = 5;
+    const totalSteps = 7; // Increased from 5
     
     if (plans.length > 0) {
       // Get the first plan with data or the most recent plan
       const activePlan = plans.find(p => p.eventDate || p.venue || p.catering) || plans[0];
       
-      // Define completion criteria
+      // More comprehensive criteria
       const criteria = [
-        !!activePlan.eventDate || !!activePlan.date,  // Has event date
-        !!activePlan.venue,                            // Has venue selected
-        !!activePlan.catering,                         // Has catering selected
-        !!(activePlan.budget && parseFloat(activePlan.budget) > 0),  // Has budget set
-        !!(activePlan.guestCount || activePlan.guests) && parseInt(activePlan.guestCount || activePlan.guests || 0) > 0,  // Has guest list
+        !!activePlan.eventDate || !!activePlan.date,                                          // Has event date
+        !!activePlan.eventName || !!activePlan.eventType,                                     // Has event name/type
+        !!activePlan.venue,                                                                    // Has venue selected
+        !!activePlan.catering,                                                                 // Has catering selected
+        !!(activePlan.budget && parseFloat(activePlan.budget) > 0),                           // Has budget set
+        !!(activePlan.guestCount || activePlan.guests) && parseInt(activePlan.guestCount || activePlan.guests || 0) > 0,  // Has guest count
+        !!(activePlan.packages && Array.isArray(activePlan.packages) && activePlan.packages.length > 0),  // Has booked suppliers
       ];
       
       completedSteps = criteria.filter(Boolean).length;
@@ -485,12 +566,12 @@ async function initCustomerDashboardWidgets() {
     // Create progress ring
     createProgressRing({
       percentage: progressPercentage,
-      label: 'Event Progress',
+      label: 'Planning Progress',  // Changed from "Event Progress"
       booked: completedSteps,
       pending: totalSteps - completedSteps,
     }, 'progress-ring-widget');
     
-    // Create upcoming events timeline based on plans
+    // Create upcoming events timeline based on REAL event date
     let upcomingEvents = [];
     let eventDate = null;
     
@@ -499,20 +580,84 @@ async function initCustomerDashboardWidgets() {
       const planWithDate = plans.find(p => p.eventDate || p.date);
       if (planWithDate) {
         eventDate = planWithDate.eventDate || planWithDate.date;
+        const eventDateObj = new Date(eventDate);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        const daysUntilEvent = Math.ceil((eventDateObj - today) / (1000 * 60 * 60 * 24));
+        
+        if (daysUntilEvent > 0) {
+          // Generate REAL tasks based on event date
+          const tasks = [];
+          
+          // 14 days before: Finalize suppliers
+          if (daysUntilEvent > 14) {
+            tasks.push({
+              name: 'Finalize all supplier bookings',
+              supplier: 'All Suppliers',
+              daysUntil: Math.max(1, daysUntilEvent - 14)
+            });
+          }
+          
+          // 7 days before: Confirm details
+          if (daysUntilEvent > 7) {
+            tasks.push({
+              name: 'Confirm final event details',
+              supplier: 'Event Planning',
+              daysUntil: Math.max(1, daysUntilEvent - 7)
+            });
+          }
+          
+          // 3 days before: Final payments
+          if (daysUntilEvent > 3) {
+            tasks.push({
+              name: 'Complete final payments',
+              supplier: 'Budget',
+              daysUntil: Math.max(1, daysUntilEvent - 3)
+            });
+          }
+          
+          // 1 day before: Final checks
+          if (daysUntilEvent > 1) {
+            tasks.push({
+              name: 'Final venue and supplier checks',
+              supplier: 'All',
+              daysUntil: 1
+            });
+          }
+          
+          // Filter to only show upcoming tasks
+          upcomingEvents = tasks.filter(task => task.daysUntil <= daysUntilEvent);
+          
+        } else if (daysUntilEvent === 0) {
+          // Event is today!
+          upcomingEvents = [
+            { name: '🎉 Your event is TODAY!', supplier: 'EventFlow', daysUntil: 0 }
+          ];
+        } else {
+          // Event has passed
+          upcomingEvents = [
+            { name: '✅ Event completed', supplier: 'Past Event', daysUntil: 0 },
+            { name: 'Create a new event plan', supplier: 'Getting Started', daysUntil: 0 }
+          ];
+        }
       }
       
-      // Generate contextual tasks based on actual plans
-      upcomingEvents = [
-        { name: 'Review plan details', supplier: 'Planning Dashboard', daysUntil: 2 },
-        { name: 'Confirm supplier bookings', supplier: `${plans.length} supplier${plans.length !== 1 ? 's' : ''}`, daysUntil: 7 },
-        { name: 'Finalize event details', supplier: 'Event Planning', daysUntil: 14 },
-      ];
+      // If no date set, show planning tasks
+      if (upcomingEvents.length === 0) {
+        upcomingEvents = [
+          { name: 'Set your event date', supplier: 'Planning', daysUntil: 0 },
+          { name: 'Browse and book suppliers', supplier: 'Marketplace', daysUntil: 0 },
+          { name: 'Set your budget', supplier: 'Budget Settings', daysUntil: 0 },
+        ];
+      }
+      
     } else {
-      // Show getting started tasks if no plans
+      // No plans - show getting started tasks
       upcomingEvents = [
         { name: 'Create your first event plan', supplier: 'Getting Started', daysUntil: 0 },
-        { name: 'Browse suppliers', supplier: 'Marketplace', daysUntil: 1 },
-        { name: 'Save your favorites', supplier: 'Supplier Search', daysUntil: 3 },
+        { name: 'Browse suppliers', supplier: 'Marketplace', daysUntil: 0 },
+        { name: 'Save your favorites', supplier: 'Supplier Search', daysUntil: 0 },
       ];
     }
     
@@ -522,13 +667,6 @@ async function initCustomerDashboardWidgets() {
     console.error('Error initializing dashboard widgets:', error);
   }
 }
-
-// Initialize widgets after page loads
-window.addEventListener('load', () => {
-  setTimeout(() => {
-    initCustomerDashboardWidgets();
-  }, 500);
-});
 </script>
 <script>
 window.__EF_PAGE__='dash_customer';
@@ -597,7 +735,7 @@ async function checkAuth() {
   }
 }
 
-// Setup navigation with auth check
+// Setup navigation with auth check and consolidated initialization
 async function initDashboard() {
   const user = await checkAuth();
   
@@ -623,14 +761,138 @@ async function initDashboard() {
   // Check for guest plan token and claim it
   await claimGuestPlanIfExists();
 
-  // Load customer plans
-  loadCustomerPlans();
+  // Load all dashboard components IN PARALLEL
+  await Promise.allSettled([
+    loadCustomerPlans(),
+    initCustomerDashboardWidgets(),
+    initCalendar(),
+  ]);
+  
+  // Setup event handlers
+  setupEventHandlers();
+  
+  console.log('✅ Dashboard initialized successfully');
+}
 
+// Initialize calendar
+function initCalendar() {
+  return new Promise((resolve) => {
+    if (window.CalendarView && document.getElementById('events-calendar')) {
+      try {
+        window.CalendarView.init('events-calendar', {
+          initialView: 'dayGridMonth',
+          height: 500
+        });
+        console.log('✅ Calendar initialized');
+      } catch (err) {
+        console.error('Calendar init failed:', err);
+      }
+    }
+    resolve();
+  });
+}
+
+// Setup all event handlers
+function setupEventHandlers() {
   // Setup Open My Plan button with auth-aware navigation
   document.getElementById('openPlanBtn')?.addEventListener('click', async (e) => {
     e.preventDefault();
-    window.location.href = '/plan.html';
+    
+    // Get saved suppliers from localStorage (with error handling)
+    let saved = [];
+    try {
+      saved = JSON.parse(localStorage.getItem('eventflow_saved_suppliers') || '[]');
+    } catch (err) {
+      console.error('Error reading saved suppliers from localStorage:', err);
+      // Continue with empty array
+    }
+    
+    if (saved.length === 0) {
+      // Show styled notification instead of alert
+      const notification = document.createElement('div');
+      notification.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#FEF2F2;border:1px solid #FCA5A5;padding:1rem 1.5rem;border-radius:8px;box-shadow:0 4px 6px rgba(0,0,0,0.1);z-index:10000;max-width:400px;';
+      notification.innerHTML = `
+        <div style="display:flex;align-items:center;gap:0.75rem;">
+          <span style="font-size:1.5rem;">ℹ️</span>
+          <div>
+            <strong style="display:block;color:#991B1B;margin-bottom:0.25rem;">No Saved Suppliers</strong>
+            <p style="margin:0;color:#7F1D1D;font-size:0.9rem;">You haven't saved any suppliers yet. Browse suppliers to get started!</p>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(notification);
+      
+      // Remove notification after 3 seconds and redirect
+      setTimeout(() => {
+        notification.remove();
+        window.location.href = '/suppliers';
+      }, 3000);
+    } else {
+      // Redirect to suppliers page with saved filter
+      window.location.href = '/suppliers?filter=saved';
+    }
   });
+  
+  // Budget settings handler
+  document.getElementById('budget-settings-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const input = document.getElementById('custom-budget-input');
+    const budgetStatus = document.getElementById('budget-status');
+    const budget = parseFloat(input.value);
+    
+    // Validate budget (also enforce in JS, not just HTML)
+    if (isNaN(budget) || budget <= 0) {
+      budgetStatus.style.display = 'block';
+      budgetStatus.style.background = '#FEF2F2';
+      budgetStatus.innerHTML = '<p class="small" style="margin:0;color:#DC2626;">❌ Please enter a valid budget amount greater than £0</p>';
+      return;
+    }
+    
+    // Save to localStorage with error handling
+    try {
+      localStorage.setItem('eventflow_custom_budget', budget.toString());
+    } catch (err) {
+      console.error('Failed to save budget to localStorage:', err);
+      budgetStatus.style.display = 'block';
+      budgetStatus.style.background = '#FEF2F2';
+      budgetStatus.innerHTML = '<p class="small" style="margin:0;color:#DC2626;">❌ Failed to save budget. Storage may be full.</p>';
+      return;
+    }
+    
+    // Show success message
+    budgetStatus.style.display = 'block';
+    budgetStatus.style.background = '#F0FDF4';
+    budgetStatus.innerHTML = '<p class="small" style="margin:0;color:#059669;">✅ Budget set to £' + budget.toLocaleString() + '</p>';
+    
+    // Reload widgets with new budget - with error handling
+    try {
+      await initCustomerDashboardWidgets();
+    } catch (err) {
+      console.error('Failed to reload widgets after budget update:', err);
+      // Don't show error to user since budget was saved successfully
+      // Widgets will reload on next page visit
+    }
+    
+    // Hide success message after 3 seconds
+    setTimeout(() => {
+      budgetStatus.style.display = 'none';
+    }, 3000);
+  });
+
+  // Load saved budget on page load (with error handling)
+  try {
+    const savedBudget = localStorage.getItem('eventflow_custom_budget');
+    if (savedBudget) {
+      const input = document.getElementById('custom-budget-input');
+      if (input) {
+        input.value = savedBudget;
+      }
+    }
+  } catch (err) {
+    console.error('Error loading saved budget from localStorage:', err);
+    // Continue without pre-filling the input
+  }
 }
 
 /**
@@ -686,8 +948,12 @@ function getCsrfToken() {
   return match ? match[1] : '';
 }
 
-// Initialize dashboard
-initDashboard();
+// Single initialization call - use readyState check for reliability
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initDashboard);
+} else {
+  initDashboard();
+}
 </script>
 </div></main>
 <!-- BOTTOM NAVBAR - GOLD STANDARD REBUILD (Mobile Only) -->
@@ -769,20 +1035,6 @@ initDashboard();
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css">
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
 <script src="/assets/js/calendar-view.js"></script>
-<script>
-  // Initialize calendar view
-  document.addEventListener('DOMContentLoaded', () => {
-    // Wait a bit for auth to load
-    setTimeout(() => {
-      if (window.CalendarView && document.getElementById('events-calendar')) {
-        window.CalendarView.init('events-calendar', {
-          initialView: 'dayGridMonth',
-          height: 500
-        });
-      }
-    }, 500);
-  });
-</script>
 <script src="/assets/js/recommendations-widget.js" defer></script>
 <script src="/assets/js/keyboard-shortcuts.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
