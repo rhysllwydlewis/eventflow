@@ -19,7 +19,7 @@ function generateUid() {
 
 /**
  * Check if supplier's Pro plan is currently active
- * Uses subscription service for accurate status
+ * Uses subscription service for accurate status - no legacy fallbacks
  * @param {string} userIdOrSupplier - User ID or Supplier object with ownerUserId
  * @returns {Promise<boolean>} True if Pro/Pro+/Enterprise plan is active
  */
@@ -30,18 +30,7 @@ async function supplierIsProActive(userIdOrSupplier) {
       typeof userIdOrSupplier === 'string' ? userIdOrSupplier : userIdOrSupplier?.ownerUserId;
 
     if (!userId) {
-      // Fallback to legacy logic if no userId available
-      if (!userIdOrSupplier || !userIdOrSupplier.isPro) {
-        return false;
-      }
-      if (!userIdOrSupplier.proExpiresAt) {
-        return !!userIdOrSupplier.isPro;
-      }
-      const t = Date.parse(userIdOrSupplier.proExpiresAt);
-      if (!t || isNaN(t)) {
-        return !!userIdOrSupplier.isPro;
-      }
-      return t > Date.now();
+      return false;
     }
 
     const subscriptionService = require('../services/subscriptionService');
@@ -51,10 +40,19 @@ async function supplierIsProActive(userIdOrSupplier) {
       return false;
     }
 
-    const validPlans = ['pro', 'pro_plus', 'enterprise'];
-    const validStatuses = ['active', 'trialing'];
+    // Check subscription is active and not expired
+    if (!['active', 'trialing'].includes(subscription.status)) {
+      return false;
+    }
 
-    return validPlans.includes(subscription.plan) && validStatuses.includes(subscription.status);
+    // Verify current period hasn't ended
+    if (subscription.currentPeriodEnd && new Date(subscription.currentPeriodEnd) < new Date()) {
+      return false;
+    }
+
+    // Pro or higher tier
+    const validPlans = ['pro', 'pro_plus', 'enterprise'];
+    return validPlans.includes(subscription.plan);
   } catch (error) {
     console.error('Error checking Pro status:', error);
     return false;

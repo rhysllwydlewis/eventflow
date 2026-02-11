@@ -13,7 +13,7 @@ const { getPlanFeatures, hasFeature, getAllPlans } = require('../models/Subscrip
  * Create a new subscription
  * @param {Object} params - Subscription parameters
  * @param {string} params.userId - User ID
- * @param {string} params.plan - Plan tier (free, basic, pro, enterprise)
+ * @param {string} params.plan - Plan tier (free, pro, pro_plus, enterprise)
  * @param {string} params.stripeSubscriptionId - Stripe subscription ID
  * @param {string} params.stripeCustomerId - Stripe customer ID
  * @param {Date} params.trialEnd - Trial end date (optional)
@@ -141,7 +141,7 @@ async function upgradeSubscription(subscriptionId, newPlan) {
     throw new Error('Subscription not found');
   }
 
-  const planHierarchy = ['free', 'basic', 'pro', 'enterprise'];
+  const planHierarchy = ['free', 'pro', 'pro_plus', 'enterprise'];
   const currentIndex = planHierarchy.indexOf(subscription.plan);
   const newIndex = planHierarchy.indexOf(newPlan);
 
@@ -168,7 +168,7 @@ async function downgradeSubscription(subscriptionId, newPlan) {
     throw new Error('Subscription not found');
   }
 
-  const planHierarchy = ['free', 'basic', 'pro', 'enterprise'];
+  const planHierarchy = ['free', 'pro', 'pro_plus', 'enterprise'];
   const currentIndex = planHierarchy.indexOf(subscription.plan);
   const newIndex = planHierarchy.indexOf(newPlan);
 
@@ -339,8 +339,8 @@ async function getSubscriptionStats() {
     pastDue: subscriptions.filter(s => s.status === 'past_due').length,
     byPlan: {
       free: subscriptions.filter(s => s.plan === 'free').length,
-      basic: subscriptions.filter(s => s.plan === 'basic').length,
       pro: subscriptions.filter(s => s.plan === 'pro').length,
+      pro_plus: subscriptions.filter(s => s.plan === 'pro_plus').length,
       enterprise: subscriptions.filter(s => s.plan === 'enterprise').length,
     },
   };

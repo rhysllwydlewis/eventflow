@@ -9,7 +9,7 @@ const subscriptionService = require('../services/subscriptionService');
 
 /**
  * Require a minimum subscription tier
- * @param {string} minTier - Minimum tier required (free, basic, pro, pro_plus, enterprise)
+ * @param {string} minTier - Minimum tier required (free, pro, pro_plus, enterprise)
  * @returns {Function} Express middleware
  */
 function requireSubscription(minTier = 'free') {
@@ -22,7 +22,7 @@ function requireSubscription(minTier = 'free') {
       const subscription = await subscriptionService.getSubscriptionByUserId(req.user.id);
       const currentTier = subscription?.plan || 'free';
 
-      const tierLevels = { free: 0, basic: 1, pro: 2, pro_plus: 3, enterprise: 4 };
+      const tierLevels = { free: 0, pro: 1, pro_plus: 2, enterprise: 3 };
 
       if (tierLevels[currentTier] >= tierLevels[minTier]) {
         req.subscription = subscription; // Attach to request
