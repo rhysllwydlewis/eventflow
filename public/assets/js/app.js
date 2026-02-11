@@ -2670,7 +2670,7 @@ async function initDashSupplier() {
   async function loadSuppliers() {
     try {
       const d = await api('/api/me/suppliers');
-      const items = (d && Array.isArray(d.items)) ? d.items : [];
+      const items = Array.isArray(d?.items) ? d.items : [];
     // If this user has at least one Pro supplier, treat them as Pro.
     currentIsPro = items.some(s => !!s.isPro);
 
@@ -2740,14 +2740,14 @@ async function initDashSupplier() {
           .join('');
 
         // Safe access to all fields with defaults
-        const supplierId = (s.id || '').toString().replace(/"/g, '&quot;');
-        const name = (s.name || 'Unnamed Supplier').toString();
+        const supplierId = String(s.id || '').replace(/"/g, '&quot;');
+        const name = String(s.name || 'Unnamed Supplier');
         const photos = (s.photos && Array.isArray(s.photos)) ? s.photos : [];
         const photoUrl = photos[0] || '/assets/images/collage-venue.svg';
-        const location = (s.location || 'Location not set').toString();
-        const category = (s.category || 'Uncategorized').toString();
+        const location = String(s.location || 'Location not set');
+        const category = String(s.category || 'Uncategorized');
         const priceDisplay = s.price_display ? ` · ${s.price_display}` : '';
-        const description = (s.description_short || '').toString();
+        const description = String(s.description_short || '');
         const approved = !!s.approved;
 
         return `<div class="supplier-card card" style="margin-bottom:10px" data-supplier-id="${supplierId}">
@@ -2975,7 +2975,7 @@ async function initDashSupplier() {
       }
       const note = document.getElementById('pkg-limit-note');
       const d = await api('/api/me/packages');
-      const items = (d && Array.isArray(d.items)) ? d.items : [];
+      const items = Array.isArray(d?.items) ? d.items : [];
       const count = items.length;
     const freeLimit = 3; // keep in sync with server FREE_PACKAGE_LIMIT default
 
@@ -3023,11 +3023,11 @@ async function initDashSupplier() {
       .map(p => {
         if (!p) return '';
         
-        const packageId = (p.id || '').toString().replace(/"/g, '&quot;');
-        const image = (p.image || '/assets/images/package-placeholder.svg').toString();
-        const title = (p.title || 'Untitled Package').toString();
-        const priceDisplay = (p.price_display || '').toString();
-        const description = (p.description || '').toString();
+        const packageId = String(p.id || '').replace(/"/g, '&quot;');
+        const image = String(p.image || '/assets/images/package-placeholder.svg');
+        const title = String(p.title || 'Untitled Package');
+        const priceDisplay = String(p.price_display || '');
+        const description = String(p.description || '');
         const featured = !!p.featured;
         
         return `<div class="card package-card" data-package-id="${packageId}">
