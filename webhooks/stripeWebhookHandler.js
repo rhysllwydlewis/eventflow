@@ -140,6 +140,36 @@ async function handleInvoicePaymentFailed(invoice) {
     await dbUnified.write('invoices', invoices);
   }
 
+  // Update subscription status to past_due
+  await subscriptionService.updateSubscription(subscription.id, {
+    status: 'past_due',
+    metadata: {
+      ...subscription.metadata,
+      lastPaymentFailed: new Date().toISOString(),
+      failedInvoiceId: invoice.id,
+    },
+  });
+
+  // Get user details for notification
+  const users = await dbUnified.read('users');
+  const user = users.find(u => u.id === subscription.userId);
+
+  if (user) {
+    console.log(
+      `Payment failed for user ${user.email}: Invoice ${invoice.id}, Amount: ${invoice.amount_due / 100} ${invoice.currency.toUpperCase()}`
+    );
+
+    // TODO: Send payment failed email when email service is available
+    // await emailService.sendPaymentFailedNotification({
+    //   userId: subscription.userId,
+    //   email: user.email,
+    //   invoiceId: invoice.id,
+    //   amount: invoice.amount_due / 100,
+    //   currency: invoice.currency,
+    //   attemptCount: invoiceRecord?.attemptCount || 1,
+    // });
+  }
+
   // Handle dunning
   await paymentService.handleFailedPayment(subscription.id, invoice);
 }
@@ -222,6 +252,58 @@ async function handleSubscriptionUpdated(stripeSubscription) {
   }
 
   await subscriptionService.updateSubscription(subscription.id, updates);
+}
+
+/**
+ * Handle customer.subscription.trial_will_end event
+ * Sent 3 days before trial ends
+ * @param {Object} stripeSubscription - Stripe subscription object
+ */
+async function handleSubscriptionTrialWillEnd(stripeSubscription) {
+  console.log('Processing customer.subscription.trial_will_end:', stripeSubscription.id);
+
+  const subscription = await subscriptionService.getSubscriptionByStripeId(stripeSubscription.id);
+
+  if (!subscription) {
+    console.warn('Subscription not found:', stripeSubscription.id);
+    return;
+  }
+
+  // Get user details for sending email
+  const dbUnified = require('../db-unified');
+  const users = await dbUnified.read('users');
+  const user = users.find(u => u.id === subscription.userId);
+
+  if (!user) {
+    console.warn('User not found for subscription:', subscription.userId);
+    return;
+  }
+
+  // Calculate days remaining
+  const trialEndDate = new Date(stripeSubscription.trial_end * 1000);
+  const now = new Date();
+  const daysRemaining = Math.ceil((trialEndDate - now) / (1000 * 60 * 60 * 24));
+
+  console.log(
+    `Trial ending soon for user ${user.email}: ${daysRemaining} days remaining (ends ${trialEndDate.toISOString()})`
+  );
+
+  // TODO: Send email reminder when email service is available
+  // await emailService.sendTrialEndingReminder({
+  //   userId: subscription.userId,
+  //   email: user.email,
+  //   trialEndDate,
+  //   daysRemaining,
+  //   plan: subscription.plan,
+  // });
+
+  // Update subscription metadata to track notification sent
+  await subscriptionService.updateSubscription(subscription.id, {
+    metadata: {
+      ...subscription.metadata,
+      trialEndingNotificationSent: new Date().toISOString(),
+    },
+  });
 }
 
 /**
@@ -329,6 +411,9 @@ async function processWebhookEvent(event) {
         break;
       case 'customer.subscription.deleted':
         await handleSubscriptionDeleted(event.data.object);
+        break;
+      case 'customer.subscription.trial_will_end':
+        await handleSubscriptionTrialWillEnd(event.data.object);
         break;
 
       // Payment events

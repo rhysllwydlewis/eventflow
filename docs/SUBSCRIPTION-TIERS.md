@@ -2,15 +2,25 @@
 
 ## Overview
 
-EventFlow offers three clear subscription tiers designed to support suppliers at every stage of their business growth. Our pricing is **transparent, fair, and commission-free** — unlike competitors who take 10-20% of each booking.
+EventFlow offers subscription tiers designed to support suppliers at every stage of their business growth. Our pricing is **transparent, fair, and commission-free** — unlike competitors who take 10-20% of each booking.
+
+## Pricing Summary
+
+| Plan             | Price                           | Trial   | Max Packages | Max Bookings | Key Features                                                         |
+| ---------------- | ------------------------------- | ------- | ------------ | ------------ | -------------------------------------------------------------------- |
+| **Free**         | £0/mo                           | N/A     | 3            | 10           | Basic profile, Messaging                                             |
+| **Pro Monthly**  | £39/mo (first 3mo), then £59/mo | 14 days | 50           | 50           | Priority listing, Analytics, Email support, Pro badge                |
+| **Pro+ Monthly** | £199/mo                         | 14 days | Unlimited    | Unlimited    | All Pro features + Custom branding, Homepage carousel, Phone support |
+| **Pro Yearly**   | £468/yr                         | 28 days | 50           | 50           | Same as Pro Monthly (save £240/yr)                                   |
+| **Pro+ Yearly**  | £2,388/yr                       | 28 days | Unlimited    | Unlimited    | Same as Pro+ Monthly                                                 |
 
 ## Core Pricing Philosophy
 
 ✅ **No commission on bookings** — All revenue from your customers is 100% yours
-✅ **Monthly billing only** — No annual lock-ins or hidden contracts
+✅ **Flexible billing** — Monthly or yearly options
 ✅ **Cancel anytime** — One-click cancellation, no questions asked
 ✅ **Your data stays yours** — Export everything if you leave
-✅ **First month guarantee** — Not happy? We'll refund your first month
+✅ **Trial period guarantee** — Not happy during trial? No charge
 
 ---
 
@@ -43,7 +53,7 @@ When you start receiving regular enquiries and want to improve lead quality, upg
 
 ---
 
-## PRO Tier (£49/month for 3 months, then £99/month)
+## PRO Tier (£39/month for 3 months, then £59/month)
 
 ### Who It's For
 
@@ -111,7 +121,7 @@ If Pro features help you:
 
 ---
 
-## FEATURED Tier (£199/month)
+## PRO+ Tier (£199/month)
 
 ### Who It's For
 

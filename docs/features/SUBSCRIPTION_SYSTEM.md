@@ -2,7 +2,7 @@
 
 ## Overview
 
-The EventFlow subscription system provides a complete payment and subscription management solution for supplier accounts using Google Pay integration.
+The EventFlow subscription system provides a complete payment and subscription management solution for supplier accounts using Stripe integration. Google Pay has been removed in favor of Stripe's comprehensive payment solution.
 
 ## Architecture
 
@@ -10,20 +10,21 @@ The EventFlow subscription system provides a complete payment and subscription m
 
 1. **Frontend (Public Pages)**
    - `/public/supplier/subscription.html` - Subscription management page
-   - `/public/supplier/js/subscription.js` - Subscription logic
-   - `/public/supplier/js/googlepay-config.js` - Google Pay integration
+   - `/public/supplier/js/subscription.js` - Subscription logic (Stripe integration)
+   - `/public/supplier/js/feature-access.js` - Feature access control
    - `/public/dashboard-supplier.html` - Supplier dashboard with subscription status
 
-2. **Backend (Firebase Functions)**
-   - `/functions/subscriptions.js` - Cloud Functions for subscription management
-   - `/functions/index.js` - Entry point for all functions
+2. **Backend (Express Routes)**
+   - `/routes/subscriptions-v2.js` - RESTful API for subscriptions
+   - `/services/subscriptionService.js` - Business logic
+   - `/services/paymentService.js` - Stripe payment processing
+   - `/middleware/subscriptionGate.js` - Feature gating middleware
 
-3. **Email Templates**
-   - `/email-templates/subscription-activated.html` - Welcome email
-   - `/email-templates/subscription-renewal-reminder.html` - Renewal reminder
-   - `/email-templates/subscription-trial-ending.html` - Trial ending notice
-   - `/email-templates/subscription-cancelled.html` - Cancellation confirmation
-   - `/email-templates/subscription-payment-failed.html` - Payment failure notice
+3. **Webhooks**
+   - `/webhooks/stripeWebhookHandler.js` - Stripe event processing
+
+4. **Models**
+   - `/models/Subscription.js` - Subscription schema and feature definitions
 
 ## Subscription Plans
 
@@ -31,52 +32,69 @@ The EventFlow subscription system provides a complete payment and subscription m
 
 ```javascript
 {
+  free: {
+    price: £0/month,
+    features: {
+      maxPackages: 3,
+      maxBookings: 10,
+      messaging: true,
+      analytics: false,
+      prioritySupport: false,
+    }
+  },
   pro_monthly: {
-    price: £9.99/month,
+    price: £39/month (first 3 months), then £59/month,
     trial: 14 days,
-    features: [
-      'Priority listing',
-      'Featured badge',
-      'Advanced analytics',
-      'Up to 50 bookings/month',
-      'Email support'
-    ]
+    features: {
+      maxPackages: 50,
+      maxBookings: 50,
+      messaging: true,
+      analytics: true,
+      prioritySupport: true,
+      priorityListing: true,
+      badge: 'pro',
+    }
   },
   pro_plus_monthly: {
-    price: £19.99/month,
+    price: £199/month,
     trial: 14 days,
-    features: [
-      'All Pro features',
-      'Premium badge',
-      'Unlimited bookings',
-      'Priority phone support',
-      'Custom branding',
-      'Homepage carousel'
-    ]
+    features: {
+      maxPackages: -1, // unlimited
+      maxBookings: -1, // unlimited
+      messaging: true,
+      analytics: true,
+      prioritySupport: true,
+      priorityListing: true,
+      badge: 'pro_plus',
+      customBranding: true,
+      homepageCarousel: true,
+    }
   },
   pro_yearly: {
-    price: £99.99/year (17% savings),
-    trial: 28 days
+    price: £468/year,
+    trial: 28 days,
+    features: 'Same as pro_monthly'
   },
   pro_plus_yearly: {
-    price: £199.99/year (17% savings),
-    trial: 28 days
+    price: £2,388/year,
+    trial: 28 days,
+    features: 'Same as pro_plus_monthly'
   }
 }
 ```
 
 ## Payment Flow
 
-### Google Pay Integration
+### Stripe Integration
 
 1. **User selects plan** → `subscription.html`
-2. **Clicks Google Pay button** → `processGooglePayPayment()`
-3. **Google Pay dialog opens** → User authorizes payment
-4. **Payment token received** → Written to Firestore `payments` collection
-5. **Firebase Extension processes** → Updates payment document with result
-6. **Cloud Function triggered** → `onPaymentSuccess` activates subscription
-7. **Email sent** → Confirmation email to user
-8. **Dashboard updated** → Shows subscription status
+2. **Clicks Subscribe button** → `POST /api/v2/subscriptions`
+3. **Backend creates Stripe subscription** → Returns checkout URL
+4. **Stripe redirects** → Hosted checkout page
+5. **User completes payment** → Stripe processes
+6. **Stripe webhook** → `customer.subscription.created` event
+7. **Backend activates** → Subscription record created/updated
+8. **User redirected** → Dashboard with active subscription
 
 ### Payment Document Structure
 
