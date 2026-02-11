@@ -258,7 +258,7 @@
       }
 
       // Show notification bell ONLY when logged in (desktop)
-      // Re-query DOM to avoid stale reference after notifications.js cloneNode
+      // Re-query DOM to ensure fresh reference
       const btn = document.getElementById('ef-notification-btn');
       if (btn) {
         btn.style.display = 'flex';
@@ -316,7 +316,7 @@
       }
 
       // Hide notification bell
-      // Re-query DOM to avoid stale reference after notifications.js cloneNode
+      // Re-query DOM to ensure fresh reference
       const btn = document.getElementById('ef-notification-btn');
       if (btn) {
         btn.style.display = 'none';
