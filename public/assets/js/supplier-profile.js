@@ -161,30 +161,35 @@
 
       // Rating
       if (supplier.rating && supplier.reviewCount) {
+        const rating = Number(supplier.rating).toFixed(1);
+        const reviewCount = Number(supplier.reviewCount);
         metaItems.push(`
           <div class="meta-item meta-rating">
             <span class="star-icon" aria-hidden="true">⭐</span>
-            <span>${supplier.rating.toFixed(1)} (${supplier.reviewCount} reviews)</span>
+            <span>${rating} (${reviewCount} reviews)</span>
           </div>
         `);
       }
 
       // Location
       if (supplier.location) {
+        const location = escapeHtml(supplier.location);
+        const postcode = supplier.postcode ? escapeHtml(supplier.postcode) : '';
         metaItems.push(`
           <div class="meta-item meta-location">
             <span aria-hidden="true">📍</span>
-            <span>${supplier.location}${supplier.postcode ? `, ${supplier.postcode}` : ''}</span>
+            <span>${location}${postcode ? `, ${postcode}` : ''}</span>
           </div>
         `);
       }
 
       // Price range
       if (supplier.priceRange) {
+        const priceRange = escapeHtml(supplier.priceRange);
         metaItems.push(`
           <div class="meta-item meta-price">
             <span aria-hidden="true">💰</span>
-            <span>${supplier.priceRange}</span>
+            <span>${priceRange}</span>
           </div>
         `);
       }
