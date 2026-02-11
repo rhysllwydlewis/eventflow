@@ -40,7 +40,7 @@
 
               // Log 404 errors for upload paths to help debug upload issues
               if (img.src && img.src.includes('/uploads/')) {
-                console.error('Image upload 404 - File not found:', img.src);
+                console.warn('Image upload 404 - File not found:', img.src);
               }
 
               // Check if it's a supplier avatar, profile image, or package image

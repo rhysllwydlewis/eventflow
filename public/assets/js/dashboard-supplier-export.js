@@ -48,7 +48,7 @@
         const csvRows = [];
         csvRows.push(['Date', 'Customer', 'Status', 'Last Message', 'Unread'].join(','));
 
-        threads.forEach(thread => {
+        threads.forEach((thread) => {
           const date = thread.createdAt
             ? new Date(thread.createdAt).toISOString().split('T')[0]
             : 'N/A';
