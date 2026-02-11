@@ -125,7 +125,7 @@
       window.addEventListener('auth-state-changed', event => {
         const user = event.detail.user;
         if (user && user.id) {
-          if (state.socket && state.isConnected) {
+          if (state.socket && state.socket.connected) {
             state.socket.emit('auth', { userId: user.id });
           }
         } else {
@@ -578,7 +578,7 @@
       return;
     }
 
-    // Position dropdown below bell
+    // Position dropdown below bell with viewport boundary detection
     const positionDropdown = dropdown => {
       // Always get fresh reference to avoid stale DOM reference
       const currentBell =
@@ -602,18 +602,49 @@
         return;
       }
 
-      dropdown.style.top = `${rect.bottom + 8}px`;
-      dropdown.style.right = `${window.innerWidth - rect.right}px`;
+      // Calculate initial position below the bell
+      let top = rect.bottom + 8;
+      let right = window.innerWidth - rect.right;
+
+      // Get dropdown dimensions (may need to show it temporarily to measure)
+      const dropdownRect = dropdown.getBoundingClientRect();
+      const dropdownWidth = dropdownRect.width || 380; // Default width from CSS
+      const dropdownHeight = dropdownRect.height || 500; // Max height from CSS
+
+      // Viewport boundary detection
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+
+      // Check if dropdown goes off the right edge
+      const dropdownLeft = viewportWidth - right - dropdownWidth;
+      if (dropdownLeft < 16) {
+        // Adjust to keep 16px padding from left edge
+        right = viewportWidth - dropdownWidth - 16;
+      }
+
+      // Check if dropdown goes off the bottom edge
+      if (top + dropdownHeight > viewportHeight - 16) {
+        // Position above the bell instead
+        top = rect.top - dropdownHeight - 8;
+        
+        // If still off screen, position at top with margin
+        if (top < 16) {
+          top = 16;
+        }
+      }
+
+      dropdown.style.top = `${top}px`;
+      dropdown.style.right = `${right}px`;
     };
 
     // Find pre-rendered dropdown or create if not found
     let dropdown = document.getElementById('notification-dropdown');
-    let isNewDropdown = false;
+    let needsEventListeners = false;
 
     if (!dropdown) {
       // Fallback: Create dropdown if not pre-rendered (for backward compatibility)
       console.warn('Notification dropdown not pre-rendered, creating dynamically');
-      isNewDropdown = true;
+      needsEventListeners = true;
       dropdown = document.createElement('div');
       dropdown.id = 'notification-dropdown';
       dropdown.className = 'notification-dropdown';
@@ -634,8 +665,8 @@
     } else {
       // Pre-rendered dropdown found, just ensure it's properly initialized
       console.log('Using pre-rendered notification dropdown');
-      // Mark dropdown as existing but not yet initialized for event listeners
-      isNewDropdown = true;
+      // Mark that we need to attach event listeners
+      needsEventListeners = true;
     }
 
     // Toggle dropdown - Use single event listener (no cloning)
@@ -643,20 +674,17 @@
       e.stopPropagation();
       e.preventDefault();
       
-      // Show/hide dropdown by toggling class and display
-      const isOpen = dropdown.classList.toggle('notification-dropdown--open');
+      // Toggle dropdown visibility with CSS class only
+      dropdown.classList.toggle('notification-dropdown--open');
       
-      if (isOpen) {
-        dropdown.style.display = 'block';
+      if (dropdown.classList.contains('notification-dropdown--open')) {
         positionDropdown(dropdown);
         fetchNotifications();
-      } else {
-        dropdown.style.display = 'none';
       }
     });
 
-    // Close on outside click (only attach once for new dropdowns)
-    if (isNewDropdown) {
+    // Close on outside click (only attach once)
+    if (needsEventListeners) {
       document.addEventListener('click', e => {
         // Query bell to check if click is outside
         const currentBell =
@@ -664,7 +692,6 @@
           document.getElementById('notification-bell');
         if (currentBell && !currentBell.contains(e.target) && !dropdown.contains(e.target)) {
           dropdown.classList.remove('notification-dropdown--open');
-          dropdown.style.display = 'none';
         }
       });
 
@@ -672,7 +699,6 @@
       document.addEventListener('keydown', e => {
         if (e.key === 'Escape' && dropdown.classList.contains('notification-dropdown--open')) {
           dropdown.classList.remove('notification-dropdown--open');
-          dropdown.style.display = 'none';
         }
       });
 
