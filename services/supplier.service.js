@@ -9,6 +9,24 @@ const { NotFoundError, ValidationError, AuthorizationError } = require('../error
 const logger = require('../utils/logger');
 const { paginationHelper } = require('../utils/database');
 
+/**
+ * Generate SEO-friendly slug from text
+ * @param {string} text - Text to slugify
+ * @returns {string} - URL-safe slug
+ */
+function generateSlug(text) {
+  if (!text) {
+    return '';
+  }
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '') // Remove special characters
+    .replace(/\s+/g, '-') // Replace spaces with hyphens
+    .replace(/-+/g, '-') // Replace multiple hyphens with single
+    .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
+}
+
 class SupplierService {
   constructor(dbUnified, uid) {
     this.db = dbUnified;
@@ -60,6 +78,38 @@ class SupplierService {
       verified: false,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
+
+      // Publishing workflow (Phase 1 additions)
+      status: data.status || 'draft',
+      slug: data.slug || generateSlug(String(data.name).trim()),
+      publishedAt: data.publishedAt || null,
+
+      // SEO & Social
+      metaDescription: data.metaDescription || '',
+      openGraphImage: data.openGraphImage || '',
+      tags: Array.isArray(data.tags) ? data.tags : [],
+
+      // Business details
+      amenities: Array.isArray(data.amenities) ? data.amenities : [],
+      priceRange: data.priceRange || '£',
+      businessHours: data.businessHours || {},
+      responseTime: data.responseTime || null,
+
+      // Media & Content
+      bookingUrl: data.bookingUrl || '',
+      videoUrl: data.videoUrl || '',
+      faqs: Array.isArray(data.faqs) ? data.faqs : [],
+      testimonials: Array.isArray(data.testimonials) ? data.testimonials : [],
+      awards: Array.isArray(data.awards) ? data.awards : [],
+      certifications: Array.isArray(data.certifications) ? data.certifications : [],
+
+      // Analytics (denormalized)
+      viewCount: data.viewCount || 0,
+      enquiryCount: data.enquiryCount || 0,
+
+      // Admin approval
+      approvedAt: data.approvedAt || null,
+      approvedBy: data.approvedBy || null,
     };
 
     suppliers.push(supplier);
@@ -153,11 +203,36 @@ class SupplierService {
       'logo',
       'coverImage',
       'images',
+      // Phase 1 additions - Supplier can update
+      'status',
+      'slug',
+      'metaDescription',
+      'openGraphImage',
+      'tags',
+      'amenities',
+      'priceRange',
+      'businessHours',
+      'bookingUrl',
+      'videoUrl',
+      'faqs',
+      'testimonials',
+      'awards',
+      'certifications',
     ];
 
     // Admins can update these fields
     if (userRole === 'admin') {
-      allowedFields.push('isPro', 'proExpiresAt', 'verified');
+      allowedFields.push(
+        'isPro',
+        'proExpiresAt',
+        'verified',
+        'publishedAt',
+        'approvedAt',
+        'approvedBy',
+        'responseTime',
+        'viewCount',
+        'enquiryCount'
+      );
     }
 
     // Apply updates
@@ -367,3 +442,4 @@ class SupplierService {
 }
 
 module.exports = SupplierService;
+module.exports.generateSlug = generateSlug;
