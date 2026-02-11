@@ -1,12 +1,291 @@
 /**
  * Supplier Profile Page - Reviews and Package Cards
  * Handles reviews loading and package card interactions
+ * Phase 1: Added hero section rendering and SEO meta tags
  */
 
 (function () {
   'use strict';
 
   let supplierId = null;
+  let supplierData = null;
+
+  /**
+   * Update SEO meta tags dynamically based on supplier data
+   * @param {Object} supplier - Supplier data
+   */
+  function updateMetaTags(supplier) {
+    if (!supplier) {
+      return;
+    }
+
+    const title = `${supplier.name} — EventFlow`;
+    const description =
+      supplier.metaDescription ||
+      supplier.description ||
+      `View ${supplier.name} on EventFlow - the UK's leading event planning platform.`;
+    const image =
+      supplier.openGraphImage ||
+      supplier.coverImage ||
+      supplier.logo ||
+      'https://event-flow.co.uk/assets/images/eventflow-og-image.jpg';
+    const url = `https://event-flow.co.uk/supplier.html?id=${supplier.id}`;
+
+    // Update page title
+    document.title = title;
+    const pageTitle = document.getElementById('page-title');
+    if (pageTitle) {
+      pageTitle.textContent = title;
+    }
+
+    // Update meta description
+    const metaDesc = document.getElementById('meta-description');
+    if (metaDesc) {
+      metaDesc.setAttribute('content', description);
+    }
+
+    // Update Open Graph tags
+    const ogTitle = document.getElementById('og-title');
+    if (ogTitle) {
+      ogTitle.setAttribute('content', title);
+    }
+
+    const ogDesc = document.getElementById('og-description');
+    if (ogDesc) {
+      ogDesc.setAttribute('content', description);
+    }
+
+    const ogImage = document.getElementById('og-image');
+    if (ogImage) {
+      ogImage.setAttribute('content', image);
+    }
+
+    const ogUrl = document.getElementById('og-url');
+    if (ogUrl) {
+      ogUrl.setAttribute('content', url);
+    }
+
+    // Update Twitter Card tags
+    const twitterTitle = document.getElementById('twitter-title');
+    if (twitterTitle) {
+      twitterTitle.setAttribute('content', title);
+    }
+
+    const twitterDesc = document.getElementById('twitter-description');
+    if (twitterDesc) {
+      twitterDesc.setAttribute('content', description);
+    }
+
+    const twitterImage = document.getElementById('twitter-image');
+    if (twitterImage) {
+      twitterImage.setAttribute('content', image);
+    }
+
+    const twitterUrl = document.getElementById('twitter-url');
+    if (twitterUrl) {
+      twitterUrl.setAttribute('content', url);
+    }
+  }
+
+  /**
+   * Render hero section with supplier data
+   * @param {Object} supplier - Supplier data
+   */
+  function renderHeroSection(supplier) {
+    if (!supplier) {
+      return;
+    }
+
+    // Update banner image
+    const heroBanner = document.getElementById('hero-banner');
+    if (heroBanner && supplier.coverImage) {
+      heroBanner.src = supplier.coverImage;
+      heroBanner.alt = `${supplier.name} banner`;
+    }
+
+    // Render badges
+    const badgesContainer = document.getElementById('hero-badges');
+    if (badgesContainer) {
+      const badges = [];
+
+      if (supplier.verified) {
+        badges.push(
+          '<span class="badge badge-verified" aria-label="Verified supplier">✓ Verified</span>'
+        );
+      }
+
+      if (supplier.isPro) {
+        const now = new Date();
+        const proExpiry = supplier.proExpiresAt ? new Date(supplier.proExpiresAt) : null;
+        const isProActive = !proExpiry || proExpiry > now;
+
+        if (isProActive) {
+          // Check if Pro+ based on some criteria (could be a separate field)
+          const isProPlus = supplier.proTier === 'plus' || supplier.isPro === 'plus';
+          if (isProPlus) {
+            badges.push(
+              '<span class="badge badge-pro-plus" aria-label="Pro Plus supplier">⭐ Pro+</span>'
+            );
+          } else {
+            badges.push('<span class="badge badge-pro" aria-label="Pro supplier">✨ Pro</span>');
+          }
+        }
+      }
+
+      badgesContainer.innerHTML = badges.join('');
+    }
+
+    // Update title
+    const heroTitle = document.getElementById('hero-title');
+    if (heroTitle) {
+      heroTitle.textContent = supplier.name;
+    }
+
+    // Update breadcrumb
+    const breadcrumbName = document.getElementById('breadcrumb-supplier-name');
+    if (breadcrumbName) {
+      breadcrumbName.textContent = supplier.name;
+    }
+
+    // Update tagline
+    const heroTagline = document.getElementById('hero-tagline');
+    if (heroTagline) {
+      heroTagline.textContent = supplier.tagline || supplier.description?.substring(0, 150) || '';
+      heroTagline.style.display = heroTagline.textContent ? 'block' : 'none';
+    }
+
+    // Render meta information
+    const heroMeta = document.getElementById('hero-meta');
+    if (heroMeta) {
+      const metaItems = [];
+
+      // Rating
+      if (supplier.rating && supplier.reviewCount) {
+        const rating = Number(supplier.rating).toFixed(1);
+        const reviewCount = Number(supplier.reviewCount);
+        metaItems.push(`
+          <div class="meta-item meta-rating">
+            <span class="star-icon" aria-hidden="true">⭐</span>
+            <span>${rating} (${reviewCount} reviews)</span>
+          </div>
+        `);
+      }
+
+      // Location
+      if (supplier.location) {
+        const location = escapeHtml(supplier.location);
+        const postcode = supplier.postcode ? escapeHtml(supplier.postcode) : '';
+        metaItems.push(`
+          <div class="meta-item meta-location">
+            <span aria-hidden="true">📍</span>
+            <span>${location}${postcode ? `, ${postcode}` : ''}</span>
+          </div>
+        `);
+      }
+
+      // Price range
+      if (supplier.priceRange) {
+        const priceRange = escapeHtml(supplier.priceRange);
+        metaItems.push(`
+          <div class="meta-item meta-price">
+            <span aria-hidden="true">💰</span>
+            <span>${priceRange}</span>
+          </div>
+        `);
+      }
+
+      heroMeta.innerHTML = metaItems.join('');
+    }
+
+    // Setup CTA buttons
+    const btnEnquiry = document.getElementById('btn-enquiry');
+    if (btnEnquiry) {
+      btnEnquiry.onclick = () => {
+        // TODO: Open enquiry modal
+        if (window.EventFlowNotifications) {
+          window.EventFlowNotifications.info('Enquiry form coming soon!');
+        }
+      };
+    }
+
+    const btnCall = document.getElementById('btn-call');
+    if (btnCall && supplier.phone) {
+      btnCall.href = `tel:${supplier.phone}`;
+      btnCall.style.display = 'inline-flex';
+    } else if (btnCall) {
+      btnCall.style.display = 'none';
+    }
+
+    const btnSave = document.getElementById('btn-save');
+    if (btnSave) {
+      btnSave.onclick = () => {
+        // TODO: Save to favorites
+        if (window.EventFlowNotifications) {
+          window.EventFlowNotifications.info('Save feature coming soon!');
+        }
+      };
+    }
+
+    const btnShare = document.getElementById('btn-share');
+    if (btnShare) {
+      btnShare.onclick = async () => {
+        const shareData = {
+          title: supplier.name,
+          text: supplier.description || `Check out ${supplier.name} on EventFlow`,
+          url: window.location.href,
+        };
+
+        if (navigator.share) {
+          try {
+            await navigator.share(shareData);
+          } catch (err) {
+            if (err.name !== 'AbortError') {
+              console.error('Error sharing:', err);
+            }
+          }
+        } else {
+          // Fallback: Copy to clipboard
+          navigator.clipboard.writeText(window.location.href);
+          if (window.EventFlowNotifications) {
+            window.EventFlowNotifications.success('Link copied to clipboard!');
+          }
+        }
+      };
+    }
+  }
+
+  /**
+   * Load supplier data and render hero
+   */
+  async function loadSupplierData() {
+    if (!supplierId) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/suppliers/${supplierId}`, {
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to load supplier data');
+      }
+
+      supplierData = await response.json();
+
+      // Update meta tags
+      updateMetaTags(supplierData);
+
+      // Render hero section
+      renderHeroSection(supplierData);
+    } catch (error) {
+      console.error('Error loading supplier data:', error);
+      const heroTitle = document.getElementById('hero-title');
+      if (heroTitle) {
+        heroTitle.textContent = 'Supplier Not Found';
+      }
+    }
+  }
 
   /**
    * Initialize supplier profile page
@@ -20,6 +299,7 @@
       return;
     }
 
+    loadSupplierData();
     loadReviews();
     initializePackageCards();
   }

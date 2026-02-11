@@ -1,7 +1,41 @@
-<!DOCTYPE html><html lang='en-GB'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>Supplier Profile — EventFlow</title><meta name="description" content="View supplier profile, packages, reviews and ratings on EventFlow - the UK's leading event planning platform."><meta name='twitter:card' content='summary_large_image' /><meta name='twitter:url' content='https://event-flow.co.uk/supplier.html' /><meta name='twitter:title' content='Supplier Profile — EventFlow' /><meta name='twitter:description' content="View supplier profile, packages, reviews and ratings on EventFlow - the UK's leading event planning platform." /><meta name='twitter:image' content='https://event-flow.co.uk/assets/images/eventflow-og-image.jpg' /><link rel='stylesheet' href='/assets/css/styles.css?v=18.0.0'> <link rel="stylesheet" href="/assets/css/mobile-optimizations.css?v=18.0.0"> <link rel="stylesheet" href="/assets/css/ui-ux-fixes.css?v=18.0.0">
-    <link rel="stylesheet" href="/assets/css/navbar.css?v=18.0.0" /> <link rel="stylesheet" href="/assets/css/reviews.css?v=18.0.0"><link rel="stylesheet" href="/assets/css/p3-features.css?v=18.1.1"><link rel="stylesheet" href="/assets/css/supplier-dashboard-improvements.css?v=18.1.0">
-<script src="/assets/js/reviews.js" defer></script>
-</head><body>
+<!DOCTYPE html>
+<html lang='en-GB'>
+<head>
+  <meta charset='utf-8'>
+  <meta name='viewport' content='width=device-width,initial-scale=1'>
+  <title id="page-title">Supplier Profile — EventFlow</title>
+  
+  <!-- SEO Meta Tags (will be dynamically updated) -->
+  <meta name="description" id="meta-description" content="View supplier profile, packages, reviews and ratings on EventFlow - the UK's leading event planning platform.">
+  
+  <!-- Open Graph Meta Tags -->
+  <meta property="og:title" id="og-title" content="Supplier Profile — EventFlow">
+  <meta property="og:description" id="og-description" content="View supplier profile, packages, reviews and ratings on EventFlow - the UK's leading event planning platform.">
+  <meta property="og:image" id="og-image" content="https://event-flow.co.uk/assets/images/eventflow-og-image.jpg">
+  <meta property="og:url" id="og-url" content="https://event-flow.co.uk/supplier.html">
+  <meta property="og:type" content="business.business">
+  
+  <!-- Twitter Card Meta Tags -->
+  <meta name='twitter:card' content='summary_large_image'>
+  <meta name='twitter:url' id="twitter-url" content='https://event-flow.co.uk/supplier.html'>
+  <meta name='twitter:title' id="twitter-title" content='Supplier Profile — EventFlow'>
+  <meta name='twitter:description' id="twitter-description" content="View supplier profile, packages, reviews and ratings on EventFlow - the UK's leading event planning platform.">
+  <meta name='twitter:image' id="twitter-image" content='https://event-flow.co.uk/assets/images/eventflow-og-image.jpg'>
+  
+  <!-- Stylesheets -->
+  <link rel='stylesheet' href='/assets/css/styles.css?v=18.0.0'>
+  <link rel="stylesheet" href="/assets/css/mobile-optimizations.css?v=18.0.0">
+  <link rel="stylesheet" href="/assets/css/ui-ux-fixes.css?v=18.0.0">
+  <link rel="stylesheet" href="/assets/css/navbar.css?v=18.0.0">
+  <link rel="stylesheet" href="/assets/css/reviews.css?v=18.0.0">
+  <link rel="stylesheet" href="/assets/css/p3-features.css?v=18.1.1">
+  <link rel="stylesheet" href="/assets/css/supplier-dashboard-improvements.css?v=18.1.0">
+  <link rel="stylesheet" href="/assets/css/supplier-profile.css?v=18.2.0">
+  
+  <script src="/assets/js/toast-notifications.js?v=18.2.0"></script>
+  <script src="/assets/js/reviews.js" defer></script>
+</head>
+<body>
 <!-- TOP NAVBAR - GOLD STANDARD REBUILD -->
 <header class="ef-header" role="banner">
   <div class="ef-container">
@@ -98,6 +132,62 @@
         <a href="/notifications.html" class="notification-view-all">View all</a>
       </div>
     </div>
+
+    <!-- Breadcrumb Navigation -->
+    <nav class="supplier-breadcrumb" aria-label="Breadcrumb">
+      <ol>
+        <li>
+          <a href="/">Home</a>
+          <span class="separator" aria-hidden="true">›</span>
+        </li>
+        <li>
+          <a href="/suppliers">Suppliers</a>
+          <span class="separator" aria-hidden="true">›</span>
+        </li>
+        <li>
+          <span class="current" id="breadcrumb-supplier-name">Loading...</span>
+        </li>
+      </ol>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="supplier-hero" id="supplier-hero">
+      <div class="hero-media">
+        <img 
+          id="hero-banner" 
+          src="/assets/images/placeholder-banner.jpg" 
+          alt="Supplier banner"
+          onerror="this.src='/assets/images/placeholder-banner.jpg'"
+        />
+        <div class="hero-badges" id="hero-badges">
+          <!-- Badges will be dynamically inserted here -->
+        </div>
+      </div>
+      
+      <div class="hero-content">
+        <h1 id="hero-title">Loading Supplier...</h1>
+        <p class="supplier-tagline" id="hero-tagline"></p>
+        
+        <div class="supplier-meta" id="hero-meta">
+          <!-- Meta information will be dynamically inserted here -->
+        </div>
+        
+        <div class="hero-actions">
+          <button class="btn btn-primary" id="btn-enquiry" aria-label="Send enquiry to supplier">
+            📧 Send Enquiry
+          </button>
+          <a class="btn btn-secondary" id="btn-call" href="#" aria-label="Call supplier">
+            📞 Call Now
+          </a>
+          <button class="btn btn-tertiary" id="btn-save" aria-label="Save supplier to favorites">
+            🔖 Save
+          </button>
+          <button class="btn btn-tertiary" id="btn-share" aria-label="Share supplier profile">
+            🔗 Share
+          </button>
+        </div>
+      </div>
+    </section>
 
     <script src="/assets/js/utils/auth-state.js" defer></script>
     <script src="/assets/js/burger-menu.js" defer></script>

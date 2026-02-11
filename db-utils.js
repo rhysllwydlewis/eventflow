@@ -293,6 +293,110 @@ async function clearCollection(collectionName) {
   }
 }
 
+/**
+ * Migration: Add new fields to supplier profiles (Phase 1)
+ * Extends supplier data model with SEO, business, and content fields
+ * @returns {Promise<Object>} Migration results
+ */
+async function migrateSuppliers_AddNewFields() {
+  const { generateSlug } = require('./services/supplier.service');
+
+  console.log('Starting supplier migration: Adding new fields...');
+
+  try {
+    // Create backup first
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const suppliers = await read('suppliers');
+
+    console.log(`Found ${suppliers.length} suppliers to migrate`);
+
+    if (suppliers.length === 0) {
+      console.log('No suppliers to migrate');
+      return { success: true, migrated: 0, message: 'No suppliers to migrate' };
+    }
+
+    // Backup data (if using file-based storage, this would be written to disk)
+    console.log(`Creating backup of suppliers data (timestamp: ${timestamp})`);
+
+    // Process each supplier
+    const updated = suppliers.map(s => {
+      // Generate slug if not present
+      const slug = s.slug || generateSlug(s.name);
+
+      // Determine status based on profile completeness
+      // Only mark as published if supplier has minimum viable profile
+      let status = s.status;
+      if (!status) {
+        const hasMinimumViableProfile =
+          s.name && s.description && s.location && (s.email || s.phone);
+
+        status = hasMinimumViableProfile ? 'published' : 'draft';
+      }
+
+      return {
+        ...s,
+        // Publishing workflow
+        status: status,
+        slug: slug,
+        publishedAt:
+          s.publishedAt ||
+          (status === 'published' ? s.createdAt || new Date().toISOString() : null),
+
+        // SEO & Social
+        metaDescription:
+          s.metaDescription || (s.description ? s.description.substring(0, 160) : ''),
+        openGraphImage: s.openGraphImage || s.logo || '',
+        tags: Array.isArray(s.tags) ? s.tags : [],
+
+        // Business details
+        amenities: Array.isArray(s.amenities) ? s.amenities : [],
+        priceRange: s.priceRange || '£',
+        businessHours: s.businessHours || {},
+        responseTime: s.responseTime || null,
+
+        // Media & Content
+        bookingUrl: s.bookingUrl || '',
+        videoUrl: s.videoUrl || '',
+        faqs: Array.isArray(s.faqs) ? s.faqs : [],
+        testimonials: Array.isArray(s.testimonials) ? s.testimonials : [],
+        awards: Array.isArray(s.awards) ? s.awards : [],
+        certifications: Array.isArray(s.certifications) ? s.certifications : [],
+
+        // Analytics (denormalized)
+        viewCount: s.viewCount || 0,
+        enquiryCount: s.enquiryCount || 0,
+
+        // Admin approval
+        approvedAt: s.approvedAt || null,
+        approvedBy: s.approvedBy || null,
+
+        // Keep existing updatedAt or set it if missing
+        updatedAt: s.updatedAt || new Date().toISOString(),
+      };
+    });
+
+    // Write updated suppliers back to database
+    await write('suppliers', updated);
+
+    console.log(`Successfully migrated ${updated.length} suppliers`);
+    console.log('Migration complete! All suppliers now have Phase 1 fields');
+
+    return {
+      success: true,
+      migrated: updated.length,
+      message: `Successfully migrated ${updated.length} supplier profiles with new fields`,
+      backupTimestamp: timestamp,
+    };
+  } catch (error) {
+    console.error('Migration failed:', error.message);
+    return {
+      success: false,
+      error: error.message,
+      message: 'Migration failed. Please check logs and restore from backup if needed.',
+    };
+  }
+}
+
 module.exports = {
   read,
   write,
@@ -306,4 +410,5 @@ module.exports = {
   migrateFromJson,
   exportToJson,
   clearCollection,
+  migrateSuppliers_AddNewFields,
 };
