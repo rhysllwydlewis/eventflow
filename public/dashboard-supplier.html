@@ -20,6 +20,7 @@
     <link rel="stylesheet" href="/assets/css/supplier-dashboard-improvements.css?v=18.2.0" />
     <link rel="stylesheet" href="/assets/css/dashboard-hero.css?v=18.2.0" />
     <link rel="stylesheet" href="/assets/css/supplier-utils.css?v=18.2.0" />
+    <link rel="stylesheet" href="/assets/css/profile-health.css?v=18.2.0" />
     <script src="/assets/js/dashboard-guard.js?v=17.0.2"></script>
     <script src="/assets/js/toast-notifications.js?v=18.2.0"></script>
     <script>
@@ -2234,6 +2235,11 @@
                     hasHighlights = supplier.highlights && supplier.highlights.length >= 3;
                     hasSocialLinks =
                       supplier.socialLinks && Object.keys(supplier.socialLinks).length >= 2;
+                    
+                    // Initialize Profile Health Widget with supplier data
+                    if (window.ProfileHealthWidget) {
+                      window.ProfileHealthWidget.init('profile-completeness-widget', supplier);
+                    }
                   }
                 }
               } catch (err) {
@@ -2269,21 +2275,8 @@
                 console.error('Error checking email verification:', err);
               }
 
-              // Create profile completeness checklist with new fields
-              createProfileChecklist(
-                {
-                  basicInfo: hasProfile,
-                  photos: hasPhotos,
-                  package: hasPackage,
-                  emailVerified: emailVerified,
-                  banner: hasBanner,
-                  tagline: hasTagline,
-                  highlights: hasHighlights,
-                  socialLinks: hasSocialLinks,
-                  firstReview: false, // Would check reviews API
-                },
-                'profile-completeness-widget'
-              );
+              // Note: Profile Health Widget is now initialized when supplier data is fetched above
+              // Old createProfileChecklist has been replaced with ProfileHealthWidget
             } catch (error) {
               console.error('Error initializing supplier dashboard widgets:', error);
             }
@@ -3149,6 +3142,7 @@
     </script>
 
     <script src="/assets/js/notifications.js?v=18.2.0"></script>
+    <script src="/assets/js/components/profile-health-widget.js?v=18.2.0"></script>
     <script src="/assets/js/keyboard-shortcuts.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
     <script src="/assets/js/utils/p3-features.js" defer></script>
