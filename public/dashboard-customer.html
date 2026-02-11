@@ -397,23 +397,28 @@ async function calculateRealBudget(plans) {
   
   // Get total budget - CHECK CUSTOM BUDGET FIRST
   let totalBudget = BUDGET_CONFIG.DEFAULT_TOTAL_BUDGET;
+  const planWithBudget = plans.find(p => p.budget && parseFloat(p.budget) > 0);
   
-  // Priority 1: Check localStorage for custom budget
-  const customBudget = localStorage.getItem('eventflow_custom_budget');
-  if (customBudget && parseFloat(customBudget) > 0) {
-    totalBudget = parseFloat(customBudget);
-    console.log('Using custom budget:', totalBudget);
+  // Priority 1: Check localStorage for custom budget (with error handling)
+  try {
+    const customBudget = localStorage.getItem('eventflow_custom_budget');
+    if (customBudget && parseFloat(customBudget) > 0) {
+      totalBudget = parseFloat(customBudget);
+    }
+  } catch (err) {
+    console.error('Failed to read custom budget from localStorage:', err);
+    // Continue with default budget
   }
-  // Priority 2: Check if user set budget in plan
-  else if (planWithBudget) {
+  
+  // Priority 2: Check if user set budget in plan (only if custom budget not set)
+  if (totalBudget === BUDGET_CONFIG.DEFAULT_TOTAL_BUDGET && planWithBudget) {
     totalBudget = parseFloat(planWithBudget.budget);
-    console.log('Using plan budget:', totalBudget);
   }
-  // Priority 3: If spending but no budget set, DON'T auto-expand
-  else if (totalSpent > 0) {
+  
+  // Priority 3: If spending but no budget set, use default
+  if (totalBudget === BUDGET_CONFIG.DEFAULT_TOTAL_BUDGET && totalSpent > 0) {
     // Show warning instead of auto-expanding
     console.warn('User is spending without a budget set. Total spent:', totalSpent);
-    totalBudget = BUDGET_CONFIG.DEFAULT_TOTAL_BUDGET;
   }
   
   const remaining = Math.max(0, totalBudget - totalSpent);
@@ -479,7 +484,9 @@ async function initCustomerDashboardWidgets() {
     try {
       savedSuppliers = JSON.parse(localStorage.getItem('eventflow_saved_suppliers') || '[]');
     } catch (err) {
-      console.error('Error reading saved suppliers:', err);
+      console.error('Error reading saved suppliers from localStorage:', err);
+      // Continue with empty array
+    }
       savedSuppliers = [];
     }
     
@@ -791,8 +798,14 @@ function setupEventHandlers() {
   document.getElementById('openPlanBtn')?.addEventListener('click', async (e) => {
     e.preventDefault();
     
-    // Get saved suppliers from localStorage
-    const saved = JSON.parse(localStorage.getItem('eventflow_saved_suppliers') || '[]');
+    // Get saved suppliers from localStorage (with error handling)
+    let saved = [];
+    try {
+      saved = JSON.parse(localStorage.getItem('eventflow_saved_suppliers') || '[]');
+    } catch (err) {
+      console.error('Error reading saved suppliers from localStorage:', err);
+      // Continue with empty array
+    }
     
     if (saved.length === 0) {
       // Show styled notification instead of alert
@@ -828,23 +841,45 @@ function setupEventHandlers() {
     const budgetStatus = document.getElementById('budget-status');
     const budget = parseFloat(input.value);
     
-    if (isNaN(budget) || budget <= 0) {
+    // Validate budget (also enforce in JS, not just HTML)
+    if (isNaN(budget) || budget < 0) {
       budgetStatus.style.display = 'block';
       budgetStatus.style.background = '#FEF2F2';
-      budgetStatus.innerHTML = '<p class="small" style="margin:0;color:#DC2626;">❌ Please enter a valid budget amount (minimum £1)</p>';
+      budgetStatus.innerHTML = '<p class="small" style="margin:0;color:#DC2626;">❌ Please enter a valid positive budget amount</p>';
       return;
     }
     
-    // Save to localStorage
-    localStorage.setItem('eventflow_custom_budget', budget.toString());
+    if (budget === 0) {
+      budgetStatus.style.display = 'block';
+      budgetStatus.style.background = '#FEF2F2';
+      budgetStatus.innerHTML = '<p class="small" style="margin:0;color:#DC2626;">❌ Budget must be greater than £0</p>';
+      return;
+    }
+    
+    // Save to localStorage with error handling
+    try {
+      localStorage.setItem('eventflow_custom_budget', budget.toString());
+    } catch (err) {
+      console.error('Failed to save budget to localStorage:', err);
+      budgetStatus.style.display = 'block';
+      budgetStatus.style.background = '#FEF2F2';
+      budgetStatus.innerHTML = '<p class="small" style="margin:0;color:#DC2626;">❌ Failed to save budget. Storage may be full.</p>';
+      return;
+    }
     
     // Show success message
     budgetStatus.style.display = 'block';
     budgetStatus.style.background = '#F0FDF4';
     budgetStatus.innerHTML = '<p class="small" style="margin:0;color:#059669;">✅ Budget set to £' + budget.toLocaleString() + '</p>';
     
-    // Reload widgets with new budget
-    await initCustomerDashboardWidgets();
+    // Reload widgets with new budget - with error handling
+    try {
+      await initCustomerDashboardWidgets();
+    } catch (err) {
+      console.error('Failed to reload widgets after budget update:', err);
+      // Don't show error to user since budget was saved successfully
+      // Widgets will reload on next page visit
+    }
     
     // Hide success message after 3 seconds
     setTimeout(() => {
@@ -852,13 +887,18 @@ function setupEventHandlers() {
     }, 3000);
   });
 
-  // Load saved budget on page load
-  const savedBudget = localStorage.getItem('eventflow_custom_budget');
-  if (savedBudget) {
-    const input = document.getElementById('custom-budget-input');
-    if (input) {
-      input.value = savedBudget;
+  // Load saved budget on page load (with error handling)
+  try {
+    const savedBudget = localStorage.getItem('eventflow_custom_budget');
+    if (savedBudget) {
+      const input = document.getElementById('custom-budget-input');
+      if (input) {
+        input.value = savedBudget;
+      }
     }
+  } catch (err) {
+    console.error('Error loading saved budget from localStorage:', err);
+    // Continue without pre-filling the input
   }
 }
 
