@@ -96,24 +96,6 @@ The EventFlow subscription system provides a complete payment and subscription m
 7. **Backend activates** → Subscription record created/updated
 8. **User redirected** → Dashboard with active subscription
 
-### Payment Document Structure
-
-```javascript
-{
-  psp: 'googlepay',
-  total: 9.99,
-  currency: 'GBP',
-  paymentToken: {...},
-  status: 'pending' | 'success' | 'error',
-  userId: 'user123',
-  supplierId: 'supplier456',
-  planId: 'pro_monthly',
-  createdAt: Timestamp,
-  processedAt: Timestamp,
-  subscriptionActivated: true
-}
-```
-
 ## Subscription Lifecycle
 
 ### Status Flow
@@ -126,28 +108,26 @@ New → Trial → Active → (Expired/Cancelled)
 
 ```javascript
 {
-  subscription: {
-    tier: 'pro' | 'pro_plus' | 'free',
-    status: 'trial' | 'active' | 'expired' | 'cancelled',
-    planId: 'pro_monthly',
-    paymentId: 'payment123',
-    startDate: Timestamp,
-    endDate: Timestamp,
-    trialEndDate: Timestamp,
-    autoRenew: true,
-    billingCycle: 'monthly' | 'yearly',
-    lastUpdated: Timestamp,
-    lastChecked: Timestamp,
-    cancelledAt?: Timestamp
-  }
+  id: 'sub_xxx',
+  userId: 'user123',
+  plan: 'pro' | 'pro_plus' | 'free',
+  status: 'active' | 'trialing' | 'past_due' | 'canceled',
+  stripeSubscriptionId: 'sub_stripe_xxx',
+  stripeCustomerId: 'cus_stripe_xxx',
+  currentPeriodStart: '2024-01-01T00:00:00.000Z',
+  currentPeriodEnd: '2024-02-01T00:00:00.000Z',
+  trialEnd: '2024-01-15T00:00:00.000Z',
+  cancelAtPeriodEnd: false,
+  createdAt: '2024-01-01T00:00:00.000Z',
+  updatedAt: '2024-01-01T00:00:00.000Z'
 }
 ```
 
 ## Automated Processes
 
-### Daily Status Check (`checkSubscriptionStatus`)
+### Stripe Webhooks
 
-Runs at midnight (Europe/London) via Cloud Scheduler:
+Webhook events processed automatically:
 
 1. **Check trial expiration** → Move from 'trial' to 'active'
 2. **Check subscription expiration** → Expire if past end date
@@ -218,166 +198,44 @@ Runs at midnight (Europe/London) via Cloud Scheduler:
 ### Environment Variables
 
 ```env
-# Firebase Functions
-SEND_EMAILS=true
-APP_BASE_URL=https://eventflow-ffb12.web.app
+# Stripe Configuration
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_PUBLISHABLE_KEY=pk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
 
-# Email Service (Postmark)
-POSTMARK_API_KEY=your_postmark_server_token
-POSTMARK_FROM=admin@event-flow.co.uk
+# Stripe Price IDs
+STRIPE_PRO_PRICE_ID=price_xxxxx
+STRIPE_PRO_PLUS_PRICE_ID=price_xxxxx
 ```
 
-### Google Pay Configuration
+## Feature Gating
 
-**Test Mode**: Currently configured with `gateway: 'example'` for testing
-
-**Production Setup**: Update `/public/supplier/js/googlepay-config.js`:
+### Server-Side Checks
 
 ```javascript
-// For Stripe
-gateway: 'stripe',
-gatewayMerchantId: 'your_stripe_merchant_id'
+const subscriptionService = require('../services/subscriptionService');
 
-// For Braintree
-gateway: 'braintree',
-gatewayMerchantId: 'your_braintree_merchant_id'
+// Check feature access
+const hasAnalytics = await subscriptionService.checkFeatureAccess(userId, 'analytics');
+
+// Get user features
+const features = await subscriptionService.getUserFeatures(userId);
 ```
 
-## Limitations & TODOs
+### Middleware Protection
 
-### Current Limitations
+```javascript
+const { requireSubscription } = require('../middleware/subscriptionGate');
 
-1. **Automatic Renewals**: Google Pay one-time tokens cannot be reused for recurring billing
-   - Users must manually renew when subscription expires
-   - Email reminders sent 7 days before expiry
-
-2. **Payment Method Storage**: No payment method tokens stored for future charges
-   - Each renewal requires new payment authorization
-
-3. **Failed Payment Retry**: Limited retry logic for failed payments
-   - Grace period implemented but no automatic retry
-
-### Recommended Improvements
-
-1. **Implement Recurring Billing**
-   - Integrate with Stripe/Braintree for recurring charges
-   - Store payment method IDs securely
-   - Process automatic renewals
-
-2. **Enhanced Dunning Management**
-   - Multiple retry attempts for failed payments
-   - Escalating email notifications
-   - Smart retry timing (avoid weekends/holidays)
-
-3. **Subscription Analytics**
-   - Track churn rates
-   - Monitor conversion from trial to paid
-   - Revenue reporting
-
-4. **Upgrade/Downgrade Flow**
-   - Complete the pro-rated payment processing
-   - Immediate plan changes
-   - Credit management
+router.post('/advanced-feature', requireSubscription('pro'), async (req, res) => {
+  // Protected route
+});
+```
 
 ## Testing
 
-### Manual Testing Checklist
+### Test Cards
 
-- [ ] Payment completes successfully
-- [ ] Subscription activates in database
-- [ ] Dashboard shows correct status
-- [ ] Trial countdown displays
-- [ ] Renewal date shown correctly
-- [ ] Cancellation works
-- [ ] Reactivation works
-- [ ] Email notifications sent (check logs)
-- [ ] Google Pay button renders
-- [ ] Plan selection UI works
-
-### Test Accounts
-
-Use Google Pay TEST mode with test cards:
-
-- Test Card: 4111 1111 1111 1111
-- Any future expiry date
-- Any 3-digit CVV
-
-## Security Considerations
-
-1. **Payment Tokens**: Never log or expose payment tokens
-2. **User Verification**: All functions verify user owns supplier account
-3. **Input Validation**: All user inputs sanitized
-4. **Error Messages**: Generic errors to prevent information leakage
-5. **HTTPS Only**: All payment flows over HTTPS
-
-## Support & Troubleshooting
-
-### Common Issues
-
-**"Please log in to view subscription status"**
-
-- User not authenticated - check Firebase Auth state
-- Check browser console for errors
-
-**Google Pay button not appearing**
-
-- Google Pay API not loaded - check network tab
-- Browser doesn't support Google Pay
-- TEST mode requires specific browsers
-
-**Subscription not activating after payment**
-
-- Check Cloud Function logs
-- Verify Firebase Extension is installed
-- Check payment document in Firestore
-
-**Emails not sending**
-
-- Set `SEND_EMAILS=true` environment variable
-- Configure Postmark (see POSTMARK_SETUP.md)
-- Check function logs for email errors
-
-### Debug Mode
-
-Enable detailed logging:
-
-```javascript
-console.log('Subscription status:', subscription);
-console.log('Payment data:', paymentData);
-```
-
-## Deployment
-
-### Firebase Functions
-
-```bash
-cd functions
-npm install
-firebase deploy --only functions
-```
-
-### Frontend
-
-```bash
-# Files automatically served from public/
-# No build step required for static files
-```
-
-### Cloud Scheduler (for checkSubscriptionStatus)
-
-```bash
-# Ensure scheduler is enabled
-firebase deploy --only functions:checkSubscriptionStatus
-```
-
-## Resources
-
-- [Google Pay Web API](https://developers.google.com/pay/api/web)
-- [Firebase Cloud Functions](https://firebase.google.com/docs/functions)
-- [Firestore Security Rules](https://firebase.google.com/docs/firestore/security/get-started)
-
-## License
-
-Part of EventFlow - Event planning made simple.
-
-© 2024 EventFlow. All rights reserved.
+- Success: 4242 4242 4242 4242
+- Decline: 4000 0000 0000 0002
+- 3D Secure: 4000 0025 0000 3155

@@ -198,17 +198,15 @@ router.post(
     }
 
     const users = await dbUnified.read('users');
-    
+
     // Check if this is the owner email trying to register
     // Owner account should only be created through seed, not registration
     if (domainAdmin.isOwnerEmail(email)) {
-      const ownerExists = users.find(
-        u => u.email.toLowerCase() === email.toLowerCase()
-      );
+      const ownerExists = users.find(u => u.email.toLowerCase() === email.toLowerCase());
       if (ownerExists) {
-        return res.status(409).json({ 
+        return res.status(409).json({
           error: 'Email already registered',
-          message: 'This email is reserved for the system owner account.'
+          message: 'This email is reserved for the system owner account.',
         });
       } else {
         // Owner doesn't exist yet - this shouldn't happen normally (seed creates it)
@@ -257,19 +255,21 @@ router.post(
       badges.push('founder');
       console.log(`🏆 Founder badge awarded to ${email} (registered within 6 months of launch)`);
     }
-    
+
     // Determine role using domain-admin logic
     // Owner email: always admin, always verified (skip verification email)
     // Admin domain: initial role as requested, upgrade to admin AFTER verification
     // Regular user: use requested role
     const isOwner = domainAdmin.isOwnerEmail(email);
     const roleDecision = domainAdmin.determineRole(email, roleFinal, false); // Not verified yet
-    
+
     // Log admin domain detection
     if (roleDecision.willUpgradeOnVerification) {
-      console.log(`🔐 Admin domain detected: ${email} will be promoted to admin after verification`);
+      console.log(
+        `🔐 Admin domain detected: ${email} will be promoted to admin after verification`
+      );
     }
-    
+
     if (isOwner) {
       console.log(`👑 Owner account registration: ${email}`);
     }
@@ -433,9 +433,7 @@ router.post('/login', authLimiter, async (req, res) => {
   }
 
   const users = await dbUnified.read('users');
-  const user = users.find(
-    u => (u.email || '').toLowerCase() === String(email).toLowerCase()
-  );
+  const user = users.find(u => (u.email || '').toLowerCase() === String(email).toLowerCase());
 
   if (!user) {
     console.warn(`[LOGIN] User not found: ${email}`);
@@ -613,14 +611,16 @@ router.get('/verify', async (req, res) => {
     users[idx].verified = true;
     delete users[idx].verificationToken;
     delete users[idx].verificationTokenExpiresAt;
-    
+
     // Check if this user should be auto-promoted to admin (domain-based)
     if (domainAdmin.shouldUpgradeToAdminOnVerification(user.email)) {
       const previousRole = users[idx].role;
       users[idx].role = 'admin';
-      console.log(`🔐 Auto-promoted ${user.email} from ${previousRole} to admin (admin domain verified)`);
+      console.log(
+        `🔐 Auto-promoted ${user.email} from ${previousRole} to admin (admin domain verified)`
+      );
     }
-    
+
     await dbUnified.write('users', users);
     console.log(`✅ User verified successfully via JWT: ${user.email}`);
 
@@ -674,23 +674,25 @@ router.get('/verify', async (req, res) => {
   legacyUsers[legacyIdx].verified = true;
   delete legacyUsers[legacyIdx].verificationToken;
   delete legacyUsers[legacyIdx].verificationTokenExpiresAt;
-  
+
   // Check if this user should be auto-promoted to admin (domain-based)
   if (domainAdmin.shouldUpgradeToAdminOnVerification(legacyUser.email)) {
     const previousRole = legacyUsers[legacyIdx].role;
     legacyUsers[legacyIdx].role = 'admin';
-    console.log(`🔐 Auto-promoted ${legacyUser.email} from ${previousRole} to admin (admin domain verified)`);
+    console.log(
+      `🔐 Auto-promoted ${legacyUser.email} from ${previousRole} to admin (admin domain verified)`
+    );
   }
-  
+
   await dbUnified.write('users', legacyUsers);
   console.log(`✅ User verified successfully: ${legacyUser.email}`);
 
   // Send welcome email after successful verification (non-blocking)
   (async () => {
     try {
-      console.log(`📧 Sending welcome email to newly verified user: ${user.email}`);
-      await postmark.sendWelcomeEmail(user);
-      console.log(`✅ Welcome email sent to ${user.email}`);
+      console.log(`📧 Sending welcome email to newly verified user: ${legacyUser.email}`);
+      await postmark.sendWelcomeEmail(legacyUser);
+      console.log(`✅ Welcome email sent to ${legacyUser.email}`);
     } catch (emailError) {
       // Don't fail verification if welcome email fails - just log it
       console.error('❌ Failed to send welcome email:', emailError.message);

@@ -22,7 +22,6 @@ let uid;
 let path;
 let fs;
 let DATA_DIR;
-let supplierIsProActive;
 
 /**
  * Initialize dependencies from server.js
@@ -48,7 +47,6 @@ function initializeDependencies(deps) {
     'path',
     'fs',
     'DATA_DIR',
-    'supplierIsProActive',
   ];
 
   const missing = required.filter(key => deps[key] === undefined);
@@ -69,7 +67,6 @@ function initializeDependencies(deps) {
   path = deps.path;
   fs = deps.fs;
   DATA_DIR = deps.DATA_DIR;
-  supplierIsProActive = deps.supplierIsProActive;
 }
 
 /**
