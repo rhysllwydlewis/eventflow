@@ -2751,7 +2751,7 @@ async function initDashSupplier() {
         const approved = !!s.approved;
 
         return `<div class="supplier-card card" style="margin-bottom:10px" data-supplier-id="${supplierId}">
-      <img src="${photoUrl}" onerror="this.src='/assets/images/collage-venue.svg'; this.onerror=null;">
+      <img src="${photoUrl}" alt="${name} profile photo" onerror="console.warn('Failed to load supplier image:', this.src); this.src='/assets/images/collage-venue.svg'; this.onerror=null;">
       <div>
         <h3>${name} ${proBadge} ${approved ? '<span class="badge">Approved</span>' : '<span class="badge" style="background:#FFF5E6;color:#8A5A00">Awaiting review</span>'}</h3>
         <div class="small">${location} · <span class="badge">${category}</span>${priceDisplay}</div>
