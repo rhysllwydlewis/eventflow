@@ -114,7 +114,7 @@ describe('Subscription Service Integration Tests', () => {
     beforeEach(async () => {
       const sub = await subscriptionService.createSubscription({
         userId: 'usr-1',
-        plan: 'basic',
+        plan: 'pro',
         stripeSubscriptionId: 'sub_stripe_123',
         stripeCustomerId: 'cus_stripe_123',
       });
@@ -122,9 +122,9 @@ describe('Subscription Service Integration Tests', () => {
     });
 
     it('should upgrade subscription to higher tier', async () => {
-      const updated = await subscriptionService.upgradeSubscription(subscriptionId, 'pro');
+      const updated = await subscriptionService.upgradeSubscription(subscriptionId, 'pro_plus');
 
-      expect(updated.plan).toBe('pro');
+      expect(updated.plan).toBe('pro_plus');
       expect(updated.status).toBe('active');
     });
 
@@ -136,7 +136,7 @@ describe('Subscription Service Integration Tests', () => {
 
     it('should reject same tier upgrade', async () => {
       await expect(
-        subscriptionService.upgradeSubscription(subscriptionId, 'basic')
+        subscriptionService.upgradeSubscription(subscriptionId, 'pro')
       ).rejects.toThrow('must be higher tier');
     });
   });
@@ -155,9 +155,9 @@ describe('Subscription Service Integration Tests', () => {
     });
 
     it('should schedule downgrade to lower tier', async () => {
-      const updated = await subscriptionService.downgradeSubscription(subscriptionId, 'basic');
+      const updated = await subscriptionService.downgradeSubscription(subscriptionId, 'free');
 
-      expect(updated.plan).toBe('basic');
+      expect(updated.plan).toBe('free');
       expect(updated.cancelAtPeriodEnd).toBe(true);
     });
 
@@ -271,7 +271,7 @@ describe('Subscription Service Integration Tests', () => {
 
       await subscriptionService.createSubscription({
         userId: 'usr-2',
-        plan: 'basic',
+        plan: 'pro',
         stripeSubscriptionId: 'sub_2',
         stripeCustomerId: 'cus_2',
       });

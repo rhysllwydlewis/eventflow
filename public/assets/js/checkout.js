@@ -11,15 +11,15 @@
 
   // Pricing plans configuration - aligned with updated pricing
   const PLANS = {
-    starter: {
-      name: 'Starter',
+    free: {
+      name: 'Free',
       price: 0.0,
       priceDisplay: '£0',
       interval: 'month',
       features: [
         'Basic supplier profile',
-        'Up to 5 photos',
-        'Receive enquiries',
+        'Up to 3 packages',
+        'Up to 10 bookings per month',
         'Standard listing in search',
         'Email support',
       ],
@@ -132,7 +132,7 @@
         const urlParams = new URLSearchParams(window.location.search);
         const plan = urlParams.get('plan');
 
-        if (plan === 'starter') {
+        if (plan === 'free') {
           // Show signup option for free plan
           return 'unauthenticated_free';
         }
@@ -274,7 +274,7 @@
     try {
       // Handle free plan - just redirect to sign up or dashboard
       if (plan.isFree) {
-        window.location.href = '/auth.html?plan=starter';
+        window.location.href = '/auth.html?plan=free';
         return;
       }
 

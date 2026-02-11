@@ -59,7 +59,7 @@
     const hasActivePro = isProActive(user);
 
     // Update free plan button
-    const freeButtons = document.querySelectorAll('a[href="/checkout.html?plan=starter"]');
+    const freeButtons = document.querySelectorAll('a[href="/checkout.html?plan=free"]');
     freeButtons.forEach(button => {
       if (!hasActivePro) {
         // User is on free plan (not Pro or Pro has expired)
