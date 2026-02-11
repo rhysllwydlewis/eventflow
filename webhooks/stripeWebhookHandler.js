@@ -204,10 +204,10 @@ async function handleSubscriptionCreated(stripeSubscription) {
     'pro';
   const plan = planName.toLowerCase().includes('enterprise')
     ? 'enterprise'
-    : planName.toLowerCase().includes('pro')
-      ? 'pro'
-      : planName.toLowerCase().includes('basic')
-        ? 'basic'
+    : planName.toLowerCase().includes('pro_plus') || planName.toLowerCase().includes('proplus')
+      ? 'pro_plus'
+      : planName.toLowerCase().includes('pro')
+        ? 'pro'
         : 'free';
 
   // Create subscription record
