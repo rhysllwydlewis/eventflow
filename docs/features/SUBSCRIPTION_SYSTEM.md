@@ -30,58 +30,48 @@ The EventFlow subscription system provides a complete payment and subscription m
 
 ### Available Plans
 
-```javascript
-{
-  free: {
-    price: £0/month,
-    features: {
-      maxPackages: 3,
-      maxBookings: 10,
-      messaging: true,
-      analytics: false,
-      prioritySupport: false,
-    }
-  },
-  pro_monthly: {
-    price: £39/month (first 3 months), then £59/month,
-    trial: 14 days,
-    features: {
-      maxPackages: 50,
-      maxBookings: 50,
-      messaging: true,
-      analytics: true,
-      prioritySupport: true,
-      priorityListing: true,
-      badge: 'pro',
-    }
-  },
-  pro_plus_monthly: {
-    price: £199/month,
-    trial: 14 days,
-    features: {
-      maxPackages: -1, // unlimited
-      maxBookings: -1, // unlimited
-      messaging: true,
-      analytics: true,
-      prioritySupport: true,
-      priorityListing: true,
-      badge: 'pro_plus',
-      customBranding: true,
-      homepageCarousel: true,
-    }
-  },
-  pro_yearly: {
-    price: £468/year,
-    trial: 28 days,
-    features: 'Same as pro_monthly'
-  },
-  pro_plus_yearly: {
-    price: £2,388/year,
-    trial: 28 days,
-    features: 'Same as pro_plus_monthly'
-  }
-}
-```
+#### Free
+- **Price**: £0/month
+- **Features**:
+  - Up to 3 packages
+  - Up to 10 event bookings per month
+  - Messaging enabled
+  - No analytics
+  
+#### Pro Monthly
+- **Price**: £39/month for first 3 months, then £59/month
+- **Trial**: 14 days free
+- **Features**:
+  - Pro supplier badge on profile
+  - Priority listing in search results
+  - Up to 50 packages
+  - Up to 50 event bookings per month
+  - Messaging enabled
+  - Advanced analytics dashboard
+  - Priority email support
+
+#### Pro+ Monthly
+- **Price**: £199/month
+- **Trial**: 14 days free
+- **Features**:
+  - Premium Pro+ badge on profile
+  - All Pro features
+  - Unlimited packages
+  - Unlimited bookings
+  - Advanced analytics dashboard
+  - Priority phone support
+  - Custom branding options
+  - Featured in homepage carousel
+
+#### Pro Yearly
+- **Price**: £468/year (save £240 vs monthly)
+- **Trial**: 28 days free
+- Same features as Pro Monthly
+
+#### Pro+ Yearly
+- **Price**: £2,388/year
+- **Trial**: 28 days free
+- Same features as Pro+ Monthly
 
 ## Payment Flow
 

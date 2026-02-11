@@ -6,6 +6,16 @@ EventFlow uses Stripe for all payment processing. Google Pay integration has bee
 
 ## Current Pricing Structure
 
+### Free
+
+- **Price**: £0/month
+- **Features**:
+  - Up to 3 packages
+  - Up to 10 event bookings per month
+  - Messaging enabled
+  - No analytics
+  - Email support
+
 ### Pro Monthly
 
 - **Price**: £39/month for first 3 months, then £59/month
@@ -232,7 +242,7 @@ stripe trigger invoice.payment_succeeded
 {
   id: 'sub_xxx',
   userId: 'usr_xxx',
-  plan: 'pro', // free, basic, pro, pro_plus, enterprise
+  plan: 'pro', // free, pro, pro_plus, enterprise
   status: 'active', // active, trialing, past_due, canceled, unpaid
   stripeSubscriptionId: 'sub_stripe_xxx',
   stripeCustomerId: 'cus_stripe_xxx',

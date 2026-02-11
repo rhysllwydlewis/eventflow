@@ -170,29 +170,29 @@ describe('Complete Subscription Flow Integration', () => {
     it('should handle upgrade from Basic to Pro', async () => {
       const userId = 'usr-test-001';
 
-      // Start with Basic plan
-      const basicSub = await subscriptionService.createSubscription({
+      // Start with Pro plan
+      const proSub = await subscriptionService.createSubscription({
         userId,
-        plan: 'basic',
-        stripeSubscriptionId: 'sub_basic_123',
+        plan: 'pro',
+        stripeSubscriptionId: 'sub_pro_123',
         stripeCustomerId: 'cus_123',
       });
 
-      // Verify basic features
+      // Verify pro features
       let features = await subscriptionService.getUserFeatures(userId);
-      expect(features.name).toBe('Basic');
-      expect(features.features.maxSuppliers).toBe(3);
-      expect(features.features.apiAccess).toBe(false);
-
-      // Upgrade to Pro
-      const upgradedSub = await subscriptionService.upgradeSubscription(basicSub.id, 'pro');
-
-      expect(upgradedSub.plan).toBe('pro');
-
-      // Verify pro features unlocked
-      features = await subscriptionService.getUserFeatures(userId);
       expect(features.name).toBe('Professional');
+      expect(features.features.maxSuppliers).toBe(10);
       expect(features.features.apiAccess).toBe(true);
+
+      // Upgrade to Pro Plus
+      const upgradedSub = await subscriptionService.upgradeSubscription(proSub.id, 'pro_plus');
+
+      expect(upgradedSub.plan).toBe('pro_plus');
+
+      // Verify pro_plus features unlocked
+      features = await subscriptionService.getUserFeatures(userId);
+      expect(features.name).toBe('Professional Plus');
+      expect(features.features.customBranding).toBe(true);
     });
 
     it('should handle subscription cancellation and feature removal', async () => {
@@ -241,7 +241,7 @@ describe('Complete Subscription Flow Integration', () => {
 
       await subscriptionService.createSubscription({
         userId: 'usr-2',
-        plan: 'basic',
+        plan: 'pro',
         stripeSubscriptionId: 'sub_2',
         stripeCustomerId: 'cus_2',
       });
@@ -319,7 +319,7 @@ describe('Complete Subscription Flow Integration', () => {
 
       // Cannot "upgrade" to a lower tier
       await expect(
-        subscriptionService.upgradeSubscription(subscription.id, 'basic')
+        subscriptionService.upgradeSubscription(subscription.id, 'free')
       ).rejects.toThrow('higher tier');
     });
   });
@@ -330,10 +330,10 @@ describe('Complete Subscription Flow Integration', () => {
         { plan: 'free', feature: 'messaging', expected: true },
         { plan: 'free', feature: 'analytics', expected: false },
         { plan: 'free', feature: 'apiAccess', expected: false },
-        { plan: 'basic', feature: 'analytics', expected: true },
-        { plan: 'basic', feature: 'apiAccess', expected: false },
+        { plan: 'pro', feature: 'analytics', expected: true },
         { plan: 'pro', feature: 'apiAccess', expected: true },
         { plan: 'pro', feature: 'prioritySupport', expected: true },
+        { plan: 'pro_plus', feature: 'customBranding', expected: true },
         { plan: 'enterprise', feature: 'apiAccess', expected: true },
       ];
 

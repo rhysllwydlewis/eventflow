@@ -28,7 +28,7 @@ class MessagingService {
   /**
    * Check if user has reached their message limit for the day
    * @param {string} userId - User ID
-   * @param {string} subscriptionTier - Subscription tier (free, starter, pro, enterprise)
+   * @param {string} subscriptionTier - Subscription tier (free, pro, pro_plus, enterprise)
    * @returns {Promise<Object>} Limit check result
    */
   async checkMessageLimit(userId, subscriptionTier = 'free') {
@@ -69,7 +69,7 @@ class MessagingService {
   /**
    * Check if user has reached their thread creation limit for the day
    * @param {string} userId - User ID
-   * @param {string} subscriptionTier - Subscription tier (free, starter, pro, enterprise)
+   * @param {string} subscriptionTier - Subscription tier (free, pro, pro_plus, enterprise)
    * @returns {Promise<Object>} Limit check result
    */
   async checkThreadLimit(userId, subscriptionTier = 'free') {

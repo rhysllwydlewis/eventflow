@@ -13,22 +13,21 @@
 ### Initial Payment
 
 - [ ] Navigate to `/supplier/subscription.html` while logged in
-- [ ] Verify Google Pay button appears on plan cards
-- [ ] Click Google Pay button and complete test payment
+- [ ] Verify Stripe checkout button appears on plan cards
+- [ ] Click Subscribe button and complete Stripe checkout
 - [ ] Verify payment success message appears
-- [ ] Verify redirect to dashboard after 2 seconds
-- [ ] Check Firestore `payments` collection for payment document
-- [ ] Verify payment document has `subscriptionActivated: true`
-- [ ] Check Cloud Function logs for payment processing
+- [ ] Verify redirect to dashboard after subscription activation
+- [ ] Check database `subscriptions` collection for subscription record
+- [ ] Verify subscription has `status: 'active'` or `status: 'trialing'`
+- [ ] Verify Stripe webhook processed subscription.created event
 - [ ] Verify confirmation email logged (or sent if email configured)
 
 ### Subscription Activation
 
-- [ ] Check Firestore `suppliers` collection for updated subscription field
-- [ ] Verify subscription has correct tier, status, dates
-- [ ] Verify `pro: true` field is set
+- [ ] Check database `subscriptions` collection for subscription record
+- [ ] Verify subscription has correct plan (pro, pro_plus), status, dates
 - [ ] Check supplier dashboard shows subscription status
-- [ ] Verify pro ribbon displays at top of dashboard
+- [ ] Verify pro badge displays on supplier profile
 - [ ] Verify subscription card shows plan name and trial info
 
 ## Dashboard Display Testing
@@ -241,7 +240,7 @@
 - [ ] Verify plan cards display correctly
 - [ ] Verify tabs switch between monthly/yearly
 - [ ] Verify "Current Plan" badge appears correctly
-- [ ] Verify Google Pay button renders properly
+- [ ] Verify Stripe checkout buttons render properly
 - [ ] Test responsive design at various widths
 
 ### Dashboard
@@ -289,15 +288,15 @@
 
 ## Production Readiness
 
-- [ ] Replace 'example' PSP with actual gateway (Stripe/Braintree)
-- [ ] Configure production Google Pay merchant ID
+- [ ] Configure production Stripe API keys
 - [ ] Set up production email service
 - [ ] Configure environment variables for production
 - [ ] Set SEND_EMAILS=true
 - [ ] Test with real (non-test) payment card
 - [ ] Verify SSL certificates valid
-- [ ] Set up monitoring/alerting for Cloud Functions
+- [ ] Set up monitoring/alerting for webhook handlers
 - [ ] Plan for handling failed renewals at scale
+- [ ] Configure Stripe webhook endpoints in production
 
 ## Post-Deployment Monitoring
 

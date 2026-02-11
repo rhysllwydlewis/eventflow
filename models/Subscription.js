@@ -32,7 +32,7 @@ const subscriptionSchema = {
           description: 'Stripe customer ID',
         },
         plan: {
-          enum: ['free', 'basic', 'pro', 'enterprise'],
+          enum: ['free', 'pro', 'pro_plus', 'enterprise'],
           description: 'Subscription plan tier',
         },
         status: {
@@ -141,25 +141,6 @@ const PLAN_FEATURES = {
       apiAccess: false,
     },
   },
-  basic: {
-    name: 'Basic',
-    price: 9.99,
-    interval: 'month',
-    features: {
-      maxSuppliers: 3,
-      maxPackages: 20,
-      maxPhotos: 50,
-      maxBookings: 30,
-      messaging: true,
-      analytics: true,
-      prioritySupport: false,
-      priorityListing: false,
-      badge: null,
-      customBranding: false,
-      homepageCarousel: false,
-      apiAccess: false,
-    },
-  },
   pro: {
     name: 'Professional',
     price: 39.0, // Introductory (first 3 months)
@@ -222,7 +203,7 @@ const PLAN_FEATURES = {
 
 /**
  * Get feature configuration for a plan
- * @param {string} plan - Plan tier (free, basic, pro, enterprise)
+ * @param {string} plan - Plan tier (free, pro, pro_plus, enterprise)
  * @returns {Object} Feature configuration
  */
 function getPlanFeatures(plan) {
