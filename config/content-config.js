@@ -26,7 +26,7 @@ const contentConfig = {
     legalEffectiveDate: 'January 2026',
     // Sitemap last modification date
     sitemapLastMod: new Date().toISOString().split('T')[0], // YYYY-MM-DD format
-    
+
     // Automation fields for date management service
     autoUpdateEnabled: true, // Enable/disable automated monthly updates
     lastAutoCheck: null, // Last time automated check ran
@@ -39,14 +39,17 @@ const contentConfig = {
     nameLegal: 'EventFlow Limited',
     legalName: 'EventFlow Limited',
 
-    // TODO: BEFORE PRODUCTION - Get from Companies House registration
-    registrationNumber: '12345678', // PLACEHOLDER - UPDATE BEFORE LAUNCH
-    companyNumber: '[Pending Registration - To be added upon Companies House registration]',
+    // Company registration details
+    // Set via environment variables in production
+    registrationNumber: process.env.COMPANY_NUMBER || '12345678', // PLACEHOLDER
+    companyNumber:
+      process.env.COMPANY_NUMBER ||
+      '[Pending Registration - To be added upon Companies House registration]',
 
-    // TODO: BEFORE PRODUCTION - Add actual registered office address
-    registeredOffice: '[To be added upon company registration]',
+    // Registered office address
+    registeredOffice: process.env.REGISTERED_OFFICE || '[To be added upon company registration]',
 
-    // TODO: BEFORE PRODUCTION - Update VAT status
+    // VAT registration
     vatNumber: '[Not currently VAT registered]', // Update if/when VAT registered
 
     placeOfRegistration: 'England and Wales',
@@ -60,13 +63,17 @@ const contentConfig = {
     abuseEmail: 'abuse@event-flow.co.uk',
     salesEmail: 'sales@event-flow.co.uk',
     privacyEmail: 'privacy@event-flow.co.uk',
+    securityEmail: 'security@event-flow.co.uk',
 
-    // TODO: BEFORE PRODUCTION - Update with actual company address
+    // Business phone number
+    phone: process.env.BUSINESS_PHONE || '+44 20 1234 5678', // PLACEHOLDER
+
+    // Business address (for legal/contact pages)
     address: {
-      line1: '123 Business Street', // PLACEHOLDER
-      line2: 'Floor 2', // PLACEHOLDER
-      city: 'London', // PLACEHOLDER
-      postcode: 'EC1A 1BB', // PLACEHOLDER
+      line1: process.env.BUSINESS_ADDRESS_LINE1 || '123 Business Street', // PLACEHOLDER
+      line2: process.env.BUSINESS_ADDRESS_LINE2 || 'Floor 2', // PLACEHOLDER
+      city: process.env.BUSINESS_CITY || 'London', // PLACEHOLDER
+      postcode: process.env.BUSINESS_POSTCODE || 'EC1A 1BB', // PLACEHOLDER
       country: 'United Kingdom',
     },
   },
@@ -124,6 +131,8 @@ function getPlaceholders() {
     ABUSE_EMAIL: contentConfig.contact.abuseEmail,
     SALES_EMAIL: contentConfig.contact.salesEmail,
     PRIVACY_EMAIL: contentConfig.contact.privacyEmail,
+    SECURITY_EMAIL: contentConfig.contact.securityEmail,
+    BUSINESS_PHONE: contentConfig.contact.phone,
     COMPANY_ADDRESS_LINE1: contentConfig.contact.address.line1,
     COMPANY_ADDRESS_LINE2: contentConfig.contact.address.line2,
     COMPANY_ADDRESS_CITY: contentConfig.contact.address.city,

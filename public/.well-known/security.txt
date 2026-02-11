@@ -1,9 +1,8 @@
-Contact: mailto:security@event-flow.co.uk
-Expires: 2027-02-06T23:59:59.000Z
-Preferred-Languages: en
 Canonical: https://event-flow.co.uk/.well-known/security.txt
-Policy: https://event-flow.co.uk/legal#security-policy
-Acknowledgments: https://event-flow.co.uk/legal#security-acknowledgments
+Contact: mailto:security@event-flow.co.uk
+Expires: 2027-12-31T23:59:59.000Z
+Preferred-Languages: en
+Policy: https://event-flow.co.uk/security-policy
 
 # Please report security vulnerabilities to security@event-flow.co.uk
 # We appreciate responsible disclosure and will respond promptly to reports

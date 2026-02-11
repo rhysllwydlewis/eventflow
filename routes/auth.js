@@ -470,6 +470,23 @@ router.post('/login', authLimiter, async (req, res) => {
     return res.status(403).json({ error: 'Please verify your email address before signing in.' });
   }
 
+  // Check if 2FA is enabled
+  if (user.twoFactorEnabled) {
+    console.log(`[LOGIN] 2FA required for user: ${email}`);
+    // Generate temporary token for 2FA step
+    const tempToken = jwt.sign(
+      { id: user.id, email: user.email, role: user.role, requires2FA: true },
+      JWT_SECRET,
+      { expiresIn: '5m' } // Short-lived token for 2FA verification
+    );
+    return res.json({
+      ok: false,
+      requires2FA: true,
+      tempToken,
+      message: 'Please enter your 2FA code',
+    });
+  }
+
   // Update last login timestamp
   console.log(`[LOGIN] ✅ Successful login for: ${email}`);
   await updateLastLogin(user.id);
@@ -479,6 +496,105 @@ router.post('/login', authLimiter, async (req, res) => {
   });
 
   // Set cookie with remember option: if remember is true, persist for 7 days; otherwise session-only
+  setAuthCookie(res, token, { remember: !!remember });
+
+  res.json({
+    ok: true,
+    user: { id: user.id, name: user.name, email: user.email, role: user.role },
+  });
+});
+
+/**
+ * POST /api/auth/login-2fa
+ * Complete login with 2FA token
+ */
+router.post('/login-2fa', authLimiter, async (req, res) => {
+  const { tempToken, token: tfaToken, backupCode, remember } = req.body || {};
+
+  console.log('[LOGIN-2FA] 2FA verification attempt');
+
+  if (!tempToken) {
+    return res.status(400).json({ error: 'Temporary token is required' });
+  }
+
+  if (!tfaToken && !backupCode) {
+    return res.status(400).json({ error: '2FA token or backup code is required' });
+  }
+
+  // Verify temporary token
+  let decoded;
+  try {
+    decoded = jwt.verify(tempToken, JWT_SECRET);
+    if (!decoded.requires2FA) {
+      return res.status(400).json({ error: 'Invalid token' });
+    }
+  } catch (error) {
+    console.error('[LOGIN-2FA] Token verification error:', error.message);
+    return res.status(401).json({ error: 'Invalid or expired token' });
+  }
+
+  // Get user
+  const users = await dbUnified.read('users');
+  const user = users.find(u => u.id === decoded.id);
+
+  if (!user || !user.twoFactorEnabled || !user.twoFactorSecret) {
+    return res.status(400).json({ error: '2FA is not enabled for this account' });
+  }
+
+  // Import encryption utilities
+  const { decrypt, verifyHash } = require('../utils/encryption');
+  const speakeasy = require('speakeasy');
+
+  let verified = false;
+
+  // Verify with 2FA token
+  if (tfaToken) {
+    try {
+      const secret = decrypt(user.twoFactorSecret);
+      verified = speakeasy.totp.verify({
+        secret,
+        encoding: 'base32',
+        token: tfaToken,
+        window: 2,
+      });
+    } catch (error) {
+      console.error('[LOGIN-2FA] Token verification error:', error);
+    }
+  }
+
+  // Verify with backup code
+  if (!verified && backupCode && user.twoFactorBackupCodes) {
+    for (const hashedCode of user.twoFactorBackupCodes) {
+      if (verifyHash(backupCode.toUpperCase(), hashedCode)) {
+        verified = true;
+        // Remove used backup code
+        const updatedCodes = user.twoFactorBackupCodes.filter(c => c !== hashedCode);
+        await dbUnified.updateOne(
+          'users',
+          { id: user.id },
+          {
+            $set: { twoFactorBackupCodes: updatedCodes },
+          }
+        );
+        console.log('[LOGIN-2FA] Backup code used and removed');
+        break;
+      }
+    }
+  }
+
+  if (!verified) {
+    console.warn('[LOGIN-2FA] ❌ Invalid 2FA token/code');
+    return res.status(401).json({ error: 'Invalid 2FA token or backup code' });
+  }
+
+  // Update last login timestamp
+  console.log(`[LOGIN-2FA] ✅ Successful 2FA login for: ${user.email}`);
+  await updateLastLogin(user.id);
+
+  const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, {
+    expiresIn: '7d',
+  });
+
   setAuthCookie(res, token, { remember: !!remember });
 
   res.json({
