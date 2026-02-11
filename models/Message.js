@@ -49,6 +49,13 @@ const MessageSchema = {
   ],
   isDraft: Boolean, // Draft messages not yet sent
   parentMessageId: String, // For threaded replies
+  editedAt: Date, // When message was last edited
+  editHistory: [
+    {
+      content: String, // Previous content
+      editedAt: Date, // When this edit was made
+    },
+  ],
   metadata: Object, // Additional metadata
   createdAt: Date,
   updatedAt: Date,
@@ -66,6 +73,8 @@ const ThreadSchema = {
   lastMessageAt: Date, // Timestamp of last message
   unreadCount: Object, // { userId: count } mapping
   status: String, // 'active', 'archived', 'deleted'
+  pinnedAt: Object, // { userId: Date } mapping for pinned threads
+  mutedUntil: Object, // { userId: Date } mapping for muted threads
   metadata: Object, // Additional metadata (subject, context, etc.)
   createdAt: Date,
   updatedAt: Date,
@@ -111,6 +120,8 @@ async function createIndexes(db) {
   await messagesCollection.createIndex({ status: 1 });
   await messagesCollection.createIndex({ createdAt: -1 });
   await messagesCollection.createIndex({ isDraft: 1 });
+  // Text search index for message content
+  await messagesCollection.createIndex({ content: 'text' }, { default_language: 'english' });
 
   // Thread indexes
   await threadsCollection.createIndex({ participants: 1 });
@@ -175,6 +186,8 @@ function createMessage(data) {
     deliveredTo: data.deliveredTo || [],
     isDraft: data.isDraft || false,
     parentMessageId: data.parentMessageId || null,
+    editedAt: null,
+    editHistory: [],
     metadata: data.metadata || {},
     createdAt: now,
     updatedAt: now,
@@ -195,6 +208,8 @@ function createThread(data) {
     lastMessageAt: data.lastMessageAt || null,
     unreadCount: data.unreadCount || {},
     status: data.status || THREAD_STATUS.ACTIVE,
+    pinnedAt: data.pinnedAt || {},
+    mutedUntil: data.mutedUntil || {},
     metadata: data.metadata || {},
     createdAt: now,
     updatedAt: now,
