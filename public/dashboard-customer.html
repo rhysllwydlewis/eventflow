@@ -842,17 +842,10 @@ function setupEventHandlers() {
     const budget = parseFloat(input.value);
     
     // Validate budget (also enforce in JS, not just HTML)
-    if (isNaN(budget) || budget < 0) {
+    if (isNaN(budget) || budget <= 0) {
       budgetStatus.style.display = 'block';
       budgetStatus.style.background = '#FEF2F2';
-      budgetStatus.innerHTML = '<p class="small" style="margin:0;color:#DC2626;">❌ Please enter a valid positive budget amount</p>';
-      return;
-    }
-    
-    if (budget === 0) {
-      budgetStatus.style.display = 'block';
-      budgetStatus.style.background = '#FEF2F2';
-      budgetStatus.innerHTML = '<p class="small" style="margin:0;color:#DC2626;">❌ Budget must be greater than £0</p>';
+      budgetStatus.innerHTML = '<p class="small" style="margin:0;color:#DC2626;">❌ Please enter a valid budget amount greater than £0</p>';
       return;
     }
     
