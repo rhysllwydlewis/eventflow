@@ -2490,38 +2490,35 @@ function efMaybeShowOnboarding(page) {
 
     const box = document.createElement('div');
     box.className = 'card glass-card glass-card--teal glass-card--elevated';
-    box.style.background = 'linear-gradient(135deg, rgba(11, 128, 115, 0.85) 0%, rgba(10, 103, 93, 0.9) 100%)';
-    box.style.color = '#ffffff';
+    box.style.background = '#ffffff';
+    box.style.color = '#1f2937';
     box.style.padding = '2rem';
     box.style.borderRadius = '16px';
     box.style.boxShadow = '0 12px 40px rgba(11, 128, 115, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.15)';
     box.style.textAlign = 'center';
-    const blurEffect = 'blur(20px) saturate(200%)';
-    box.style.backdropFilter = blurEffect;
-    box.style.webkitBackdropFilter = blurEffect;
-    box.style.border = '1px solid rgba(255, 255, 255, 0.25)';
+    box.style.border = '1px solid rgba(11, 128, 115, 0.15)';
     
     box.innerHTML = `
       <div style="font-size: 3rem; margin-bottom: 1rem;" role="img" aria-label="celebration">🎉</div>
-      <h2 style="color: #ffffff; font-size: 1.75rem; font-weight: 700; margin-bottom: 0.75rem;">Welcome to Your Supplier Dashboard!</h2>
-      <p style="color: rgba(255, 255, 255, 0.95); font-size: 1.1rem; line-height: 1.6; margin-bottom: 1.5rem; max-width: 600px; margin-left: auto; margin-right: auto;">
+      <h2 style="color: #1f2937; font-size: 1.75rem; font-weight: 700; margin-bottom: 0.75rem;">Welcome to Your Supplier Dashboard!</h2>
+      <p style="color: #4b5563; font-size: 1.1rem; line-height: 1.6; margin-bottom: 1.5rem; max-width: 600px; margin-left: auto; margin-right: auto;">
         You're all set to showcase your services and connect with event planners. Let's help you get started on your journey!
       </p>
-      <div style="background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 12px; padding: 1.25rem; margin-bottom: 1.5rem; text-align: left; max-width: 600px; margin-left: auto; margin-right: auto; box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1);">
+      <div style="background: #f0fdfa; border: 1px solid #99f6e4; border-radius: 12px; padding: 1.25rem; margin-bottom: 1.5rem; text-align: left; max-width: 600px; margin-left: auto; margin-right: auto;">
         <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem;">
           <span style="font-size: 1.5rem;" aria-hidden="true">✨</span>
-          <span style="color: rgba(255, 255, 255, 0.98); font-weight: 500;">Complete your supplier profile</span>
+          <span style="color: #1f2937; font-weight: 500;">Complete your supplier profile</span>
         </div>
         <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem;">
           <span style="font-size: 1.5rem;" aria-hidden="true">📦</span>
-          <span style="color: rgba(255, 255, 255, 0.98); font-weight: 500;">Add your first package or service</span>
+          <span style="color: #1f2937; font-weight: 500;">Add your first package or service</span>
         </div>
         <div style="display: flex; align-items: center; gap: 0.75rem;">
           <span style="font-size: 1.5rem;" aria-hidden="true">💬</span>
-          <span style="color: rgba(255, 255, 255, 0.98); font-weight: 500;">Start engaging with customers</span>
+          <span style="color: #1f2937; font-weight: 500;">Start engaging with customers</span>
         </div>
       </div>
-      <button type="button" class="cta" id="ef-onboarding-dismiss" aria-label="Dismiss onboarding and start using dashboard" style="background: #ffffff; color: #0B8073; font-weight: 600; padding: 0.75rem 2rem; border-radius: 10px; border: none; cursor: pointer; font-size: 1rem; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);">Got it! Let's go 🚀</button>
+      <button type="button" class="cta" id="ef-onboarding-dismiss" aria-label="Dismiss onboarding and start using dashboard" style="background: #0B8073; color: #ffffff; font-weight: 600; padding: 0.75rem 2rem; border-radius: 10px; border: none; cursor: pointer; font-size: 1rem; box-shadow: 0 4px 12px rgba(11, 128, 115, 0.3); transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);">Got it! Let's go 🚀</button>
     `;
 
     const cards = container.querySelector('.cards');
@@ -2646,16 +2643,22 @@ async function initDashSupplier() {
   }
 
   async function api(path, opts = {}) {
-    // Always include credentials for cookie-based auth
-    const options = {
-      ...opts,
-      credentials: opts.credentials || 'include',
-    };
-    const r = await fetch(path, options);
-    if (!r.ok) {
-      throw new Error((await r.json()).error || 'Request failed');
+    try {
+      // Always include credentials for cookie-based auth
+      const options = {
+        ...opts,
+        credentials: opts.credentials || 'include',
+      };
+      const r = await fetch(path, options);
+      if (!r.ok) {
+        const errorData = await r.json().catch(() => ({ error: 'Request failed' }));
+        throw new Error(errorData.error || `HTTP ${r.status}`);
+      }
+      return r.json();
+    } catch (error) {
+      console.error(`API Error [${path}]:`, error);
+      throw error;
     }
-    return r.json();
   }
   const supWrap = document.getElementById('my-suppliers');
   const pkgsWrap = document.getElementById('my-packages');
@@ -2665,8 +2668,9 @@ async function initDashSupplier() {
   let currentEditingSupplierId = null; // Track which supplier is being edited
 
   async function loadSuppliers() {
-    const d = await api('/api/me/suppliers');
-    const items = d.items || [];
+    try {
+      const d = await api('/api/me/suppliers');
+      const items = (d && Array.isArray(d.items)) ? d.items : [];
     // If this user has at least one Pro supplier, treat them as Pro.
     currentIsPro = items.some(s => !!s.isPro);
 
@@ -2685,13 +2689,17 @@ async function initDashSupplier() {
     if (!supWrap) {
       return;
     }
-    if (!items.length) {
+    
+    if (!items || items.length === 0) {
       supWrap.innerHTML =
         '<div class="card"><p>You have not created a supplier profile yet.</p></div>';
       return;
     }
     supWrap.innerHTML = items
       .map(s => {
+        // Safe access to supplier properties
+        if (!s) return '';
+        
         // Enhanced badge rendering for Pro and Pro+ tiers
         let proBadge = '';
         // Check subscriptionTier field first (new), then fall back to subscription.tier or isPro
@@ -2706,12 +2714,12 @@ async function initDashSupplier() {
           proBadge = '<span class="badge badge-pro">Professional</span>';
         }
 
-        // Calculate profile completeness checklist
-        const hasPhotos = s.photos && s.photos.length > 0;
-        const hasDescription = s.description_long && s.description_long.length > 50;
-        const hasCategory = s.category && s.category.length > 0;
-        const hasLocation = s.location && s.location.length > 0;
-        const hasWebsite = s.website && s.website.length > 0;
+        // Calculate profile completeness checklist with safe property access
+        const hasPhotos = s.photos && Array.isArray(s.photos) && s.photos.length > 0;
+        const hasDescription = s.description_long && typeof s.description_long === 'string' && s.description_long.length > 50;
+        const hasCategory = s.category && typeof s.category === 'string' && s.category.length > 0;
+        const hasLocation = s.location && typeof s.location === 'string' && s.location.length > 0;
+        const hasWebsite = s.website && typeof s.website === 'string' && s.website.length > 0;
 
         const checklistItems = [
           { label: 'Photos uploaded', complete: hasPhotos },
@@ -2731,12 +2739,23 @@ async function initDashSupplier() {
           )
           .join('');
 
-        return `<div class="supplier-card card" style="margin-bottom:10px" data-supplier-id="${s.id ? s.id.replace(/"/g, '&quot;') : ''}">
-      <img src="${(s.photos && s.photos[0]) || '/assets/images/collage-venue.svg'}" onerror="this.src='/assets/images/collage-venue.svg'">
+        // Safe access to all fields with defaults
+        const supplierId = (s.id || '').toString().replace(/"/g, '&quot;');
+        const name = (s.name || 'Unnamed Supplier').toString();
+        const photos = (s.photos && Array.isArray(s.photos)) ? s.photos : [];
+        const photoUrl = photos[0] || '/assets/images/collage-venue.svg';
+        const location = (s.location || 'Location not set').toString();
+        const category = (s.category || 'Uncategorized').toString();
+        const priceDisplay = s.price_display ? ` · ${s.price_display}` : '';
+        const description = (s.description_short || '').toString();
+        const approved = !!s.approved;
+
+        return `<div class="supplier-card card" style="margin-bottom:10px" data-supplier-id="${supplierId}">
+      <img src="${photoUrl}" onerror="this.src='/assets/images/collage-venue.svg'; this.onerror=null;">
       <div>
-        <h3>${s.name} ${proBadge} ${s.approved ? '<span class="badge">Approved</span>' : '<span class="badge" style="background:#FFF5E6;color:#8A5A00">Awaiting review</span>'}</h3>
-        <div class="small">${s.location || 'Location not set'} · <span class="badge">${s.category}</span> ${s.price_display ? `· ${s.price_display}` : ''}</div>
-        <p class="small">${s.description_short || ''}</p>
+        <h3>${name} ${proBadge} ${approved ? '<span class="badge">Approved</span>' : '<span class="badge" style="background:#FFF5E6;color:#8A5A00">Awaiting review</span>'}</h3>
+        <div class="small">${location} · <span class="badge">${category}</span>${priceDisplay}</div>
+        <p class="small">${description}</p>
         <div class="listing-health">
           <div class="listing-health-bar">
             <div class="listing-health-fill"></div>
@@ -2752,8 +2771,8 @@ async function initDashSupplier() {
           </div>
         </details>
         <div class="card-actions">
-          <button type="button" class="card-action-btn edit-btn" data-action="edit-profile" data-profile-id="${s.id ? s.id.replace(/"/g, '&quot;') : ''}">Edit</button>
-          <button type="button" class="card-action-btn delete-btn" data-action="delete-profile" data-profile-id="${s.id ? s.id.replace(/"/g, '&quot;') : ''}">Delete</button>
+          <button type="button" class="card-action-btn edit-btn" data-action="edit-profile" data-profile-id="${supplierId}">Edit</button>
+          <button type="button" class="card-action-btn delete-btn" data-action="delete-profile" data-profile-id="${supplierId}">Delete</button>
         </div>
       </div>
     </div>`;
@@ -2763,6 +2782,8 @@ async function initDashSupplier() {
     // Listing health based on smart score if present
     const rows = supWrap.querySelectorAll('.supplier-card');
     items.forEach((s, idx) => {
+      if (!s) return;
+      
       const row = rows[idx];
       if (!row) {
         return;
@@ -2781,7 +2802,10 @@ async function initDashSupplier() {
     });
 
     if (select) {
-      select.innerHTML = items.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+      select.innerHTML = items
+        .filter(s => s && s.id && s.name)
+        .map(s => `<option value="${s.id}">${s.name}</option>`)
+        .join('');
     }
 
     // Auto-populate form with supplier's data
@@ -2792,7 +2816,7 @@ async function initDashSupplier() {
 
       // If we have a currently editing supplier ID, find it and use it
       if (currentEditingSupplierId) {
-        const foundSupplier = items.find(s => s.id === currentEditingSupplierId);
+        const foundSupplier = items.find(s => s && s.id === currentEditingSupplierId);
         if (foundSupplier) {
           supplierToEdit = foundSupplier;
         }
@@ -2800,7 +2824,13 @@ async function initDashSupplier() {
 
       populateSupplierForm(supplierToEdit);
     }
+  } catch (err) {
+    console.error('Error loading suppliers:', err);
+    if (supWrap) {
+      supWrap.innerHTML = '<div class="card"><p>Error loading suppliers. Please try again.</p></div>';
+    }
   }
+}
 
   /**
    * Populate supplier form with existing supplier data
@@ -2939,13 +2969,14 @@ async function initDashSupplier() {
   }
 
   async function loadPackages() {
-    if (!pkgsWrap) {
-      return;
-    }
-    const note = document.getElementById('pkg-limit-note');
-    const d = await api('/api/me/packages');
-    const items = d.items || [];
-    const count = items.length;
+    try {
+      if (!pkgsWrap) {
+        return;
+      }
+      const note = document.getElementById('pkg-limit-note');
+      const d = await api('/api/me/packages');
+      const items = (d && Array.isArray(d.items)) ? d.items : [];
+      const count = items.length;
     const freeLimit = 3; // keep in sync with server FREE_PACKAGE_LIMIT default
 
     // Update note about allowance
@@ -2984,27 +3015,42 @@ async function initDashSupplier() {
       }
     }
 
-    if (!items.length) {
+    if (!items || items.length === 0) {
       pkgsWrap.innerHTML = '<div class="card"><p>You have not created any packages yet.</p></div>';
       return;
     }
     pkgsWrap.innerHTML = items
-      .map(
-        p => `<div class="card package-card" data-package-id="${p.id ? p.id.replace(/"/g, '&quot;') : ''}">
-      <img src="${p.image || '/assets/images/package-placeholder.svg'}" alt="${p.title} image" onerror="this.src='/assets/images/package-placeholder.svg'">
+      .map(p => {
+        if (!p) return '';
+        
+        const packageId = (p.id || '').toString().replace(/"/g, '&quot;');
+        const image = (p.image || '/assets/images/package-placeholder.svg').toString();
+        const title = (p.title || 'Untitled Package').toString();
+        const priceDisplay = (p.price_display || '').toString();
+        const description = (p.description || '').toString();
+        const featured = !!p.featured;
+        
+        return `<div class="card package-card" data-package-id="${packageId}">
+      <img src="${image}" alt="${title} image" onerror="this.src='/assets/images/package-placeholder.svg'; this.onerror=null;">
       <div>
-        <h3>${p.title}</h3>
-        <div class="small"><span class="badge">${p.price_display || ''}</span> ${p.featured ? '<span class="badge">Featured</span>' : ''}</div>
-        <p class="small">${p.description || ''}</p>
+        <h3>${title}</h3>
+        <div class="small"><span class="badge">${priceDisplay}</span> ${featured ? '<span class="badge">Featured</span>' : ''}</div>
+        <p class="small">${description}</p>
         <div class="card-actions">
-          <button type="button" class="card-action-btn edit-btn" data-action="edit-package" data-package-id="${p.id ? p.id.replace(/"/g, '&quot;') : ''}">Edit</button>
-          <button type="button" class="card-action-btn delete-btn" data-action="delete-package" data-package-id="${p.id ? p.id.replace(/"/g, '&quot;') : ''}">Delete</button>
+          <button type="button" class="card-action-btn edit-btn" data-action="edit-package" data-package-id="${packageId}">Edit</button>
+          <button type="button" class="card-action-btn delete-btn" data-action="delete-package" data-package-id="${packageId}">Delete</button>
         </div>
       </div>
-    </div>`
-      )
+    </div>`;
+      })
       .join('');
+  } catch (err) {
+    console.error('Error loading packages:', err);
+    if (pkgsWrap) {
+      pkgsWrap.innerHTML = '<div class="card"><p>Error loading packages. Please try again.</p></div>';
+    }
   }
+}
   await loadSuppliers();
   await loadPackages();
 
