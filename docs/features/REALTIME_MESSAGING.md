@@ -1,5 +1,8 @@
 # Real-Time Messaging & Notifications System
 
+**API Version:** v2 (`/api/v2/messages`) - **Complete Feature Set (27 Endpoints)**  
+**Status:** Production-ready | **Last Updated:** Feb 2026 | **Frontend Migration:** ✅ Complete
+
 ## Overview
 
 EventFlow's real-time messaging and notifications system provides production-grade communication capabilities including:
@@ -10,6 +13,13 @@ EventFlow's real-time messaging and notifications system provides production-gra
 - **Rich messaging features** (typing indicators, read receipts, reactions)
 - **Message persistence** with MongoDB
 - **Fault-tolerant delivery** with queuing and retries
+- **Complete API v2** with feature parity and backward compatibility
+
+### API Version Information
+- **Current:** API v2 (`/api/v2/messages`) - 27 endpoints
+- **Deprecated:** API v1 (`/api/v1/messages`) - frontend migration complete
+- **Breaking Changes:** `mark-read` → `read` (all other paths unchanged)
+- **Version Constant:** `public/assets/js/config/api-version.js`
 
 ## Architecture
 
@@ -90,40 +100,90 @@ Multi-channel notification delivery:
 
 ### 5. REST API v2 (`routes/messaging-v2.js`)
 
-RESTful endpoints at `/api/v2/messages/`:
+RESTful endpoints at `/api/v2/messages/` - **Complete API Reference (27 Endpoints)**
 
-#### Thread Management
+#### Thread Management (5 endpoints)
 
-- `POST /api/v2/messages/threads` - Create thread
-- `GET /api/v2/messages/threads` - List user's threads
-- `GET /api/v2/messages/threads/:id` - Get thread details
-- `DELETE /api/v2/messages/threads/:id` - Archive thread
+- `POST /threads` - Create new thread
+  - Body: `{ participants: [], subject?, metadata? }`
+  - Returns: Thread object
+- `GET /threads` - List user's threads
+  - Query: `status`, `limit`, `skip`
+  - Returns: Array of threads
+- `GET /threads/:id` - Get thread details
+  - Returns: Thread object with participants
+- `DELETE /threads/:id` - Archive thread (soft delete)
+  - Returns: Success status
+- `POST /threads/:threadId/read` - Mark all thread messages as read
+  - Returns: Success status
+- `POST /threads/:threadId/mark-unread` - Mark thread as unread (NEW in v2)
+  - Returns: Success status
+- `POST /threads/:threadId/unarchive` - Unarchive archived thread (NEW in v2)
+  - Returns: Success status
 
-#### Messaging
+#### Messaging (9 endpoints)
 
-- `GET /api/v2/messages/:threadId` - Get message history
-- `POST /api/v2/messages/:threadId` - Send message
-- `POST /api/v2/messages/:id/reactions` - Add/remove reaction
-- `POST /api/v2/messages/:id/read` - Mark message as read
-- `POST /api/v2/messages/threads/:threadId/read` - Mark thread as read
+- `GET /:threadId` - Get message history for thread
+  - Query: `limit`, `skip`, `before`
+  - Returns: Array of messages
+- `POST /:threadId` - Send message in thread
+  - Body: `{ content, attachments?, isDraft? }`
+  - Returns: Message object
+- `PUT /:messageId` - Edit message (NEW in v2 - currently drafts only)
+  - Body: `{ content }`
+  - Returns: Updated message
+- `DELETE /:messageId` - Soft delete message (NEW in v2)
+  - Returns: Success status
+- `POST /:id/reactions` - Add/toggle reaction on message
+  - Body: `{ emoji }`
+  - Returns: Updated reactions array
+- `POST /:id/read` - Mark single message as read
+  - Returns: Success status
+- `GET /unread` - Get total unread message count (NEW in v2)
+  - Returns: `{ count: number }`
+- `GET /drafts` - Get all draft messages (NEW in v2)
+  - Returns: Array of draft messages
+- `GET /sent` - Get all sent messages (NEW in v2)
+  - Returns: Array of sent messages
 
-#### User Presence
+#### Backward Compatibility Aliases (3 endpoints)
 
-- `GET /api/v2/presence/:userId` - Get user presence
-- `GET /api/v2/presence?userIds=...` - Bulk presence query
+- `GET /conversations` - Alias for GET /threads (NEW in v2)
+- `GET /:conversationId` - Alias for GET /:threadId
+- `POST /:conversationId` - Alias for POST /:threadId
+- `POST /:conversationId/read` - Alias for POST /threads/:threadId/read
 
-#### Notifications
+#### User Presence (3 endpoints)
 
-- `GET /api/v2/notifications` - List notifications
-- `POST /api/v2/notifications` - Send notification (admin only)
-- `GET /api/v2/notifications/preferences` - Get preferences
-- `POST /api/v2/notifications/preferences` - Update preferences
-- `POST /api/v2/notifications/:id/read` - Mark as read
-- `DELETE /api/v2/notifications/:id` - Delete notification
+- `GET /presence/:userId` - Get user presence
+  - Returns: `{ userId, status, lastSeen }`
+- `GET /presence?userIds=user1,user2` - Bulk presence query
+  - Returns: Array of presence objects
 
-#### Monitoring
+#### Notifications (7 endpoints)
 
-- `GET /api/v2/messaging/status` - Server health (admin only)
+- `GET /notifications` - List notifications for current user
+  - Query: `read`, `limit`, `skip`
+  - Returns: Array of notifications
+- `POST /notifications` - Send notification (admin only)
+  - Body: `{ recipientId, type, title, message }`
+  - Returns: Notification object
+- `GET /notifications/preferences` - Get notification preferences
+  - Returns: User preferences object
+- `POST /notifications/preferences` - Update notification preferences
+  - Body: `{ emailEnabled?, pushEnabled?, soundEnabled? }`
+  - Returns: Updated preferences
+- `POST /notifications/:id/read` - Mark notification as read
+  - Returns: Success status
+- `DELETE /notifications/:id` - Delete notification
+  - Returns: Success status
+
+#### Monitoring & Limits (2 endpoints)
+
+- `GET /messaging/status` - Server health and metrics (admin only)
+  - Returns: WebSocket stats, connection count, uptime
+- `GET /limits` - Get message/thread limits for current user
+  - Returns: Current usage and limits by subscription tier
 
 ## Database Schema
 
