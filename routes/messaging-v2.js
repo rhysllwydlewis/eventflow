@@ -1124,5 +1124,937 @@ router.post(
   }
 );
 
+/**
+ * ============================================
+ * MESSAGE QUEUE ENDPOINTS
+ * ============================================
+ */
+
+/**
+ * Add message to queue (offline support)
+ * POST /api/v2/messages/queue
+ */
+router.post('/queue', applyAuthRequired, ensureServices, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { message } = req.body;
+
+    if (!message || typeof message !== 'object') {
+      return res.status(400).json({ error: 'Message object is required' });
+    }
+
+    const MessageQueue = require('../models/MessageQueue');
+    const queueEntry = MessageQueue.createQueueEntry({
+      userId,
+      message,
+      metadata: { userAgent: req.headers['user-agent'] },
+    });
+
+    await mongoDb.db.collection(MessageQueue.COLLECTION).insertOne(queueEntry);
+
+    res.json({ 
+      success: true, 
+      queueId: queueEntry._id.toString(),
+      status: queueEntry.status 
+    });
+  } catch (error) {
+    logger.error('Queue message error', { error: error.message, userId: req.user.id });
+    res.status(500).json({ error: 'Failed to queue message', message: error.message });
+  }
+});
+
+/**
+ * Get pending messages from queue
+ * GET /api/v2/messages/queue
+ */
+router.get('/queue', applyAuthRequired, ensureServices, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const MessageQueue = require('../models/MessageQueue');
+
+    const queuedMessages = await mongoDb.db
+      .collection(MessageQueue.COLLECTION)
+      .find({
+        userId,
+        status: { $in: [MessageQueue.QUEUE_STATUS.PENDING, MessageQueue.QUEUE_STATUS.FAILED] },
+      })
+      .sort({ createdAt: 1 })
+      .toArray();
+
+    res.json({ messages: queuedMessages, count: queuedMessages.length });
+  } catch (error) {
+    logger.error('Get queue error', { error: error.message, userId: req.user.id });
+    res.status(500).json({ error: 'Failed to get queue', message: error.message });
+  }
+});
+
+/**
+ * Retry failed message from queue
+ * POST /api/v2/messages/queue/:id/retry
+ */
+router.post('/queue/:id/retry', applyAuthRequired, ensureServices, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const queueId = req.params.id;
+
+    if (!ObjectId.isValid(queueId)) {
+      return res.status(400).json({ error: 'Invalid queue ID' });
+    }
+
+    const MessageQueue = require('../models/MessageQueue');
+    const queueEntry = await mongoDb.db
+      .collection(MessageQueue.COLLECTION)
+      .findOne({ _id: new ObjectId(queueId), userId });
+
+    if (!queueEntry) {
+      return res.status(404).json({ error: 'Queue entry not found' });
+    }
+
+    if (queueEntry.retryCount >= MessageQueue.MAX_RETRIES) {
+      return res.status(400).json({ error: 'Max retries exceeded' });
+    }
+
+    // Update queue entry for retry
+    const nextRetry = MessageQueue.calculateNextRetry(queueEntry.retryCount);
+    await mongoDb.db.collection(MessageQueue.COLLECTION).updateOne(
+      { _id: new ObjectId(queueId) },
+      {
+        $set: {
+          status: MessageQueue.QUEUE_STATUS.PENDING,
+          nextRetry,
+        },
+        $inc: { retryCount: 1 },
+      }
+    );
+
+    res.json({ success: true, nextRetry });
+  } catch (error) {
+    logger.error('Retry queue message error', { error: error.message, userId: req.user.id });
+    res.status(500).json({ error: 'Failed to retry message', message: error.message });
+  }
+});
+
+/**
+ * Remove message from queue
+ * DELETE /api/v2/messages/queue/:id
+ */
+router.delete('/queue/:id', applyAuthRequired, ensureServices, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const queueId = req.params.id;
+
+    if (!ObjectId.isValid(queueId)) {
+      return res.status(400).json({ error: 'Invalid queue ID' });
+    }
+
+    const MessageQueue = require('../models/MessageQueue');
+    const result = await mongoDb.db
+      .collection(MessageQueue.COLLECTION)
+      .deleteOne({ _id: new ObjectId(queueId), userId });
+
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ error: 'Queue entry not found' });
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    logger.error('Delete queue message error', { error: error.message, userId: req.user.id });
+    res.status(500).json({ error: 'Failed to delete message', message: error.message });
+  }
+});
+
+/**
+ * ============================================
+ * SEARCH ENDPOINTS
+ * ============================================
+ */
+
+/**
+ * Search messages with filters
+ * GET /api/v2/messages/search?q=query&participant=userId&startDate=...
+ */
+router.get('/search', applyAuthRequired, ensureServices, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { 
+      q, 
+      participant, 
+      startDate, 
+      endDate, 
+      status, 
+      hasAttachments,
+      page = 1,
+      limit = 20 
+    } = req.query;
+
+    if (!q || q.trim().length === 0) {
+      return res.status(400).json({ error: 'Search query is required' });
+    }
+
+    const pageNum = parseInt(page, 10);
+    const limitNum = Math.min(parseInt(limit, 10), 100);
+    const skip = (pageNum - 1) * limitNum;
+
+    // Build search query
+    const searchQuery = {
+      $text: { $search: q },
+      $or: [
+        { senderId: userId },
+        { recipientIds: userId },
+      ],
+      deletedAt: null,
+    };
+
+    // Add filters
+    if (participant) {
+      searchQuery.$or = [
+        { senderId: participant, recipientIds: userId },
+        { senderId: userId, recipientIds: participant },
+      ];
+    }
+
+    if (startDate || endDate) {
+      searchQuery.createdAt = {};
+      if (startDate) searchQuery.createdAt.$gte = new Date(startDate);
+      if (endDate) searchQuery.createdAt.$lte = new Date(endDate);
+    }
+
+    if (status === 'read') {
+      searchQuery['readBy.userId'] = userId;
+    } else if (status === 'unread') {
+      searchQuery['readBy.userId'] = { $ne: userId };
+    }
+
+    if (hasAttachments === 'true') {
+      searchQuery['attachments.0'] = { $exists: true };
+    }
+
+    // Execute search
+    const [results, total] = await Promise.all([
+      mongoDb.db
+        .collection('messages')
+        .find(searchQuery, { projection: { score: { $meta: 'textScore' } } })
+        .sort({ score: { $meta: 'textScore' }, createdAt: -1 })
+        .skip(skip)
+        .limit(limitNum)
+        .toArray(),
+      mongoDb.db.collection('messages').countDocuments(searchQuery),
+    ]);
+
+    res.json({
+      results,
+      total,
+      page: pageNum,
+      hasMore: skip + results.length < total,
+    });
+  } catch (error) {
+    logger.error('Search messages error', { error: error.message, userId: req.user.id });
+    res.status(500).json({ error: 'Failed to search messages', message: error.message });
+  }
+});
+
+/**
+ * ============================================
+ * MESSAGE EDITING ENDPOINTS
+ * ============================================
+ */
+
+/**
+ * Edit message content
+ * PUT /api/v2/messages/:messageId/edit
+ */
+router.put('/:messageId/edit', applyAuthRequired, ensureServices, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { messageId } = req.params;
+    const { content } = req.body;
+
+    if (!content || typeof content !== 'string' || content.trim().length === 0) {
+      return res.status(400).json({ error: 'Content is required' });
+    }
+
+    // SECURITY: Sanitize content before processing
+    const { sanitizeContent } = require('../services/contentSanitizer');
+    const sanitizedContent = sanitizeContent(content, false);
+
+    if (!ObjectId.isValid(messageId)) {
+      return res.status(400).json({ error: 'Invalid message ID' });
+    }
+
+    // Get message
+    const message = await mongoDb.db
+      .collection('messages')
+      .findOne({ _id: new ObjectId(messageId) });
+
+    if (!message) {
+      return res.status(404).json({ error: 'Message not found' });
+    }
+
+    // Check if user is the sender
+    if (message.senderId !== userId) {
+      return res.status(403).json({ error: 'Only message sender can edit' });
+    }
+
+    // Check edit window (15 minutes default)
+    const editWindowMinutes = parseInt(process.env.MESSAGE_EDIT_WINDOW_MINUTES || '15', 10);
+    const editDeadline = new Date(message.createdAt.getTime() + editWindowMinutes * 60 * 1000);
+    const now = new Date();
+
+    if (now > editDeadline) {
+      return res.status(403).json({ 
+        error: `Message can only be edited within ${editWindowMinutes} minutes of sending` 
+      });
+    }
+
+    // Save current content to edit history
+    const editHistory = message.editHistory || [];
+    editHistory.push({
+      content: message.content,
+      editedAt: now,
+    });
+
+    // Update message
+    await mongoDb.db.collection('messages').updateOne(
+      { _id: new ObjectId(messageId) },
+      {
+        $set: {
+          content: sanitizedContent,
+          editedAt: now,
+          editHistory,
+          updatedAt: now,
+        },
+      }
+    );
+
+    // Broadcast edit to WebSocket clients
+    if (wsServerV2) {
+      wsServerV2.to(message.threadId).emit('message:edited', {
+        messageId,
+        content: sanitizedContent,
+        editedAt: now,
+        senderId: userId,
+      });
+    }
+
+    res.json({ 
+      success: true, 
+      editedAt: now,
+      content: sanitizedContent 
+    });
+  } catch (error) {
+    logger.error('Edit message error', { error: error.message, userId: req.user.id });
+    res.status(500).json({ error: 'Failed to edit message', message: error.message });
+  }
+});
+
+/**
+ * Get message edit history
+ * GET /api/v2/messages/:messageId/history
+ */
+router.get('/:messageId/history', applyAuthRequired, ensureServices, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { messageId } = req.params;
+
+    if (!ObjectId.isValid(messageId)) {
+      return res.status(400).json({ error: 'Invalid message ID' });
+    }
+
+    const message = await mongoDb.db
+      .collection('messages')
+      .findOne({ _id: new ObjectId(messageId) });
+
+    if (!message) {
+      return res.status(404).json({ error: 'Message not found' });
+    }
+
+    // Check if user is a participant
+    if (message.senderId !== userId && !message.recipientIds.includes(userId)) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const history = message.editHistory || [];
+    res.json({ 
+      history,
+      currentContent: message.content,
+      editedAt: message.editedAt,
+    });
+  } catch (error) {
+    logger.error('Get edit history error', { error: error.message, userId: req.user.id });
+    res.status(500).json({ error: 'Failed to get edit history', message: error.message });
+  }
+});
+
+/**
+ * ============================================
+ * BLOCKING & REPORTING ENDPOINTS
+ * ============================================
+ */
+
+/**
+ * Report a message
+ * POST /api/v2/messages/:id/report
+ */
+router.post('/:id/report', applyAuthRequired, ensureServices, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const messageId = req.params.id;
+    const { reason, details } = req.body;
+
+    const ReportedMessage = require('../models/ReportedMessage');
+    const errors = ReportedMessage.validateReportedMessage({
+      messageId,
+      reportedBy: userId,
+      reason,
+    });
+
+    if (errors) {
+      return res.status(400).json({ errors });
+    }
+
+    const report = ReportedMessage.createReportedMessage({
+      messageId,
+      reportedBy: userId,
+      reason,
+      details,
+    });
+
+    await mongoDb.db.collection(ReportedMessage.COLLECTION).insertOne(report);
+
+    res.json({ success: true, reportId: report._id.toString() });
+  } catch (error) {
+    logger.error('Report message error', { error: error.message, userId: req.user.id });
+    res.status(500).json({ error: 'Failed to report message', message: error.message });
+  }
+});
+
+/**
+ * Block a user
+ * POST /api/v2/users/:id/block
+ */
+router.post('/users/:id/block', applyAuthRequired, ensureServices, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const blockedUserId = req.params.id;
+    const { reason } = req.body;
+
+    if (userId === blockedUserId) {
+      return res.status(400).json({ error: 'Cannot block yourself' });
+    }
+
+    const BlockedUser = require('../models/BlockedUser');
+    const blockedUser = BlockedUser.createBlockedUser({
+      userId,
+      blockedUserId,
+      reason,
+    });
+
+    try {
+      await mongoDb.db.collection(BlockedUser.COLLECTION).insertOne(blockedUser);
+    } catch (err) {
+      if (err.code === 11000) {
+        return res.status(400).json({ error: 'User already blocked' });
+      }
+      throw err;
+    }
+
+    res.json({ success: true, blockedAt: blockedUser.createdAt });
+  } catch (error) {
+    logger.error('Block user error', { error: error.message, userId: req.user.id });
+    res.status(500).json({ error: 'Failed to block user', message: error.message });
+  }
+});
+
+/**
+ * Unblock a user
+ * POST /api/v2/users/:id/unblock
+ */
+router.post('/users/:id/unblock', applyAuthRequired, ensureServices, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const blockedUserId = req.params.id;
+
+    const BlockedUser = require('../models/BlockedUser');
+    const result = await mongoDb.db
+      .collection(BlockedUser.COLLECTION)
+      .deleteOne({ userId, blockedUserId });
+
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ error: 'Block not found' });
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    logger.error('Unblock user error', { error: error.message, userId: req.user.id });
+    res.status(500).json({ error: 'Failed to unblock user', message: error.message });
+  }
+});
+
+/**
+ * Get blocked users list
+ * GET /api/v2/users/blocked
+ */
+router.get('/users/blocked', applyAuthRequired, ensureServices, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const BlockedUser = require('../models/BlockedUser');
+
+    const blockedUsers = await mongoDb.db
+      .collection(BlockedUser.COLLECTION)
+      .find({ userId })
+      .sort({ createdAt: -1 })
+      .toArray();
+
+    res.json({ blockedUsers, count: blockedUsers.length });
+  } catch (error) {
+    logger.error('Get blocked users error', { error: error.message, userId: req.user.id });
+    res.status(500).json({ error: 'Failed to get blocked users', message: error.message });
+  }
+});
+
+/**
+ * ============================================
+ * THREAD MANAGEMENT ENDPOINTS
+ * ============================================
+ */
+
+/**
+ * Pin a thread
+ * POST /api/v2/threads/:id/pin
+ */
+router.post('/threads/:id/pin', applyAuthRequired, ensureServices, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const threadId = req.params.id;
+
+    if (!ObjectId.isValid(threadId)) {
+      return res.status(400).json({ error: 'Invalid thread ID' });
+    }
+
+    const thread = await messagingService.threadsCollection.findOne({
+      _id: new ObjectId(threadId),
+    });
+
+    if (!thread || !thread.participants.includes(userId)) {
+      return res.status(404).json({ error: 'Thread not found' });
+    }
+
+    // Check max pinned threads limit
+    const maxPinned = parseInt(process.env.MAX_PINNED_THREADS || '10', 10);
+    const pinnedCount = await messagingService.threadsCollection.countDocuments({
+      participants: userId,
+      [`pinnedAt.${userId}`]: { $exists: true, $ne: null },
+    });
+
+    if (pinnedCount >= maxPinned) {
+      return res.status(400).json({ 
+        error: `Maximum ${maxPinned} threads can be pinned` 
+      });
+    }
+
+    await messagingService.threadsCollection.updateOne(
+      { _id: new ObjectId(threadId) },
+      { $set: { [`pinnedAt.${userId}`]: new Date() } }
+    );
+
+    res.json({ success: true });
+  } catch (error) {
+    logger.error('Pin thread error', { error: error.message, userId: req.user.id });
+    res.status(500).json({ error: 'Failed to pin thread', message: error.message });
+  }
+});
+
+/**
+ * Unpin a thread
+ * POST /api/v2/threads/:id/unpin
+ */
+router.post('/threads/:id/unpin', applyAuthRequired, ensureServices, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const threadId = req.params.id;
+
+    if (!ObjectId.isValid(threadId)) {
+      return res.status(400).json({ error: 'Invalid thread ID' });
+    }
+
+    await messagingService.threadsCollection.updateOne(
+      { _id: new ObjectId(threadId), participants: userId },
+      { $unset: { [`pinnedAt.${userId}`]: '' } }
+    );
+
+    res.json({ success: true });
+  } catch (error) {
+    logger.error('Unpin thread error', { error: error.message, userId: req.user.id });
+    res.status(500).json({ error: 'Failed to unpin thread', message: error.message });
+  }
+});
+
+/**
+ * Mute a thread
+ * POST /api/v2/threads/:id/mute
+ */
+router.post('/threads/:id/mute', applyAuthRequired, ensureServices, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const threadId = req.params.id;
+    const { duration } = req.body; // '1h', '8h', '1d', 'forever'
+
+    if (!ObjectId.isValid(threadId)) {
+      return res.status(400).json({ error: 'Invalid thread ID' });
+    }
+
+    const thread = await messagingService.threadsCollection.findOne({
+      _id: new ObjectId(threadId),
+    });
+
+    if (!thread || !thread.participants.includes(userId)) {
+      return res.status(404).json({ error: 'Thread not found' });
+    }
+
+    // Calculate mute until date
+    let mutedUntil;
+    if (duration === 'forever') {
+      mutedUntil = new Date('2099-12-31');
+    } else {
+      const now = Date.now();
+      const durationMap = {
+        '1h': 60 * 60 * 1000,
+        '8h': 8 * 60 * 60 * 1000,
+        '1d': 24 * 60 * 60 * 1000,
+      };
+      const ms = durationMap[duration] || durationMap['1h'];
+      mutedUntil = new Date(now + ms);
+    }
+
+    await messagingService.threadsCollection.updateOne(
+      { _id: new ObjectId(threadId) },
+      { $set: { [`mutedUntil.${userId}`]: mutedUntil } }
+    );
+
+    res.json({ success: true, mutedUntil });
+  } catch (error) {
+    logger.error('Mute thread error', { error: error.message, userId: req.user.id });
+    res.status(500).json({ error: 'Failed to mute thread', message: error.message });
+  }
+});
+
+/**
+ * Unmute a thread
+ * POST /api/v2/threads/:id/unmute
+ */
+router.post('/threads/:id/unmute', applyAuthRequired, ensureServices, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const threadId = req.params.id;
+
+    if (!ObjectId.isValid(threadId)) {
+      return res.status(400).json({ error: 'Invalid thread ID' });
+    }
+
+    await messagingService.threadsCollection.updateOne(
+      { _id: new ObjectId(threadId), participants: userId },
+      { $unset: { [`mutedUntil.${userId}`]: '' } }
+    );
+
+    res.json({ success: true });
+  } catch (error) {
+    logger.error('Unmute thread error', { error: error.message, userId: req.user.id });
+    res.status(500).json({ error: 'Failed to unmute thread', message: error.message });
+  }
+});
+
+/**
+ * Forward a message to new recipients
+ * POST /api/v2/messages/:id/forward
+ */
+router.post('/:id/forward', applyAuthRequired, ensureServices, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const messageId = req.params.id;
+    const { recipientIds, note } = req.body;
+
+    if (!Array.isArray(recipientIds) || recipientIds.length === 0) {
+      return res.status(400).json({ error: 'Recipient IDs required' });
+    }
+
+    if (!ObjectId.isValid(messageId)) {
+      return res.status(400).json({ error: 'Invalid message ID' });
+    }
+
+    // Get original message
+    const originalMessage = await mongoDb.db
+      .collection('messages')
+      .findOne({ _id: new ObjectId(messageId) });
+
+    if (!originalMessage) {
+      return res.status(404).json({ error: 'Message not found' });
+    }
+
+    // Check access
+    if (originalMessage.senderId !== userId && !originalMessage.recipientIds.includes(userId)) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    // Create forwarded messages for each recipient
+    const forwardedMessages = [];
+    for (const recipientId of recipientIds) {
+      // Find or create thread
+      const thread = await messagingService.findOrCreateThread([userId, recipientId]);
+
+      // Create forwarded message
+      const Message = require('../models/Message');
+      const forwardContent = note 
+        ? `${note}\n\n---\nForwarded from ${req.user.name || 'Unknown'}:\n${originalMessage.content}`
+        : `Forwarded from ${req.user.name || 'Unknown'}:\n${originalMessage.content}`;
+
+      const message = Message.createMessage({
+        threadId: thread._id.toString(),
+        senderId: userId,
+        recipientIds: [recipientId],
+        content: forwardContent,
+        attachments: originalMessage.attachments || [],
+        metadata: {
+          isForwarded: true,
+          originalMessageId: messageId,
+        },
+      });
+
+      await mongoDb.db.collection('messages').insertOne(message);
+      
+      // Update thread
+      await messagingService.threadsCollection.updateOne(
+        { _id: thread._id },
+        {
+          $set: {
+            lastMessageId: message._id.toString(),
+            lastMessageAt: message.createdAt,
+          },
+          $inc: { [`unreadCount.${recipientId}`]: 1 },
+        }
+      );
+
+      // Send via WebSocket
+      if (wsServerV2) {
+        wsServerV2.to(recipientId).emit('message:received', message);
+      }
+
+      forwardedMessages.push(message);
+    }
+
+    res.json({ 
+      success: true, 
+      forwardedCount: forwardedMessages.length,
+      messages: forwardedMessages 
+    });
+  } catch (error) {
+    logger.error('Forward message error', { error: error.message, userId: req.user.id });
+    res.status(500).json({ error: 'Failed to forward message', message: error.message });
+  }
+});
+
+/**
+ * ============================================
+ * LINK PREVIEW ENDPOINT
+ * ============================================
+ */
+
+/**
+ * Fetch link preview metadata
+ * POST /api/v2/messages/preview-link
+ */
+router.post('/preview-link', applyAuthRequired, ensureServices, async (req, res) => {
+  try {
+    const { url } = req.body;
+
+    if (!url || typeof url !== 'string') {
+      return res.status(400).json({ error: 'URL is required' });
+    }
+
+    const LinkPreview = require('../models/LinkPreview');
+    const normalizedUrl = LinkPreview.normalizeUrl(url);
+
+    if (!normalizedUrl) {
+      return res.status(400).json({ error: 'Invalid URL' });
+    }
+
+    // Check cache first
+    const cached = await mongoDb.db
+      .collection(LinkPreview.COLLECTION)
+      .findOne({
+        normalizedUrl,
+        expiresAt: { $gt: new Date() },
+      });
+
+    if (cached) {
+      return res.json(cached);
+    }
+
+    // Fetch new preview
+    const { getLinkPreview } = require('link-preview-js');
+    try {
+      const preview = await getLinkPreview(url, {
+        timeout: 5000,
+        headers: {
+          'user-agent': 'EventFlow-LinkPreview/1.0',
+        },
+      });
+
+      const linkPreview = LinkPreview.createLinkPreview({
+        url,
+        title: preview.title || '',
+        description: preview.description || '',
+        image: preview.images?.[0] || preview.favicons?.[0] || '',
+        siteName: preview.siteName || '',
+        favicon: preview.favicons?.[0] || '',
+        mediaType: preview.mediaType || 'website',
+        metadata: preview,
+      });
+
+      // Save to cache
+      await mongoDb.db
+        .collection(LinkPreview.COLLECTION)
+        .updateOne(
+          { normalizedUrl },
+          { $set: linkPreview },
+          { upsert: true }
+        );
+
+      res.json(linkPreview);
+    } catch (fetchError) {
+      // Save failed attempt to prevent repeated failures
+      const failedPreview = LinkPreview.createLinkPreview({
+        url,
+        fetchError: fetchError.message,
+      });
+
+      await mongoDb.db
+        .collection(LinkPreview.COLLECTION)
+        .updateOne(
+          { normalizedUrl },
+          { $set: failedPreview },
+          { upsert: true }
+        );
+
+      res.status(400).json({ error: 'Failed to fetch link preview', details: fetchError.message });
+    }
+  } catch (error) {
+    logger.error('Link preview error', { error: error.message, userId: req.user.id });
+    res.status(500).json({ error: 'Failed to generate preview', message: error.message });
+  }
+});
+
+/**
+ * ============================================
+ * ADMIN MODERATION ENDPOINTS
+ * ============================================
+ */
+
+/**
+ * Get all reported messages (admin only)
+ * GET /api/v2/admin/reports
+ */
+router.get(
+  '/admin/reports',
+  applyAuthRequired,
+  applyRoleRequired('admin'),
+  ensureServices,
+  async (req, res) => {
+    try {
+      const { status, reason, page = 1, limit = 50 } = req.query;
+      
+      const pageNum = parseInt(page, 10);
+      const limitNum = Math.min(parseInt(limit, 10), 100);
+      const skip = (pageNum - 1) * limitNum;
+
+      const ReportedMessage = require('../models/ReportedMessage');
+      const query = {};
+
+      if (status) {
+        query.status = status;
+      }
+      if (reason) {
+        query.reason = reason;
+      }
+
+      const [reports, total] = await Promise.all([
+        mongoDb.db
+          .collection(ReportedMessage.COLLECTION)
+          .find(query)
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(limitNum)
+          .toArray(),
+        mongoDb.db.collection(ReportedMessage.COLLECTION).countDocuments(query),
+      ]);
+
+      res.json({
+        reports,
+        total,
+        page: pageNum,
+        hasMore: skip + reports.length < total,
+      });
+    } catch (error) {
+      logger.error('Get reports error', { error: error.message, userId: req.user.id });
+      res.status(500).json({ error: 'Failed to get reports', message: error.message });
+    }
+  }
+);
+
+/**
+ * Update report status (admin only)
+ * PUT /api/v2/admin/reports/:id
+ */
+router.put(
+  '/admin/reports/:id',
+  applyAuthRequired,
+  applyRoleRequired('admin'),
+  ensureServices,
+  async (req, res) => {
+    try {
+      const reportId = req.params.id;
+      const { status, reviewNotes } = req.body;
+
+      if (!ObjectId.isValid(reportId)) {
+        return res.status(400).json({ error: 'Invalid report ID' });
+      }
+
+      const ReportedMessage = require('../models/ReportedMessage');
+      if (status && !Object.values(ReportedMessage.REPORT_STATUS).includes(status)) {
+        return res.status(400).json({ error: 'Invalid status' });
+      }
+
+      const update = {
+        updatedAt: new Date(),
+      };
+
+      if (status) {
+        update.status = status;
+        update.reviewedAt = new Date();
+        update.reviewedBy = req.user.id;
+      }
+
+      if (reviewNotes) {
+        update.reviewNotes = reviewNotes;
+      }
+
+      const result = await mongoDb.db
+        .collection(ReportedMessage.COLLECTION)
+        .updateOne(
+          { _id: new ObjectId(reportId) },
+          { $set: update }
+        );
+
+      if (result.matchedCount === 0) {
+        return res.status(404).json({ error: 'Report not found' });
+      }
+
+      res.json({ success: true });
+    } catch (error) {
+      logger.error('Update report error', { error: error.message, userId: req.user.id });
+      res.status(500).json({ error: 'Failed to update report', message: error.message });
+    }
+  }
+);
+
 module.exports = router;
 module.exports.initializeDependencies = initializeDependencies;
