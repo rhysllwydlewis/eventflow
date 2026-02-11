@@ -707,7 +707,7 @@ export async function createLeadQualityWidget(containerId) {
 async function fetchLeadQualityData() {
   try {
     // Try to fetch from API first
-    const response = await fetch('/api/v1/supplier/lead-quality', {
+    const response = await fetch('/api/supplier/lead-quality', {
       credentials: 'include',
     });
 
