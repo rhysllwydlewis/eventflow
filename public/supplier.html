@@ -31,6 +31,7 @@
   <link rel="stylesheet" href="/assets/css/p3-features.css?v=18.1.1">
   <link rel="stylesheet" href="/assets/css/supplier-dashboard-improvements.css?v=18.1.0">
   <link rel="stylesheet" href="/assets/css/supplier-profile.css?v=18.2.0">
+  <link rel="stylesheet" href="/assets/css/badges.css?v=18.2.0">
   
   <script src="/assets/js/toast-notifications.js?v=18.2.0"></script>
   <script src="/assets/js/reviews.js" defer></script>
@@ -197,6 +198,14 @@
 <h1 style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border-width:0;">Supplier Profile</h1>
 <div id="supplier-container"><div class="card"><p>Loading supplier…</p></div></div>
 <script src="/assets/js/app.js"></script>
+<script type="module">
+  // Import verification badges utility
+  import { renderVerificationBadges, renderVerificationSection } from '/assets/js/utils/verification-badges.js';
+  // Make available globally for supplier-profile.js (non-module script)
+  // TODO: Refactor supplier-profile.js to use ES6 modules to remove global exposure
+  window.renderVerificationBadges = renderVerificationBadges;
+  window.renderVerificationSection = renderVerificationSection;
+</script>
 <script src="/assets/js/supplier-profile.js"></script>
 <script type="module" src="/assets/js/supplier-conversation.js"></script>
 <script>window.__EF_PAGE__='supplier'</script>

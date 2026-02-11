@@ -103,36 +103,70 @@
       heroBanner.alt = `${supplier.name} banner`;
     }
 
-    // Render badges
+    // Render badges using verification-badges utility
     const badgesContainer = document.getElementById('hero-badges');
     if (badgesContainer) {
-      const badges = [];
+      // Try to import and use verification-badges module
+      if (typeof renderVerificationBadges !== 'undefined') {
+        // Use the utility function if available
+        badgesContainer.innerHTML = renderVerificationBadges(supplier, { size: 'normal' });
+      } else {
+        // Fallback to inline rendering
+        const badges = [];
 
-      if (supplier.verified) {
-        badges.push(
-          '<span class="badge badge-verified" aria-label="Verified supplier">✓ Verified</span>'
-        );
-      }
+        // Founding Supplier
+        if (supplier.isFoundingSupplier || supplier.isFounding) {
+          badges.push(
+            '<span class="badge badge-founding" aria-label="Founding supplier" title="Founding Supplier - Original member since 2024">⭐ Founding</span>'
+          );
+        }
 
-      if (supplier.isPro) {
-        const now = new Date();
-        const proExpiry = supplier.proExpiresAt ? new Date(supplier.proExpiresAt) : null;
-        const isProActive = !proExpiry || proExpiry > now;
+        // Pro+ Badge
+        if (supplier.subscription?.tier === 'pro_plus' || supplier.proPlan === 'Pro+') {
+          badges.push(
+            '<span class="badge badge-pro-plus" aria-label="Pro Plus supplier" title="Pro Plus - Premium features">Pro+</span>'
+          );
+        }
+        // Pro Badge
+        else if (supplier.isPro || supplier.subscription?.tier === 'pro') {
+          const now = new Date();
+          const proExpiry = supplier.proExpiresAt ? new Date(supplier.proExpiresAt) : null;
+          const isProActive = !proExpiry || proExpiry > now;
 
-        if (isProActive) {
-          // Check if Pro+ based on some criteria (could be a separate field)
-          const isProPlus = supplier.proTier === 'plus' || supplier.isPro === 'plus';
-          if (isProPlus) {
+          if (isProActive) {
             badges.push(
-              '<span class="badge badge-pro-plus" aria-label="Pro Plus supplier">⭐ Pro+</span>'
+              '<span class="badge badge-pro" aria-label="Pro supplier" title="Pro - Enhanced features">✨ Pro</span>'
             );
-          } else {
-            badges.push('<span class="badge badge-pro" aria-label="Pro supplier">✨ Pro</span>');
           }
         }
-      }
 
-      badgesContainer.innerHTML = badges.join('');
+        // Email Verified
+        if (
+          supplier.emailVerified ||
+          supplier.verifications?.email?.verified ||
+          supplier.verified
+        ) {
+          badges.push(
+            '<span class="badge badge-email-verified" aria-label="Email verified" title="Email address verified">✓ Email</span>'
+          );
+        }
+
+        // Phone Verified
+        if (supplier.phoneVerified || supplier.verifications?.phone?.verified) {
+          badges.push(
+            '<span class="badge badge-phone-verified" aria-label="Phone verified" title="Phone number verified">✓ Phone</span>'
+          );
+        }
+
+        // Business Verified
+        if (supplier.businessVerified || supplier.verifications?.business?.verified) {
+          badges.push(
+            '<span class="badge badge-business-verified" aria-label="Business verified" title="Business documents verified">✓ Business</span>'
+          );
+        }
+
+        badgesContainer.innerHTML = badges.join('');
+      }
     }
 
     // Update title
