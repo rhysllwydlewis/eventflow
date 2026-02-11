@@ -83,11 +83,13 @@ function applyCsrfProtection(req, res, next) {
  */
 router.get('/suppliers', applyAuthRequired, applyRoleRequired('admin'), async (_req, res) => {
   const raw = await dbUnified.read('suppliers');
-  const items = raw.map(s => ({
-    ...s,
-    isPro: supplierIsProActive(s),
-    proExpiresAt: s.proExpiresAt || null,
-  }));
+  const items = await Promise.all(
+    raw.map(async s => ({
+      ...s,
+      isPro: await supplierIsProActive(s),
+      proExpiresAt: s.proExpiresAt || null,
+    }))
+  );
   res.json({ items });
 });
 
@@ -209,7 +211,7 @@ router.post(
     all[i] = s;
     await dbUnified.write('suppliers', all);
 
-    const active = supplierIsProActive(s);
+    const active = await supplierIsProActive(s);
     res.json({
       ok: true,
       supplier: {

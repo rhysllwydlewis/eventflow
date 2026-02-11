@@ -113,19 +113,21 @@ router.get('/suppliers', async (req, res) => {
 
   // Mark suppliers that have at least one featured package and compute active Pro flag
   const pkgs = await dbUnified.read('packages');
-  items = items.map(s => {
-    const featuredSupplier = pkgs.some(p => p.supplierId === s.id && p.featured);
-    const isProActive = supplierIsProActive(s);
-    return {
-      ...s,
-      featuredSupplier,
-      isPro: isProActive,
-      proExpiresAt: s.proExpiresAt || null,
-    };
-  });
+  const itemsWithMeta = await Promise.all(
+    items.map(async s => {
+      const featuredSupplier = pkgs.some(p => p.supplierId === s.id && p.featured);
+      const isProActive = await supplierIsProActive(s);
+      return {
+        ...s,
+        featuredSupplier,
+        isPro: isProActive,
+        proExpiresAt: s.proExpiresAt || null,
+      };
+    })
+  );
 
   // If smart scores are available, sort by them while giving Pro suppliers a gentle boost.
-  items = items
+  items = itemsWithMeta
     .map((s, index) => ({ ...s, _idx: index }))
     .sort((a, b) => {
       const sa = typeof a.aiScore === 'number' ? a.aiScore : 0;
@@ -172,7 +174,7 @@ router.get('/suppliers/:id', async (req, res) => {
 
     const pkgs = await dbUnified.read('packages');
     const featuredSupplier = pkgs.some(p => p.supplierId === sRaw.id && p.featured);
-    const isProActive = supplierIsProActive(sRaw);
+    const isProActive = await supplierIsProActive(sRaw);
     const s = {
       ...sRaw,
       featuredSupplier,
@@ -219,11 +221,13 @@ router.get('/suppliers/:id/packages', async (req, res) => {
  */
 router.get('/me/suppliers', applyAuthRequired, applyRoleRequired('supplier'), async (req, res) => {
   const listRaw = (await dbUnified.read('suppliers')).filter(s => s.ownerUserId === req.user.id);
-  const list = listRaw.map(s => ({
-    ...s,
-    isPro: supplierIsProActive(s),
-    proExpiresAt: s.proExpiresAt || null,
-  }));
+  const list = await Promise.all(
+    listRaw.map(async s => ({
+      ...s,
+      isPro: await supplierIsProActive(s),
+      proExpiresAt: s.proExpiresAt || null,
+    }))
+  );
   res.json({ items: list });
 });
 

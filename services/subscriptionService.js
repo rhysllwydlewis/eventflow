@@ -50,14 +50,18 @@ async function createSubscription({
 
   await dbUnified.insertOne('subscriptions', subscription);
 
-  // Update user record with subscription reference
-  const users = await dbUnified.read('users');
-  const user = users.find(u => u.id === userId);
-  if (user) {
-    user.subscriptionId = subscription.id;
-    user.isPro = plan !== 'free';
-    await dbUnified.write('users', users);
-  }
+  // Update user record with subscription reference using updateOne
+  await dbUnified.updateOne(
+    'users',
+    { id: userId },
+    {
+      $set: {
+        subscriptionId: subscription.id,
+        isPro: plan !== 'free',
+        updatedAt: new Date().toISOString(),
+      },
+    }
+  );
 
   return subscription;
 }
@@ -114,12 +118,11 @@ async function updateSubscription(subscriptionId, updates) {
 
   // Update user isPro status if plan changed
   if (updates.plan) {
-    const users = await dbUnified.read('users');
-    const user = users.find(u => u.id === subscription.userId);
-    if (user) {
-      user.isPro = updates.plan !== 'free';
-      await dbUnified.write('users', users);
-    }
+    await dbUnified.updateOne(
+      'users',
+      { id: subscription.userId },
+      { $set: { isPro: updates.plan !== 'free', updatedAt: new Date().toISOString() } }
+    );
   }
 
   return subscription;

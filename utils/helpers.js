@@ -19,21 +19,46 @@ function generateUid() {
 
 /**
  * Check if supplier's Pro plan is currently active
- * @param {Object} supplier - Supplier object
- * @returns {boolean} True if Pro plan is active
+ * Uses subscription service for accurate status
+ * @param {string} userIdOrSupplier - User ID or Supplier object with ownerUserId
+ * @returns {Promise<boolean>} True if Pro/Pro+/Enterprise plan is active
  */
-function supplierIsProActive(supplier) {
-  if (!supplier || !supplier.isPro) {
+async function supplierIsProActive(userIdOrSupplier) {
+  try {
+    // Handle both supplier object and direct user ID
+    const userId =
+      typeof userIdOrSupplier === 'string' ? userIdOrSupplier : userIdOrSupplier?.ownerUserId;
+
+    if (!userId) {
+      // Fallback to legacy logic if no userId available
+      if (!userIdOrSupplier || !userIdOrSupplier.isPro) {
+        return false;
+      }
+      if (!userIdOrSupplier.proExpiresAt) {
+        return !!userIdOrSupplier.isPro;
+      }
+      const t = Date.parse(userIdOrSupplier.proExpiresAt);
+      if (!t || isNaN(t)) {
+        return !!userIdOrSupplier.isPro;
+      }
+      return t > Date.now();
+    }
+
+    const subscriptionService = require('../services/subscriptionService');
+    const subscription = await subscriptionService.getSubscriptionByUserId(userId);
+
+    if (!subscription) {
+      return false;
+    }
+
+    const validPlans = ['pro', 'pro_plus', 'enterprise'];
+    const validStatuses = ['active', 'trialing'];
+
+    return validPlans.includes(subscription.plan) && validStatuses.includes(subscription.status);
+  } catch (error) {
+    console.error('Error checking Pro status:', error);
     return false;
   }
-  if (!supplier.proExpiresAt) {
-    return !!supplier.isPro;
-  }
-  const t = Date.parse(supplier.proExpiresAt);
-  if (!t || isNaN(t)) {
-    return !!supplier.isPro;
-  }
-  return t > Date.now();
 }
 
 /**

@@ -25,6 +25,50 @@ try {
 }
 
 /**
+ * Retry a Stripe API call with exponential backoff
+ * @param {Function} fn - Function to retry
+ * @param {number} maxRetries - Maximum number of retries (default: 3)
+ * @returns {Promise<any>} Result of the function
+ */
+async function retryStripeCall(fn, maxRetries = 3) {
+  let lastError;
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error;
+
+      // Don't retry on user errors (invalid card, etc.)
+      if (
+        error.type === 'card_error' ||
+        error.type === 'invalid_request_error' ||
+        error.statusCode === 400 ||
+        error.statusCode === 401 ||
+        error.statusCode === 403 ||
+        error.statusCode === 404
+      ) {
+        throw error;
+      }
+
+      // Don't retry on the last attempt
+      if (attempt === maxRetries) {
+        break;
+      }
+
+      // Exponential backoff: 1s, 2s, 4s
+      const delay = Math.pow(2, attempt - 1) * 1000;
+      console.warn(
+        `Stripe API call failed (attempt ${attempt}/${maxRetries}): ${error.message}. Retrying in ${delay}ms...`
+      );
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+
+  throw lastError;
+}
+
+/**
  * Create or retrieve Stripe customer
  * @param {Object} user - User object
  * @returns {Promise<Object>} Stripe customer object
@@ -96,7 +140,7 @@ async function createStripeSubscription({
     subscriptionParams.trial_period_days = trialPeriodDays;
   }
 
-  return await stripe.subscriptions.create(subscriptionParams);
+  return await retryStripeCall(() => stripe.subscriptions.create(subscriptionParams));
 }
 
 /**
