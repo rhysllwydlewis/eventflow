@@ -13,7 +13,8 @@ EventFlow uses Stripe for all payment processing. Google Pay integration has bee
   - Up to 3 packages
   - Up to 10 event bookings per month
   - Messaging enabled
-  - Basic analytics
+  - No analytics
+  - Email support
 
 ### Pro Monthly
 
