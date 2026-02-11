@@ -3,7 +3,7 @@
  * Provides offline functionality and caching strategies
  */
 
-const CACHE_VERSION = 'eventflow-v18.3.0';
+const CACHE_VERSION = 'eventflow-v18.4.0';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 const IMAGE_CACHE = `${CACHE_VERSION}-images`;
@@ -12,7 +12,7 @@ const IMAGE_CACHE = `${CACHE_VERSION}-images`;
 const STATIC_ASSETS = [
   '/',
   '/offline.html',
-  '/assets/css/style.css',
+  '/assets/css/styles.css',
   '/assets/js/utils/api.js',
   '/assets/js/utils/storage.js',
   '/assets/js/components/ErrorBoundary.js',
