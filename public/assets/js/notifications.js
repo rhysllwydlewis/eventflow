@@ -606,11 +606,13 @@
       dropdown.style.right = `${window.innerWidth - rect.right}px`;
     };
 
-    // Find or create dropdown
+    // Find pre-rendered dropdown or create if not found
     let dropdown = document.getElementById('notification-dropdown');
     let isNewDropdown = false;
 
     if (!dropdown) {
+      // Fallback: Create dropdown if not pre-rendered (for backward compatibility)
+      console.warn('Notification dropdown not pre-rendered, creating dynamically');
       isNewDropdown = true;
       dropdown = document.createElement('div');
       dropdown.id = 'notification-dropdown';
@@ -629,17 +631,27 @@
       `;
 
       document.body.appendChild(dropdown);
+    } else {
+      // Pre-rendered dropdown found, just ensure it's properly initialized
+      console.log('Using pre-rendered notification dropdown');
+      // Mark dropdown as existing but not yet initialized for event listeners
+      isNewDropdown = true;
     }
 
     // Toggle dropdown - Use single event listener (no cloning)
     bell.addEventListener('click', e => {
       e.stopPropagation();
       e.preventDefault();
+      
+      // Show/hide dropdown by toggling class and display
       const isOpen = dropdown.classList.toggle('notification-dropdown--open');
-
+      
       if (isOpen) {
+        dropdown.style.display = 'block';
         positionDropdown(dropdown);
         fetchNotifications();
+      } else {
+        dropdown.style.display = 'none';
       }
     });
 
@@ -652,6 +664,7 @@
           document.getElementById('notification-bell');
         if (currentBell && !currentBell.contains(e.target) && !dropdown.contains(e.target)) {
           dropdown.classList.remove('notification-dropdown--open');
+          dropdown.style.display = 'none';
         }
       });
 
@@ -659,6 +672,7 @@
       document.addEventListener('keydown', e => {
         if (e.key === 'Escape' && dropdown.classList.contains('notification-dropdown--open')) {
           dropdown.classList.remove('notification-dropdown--open');
+          dropdown.style.display = 'none';
         }
       });
 
