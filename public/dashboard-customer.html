@@ -448,11 +448,16 @@ async function initCustomerDashboardWidgets() {
             <div style="font-size: 3rem; margin-bottom: 1rem;">⚠️</div>
             <h3 style="margin: 0 0 0.5rem 0; color: #991B1B;">Unable to Load Dashboard</h3>
             <p style="color: #7F1D1D; margin: 0 0 1.5rem 0;">There was a problem connecting to our servers.</p>
-            <button class="cta" onclick="window.location.reload()" style="background: #DC2626;">
+            <button id="dashboard-error-retry" class="cta" style="background: #DC2626;">
               🔄 Retry
             </button>
           </div>
         `;
+        
+        // Add event listener for retry button
+        document.getElementById('dashboard-error-retry')?.addEventListener('click', () => {
+          window.location.reload();
+        });
       }
       
       // Show error in other widgets too
@@ -622,6 +627,12 @@ async function initCustomerDashboardWidgets() {
           upcomingEvents = [
             { name: '🎉 Your event is TODAY!', supplier: 'EventFlow', daysUntil: 0 }
           ];
+        } else {
+          // Event has passed
+          upcomingEvents = [
+            { name: '✅ Event completed', supplier: 'Past Event', daysUntil: 0 },
+            { name: 'Create a new event plan', supplier: 'Getting Started', daysUntil: 0 }
+          ];
         }
       }
       
@@ -784,8 +795,25 @@ function setupEventHandlers() {
     const saved = JSON.parse(localStorage.getItem('eventflow_saved_suppliers') || '[]');
     
     if (saved.length === 0) {
-      alert('You haven\'t saved any suppliers yet. Browse suppliers to get started!');
-      window.location.href = '/suppliers';
+      // Show styled notification instead of alert
+      const notification = document.createElement('div');
+      notification.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#FEF2F2;border:1px solid #FCA5A5;padding:1rem 1.5rem;border-radius:8px;box-shadow:0 4px 6px rgba(0,0,0,0.1);z-index:10000;max-width:400px;';
+      notification.innerHTML = `
+        <div style="display:flex;align-items:center;gap:0.75rem;">
+          <span style="font-size:1.5rem;">ℹ️</span>
+          <div>
+            <strong style="display:block;color:#991B1B;margin-bottom:0.25rem;">No Saved Suppliers</strong>
+            <p style="margin:0;color:#7F1D1D;font-size:0.9rem;">You haven't saved any suppliers yet. Browse suppliers to get started!</p>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(notification);
+      
+      // Remove notification after 3 seconds and redirect
+      setTimeout(() => {
+        notification.remove();
+        window.location.href = '/suppliers';
+      }, 3000);
     } else {
       // Redirect to suppliers page with saved filter
       window.location.href = '/suppliers?filter=saved';

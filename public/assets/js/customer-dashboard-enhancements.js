@@ -55,12 +55,11 @@
 
   /**
    * Trigger confetti on first plan creation
-   * NOTE: Disabled - customer dashboard has no plan creation trigger elements
+   * @note Disabled - customer dashboard has no plan creation trigger elements.
+   * Plan creation happens on a different page (/start or /plan.html).
+   * Confetti should be triggered there, not here.
    */
   function setupPlanCreationConfetti() {
-    // Customer dashboard doesn't have #create-plan-btn or [data-action="create-plan"]
-    // Plan creation happens on a different page (/start or /plan.html)
-    // Confetti should be triggered there, not here
     return;
   }
 
