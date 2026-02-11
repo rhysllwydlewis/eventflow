@@ -29,73 +29,148 @@
   };
 
   // ==========================================
+  // LOADING STATE MANAGEMENT
+  // ==========================================
+
+  function setBellLoadingState(loading) {
+    const bell =
+      document.getElementById('ef-notification-btn') ||
+      document.getElementById('notification-bell');
+    
+    if (bell) {
+      if (loading) {
+        bell.classList.add('ef-notification-loading');
+        bell.disabled = true;
+        bell.setAttribute('aria-busy', 'true');
+      } else {
+        bell.classList.remove('ef-notification-loading');
+        bell.disabled = false;
+        bell.removeAttribute('aria-busy');
+      }
+    }
+  }
+
+  // ==========================================
   // WEBSOCKET CONNECTION
   // ==========================================
 
   function initWebSocket() {
-    // Load Socket.IO from CDN
-    const script = document.createElement('script');
-    script.src = 'https://cdn.socket.io/4.5.4/socket.io.min.js';
-    script.onload = () => {
-      connectWebSocket();
-    };
-    script.onerror = () => {
-      console.error('Failed to load Socket.IO');
-    };
-    document.head.appendChild(script);
+    try {
+      // Load Socket.IO from CDN
+      const script = document.createElement('script');
+      script.src = 'https://cdn.socket.io/4.5.4/socket.io.min.js';
+      script.onload = () => {
+        connectWebSocket();
+      };
+      script.onerror = () => {
+        console.error('Failed to load Socket.IO');
+        // Show user-friendly error message
+        showWebSocketError('Failed to load real-time notifications. Some features may be unavailable.');
+      };
+      document.head.appendChild(script);
+    } catch (error) {
+      console.error('Error initializing WebSocket:', error);
+      showWebSocketError('Failed to initialize real-time notifications.');
+    }
   }
 
   function connectWebSocket() {
-    if (!window.io) {
-      console.error('Socket.IO not loaded');
-      return;
-    }
-
-    // Connect to WebSocket server
-    state.socket = window.io({
-      transports: ['websocket', 'polling'],
-      reconnection: true,
-      reconnectionDelay: 1000,
-      reconnectionAttempts: 10,
-    });
-
-    state.socket.on('connect', () => {
-      state.isConnected = true;
-      console.log('WebSocket connected');
-
-      // Authenticate with user ID if available
-      const user = getUserFromStorage();
-      if (user && user.id) {
-        state.socket.emit('auth', { userId: user.id });
+    try {
+      if (!window.io) {
+        console.error('Socket.IO not loaded');
+        showWebSocketError('Real-time notifications unavailable.');
+        return;
       }
-    });
 
-    state.socket.on('disconnect', () => {
-      state.isConnected = false;
-      console.log('WebSocket disconnected');
-    });
+      // Connect to WebSocket server
+      state.socket = window.io({
+        transports: ['websocket', 'polling'],
+        reconnection: true,
+        reconnectionDelay: 1000,
+        reconnectionAttempts: 10,
+      });
 
-    state.socket.on('auth:success', data => {
-      console.log('WebSocket authenticated:', data.userId);
-    });
+      state.socket.on('connect', () => {
+        state.isConnected = true;
+        console.log('WebSocket connected');
+        hideWebSocketError();
 
-    // Listen for real-time notifications
-    state.socket.on('notification', notification => {
-      handleRealtimeNotification(notification);
-    });
-
-    // Listen for auth state changes
-    window.addEventListener('auth-state-changed', event => {
-      const user = event.detail.user;
-      if (user && user.id) {
-        state.socket.emit('auth', { userId: user.id });
-      } else {
-        // User logged out, disconnect
-        if (state.socket) {
-          state.socket.close();
+        // Authenticate with user ID if available
+        const user = getUserFromStorage();
+        if (user && user.id) {
+          state.socket.emit('auth', { userId: user.id });
         }
-      }
-    });
+      });
+
+      state.socket.on('disconnect', () => {
+        state.isConnected = false;
+        console.log('WebSocket disconnected');
+      });
+
+      state.socket.on('connect_error', (error) => {
+        console.error('WebSocket connection error:', error);
+        showWebSocketError('Connection to notification server failed. Retrying...');
+      });
+
+      state.socket.on('auth:success', data => {
+        console.log('WebSocket authenticated:', data.userId);
+      });
+
+      // Listen for real-time notifications
+      state.socket.on('notification', notification => {
+        handleRealtimeNotification(notification);
+      });
+
+      // Listen for auth state changes
+      window.addEventListener('auth-state-changed', event => {
+        const user = event.detail.user;
+        if (user && user.id) {
+          if (state.socket && state.socket.connected) {
+            state.socket.emit('auth', { userId: user.id });
+          }
+        } else {
+          // User logged out, disconnect
+          if (state.socket) {
+            state.socket.close();
+          }
+        }
+      });
+    } catch (error) {
+      console.error('Error connecting to WebSocket:', error);
+      showWebSocketError('Failed to connect to notification server.');
+    }
+  }
+
+  function showWebSocketError(message) {
+    // Show a non-intrusive error message
+    const errorDiv = document.getElementById('ws-error-message') || document.createElement('div');
+    errorDiv.id = 'ws-error-message';
+    errorDiv.className = 'ws-error-message';
+    errorDiv.textContent = message;
+    errorDiv.style.cssText = `
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: rgba(239, 68, 68, 0.95);
+      color: white;
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      z-index: 10000;
+      max-width: 300px;
+    `;
+    
+    if (!document.getElementById('ws-error-message')) {
+      document.body.appendChild(errorDiv);
+    }
+  }
+
+  function hideWebSocketError() {
+    const errorDiv = document.getElementById('ws-error-message');
+    if (errorDiv) {
+      errorDiv.remove();
+    }
   }
 
   // ==========================================
@@ -487,12 +562,12 @@
   // ==========================================
 
   function initDropdown() {
-    // Prevent multiple initializations
-    if (window.__notificationDropdownInitialized) {
-      console.log('Notification dropdown already initialized');
+    // Prevent multiple initializations using guard flag
+    if (window.__notificationBellInitialized) {
+      console.log('Notification bell already initialized');
       return;
     }
-    window.__notificationDropdownInitialized = true;
+    window.__notificationBellInitialized = true;
 
     // Support both old and new notification bell IDs
     const bell =
@@ -503,9 +578,9 @@
       return;
     }
 
-    // Position dropdown below bell - FIXED: Re-query DOM to avoid stale reference
+    // Position dropdown below bell with viewport boundary detection
     const positionDropdown = dropdown => {
-      // Always get fresh reference to avoid stale DOM reference after cloning
+      // Always get fresh reference to avoid stale DOM reference
       const currentBell =
         document.getElementById('ef-notification-btn') ||
         document.getElementById('notification-bell');
@@ -527,16 +602,49 @@
         return;
       }
 
-      dropdown.style.top = `${rect.bottom + 8}px`;
-      dropdown.style.right = `${window.innerWidth - rect.right}px`;
+      // Calculate initial position below the bell
+      let top = rect.bottom + 8;
+      let right = window.innerWidth - rect.right;
+
+      // Get dropdown dimensions (may need to show it temporarily to measure)
+      const dropdownRect = dropdown.getBoundingClientRect();
+      const dropdownWidth = dropdownRect.width || 380; // Default width from CSS
+      const dropdownHeight = dropdownRect.height || 500; // Max height from CSS
+
+      // Viewport boundary detection
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+
+      // Check if dropdown goes off the right edge
+      const dropdownLeft = viewportWidth - right - dropdownWidth;
+      if (dropdownLeft < 16) {
+        // Adjust to keep 16px padding from left edge
+        right = viewportWidth - dropdownWidth - 16;
+      }
+
+      // Check if dropdown goes off the bottom edge
+      if (top + dropdownHeight > viewportHeight - 16) {
+        // Position above the bell instead
+        top = rect.top - dropdownHeight - 8;
+        
+        // If still off screen, position at top with margin
+        if (top < 16) {
+          top = 16;
+        }
+      }
+
+      dropdown.style.top = `${top}px`;
+      dropdown.style.right = `${right}px`;
     };
 
-    // Create dropdown if it doesn't exist
+    // Find pre-rendered dropdown or create if not found
     let dropdown = document.getElementById('notification-dropdown');
-    let isNewDropdown = false;
+    let needsEventListeners = false;
 
     if (!dropdown) {
-      isNewDropdown = true;
+      // Fallback: Create dropdown if not pre-rendered (for backward compatibility)
+      console.warn('Notification dropdown not pre-rendered, creating dynamically');
+      needsEventListeners = true;
       dropdown = document.createElement('div');
       dropdown.id = 'notification-dropdown';
       dropdown.className = 'notification-dropdown';
@@ -554,31 +662,31 @@
       `;
 
       document.body.appendChild(dropdown);
+    } else {
+      // Pre-rendered dropdown found, just ensure it's properly initialized
+      console.log('Using pre-rendered notification dropdown');
+      // Mark that we need to attach event listeners
+      needsEventListeners = true;
     }
 
-    // Remove any existing click listeners by cloning and replacing the button
-    // This prevents duplicate event listeners if init is called multiple times
-    const newBell = bell.cloneNode(true);
-    bell.parentNode.replaceChild(newBell, bell);
-    // FIX: Ensure the cloned bell inherits the visible state
-    newBell.style.display = 'flex';
-
-    // Toggle dropdown - attach to the new button element
-    newBell.addEventListener('click', e => {
+    // Toggle dropdown - Use single event listener (no cloning)
+    bell.addEventListener('click', e => {
       e.stopPropagation();
       e.preventDefault();
-      const isOpen = dropdown.classList.toggle('notification-dropdown--open');
-
-      if (isOpen) {
+      
+      // Toggle dropdown visibility with CSS class only
+      dropdown.classList.toggle('notification-dropdown--open');
+      
+      if (dropdown.classList.contains('notification-dropdown--open')) {
         positionDropdown(dropdown);
         fetchNotifications();
       }
     });
 
-    // Close on outside click (only attach once for new dropdowns)
-    if (isNewDropdown) {
+    // Close on outside click (only attach once)
+    if (needsEventListeners) {
       document.addEventListener('click', e => {
-        // Re-query bell to avoid stale reference
+        // Query bell to check if click is outside
         const currentBell =
           document.getElementById('ef-notification-btn') ||
           document.getElementById('notification-bell');
@@ -662,6 +770,9 @@
 
       console.log('Notification system: Initializing for user', user.id);
 
+      // Set loading state
+      setBellLoadingState(true);
+
       // Initialize WebSocket
       initWebSocket();
 
@@ -669,7 +780,13 @@
       initDropdown();
 
       // Fetch initial notifications
-      fetchNotifications();
+      fetchNotifications().then(() => {
+        // Remove loading state after initial fetch
+        setBellLoadingState(false);
+      }).catch(() => {
+        // Still remove loading state even on error
+        setBellLoadingState(false);
+      });
 
       // Request desktop notification permission after a delay
       setTimeout(() => {
@@ -691,14 +808,20 @@
         },
         // Expose reinit for debugging
         reinit: () => {
-          window.__notificationDropdownInitialized = false;
+          window.__notificationBellInitialized = false;
           initDropdown();
         },
       };
 
       console.log('Notification system: Initialization complete');
+
+      // Fire custom event to signal that notification system is ready
+      window.dispatchEvent(new CustomEvent('notification-system-ready', {
+        detail: { initialized: true, userId: user.id }
+      }));
     } catch (error) {
       console.error('Notification system: Initialization failed', error);
+      setBellLoadingState(false);
     }
   }
 
