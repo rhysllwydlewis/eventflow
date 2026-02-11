@@ -320,7 +320,7 @@ class OfflineQueueManager {
    * Generate unique ID
    */
   generateId() {
-    return `queue_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return `queue_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
   }
 
   /**
