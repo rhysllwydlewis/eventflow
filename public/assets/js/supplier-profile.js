@@ -197,7 +197,9 @@
     if (btnEnquiry) {
       btnEnquiry.onclick = () => {
         // TODO: Open enquiry modal
-        alert('Enquiry form coming soon!');
+        if (window.EventFlowNotifications) {
+          window.EventFlowNotifications.info('Enquiry form coming soon!');
+        }
       };
     }
 
@@ -213,7 +215,9 @@
     if (btnSave) {
       btnSave.onclick = () => {
         // TODO: Save to favorites
-        alert('Save feature coming soon!');
+        if (window.EventFlowNotifications) {
+          window.EventFlowNotifications.info('Save feature coming soon!');
+        }
       };
     }
 
@@ -237,7 +241,9 @@
         } else {
           // Fallback: Copy to clipboard
           navigator.clipboard.writeText(window.location.href);
-          alert('Link copied to clipboard!');
+          if (window.EventFlowNotifications) {
+            window.EventFlowNotifications.success('Link copied to clipboard!');
+          }
         }
       };
     }

@@ -323,12 +323,24 @@ async function migrateSuppliers_AddNewFields() {
       // Generate slug if not present
       const slug = s.slug || generateSlug(s.name);
 
+      // Determine status based on profile completeness
+      // Only mark as published if supplier has minimum viable profile
+      let status = s.status;
+      if (!status) {
+        const hasMinimumViableProfile =
+          s.name && s.description && s.location && (s.email || s.phone);
+
+        status = hasMinimumViableProfile ? 'published' : 'draft';
+      }
+
       return {
         ...s,
         // Publishing workflow
-        status: s.status || 'published', // Existing suppliers are published
+        status: status,
         slug: slug,
-        publishedAt: s.publishedAt || s.createdAt || new Date().toISOString(),
+        publishedAt:
+          s.publishedAt ||
+          (status === 'published' ? s.createdAt || new Date().toISOString() : null),
 
         // SEO & Social
         metaDescription:
